@@ -10,7 +10,7 @@ import { useCartStore } from "@/lib/store";
 import { useUserStore } from "@/lib/userStore";
 import { CartDrawer } from "@/components/ui/CartDrawer";
 
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -25,8 +25,10 @@ const TABS = [
 
 export function Header() {
   const pathname = usePathname();
+  const router = useRouter();
   const [activeTab, setActiveTab] = useState(TABS[0].id);
   const [hoveredTab, setHoveredTab] = useState<string | null>(null);
+  const [searchVal, setSearchVal] = useState("");
   
   const { toggleCart, getTotalItems } = useCartStore();
   const { isAuthenticated } = useUserStore();
@@ -35,6 +37,14 @@ export function Header() {
   useEffect(() => {
     setIsMounted(true);
   }, []);
+
+  const handleSearchSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (searchVal.trim()) {
+      router.push(`/shop?search=${encodeURIComponent(searchVal.trim())}`);
+      setSearchVal("");
+    }
+  };
 
   // Do not render floating navigation pill on auth, profile, or admin dashboard pages
   if (pathname?.startsWith("/auth") || pathname?.startsWith("/profile") || pathname?.startsWith("/admin")) {
@@ -114,10 +124,11 @@ export function Header() {
               <User className="w-5 h-5" />
             </Link>
             
-            <form action="/shop" method="GET" className="relative group">
+            <form onSubmit={handleSearchSubmit} className="relative group">
               <input 
                 type="text" 
-                name="search"
+                value={searchVal}
+                onChange={(e) => setSearchVal(e.target.value)}
                 placeholder="Buscar..."
                 className="w-0 transition-all duration-300 group-hover:w-48 group-focus-within:w-48 bg-white/40 backdrop-blur-md border border-transparent group-hover:border-white/60 focus:border-white/60 rounded-full py-2 pl-10 pr-4 text-sm text-gray-900 placeholder:text-gray-500 outline-none shadow-[0_4px_16px_rgba(0,0,0,0.05)] opacity-0 group-hover:opacity-100 focus:opacity-100"
               />

@@ -450,7 +450,7 @@ export default function ProfilePage() {
             <Store className="w-5 h-5" />
           </Link>
           <button 
-            onClick={() => { logout(); router.push("/"); }} 
+            onClick={() => { logout(); router.push("/auth/login"); }} 
             className="w-10 h-10 rounded-2xl flex items-center justify-center text-red-400 hover:text-red-600 hover:bg-red-50 transition-colors"
             title="Cerrar Sesión"
           >
@@ -523,19 +523,71 @@ export default function ProfilePage() {
 
           {/* Right Search Input & Profile Badge */}
           <div className="flex items-center gap-3 shrink-0">
-            <div className="hidden sm:flex items-center bg-gray-100/70 px-3 py-1.5 rounded-2xl border border-gray-200/50 text-xs text-gray-600 focus-within:ring-2 focus-within:ring-[#8c9276]/30 transition-all">
-              <Search className="w-3.5 h-3.5 mr-2 text-gray-400" />
-              <input 
-                type="text" 
-                value={searchQuery}
-                onChange={e => setSearchQuery(e.target.value)}
-                placeholder="Buscar en panel..."
-                className="bg-transparent border-none outline-none text-xs w-28 md:w-36 text-gray-800 placeholder:text-gray-400"
-              />
-              {searchQuery && (
-                <button onClick={() => setSearchQuery("")} className="text-gray-400 hover:text-gray-600 ml-1">
-                  <X className="w-3 h-3" />
-                </button>
+            <div className="relative">
+              <div className="hidden sm:flex items-center bg-gray-100/70 px-3 py-1.5 rounded-2xl border border-gray-200/50 text-xs text-gray-600 focus-within:ring-2 focus-within:ring-[#8c9276]/30 focus-within:bg-white transition-all">
+                <Search className="w-3.5 h-3.5 mr-2 text-gray-400" />
+                <input 
+                  type="text" 
+                  value={searchQuery}
+                  onChange={e => setSearchQuery(e.target.value)}
+                  placeholder="Buscar en panel..."
+                  className="bg-transparent border-none outline-none text-xs w-28 md:w-44 text-gray-800 placeholder:text-gray-400 font-medium"
+                />
+                {searchQuery && (
+                  <button onClick={() => setSearchQuery("")} className="text-gray-400 hover:text-gray-600 ml-1">
+                    <X className="w-3 h-3" />
+                  </button>
+                )}
+              </div>
+
+              {/* Floating Live Quick Search Results */}
+              {searchQuery.trim().length > 0 && (
+                <div className="absolute right-0 top-full mt-2 w-72 bg-white/95 backdrop-blur-2xl border border-gray-200/80 rounded-2xl shadow-2xl p-3 z-50 space-y-3 animate-fade-in text-xs">
+                  <div className="flex items-center justify-between pb-1 border-b border-gray-100 text-[10px] text-gray-400 uppercase font-bold">
+                    <span>Resultados de búsqueda</span>
+                    <button onClick={() => setSearchQuery("")} className="hover:text-gray-700">Cerrar</button>
+                  </div>
+                  
+                  {/* Matching Orders */}
+                  {filteredOrders.length > 0 && (
+                    <div className="space-y-1">
+                      <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Pedidos ({filteredOrders.length})</p>
+                      {filteredOrders.slice(0, 2).map(ord => (
+                        <div 
+                          key={ord.id} 
+                          onClick={() => { setActiveTab("orders"); setSelectedOrder(ord); setSearchQuery(""); }}
+                          className="p-1.5 rounded-lg hover:bg-gray-100 cursor-pointer flex items-center justify-between transition-colors"
+                        >
+                          <span className="font-mono font-bold text-gray-800">{ord.id}</span>
+                          <span className="text-[10px] px-1.5 py-0.5 rounded bg-gray-100 text-gray-600 font-semibold">{ord.status}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Matching Catalog */}
+                  {filteredCatalog.length > 0 && (
+                    <div className="space-y-1">
+                      <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Catálogo ({filteredCatalog.length})</p>
+                      {filteredCatalog.slice(0, 3).map(prod => (
+                        <div 
+                          key={prod.id} 
+                          onClick={() => { setActiveTab(isAdmin ? "catalog" : "favorites"); setSearchQuery(""); }}
+                          className="p-1.5 rounded-lg hover:bg-gray-100 cursor-pointer flex items-center justify-between transition-colors"
+                        >
+                          <span className="font-medium text-gray-800 truncate max-w-[150px]">{prod.title}</span>
+                          <span className="font-bold text-gray-900">${prod.price.toFixed(2)}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {filteredOrders.length === 0 && filteredCatalog.length === 0 && (
+                    <div className="py-3 text-center text-gray-400">
+                      Sin coincidencias para &quot;{searchQuery}&quot;
+                    </div>
+                  )}
+                </div>
               )}
             </div>
 

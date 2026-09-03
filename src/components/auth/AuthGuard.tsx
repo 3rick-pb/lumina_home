@@ -10,26 +10,26 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const [mounted, setMounted] = useState(false);
 
-  const isProtected = pathname?.startsWith("/profile") || pathname?.startsWith("/admin");
+  const isAuthRoute = pathname?.startsWith("/auth");
 
   useEffect(() => {
     setMounted(true);
   }, []);
 
   useEffect(() => {
-    // Only redirect to login if the user is trying to access a private dashboard without authentication
-    if (mounted && !isLoading && !isAuthenticated && isProtected) {
+    // Always open on the login page if the user is unauthenticated
+    if (mounted && !isLoading && !isAuthenticated && !isAuthRoute) {
       router.push("/auth/login");
     }
-  }, [mounted, isLoading, isAuthenticated, isProtected, router]);
+  }, [mounted, isLoading, isAuthenticated, isAuthRoute, router]);
 
   // To prevent Next.js build errors (PageNotFoundError), always render children during SSR
   if (!mounted) {
     return <div style={{ visibility: "hidden" }}>{children}</div>;
   }
 
-  // If trying to access a protected dashboard route while unauthenticated, hide until redirect occurs
-  if (!isLoading && !isAuthenticated && isProtected) {
+  // If not authenticated and trying to access store/dashboard, hide while redirecting to login
+  if (!isLoading && !isAuthenticated && !isAuthRoute) {
     return <div style={{ visibility: "hidden" }}>{children}</div>;
   }
 
