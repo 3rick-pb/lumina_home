@@ -920,35 +920,51 @@ export function CartDrawer() {
                           </span>
                         </div>
 
-                        {/* Liquid Glass Horizontal Capsule Bar */}
-                        <div className="relative p-1.5 rounded-full bg-slate-100/80 backdrop-blur-2xl border border-white/90 shadow-[inset_0_2px_4px_rgba(0,0,0,0.03),0_6px_20px_rgba(0,0,0,0.04)] grid grid-cols-4 gap-1">
+                        {/* THE LIQUID GLASS FLOATING DOCK (Exact from user's video "Video Liquid Glass vs Netflix.mp4") */}
+                        <div className="relative p-2 rounded-full bg-[#0a0b10] border border-white/15 shadow-[0_25px_60px_rgba(0,0,0,0.6),inset_0_1px_2px_rgba(255,255,255,0.25)] backdrop-blur-3xl grid grid-cols-4 gap-1.5 sm:gap-2">
                           {[
                             { 
                               id: "card", 
                               label: "Tarjeta", 
+                              glowGradient: "from-amber-500/35 via-orange-500/20 to-transparent",
+                              borderColor: "border-amber-400/50",
+                              shadowGlow: "shadow-[0_0_25px_rgba(245,158,11,0.3),inset_0_2px_3px_rgba(255,255,255,0.9),inset_0_-1.5px_2px_rgba(0,0,0,0.5)]",
                               renderIcon: (active: boolean) => (
-                                <CreditCard className={`w-4 h-4 transition-colors ${active ? "text-gray-900" : "text-gray-500"}`} />
+                                <CreditCard className={`w-5 h-5 transition-all duration-300 ${active ? "text-amber-300 scale-110 drop-shadow-[0_0_10px_rgba(245,158,11,0.8)]" : "text-zinc-400"}`} />
                               ) 
                             },
                             { 
                               id: "apple", 
                               label: "Apple Pay", 
+                              glowGradient: "from-white/30 via-white/10 to-transparent",
+                              borderColor: "border-white/60",
+                              shadowGlow: "shadow-[0_0_25px_rgba(255,255,255,0.3),inset_0_2px_3px_rgba(255,255,255,1),inset_0_-1.5px_2px_rgba(0,0,0,0.5)]",
                               renderIcon: (active: boolean) => (
-                                <ApplePayLogo className={`h-3.5 transition-colors ${active ? "text-gray-900" : "text-gray-500"}`} />
+                                <ApplePayLogo className={`h-4 transition-all duration-300 ${active ? "text-white scale-110 drop-shadow-[0_0_10px_rgba(255,255,255,0.8)]" : "text-zinc-400"}`} />
                               ) 
                             },
                             { 
                               id: "google", 
                               label: "Google Pay", 
-                              renderIcon: () => (
-                                <GooglePayLogo className="h-3.5" />
+                              glowGradient: "from-blue-500/35 via-emerald-500/20 to-transparent",
+                              borderColor: "border-blue-400/50",
+                              shadowGlow: "shadow-[0_0_25px_rgba(59,130,246,0.3),inset_0_2px_3px_rgba(255,255,255,0.9),inset_0_-1.5px_2px_rgba(0,0,0,0.5)]",
+                              renderIcon: (active: boolean) => (
+                                <div className={`transition-all duration-300 ${active ? "scale-110 drop-shadow-[0_0_10px_rgba(59,130,246,0.7)]" : "grayscale opacity-50"}`}>
+                                  <GooglePayLogo className="h-4 text-white" />
+                                </div>
                               ) 
                             },
                             { 
                               id: "paypal", 
                               label: "PayPal", 
-                              renderIcon: () => (
-                                <PayPalLogo className="h-3.5" />
+                              glowGradient: "from-cyan-500/35 via-[#003087]/30 to-transparent",
+                              borderColor: "border-cyan-400/50",
+                              shadowGlow: "shadow-[0_0_25px_rgba(6,182,212,0.35),inset_0_2px_3px_rgba(255,255,255,0.9),inset_0_-1.5px_2px_rgba(0,0,0,0.5)]",
+                              renderIcon: (active: boolean) => (
+                                <div className={`transition-all duration-300 ${active ? "scale-110 drop-shadow-[0_0_10px_rgba(6,182,212,0.8)]" : "grayscale opacity-50"}`}>
+                                  <PayPalLogo className="h-4 text-white" />
+                                </div>
                               ) 
                             },
                           ].map((m) => {
@@ -958,25 +974,27 @@ export function CartDrawer() {
                                 key={m.id}
                                 type="button"
                                 onClick={() => setSelectedMethod(m.id as typeof selectedMethod)}
-                                className="relative z-10 py-2.5 px-1 sm:px-2 rounded-full flex items-center justify-center gap-1.5 text-xs font-semibold transition-colors duration-200 outline-none select-none cursor-pointer"
+                                className="group relative z-10 py-3 px-2 rounded-full flex flex-col items-center justify-center gap-1 text-xs outline-none select-none cursor-pointer transition-all duration-300"
                               >
-                                {/* Apple-Style Water Droplet Liquid Glass Sliding Bubble */}
+                                {/* Liquid Glass Water Droplet (Fluid Spring with internal liquid glow & specular rim) */}
                                 {isActive && (
                                   <motion.div
-                                    layoutId="liquidPaymentBubble"
-                                    transition={{ type: "spring", stiffness: 450, damping: 32 }}
-                                    className="absolute inset-0 rounded-full bg-white/95 backdrop-blur-2xl border border-white shadow-[0_6px_20px_rgba(0,0,0,0.08),inset_0_1.5px_2px_rgba(255,255,255,1),inset_0_-1px_1.5px_rgba(0,0,0,0.03)]"
+                                    layoutId="videoLiquidGlassBubble"
+                                    transition={{ type: "spring", stiffness: 380, damping: 24, mass: 0.7 }}
+                                    className={`absolute inset-0 rounded-full bg-gradient-to-b ${m.glowGradient} backdrop-blur-2xl border ${m.borderColor} ${m.shadowGlow}`}
                                   >
-                                    {/* Top Specular Rim */}
-                                    <div className="absolute inset-x-3 top-0 h-[1px] bg-gradient-to-r from-transparent via-white to-transparent" />
-                                    {/* Caustic glint */}
-                                    <div className="absolute top-1 left-3 w-3 h-1 bg-white/80 rounded-full blur-[0.5px]" />
+                                    {/* Razor Specular Rim Light */}
+                                    <div className="absolute inset-x-3 top-0.5 h-[1.5px] bg-gradient-to-r from-transparent via-white to-transparent opacity-95" />
+                                    {/* Caustic light glare corner spot */}
+                                    <div className="absolute top-1 left-3 w-3 h-1.5 bg-white/90 rounded-full blur-[0.6px]" />
+                                    {/* Inner liquid depth reflection */}
+                                    <div className="absolute inset-0 rounded-full bg-white/5 pointer-events-none" />
                                   </motion.div>
                                 )}
 
-                                <span className="relative z-10 flex items-center justify-center gap-1.5 truncate">
+                                <span className="relative z-10 flex flex-col items-center justify-center gap-1.5">
                                   {m.renderIcon(isActive)}
-                                  <span className={`hidden md:inline ${isActive ? "text-gray-900 font-bold" : "text-gray-500"}`}>
+                                  <span className={`text-[11px] tracking-tight transition-all duration-300 ${isActive ? "text-white font-extrabold drop-shadow" : "text-zinc-400 group-hover:text-zinc-300 font-medium"}`}>
                                     {m.label}
                                   </span>
                                 </span>
