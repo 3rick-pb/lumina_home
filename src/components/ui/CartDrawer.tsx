@@ -178,6 +178,7 @@ export function CartDrawer() {
   // Payment method selection
   const [selectedMethod, setSelectedMethod] = useState<"card" | "apple" | "google" | "paypal">("card");
   const [selectedCardId, setSelectedCardId] = useState<string>("");
+  const [hoveredPaymentMethod, setHoveredPaymentMethod] = useState<string | null>(null);
 
   // Quick Address Inline Form
   const [isEditingAddress, setIsEditingAddress] = useState(false);
@@ -942,28 +943,31 @@ export function CartDrawer() {
                           </span>
                         </div>
 
-                        {/* WHITE LIQUID GLASS FLOATING DOCK (Clean, Serious Financial Typography, No Bottom Line) */}
-                        <div className="relative p-1.5 rounded-full bg-slate-100/90 backdrop-blur-2xl border border-white/80 shadow-[inset_0_2px_4px_rgba(0,0,0,0.03),0_6px_20px_rgba(0,0,0,0.04)] grid grid-cols-4 gap-1.5 max-w-lg mx-auto font-sans">
+                        {/* LIQUID GLASS PAYMENT SELECTOR (Matching Header Liquid Glass Structure) */}
+                        <div 
+                          className="relative p-1.5 rounded-full bg-slate-100/80 backdrop-blur-xl border border-white/90 shadow-[0_8px_32px_rgba(0,0,0,0.06)] flex items-center justify-between gap-1 max-w-xl mx-auto font-sans"
+                          onMouseLeave={() => setHoveredPaymentMethod(null)}
+                        >
                           {[
                             { 
                               id: "card", 
                               label: "Tarjeta", 
                               renderIcon: (active: boolean) => (
-                                <CreditCard className={`w-4 h-4 transition-colors duration-200 ${active ? "text-gray-950" : "text-gray-500"}`} />
+                                <CreditCard className={`w-4 h-4 transition-colors duration-200 ${active ? "text-gray-900" : "text-gray-500"}`} />
                               ) 
                             },
                             { 
                               id: "apple", 
                               label: "Apple Pay", 
                               renderIcon: (active: boolean) => (
-                                <AppleIcon className={`w-4 h-4 transition-colors duration-200 ${active ? "text-gray-950" : "text-gray-500"}`} />
+                                <AppleIcon className={`w-4 h-4 transition-colors duration-200 ${active ? "text-gray-900" : "text-gray-500"}`} />
                               ) 
                             },
                             { 
                               id: "google", 
                               label: "Google Pay", 
                               renderIcon: (active: boolean) => (
-                                <div className={`transition-all duration-200 ${active ? "opacity-100 scale-105" : "opacity-60 grayscale-[0.2]"}`}>
+                                <div className={`transition-all duration-200 ${active ? "opacity-100" : "opacity-60"}`}>
                                   <GoogleIcon className="w-4 h-4" />
                                 </div>
                               ) 
@@ -972,44 +976,54 @@ export function CartDrawer() {
                               id: "paypal", 
                               label: "PayPal", 
                               renderIcon: (active: boolean) => (
-                                <div className={`transition-all duration-200 ${active ? "opacity-100 scale-105" : "opacity-60"}`}>
+                                <div className={`transition-all duration-200 ${active ? "opacity-100" : "opacity-60"}`}>
                                   <PayPalIcon className="w-4 h-4" />
                                 </div>
                               ) 
                             },
                           ].map((m) => {
                             const isActive = selectedMethod === m.id;
+                            const isHovered = hoveredPaymentMethod === m.id;
+
                             return (
                               <button
                                 key={m.id}
                                 type="button"
                                 onClick={() => setSelectedMethod(m.id as typeof selectedMethod)}
-                                className="group relative z-10 py-2.5 px-1 sm:px-2 rounded-full flex flex-col items-center justify-center gap-1 outline-none select-none cursor-pointer transition-all"
+                                onMouseEnter={() => setHoveredPaymentMethod(m.id)}
+                                className={`relative flex-1 flex items-center justify-center gap-2 py-2.5 px-3 rounded-full text-xs font-semibold font-sans tracking-tight outline-none select-none cursor-pointer transition-colors duration-300 ${
+                                  isActive ? "text-gray-900 font-bold" : "text-gray-600 hover:text-gray-900"
+                                }`}
                               >
-                                {/* Horizontal Sliding Liquid Glass Droplet (Zero Bottom Line) */}
+                                {/* Active Indicator (Liquid Glass Pill with Smooth Left-Right Sliding) */}
                                 {isActive && (
                                   <motion.div
-                                    layoutId="liquidGlassHorizontalBubble"
-                                    transition={{
-                                      type: "spring",
-                                      stiffness: 350,
-                                      damping: 24,
-                                      mass: 0.6
-                                    }}
-                                    className="absolute inset-0 rounded-full bg-white/95 backdrop-blur-2xl border border-white shadow-[0_4px_16px_rgba(0,0,0,0.08),inset_0_1.5px_2px_rgba(255,255,255,1),inset_0_-1px_1.5px_rgba(0,0,0,0.03)]"
-                                  >
-                                    {/* Top Specular Curved Glass Highlight Rim */}
-                                    <div className="absolute inset-x-3 top-0 h-[1.5px] bg-gradient-to-r from-transparent via-white to-transparent opacity-95" />
-                                    {/* Caustic glass reflection glint in corner */}
-                                    <div className="absolute top-1 left-3 w-3 h-1 bg-white/95 rounded-full blur-[0.4px]" />
-                                  </motion.div>
+                                    layoutId="liquidGlassPaymentPill"
+                                    className="absolute inset-0 rounded-full bg-white/95 shadow-[0_4px_16px_rgba(0,0,0,0.06)] border border-white"
+                                    initial={{ opacity: 0 }}
+                                    animate={{ opacity: 1 }}
+                                    exit={{ opacity: 0 }}
+                                    transition={{ type: "spring", stiffness: 380, damping: 28 }}
+                                  />
                                 )}
 
-                                <span className="relative z-10 flex flex-col items-center justify-center gap-1 w-full">
+                                {/* Hover Indicator (Subtle Liquid Glow) */}
+                                {!isActive && isHovered && (
+                                  <motion.div
+                                    layoutId="liquidGlassHoverPaymentPill"
+                                    className="absolute inset-0 rounded-full bg-white/40"
+                                    initial={{ opacity: 0 }}
+                                    animate={{ opacity: 1 }}
+                                    exit={{ opacity: 0 }}
+                                    transition={{ duration: 0.15 }}
+                                  />
+                                )}
+
+                                <span className="relative z-10 flex items-center justify-center shrink-0">
                                   {m.renderIcon(isActive)}
-                                  <span className={`text-[11px] font-sans tracking-tight whitespace-nowrap transition-colors duration-200 ${isActive ? "text-gray-950 font-bold" : "text-gray-600 font-medium group-hover:text-gray-900"}`}>
-                                    {m.label}
-                                  </span>
+                                </span>
+                                <span className="relative z-10 whitespace-nowrap">
+                                  {m.label}
                                 </span>
                               </button>
                             );
