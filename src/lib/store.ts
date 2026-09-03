@@ -17,13 +17,15 @@ interface CartState {
   couponCode: string | null;
   discountPercent: number;
   isFreeShippingCoupon: boolean;
+  originCoords: { x: number; y: number } | null;
   
   addItem: (product: Product, quantity?: number, color?: string, size?: string) => void;
   removeItem: (id: string) => void;
   updateQuantity: (id: string, quantity: number) => void;
   clearCart: () => void;
   setIsOpen: (isOpen: boolean) => void;
-  toggleCart: () => void;
+  toggleCart: (coords?: { x: number; y: number }) => void;
+  setOriginCoords: (coords: { x: number; y: number } | null) => void;
   getTotalItems: () => number;
   getSubtotal: () => number;
   getDiscountAmount: () => number;
@@ -41,6 +43,7 @@ export const useCartStore = create<CartState>()(
       couponCode: null,
       discountPercent: 0,
       isFreeShippingCoupon: false,
+      originCoords: null,
       
       addItem: (product, quantity = 1, color, size) => {
         set((state) => {
@@ -90,7 +93,12 @@ export const useCartStore = create<CartState>()(
       
       setIsOpen: (isOpen) => set({ isOpen }),
       
-      toggleCart: () => set((state) => ({ isOpen: !state.isOpen })),
+      setOriginCoords: (coords) => set({ originCoords: coords }),
+
+      toggleCart: (coords) => set((state) => ({ 
+        isOpen: !state.isOpen,
+        originCoords: coords !== undefined ? coords : state.originCoords 
+      })),
       
       getTotalItems: () => {
         return get().items.reduce((total, item) => total + item.quantity, 0);

@@ -22,7 +22,6 @@ import {
   ChevronRight,
   PlusCircle,
   Trash2,
-  Maximize2,
   RotateCcw
 } from "lucide-react";
 import { useCartStore } from "@/lib/store";
@@ -43,6 +42,7 @@ export function CartDrawer() {
     couponCode,
     discountPercent,
     isFreeShippingCoupon,
+    originCoords,
     applyCoupon,
     removeCoupon,
     clearCart 
@@ -121,6 +121,17 @@ export function CartDrawer() {
       return () => clearTimeout(timer);
     }
   }, [isOpen, step]);
+
+  // Prevent background catalog scroll when cart modal is open
+  useEffect(() => {
+    if (isOpen) {
+      const originalOverflow = document.body.style.overflow;
+      document.body.style.overflow = "hidden";
+      return () => {
+        document.body.style.overflow = originalOverflow;
+      };
+    }
+  }, [isOpen]);
 
   const subtotal = getSubtotal();
   const discountAmount = getDiscountAmount();
@@ -223,19 +234,21 @@ export function CartDrawer() {
   // Recommended products for the bottom of the cart page
   const recommendedProducts = products.filter(p => !items.some(i => i.productId === p.id)).slice(0, 3);
 
-  // 3D Book Page Flip / macOS Genie Window animation variants
+  // Dynamic 3D Book Page Flip / Genie expansion originating exactly from the cart icon
+  const startX = originCoords && typeof window !== "undefined" ? originCoords.x - window.innerWidth / 2 : 250;
+  const startY = originCoords && typeof window !== "undefined" ? originCoords.y - window.innerHeight / 2 : -250;
+
   const bookPageVariants: Variants = {
     hidden: {
       opacity: 0,
-      scale: 0.12,
-      rotateY: -45,
-      rotateX: 15,
-      x: 350,
-      y: -250,
-      filter: "blur(14px)",
-      transformOrigin: "top right",
+      scale: 0.04,
+      rotateY: -35,
+      rotateX: 10,
+      x: startX,
+      y: startY,
+      filter: "blur(12px)",
       transition: {
-        duration: 0.4,
+        duration: 0.38,
         ease: [0.32, 0, 0.67, 0] as [number, number, number, number],
       }
     },
@@ -247,23 +260,21 @@ export function CartDrawer() {
       x: 0,
       y: 0,
       filter: "blur(0px)",
-      transformOrigin: "top right",
       transition: {
         duration: 0.55,
-        ease: [0.16, 1, 0.3, 1] as [number, number, number, number], // macOS springy un-minimize curve
+        ease: [0.16, 1, 0.3, 1] as [number, number, number, number],
       }
     },
     exit: {
       opacity: 0,
-      scale: 0.12,
-      rotateY: -45,
-      rotateX: 15,
-      x: 350,
-      y: -250,
-      filter: "blur(14px)",
-      transformOrigin: "top right",
+      scale: 0.04,
+      rotateY: -35,
+      rotateX: 10,
+      x: startX,
+      y: startY,
+      filter: "blur(12px)",
       transition: {
-        duration: 0.45,
+        duration: 0.42,
         ease: [0.32, 0, 0.67, 0] as [number, number, number, number],
       }
     }
@@ -284,7 +295,7 @@ export function CartDrawer() {
             onClick={() => setIsOpen(false)}
           />
 
-          {/* 3D BOOK PAGE / macOS GENIE UN-MINIMIZE CANVAS (Cart Page Reference) */}
+          {/* 3D BOOK PAGE / MACBOOK GENIE CANVAS */}
           <motion.div
             variants={bookPageVariants}
             initial="hidden"
@@ -294,44 +305,22 @@ export function CartDrawer() {
             className="relative w-full max-w-6xl h-full max-h-[92vh] bg-white/95 backdrop-blur-3xl rounded-[2.5rem] border border-white/90 shadow-[0_35px_120px_rgba(0,0,0,0.35)] flex flex-col overflow-hidden z-10"
           >
 
-            {/* ========================================================================= */}
-            {/* macOS WINDOW TOP BAR & HEADER */}
-            {/* ========================================================================= */}
+            {/* Top Bar Header */}
             <header className="px-6 sm:px-8 py-4 bg-white/80 backdrop-blur-xl border-b border-gray-100 flex items-center justify-between shrink-0 shadow-sm">
               
-              {/* macOS Window Controls (Traffic Lights) */}
+              {/* Brand Logo & Studio Identity */}
               <div className="flex items-center gap-3">
-                <div className="flex items-center gap-2">
-                  <button 
-                    onClick={() => setIsOpen(false)}
-                    className="w-3.5 h-3.5 rounded-full bg-[#ff5f56] hover:brightness-90 transition-all border border-[#e0443e] shadow-sm flex items-center justify-center group"
-                    title="Cerrar ventana"
-                  >
-                    <X className="w-2 h-2 text-red-900 opacity-0 group-hover:opacity-100 transition-opacity" />
-                  </button>
-                  <button 
-                    onClick={() => setIsOpen(false)}
-                    className="w-3.5 h-3.5 rounded-full bg-[#ffbd2e] hover:brightness-90 transition-all border border-[#dea123] shadow-sm flex items-center justify-center group"
-                    title="Minimizar ventana"
-                  >
-                    <Minus className="w-2 h-2 text-amber-900 opacity-0 group-hover:opacity-100 transition-opacity" />
-                  </button>
-                  <button 
-                    className="w-3.5 h-3.5 rounded-full bg-[#27c93f] hover:brightness-90 transition-all border border-[#1aab29] shadow-sm flex items-center justify-center group"
-                    title="Pantalla completa"
-                  >
-                    <Maximize2 className="w-2 h-2 text-emerald-900 opacity-0 group-hover:opacity-100 transition-opacity" />
-                  </button>
+                <div className="w-8 h-8 rounded-xl bg-gray-900 text-white flex items-center justify-center shadow-md">
+                  <ShoppingBag className="w-4 h-4" />
                 </div>
-
-                <div className="h-4 w-[1px] bg-gray-200 mx-1 hidden sm:block" />
-
-                <span className="font-display italic font-bold text-lg text-gray-900 tracking-tight hidden sm:inline">
-                  Lumina<span className="text-[#8c9276]">.</span>
-                </span>
-                <span className="text-xs text-gray-400 font-medium hidden sm:inline">
-                  • Libro de Compras & Checkout
-                </span>
+                <div>
+                  <span className="font-display italic font-bold text-lg text-gray-900 tracking-tight">
+                    Lumina<span className="text-[#8c9276]">.</span>
+                  </span>
+                  <span className="text-xs text-gray-400 font-medium ml-2 hidden sm:inline">
+                    • Libro de Compras & Checkout
+                  </span>
+                </div>
               </div>
 
               {/* Center Step Indicator */}

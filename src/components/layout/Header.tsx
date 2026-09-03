@@ -280,7 +280,13 @@ export function Header() {
             {/* Shopping Cart Button */}
             <button 
               aria-label="Carrito" 
-              onClick={toggleCart}
+              onClick={(e) => {
+                const rect = e.currentTarget.getBoundingClientRect();
+                toggleCart({
+                  x: rect.left + rect.width / 2,
+                  y: rect.top + rect.height / 2
+                });
+              }}
               className="relative p-2.5 rounded-full bg-white/40 backdrop-blur-md border border-white/60 text-gray-900 hover:bg-white/60 transition-colors shadow-[0_4px_16px_rgba(0,0,0,0.05)]"
             >
               <ShoppingBag className="w-5 h-5" />
