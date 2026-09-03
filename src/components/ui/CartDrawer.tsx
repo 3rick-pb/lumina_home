@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState, useMemo } from "react";
+import React, { useEffect, useState, useMemo, useRef } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence, Variants } from "framer-motion";
@@ -84,23 +84,26 @@ function PayPalLogo({ className = "h-4" }: { className?: string }) {
   );
 }
 
-function MastercardLogo({ className = "h-7" }: { className?: string }) {
+function MastercardLogo({ className = "h-4" }: { className?: string }) {
   return (
-    <div className={`flex flex-col items-center justify-center ${className}`}>
-      <svg className="h-6 sm:h-7 w-auto" viewBox="0 0 138 84" fill="none">
-        <circle cx="42" cy="42" r="42" fill="#EB001B" />
-        <circle cx="96" cy="42" r="42" fill="#F79E1B" />
-        <path d="M69 13.3a41.87 41.87 0 0 1 0 57.4 41.87 41.87 0 0 1 0-57.4z" fill="#FF5F00" />
-      </svg>
-      <span className="text-[7px] font-sans font-bold text-white/90 tracking-tight lowercase -mt-0.5">mastercard</span>
-    </div>
+    <svg className={`shrink-0 ${className}`} viewBox="0 0 38 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="12" cy="12" r="11" fill="#EB001B" />
+      <circle cx="26" cy="12" r="11" fill="#F79E1B" fillOpacity="0.96" />
+      <path
+        d="M19 4.38a10.96 10.96 0 0 1 4.38 7.62A10.96 10.96 0 0 1 19 19.62a10.96 10.96 0 0 1-4.38-7.62A10.96 10.96 0 0 1 19 4.38z"
+        fill="#FF5F00"
+      />
+    </svg>
   );
 }
 
-function VisaLogo({ className = "h-5", fill = "#FFFFFF" }: { className?: string; fill?: string }) {
+function VisaLogo({ className = "h-4", fill = "#FFFFFF" }: { className?: string; fill?: string }) {
   return (
-    <svg className={className} viewBox="0 0 141 45" fill="none">
-      <path d="M57.6 1.2L37.9 43.8H25.3L15.4 9.6c-.6-2.4-1.2-3.3-3.1-4.3C9.2 3.6 4.4 2.2 0 1.2l.6 2.6c6.2 1.3 13.3 3.6 17.5 6.3 2.7 1.8 3.5 3.3 4.4 7.1l10.5 40h13.2L68.8 1.2H57.6zm44.2 29.1c.1-7.9-11.2-8.3-11.1-11.9 0-3.6 4-3.8 8.2-3.2 2.3.3 8.3 1.8 10.8 3l2-9.4c-2.8-1-7.4-2-12.7-2-13.4 0-22.9 7-23 17.1-.1 7.4 6.7 11.6 11.8 14.1 5.2 2.5 7 4.1 7 6.4-.1 3.5-4.3 5.1-8.3 5.1-5.5 0-11.4-1.6-14.7-3.1l-2.1 9.7c3 1.4 8.6 2.6 14.4 2.6 14.2.2 23.6-6.8 23.7-17.5zm37.6 13.5h11.5L141 1.2h-10.7c-2.4 0-4.4 1.4-5.3 3.5L108.6 43.8h13.2l2.6-7.3h16.2l1.6 7.3zm-14.1-17.2l6.5-17.7 3.8 17.7h-10.3zm-48.4-25.4L66.6 43.8h12.6l10.3-42.6H86.9z" fill={fill} />
+    <svg className={`shrink-0 ${className}`} viewBox="0 0 50 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path
+        d="M19.1 1.2L12.6 15.2H8.5L5.3 3.6C5.1 2.8 4.9 2.5 4.3 2.2C3.3 1.6 1.6 1.1 0.2 0.8L0.3 0.4H7C7.9 0.4 8.6 1 8.8 1.9L10.5 10.5L14.6 1.2H19.1ZM35.6 10.5C35.6 6.6 30.1 6.4 30.2 4.7C30.2 4.1 30.7 3.6 31.8 3.4C32.3 3.3 33.9 3.3 35.6 4.1L36.3 1C35.4 0.6 34.2 0.3 32.7 0.3C28.8 0.3 26 2.4 26 5.4C26 7.6 28 8.8 29.5 9.5C31 10.3 31.5 10.8 31.5 11.4C31.5 12.4 30.3 12.9 29.2 12.9C27.2 12.9 26 12.3 25.1 11.9L24.4 15.2C25.3 15.6 27.1 16 28.9 16C33.1 16 35.6 14 35.6 10.5ZM45.9 15.2H49.5L46.4 1.2H43.1C42.3 1.2 41.6 1.7 41.3 2.4L35.3 15.2H39.6L40.5 12.8H45.4L45.9 15.2ZM41.7 9.5L43.6 4.2L44.7 9.5H41.7ZM25.3 1.2L21.9 15.2H18L21.4 1.2H25.3Z"
+        fill={fill}
+      />
     </svg>
   );
 }
@@ -179,6 +182,33 @@ export function CartDrawer() {
   const [hoveredPaymentMethod, setHoveredPaymentMethod] = useState<string | null>(null);
   const [isWalletOpen, setIsWalletOpen] = useState(false);
   const [hoveredCardId, setHoveredCardId] = useState<string | null>(null);
+
+  // Wallet Interaction Stability & Debounced Leave Timer (Eliminates all hover jitter/flicker)
+  const closeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  const handleOpenWallet = () => {
+    if (closeTimeoutRef.current) {
+      clearTimeout(closeTimeoutRef.current);
+      closeTimeoutRef.current = null;
+    }
+    setIsWalletOpen(true);
+  };
+
+  const handleCloseWallet = (immediate = false) => {
+    if (closeTimeoutRef.current) {
+      clearTimeout(closeTimeoutRef.current);
+      closeTimeoutRef.current = null;
+    }
+    if (immediate) {
+      setIsWalletOpen(false);
+      setHoveredCardId(null);
+      return;
+    }
+    closeTimeoutRef.current = setTimeout(() => {
+      setIsWalletOpen(false);
+      setHoveredCardId(null);
+    }, 220);
+  };
 
   // Quick Address Inline Form
   const [isEditingAddress, setIsEditingAddress] = useState(false);
@@ -1099,12 +1129,9 @@ export function CartDrawer() {
 
                             {/* 2. THE BLUE WALLET SLEEVE ("EMPAQUE AZUL / BOLSITA") */}
                             <div 
-                              className="relative w-full max-w-[370px] mx-auto pt-20 pb-1 select-none"
-                              onMouseEnter={() => setIsWalletOpen(true)}
-                              onMouseLeave={() => {
-                                setIsWalletOpen(false);
-                                setHoveredCardId(null);
-                              }}
+                              className="relative w-full max-w-[370px] mx-auto pt-24 pb-2 select-none"
+                              onMouseEnter={handleOpenWallet}
+                              onMouseLeave={() => handleCloseWallet(false)}
                             >
                               {/* Background Base of Wallet Pocket */}
                               <div className="relative w-full h-[145px] rounded-3xl bg-gradient-to-b from-[#080e1c] via-[#0b1426] to-[#060a13] border border-slate-800/80 shadow-[0_18px_40px_rgba(6,10,19,0.5)] overflow-visible">
@@ -1162,17 +1189,15 @@ export function CartDrawer() {
                                   const depthFromFront = totalCards - 1 - idx;
 
                                   // When closed: nested inside pocket, activeCard in front
-                                  const closedY = 26 - depthFromFront * 10;
-                                  const closedScale = 1 - depthFromFront * 0.05;
-                                  const closedOpacity = 1 - depthFromFront * 0.15;
+                                  const closedY = 22 - depthFromFront * 9;
+                                  const closedScale = 1 - depthFromFront * 0.035;
+                                  const closedOpacity = 1 - depthFromFront * 0.12;
 
                                   // When open: cards slide UPWARDS out of the pocket
-                                  // Back card slides highest (-72px), middle (-36px), front (2px)
-                                  const openBaseY = -depthFromFront * 36;
-                                  const openY = isCardHovered ? openBaseY - 12 : openBaseY;
-                                  const openScale = isCardHovered ? 1.03 : (1 - depthFromFront * 0.03);
-
-                                  const zIndex = isCardHovered ? 50 : (15 + idx * 5);
+                                  // Staggered by 44px so the logo AND card number are 100% visible on each card
+                                  const openY = -depthFromFront * 44;
+                                  const openScale = isCardHovered ? 1.025 : 1;
+                                  const zIndex = isCardHovered ? 60 : (15 + idx * 5);
 
                                   return (
                                     <motion.div
@@ -1182,7 +1207,7 @@ export function CartDrawer() {
                                       onClick={(e) => {
                                         e.stopPropagation();
                                         setSelectedCardId(card.id);
-                                        setIsWalletOpen(false);
+                                        handleCloseWallet(true);
                                       }}
                                       initial={false}
                                       animate={{
@@ -1198,7 +1223,9 @@ export function CartDrawer() {
                                         mass: 0.7
                                       }}
                                       style={{ transformStyle: "preserve-3d" }}
-                                      className={`absolute left-[6%] w-[88%] h-[122px] rounded-2xl p-3.5 sm:p-4 ${theme.bg} ${theme.text} ${theme.border} ${theme.shadow} flex flex-col justify-between cursor-pointer select-none border transition-colors overflow-hidden`}
+                                      className={`absolute left-[6%] w-[88%] h-[126px] rounded-2xl p-3.5 sm:p-4 ${theme.bg} ${theme.text} ${theme.border} ${theme.shadow} flex flex-col justify-between cursor-pointer select-none border transition-all overflow-hidden ${
+                                        isCardHovered ? "ring-2 ring-white/50 brightness-105" : ""
+                                      }`}
                                     >
                                       {/* Specular curved reflection glint */}
                                       <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/10 to-transparent pointer-events-none" />
@@ -1207,7 +1234,7 @@ export function CartDrawer() {
                                       {/* Top Row: Network & Status */}
                                       <div className="flex items-center justify-between relative z-10">
                                         <div className="flex items-center gap-1.5">
-                                          <span className="font-mono text-[8px] sm:text-[9px] tracking-[0.18em] font-extrabold uppercase opacity-80">
+                                          <span className="font-sans text-[10px] font-bold tracking-wider uppercase opacity-90">
                                             {theme.name}
                                           </span>
                                           {isSelected && (
@@ -1218,22 +1245,22 @@ export function CartDrawer() {
                                         <div className="flex items-center gap-1.5">
                                           <ContactlessIcon className="w-3.5 h-3.5 opacity-70" />
                                           {card.type === "visa" ? (
-                                            <VisaLogo className="h-3.5 sm:h-4" fill={theme.logoColor} />
+                                            <VisaLogo className="h-3.5" fill={theme.logoColor} />
                                           ) : (
-                                            <MastercardLogo className="h-4 sm:h-5" />
+                                            <MastercardLogo className="h-4" />
                                           )}
                                         </div>
                                       </div>
 
-                                      {/* Card Number (Prominently centered so it's readable when peeking) */}
-                                      <div className="relative z-10 my-auto">
+                                      {/* Card Number (Placed immediately below top row for 100% visibility during accordion fan-out) */}
+                                      <div className="relative z-10 mt-1 sm:mt-1.5">
                                         <p className="font-mono font-bold text-sm sm:text-base tracking-[0.2em] drop-shadow-sm opacity-95">
                                           {card.number}
                                         </p>
                                       </div>
 
                                       {/* Bottom Row: Chip & Holder */}
-                                      <div className="flex items-end justify-between relative z-10 pt-1 border-t border-white/15 text-[9px]">
+                                      <div className="flex items-end justify-between relative z-10 pt-1 border-t border-white/15 text-[9px] mt-auto">
                                         <div className="flex items-center gap-2">
                                           <div className="scale-75 origin-left">
                                             <EmvChip />
@@ -1252,7 +1279,13 @@ export function CartDrawer() {
 
                                 {/* Front Flap Overlay of the Blue Wallet Sleeve */}
                                 <div 
-                                  onClick={() => setIsWalletOpen(!isWalletOpen)}
+                                  onClick={() => {
+                                    if (isWalletOpen) {
+                                      handleCloseWallet(true);
+                                    } else {
+                                      handleOpenWallet();
+                                    }
+                                  }}
                                   className="absolute bottom-0 inset-x-0 h-[105px] rounded-b-3xl rounded-t-2xl bg-gradient-to-b from-[#0e172a]/95 via-[#0b1324]/98 to-[#060a12] border-t border-sky-400/30 border-x border-b border-slate-800 shadow-[0_-10px_20px_rgba(0,0,0,0.35),0_15px_30px_rgba(5,9,18,0.5)] backdrop-blur-xl p-3.5 flex flex-col justify-between cursor-pointer z-30 transition-all hover:border-sky-400/50"
                                 >
                                   {/* Top Pocket Arc Lip & Specular Highlight */}
@@ -1282,9 +1315,13 @@ export function CartDrawer() {
                                         {activeCard.number.slice(-9)}
                                       </span>
                                     </div>
-                                    <span className="text-[10px] font-medium text-slate-400">
-                                      {activeCard.type === "visa" ? "VISA" : "MASTERCARD"}
-                                    </span>
+                                    <div className="flex items-center gap-1.5">
+                                      {activeCard.type === "visa" ? (
+                                        <VisaLogo className="h-3" fill="#7dd3fc" />
+                                      ) : (
+                                        <MastercardLogo className="h-3.5" />
+                                      )}
+                                    </div>
                                   </div>
                                 </div>
                               </div>
