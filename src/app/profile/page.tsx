@@ -18,19 +18,20 @@ import {
   AlertTriangle, 
   Search, 
   Sparkles, 
-  Store,
-  CheckCircle2,
-  Eye,
-  Settings,
-  ShieldCheck,
-  User as UserIcon,
-  KeyRound,
-  ExternalLink,
-  MapPin,
-  Tag
+  Store, 
+  CheckCircle2, 
+  Eye, 
+  Settings, 
+  ShieldCheck, 
+  User as UserIcon, 
+  KeyRound, 
+  ExternalLink, 
+  MapPin, 
+  Tag, 
+  Pencil 
 } from "lucide-react";
 import { useUserStore, Order } from "@/lib/userStore";
-import { useCatalogStore } from "@/lib/catalogStore";
+import { useCatalogStore, normalizeCategory, CatalogProduct } from "@/lib/catalogStore";
 import { useCartStore } from "@/lib/store";
 
 export default function ProfilePage() {
@@ -55,7 +56,7 @@ export default function ProfilePage() {
     updateUserPassword
   } = useUserStore();
 
-  const { products, categories, badges, addProduct, deleteProduct, addCategory, deleteCategory, addBadge, deleteBadge } = useCatalogStore();
+  const { products, categories, badges, addProduct, updateProduct, deleteProduct, addCategory, deleteCategory, addBadge, deleteBadge } = useCatalogStore();
   const { addItem, setIsOpen: setCartOpen } = useCartStore();
 
   // Navigation & Search State
@@ -106,6 +107,28 @@ export default function ProfilePage() {
   const [prodSizes, setProdSizes] = useState("");
   const [hasColors, setHasColors] = useState(false);
   const [prodColors, setProdColors] = useState("");
+
+  // Admin Edit Product Modal State
+  const [showEditProductModal, setShowEditProductModal] = useState(false);
+  const [editingProductId, setEditingProductId] = useState<string | null>(null);
+  const [isSubmittingEdit, setIsSubmittingEdit] = useState(false);
+  const [editTitle, setEditTitle] = useState("");
+  const [editHighlight, setEditHighlight] = useState("");
+  const [editCategory, setEditCategory] = useState("");
+  const [editPrice, setEditPrice] = useState("");
+  const [editHasDiscount, setEditHasDiscount] = useState(false);
+  const [editOldPrice, setEditOldPrice] = useState("");
+  const [editCalculatedDiscount, setEditCalculatedDiscount] = useState("");
+  const [editBadge, setEditBadge] = useState("");
+  const [editImageUrl, setEditImageUrl] = useState("");
+  const [editExtraImages, setEditExtraImages] = useState("");
+  const [editDescription, setEditDescription] = useState("");
+  const [editFeatures, setEditFeatures] = useState("");
+  const [editHasSizes, setEditHasSizes] = useState(false);
+  const [editSizes, setEditSizes] = useState("");
+  const [editHasColors, setEditHasColors] = useState(false);
+  const [editColors, setEditColors] = useState("");
+  const [editFeedback, setEditFeedback] = useState<{ msg: string; success: boolean } | null>(null);
 
   // Category & Badge manager state
   const [newCatInput, setNewCatInput] = useState("");
@@ -176,14 +199,14 @@ export default function ProfilePage() {
 
   const emptyCategories = useMemo(() => {
     return categories.filter(cat => 
-      !products.some(p => p.category?.toLowerCase() === cat.toLowerCase())
+      !products.some(p => normalizeCategory(p.category) === normalizeCategory(cat))
     );
   }, [categories, products]);
 
   // 3. Real Category Product Distribution Chart (for Admin)
   const categoryDistributionData = useMemo(() => {
-    const counts = categories.slice(0, 6).map(cat => {
-      const count = products.filter(p => p.category?.toLowerCase() === cat.toLowerCase()).length;
+    const counts = categories.map(cat => {
+      const count = products.filter(p => normalizeCategory(p.category) === normalizeCategory(cat)).length;
       return { category: cat, count };
     });
     const maxCount = Math.max(...counts.map(c => c.count), 1);
@@ -349,6 +372,85 @@ export default function ProfilePage() {
       setProdSizes("");
       setHasColors(false);
       setProdColors("");
+    }
+  };
+
+  // Edit Product Handlers
+  const handleEditPriceChange = (newPrice: string, newOldPrice: string, withDiscount: boolean) => {
+    setEditPrice(newPrice);
+    setEditOldPrice(newOldPrice);
+    if (withDiscount && newPrice && newOldPrice) {
+      const p = parseFloat(newPrice);
+      const op = parseFloat(newOldPrice);
+      if (op > p && op > 0) {
+        const pct = Math.round(((op - p) / op) * 100);
+        setEditCalculatedDiscount(`-${pct}%`);
+        return;
+      }
+    }
+    setEditCalculatedDiscount("");
+  };
+
+  const handleOpenEditProduct = (p: CatalogProduct) => {
+    setEditingProductId(p.id);
+    setEditTitle(p.title || "");
+    setEditHighlight(p.titleHighlight || "");
+    setEditCategory(p.category || "");
+    setEditPrice(p.price ? p.price.toString() : "");
+    const withDiscount = Boolean(p.discount || (p.oldPrice && p.oldPrice > p.price));
+    setEditHasDiscount(withDiscount);
+    setEditOldPrice(p.oldPrice ? p.oldPrice.toString() : "");
+    setEditCalculatedDiscount(p.discount || "");
+    setEditBadge(p.badge || "");
+    setEditImageUrl(p.imageUrl || "");
+    setEditExtraImages(p.images && p.images.length > 1 ? p.images.slice(1).join(", ") : "");
+    setEditDescription(p.description || "");
+    setEditFeatures(p.features ? p.features.join("\n") : "");
+    setEditHasSizes(Boolean(p.sizes && p.sizes.length > 0));
+    setEditSizes(p.sizes ? p.sizes.join(", ") : "");
+    setEditHasColors(Boolean(p.colors && p.colors.length > 0));
+    setEditColors(p.colors ? p.colors.map(c => c.name).join(", ") : "");
+    setEditFeedback(null);
+    setShowEditProductModal(true);
+  };
+
+  const handleUpdateProductSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingProductId) return;
+    setIsSubmittingEdit(true);
+    setEditFeedback(null);
+
+    const imagesList = [editImageUrl.trim()];
+    if (editExtraImages.trim()) {
+      imagesList.push(...editExtraImages.split(",").map(u => u.trim()).filter(Boolean));
+    }
+
+    const res = await updateProduct(editingProductId, {
+      id: editingProductId,
+      title: editTitle.trim(),
+      titleHighlight: editHighlight.trim() || undefined,
+      category: editCategory.trim(),
+      price: parseFloat(editPrice) || 0,
+      oldPrice: editHasDiscount && editOldPrice ? parseFloat(editOldPrice) : null,
+      discount: editHasDiscount && editCalculatedDiscount ? editCalculatedDiscount : undefined,
+      badge: editBadge.trim() || undefined,
+      imageUrl: editImageUrl.trim() || "https://images.unsplash.com/photo-1507473885765-e6ed057f782c?q=80&w=800&auto=format&fit=crop",
+      images: imagesList,
+      description: editDescription.trim(),
+      features: editFeatures.trim() ? editFeatures.split("\n").map(f => f.trim()).filter(Boolean) : undefined,
+      sizes: editHasSizes && editSizes.trim() ? editSizes.split(",").map(s => s.trim()).filter(Boolean) : undefined,
+      colors: editHasColors && editColors.trim() ? editColors.split(",").map(c => ({ name: c.trim(), hex: "#94a3b8" })) : undefined,
+    });
+
+    setIsSubmittingEdit(false);
+    if (res.success) {
+      setEditFeedback({ msg: "¡Producto actualizado exitosamente!", success: true });
+      setTimeout(() => {
+        setShowEditProductModal(false);
+        setEditFeedback(null);
+      }, 700);
+    } else {
+      setEditFeedback({ msg: res.error || "Error al actualizar", success: false });
     }
   };
 
@@ -1439,6 +1541,13 @@ export default function ProfilePage() {
                       </td>
                       <td className="py-3 px-2 text-right">
                         <div className="flex items-center justify-end gap-2">
+                          <button 
+                            onClick={() => handleOpenEditProduct(p)}
+                            className="p-1.5 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-lg transition-colors"
+                            title="Editar producto"
+                          >
+                            <Pencil className="w-4 h-4" />
+                          </button>
                           <Link 
                             href={`/product/${p.id}`}
                             className="p-1.5 text-gray-400 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
@@ -2110,6 +2219,251 @@ export default function ProfilePage() {
                 <button type="button" onClick={() => setShowProductModal(false)} className="px-5 py-2.5 text-xs font-semibold text-gray-600 hover:bg-gray-100 rounded-xl">Cancelar</button>
                 <button type="submit" disabled={isSubmittingProd} className="px-6 py-2.5 text-xs font-semibold bg-gray-900 text-white rounded-xl shadow-md hover:bg-gray-800 disabled:opacity-50">
                   {isSubmittingProd ? "Guardando..." : "Publicar en Tienda"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* MODAL: ADMIN EDITAR PRODUCTO */}
+      {/* ========================================================================= */}
+      {showEditProductModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-fade-in">
+          <div className="bg-white rounded-3xl w-full max-w-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+            <div className="p-6 border-b border-gray-100 flex items-center justify-between bg-gray-50/70">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center shadow-sm">
+                  <Pencil className="w-5 h-5" />
+                </div>
+                <div>
+                  <h2 className="text-xl font-bold text-gray-900">Editar Producto</h2>
+                  <p className="text-xs text-gray-500">Modifica los detalles sin perder trazabilidad. Los cambios se sincronizan en Supabase.</p>
+                </div>
+              </div>
+              <button 
+                onClick={() => setShowEditProductModal(false)} 
+                className="p-2 text-gray-400 hover:text-gray-900 bg-white rounded-full shadow-sm"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleUpdateProductSubmit} className="p-6 overflow-y-auto flex-1 space-y-5">
+              {editFeedback && (
+                <div className={`p-3.5 rounded-xl text-xs font-semibold ${editFeedback.success ? "bg-emerald-50 text-emerald-800 border border-emerald-200" : "bg-red-50 text-red-800 border border-red-200"}`}>
+                  {editFeedback.msg}
+                </div>
+              )}
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-semibold text-gray-700 mb-1">Nombre Principal *</label>
+                  <input 
+                    required 
+                    type="text" 
+                    value={editTitle} 
+                    onChange={e => setEditTitle(e.target.value)} 
+                    className="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm outline-none focus:ring-1 focus:ring-gray-900" 
+                    placeholder="Ej: Lámpara de Mesa" 
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-gray-700 mb-1">Subtítulo Itálica</label>
+                  <input 
+                    type="text" 
+                    value={editHighlight} 
+                    onChange={e => setEditHighlight(e.target.value)} 
+                    className="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm outline-none focus:ring-1 focus:ring-gray-900" 
+                    placeholder="Ej: Nova LED, Artesanal" 
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-semibold text-gray-700 mb-1">Nicho / Categoría *</label>
+                  <select 
+                    required 
+                    value={editCategory} 
+                    onChange={e => setEditCategory(e.target.value)} 
+                    className="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm outline-none bg-white"
+                  >
+                    <option value="">Selecciona un nicho</option>
+                    {categories.map(c => <option key={c} value={c}>{c}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-gray-700 mb-1">Badge de Marketing</label>
+                  <select 
+                    value={editBadge} 
+                    onChange={e => setEditBadge(e.target.value)} 
+                    className="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm outline-none bg-white"
+                  >
+                    <option value="">Sin badge</option>
+                    {badges.map(b => (
+                      <option key={b} value={b}>{b}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              {/* Precios y Descuento */}
+              <div className="p-4 bg-gray-50/70 rounded-2xl border border-gray-100 space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-gray-700 uppercase">Precios y Rebajas</span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-gray-500">¿Tiene descuento?</span>
+                    <button 
+                      type="button" 
+                      onClick={() => {
+                        const next = !editHasDiscount;
+                        setEditHasDiscount(next);
+                        handleEditPriceChange(editPrice, editOldPrice, next);
+                      }}
+                      className={`w-10 h-5 rounded-full relative transition-colors ${editHasDiscount ? "bg-gray-900" : "bg-gray-300"}`}
+                    >
+                      <span className={`absolute top-0.5 w-4 h-4 rounded-full bg-white transition-all ${editHasDiscount ? "left-5" : "left-1"}`} />
+                    </button>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div>
+                    <label className="block text-xs text-gray-600 mb-1">{editHasDiscount ? "Precio con Descuento ($) *" : "Precio Regular ($) *"}</label>
+                    <input 
+                      required 
+                      type="number" 
+                      step="0.01" 
+                      value={editPrice} 
+                      onChange={e => handleEditPriceChange(e.target.value, editOldPrice, editHasDiscount)} 
+                      className="w-full px-3 py-2 rounded-xl border border-gray-200 text-sm outline-none" 
+                      placeholder="89.90" 
+                    />
+                  </div>
+                  {editHasDiscount && (
+                    <>
+                      <div>
+                        <label className="block text-xs text-gray-600 mb-1">Precio Original Antes ($)</label>
+                        <input 
+                          type="number" 
+                          step="0.01" 
+                          value={editOldPrice} 
+                          onChange={e => handleEditPriceChange(editPrice, e.target.value, editHasDiscount)} 
+                          className="w-full px-3 py-2 rounded-xl border border-gray-200 text-sm outline-none" 
+                          placeholder="119.90" 
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs text-gray-600 mb-1">% Descuento Calculado</label>
+                        <input 
+                          type="text" 
+                          readOnly 
+                          value={editCalculatedDiscount} 
+                          className="w-full px-3 py-2 rounded-xl border border-gray-200 text-sm bg-gray-100 text-red-600 font-bold outline-none" 
+                          placeholder="-25%" 
+                        />
+                      </div>
+                    </>
+                  )}
+                </div>
+              </div>
+
+              {/* Imagen y Vista Previa */}
+              <div className="space-y-3">
+                <div className="flex gap-4 items-start">
+                  {editImageUrl && (
+                    <div className="relative w-16 h-16 rounded-xl overflow-hidden bg-gray-100 border border-gray-200 shrink-0">
+                      <Image src={editImageUrl} alt="Preview" fill className="object-cover" />
+                    </div>
+                  )}
+                  <div className="flex-1">
+                    <label className="block text-xs font-semibold text-gray-700 mb-1">URL de Imagen Principal *</label>
+                    <input 
+                      required 
+                      type="url" 
+                      value={editImageUrl} 
+                      onChange={e => setEditImageUrl(e.target.value)} 
+                      className="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm outline-none" 
+                      placeholder="https://images.unsplash.com/..." 
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-gray-700 mb-1">Galería de Imágenes Adicionales (separadas por coma)</label>
+                  <input 
+                    type="text" 
+                    value={editExtraImages} 
+                    onChange={e => setEditExtraImages(e.target.value)} 
+                    className="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm outline-none" 
+                    placeholder="https://... , https://..." 
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-gray-700 mb-1">Descripción Completa *</label>
+                <textarea 
+                  required 
+                  rows={3} 
+                  value={editDescription} 
+                  onChange={e => setEditDescription(e.target.value)} 
+                  className="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm outline-none resize-none" 
+                  placeholder="Describe los detalles de este producto..." 
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-gray-700 mb-1">Características / Viñetas (una por línea)</label>
+                <textarea 
+                  rows={3} 
+                  value={editFeatures} 
+                  onChange={e => setEditFeatures(e.target.value)} 
+                  className="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm outline-none resize-none" 
+                  placeholder="Material: Cerámica artesanal&#10;Acabado mate texturizado" 
+                />
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-semibold text-gray-700 mb-1">Tallas / Tamaños (separados por coma)</label>
+                  <input 
+                    type="text" 
+                    value={editSizes} 
+                    onChange={e => { setEditSizes(e.target.value); setEditHasSizes(!!e.target.value.trim()); }} 
+                    className="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm outline-none" 
+                    placeholder="Ej: Individual, Queen, King" 
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-gray-700 mb-1">Colores (nombres separados por coma)</label>
+                  <input 
+                    type="text" 
+                    value={editColors} 
+                    onChange={e => { setEditColors(e.target.value); setEditHasColors(!!e.target.value.trim()); }} 
+                    className="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm outline-none" 
+                    placeholder="Ej: Nogal, Roble, Blanco" 
+                  />
+                </div>
+              </div>
+
+              <div className="pt-4 flex justify-end gap-3 border-t border-gray-100">
+                <button 
+                  type="button" 
+                  onClick={() => setShowEditProductModal(false)} 
+                  className="px-5 py-2.5 text-xs font-semibold text-gray-600 hover:bg-gray-100 rounded-xl"
+                >
+                  Cancelar
+                </button>
+                <button 
+                  type="submit" 
+                  disabled={isSubmittingEdit} 
+                  className="px-6 py-2.5 text-xs font-semibold bg-blue-600 text-white rounded-xl shadow-md hover:bg-blue-700 disabled:opacity-50 flex items-center gap-1.5"
+                >
+                  <Pencil className="w-3.5 h-3.5" />
+                  {isSubmittingEdit ? "Actualizando..." : "Guardar Cambios"}
                 </button>
               </div>
             </form>

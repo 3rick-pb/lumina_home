@@ -11,12 +11,13 @@ import {
   Trash2, 
   AlertTriangle, 
   Tag, 
-  Layers
+  Layers,
+  Pencil
 } from "lucide-react";
-import { useCatalogStore } from "@/lib/catalogStore";
+import { useCatalogStore, normalizeCategory, CatalogProduct } from "@/lib/catalogStore";
 
 export default function AdminPage() {
-  const { products, categories, addProduct, deleteProduct, addCategory, deleteCategory } = useCatalogStore();
+  const { products, categories, addProduct, updateProduct, deleteProduct, addCategory, deleteCategory } = useCatalogStore();
   
   // Modal State
   const [showModal, setShowModal] = useState(false);
@@ -126,9 +127,105 @@ export default function AdminPage() {
     }
   };
 
-  // Find empty categories (niches with 0 products)
+  // Edit Product State
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editingProductId, setEditingProductId] = useState<string | null>(null);
+  const [editTitle, setEditTitle] = useState("");
+  const [editTitleHighlight, setEditTitleHighlight] = useState("");
+  const [editCategory, setEditCategory] = useState("");
+  const [editPrice, setEditPrice] = useState("");
+  const [editHasDiscount, setEditHasDiscount] = useState(false);
+  const [editOldPrice, setEditOldPrice] = useState("");
+  const [editCalculatedDiscount, setEditCalculatedDiscount] = useState("");
+  const [editBadge, setEditBadge] = useState("");
+  const [editImageUrl, setEditImageUrl] = useState("");
+  const [editExtraImages, setEditExtraImages] = useState("");
+  const [editDescription, setEditDescription] = useState("");
+  const [editFeatures, setEditFeatures] = useState("");
+  const [editHasSizes, setEditHasSizes] = useState(false);
+  const [editSizes, setEditSizes] = useState("");
+  const [editHasColors, setEditHasColors] = useState(false);
+  const [editColors, setEditColors] = useState("");
+  const [isSubmittingEdit, setIsSubmittingEdit] = useState(false);
+  const [editError, setEditError] = useState("");
+
+  const handleEditPriceChange = (newPrice: string, newOldPrice: string, withDiscount: boolean) => {
+    setEditPrice(newPrice);
+    setEditOldPrice(newOldPrice);
+    if (withDiscount && newPrice && newOldPrice) {
+      const p = parseFloat(newPrice);
+      const op = parseFloat(newOldPrice);
+      if (op > p && op > 0) {
+        const pct = Math.round(((op - p) / op) * 100);
+        setEditCalculatedDiscount(`-${pct}%`);
+        return;
+      }
+    }
+    setEditCalculatedDiscount("");
+  };
+
+  const handleOpenEdit = (prod: CatalogProduct) => {
+    setEditingProductId(prod.id);
+    setEditTitle(prod.title || "");
+    setEditTitleHighlight(prod.titleHighlight || "");
+    setEditCategory(prod.category || "");
+    setEditPrice(prod.price ? prod.price.toString() : "");
+    const withDiscount = Boolean(prod.discount || (prod.oldPrice && prod.oldPrice > prod.price));
+    setEditHasDiscount(withDiscount);
+    setEditOldPrice(prod.oldPrice ? prod.oldPrice.toString() : "");
+    setEditCalculatedDiscount(prod.discount || "");
+    setEditBadge(prod.badge || "");
+    setEditImageUrl(prod.imageUrl || "");
+    setEditExtraImages(prod.images && prod.images.length > 1 ? prod.images.slice(1).join(", ") : "");
+    setEditDescription(prod.description || "");
+    setEditFeatures(prod.features ? prod.features.join("\n") : "");
+    setEditHasSizes(Boolean(prod.sizes && prod.sizes.length > 0));
+    setEditSizes(prod.sizes ? prod.sizes.join(", ") : "");
+    setEditHasColors(Boolean(prod.colors && prod.colors.length > 0));
+    setEditColors(prod.colors ? prod.colors.map(c => c.name).join(", ") : "");
+    setEditError("");
+    setShowEditModal(true);
+  };
+
+  const handleUpdateProduct = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingProductId) return;
+    setEditError("");
+    setIsSubmittingEdit(true);
+
+    const imagesList = [editImageUrl.trim()];
+    if (editExtraImages.trim()) {
+      imagesList.push(...editExtraImages.split(",").map(u => u.trim()).filter(Boolean));
+    }
+
+    const res = await updateProduct(editingProductId, {
+      id: editingProductId,
+      title: editTitle.trim(),
+      titleHighlight: editTitleHighlight.trim() || undefined,
+      category: editCategory.trim(),
+      price: parseFloat(editPrice) || 0,
+      oldPrice: editHasDiscount && editOldPrice ? parseFloat(editOldPrice) : null,
+      discount: editHasDiscount && editCalculatedDiscount ? editCalculatedDiscount : undefined,
+      badge: editBadge.trim() || undefined,
+      imageUrl: editImageUrl.trim() || "https://images.unsplash.com/photo-1507473885765-e6ed057f782c?q=80&w=800&auto=format&fit=crop",
+      images: imagesList,
+      description: editDescription.trim(),
+      features: editFeatures.trim() ? editFeatures.split("\n").map(f => f.trim()).filter(Boolean) : undefined,
+      sizes: editHasSizes && editSizes.trim() ? editSizes.split(",").map(s => s.trim()).filter(Boolean) : undefined,
+      colors: editHasColors && editColors.trim() ? editColors.split(",").map(c => ({ name: c.trim(), hex: "#94a3b8" })) : undefined,
+    });
+
+    setIsSubmittingEdit(false);
+    if (res.success) {
+      setShowEditModal(false);
+    } else {
+      setEditError(res.error || "Error al actualizar el producto");
+    }
+  };
+
+  // Find empty categories (niches with 0 products) with normalized comparison
   const emptyCategories = categories.filter(cat => 
-    !products.some(p => p.category?.toLowerCase() === cat.toLowerCase())
+    !products.some(p => normalizeCategory(p.category) === normalizeCategory(cat))
   );
 
   const Kpis = [
@@ -205,7 +302,7 @@ export default function AdminPage() {
 
           <div className="flex flex-wrap gap-2.5 mb-5">
             {categories.map((cat) => {
-              const count = products.filter(p => p.category?.toLowerCase() === cat.toLowerCase()).length;
+              const count = products.filter(p => normalizeCategory(p.category) === normalizeCategory(cat)).length;
               return (
                 <div key={cat} className="flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white border border-gray-200 text-xs font-medium text-gray-800 shadow-sm">
                   <span>{cat}</span>
@@ -345,17 +442,26 @@ export default function AdminPage() {
                     )}
                   </td>
                   <td className="px-6 py-4 text-right">
-                    <button 
-                      onClick={() => {
-                        if (confirm(`¿Seguro que deseas eliminar "${prod.title}"?`)) {
-                          deleteProduct(prod.id);
-                        }
-                      }}
-                      className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-all"
-                      title="Eliminar producto"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
+                    <div className="flex items-center justify-end gap-2">
+                      <button 
+                        onClick={() => handleOpenEdit(prod)}
+                        className="p-2 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-xl transition-all"
+                        title="Editar producto"
+                      >
+                        <Pencil className="w-4 h-4" />
+                      </button>
+                      <button 
+                        onClick={() => {
+                          if (confirm(`¿Seguro que deseas eliminar "${prod.title}"?`)) {
+                            deleteProduct(prod.id);
+                          }
+                        }}
+                        className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-all"
+                        title="Eliminar producto"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -617,6 +723,260 @@ export default function AdminPage() {
                   className="px-6 py-2.5 rounded-xl bg-gray-900 text-white font-medium shadow-lg hover:bg-gray-800 transition-all text-sm disabled:opacity-50"
                 >
                   {isSubmitting ? "Publicando en Supabase..." : "Publicar en Tienda"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Product Modal */}
+      {showEditModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-fade-in">
+          <div className="bg-white rounded-3xl w-full max-w-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+            <div className="p-6 border-b border-gray-100 flex items-center justify-between bg-gray-50/50">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center">
+                  <Pencil className="w-5 h-5" />
+                </div>
+                <div>
+                  <h2 className="text-xl font-bold text-gray-900">Editar Producto</h2>
+                  <p className="text-xs text-gray-500">Actualiza la información en la base de datos sin necesidad de eliminarlo.</p>
+                </div>
+              </div>
+              <button onClick={() => setShowEditModal(false)} className="p-2 text-gray-400 hover:text-gray-900 bg-white rounded-full shadow-sm">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            
+            <form onSubmit={handleUpdateProduct} className="p-6 overflow-y-auto flex-1 space-y-6">
+              {editError && (
+                <div className="p-4 bg-red-50 text-red-700 text-xs rounded-2xl border border-red-200">
+                  {editError}
+                </div>
+              )}
+
+              {/* Section 1: Basic Information */}
+              <div className="space-y-4">
+                <h3 className="text-xs font-bold uppercase tracking-wider text-gray-400">Datos Principales</h3>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-700 mb-1.5">Nombre del Producto *</label>
+                    <input 
+                      required 
+                      type="text" 
+                      value={editTitle} 
+                      onChange={e => setEditTitle(e.target.value)} 
+                      className="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm focus:border-gray-900 outline-none" 
+                      placeholder="Ej: Lámpara de Escritorio" 
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-700 mb-1.5">Subtítulo / Highlight</label>
+                    <input 
+                      type="text" 
+                      value={editTitleHighlight} 
+                      onChange={e => setEditTitleHighlight(e.target.value)} 
+                      className="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm focus:border-gray-900 outline-none font-display italic" 
+                      placeholder="Ej: Orbit, Nordic, Minimal" 
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-700 mb-1.5">Nicho / Categoría *</label>
+                    <select 
+                      required 
+                      value={editCategory} 
+                      onChange={e => setEditCategory(e.target.value)} 
+                      className="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm focus:border-gray-900 outline-none bg-white"
+                    >
+                      <option value="">Selecciona un nicho...</option>
+                      {categories.map((c) => (
+                        <option key={c} value={c}>{c}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-700 mb-1.5">Badge de Marketing</label>
+                    <input 
+                      type="text" 
+                      value={editBadge} 
+                      onChange={e => setEditBadge(e.target.value)} 
+                      className="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm focus:border-gray-900 outline-none" 
+                      placeholder="Ej: Más Vendido, Bestseller, Nuevo" 
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-gray-700 mb-1.5">Descripción Completa *</label>
+                  <textarea 
+                    required 
+                    rows={3} 
+                    value={editDescription} 
+                    onChange={e => setEditDescription(e.target.value)} 
+                    className="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm focus:border-gray-900 outline-none resize-none" 
+                    placeholder="Describe los beneficios, materiales y propuesta de valor..." 
+                  />
+                </div>
+              </div>
+
+              {/* Section 2: Pricing & Discounts */}
+              <div className="p-5 rounded-2xl bg-gray-50 border border-gray-100 space-y-4">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-xs font-bold uppercase tracking-wider text-gray-500">Precios y Rebajas</h3>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-gray-600">¿Tiene descuento?</span>
+                    <button 
+                      type="button" 
+                      onClick={() => {
+                        const next = !editHasDiscount;
+                        setEditHasDiscount(next);
+                        handleEditPriceChange(editPrice, editOldPrice, next);
+                      }} 
+                      className={`w-11 h-6 rounded-full transition-colors relative ${editHasDiscount ? 'bg-gray-900' : 'bg-gray-300'}`}
+                    >
+                      <span className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-all ${editHasDiscount ? 'left-6' : 'left-1'}`} />
+                    </button>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-1">
+                      {editHasDiscount ? "Precio con Descuento ($) *" : "Precio Normal ($) *"}
+                    </label>
+                    <input 
+                      required 
+                      type="number" 
+                      step="0.01" 
+                      value={editPrice} 
+                      onChange={e => handleEditPriceChange(e.target.value, editOldPrice, editHasDiscount)} 
+                      className="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm focus:border-gray-900 outline-none" 
+                      placeholder="89.90" 
+                    />
+                  </div>
+                  {editHasDiscount && (
+                    <>
+                      <div>
+                        <label className="block text-xs font-medium text-gray-700 mb-1">Precio Original Anterior ($)</label>
+                        <input 
+                          type="number" 
+                          step="0.01" 
+                          value={editOldPrice} 
+                          onChange={e => handleEditPriceChange(editPrice, e.target.value, editHasDiscount)} 
+                          className="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm focus:border-gray-900 outline-none" 
+                          placeholder="119.90" 
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-medium text-gray-700 mb-1">% Descuento Calculado</label>
+                        <input 
+                          type="text" 
+                          readOnly 
+                          value={editCalculatedDiscount} 
+                          className="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm bg-gray-100 text-red-600 font-bold outline-none" 
+                          placeholder="-25%" 
+                        />
+                      </div>
+                    </>
+                  )}
+                </div>
+              </div>
+
+              {/* Section 3: Images */}
+              <div className="space-y-4">
+                <h3 className="text-xs font-bold uppercase tracking-wider text-gray-400">Fotografía y Galería</h3>
+                
+                <div className="flex gap-4 items-start">
+                  {editImageUrl && (
+                    <div className="relative w-16 h-16 rounded-xl overflow-hidden bg-gray-100 border border-gray-200 shrink-0">
+                      <Image src={editImageUrl} alt="Preview" fill className="object-cover" />
+                    </div>
+                  )}
+                  <div className="flex-1">
+                    <label className="block text-xs font-semibold text-gray-700 mb-1.5">URL de Imagen Principal *</label>
+                    <input 
+                      required 
+                      type="url" 
+                      value={editImageUrl} 
+                      onChange={e => setEditImageUrl(e.target.value)} 
+                      className="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm focus:border-gray-900 outline-none" 
+                      placeholder="https://images.unsplash.com/photo-..." 
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-gray-700 mb-1.5">URLs de Galería Adicional (Opcional)</label>
+                  <input 
+                    type="text" 
+                    value={editExtraImages} 
+                    onChange={e => setEditExtraImages(e.target.value)} 
+                    className="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm focus:border-gray-900 outline-none" 
+                    placeholder="https://... , https://... (separadas por coma)" 
+                  />
+                </div>
+              </div>
+
+              {/* Section 4: Specifications */}
+              <div className="space-y-4">
+                <h3 className="text-xs font-bold uppercase tracking-wider text-gray-400">Especificaciones & Opciones</h3>
+                
+                <div>
+                  <label className="block text-xs font-semibold text-gray-700 mb-1.5">Características Clave (una por línea)</label>
+                  <textarea 
+                    rows={3} 
+                    value={editFeatures} 
+                    onChange={e => setEditFeatures(e.target.value)} 
+                    className="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm focus:border-gray-900 outline-none resize-none" 
+                    placeholder="Material: Aluminio aeroespacial&#10;Garantía de por vida" 
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-700 mb-1.5">Tallas / Tamaños (separadas por coma)</label>
+                    <input 
+                      type="text" 
+                      value={editSizes} 
+                      onChange={e => { setEditSizes(e.target.value); setEditHasSizes(!!e.target.value.trim()); }} 
+                      className="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm focus:border-gray-900 outline-none" 
+                      placeholder="Ej: Individual, Queen, King" 
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-700 mb-1.5">Colores (nombres separados por coma)</label>
+                    <input 
+                      type="text" 
+                      value={editColors} 
+                      onChange={e => { setEditColors(e.target.value); setEditHasColors(!!e.target.value.trim()); }} 
+                      className="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm focus:border-gray-900 outline-none" 
+                      placeholder="Ej: Nogal, Roble, Blanco" 
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Modal Actions */}
+              <div className="pt-4 border-t border-gray-100 flex justify-end gap-3">
+                <button 
+                  type="button" 
+                  onClick={() => setShowEditModal(false)} 
+                  className="px-5 py-2.5 rounded-xl text-gray-600 font-medium hover:bg-gray-100 transition-colors text-sm"
+                >
+                  Cancelar
+                </button>
+                <button 
+                  type="submit" 
+                  disabled={isSubmittingEdit}
+                  className="px-6 py-2.5 rounded-xl bg-blue-600 text-white font-medium shadow-lg hover:bg-blue-700 transition-all text-sm disabled:opacity-50 flex items-center gap-1.5"
+                >
+                  <Pencil className="w-4 h-4" />
+                  {isSubmittingEdit ? "Guardando cambios..." : "Guardar Cambios"}
                 </button>
               </div>
             </form>

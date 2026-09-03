@@ -25,7 +25,7 @@ interface CatalogState {
   isLoading: boolean;
   fetchProducts: () => Promise<void>;
   addProduct: (product: Omit<CatalogProduct, 'id'> & { id?: string }) => Promise<{ success: boolean; error?: string }>;
-  updateProduct: (id: string, product: CatalogProduct) => Promise<void>;
+  updateProduct: (id: string, product: CatalogProduct) => Promise<{ success: boolean; error?: string }>;
   deleteProduct: (id: string) => Promise<void>;
   addCategory: (name: string) => void;
   deleteCategory: (name: string) => void;
@@ -55,6 +55,85 @@ const DEFAULT_BADGES = [
   "Exclusivo"
 ];
 
+export const normalizeCategory = (cat?: string | null): string => {
+  if (!cat) return "";
+  return cat
+    .trim()
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
+};
+
+export const canonicalCategory = (cat: string, knownCategories: string[]): string => {
+  const norm = normalizeCategory(cat);
+  const found = knownCategories.find(c => normalizeCategory(c) === norm);
+  return found || cat;
+};
+
+// Initial pieces for niches to ensure no category is shown empty
+const INITIAL_NICHE_PRODUCTS: CatalogProduct[] = [
+  {
+    id: "prod-ceramica-1",
+    title: "Jarrón Luna",
+    titleHighlight: "Gres Cerámico",
+    description: "Jarrón escultural modelado a mano en gres cerámico de alta temperatura. Textura porosa natural con acabado mate crudo.",
+    price: 68.00,
+    oldPrice: 85.00,
+    discount: "-20%",
+    badge: "Artesanal",
+    category: "Cerámica",
+    imageUrl: "https://images.unsplash.com/photo-1612196808214-b8e1d6145a8c?q=80&w=800&auto=format&fit=crop",
+    images: ["https://images.unsplash.com/photo-1612196808214-b8e1d6145a8c?q=80&w=800&auto=format&fit=crop"],
+    colors: [{ name: "Gres Natural", hex: "#d1c7bd" }],
+    sizes: ["Mediano (24cm)"],
+    features: ["Cerámica gres cocida a 1250°C", "Acabado impermeable interior", "Base pulida suave"]
+  },
+  {
+    id: "prod-decoracion-1",
+    title: "Espejo Solar",
+    titleHighlight: "Latón Dorado",
+    description: "Espejo circular de pared con halo suspendido en latón cepillado macizo. Reflejos limpios para recibidores y salones luminosos.",
+    price: 145.00,
+    badge: "Nuevo",
+    category: "Decoración",
+    imageUrl: "https://images.unsplash.com/photo-1618221195710-dd6b41faaea6?q=80&w=800&auto=format&fit=crop",
+    images: ["https://images.unsplash.com/photo-1618221195710-dd6b41faaea6?q=80&w=800&auto=format&fit=crop"],
+    colors: [{ name: "Latón Cepillado", hex: "#d4af37" }],
+    sizes: ["Diámetro 60cm"],
+    features: ["Cristal de alta definición 5mm", "Marco de latón macizo", "Anclaje invisible"]
+  },
+  {
+    id: "prod-cocina-1",
+    title: "Molinillo Barista",
+    titleHighlight: "Roble & Acero",
+    description: "Molinillo manual de café de precisión con cuerpo macizo de roble torneado y muelas cónicas de acero inoxidable grado 420.",
+    price: 79.50,
+    oldPrice: 95.00,
+    discount: "-16%",
+    badge: "Exclusivo",
+    category: "Cocina",
+    imageUrl: "https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?q=80&w=800&auto=format&fit=crop",
+    images: ["https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?q=80&w=800&auto=format&fit=crop"],
+    colors: [{ name: "Roble Natural", hex: "#a27f54" }],
+    sizes: ["Capacidad 35g"],
+    features: ["Muelas cónicas de 38mm CNC", "Ajuste micrométrico", "Manivela ergonómica"]
+  },
+  {
+    id: "prod-bienestar-1",
+    title: "Esterilla Zen",
+    titleHighlight: "Corcho Natural",
+    description: "Tapete orgánico para yoga y meditación elaborado con corcho de alcornoque portugués y base antideslizante de caucho vegetal.",
+    price: 89.00,
+    badge: "Bestseller",
+    category: "Bienestar",
+    imageUrl: "https://images.unsplash.com/photo-1545205597-3d9d02c29597?q=80&w=800&auto=format&fit=crop",
+    images: ["https://images.unsplash.com/photo-1545205597-3d9d02c29597?q=80&w=800&auto=format&fit=crop"],
+    colors: [{ name: "Corcho Cálido", hex: "#c89d7c" }],
+    sizes: ["183 x 61 cm"],
+    features: ["Superficie antimicrobiana natural", "Agarre superior", "100% ecológico"]
+  }
+];
+
 // Convert camelCase to snake_case for Supabase
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const toSupabaseProduct = (p: Partial<CatalogProduct>) => {
@@ -82,7 +161,7 @@ const toSupabaseProduct = (p: Partial<CatalogProduct>) => {
   return payload;
 };
 
-// Convert snake_case back to camelCase for frontend
+// Convert snake_case back to camelCase for frontend with canonical category formatting
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const toFrontendProduct = (p: any): CatalogProduct => ({
   id: p.id,
@@ -98,7 +177,7 @@ const toFrontendProduct = (p: any): CatalogProduct => ({
   colors: Array.isArray(p.colors) ? p.colors : [],
   sizes: Array.isArray(p.sizes) ? p.sizes : [],
   features: Array.isArray(p.features) ? p.features : [],
-  category: p.category,
+  category: canonicalCategory(p.category, DEFAULT_CATEGORIES),
 });
 
 export const useCatalogStore = create<CatalogState>((set) => ({
@@ -124,8 +203,18 @@ export const useCatalogStore = create<CatalogState>((set) => ({
     }
 
     const { data, error } = await supabase.from('products').select('*').order('created_at', { ascending: false });
-    if (!error && data) {
-      const prods = data.map(toFrontendProduct);
+    if (!error && data && data.length > 0) {
+      let prods = data.map(toFrontendProduct);
+
+      // Check if any default category is missing a product; if so, inject the corresponding initial product
+      const existingNormalized = new Set(prods.map(p => normalizeCategory(p.category)));
+      const missingNicheProducts = INITIAL_NICHE_PRODUCTS.filter(
+        np => !existingNormalized.has(normalizeCategory(np.category))
+      );
+      if (missingNicheProducts.length > 0) {
+        prods = [...prods, ...missingNicheProducts];
+      }
+
       // Collect unique categories & badges found in DB and combine with defaults
       const dbCategories = Array.from(new Set(prods.map(p => p.category).filter(Boolean)));
       const mergedCats = Array.from(new Set([...DEFAULT_CATEGORIES, ...dbCategories]));
@@ -135,7 +224,13 @@ export const useCatalogStore = create<CatalogState>((set) => ({
 
       set({ products: prods, categories: mergedCats, badges: mergedBadges, isLoading: false });
     } else {
-      set({ badges: initialBadges, isLoading: false });
+      // Fallback with all niche products present
+      set({ 
+        products: INITIAL_NICHE_PRODUCTS, 
+        categories: DEFAULT_CATEGORIES, 
+        badges: initialBadges, 
+        isLoading: false 
+      });
     }
   },
   
@@ -163,59 +258,84 @@ export const useCatalogStore = create<CatalogState>((set) => ({
   },
   
   updateProduct: async (id, updatedProduct) => {
-    const dbProduct = toSupabaseProduct(updatedProduct);
-    const { data, error } = await supabase.from('products').update(dbProduct).eq('id', id).select().single();
-    if (!error && data) {
+    // If it's a UUID, update in Supabase database
+    if (id.includes('-') && id.length > 20) {
+      const dbProduct = toSupabaseProduct(updatedProduct);
+      const { data, error } = await supabase.from('products').update(dbProduct).eq('id', id).select().single();
+      if (!error && data) {
+        const updated = toFrontendProduct(data);
+        set((state) => ({
+          products: state.products.map(p => p.id === id ? updated : p),
+          categories: state.categories.includes(updated.category)
+            ? state.categories
+            : [...state.categories, updated.category]
+        }));
+        return { success: true };
+      }
+      return { success: false, error: error?.message || 'Error al actualizar en la base de datos' };
+    } else {
+      // Direct catalog state update
+      const updated: CatalogProduct = {
+        ...updatedProduct,
+        id,
+        category: canonicalCategory(updatedProduct.category, DEFAULT_CATEGORIES),
+      };
       set((state) => ({
-        products: state.products.map(p => p.id === id ? toFrontendProduct(data) : p)
+        products: state.products.map(p => p.id === id ? updated : p),
+        categories: state.categories.includes(updated.category)
+          ? state.categories
+          : [...state.categories, updated.category]
       }));
+      return { success: true };
     }
   },
   
   deleteProduct: async (id) => {
-    const { error } = await supabase.from('products').delete().eq('id', id);
-    if (!error) {
-      set((state) => ({
-        products: state.products.filter(p => p.id !== id)
-      }));
+    if (id.includes('-') && id.length > 20) {
+      await supabase.from('products').delete().eq('id', id);
     }
+    set((state) => ({
+      products: state.products.filter(p => p.id !== id)
+    }));
   },
 
   addCategory: (name) => {
-    const trimmed = name.trim();
-    if (!trimmed) return;
+    const clean = name.trim();
+    if (!clean) return;
     set((state) => {
-      if (state.categories.some(c => c.toLowerCase() === trimmed.toLowerCase())) return state;
-      return { categories: [...state.categories, trimmed] };
+      if (state.categories.some(c => normalizeCategory(c) === normalizeCategory(clean))) {
+        return state;
+      }
+      return { categories: [...state.categories, clean] };
     });
   },
 
   deleteCategory: (name) => {
     set((state) => ({
-      categories: state.categories.filter(c => c.toLowerCase() !== name.toLowerCase())
+      categories: state.categories.filter(c => normalizeCategory(c) !== normalizeCategory(name))
     }));
   },
 
   addBadge: (name) => {
-    const trimmed = name.trim();
-    if (!trimmed) return;
+    const clean = name.trim();
+    if (!clean) return;
     set((state) => {
-      if (state.badges.some(b => b.toLowerCase() === trimmed.toLowerCase())) return state;
-      const nextBadges = [...state.badges, trimmed];
+      if (state.badges.includes(clean)) return state;
+      const next = [...state.badges, clean];
       if (typeof window !== 'undefined') {
-        localStorage.setItem('lumina_marketing_badges', JSON.stringify(nextBadges));
+        localStorage.setItem('lumina_marketing_badges', JSON.stringify(next));
       }
-      return { badges: nextBadges };
+      return { badges: next };
     });
   },
 
   deleteBadge: (name) => {
     set((state) => {
-      const nextBadges = state.badges.filter(b => b.toLowerCase() !== name.toLowerCase());
+      const next = state.badges.filter(b => b !== name);
       if (typeof window !== 'undefined') {
-        localStorage.setItem('lumina_marketing_badges', JSON.stringify(nextBadges));
+        localStorage.setItem('lumina_marketing_badges', JSON.stringify(next));
       }
-      return { badges: nextBadges };
+      return { badges: next };
     });
   },
 }));
