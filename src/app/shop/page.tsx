@@ -15,7 +15,6 @@ export default function ShopPage({ searchParams }: { searchParams: { category?: 
   const [isMounted, setIsMounted] = useState(false);
 
   useEffect(() => {
-    useCatalogStore.persist.rehydrate();
     setIsMounted(true);
   }, []);
 

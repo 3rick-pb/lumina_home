@@ -6,6 +6,7 @@ import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import { AmbientBackground } from "@/components/ui/AmbientBackground";
 import { AuthGuard } from "@/components/auth/AuthGuard";
+import { AppInitializer } from "@/components/AppInitializer";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -38,6 +39,7 @@ export default function RootLayout({
         <Suspense fallback={null}>
           <AmbientBackground />
         </Suspense>
+        <AppInitializer />
         <AuthGuard>
           <Header />
           <main className="flex-1">

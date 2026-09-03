@@ -12,12 +12,18 @@ export default function LoginPage() {
   const router = useRouter();
   const login = useUserStore((state) => state.login);
 
-  const handleLogin = (e: React.FormEvent) => {
+  const [errorMsg, setErrorMsg] = useState("");
+
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (email) {
-      const name = email.split("@")[0];
-      login(email, name.charAt(0).toUpperCase() + name.slice(1));
-      router.push("/profile");
+    setErrorMsg("");
+    if (email && password) {
+      const { error } = await login(email, password);
+      if (error) {
+        setErrorMsg(error);
+      } else {
+        router.push("/profile");
+      }
     }
   };
 
@@ -35,6 +41,11 @@ export default function LoginPage() {
           </div>
 
           <form onSubmit={handleLogin} className="space-y-5">
+            {errorMsg && (
+              <div className="p-3 bg-red-50 text-red-600 text-xs rounded-xl border border-red-100 text-center">
+                {errorMsg}
+              </div>
+            )}
             <div>
               <label className="block text-xs font-medium text-gray-700 mb-1.5 ml-1">Correo Electrónico</label>
               <div className="relative">

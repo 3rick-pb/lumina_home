@@ -21,7 +21,6 @@ export default function Home() {
   const [isMounted, setIsMounted] = useState(false);
 
   useEffect(() => {
-    useCatalogStore.persist.rehydrate();
     setIsMounted(true);
   }, []);
 
