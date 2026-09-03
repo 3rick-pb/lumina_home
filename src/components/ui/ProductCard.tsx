@@ -76,6 +76,7 @@ export function ProductCard({ id, title, price, oldPrice, discount, badge, image
             e.preventDefault(); 
             const product = useCatalogStore.getState().products.find(p => p.id === id);
             if (product) {
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
               addItem(product as any, 1, product.colors?.[0]?.name, product.sizes?.[0]);
             }
           }}
