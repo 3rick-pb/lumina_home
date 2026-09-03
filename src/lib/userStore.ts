@@ -66,18 +66,79 @@ interface UserState {
   updateUserPassword: (password: string) => Promise<{ error: string | null }>;
 }
 
-const loadUserData = (userId: string) => {
-  if (typeof window === 'undefined') return { cards: [], orders: [], address: null };
+const fetchUserDataFromDatabase = async (userId: string) => {
   try {
-    const savedCards = localStorage.getItem(`lumina_cards_${userId}`);
-    const savedOrders = localStorage.getItem(`lumina_orders_${userId}`);
-    const savedAddress = localStorage.getItem(`lumina_address_${userId}`);
-    return {
-      cards: savedCards ? JSON.parse(savedCards) : [],
-      orders: savedOrders ? JSON.parse(savedOrders) : [],
-      address: savedAddress ? JSON.parse(savedAddress) : null,
-    };
-  } catch {
+    // 1. Fetch orders from Supabase orders table
+    const { data: dbOrders } = await supabase
+      .from('orders')
+      .select('*')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false });
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let orders: Order[] = (dbOrders || []).map((o: any) => ({
+      id: o.id,
+      date: o.created_at ? new Date(o.created_at).toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: 'numeric' }) : 'Reciente',
+      status: o.status || 'Procesando',
+      trackingNumber: o.tracking_number,
+      total: Number(o.total) || 0,
+      items: Array.isArray(o.items) ? o.items : [],
+    }));
+
+    // 2. Fetch address from Supabase addresses table
+    const { data: dbAddr } = await supabase
+      .from('addresses')
+      .select('*')
+      .eq('user_id', userId)
+      .limit(1)
+      .maybeSingle();
+
+    let address: ShippingAddress | null = null;
+    if (dbAddr) {
+      address = {
+        street: dbAddr.street || '',
+        city: dbAddr.city || '',
+        state: dbAddr.state || '',
+        postalCode: dbAddr.postal_code || '',
+        country: dbAddr.country || 'España',
+      };
+    }
+
+    // 3. Fetch cards from Supabase payment_cards or user_metadata
+    let cards: PaymentCard[] = [];
+    const { data: dbCards, error: cErr } = await supabase
+      .from('payment_cards')
+      .select('*')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false });
+
+    if (dbCards && !cErr && dbCards.length > 0) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      cards = dbCards.map((c: any) => ({
+        id: c.id,
+        number: c.number,
+        holder: c.holder,
+        exp: c.exp,
+        type: c.type,
+        isDefault: !!c.is_default,
+      }));
+    } else {
+      // Check user_metadata
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user?.user_metadata?.cards) {
+        cards = user.user_metadata.cards;
+      }
+      if (!address && user?.user_metadata?.address) {
+        address = user.user_metadata.address;
+      }
+      if (orders.length === 0 && user?.user_metadata?.orders) {
+        orders = user.user_metadata.orders;
+      }
+    }
+
+    return { cards, orders, address };
+  } catch (e) {
+    console.error("Error fetching user data from Supabase:", e);
     return { cards: [], orders: [], address: null };
   }
 };
@@ -99,7 +160,8 @@ export const useUserStore = create<UserState>((set, get) => ({
         const role = (email.toLowerCase() === 'admin@lumina.com' || session.user.user_metadata?.role === 'ADMIN') ? 'ADMIN' : 'USER';
         const name = session.user.user_metadata?.name || email.split('@')[0];
         
-        const personalData = loadUserData(session.user.id);
+        // Fetch all user private data directly from Supabase database
+        const personalData = await fetchUserDataFromDatabase(session.user.id);
 
         set({ 
           user: { id: session.user.id, email, name, role }, 
@@ -109,8 +171,8 @@ export const useUserStore = create<UserState>((set, get) => ({
           address: personalData.address
         });
 
-        // Initialize and isolate cart for this specific user
-        useCartStore.getState().initCartForUser(session.user.id);
+        // Initialize and isolate cart from Supabase cloud database
+        await useCartStore.getState().initCartForUser(session.user.id);
         
         // Load favorites from Supabase
         const { data: favs } = await supabase.from('favorites').select('product_id').eq('user_id', session.user.id);
@@ -118,7 +180,7 @@ export const useUserStore = create<UserState>((set, get) => ({
           set({ favorites: favs.map(f => f.product_id) });
         }
       } else {
-        useCartStore.getState().initCartForUser(null);
+        await useCartStore.getState().initCartForUser(null);
         set({ user: null, isAuthenticated: false, cards: [], orders: [], address: null, favorites: [] });
       }
     } finally {
@@ -130,7 +192,7 @@ export const useUserStore = create<UserState>((set, get) => ({
         const email = session.user.email || '';
         const role = (email.toLowerCase() === 'admin@lumina.com' || session.user.user_metadata?.role === 'ADMIN') ? 'ADMIN' : 'USER';
         const name = session.user.user_metadata?.name || email.split('@')[0];
-        const personalData = loadUserData(session.user.id);
+        const personalData = await fetchUserDataFromDatabase(session.user.id);
 
         set({ 
           user: { id: session.user.id, email, name, role }, 
@@ -141,14 +203,14 @@ export const useUserStore = create<UserState>((set, get) => ({
           address: personalData.address
         });
 
-        // Switch active cart strictly to this account
-        useCartStore.getState().initCartForUser(session.user.id);
+        // Switch active cart strictly to this account from Supabase
+        await useCartStore.getState().initCartForUser(session.user.id);
 
         const { data: favs } = await supabase.from('favorites').select('product_id').eq('user_id', session.user.id);
         if (favs) set({ favorites: favs.map(f => f.product_id) });
       } else {
-        // Reset and isolate guest cart when signed out
-        useCartStore.getState().initCartForUser(null);
+        // Reset and wipe data when signed out
+        await useCartStore.getState().initCartForUser(null);
         set({ user: null, isAuthenticated: false, favorites: [], cards: [], orders: [], address: null, isLoading: false });
       }
     });
@@ -161,7 +223,7 @@ export const useUserStore = create<UserState>((set, get) => ({
       const userEmail = data.user.email || cleanEmail;
       const role = (userEmail.toLowerCase() === 'admin@lumina.com' || data.user.user_metadata?.role === 'ADMIN') ? 'ADMIN' : 'USER';
       const name = data.user.user_metadata?.name || userEmail.split('@')[0];
-      const personalData = loadUserData(data.user.id);
+      const personalData = await fetchUserDataFromDatabase(data.user.id);
 
       set({ 
         user: { id: data.user.id, email: userEmail, name, role }, 
@@ -171,8 +233,8 @@ export const useUserStore = create<UserState>((set, get) => ({
         address: personalData.address
       });
 
-      // Synchronize and load user's private cart
-      useCartStore.getState().initCartForUser(data.user.id, true);
+      // Synchronize and load user's private cart from Supabase
+      await useCartStore.getState().initCartForUser(data.user.id);
 
       const { data: favs } = await supabase.from('favorites').select('product_id').eq('user_id', data.user.id);
       if (favs) set({ favorites: favs.map(f => f.product_id) });
@@ -182,9 +244,27 @@ export const useUserStore = create<UserState>((set, get) => ({
   
   logout: async () => {
     await supabase.auth.signOut();
-    // Isolate & reset cart to guest session (empty) so no data leaks into the next account
-    useCartStore.getState().initCartForUser(null);
+    
+    // Disconnect and reset cart
+    await useCartStore.getState().initCartForUser(null);
+    
+    // Reset all in-memory user data
     set({ user: null, isAuthenticated: false, favorites: [], cards: [], orders: [], address: null });
+
+    // WIPE ENTIRE LOCAL DATA ON COMPUTER SO NOTHING STAYS BEHIND
+    if (typeof window !== 'undefined') {
+      try {
+        const keysToRemove: string[] = [];
+        for (let i = 0; i < localStorage.length; i++) {
+          const k = localStorage.key(i);
+          if (k && (k.startsWith('lumina') || k.startsWith('sb-') || k.includes('cart') || k.includes('user'))) {
+            keysToRemove.push(k);
+          }
+        }
+        keysToRemove.forEach(k => localStorage.removeItem(k));
+        sessionStorage.clear();
+      } catch {}
+    }
   },
   
   register: async (email, password, name) => {
@@ -205,43 +285,70 @@ export const useUserStore = create<UserState>((set, get) => ({
         favorites: []
       });
 
-      // Initialize empty private cart for new user
-      useCartStore.getState().initCartForUser(data.user.id, true);
+      // Initialize empty private cart for new user in Supabase
+      await useCartStore.getState().initCartForUser(data.user.id);
     }
     return { error: error?.message || null };
   },
 
-  addCard: (card) => {
-    const userId = get().user?.id || 'guest';
+  addCard: async (card) => {
+    const user = get().user;
     const newCard: PaymentCard = {
       ...card,
       id: Math.random().toString(36).substring(7)
     };
     const nextCards = [newCard, ...get().cards];
     set({ cards: nextCards });
-    if (typeof window !== 'undefined') {
-      localStorage.setItem(`lumina_cards_${userId}`, JSON.stringify(nextCards));
+
+    if (user) {
+      try {
+        await supabase.from('payment_cards').insert({
+          id: newCard.id,
+          user_id: user.id,
+          number: card.number,
+          holder: card.holder,
+          exp: card.exp,
+          type: card.type,
+          is_default: card.isDefault || false,
+        });
+      } catch {}
+      try {
+        await supabase.auth.updateUser({ data: { cards: nextCards } });
+      } catch {}
     }
   },
 
-  removeCard: (id) => {
-    const userId = get().user?.id || 'guest';
+  removeCard: async (id) => {
+    const user = get().user;
     const nextCards = get().cards.filter(c => c.id !== id);
     set({ cards: nextCards });
-    if (typeof window !== 'undefined') {
-      localStorage.setItem(`lumina_cards_${userId}`, JSON.stringify(nextCards));
+
+    if (user) {
+      try {
+        await supabase.from('payment_cards').delete().eq('id', id);
+      } catch {}
+      try {
+        await supabase.auth.updateUser({ data: { cards: nextCards } });
+      } catch {}
     }
   },
 
-  setDefaultCard: (id) => {
-    const userId = get().user?.id || 'guest';
+  setDefaultCard: async (id) => {
+    const user = get().user;
     const nextCards = get().cards.map(c => ({
       ...c,
       isDefault: c.id === id
     }));
     set({ cards: nextCards });
-    if (typeof window !== 'undefined') {
-      localStorage.setItem(`lumina_cards_${userId}`, JSON.stringify(nextCards));
+
+    if (user) {
+      try {
+        await supabase.from('payment_cards').update({ is_default: false }).eq('user_id', user.id);
+        await supabase.from('payment_cards').update({ is_default: true }).eq('id', id);
+      } catch {}
+      try {
+        await supabase.auth.updateUser({ data: { cards: nextCards } });
+      } catch {}
     }
   },
   
@@ -261,37 +368,90 @@ export const useUserStore = create<UserState>((set, get) => ({
   
   isFavorite: (productId) => get().favorites.includes(productId),
   
-  addOrder: (order) => {
-    const userId = get().user?.id || 'guest';
+  addOrder: async (order) => {
+    const user = get().user;
     const nextOrders = [order, ...get().orders];
     set({ orders: nextOrders });
-    if (typeof window !== 'undefined') {
-      localStorage.setItem(`lumina_orders_${userId}`, JSON.stringify(nextOrders));
+
+    if (user) {
+      try {
+        await supabase.from('orders').insert({
+          id: order.id,
+          user_id: user.id,
+          status: order.status,
+          total: order.total,
+          items: order.items,
+          tracking_number: order.trackingNumber,
+        });
+      } catch (e) {
+        console.error("Error saving order to Supabase:", e);
+      }
+      try {
+        await supabase.auth.updateUser({ data: { orders: nextOrders } });
+      } catch {}
     }
   },
 
-  updateOrderStatus: (orderId, status) => {
-    const userId = get().user?.id || 'guest';
+  updateOrderStatus: async (orderId, status) => {
+    const user = get().user;
     const nextOrders = get().orders.map(order => order.id === orderId ? { ...order, status } : order);
     set({ orders: nextOrders });
-    if (typeof window !== 'undefined') {
-      localStorage.setItem(`lumina_orders_${userId}`, JSON.stringify(nextOrders));
+
+    if (user) {
+      try {
+        await supabase.from('orders').update({ status }).eq('id', orderId);
+      } catch {}
+      try {
+        await supabase.auth.updateUser({ data: { orders: nextOrders } });
+      } catch {}
     }
   },
 
-  setAddress: (address) => {
-    const userId = get().user?.id || 'guest';
+  setAddress: async (address) => {
+    const user = get().user;
     set({ address });
-    if (typeof window !== 'undefined') {
-      localStorage.setItem(`lumina_address_${userId}`, JSON.stringify(address));
+
+    if (user) {
+      try {
+        const { data: existing } = await supabase.from('addresses').select('id').eq('user_id', user.id).maybeSingle();
+        if (existing) {
+          await supabase.from('addresses').update({
+            street: address.street,
+            city: address.city,
+            state: address.state,
+            postal_code: address.postalCode,
+            country: address.country,
+          }).eq('user_id', user.id);
+        } else {
+          await supabase.from('addresses').insert({
+            user_id: user.id,
+            street: address.street,
+            city: address.city,
+            state: address.state,
+            postal_code: address.postalCode,
+            country: address.country,
+          });
+        }
+      } catch (e) {
+        console.error("Error saving address to Supabase:", e);
+      }
+      try {
+        await supabase.auth.updateUser({ data: { address } });
+      } catch {}
     }
   },
 
-  removeAddress: () => {
-    const userId = get().user?.id || 'guest';
+  removeAddress: async () => {
+    const user = get().user;
     set({ address: null });
-    if (typeof window !== 'undefined') {
-      localStorage.removeItem(`lumina_address_${userId}`);
+
+    if (user) {
+      try {
+        await supabase.from('addresses').delete().eq('user_id', user.id);
+      } catch {}
+      try {
+        await supabase.auth.updateUser({ data: { address: null } });
+      } catch {}
     }
   },
 

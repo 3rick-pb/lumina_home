@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { Product } from './data';
+import { supabase } from './supabase';
 
 export interface CartItem {
   id: string; // Unique cart item ID (product.id + color + size)
@@ -26,7 +27,7 @@ interface CartState {
   isFreeShippingCoupon: boolean;
   originCoords: { x: number; y: number } | null;
   
-  initCartForUser: (userId: string | null, mergeGuest?: boolean) => void;
+  initCartForUser: (userId: string | null) => Promise<void>;
   addItem: (product: Product, quantity?: number, color?: string, size?: string) => void;
   removeItem: (id: string) => void;
   updateQuantity: (id: string, quantity: number) => void;
@@ -43,37 +44,28 @@ interface CartState {
   removeCoupon: () => void;
 }
 
-const getStorageKey = (userId: string | null) => {
-  return userId ? `lumina_cart_${userId}` : `lumina_cart_guest`;
-};
-
-const loadCartData = (userId: string | null): CartStoragePayload => {
-  if (typeof window === 'undefined') {
-    return { items: [], couponCode: null, discountPercent: 0, isFreeShippingCoupon: false };
-  }
+// Helper to push cart payload directly to Supabase cloud database
+const syncCartToDatabase = async (userId: string | null, payload: CartStoragePayload) => {
+  if (!userId) return;
   try {
-    const key = getStorageKey(userId);
-    const saved = localStorage.getItem(key);
-    if (!saved) return { items: [], couponCode: null, discountPercent: 0, isFreeShippingCoupon: false };
-    const parsed = JSON.parse(saved);
-    return {
-      items: Array.isArray(parsed.items) ? parsed.items : [],
-      couponCode: parsed.couponCode || null,
-      discountPercent: typeof parsed.discountPercent === 'number' ? parsed.discountPercent : 0,
-      isFreeShippingCoupon: !!parsed.isFreeShippingCoupon,
-    };
-  } catch {
-    return { items: [], couponCode: null, discountPercent: 0, isFreeShippingCoupon: false };
-  }
-};
+    // 1. Persist to user_carts table in Supabase
+    const { error } = await supabase.from('user_carts').upsert({
+      user_id: userId,
+      items: payload.items,
+      coupon_code: payload.couponCode,
+      discount_percent: payload.discountPercent,
+      is_free_shipping: payload.isFreeShippingCoupon,
+      updated_at: new Date().toISOString()
+    });
 
-const saveCartData = (userId: string | null, data: CartStoragePayload) => {
-  if (typeof window === 'undefined') return;
-  try {
-    const key = getStorageKey(userId);
-    localStorage.setItem(key, JSON.stringify(data));
+    // 2. Also keep user_metadata synced as reliable cloud backup
+    if (error) {
+      await supabase.auth.updateUser({
+        data: { cart: payload }
+      });
+    }
   } catch (e) {
-    console.error("Error saving cart to storage:", e);
+    console.error("Error syncing cart to database:", e);
   }
 };
 
@@ -86,72 +78,76 @@ export const useCartStore = create<CartState>((set, get) => ({
   isFreeShippingCoupon: false,
   originCoords: null,
   
-  initCartForUser: (newUserId: string | null, mergeGuest = false) => {
+  initCartForUser: async (newUserId: string | null) => {
+    // Purge any local computer storage so nothing stays on disk
     if (typeof window !== 'undefined') {
-      // Purge legacy shared storage key so it never leaks
       try {
         localStorage.removeItem('lumina-cart-storage');
+        localStorage.removeItem('lumina_cart_guest');
+        if (!newUserId) {
+          const keysToRemove: string[] = [];
+          for (let i = 0; i < localStorage.length; i++) {
+            const k = localStorage.key(i);
+            if (k && k.startsWith('lumina_cart_')) keysToRemove.push(k);
+          }
+          keysToRemove.forEach(k => localStorage.removeItem(k));
+        }
       } catch {}
     }
 
-    const prevUserId = get().currentUserId;
-    
-    // Save current active cart to previous user before switching
-    if (prevUserId !== newUserId && get().items.length > 0) {
-      saveCartData(prevUserId, {
-        items: get().items,
-        couponCode: get().couponCode,
-        discountPercent: get().discountPercent,
-        isFreeShippingCoupon: get().isFreeShippingCoupon,
+    if (!newUserId) {
+      // Guest or logged out: completely empty cart in memory, nothing on computer
+      set({
+        currentUserId: null,
+        items: [],
+        couponCode: null,
+        discountPercent: 0,
+        isFreeShippingCoupon: false,
+        isOpen: false,
       });
+      return;
     }
 
-    // If a guest added items and is now logging in, optionally merge guest items into the user's cart
-    let guestItems: CartItem[] = [];
-    if (mergeGuest && !prevUserId && newUserId) {
-      const guestData = loadCartData(null);
-      guestItems = guestData.items;
-      if (typeof window !== 'undefined') {
-        try {
-          localStorage.removeItem('lumina_cart_guest');
-        } catch {}
-      }
-    }
+    let items: CartItem[] = [];
+    let couponCode: string | null = null;
+    let discountPercent = 0;
+    let isFreeShippingCoupon = false;
 
-    // Load target user's private cart
-    const userData = loadCartData(newUserId);
-    const finalItems = [...userData.items];
+    try {
+      // 1. Fetch from Supabase user_carts table
+      const { data: dbCart, error } = await supabase
+        .from('user_carts')
+        .select('*')
+        .eq('user_id', newUserId)
+        .maybeSingle();
 
-    if (guestItems.length > 0) {
-      for (const gItem of guestItems) {
-        const existingIdx = finalItems.findIndex(i => i.id === gItem.id);
-        if (existingIdx >= 0) {
-          finalItems[existingIdx] = {
-            ...finalItems[existingIdx],
-            quantity: finalItems[existingIdx].quantity + gItem.quantity,
-          };
-        } else {
-          finalItems.push(gItem);
+      if (dbCart && !error) {
+        items = Array.isArray(dbCart.items) ? dbCart.items : [];
+        couponCode = dbCart.coupon_code || null;
+        discountPercent = Number(dbCart.discount_percent) || 0;
+        isFreeShippingCoupon = !!dbCart.is_free_shipping;
+      } else {
+        // 2. Fallback to Supabase auth user_metadata
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user?.user_metadata?.cart) {
+          const c = user.user_metadata.cart;
+          items = Array.isArray(c.items) ? c.items : [];
+          couponCode = c.couponCode || null;
+          discountPercent = Number(c.discountPercent) || 0;
+          isFreeShippingCoupon = !!c.isFreeShippingCoupon;
         }
       }
+    } catch (e) {
+      console.error("Error loading cart from database:", e);
     }
-
-    const payload: CartStoragePayload = {
-      items: finalItems,
-      couponCode: userData.couponCode,
-      discountPercent: userData.discountPercent,
-      isFreeShippingCoupon: userData.isFreeShippingCoupon,
-    };
-
-    saveCartData(newUserId, payload);
 
     set({
       currentUserId: newUserId,
-      items: payload.items,
-      couponCode: payload.couponCode,
-      discountPercent: payload.discountPercent,
-      isFreeShippingCoupon: payload.isFreeShippingCoupon,
-      isOpen: false, // Ensure cart modal is closed upon account switch
+      items,
+      couponCode,
+      discountPercent,
+      isFreeShippingCoupon,
+      isOpen: false,
     });
   },
 
@@ -178,7 +174,9 @@ export const useCartStore = create<CartState>((set, get) => ({
       discountPercent: get().discountPercent,
       isFreeShippingCoupon: get().isFreeShippingCoupon,
     };
-    saveCartData(currentUserId, payload);
+
+    // Sync to Supabase cloud database
+    syncCartToDatabase(currentUserId, payload);
 
     set({ items: newItems, isOpen: true });
   },
@@ -192,7 +190,10 @@ export const useCartStore = create<CartState>((set, get) => ({
       discountPercent: get().discountPercent,
       isFreeShippingCoupon: get().isFreeShippingCoupon,
     };
-    saveCartData(currentUserId, payload);
+
+    // Sync to Supabase cloud database
+    syncCartToDatabase(currentUserId, payload);
+
     set({ items: newItems });
   },
   
@@ -211,7 +212,10 @@ export const useCartStore = create<CartState>((set, get) => ({
       discountPercent: get().discountPercent,
       isFreeShippingCoupon: get().isFreeShippingCoupon,
     };
-    saveCartData(currentUserId, payload);
+
+    // Sync to Supabase cloud database
+    syncCartToDatabase(currentUserId, payload);
+
     set({ items: newItems });
   },
   
@@ -223,7 +227,10 @@ export const useCartStore = create<CartState>((set, get) => ({
       discountPercent: 0,
       isFreeShippingCoupon: false,
     };
-    saveCartData(currentUserId, payload);
+
+    // Sync empty cart to Supabase cloud database
+    syncCartToDatabase(currentUserId, payload);
+
     set({ items: [], couponCode: null, discountPercent: 0, isFreeShippingCoupon: false });
   },
   
@@ -300,7 +307,9 @@ export const useCartStore = create<CartState>((set, get) => ({
       discountPercent: discount,
       isFreeShippingCoupon: freeShipping,
     };
-    saveCartData(currentUserId, payload);
+
+    // Sync to Supabase cloud database
+    syncCartToDatabase(currentUserId, payload);
 
     set({ couponCode: codeName, discountPercent: discount, isFreeShippingCoupon: freeShipping });
     return { success: true, message };
@@ -314,7 +323,10 @@ export const useCartStore = create<CartState>((set, get) => ({
       discountPercent: 0,
       isFreeShippingCoupon: false,
     };
-    saveCartData(currentUserId, payload);
+
+    // Sync to Supabase cloud database
+    syncCartToDatabase(currentUserId, payload);
+
     set({ couponCode: null, discountPercent: 0, isFreeShippingCoupon: false });
   },
 }));
