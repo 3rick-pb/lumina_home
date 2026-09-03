@@ -10,11 +10,16 @@ import { useCatalogStore } from "@/lib/catalogStore";
 import { useAmbientStore } from "@/lib/ambientStore";
 
 const CATEGORIES = [
-  { name: "Aromaterapia", price: "desde $29", img: "https://images.unsplash.com/photo-1602928321679-560bb453f190?q=80&w=800&auto=format&fit=crop" },
-  { name: "Iluminación", price: "desde $89", img: "https://images.unsplash.com/photo-1507473885765-e6ed057f782c?q=80&w=800&auto=format&fit=crop" },
-  { name: "Home Office", price: "desde $49", img: "https://images.unsplash.com/photo-1527443224154-c4a3942d3acf?q=80&w=800&auto=format&fit=crop" },
-  { name: "Textiles", price: "desde $39", img: "https://images.unsplash.com/photo-1584100936595-c0654b55a2e2?q=80&w=800&auto=format&fit=crop" },
-  { name: "Gadgets", price: "desde $120", img: "https://images.unsplash.com/photo-1558317374-067fb5f30001?q=80&w=800&auto=format&fit=crop" }
+  { name: "Aromaterapia", subtitle: "Difusores & esencias", price: "desde $29", img: "https://images.unsplash.com/photo-1602928321679-560bb453f190?q=80&w=800&auto=format&fit=crop" },
+  { name: "Iluminación", subtitle: "Lámparas de ambiente", price: "desde $89", img: "https://images.unsplash.com/photo-1507473885765-e6ed057f782c?q=80&w=800&auto=format&fit=crop" },
+  { name: "Home Office", subtitle: "Ergonomía & orden", price: "desde $49", img: "https://images.unsplash.com/photo-1527443224154-c4a3942d3acf?q=80&w=800&auto=format&fit=crop" },
+  { name: "Textiles", subtitle: "Lino y lana natural", price: "desde $39", img: "https://images.unsplash.com/photo-1584100936595-c0654b55a2e2?q=80&w=800&auto=format&fit=crop" },
+  { name: "Gadgets", subtitle: "Tecnología minimalista", price: "desde $120", img: "https://images.unsplash.com/photo-1558317374-067fb5f30001?q=80&w=800&auto=format&fit=crop" },
+  { name: "Almacenamiento", subtitle: "Cestas & orden", price: "desde $34", img: "https://images.unsplash.com/photo-1595428774223-ef52624120d2?q=80&w=800&auto=format&fit=crop" },
+  { name: "Cerámica", subtitle: "Vajilla de autor", price: "desde $25", img: "https://images.unsplash.com/photo-1610701596007-11502861dcfa?q=80&w=800&auto=format&fit=crop" },
+  { name: "Decoración", subtitle: "Esculturas & jarrones", price: "desde $45", img: "https://images.unsplash.com/photo-1513519245088-0e12902e5a38?q=80&w=800&auto=format&fit=crop" },
+  { name: "Cocina", subtitle: "Ritual barista", price: "desde $29", img: "https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?q=80&w=800&auto=format&fit=crop" },
+  { name: "Bienestar", subtitle: "Calma & descanso", price: "desde $35", img: "https://images.unsplash.com/photo-1540555700478-4be289fbecef?q=80&w=800&auto=format&fit=crop" }
 ];
 
 const normalizeText = (text: string) => {
@@ -145,18 +150,23 @@ export default function Home() {
                 <Link 
                   href={`/shop?category=${cat.name.toLowerCase()}`} 
                   key={idx} 
+                  scroll={true}
+                  onClick={() => {
+                    window.scrollTo({ top: 0, left: 0, behavior: "instant" });
+                  }}
                   onMouseEnter={() => setCategoryTheme(cat.name)}
                   onMouseLeave={() => resetTheme()}
                   className="group relative h-[320px] rounded-2xl overflow-hidden block shadow-sm border border-black/5 transition-transform duration-300 hover:-translate-y-1"
                 >
                   <Image src={cat.img} fill className="object-cover transition-transform duration-700 group-hover:scale-105" alt={cat.name} />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/30 to-transparent" />
                   <div className="absolute bottom-0 left-0 w-full p-5 flex items-end justify-between">
                     <div>
-                      <h3 className="text-white font-medium text-lg">{cat.name}</h3>
-                      <p className="text-white/70 text-sm">{cat.price}</p>
+                      <span className="text-white/60 text-[11px] font-light uppercase tracking-wider block mb-0.5">{cat.subtitle}</span>
+                      <h3 className="text-white font-medium text-lg leading-tight">{cat.name}</h3>
+                      <p className="text-white/80 text-xs font-light mt-1">{cat.price}</p>
                     </div>
-                    <div className="w-8 h-8 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center text-white group-hover:bg-white group-hover:text-black transition-colors">
+                    <div className="w-8 h-8 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center text-white group-hover:bg-white group-hover:text-black transition-colors shrink-0 ml-2">
                       <ArrowRight className="w-4 h-4" />
                     </div>
                   </div>
@@ -183,7 +193,7 @@ export default function Home() {
 
               {/* Dynamic Interactive Filter Pills */}
               <div className="flex items-center gap-2 overflow-x-auto pb-2 w-full lg:w-auto hide-scrollbar">
-                {["Todos", "Iluminación", "Aromaterapia", "Home Office", "Textiles", "Gadgets", "Almacenamiento"].map((filter) => {
+                {["Todos", "Iluminación", "Aromaterapia", "Home Office", "Textiles", "Gadgets", "Almacenamiento", "Cerámica", "Decoración", "Cocina", "Bienestar"].map((filter) => {
                   const isActive = activeFilter === filter;
                   return (
                     <button 

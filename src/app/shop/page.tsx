@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect } from "react";
 import Link from "next/link";
 import { ProductCard } from "@/components/ui/ProductCard";
 import { useCatalogStore } from "@/lib/catalogStore";
@@ -13,11 +13,14 @@ export default function ShopPage({ searchParams }: { searchParams: { category?: 
   const categoryFilter = searchParams.category;
   const searchQuery = searchParams.search;
   const { products, categories } = useCatalogStore();
-  const [isMounted, setIsMounted] = useState(false);
 
   useEffect(() => {
-    setIsMounted(true);
+    window.scrollTo({ top: 0, left: 0, behavior: "instant" });
   }, []);
+
+  useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: "instant" });
+  }, [categoryFilter, searchQuery]);
 
   let filteredProducts = products;
 
@@ -33,8 +36,6 @@ export default function ShopPage({ searchParams }: { searchParams: { category?: 
       (p.description && normalizeText(p.description).includes(q))
     );
   }
-
-  if (!isMounted) return null;
 
   return (
     <div className="min-h-screen pt-32 pb-24 bg-transparent relative">

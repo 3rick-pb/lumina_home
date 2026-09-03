@@ -44,6 +44,30 @@ export const CATEGORY_THEMES: Record<string, AmbientTheme> = {
     c3: "#e2e8f0", // Perla mate
     mood: "gadgets"
   },
+  ceramica: {
+    c1: "#fed7aa", // Arcilla cocida suave
+    c2: "#f5d0b0", // Terracota fina
+    c3: "#fbf3ea", // Caolín suave
+    mood: "ceramica"
+  },
+  decoracion: {
+    c1: "#e2e8f0", // Piedra caliza
+    c2: "#cbd5e1", // Travertino
+    c3: "#f8fafc", // Mármol cálido
+    mood: "decoracion"
+  },
+  cocina: {
+    c1: "#fed7aa", // Roble y café tostado
+    c2: "#fde68a", // Canela sutil
+    c3: "#fef3c7", // Vainilla
+    mood: "cocina"
+  },
+  bienestar: {
+    c1: "#dcfce7", // Salvia fresca
+    c2: "#d1fae5", // Menta suave
+    c3: "#f0fdf4", // Nube verde
+    mood: "bienestar"
+  },
   auth: {
     c1: "#eedec7", // Cachemira suave
     c2: "#dce4dc", // Salvia niebla

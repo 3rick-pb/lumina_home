@@ -36,7 +36,11 @@ const DEFAULT_CATEGORIES = [
   "Textiles",
   "Home Office",
   "Almacenamiento",
-  "Gadgets"
+  "Gadgets",
+  "Cerámica",
+  "Decoración",
+  "Cocina",
+  "Bienestar"
 ];
 
 // Convert camelCase to snake_case for Supabase

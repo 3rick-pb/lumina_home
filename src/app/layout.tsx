@@ -7,6 +7,7 @@ import { Footer } from "@/components/layout/Footer";
 import { AmbientBackground } from "@/components/ui/AmbientBackground";
 import { AuthGuard } from "@/components/auth/AuthGuard";
 import { AppInitializer } from "@/components/AppInitializer";
+import { ScrollToTop } from "@/components/layout/ScrollToTop";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -32,10 +33,13 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="es" className="scroll-smooth">
+    <html lang="es">
       <body
         className={`${inter.variable} ${playfair.variable} font-sans antialiased text-gray-900 bg-transparent flex flex-col min-h-screen relative`}
       >
+        <Suspense fallback={null}>
+          <ScrollToTop />
+        </Suspense>
         <Suspense fallback={null}>
           <AmbientBackground />
         </Suspense>
