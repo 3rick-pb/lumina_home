@@ -481,7 +481,7 @@ export default function ProfilePage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#f3f4f6] text-gray-900 flex p-3 md:p-6 lg:p-8 selection:bg-[#8c9276]/20">
+    <div className="min-h-screen w-full max-w-full overflow-x-hidden bg-[#f3f4f6] text-gray-900 flex p-3 md:p-6 lg:p-8 selection:bg-[#8c9276]/20">
       
       {/* 1. Left Vertical Icon Sidebar (Reference Style) */}
       <aside className="w-16 md:w-20 bg-white/90 backdrop-blur-2xl rounded-3xl border border-white/80 shadow-[0_8px_32px_rgba(0,0,0,0.03)] flex flex-col items-center py-6 justify-between shrink-0 mr-4 md:mr-6">
@@ -572,7 +572,7 @@ export default function ProfilePage() {
       </aside>
 
       {/* 2. Main Bento Canvas */}
-      <main className="flex-1 flex flex-col min-w-0 max-w-7xl mx-auto space-y-6">
+      <main className="flex-1 flex flex-col min-w-0 max-w-7xl w-full mx-auto space-y-6 overflow-hidden">
         
         {/* Top App Bar (Reference Style) */}
         <header className="relative z-40 bg-white/80 backdrop-blur-2xl p-4 md:px-6 rounded-3xl border border-white/80 shadow-[0_4px_20px_rgba(0,0,0,0.02)] flex items-center justify-between gap-4">
@@ -882,53 +882,83 @@ export default function ProfilePage() {
             </div>
 
             {/* BENTO CARD 3: REAL DYNAMIC CHART (4 cols) */}
-            <div className="lg:col-span-4 bg-white/90 backdrop-blur-xl p-6 rounded-[2rem] border border-white/80 shadow-[0_4px_24px_rgba(0,0,0,0.02)] flex flex-col justify-between">
+            <div className="lg:col-span-4 min-w-0 max-w-full bg-white/90 backdrop-blur-xl p-6 rounded-[2rem] border border-white/80 shadow-[0_4px_24px_rgba(0,0,0,0.02)] flex flex-col justify-between overflow-hidden">
               <div className="flex items-center justify-between mb-4">
-                <div>
-                  <h3 className="text-sm font-bold text-gray-900">
+                <div className="min-w-0 pr-2">
+                  <h3 className="text-sm font-bold text-gray-900 truncate">
                     {isAdmin ? "Inventario por Nicho" : "Frecuencia de Compras"}
                   </h3>
-                  <p className="text-xs text-gray-400">
+                  <p className="text-xs text-gray-400 truncate">
                     {isAdmin ? "Volumen real de piezas por categoría" : "Gastos calculados por mes (2026)"}
                   </p>
                 </div>
-                <span className="text-[10px] font-bold px-2 py-1 bg-gray-100 rounded-lg text-gray-600">
+                <span className="text-[10px] font-bold px-2 py-1 bg-gray-100 rounded-lg text-gray-600 shrink-0">
                   {isAdmin ? `${products.length} Total` : "Semestre"}
                 </span>
               </div>
 
-              {/* Visual Dynamic Bar Chart */}
-              <div className="flex items-end justify-between gap-3 h-36 pt-4 px-2">
-                {isAdmin ? (
-                  categoryDistributionData.map((bar, idx) => (
-                    <div key={idx} className="flex-1 flex flex-col items-center gap-2 h-full justify-end" title={`${bar.category}: ${bar.count} productos`}>
+              {/* Visual Dynamic Bar Chart with Internal Horizontal Scroll Container */}
+              <div className="relative w-full overflow-hidden my-auto">
+                <div 
+                  className={`flex items-end gap-3 h-36 pt-4 pb-2 px-1 overflow-x-auto overflow-y-hidden select-none cursor-grab active:cursor-grabbing ${
+                    categoryDistributionData.length <= 4 ? "justify-between" : "justify-start"
+                  }`}
+                  style={{
+                    scrollbarWidth: "thin",
+                    scrollbarColor: "rgba(156, 163, 175, 0.4) transparent"
+                  }}
+                  onWheel={(e) => {
+                    if (e.deltaY !== 0 && categoryDistributionData.length > 4) {
+                      e.currentTarget.scrollLeft += e.deltaY;
+                    }
+                  }}
+                >
+                  {isAdmin ? (
+                    categoryDistributionData.map((bar, idx) => (
                       <div 
-                        className={`w-full rounded-xl transition-all ${bar.count > 0 ? "bg-[#e07a3f]" : "bg-gray-200"}`} 
-                        style={{ height: `${bar.heightPct}%` }}
-                      />
-                      <span className="text-[9px] font-medium text-gray-400 truncate max-w-[36px]">{bar.category}</span>
-                    </div>
-                  ))
-                ) : (
-                  monthlySpendData.map((bar, idx) => (
-                    <div key={idx} className="flex-1 flex flex-col items-center gap-2 h-full justify-end" title={`${bar.month}: $${bar.total.toFixed(2)}`}>
-                      <div 
-                        className={`w-full rounded-xl transition-all ${bar.hasData ? "bg-[#e07a3f]" : "bg-gray-200"}`} 
-                        style={{ height: `${bar.heightPct}%` }}
-                      />
-                      <span className="text-[10px] font-medium text-gray-400">{bar.month}</span>
-                    </div>
-                  ))
-                )}
+                        key={idx} 
+                        className={`flex flex-col items-center gap-2 h-full justify-end group ${
+                          categoryDistributionData.length <= 4 ? "flex-1 min-w-0" : "w-14 shrink-0"
+                        }`} 
+                        title={`${bar.category}: ${bar.count} productos`}
+                      >
+                        <span className="text-[10px] font-bold text-gray-700 opacity-0 group-hover:opacity-100 transition-opacity">
+                          {bar.count}
+                        </span>
+                        <div 
+                          className={`w-full rounded-2xl transition-all duration-300 ${
+                            bar.count > 0 ? "bg-[#e07a3f] shadow-sm shadow-[#e07a3f]/20 hover:brightness-105" : "bg-gray-200"
+                          }`} 
+                          style={{ height: `${bar.heightPct}%` }}
+                        />
+                        <span className="text-[10px] font-medium text-gray-400 truncate max-w-full text-center" title={bar.category}>
+                          {bar.category}
+                        </span>
+                      </div>
+                    ))
+                  ) : (
+                    monthlySpendData.map((bar, idx) => (
+                      <div key={idx} className="flex-1 flex flex-col items-center gap-2 h-full justify-end" title={`${bar.month}: $${bar.total.toFixed(2)}`}>
+                        <div 
+                          className={`w-full rounded-2xl transition-all ${bar.hasData ? "bg-[#e07a3f]" : "bg-gray-200"}`} 
+                          style={{ height: `${bar.heightPct}%` }}
+                        />
+                        <span className="text-[10px] font-medium text-gray-400">{bar.month}</span>
+                      </div>
+                    ))
+                  )}
+                </div>
               </div>
 
               <div className="mt-4 pt-3 border-t border-gray-100 flex items-center justify-between text-xs text-gray-500">
-                <span className="flex items-center gap-1.5">
+                <span className="flex items-center gap-1.5 shrink-0">
                   <span className="w-2 h-2 rounded-full bg-[#e07a3f]" /> 
                   {isAdmin ? "Con existencias" : "Compras registradas"}
                 </span>
-                <span className="text-gray-400">
-                  {isAdmin ? `${categories.length} categorías analizadas` : (orders.length === 0 ? "0 transacciones aún" : `${orders.length} pedidos`)}
+                <span className="text-gray-400 text-right truncate pl-2">
+                  {isAdmin 
+                    ? `${categories.length} nichos ${categoryDistributionData.length > 4 ? "• Desliza ↔" : ""}` 
+                    : (orders.length === 0 ? "0 transacciones aún" : `${orders.length} pedidos`)}
                 </span>
               </div>
             </div>
