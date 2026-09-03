@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState, useMemo, useRef } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence, Variants } from "framer-motion";
@@ -181,34 +181,6 @@ export function CartDrawer() {
   const [selectedCardId, setSelectedCardId] = useState<string>("");
   const [hoveredPaymentMethod, setHoveredPaymentMethod] = useState<string | null>(null);
   const [isWalletOpen, setIsWalletOpen] = useState(false);
-  const [hoveredCardId, setHoveredCardId] = useState<string | null>(null);
-
-  // Wallet Interaction Stability & Debounced Leave Timer (Eliminates all hover jitter/flicker)
-  const closeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-
-  const handleOpenWallet = () => {
-    if (closeTimeoutRef.current) {
-      clearTimeout(closeTimeoutRef.current);
-      closeTimeoutRef.current = null;
-    }
-    setIsWalletOpen(true);
-  };
-
-  const handleCloseWallet = (immediate = false) => {
-    if (closeTimeoutRef.current) {
-      clearTimeout(closeTimeoutRef.current);
-      closeTimeoutRef.current = null;
-    }
-    if (immediate) {
-      setIsWalletOpen(false);
-      setHoveredCardId(null);
-      return;
-    }
-    closeTimeoutRef.current = setTimeout(() => {
-      setIsWalletOpen(false);
-      setHoveredCardId(null);
-    }, 220);
-  };
 
   // Quick Address Inline Form
   const [isEditingAddress, setIsEditingAddress] = useState(false);
@@ -1127,22 +1099,21 @@ export function CartDrawer() {
                               </button>
                             </div>
 
-                            {/* 2. THE BLUE WALLET SLEEVE ("EMPAQUE AZUL / BOLSITA") */}
+                            {/* 2. THE BLUE WALLET SLEEVE ("EMPAQUE AZUL / BOLSITA") - 100% CLICK-ONLY */}
                             <div 
-                              className="relative w-full max-w-[370px] mx-auto pt-24 pb-2 select-none"
-                              onMouseEnter={handleOpenWallet}
-                              onMouseLeave={() => handleCloseWallet(false)}
+                              className="relative w-full max-w-[370px] mx-auto pt-16 pb-2 select-none"
                             >
                               {/* Background Base of Wallet Pocket with bottom-only rounded clipPath */}
                               <div 
-                                className="relative w-full h-[155px] rounded-3xl bg-gradient-to-b from-[#080e1c] via-[#0b1426] to-[#060a13] border border-slate-800/80 shadow-[0_18px_40px_rgba(6,10,19,0.5)] overflow-visible"
+                                onClick={() => setIsWalletOpen(!isWalletOpen)}
+                                className="relative w-full h-[155px] rounded-3xl bg-gradient-to-b from-[#080e1c] via-[#0b1426] to-[#060a13] border border-slate-800/80 shadow-[0_18px_40px_rgba(6,10,19,0.5)] overflow-visible cursor-pointer"
                                 style={{ clipPath: "inset(-350px -20px 0px -20px round 0px 0px 1.5rem 1.5rem)" }}
                               >
                                 
                                 {/* Inner Shadow & Leather texture depth */}
                                 <div className="absolute inset-0 rounded-3xl bg-[radial-gradient(ellipse_at_top,rgba(30,58,138,0.25),transparent_70%)] pointer-events-none" />
 
-                                {/* The Layered Cards Rising Upwards out of the Wallet */}
+                                {/* The Layered Cards Rising Upwards with 1-finger separation (approx 24px) */}
                                 {orderedCards.map((card, idx) => {
                                   // Assign distinct luxury theme (matching video colors: Blue 4120, White 4916, Coral 0019)
                                   let theme = {
@@ -1184,51 +1155,43 @@ export function CartDrawer() {
                                   }
 
                                   const isSelected = card.id === activeCard.id;
-                                  const isCardHovered = hoveredCardId === card.id;
 
-                                  // Calculate vertical offsets for upward accordion deployment
-                                  // In orderedCards: deepest cards first (idx 0), activeCard last (idx = length - 1)
+                                  // Calculate vertical offsets for 1-finger upward accordion stacking (24px separation)
                                   const totalCards = orderedCards.length;
                                   const depthFromFront = totalCards - 1 - idx;
 
-                                  // When closed: securely nested inside pocket, finishes well above wallet bottom
-                                  const closedY = 6 - depthFromFront * 7;
+                                  // When closed: nested inside pocket
+                                  const closedY = 6 - depthFromFront * 5;
                                   const closedScale = 1 - depthFromFront * 0.035;
                                   const closedOpacity = 1 - depthFromFront * 0.12;
 
-                                  // When open: cards slide UPWARDS out of the pocket
-                                  // Staggered by 42px so the logo AND card number are 100% visible on each card
-                                  const openY = -depthFromFront * 42;
-                                  const openScale = isCardHovered ? 1.025 : 1;
-                                  const zIndex = isCardHovered ? 60 : (15 + idx * 5);
+                                  // When open: "un dedo de separación" (24px separation step)
+                                  const openY = -depthFromFront * 24;
+                                  const zIndex = 15 + idx * 5;
 
                                   return (
                                     <motion.div
                                       key={card.id}
-                                      onMouseEnter={() => setHoveredCardId(card.id)}
-                                      onMouseLeave={() => setHoveredCardId(null)}
                                       onClick={(e) => {
                                         e.stopPropagation();
                                         setSelectedCardId(card.id);
-                                        handleCloseWallet(true);
+                                        setIsWalletOpen(false);
                                       }}
                                       initial={false}
                                       animate={{
                                         y: isWalletOpen ? openY : closedY,
-                                        scale: isWalletOpen ? openScale : closedScale,
+                                        scale: isWalletOpen ? 1 : closedScale,
                                         opacity: isWalletOpen ? 1 : closedOpacity,
                                         zIndex: zIndex,
                                       }}
                                       transition={{
                                         type: "spring",
-                                        stiffness: 350,
-                                        damping: 26,
+                                        stiffness: 340,
+                                        damping: 28,
                                         mass: 0.7
                                       }}
                                       style={{ transformStyle: "preserve-3d" }}
-                                      className={`absolute left-[6%] w-[88%] h-[116px] rounded-2xl p-3.5 sm:p-4 ${theme.bg} ${theme.text} ${theme.border} ${theme.shadow} flex flex-col justify-between cursor-pointer select-none border transition-all overflow-hidden ${
-                                        isCardHovered ? "ring-2 ring-white/50 brightness-105" : ""
-                                      }`}
+                                      className={`absolute left-[6%] w-[88%] h-[116px] rounded-2xl p-3 sm:p-3.5 ${theme.bg} ${theme.text} ${theme.border} ${theme.shadow} flex flex-col justify-between cursor-pointer select-none border transition-colors overflow-hidden`}
                                     >
                                       {/* Specular curved reflection glint */}
                                       <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/10 to-transparent pointer-events-none" />
@@ -1255,8 +1218,8 @@ export function CartDrawer() {
                                         </div>
                                       </div>
 
-                                      {/* Card Number (Placed immediately below top row for 100% visibility during accordion fan-out) */}
-                                      <div className="relative z-10 mt-1 sm:mt-1.5">
+                                      {/* Card Number */}
+                                      <div className="relative z-10 mt-1">
                                         <p className="font-mono font-bold text-sm sm:text-base tracking-[0.2em] drop-shadow-sm opacity-95">
                                           {card.number}
                                         </p>
@@ -1282,14 +1245,11 @@ export function CartDrawer() {
 
                                 {/* Front Flap Overlay of the Blue Wallet Sleeve */}
                                 <div 
-                                  onClick={() => {
-                                    if (isWalletOpen) {
-                                      handleCloseWallet(true);
-                                    } else {
-                                      handleOpenWallet();
-                                    }
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setIsWalletOpen(!isWalletOpen);
                                   }}
-                                  className="absolute bottom-0 inset-x-0 h-[115px] rounded-b-3xl rounded-t-2xl bg-gradient-to-b from-[#0e172a]/95 via-[#0b1324]/98 to-[#060a12] border-t border-sky-400/30 border-x border-b border-slate-800 shadow-[0_-10px_20px_rgba(0,0,0,0.35),0_15px_30px_rgba(5,9,18,0.5)] backdrop-blur-xl p-3.5 flex flex-col justify-between cursor-pointer z-30 transition-all hover:border-sky-400/50"
+                                  className="absolute bottom-0 inset-x-0 h-[115px] rounded-b-3xl rounded-t-2xl bg-gradient-to-b from-[#0e172a]/95 via-[#0b1324]/98 to-[#060a12] border-t border-sky-400/30 border-x border-b border-slate-800 shadow-[0_-10px_20px_rgba(0,0,0,0.35),0_15px_30px_rgba(5,9,18,0.5)] backdrop-blur-xl p-3.5 flex flex-col justify-between cursor-pointer z-30 transition-all hover:border-sky-400/50 active:scale-[0.99]"
                                 >
                                   {/* Top Pocket Arc Lip & Specular Highlight */}
                                   <div className="absolute inset-x-6 top-0 h-[1.5px] bg-gradient-to-r from-transparent via-sky-300 to-transparent opacity-80" />
@@ -1305,8 +1265,8 @@ export function CartDrawer() {
                                         LUMINA VAULT
                                       </span>
                                     </div>
-                                    <span className="font-sans text-[10px] font-semibold text-sky-300/80 bg-sky-950/60 px-2 py-0.5 rounded-full border border-sky-800/50">
-                                      {isWalletOpen ? "Toca para cerrar" : "Pasa el cursor para abrir"}
+                                    <span className="font-sans text-[10px] font-semibold text-sky-300/90 bg-sky-950/70 px-2.5 py-0.5 rounded-full border border-sky-800/60 shadow-2xs">
+                                      {isWalletOpen ? "Clic para cerrar wallet" : "Clic para abrir wallet"}
                                     </span>
                                   </div>
 
