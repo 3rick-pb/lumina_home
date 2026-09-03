@@ -836,8 +836,8 @@ export function CartDrawer() {
                     >
                       <ArrowLeft className="w-3.5 h-3.5" /> Volver a la Bolsa
                     </button>
-                    <h2 className="font-display font-bold text-2xl sm:text-3xl text-gray-900">
-                      Método de Pago & Entrega
+                    <h2 className="font-sans font-extrabold text-2xl sm:text-3xl text-gray-950 tracking-tight">
+                      Método de Pago y Entrega
                     </h2>
                     <p className="text-xs text-gray-500 mt-0.5">
                       Configura tu dirección y selecciona tu método de pago preferido.
@@ -943,28 +943,28 @@ export function CartDrawer() {
                           </span>
                         </div>
 
-                        {/* WHITE LIQUID GLASS FLOATING DOCK (Horizontal Sliding Physics Inspired by iOS 27 Beta Video) */}
-                        <div className="relative p-1.5 rounded-full bg-white/75 backdrop-blur-2xl border border-white/85 shadow-[0_10px_32px_rgba(0,0,0,0.06),inset_0_1.5px_2px_rgba(255,255,255,1),inset_0_-1px_1.5px_rgba(0,0,0,0.02)] grid grid-cols-4 gap-1.5 max-w-lg mx-auto">
+                        {/* WHITE LIQUID GLASS FLOATING DOCK (Clean, Serious Financial Typography, No Bottom Line) */}
+                        <div className="relative p-1.5 rounded-full bg-slate-100/90 backdrop-blur-2xl border border-white/80 shadow-[inset_0_2px_4px_rgba(0,0,0,0.03),0_6px_20px_rgba(0,0,0,0.04)] grid grid-cols-4 gap-1.5 max-w-lg mx-auto font-sans">
                           {[
                             { 
                               id: "card", 
                               label: "Tarjeta", 
                               renderIcon: (active: boolean) => (
-                                <CreditCard className={`w-4 h-4 transition-colors duration-200 ${active ? "text-[#0071e3]" : "text-gray-600"}`} />
+                                <CreditCard className={`w-4 h-4 transition-colors duration-200 ${active ? "text-gray-950" : "text-gray-500"}`} />
                               ) 
                             },
                             { 
                               id: "apple", 
                               label: "Apple Pay", 
                               renderIcon: (active: boolean) => (
-                                <AppleIcon className={`w-4 h-4 transition-colors duration-200 ${active ? "text-[#0071e3]" : "text-gray-600"}`} />
+                                <AppleIcon className={`w-4 h-4 transition-colors duration-200 ${active ? "text-gray-950" : "text-gray-500"}`} />
                               ) 
                             },
                             { 
                               id: "google", 
                               label: "Google Pay", 
                               renderIcon: (active: boolean) => (
-                                <div className={`transition-all duration-200 ${active ? "opacity-100 scale-105" : "opacity-70"}`}>
+                                <div className={`transition-all duration-200 ${active ? "opacity-100 scale-105" : "opacity-60 grayscale-[0.2]"}`}>
                                   <GoogleIcon className="w-4 h-4" />
                                 </div>
                               ) 
@@ -973,7 +973,7 @@ export function CartDrawer() {
                               id: "paypal", 
                               label: "PayPal", 
                               renderIcon: (active: boolean) => (
-                                <div className={`transition-all duration-200 ${active ? "opacity-100 scale-105" : "opacity-70"}`}>
+                                <div className={`transition-all duration-200 ${active ? "opacity-100 scale-105" : "opacity-60"}`}>
                                   <PayPalIcon className="w-4 h-4" />
                                 </div>
                               ) 
@@ -987,7 +987,7 @@ export function CartDrawer() {
                                 onClick={() => setSelectedMethod(m.id as typeof selectedMethod)}
                                 className="group relative z-10 py-2.5 px-1 sm:px-2 rounded-full flex flex-col items-center justify-center gap-1 outline-none select-none cursor-pointer transition-all"
                               >
-                                {/* Horizontal Sliding Liquid Glass Droplet with Fluid Spring Inertia */}
+                                {/* Horizontal Sliding Liquid Glass Droplet (Zero Bottom Line) */}
                                 {isActive && (
                                   <motion.div
                                     layoutId="liquidGlassHorizontalBubble"
@@ -997,20 +997,18 @@ export function CartDrawer() {
                                       damping: 24,
                                       mass: 0.6
                                     }}
-                                    className="absolute inset-0 rounded-full bg-white/95 backdrop-blur-2xl border border-white shadow-[0_6px_20px_rgba(0,113,227,0.12),inset_0_1.5px_2px_rgba(255,255,255,1),inset_0_-1px_1.5px_rgba(0,0,0,0.03)]"
+                                    className="absolute inset-0 rounded-full bg-white/95 backdrop-blur-2xl border border-white shadow-[0_4px_16px_rgba(0,0,0,0.08),inset_0_1.5px_2px_rgba(255,255,255,1),inset_0_-1px_1.5px_rgba(0,0,0,0.03)]"
                                   >
                                     {/* Top Specular Curved Glass Highlight Rim */}
                                     <div className="absolute inset-x-3 top-0 h-[1.5px] bg-gradient-to-r from-transparent via-white to-transparent opacity-95" />
                                     {/* Caustic glass reflection glint in corner */}
                                     <div className="absolute top-1 left-3 w-3 h-1 bg-white/95 rounded-full blur-[0.4px]" />
-                                    {/* Subtle bottom liquid refraction */}
-                                    <div className="absolute inset-x-4 bottom-0.5 h-[1px] bg-gradient-to-r from-transparent via-[#0071e3]/20 to-transparent" />
                                   </motion.div>
                                 )}
 
                                 <span className="relative z-10 flex flex-col items-center justify-center gap-1 w-full">
                                   {m.renderIcon(isActive)}
-                                  <span className={`text-[11px] font-sans tracking-tight whitespace-nowrap transition-colors duration-200 ${isActive ? "text-[#0071e3] font-bold" : "text-gray-600 font-medium group-hover:text-gray-900"}`}>
+                                  <span className={`text-[11px] font-sans tracking-tight whitespace-nowrap transition-colors duration-200 ${isActive ? "text-gray-950 font-bold" : "text-gray-600 font-medium group-hover:text-gray-900"}`}>
                                     {m.label}
                                   </span>
                                 </span>
@@ -1183,7 +1181,7 @@ export function CartDrawer() {
                               <ApplePayLogo className="h-8 text-white" />
                             </div>
                             <div>
-                              <h4 className="font-display font-bold text-lg text-white">Apple Pay Express</h4>
+                              <h4 className="font-sans font-bold text-base text-white tracking-tight">Apple Pay</h4>
                               <p className="text-xs text-zinc-400 max-w-sm mt-1 leading-relaxed">
                                 Paga al instante y con total privacidad utilizando Touch ID o Face ID directamente en tu dispositivo Apple.
                               </p>
@@ -1202,7 +1200,7 @@ export function CartDrawer() {
                               <GooglePayLogo className="h-7" />
                             </div>
                             <div>
-                              <h4 className="font-display font-bold text-lg text-gray-900">Google Pay</h4>
+                              <h4 className="font-sans font-bold text-base text-gray-900 tracking-tight">Google Pay</h4>
                               <p className="text-xs text-gray-500 max-w-sm mt-1 leading-relaxed">
                                 Completa tu compra en un toque utilizando las tarjetas y métodos de pago guardados en tu cuenta de Google.
                               </p>
@@ -1221,7 +1219,7 @@ export function CartDrawer() {
                               <PayPalLogo className="h-7" />
                             </div>
                             <div>
-                              <h4 className="font-display font-bold text-lg text-gray-900">PayPal Checkout</h4>
+                              <h4 className="font-sans font-bold text-base text-gray-900 tracking-tight">PayPal</h4>
                               <p className="text-xs text-gray-500 max-w-sm mt-1 leading-relaxed">
                                 Paga con tu saldo de PayPal, cuenta bancaria vinculada o financiamiento sin intereses en cómodos plazos.
                               </p>
@@ -1239,11 +1237,11 @@ export function CartDrawer() {
 
                     {/* Right 5 cols: Order Final Summary & Confirm */}
                     <div className="lg:col-span-5 bg-white p-6 sm:p-7 rounded-[2rem] border border-gray-200/70 shadow-lg space-y-5">
-                      <h4 className="font-display font-bold text-lg text-gray-900 border-b border-gray-100 pb-3">
-                        Resumen del Cargo
+                      <h4 className="font-sans font-bold text-base text-gray-900 border-b border-gray-100 pb-3 tracking-tight uppercase">
+                        Resumen del Pedido
                       </h4>
 
-                      <div className="space-y-3 text-xs sm:text-sm text-gray-600">
+                      <div className="space-y-3 text-xs sm:text-sm text-gray-600 font-sans">
                         <div className="flex justify-between">
                           <span>Subtotal ({items.length} artículos)</span>
                           <span className="font-semibold text-gray-900">${subtotal.toFixed(2)} USD</span>
@@ -1262,7 +1260,7 @@ export function CartDrawer() {
                         </div>
                         <div className="pt-3 border-t border-gray-200 flex justify-between items-baseline">
                           <span className="font-bold text-gray-900">Total Final</span>
-                          <span className="font-display font-bold text-2xl text-blue-700">
+                          <span className="font-sans font-extrabold text-2xl text-gray-950 tracking-tight">
                             ${finalTotal.toFixed(2)} USD
                           </span>
                         </div>
