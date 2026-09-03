@@ -1133,8 +1133,11 @@ export function CartDrawer() {
                               onMouseEnter={handleOpenWallet}
                               onMouseLeave={() => handleCloseWallet(false)}
                             >
-                              {/* Background Base of Wallet Pocket */}
-                              <div className="relative w-full h-[145px] rounded-3xl bg-gradient-to-b from-[#080e1c] via-[#0b1426] to-[#060a13] border border-slate-800/80 shadow-[0_18px_40px_rgba(6,10,19,0.5)] overflow-visible">
+                              {/* Background Base of Wallet Pocket with bottom-only rounded clipPath */}
+                              <div 
+                                className="relative w-full h-[155px] rounded-3xl bg-gradient-to-b from-[#080e1c] via-[#0b1426] to-[#060a13] border border-slate-800/80 shadow-[0_18px_40px_rgba(6,10,19,0.5)] overflow-visible"
+                                style={{ clipPath: "inset(-350px -20px 0px -20px round 0px 0px 1.5rem 1.5rem)" }}
+                              >
                                 
                                 {/* Inner Shadow & Leather texture depth */}
                                 <div className="absolute inset-0 rounded-3xl bg-[radial-gradient(ellipse_at_top,rgba(30,58,138,0.25),transparent_70%)] pointer-events-none" />
@@ -1188,14 +1191,14 @@ export function CartDrawer() {
                                   const totalCards = orderedCards.length;
                                   const depthFromFront = totalCards - 1 - idx;
 
-                                  // When closed: nested inside pocket, activeCard in front
-                                  const closedY = 22 - depthFromFront * 9;
+                                  // When closed: securely nested inside pocket, finishes well above wallet bottom
+                                  const closedY = 6 - depthFromFront * 7;
                                   const closedScale = 1 - depthFromFront * 0.035;
                                   const closedOpacity = 1 - depthFromFront * 0.12;
 
                                   // When open: cards slide UPWARDS out of the pocket
-                                  // Staggered by 44px so the logo AND card number are 100% visible on each card
-                                  const openY = -depthFromFront * 44;
+                                  // Staggered by 42px so the logo AND card number are 100% visible on each card
+                                  const openY = -depthFromFront * 42;
                                   const openScale = isCardHovered ? 1.025 : 1;
                                   const zIndex = isCardHovered ? 60 : (15 + idx * 5);
 
@@ -1223,7 +1226,7 @@ export function CartDrawer() {
                                         mass: 0.7
                                       }}
                                       style={{ transformStyle: "preserve-3d" }}
-                                      className={`absolute left-[6%] w-[88%] h-[126px] rounded-2xl p-3.5 sm:p-4 ${theme.bg} ${theme.text} ${theme.border} ${theme.shadow} flex flex-col justify-between cursor-pointer select-none border transition-all overflow-hidden ${
+                                      className={`absolute left-[6%] w-[88%] h-[116px] rounded-2xl p-3.5 sm:p-4 ${theme.bg} ${theme.text} ${theme.border} ${theme.shadow} flex flex-col justify-between cursor-pointer select-none border transition-all overflow-hidden ${
                                         isCardHovered ? "ring-2 ring-white/50 brightness-105" : ""
                                       }`}
                                     >
@@ -1286,7 +1289,7 @@ export function CartDrawer() {
                                       handleOpenWallet();
                                     }
                                   }}
-                                  className="absolute bottom-0 inset-x-0 h-[105px] rounded-b-3xl rounded-t-2xl bg-gradient-to-b from-[#0e172a]/95 via-[#0b1324]/98 to-[#060a12] border-t border-sky-400/30 border-x border-b border-slate-800 shadow-[0_-10px_20px_rgba(0,0,0,0.35),0_15px_30px_rgba(5,9,18,0.5)] backdrop-blur-xl p-3.5 flex flex-col justify-between cursor-pointer z-30 transition-all hover:border-sky-400/50"
+                                  className="absolute bottom-0 inset-x-0 h-[115px] rounded-b-3xl rounded-t-2xl bg-gradient-to-b from-[#0e172a]/95 via-[#0b1324]/98 to-[#060a12] border-t border-sky-400/30 border-x border-b border-slate-800 shadow-[0_-10px_20px_rgba(0,0,0,0.35),0_15px_30px_rgba(5,9,18,0.5)] backdrop-blur-xl p-3.5 flex flex-col justify-between cursor-pointer z-30 transition-all hover:border-sky-400/50"
                                 >
                                   {/* Top Pocket Arc Lip & Specular Highlight */}
                                   <div className="absolute inset-x-6 top-0 h-[1.5px] bg-gradient-to-r from-transparent via-sky-300 to-transparent opacity-80" />
