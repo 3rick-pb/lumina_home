@@ -22,10 +22,7 @@ import {
   ChevronRight,
   Trash2,
   RotateCcw,
-  CreditCard,
-  Layers,
-  ChevronDown,
-  ChevronUp
+  CreditCard
 } from "lucide-react";
 import { useCartStore } from "@/lib/store";
 import { useUserStore, Order, PaymentCard, ShippingAddress } from "@/lib/userStore";
@@ -180,7 +177,8 @@ export function CartDrawer() {
   const [selectedMethod, setSelectedMethod] = useState<"card" | "apple" | "google" | "paypal">("card");
   const [selectedCardId, setSelectedCardId] = useState<string>("");
   const [hoveredPaymentMethod, setHoveredPaymentMethod] = useState<string | null>(null);
-  const [isCardsExpanded, setIsCardsExpanded] = useState(false);
+  const [isWalletOpen, setIsWalletOpen] = useState(false);
+  const [hoveredCardId, setHoveredCardId] = useState<string | null>(null);
 
   // Quick Address Inline Form
   const [isEditingAddress, setIsEditingAddress] = useState(false);
@@ -340,12 +338,9 @@ export function CartDrawer() {
   const activeCard = availableCards.find(c => c.id === effectiveSelectedCardId) || availableCards[0];
 
   const orderedCards = useMemo(() => {
-    if (!isCardsExpanded) {
-      const others = availableCards.filter(c => c.id !== activeCard.id);
-      return [activeCard, ...others];
-    }
-    return availableCards;
-  }, [availableCards, activeCard, isCardsExpanded]);
+    const others = availableCards.filter(c => c.id !== activeCard.id);
+    return [...others, activeCard];
+  }, [availableCards, activeCard]);
 
   // Recommended products for the bottom of the cart page
   const recommendedProducts = useMemo(() => {
@@ -1070,27 +1065,22 @@ export function CartDrawer() {
                           );
                         })()}
 
-                        {/* VIEW 1: CREDIT / DEBIT CARD DETAILS WITH 3D ACCORDION STACK */}
+                        {/* VIEW 1: CREDIT / DEBIT CARD DETAILS WITH BLUE WALLET SLEEVE */}
                         {selectedMethod === "card" && (
                           <div className="pt-1 space-y-4 font-sans">
-                            {/* Top Card Management & Redirect Header Box (Recuadro Chévere) */}
-                            <div className="p-4 sm:p-5 rounded-2xl bg-slate-50/90 border border-slate-200/80 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-sm">
-                              <div className="flex items-center gap-3">
-                                <div className="w-10 h-10 rounded-xl bg-gray-950 text-white flex items-center justify-center shadow-md shrink-0">
-                                  <CreditCard className="w-5 h-5" />
+                            {/* 1. Sleek Compact Header Bar (Not Bulky, Modern & Refined) */}
+                            <div className="flex items-center justify-between px-4 py-2.5 rounded-2xl bg-slate-100/80 border border-slate-200/70 shadow-2xs">
+                              <div className="flex items-center gap-2.5">
+                                <div className="w-6 h-6 rounded-lg bg-gray-900 text-white flex items-center justify-center shadow-xs shrink-0">
+                                  <CreditCard className="w-3.5 h-3.5" />
                                 </div>
-                                <div>
-                                  <div className="flex items-center gap-2">
-                                    <h4 className="font-sans font-bold text-xs uppercase tracking-wider text-gray-900">
-                                      Tarjetas Guardadas en tu Cuenta
-                                    </h4>
-                                    <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-white border border-gray-200 text-gray-600 font-semibold shadow-2xs">
-                                      {availableCards.length} {availableCards.length === 1 ? "tarjeta" : "tarjetas"}
-                                    </span>
-                                  </div>
-                                  <p className="text-[11px] text-gray-500 mt-0.5">
-                                    Elige tu tarjeta para procesar el pago o añade una nueva en tu perfil.
-                                  </p>
+                                <div className="flex items-center gap-2">
+                                  <span className="font-sans font-bold text-xs text-gray-900 tracking-tight">
+                                    Mis Tarjetas
+                                  </span>
+                                  <span className="text-[10px] font-mono font-semibold px-2 py-0.5 rounded-full bg-white text-gray-600 border border-gray-200 shadow-2xs">
+                                    {availableCards.length} disponibles
+                                  </span>
                                 </div>
                               </div>
 
@@ -1100,178 +1090,246 @@ export function CartDrawer() {
                                   setIsOpen(false);
                                   router.push("/profile?tab=cards");
                                 }}
-                                className="self-start sm:self-auto flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-gray-900 hover:bg-gray-800 text-white text-xs font-semibold transition-all shadow-sm hover:scale-[1.02] cursor-pointer shrink-0"
+                                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white hover:bg-gray-50 text-gray-800 text-[11px] font-semibold transition-all border border-gray-200 shadow-2xs hover:shadow-xs hover:border-gray-300 cursor-pointer"
                               >
-                                <Plus className="w-3.5 h-3.5" />
-                                <span>Agregar nueva tarjeta</span>
+                                <Plus className="w-3 h-3 text-gray-700" />
+                                <span>Nueva tarjeta</span>
                               </button>
                             </div>
 
-                            {/* 3D STACK INTERACTIVE STAGE (Wallet Accordion Stack) */}
-                            <div className="relative pt-1 pb-4">
-                              {/* Interactive Hint Header */}
-                              <div className="flex items-center justify-between px-1 mb-3 text-xs text-gray-500">
-                                <span className="flex items-center gap-1.5 font-medium text-[11px] sm:text-xs">
-                                  <Layers className="w-3.5 h-3.5 text-blue-600 shrink-0" />
-                                  {isCardsExpanded 
-                                    ? "Toca una tarjeta para seleccionarla y plegar" 
-                                    : "Toca las tarjetas para desplegar la colección"}
-                                </span>
-                                <button
-                                  type="button"
-                                  onClick={() => setIsCardsExpanded(!isCardsExpanded)}
-                                  className="flex items-center gap-1 font-bold text-xs text-gray-900 hover:text-blue-600 transition-colors cursor-pointer"
-                                >
-                                  <span>{isCardsExpanded ? "Plegar" : "Desplegar"}</span>
-                                  {isCardsExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-                                </button>
-                              </div>
+                            {/* 2. THE BLUE WALLET SLEEVE ("EMPAQUE AZUL / BOLSITA") */}
+                            <div 
+                              className="relative w-full max-w-[370px] mx-auto pt-20 pb-1 select-none"
+                              onMouseEnter={() => setIsWalletOpen(true)}
+                              onMouseLeave={() => {
+                                setIsWalletOpen(false);
+                                setHoveredCardId(null);
+                              }}
+                            >
+                              {/* Background Base of Wallet Pocket */}
+                              <div className="relative w-full h-[145px] rounded-3xl bg-gradient-to-b from-[#080e1c] via-[#0b1426] to-[#060a13] border border-slate-800/80 shadow-[0_18px_40px_rgba(6,10,19,0.5)] overflow-visible">
+                                
+                                {/* Inner Shadow & Leather texture depth */}
+                                <div className="absolute inset-0 rounded-3xl bg-[radial-gradient(ellipse_at_top,rgba(30,58,138,0.25),transparent_70%)] pointer-events-none" />
 
-                              {/* 3D Perspective Stage */}
-                              <motion.div 
-                                className="relative w-full max-w-[420px] mx-auto"
-                                animate={{
-                                  height: isCardsExpanded ? `${orderedCards.length * 115 + 110}px` : "230px",
-                                }}
-                                transition={{ type: "spring", stiffness: 320, damping: 28 }}
-                              >
+                                {/* The Layered Cards Rising Upwards out of the Wallet */}
                                 {orderedCards.map((card, idx) => {
-                                  // Determine distinct luxury theme matching user's video
+                                  // Assign distinct luxury theme (matching video colors: Blue 4120, White 4916, Coral 0019)
                                   let theme = {
                                     bg: "bg-gradient-to-tr from-[#0a192f] via-[#10316b] to-[#0284c7]",
                                     text: "text-white",
-                                    border: "border-blue-400/30",
-                                    shadow: "shadow-[0_20px_50px_rgba(2,132,199,0.35)]",
+                                    border: "border-blue-400/40",
+                                    shadow: "shadow-[0_12px_28px_rgba(2,132,199,0.3)]",
                                     logoColor: "#FFFFFF",
-                                    name: "SAPPHIRE ELITE"
+                                    name: "SAPPHIRE"
                                   };
 
                                   if (card.number.includes("4916")) {
                                     theme = {
-                                      bg: "bg-gradient-to-tr from-[#ffffff] via-[#f8fafc] to-[#e2e8f0]",
+                                      bg: "bg-gradient-to-tr from-[#ffffff] via-[#f1f5f9] to-[#e2e8f0]",
                                       text: "text-slate-900",
                                       border: "border-slate-200/90",
-                                      shadow: "shadow-[0_20px_50px_rgba(0,0,0,0.12)]",
+                                      shadow: "shadow-[0_12px_28px_rgba(0,0,0,0.12)]",
                                       logoColor: "#0f172a",
-                                      name: "PLATINUM PURE"
+                                      name: "PLATINUM"
                                     };
                                   } else if (card.number.includes("0019")) {
                                     theme = {
                                       bg: "bg-gradient-to-tr from-[#ea580c] via-[#f97316] to-[#ec4899]",
                                       text: "text-white",
-                                      border: "border-orange-300/30",
-                                      shadow: "shadow-[0_20px_50px_rgba(234,88,12,0.35)]",
+                                      border: "border-orange-300/40",
+                                      shadow: "shadow-[0_12px_28px_rgba(234,88,12,0.3)]",
                                       logoColor: "#FFFFFF",
-                                      name: "CORAL RESERVE"
+                                      name: "CORAL"
                                     };
-                                  } else if (idx % 3 === 1) {
+                                  } else if (idx % 2 === 0) {
                                     theme = {
                                       bg: "bg-gradient-to-tr from-[#0f172a] via-[#1e293b] to-[#334155]",
                                       text: "text-white",
                                       border: "border-slate-600/50",
-                                      shadow: "shadow-[0_20px_50px_rgba(0,0,0,0.5)]",
+                                      shadow: "shadow-[0_12px_28px_rgba(0,0,0,0.4)]",
                                       logoColor: "#FFFFFF",
-                                      name: "OBSIDIAN TITANIUM"
+                                      name: "OBSIDIAN"
                                     };
                                   }
 
                                   const isSelected = card.id === activeCard.id;
+                                  const isCardHovered = hoveredCardId === card.id;
 
-                                  const collapsedY = idx === 0 ? 0 : idx === 1 ? -16 : -30;
-                                  const collapsedScale = idx === 0 ? 1 : idx === 1 ? 0.95 : 0.90;
-                                  const collapsedZIndex = 30 - idx * 10;
-                                  const collapsedOpacity = idx === 0 ? 1 : idx === 1 ? 0.88 : 0.72;
+                                  // Calculate vertical offsets for upward accordion deployment
+                                  // In orderedCards: deepest cards first (idx 0), activeCard last (idx = length - 1)
+                                  const totalCards = orderedCards.length;
+                                  const depthFromFront = totalCards - 1 - idx;
 
-                                  const expandedY = idx * 115;
-                                  const expandedZIndex = 20 + idx;
+                                  // When closed: nested inside pocket, activeCard in front
+                                  const closedY = 26 - depthFromFront * 10;
+                                  const closedScale = 1 - depthFromFront * 0.05;
+                                  const closedOpacity = 1 - depthFromFront * 0.15;
+
+                                  // When open: cards slide UPWARDS out of the pocket
+                                  // Back card slides highest (-72px), middle (-36px), front (2px)
+                                  const openBaseY = -depthFromFront * 36;
+                                  const openY = isCardHovered ? openBaseY - 12 : openBaseY;
+                                  const openScale = isCardHovered ? 1.03 : (1 - depthFromFront * 0.03);
+
+                                  const zIndex = isCardHovered ? 50 : (15 + idx * 5);
 
                                   return (
                                     <motion.div
                                       key={card.id}
-                                      onClick={() => {
+                                      onMouseEnter={() => setHoveredCardId(card.id)}
+                                      onMouseLeave={() => setHoveredCardId(null)}
+                                      onClick={(e) => {
+                                        e.stopPropagation();
                                         setSelectedCardId(card.id);
-                                        setIsCardsExpanded(false);
+                                        setIsWalletOpen(false);
                                       }}
                                       initial={false}
                                       animate={{
-                                        y: isCardsExpanded ? expandedY : collapsedY,
-                                        scale: isCardsExpanded ? 1 : collapsedScale,
-                                        zIndex: isCardsExpanded ? expandedZIndex : collapsedZIndex,
-                                        opacity: isCardsExpanded ? 1 : collapsedOpacity,
-                                        rotateX: isCardsExpanded ? 0 : (idx === 0 ? 0 : 3),
-                                      }}
-                                      whileHover={{
-                                        scale: 1.025,
-                                        zIndex: 60,
+                                        y: isWalletOpen ? openY : closedY,
+                                        scale: isWalletOpen ? openScale : closedScale,
+                                        opacity: isWalletOpen ? 1 : closedOpacity,
+                                        zIndex: zIndex,
                                       }}
                                       transition={{
                                         type: "spring",
-                                        stiffness: 340,
+                                        stiffness: 350,
                                         damping: 26,
-                                        mass: 0.7,
+                                        mass: 0.7
                                       }}
                                       style={{ transformStyle: "preserve-3d" }}
-                                      className={`absolute top-0 left-0 right-0 h-[200px] rounded-3xl p-5 sm:p-6 ${theme.bg} ${theme.text} ${theme.border} ${theme.shadow} flex flex-col justify-between cursor-pointer select-none transition-shadow overflow-hidden border`}
+                                      className={`absolute left-[6%] w-[88%] h-[122px] rounded-2xl p-3.5 sm:p-4 ${theme.bg} ${theme.text} ${theme.border} ${theme.shadow} flex flex-col justify-between cursor-pointer select-none border transition-colors overflow-hidden`}
                                     >
-                                      {/* Gloss reflection highlight */}
+                                      {/* Specular curved reflection glint */}
                                       <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/10 to-transparent pointer-events-none" />
-                                      <div className="absolute inset-[1px] rounded-[23px] border border-white/20 pointer-events-none" />
+                                      <div className="absolute inset-[1px] rounded-[15px] border border-white/20 pointer-events-none" />
 
                                       {/* Top Row: Network & Status */}
                                       <div className="flex items-center justify-between relative z-10">
-                                        <div className="flex items-center gap-2">
-                                          <span className="font-mono text-[9px] sm:text-[10px] tracking-[0.2em] font-extrabold uppercase opacity-80">
+                                        <div className="flex items-center gap-1.5">
+                                          <span className="font-mono text-[8px] sm:text-[9px] tracking-[0.18em] font-extrabold uppercase opacity-80">
                                             {theme.name}
                                           </span>
                                           {isSelected && (
-                                            <span className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-400/30 flex items-center gap-1 backdrop-blur-sm">
-                                              <Check className="w-2.5 h-2.5" /> Seleccionada
-                                            </span>
+                                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
                                           )}
                                         </div>
 
-                                        <div className="flex items-center gap-2">
-                                          <ContactlessIcon className="w-4 h-4 opacity-75" />
+                                        <div className="flex items-center gap-1.5">
+                                          <ContactlessIcon className="w-3.5 h-3.5 opacity-70" />
                                           {card.type === "visa" ? (
-                                            <VisaLogo className="h-4 sm:h-5" fill={theme.logoColor} />
+                                            <VisaLogo className="h-3.5 sm:h-4" fill={theme.logoColor} />
                                           ) : (
-                                            <MastercardLogo className="h-5 sm:h-6" />
+                                            <MastercardLogo className="h-4 sm:h-5" />
                                           )}
                                         </div>
                                       </div>
 
-                                      {/* Center Row: EMV Chip & Masked Number */}
-                                      <div className="relative z-10 flex items-center justify-between my-auto">
-                                        <EmvChip />
-                                        <p className="font-mono font-bold text-base sm:text-lg tracking-[0.22em] drop-shadow-sm opacity-95">
+                                      {/* Card Number (Prominently centered so it's readable when peeking) */}
+                                      <div className="relative z-10 my-auto">
+                                        <p className="font-mono font-bold text-sm sm:text-base tracking-[0.2em] drop-shadow-sm opacity-95">
                                           {card.number}
                                         </p>
                                       </div>
 
-                                      {/* Bottom Row: Holder & Expiry */}
-                                      <div className="flex items-end justify-between relative z-10 pt-1 border-t border-white/15 text-[10px]">
-                                        <div>
-                                          <span className="text-[7px] sm:text-[8px] font-mono opacity-70 uppercase tracking-widest block">
-                                            TITULAR
-                                          </span>
-                                          <p className="font-mono font-bold text-xs tracking-wider uppercase truncate max-w-[170px]">
+                                      {/* Bottom Row: Chip & Holder */}
+                                      <div className="flex items-end justify-between relative z-10 pt-1 border-t border-white/15 text-[9px]">
+                                        <div className="flex items-center gap-2">
+                                          <div className="scale-75 origin-left">
+                                            <EmvChip />
+                                          </div>
+                                          <span className="font-mono font-bold uppercase truncate max-w-[130px] opacity-90">
                                             {card.holder}
-                                          </p>
-                                        </div>
-
-                                        <div className="text-right">
-                                          <span className="text-[7px] sm:text-[8px] font-mono opacity-70 uppercase tracking-widest block">
-                                            VENCE
                                           </span>
-                                          <p className="font-mono font-bold text-xs tracking-wider">
-                                            {card.exp}
-                                          </p>
                                         </div>
+                                        <span className="font-mono font-bold opacity-85">
+                                          {card.exp}
+                                        </span>
                                       </div>
                                     </motion.div>
                                   );
                                 })}
-                              </motion.div>
+
+                                {/* Front Flap Overlay of the Blue Wallet Sleeve */}
+                                <div 
+                                  onClick={() => setIsWalletOpen(!isWalletOpen)}
+                                  className="absolute bottom-0 inset-x-0 h-[105px] rounded-b-3xl rounded-t-2xl bg-gradient-to-b from-[#0e172a]/95 via-[#0b1324]/98 to-[#060a12] border-t border-sky-400/30 border-x border-b border-slate-800 shadow-[0_-10px_20px_rgba(0,0,0,0.35),0_15px_30px_rgba(5,9,18,0.5)] backdrop-blur-xl p-3.5 flex flex-col justify-between cursor-pointer z-30 transition-all hover:border-sky-400/50"
+                                >
+                                  {/* Top Pocket Arc Lip & Specular Highlight */}
+                                  <div className="absolute inset-x-6 top-0 h-[1.5px] bg-gradient-to-r from-transparent via-sky-300 to-transparent opacity-80" />
+                                  <div className="absolute top-1.5 left-1/2 -translate-x-1/2 w-8 h-1 rounded-full bg-sky-400/30" />
+
+                                  {/* Wallet Sleeve Brand Label */}
+                                  <div className="flex items-center justify-between pt-1">
+                                    <div className="flex items-center gap-2">
+                                      <div className="w-5 h-5 rounded-md bg-sky-500/20 text-sky-300 flex items-center justify-center border border-sky-400/30">
+                                        <Lock className="w-3 h-3" />
+                                      </div>
+                                      <span className="font-mono text-[10px] font-bold text-sky-100 tracking-[0.2em] uppercase">
+                                        LUMINA VAULT
+                                      </span>
+                                    </div>
+                                    <span className="font-sans text-[10px] font-semibold text-sky-300/80 bg-sky-950/60 px-2 py-0.5 rounded-full border border-sky-800/50">
+                                      {isWalletOpen ? "Toca para cerrar" : "Pasa el cursor para abrir"}
+                                    </span>
+                                  </div>
+
+                                  {/* Active Card Indicator on Front Flap */}
+                                  <div className="flex items-center justify-between text-xs text-slate-300 pt-2 border-t border-slate-800/80">
+                                    <div className="flex items-center gap-2">
+                                      <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                                      <span className="font-mono text-[11px] font-semibold text-white tracking-wider">
+                                        {activeCard.number.slice(-9)}
+                                      </span>
+                                    </div>
+                                    <span className="text-[10px] font-medium text-slate-400">
+                                      {activeCard.type === "visa" ? "VISA" : "MASTERCARD"}
+                                    </span>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* 3. ACTIVE CARD INFORMATION PANEL ("Y ABAJO SALDRÁ PUES LA INFORMACIÓN DE LA TARJETA") */}
+                            <div className="p-4 rounded-2xl bg-white border border-gray-200/80 shadow-xs space-y-3 font-sans">
+                              <div className="flex items-center justify-between pb-2 border-b border-gray-100">
+                                <div className="flex items-center gap-2">
+                                  <div className="w-2 h-2 rounded-full bg-emerald-500" />
+                                  <span className="font-sans font-bold text-xs text-gray-900">
+                                    {activeCard.type === "visa" ? "Tarjeta Visa Seleccionada" : "Tarjeta Mastercard Seleccionada"}
+                                  </span>
+                                </div>
+                                <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
+                                  ✓ Lista para pagar
+                                </span>
+                              </div>
+
+                              <div className="grid grid-cols-2 gap-3 text-xs">
+                                <div className="space-y-0.5">
+                                  <span className="text-[9px] font-mono text-gray-400 uppercase tracking-wider block">Número</span>
+                                  <p className="font-mono font-bold text-gray-900 tracking-wider">
+                                    {activeCard.number}
+                                  </p>
+                                </div>
+                                <div className="space-y-0.5 text-right">
+                                  <span className="text-[9px] font-mono text-gray-400 uppercase tracking-wider block">Vencimiento</span>
+                                  <p className="font-mono font-bold text-gray-900">
+                                    {activeCard.exp}
+                                  </p>
+                                </div>
+                                <div className="space-y-0.5">
+                                  <span className="text-[9px] font-mono text-gray-400 uppercase tracking-wider block">Titular</span>
+                                  <p className="font-sans font-semibold text-gray-800 uppercase truncate">
+                                    {activeCard.holder}
+                                  </p>
+                                </div>
+                                <div className="space-y-0.5 text-right">
+                                  <span className="text-[9px] font-mono text-gray-400 uppercase tracking-wider block">Seguridad</span>
+                                  <p className="font-sans font-semibold text-emerald-600 flex items-center justify-end gap-1">
+                                    <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" /> SSL Cifrado
+                                  </p>
+                                </div>
+                              </div>
                             </div>
                           </div>
                         )}
