@@ -22,11 +22,97 @@ import {
   ChevronRight,
   PlusCircle,
   Trash2,
-  RotateCcw
+  RotateCcw,
+  CreditCard
 } from "lucide-react";
 import { useCartStore } from "@/lib/store";
 import { useUserStore, Order, PaymentCard, ShippingAddress } from "@/lib/userStore";
 import { useCatalogStore } from "@/lib/catalogStore";
+
+// High-Ticket Payment Method SVGs & Micro-Components
+function ApplePayLogo({ className = "h-4" }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 170 80" fill="currentColor">
+      <path d="M45.54 39.46c-.07-9.5 7.74-14.1 8.1-14.33-4.42-6.46-11.29-7.34-13.73-7.44-5.83-.59-11.41 3.44-14.37 3.44-2.99 0-7.56-3.36-12.44-3.26-6.38.1-12.28 3.73-15.58 9.47-6.68 11.59-1.7 28.75 4.8 38.13 3.18 4.6 6.96 9.77 11.93 9.58 4.79-.19 6.6-3.08 12.39-3.08 5.8 0 7.42 3.08 12.45 2.98 5.12-.1 8.37-4.66 11.52-9.28 3.65-5.33 5.15-10.5 5.25-10.77-.12-.05-10.19-3.91-10.32-15.44zM37.94 13.56c2.61-3.17 4.38-7.59 3.9-12.01-3.77.15-8.33 2.51-11.03 5.67-2.39 2.76-4.48 7.25-3.92 11.54 4.21.33 8.44-2.03 11.05-5.2z" />
+      <path d="M83.4 5.37h15.48c10.75 0 17.52 6.55 17.52 16.54 0 9.99-6.86 16.59-17.65 16.59h-5.46v24.63H83.4V5.37zm15.15 25.1c5.96 0 9.29-3.32 9.29-8.56 0-5.23-3.33-8.52-9.29-8.52h-7.25v17.08h7.25zm22.42 22.04c0-8.24 6.32-13.52 17.57-14.19l7.08-.43v-3.72c0-4.14-2.88-6.61-7.85-6.61-4.75 0-7.79 2.22-8.39 5.56h-7.39c.65-7.1 6.86-11.83 15.99-11.83 9.4 0 15.63 5.06 15.63 12.87v34.05h-7.61v-7.88c-2.34 5.28-7.78 8.49-14.07 8.49-8.5 0-14.28-5.37-14.28-13.23zm24.65-4.41v-3.98l-6.33.43c-6.17.43-9.45 3.01-9.45 7.42 0 4.41 3.28 6.99 8.28 6.99 6.27 0 10.45-4.25 10.45-10.86zm18.3 27.69l7.85-23.75-13.57-36.21h8.5l9.21 27.18 9.17-27.18h8.37l-19.67 50.15h-8.08z" />
+    </svg>
+  );
+}
+
+function GooglePayLogo({ className = "h-4" }: { className?: string }) {
+  return (
+    <div className={`flex items-center gap-1 font-sans ${className}`}>
+      <svg className="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24">
+        <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
+        <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
+        <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" />
+        <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" />
+      </svg>
+      <span className="text-xs font-bold text-gray-800 tracking-tight">Pay</span>
+    </div>
+  );
+}
+
+function PayPalLogo({ className = "h-4" }: { className?: string }) {
+  return (
+    <div className={`flex items-center gap-1 ${className}`}>
+      <svg className="w-3.5 h-3.5 shrink-0" viewBox="0 0 100 100" fill="none">
+        <path d="M72.2 27.8c-1.4 10.3-9 16.4-19.3 16.4H39.2l-4.5 28.5h-13l9-57.1h25.8c10.4 0 17.5 5.1 15.7 12.2z" fill="#003087" />
+        <path d="M79.4 39.8c-1.8 11.2-10 18.2-21.2 18.2H45.8l-3.3 20.8h-12l7.2-45.7h17.9c11.5 0 21.6 0 24 6.7z" fill="#0079C1" />
+      </svg>
+      <span className="text-xs font-extrabold italic text-[#003087] tracking-tight">PayPal</span>
+    </div>
+  );
+}
+
+function MastercardLogo({ className = "h-7" }: { className?: string }) {
+  return (
+    <div className={`flex flex-col items-center justify-center ${className}`}>
+      <svg className="h-6 sm:h-7 w-auto" viewBox="0 0 138 84" fill="none">
+        <circle cx="42" cy="42" r="42" fill="#EB001B" />
+        <circle cx="96" cy="42" r="42" fill="#F79E1B" />
+        <path d="M69 13.3a41.87 41.87 0 0 1 0 57.4 41.87 41.87 0 0 1 0-57.4z" fill="#FF5F00" />
+      </svg>
+      <span className="text-[7px] font-sans font-bold text-white/90 tracking-tight lowercase -mt-0.5">mastercard</span>
+    </div>
+  );
+}
+
+function VisaLogo({ className = "h-5" }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 141 45" fill="none">
+      <path d="M57.6 1.2L37.9 43.8H25.3L15.4 9.6c-.6-2.4-1.2-3.3-3.1-4.3C9.2 3.6 4.4 2.2 0 1.2l.6 2.6c6.2 1.3 13.3 3.6 17.5 6.3 2.7 1.8 3.5 3.3 4.4 7.1l10.5 40h13.2L68.8 1.2H57.6zm44.2 29.1c.1-7.9-11.2-8.3-11.1-11.9 0-3.6 4-3.8 8.2-3.2 2.3.3 8.3 1.8 10.8 3l2-9.4c-2.8-1-7.4-2-12.7-2-13.4 0-22.9 7-23 17.1-.1 7.4 6.7 11.6 11.8 14.1 5.2 2.5 7 4.1 7 6.4-.1 3.5-4.3 5.1-8.3 5.1-5.5 0-11.4-1.6-14.7-3.1l-2.1 9.7c3 1.4 8.6 2.6 14.4 2.6 14.2.2 23.6-6.8 23.7-17.5zm37.6 13.5h11.5L141 1.2h-10.7c-2.4 0-4.4 1.4-5.3 3.5L108.6 43.8h13.2l2.6-7.3h16.2l1.6 7.3zm-14.1-17.2l6.5-17.7 3.8 17.7h-10.3zm-48.4-25.4L66.6 43.8h12.6l10.3-42.6H86.9z" fill="#FFFFFF" />
+    </svg>
+  );
+}
+
+function ContactlessIcon({ className = "w-5 h-5" }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+      <path d="M8.5 16.5a5 5 0 0 1 0-9" />
+      <path d="M12 19a8.5 8.5 0 0 1 0-14" />
+      <path d="M15.5 21.5a12 12 0 0 1 0-19" />
+    </svg>
+  );
+}
+
+function EmvChip() {
+  return (
+    <div className="relative w-11 h-8 sm:w-12 sm:h-9 rounded-md bg-gradient-to-br from-[#f3db8a] via-[#dfba56] to-[#9c7923] p-[1.5px] shadow-[inset_0_1px_2px_rgba(255,255,255,0.7),0_2px_6px_rgba(0,0,0,0.5)] border border-[#7a5b14]/70 overflow-hidden shrink-0">
+      <div className="w-full h-full rounded-[3px] border border-[#6d5111]/45 flex flex-col justify-between p-[2px] bg-gradient-to-b from-transparent via-[#f8e49d]/20 to-transparent">
+        <div className="flex justify-between h-2.5 border-b border-[#6d5111]/40">
+          <div className="w-2.5 border-r border-[#6d5111]/40" />
+          <div className="w-2.5 border-l border-[#6d5111]/40" />
+        </div>
+        <div className="flex justify-between h-2.5">
+          <div className="w-2.5 border-r border-[#6d5111]/40" />
+          <div className="w-2.5 border-l border-[#6d5111]/40" />
+        </div>
+      </div>
+      <div className="absolute top-0 left-0 w-4 h-full bg-gradient-to-r from-transparent via-white/35 to-transparent transform -skew-x-12 pointer-events-none" />
+    </div>
+  );
+}
 
 export function CartDrawer() {
   const { 
@@ -421,8 +507,8 @@ export function CartDrawer() {
                         <div className="hidden sm:grid grid-cols-12 text-xs font-bold text-gray-400 uppercase tracking-wider pb-3 border-b border-gray-100">
                           <span className="col-span-5">Producto</span>
                           <span className="col-span-3 text-center">Cantidad</span>
-                          <span className="col-span-2 text-right">Subtotal</span>
-                          <span className="col-span-2 text-right">Acción</span>
+                          <span className="col-span-2 text-right pr-6">Subtotal</span>
+                          <span className="col-span-2 text-right pr-1">Acción</span>
                         </div>
 
                         {/* Product Rows with generous breathing room */}
@@ -491,7 +577,7 @@ export function CartDrawer() {
                               </div>
 
                               {/* Subtotal Price (2 cols) */}
-                              <div className="sm:col-span-2 sm:text-right flex items-center justify-between sm:block">
+                              <div className="sm:col-span-2 sm:text-right flex items-center justify-between sm:block pr-6">
                                 <span className="text-xs text-gray-400 sm:hidden">Subtotal:</span>
                                 <span className="font-extrabold text-base sm:text-lg text-gray-900">
                                   ${(item.product.price * item.quantity).toFixed(2)}
@@ -499,15 +585,15 @@ export function CartDrawer() {
                               </div>
 
                               {/* PURE LIQUID GLASS DELETE BUTTON (Matching Diagram Reference) */}
-                              <div className="sm:col-span-2 sm:text-right flex justify-end">
+                              <div className="sm:col-span-2 flex justify-end items-center sm:text-right">
                                 <button 
                                   onClick={() => removeItem(item.id)}
-                                  className="relative overflow-hidden group/del px-3.5 py-1.5 rounded-full text-xs font-semibold text-rose-600 
+                                  className="relative overflow-hidden group/del px-4 py-1.5 rounded-full text-xs font-semibold text-rose-600 
                                   bg-white/40 hover:bg-white/65 backdrop-blur-2xl
                                   border border-white/90 
                                   shadow-[0_4px_16px_rgba(0,0,0,0.06),inset_0_1.5px_2px_rgba(255,255,255,0.95),inset_0_-1px_2px_rgba(0,0,0,0.04)]
                                   hover:shadow-[0_8px_24px_rgba(225,29,72,0.18),inset_0_2px_3px_rgba(255,255,255,1)]
-                                  transition-all duration-300 active:scale-95 flex items-center gap-1.5 cursor-pointer"
+                                  transition-all duration-300 active:scale-95 flex items-center gap-1.5 cursor-pointer ml-auto"
                                   title="Eliminar producto"
                                 >
                                   {/* Specular Highlight Sheen (Top glass edge curve) */}
@@ -823,49 +909,98 @@ export function CartDrawer() {
                         )}
                       </div>
 
-                      {/* Payment Method Selector */}
-                      <div className="p-6 rounded-[2rem] bg-white border border-gray-200/70 shadow-sm space-y-4">
-                        <h4 className="font-bold text-sm text-gray-900">
-                          Selecciona Método de Pago
-                        </h4>
-
-                        <div className="grid grid-cols-4 gap-3">
-                          {[
-                            { id: "card", label: "Tarjeta", icon: "💳" },
-                            { id: "apple", label: "Apple Pay", icon: "" },
-                            { id: "google", label: "Google Pay", icon: "G" },
-                            { id: "paypal", label: "PayPal", icon: "P" },
-                          ].map((m) => (
-                            <button
-                              key={m.id}
-                              onClick={() => setSelectedMethod(m.id as typeof selectedMethod)}
-                              className={`p-3 rounded-2xl border text-center transition-all flex flex-col items-center gap-1 ${
-                                selectedMethod === m.id 
-                                  ? "bg-blue-600 text-white border-blue-600 shadow-md shadow-blue-600/20 scale-[1.02]" 
-                                  : "bg-white text-gray-700 border-gray-200 hover:bg-gray-50"
-                              }`}
-                            >
-                              <span className="text-lg leading-none">{m.icon}</span>
-                              <span className="text-[11px] font-bold truncate">{m.label}</span>
-                            </button>
-                          ))}
+                      {/* Payment Method Selector (Liquid Glass Horizontal Pill with Apple Droplet) */}
+                      <div className="p-6 rounded-[2rem] bg-white border border-gray-200/70 shadow-sm space-y-5">
+                        <div className="flex items-center justify-between">
+                          <h4 className="font-bold text-sm text-gray-900">
+                            Método de Pago
+                          </h4>
+                          <span className="text-[11px] text-gray-400 font-medium">
+                            Cifrado SSL 256-Bit
+                          </span>
                         </div>
 
+                        {/* Liquid Glass Horizontal Capsule Bar */}
+                        <div className="relative p-1.5 rounded-full bg-slate-100/80 backdrop-blur-2xl border border-white/90 shadow-[inset_0_2px_4px_rgba(0,0,0,0.03),0_6px_20px_rgba(0,0,0,0.04)] grid grid-cols-4 gap-1">
+                          {[
+                            { 
+                              id: "card", 
+                              label: "Tarjeta", 
+                              renderIcon: (active: boolean) => (
+                                <CreditCard className={`w-4 h-4 transition-colors ${active ? "text-gray-900" : "text-gray-500"}`} />
+                              ) 
+                            },
+                            { 
+                              id: "apple", 
+                              label: "Apple Pay", 
+                              renderIcon: (active: boolean) => (
+                                <ApplePayLogo className={`h-3.5 transition-colors ${active ? "text-gray-900" : "text-gray-500"}`} />
+                              ) 
+                            },
+                            { 
+                              id: "google", 
+                              label: "Google Pay", 
+                              renderIcon: () => (
+                                <GooglePayLogo className="h-3.5" />
+                              ) 
+                            },
+                            { 
+                              id: "paypal", 
+                              label: "PayPal", 
+                              renderIcon: () => (
+                                <PayPalLogo className="h-3.5" />
+                              ) 
+                            },
+                          ].map((m) => {
+                            const isActive = selectedMethod === m.id;
+                            return (
+                              <button
+                                key={m.id}
+                                type="button"
+                                onClick={() => setSelectedMethod(m.id as typeof selectedMethod)}
+                                className="relative z-10 py-2.5 px-1 sm:px-2 rounded-full flex items-center justify-center gap-1.5 text-xs font-semibold transition-colors duration-200 outline-none select-none cursor-pointer"
+                              >
+                                {/* Apple-Style Water Droplet Liquid Glass Sliding Bubble */}
+                                {isActive && (
+                                  <motion.div
+                                    layoutId="liquidPaymentBubble"
+                                    transition={{ type: "spring", stiffness: 450, damping: 32 }}
+                                    className="absolute inset-0 rounded-full bg-white/95 backdrop-blur-2xl border border-white shadow-[0_6px_20px_rgba(0,0,0,0.08),inset_0_1.5px_2px_rgba(255,255,255,1),inset_0_-1px_1.5px_rgba(0,0,0,0.03)]"
+                                  >
+                                    {/* Top Specular Rim */}
+                                    <div className="absolute inset-x-3 top-0 h-[1px] bg-gradient-to-r from-transparent via-white to-transparent" />
+                                    {/* Caustic glint */}
+                                    <div className="absolute top-1 left-3 w-3 h-1 bg-white/80 rounded-full blur-[0.5px]" />
+                                  </motion.div>
+                                )}
+
+                                <span className="relative z-10 flex items-center justify-center gap-1.5 truncate">
+                                  {m.renderIcon(isActive)}
+                                  <span className={`hidden md:inline ${isActive ? "text-gray-900 font-bold" : "text-gray-500"}`}>
+                                    {m.label}
+                                  </span>
+                                </span>
+                              </button>
+                            );
+                          })}
+                        </div>
+
+                        {/* VIEW 1: CREDIT / DEBIT CARD DETAILS */}
                         {selectedMethod === "card" && (
-                          <div className="pt-2">
-                            <div className="flex items-center justify-between mb-3">
-                              <span className="text-xs font-bold text-gray-600">Tarjeta Seleccionada</span>
+                          <div className="pt-1 space-y-4">
+                            <div className="flex items-center justify-between">
+                              <span className="text-xs font-bold text-gray-700">Tarjeta Vinculada</span>
                               <button 
                                 onClick={() => setIsAddingCard(!isAddingCard)}
                                 className="text-xs font-semibold text-blue-600 hover:underline flex items-center gap-1"
                               >
                                 <PlusCircle className="w-3.5 h-3.5" />
-                                {isAddingCard ? "Ver tarjeta" : "Nueva tarjeta"}
+                                {isAddingCard ? "Ver tarjeta guardada" : "+ Nueva tarjeta"}
                               </button>
                             </div>
 
                             {isAddingCard ? (
-                              <form onSubmit={handleSaveNewCard} className="p-4 rounded-2xl bg-gray-50 border border-gray-200 space-y-3">
+                              <form onSubmit={handleSaveNewCard} className="p-4 sm:p-5 rounded-2xl bg-gray-50 border border-gray-200 space-y-3.5">
                                 <div>
                                   <label className="block text-[11px] font-semibold text-gray-600 mb-1">Número de tarjeta</label>
                                   <input 
@@ -874,102 +1009,195 @@ export function CartDrawer() {
                                     onChange={e => setNewCardNumber(e.target.value)} 
                                     placeholder="4532 •••• •••• 8921"
                                     maxLength={19}
-                                    className="w-full px-3 py-2 rounded-xl border border-gray-200 text-xs font-mono outline-none"
+                                    className="w-full px-3.5 py-2 rounded-xl border border-gray-200 text-xs font-mono outline-none focus:ring-1 focus:ring-blue-500 bg-white"
                                     required
                                   />
                                 </div>
-                                <div className="grid grid-cols-2 gap-2">
+                                <div className="grid grid-cols-2 gap-3">
                                   <div>
-                                    <label className="block text-[11px] font-semibold text-gray-600 mb-1">Titular</label>
+                                    <label className="block text-[11px] font-semibold text-gray-600 mb-1">Titular de la tarjeta</label>
                                     <input 
                                       type="text" 
                                       value={newCardHolder} 
                                       onChange={e => setNewCardHolder(e.target.value)} 
                                       placeholder="Nombre y Apellidos"
-                                      className="w-full px-3 py-2 rounded-xl border border-gray-200 text-xs outline-none"
+                                      className="w-full px-3.5 py-2 rounded-xl border border-gray-200 text-xs outline-none focus:ring-1 focus:ring-blue-500 bg-white"
                                       required
                                     />
                                   </div>
                                   <div>
-                                    <label className="block text-[11px] font-semibold text-gray-600 mb-1">Expiración</label>
+                                    <label className="block text-[11px] font-semibold text-gray-600 mb-1">Fecha de Expiración</label>
                                     <input 
                                       type="text" 
                                       value={newCardExp} 
                                       onChange={e => setNewCardExp(e.target.value)} 
                                       placeholder="MM/AA"
                                       maxLength={5}
-                                      className="w-full px-3 py-2 rounded-xl border border-gray-200 text-xs outline-none"
+                                      className="w-full px-3.5 py-2 rounded-xl border border-gray-200 text-xs outline-none focus:ring-1 focus:ring-blue-500 bg-white"
                                       required
                                     />
                                   </div>
                                 </div>
                                 <div>
-                                  <label className="block text-[11px] font-semibold text-gray-600 mb-1">Red de la tarjeta</label>
+                                  <label className="block text-[11px] font-semibold text-gray-600 mb-1">Franquicia de la tarjeta</label>
                                   <div className="flex gap-2">
                                     <button 
                                       type="button"
                                       onClick={() => setNewCardType("mastercard")}
-                                      className={`flex-1 py-1.5 rounded-xl border text-xs font-semibold transition-all ${newCardType === "mastercard" ? "bg-gray-900 text-white border-gray-900" : "bg-white text-gray-700 border-gray-200"}`}
+                                      className={`flex-1 py-2 rounded-xl border text-xs font-semibold transition-all flex items-center justify-center gap-1.5 ${newCardType === "mastercard" ? "bg-gray-900 text-white border-gray-900 shadow-sm" : "bg-white text-gray-700 border-gray-200 hover:bg-gray-50"}`}
                                     >
-                                      Mastercard
+                                      <MastercardLogo className="h-4" />
+                                      <span>Mastercard</span>
                                     </button>
                                     <button 
                                       type="button"
                                       onClick={() => setNewCardType("visa")}
-                                      className={`flex-1 py-1.5 rounded-xl border text-xs font-semibold transition-all ${newCardType === "visa" ? "bg-gray-900 text-white border-gray-900" : "bg-white text-gray-700 border-gray-200"}`}
+                                      className={`flex-1 py-2 rounded-xl border text-xs font-semibold transition-all flex items-center justify-center gap-1.5 ${newCardType === "visa" ? "bg-gray-900 text-white border-gray-900 shadow-sm" : "bg-white text-gray-700 border-gray-200 hover:bg-gray-50"}`}
                                     >
-                                      Visa
+                                      <span className="font-extrabold italic text-sm text-blue-600">VISA</span>
                                     </button>
                                   </div>
                                 </div>
                                 <button 
                                   type="submit"
-                                  className="w-full py-2 bg-gray-900 text-white rounded-xl text-xs font-semibold hover:bg-gray-800 transition-colors shadow-sm"
+                                  className="w-full py-2.5 bg-gray-900 text-white rounded-xl text-xs font-semibold hover:bg-gray-800 transition-colors shadow-sm cursor-pointer"
                                 >
-                                  Guardar y Usar Tarjeta
+                                  Guardar y Vincular Tarjeta
                                 </button>
                               </form>
                             ) : (
-                              /* Luxury Black Matte Credit Card Preview */
-                              <div className="relative aspect-[1.58/1] max-w-sm mx-auto rounded-3xl p-6 bg-gradient-to-br from-zinc-800 via-zinc-900 to-black text-white shadow-2xl shadow-black/25 flex flex-col justify-between overflow-hidden border border-zinc-700/60">
-                                <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/5 to-transparent pointer-events-none" />
+                              /* ULTRA-REALISTIC LUXURY BLACK TITANIUM METAL CARD (Apple Card / Centurion Elite) */
+                              <div className="relative aspect-[1.586/1] max-w-[390px] mx-auto rounded-3xl p-6 sm:p-7 text-white shadow-[0_30px_70px_-10px_rgba(0,0,0,0.85),0_10px_25px_rgba(0,0,0,0.5)] flex flex-col justify-between overflow-hidden border border-zinc-700/80
+                                bg-[#0c0d10]
+                                before:absolute before:inset-0 before:bg-[radial-gradient(ellipse_90%_90%_at_30%_-20%,rgba(255,255,255,0.12),transparent_70%)] before:pointer-events-none
+                                after:absolute after:inset-0 after:bg-[linear-gradient(135deg,rgba(255,255,255,0.08)_0%,transparent_50%,rgba(255,255,255,0.02)_100%)] after:pointer-events-none"
+                              >
+                                {/* Milled Metal Edge Bevel Highlight */}
+                                <div className="absolute inset-[1px] rounded-[23px] border border-white/15 pointer-events-none" />
+
+                                {/* Top Row: Brand Header & NFC Contactless Wave */}
                                 <div className="flex items-center justify-between relative z-10">
-                                  <span className="text-[11px] font-mono tracking-widest text-zinc-400 uppercase">
-                                    Tarjeta de Crédito
-                                  </span>
-                                  <span className="font-display font-bold italic text-base tracking-wider text-zinc-200">
-                                    {activeCard.type === "visa" ? "VISA" : "Mastercard"}
-                                  </span>
-                                </div>
-                                <div className="relative z-10 flex items-center gap-3">
-                                  <div className="w-10 h-8 rounded-lg bg-gradient-to-tr from-amber-200 via-amber-300 to-amber-100 border border-amber-400/50 shadow-inner flex items-center justify-center">
-                                    <div className="w-6 h-5 border border-amber-600/40 rounded-sm" />
+                                  <div className="flex items-center gap-2">
+                                    <span className="font-mono font-extrabold text-[11px] sm:text-xs tracking-[0.25em] bg-gradient-to-r from-zinc-100 via-white to-zinc-400 bg-clip-text text-transparent uppercase drop-shadow">
+                                      LUMINA BLACK
+                                    </span>
+                                    <span className="text-[8px] font-mono tracking-widest text-zinc-400 px-1.5 py-0.5 rounded border border-zinc-700 bg-zinc-900/90">
+                                      PRIVATE CLIENT
+                                    </span>
                                   </div>
-                                  <span className="text-[10px] font-mono text-zinc-400 tracking-wider">LUMINA PRIVILEGE</span>
+                                  
+                                  <div className="flex items-center gap-2 text-zinc-300">
+                                    <ContactlessIcon className="w-5 h-5 opacity-80" />
+                                    {/* Iridescent security hologram patch */}
+                                    <div className="w-6 h-4 rounded bg-gradient-to-tr from-cyan-400 via-fuchsia-400 to-amber-300 opacity-40 shadow-inner" />
+                                  </div>
                                 </div>
+
+                                {/* Center Row: EMV Gold Smart Chip with circuit lines */}
+                                <div className="relative z-10 flex items-center justify-between my-1">
+                                  <EmvChip />
+                                  <span className="text-[9px] font-mono tracking-[0.2em] text-zinc-400 uppercase">
+                                    {activeCard.type === "visa" ? "VISA INFINITE" : "WORLD ELITE"}
+                                  </span>
+                                </div>
+
+                                {/* Card Number: Embossed Foil Typography */}
                                 <div className="relative z-10">
-                                  <p className="font-mono font-bold text-lg sm:text-xl tracking-widest text-zinc-100 drop-shadow">
+                                  <p className="font-mono font-semibold text-lg sm:text-2xl tracking-[0.22em] text-zinc-100 drop-shadow-[0_2px_4px_rgba(0,0,0,0.95)]">
                                     {activeCard.number}
                                   </p>
                                 </div>
-                                <div className="flex items-center justify-between relative z-10 pt-2 border-t border-zinc-800 text-[11px]">
+
+                                {/* Bottom Row: Holder, Expiry & Authentic Vector Brand Logo */}
+                                <div className="flex items-end justify-between relative z-10 pt-2 border-t border-zinc-800/80 text-[11px]">
                                   <div>
-                                    <span className="text-[9px] text-zinc-500 uppercase tracking-wider block">Titular</span>
-                                    <p className="font-bold text-zinc-200 tracking-wide truncate max-w-[180px]">
-                                      {activeCard.holder}
+                                    <span className="text-[8px] font-mono text-zinc-400 uppercase tracking-widest block mb-0.5">
+                                      TITULAR
+                                    </span>
+                                    <p className="font-mono font-bold text-xs sm:text-sm text-zinc-100 tracking-wider truncate max-w-[160px] drop-shadow-sm">
+                                      {activeCard.holder.toUpperCase()}
                                     </p>
                                   </div>
-                                  <div className="text-right">
-                                    <span className="text-[9px] text-zinc-500 uppercase tracking-wider block">Vence</span>
-                                    <p className="font-mono font-bold text-zinc-200">
+
+                                  <div>
+                                    <span className="text-[8px] font-mono text-zinc-400 uppercase tracking-widest block mb-0.5 text-center">
+                                      VENCE
+                                    </span>
+                                    <p className="font-mono font-bold text-xs sm:text-sm text-zinc-200 tracking-wider text-center drop-shadow-sm">
                                       {activeCard.exp}
                                     </p>
+                                  </div>
+
+                                  <div className="flex items-center justify-end pl-2">
+                                    {activeCard.type === "visa" ? (
+                                      <VisaLogo className="h-5 sm:h-6 drop-shadow-md" />
+                                    ) : (
+                                      <MastercardLogo className="h-6 sm:h-7 drop-shadow-md" />
+                                    )}
                                   </div>
                                 </div>
                               </div>
                             )}
                           </div>
                         )}
+
+                        {/* VIEW 2: APPLE PAY HIGH-TICKET EXPERIENCE */}
+                        {selectedMethod === "apple" && (
+                          <div className="p-6 sm:p-8 rounded-3xl bg-slate-950 text-white shadow-xl flex flex-col items-center justify-center text-center space-y-4 border border-zinc-800">
+                            <div className="w-16 h-16 rounded-2xl bg-black border border-zinc-700 flex items-center justify-center shadow-2xl shadow-black/60">
+                              <ApplePayLogo className="h-8 text-white" />
+                            </div>
+                            <div>
+                              <h4 className="font-display font-bold text-lg text-white">Apple Pay Express</h4>
+                              <p className="text-xs text-zinc-400 max-w-sm mt-1 leading-relaxed">
+                                Paga al instante y con total privacidad utilizando Touch ID o Face ID directamente en tu dispositivo Apple.
+                              </p>
+                            </div>
+                            <div className="flex items-center gap-2 text-[11px] text-zinc-300 font-medium px-4 py-2 rounded-full bg-zinc-900 border border-zinc-700/80">
+                              <ShieldCheck className="w-4 h-4 text-emerald-400" />
+                              <span>Cifrado biométrico de alta seguridad mediante Apple Secure Enclave</span>
+                            </div>
+                          </div>
+                        )}
+
+                        {/* VIEW 3: GOOGLE PAY HIGH-TICKET EXPERIENCE */}
+                        {selectedMethod === "google" && (
+                          <div className="p-6 sm:p-8 rounded-3xl bg-white border border-gray-200 shadow-sm flex flex-col items-center justify-center text-center space-y-4">
+                            <div className="w-16 h-16 rounded-2xl bg-gray-50 border border-gray-200 flex items-center justify-center shadow-inner">
+                              <GooglePayLogo className="h-7" />
+                            </div>
+                            <div>
+                              <h4 className="font-display font-bold text-lg text-gray-900">Google Pay</h4>
+                              <p className="text-xs text-gray-500 max-w-sm mt-1 leading-relaxed">
+                                Completa tu compra en un toque utilizando las tarjetas y métodos de pago guardados en tu cuenta de Google.
+                              </p>
+                            </div>
+                            <div className="flex items-center gap-2 text-[11px] text-gray-700 font-medium px-4 py-2 rounded-full bg-blue-50 border border-blue-100">
+                              <ShieldCheck className="w-4 h-4 text-blue-600" />
+                              <span>Protección integral contra fraude respaldada por Google Security</span>
+                            </div>
+                          </div>
+                        )}
+
+                        {/* VIEW 4: PAYPAL HIGH-TICKET EXPERIENCE */}
+                        {selectedMethod === "paypal" && (
+                          <div className="p-6 sm:p-8 rounded-3xl bg-[#f8faff] border border-blue-100 shadow-sm flex flex-col items-center justify-center text-center space-y-4">
+                            <div className="w-16 h-16 rounded-2xl bg-white border border-blue-100 flex items-center justify-center shadow-sm">
+                              <PayPalLogo className="h-7" />
+                            </div>
+                            <div>
+                              <h4 className="font-display font-bold text-lg text-gray-900">PayPal Checkout</h4>
+                              <p className="text-xs text-gray-500 max-w-sm mt-1 leading-relaxed">
+                                Paga con tu saldo de PayPal, cuenta bancaria vinculada o financiamiento sin intereses en cómodos plazos.
+                              </p>
+                            </div>
+                            <div className="flex items-center gap-2 text-[11px] text-[#003087] font-semibold px-4 py-2 rounded-full bg-blue-50 border border-blue-200">
+                              <ShieldCheck className="w-4 h-4 text-[#0079C1]" />
+                              <span>Garantía y Protección al Comprador PayPal al 100%</span>
+                            </div>
+                          </div>
+                        )}
+
                       </div>
 
                     </div>
