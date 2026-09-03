@@ -32,8 +32,8 @@ import { useCatalogStore } from "@/lib/catalogStore";
 // High-Ticket Payment Method SVGs & Micro-Components (1:1 Aspect Ratio, Zero Cutoffs)
 function AppleIcon({ className = "w-4 h-4" }: { className?: string }) {
   return (
-    <svg className={`shrink-0 ${className}`} viewBox="0 0 170 170" fill="currentColor">
-      <path d="M150.37 130.25c-2.45 5.66-5.35 10.87-8.71 15.66-4.58 6.53-8.33 11.05-11.22 13.56-4.48 4.12-9.28 6.23-14.42 6.35-3.69 0-8.14-1.05-13.32-3.18-5.19-2.12-9.97-3.17-14.34-3.17-4.58 0-9.49 1.05-14.75 3.17-5.26 2.13-9.5 3.24-12.74 3.35-4.35.13-9.16-1.9-14.42-6.08-3.69-3.08-7.73-7.94-12.13-14.58-6.3-9.53-11.24-20.2-14.81-32.01-3.58-11.82-5.37-23.01-5.37-33.58 0-14.28 3.58-26.04 10.74-35.28 7.16-9.24 16.27-13.98 27.32-14.21 4.58 0 9.87 1.25 15.86 3.76 5.99 2.51 9.77 3.82 11.34 3.92 1.34 0 5.4-1.46 12.18-4.38 6.78-2.92 12.63-4.14 17.55-3.66 13.48 1.07 24.16 6.45 32.04 16.14-11.82 7.16-17.62 17-17.41 29.52.22 9.82 3.98 17.97 11.28 24.45 7.3 6.48 15.93 10.05 25.89 10.72-2.14 6.32-4.59 12.71-7.35 19.17zM119.22 33.09c0-7.38 2.65-14.34 7.95-20.89 5.3-6.55 11.96-10.73 19.98-12.54 0 .99.07 1.94.07 2.86 0 7.33-2.77 14.34-8.31 21.03-5.54 6.69-12.11 10.66-19.69 11.92-.22-.79-.33-1.6-.33-2.38z" />
+    <svg className={`shrink-0 ${className}`} viewBox="0 0 384 512" fill="currentColor">
+      <path d="M318.7 268.7c-.2-36.7 16.4-64.4 50-84.8-18.8-26.9-47.2-41.7-84.7-44.6-35.5-2.8-74.3 20.7-88.5 20.7-15 0-49.4-19.7-76.4-19.7C63.3 141.2 4 184.8 4 273.5q0 39.3 14.4 81.2c12.8 36.7 59 126.7 107.2 125.2 25.2-.6 43-17.9 75.8-17.9 31.8 0 48.3 17.9 76.4 17.9 48.6-.7 90.4-82.5 102.6-119.3-65.2-30.7-61.7-90-61.7-91.9zm-56.6-164.2c27.3-32.4 24.8-61.9 24-72.5-24.1 1.4-52 16.4-67.9 34.9-17.5 19.8-27.8 44.3-25.6 71.9 26.1 2 49.9-11.4 69.5-34.3z" />
     </svg>
   );
 }
@@ -943,28 +943,28 @@ export function CartDrawer() {
                           </span>
                         </div>
 
-                        {/* WHITE LIQUID GLASS FLOATING DOCK (Compact, Friendly, Serious Financial Design) */}
-                        <div className="relative p-1.5 rounded-full bg-slate-100/90 backdrop-blur-2xl border border-white/90 shadow-[inset_0_2px_4px_rgba(0,0,0,0.03),0_6px_20px_rgba(0,0,0,0.04)] grid grid-cols-4 gap-1 max-w-lg mx-auto">
+                        {/* WHITE LIQUID GLASS FLOATING DOCK (Horizontal Sliding Physics Inspired by iOS 27 Beta Video) */}
+                        <div className="relative p-1.5 rounded-full bg-white/75 backdrop-blur-2xl border border-white/85 shadow-[0_10px_32px_rgba(0,0,0,0.06),inset_0_1.5px_2px_rgba(255,255,255,1),inset_0_-1px_1.5px_rgba(0,0,0,0.02)] grid grid-cols-4 gap-1.5 max-w-lg mx-auto">
                           {[
                             { 
                               id: "card", 
                               label: "Tarjeta", 
                               renderIcon: (active: boolean) => (
-                                <CreditCard className={`w-4 h-4 transition-colors ${active ? "text-gray-900" : "text-gray-500"}`} />
+                                <CreditCard className={`w-4 h-4 transition-colors duration-200 ${active ? "text-[#0071e3]" : "text-gray-600"}`} />
                               ) 
                             },
                             { 
                               id: "apple", 
                               label: "Apple Pay", 
                               renderIcon: (active: boolean) => (
-                                <AppleIcon className={`w-4 h-4 transition-colors ${active ? "text-gray-900" : "text-gray-500"}`} />
+                                <AppleIcon className={`w-4 h-4 transition-colors duration-200 ${active ? "text-[#0071e3]" : "text-gray-600"}`} />
                               ) 
                             },
                             { 
                               id: "google", 
                               label: "Google Pay", 
                               renderIcon: (active: boolean) => (
-                                <div className={`transition-all ${active ? "opacity-100 scale-105" : "opacity-60 grayscale-[0.2]"}`}>
+                                <div className={`transition-all duration-200 ${active ? "opacity-100 scale-105" : "opacity-70"}`}>
                                   <GoogleIcon className="w-4 h-4" />
                                 </div>
                               ) 
@@ -973,7 +973,7 @@ export function CartDrawer() {
                               id: "paypal", 
                               label: "PayPal", 
                               renderIcon: (active: boolean) => (
-                                <div className={`transition-all ${active ? "opacity-100 scale-105" : "opacity-60"}`}>
+                                <div className={`transition-all duration-200 ${active ? "opacity-100 scale-105" : "opacity-70"}`}>
                                   <PayPalIcon className="w-4 h-4" />
                                 </div>
                               ) 
@@ -985,25 +985,32 @@ export function CartDrawer() {
                                 key={m.id}
                                 type="button"
                                 onClick={() => setSelectedMethod(m.id as typeof selectedMethod)}
-                                className="group relative z-10 py-2 px-1 sm:px-2 rounded-full flex flex-col items-center justify-center gap-1 outline-none select-none cursor-pointer transition-all"
+                                className="group relative z-10 py-2.5 px-1 sm:px-2 rounded-full flex flex-col items-center justify-center gap-1 outline-none select-none cursor-pointer transition-all"
                               >
-                                {/* White Liquid Glass Water Droplet with Fluid Spring Inertia */}
+                                {/* Horizontal Sliding Liquid Glass Droplet with Fluid Spring Inertia */}
                                 {isActive && (
                                   <motion.div
-                                    layoutId="whiteLiquidGlassBubble"
-                                    transition={{ type: "spring", stiffness: 420, damping: 28, mass: 0.7 }}
-                                    className="absolute inset-0 rounded-full bg-white/95 backdrop-blur-2xl border border-white shadow-[0_4px_16px_rgba(0,0,0,0.08),inset_0_1.5px_2px_rgba(255,255,255,1),inset_0_-1px_1.5px_rgba(0,0,0,0.03)]"
+                                    layoutId="liquidGlassHorizontalBubble"
+                                    transition={{
+                                      type: "spring",
+                                      stiffness: 350,
+                                      damping: 24,
+                                      mass: 0.6
+                                    }}
+                                    className="absolute inset-0 rounded-full bg-white/95 backdrop-blur-2xl border border-white shadow-[0_6px_20px_rgba(0,113,227,0.12),inset_0_1.5px_2px_rgba(255,255,255,1),inset_0_-1px_1.5px_rgba(0,0,0,0.03)]"
                                   >
-                                    {/* Razor Specular Rim Light */}
-                                    <div className="absolute inset-x-3 top-0.5 h-[1px] bg-gradient-to-r from-transparent via-white to-transparent opacity-95" />
-                                    {/* Caustic glint */}
-                                    <div className="absolute top-1 left-2.5 w-2.5 h-1 bg-white/90 rounded-full blur-[0.4px]" />
+                                    {/* Top Specular Curved Glass Highlight Rim */}
+                                    <div className="absolute inset-x-3 top-0 h-[1.5px] bg-gradient-to-r from-transparent via-white to-transparent opacity-95" />
+                                    {/* Caustic glass reflection glint in corner */}
+                                    <div className="absolute top-1 left-3 w-3 h-1 bg-white/95 rounded-full blur-[0.4px]" />
+                                    {/* Subtle bottom liquid refraction */}
+                                    <div className="absolute inset-x-4 bottom-0.5 h-[1px] bg-gradient-to-r from-transparent via-[#0071e3]/20 to-transparent" />
                                   </motion.div>
                                 )}
 
                                 <span className="relative z-10 flex flex-col items-center justify-center gap-1 w-full">
                                   {m.renderIcon(isActive)}
-                                  <span className={`text-[11px] font-sans tracking-tight whitespace-nowrap transition-colors ${isActive ? "text-gray-950 font-bold" : "text-gray-500 font-medium group-hover:text-gray-800"}`}>
+                                  <span className={`text-[11px] font-sans tracking-tight whitespace-nowrap transition-colors duration-200 ${isActive ? "text-[#0071e3] font-bold" : "text-gray-600 font-medium group-hover:text-gray-900"}`}>
                                     {m.label}
                                   </span>
                                 </span>
