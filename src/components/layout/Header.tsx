@@ -141,14 +141,14 @@ export function Header() {
             <Link 
               href={isAuthenticated ? '/profile' : '/auth/login'}
               aria-label="Perfil" 
-              className="p-2.5 rounded-full bg-white/40 backdrop-blur-md border border-white/60 text-gray-700 hover:bg-white/60 transition-colors shadow-[0_4px_16px_rgba(0,0,0,0.05)]"
+              className="w-10 h-10 rounded-full bg-white/40 backdrop-blur-md border border-white/60 text-gray-700 hover:bg-white/60 transition-colors shadow-[0_4px_16px_rgba(0,0,0,0.05)] flex items-center justify-center shrink-0"
               title={isAuthenticated ? "Mi Perfil" : "Iniciar Sesión"}
             >
-              <User className="w-5 h-5" />
+              <User className="w-4 h-4" />
             </Link>
             
             {/* Interactive Live Search in Pill */}
-            <div className="relative group">
+            <div className="relative flex items-center group">
               <form onSubmit={handleSearchSubmit} className="relative flex items-center">
                 <input 
                   type="text" 
@@ -156,26 +156,26 @@ export function Header() {
                   onChange={(e) => setSearchVal(e.target.value)}
                   placeholder="Buscar en catálogo..."
                   className={cn(
-                    "transition-all duration-300 rounded-full py-2 pl-10 text-xs text-gray-900 placeholder:text-gray-500 outline-none bg-white/50 backdrop-blur-md border border-white/60 focus:bg-white/90 focus:border-white/80 shadow-[0_4px_16px_rgba(0,0,0,0.05)]",
+                    "h-10 transition-all duration-300 rounded-full pl-10 text-xs text-gray-900 placeholder:text-gray-500 outline-none bg-white/50 backdrop-blur-md border border-white/60 focus:bg-white/90 focus:border-white/80 shadow-[0_4px_16px_rgba(0,0,0,0.05)]",
                     searchVal 
-                      ? "w-52 sm:w-64 pr-8 opacity-100" 
-                      : "w-0 pr-0 opacity-0 group-hover:w-44 sm:group-hover:w-56 group-hover:pr-8 group-hover:opacity-100 focus:w-52 sm:focus:w-64 focus:pr-8 focus:opacity-100"
+                      ? "w-56 sm:w-64 pr-8 opacity-100" 
+                      : "w-10 pr-0 opacity-0 group-hover:w-48 sm:group-hover:w-56 group-hover:pr-8 group-hover:opacity-100 focus:w-56 sm:focus:w-64 focus:pr-8 focus:opacity-100 cursor-pointer focus:cursor-text"
                   )}
                 />
                 
                 <button 
                   type="submit" 
                   aria-label="Buscar" 
-                  className="absolute left-0 top-0 p-2.5 rounded-full hover:bg-white/50 text-gray-700 transition-colors z-10"
+                  className="absolute left-0 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full flex items-center justify-center text-gray-700 hover:text-gray-950 transition-colors z-10 pointer-events-auto"
                 >
-                  <Search className="w-5 h-5" />
+                  <Search className="w-4 h-4" />
                 </button>
 
                 {searchVal && (
                   <button 
                     type="button"
                     onClick={() => setSearchVal("")}
-                    className="absolute right-2.5 top-1/2 -translate-y-1/2 p-1 text-gray-400 hover:text-gray-700 transition-colors z-10"
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full flex items-center justify-center text-gray-400 hover:text-gray-700 hover:bg-gray-200/50 transition-colors z-10"
                     title="Limpiar búsqueda"
                   >
                     <X className="w-3.5 h-3.5" />
