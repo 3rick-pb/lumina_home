@@ -30,31 +30,82 @@
   }
 }
 
-@keyframes ambient-float {
-  0%, 100% {
-    transform: translate(0, 0) scale(1);
+/* True Screensaver Animations: Sweeping multi-axis floating paths */
+@keyframes screensaver-1 {
+  0% {
+    transform: translate(0vw, 0vh) scale(1);
   }
-  33% {
-    transform: translate(40px, -30px) scale(1.08);
-  }
-  66% {
-    transform: translate(-30px, 40px) scale(0.95);
-  }
-}
-
-@keyframes ambient-drift {
-  0%, 100% {
-    transform: translate(0, 0);
+  25% {
+    transform: translate(25vw, 20vh) scale(1.15);
   }
   50% {
-    transform: translate(-50px, 30px);
+    transform: translate(10vw, 40vh) scale(0.92);
+  }
+  75% {
+    transform: translate(-20vw, 18vh) scale(1.1);
+  }
+  100% {
+    transform: translate(0vw, 0vh) scale(1);
   }
 }
 
-.animate-ambient-float {
-  animation: ambient-float 16s ease-in-out infinite alternate;
+@keyframes screensaver-2 {
+  0% {
+    transform: translate(0vw, 0vh) scale(1.1);
+  }
+  30% {
+    transform: translate(-25vw, -20vh) scale(0.92);
+  }
+  60% {
+    transform: translate(-10vw, 25vh) scale(1.18);
+  }
+  85% {
+    transform: translate(20vw, -12vh) scale(1.02);
+  }
+  100% {
+    transform: translate(0vw, 0vh) scale(1.1);
+  }
 }
 
-.animate-ambient-drift {
-  animation: ambient-drift 22s ease-in-out infinite alternate;
+@keyframes screensaver-3 {
+  0% {
+    transform: translate(0vw, 0vh) scale(0.95);
+  }
+  33% {
+    transform: translate(20vw, -25vh) scale(1.22);
+  }
+  66% {
+    transform: translate(-22vw, -15vh) scale(1.04);
+  }
+  100% {
+    transform: translate(0vw, 0vh) scale(0.95);
+  }
+}
+
+@keyframes screensaver-4 {
+  0% {
+    transform: translate(0vw, 0vh) scale(1.05);
+  }
+  50% {
+    transform: translate(-28vw, 18vh) scale(1.2);
+  }
+  100% {
+    transform: translate(0vw, 0vh) scale(1.05);
+  }
+}
+
+.animate-screensaver-1 {
+  animation: screensaver-1 22s ease-in-out infinite;
+}
+
+.animate-screensaver-2 {
+  animation: screensaver-2 28s ease-in-out infinite;
+}
+
+.animate-screensaver-3 {
+  animation: screensaver-3 24s ease-in-out infinite;
+}
+
+.animate-screensaver-4 {
+  animation: screensaver-4 30s ease-in-out infinite;
 }

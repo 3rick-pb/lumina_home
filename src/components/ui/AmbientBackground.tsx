@@ -23,27 +23,32 @@ export function AmbientBackground() {
     }
   }, [pathname, searchParams, isAuthPage, setCategoryTheme, setTheme]);
 
-  // Auth pages have floating drifting orbs
+  // Auth pages have multi-axis, continuous screensaver-style drifting fluid matte aura
   if (isAuthPage) {
     return (
-      <div className="fixed inset-0 pointer-events-none -z-10 overflow-hidden bg-[#fbfbfa]">
-        {/* Floating Orb 1: moves left-right, up-down */}
+      <div className="fixed inset-0 pointer-events-none -z-10 overflow-hidden bg-[#faf8f5]">
+        {/* Screensaver Orb 1: Lumina Signature Olive / Sage */}
         <div 
-          className="absolute -top-[10%] -left-[10%] w-[65vw] h-[65vw] rounded-full filter blur-[150px] opacity-50 animate-ambient-float transition-colors duration-1000" 
-          style={{ backgroundColor: CATEGORY_THEMES.auth.c1 }} 
+          className="absolute -top-[10%] -left-[10%] w-[60vw] h-[60vw] rounded-full filter blur-[150px] opacity-60 animate-screensaver-1" 
+          style={{ backgroundColor: "#8c9276" }} 
         />
-        {/* Floating Orb 2: drifts opposite */}
+        {/* Screensaver Orb 2: Lumina Sandstone / Warm Tan */}
         <div 
-          className="absolute -bottom-[10%] -right-[10%] w-[70vw] h-[70vw] rounded-full filter blur-[170px] opacity-45 animate-ambient-drift transition-colors duration-1000" 
-          style={{ backgroundColor: CATEGORY_THEMES.auth.c2 }} 
+          className="absolute -bottom-[10%] -right-[10%] w-[65vw] h-[65vw] rounded-full filter blur-[160px] opacity-55 animate-screensaver-2" 
+          style={{ backgroundColor: "#d2b48c" }} 
         />
-        {/* Center atmospheric glow */}
+        {/* Screensaver Orb 3: Lumina Champagne Cream Glow */}
         <div 
-          className="absolute top-1/3 left-1/4 w-[50vw] h-[50vw] rounded-full filter blur-[160px] opacity-40 animate-ambient-float transition-colors duration-1000" 
-          style={{ backgroundColor: CATEGORY_THEMES.auth.c3, animationDelay: "-8s" }} 
+          className="absolute top-1/4 right-1/4 w-[55vw] h-[55vw] rounded-full filter blur-[170px] opacity-65 animate-screensaver-3" 
+          style={{ backgroundColor: "#f3e7d3" }} 
         />
-        {/* Velvety matte film */}
-        <div className="absolute inset-0 bg-white/25 backdrop-blur-[25px]" />
+        {/* Screensaver Orb 4: Deep Warm Slate Accent */}
+        <div 
+          className="absolute bottom-1/4 left-1/4 w-[50vw] h-[50vw] rounded-full filter blur-[180px] opacity-35 animate-screensaver-4" 
+          style={{ backgroundColor: "#686b59" }} 
+        />
+        {/* Velvety Matte Frosted Overlay */}
+        <div className="absolute inset-0 bg-white/20 backdrop-blur-[45px]" />
       </div>
     );
   }
