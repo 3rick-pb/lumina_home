@@ -318,7 +318,7 @@ export function CartDrawer() {
                     Lumina<span className="text-[#8c9276]">.</span>
                   </span>
                   <span className="text-xs text-gray-400 font-medium ml-2 hidden sm:inline">
-                    • Libro de Compras & Checkout
+                    • Bolsa de Compras & Pasarela
                   </span>
                 </div>
               </div>
@@ -375,7 +375,7 @@ export function CartDrawer() {
                         Estudio de Compra
                       </span>
                       <h1 className="font-display font-bold text-3xl sm:text-4xl text-gray-900 tracking-tight">
-                        Shopping Cart
+                        Bolsa de Compras
                       </h1>
                       <p className="text-xs sm:text-sm text-gray-500 mt-1">
                         Piezas de autor seleccionadas con precisión artesanal para tu espacio.
@@ -417,24 +417,23 @@ export function CartDrawer() {
                       {/* Left Column: Spacious Products Table (7 or 8 cols) */}
                       {/* ---------------------------------------------------- */}
                       <div className="lg:col-span-8 bg-white/80 backdrop-blur-xl rounded-[2rem] border border-gray-200/60 p-6 sm:p-8 shadow-sm space-y-6">
-                        
                         {/* Table Column Headers (Directly from Reference Image) */}
                         <div className="hidden sm:grid grid-cols-12 text-xs font-bold text-gray-400 uppercase tracking-wider pb-3 border-b border-gray-100">
-                          <span className="col-span-6">Producto</span>
+                          <span className="col-span-5">Producto</span>
                           <span className="col-span-3 text-center">Cantidad</span>
                           <span className="col-span-2 text-right">Subtotal</span>
-                          <span className="col-span-1 text-right">Acción</span>
+                          <span className="col-span-2 text-right">Acción</span>
                         </div>
 
                         {/* Product Rows with generous breathing room */}
                         <div className="divide-y divide-gray-100">
                           {items.map((item) => (
                             <div 
-                              key={item.id}
+                              key={item.id} 
                               className="py-5 first:pt-0 last:pb-0 flex flex-col sm:grid sm:grid-cols-12 gap-4 sm:items-center group"
                             >
-                              {/* Product Info (6 cols) */}
-                              <div className="sm:col-span-6 flex items-center gap-4">
+                              {/* Product Info (5 cols) */}
+                              <div className="sm:col-span-5 flex items-center gap-4">
                                 <div className="relative w-20 h-20 sm:w-24 sm:h-24 rounded-2xl overflow-hidden bg-gray-100 shrink-0 border border-white shadow-sm">
                                   <Image 
                                     src={item.product.imageUrl} 
@@ -499,15 +498,29 @@ export function CartDrawer() {
                                 </span>
                               </div>
 
-                              {/* Liquid Glass Delete Action Button (1 col) */}
-                              <div className="sm:col-span-1 sm:text-right">
+                              {/* PURE LIQUID GLASS DELETE BUTTON (Matching Diagram Reference) */}
+                              <div className="sm:col-span-2 sm:text-right flex justify-end">
                                 <button 
                                   onClick={() => removeItem(item.id)}
-                                  className="relative overflow-hidden p-2 sm:p-2.5 rounded-xl text-red-600 bg-red-500/10 hover:bg-red-500/15 border border-red-200/70 backdrop-blur-md shadow-[0_2px_8px_rgba(239,68,68,0.08),inset_0_1px_1px_rgba(255,255,255,0.6)] transition-all inline-flex items-center justify-center group active:scale-95"
-                                  title="Eliminar artículo"
+                                  className="relative overflow-hidden group/del px-3.5 py-1.5 rounded-full text-xs font-semibold text-rose-600 
+                                  bg-white/40 hover:bg-white/65 backdrop-blur-2xl
+                                  border border-white/90 
+                                  shadow-[0_4px_16px_rgba(0,0,0,0.06),inset_0_1.5px_2px_rgba(255,255,255,0.95),inset_0_-1px_2px_rgba(0,0,0,0.04)]
+                                  hover:shadow-[0_8px_24px_rgba(225,29,72,0.18),inset_0_2px_3px_rgba(255,255,255,1)]
+                                  transition-all duration-300 active:scale-95 flex items-center gap-1.5 cursor-pointer"
+                                  title="Eliminar producto"
                                 >
-                                  <Trash2 className="w-4 h-4 group-hover:rotate-12 transition-transform" />
-                                  <div className="absolute inset-0 bg-gradient-to-b from-white/20 to-transparent pointer-events-none rounded-xl" />
+                                  {/* Specular Highlight Sheen (Top glass edge curve) */}
+                                  <div className="absolute inset-x-2 top-0 h-[1px] bg-gradient-to-r from-transparent via-white to-transparent pointer-events-none opacity-90" />
+
+                                  {/* Diagonal Glossy Reflection Layer */}
+                                  <div className="absolute inset-0 bg-gradient-to-b from-white/40 via-white/10 to-transparent pointer-events-none rounded-full" />
+
+                                  {/* Caustic Glow Corner Spot */}
+                                  <div className="absolute top-1 left-2.5 w-2.5 h-1 bg-white/80 rounded-full blur-[0.5px] pointer-events-none" />
+
+                                  <Trash2 className="relative z-10 w-3.5 h-3.5 text-rose-500 group-hover/del:rotate-12 group-hover/del:text-rose-600 transition-all duration-300" />
+                                  <span className="relative z-10 tracking-tight text-rose-600 font-bold text-[11px]">Eliminar</span>
                                 </button>
                               </div>
 
@@ -536,7 +549,7 @@ export function CartDrawer() {
                       <div className="lg:col-span-4 bg-white/90 backdrop-blur-2xl rounded-[2rem] border border-gray-200/70 p-6 sm:p-7 shadow-lg shadow-gray-200/50 space-y-6">
                         
                         <h3 className="font-display font-bold text-xl text-gray-900 tracking-tight pb-3 border-b border-gray-100">
-                          Order Summary
+                          Resumen del Pedido
                         </h3>
 
                         {/* Free Shipping Progress Capsule */}
@@ -598,22 +611,22 @@ export function CartDrawer() {
                         {/* Breakdown Lines */}
                         <div className="space-y-2.5 text-xs sm:text-sm text-gray-600 pt-1">
                           <div className="flex justify-between">
-                            <span>Sub Total</span>
+                            <span>Subtotal</span>
                             <span className="font-semibold text-gray-900">${subtotal.toFixed(2)} USD</span>
                           </div>
 
                           {discountAmount > 0 && (
                             <div className="flex justify-between text-emerald-700 font-semibold">
-                              <span>Discount ({discountPercent}%)</span>
+                              <span>Descuento ({discountPercent}%)</span>
                               <span>-${discountAmount.toFixed(2)} USD</span>
                             </div>
                           )}
 
                           <div className="flex justify-between">
-                            <span>Delivery fee</span>
+                            <span>Gastos de Envío</span>
                             <span className="font-semibold">
                               {shipping === 0 ? (
-                                <span className="text-emerald-700 font-bold uppercase text-xs">FREE</span>
+                                <span className="text-emerald-700 font-bold uppercase text-xs">GRATIS</span>
                               ) : (
                                 `$${shipping.toFixed(2)} USD`
                               )}
@@ -639,7 +652,7 @@ export function CartDrawer() {
                           </p>
                         </div>
 
-                        {/* LIQUID GLASS CHECKOUT NOW BUTTON */}
+                        {/* LIQUID GLASS PROCEDER AL PAGO BUTTON */}
                         <button 
                           onClick={handleProceedToPayment}
                           className="relative overflow-hidden w-full h-14 rounded-2xl font-bold text-white text-sm sm:text-base flex items-center justify-center gap-2.5 transition-all duration-300
@@ -650,7 +663,7 @@ export function CartDrawer() {
                           before:absolute before:inset-0 before:bg-gradient-to-b before:from-white/35 before:via-white/10 before:to-transparent before:pointer-events-none before:rounded-2xl
                           after:absolute after:inset-x-0 after:top-0 after:h-[1px] after:bg-white/60 cursor-pointer group"
                         >
-                          <span className="relative z-10 tracking-wide">Checkout Now</span>
+                          <span className="relative z-10 tracking-wide">Proceder al Pago</span>
                           <ArrowRight className="relative z-10 w-4 h-4 group-hover:translate-x-1 transition-transform" />
                         </button>
 
@@ -922,7 +935,7 @@ export function CartDrawer() {
                                 <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/5 to-transparent pointer-events-none" />
                                 <div className="flex items-center justify-between relative z-10">
                                   <span className="text-[11px] font-mono tracking-widest text-zinc-400 uppercase">
-                                    Credit Card
+                                    Tarjeta de Crédito
                                   </span>
                                   <span className="font-display font-bold italic text-base tracking-wider text-zinc-200">
                                     {activeCard.type === "visa" ? "VISA" : "Mastercard"}
