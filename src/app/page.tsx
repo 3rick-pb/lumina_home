@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState, useRef, useMemo } from "react";
 import Image from "next/image";
 import { Button } from "@/components/ui/Button";
 import { ProductCard } from "@/components/ui/ProductCard";
@@ -9,31 +9,96 @@ import Link from "next/link";
 import { useCatalogStore } from "@/lib/catalogStore";
 import { useAmbientStore } from "@/lib/ambientStore";
 
-const CATEGORIES = [
-  { name: "Aromaterapia", subtitle: "Difusores & esencias", price: "desde $29", img: "https://images.unsplash.com/photo-1602928321679-560bb453f190?q=80&w=800&auto=format&fit=crop" },
-  { name: "Iluminación", subtitle: "Lámparas de ambiente", price: "desde $89", img: "https://images.unsplash.com/photo-1507473885765-e6ed057f782c?q=80&w=800&auto=format&fit=crop" },
-  { name: "Home Office", subtitle: "Ergonomía & orden", price: "desde $49", img: "https://images.unsplash.com/photo-1527443224154-c4a3942d3acf?q=80&w=800&auto=format&fit=crop" },
-  { name: "Textiles", subtitle: "Lino y lana natural", price: "desde $39", img: "https://images.unsplash.com/photo-1584100936595-c0654b55a2e2?q=80&w=800&auto=format&fit=crop" },
-  { name: "Gadgets", subtitle: "Tecnología minimalista", price: "desde $120", img: "https://images.unsplash.com/photo-1558317374-067fb5f30001?q=80&w=800&auto=format&fit=crop" },
-  { name: "Almacenamiento", subtitle: "Cestas & orden", price: "desde $34", img: "https://images.unsplash.com/photo-1595428774223-ef52624120d2?q=80&w=800&auto=format&fit=crop" },
-  { name: "Cerámica", subtitle: "Vajilla de autor", price: "desde $25", img: "https://images.unsplash.com/photo-1610701596007-11502861dcfa?q=80&w=800&auto=format&fit=crop" },
-  { name: "Decoración", subtitle: "Esculturas & jarrones", price: "desde $45", img: "https://images.unsplash.com/photo-1513519245088-0e12902e5a38?q=80&w=800&auto=format&fit=crop" },
-  { name: "Cocina", subtitle: "Ritual barista", price: "desde $29", img: "https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?q=80&w=800&auto=format&fit=crop" },
-  { name: "Bienestar", subtitle: "Calma & descanso", price: "desde $35", img: "https://images.unsplash.com/photo-1540555700478-4be289fbecef?q=80&w=800&auto=format&fit=crop" }
-];
+const NICHE_METADATA_MAP: Record<string, { subtitle: string; img: string; defaultPrice: string }> = {
+  "aromaterapia": { 
+    subtitle: "Difusores & esencias", 
+    img: "https://images.unsplash.com/photo-1602928321679-560bb453f190?q=80&w=800&auto=format&fit=crop",
+    defaultPrice: "desde $29"
+  },
+  "iluminacion": { 
+    subtitle: "Lámparas de ambiente", 
+    img: "https://images.unsplash.com/photo-1507473885765-e6ed057f782c?q=80&w=800&auto=format&fit=crop",
+    defaultPrice: "desde $89"
+  },
+  "home office": { 
+    subtitle: "Ergonomía & orden", 
+    img: "https://images.unsplash.com/photo-1527443224154-c4a3942d3acf?q=80&w=800&auto=format&fit=crop",
+    defaultPrice: "desde $49"
+  },
+  "textiles": { 
+    subtitle: "Lino y lana natural", 
+    img: "https://images.unsplash.com/photo-1584100936595-c0654b55a2e2?q=80&w=800&auto=format&fit=crop",
+    defaultPrice: "desde $39"
+  },
+  "gadgets": { 
+    subtitle: "Tecnología minimalista", 
+    img: "https://images.unsplash.com/photo-1558317374-067fb5f30001?q=80&w=800&auto=format&fit=crop",
+    defaultPrice: "desde $120"
+  },
+  "almacenamiento": { 
+    subtitle: "Cestas & orden", 
+    img: "https://images.unsplash.com/photo-1595428774223-ef52624120d2?q=80&w=800&auto=format&fit=crop",
+    defaultPrice: "desde $34"
+  },
+  "ceramica": { 
+    subtitle: "Vajilla de autor", 
+    img: "https://images.unsplash.com/photo-1610701596007-11502861dcfa?q=80&w=800&auto=format&fit=crop",
+    defaultPrice: "desde $25"
+  },
+  "decoracion": { 
+    subtitle: "Esculturas & jarrones", 
+    img: "https://images.unsplash.com/photo-1513519245088-0e12902e5a38?q=80&w=800&auto=format&fit=crop",
+    defaultPrice: "desde $45"
+  },
+  "cocina": { 
+    subtitle: "Ritual barista", 
+    img: "https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?q=80&w=800&auto=format&fit=crop",
+    defaultPrice: "desde $29"
+  },
+  "bienestar": { 
+    subtitle: "Calma & descanso", 
+    img: "https://images.unsplash.com/photo-1540555700478-4be289fbecef?q=80&w=800&auto=format&fit=crop",
+    defaultPrice: "desde $35"
+  }
+};
 
 const normalizeText = (text: string) => {
   return text.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
 };
 
 export default function Home() {
-  const { products } = useCatalogStore();
+  const { products, categories } = useCatalogStore();
   const { setCategoryTheme, resetTheme } = useAmbientStore();
   const [isMounted, setIsMounted] = useState(false);
   const [activeFilter, setActiveFilter] = useState("Todos");
 
   const categoriesRef = useRef<HTMLDivElement>(null);
   const popularRef = useRef<HTMLDivElement>(null);
+
+  // Derive dynamic category cards strictly from active categories in store
+  const dynamicCategories = useMemo(() => {
+    return categories.map((catName) => {
+      const norm = normalizeText(catName);
+      const meta = NICHE_METADATA_MAP[norm];
+
+      const catProducts = products.filter(p => normalizeText(p.category) === norm);
+      let priceText = meta?.defaultPrice || "Colección activa";
+      if (catProducts.length > 0) {
+        const minPrice = Math.min(...catProducts.map(p => p.price));
+        priceText = `desde $${minPrice.toFixed(0)}`;
+      }
+
+      const img = meta?.img || catProducts[0]?.imageUrl || "https://images.unsplash.com/photo-1600210492486-724fe5c67fb0?q=80&w=800&auto=format&fit=crop";
+      const subtitle = meta?.subtitle || "Colección exclusiva";
+
+      return {
+        name: catName,
+        subtitle,
+        price: priceText,
+        img
+      };
+    });
+  }, [categories, products]);
 
   useEffect(() => {
     setIsMounted(true);
@@ -145,8 +210,12 @@ export default function Home() {
               </div>
             </div>
             
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
-              {CATEGORIES.map((cat, idx) => (
+            <div className={`grid grid-cols-2 gap-4 ${
+              dynamicCategories.length <= 4 
+                ? "md:grid-cols-2 lg:grid-cols-4" 
+                : "md:grid-cols-3 lg:grid-cols-5"
+            }`}>
+              {dynamicCategories.map((cat, idx) => (
                 <Link 
                   href={`/shop?category=${cat.name.toLowerCase()}`} 
                   key={idx} 
@@ -193,7 +262,7 @@ export default function Home() {
 
               {/* Dynamic Interactive Filter Pills */}
               <div className="flex items-center gap-2 overflow-x-auto pb-2 w-full lg:w-auto hide-scrollbar">
-                {["Todos", "Iluminación", "Aromaterapia", "Home Office", "Textiles", "Gadgets", "Almacenamiento", "Cerámica", "Decoración", "Cocina", "Bienestar"].map((filter) => {
+                {["Todos", ...categories].map((filter) => {
                   const isActive = activeFilter === filter;
                   return (
                     <button 
