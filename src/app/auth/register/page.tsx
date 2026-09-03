@@ -29,10 +29,7 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="min-h-screen pt-32 pb-24 flex items-center justify-center bg-[#f8f9fa] relative overflow-hidden">
-      {/* Decorative Blur Orbs */}
-      <div className="absolute top-1/4 right-1/4 w-96 h-96 bg-white rounded-full blur-[120px] opacity-60 mix-blend-overlay pointer-events-none" />
-      <div className="absolute bottom-1/4 left-1/4 w-[500px] h-[500px] bg-[#8c9276] rounded-full blur-[150px] opacity-20 pointer-events-none" />
+    <div className="min-h-screen pt-20 pb-20 flex items-center justify-center bg-transparent relative overflow-hidden">
       
       <div className="w-full max-w-md px-6 relative z-10">
         <div className="bg-white/40 backdrop-blur-2xl border border-white/60 p-8 sm:p-10 rounded-[2rem] shadow-[0_8px_32px_rgba(0,0,0,0.05)]">

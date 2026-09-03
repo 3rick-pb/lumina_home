@@ -1,12 +1,13 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import Image from "next/image";
 import { Button } from "@/components/ui/Button";
 import { ProductCard } from "@/components/ui/ProductCard";
 import { Percent, Truck, Wrench, ShieldCheck, CreditCard, ArrowRight } from "lucide-react";
 import Link from "next/link";
 import { useCatalogStore } from "@/lib/catalogStore";
+import { useAmbientStore } from "@/lib/ambientStore";
 
 const CATEGORIES = [
   { name: "Aromaterapia", price: "desde $29", img: "https://images.unsplash.com/photo-1602928321679-560bb453f190?q=80&w=800&auto=format&fit=crop" },
@@ -16,15 +17,53 @@ const CATEGORIES = [
   { name: "Gadgets", price: "desde $120", img: "https://images.unsplash.com/photo-1558317374-067fb5f30001?q=80&w=800&auto=format&fit=crop" }
 ];
 
+const normalizeText = (text: string) => {
+  return text.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+};
+
 export default function Home() {
   const { products } = useCatalogStore();
+  const { setCategoryTheme, resetTheme } = useAmbientStore();
   const [isMounted, setIsMounted] = useState(false);
+  const [activeFilter, setActiveFilter] = useState("Todos");
+
+  const categoriesRef = useRef<HTMLDivElement>(null);
+  const popularRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     setIsMounted(true);
   }, []);
 
+  // IntersectionObserver to smoothly shift ambient matte glow as user scrolls down the catalog
+  useEffect(() => {
+    if (!isMounted) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            if (entry.target.id === "catalog-categories") {
+              setCategoryTheme("aromaterapia");
+            } else if (entry.target.id === "catalog-popular") {
+              setCategoryTheme(activeFilter === "Todos" ? "iluminacion" : activeFilter);
+            }
+          }
+        });
+      },
+      { threshold: 0.3 }
+    );
+
+    if (categoriesRef.current) observer.observe(categoriesRef.current);
+    if (popularRef.current) observer.observe(popularRef.current);
+
+    return () => observer.disconnect();
+  }, [isMounted, activeFilter, setCategoryTheme]);
+
   const displayProducts = isMounted ? products : [];
+  
+  const filteredProducts = activeFilter === "Todos"
+    ? displayProducts
+    : displayProducts.filter(p => normalizeText(p.category) === normalizeText(activeFilter));
 
   return (
     <>
@@ -35,7 +74,7 @@ export default function Home() {
             src="https://images.unsplash.com/photo-1600210492486-724fe5c67fb0?q=80&w=2000&auto=format&fit=crop" 
             alt="Interior elegante" 
             fill 
-            className="object-cover"
+            className="object-cover" 
             priority
           />
           <div className="absolute inset-0 bg-gradient-to-t from-brand-900/90 via-brand-900/40 to-transparent" />
@@ -85,8 +124,12 @@ export default function Home() {
       {/* Immersive Background Wrapper for Catalog Sections */}
       <div className="relative overflow-hidden bg-transparent">
 
-        {/* Categories */}
-        <section className="py-24 relative z-10">
+        {/* Categories Section */}
+        <section 
+          id="catalog-categories" 
+          ref={categoriesRef} 
+          className="py-24 relative z-10"
+        >
           <div className="container mx-auto px-4 md:px-8">
             <div className="flex items-end justify-between mb-12">
               <div>
@@ -99,7 +142,13 @@ export default function Home() {
             
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
               {CATEGORIES.map((cat, idx) => (
-                <Link href={`/shop?category=${cat.name.toLowerCase()}`} key={idx} className="group relative h-[320px] rounded-2xl overflow-hidden block shadow-sm border border-black/5">
+                <Link 
+                  href={`/shop?category=${cat.name.toLowerCase()}`} 
+                  key={idx} 
+                  onMouseEnter={() => setCategoryTheme(cat.name)}
+                  onMouseLeave={() => resetTheme()}
+                  className="group relative h-[320px] rounded-2xl overflow-hidden block shadow-sm border border-black/5 transition-transform duration-300 hover:-translate-y-1"
+                >
                   <Image src={cat.img} fill className="object-cover transition-transform duration-700 group-hover:scale-105" alt={cat.name} />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
                   <div className="absolute bottom-0 left-0 w-full p-5 flex items-end justify-between">
@@ -117,38 +166,71 @@ export default function Home() {
           </div>
         </section>
 
-        {/* Popular Products */}
-        <section className="py-20 relative z-10">
+        {/* Popular Products Section */}
+        <section 
+          id="catalog-popular" 
+          ref={popularRef} 
+          className="py-20 relative z-10"
+        >
           <div className="container mx-auto px-4 md:px-8">
             <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between mb-12 gap-6">
-              <h2 className="text-3xl font-sans font-medium text-gray-900">
-                Productos <span className="font-display italic text-accent-700">Populares</span>
-              </h2>
+              <div>
+                <h2 className="text-3xl font-sans font-medium text-gray-900 mb-1">
+                  Productos <span className="font-display italic text-accent-700">Populares</span>
+                </h2>
+                <p className="text-gray-500 text-sm">Selección destacada para transformar cada espacio.</p>
+              </div>
+
+              {/* Dynamic Interactive Filter Pills */}
               <div className="flex items-center gap-2 overflow-x-auto pb-2 w-full lg:w-auto hide-scrollbar">
-                {["Todos", "Iluminación", "Aromaterapia", "Home Office", "Textiles"].map((filter, i) => (
-                  <button 
-                    key={i}
-                    className={`px-5 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all ${
-                      i === 0 
-                        ? 'bg-white/40 backdrop-blur-xl border border-white/60 text-gray-900 shadow-[0_4px_16px_rgba(0,0,0,0.05)]' 
-                        : 'bg-white/20 backdrop-blur-md border border-white/30 text-gray-600 hover:bg-white/40 hover:border-white/60'
-                    }`}
-                  >
-                    {filter}
-                  </button>
-                ))}
+                {["Todos", "Iluminación", "Aromaterapia", "Home Office", "Textiles", "Gadgets", "Almacenamiento"].map((filter) => {
+                  const isActive = activeFilter === filter;
+                  return (
+                    <button 
+                      key={filter}
+                      onClick={() => {
+                        setActiveFilter(filter);
+                        if (filter === "Todos") resetTheme();
+                        else setCategoryTheme(filter);
+                      }}
+                      onMouseEnter={() => {
+                        if (filter !== "Todos") setCategoryTheme(filter);
+                      }}
+                      className={`px-5 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all ${
+                        isActive 
+                          ? 'bg-white/60 backdrop-blur-xl border border-white/80 text-gray-900 shadow-md shadow-black/5' 
+                          : 'bg-white/20 backdrop-blur-md border border-white/40 text-gray-600 hover:bg-white/40 hover:text-gray-900'
+                      }`}
+                    >
+                      {filter}
+                    </button>
+                  );
+                })}
               </div>
             </div>
             
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-              {displayProducts.slice(0, 4).map((product) => (
-                <ProductCard key={product.id} {...product} />
-              ))}
-            </div>
+            {filteredProducts.length === 0 ? (
+              <div className="text-center py-16 bg-white/30 backdrop-blur-md rounded-3xl border border-white/50">
+                <p className="text-gray-600 font-medium">No hay productos en esta categoría por el momento.</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                {filteredProducts.slice(0, 8).map((product) => (
+                  <div 
+                    key={product.id}
+                    onMouseEnter={() => setCategoryTheme(product.category)}
+                    onMouseLeave={() => {
+                      if (activeFilter !== "Todos") setCategoryTheme(activeFilter);
+                    }}
+                  >
+                    <ProductCard {...product} />
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </section>
       </div>
-
     </>
   );
 }

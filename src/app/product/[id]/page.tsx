@@ -9,10 +9,12 @@ import { ProductCard } from "@/components/ui/ProductCard";
 import { useCartStore } from "@/lib/store";
 import { useCatalogStore } from "@/lib/catalogStore";
 import { useUserStore } from "@/lib/userStore";
+import { useAmbientStore } from "@/lib/ambientStore";
 
 export default function ProductDetail({ params }: { params: { id: string } }) {
   const { products } = useCatalogStore();
   const product = products.find(p => p.id === params.id);
+  const { setCategoryTheme, resetTheme } = useAmbientStore();
   
   if (!product) {
     notFound();
@@ -31,7 +33,11 @@ export default function ProductDetail({ params }: { params: { id: string } }) {
   
   React.useEffect(() => {
     setIsMounted(true);
-  }, []);
+    if (product?.category) {
+      setCategoryTheme(product.category);
+    }
+    return () => resetTheme();
+  }, [product?.category, setCategoryTheme, resetTheme]);
 
   const handleAddToCart = () => {
     setIsAdding(true);
@@ -48,7 +54,7 @@ export default function ProductDetail({ params }: { params: { id: string } }) {
   return (
     <div className="relative min-h-screen pt-28 pb-24 bg-transparent">
       {/* Soft Mate Ambient Aura */}
-      <div className="fixed inset-0 z-[-1] overflow-hidden pointer-events-none">
+      <div className="fixed inset-0 -z-10 overflow-hidden pointer-events-none">
         <Image
           src={currentImage}
           alt="Ambient Aura"
@@ -56,7 +62,7 @@ export default function ProductDetail({ params }: { params: { id: string } }) {
           className="object-cover blur-[180px] saturate-[1.1] opacity-25 transition-all duration-1000 z-10"
         />
         {/* Soft matte film */}
-        <div className="absolute inset-0 bg-[#fafafa]/70 backdrop-blur-[50px] z-20" />
+        <div className="absolute inset-0 bg-[#fafafa]/60 backdrop-blur-[50px] z-20" />
       </div>
 
       <div className="container mx-auto px-4 md:px-6 relative z-10">

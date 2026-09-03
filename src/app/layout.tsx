@@ -34,7 +34,7 @@ export default function RootLayout({
   return (
     <html lang="es" className="scroll-smooth">
       <body
-        className={`${inter.variable} ${playfair.variable} font-sans antialiased text-gray-900 bg-[#f8f9fa] flex flex-col min-h-screen relative`}
+        className={`${inter.variable} ${playfair.variable} font-sans antialiased text-gray-900 bg-transparent flex flex-col min-h-screen relative`}
       >
         <Suspense fallback={null}>
           <AmbientBackground />
