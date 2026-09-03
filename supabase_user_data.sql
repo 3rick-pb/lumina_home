@@ -1,4 +1,4 @@
-﻿-- =========================================================================
+-- =========================================================================
 -- LUMINA HOME: ARCHITECTURE DE PERSISTENCIA Y AISLAMIENTO EN BASE DE DATOS
 -- =========================================================================
 
@@ -69,3 +69,22 @@ CREATE POLICY "Users can manage their own addresses" ON public.addresses
   FOR ALL
   USING (auth.uid() = user_id)
   WITH CHECK (auth.uid() = user_id);
+
+-- 5. TABLA DE NICHOS / CATEGORÍAS 100% DINÁMICAS (categories)
+CREATE TABLE IF NOT EXISTS public.categories (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  name TEXT UNIQUE NOT NULL,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+ALTER TABLE public.categories ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Public can view categories" ON public.categories;
+CREATE POLICY "Public can view categories" ON public.categories
+  FOR SELECT USING (true);
+
+DROP POLICY IF EXISTS "Authenticated users can manage categories" ON public.categories;
+CREATE POLICY "Authenticated users can manage categories" ON public.categories
+  FOR ALL
+  USING (auth.role() = 'authenticated')
+  WITH CHECK (auth.role() = 'authenticated');

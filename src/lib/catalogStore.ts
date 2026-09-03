@@ -27,8 +27,8 @@ interface CatalogState {
   addProduct: (product: Omit<CatalogProduct, 'id'> & { id?: string }) => Promise<{ success: boolean; error?: string }>;
   updateProduct: (id: string, product: CatalogProduct) => Promise<{ success: boolean; error?: string }>;
   deleteProduct: (id: string) => Promise<void>;
-  addCategory: (name: string) => void;
-  deleteCategory: (name: string) => void;
+  addCategory: (name: string) => Promise<void>;
+  deleteCategory: (name: string) => Promise<void>;
   addBadge: (name: string) => void;
   deleteBadge: (name: string) => void;
 }
@@ -202,36 +202,38 @@ export const useCatalogStore = create<CatalogState>((set) => ({
       }
     }
 
-    const { data, error } = await supabase.from('products').select('*').order('created_at', { ascending: false });
-    if (!error && data && data.length > 0) {
-      let prods = data.map(toFrontendProduct);
-
-      // Check if any default category is missing a product; if so, inject the corresponding initial product
-      const existingNormalized = new Set(prods.map(p => normalizeCategory(p.category)));
-      const missingNicheProducts = INITIAL_NICHE_PRODUCTS.filter(
-        np => !existingNormalized.has(normalizeCategory(np.category))
-      );
-      if (missingNicheProducts.length > 0) {
-        prods = [...prods, ...missingNicheProducts];
+    // 1. Dynamic Categories from Supabase database
+    let activeCategories: string[] = [];
+    try {
+      const { data: catData, error: catError } = await supabase
+        .from('categories')
+        .select('name')
+        .order('created_at', { ascending: true });
+      if (!catError && catData && catData.length > 0) {
+        activeCategories = catData.map(c => c.name).filter(Boolean);
       }
+    } catch {}
 
-      // Collect unique categories & badges found in DB and combine with defaults
-      const dbCategories = Array.from(new Set(prods.map(p => p.category).filter(Boolean)));
-      const mergedCats = Array.from(new Set([...DEFAULT_CATEGORIES, ...dbCategories]));
-      
-      const dbBadges = Array.from(new Set(prods.map(p => p.badge).filter((b): b is string => Boolean(b))));
-      const mergedBadges = Array.from(new Set([...initialBadges, ...dbBadges]));
-
-      set({ products: prods, categories: mergedCats, badges: mergedBadges, isLoading: false });
+    // 2. Fetch Products
+    const { data, error } = await supabase.from('products').select('*').order('created_at', { ascending: false });
+    let prods: CatalogProduct[] = [];
+    if (!error && data && data.length > 0) {
+      prods = data.map(toFrontendProduct);
     } else {
-      // Fallback with all niche products present
-      set({ 
-        products: INITIAL_NICHE_PRODUCTS, 
-        categories: DEFAULT_CATEGORIES, 
-        badges: initialBadges, 
-        isLoading: false 
-      });
+      prods = INITIAL_NICHE_PRODUCTS;
     }
+
+    // 3. If categories table is not yet populated, discover niches dynamically from active products
+    if (activeCategories.length === 0) {
+      const productCategories = Array.from(new Set(prods.map(p => p.category).filter(Boolean)));
+      activeCategories = productCategories.length > 0 ? productCategories : DEFAULT_CATEGORIES;
+    }
+
+    // 4. Badges
+    const dbBadges = Array.from(new Set(prods.map(p => p.badge).filter((b): b is string => Boolean(b))));
+    const mergedBadges = Array.from(new Set([...initialBadges, ...dbBadges]));
+
+    set({ products: prods, categories: activeCategories, badges: mergedBadges, isLoading: false });
   },
   
   addProduct: async (product) => {
@@ -299,7 +301,7 @@ export const useCatalogStore = create<CatalogState>((set) => ({
     }));
   },
 
-  addCategory: (name) => {
+  addCategory: async (name) => {
     const clean = name.trim();
     if (!clean) return;
     set((state) => {
@@ -308,12 +310,25 @@ export const useCatalogStore = create<CatalogState>((set) => ({
       }
       return { categories: [...state.categories, clean] };
     });
+
+    try {
+      await supabase.from('categories').insert([{ name: clean }]);
+    } catch (e) {
+      console.error("Error saving category to database:", e);
+    }
   },
 
-  deleteCategory: (name) => {
+  deleteCategory: async (name) => {
+    const clean = name.trim();
     set((state) => ({
-      categories: state.categories.filter(c => normalizeCategory(c) !== normalizeCategory(name))
+      categories: state.categories.filter(c => normalizeCategory(c) !== normalizeCategory(clean))
     }));
+
+    try {
+      await supabase.from('categories').delete().ilike('name', clean);
+    } catch (e) {
+      console.error("Error deleting category from database:", e);
+    }
   },
 
   addBadge: (name) => {
