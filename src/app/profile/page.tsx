@@ -150,6 +150,13 @@ export default function ProfilePage() {
 
   useEffect(() => {
     setIsMounted(true);
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      const tabParam = params.get("tab");
+      if (tabParam && ["overview", "orders", "cards", "favorites", "catalog", "niches", "settings"].includes(tabParam)) {
+        setActiveTab(tabParam as "overview" | "orders" | "cards" | "favorites" | "catalog" | "niches" | "settings");
+      }
+    }
     if (isMounted && !isLoading && !isAuthenticated) {
       router.push("/auth/login");
     }

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence, Variants } from "framer-motion";
@@ -20,10 +20,12 @@ import {
   Check, 
   Lock,
   ChevronRight,
-  PlusCircle,
   Trash2,
   RotateCcw,
-  CreditCard
+  CreditCard,
+  Layers,
+  ChevronDown,
+  ChevronUp
 } from "lucide-react";
 import { useCartStore } from "@/lib/store";
 import { useUserStore, Order, PaymentCard, ShippingAddress } from "@/lib/userStore";
@@ -98,10 +100,10 @@ function MastercardLogo({ className = "h-7" }: { className?: string }) {
   );
 }
 
-function VisaLogo({ className = "h-5" }: { className?: string }) {
+function VisaLogo({ className = "h-5", fill = "#FFFFFF" }: { className?: string; fill?: string }) {
   return (
     <svg className={className} viewBox="0 0 141 45" fill="none">
-      <path d="M57.6 1.2L37.9 43.8H25.3L15.4 9.6c-.6-2.4-1.2-3.3-3.1-4.3C9.2 3.6 4.4 2.2 0 1.2l.6 2.6c6.2 1.3 13.3 3.6 17.5 6.3 2.7 1.8 3.5 3.3 4.4 7.1l10.5 40h13.2L68.8 1.2H57.6zm44.2 29.1c.1-7.9-11.2-8.3-11.1-11.9 0-3.6 4-3.8 8.2-3.2 2.3.3 8.3 1.8 10.8 3l2-9.4c-2.8-1-7.4-2-12.7-2-13.4 0-22.9 7-23 17.1-.1 7.4 6.7 11.6 11.8 14.1 5.2 2.5 7 4.1 7 6.4-.1 3.5-4.3 5.1-8.3 5.1-5.5 0-11.4-1.6-14.7-3.1l-2.1 9.7c3 1.4 8.6 2.6 14.4 2.6 14.2.2 23.6-6.8 23.7-17.5zm37.6 13.5h11.5L141 1.2h-10.7c-2.4 0-4.4 1.4-5.3 3.5L108.6 43.8h13.2l2.6-7.3h16.2l1.6 7.3zm-14.1-17.2l6.5-17.7 3.8 17.7h-10.3zm-48.4-25.4L66.6 43.8h12.6l10.3-42.6H86.9z" fill="#FFFFFF" />
+      <path d="M57.6 1.2L37.9 43.8H25.3L15.4 9.6c-.6-2.4-1.2-3.3-3.1-4.3C9.2 3.6 4.4 2.2 0 1.2l.6 2.6c6.2 1.3 13.3 3.6 17.5 6.3 2.7 1.8 3.5 3.3 4.4 7.1l10.5 40h13.2L68.8 1.2H57.6zm44.2 29.1c.1-7.9-11.2-8.3-11.1-11.9 0-3.6 4-3.8 8.2-3.2 2.3.3 8.3 1.8 10.8 3l2-9.4c-2.8-1-7.4-2-12.7-2-13.4 0-22.9 7-23 17.1-.1 7.4 6.7 11.6 11.8 14.1 5.2 2.5 7 4.1 7 6.4-.1 3.5-4.3 5.1-8.3 5.1-5.5 0-11.4-1.6-14.7-3.1l-2.1 9.7c3 1.4 8.6 2.6 14.4 2.6 14.2.2 23.6-6.8 23.7-17.5zm37.6 13.5h11.5L141 1.2h-10.7c-2.4 0-4.4 1.4-5.3 3.5L108.6 43.8h13.2l2.6-7.3h16.2l1.6 7.3zm-14.1-17.2l6.5-17.7 3.8 17.7h-10.3zm-48.4-25.4L66.6 43.8h12.6l10.3-42.6H86.9z" fill={fill} />
     </svg>
   );
 }
@@ -160,7 +162,6 @@ export function CartDrawer() {
     cards, 
     address, 
     setAddress, 
-    addCard, 
     addOrder 
   } = useUserStore();
 
@@ -179,6 +180,7 @@ export function CartDrawer() {
   const [selectedMethod, setSelectedMethod] = useState<"card" | "apple" | "google" | "paypal">("card");
   const [selectedCardId, setSelectedCardId] = useState<string>("");
   const [hoveredPaymentMethod, setHoveredPaymentMethod] = useState<string | null>(null);
+  const [isCardsExpanded, setIsCardsExpanded] = useState(false);
 
   // Quick Address Inline Form
   const [isEditingAddress, setIsEditingAddress] = useState(false);
@@ -186,13 +188,6 @@ export function CartDrawer() {
   const [addrCity, setAddrCity] = useState("");
   const [addrPostal, setAddrPostal] = useState("");
   const [addrCountry, setAddrCountry] = useState("España");
-
-  // Quick Card Inline Form
-  const [isAddingCard, setIsAddingCard] = useState(false);
-  const [newCardNumber, setNewCardNumber] = useState("");
-  const [newCardHolder, setNewCardHolder] = useState("");
-  const [newCardExp, setNewCardExp] = useState("");
-  const [newCardType, setNewCardType] = useState<"mastercard" | "visa">("mastercard");
 
   // Checkout Processing
   const [isProcessing, setIsProcessing] = useState(false);
@@ -276,25 +271,6 @@ export function CartDrawer() {
     setIsEditingAddress(false);
   };
 
-  const handleSaveNewCard = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newCardNumber.trim()) return;
-    const cleanNum = newCardNumber.replace(/\s+/g, '');
-    const masked = cleanNum.slice(-4) || "8888";
-    const cardData: Omit<PaymentCard, 'id'> = {
-      number: `•••• •••• •••• ${masked}`,
-      holder: newCardHolder.trim() || user?.name || "Titular",
-      exp: newCardExp.trim() || "12/28",
-      type: newCardType,
-      isDefault: true
-    };
-    addCard(cardData);
-    setIsAddingCard(false);
-    setNewCardNumber("");
-    setNewCardHolder("");
-    setNewCardExp("");
-  };
-
   const handleProceedToPayment = () => {
     if (!isAuthenticated) {
       setIsOpen(false);
@@ -328,19 +304,55 @@ export function CartDrawer() {
     }, 1200);
   };
 
-  if (!isMounted) return null;
+  // Demo cards matching user's video exactly (4120 Sapphire, 4916 Platinum, 0019 Coral)
+  const DEMO_CARDS: PaymentCard[] = useMemo(() => [
+    {
+      id: "card-demo-1",
+      number: "•••• •••• •••• 4120",
+      holder: user?.name ? user.name.toUpperCase() : "ERICK PÉREZ",
+      exp: "09/29",
+      type: "visa",
+      isDefault: true,
+    },
+    {
+      id: "card-demo-2",
+      number: "•••• •••• •••• 4916",
+      holder: user?.name ? user.name.toUpperCase() : "ERICK PÉREZ",
+      exp: "04/28",
+      type: "visa",
+      isDefault: false,
+    },
+    {
+      id: "card-demo-3",
+      number: "•••• •••• •••• 0019",
+      holder: user?.name ? user.name.toUpperCase() : "ERICK PÉREZ",
+      exp: "11/27",
+      type: "mastercard",
+      isDefault: false,
+    },
+  ], [user?.name]);
 
-  // Selected card preview object
-  const activeCard = cards.find(c => c.id === selectedCardId) || cards[0] || {
-    id: "default",
-    number: "•••• •••• •••• 4242",
-    holder: user?.name || "LUMINA CLIENT",
-    exp: "04/28",
-    type: "mastercard" as const
-  };
+  const availableCards = useMemo(() => {
+    return cards && cards.length > 0 ? cards : DEMO_CARDS;
+  }, [cards, DEMO_CARDS]);
+
+  const effectiveSelectedCardId = selectedCardId || availableCards[0]?.id;
+  const activeCard = availableCards.find(c => c.id === effectiveSelectedCardId) || availableCards[0];
+
+  const orderedCards = useMemo(() => {
+    if (!isCardsExpanded) {
+      const others = availableCards.filter(c => c.id !== activeCard.id);
+      return [activeCard, ...others];
+    }
+    return availableCards;
+  }, [availableCards, activeCard, isCardsExpanded]);
 
   // Recommended products for the bottom of the cart page
-  const recommendedProducts = products.filter(p => !items.some(i => i.productId === p.id)).slice(0, 3);
+  const recommendedProducts = useMemo(() => {
+    return products.filter(p => !items.some(i => i.productId === p.id)).slice(0, 3);
+  }, [products, items]);
+
+  if (!isMounted) return null;
 
   // Dynamic 3D Book Page Flip / Genie expansion originating exactly from the cart icon
   const startX = originCoords && typeof window !== "undefined" ? originCoords.x - window.innerWidth / 2 : 250;
@@ -1058,160 +1070,209 @@ export function CartDrawer() {
                           );
                         })()}
 
-                        {/* VIEW 1: CREDIT / DEBIT CARD DETAILS */}
+                        {/* VIEW 1: CREDIT / DEBIT CARD DETAILS WITH 3D ACCORDION STACK */}
                         {selectedMethod === "card" && (
-                          <div className="pt-1 space-y-4">
-                            <div className="flex items-center justify-between">
-                              <span className="font-sans font-bold text-xs text-gray-900 tracking-tight">Tarjeta Seleccionada</span>
-                              <button 
-                                onClick={() => setIsAddingCard(!isAddingCard)}
-                                className="text-xs font-semibold font-sans text-blue-600 hover:text-blue-700 flex items-center gap-1 transition-colors"
+                          <div className="pt-1 space-y-4 font-sans">
+                            {/* Top Card Management & Redirect Header Box (Recuadro Chévere) */}
+                            <div className="p-4 sm:p-5 rounded-2xl bg-slate-50/90 border border-slate-200/80 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-sm">
+                              <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 rounded-xl bg-gray-950 text-white flex items-center justify-center shadow-md shrink-0">
+                                  <CreditCard className="w-5 h-5" />
+                                </div>
+                                <div>
+                                  <div className="flex items-center gap-2">
+                                    <h4 className="font-sans font-bold text-xs uppercase tracking-wider text-gray-900">
+                                      Tarjetas Guardadas en tu Cuenta
+                                    </h4>
+                                    <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-white border border-gray-200 text-gray-600 font-semibold shadow-2xs">
+                                      {availableCards.length} {availableCards.length === 1 ? "tarjeta" : "tarjetas"}
+                                    </span>
+                                  </div>
+                                  <p className="text-[11px] text-gray-500 mt-0.5">
+                                    Elige tu tarjeta para procesar el pago o añade una nueva en tu perfil.
+                                  </p>
+                                </div>
+                              </div>
+
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setIsOpen(false);
+                                  router.push("/profile?tab=cards");
+                                }}
+                                className="self-start sm:self-auto flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-gray-900 hover:bg-gray-800 text-white text-xs font-semibold transition-all shadow-sm hover:scale-[1.02] cursor-pointer shrink-0"
                               >
-                                <PlusCircle className="w-3.5 h-3.5" />
-                                {isAddingCard ? "Ver tarjeta guardada" : "+ Nueva tarjeta"}
+                                <Plus className="w-3.5 h-3.5" />
+                                <span>Agregar nueva tarjeta</span>
                               </button>
                             </div>
 
-                            {isAddingCard ? (
-                              <form onSubmit={handleSaveNewCard} className="p-4 sm:p-5 rounded-2xl bg-gray-50/80 border border-gray-200/80 space-y-3.5 font-sans">
-                                <div>
-                                  <label className="block text-[10px] font-bold text-gray-600 uppercase tracking-wider mb-1.5 font-sans">Número de Tarjeta</label>
-                                  <input 
-                                    type="text" 
-                                    value={newCardNumber} 
-                                    onChange={e => setNewCardNumber(e.target.value)} 
-                                    placeholder="4532 •••• •••• 8921"
-                                    maxLength={19}
-                                    className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 text-xs font-mono outline-none focus:border-gray-900 focus:ring-1 focus:ring-gray-900 bg-white transition-all shadow-sm"
-                                    required
-                                  />
-                                </div>
-                                <div className="grid grid-cols-2 gap-3">
-                                  <div>
-                                    <label className="block text-[10px] font-bold text-gray-600 uppercase tracking-wider mb-1.5 font-sans">Titular de la Tarjeta</label>
-                                    <input 
-                                      type="text" 
-                                      value={newCardHolder} 
-                                      onChange={e => setNewCardHolder(e.target.value)} 
-                                      placeholder="Nombre y Apellidos"
-                                      className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 text-xs font-sans outline-none focus:border-gray-900 focus:ring-1 focus:ring-gray-900 bg-white transition-all shadow-sm"
-                                      required
-                                    />
-                                  </div>
-                                  <div>
-                                    <label className="block text-[10px] font-bold text-gray-600 uppercase tracking-wider mb-1.5 font-sans">Vencimiento</label>
-                                    <input 
-                                      type="text" 
-                                      value={newCardExp} 
-                                      onChange={e => setNewCardExp(e.target.value)} 
-                                      placeholder="MM/AA"
-                                      maxLength={5}
-                                      className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 text-xs font-mono outline-none focus:border-gray-900 focus:ring-1 focus:ring-gray-900 bg-white transition-all shadow-sm"
-                                      required
-                                    />
-                                  </div>
-                                </div>
-                                <div>
-                                  <label className="block text-[10px] font-bold text-gray-600 uppercase tracking-wider mb-1.5 font-sans">Red Emisora</label>
-                                  <div className="flex gap-2">
-                                    <button 
-                                      type="button"
-                                      onClick={() => setNewCardType("mastercard")}
-                                      className={`flex-1 py-2 rounded-xl border text-xs font-semibold font-sans transition-all flex items-center justify-center gap-2 ${newCardType === "mastercard" ? "bg-gray-900 text-white border-gray-900 shadow-sm" : "bg-white text-gray-700 border-gray-200 hover:bg-gray-50"}`}
-                                    >
-                                      <MastercardLogo className="h-4" />
-                                      <span>Mastercard</span>
-                                    </button>
-                                    <button 
-                                      type="button"
-                                      onClick={() => setNewCardType("visa")}
-                                      className={`flex-1 py-2 rounded-xl border text-xs font-semibold font-sans transition-all flex items-center justify-center gap-2 ${newCardType === "visa" ? "bg-gray-900 text-white border-gray-900 shadow-sm" : "bg-white text-gray-700 border-gray-200 hover:bg-gray-50"}`}
-                                    >
-                                      <VisaLogo className="h-3.5" />
-                                      <span>Visa</span>
-                                    </button>
-                                  </div>
-                                </div>
-                                <button 
-                                  type="submit"
-                                  className="w-full py-3 bg-gray-900 text-white rounded-xl text-xs font-bold font-sans tracking-wider uppercase hover:bg-gray-800 transition-colors shadow-sm cursor-pointer"
+                            {/* 3D STACK INTERACTIVE STAGE (Wallet Accordion Stack) */}
+                            <div className="relative pt-1 pb-4">
+                              {/* Interactive Hint Header */}
+                              <div className="flex items-center justify-between px-1 mb-3 text-xs text-gray-500">
+                                <span className="flex items-center gap-1.5 font-medium text-[11px] sm:text-xs">
+                                  <Layers className="w-3.5 h-3.5 text-blue-600 shrink-0" />
+                                  {isCardsExpanded 
+                                    ? "Toca una tarjeta para seleccionarla y plegar" 
+                                    : "Toca las tarjetas para desplegar la colección"}
+                                </span>
+                                <button
+                                  type="button"
+                                  onClick={() => setIsCardsExpanded(!isCardsExpanded)}
+                                  className="flex items-center gap-1 font-bold text-xs text-gray-900 hover:text-blue-600 transition-colors cursor-pointer"
                                 >
-                                  Guardar y Vincular Tarjeta
+                                  <span>{isCardsExpanded ? "Plegar" : "Desplegar"}</span>
+                                  {isCardsExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
                                 </button>
-                              </form>
-                            ) : (
-                              /* ULTRA-REALISTIC LUXURY BLACK TITANIUM METAL CARD (Apple Card / Centurion Elite) */
-                              <div className="relative aspect-[1.586/1] max-w-[390px] mx-auto rounded-3xl p-6 sm:p-7 text-white shadow-[0_30px_70px_-10px_rgba(0,0,0,0.85),0_10px_25px_rgba(0,0,0,0.5)] flex flex-col justify-between overflow-hidden border border-zinc-700/80
-                                bg-[#0c0d10]
-                                before:absolute before:inset-0 before:bg-[radial-gradient(ellipse_90%_90%_at_30%_-20%,rgba(255,255,255,0.12),transparent_70%)] before:pointer-events-none
-                                after:absolute after:inset-0 after:bg-[linear-gradient(135deg,rgba(255,255,255,0.08)_0%,transparent_50%,rgba(255,255,255,0.02)_100%)] after:pointer-events-none"
-                              >
-                                {/* Milled Metal Edge Bevel Highlight */}
-                                <div className="absolute inset-[1px] rounded-[23px] border border-white/15 pointer-events-none" />
-
-                                {/* Top Row: Brand Header & NFC Contactless Wave */}
-                                <div className="flex items-center justify-between relative z-10">
-                                  <div className="flex items-center gap-2">
-                                    <span className="font-mono font-extrabold text-[11px] sm:text-xs tracking-[0.25em] bg-gradient-to-r from-zinc-100 via-white to-zinc-400 bg-clip-text text-transparent uppercase drop-shadow">
-                                      LUMINA BLACK
-                                    </span>
-                                    <span className="text-[8px] font-mono tracking-widest text-zinc-400 px-1.5 py-0.5 rounded border border-zinc-700 bg-zinc-900/90">
-                                      PRIVATE CLIENT
-                                    </span>
-                                  </div>
-                                  
-                                  <div className="flex items-center gap-2 text-zinc-300">
-                                    <ContactlessIcon className="w-5 h-5 opacity-80" />
-                                    {/* Iridescent security hologram patch */}
-                                    <div className="w-6 h-4 rounded bg-gradient-to-tr from-cyan-400 via-fuchsia-400 to-amber-300 opacity-40 shadow-inner" />
-                                  </div>
-                                </div>
-
-                                {/* Center Row: EMV Gold Smart Chip with circuit lines */}
-                                <div className="relative z-10 flex items-center justify-between my-1">
-                                  <EmvChip />
-                                  <span className="text-[9px] font-mono tracking-[0.2em] text-zinc-400 uppercase">
-                                    {activeCard.type === "visa" ? "VISA INFINITE" : "WORLD ELITE"}
-                                  </span>
-                                </div>
-
-                                {/* Card Number: Embossed Foil Typography */}
-                                <div className="relative z-10">
-                                  <p className="font-mono font-semibold text-lg sm:text-2xl tracking-[0.22em] text-zinc-100 drop-shadow-[0_2px_4px_rgba(0,0,0,0.95)]">
-                                    {activeCard.number}
-                                  </p>
-                                </div>
-
-                                {/* Bottom Row: Holder, Expiry & Authentic Vector Brand Logo */}
-                                <div className="flex items-end justify-between relative z-10 pt-2 border-t border-zinc-800/80 text-[11px]">
-                                  <div>
-                                    <span className="text-[8px] font-mono text-zinc-400 uppercase tracking-widest block mb-0.5">
-                                      TITULAR
-                                    </span>
-                                    <p className="font-mono font-bold text-xs sm:text-sm text-zinc-100 tracking-wider truncate max-w-[160px] drop-shadow-sm">
-                                      {activeCard.holder.toUpperCase()}
-                                    </p>
-                                  </div>
-
-                                  <div>
-                                    <span className="text-[8px] font-mono text-zinc-400 uppercase tracking-widest block mb-0.5 text-center">
-                                      VENCE
-                                    </span>
-                                    <p className="font-mono font-bold text-xs sm:text-sm text-zinc-200 tracking-wider text-center drop-shadow-sm">
-                                      {activeCard.exp}
-                                    </p>
-                                  </div>
-
-                                  <div className="flex items-center justify-end pl-2">
-                                    {activeCard.type === "visa" ? (
-                                      <VisaLogo className="h-5 sm:h-6 drop-shadow-md" />
-                                    ) : (
-                                      <MastercardLogo className="h-6 sm:h-7 drop-shadow-md" />
-                                    )}
-                                  </div>
-                                </div>
                               </div>
-                            )}
+
+                              {/* 3D Perspective Stage */}
+                              <motion.div 
+                                className="relative w-full max-w-[420px] mx-auto"
+                                animate={{
+                                  height: isCardsExpanded ? `${orderedCards.length * 115 + 110}px` : "230px",
+                                }}
+                                transition={{ type: "spring", stiffness: 320, damping: 28 }}
+                              >
+                                {orderedCards.map((card, idx) => {
+                                  // Determine distinct luxury theme matching user's video
+                                  let theme = {
+                                    bg: "bg-gradient-to-tr from-[#0a192f] via-[#10316b] to-[#0284c7]",
+                                    text: "text-white",
+                                    border: "border-blue-400/30",
+                                    shadow: "shadow-[0_20px_50px_rgba(2,132,199,0.35)]",
+                                    logoColor: "#FFFFFF",
+                                    name: "SAPPHIRE ELITE"
+                                  };
+
+                                  if (card.number.includes("4916")) {
+                                    theme = {
+                                      bg: "bg-gradient-to-tr from-[#ffffff] via-[#f8fafc] to-[#e2e8f0]",
+                                      text: "text-slate-900",
+                                      border: "border-slate-200/90",
+                                      shadow: "shadow-[0_20px_50px_rgba(0,0,0,0.12)]",
+                                      logoColor: "#0f172a",
+                                      name: "PLATINUM PURE"
+                                    };
+                                  } else if (card.number.includes("0019")) {
+                                    theme = {
+                                      bg: "bg-gradient-to-tr from-[#ea580c] via-[#f97316] to-[#ec4899]",
+                                      text: "text-white",
+                                      border: "border-orange-300/30",
+                                      shadow: "shadow-[0_20px_50px_rgba(234,88,12,0.35)]",
+                                      logoColor: "#FFFFFF",
+                                      name: "CORAL RESERVE"
+                                    };
+                                  } else if (idx % 3 === 1) {
+                                    theme = {
+                                      bg: "bg-gradient-to-tr from-[#0f172a] via-[#1e293b] to-[#334155]",
+                                      text: "text-white",
+                                      border: "border-slate-600/50",
+                                      shadow: "shadow-[0_20px_50px_rgba(0,0,0,0.5)]",
+                                      logoColor: "#FFFFFF",
+                                      name: "OBSIDIAN TITANIUM"
+                                    };
+                                  }
+
+                                  const isSelected = card.id === activeCard.id;
+
+                                  const collapsedY = idx === 0 ? 0 : idx === 1 ? -16 : -30;
+                                  const collapsedScale = idx === 0 ? 1 : idx === 1 ? 0.95 : 0.90;
+                                  const collapsedZIndex = 30 - idx * 10;
+                                  const collapsedOpacity = idx === 0 ? 1 : idx === 1 ? 0.88 : 0.72;
+
+                                  const expandedY = idx * 115;
+                                  const expandedZIndex = 20 + idx;
+
+                                  return (
+                                    <motion.div
+                                      key={card.id}
+                                      onClick={() => {
+                                        setSelectedCardId(card.id);
+                                        setIsCardsExpanded(false);
+                                      }}
+                                      initial={false}
+                                      animate={{
+                                        y: isCardsExpanded ? expandedY : collapsedY,
+                                        scale: isCardsExpanded ? 1 : collapsedScale,
+                                        zIndex: isCardsExpanded ? expandedZIndex : collapsedZIndex,
+                                        opacity: isCardsExpanded ? 1 : collapsedOpacity,
+                                        rotateX: isCardsExpanded ? 0 : (idx === 0 ? 0 : 3),
+                                      }}
+                                      whileHover={{
+                                        scale: 1.025,
+                                        zIndex: 60,
+                                      }}
+                                      transition={{
+                                        type: "spring",
+                                        stiffness: 340,
+                                        damping: 26,
+                                        mass: 0.7,
+                                      }}
+                                      style={{ transformStyle: "preserve-3d" }}
+                                      className={`absolute top-0 left-0 right-0 h-[200px] rounded-3xl p-5 sm:p-6 ${theme.bg} ${theme.text} ${theme.border} ${theme.shadow} flex flex-col justify-between cursor-pointer select-none transition-shadow overflow-hidden border`}
+                                    >
+                                      {/* Gloss reflection highlight */}
+                                      <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/10 to-transparent pointer-events-none" />
+                                      <div className="absolute inset-[1px] rounded-[23px] border border-white/20 pointer-events-none" />
+
+                                      {/* Top Row: Network & Status */}
+                                      <div className="flex items-center justify-between relative z-10">
+                                        <div className="flex items-center gap-2">
+                                          <span className="font-mono text-[9px] sm:text-[10px] tracking-[0.2em] font-extrabold uppercase opacity-80">
+                                            {theme.name}
+                                          </span>
+                                          {isSelected && (
+                                            <span className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-400/30 flex items-center gap-1 backdrop-blur-sm">
+                                              <Check className="w-2.5 h-2.5" /> Seleccionada
+                                            </span>
+                                          )}
+                                        </div>
+
+                                        <div className="flex items-center gap-2">
+                                          <ContactlessIcon className="w-4 h-4 opacity-75" />
+                                          {card.type === "visa" ? (
+                                            <VisaLogo className="h-4 sm:h-5" fill={theme.logoColor} />
+                                          ) : (
+                                            <MastercardLogo className="h-5 sm:h-6" />
+                                          )}
+                                        </div>
+                                      </div>
+
+                                      {/* Center Row: EMV Chip & Masked Number */}
+                                      <div className="relative z-10 flex items-center justify-between my-auto">
+                                        <EmvChip />
+                                        <p className="font-mono font-bold text-base sm:text-lg tracking-[0.22em] drop-shadow-sm opacity-95">
+                                          {card.number}
+                                        </p>
+                                      </div>
+
+                                      {/* Bottom Row: Holder & Expiry */}
+                                      <div className="flex items-end justify-between relative z-10 pt-1 border-t border-white/15 text-[10px]">
+                                        <div>
+                                          <span className="text-[7px] sm:text-[8px] font-mono opacity-70 uppercase tracking-widest block">
+                                            TITULAR
+                                          </span>
+                                          <p className="font-mono font-bold text-xs tracking-wider uppercase truncate max-w-[170px]">
+                                            {card.holder}
+                                          </p>
+                                        </div>
+
+                                        <div className="text-right">
+                                          <span className="text-[7px] sm:text-[8px] font-mono opacity-70 uppercase tracking-widest block">
+                                            VENCE
+                                          </span>
+                                          <p className="font-mono font-bold text-xs tracking-wider">
+                                            {card.exp}
+                                          </p>
+                                        </div>
+                                      </div>
+                                    </motion.div>
+                                  );
+                                })}
+                              </motion.div>
+                            </div>
                           </div>
                         )}
 
