@@ -22,13 +22,14 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
     }
   }, [mounted, isAuthenticated, pathname, router]);
 
+  // To prevent Next.js build errors (PageNotFoundError), we must always render children during SSR
   if (!mounted) {
-    return <div className="min-h-screen bg-[#f8f9fa]" />; // Prevent flicker
+    return <div style={{ visibility: "hidden" }}>{children}</div>;
   }
 
-  // If not authenticated and trying to access a protected route, render nothing while redirecting
+  // If not authenticated and trying to access a protected route, render hidden children while redirecting
   if (!isAuthenticated && pathname !== "/auth/login" && pathname !== "/auth/register") {
-    return <div className="min-h-screen bg-[#f8f9fa]" />;
+    return <div style={{ visibility: "hidden" }}>{children}</div>;
   }
 
   return <>{children}</>;
