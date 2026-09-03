@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { supabase } from './supabase';
-import { CartItem } from './store';
+import { CartItem, useCartStore } from './store';
 
 export interface User {
   id: string;
@@ -108,6 +108,9 @@ export const useUserStore = create<UserState>((set, get) => ({
           orders: personalData.orders,
           address: personalData.address
         });
+
+        // Initialize and isolate cart for this specific user
+        useCartStore.getState().initCartForUser(session.user.id);
         
         // Load favorites from Supabase
         const { data: favs } = await supabase.from('favorites').select('product_id').eq('user_id', session.user.id);
@@ -115,6 +118,7 @@ export const useUserStore = create<UserState>((set, get) => ({
           set({ favorites: favs.map(f => f.product_id) });
         }
       } else {
+        useCartStore.getState().initCartForUser(null);
         set({ user: null, isAuthenticated: false, cards: [], orders: [], address: null, favorites: [] });
       }
     } finally {
@@ -136,9 +140,15 @@ export const useUserStore = create<UserState>((set, get) => ({
           orders: personalData.orders,
           address: personalData.address
         });
+
+        // Switch active cart strictly to this account
+        useCartStore.getState().initCartForUser(session.user.id);
+
         const { data: favs } = await supabase.from('favorites').select('product_id').eq('user_id', session.user.id);
         if (favs) set({ favorites: favs.map(f => f.product_id) });
       } else {
+        // Reset and isolate guest cart when signed out
+        useCartStore.getState().initCartForUser(null);
         set({ user: null, isAuthenticated: false, favorites: [], cards: [], orders: [], address: null, isLoading: false });
       }
     });
@@ -160,6 +170,10 @@ export const useUserStore = create<UserState>((set, get) => ({
         orders: personalData.orders,
         address: personalData.address
       });
+
+      // Synchronize and load user's private cart
+      useCartStore.getState().initCartForUser(data.user.id, true);
+
       const { data: favs } = await supabase.from('favorites').select('product_id').eq('user_id', data.user.id);
       if (favs) set({ favorites: favs.map(f => f.product_id) });
     }
@@ -168,6 +182,8 @@ export const useUserStore = create<UserState>((set, get) => ({
   
   logout: async () => {
     await supabase.auth.signOut();
+    // Isolate & reset cart to guest session (empty) so no data leaks into the next account
+    useCartStore.getState().initCartForUser(null);
     set({ user: null, isAuthenticated: false, favorites: [], cards: [], orders: [], address: null });
   },
   
@@ -188,6 +204,9 @@ export const useUserStore = create<UserState>((set, get) => ({
         address: null,
         favorites: []
       });
+
+      // Initialize empty private cart for new user
+      useCartStore.getState().initCartForUser(data.user.id, true);
     }
     return { error: error?.message || null };
   },

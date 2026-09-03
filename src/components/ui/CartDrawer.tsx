@@ -197,24 +197,25 @@ export function CartDrawer() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [lastPlacedOrder, setLastPlacedOrder] = useState<Order | null>(null);
 
-  // Rehydrate store on mount
+  // Mount on client
   useEffect(() => {
-    useCartStore.persist.rehydrate();
     setIsMounted(true);
   }, []);
 
-  // Initialize defaults from userStore
+  // Initialize defaults from userStore cleanly scoped to the active account
   useEffect(() => {
-    if (cards && cards.length > 0 && !selectedCardId) {
-      setSelectedCardId(cards[0].id);
-    }
+    setSelectedCardId(cards && cards.length > 0 ? cards[0].id : "");
     if (address) {
       setAddrStreet(address.street);
       setAddrCity(address.city);
       setAddrPostal(address.postalCode);
       setAddrCountry(address.country);
+    } else {
+      setAddrStreet("");
+      setAddrCity("");
+      setAddrPostal("");
     }
-  }, [cards, address, selectedCardId]);
+  }, [user?.id, cards, address]);
 
   // Reset step when cart is closed
   useEffect(() => {
