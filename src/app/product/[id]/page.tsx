@@ -46,17 +46,15 @@ export default function ProductDetail({ params }: { params: { id: string } }) {
     <div className="relative min-h-screen pt-28 pb-24 bg-transparent">
       {/* Ambient Background Effect (YouTube Style) */}
       <div className="fixed inset-0 z-[-1] overflow-hidden pointer-events-none">
-        {/* Capa base blanca para dar luz */}
-        <div className="absolute inset-0 bg-white z-0" />
         {/* Imagen del producto altamente desenfocada y opaca para el color */}
         <Image
           src={images[activeImage]}
           alt="Ambient"
           fill
-          className="object-cover blur-[120px] saturate-[2] opacity-50 transition-all duration-700 z-10"
+          className="object-cover blur-[150px] saturate-[2] opacity-30 transition-all duration-700 z-10"
         />
         {/* Capa esmerilada fina encima para dar el toque mate (matte) */}
-        <div className="absolute inset-0 bg-white/40 backdrop-blur-[60px] z-20" />
+        <div className="absolute inset-0 bg-transparent backdrop-blur-[40px] z-20" />
       </div>
 
       <div className="container mx-auto px-4 md:px-6 relative z-10">

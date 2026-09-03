@@ -5,7 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { Heart, ShoppingBag } from "lucide-react";
 import { useCartStore } from "@/lib/store";
-import { getProduct } from "@/lib/data";
+import { useCatalogStore } from "@/lib/catalogStore";
 import { useUserStore } from "@/lib/userStore";
 
 interface ProductCardProps {
@@ -74,9 +74,9 @@ export function ProductCard({ id, title, price, oldPrice, discount, badge, image
           className="mt-auto w-full py-2.5 rounded-xl bg-white/40 backdrop-blur-md border border-white/60 text-gray-900 font-medium text-sm flex items-center justify-center gap-2 hover:bg-white/60 transition-all shadow-sm"
           onClick={(e) => { 
             e.preventDefault(); 
-            const product = getProduct(id);
+            const product = useCatalogStore.getState().products.find(p => p.id === id);
             if (product) {
-              addItem(product, 1, product.colors?.[0]?.name, product.sizes?.[0]);
+              addItem(product as any, 1, product.colors?.[0]?.name, product.sizes?.[0]);
             }
           }}
         >

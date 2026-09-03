@@ -84,11 +84,7 @@ export default function Home() {
       </div>
 
       {/* Immersive Background Wrapper for Catalog Sections */}
-      <div className="relative overflow-hidden bg-[#fafafa]">
-        {/* Soft ambient blobs */}
-        <div className="absolute top-0 left-0 w-[600px] h-[600px] bg-[#d2b48c] rounded-full mix-blend-multiply filter blur-[150px] opacity-20 animate-pulse pointer-events-none" style={{ animationDuration: '10s' }} />
-        <div className="absolute bottom-0 right-0 w-[800px] h-[800px] bg-[#8c9276] rounded-full mix-blend-multiply filter blur-[150px] opacity-10 pointer-events-none" />
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[1000px] h-[500px] bg-[#e1ad01] rounded-full mix-blend-multiply filter blur-[200px] opacity-[0.08] pointer-events-none" />
+      <div className="relative overflow-hidden bg-transparent">
 
         {/* Categories */}
         <section className="py-24 relative z-10">

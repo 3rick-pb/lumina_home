@@ -40,6 +40,7 @@ export const useCatalogStore = create<CatalogState>()(
     }),
     {
       name: 'lumina-catalog-storage',
+      version: 2,
       skipHydration: true,
     }
   )
