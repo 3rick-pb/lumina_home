@@ -30,6 +30,7 @@ export interface PaymentCard {
 interface UserState {
   user: User | null;
   isAuthenticated: boolean;
+  isLoading: boolean;
   favorites: string[]; // array of product IDs
   orders: Order[];
   cards: PaymentCard[];
@@ -102,23 +103,28 @@ const DEFAULT_ORDERS: Order[] = [
 export const useUserStore = create<UserState>((set, get) => ({
   user: null,
   isAuthenticated: false,
+  isLoading: true,
   favorites: [],
   orders: DEFAULT_ORDERS,
   cards: DEFAULT_CARDS,
   
   initializeAuth: async () => {
-    const { data: { session } } = await supabase.auth.getSession();
-    if (session?.user) {
-      const email = session.user.email || '';
-      const role = (email.toLowerCase() === 'admin@lumina.com' || session.user.user_metadata?.role === 'ADMIN') ? 'ADMIN' : 'USER';
-      const name = session.user.user_metadata?.name || email.split('@')[0];
-      set({ user: { id: session.user.id, email, name, role }, isAuthenticated: true });
-      
-      // Load favorites
-      const { data: favs } = await supabase.from('favorites').select('product_id').eq('user_id', session.user.id);
-      if (favs) {
-        set({ favorites: favs.map(f => f.product_id) });
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user) {
+        const email = session.user.email || '';
+        const role = (email.toLowerCase() === 'admin@lumina.com' || session.user.user_metadata?.role === 'ADMIN') ? 'ADMIN' : 'USER';
+        const name = session.user.user_metadata?.name || email.split('@')[0];
+        set({ user: { id: session.user.id, email, name, role }, isAuthenticated: true });
+        
+        // Load favorites
+        const { data: favs } = await supabase.from('favorites').select('product_id').eq('user_id', session.user.id);
+        if (favs) {
+          set({ favorites: favs.map(f => f.product_id) });
+        }
       }
+    } finally {
+      set({ isLoading: false });
     }
     
     supabase.auth.onAuthStateChange(async (event, session) => {
@@ -126,11 +132,11 @@ export const useUserStore = create<UserState>((set, get) => ({
         const email = session.user.email || '';
         const role = (email.toLowerCase() === 'admin@lumina.com' || session.user.user_metadata?.role === 'ADMIN') ? 'ADMIN' : 'USER';
         const name = session.user.user_metadata?.name || email.split('@')[0];
-        set({ user: { id: session.user.id, email, name, role }, isAuthenticated: true });
+        set({ user: { id: session.user.id, email, name, role }, isAuthenticated: true, isLoading: false });
         const { data: favs } = await supabase.from('favorites').select('product_id').eq('user_id', session.user.id);
         if (favs) set({ favorites: favs.map(f => f.product_id) });
       } else {
-        set({ user: null, isAuthenticated: false, favorites: [] });
+        set({ user: null, isAuthenticated: false, favorites: [], isLoading: false });
       }
     });
   },

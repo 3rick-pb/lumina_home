@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
+import Link from "next/link";
 import { ProductCard } from "@/components/ui/ProductCard";
 import { useCatalogStore } from "@/lib/catalogStore";
 
@@ -49,17 +50,17 @@ export default function ShopPage({ searchParams }: { searchParams: { category?: 
         </div>
 
         <div className="flex flex-wrap gap-3 mb-10">
-          <a href="/shop" className={`px-5 py-2 rounded-full text-sm font-medium transition-all ${!categoryFilter ? 'bg-white/40 backdrop-blur-xl border border-white/60 text-gray-900 shadow-sm' : 'bg-transparent text-gray-600 border border-gray-200 hover:bg-white/40 hover:backdrop-blur-md'}`}>
+          <Link href="/shop" className={`px-5 py-2 rounded-full text-sm font-medium transition-all ${!categoryFilter ? 'bg-white/40 backdrop-blur-xl border border-white/60 text-gray-900 shadow-sm' : 'bg-transparent text-gray-600 border border-gray-200 hover:bg-white/40 hover:backdrop-blur-md'}`}>
             Todos
-          </a>
+          </Link>
           {categories.map((cat) => (
-            <a 
+            <Link 
               key={cat} 
               href={`/shop?category=${cat.toLowerCase()}`}
               className={`px-5 py-2 rounded-full text-sm font-medium transition-all ${categoryFilter?.toLowerCase() === cat.toLowerCase() ? 'bg-white/40 backdrop-blur-xl border border-white/60 text-gray-900 shadow-sm' : 'bg-transparent text-gray-600 border border-gray-200 hover:bg-white/40 hover:backdrop-blur-md'}`}
             >
               {cat}
-            </a>
+            </Link>
           ))}
         </div>
 
