@@ -26,7 +26,8 @@ import {
   User as UserIcon,
   KeyRound,
   ExternalLink,
-  MapPin
+  MapPin,
+  Tag
 } from "lucide-react";
 import { useUserStore, Order } from "@/lib/userStore";
 import { useCatalogStore } from "@/lib/catalogStore";
@@ -54,7 +55,7 @@ export default function ProfilePage() {
     updateUserPassword
   } = useUserStore();
 
-  const { products, categories, addProduct, deleteProduct, addCategory, deleteCategory } = useCatalogStore();
+  const { products, categories, badges, addProduct, deleteProduct, addCategory, deleteCategory, addBadge, deleteBadge } = useCatalogStore();
   const { addItem, setIsOpen: setCartOpen } = useCartStore();
 
   // Navigation & Search State
@@ -106,8 +107,17 @@ export default function ProfilePage() {
   const [hasColors, setHasColors] = useState(false);
   const [prodColors, setProdColors] = useState("");
 
-  // Category manager state
+  // Category & Badge manager state
   const [newCatInput, setNewCatInput] = useState("");
+  const [newBadgeInput, setNewBadgeInput] = useState("");
+
+  const handleAddBadgeSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (newBadgeInput.trim()) {
+      addBadge(newBadgeInput.trim());
+      setNewBadgeInput("");
+    }
+  };
 
   // Settings State
   const [editName, setEditName] = useState("");
@@ -463,7 +473,7 @@ export default function ProfilePage() {
       <main className="flex-1 flex flex-col min-w-0 max-w-7xl mx-auto space-y-6">
         
         {/* Top App Bar (Reference Style) */}
-        <header className="bg-white/80 backdrop-blur-2xl p-4 md:px-6 rounded-3xl border border-white/80 shadow-[0_4px_20px_rgba(0,0,0,0.02)] flex items-center justify-between gap-4">
+        <header className="relative z-40 bg-white/80 backdrop-blur-2xl p-4 md:px-6 rounded-3xl border border-white/80 shadow-[0_4px_20px_rgba(0,0,0,0.02)] flex items-center justify-between gap-4">
           
           {/* Brand & Tabs */}
           <div className="flex items-center gap-3 md:gap-6 overflow-x-auto hide-scrollbar">
@@ -508,7 +518,7 @@ export default function ProfilePage() {
                     onClick={() => setActiveTab("niches")} 
                     className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all ${activeTab === "niches" ? "bg-white text-gray-900 shadow-sm" : "text-gray-500 hover:text-gray-900"}`}
                   >
-                    Nichos ({categories.length})
+                    Nichos & Badges ({categories.length})
                   </button>
                 </>
               )}
@@ -523,7 +533,7 @@ export default function ProfilePage() {
 
           {/* Right Search Input & Profile Badge */}
           <div className="flex items-center gap-3 shrink-0">
-            <div className="relative">
+            <div className="relative z-50">
               <div className="hidden sm:flex items-center bg-gray-100/70 px-3 py-1.5 rounded-2xl border border-gray-200/50 text-xs text-gray-600 focus-within:ring-2 focus-within:ring-[#8c9276]/30 focus-within:bg-white transition-all">
                 <Search className="w-3.5 h-3.5 mr-2 text-gray-400" />
                 <input 
@@ -542,10 +552,10 @@ export default function ProfilePage() {
 
               {/* Floating Live Quick Search Results */}
               {searchQuery.trim().length > 0 && (
-                <div className="absolute right-0 top-full mt-2 w-72 bg-white/95 backdrop-blur-2xl border border-gray-200/80 rounded-2xl shadow-2xl p-3 z-50 space-y-3 animate-fade-in text-xs">
+                <div className="absolute right-0 top-full mt-2 w-80 sm:w-96 bg-white/95 backdrop-blur-2xl border border-gray-200/80 rounded-3xl shadow-[0_24px_70px_rgba(0,0,0,0.22)] p-4 z-[100] space-y-3 animate-fade-in text-xs pointer-events-auto">
                   <div className="flex items-center justify-between pb-1 border-b border-gray-100 text-[10px] text-gray-400 uppercase font-bold">
                     <span>Resultados de búsqueda</span>
-                    <button onClick={() => setSearchQuery("")} className="hover:text-gray-700">Cerrar</button>
+                    <button onClick={() => setSearchQuery("")} className="hover:text-gray-700 font-medium text-xs normal-case">Cerrar</button>
                   </div>
                   
                   {/* Matching Orders */}
@@ -1513,6 +1523,68 @@ export default function ProfilePage() {
                 );
               })}
             </div>
+
+            {/* ---------------------------------------------------- */}
+            {/* Marketing Badges Section */}
+            {/* ---------------------------------------------------- */}
+            <div className="pt-8 border-t border-gray-100 space-y-6">
+              <div>
+                <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">
+                  <Tag className="w-5 h-5 text-[#8c9276]" /> Badges & Etiquetas de Marketing
+                </h2>
+                <p className="text-xs text-gray-500">
+                  Crea o elimina distintivos comerciales para destacar tus piezas (ej: Más Vendido, Bestseller, Edición Limitada).
+                </p>
+              </div>
+
+              {/* Add Badge Form */}
+              <form onSubmit={handleAddBadgeSubmit} className="flex gap-3 max-w-md">
+                <input 
+                  type="text" 
+                  value={newBadgeInput} 
+                  onChange={e => setNewBadgeInput(e.target.value)}
+                  placeholder="Nombre del nuevo badge (ej: Edición Limitada)"
+                  className="flex-1 px-4 py-2.5 rounded-xl border border-gray-200 text-xs focus:outline-none focus:ring-1 focus:ring-gray-900"
+                />
+                <button 
+                  type="submit" 
+                  className="px-5 py-2.5 bg-gray-900 text-white rounded-xl text-xs font-semibold hover:bg-gray-800 transition-colors shadow-sm shrink-0"
+                >
+                  + Añadir Badge
+                </button>
+              </form>
+
+              {/* Badges Grid */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 pt-2">
+                {badges.map(badge => {
+                  const count = products.filter(p => p.badge?.toLowerCase() === badge.toLowerCase()).length;
+
+                  return (
+                    <div 
+                      key={badge} 
+                      className="p-4 rounded-2xl border border-gray-100 bg-white shadow-sm flex items-center justify-between"
+                    >
+                      <div className="flex items-center gap-2.5">
+                        <span className="px-2.5 py-1 rounded-full bg-amber-50 text-amber-900 border border-amber-200 text-[11px] font-bold">
+                          {badge}
+                        </span>
+                        <span className="text-[11px] text-gray-400">
+                          {count} {count === 1 ? "producto" : "productos"}
+                        </span>
+                      </div>
+
+                      <button 
+                        onClick={() => deleteBadge(badge)}
+                        className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-colors"
+                        title="Eliminar badge"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
           </div>
         )}
 
@@ -1955,13 +2027,21 @@ export default function ProfilePage() {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-gray-700 mb-1">Badge de Marketing</label>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="block text-xs font-semibold text-gray-700">Badge de Marketing</label>
+                    <button 
+                      type="button" 
+                      onClick={() => { setShowProductModal(false); setActiveTab("niches"); }}
+                      className="text-[10px] font-semibold text-[#8c9276] hover:underline cursor-pointer"
+                    >
+                      + Gestionar badges
+                    </button>
+                  </div>
                   <select value={prodBadge} onChange={e => setProdBadge(e.target.value)} className="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm outline-none bg-white">
                     <option value="">Sin badge</option>
-                    <option value="Más Vendido">Más Vendido</option>
-                    <option value="Nuevo">Nuevo</option>
-                    <option value="Bestseller">Bestseller</option>
-                    <option value="Tendencia">Tendencia</option>
+                    {badges.map(b => (
+                      <option key={b} value={b}>{b}</option>
+                    ))}
                   </select>
                 </div>
               </div>

@@ -66,6 +66,22 @@ interface UserState {
   updateUserPassword: (password: string) => Promise<{ error: string | null }>;
 }
 
+const loadUserData = (userId: string) => {
+  if (typeof window === 'undefined') return { cards: [], orders: [], address: null };
+  try {
+    const savedCards = localStorage.getItem(`lumina_cards_${userId}`);
+    const savedOrders = localStorage.getItem(`lumina_orders_${userId}`);
+    const savedAddress = localStorage.getItem(`lumina_address_${userId}`);
+    return {
+      cards: savedCards ? JSON.parse(savedCards) : [],
+      orders: savedOrders ? JSON.parse(savedOrders) : [],
+      address: savedAddress ? JSON.parse(savedAddress) : null,
+    };
+  } catch {
+    return { cards: [], orders: [], address: null };
+  }
+};
+
 export const useUserStore = create<UserState>((set, get) => ({
   user: null,
   isAuthenticated: false,
@@ -76,35 +92,30 @@ export const useUserStore = create<UserState>((set, get) => ({
   address: null,
   
   initializeAuth: async () => {
-    // Load persisted local data if any
-    if (typeof window !== 'undefined') {
-      try {
-        const savedCards = localStorage.getItem('lumina_cards');
-        const savedOrders = localStorage.getItem('lumina_orders');
-        const savedAddress = localStorage.getItem('lumina_address');
-        set({
-          cards: savedCards ? JSON.parse(savedCards) : [],
-          orders: savedOrders ? JSON.parse(savedOrders) : [],
-          address: savedAddress ? JSON.parse(savedAddress) : null,
-        });
-      } catch {
-        // Ignore JSON parse errors
-      }
-    }
-
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (session?.user) {
         const email = session.user.email || '';
         const role = (email.toLowerCase() === 'admin@lumina.com' || session.user.user_metadata?.role === 'ADMIN') ? 'ADMIN' : 'USER';
         const name = session.user.user_metadata?.name || email.split('@')[0];
-        set({ user: { id: session.user.id, email, name, role }, isAuthenticated: true });
+        
+        const personalData = loadUserData(session.user.id);
+
+        set({ 
+          user: { id: session.user.id, email, name, role }, 
+          isAuthenticated: true,
+          cards: personalData.cards,
+          orders: personalData.orders,
+          address: personalData.address
+        });
         
         // Load favorites from Supabase
         const { data: favs } = await supabase.from('favorites').select('product_id').eq('user_id', session.user.id);
         if (favs) {
           set({ favorites: favs.map(f => f.product_id) });
         }
+      } else {
+        set({ user: null, isAuthenticated: false, cards: [], orders: [], address: null, favorites: [] });
       }
     } finally {
       set({ isLoading: false });
@@ -115,11 +126,20 @@ export const useUserStore = create<UserState>((set, get) => ({
         const email = session.user.email || '';
         const role = (email.toLowerCase() === 'admin@lumina.com' || session.user.user_metadata?.role === 'ADMIN') ? 'ADMIN' : 'USER';
         const name = session.user.user_metadata?.name || email.split('@')[0];
-        set({ user: { id: session.user.id, email, name, role }, isAuthenticated: true, isLoading: false });
+        const personalData = loadUserData(session.user.id);
+
+        set({ 
+          user: { id: session.user.id, email, name, role }, 
+          isAuthenticated: true, 
+          isLoading: false,
+          cards: personalData.cards,
+          orders: personalData.orders,
+          address: personalData.address
+        });
         const { data: favs } = await supabase.from('favorites').select('product_id').eq('user_id', session.user.id);
         if (favs) set({ favorites: favs.map(f => f.product_id) });
       } else {
-        set({ user: null, isAuthenticated: false, favorites: [], isLoading: false });
+        set({ user: null, isAuthenticated: false, favorites: [], cards: [], orders: [], address: null, isLoading: false });
       }
     });
   },
@@ -131,9 +151,14 @@ export const useUserStore = create<UserState>((set, get) => ({
       const userEmail = data.user.email || cleanEmail;
       const role = (userEmail.toLowerCase() === 'admin@lumina.com' || data.user.user_metadata?.role === 'ADMIN') ? 'ADMIN' : 'USER';
       const name = data.user.user_metadata?.name || userEmail.split('@')[0];
+      const personalData = loadUserData(data.user.id);
+
       set({ 
         user: { id: data.user.id, email: userEmail, name, role }, 
-        isAuthenticated: true 
+        isAuthenticated: true,
+        cards: personalData.cards,
+        orders: personalData.orders,
+        address: personalData.address
       });
       const { data: favs } = await supabase.from('favorites').select('product_id').eq('user_id', data.user.id);
       if (favs) set({ favorites: favs.map(f => f.product_id) });
@@ -143,7 +168,7 @@ export const useUserStore = create<UserState>((set, get) => ({
   
   logout: async () => {
     await supabase.auth.signOut();
-    set({ user: null, isAuthenticated: false, favorites: [] });
+    set({ user: null, isAuthenticated: false, favorites: [], cards: [], orders: [], address: null });
   },
   
   register: async (email, password, name) => {
@@ -157,13 +182,18 @@ export const useUserStore = create<UserState>((set, get) => ({
     if (!error && data?.user) {
       set({ 
         user: { id: data.user.id, email: cleanEmail, name, role }, 
-        isAuthenticated: true 
+        isAuthenticated: true,
+        cards: [],
+        orders: [],
+        address: null,
+        favorites: []
       });
     }
     return { error: error?.message || null };
   },
 
   addCard: (card) => {
+    const userId = get().user?.id || 'guest';
     const newCard: PaymentCard = {
       ...card,
       id: Math.random().toString(36).substring(7)
@@ -171,26 +201,28 @@ export const useUserStore = create<UserState>((set, get) => ({
     const nextCards = [newCard, ...get().cards];
     set({ cards: nextCards });
     if (typeof window !== 'undefined') {
-      localStorage.setItem('lumina_cards', JSON.stringify(nextCards));
+      localStorage.setItem(`lumina_cards_${userId}`, JSON.stringify(nextCards));
     }
   },
 
   removeCard: (id) => {
+    const userId = get().user?.id || 'guest';
     const nextCards = get().cards.filter(c => c.id !== id);
     set({ cards: nextCards });
     if (typeof window !== 'undefined') {
-      localStorage.setItem('lumina_cards', JSON.stringify(nextCards));
+      localStorage.setItem(`lumina_cards_${userId}`, JSON.stringify(nextCards));
     }
   },
 
   setDefaultCard: (id) => {
+    const userId = get().user?.id || 'guest';
     const nextCards = get().cards.map(c => ({
       ...c,
       isDefault: c.id === id
     }));
     set({ cards: nextCards });
     if (typeof window !== 'undefined') {
-      localStorage.setItem('lumina_cards', JSON.stringify(nextCards));
+      localStorage.setItem(`lumina_cards_${userId}`, JSON.stringify(nextCards));
     }
   },
   
@@ -211,32 +243,36 @@ export const useUserStore = create<UserState>((set, get) => ({
   isFavorite: (productId) => get().favorites.includes(productId),
   
   addOrder: (order) => {
+    const userId = get().user?.id || 'guest';
     const nextOrders = [order, ...get().orders];
     set({ orders: nextOrders });
     if (typeof window !== 'undefined') {
-      localStorage.setItem('lumina_orders', JSON.stringify(nextOrders));
+      localStorage.setItem(`lumina_orders_${userId}`, JSON.stringify(nextOrders));
     }
   },
 
   updateOrderStatus: (orderId, status) => {
+    const userId = get().user?.id || 'guest';
     const nextOrders = get().orders.map(order => order.id === orderId ? { ...order, status } : order);
     set({ orders: nextOrders });
     if (typeof window !== 'undefined') {
-      localStorage.setItem('lumina_orders', JSON.stringify(nextOrders));
+      localStorage.setItem(`lumina_orders_${userId}`, JSON.stringify(nextOrders));
     }
   },
 
   setAddress: (address) => {
+    const userId = get().user?.id || 'guest';
     set({ address });
     if (typeof window !== 'undefined') {
-      localStorage.setItem('lumina_address', JSON.stringify(address));
+      localStorage.setItem(`lumina_address_${userId}`, JSON.stringify(address));
     }
   },
 
   removeAddress: () => {
+    const userId = get().user?.id || 'guest';
     set({ address: null });
     if (typeof window !== 'undefined') {
-      localStorage.removeItem('lumina_address');
+      localStorage.removeItem(`lumina_address_${userId}`);
     }
   },
 

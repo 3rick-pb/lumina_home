@@ -21,6 +21,7 @@ export interface CatalogProduct {
 interface CatalogState {
   products: CatalogProduct[];
   categories: string[];
+  badges: string[];
   isLoading: boolean;
   fetchProducts: () => Promise<void>;
   addProduct: (product: Omit<CatalogProduct, 'id'> & { id?: string }) => Promise<{ success: boolean; error?: string }>;
@@ -28,6 +29,8 @@ interface CatalogState {
   deleteProduct: (id: string) => Promise<void>;
   addCategory: (name: string) => void;
   deleteCategory: (name: string) => void;
+  addBadge: (name: string) => void;
+  deleteBadge: (name: string) => void;
 }
 
 const DEFAULT_CATEGORIES = [
@@ -41,6 +44,15 @@ const DEFAULT_CATEGORIES = [
   "Decoración",
   "Cocina",
   "Bienestar"
+];
+
+const DEFAULT_BADGES = [
+  "Más Vendido",
+  "Nuevo",
+  "Bestseller",
+  "Tendencia",
+  "Edición Limitada",
+  "Exclusivo"
 ];
 
 // Convert camelCase to snake_case for Supabase
@@ -92,19 +104,38 @@ const toFrontendProduct = (p: any): CatalogProduct => ({
 export const useCatalogStore = create<CatalogState>((set) => ({
   products: [],
   categories: DEFAULT_CATEGORIES,
+  badges: DEFAULT_BADGES,
   isLoading: true,
   
   fetchProducts: async () => {
     set({ isLoading: true });
+    
+    // Load custom badges from localStorage if present
+    let initialBadges = DEFAULT_BADGES;
+    if (typeof window !== 'undefined') {
+      try {
+        const savedBadges = localStorage.getItem('lumina_marketing_badges');
+        if (savedBadges) {
+          initialBadges = Array.from(new Set([...DEFAULT_BADGES, ...JSON.parse(savedBadges)]));
+        }
+      } catch {
+        // Ignore JSON error
+      }
+    }
+
     const { data, error } = await supabase.from('products').select('*').order('created_at', { ascending: false });
     if (!error && data) {
       const prods = data.map(toFrontendProduct);
-      // Collect unique categories found in DB and combine with defaults
+      // Collect unique categories & badges found in DB and combine with defaults
       const dbCategories = Array.from(new Set(prods.map(p => p.category).filter(Boolean)));
       const mergedCats = Array.from(new Set([...DEFAULT_CATEGORIES, ...dbCategories]));
-      set({ products: prods, categories: mergedCats, isLoading: false });
+      
+      const dbBadges = Array.from(new Set(prods.map(p => p.badge).filter((b): b is string => Boolean(b))));
+      const mergedBadges = Array.from(new Set([...initialBadges, ...dbBadges]));
+
+      set({ products: prods, categories: mergedCats, badges: mergedBadges, isLoading: false });
     } else {
-      set({ isLoading: false });
+      set({ badges: initialBadges, isLoading: false });
     }
   },
   
@@ -117,9 +148,13 @@ export const useCatalogStore = create<CatalogState>((set) => ({
         const newCats = state.categories.includes(created.category)
           ? state.categories
           : [...state.categories, created.category];
+        const newBadges = created.badge && !state.badges.includes(created.badge)
+          ? [...state.badges, created.badge]
+          : state.badges;
         return { 
           products: [created, ...state.products],
-          categories: newCats
+          categories: newCats,
+          badges: newBadges
         };
       });
       return { success: true };
@@ -159,5 +194,28 @@ export const useCatalogStore = create<CatalogState>((set) => ({
     set((state) => ({
       categories: state.categories.filter(c => c.toLowerCase() !== name.toLowerCase())
     }));
+  },
+
+  addBadge: (name) => {
+    const trimmed = name.trim();
+    if (!trimmed) return;
+    set((state) => {
+      if (state.badges.some(b => b.toLowerCase() === trimmed.toLowerCase())) return state;
+      const nextBadges = [...state.badges, trimmed];
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('lumina_marketing_badges', JSON.stringify(nextBadges));
+      }
+      return { badges: nextBadges };
+    });
+  },
+
+  deleteBadge: (name) => {
+    set((state) => {
+      const nextBadges = state.badges.filter(b => b.toLowerCase() !== name.toLowerCase());
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('lumina_marketing_badges', JSON.stringify(nextBadges));
+      }
+      return { badges: nextBadges };
+    });
   },
 }));
