@@ -352,7 +352,6 @@ export function CartDrawer() {
       rotateX: 10,
       x: startX,
       y: startY,
-      filter: "blur(12px)",
       transition: {
         duration: 0.38,
         ease: [0.32, 0, 0.67, 0] as [number, number, number, number],
@@ -365,7 +364,6 @@ export function CartDrawer() {
       rotateX: 0,
       x: 0,
       y: 0,
-      filter: "blur(0px)",
       transition: {
         duration: 0.55,
         ease: [0.16, 1, 0.3, 1] as [number, number, number, number],
@@ -378,7 +376,6 @@ export function CartDrawer() {
       rotateX: 10,
       x: startX,
       y: startY,
-      filter: "blur(12px)",
       transition: {
         duration: 0.42,
         ease: [0.32, 0, 0.67, 0] as [number, number, number, number],
@@ -397,6 +394,7 @@ export function CartDrawer() {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.35 }}
+            style={{ willChange: "opacity" }}
             className="fixed inset-0 bg-slate-950/60 backdrop-blur-xl"
             onClick={() => setIsOpen(false)}
           />
@@ -407,7 +405,7 @@ export function CartDrawer() {
             initial="hidden"
             animate="visible"
             exit="exit"
-            style={{ transformStyle: "preserve-3d" }}
+            style={{ transformStyle: "preserve-3d", willChange: "transform, opacity" }}
             className="relative w-full max-w-6xl h-full max-h-[92vh] bg-white/95 backdrop-blur-3xl rounded-[2.5rem] border border-white/90 shadow-[0_35px_120px_rgba(0,0,0,0.35)] flex flex-col overflow-hidden z-10"
           >
 
