@@ -29,7 +29,35 @@ import { useCartStore } from "@/lib/store";
 import { useUserStore, Order, PaymentCard, ShippingAddress } from "@/lib/userStore";
 import { useCatalogStore } from "@/lib/catalogStore";
 
-// High-Ticket Payment Method SVGs & Micro-Components
+// High-Ticket Payment Method SVGs & Micro-Components (1:1 Aspect Ratio, Zero Cutoffs)
+function AppleIcon({ className = "w-4 h-4" }: { className?: string }) {
+  return (
+    <svg className={`shrink-0 ${className}`} viewBox="0 0 170 170" fill="currentColor">
+      <path d="M150.37 130.25c-2.45 5.66-5.35 10.87-8.71 15.66-4.58 6.53-8.33 11.05-11.22 13.56-4.48 4.12-9.28 6.23-14.42 6.35-3.69 0-8.14-1.05-13.32-3.18-5.19-2.12-9.97-3.17-14.34-3.17-4.58 0-9.49 1.05-14.75 3.17-5.26 2.13-9.5 3.24-12.74 3.35-4.35.13-9.16-1.9-14.42-6.08-3.69-3.08-7.73-7.94-12.13-14.58-6.3-9.53-11.24-20.2-14.81-32.01-3.58-11.82-5.37-23.01-5.37-33.58 0-14.28 3.58-26.04 10.74-35.28 7.16-9.24 16.27-13.98 27.32-14.21 4.58 0 9.87 1.25 15.86 3.76 5.99 2.51 9.77 3.82 11.34 3.92 1.34 0 5.4-1.46 12.18-4.38 6.78-2.92 12.63-4.14 17.55-3.66 13.48 1.07 24.16 6.45 32.04 16.14-11.82 7.16-17.62 17-17.41 29.52.22 9.82 3.98 17.97 11.28 24.45 7.3 6.48 15.93 10.05 25.89 10.72-2.14 6.32-4.59 12.71-7.35 19.17zM119.22 33.09c0-7.38 2.65-14.34 7.95-20.89 5.3-6.55 11.96-10.73 19.98-12.54 0 .99.07 1.94.07 2.86 0 7.33-2.77 14.34-8.31 21.03-5.54 6.69-12.11 10.66-19.69 11.92-.22-.79-.33-1.6-.33-2.38z" />
+    </svg>
+  );
+}
+
+function GoogleIcon({ className = "w-4 h-4" }: { className?: string }) {
+  return (
+    <svg className={`shrink-0 ${className}`} viewBox="0 0 24 24">
+      <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
+      <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
+      <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" />
+      <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" />
+    </svg>
+  );
+}
+
+function PayPalIcon({ className = "w-4 h-4" }: { className?: string }) {
+  return (
+    <svg className={`shrink-0 ${className}`} viewBox="0 0 100 100" fill="none">
+      <path d="M72.2 27.8c-1.4 10.3-9 16.4-19.3 16.4H39.2l-4.5 28.5h-13l9-57.1h25.8c10.4 0 17.5 5.1 15.7 12.2z" fill="#003087" />
+      <path d="M79.4 39.8c-1.8 11.2-10 18.2-21.2 18.2H45.8l-3.3 20.8h-12l7.2-45.7h17.9c11.5 0 21.6 0 24 6.7z" fill="#0079C1" />
+    </svg>
+  );
+}
+
 function ApplePayLogo({ className = "h-4" }: { className?: string }) {
   return (
     <svg className={className} viewBox="0 0 170 80" fill="currentColor">
@@ -42,12 +70,7 @@ function ApplePayLogo({ className = "h-4" }: { className?: string }) {
 function GooglePayLogo({ className = "h-4" }: { className?: string }) {
   return (
     <div className={`flex items-center gap-1 font-sans ${className}`}>
-      <svg className="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24">
-        <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
-        <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
-        <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" />
-        <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" />
-      </svg>
+      <GoogleIcon className="w-4 h-4 shrink-0" />
       <span className="text-xs font-bold text-gray-800 tracking-tight">Pay</span>
     </div>
   );
@@ -56,10 +79,7 @@ function GooglePayLogo({ className = "h-4" }: { className?: string }) {
 function PayPalLogo({ className = "h-4" }: { className?: string }) {
   return (
     <div className={`flex items-center gap-1 ${className}`}>
-      <svg className="w-3.5 h-3.5 shrink-0" viewBox="0 0 100 100" fill="none">
-        <path d="M72.2 27.8c-1.4 10.3-9 16.4-19.3 16.4H39.2l-4.5 28.5h-13l9-57.1h25.8c10.4 0 17.5 5.1 15.7 12.2z" fill="#003087" />
-        <path d="M79.4 39.8c-1.8 11.2-10 18.2-21.2 18.2H45.8l-3.3 20.8h-12l7.2-45.7h17.9c11.5 0 21.6 0 24 6.7z" fill="#0079C1" />
-      </svg>
+      <PayPalIcon className="w-4 h-4 shrink-0" />
       <span className="text-xs font-extrabold italic text-[#003087] tracking-tight">PayPal</span>
     </div>
   );
@@ -911,59 +931,50 @@ export function CartDrawer() {
 
                       {/* Payment Method Selector (Liquid Glass Horizontal Pill with Apple Droplet) */}
                       <div className="p-6 rounded-[2rem] bg-white border border-gray-200/70 shadow-sm space-y-5">
-                        <div className="flex items-center justify-between">
-                          <h4 className="font-bold text-sm text-gray-900">
-                            Método de Pago
-                          </h4>
-                          <span className="text-[11px] text-gray-400 font-medium">
-                            Cifrado SSL 256-Bit
+                        <div className="flex items-center justify-between pb-1 border-b border-gray-100">
+                          <div className="flex items-center gap-2">
+                            <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0" />
+                            <h4 className="font-sans font-bold text-xs uppercase tracking-wider text-gray-900">
+                              Método de Pago
+                            </h4>
+                          </div>
+                          <span className="font-mono text-[10px] font-medium text-gray-400 tracking-tight uppercase">
+                            Cifrado Seguro SSL 256-Bit
                           </span>
                         </div>
 
-                        {/* THE LIQUID GLASS FLOATING DOCK (Exact from user's video "Video Liquid Glass vs Netflix.mp4") */}
-                        <div className="relative p-2 rounded-full bg-[#0a0b10] border border-white/15 shadow-[0_25px_60px_rgba(0,0,0,0.6),inset_0_1px_2px_rgba(255,255,255,0.25)] backdrop-blur-3xl grid grid-cols-4 gap-1.5 sm:gap-2">
+                        {/* WHITE LIQUID GLASS FLOATING DOCK (Compact, Friendly, Serious Financial Design) */}
+                        <div className="relative p-1.5 rounded-full bg-slate-100/90 backdrop-blur-2xl border border-white/90 shadow-[inset_0_2px_4px_rgba(0,0,0,0.03),0_6px_20px_rgba(0,0,0,0.04)] grid grid-cols-4 gap-1 max-w-lg mx-auto">
                           {[
                             { 
                               id: "card", 
                               label: "Tarjeta", 
-                              glowGradient: "from-amber-500/35 via-orange-500/20 to-transparent",
-                              borderColor: "border-amber-400/50",
-                              shadowGlow: "shadow-[0_0_25px_rgba(245,158,11,0.3),inset_0_2px_3px_rgba(255,255,255,0.9),inset_0_-1.5px_2px_rgba(0,0,0,0.5)]",
                               renderIcon: (active: boolean) => (
-                                <CreditCard className={`w-5 h-5 transition-all duration-300 ${active ? "text-amber-300 scale-110 drop-shadow-[0_0_10px_rgba(245,158,11,0.8)]" : "text-zinc-400"}`} />
+                                <CreditCard className={`w-4 h-4 transition-colors ${active ? "text-gray-900" : "text-gray-500"}`} />
                               ) 
                             },
                             { 
                               id: "apple", 
                               label: "Apple Pay", 
-                              glowGradient: "from-white/30 via-white/10 to-transparent",
-                              borderColor: "border-white/60",
-                              shadowGlow: "shadow-[0_0_25px_rgba(255,255,255,0.3),inset_0_2px_3px_rgba(255,255,255,1),inset_0_-1.5px_2px_rgba(0,0,0,0.5)]",
                               renderIcon: (active: boolean) => (
-                                <ApplePayLogo className={`h-4 transition-all duration-300 ${active ? "text-white scale-110 drop-shadow-[0_0_10px_rgba(255,255,255,0.8)]" : "text-zinc-400"}`} />
+                                <AppleIcon className={`w-4 h-4 transition-colors ${active ? "text-gray-900" : "text-gray-500"}`} />
                               ) 
                             },
                             { 
                               id: "google", 
                               label: "Google Pay", 
-                              glowGradient: "from-blue-500/35 via-emerald-500/20 to-transparent",
-                              borderColor: "border-blue-400/50",
-                              shadowGlow: "shadow-[0_0_25px_rgba(59,130,246,0.3),inset_0_2px_3px_rgba(255,255,255,0.9),inset_0_-1.5px_2px_rgba(0,0,0,0.5)]",
                               renderIcon: (active: boolean) => (
-                                <div className={`transition-all duration-300 ${active ? "scale-110 drop-shadow-[0_0_10px_rgba(59,130,246,0.7)]" : "grayscale opacity-50"}`}>
-                                  <GooglePayLogo className="h-4 text-white" />
+                                <div className={`transition-all ${active ? "opacity-100 scale-105" : "opacity-60 grayscale-[0.2]"}`}>
+                                  <GoogleIcon className="w-4 h-4" />
                                 </div>
                               ) 
                             },
                             { 
                               id: "paypal", 
                               label: "PayPal", 
-                              glowGradient: "from-cyan-500/35 via-[#003087]/30 to-transparent",
-                              borderColor: "border-cyan-400/50",
-                              shadowGlow: "shadow-[0_0_25px_rgba(6,182,212,0.35),inset_0_2px_3px_rgba(255,255,255,0.9),inset_0_-1.5px_2px_rgba(0,0,0,0.5)]",
                               renderIcon: (active: boolean) => (
-                                <div className={`transition-all duration-300 ${active ? "scale-110 drop-shadow-[0_0_10px_rgba(6,182,212,0.8)]" : "grayscale opacity-50"}`}>
-                                  <PayPalLogo className="h-4 text-white" />
+                                <div className={`transition-all ${active ? "opacity-100 scale-105" : "opacity-60"}`}>
+                                  <PayPalIcon className="w-4 h-4" />
                                 </div>
                               ) 
                             },
@@ -974,27 +985,25 @@ export function CartDrawer() {
                                 key={m.id}
                                 type="button"
                                 onClick={() => setSelectedMethod(m.id as typeof selectedMethod)}
-                                className="group relative z-10 py-3 px-2 rounded-full flex flex-col items-center justify-center gap-1 text-xs outline-none select-none cursor-pointer transition-all duration-300"
+                                className="group relative z-10 py-2 px-1 sm:px-2 rounded-full flex flex-col items-center justify-center gap-1 outline-none select-none cursor-pointer transition-all"
                               >
-                                {/* Liquid Glass Water Droplet (Fluid Spring with internal liquid glow & specular rim) */}
+                                {/* White Liquid Glass Water Droplet with Fluid Spring Inertia */}
                                 {isActive && (
                                   <motion.div
-                                    layoutId="videoLiquidGlassBubble"
-                                    transition={{ type: "spring", stiffness: 380, damping: 24, mass: 0.7 }}
-                                    className={`absolute inset-0 rounded-full bg-gradient-to-b ${m.glowGradient} backdrop-blur-2xl border ${m.borderColor} ${m.shadowGlow}`}
+                                    layoutId="whiteLiquidGlassBubble"
+                                    transition={{ type: "spring", stiffness: 420, damping: 28, mass: 0.7 }}
+                                    className="absolute inset-0 rounded-full bg-white/95 backdrop-blur-2xl border border-white shadow-[0_4px_16px_rgba(0,0,0,0.08),inset_0_1.5px_2px_rgba(255,255,255,1),inset_0_-1px_1.5px_rgba(0,0,0,0.03)]"
                                   >
                                     {/* Razor Specular Rim Light */}
-                                    <div className="absolute inset-x-3 top-0.5 h-[1.5px] bg-gradient-to-r from-transparent via-white to-transparent opacity-95" />
-                                    {/* Caustic light glare corner spot */}
-                                    <div className="absolute top-1 left-3 w-3 h-1.5 bg-white/90 rounded-full blur-[0.6px]" />
-                                    {/* Inner liquid depth reflection */}
-                                    <div className="absolute inset-0 rounded-full bg-white/5 pointer-events-none" />
+                                    <div className="absolute inset-x-3 top-0.5 h-[1px] bg-gradient-to-r from-transparent via-white to-transparent opacity-95" />
+                                    {/* Caustic glint */}
+                                    <div className="absolute top-1 left-2.5 w-2.5 h-1 bg-white/90 rounded-full blur-[0.4px]" />
                                   </motion.div>
                                 )}
 
-                                <span className="relative z-10 flex flex-col items-center justify-center gap-1.5">
+                                <span className="relative z-10 flex flex-col items-center justify-center gap-1 w-full">
                                   {m.renderIcon(isActive)}
-                                  <span className={`text-[11px] tracking-tight transition-all duration-300 ${isActive ? "text-white font-extrabold drop-shadow" : "text-zinc-400 group-hover:text-zinc-300 font-medium"}`}>
+                                  <span className={`text-[11px] font-sans tracking-tight whitespace-nowrap transition-colors ${isActive ? "text-gray-950 font-bold" : "text-gray-500 font-medium group-hover:text-gray-800"}`}>
                                     {m.label}
                                   </span>
                                 </span>
@@ -1007,10 +1016,10 @@ export function CartDrawer() {
                         {selectedMethod === "card" && (
                           <div className="pt-1 space-y-4">
                             <div className="flex items-center justify-between">
-                              <span className="text-xs font-bold text-gray-700">Tarjeta Vinculada</span>
+                              <span className="font-sans font-bold text-xs text-gray-900 tracking-tight">Tarjeta Seleccionada</span>
                               <button 
                                 onClick={() => setIsAddingCard(!isAddingCard)}
-                                className="text-xs font-semibold text-blue-600 hover:underline flex items-center gap-1"
+                                className="text-xs font-semibold font-sans text-blue-600 hover:text-blue-700 flex items-center gap-1 transition-colors"
                               >
                                 <PlusCircle className="w-3.5 h-3.5" />
                                 {isAddingCard ? "Ver tarjeta guardada" : "+ Nueva tarjeta"}
@@ -1018,51 +1027,51 @@ export function CartDrawer() {
                             </div>
 
                             {isAddingCard ? (
-                              <form onSubmit={handleSaveNewCard} className="p-4 sm:p-5 rounded-2xl bg-gray-50 border border-gray-200 space-y-3.5">
+                              <form onSubmit={handleSaveNewCard} className="p-4 sm:p-5 rounded-2xl bg-gray-50/80 border border-gray-200/80 space-y-3.5 font-sans">
                                 <div>
-                                  <label className="block text-[11px] font-semibold text-gray-600 mb-1">Número de tarjeta</label>
+                                  <label className="block text-[10px] font-bold text-gray-600 uppercase tracking-wider mb-1.5 font-sans">Número de Tarjeta</label>
                                   <input 
                                     type="text" 
                                     value={newCardNumber} 
                                     onChange={e => setNewCardNumber(e.target.value)} 
                                     placeholder="4532 •••• •••• 8921"
                                     maxLength={19}
-                                    className="w-full px-3.5 py-2 rounded-xl border border-gray-200 text-xs font-mono outline-none focus:ring-1 focus:ring-blue-500 bg-white"
+                                    className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 text-xs font-mono outline-none focus:border-gray-900 focus:ring-1 focus:ring-gray-900 bg-white transition-all shadow-sm"
                                     required
                                   />
                                 </div>
                                 <div className="grid grid-cols-2 gap-3">
                                   <div>
-                                    <label className="block text-[11px] font-semibold text-gray-600 mb-1">Titular de la tarjeta</label>
+                                    <label className="block text-[10px] font-bold text-gray-600 uppercase tracking-wider mb-1.5 font-sans">Titular de la Tarjeta</label>
                                     <input 
                                       type="text" 
                                       value={newCardHolder} 
                                       onChange={e => setNewCardHolder(e.target.value)} 
                                       placeholder="Nombre y Apellidos"
-                                      className="w-full px-3.5 py-2 rounded-xl border border-gray-200 text-xs outline-none focus:ring-1 focus:ring-blue-500 bg-white"
+                                      className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 text-xs font-sans outline-none focus:border-gray-900 focus:ring-1 focus:ring-gray-900 bg-white transition-all shadow-sm"
                                       required
                                     />
                                   </div>
                                   <div>
-                                    <label className="block text-[11px] font-semibold text-gray-600 mb-1">Fecha de Expiración</label>
+                                    <label className="block text-[10px] font-bold text-gray-600 uppercase tracking-wider mb-1.5 font-sans">Vencimiento</label>
                                     <input 
                                       type="text" 
                                       value={newCardExp} 
                                       onChange={e => setNewCardExp(e.target.value)} 
                                       placeholder="MM/AA"
                                       maxLength={5}
-                                      className="w-full px-3.5 py-2 rounded-xl border border-gray-200 text-xs outline-none focus:ring-1 focus:ring-blue-500 bg-white"
+                                      className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 text-xs font-mono outline-none focus:border-gray-900 focus:ring-1 focus:ring-gray-900 bg-white transition-all shadow-sm"
                                       required
                                     />
                                   </div>
                                 </div>
                                 <div>
-                                  <label className="block text-[11px] font-semibold text-gray-600 mb-1">Franquicia de la tarjeta</label>
+                                  <label className="block text-[10px] font-bold text-gray-600 uppercase tracking-wider mb-1.5 font-sans">Red Emisora</label>
                                   <div className="flex gap-2">
                                     <button 
                                       type="button"
                                       onClick={() => setNewCardType("mastercard")}
-                                      className={`flex-1 py-2 rounded-xl border text-xs font-semibold transition-all flex items-center justify-center gap-1.5 ${newCardType === "mastercard" ? "bg-gray-900 text-white border-gray-900 shadow-sm" : "bg-white text-gray-700 border-gray-200 hover:bg-gray-50"}`}
+                                      className={`flex-1 py-2 rounded-xl border text-xs font-semibold font-sans transition-all flex items-center justify-center gap-2 ${newCardType === "mastercard" ? "bg-gray-900 text-white border-gray-900 shadow-sm" : "bg-white text-gray-700 border-gray-200 hover:bg-gray-50"}`}
                                     >
                                       <MastercardLogo className="h-4" />
                                       <span>Mastercard</span>
@@ -1070,15 +1079,16 @@ export function CartDrawer() {
                                     <button 
                                       type="button"
                                       onClick={() => setNewCardType("visa")}
-                                      className={`flex-1 py-2 rounded-xl border text-xs font-semibold transition-all flex items-center justify-center gap-1.5 ${newCardType === "visa" ? "bg-gray-900 text-white border-gray-900 shadow-sm" : "bg-white text-gray-700 border-gray-200 hover:bg-gray-50"}`}
+                                      className={`flex-1 py-2 rounded-xl border text-xs font-semibold font-sans transition-all flex items-center justify-center gap-2 ${newCardType === "visa" ? "bg-gray-900 text-white border-gray-900 shadow-sm" : "bg-white text-gray-700 border-gray-200 hover:bg-gray-50"}`}
                                     >
-                                      <span className="font-extrabold italic text-sm text-blue-600">VISA</span>
+                                      <VisaLogo className="h-3.5" />
+                                      <span>Visa</span>
                                     </button>
                                   </div>
                                 </div>
                                 <button 
                                   type="submit"
-                                  className="w-full py-2.5 bg-gray-900 text-white rounded-xl text-xs font-semibold hover:bg-gray-800 transition-colors shadow-sm cursor-pointer"
+                                  className="w-full py-3 bg-gray-900 text-white rounded-xl text-xs font-bold font-sans tracking-wider uppercase hover:bg-gray-800 transition-colors shadow-sm cursor-pointer"
                                 >
                                   Guardar y Vincular Tarjeta
                                 </button>
