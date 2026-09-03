@@ -6,7 +6,13 @@ import { usePathname } from "next/navigation";
 
 export function Footer() {
   const pathname = usePathname();
+  const isDashboardPage = pathname?.startsWith("/profile") || pathname?.startsWith("/admin");
   const isAuthPage = pathname?.startsWith("/auth");
+
+  // Do not render store footer on standalone dashboard pages (Profile / Admin)
+  if (isDashboardPage) {
+    return null;
+  }
 
   return (
     <footer className={`${isAuthPage ? "mt-0 bg-transparent border-t border-gray-200/40" : "mt-20 border-t border-gray-100 bg-gray-50"} pt-12 pb-8`}>

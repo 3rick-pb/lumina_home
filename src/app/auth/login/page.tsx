@@ -25,7 +25,7 @@ export default function LoginPage() {
       if (error) {
         setErrorMsg(error === "Invalid login credentials" ? "Credenciales incorrectas. Verifica tu correo y contraseña." : error);
       } else {
-        router.push("/profile");
+        router.push("/");
       }
     } else {
       setIsLoading(false);

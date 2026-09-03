@@ -29,15 +29,15 @@ export function Header() {
   const [hoveredTab, setHoveredTab] = useState<string | null>(null);
   
   const { toggleCart, getTotalItems } = useCartStore();
-  const { user } = useUserStore();
+  const { isAuthenticated } = useUserStore();
   const [isMounted, setIsMounted] = useState(false);
 
   useEffect(() => {
     setIsMounted(true);
   }, []);
 
-  // Do not render floating navigation pill on login/register pages
-  if (pathname?.startsWith("/auth")) {
+  // Do not render floating navigation pill on auth, profile, or admin dashboard pages
+  if (pathname?.startsWith("/auth") || pathname?.startsWith("/profile") || pathname?.startsWith("/admin")) {
     return null;
   }
 
@@ -107,7 +107,7 @@ export function Header() {
           {/* Actions */}
           <div className="flex items-center gap-2 pl-4 pr-2">
             <Link 
-              href={isMounted && user?.role === 'ADMIN' ? '/admin' : '/profile'}
+              href={isAuthenticated ? '/profile' : '/auth/login'}
               aria-label="Perfil" 
               className="p-2.5 rounded-full bg-white/40 backdrop-blur-md border border-white/60 text-gray-700 hover:bg-white/60 transition-colors shadow-[0_4px_16px_rgba(0,0,0,0.05)]"
             >

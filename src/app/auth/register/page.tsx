@@ -26,7 +26,7 @@ export default function RegisterPage() {
       if (error) {
         setErrorMsg(error);
       } else {
-        router.push("/profile");
+        router.push("/");
       }
     } else {
       setIsLoading(false);
