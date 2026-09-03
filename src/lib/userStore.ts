@@ -44,9 +44,13 @@ interface UserState {
   
   addCard: (card: Omit<PaymentCard, 'id'>) => void;
   removeCard: (id: string) => void;
+  setDefaultCard: (id: string) => void;
   
   addOrder: (order: Order) => void;
   updateOrderStatus: (orderId: string, status: Order['status']) => void;
+
+  updateUserName: (name: string) => Promise<{ error: string | null }>;
+  updateUserPassword: (password: string) => Promise<{ error: string | null }>;
 }
 
 const DEFAULT_CARDS: PaymentCard[] = [
@@ -183,6 +187,15 @@ export const useUserStore = create<UserState>((set, get) => ({
   removeCard: (id) => {
     set((state) => ({ cards: state.cards.filter(c => c.id !== id) }));
   },
+
+  setDefaultCard: (id) => {
+    set((state) => ({
+      cards: state.cards.map(c => ({
+        ...c,
+        isDefault: c.id === id
+      }))
+    }));
+  },
   
   toggleFavorite: async (productId) => {
     const { user, favorites } = get();
@@ -204,4 +217,19 @@ export const useUserStore = create<UserState>((set, get) => ({
   updateOrderStatus: (orderId, status) => set((state) => ({
     orders: state.orders.map(order => order.id === orderId ? { ...order, status } : order)
   })),
+
+  updateUserName: async (name) => {
+    const { error } = await supabase.auth.updateUser({ data: { name } });
+    if (!error) {
+      set((state) => ({
+        user: state.user ? { ...state.user, name } : null
+      }));
+    }
+    return { error: error?.message || null };
+  },
+
+  updateUserPassword: async (password) => {
+    const { error } = await supabase.auth.updateUser({ password });
+    return { error: error?.message || null };
+  },
 }));
