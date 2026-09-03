@@ -14,6 +14,10 @@ export interface CartItem {
 interface CartState {
   items: CartItem[];
   isOpen: boolean;
+  couponCode: string | null;
+  discountPercent: number;
+  isFreeShippingCoupon: boolean;
+  
   addItem: (product: Product, quantity?: number, color?: string, size?: string) => void;
   removeItem: (id: string) => void;
   updateQuantity: (id: string, quantity: number) => void;
@@ -22,6 +26,11 @@ interface CartState {
   toggleCart: () => void;
   getTotalItems: () => number;
   getSubtotal: () => number;
+  getDiscountAmount: () => number;
+  getShipping: () => number;
+  getTotal: () => number;
+  applyCoupon: (code: string) => { success: boolean; message: string };
+  removeCoupon: () => void;
 }
 
 export const useCartStore = create<CartState>()(
@@ -29,6 +38,9 @@ export const useCartStore = create<CartState>()(
     (set, get) => ({
       items: [],
       isOpen: false,
+      couponCode: null,
+      discountPercent: 0,
+      isFreeShippingCoupon: false,
       
       addItem: (product, quantity = 1, color, size) => {
         set((state) => {
@@ -74,7 +86,7 @@ export const useCartStore = create<CartState>()(
         }));
       },
       
-      clearCart: () => set({ items: [] }),
+      clearCart: () => set({ items: [], couponCode: null, discountPercent: 0, isFreeShippingCoupon: false }),
       
       setIsOpen: (isOpen) => set({ isOpen }),
       
@@ -87,10 +99,57 @@ export const useCartStore = create<CartState>()(
       getSubtotal: () => {
         return get().items.reduce((total, item) => total + (item.product.price * item.quantity), 0);
       },
+
+      getDiscountAmount: () => {
+        const subtotal = get().getSubtotal();
+        const percent = get().discountPercent;
+        if (!percent || percent <= 0) return 0;
+        return (subtotal * percent) / 100;
+      },
+
+      getShipping: () => {
+        const subtotal = get().getSubtotal();
+        if (subtotal === 0) return 0;
+        if (get().isFreeShippingCoupon || subtotal >= 100) return 0;
+        return 4.99;
+      },
+
+      getTotal: () => {
+        const subtotal = get().getSubtotal();
+        if (subtotal === 0) return 0;
+        const discount = get().getDiscountAmount();
+        const shipping = get().getShipping();
+        return Math.max(0, subtotal - discount + shipping);
+      },
+
+      applyCoupon: (code: string) => {
+        const clean = code.trim().toUpperCase();
+        if (clean === 'LUMINA10') {
+          set({ couponCode: 'LUMINA10', discountPercent: 10, isFreeShippingCoupon: false });
+          return { success: true, message: '¡Cupón LUMINA10 aplicado! 10% de descuento.' };
+        }
+        if (clean === 'VIP20') {
+          set({ couponCode: 'VIP20', discountPercent: 20, isFreeShippingCoupon: false });
+          return { success: true, message: '¡Cupón VIP20 aplicado! 20% de descuento exclusivo.' };
+        }
+        if (clean === 'BIENVENIDO') {
+          set({ couponCode: 'BIENVENIDO', discountPercent: 15, isFreeShippingCoupon: false });
+          return { success: true, message: '¡Cupón BIENVENIDO aplicado! 15% de descuento.' };
+        }
+        if (clean === 'ENVIOGRATIS') {
+          set({ couponCode: 'ENVIOGRATIS', discountPercent: 0, isFreeShippingCoupon: true });
+          return { success: true, message: '¡Cupón de Envío Gratuito aplicado con éxito!' };
+        }
+        return { success: false, message: 'Código no válido o expirado. Prueba con LUMINA10.' };
+      },
+
+      removeCoupon: () => {
+        set({ couponCode: null, discountPercent: 0, isFreeShippingCoupon: false });
+      },
     }),
     {
       name: 'lumina-cart-storage',
-      skipHydration: true, // We'll handle hydration manually to avoid mismatch errors
+      skipHydration: true,
     }
   )
 );
