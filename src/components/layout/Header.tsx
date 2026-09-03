@@ -10,6 +10,8 @@ import { useCartStore } from "@/lib/store";
 import { useUserStore } from "@/lib/userStore";
 import { CartDrawer } from "@/components/ui/CartDrawer";
 
+import { usePathname } from "next/navigation";
+
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
@@ -22,6 +24,7 @@ const TABS = [
 ];
 
 export function Header() {
+  const pathname = usePathname();
   const [activeTab, setActiveTab] = useState(TABS[0].id);
   const [hoveredTab, setHoveredTab] = useState<string | null>(null);
   
@@ -32,6 +35,11 @@ export function Header() {
   useEffect(() => {
     setIsMounted(true);
   }, []);
+
+  // Do not render floating navigation pill on login/register pages
+  if (pathname?.startsWith("/auth")) {
+    return null;
+  }
 
   const totalItems = isMounted ? getTotalItems() : 0;
 

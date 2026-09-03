@@ -9,11 +9,11 @@ import Link from "next/link";
 import { useCatalogStore } from "@/lib/catalogStore";
 
 const CATEGORIES = [
-  { name: "Aromaterapia", price: "desde $29", img: "https://images.unsplash.com/photo-1608528577891-eb055944f2e1?q=80&w=600&auto=format&fit=crop" },
-  { name: "Iluminación", price: "desde $89", img: "https://images.unsplash.com/photo-1507473885765-e6ed057f782c?q=80&w=600&auto=format&fit=crop" },
-  { name: "Home Office", price: "desde $49", img: "https://images.unsplash.com/photo-1527443224154-c4a3942d3acf?q=80&w=600&auto=format&fit=crop" },
-  { name: "Textiles", price: "desde $39", img: "https://images.unsplash.com/photo-1580828343064-fde4cad202d0?q=80&w=600&auto=format&fit=crop" },
-  { name: "Gadgets", price: "desde $120", img: "https://images.unsplash.com/photo-1558317374-067fb5f30001?q=80&w=600&auto=format&fit=crop" }
+  { name: "Aromaterapia", price: "desde $29", img: "https://images.unsplash.com/photo-1602928321679-560bb453f190?q=80&w=800&auto=format&fit=crop" },
+  { name: "Iluminación", price: "desde $89", img: "https://images.unsplash.com/photo-1507473885765-e6ed057f782c?q=80&w=800&auto=format&fit=crop" },
+  { name: "Home Office", price: "desde $49", img: "https://images.unsplash.com/photo-1527443224154-c4a3942d3acf?q=80&w=800&auto=format&fit=crop" },
+  { name: "Textiles", price: "desde $39", img: "https://images.unsplash.com/photo-1584100936595-c0654b55a2e2?q=80&w=800&auto=format&fit=crop" },
+  { name: "Gadgets", price: "desde $120", img: "https://images.unsplash.com/photo-1558317374-067fb5f30001?q=80&w=800&auto=format&fit=crop" }
 ];
 
 export default function Home() {

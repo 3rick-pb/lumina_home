@@ -27,8 +27,9 @@ export function ProductCard({ id, title, price, oldPrice, discount, badge, image
     setIsMounted(true);
   }, []);
   
+  const [imgSrc, setImgSrc] = React.useState(imageUrl || "https://images.unsplash.com/photo-1507473885765-e6ed057f782c?q=80&w=800&auto=format&fit=crop");
   const isFav = isMounted ? isFavorite(id) : false;
-  
+
   return (
     <Link href={`/product/${id}`} className="group flex flex-col bg-transparent">
       <div className="relative aspect-[4/3] overflow-hidden rounded-2xl bg-gray-100 mb-4">
@@ -49,9 +50,10 @@ export function ProductCard({ id, title, price, oldPrice, discount, badge, image
         </button>
 
         <Image
-          src={imageUrl}
+          src={imgSrc}
           alt={title}
           fill
+          onError={() => setImgSrc("https://images.unsplash.com/photo-1507473885765-e6ed057f782c?q=80&w=800&auto=format&fit=crop")}
           className="object-cover transition-transform duration-700 group-hover:scale-105"
         />
       </div>

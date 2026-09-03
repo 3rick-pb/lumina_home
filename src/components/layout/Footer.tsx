@@ -1,28 +1,37 @@
+"use client";
+
 import React from "react";
 import { ShieldCheck, Truck, RotateCcw } from "lucide-react";
+import { usePathname } from "next/navigation";
 
 export function Footer() {
+  const pathname = usePathname();
+  const isAuthPage = pathname?.startsWith("/auth");
+
   return (
-    <footer className="mt-20 border-t border-gray-100 bg-gray-50 pt-16 pb-8">
+    <footer className={`${isAuthPage ? "mt-0 bg-transparent border-t border-gray-200/40" : "mt-20 border-t border-gray-100 bg-gray-50"} pt-12 pb-8`}>
       <div className="container mx-auto px-4 md:px-6">
         
-        <div className="grid grid-cols-1 gap-8 md:grid-cols-3 mb-16">
-          <div className="flex flex-col items-center text-center p-6 bg-white rounded-xl border border-gray-100 shadow-sm">
-            <Truck className="h-10 w-10 text-brand-500 mb-4" />
-            <h4 className="text-lg font-medium text-gray-900">Envío Seguro</h4>
-            <p className="mt-2 text-sm text-gray-500">Entregas garantizadas con seguimiento en tiempo real.</p>
+        {/* Do not show guarantee badges on login/register as requested */}
+        {!isAuthPage && (
+          <div className="grid grid-cols-1 gap-8 md:grid-cols-3 mb-16">
+            <div className="flex flex-col items-center text-center p-6 bg-white rounded-xl border border-gray-100 shadow-sm">
+              <Truck className="h-10 w-10 text-brand-500 mb-4" />
+              <h4 className="text-lg font-medium text-gray-900">Envío Seguro</h4>
+              <p className="mt-2 text-sm text-gray-500">Entregas garantizadas con seguimiento en tiempo real.</p>
+            </div>
+            <div className="flex flex-col items-center text-center p-6 bg-white rounded-xl border border-gray-100 shadow-sm">
+              <ShieldCheck className="h-10 w-10 text-brand-500 mb-4" />
+              <h4 className="text-lg font-medium text-gray-900">Pago Protegido</h4>
+              <p className="mt-2 text-sm text-gray-500">Transacciones 100% cifradas y seguras.</p>
+            </div>
+            <div className="flex flex-col items-center text-center p-6 bg-white rounded-xl border border-gray-100 shadow-sm">
+              <RotateCcw className="h-10 w-10 text-brand-500 mb-4" />
+              <h4 className="text-lg font-medium text-gray-900">Garantía</h4>
+              <p className="mt-2 text-sm text-gray-500">30 días de devolución si no estás satisfecho.</p>
+            </div>
           </div>
-          <div className="flex flex-col items-center text-center p-6 bg-white rounded-xl border border-gray-100 shadow-sm">
-            <ShieldCheck className="h-10 w-10 text-brand-500 mb-4" />
-            <h4 className="text-lg font-medium text-gray-900">Pago Protegido</h4>
-            <p className="mt-2 text-sm text-gray-500">Transacciones 100% cifradas y seguras.</p>
-          </div>
-          <div className="flex flex-col items-center text-center p-6 bg-white rounded-xl border border-gray-100 shadow-sm">
-            <RotateCcw className="h-10 w-10 text-brand-500 mb-4" />
-            <h4 className="text-lg font-medium text-gray-900">Garantía</h4>
-            <p className="mt-2 text-sm text-gray-500">30 días de devolución si no estás satisfecho.</p>
-          </div>
-        </div>
+        )}
 
         <div className="grid grid-cols-2 gap-8 md:grid-cols-4 lg:grid-cols-5">
           <div className="col-span-2 lg:col-span-2">

@@ -39,22 +39,24 @@ export default function ProductDetail({ params }: { params: { id: string } }) {
     setTimeout(() => setIsAdding(false), 1500);
   };
 
-  const images = product.images || [product.imageUrl];
+  const defaultFallback = "https://images.unsplash.com/photo-1507473885765-e6ed057f782c?q=80&w=800&auto=format&fit=crop";
+  const rawImages = (product.images && product.images.length > 0) ? product.images : [product.imageUrl || defaultFallback];
+  const images = rawImages.filter(Boolean);
+  const currentImage = images[activeImage] || images[0] || defaultFallback;
   const isFav = isMounted ? isFavorite(product.id) : false;
 
   return (
     <div className="relative min-h-screen pt-28 pb-24 bg-transparent">
-      {/* Ambient Background Effect (YouTube Style) */}
+      {/* Soft Mate Ambient Aura */}
       <div className="fixed inset-0 z-[-1] overflow-hidden pointer-events-none">
-        {/* Imagen del producto altamente desenfocada y opaca para el color */}
         <Image
-          src={images[activeImage]}
-          alt="Ambient"
+          src={currentImage}
+          alt="Ambient Aura"
           fill
-          className="object-cover blur-[150px] saturate-[2] opacity-30 transition-all duration-700 z-10"
+          className="object-cover blur-[180px] saturate-[1.1] opacity-25 transition-all duration-1000 z-10"
         />
-        {/* Capa esmerilada fina encima para dar el toque mate (matte) */}
-        <div className="absolute inset-0 bg-transparent backdrop-blur-[40px] z-20" />
+        {/* Soft matte film */}
+        <div className="absolute inset-0 bg-[#fafafa]/70 backdrop-blur-[50px] z-20" />
       </div>
 
       <div className="container mx-auto px-4 md:px-6 relative z-10">
@@ -81,8 +83,8 @@ export default function ProductDetail({ params }: { params: { id: string } }) {
             {/* Main Image */}
             <div className="relative w-full aspect-[4/5] md:aspect-[3/4] md:h-auto rounded-2xl overflow-hidden bg-gray-100/50">
               <Image 
-                src={images[activeImage]}
-                alt="Product image"
+                src={currentImage}
+                alt={product.title}
                 fill
                 priority
                 className="object-cover transition-opacity duration-500"
@@ -245,7 +247,9 @@ export default function ProductDetail({ params }: { params: { id: string } }) {
             <div className="flex gap-8 border-b border-gray-200 mb-8">
               <button className="pb-4 border-b-2 border-gray-900 text-sm font-semibold text-gray-900">Detalles</button>
               <button className="pb-4 text-sm font-medium text-gray-500 hover:text-gray-900">Materiales</button>
-              <button className="pb-4 text-sm font-medium text-gray-500 hover:text-gray-900">Tallas</button>
+              {product.sizes && product.sizes.length > 0 && (
+                <button className="pb-4 text-sm font-medium text-gray-500 hover:text-gray-900">Tallas</button>
+              )}
               <button className="pb-4 text-sm font-medium text-gray-500 hover:text-gray-900">Envíos</button>
             </div>
             <p className="text-gray-600 leading-relaxed mb-6">

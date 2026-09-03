@@ -29,3 +29,32 @@
     scrollbar-width: none;
   }
 }
+
+@keyframes ambient-float {
+  0%, 100% {
+    transform: translate(0, 0) scale(1);
+  }
+  33% {
+    transform: translate(40px, -30px) scale(1.08);
+  }
+  66% {
+    transform: translate(-30px, 40px) scale(0.95);
+  }
+}
+
+@keyframes ambient-drift {
+  0%, 100% {
+    transform: translate(0, 0);
+  }
+  50% {
+    transform: translate(-50px, 30px);
+  }
+}
+
+.animate-ambient-float {
+  animation: ambient-float 16s ease-in-out infinite alternate;
+}
+
+.animate-ambient-drift {
+  animation: ambient-drift 22s ease-in-out infinite alternate;
+}
