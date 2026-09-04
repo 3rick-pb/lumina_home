@@ -352,57 +352,22 @@ export default function ProfilePage() {
         try {
           const { latitude, longitude } = pos.coords;
 
-          // 1. Primary reverse geocode: OpenStreetMap Nominatim
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          let addrData: any = null;
-          try {
-            const res = await fetch(
-              `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&addressdetails=1`,
-              { headers: { "Accept-Language": "es" } }
-            );
-            if (res.ok) {
-              const data = await res.json();
-              if (data && data.address) {
-                addrData = data.address;
-              }
-            }
-          } catch {}
+          const res = await fetch("/api/geocode", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ lat: latitude, lon: longitude })
+          });
 
-          // 2. Fallback reverse geocode: BigDataCloud API
-          if (!addrData) {
-            try {
-              const bdcRes = await fetch(
-                `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${latitude}&longitude=${longitude}&localityLanguage=es`
-              );
-              if (bdcRes.ok) {
-                const bdc = await bdcRes.json();
-                if (bdc) {
-                  addrData = {
-                    road: bdc.locality || bdc.city || "",
-                    city: bdc.city || bdc.locality || "",
-                    state: bdc.principalSubdivision || "",
-                    postcode: bdc.postcode || "",
-                    country: bdc.countryName || "España"
-                  };
-                }
-              }
-            } catch {}
-          }
+          const result = await res.json();
 
-          if (addrData) {
-            const roadName = addrData.road || addrData.pedestrian || addrData.suburb || addrData.neighbourhood || addrData.quarter || "";
-            const houseNum = addrData.house_number || "";
-            const detectedStreet = [roadName, houseNum].filter(Boolean).join(" ") || (addrData.city ? `Cerca de ${addrData.city}` : "");
-            const detectedCity = addrData.city || addrData.town || addrData.village || addrData.municipality || addrData.county || "";
-            const detectedState = addrData.state || addrData.region || addrData.province || addrData.principalSubdivision || "";
-            const detectedPostal = addrData.postcode || "";
-            const detectedCountry = addrData.country || "España";
+          if (result.success && result.data) {
+            const { street: detStreet, city: detCity, state: detState, postalCode: detPostal, country: detCountry } = result.data;
 
-            if (detectedStreet) setStreet(detectedStreet);
-            if (detectedCity) setCity(detectedCity);
-            if (detectedState) setStateProv(detectedState);
-            if (detectedPostal) setPostalCode(detectedPostal);
-            if (detectedCountry) setCountry(detectedCountry);
+            if (detStreet) setStreet(detStreet);
+            if (detCity) setCity(detCity);
+            if (detState) setStateProv(detState);
+            if (detPostal) setPostalCode(detPostal);
+            if (detCountry) setCountry(detCountry);
 
             // Keep recipient untouched, or if totally blank, suggest user name
             if (!recipient.trim() && user?.name) {
@@ -411,7 +376,7 @@ export default function ProfilePage() {
 
             setLocationSuccess(true);
           } else {
-            setLocationError("No se pudo obtener la información de dirección. Por favor, ingrésala manualmente.");
+            setLocationError(result.error || "No se pudo obtener la información de dirección. Por favor, ingrésala manualmente.");
           }
         } catch {
           setLocationError("Error al procesar la dirección de tu ubicación.");
