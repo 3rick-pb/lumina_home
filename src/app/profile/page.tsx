@@ -1894,7 +1894,7 @@ export default function ProfilePage() {
                         {p.badge ? (
                           <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
                             isAgotadoBadge(p.badge)
-                              ? "bg-red-500 text-white border border-red-600 tracking-wide uppercase shadow-xs"
+                              ? "bg-red-50 text-red-600 border border-red-200"
                               : "bg-amber-50 text-amber-800 border border-amber-200"
                           }`}>
                             {p.badge}
@@ -2047,7 +2047,7 @@ export default function ProfilePage() {
                       <div className="flex items-center gap-2.5">
                         <span className={`px-2.5 py-1 rounded-full text-[11px] font-bold ${
                           isAgotadoBadge(badge)
-                            ? "bg-red-500 text-white border border-red-600 tracking-wide uppercase shadow-xs"
+                            ? "bg-red-50 text-red-600 border border-red-200"
                             : "bg-amber-50 text-amber-900 border border-amber-200"
                         }`}>
                           {badge}

@@ -777,8 +777,8 @@ export function CartDrawer() {
                                       className="object-cover group-hover:scale-105 transition-transform duration-500" 
                                     />
                                     {itemIsAgotado && (
-                                      <div className="absolute inset-0 bg-black/45 backdrop-blur-[1px] flex items-center justify-center p-1">
-                                        <span className="bg-red-600 text-white font-bold text-[9px] uppercase tracking-wider px-2 py-0.5 rounded-full shadow-md text-center">
+                                      <div className="absolute inset-0 bg-black/25 backdrop-blur-[1px] flex items-center justify-center p-1">
+                                        <span className="bg-red-50/90 text-red-600 font-bold border border-red-200 text-[9px] uppercase tracking-wider px-2 py-0.5 rounded-full shadow-sm text-center backdrop-blur-md">
                                           Agotado
                                         </span>
                                       </div>

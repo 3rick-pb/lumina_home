@@ -436,7 +436,7 @@ export default function AdminPage() {
                     {prod.badge ? (
                       <span className={`px-2.5 py-1 rounded-full text-xs font-semibold ${
                         isAgotadoBadge(prod.badge)
-                          ? "bg-red-500 text-white border border-red-600 tracking-wide uppercase shadow-xs"
+                          ? "bg-red-50 text-red-600 border border-red-200"
                           : "bg-[#8c9276]/10 text-[#8c9276] border border-[#8c9276]/20"
                       }`}>
                         {prod.badge}

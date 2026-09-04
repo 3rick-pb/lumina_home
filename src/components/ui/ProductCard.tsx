@@ -37,7 +37,7 @@ export function ProductCard({ id, title, price, oldPrice, discount, badge, image
         {badge && (
           <div className={`absolute top-3 left-3 backdrop-blur-md text-xs font-bold px-3 py-1 rounded-full z-10 shadow-sm transition-colors ${
             isAgotado 
-              ? "bg-red-500/90 text-white border border-red-400 shadow-red-500/20 tracking-wider uppercase" 
+              ? "bg-red-50/60 border border-red-300/80 text-red-600" 
               : "bg-white/40 border border-white/60 text-gray-900"
           }`}>
             {badge}

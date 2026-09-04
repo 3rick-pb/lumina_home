@@ -108,7 +108,7 @@ export default function ProductDetail({ params }: { params: { id: string } }) {
               {product.badge && (
                 <span className={`px-3 py-1 rounded-full text-xs font-bold transition-colors inline-block ${
                   isAgotado
-                    ? "bg-red-500 text-white border border-red-600 shadow-sm shadow-red-500/20 tracking-wider uppercase"
+                    ? "bg-red-50 text-red-600 border border-red-200"
                     : "bg-gray-100 text-gray-800 border border-gray-200 font-semibold"
                 }`}>
                   {product.badge}
