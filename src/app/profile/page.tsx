@@ -30,7 +30,9 @@ import {
   MapPin, 
   Tag, 
   Pencil,
-  Star 
+  Star,
+  Navigation,
+  Loader2 
 } from "lucide-react";
 import { useUserStore, Order } from "@/lib/userStore";
 import { useCatalogStore, normalizeCategory, CatalogProduct } from "@/lib/catalogStore";
@@ -91,6 +93,9 @@ export default function ProfilePage() {
   const [stateProv, setStateProv] = useState("");
   const [postalCode, setPostalCode] = useState("");
   const [country, setCountry] = useState("España");
+  const [isDetectingLocation, setIsDetectingLocation] = useState(false);
+  const [locationError, setLocationError] = useState<string | null>(null);
+  const [locationSuccess, setLocationSuccess] = useState(false);
 
   // Admin New Product Modal State
   const [showProductModal, setShowProductModal] = useState(false);
@@ -331,6 +336,109 @@ export default function ProfilePage() {
     setNewCatInput("");
   };
 
+  // Geolocation-based Address Detection
+  const handleDetectLocation = () => {
+    if (typeof window === "undefined" || !navigator.geolocation) {
+      setLocationError("Tu navegador no soporta geolocalización.");
+      return;
+    }
+
+    setIsDetectingLocation(true);
+    setLocationError(null);
+    setLocationSuccess(false);
+
+    navigator.geolocation.getCurrentPosition(
+      async (pos) => {
+        try {
+          const { latitude, longitude } = pos.coords;
+
+          // 1. Primary reverse geocode: OpenStreetMap Nominatim
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          let addrData: any = null;
+          try {
+            const res = await fetch(
+              `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&addressdetails=1`,
+              { headers: { "Accept-Language": "es" } }
+            );
+            if (res.ok) {
+              const data = await res.json();
+              if (data && data.address) {
+                addrData = data.address;
+              }
+            }
+          } catch {}
+
+          // 2. Fallback reverse geocode: BigDataCloud API
+          if (!addrData) {
+            try {
+              const bdcRes = await fetch(
+                `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${latitude}&longitude=${longitude}&localityLanguage=es`
+              );
+              if (bdcRes.ok) {
+                const bdc = await bdcRes.json();
+                if (bdc) {
+                  addrData = {
+                    road: bdc.locality || bdc.city || "",
+                    city: bdc.city || bdc.locality || "",
+                    state: bdc.principalSubdivision || "",
+                    postcode: bdc.postcode || "",
+                    country: bdc.countryName || "España"
+                  };
+                }
+              }
+            } catch {}
+          }
+
+          if (addrData) {
+            const roadName = addrData.road || addrData.pedestrian || addrData.suburb || addrData.neighbourhood || addrData.quarter || "";
+            const houseNum = addrData.house_number || "";
+            const detectedStreet = [roadName, houseNum].filter(Boolean).join(" ") || (addrData.city ? `Cerca de ${addrData.city}` : "");
+            const detectedCity = addrData.city || addrData.town || addrData.village || addrData.municipality || addrData.county || "";
+            const detectedState = addrData.state || addrData.region || addrData.province || addrData.principalSubdivision || "";
+            const detectedPostal = addrData.postcode || "";
+            const detectedCountry = addrData.country || "España";
+
+            if (detectedStreet) setStreet(detectedStreet);
+            if (detectedCity) setCity(detectedCity);
+            if (detectedState) setStateProv(detectedState);
+            if (detectedPostal) setPostalCode(detectedPostal);
+            if (detectedCountry) setCountry(detectedCountry);
+
+            // Keep recipient untouched, or if totally blank, suggest user name
+            if (!recipient.trim() && user?.name) {
+              setRecipient(user.name);
+            }
+
+            setLocationSuccess(true);
+          } else {
+            setLocationError("No se pudo obtener la información de dirección. Por favor, ingrésala manualmente.");
+          }
+        } catch {
+          setLocationError("Error al procesar la dirección de tu ubicación.");
+        } finally {
+          setIsDetectingLocation(false);
+        }
+      },
+      (err) => {
+        setIsDetectingLocation(false);
+        if (err.code === 1) {
+          setLocationError("Permiso de ubicación denegado. Habilita el acceso a la ubicación en tu navegador o ingresa los datos manualmente.");
+        } else if (err.code === 2) {
+          setLocationError("Ubicación no disponible en este dispositivo. Ingresa los datos manualmente.");
+        } else if (err.code === 3) {
+          setLocationError("Tiempo de espera agotado al obtener la ubicación. Ingresa los datos manualmente.");
+        } else {
+          setLocationError("No se pudo acceder a la ubicación. Ingresa los datos manualmente.");
+        }
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 0
+      }
+    );
+  };
+
   // Add Address Submit
   const handleAddressSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -354,6 +462,8 @@ export default function ProfilePage() {
     setStateProv("");
     setPostalCode("");
     setCountry("España");
+    setLocationError(null);
+    setLocationSuccess(false);
     setShowAddressForm(false);
   };
 
@@ -2042,12 +2152,59 @@ export default function ProfilePage() {
                       </span>
                       <button 
                         type="button" 
-                        onClick={() => setShowAddressForm(false)} 
+                        onClick={() => {
+                          setLocationError(null);
+                          setLocationSuccess(false);
+                          setShowAddressForm(false);
+                        }} 
                         className="text-xs text-gray-500 hover:text-gray-800 cursor-pointer"
                       >
                         Cerrar
                       </button>
                     </div>
+
+                    {/* Geolocation Auto-fill Button */}
+                    <div className="pt-1">
+                      <button
+                        type="button"
+                        onClick={handleDetectLocation}
+                        disabled={isDetectingLocation}
+                        className="w-full py-2.5 px-3.5 rounded-xl text-xs font-semibold flex items-center justify-center gap-2 border transition-all cursor-pointer shadow-xs disabled:opacity-60 disabled:cursor-not-allowed
+                          bg-gradient-to-r from-blue-50 via-indigo-50/60 to-blue-50 text-blue-700 border-blue-200/90 hover:bg-blue-100 hover:border-blue-300 active:scale-[0.99]"
+                      >
+                        {isDetectingLocation ? (
+                          <>
+                            <Loader2 className="w-3.5 h-3.5 animate-spin text-blue-600" />
+                            <span>Detectando ubicación real del dispositivo...</span>
+                          </>
+                        ) : (
+                          <>
+                            <Navigation className="w-3.5 h-3.5 text-blue-600" />
+                            <span>Autocompletar con mi ubicación actual</span>
+                          </>
+                        )}
+                      </button>
+
+                      {locationError && (
+                        <p className="text-[11px] text-amber-800 bg-amber-50 border border-amber-200 rounded-xl p-2.5 mt-2 leading-tight">
+                          {locationError}
+                        </p>
+                      )}
+
+                      {locationSuccess && (
+                        <p className="text-[11px] text-emerald-800 bg-emerald-50 border border-emerald-200 rounded-xl p-2.5 mt-2 leading-tight flex items-center gap-1.5">
+                          <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                          <span>¡Ubicación detectada! Revisa los campos y escribe el nombre de quién recibe.</span>
+                        </p>
+                      )}
+                    </div>
+
+                    <div className="relative flex py-0.5 items-center">
+                      <div className="flex-grow border-t border-gray-200"></div>
+                      <span className="flex-shrink mx-2 text-[10px] text-gray-400 font-semibold uppercase tracking-wider">o llena los datos manualmente</span>
+                      <div className="flex-grow border-t border-gray-200"></div>
+                    </div>
+
                     <div>
                       <label className="block text-[11px] font-semibold text-gray-700 mb-1">
                         ¿Quién recibe? (Nombre y apellidos)
