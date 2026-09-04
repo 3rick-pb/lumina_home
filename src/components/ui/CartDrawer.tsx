@@ -181,12 +181,14 @@ export function CartDrawer() {
   const [selectedCardId, setSelectedCardId] = useState<string>("");
   const [hoveredPaymentMethod, setHoveredPaymentMethod] = useState<string | null>(null);
   const [isWalletOpen, setIsWalletOpen] = useState(false);
+  const [hoveredCardId, setHoveredCardId] = useState<string | null>(null);
 
   // Quick Address Inline Form
   const [isEditingAddress, setIsEditingAddress] = useState(false);
   const [addrStreet, setAddrStreet] = useState("");
   const [addrCity, setAddrCity] = useState("");
   const [addrPostal, setAddrPostal] = useState("");
+  const [addrState, setAddrState] = useState("");
   const [addrCountry, setAddrCountry] = useState("España");
 
   // Checkout Processing
@@ -205,13 +207,23 @@ export function CartDrawer() {
       setAddrStreet(address.street);
       setAddrCity(address.city);
       setAddrPostal(address.postalCode);
-      setAddrCountry(address.country);
+      setAddrState(address.state || "");
+      setAddrCountry(address.country || "España");
     } else {
       setAddrStreet("");
       setAddrCity("");
       setAddrPostal("");
+      setAddrState("");
+      setAddrCountry("España");
     }
   }, [user?.id, cards, address]);
+
+  // Reset wallet hover if wallet closes
+  useEffect(() => {
+    if (!isWalletOpen) {
+      setHoveredCardId(null);
+    }
+  }, [isWalletOpen]);
 
   // Reset step when cart is closed
   useEffect(() => {
@@ -259,13 +271,13 @@ export function CartDrawer() {
 
   const handleSaveAddress = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!addrStreet.trim() || !addrCity.trim()) return;
+    if (!addrStreet.trim() || !addrCity.trim() || !addrPostal.trim() || !addrState.trim() || !addrCountry.trim()) return;
     const newAddr: ShippingAddress = {
       street: addrStreet.trim(),
       city: addrCity.trim(),
-      state: "Provincia",
-      postalCode: addrPostal.trim() || "28001",
-      country: addrCountry
+      state: addrState.trim(),
+      postalCode: addrPostal.trim(),
+      country: addrCountry.trim()
     };
     setAddress(newAddr);
     setIsEditingAddress(false);
@@ -281,6 +293,10 @@ export function CartDrawer() {
   };
 
   const handleConfirmOrder = () => {
+    if (!address) {
+      setIsEditingAddress(true);
+      return;
+    }
     setIsProcessing(true);
 
     setTimeout(() => {
@@ -866,16 +882,16 @@ export function CartDrawer() {
                           </h4>
                           <button 
                             onClick={() => setIsEditingAddress(!isEditingAddress)}
-                            className="text-xs font-semibold text-blue-600 hover:underline"
+                            className="text-xs font-semibold text-blue-600 hover:underline cursor-pointer"
                           >
-                            {address ? (isEditingAddress ? "Cancelar" : "Modificar") : "+ Añadir"}
+                            {address ? (isEditingAddress ? "Cancelar" : "Modificar") : (isEditingAddress ? "Cancelar" : "+ Añadir")}
                           </button>
                         </div>
 
                         {isEditingAddress ? (
                           <form onSubmit={handleSaveAddress} className="space-y-3 pt-2">
                             <div>
-                              <label className="block text-[11px] font-semibold text-gray-600 mb-1">Calle y número</label>
+                              <label className="block text-[11px] font-semibold text-gray-700 mb-1">Calle y número</label>
                               <input 
                                 type="text" 
                                 value={addrStreet} 
@@ -887,7 +903,7 @@ export function CartDrawer() {
                             </div>
                             <div className="grid grid-cols-2 gap-3">
                               <div>
-                                <label className="block text-[11px] font-semibold text-gray-600 mb-1">Ciudad</label>
+                                <label className="block text-[11px] font-semibold text-gray-700 mb-1">Ciudad</label>
                                 <input 
                                   type="text" 
                                   value={addrCity} 
@@ -898,28 +914,64 @@ export function CartDrawer() {
                                 />
                               </div>
                               <div>
-                                <label className="block text-[11px] font-semibold text-gray-600 mb-1">Código Postal</label>
+                                <label className="block text-[11px] font-semibold text-gray-700 mb-1">Código Postal</label>
                                 <input 
                                   type="text" 
                                   value={addrPostal} 
                                   onChange={e => setAddrPostal(e.target.value)} 
                                   placeholder="28001"
                                   className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 text-xs outline-none focus:ring-1 focus:ring-blue-500"
+                                  required
                                 />
                               </div>
                             </div>
-                            <button 
-                              type="submit"
-                              className="w-full py-2.5 bg-gray-900 text-white rounded-xl text-xs font-semibold hover:bg-gray-800 transition-colors shadow-sm"
-                            >
-                              Guardar Dirección
-                            </button>
+                            <div className="grid grid-cols-2 gap-3">
+                              <div>
+                                <label className="block text-[11px] font-semibold text-gray-700 mb-1">Provincia/Estado</label>
+                                <input 
+                                  type="text" 
+                                  value={addrState} 
+                                  onChange={e => setAddrState(e.target.value)} 
+                                  placeholder="Madrid"
+                                  className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 text-xs outline-none focus:ring-1 focus:ring-blue-500"
+                                  required
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-[11px] font-semibold text-gray-700 mb-1">País</label>
+                                <input 
+                                  type="text" 
+                                  value={addrCountry} 
+                                  onChange={e => setAddrCountry(e.target.value)} 
+                                  placeholder="España"
+                                  className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 text-xs outline-none focus:ring-1 focus:ring-blue-500"
+                                  required
+                                />
+                              </div>
+                            </div>
+                            <div className="flex gap-2 pt-1">
+                              <button 
+                                type="button"
+                                onClick={() => setIsEditingAddress(false)}
+                                className="w-1/3 py-2.5 bg-gray-100 text-gray-700 rounded-xl text-xs font-semibold hover:bg-gray-200 transition-colors cursor-pointer"
+                              >
+                                Cancelar
+                              </button>
+                              <button 
+                                type="submit"
+                                className="w-2/3 py-2.5 bg-gray-900 text-white rounded-xl text-xs font-semibold hover:bg-gray-800 transition-colors shadow-sm cursor-pointer"
+                              >
+                                Guardar Dirección
+                              </button>
+                            </div>
                           </form>
                         ) : address ? (
                           <div className="p-4 rounded-2xl bg-gray-50 border border-gray-100 flex items-center justify-between">
                             <div>
                               <p className="font-bold text-xs text-gray-900">{address.street}</p>
-                              <p className="text-xs text-gray-500 mt-0.5">{address.city}, {address.postalCode} • {address.country}</p>
+                              <p className="text-xs text-gray-500 mt-0.5">
+                                {address.city}{address.state ? `, ${address.state}` : ""}, {address.postalCode} • {address.country}
+                              </p>
                             </div>
                             <div className="w-6 h-6 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center border border-emerald-200">
                               <Check className="w-3.5 h-3.5" />
@@ -930,7 +982,7 @@ export function CartDrawer() {
                             <p className="text-xs text-amber-800 font-medium">Aún no has configurado tu dirección.</p>
                             <button 
                               onClick={() => setIsEditingAddress(true)}
-                              className="px-4 py-1.5 bg-amber-900 text-white rounded-xl text-xs font-semibold"
+                              className="px-4 py-1.5 bg-amber-900 text-white rounded-xl text-xs font-semibold cursor-pointer"
                             >
                               + Añadir Dirección Ahora
                             </button>
@@ -1105,7 +1157,10 @@ export function CartDrawer() {
                             >
                               {/* Background Base of Wallet Pocket with bottom-only rounded clipPath */}
                               <div 
-                                onClick={() => setIsWalletOpen(!isWalletOpen)}
+                                onClick={() => {
+                                  setIsWalletOpen(!isWalletOpen);
+                                  setHoveredCardId(null);
+                                }}
                                 className="relative w-full h-[155px] rounded-3xl bg-gradient-to-b from-[#080e1c] via-[#0b1426] to-[#060a13] border border-slate-800/50 shadow-[0_12px_28px_-6px_rgba(15,23,42,0.18),0_4px_12px_-2px_rgba(15,23,42,0.08)] overflow-visible cursor-pointer"
                                 style={{ clipPath: "inset(-350px -12px 0px -12px round 0px 0px 1.5rem 1.5rem)" }}
                               >
@@ -1155,6 +1210,7 @@ export function CartDrawer() {
                                   }
 
                                   const isSelected = card.id === activeCard.id;
+                                  const isCardHovered = isWalletOpen && hoveredCardId === card.id;
 
                                   // Calculate vertical offsets for 1-finger upward accordion stacking (24px separation)
                                   const totalCards = orderedCards.length;
@@ -1176,6 +1232,13 @@ export function CartDrawer() {
                                         e.stopPropagation();
                                         setSelectedCardId(card.id);
                                         setIsWalletOpen(false);
+                                        setHoveredCardId(null);
+                                      }}
+                                      onMouseEnter={() => {
+                                        if (isWalletOpen) setHoveredCardId(card.id);
+                                      }}
+                                      onMouseLeave={() => {
+                                        if (hoveredCardId === card.id) setHoveredCardId(null);
                                       }}
                                       initial={false}
                                       animate={{
@@ -1191,11 +1254,18 @@ export function CartDrawer() {
                                         mass: 0.7
                                       }}
                                       style={{ transformStyle: "preserve-3d" }}
-                                      className={`absolute left-[6%] w-[88%] h-[116px] rounded-2xl p-3 sm:p-3.5 ${theme.bg} ${theme.text} ${theme.border} ${theme.shadow} flex flex-col justify-between cursor-pointer select-none border transition-colors overflow-hidden`}
+                                      className={`absolute left-[6%] w-[88%] h-[116px] rounded-2xl p-3 sm:p-3.5 ${theme.bg} ${theme.text} ${theme.shadow} flex flex-col justify-between cursor-pointer select-none border transition-all duration-200 overflow-hidden ${
+                                        isCardHovered
+                                          ? "border-sky-300 ring-2 ring-sky-400/80 shadow-[0_0_18px_rgba(56,189,248,0.5),0_8px_24px_rgba(0,0,0,0.3)] brightness-[1.05]"
+                                          : `${theme.border} ${isWalletOpen ? "hover:border-sky-300 hover:ring-2 hover:ring-sky-400/70 hover:shadow-[0_0_16px_rgba(56,189,248,0.4)] hover:brightness-[1.04]" : ""}`
+                                      }`}
                                     >
                                       {/* Specular curved reflection glint */}
                                       <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/10 to-transparent pointer-events-none" />
-                                      <div className="absolute inset-[1px] rounded-[15px] border border-white/20 pointer-events-none" />
+                                      <div className={`absolute inset-[1px] rounded-[15px] border pointer-events-none transition-colors duration-200 ${isCardHovered ? "border-sky-300/50" : "border-white/20"}`} />
+
+                                      {/* Top rim specular highlight on hover */}
+                                      <div className={`absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-transparent via-sky-300 to-transparent transition-opacity duration-200 pointer-events-none ${isCardHovered ? "opacity-100" : "opacity-0"}`} />
 
                                       {/* Top Row: Network & Status */}
                                       <div className="flex items-center justify-between relative z-10">
@@ -1248,6 +1318,7 @@ export function CartDrawer() {
                                   onClick={(e) => {
                                     e.stopPropagation();
                                     setIsWalletOpen(!isWalletOpen);
+                                    setHoveredCardId(null);
                                   }}
                                   className="absolute bottom-0 inset-x-0 h-[115px] rounded-b-3xl rounded-t-2xl bg-gradient-to-b from-[#0e172a]/95 via-[#0b1324]/98 to-[#060a12] border-t border-sky-400/30 border-x border-b border-slate-800/40 shadow-[0_-4px_12px_-2px_rgba(0,0,0,0.18),0_8px_20px_-4px_rgba(15,23,42,0.22)] backdrop-blur-xl p-3.5 flex flex-col justify-between cursor-pointer z-30 transition-all hover:border-sky-400/50 active:scale-[0.99]"
                                 >
