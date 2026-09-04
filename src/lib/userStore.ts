@@ -12,10 +12,18 @@ export interface User {
 export interface Order {
   id: string;
   date: string;
+  time?: string;
+  createdAt?: string;
   status: 'Procesando' | 'Enviado' | 'Entregado';
   trackingNumber?: string;
   total: number;
   items: CartItem[];
+  customerName?: string;
+  customerEmail?: string;
+  recipient?: string;
+  shippingAddress?: ShippingAddress;
+  paymentMethod?: string;
+  userId?: string;
 }
 
 export interface PaymentCard {
@@ -72,24 +80,53 @@ interface UserState {
   updateUserPassword: (password: string) => Promise<{ error: string | null }>;
 }
 
-const fetchUserDataFromDatabase = async (userId: string) => {
+const fetchUserDataFromDatabase = async (userId: string, role: 'USER' | 'ADMIN' = 'USER', email: string = '') => {
   try {
-    // 1. Fetch orders from Supabase orders table
-    const { data: dbOrders } = await supabase
-      .from('orders')
-      .select('*')
-      .eq('user_id', userId)
-      .order('created_at', { ascending: false });
+    const isAdmin = role === 'ADMIN' || email.toLowerCase() === 'admin@lumina.com';
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    let orders: Order[] = (dbOrders || []).map((o: any) => ({
-      id: o.id,
-      date: o.created_at ? new Date(o.created_at).toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: 'numeric' }) : 'Reciente',
-      status: o.status || 'Procesando',
-      trackingNumber: o.tracking_number,
-      total: Number(o.total) || 0,
-      items: Array.isArray(o.items) ? o.items : [],
-    }));
+    // 1. Fetch store/user orders from persistent API with instant synchronization
+    let orders: Order[] = [];
+    try {
+      const res = await fetch(`/api/orders?userId=${encodeURIComponent(userId)}&role=${encodeURIComponent(role)}&email=${encodeURIComponent(email)}`);
+      if (res.ok) {
+        const json = await res.json();
+        if (json.success && Array.isArray(json.orders)) {
+          orders = json.orders;
+        }
+      }
+    } catch (apiErr) {
+      console.warn("Could not fetch orders from /api/orders, checking Supabase/metadata fallback", apiErr);
+    }
+
+    // Supabase fallback if API returned no orders
+    if (orders.length === 0) {
+      try {
+        let query = supabase.from('orders').select('*').order('created_at', { ascending: false });
+        if (!isAdmin) {
+          query = query.eq('user_id', userId);
+        }
+        const { data: dbOrders } = await query;
+        if (dbOrders && dbOrders.length > 0) {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          orders = dbOrders.map((o: any) => ({
+            id: o.id,
+            userId: o.user_id,
+            customerName: o.customer_name || 'Cliente Lumina',
+            customerEmail: o.customer_email || email,
+            recipient: o.recipient || '',
+            shippingAddress: o.shipping_address,
+            paymentMethod: o.payment_method,
+            date: o.created_at ? new Date(o.created_at).toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: 'numeric' }) : 'Reciente',
+            time: o.created_at ? new Date(o.created_at).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }) : '12:00',
+            createdAt: o.created_at,
+            status: o.status || 'Procesando',
+            trackingNumber: o.tracking_number,
+            total: Number(o.total) || 0,
+            items: Array.isArray(o.items) ? o.items : [],
+          }));
+        }
+      } catch {}
+    }
 
     // 2. Fetch addresses from Supabase addresses table
     let addresses: ShippingAddress[] = [];
@@ -198,8 +235,8 @@ export const useUserStore = create<UserState>((set, get) => ({
         const role = (email.toLowerCase() === 'admin@lumina.com' || session.user.user_metadata?.role === 'ADMIN') ? 'ADMIN' : 'USER';
         const name = session.user.user_metadata?.name || email.split('@')[0];
         
-        // Fetch all user private data directly from Supabase database
-        const personalData = await fetchUserDataFromDatabase(session.user.id);
+        // Fetch all user private data directly from Supabase database and API
+        const personalData = await fetchUserDataFromDatabase(session.user.id, role, email);
 
         set({ 
           user: { id: session.user.id, email, name, role }, 
@@ -231,7 +268,7 @@ export const useUserStore = create<UserState>((set, get) => ({
         const email = session.user.email || '';
         const role = (email.toLowerCase() === 'admin@lumina.com' || session.user.user_metadata?.role === 'ADMIN') ? 'ADMIN' : 'USER';
         const name = session.user.user_metadata?.name || email.split('@')[0];
-        const personalData = await fetchUserDataFromDatabase(session.user.id);
+        const personalData = await fetchUserDataFromDatabase(session.user.id, role, email);
 
         set({ 
           user: { id: session.user.id, email, name, role }, 
@@ -263,13 +300,14 @@ export const useUserStore = create<UserState>((set, get) => ({
       const userEmail = data.user.email || cleanEmail;
       const role = (userEmail.toLowerCase() === 'admin@lumina.com' || data.user.user_metadata?.role === 'ADMIN') ? 'ADMIN' : 'USER';
       const name = data.user.user_metadata?.name || userEmail.split('@')[0];
-      const personalData = await fetchUserDataFromDatabase(data.user.id);
+      const personalData = await fetchUserDataFromDatabase(data.user.id, role, userEmail);
 
       set({ 
         user: { id: data.user.id, email: userEmail, name, role }, 
         isAuthenticated: true,
         cards: personalData.cards,
         orders: personalData.orders,
+        addresses: personalData.addresses,
         address: personalData.address
       });
 
@@ -410,21 +448,47 @@ export const useUserStore = create<UserState>((set, get) => ({
   
   addOrder: async (order) => {
     const user = get().user;
-    const nextOrders = [order, ...get().orders];
+    const enrichedOrder: Order = {
+      ...order,
+      userId: user?.id,
+      customerName: order.customerName || user?.name || 'Cliente Lumina',
+      customerEmail: order.customerEmail || user?.email || 'cliente@lumina.com',
+      time: order.time || new Date().toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }),
+      createdAt: order.createdAt || new Date().toISOString()
+    };
+    const nextOrders = [enrichedOrder, ...get().orders];
     set({ orders: nextOrders });
 
+    // 1. Sync via API route for store-wide live persistence
+    try {
+      await fetch('/api/orders', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ order: enrichedOrder })
+      });
+    } catch (e) {
+      console.warn("Could not sync order to /api/orders", e);
+    }
+
+    // 2. Sync to Supabase
     if (user) {
       try {
-        await supabase.from('orders').insert({
-          id: order.id,
+        await supabase.from('orders').upsert({
+          id: enrichedOrder.id,
           user_id: user.id,
-          status: order.status,
-          total: order.total,
-          items: order.items,
-          tracking_number: order.trackingNumber,
+          status: enrichedOrder.status,
+          total: enrichedOrder.total,
+          items: enrichedOrder.items,
+          tracking_number: enrichedOrder.trackingNumber,
+          customer_name: enrichedOrder.customerName,
+          customer_email: enrichedOrder.customerEmail,
+          recipient: enrichedOrder.recipient,
+          shipping_address: enrichedOrder.shippingAddress,
+          payment_method: enrichedOrder.paymentMethod,
+          created_at: enrichedOrder.createdAt
         });
       } catch (e) {
-        console.error("Error saving order to Supabase:", e);
+        console.warn("Error saving order to Supabase:", e);
       }
       try {
         await supabase.auth.updateUser({ data: { orders: nextOrders } });
@@ -437,6 +501,18 @@ export const useUserStore = create<UserState>((set, get) => ({
     const nextOrders = get().orders.map(order => order.id === orderId ? { ...order, status } : order);
     set({ orders: nextOrders });
 
+    // 1. Sync status change to /api/orders
+    try {
+      await fetch('/api/orders', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ orderId, status })
+      });
+    } catch (e) {
+      console.warn("Could not sync status change to /api/orders", e);
+    }
+
+    // 2. Sync to Supabase
     if (user) {
       try {
         await supabase.from('orders').update({ status }).eq('id', orderId);

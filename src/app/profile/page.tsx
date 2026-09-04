@@ -267,7 +267,11 @@ export default function ProfilePage() {
     const q = normalizeSearchText(searchQuery);
     return orders.filter(ord => {
       const matchStatus = orderStatusFilter === "all" || ord.status.toLowerCase() === orderStatusFilter.toLowerCase();
-      const matchQuery = !q || normalizeSearchText(ord.id).includes(q);
+      const matchQuery = !q || 
+        normalizeSearchText(ord.id).includes(q) ||
+        normalizeSearchText(ord.customerName || "").includes(q) ||
+        normalizeSearchText(ord.customerEmail || "").includes(q) ||
+        normalizeSearchText(ord.trackingNumber || "").includes(q);
       return matchStatus && matchQuery;
     });
   }, [orders, orderStatusFilter, searchQuery]);
@@ -1306,10 +1310,11 @@ export default function ProfilePage() {
                     <thead>
                       <tr className="border-b border-gray-100 text-gray-400 uppercase tracking-wider font-semibold">
                         <th className="pb-3 px-2">ID Pedido</th>
+                        {isAdmin && <th className="pb-3 px-2">Cliente</th>}
                         <th className="pb-3 px-2">Concepto</th>
                         <th className="pb-3 px-2">Monto</th>
                         <th className="pb-3 px-2">Estado</th>
-                        <th className="pb-3 px-2">Fecha</th>
+                        <th className="pb-3 px-2">Fecha / Hora</th>
                         <th className="pb-3 px-2 text-right">Detalle</th>
                       </tr>
                     </thead>
@@ -1317,6 +1322,12 @@ export default function ProfilePage() {
                       {orders.slice(0, 4).map((ord) => (
                         <tr key={ord.id} className="hover:bg-gray-50/50 transition-colors cursor-pointer" onClick={() => setSelectedOrder(ord)}>
                           <td className="py-3.5 px-2 font-mono font-semibold text-gray-900">{ord.id}</td>
+                          {isAdmin && (
+                            <td className="py-3.5 px-2">
+                              <p className="font-semibold text-gray-900 truncate max-w-[130px]">{ord.customerName || "Cliente Lumina"}</p>
+                              <p className="text-[10px] text-gray-400 truncate max-w-[130px]">{ord.customerEmail || "cliente@lumina.com"}</p>
+                            </td>
+                          )}
                           <td className="py-3.5 px-2 font-medium text-gray-800 flex items-center gap-2">
                             <div className="w-7 h-7 rounded-lg bg-gray-100 flex items-center justify-center text-gray-600">
                               <Package className="w-3.5 h-3.5" />
@@ -1324,21 +1335,49 @@ export default function ProfilePage() {
                             <span>{ord.items.length > 0 ? `${ord.items.length} pieza(s) Lumina` : "Compra Lumina"}</span>
                           </td>
                           <td className="py-3.5 px-2 font-bold text-gray-900">${ord.total.toFixed(2)}</td>
-                          <td className="py-3.5 px-2">
-                            <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold ${
-                              ord.status === "Entregado" 
-                                ? "bg-emerald-50 text-emerald-700 border border-emerald-100" 
-                                : ord.status === "Enviado" 
-                                ? "bg-blue-50 text-blue-700 border border-blue-100" 
-                                : "bg-amber-50 text-amber-700 border border-amber-100"
-                            }`}>
-                              <span className={`w-1.5 h-1.5 rounded-full ${
-                                ord.status === "Entregado" ? "bg-emerald-500" : ord.status === "Enviado" ? "bg-blue-500" : "bg-amber-500"
-                              }`} />
-                              {ord.status}
-                            </span>
+                          <td className="py-3.5 px-2" onClick={(e) => e.stopPropagation()}>
+                            {isAdmin ? (
+                              <div className="relative inline-block">
+                                <select 
+                                  value={ord.status}
+                                  onChange={(e) => updateOrderStatus(ord.id, e.target.value as Order['status'])}
+                                  className={`appearance-none text-[11px] font-bold px-2.5 py-1 pr-6 rounded-full cursor-pointer outline-none border transition-all ${
+                                    ord.status === "Entregado" 
+                                      ? "bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100" 
+                                      : ord.status === "Enviado" 
+                                      ? "bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100" 
+                                      : "bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100"
+                                  }`}
+                                >
+                                  <option value="Procesando">Procesando</option>
+                                  <option value="Enviado">Enviado</option>
+                                  <option value="Entregado">Entregado</option>
+                                </select>
+                                <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2">
+                                  <svg className="h-3 w-3 text-current opacity-70" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
+                                  </svg>
+                                </div>
+                              </div>
+                            ) : (
+                              <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold ${
+                                ord.status === "Entregado" 
+                                  ? "bg-emerald-50 text-emerald-700 border border-emerald-100" 
+                                  : ord.status === "Enviado" 
+                                  ? "bg-blue-50 text-blue-700 border border-blue-100" 
+                                  : "bg-amber-50 text-amber-700 border border-amber-100"
+                              }`}>
+                                <span className={`w-1.5 h-1.5 rounded-full ${
+                                  ord.status === "Entregado" ? "bg-emerald-500" : ord.status === "Enviado" ? "bg-blue-500" : "bg-amber-500"
+                                }`} />
+                                {ord.status}
+                              </span>
+                            )}
                           </td>
-                          <td className="py-3.5 px-2 text-gray-400">{ord.date}</td>
+                          <td className="py-3.5 px-2 text-gray-500">
+                            <span className="block font-medium text-gray-800">{ord.date}</span>
+                            {ord.time && <span className="block text-[10px] text-gray-400">{ord.time}</span>}
+                          </td>
                           <td className="py-3.5 px-2 text-right">
                             <button 
                               onClick={(e) => { e.stopPropagation(); setSelectedOrder(ord); }} 
@@ -1444,11 +1483,12 @@ export default function ProfilePage() {
                   <thead>
                     <tr className="border-b border-gray-200 text-gray-400 uppercase tracking-wider font-semibold">
                       <th className="pb-3 px-3">ID Pedido</th>
+                      {isAdmin && <th className="pb-3 px-3">Cliente</th>}
                       <th className="pb-3 px-3">Código Rastreo</th>
                       <th className="pb-3 px-3">Artículos</th>
                       <th className="pb-3 px-3">Total</th>
                       <th className="pb-3 px-3">Estado</th>
-                      <th className="pb-3 px-3">Fecha</th>
+                      <th className="pb-3 px-3">Fecha / Hora</th>
                       <th className="pb-3 px-3 text-right">Acción</th>
                     </tr>
                   </thead>
@@ -1456,6 +1496,12 @@ export default function ProfilePage() {
                     {filteredOrders.map((ord) => (
                       <tr key={ord.id} className="hover:bg-gray-50/70 transition-colors">
                         <td className="py-4 px-3 font-mono font-bold text-gray-900">{ord.id}</td>
+                        {isAdmin && (
+                          <td className="py-4 px-3">
+                            <p className="font-semibold text-gray-900">{ord.customerName || "Cliente Lumina"}</p>
+                            <p className="text-[10px] text-gray-400">{ord.customerEmail || "cliente@lumina.com"}</p>
+                          </td>
+                        )}
                         <td className="py-4 px-3 font-mono text-gray-500">{ord.trackingNumber || "TRK-PENDIENTE"}</td>
                         <td className="py-4 px-3 text-gray-700">
                           {ord.items.length > 0 ? `${ord.items.length} producto(s)` : "1 artículo Lumina"}
@@ -1475,14 +1521,17 @@ export default function ProfilePage() {
                             {ord.status}
                           </span>
                         </td>
-                        <td className="py-4 px-3 text-gray-400">{ord.date}</td>
+                        <td className="py-4 px-3 text-gray-500">
+                          <span className="block font-medium text-gray-800">{ord.date}</span>
+                          {ord.time && <span className="block text-[10px] text-gray-400">{ord.time}</span>}
+                        </td>
                         <td className="py-4 px-3 text-right">
                           <div className="flex items-center justify-end gap-2">
                             {isAdmin && (
                               <select 
                                 value={ord.status} 
                                 onChange={(e) => updateOrderStatus(ord.id, e.target.value as "Procesando" | "Enviado" | "Entregado")}
-                                className="text-[11px] font-semibold bg-gray-100 rounded-lg px-2 py-1 outline-none border border-gray-200"
+                                className="text-[11px] font-semibold bg-gray-100 rounded-lg px-2.5 py-1.5 outline-none border border-gray-200 cursor-pointer"
                               >
                                 <option value="Procesando">Procesando</option>
                                 <option value="Enviado">Enviado</option>
@@ -1491,7 +1540,7 @@ export default function ProfilePage() {
                             )}
                             <button 
                               onClick={() => setSelectedOrder(ord)} 
-                              className="px-3 py-1 bg-gray-900 text-white rounded-xl text-xs font-medium hover:bg-gray-800 transition-colors flex items-center gap-1"
+                              className="px-3 py-1.5 bg-gray-900 text-white rounded-xl text-xs font-medium hover:bg-gray-800 transition-colors flex items-center gap-1"
                             >
                               <Eye className="w-3.5 h-3.5" /> Ver Detalle
                             </button>
@@ -2273,13 +2322,13 @@ export default function ProfilePage() {
                 <span className="text-[10px] font-bold uppercase tracking-wider text-[#8c9276]">Detalle de Envío</span>
                 <h3 className="text-xl font-bold text-gray-900 font-mono">{selectedOrder.id}</h3>
               </div>
-              <button onClick={() => setSelectedOrder(null)} className="p-2 rounded-full hover:bg-gray-100 text-gray-400 hover:text-gray-900">
+              <button onClick={() => setSelectedOrder(null)} className="p-2 rounded-full hover:bg-gray-100 text-gray-400 hover:text-gray-900 cursor-pointer">
                 <X className="w-5 h-5" />
               </button>
             </div>
 
             {/* Tracking Progress Bar */}
-            <div className="my-6 p-4 bg-gray-50 rounded-2xl border border-gray-100">
+            <div className="my-5 p-4 bg-gray-50 rounded-2xl border border-gray-100">
               <div className="flex items-center justify-between mb-3 text-xs">
                 <span className="font-semibold text-gray-700">Rastreo: <span className="font-mono">{selectedOrder.trackingNumber || "LM-982410"}</span></span>
                 <span className={`px-2.5 py-0.5 rounded-full font-bold text-[10px] ${
@@ -2308,9 +2357,41 @@ export default function ProfilePage() {
               </div>
             </div>
 
+            {/* Customer & Order Metadata Card */}
+            <div className="mb-5 grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {/* Comprador & Fecha */}
+              <div className="p-3.5 bg-gray-50/80 rounded-2xl border border-gray-100">
+                <p className="text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-1">Cliente / Comprador</p>
+                <p className="text-xs font-bold text-gray-900">{selectedOrder.customerName || "Cliente Lumina"}</p>
+                <p className="text-[11px] text-gray-500 truncate">{selectedOrder.customerEmail || "cliente@lumina.com"}</p>
+                <div className="mt-2 pt-2 border-t border-gray-200/60 text-[11px] text-gray-600 flex items-center justify-between">
+                  <span className="text-[10px] text-gray-400">Fecha y Hora:</span>
+                  <span className="font-semibold text-gray-800">{selectedOrder.date} {selectedOrder.time ? `• ${selectedOrder.time}` : ""}</span>
+                </div>
+              </div>
+
+              {/* Entrega & Pago */}
+              <div className="p-3.5 bg-gray-50/80 rounded-2xl border border-gray-100">
+                <p className="text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-1">Dirección de Entrega</p>
+                {selectedOrder.shippingAddress ? (
+                  <>
+                    <p className="text-xs font-semibold text-gray-900 truncate">{selectedOrder.shippingAddress.street}</p>
+                    <p className="text-[11px] text-gray-500 truncate">{selectedOrder.shippingAddress.city}{selectedOrder.shippingAddress.state ? `, ${selectedOrder.shippingAddress.state}` : ""}</p>
+                    <p className="text-[10px] text-gray-400">{selectedOrder.shippingAddress.postalCode} • {selectedOrder.shippingAddress.country}</p>
+                  </>
+                ) : (
+                  <p className="text-xs text-gray-500 italic">Dirección registrada por defecto</p>
+                )}
+                <div className="mt-2 pt-2 border-t border-gray-200/60 text-[11px] text-gray-600 flex items-center justify-between">
+                  <span className="text-[10px] text-gray-400">Método de Pago:</span>
+                  <span className="font-semibold text-gray-800">{selectedOrder.paymentMethod || "Tarjeta de Crédito"}</span>
+                </div>
+              </div>
+            </div>
+
             {/* Items Purchased */}
-            <div className="space-y-3 mb-6">
-              <h4 className="text-xs font-bold uppercase tracking-wider text-gray-400">Piezas Adquiridas</h4>
+            <div className="space-y-3 mb-5">
+              <h4 className="text-xs font-bold uppercase tracking-wider text-gray-400">Piezas Adquiridas ({selectedOrder.items.length})</h4>
               {selectedOrder.items.length === 0 ? (
                 <div className="p-3 bg-gray-50 rounded-xl flex items-center justify-between text-xs">
                   <span>Pieza Colección Exclusiva Lumina</span>
@@ -2320,12 +2401,12 @@ export default function ProfilePage() {
                 selectedOrder.items.map((item, idx) => (
                   <div key={idx} className="p-3 bg-gray-50 rounded-xl flex items-center justify-between text-xs">
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-lg overflow-hidden bg-white shrink-0 relative">
+                      <div className="w-10 h-10 rounded-lg overflow-hidden bg-white shrink-0 relative border border-gray-100">
                         <Image src={item.product.imageUrl} alt={item.product.title} fill className="object-cover" />
                       </div>
                       <div>
                         <p className="font-semibold text-gray-900">{item.product.title}</p>
-                        <p className="text-[10px] text-gray-400">Cant: {item.quantity} {item.color ? `• ${item.color}` : ""}</p>
+                        <p className="text-[10px] text-gray-400">Cant: {item.quantity} {item.color ? `• Color: ${item.color}` : ""}</p>
                       </div>
                     </div>
                     <span className="font-bold text-gray-900">${(item.product.price * item.quantity).toFixed(2)}</span>
@@ -2342,8 +2423,11 @@ export default function ProfilePage() {
 
             {/* If Admin: live status changer */}
             {isAdmin && (
-              <div className="mt-6 pt-4 border-t border-gray-100 flex items-center justify-between bg-amber-50/60 p-3 rounded-2xl">
-                <span className="text-xs font-bold text-amber-900">Actualizar Estado (Admin)</span>
+              <div className="mt-5 pt-4 border-t border-gray-100 flex items-center justify-between bg-amber-50/70 p-3.5 rounded-2xl border border-amber-200/60">
+                <div>
+                  <p className="text-xs font-bold text-amber-900">Actualizar Estado (Administrador)</p>
+                  <p className="text-[10px] text-amber-700">Cambia la etapa del pedido en tiempo real para el cliente</p>
+                </div>
                 <select 
                   value={selectedOrder.status}
                   onChange={(e) => {
@@ -2351,7 +2435,7 @@ export default function ProfilePage() {
                     updateOrderStatus(selectedOrder.id, nextSt);
                     setSelectedOrder({ ...selectedOrder, status: nextSt });
                   }}
-                  className="text-xs font-semibold bg-white border border-amber-200 rounded-xl px-3 py-1.5 outline-none"
+                  className="text-xs font-bold bg-white border border-amber-300 rounded-xl px-3.5 py-2 outline-none shadow-sm cursor-pointer text-gray-900"
                 >
                   <option value="Procesando">Procesando</option>
                   <option value="Enviado">Enviado</option>

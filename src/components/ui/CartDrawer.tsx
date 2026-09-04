@@ -391,13 +391,14 @@ export function CartDrawer() {
   };
 
   const handleConfirmOrder = () => {
-    if (!address && (!addresses || addresses.length === 0)) {
+    if (!address && (!addresses || addresses.length === 0) && !addrStreet) {
       setIsEditingAddress(true);
       return;
     }
-    if (!address && addresses && addresses.length > 0) {
-      const defaultAddr = addresses.find(a => a.isDefault) || addresses[0];
-      setAddress(defaultAddr);
+    let shippingAddr = address;
+    if (!shippingAddr && addresses && addresses.length > 0) {
+      shippingAddr = addresses.find(a => a.isDefault) || addresses[0];
+      setAddress(shippingAddr);
     }
     setIsProcessing(true);
 
@@ -405,13 +406,61 @@ export function CartDrawer() {
       const orderId = `INV_${Math.floor(100000 + Math.random() * 900000)}`;
       const trackingCode = `LM-${Math.floor(1000000 + Math.random() * 9000000)}`;
 
+      const customerName = user?.name || shippingAddr?.recipient || addrRecipient || "Cliente";
+      const customerEmail = user?.email || "cliente@lumina.com";
+      const recipientName = shippingAddr?.recipient || addrRecipient || customerName;
+
+      const effectiveCards = cards && cards.length > 0 ? cards : DEMO_CARDS;
+      const chosenCard = effectiveCards.find(c => c.id === selectedCardId) || effectiveCards[0];
+      
+      let paymentDesc = "Tarjeta Bancaria";
+      if (selectedMethod === "card") {
+        paymentDesc = chosenCard ? `${chosenCard.type.toUpperCase()} •••• ${chosenCard.number.slice(-4)}` : "Tarjeta Bancaria";
+      } else if (selectedMethod === "apple") {
+        paymentDesc = "Apple Pay";
+      } else if (selectedMethod === "google") {
+        paymentDesc = "Google Pay";
+      } else if (selectedMethod === "paypal") {
+        paymentDesc = "PayPal";
+      }
+
+      const now = new Date();
+      const formattedDate = now.toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: 'numeric' });
+      const formattedTime = now.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
+
       const newOrder: Order = {
         id: orderId,
-        date: new Date().toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: 'numeric' }),
+        date: formattedDate,
+        time: formattedTime,
+        createdAt: now.toISOString(),
         status: 'Procesando',
         trackingNumber: trackingCode,
         total: finalTotal,
-        items: [...items]
+        items: [...items],
+        customerName,
+        customerEmail,
+        recipient: recipientName,
+        shippingAddress: shippingAddr ? {
+          id: shippingAddr.id,
+          recipient: recipientName,
+          street: shippingAddr.street,
+          city: shippingAddr.city,
+          state: shippingAddr.state,
+          postalCode: shippingAddr.postalCode,
+          country: shippingAddr.country,
+          isDefault: shippingAddr.isDefault
+        } : (addrStreet ? {
+          id: "addr-order",
+          recipient: recipientName,
+          street: addrStreet,
+          city: addrCity,
+          state: addrState,
+          postalCode: addrPostal,
+          country: addrCountry,
+          isDefault: true
+        } : undefined),
+        paymentMethod: paymentDesc,
+        userId: user?.id,
       };
 
       addOrder(newOrder);
