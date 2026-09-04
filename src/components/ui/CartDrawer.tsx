@@ -25,7 +25,7 @@ import {
   CreditCard
 } from "lucide-react";
 import { useCartStore } from "@/lib/store";
-import { useUserStore, Order, PaymentCard, ShippingAddress } from "@/lib/userStore";
+import { useUserStore, Order, PaymentCard } from "@/lib/userStore";
 import { useCatalogStore } from "@/lib/catalogStore";
 
 // High-Ticket Payment Method SVGs & Micro-Components (1:1 Aspect Ratio, Zero Cutoffs)
@@ -161,7 +161,9 @@ export function CartDrawer() {
     isAuthenticated, 
     cards, 
     address, 
+    addresses,
     setAddress, 
+    addAddress,
     addOrder 
   } = useUserStore();
 
@@ -203,12 +205,13 @@ export function CartDrawer() {
   // Initialize defaults from userStore cleanly scoped to the active account
   useEffect(() => {
     setSelectedCardId(cards && cards.length > 0 ? cards[0].id : "");
-    if (address) {
-      setAddrStreet(address.street);
-      setAddrCity(address.city);
-      setAddrPostal(address.postalCode);
-      setAddrState(address.state || "");
-      setAddrCountry(address.country || "España");
+    const activeAddr = address || (addresses && addresses.length > 0 ? addresses[0] : null);
+    if (activeAddr) {
+      setAddrStreet(activeAddr.street);
+      setAddrCity(activeAddr.city);
+      setAddrPostal(activeAddr.postalCode);
+      setAddrState(activeAddr.state || "");
+      setAddrCountry(activeAddr.country || "España");
     } else {
       setAddrStreet("");
       setAddrCity("");
@@ -216,7 +219,7 @@ export function CartDrawer() {
       setAddrState("");
       setAddrCountry("España");
     }
-  }, [user?.id, cards, address]);
+  }, [user?.id, cards, address, addresses]);
 
   // Reset wallet hover if wallet closes
   useEffect(() => {
@@ -269,17 +272,26 @@ export function CartDrawer() {
     }
   };
 
-  const handleSaveAddress = (e: React.FormEvent) => {
+  const handleSaveAddress = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!addrStreet.trim() || !addrCity.trim() || !addrPostal.trim() || !addrState.trim() || !addrCountry.trim()) return;
-    const newAddr: ShippingAddress = {
+    if (addresses.length >= 4) {
+      setIsEditingAddress(false);
+      return;
+    }
+    await addAddress({
       street: addrStreet.trim(),
       city: addrCity.trim(),
       state: addrState.trim(),
       postalCode: addrPostal.trim(),
-      country: addrCountry.trim()
-    };
-    setAddress(newAddr);
+      country: addrCountry.trim(),
+      isDefault: addresses.length === 0
+    });
+    setAddrStreet("");
+    setAddrCity("");
+    setAddrPostal("");
+    setAddrState("");
+    setAddrCountry("España");
     setIsEditingAddress(false);
   };
 
@@ -293,9 +305,12 @@ export function CartDrawer() {
   };
 
   const handleConfirmOrder = () => {
-    if (!address) {
+    if (!address && (!addresses || addresses.length === 0)) {
       setIsEditingAddress(true);
       return;
+    }
+    if (!address && addresses && addresses.length > 0) {
+      setAddress(addresses[0]);
     }
     setIsProcessing(true);
 
@@ -877,19 +892,50 @@ export function CartDrawer() {
                       {/* Shipping Address */}
                       <div className="p-6 rounded-[2rem] bg-white border border-gray-200/70 shadow-sm space-y-4">
                         <div className="flex items-center justify-between">
-                          <h4 className="font-bold text-sm text-gray-900 flex items-center gap-2">
-                            <MapPin className="w-4 h-4 text-blue-600" /> Dirección de Entrega
-                          </h4>
-                          <button 
-                            onClick={() => setIsEditingAddress(!isEditingAddress)}
-                            className="text-xs font-semibold text-blue-600 hover:underline cursor-pointer"
-                          >
-                            {address ? (isEditingAddress ? "Cancelar" : "Modificar") : (isEditingAddress ? "Cancelar" : "+ Añadir")}
-                          </button>
+                          <div className="flex items-center gap-2">
+                            <MapPin className="w-4 h-4 text-blue-600" />
+                            <h4 className="font-bold text-sm text-gray-900">Dirección de Entrega</h4>
+                            {addresses.length > 0 && (
+                              <span className="text-[10px] font-mono font-semibold px-2 py-0.5 rounded-full bg-gray-100 text-gray-600 border border-gray-200">
+                                {addresses.length}/4
+                              </span>
+                            )}
+                          </div>
+                          {isEditingAddress ? (
+                            <button 
+                              onClick={() => setIsEditingAddress(false)}
+                              className="text-xs font-semibold text-gray-500 hover:text-gray-800 hover:underline cursor-pointer"
+                            >
+                              Cancelar
+                            </button>
+                          ) : addresses.length < 4 ? (
+                            <button 
+                              onClick={() => {
+                                setIsEditingAddress(true);
+                                setAddrStreet("");
+                                setAddrCity("");
+                                setAddrPostal("");
+                                setAddrState("");
+                                setAddrCountry("España");
+                              }}
+                              className="text-xs font-semibold text-blue-600 hover:underline cursor-pointer flex items-center gap-1"
+                            >
+                              + Añadir
+                            </button>
+                          ) : (
+                            <span className="text-[10px] font-semibold text-gray-400">
+                              Límite (4 máx.)
+                            </span>
+                          )}
                         </div>
 
                         {isEditingAddress ? (
-                          <form onSubmit={handleSaveAddress} className="space-y-3 pt-2">
+                          <form onSubmit={handleSaveAddress} className="space-y-3 pt-1">
+                            <div className="flex items-center justify-between pb-1 border-b border-gray-100">
+                              <span className="text-xs font-bold text-gray-800">
+                                Añadir dirección ({addresses.length + 1} de 4)
+                              </span>
+                            </div>
                             <div>
                               <label className="block text-[11px] font-semibold text-gray-700 mb-1">Calle y número</label>
                               <input 
@@ -965,6 +1011,60 @@ export function CartDrawer() {
                               </button>
                             </div>
                           </form>
+                        ) : addresses.length > 0 ? (
+                          <div className="space-y-2.5">
+                            <p className="text-[11px] text-gray-500">
+                              Selecciona la dirección para este envío o añade hasta 4 direcciones:
+                            </p>
+                            <div className="space-y-2">
+                              {addresses.map((addr) => {
+                                const isSelected = address?.id 
+                                  ? address.id === addr.id 
+                                  : (address?.street === addr.street && address?.postalCode === addr.postalCode) || (addresses.length === 1);
+
+                                return (
+                                  <div
+                                    key={addr.id}
+                                    onClick={() => setAddress(addr)}
+                                    className={`p-3.5 rounded-2xl border transition-all cursor-pointer flex items-center justify-between gap-3 select-none ${
+                                      isSelected
+                                        ? "bg-blue-50/50 border-blue-500 shadow-xs ring-1 ring-blue-500/20"
+                                        : "bg-gray-50/70 hover:bg-gray-50 border-gray-200/80 hover:border-gray-300"
+                                    }`}
+                                  >
+                                    <div className="flex items-start gap-3 min-w-0">
+                                      <div className={`mt-0.5 w-4 h-4 rounded-full border flex items-center justify-center shrink-0 transition-colors ${
+                                        isSelected 
+                                          ? "border-blue-600 bg-blue-600 text-white" 
+                                          : "border-gray-300 bg-white"
+                                      }`}>
+                                        {isSelected && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
+                                      </div>
+                                      <div className="min-w-0">
+                                        <div className="flex items-center gap-2">
+                                          <p className="font-bold text-xs text-gray-900 truncate">{addr.street}</p>
+                                          {addr.isDefault && (
+                                            <span className="text-[9px] font-bold uppercase tracking-wider text-emerald-700 bg-emerald-100 px-1.5 py-0.2 rounded border border-emerald-200 shrink-0">
+                                              Predeterminada
+                                            </span>
+                                          )}
+                                        </div>
+                                        <p className="text-xs text-gray-500 truncate mt-0.5">
+                                          {addr.city}{addr.state ? `, ${addr.state}` : ""}, {addr.postalCode} • {addr.country}
+                                        </p>
+                                      </div>
+                                    </div>
+
+                                    {isSelected && (
+                                      <div className="w-5 h-5 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center shrink-0 border border-emerald-200 shadow-2xs">
+                                        <Check className="w-3 h-3" />
+                                      </div>
+                                    )}
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
                         ) : address ? (
                           <div className="p-4 rounded-2xl bg-gray-50 border border-gray-100 flex items-center justify-between">
                             <div>
@@ -981,7 +1081,14 @@ export function CartDrawer() {
                           <div className="p-4 rounded-2xl bg-amber-50/70 border border-amber-200 text-center space-y-2">
                             <p className="text-xs text-amber-800 font-medium">Aún no has configurado tu dirección.</p>
                             <button 
-                              onClick={() => setIsEditingAddress(true)}
+                              onClick={() => {
+                                setIsEditingAddress(true);
+                                setAddrStreet("");
+                                setAddrCity("");
+                                setAddrPostal("");
+                                setAddrState("");
+                                setAddrCountry("España");
+                              }}
                               className="px-4 py-1.5 bg-amber-900 text-white rounded-xl text-xs font-semibold cursor-pointer"
                             >
                               + Añadir Dirección Ahora

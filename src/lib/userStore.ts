@@ -28,11 +28,13 @@ export interface PaymentCard {
 }
 
 export interface ShippingAddress {
+  id: string;
   street: string;
   city: string;
   state: string;
   postalCode: string;
   country: string;
+  isDefault?: boolean;
 }
 
 interface UserState {
@@ -43,6 +45,7 @@ interface UserState {
   orders: Order[];
   cards: PaymentCard[];
   address: ShippingAddress | null;
+  addresses: ShippingAddress[];
   
   initializeAuth: () => Promise<void>;
   login: (email: string, password: string) => Promise<{ error: string | null }>;
@@ -59,8 +62,10 @@ interface UserState {
   addOrder: (order: Order) => void;
   updateOrderStatus: (orderId: string, status: Order['status']) => void;
 
-  setAddress: (address: ShippingAddress) => void;
-  removeAddress: () => void;
+  addAddress: (address: Omit<ShippingAddress, 'id'>) => Promise<boolean>;
+  removeAddress: (id?: string) => void;
+  setDefaultAddress: (id: string) => void;
+  setAddress: (address: ShippingAddress | Omit<ShippingAddress, 'id'>) => void;
 
   updateUserName: (name: string) => Promise<{ error: string | null }>;
   updateUserPassword: (password: string) => Promise<{ error: string | null }>;
@@ -85,24 +90,29 @@ const fetchUserDataFromDatabase = async (userId: string) => {
       items: Array.isArray(o.items) ? o.items : [],
     }));
 
-    // 2. Fetch address from Supabase addresses table
-    const { data: dbAddr } = await supabase
-      .from('addresses')
-      .select('*')
-      .eq('user_id', userId)
-      .limit(1)
-      .maybeSingle();
+    // 2. Fetch addresses from Supabase addresses table
+    let addresses: ShippingAddress[] = [];
+    try {
+      const { data: dbAddrs, error: aErr } = await supabase
+        .from('addresses')
+        .select('*')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false })
+        .limit(4);
 
-    let address: ShippingAddress | null = null;
-    if (dbAddr) {
-      address = {
-        street: dbAddr.street || '',
-        city: dbAddr.city || '',
-        state: dbAddr.state || '',
-        postalCode: dbAddr.postal_code || '',
-        country: dbAddr.country || 'España',
-      };
-    }
+      if (dbAddrs && !aErr && dbAddrs.length > 0) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        addresses = dbAddrs.map((dbAddr: any, index: number) => ({
+          id: dbAddr.id || `addr-${index}`,
+          street: dbAddr.street || '',
+          city: dbAddr.city || '',
+          state: dbAddr.state || '',
+          postalCode: dbAddr.postal_code || '',
+          country: dbAddr.country || 'España',
+          isDefault: dbAddr.is_default !== undefined ? !!dbAddr.is_default : index === 0,
+        }));
+      }
+    } catch {}
 
     // 3. Fetch cards from Supabase payment_cards or user_metadata
     let cards: PaymentCard[] = [];
@@ -128,18 +138,41 @@ const fetchUserDataFromDatabase = async (userId: string) => {
       if (user?.user_metadata?.cards) {
         cards = user.user_metadata.cards;
       }
-      if (!address && user?.user_metadata?.address) {
-        address = user.user_metadata.address;
-      }
       if (orders.length === 0 && user?.user_metadata?.orders) {
         orders = user.user_metadata.orders;
       }
     }
 
-    return { cards, orders, address };
+    // Check user_metadata if addresses was empty
+    const { data: { user: currentUser } } = await supabase.auth.getUser();
+    if (addresses.length === 0) {
+      if (Array.isArray(currentUser?.user_metadata?.addresses) && currentUser.user_metadata.addresses.length > 0) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        addresses = currentUser.user_metadata.addresses.slice(0, 4).map((a: any, idx: number) => ({
+          ...a,
+          id: a.id || `addr-meta-${idx}`,
+          isDefault: a.isDefault !== undefined ? a.isDefault : idx === 0,
+        }));
+      } else if (currentUser?.user_metadata?.address) {
+        const single = currentUser.user_metadata.address;
+        addresses = [{
+          id: 'addr-default',
+          street: single.street || '',
+          city: single.city || '',
+          state: single.state || '',
+          postalCode: single.postalCode || '',
+          country: single.country || 'España',
+          isDefault: true,
+        }];
+      }
+    }
+
+    const defaultAddr = addresses.find(a => a.isDefault) || addresses[0] || null;
+
+    return { cards, orders, addresses, address: defaultAddr };
   } catch (e) {
     console.error("Error fetching user data from Supabase:", e);
-    return { cards: [], orders: [], address: null };
+    return { cards: [], orders: [], addresses: [], address: null };
   }
 };
 
@@ -150,6 +183,7 @@ export const useUserStore = create<UserState>((set, get) => ({
   favorites: [],
   orders: [],
   cards: [],
+  addresses: [],
   address: null,
   
   initializeAuth: async () => {
@@ -168,6 +202,7 @@ export const useUserStore = create<UserState>((set, get) => ({
           isAuthenticated: true,
           cards: personalData.cards,
           orders: personalData.orders,
+          addresses: personalData.addresses,
           address: personalData.address
         });
 
@@ -181,7 +216,7 @@ export const useUserStore = create<UserState>((set, get) => ({
         }
       } else {
         await useCartStore.getState().initCartForUser(null);
-        set({ user: null, isAuthenticated: false, cards: [], orders: [], address: null, favorites: [] });
+        set({ user: null, isAuthenticated: false, cards: [], orders: [], addresses: [], address: null, favorites: [] });
       }
     } finally {
       set({ isLoading: false });
@@ -200,6 +235,7 @@ export const useUserStore = create<UserState>((set, get) => ({
           isLoading: false,
           cards: personalData.cards,
           orders: personalData.orders,
+          addresses: personalData.addresses,
           address: personalData.address
         });
 
@@ -407,50 +443,119 @@ export const useUserStore = create<UserState>((set, get) => ({
     }
   },
 
-  setAddress: async (address) => {
-    const user = get().user;
-    set({ address });
+  addAddress: async (addrData) => {
+    const current = get().addresses;
+    if (current.length >= 4) return false;
 
+    const newId = `addr_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
+    const shouldBeDefault = current.length === 0 || !!addrData.isDefault;
+
+    const newAddr: ShippingAddress = {
+      ...addrData,
+      id: newId,
+      isDefault: shouldBeDefault,
+    };
+
+    let nextAddresses: ShippingAddress[];
+    if (shouldBeDefault) {
+      nextAddresses = [newAddr, ...current.map(a => ({ ...a, isDefault: false }))];
+    } else {
+      nextAddresses = [...current, newAddr];
+    }
+
+    const activeAddr = nextAddresses.find(a => a.isDefault) || nextAddresses[0] || null;
+    set({ addresses: nextAddresses, address: activeAddr });
+
+    const user = get().user;
     if (user) {
       try {
-        const { data: existing } = await supabase.from('addresses').select('id').eq('user_id', user.id).maybeSingle();
-        if (existing) {
-          await supabase.from('addresses').update({
-            street: address.street,
-            city: address.city,
-            state: address.state,
-            postal_code: address.postalCode,
-            country: address.country,
-          }).eq('user_id', user.id);
-        } else {
-          await supabase.from('addresses').insert({
-            user_id: user.id,
-            street: address.street,
-            city: address.city,
-            state: address.state,
-            postal_code: address.postalCode,
-            country: address.country,
-          });
-        }
-      } catch (e) {
-        console.error("Error saving address to Supabase:", e);
-      }
+        await supabase.from('addresses').insert({
+          id: newAddr.id,
+          user_id: user.id,
+          street: newAddr.street,
+          city: newAddr.city,
+          state: newAddr.state,
+          postal_code: newAddr.postalCode,
+          country: newAddr.country,
+          is_default: newAddr.isDefault,
+        });
+      } catch {}
       try {
-        await supabase.auth.updateUser({ data: { address } });
+        await supabase.auth.updateUser({ data: { addresses: nextAddresses, address: activeAddr } });
+      } catch {}
+    }
+    return true;
+  },
+
+  removeAddress: async (id) => {
+    const current = get().addresses;
+    const targetId = id || get().address?.id || current[0]?.id;
+    if (!targetId) {
+      set({ addresses: [], address: null });
+      return;
+    }
+
+    const removedWasDefault = current.find(a => a.id === targetId)?.isDefault;
+    let nextAddresses = current.filter(a => a.id !== targetId);
+    if (removedWasDefault && nextAddresses.length > 0) {
+      nextAddresses = nextAddresses.map((a, idx) => ({ ...a, isDefault: idx === 0 }));
+    }
+    const activeAddr = nextAddresses.find(a => a.isDefault) || nextAddresses[0] || null;
+    set({ addresses: nextAddresses, address: activeAddr });
+
+    const user = get().user;
+    if (user) {
+      try {
+        await supabase.from('addresses').delete().eq('id', targetId);
+      } catch {}
+      try {
+        await supabase.auth.updateUser({ data: { addresses: nextAddresses, address: activeAddr } });
       } catch {}
     }
   },
 
-  removeAddress: async () => {
-    const user = get().user;
-    set({ address: null });
+  setDefaultAddress: async (id) => {
+    const current = get().addresses;
+    const nextAddresses = current.map(a => ({
+      ...a,
+      isDefault: a.id === id
+    }));
+    const activeAddr = nextAddresses.find(a => a.id === id) || null;
+    set({ addresses: nextAddresses, address: activeAddr });
 
+    const user = get().user;
     if (user) {
       try {
-        await supabase.from('addresses').delete().eq('user_id', user.id);
+        await supabase.from('addresses').update({ is_default: false }).eq('user_id', user.id);
+        await supabase.from('addresses').update({ is_default: true }).eq('id', id);
       } catch {}
       try {
-        await supabase.auth.updateUser({ data: { address: null } });
+        await supabase.auth.updateUser({ data: { addresses: nextAddresses, address: activeAddr } });
+      } catch {}
+    }
+  },
+
+  setAddress: async (addressInput) => {
+    const current = get().addresses;
+    // If it has an id and already exists in addresses, set it as the active address
+    if ('id' in addressInput && addressInput.id && current.some(a => a.id === addressInput.id)) {
+      set({ address: addressInput as ShippingAddress });
+      return;
+    }
+    // If no addresses registered yet, add it
+    if (current.length === 0) {
+      await get().addAddress(addressInput);
+      return;
+    }
+    // Otherwise update the active/default address
+    const targetId = get().address?.id || current[0].id;
+    const nextAddresses = current.map(a => a.id === targetId ? { ...a, ...addressInput } : a);
+    const activeAddr = nextAddresses.find(a => a.id === targetId) || nextAddresses[0];
+    set({ addresses: nextAddresses, address: activeAddr });
+    const user = get().user;
+    if (user) {
+      try {
+        await supabase.auth.updateUser({ data: { addresses: nextAddresses, address: activeAddr } });
       } catch {}
     }
   },

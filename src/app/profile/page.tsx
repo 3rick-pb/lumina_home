@@ -20,6 +20,7 @@ import {
   Sparkles, 
   Store, 
   CheckCircle2, 
+  Check,
   Eye, 
   Settings, 
   ShieldCheck, 
@@ -45,9 +46,10 @@ export default function ProfilePage() {
     toggleFavorite,
     orders, 
     cards, 
-    address,
-    setAddress,
+    addresses,
+    addAddress,
     removeAddress,
+    setDefaultAddress,
     addCard, 
     removeCard, 
     setDefaultCard,
@@ -321,16 +323,26 @@ export default function ProfilePage() {
   };
 
   // Add Address Submit
-  const handleAddressSubmit = (e: React.FormEvent) => {
+  const handleAddressSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!street.trim() || !city.trim()) return;
-    setAddress({
+    if (!street.trim() || !city.trim() || !postalCode.trim() || !stateProv.trim() || !country.trim()) return;
+    if (addresses.length >= 4) {
+      alert("Has alcanzado el límite máximo de 4 direcciones.");
+      return;
+    }
+    await addAddress({
       street: street.trim(),
       city: city.trim(),
       state: stateProv.trim(),
       postalCode: postalCode.trim(),
-      country: country.trim()
+      country: country.trim(),
+      isDefault: addresses.length === 0,
     });
+    setStreet("");
+    setCity("");
+    setStateProv("");
+    setPostalCode("");
+    setCountry("España");
     setShowAddressForm(false);
   };
 
@@ -1815,43 +1827,108 @@ export default function ProfilePage() {
             </div>
 
             {/* Shipping Address Manager (5 cols) */}
-            <div className="lg:col-span-5 bg-white/90 backdrop-blur-xl p-6 md:p-8 rounded-[2.5rem] border border-white/80 shadow-[0_4px_24px_rgba(0,0,0,0.02)] flex flex-col justify-between">
+            <div className="lg:col-span-5 bg-white/90 backdrop-blur-xl p-6 md:p-8 rounded-[2.5rem] border border-white/80 shadow-[0_4px_24px_rgba(0,0,0,0.02)] flex flex-col justify-between space-y-4">
               <div>
                 <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-base font-bold text-gray-900 flex items-center gap-2">
-                    <MapPin className="w-4 h-4 text-[#8c9276]" /> Dirección de Entrega
-                  </h3>
-                  {address && (
+                  <div className="flex items-center gap-2">
+                    <MapPin className="w-4 h-4 text-[#8c9276]" />
+                    <h3 className="text-base font-bold text-gray-900">Direcciones de Entrega</h3>
+                    <span className="text-xs px-2.5 py-0.5 rounded-full bg-gray-100 text-gray-700 font-mono font-semibold">
+                      {addresses.length}/4
+                    </span>
+                  </div>
+                  {addresses.length < 4 && !showAddressForm && (
                     <button 
-                      onClick={() => removeAddress()}
-                      className="text-xs text-red-500 hover:underline"
+                      onClick={() => setShowAddressForm(true)}
+                      className="text-xs font-semibold text-blue-600 hover:underline cursor-pointer flex items-center gap-1"
                     >
-                      Eliminar
+                      + Añadir
                     </button>
                   )}
                 </div>
 
-                {address ? (
-                  <div className="p-5 rounded-2xl bg-gray-50 border border-gray-100 space-y-1 text-xs">
-                    <p className="font-bold text-gray-900 text-sm">{user.name}</p>
-                    <p className="text-gray-600">{address.street}</p>
-                    <p className="text-gray-600">{address.city}, {address.state} {address.postalCode}</p>
-                    <p className="text-gray-500 font-medium">{address.country}</p>
+                {addresses.length > 0 ? (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {addresses.map((addr) => (
+                      <div 
+                        key={addr.id}
+                        className={`p-4 rounded-2xl border transition-all flex flex-col justify-between ${
+                          addr.isDefault 
+                            ? "bg-white border-emerald-500/60 shadow-sm ring-1 ring-emerald-500/20" 
+                            : "bg-gray-50/80 border-gray-100 hover:border-gray-200"
+                        }`}
+                      >
+                        <div>
+                          <div className="flex items-center justify-between gap-1.5 mb-1.5">
+                            <span className="font-bold text-gray-900 text-xs truncate">
+                              {user.name}
+                            </span>
+                            {addr.isDefault ? (
+                              <span className="inline-flex items-center gap-1 text-[9px] font-bold px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800 border border-emerald-200 shrink-0">
+                                <Check className="w-2.5 h-2.5" /> Principal
+                              </span>
+                            ) : (
+                              <button 
+                                onClick={() => setDefaultAddress(addr.id)}
+                                className="text-[10px] font-semibold text-gray-500 hover:text-blue-600 hover:underline cursor-pointer"
+                              >
+                                Hacer principal
+                              </button>
+                            )}
+                          </div>
+                          <p className="text-gray-800 text-xs font-medium">{addr.street}</p>
+                          <p className="text-gray-500 text-[11px] mt-0.5">
+                            {addr.city}{addr.state ? `, ${addr.state}` : ""} {addr.postalCode}
+                          </p>
+                          <p className="text-gray-400 text-[10px] font-medium mt-0.5">{addr.country}</p>
+                        </div>
+
+                        <div className="pt-2.5 mt-2.5 border-t border-gray-100 flex items-center justify-end">
+                          <button 
+                            onClick={() => removeAddress(addr.id)}
+                            className="text-[11px] text-red-500 hover:text-red-700 hover:underline flex items-center gap-1 cursor-pointer"
+                          >
+                            <Trash2 className="w-3 h-3" />
+                            <span>Eliminar</span>
+                          </button>
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 ) : (
                   <div className="border-2 border-dashed border-gray-200 rounded-2xl p-6 text-center space-y-2 bg-gray-50/40">
                     <MapPin className="w-6 h-6 text-gray-400 mx-auto" />
-                    <p className="text-xs font-bold text-gray-800">Sin dirección registrada</p>
+                    <p className="text-xs font-bold text-gray-800">Sin direcciones registradas</p>
                     <p className="text-[11px] text-gray-500">
-                      Añade tus datos de entrega para agilizar el proceso de compra.
+                      Puedes guardar hasta 4 direcciones para agilizar el proceso de compra.
                     </p>
+                    {!showAddressForm && (
+                      <button 
+                        onClick={() => setShowAddressForm(true)}
+                        className="px-4 py-2 bg-gray-900 text-white rounded-xl text-xs font-semibold hover:bg-gray-800 transition-colors cursor-pointer"
+                      >
+                        + Agregar Primera Dirección
+                      </button>
+                    )}
                   </div>
                 )}
               </div>
 
               <div className="pt-4 border-t border-gray-100">
                 {showAddressForm ? (
-                  <form onSubmit={handleAddressSubmit} className="space-y-3">
+                  <form onSubmit={handleAddressSubmit} className="space-y-3 bg-gray-50/60 p-4 rounded-2xl border border-gray-100">
+                    <div className="flex items-center justify-between pb-1 border-b border-gray-200">
+                      <span className="text-xs font-bold text-gray-900">
+                        Nueva Dirección ({addresses.length + 1} de 4)
+                      </span>
+                      <button 
+                        type="button" 
+                        onClick={() => setShowAddressForm(false)} 
+                        className="text-xs text-gray-500 hover:text-gray-800 cursor-pointer"
+                      >
+                        Cerrar
+                      </button>
+                    </div>
                     <div>
                       <label className="block text-[11px] font-semibold text-gray-700 mb-1">Calle y Número</label>
                       <input 
@@ -1860,7 +1937,7 @@ export default function ProfilePage() {
                         value={street} 
                         onChange={e => setStreet(e.target.value)} 
                         placeholder="Av. Diagonal 450, 3ro 2da" 
-                        className="w-full px-3 py-2 rounded-xl border border-gray-200 text-xs outline-none"
+                        className="w-full px-3 py-2 rounded-xl border border-gray-200 text-xs outline-none bg-white"
                       />
                     </div>
                     <div className="grid grid-cols-2 gap-2">
@@ -1872,7 +1949,7 @@ export default function ProfilePage() {
                           value={city} 
                           onChange={e => setCity(e.target.value)} 
                           placeholder="Barcelona" 
-                          className="w-full px-3 py-2 rounded-xl border border-gray-200 text-xs outline-none"
+                          className="w-full px-3 py-2 rounded-xl border border-gray-200 text-xs outline-none bg-white"
                         />
                       </div>
                       <div>
@@ -1883,7 +1960,7 @@ export default function ProfilePage() {
                           value={postalCode} 
                           onChange={e => setPostalCode(e.target.value)} 
                           placeholder="08006" 
-                          className="w-full px-3 py-2 rounded-xl border border-gray-200 text-xs outline-none"
+                          className="w-full px-3 py-2 rounded-xl border border-gray-200 text-xs outline-none bg-white"
                         />
                       </div>
                     </div>
@@ -1892,34 +1969,41 @@ export default function ProfilePage() {
                         <label className="block text-[11px] font-semibold text-gray-700 mb-1">Provincia/Estado</label>
                         <input 
                           type="text" 
+                          required
                           value={stateProv} 
                           onChange={e => setStateProv(e.target.value)} 
                           placeholder="Cataluña" 
-                          className="w-full px-3 py-2 rounded-xl border border-gray-200 text-xs outline-none"
+                          className="w-full px-3 py-2 rounded-xl border border-gray-200 text-xs outline-none bg-white"
                         />
                       </div>
                       <div>
                         <label className="block text-[11px] font-semibold text-gray-700 mb-1">País</label>
                         <input 
                           type="text" 
+                          required
                           value={country} 
                           onChange={e => setCountry(e.target.value)} 
-                          className="w-full px-3 py-2 rounded-xl border border-gray-200 text-xs outline-none"
+                          placeholder="España"
+                          className="w-full px-3 py-2 rounded-xl border border-gray-200 text-xs outline-none bg-white"
                         />
                       </div>
                     </div>
                     <div className="flex justify-end gap-2 pt-2">
-                      <button type="button" onClick={() => setShowAddressForm(false)} className="px-3 py-1.5 text-xs text-gray-600 hover:bg-gray-100 rounded-xl">Cancelar</button>
-                      <button type="submit" className="px-4 py-1.5 text-xs font-semibold bg-gray-900 text-white rounded-xl hover:bg-gray-800">Guardar Dirección</button>
+                      <button type="button" onClick={() => setShowAddressForm(false)} className="px-3 py-1.5 text-xs text-gray-600 hover:bg-gray-200 rounded-xl cursor-pointer">Cancelar</button>
+                      <button type="submit" className="px-4 py-1.5 text-xs font-semibold bg-gray-900 text-white rounded-xl hover:bg-gray-800 cursor-pointer">Guardar Dirección</button>
                     </div>
                   </form>
-                ) : (
+                ) : addresses.length < 4 ? (
                   <button 
                     onClick={() => setShowAddressForm(true)}
-                    className="w-full py-2.5 bg-gray-100 text-gray-800 rounded-xl text-xs font-semibold hover:bg-gray-200 transition-colors"
+                    className="w-full py-2.5 bg-gray-100 text-gray-800 rounded-xl text-xs font-semibold hover:bg-gray-200 transition-colors cursor-pointer"
                   >
-                    {address ? "Modificar Dirección" : "+ Agregar Dirección de Entrega"}
+                    + Agregar Nueva Dirección ({addresses.length}/4)
                   </button>
+                ) : (
+                  <div className="text-center py-2 text-xs font-semibold text-gray-400">
+                    Has completado el cupo máximo de 4 direcciones.
+                  </div>
                 )}
               </div>
             </div>
