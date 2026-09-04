@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import { useUserStore } from "@/lib/userStore";
 import { useCatalogStore, CatalogProduct } from "@/lib/catalogStore";
 import { ArrowRight, Mail, Lock, Sparkles, ShieldCheck, Search, X, Eye } from "lucide-react";
+import { normalizeSearchText } from "@/lib/utils";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -21,14 +22,14 @@ export default function LoginPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [previewProduct, setPreviewProduct] = useState<CatalogProduct | null>(null);
 
-  // Filtered live search results
+  // Filtered live search results (accent/diacritic insensitive)
   const searchResults = useMemo(() => {
     if (!searchQuery.trim()) return [];
-    const q = searchQuery.toLowerCase().trim();
+    const q = normalizeSearchText(searchQuery);
     return products.filter(p => 
-      p.title.toLowerCase().includes(q) || 
-      p.category.toLowerCase().includes(q) ||
-      (p.description && p.description.toLowerCase().includes(q))
+      normalizeSearchText(p.title).includes(q) || 
+      normalizeSearchText(p.category).includes(q) ||
+      (p.description && normalizeSearchText(p.description).includes(q))
     ).slice(0, 5);
   }, [products, searchQuery]);
 

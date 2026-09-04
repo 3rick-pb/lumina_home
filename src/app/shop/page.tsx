@@ -4,10 +4,7 @@ import React, { useEffect } from "react";
 import Link from "next/link";
 import { ProductCard } from "@/components/ui/ProductCard";
 import { useCatalogStore } from "@/lib/catalogStore";
-
-const normalizeText = (text: string) => {
-  return text.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
-};
+import { normalizeSearchText as normalizeText } from "@/lib/utils";
 
 export default function ShopPage({ searchParams }: { searchParams: { category?: string, search?: string } }) {
   const categoryFilter = searchParams.category;

@@ -37,6 +37,7 @@ import {
 import { useUserStore, Order } from "@/lib/userStore";
 import { useCatalogStore, normalizeCategory, CatalogProduct } from "@/lib/catalogStore";
 import { useCartStore } from "@/lib/store";
+import { normalizeSearchText } from "@/lib/utils";
 
 export default function ProfilePage() {
   const router = useRouter();
@@ -261,19 +262,24 @@ export default function ProfilePage() {
     }));
   }, [orders]);
 
-  // 5. Filtered Lists
+  // 5. Filtered Lists (accent/diacritic insensitive)
   const filteredOrders = useMemo(() => {
+    const q = normalizeSearchText(searchQuery);
     return orders.filter(ord => {
       const matchStatus = orderStatusFilter === "all" || ord.status.toLowerCase() === orderStatusFilter.toLowerCase();
-      const matchQuery = !searchQuery || ord.id.toLowerCase().includes(searchQuery.toLowerCase());
+      const matchQuery = !q || normalizeSearchText(ord.id).includes(q);
       return matchStatus && matchQuery;
     });
   }, [orders, orderStatusFilter, searchQuery]);
 
   const filteredCatalog = useMemo(() => {
+    const q = normalizeSearchText(searchQuery);
     return products.filter(p => {
-      const matchCat = catalogCategoryFilter === "all" || p.category.toLowerCase() === catalogCategoryFilter.toLowerCase();
-      const matchQuery = !searchQuery || p.title.toLowerCase().includes(searchQuery.toLowerCase()) || p.category.toLowerCase().includes(searchQuery.toLowerCase());
+      const matchCat = catalogCategoryFilter === "all" || normalizeSearchText(p.category) === normalizeSearchText(catalogCategoryFilter);
+      const matchQuery = !q || 
+        normalizeSearchText(p.title).includes(q) || 
+        normalizeSearchText(p.category).includes(q) ||
+        (p.description && normalizeSearchText(p.description).includes(q));
       return matchCat && matchQuery;
     });
   }, [products, catalogCategoryFilter, searchQuery]);

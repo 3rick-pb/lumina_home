@@ -12,6 +12,7 @@ import { useUserStore } from "@/lib/userStore";
 import { useCatalogStore } from "@/lib/catalogStore";
 import { CartDrawer } from "@/components/ui/CartDrawer";
 import { usePathname, useRouter } from "next/navigation";
+import { normalizeSearchText } from "@/lib/utils";
 
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -40,22 +41,22 @@ export function Header() {
     setIsMounted(true);
   }, []);
 
-  // Real-time product search matches
+  // Real-time product search matches (accent/diacritic insensitive)
   const matchedProducts = useMemo(() => {
     if (!searchVal.trim()) return [];
-    const q = searchVal.toLowerCase().trim();
+    const q = normalizeSearchText(searchVal);
     return products.filter(p => 
-      p.title.toLowerCase().includes(q) || 
-      p.category.toLowerCase().includes(q) ||
-      (p.description && p.description.toLowerCase().includes(q))
+      normalizeSearchText(p.title).includes(q) || 
+      normalizeSearchText(p.category).includes(q) ||
+      (p.description && normalizeSearchText(p.description).includes(q))
     ).slice(0, 4);
   }, [products, searchVal]);
 
-  // Real-time category matches
+  // Real-time category matches (accent/diacritic insensitive)
   const matchedCategories = useMemo(() => {
     if (!searchVal.trim()) return [];
-    const q = searchVal.toLowerCase().trim();
-    return categories.filter(c => c.toLowerCase().includes(q)).slice(0, 3);
+    const q = normalizeSearchText(searchVal);
+    return categories.filter(c => normalizeSearchText(c).includes(q)).slice(0, 3);
   }, [categories, searchVal]);
 
   const handleSearchSubmit = (e: React.FormEvent) => {
