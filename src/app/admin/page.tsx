@@ -451,9 +451,12 @@ export default function AdminPage() {
                         <Pencil className="w-4 h-4" />
                       </button>
                       <button 
-                        onClick={() => {
-                          if (confirm(`¿Seguro que deseas eliminar "${prod.title}"?`)) {
-                            deleteProduct(prod.id);
+                        onClick={async () => {
+                          if (confirm(`¿Seguro que deseas eliminar "${prod.title}" de la tienda y la base de datos?`)) {
+                            const res = await deleteProduct(prod.id);
+                            if (!res.success && res.error) {
+                              alert(`Aviso de Base de Datos: ${res.error}\n\nPor favor asegúrate de ejecutar supabase_products_fix.sql en Supabase para autorizar la eliminación permanente.`);
+                            }
                           }
                         }}
                         className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-all"

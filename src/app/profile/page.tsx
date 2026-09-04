@@ -1863,7 +1863,14 @@ export default function ProfilePage() {
                             <ExternalLink className="w-4 h-4" />
                           </Link>
                           <button 
-                            onClick={() => deleteProduct(p.id)}
+                            onClick={async () => {
+                              if (confirm(`¿Estás seguro de que deseas eliminar permanentemente "${p.title}" del catálogo y de la base de datos?`)) {
+                                const res = await deleteProduct(p.id);
+                                if (!res.success && res.error) {
+                                  alert(`Aviso de Base de Datos: ${res.error}\n\nPor favor asegúrate de ejecutar supabase_products_fix.sql en Supabase para autorizar la eliminación permanente.`);
+                                }
+                              }
+                            }}
                             className="p-1.5 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                             title="Eliminar producto"
                           >

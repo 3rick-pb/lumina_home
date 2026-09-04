@@ -26,7 +26,7 @@ interface CatalogState {
   fetchProducts: () => Promise<void>;
   addProduct: (product: Omit<CatalogProduct, 'id'> & { id?: string }) => Promise<{ success: boolean; error?: string }>;
   updateProduct: (id: string, product: CatalogProduct) => Promise<{ success: boolean; error?: string }>;
-  deleteProduct: (id: string) => Promise<void>;
+  deleteProduct: (id: string) => Promise<{ success: boolean; error?: string }>;
   addCategory: (name: string) => Promise<void>;
   deleteCategory: (name: string) => Promise<void>;
   addBadge: (name: string) => void;
@@ -332,12 +332,54 @@ export const useCatalogStore = create<CatalogState>((set) => ({
   },
   
   deleteProduct: async (id) => {
+    let deletedInDb = false;
+    let lastError: string | null = null;
+
     if (id.includes('-') && id.length > 20) {
-      await supabase.from('products').delete().eq('id', id);
+      // 1. Direct Supabase client deletion
+      try {
+        const { data, error } = await supabase.from('products').delete().eq('id', id).select();
+        if (!error && data && data.length > 0) {
+          deletedInDb = true;
+        } else if (error) {
+          lastError = error.message;
+        }
+      } catch (err) {
+        lastError = String(err);
+      }
+
+      // 2. Server API fallback if direct delete was blocked by client RLS
+      if (!deletedInDb) {
+        try {
+          const res = await fetch(`/api/products?id=${encodeURIComponent(id)}`, { method: 'DELETE' });
+          if (res.ok) {
+            const json = await res.json();
+            if (json.success && json.deletedCount > 0) {
+              deletedInDb = true;
+            } else if (json.error) {
+              lastError = json.error;
+            }
+          }
+        } catch (apiErr) {
+          console.warn('Notice: API delete fallback error:', apiErr);
+        }
+      }
+    } else {
+      // Mock/in-memory product
+      deletedInDb = true;
     }
+
+    // Update local state reactively
     set((state) => ({
       products: state.products.filter(p => p.id !== id)
     }));
+
+    if (!deletedInDb && lastError) {
+      console.error('deleteProduct DB warning:', lastError);
+      return { success: false, error: lastError };
+    }
+
+    return { success: true };
   },
 
   addCategory: async (name) => {
