@@ -4,10 +4,10 @@ import React, { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ShoppingBag, Heart, ShieldCheck, Truck, RotateCcw, Check, Star, ChevronDown, Layers, Ruler, Sparkles, Box, CheckCircle2 } from "lucide-react";
+import { ShoppingBag, Heart, ShieldCheck, Truck, RotateCcw, Check, Star, ChevronDown, Layers, Ruler, Sparkles, Box, CheckCircle2, X } from "lucide-react";
 import { ProductCard } from "@/components/ui/ProductCard";
 import { useCartStore } from "@/lib/store";
-import { useCatalogStore } from "@/lib/catalogStore";
+import { useCatalogStore, isAgotadoBadge } from "@/lib/catalogStore";
 import { useUserStore } from "@/lib/userStore";
 import { useAmbientStore } from "@/lib/ambientStore";
 
@@ -20,6 +20,7 @@ export default function ProductDetail({ params }: { params: { id: string } }) {
     notFound();
   }
 
+  const isAgotado = isAgotadoBadge(product.badge);
   const relatedProducts = products.filter(p => p.id !== product.id).slice(0, 4);
 
   const [activeImage, setActiveImage] = useState(0);
@@ -41,6 +42,7 @@ export default function ProductDetail({ params }: { params: { id: string } }) {
   }, [product?.category, setCategoryTheme, resetTheme]);
 
   const handleAddToCart = () => {
+    if (isAgotado) return;
     setIsAdding(true);
     addItem(product, 1, product.colors?.[activeColor]?.name, activeSize);
     setTimeout(() => setIsAdding(false), 1500);
@@ -104,7 +106,11 @@ export default function ProductDetail({ params }: { params: { id: string } }) {
             
             <div className="mb-4">
               {product.badge && (
-                <span className="px-3 py-1 rounded bg-gray-100 text-xs font-semibold text-gray-800">
+                <span className={`px-3 py-1 rounded-full text-xs font-bold transition-colors inline-block ${
+                  isAgotado
+                    ? "bg-red-500 text-white border border-red-600 shadow-sm shadow-red-500/20 tracking-wider uppercase"
+                    : "bg-gray-100 text-gray-800 border border-gray-200 font-semibold"
+                }`}>
                   {product.badge}
                 </span>
               )}
@@ -223,15 +229,28 @@ export default function ProductDetail({ params }: { params: { id: string } }) {
             {/* Actions */}
             <div className="flex gap-3 mb-8">
               <button 
+                disabled={isAgotado}
                 onClick={handleAddToCart}
-                className="flex-1 h-14 bg-white/40 backdrop-blur-xl border border-white/60 shadow-[0_8px_32px_rgba(0,0,0,0.04)] hover:bg-white/60 text-gray-900 rounded-2xl font-medium flex items-center justify-center gap-2 transition-all duration-300 relative overflow-hidden"
+                className={`flex-1 h-14 backdrop-blur-xl border shadow-[0_8px_32px_rgba(0,0,0,0.04)] rounded-2xl font-medium flex items-center justify-center gap-2 transition-all duration-300 relative overflow-hidden ${
+                  isAgotado 
+                    ? "bg-gray-100 border-gray-200 text-gray-400 cursor-not-allowed opacity-75" 
+                    : "bg-white/40 border-white/60 hover:bg-white/60 text-gray-900"
+                }`}
               >
-                <span className={`transition-transform duration-300 flex items-center gap-2 ${isAdding ? '-translate-y-12' : 'translate-y-0'}`}>
-                  <ShoppingBag className="w-5 h-5" /> Añadir al carrito
-                </span>
-                <span className={`absolute inset-0 flex items-center justify-center gap-2 transition-transform duration-300 ${isAdding ? 'translate-y-0' : 'translate-y-12'}`}>
-                  <Check className="w-6 h-6" /> Añadido
-                </span>
+                {isAgotado ? (
+                  <span className="font-bold text-sm uppercase tracking-wider text-red-600 flex items-center gap-2">
+                    <X className="w-4 h-4" /> Producto Agotado
+                  </span>
+                ) : (
+                  <>
+                    <span className={`transition-transform duration-300 flex items-center gap-2 ${isAdding ? '-translate-y-12' : 'translate-y-0'}`}>
+                      <ShoppingBag className="w-5 h-5" /> Añadir al carrito
+                    </span>
+                    <span className={`absolute inset-0 flex items-center justify-center gap-2 transition-transform duration-300 ${isAdding ? 'translate-y-0' : 'translate-y-12'}`}>
+                      <Check className="w-6 h-6" /> Añadido
+                    </span>
+                  </>
+                )}
               </button>
               <button 
                 onClick={(e) => {

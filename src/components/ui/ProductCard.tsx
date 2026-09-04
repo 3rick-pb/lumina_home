@@ -5,7 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { Heart, ShoppingBag } from "lucide-react";
 import { useCartStore } from "@/lib/store";
-import { useCatalogStore } from "@/lib/catalogStore";
+import { useCatalogStore, isAgotadoBadge } from "@/lib/catalogStore";
 import { useUserStore } from "@/lib/userStore";
 
 interface ProductCardProps {
@@ -29,12 +29,17 @@ export function ProductCard({ id, title, price, oldPrice, discount, badge, image
   
   const [imgSrc, setImgSrc] = React.useState(imageUrl || "https://images.unsplash.com/photo-1507473885765-e6ed057f782c?q=80&w=800&auto=format&fit=crop");
   const isFav = isMounted ? isFavorite(id) : false;
+  const isAgotado = isAgotadoBadge(badge);
 
   return (
     <Link href={`/product/${id}`} className="group flex flex-col bg-transparent">
       <div className="relative aspect-[4/3] overflow-hidden rounded-2xl bg-gray-100 mb-4">
         {badge && (
-          <div className="absolute top-3 left-3 bg-white/40 backdrop-blur-md border border-white/60 text-gray-900 text-xs font-bold px-3 py-1 rounded-full z-10 shadow-sm">
+          <div className={`absolute top-3 left-3 backdrop-blur-md text-xs font-bold px-3 py-1 rounded-full z-10 shadow-sm transition-colors ${
+            isAgotado 
+              ? "bg-red-500/90 text-white border border-red-400 shadow-red-500/20 tracking-wider uppercase" 
+              : "bg-white/40 border border-white/60 text-gray-900"
+          }`}>
             {badge}
           </div>
         )}
@@ -73,9 +78,15 @@ export function ProductCard({ id, title, price, oldPrice, discount, badge, image
         </div>
         
         <button 
-          className="mt-auto w-full py-2.5 rounded-xl bg-white/40 backdrop-blur-md border border-white/60 text-gray-900 font-medium text-sm flex items-center justify-center gap-2 hover:bg-white/60 transition-all shadow-sm"
+          disabled={isAgotado}
+          className={`mt-auto w-full py-2.5 rounded-xl backdrop-blur-md border text-sm font-medium flex items-center justify-center gap-2 transition-all shadow-sm ${
+            isAgotado 
+              ? "bg-gray-100/90 border-gray-200 text-gray-400 cursor-not-allowed" 
+              : "bg-white/40 border-white/60 text-gray-900 hover:bg-white/60"
+          }`}
           onClick={(e) => { 
             e.preventDefault(); 
+            if (isAgotado) return;
             const product = useCatalogStore.getState().products.find(p => p.id === id);
             if (product) {
               // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -83,7 +94,13 @@ export function ProductCard({ id, title, price, oldPrice, discount, badge, image
             }
           }}
         >
-          <ShoppingBag className="w-4 h-4" /> Añadir rápido
+          {isAgotado ? (
+            <span className="text-xs font-bold uppercase tracking-wider text-red-600">Agotado</span>
+          ) : (
+            <>
+              <ShoppingBag className="w-4 h-4" /> Añadir rápido
+            </>
+          )}
         </button>
       </div>
     </Link>

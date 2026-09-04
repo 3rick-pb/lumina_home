@@ -36,7 +36,7 @@ import {
   Loader2 
 } from "lucide-react";
 import { useUserStore, Order } from "@/lib/userStore";
-import { useCatalogStore, normalizeCategory, CatalogProduct } from "@/lib/catalogStore";
+import { useCatalogStore, normalizeCategory, CatalogProduct, isAgotadoBadge } from "@/lib/catalogStore";
 import { useCartStore } from "@/lib/store";
 import { normalizeSearchText } from "@/lib/utils";
 
@@ -1892,7 +1892,11 @@ export default function ProfilePage() {
                       </td>
                       <td className="py-3 px-2">
                         {p.badge ? (
-                          <span className="px-2 py-0.5 rounded-full bg-amber-50 text-amber-800 border border-amber-200 text-[10px] font-bold">
+                          <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                            isAgotadoBadge(p.badge)
+                              ? "bg-red-500 text-white border border-red-600 tracking-wide uppercase shadow-xs"
+                              : "bg-amber-50 text-amber-800 border border-amber-200"
+                          }`}>
                             {p.badge}
                           </span>
                         ) : (
@@ -2041,7 +2045,11 @@ export default function ProfilePage() {
                       className="p-4 rounded-2xl border border-gray-100 bg-white shadow-sm flex items-center justify-between"
                     >
                       <div className="flex items-center gap-2.5">
-                        <span className="px-2.5 py-1 rounded-full bg-amber-50 text-amber-900 border border-amber-200 text-[11px] font-bold">
+                        <span className={`px-2.5 py-1 rounded-full text-[11px] font-bold ${
+                          isAgotadoBadge(badge)
+                            ? "bg-red-500 text-white border border-red-600 tracking-wide uppercase shadow-xs"
+                            : "bg-amber-50 text-amber-900 border border-amber-200"
+                        }`}>
                           {badge}
                         </span>
                         <span className="text-[11px] text-gray-400">

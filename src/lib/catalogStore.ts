@@ -59,8 +59,14 @@ const DEFAULT_BADGES = [
   "Bestseller",
   "Tendencia",
   "Edición Limitada",
-  "Exclusivo"
+  "Exclusivo",
+  "AGOTADO"
 ];
+
+export const isAgotadoBadge = (badge?: string | null): boolean => {
+  if (!badge) return false;
+  return badge.trim().toUpperCase() === "AGOTADO";
+};
 
 export const normalizeCategory = (cat?: string | null): string => {
   if (!cat) return "";

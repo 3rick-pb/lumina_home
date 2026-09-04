@@ -24,11 +24,12 @@ import {
   RotateCcw,
   CreditCard,
   Navigation,
-  Loader2
+  Loader2,
+  AlertTriangle
 } from "lucide-react";
 import { useCartStore } from "@/lib/store";
 import { useUserStore, Order, PaymentCard } from "@/lib/userStore";
-import { useCatalogStore } from "@/lib/catalogStore";
+import { useCatalogStore, isAgotadoBadge } from "@/lib/catalogStore";
 
 // High-Ticket Payment Method SVGs & Micro-Components (1:1 Aspect Ratio, Zero Cutoffs)
 function AppleIcon({ className = "w-4 h-4" }: { className?: string }) {
@@ -202,6 +203,19 @@ export function CartDrawer() {
   // Checkout Processing
   const [isProcessing, setIsProcessing] = useState(false);
   const [lastPlacedOrder, setLastPlacedOrder] = useState<Order | null>(null);
+  const [cartAlert, setCartAlert] = useState<string | null>(null);
+
+  // Detect products with the "AGOTADO" badge in the user's cart
+  const agotadoItems = useMemo(() => {
+    return items.filter(i => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const itemBadge = (i.product as any)?.badge;
+      const liveProduct = products.find(p => p.id === i.productId);
+      return isAgotadoBadge(itemBadge) || isAgotadoBadge(liveProduct?.badge);
+    });
+  }, [items, products]);
+
+  const hasAgotadoItems = agotadoItems.length > 0;
 
   // Mount on client
   useEffect(() => {
@@ -378,6 +392,16 @@ export function CartDrawer() {
   };
 
   const handleProceedToPayment = () => {
+    if (hasAgotadoItems) {
+      setCartAlert(
+        agotadoItems.length === 1
+          ? `El producto "${agotadoItems[0].product.title}" está marcado como AGOTADO. Por favor elimínalo de la bolsa para poder proceder al pago.`
+          : `Tienes ${agotadoItems.length} productos agotados en tu bolsa. Por favor elimínalos para poder continuar con tu compra.`
+      );
+      return;
+    }
+    setCartAlert(null);
+
     if (!isAuthenticated) {
       setIsOpen(false);
       router.push("/auth/login");
@@ -675,6 +699,27 @@ export function CartDrawer() {
                     )}
                   </div>
 
+                  {/* ALERTA DE PRODUCTOS AGOTADOS */}
+                  {(hasAgotadoItems || cartAlert) && (
+                    <div className="p-4 sm:p-5 rounded-2xl bg-red-50/90 border border-red-200 flex items-start gap-3.5 text-red-900 shadow-sm animate-fade-in">
+                      <div className="w-9 h-9 rounded-xl bg-red-100 text-red-600 flex items-center justify-center shrink-0 mt-0.5 shadow-xs">
+                        <AlertTriangle className="w-5 h-5" />
+                      </div>
+                      <div className="flex-1 text-xs">
+                        <p className="font-bold text-sm text-red-900">
+                          {agotadoItems.length === 1 ? "Producto no disponible en tu bolsa" : "Productos no disponibles en tu bolsa"}
+                        </p>
+                        <p className="mt-1 text-red-700 leading-relaxed font-medium">
+                          {cartAlert || (
+                            agotadoItems.length === 1
+                              ? `El producto "${agotadoItems[0].product.title}" está marcado como AGOTADO. Debes eliminarlo de tu bolsa de compras para poder continuar hacia la pasarela de pago.`
+                              : `Tienes ${agotadoItems.length} productos marcados como AGOTADOS en tu bolsa. Debes eliminarlos para poder continuar con tu pedido.`
+                          )}
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
                   {items.length === 0 ? (
                     <div className="flex flex-col items-center justify-center py-20 text-center">
                       <div className="w-24 h-24 rounded-3xl bg-blue-50 text-blue-600 flex items-center justify-center mb-5 border border-blue-100 shadow-inner">
@@ -709,68 +754,95 @@ export function CartDrawer() {
 
                         {/* Product Rows with generous breathing room */}
                         <div className="divide-y divide-gray-100">
-                          {items.map((item) => (
-                            <div 
-                              key={item.id} 
-                              className="py-5 first:pt-0 last:pb-0 flex flex-col sm:grid sm:grid-cols-12 gap-4 sm:items-center group"
-                            >
-                              {/* Product Info (5 cols) */}
-                              <div className="sm:col-span-5 flex items-center gap-4">
-                                <div className="relative w-20 h-20 sm:w-24 sm:h-24 rounded-2xl overflow-hidden bg-gray-100 shrink-0 border border-white shadow-sm">
-                                  <Image 
-                                    src={item.product.imageUrl} 
-                                    alt={item.product.title} 
-                                    fill 
-                                    className="object-cover group-hover:scale-105 transition-transform duration-500" 
-                                  />
-                                </div>
-                                <div className="min-w-0">
-                                  <span className="text-[10px] font-bold text-blue-600 uppercase tracking-wider block">
-                                    {item.product.category}
-                                  </span>
-                                  <h4 className="font-bold text-sm sm:text-base text-gray-900 line-clamp-1 mt-0.5">
-                                    {item.product.title}
-                                  </h4>
-                                  <div className="flex items-center gap-2 mt-1 text-xs text-gray-500 font-medium">
-                                    {item.color && (
-                                      <span className="px-2 py-0.5 rounded-lg bg-gray-100 text-[11px]">
-                                        {item.color}
-                                      </span>
-                                    )}
-                                    {item.size && (
-                                      <span className="px-2 py-0.5 rounded-lg bg-gray-100 text-[11px]">
-                                        Talla: {item.size}
-                                      </span>
+                          {items.map((item) => {
+                            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                            const itemBadge = (item.product as any)?.badge;
+                            const liveProduct = products.find(p => p.id === item.productId);
+                            const itemIsAgotado = isAgotadoBadge(itemBadge) || isAgotadoBadge(liveProduct?.badge);
+
+                            return (
+                              <div 
+                                key={item.id} 
+                                className={`py-5 first:pt-0 last:pb-0 flex flex-col sm:grid sm:grid-cols-12 gap-4 sm:items-center group transition-all rounded-2xl ${
+                                  itemIsAgotado ? "bg-red-50/50 -mx-3 px-3 border border-red-200/80 shadow-xs" : ""
+                                }`}
+                              >
+                                {/* Product Info (5 cols) */}
+                                <div className="sm:col-span-5 flex items-center gap-4">
+                                  <div className="relative w-20 h-20 sm:w-24 sm:h-24 rounded-2xl overflow-hidden bg-gray-100 shrink-0 border border-white shadow-sm">
+                                    <Image 
+                                      src={item.product.imageUrl} 
+                                      alt={item.product.title} 
+                                      fill 
+                                      className="object-cover group-hover:scale-105 transition-transform duration-500" 
+                                    />
+                                    {itemIsAgotado && (
+                                      <div className="absolute inset-0 bg-black/45 backdrop-blur-[1px] flex items-center justify-center p-1">
+                                        <span className="bg-red-600 text-white font-bold text-[9px] uppercase tracking-wider px-2 py-0.5 rounded-full shadow-md text-center">
+                                          Agotado
+                                        </span>
+                                      </div>
                                     )}
                                   </div>
-                                  <p className="text-xs text-gray-400 mt-1 sm:hidden">
-                                    Unitario: ${item.product.price.toFixed(2)}
-                                  </p>
+                                  <div className="min-w-0">
+                                    <div className="flex items-center gap-1.5 flex-wrap">
+                                      <span className="text-[10px] font-bold text-blue-600 uppercase tracking-wider block">
+                                        {item.product.category}
+                                      </span>
+                                      {itemIsAgotado && (
+                                        <span className="px-2 py-0.5 rounded-full bg-red-500 text-white text-[9px] font-bold tracking-wider uppercase shadow-xs">
+                                          Agotado
+                                        </span>
+                                      )}
+                                    </div>
+                                    <h4 className="font-bold text-sm sm:text-base text-gray-900 line-clamp-1 mt-0.5">
+                                      {item.product.title}
+                                    </h4>
+                                    <div className="flex items-center gap-2 mt-1 text-xs text-gray-500 font-medium">
+                                      {item.color && (
+                                        <span className="px-2 py-0.5 rounded-lg bg-gray-100 text-[11px]">
+                                          {item.color}
+                                        </span>
+                                      )}
+                                      {item.size && (
+                                        <span className="px-2 py-0.5 rounded-lg bg-gray-100 text-[11px]">
+                                          Talla: {item.size}
+                                        </span>
+                                      )}
+                                    </div>
+                                    <p className="text-xs text-gray-400 mt-1 sm:hidden">
+                                      Unitario: ${item.product.price.toFixed(2)}
+                                    </p>
+                                  </div>
                                 </div>
-                              </div>
 
-                              {/* Quantity Capsule with Liquid Glass (3 cols) */}
-                              <div className="sm:col-span-3 flex sm:justify-center items-center">
-                                <div className="flex items-center bg-gray-100/90 rounded-full px-2.5 py-1.5 border border-gray-200/70 shadow-inner">
-                                  <button 
-                                    onClick={() => updateQuantity(item.id, item.quantity - 1)}
-                                    className="w-7 h-7 rounded-full bg-white/90 hover:bg-white text-gray-800 flex items-center justify-center border border-white shadow-[0_2px_6px_rgba(0,0,0,0.06),inset_0_1px_1px_rgba(255,255,255,0.9)] backdrop-blur-md active:scale-90 transition-all"
-                                    title="Disminuir"
-                                  >
-                                    <Minus className="w-3.5 h-3.5" />
-                                  </button>
-                                  <span className="w-10 text-center font-mono font-bold text-xs sm:text-sm text-gray-900">
-                                    {item.quantity < 10 ? `0${item.quantity}` : item.quantity}
-                                  </span>
-                                  <button 
-                                    onClick={() => updateQuantity(item.id, item.quantity + 1)}
-                                    className="w-7 h-7 rounded-full bg-white/90 hover:bg-white text-gray-800 flex items-center justify-center border border-white shadow-[0_2px_6px_rgba(0,0,0,0.06),inset_0_1px_1px_rgba(255,255,255,0.9)] backdrop-blur-md active:scale-90 transition-all"
-                                    title="Aumentar"
-                                  >
-                                    <Plus className="w-3.5 h-3.5" />
-                                  </button>
+                                {/* Quantity Capsule with Liquid Glass (3 cols) */}
+                                <div className="sm:col-span-3 flex sm:justify-center items-center">
+                                  <div className="flex items-center bg-gray-100/90 rounded-full px-2.5 py-1.5 border border-gray-200/70 shadow-inner">
+                                    <button 
+                                      onClick={() => updateQuantity(item.id, item.quantity - 1)}
+                                      className="w-7 h-7 rounded-full bg-white/90 hover:bg-white text-gray-800 flex items-center justify-center border border-white shadow-[0_2px_6px_rgba(0,0,0,0.06),inset_0_1px_1px_rgba(255,255,255,0.9)] backdrop-blur-md active:scale-90 transition-all"
+                                      title="Disminuir"
+                                    >
+                                      <Minus className="w-3.5 h-3.5" />
+                                    </button>
+                                    <span className="w-10 text-center font-mono font-bold text-xs sm:text-sm text-gray-900">
+                                      {item.quantity < 10 ? `0${item.quantity}` : item.quantity}
+                                    </span>
+                                    <button 
+                                      disabled={itemIsAgotado}
+                                      onClick={() => updateQuantity(item.id, item.quantity + 1)}
+                                      className={`w-7 h-7 rounded-full flex items-center justify-center border border-white shadow-[0_2px_6px_rgba(0,0,0,0.06),inset_0_1px_1px_rgba(255,255,255,0.9)] backdrop-blur-md transition-all ${
+                                        itemIsAgotado 
+                                          ? "bg-gray-200 text-gray-400 cursor-not-allowed opacity-40" 
+                                          : "bg-white/90 hover:bg-white text-gray-800 active:scale-90"
+                                      }`}
+                                      title={itemIsAgotado ? "Producto sin existencias" : "Aumentar"}
+                                    >
+                                      <Plus className="w-3.5 h-3.5" />
+                                    </button>
+                                  </div>
                                 </div>
-                              </div>
 
                               {/* Subtotal Price (2 cols) */}
                               <div className="sm:col-span-2 sm:text-right flex items-center justify-between sm:block pr-6">
@@ -807,8 +879,9 @@ export function CartDrawer() {
                               </div>
 
                             </div>
-                          ))}
-                        </div>
+                          );
+                        })}
+                      </div>
 
                         {/* Bottom Actions Row */}
                         <div className="pt-4 border-t border-gray-100 flex items-center justify-between">
@@ -937,15 +1010,18 @@ export function CartDrawer() {
                         {/* LIQUID GLASS PROCEDER AL PAGO BUTTON */}
                         <button 
                           onClick={handleProceedToPayment}
-                          className="relative overflow-hidden w-full h-14 rounded-2xl font-bold text-white text-sm sm:text-base flex items-center justify-center gap-2.5 transition-all duration-300
-                          bg-gradient-to-r from-[#1e40af] via-[#2563eb] to-[#1d4ed8]
-                          shadow-[0_12px_36px_rgba(37,99,235,0.35),0_2px_8px_rgba(0,0,0,0.1)]
-                          border border-white/30
-                          hover:shadow-[0_16px_44px_rgba(37,99,235,0.45)] hover:scale-[1.01] active:scale-[0.99]
+                          className={`relative overflow-hidden w-full h-14 rounded-2xl font-bold text-white text-sm sm:text-base flex items-center justify-center gap-2.5 transition-all duration-300
+                          shadow-[0_12px_36px_rgba(0,0,0,0.12)] border border-white/30
                           before:absolute before:inset-0 before:bg-gradient-to-b before:from-white/35 before:via-white/10 before:to-transparent before:pointer-events-none before:rounded-2xl
-                          after:absolute after:inset-x-0 after:top-0 after:h-[1px] after:bg-white/60 cursor-pointer group"
+                          after:absolute after:inset-x-0 after:top-0 after:h-[1px] after:bg-white/60 cursor-pointer group ${
+                            hasAgotadoItems
+                              ? "bg-gradient-to-r from-red-600 via-red-700 to-rose-700 shadow-red-500/30 hover:scale-[1.01] active:scale-[0.99]"
+                              : "bg-gradient-to-r from-[#1e40af] via-[#2563eb] to-[#1d4ed8] shadow-[0_12px_36px_rgba(37,99,235,0.35),0_2px_8px_rgba(0,0,0,0.1)] hover:shadow-[0_16px_44px_rgba(37,99,235,0.45)] hover:scale-[1.01] active:scale-[0.99]"
+                          }`}
                         >
-                          <span className="relative z-10 tracking-wide">Proceder al Pago</span>
+                          <span className="relative z-10 tracking-wide">
+                            {hasAgotadoItems ? "Elimina productos agotados para pagar" : "Proceder al Pago"}
+                          </span>
                           <ArrowRight className="relative z-10 w-4 h-4 group-hover:translate-x-1 transition-transform" />
                         </button>
 

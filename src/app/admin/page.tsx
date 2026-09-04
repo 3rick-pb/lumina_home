@@ -14,7 +14,7 @@ import {
   Layers,
   Pencil
 } from "lucide-react";
-import { useCatalogStore, normalizeCategory, CatalogProduct } from "@/lib/catalogStore";
+import { useCatalogStore, normalizeCategory, CatalogProduct, isAgotadoBadge } from "@/lib/catalogStore";
 
 export default function AdminPage() {
   const { products, categories, addProduct, updateProduct, deleteProduct, addCategory, deleteCategory } = useCatalogStore();
@@ -434,7 +434,11 @@ export default function AdminPage() {
                   </td>
                   <td className="px-6 py-4">
                     {prod.badge ? (
-                      <span className="px-2.5 py-1 rounded-full text-xs font-medium bg-[#8c9276]/10 text-[#8c9276] border border-[#8c9276]/20">
+                      <span className={`px-2.5 py-1 rounded-full text-xs font-semibold ${
+                        isAgotadoBadge(prod.badge)
+                          ? "bg-red-500 text-white border border-red-600 tracking-wide uppercase shadow-xs"
+                          : "bg-[#8c9276]/10 text-[#8c9276] border border-[#8c9276]/20"
+                      }`}>
                         {prod.badge}
                       </span>
                     ) : (
