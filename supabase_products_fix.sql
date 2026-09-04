@@ -3,8 +3,17 @@
 -- Habilita SELECT, INSERT, UPDATE y DELETE de forma persistente
 -- =========================================================================
 
--- 1. Asegurar que Row Level Security (RLS) esté habilitado
+-- 1. Asegurar que Row Level Security (RLS) esté habilitado y columnas de información completa
 ALTER TABLE public.products ENABLE ROW LEVEL SECURITY;
+
+-- Columnas de ficha técnica enriquecida y logística para el comprador
+ALTER TABLE public.products ADD COLUMN IF NOT EXISTS materials TEXT;
+ALTER TABLE public.products ADD COLUMN IF NOT EXISTS shipping TEXT;
+ALTER TABLE public.products ADD COLUMN IF NOT EXISTS dimensions TEXT;
+ALTER TABLE public.products ADD COLUMN IF NOT EXISTS warranty TEXT;
+ALTER TABLE public.products ADD COLUMN IF NOT EXISTS care_instructions TEXT;
+ALTER TABLE public.products ADD COLUMN IF NOT EXISTS package_contents TEXT;
+ALTER TABLE public.products ADD COLUMN IF NOT EXISTS stock INTEGER DEFAULT 20;
 
 -- 2. Limpiar políticas previas potencialmente restrictivas
 DROP POLICY IF EXISTS "Public can view products" ON public.products;

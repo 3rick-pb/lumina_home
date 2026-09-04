@@ -118,6 +118,13 @@ export default function ProfilePage() {
   const [prodSizes, setProdSizes] = useState("");
   const [hasColors, setHasColors] = useState(false);
   const [prodColors, setProdColors] = useState("");
+  const [prodMaterials, setProdMaterials] = useState("");
+  const [prodShipping, setProdShipping] = useState("");
+  const [prodDimensions, setProdDimensions] = useState("");
+  const [prodWarranty, setProdWarranty] = useState("");
+  const [prodCareInstructions, setProdCareInstructions] = useState("");
+  const [prodPackageContents, setProdPackageContents] = useState("");
+  const [prodStock, setProdStock] = useState("20");
 
   // Admin Edit Product Modal State
   const [showEditProductModal, setShowEditProductModal] = useState(false);
@@ -139,6 +146,13 @@ export default function ProfilePage() {
   const [editSizes, setEditSizes] = useState("");
   const [editHasColors, setEditHasColors] = useState(false);
   const [editColors, setEditColors] = useState("");
+  const [editMaterials, setEditMaterials] = useState("");
+  const [editShipping, setEditShipping] = useState("");
+  const [editDimensions, setEditDimensions] = useState("");
+  const [editWarranty, setEditWarranty] = useState("");
+  const [editCareInstructions, setEditCareInstructions] = useState("");
+  const [editPackageContents, setEditPackageContents] = useState("");
+  const [editStock, setEditStock] = useState("20");
   const [editFeedback, setEditFeedback] = useState<{ msg: string; success: boolean } | null>(null);
 
   // Category & Badge manager state
@@ -488,6 +502,13 @@ export default function ProfilePage() {
       features: prodFeatures.trim() ? prodFeatures.split("\n").map(f => f.trim()).filter(Boolean) : undefined,
       sizes: hasSizes && prodSizes.trim() ? prodSizes.split(",").map(s => s.trim()).filter(Boolean) : undefined,
       colors: hasColors && prodColors.trim() ? prodColors.split(",").map(c => ({ name: c.trim(), hex: "#94a3b8" })) : undefined,
+      materials: prodMaterials.trim() || undefined,
+      shipping: prodShipping.trim() || undefined,
+      dimensions: prodDimensions.trim() || undefined,
+      warranty: prodWarranty.trim() || undefined,
+      careInstructions: prodCareInstructions.trim() || undefined,
+      packageContents: prodPackageContents.trim() || undefined,
+      stock: prodStock ? parseInt(prodStock, 10) : 20,
     });
 
     setIsSubmittingProd(false);
@@ -509,6 +530,13 @@ export default function ProfilePage() {
       setProdSizes("");
       setHasColors(false);
       setProdColors("");
+      setProdMaterials("");
+      setProdShipping("");
+      setProdDimensions("");
+      setProdWarranty("");
+      setProdCareInstructions("");
+      setProdPackageContents("");
+      setProdStock("20");
     }
   };
 
@@ -547,6 +575,13 @@ export default function ProfilePage() {
     setEditSizes(p.sizes ? p.sizes.join(", ") : "");
     setEditHasColors(Boolean(p.colors && p.colors.length > 0));
     setEditColors(p.colors ? p.colors.map(c => c.name).join(", ") : "");
+    setEditMaterials(p.materials || "");
+    setEditShipping(p.shipping || "");
+    setEditDimensions(p.dimensions || "");
+    setEditWarranty(p.warranty || "");
+    setEditCareInstructions(p.careInstructions || "");
+    setEditPackageContents(p.packageContents || "");
+    setEditStock(p.stock !== undefined ? p.stock.toString() : "20");
     setEditFeedback(null);
     setShowEditProductModal(true);
   };
@@ -577,6 +612,13 @@ export default function ProfilePage() {
       features: editFeatures.trim() ? editFeatures.split("\n").map(f => f.trim()).filter(Boolean) : undefined,
       sizes: editHasSizes && editSizes.trim() ? editSizes.split(",").map(s => s.trim()).filter(Boolean) : undefined,
       colors: editHasColors && editColors.trim() ? editColors.split(",").map(c => ({ name: c.trim(), hex: "#94a3b8" })) : undefined,
+      materials: editMaterials.trim() || undefined,
+      shipping: editShipping.trim() || undefined,
+      dimensions: editDimensions.trim() || undefined,
+      warranty: editWarranty.trim() || undefined,
+      careInstructions: editCareInstructions.trim() || undefined,
+      packageContents: editPackageContents.trim() || undefined,
+      stock: editStock ? parseInt(editStock, 10) : 20,
     });
 
     setIsSubmittingEdit(false);
@@ -2612,7 +2654,17 @@ export default function ProfilePage() {
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-semibold text-gray-700 mb-1">Nicho / Categoría *</label>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="block text-xs font-semibold text-gray-700">Nicho / Categoría *</label>
+                    <button 
+                      type="button" 
+                      onClick={() => { setShowProductModal(false); setActiveTab("niches"); }}
+                      className="text-[10px] font-semibold text-[#8c9276] hover:underline cursor-pointer"
+                      title="Ir a gestionar nichos y categorías"
+                    >
+                      + Gestionar nichos y categorías
+                    </button>
+                  </div>
                   <select required value={prodCategory} onChange={e => setProdCategory(e.target.value)} className="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm outline-none bg-white">
                     <option value="">Selecciona un nicho</option>
                     {categories.map(c => <option key={c} value={c}>{c}</option>)}
@@ -2773,6 +2825,103 @@ export default function ProfilePage() {
                 <textarea rows={3} value={prodFeatures} onChange={e => setProdFeatures(e.target.value)} className="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm outline-none resize-none" placeholder="Material: Cerámica artesanal&#10;Acabado mate texturizado&#10;Garantía de 2 años" />
               </div>
 
+              {/* Sección: Ficha Técnica y Fabricación */}
+              <div className="p-4 bg-stone-50/60 rounded-2xl border border-stone-200/70 space-y-4">
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-bold text-stone-800 uppercase tracking-wider">Ficha Técnica y Fabricación</span>
+                  <span className="text-[10px] text-stone-500 font-medium">(Se muestra en pestañas &ldquo;Materiales&rdquo; y &ldquo;Dimensiones&rdquo;)</span>
+                </div>
+                
+                <div>
+                  <label className="block text-xs font-semibold text-gray-700 mb-1">Materiales y Acabados Nobles</label>
+                  <input 
+                    type="text" 
+                    value={prodMaterials} 
+                    onChange={e => setProdMaterials(e.target.value)} 
+                    className="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm outline-none bg-white" 
+                    placeholder="Ej: Cerámica gres cocida a 1250°C, herrajes de latón macizo y esmalte satinado libre de tóxicos." 
+                  />
+                  <p className="text-[11px] text-gray-400 mt-1">El cliente sabrá exactamente de qué está hecha la pieza.</p>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-700 mb-1">Dimensiones y Peso</label>
+                    <input 
+                      type="text" 
+                      value={prodDimensions} 
+                      onChange={e => setProdDimensions(e.target.value)} 
+                      className="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm outline-none bg-white" 
+                      placeholder="Ej: 45 x 28 x 20 cm · Peso neto: 1.8 kg" 
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-700 mb-1">Stock / Unidades en Inventario</label>
+                    <input 
+                      type="number" 
+                      min="0"
+                      value={prodStock} 
+                      onChange={e => setProdStock(e.target.value)} 
+                      className="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm outline-none bg-white" 
+                      placeholder="20" 
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Sección: Logística, Garantía y Postventa */}
+              <div className="p-4 bg-blue-50/40 rounded-2xl border border-blue-100 space-y-4">
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-bold text-blue-950 uppercase tracking-wider">Logística, Garantía y Confianza</span>
+                  <span className="text-[10px] text-blue-700 font-medium">(Se muestra en pestañas &ldquo;Envíos&rdquo; y &ldquo;Cuidados&rdquo;)</span>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-gray-700 mb-1">Tiempos y Condiciones de Envío</label>
+                  <input 
+                    type="text" 
+                    value={prodShipping} 
+                    onChange={e => setProdShipping(e.target.value)} 
+                    className="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm outline-none bg-white" 
+                    placeholder="Ej: Entrega estándar en 24-48h. Embalaje reforzado anti-golpes. Devolución gratuita en 30 días." 
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-700 mb-1">Garantía Oficial</label>
+                    <input 
+                      type="text" 
+                      value={prodWarranty} 
+                      onChange={e => setProdWarranty(e.target.value)} 
+                      className="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm outline-none bg-white" 
+                      placeholder="Ej: 2 años de garantía de fábrica" 
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-700 mb-1">¿Qué incluye la caja?</label>
+                    <input 
+                      type="text" 
+                      value={prodPackageContents} 
+                      onChange={e => setProdPackageContents(e.target.value)} 
+                      className="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm outline-none bg-white" 
+                      placeholder="Ej: 1x Producto, 1x Cable USB-C, 1x Manual ilustrado" 
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-gray-700 mb-1">Instrucciones de Cuidado y Limpieza</label>
+                  <input 
+                    type="text" 
+                    value={prodCareInstructions} 
+                    onChange={e => setProdCareInstructions(e.target.value)} 
+                    className="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm outline-none bg-white" 
+                    placeholder="Ej: Limpiar con paño de microfibra seco. No usar productos abrasivos ni alcohol." 
+                  />
+                </div>
+              </div>
+
               <div className="pt-4 flex justify-end gap-3">
                 <button type="button" onClick={() => setShowProductModal(false)} className="px-5 py-2.5 text-xs font-semibold text-gray-600 hover:bg-gray-100 rounded-xl">Cancelar</button>
                 <button type="submit" disabled={isSubmittingProd} className="px-6 py-2.5 text-xs font-semibold bg-gray-900 text-white rounded-xl shadow-md hover:bg-gray-800 disabled:opacity-50">
@@ -2841,7 +2990,17 @@ export default function ProfilePage() {
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-semibold text-gray-700 mb-1">Nicho / Categoría *</label>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="block text-xs font-semibold text-gray-700">Nicho / Categoría *</label>
+                    <button 
+                      type="button" 
+                      onClick={() => { setShowEditProductModal(false); setActiveTab("niches"); }}
+                      className="text-[10px] font-semibold text-[#8c9276] hover:underline cursor-pointer"
+                      title="Ir a gestionar nichos y categorías"
+                    >
+                      + Gestionar nichos y categorías
+                    </button>
+                  </div>
                   <select 
                     required 
                     value={editCategory} 
@@ -3046,6 +3205,102 @@ export default function ProfilePage() {
                     onChange={e => { setEditColors(e.target.value); setEditHasColors(!!e.target.value.trim()); }} 
                     className="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm outline-none" 
                     placeholder="Ej: Nogal, Roble, Blanco" 
+                  />
+                </div>
+              </div>
+
+              {/* Sección: Ficha Técnica y Fabricación */}
+              <div className="p-4 bg-stone-50/60 rounded-2xl border border-stone-200/70 space-y-4">
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-bold text-stone-800 uppercase tracking-wider">Ficha Técnica y Fabricación</span>
+                  <span className="text-[10px] text-stone-500 font-medium">(Pestañas &ldquo;Materiales&rdquo; y &ldquo;Dimensiones&rdquo;)</span>
+                </div>
+                
+                <div>
+                  <label className="block text-xs font-semibold text-gray-700 mb-1">Materiales y Acabados Nobles</label>
+                  <input 
+                    type="text" 
+                    value={editMaterials} 
+                    onChange={e => setEditMaterials(e.target.value)} 
+                    className="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm outline-none bg-white" 
+                    placeholder="Ej: Cerámica gres cocida a 1250°C, herrajes de latón macizo y esmalte satinado." 
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-700 mb-1">Dimensiones y Peso</label>
+                    <input 
+                      type="text" 
+                      value={editDimensions} 
+                      onChange={e => setEditDimensions(e.target.value)} 
+                      className="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm outline-none bg-white" 
+                      placeholder="Ej: 45 x 28 x 20 cm · Peso neto: 1.8 kg" 
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-700 mb-1">Stock / Unidades en Inventario</label>
+                    <input 
+                      type="number" 
+                      min="0"
+                      value={editStock} 
+                      onChange={e => setEditStock(e.target.value)} 
+                      className="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm outline-none bg-white" 
+                      placeholder="20" 
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Sección: Logística, Garantía y Postventa */}
+              <div className="p-4 bg-blue-50/40 rounded-2xl border border-blue-100 space-y-4">
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-bold text-blue-950 uppercase tracking-wider">Logística, Garantía y Confianza</span>
+                  <span className="text-[10px] text-blue-700 font-medium">(Pestañas &ldquo;Envíos&rdquo; y &ldquo;Cuidados&rdquo;)</span>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-gray-700 mb-1">Tiempos y Condiciones de Envío</label>
+                  <input 
+                    type="text" 
+                    value={editShipping} 
+                    onChange={e => setEditShipping(e.target.value)} 
+                    className="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm outline-none bg-white" 
+                    placeholder="Ej: Entrega estándar en 24-48h. Embalaje reforzado anti-golpes. Devolución gratuita en 30 días." 
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-700 mb-1">Garantía Oficial</label>
+                    <input 
+                      type="text" 
+                      value={editWarranty} 
+                      onChange={e => setEditWarranty(e.target.value)} 
+                      className="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm outline-none bg-white" 
+                      placeholder="Ej: 2 años de garantía de fábrica" 
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-700 mb-1">¿Qué incluye la caja?</label>
+                    <input 
+                      type="text" 
+                      value={editPackageContents} 
+                      onChange={e => setEditPackageContents(e.target.value)} 
+                      className="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm outline-none bg-white" 
+                      placeholder="Ej: 1x Producto, 1x Cable USB-C, 1x Manual ilustrado" 
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-gray-700 mb-1">Instrucciones de Cuidado y Limpieza</label>
+                  <input 
+                    type="text" 
+                    value={editCareInstructions} 
+                    onChange={e => setEditCareInstructions(e.target.value)} 
+                    className="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm outline-none bg-white" 
+                    placeholder="Ej: Limpiar con paño de microfibra seco. No usar productos abrasivos ni alcohol." 
                   />
                 </div>
               </div>

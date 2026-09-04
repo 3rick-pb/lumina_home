@@ -524,7 +524,17 @@ export default function AdminPage() {
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-xs font-semibold text-gray-700 mb-1.5">Nicho / Categoría *</label>
+                    <div className="flex items-center justify-between mb-1.5">
+                      <label className="block text-xs font-semibold text-gray-700">Nicho / Categoría *</label>
+                      <button 
+                        type="button" 
+                        onClick={() => { setShowModal(false); setShowCatManager(true); }}
+                        className="text-[10px] font-semibold text-[#8c9276] hover:underline cursor-pointer"
+                        title="Gestionar nichos y categorías"
+                      >
+                        + Gestionar nichos y categorías
+                      </button>
+                    </div>
                     <select 
                       required 
                       value={category} 
@@ -843,7 +853,17 @@ export default function AdminPage() {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-xs font-semibold text-gray-700 mb-1.5">Nicho / Categoría *</label>
+                    <div className="flex items-center justify-between mb-1.5">
+                      <label className="block text-xs font-semibold text-gray-700">Nicho / Categoría *</label>
+                      <button 
+                        type="button" 
+                        onClick={() => { setShowEditModal(false); setShowCatManager(true); }}
+                        className="text-[10px] font-semibold text-[#8c9276] hover:underline cursor-pointer"
+                        title="Gestionar nichos y categorías"
+                      >
+                        + Gestionar nichos y categorías
+                      </button>
+                    </div>
                     <select 
                       required 
                       value={editCategory} 

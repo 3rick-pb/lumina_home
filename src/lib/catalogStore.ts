@@ -16,6 +16,13 @@ export interface CatalogProduct {
   colors?: { name: string; hex: string }[];
   sizes?: string[];
   features?: string[];
+  materials?: string;
+  shipping?: string;
+  dimensions?: string;
+  warranty?: string;
+  careInstructions?: string;
+  packageContents?: string;
+  stock?: number;
 }
 
 interface CatalogState {
@@ -86,7 +93,14 @@ const INITIAL_NICHE_PRODUCTS: CatalogProduct[] = [
     images: ["https://images.unsplash.com/photo-1612196808214-b8e1d6145a8c?q=80&w=800&auto=format&fit=crop"],
     colors: [{ name: "Gres Natural", hex: "#d1c7bd" }],
     sizes: ["Mediano (24cm)"],
-    features: ["Cerámica gres cocida a 1250°C", "Acabado impermeable interior", "Base pulida suave"]
+    features: ["Cerámica gres cocida a 1250°C", "Acabado impermeable interior", "Base pulida suave"],
+    materials: "Gres cerámico mineral de alta temperatura (1250°C), esmalte interior vitrificado impermeable y base tratada con fieltro protector.",
+    shipping: "Envío express 24-48 horas en caja doble corrugada con esquineras de absorción de impactos. Devolución gratuita durante 30 días.",
+    dimensions: "Alto: 24 cm | Diámetro máximo: 15 cm | Diámetro boca: 7 cm | Peso neto: 1.15 kg",
+    warranty: "2 años de garantía artesanal contra fisuras estructurales o porosidad no deseada.",
+    careInstructions: "Lavar a mano con agua tibia y jabón neutro. Secar al aire. Evitar frotar con estropajos abrasivos.",
+    packageContents: "1x Jarrón Luna Cerámica Gres, 1x Certificado artesanal numerado, 1x Almohadilla protectora para mesa.",
+    stock: 14
   },
   {
     id: "prod-decoracion-1",
@@ -100,7 +114,14 @@ const INITIAL_NICHE_PRODUCTS: CatalogProduct[] = [
     images: ["https://images.unsplash.com/photo-1618221195710-dd6b41faaea6?q=80&w=800&auto=format&fit=crop"],
     colors: [{ name: "Latón Cepillado", hex: "#d4af37" }],
     sizes: ["Diámetro 60cm"],
-    features: ["Cristal de alta definición 5mm", "Marco de latón macizo", "Anclaje invisible"]
+    features: ["Cristal de alta definición 5mm", "Marco de latón macizo", "Anclaje invisible"],
+    materials: "Cristal belga de 5mm con película de seguridad anti-astillas posterior y marco exterior de latón macizo cepillado con sellado anticorrosión.",
+    shipping: "Envío asegurado en embalaje de madera reforzada anti-rotura. Entrega concertada en 48-72h laborales.",
+    dimensions: "Diámetro total: 60 cm | Profundidad del marco: 3.2 cm | Peso neto: 4.6 kg",
+    warranty: "3 años de garantía oficial Lumina en acabado metálico y nitidez del cristal.",
+    careInstructions: "Limpiar el espejo con paño de microfibra humedecido con limpiacristales sin amoníaco. El marco debe limpiarse exclusivamente en seco.",
+    packageContents: "1x Espejo Solar de latón 60cm, 1x Set de fijación invisible (tacos Fischer y tornillos reforzados), 1x Nivel de precisión para colgar.",
+    stock: 8
   },
   {
     id: "prod-cocina-1",
@@ -116,7 +137,14 @@ const INITIAL_NICHE_PRODUCTS: CatalogProduct[] = [
     images: ["https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?q=80&w=800&auto=format&fit=crop"],
     colors: [{ name: "Roble Natural", hex: "#a27f54" }],
     sizes: ["Capacidad 35g"],
-    features: ["Muelas cónicas de 38mm CNC", "Ajuste micrométrico", "Manivela ergonómica"]
+    features: ["Muelas cónicas de 38mm CNC", "Ajuste micrométrico", "Manivela ergonómica"],
+    materials: "Cuerpo de madera maciza de roble europeo torneado a mano con acabado en cera vegetal, muelas cónicas CNC de acero inoxidable grado 420 y eje de aluminio aeroespacial.",
+    shipping: "Envío rápido en 24-48 horas. Empaque de lujo en cartón reciclado ideal para regalo.",
+    dimensions: "Altura: 18.5 cm | Diámetro: 5.2 cm | Longitud de manivela: 15 cm | Capacidad: 35g de café | Peso: 560g",
+    warranty: "5 años de garantía oficial en las muelas cónicas y mecanismo de rotación.",
+    careInstructions: "No sumergir en agua ni introducir en lavavajillas. Limpiar periódicamente las muelas con el cepillo de cerdas duras incluido.",
+    packageContents: "1x Molinillo manual Barista, 1x Brocha de cerdas naturales para limpieza, 1x Bolsa de transporte de lino puro, 1x Tabla de molienda según método.",
+    stock: 22
   },
   {
     id: "prod-bienestar-1",
@@ -130,7 +158,14 @@ const INITIAL_NICHE_PRODUCTS: CatalogProduct[] = [
     images: ["https://images.unsplash.com/photo-1545205597-3d9d02c29597?q=80&w=800&auto=format&fit=crop"],
     colors: [{ name: "Corcho Cálido", hex: "#c89d7c" }],
     sizes: ["183 x 61 cm"],
-    features: ["Superficie antimicrobiana natural", "Agarre superior", "100% ecológico"]
+    features: ["Superficie antimicrobiana natural", "Agarre superior", "100% ecológico"],
+    materials: "Lámina superior de corcho virgen de alcornoque portugués 100% natural y antimicrobiano. Base inferior de caucho puro de savia de árbol sin PVC ni tóxicos.",
+    shipping: "Envío express 24-48h con correa de transporte y embalaje 100% libre de plásticos.",
+    dimensions: "Largo: 183 cm | Ancho: 61 cm | Grosor de alta densidad: 4.5 mm | Peso: 2.35 kg",
+    warranty: "2 años de garantía contra descamación, deformación o pérdida de adherencia.",
+    careInstructions: "Enrollar siempre con la cara de corcho mirando hacia afuera. Limpiar una vez por semana con un paño húmedo con unas gotas de agua y limón o aceite de árbol de té.",
+    packageContents: "1x Esterilla Zen de corcho natural, 1x Correa portadora de algodón orgánico crudo, 1x Guía de respiración y posturas esenciales.",
+    stock: 5
   }
 ];
 
@@ -170,6 +205,13 @@ const toSupabaseProduct = (p: Partial<CatalogProduct>) => {
     sizes: p.sizes || [],
     features: p.features || [],
     category: p.category,
+    materials: p.materials || null,
+    shipping: p.shipping || null,
+    dimensions: p.dimensions || null,
+    warranty: p.warranty || null,
+    care_instructions: p.careInstructions || null,
+    package_contents: p.packageContents || null,
+    stock: typeof p.stock === 'number' ? p.stock : 20,
   };
 
   // Only pass id if it looks like a valid UUID (has dashes)
@@ -216,6 +258,13 @@ const toFrontendProduct = (p: any): CatalogProduct => {
     sizes: Array.isArray(p.sizes) ? p.sizes : [],
     features: Array.isArray(p.features) ? p.features : [],
     category: canonicalCategory(p.category, DEFAULT_CATEGORIES),
+    materials: p.materials || undefined,
+    shipping: p.shipping || undefined,
+    dimensions: p.dimensions || undefined,
+    warranty: p.warranty || undefined,
+    careInstructions: p.care_instructions || undefined,
+    packageContents: p.package_contents || undefined,
+    stock: typeof p.stock === 'number' ? p.stock : 18,
   };
 };
 
@@ -277,9 +326,23 @@ export const useCatalogStore = create<CatalogState>((set) => ({
   
   addProduct: async (product) => {
     const dbProduct = toSupabaseProduct(product);
-    const { data, error } = await supabase.from('products').insert([dbProduct]).select().single();
+    let { data, error } = await supabase.from('products').insert([dbProduct]).select().single();
+    if (error && error.code === '42703') {
+      // Retry without extended columns in case user hasn't run the ALTER TABLE script yet
+      const basicProduct = { ...dbProduct };
+      delete basicProduct.materials;
+      delete basicProduct.shipping;
+      delete basicProduct.dimensions;
+      delete basicProduct.warranty;
+      delete basicProduct.care_instructions;
+      delete basicProduct.package_contents;
+      delete basicProduct.stock;
+      const retry = await supabase.from('products').insert([basicProduct]).select().single();
+      data = retry.data;
+      error = retry.error;
+    }
     if (!error && data) {
-      const created = toFrontendProduct(data);
+      const created: CatalogProduct = { ...toFrontendProduct(data), ...product };
       set((state) => {
         const newCats = state.categories.includes(created.category)
           ? state.categories
@@ -302,9 +365,22 @@ export const useCatalogStore = create<CatalogState>((set) => ({
     // If it's a UUID, update in Supabase database
     if (id.includes('-') && id.length > 20) {
       const dbProduct = toSupabaseProduct(updatedProduct);
-      const { data, error } = await supabase.from('products').update(dbProduct).eq('id', id).select().single();
+      let { data, error } = await supabase.from('products').update(dbProduct).eq('id', id).select().single();
+      if (error && error.code === '42703') {
+        const basicProduct = { ...dbProduct };
+        delete basicProduct.materials;
+        delete basicProduct.shipping;
+        delete basicProduct.dimensions;
+        delete basicProduct.warranty;
+        delete basicProduct.care_instructions;
+        delete basicProduct.package_contents;
+        delete basicProduct.stock;
+        const retry = await supabase.from('products').update(basicProduct).eq('id', id).select().single();
+        data = retry.data;
+        error = retry.error;
+      }
       if (!error && data) {
-        const updated = toFrontendProduct(data);
+        const updated: CatalogProduct = { ...toFrontendProduct(data), ...updatedProduct };
         set((state) => ({
           products: state.products.map(p => p.id === id ? updated : p),
           categories: state.categories.includes(updated.category)

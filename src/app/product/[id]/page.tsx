@@ -4,7 +4,7 @@ import React, { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ShoppingBag, Heart, ShieldCheck, Truck, RotateCcw, Check, Star, ChevronDown } from "lucide-react";
+import { ShoppingBag, Heart, ShieldCheck, Truck, RotateCcw, Check, Star, ChevronDown, Layers, Ruler, Sparkles, Box, CheckCircle2 } from "lucide-react";
 import { ProductCard } from "@/components/ui/ProductCard";
 import { useCartStore } from "@/lib/store";
 import { useCatalogStore } from "@/lib/catalogStore";
@@ -25,6 +25,7 @@ export default function ProductDetail({ params }: { params: { id: string } }) {
   const [activeImage, setActiveImage] = useState(0);
   const [activeColor, setActiveColor] = useState(0);
   const [activeSize, setActiveSize] = useState(product.sizes?.[0] || "M");
+  const [activeTab, setActiveTab] = useState<'detalles' | 'materiales' | 'dimensiones' | 'envios' | 'cuidados'>('detalles');
   const [isAdding, setIsAdding] = useState(false);
   
   const { addItem } = useCartStore();
@@ -148,6 +149,31 @@ export default function ProductDetail({ params }: { params: { id: string } }) {
               )}
             </div>
 
+            {/* Disponibilidad en Stock y Garantía */}
+            <div className="flex flex-wrap items-center gap-2 mb-6">
+              {product.stock !== undefined && product.stock <= 5 && product.stock > 0 ? (
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-amber-50 text-amber-800 border border-amber-200">
+                  <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
+                  ¡Solo quedan {product.stock} unidades en almacén!
+                </span>
+              ) : product.stock === 0 ? (
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-red-50 text-red-700 border border-red-200">
+                  <span className="w-2 h-2 rounded-full bg-red-500" />
+                  Agotado temporalmente
+                </span>
+              ) : (
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200">
+                  <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                  En stock ({product.stock ?? 18} disponibles) · Envío 24/48h
+                </span>
+              )}
+              {product.warranty && (
+                <span className="text-xs text-gray-500 flex items-center gap-1 font-medium bg-gray-50 px-2.5 py-1 rounded-full border border-gray-200">
+                  <ShieldCheck className="w-3.5 h-3.5 text-[#8c9276]" /> {product.warranty}
+                </span>
+              )}
+            </div>
+
             <p className="text-base text-gray-600 leading-relaxed mb-8">
               {product.description}
             </p>
@@ -248,31 +274,171 @@ export default function ProductDetail({ params }: { params: { id: string } }) {
         </div>
 
         {/* Tabs Section */}
-        <div className="mt-24 pt-12 border-t border-gray-200 grid grid-cols-1 md:grid-cols-2 gap-12 items-start">
-          <div>
-            <div className="flex gap-8 border-b border-gray-200 mb-8">
-              <button className="pb-4 border-b-2 border-gray-900 text-sm font-semibold text-gray-900">Detalles</button>
-              <button className="pb-4 text-sm font-medium text-gray-500 hover:text-gray-900">Materiales</button>
-              {product.sizes && product.sizes.length > 0 && (
-                <button className="pb-4 text-sm font-medium text-gray-500 hover:text-gray-900">Tallas</button>
-              )}
-              <button className="pb-4 text-sm font-medium text-gray-500 hover:text-gray-900">Envíos</button>
+        <div className="mt-24 pt-12 border-t border-gray-200 grid grid-cols-1 lg:grid-cols-12 gap-12 items-start">
+          <div className="lg:col-span-7">
+            {/* Tab Navigation */}
+            <div className="flex gap-4 md:gap-8 border-b border-gray-200 mb-8 overflow-x-auto hide-scrollbar">
+              <button 
+                onClick={() => setActiveTab('detalles')}
+                className={`pb-4 text-sm font-semibold transition-all shrink-0 relative ${activeTab === 'detalles' ? 'text-gray-900 border-b-2 border-gray-900' : 'text-gray-500 hover:text-gray-800'}`}
+              >
+                Detalles
+              </button>
+              <button 
+                onClick={() => setActiveTab('materiales')}
+                className={`pb-4 text-sm font-semibold transition-all shrink-0 relative ${activeTab === 'materiales' ? 'text-gray-900 border-b-2 border-gray-900' : 'text-gray-500 hover:text-gray-800'}`}
+              >
+                Materiales y Acabados
+              </button>
+              <button 
+                onClick={() => setActiveTab('dimensiones')}
+                className={`pb-4 text-sm font-semibold transition-all shrink-0 relative ${activeTab === 'dimensiones' ? 'text-gray-900 border-b-2 border-gray-900' : 'text-gray-500 hover:text-gray-800'}`}
+              >
+                Dimensiones y Peso
+              </button>
+              <button 
+                onClick={() => setActiveTab('envios')}
+                className={`pb-4 text-sm font-semibold transition-all shrink-0 relative ${activeTab === 'envios' ? 'text-gray-900 border-b-2 border-gray-900' : 'text-gray-500 hover:text-gray-800'}`}
+              >
+                Envíos y Garantía
+              </button>
+              <button 
+                onClick={() => setActiveTab('cuidados')}
+                className={`pb-4 text-sm font-semibold transition-all shrink-0 relative ${activeTab === 'cuidados' ? 'text-gray-900 border-b-2 border-gray-900' : 'text-gray-500 hover:text-gray-800'}`}
+              >
+                Cuidados
+              </button>
             </div>
-            <p className="text-gray-600 leading-relaxed mb-6">
-              {product.description}
-            </p>
-            {product.features && (
-              <ul className="space-y-3">
-                {product.features.map((feature, idx) => (
-                  <li key={idx} className="flex items-center gap-3 text-sm text-gray-700">
-                    <ShieldCheck className="w-4 h-4 text-gray-400" /> {feature}
-                  </li>
-                ))}
-              </ul>
+
+            {/* Tab Content */}
+            {activeTab === 'detalles' && (
+              <div className="space-y-6 animate-fade-in">
+                <p className="text-gray-600 leading-relaxed text-sm md:text-base">
+                  {product.description}
+                </p>
+                {product.features && product.features.length > 0 && (
+                  <div>
+                    <h4 className="text-xs font-bold text-gray-900 uppercase tracking-wider mb-3">Aspectos Destacados</h4>
+                    <ul className="space-y-2.5">
+                      {product.features.map((feature, idx) => (
+                        <li key={idx} className="flex items-start gap-3 text-sm text-gray-700">
+                          <CheckCircle2 className="w-4 h-4 text-[#8c9276] shrink-0 mt-0.5" />
+                          <span>{feature}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+                {product.packageContents && (
+                  <div className="p-4 bg-gray-50/80 rounded-2xl border border-gray-200/70">
+                    <div className="flex items-center gap-2 mb-2 text-xs font-bold text-gray-900 uppercase tracking-wider">
+                      <Box className="w-4 h-4 text-gray-700" />
+                      <span>¿Qué incluye la caja?</span>
+                    </div>
+                    <p className="text-xs text-gray-600 leading-relaxed whitespace-pre-line">
+                      {product.packageContents}
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {activeTab === 'materiales' && (
+              <div className="space-y-6 animate-fade-in">
+                <div className="p-5 bg-stone-50/80 rounded-2xl border border-stone-200/60">
+                  <div className="flex items-center gap-2 mb-2 text-xs font-bold text-stone-900 uppercase tracking-wider">
+                    <Layers className="w-4 h-4 text-stone-700" />
+                    <span>Composición y Acabados Nobles</span>
+                  </div>
+                  <p className="text-sm text-stone-800 leading-relaxed font-normal">
+                    {product.materials || "Diseñado con materias primas seleccionadas de alta calidad, acabados no tóxicos y procesos sostenibles certificados que garantizan máxima durabilidad y calidez visual."}
+                  </p>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="p-4 rounded-xl border border-gray-200/70 bg-white/70">
+                    <p className="text-xs font-bold text-gray-900 mb-1">🌿 Sostenibilidad Certificada</p>
+                    <p className="text-xs text-gray-500">Materias primas de procedencia ética y trazable, reduciendo el impacto ecológico.</p>
+                  </div>
+                  <div className="p-4 rounded-xl border border-gray-200/70 bg-white/70">
+                    <p className="text-xs font-bold text-gray-900 mb-1">✨ Acabado Artesanal</p>
+                    <p className="text-xs text-gray-500">Tratamiento protector sellante contra desgaste diario, rayaduras leves y humedad.</p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {activeTab === 'dimensiones' && (
+              <div className="space-y-6 animate-fade-in">
+                <div className="p-5 bg-gray-50/80 rounded-2xl border border-gray-200/70">
+                  <div className="flex items-center gap-2 mb-2 text-xs font-bold text-gray-900 uppercase tracking-wider">
+                    <Ruler className="w-4 h-4 text-gray-700" />
+                    <span>Medidas y Peso de la Pieza</span>
+                  </div>
+                  <p className="text-sm text-gray-800 font-medium leading-relaxed">
+                    {product.dimensions || "Dimensiones estándar ergonómicas optimizadas para integración armónica en espacios de hogar y oficina contemporáneos."}
+                  </p>
+                </div>
+                {product.sizes && product.sizes.length > 0 && (
+                  <div className="p-4 rounded-xl border border-gray-200/70 bg-white/70">
+                    <p className="text-xs font-bold text-gray-900 mb-2">Variantes de tamaño disponibles:</p>
+                    <div className="flex flex-wrap gap-2">
+                      {product.sizes.map((s, idx) => (
+                        <span key={idx} className="px-3 py-1 bg-gray-100 text-gray-800 text-xs font-semibold rounded-lg">
+                          {s}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {activeTab === 'envios' && (
+              <div className="space-y-5 animate-fade-in">
+                <div className="p-5 bg-blue-50/60 rounded-2xl border border-blue-100">
+                  <div className="flex items-center gap-2 mb-2 text-xs font-bold text-blue-950 uppercase tracking-wider">
+                    <Truck className="w-4 h-4 text-blue-700" />
+                    <span>Condiciones de Envío y Despacho</span>
+                  </div>
+                  <p className="text-sm text-blue-900 leading-relaxed">
+                    {product.shipping || "Envío estándar en 24-48 horas laborables. Envío gratuito garantizado en pedidos superiores a $50. Embalaje reforzado anti-impactos para máxima protección de la pieza."}
+                  </p>
+                </div>
+
+                <div className="p-5 bg-emerald-50/60 rounded-2xl border border-emerald-100">
+                  <div className="flex items-center gap-2 mb-2 text-xs font-bold text-emerald-950 uppercase tracking-wider">
+                    <ShieldCheck className="w-4 h-4 text-emerald-700" />
+                    <span>Garantía Oficial Lumina</span>
+                  </div>
+                  <p className="text-sm text-emerald-900 leading-relaxed">
+                    {product.warranty || "2 años de garantía oficial ante cualquier defecto de fabricación o fallo prematuro de materiales."}
+                  </p>
+                </div>
+
+                <div className="p-4 bg-gray-50 rounded-xl border border-gray-200/70 text-xs text-gray-600 flex items-center gap-3">
+                  <RotateCcw className="w-5 h-5 text-gray-500 shrink-0" />
+                  <span>Devoluciones sencillas y sin complicaciones dentro de los primeros 30 días posteriores a la recepción del pedido.</span>
+                </div>
+              </div>
+            )}
+
+            {activeTab === 'cuidados' && (
+              <div className="space-y-6 animate-fade-in">
+                <div className="p-5 bg-amber-50/60 rounded-2xl border border-amber-100">
+                  <div className="flex items-center gap-2 mb-2 text-xs font-bold text-amber-950 uppercase tracking-wider">
+                    <Sparkles className="w-4 h-4 text-amber-700" />
+                    <span>Guía de Conservación y Mantenimiento</span>
+                  </div>
+                  <p className="text-sm text-amber-900 leading-relaxed">
+                    {product.careInstructions || "Limpiar periódicamente con un paño de microfibra seco o ligeramente humedecido con agua neutra. No utilizar productos químicos agresivos, disolventes ni estropajos. Mantener alejado de fuentes directas de calor extremo."}
+                  </p>
+                </div>
+              </div>
             )}
           </div>
-          <div className="relative w-full aspect-[16/9] rounded-2xl overflow-hidden bg-gray-100">
-             <Image src={images[1] || images[0]} fill alt="Detail" className="object-cover" />
+
+          <div className="lg:col-span-5 relative w-full aspect-[4/3] rounded-3xl overflow-hidden bg-gray-100 shadow-sm border border-gray-200/60">
+             <Image src={images[1] || images[0]} fill alt={product.title} className="object-cover" />
           </div>
         </div>
 
