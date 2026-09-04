@@ -16,6 +16,7 @@ import {
   X, 
   Trash2, 
   AlertTriangle, 
+  AlertCircle,
   Search, 
   Sparkles, 
   Store, 
@@ -125,6 +126,8 @@ export default function ProfilePage() {
   const [prodCareInstructions, setProdCareInstructions] = useState("");
   const [prodPackageContents, setProdPackageContents] = useState("");
   const [prodStock, setProdStock] = useState("20");
+  const [prodSubmitError, setProdSubmitError] = useState<string | null>(null);
+  const [prodSubmitSuccess, setProdSubmitSuccess] = useState<string | null>(null);
 
   // Admin Edit Product Modal State
   const [showEditProductModal, setShowEditProductModal] = useState(false);
@@ -482,6 +485,8 @@ export default function ProfilePage() {
   const handleAddProductSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmittingProd(true);
+    setProdSubmitError(null);
+    setProdSubmitSuccess(null);
 
     const imagesList = [prodImageUrl.trim()];
     if (prodExtraImages.trim()) {
@@ -513,30 +518,36 @@ export default function ProfilePage() {
 
     setIsSubmittingProd(false);
     if (res.success) {
-      setShowProductModal(false);
-      setProdTitle("");
-      setProdHighlight("");
-      setProdCategory("");
-      setProdPrice("");
-      setHasDiscount(false);
-      setOldPrice("");
-      setCalculatedDiscount("");
-      setProdBadge("");
-      setProdImageUrl("");
-      setProdExtraImages("");
-      setProdDescription("");
-      setProdFeatures("");
-      setHasSizes(false);
-      setProdSizes("");
-      setHasColors(false);
-      setProdColors("");
-      setProdMaterials("");
-      setProdShipping("");
-      setProdDimensions("");
-      setProdWarranty("");
-      setProdCareInstructions("");
-      setProdPackageContents("");
-      setProdStock("20");
+      setProdSubmitSuccess("¡Producto publicado exitosamente en la tienda y respaldado en la base de datos!");
+      setTimeout(() => {
+        setShowProductModal(false);
+        setProdSubmitSuccess(null);
+        setProdTitle("");
+        setProdHighlight("");
+        setProdCategory("");
+        setProdPrice("");
+        setHasDiscount(false);
+        setOldPrice("");
+        setCalculatedDiscount("");
+        setProdBadge("");
+        setProdImageUrl("");
+        setProdExtraImages("");
+        setProdDescription("");
+        setProdFeatures("");
+        setHasSizes(false);
+        setProdSizes("");
+        setHasColors(false);
+        setProdColors("");
+        setProdMaterials("");
+        setProdShipping("");
+        setProdDimensions("");
+        setProdWarranty("");
+        setProdCareInstructions("");
+        setProdPackageContents("");
+        setProdStock("20");
+      }, 900);
+    } else {
+      setProdSubmitError(res.error || "No se pudo publicar el producto. Verifica tu conexión o base de datos.");
     }
   };
 
@@ -2639,6 +2650,20 @@ export default function ProfilePage() {
                 <X className="w-5 h-5" />
               </button>
             </div>
+
+            {prodSubmitError && (
+              <div className="mx-6 mt-4 p-3.5 bg-red-50 border border-red-200 rounded-2xl flex items-center gap-2.5 text-xs text-red-700 font-medium">
+                <AlertCircle className="w-4 h-4 shrink-0 text-red-500" />
+                <span>{prodSubmitError}</span>
+              </div>
+            )}
+
+            {prodSubmitSuccess && (
+              <div className="mx-6 mt-4 p-3.5 bg-emerald-50 border border-emerald-200 rounded-2xl flex items-center gap-2.5 text-xs text-emerald-700 font-medium">
+                <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-500" />
+                <span>{prodSubmitSuccess}</span>
+              </div>
+            )}
 
             <form onSubmit={handleAddProductSubmit} className="p-6 overflow-y-auto flex-1 space-y-5">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

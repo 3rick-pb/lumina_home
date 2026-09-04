@@ -72,6 +72,27 @@ export async function DELETE(request: Request) {
   }
 }
 
+// Helper to detect missing column / schema cache errors in Supabase PostgREST
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const isMissingColumn = (err: any): boolean => {
+  if (!err) return false;
+  const code = String(err.code || '');
+  const msg = String(err.message || '').toLowerCase();
+  return code === 'PGRST204' || code === '42703' || msg.includes('column') || msg.includes('schema cache');
+};
+
+const stripExtendedFields = (obj: Record<string, unknown>) => {
+  const clean = { ...obj };
+  delete clean.materials;
+  delete clean.shipping;
+  delete clean.dimensions;
+  delete clean.warranty;
+  delete clean.care_instructions;
+  delete clean.package_contents;
+  delete clean.stock;
+  return clean;
+};
+
 // POST: Add new product with sanitized image URLs
 export async function POST(request: Request) {
   try {
@@ -81,11 +102,18 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: false, error: 'Título de producto requerido' }, { status: 400 });
     }
 
-    const { data, error } = await supabase
+    let { data, error } = await supabase
       .from('products')
       .insert([body])
       .select()
       .single();
+
+    if (isMissingColumn(error)) {
+      const basic = stripExtendedFields(body);
+      const retry = await supabase.from('products').insert([basic]).select().single();
+      data = retry.data;
+      error = retry.error;
+    }
 
     if (error) {
       return NextResponse.json({ success: false, error: error.message }, { status: 500 });
@@ -107,12 +135,19 @@ export async function PUT(request: Request) {
       return NextResponse.json({ success: false, error: 'ID requerido para actualizar' }, { status: 400 });
     }
 
-    const { data, error } = await supabase
+    let { data, error } = await supabase
       .from('products')
       .update(updates)
       .eq('id', id)
       .select()
       .single();
+
+    if (isMissingColumn(error)) {
+      const basic = stripExtendedFields(updates);
+      const retry = await supabase.from('products').update(basic).eq('id', id).select().single();
+      data = retry.data;
+      error = retry.error;
+    }
 
     if (error) {
       return NextResponse.json({ success: false, error: error.message }, { status: 500 });

@@ -221,6 +221,15 @@ const toSupabaseProduct = (p: Partial<CatalogProduct>) => {
   return payload;
 };
 
+// Helper to detect missing column / schema cache errors in Supabase PostgREST
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const isMissingColumnError = (err: any): boolean => {
+  if (!err) return false;
+  const code = String(err.code || '');
+  const msg = String(err.message || '').toLowerCase();
+  return code === 'PGRST204' || code === '42703' || msg.includes('column') || msg.includes('schema cache');
+};
+
 // Convert snake_case back to camelCase for frontend with canonical category formatting
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const toFrontendProduct = (p: any): CatalogProduct => {
@@ -243,6 +252,16 @@ const toFrontendProduct = (p: any): CatalogProduct => {
   const frontMain = parsedImages[0] || p.image_url || fallback;
   const frontImages = parsedImages.length > 0 ? parsedImages : [frontMain];
 
+  // Retrieve cached local metadata if extended columns are not yet in Supabase schema
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let extraMeta: any = {};
+  if (typeof window !== 'undefined' && p.id) {
+    try {
+      const saved = localStorage.getItem(`lumina_prod_meta_${p.id}`);
+      if (saved) extraMeta = JSON.parse(saved);
+    } catch {}
+  }
+
   return {
     id: p.id,
     title: p.title,
@@ -258,13 +277,13 @@ const toFrontendProduct = (p: any): CatalogProduct => {
     sizes: Array.isArray(p.sizes) ? p.sizes : [],
     features: Array.isArray(p.features) ? p.features : [],
     category: canonicalCategory(p.category, DEFAULT_CATEGORIES),
-    materials: p.materials || undefined,
-    shipping: p.shipping || undefined,
-    dimensions: p.dimensions || undefined,
-    warranty: p.warranty || undefined,
-    careInstructions: p.care_instructions || undefined,
-    packageContents: p.package_contents || undefined,
-    stock: typeof p.stock === 'number' ? p.stock : 18,
+    materials: p.materials || extraMeta.materials || undefined,
+    shipping: p.shipping || extraMeta.shipping || undefined,
+    dimensions: p.dimensions || extraMeta.dimensions || undefined,
+    warranty: p.warranty || extraMeta.warranty || undefined,
+    careInstructions: p.care_instructions || extraMeta.careInstructions || undefined,
+    packageContents: p.package_contents || extraMeta.packageContents || undefined,
+    stock: typeof p.stock === 'number' ? p.stock : (typeof extraMeta.stock === 'number' ? extraMeta.stock : 18),
   };
 };
 
@@ -327,8 +346,9 @@ export const useCatalogStore = create<CatalogState>((set) => ({
   addProduct: async (product) => {
     const dbProduct = toSupabaseProduct(product);
     let { data, error } = await supabase.from('products').insert([dbProduct]).select().single();
-    if (error && error.code === '42703') {
-      // Retry without extended columns in case user hasn't run the ALTER TABLE script yet
+    
+    // Auto-retry with base columns if extended columns are not yet present in Supabase table
+    if (isMissingColumnError(error)) {
       const basicProduct = { ...dbProduct };
       delete basicProduct.materials;
       delete basicProduct.shipping;
@@ -341,8 +361,45 @@ export const useCatalogStore = create<CatalogState>((set) => ({
       data = retry.data;
       error = retry.error;
     }
+
+    // Fallback to server API if needed
+    if (error) {
+      try {
+        const res = await fetch('/api/products', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(dbProduct)
+        });
+        if (res.ok) {
+          const json = await res.json();
+          if (json.success && json.product) {
+            data = json.product;
+            error = null;
+          }
+        }
+      } catch (apiErr) {
+        console.warn('API fallback error in addProduct:', apiErr);
+      }
+    }
+
     if (!error && data) {
-      const created: CatalogProduct = { ...toFrontendProduct(data), ...product };
+      // Save extended metadata locally so user gets full fidelity immediately
+      if (typeof window !== 'undefined' && data.id) {
+        try {
+          const meta = {
+            materials: product.materials,
+            shipping: product.shipping,
+            dimensions: product.dimensions,
+            warranty: product.warranty,
+            careInstructions: product.careInstructions,
+            packageContents: product.packageContents,
+            stock: product.stock
+          };
+          localStorage.setItem(`lumina_prod_meta_${data.id}`, JSON.stringify(meta));
+        } catch {}
+      }
+
+      const created: CatalogProduct = { ...toFrontendProduct(data), ...product, id: data.id };
       set((state) => {
         const newCats = state.categories.includes(created.category)
           ? state.categories
@@ -358,7 +415,7 @@ export const useCatalogStore = create<CatalogState>((set) => ({
       });
       return { success: true };
     }
-    return { success: false, error: error?.message || 'Error al guardar el producto' };
+    return { success: false, error: error?.message || 'Error al guardar el producto en la base de datos' };
   },
   
   updateProduct: async (id, updatedProduct) => {
@@ -366,7 +423,8 @@ export const useCatalogStore = create<CatalogState>((set) => ({
     if (id.includes('-') && id.length > 20) {
       const dbProduct = toSupabaseProduct(updatedProduct);
       let { data, error } = await supabase.from('products').update(dbProduct).eq('id', id).select().single();
-      if (error && error.code === '42703') {
+      
+      if (isMissingColumnError(error)) {
         const basicProduct = { ...dbProduct };
         delete basicProduct.materials;
         delete basicProduct.shipping;
@@ -379,8 +437,45 @@ export const useCatalogStore = create<CatalogState>((set) => ({
         data = retry.data;
         error = retry.error;
       }
+
+      // Fallback to server API if needed
+      if (error) {
+        try {
+          const res = await fetch('/api/products', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id, ...dbProduct })
+          });
+          if (res.ok) {
+            const json = await res.json();
+            if (json.success && json.product) {
+              data = json.product;
+              error = null;
+            }
+          }
+        } catch (apiErr) {
+          console.warn('API fallback error in updateProduct:', apiErr);
+        }
+      }
+
       if (!error && data) {
-        const updated: CatalogProduct = { ...toFrontendProduct(data), ...updatedProduct };
+        // Cache metadata locally
+        if (typeof window !== 'undefined') {
+          try {
+            const meta = {
+              materials: updatedProduct.materials,
+              shipping: updatedProduct.shipping,
+              dimensions: updatedProduct.dimensions,
+              warranty: updatedProduct.warranty,
+              careInstructions: updatedProduct.careInstructions,
+              packageContents: updatedProduct.packageContents,
+              stock: updatedProduct.stock
+            };
+            localStorage.setItem(`lumina_prod_meta_${id}`, JSON.stringify(meta));
+          } catch {}
+        }
+
+        const updated: CatalogProduct = { ...toFrontendProduct(data), ...updatedProduct, id };
         set((state) => ({
           products: state.products.map(p => p.id === id ? updated : p),
           categories: state.categories.includes(updated.category)
@@ -443,6 +538,13 @@ export const useCatalogStore = create<CatalogState>((set) => ({
     } else {
       // Mock/in-memory product
       deletedInDb = true;
+    }
+
+    // Clean up cached metadata
+    if (typeof window !== 'undefined') {
+      try {
+        localStorage.removeItem(`lumina_prod_meta_${id}`);
+      } catch {}
     }
 
     // Update local state reactively
