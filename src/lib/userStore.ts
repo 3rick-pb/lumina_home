@@ -70,6 +70,7 @@ interface UserState {
   
   addOrder: (order: Order) => void;
   updateOrderStatus: (orderId: string, status: Order['status']) => void;
+  refreshOrders: () => Promise<void>;
 
   addAddress: (address: Omit<ShippingAddress, 'id'>) => Promise<boolean>;
   removeAddress: (id?: string) => void;
@@ -521,6 +522,20 @@ export const useUserStore = create<UserState>((set, get) => ({
         await supabase.auth.updateUser({ data: { orders: nextOrders } });
       } catch {}
     }
+  },
+
+  refreshOrders: async () => {
+    const user = get().user;
+    if (!user) return;
+    try {
+      const res = await fetch(`/api/orders?userId=${encodeURIComponent(user.id)}&role=${encodeURIComponent(user.role)}&email=${encodeURIComponent(user.email)}`);
+      if (res.ok) {
+        const json = await res.json();
+        if (json.success && Array.isArray(json.orders)) {
+          set({ orders: json.orders });
+        }
+      }
+    } catch {}
   },
 
   addAddress: async (addrData) => {

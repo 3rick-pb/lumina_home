@@ -58,6 +58,7 @@ export default function ProfilePage() {
     removeCard, 
     setDefaultCard,
     updateOrderStatus,
+    refreshOrders,
     updateUserName,
     updateUserPassword
   } = useUserStore();
@@ -181,6 +182,27 @@ export default function ProfilePage() {
       setEditName(user.name);
     }
   }, [user]);
+
+  // Real-time synchronization heartbeat and window focus listener
+  useEffect(() => {
+    if (!isAuthenticated || !user) return;
+
+    // Refresh immediately on window focus
+    const onFocus = () => {
+      refreshOrders();
+    };
+    window.addEventListener("focus", onFocus);
+
+    // Refresh every 5 seconds for live store monitoring across devices
+    const interval = setInterval(() => {
+      refreshOrders();
+    }, 5000);
+
+    return () => {
+      window.removeEventListener("focus", onFocus);
+      clearInterval(interval);
+    };
+  }, [isAuthenticated, user, refreshOrders]);
 
   // =========================================================================
   // REAL-TIME MATHEMATICAL CALCULATIONS & METRICS
