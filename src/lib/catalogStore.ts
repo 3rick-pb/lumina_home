@@ -137,6 +137,24 @@ const INITIAL_NICHE_PRODUCTS: CatalogProduct[] = [
 // Convert camelCase to snake_case for Supabase
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const toSupabaseProduct = (p: Partial<CatalogProduct>) => {
+  // Helper to extract and sanitize clean image URLs
+  const rawList: string[] = [];
+  if (p.imageUrl && typeof p.imageUrl === 'string') {
+    p.imageUrl.split(/[\n,]+/).map(s => s.trim().replace(/^['"]|['"]$/g, '')).filter(s => s.startsWith('http')).forEach(u => rawList.push(u));
+  }
+  if (Array.isArray(p.images)) {
+    p.images.forEach(img => {
+      if (typeof img === 'string') {
+        img.split(/[\n,]+/).map(s => s.trim().replace(/^['"]|['"]$/g, '')).filter(s => s.startsWith('http')).forEach(u => {
+          if (!rawList.includes(u)) rawList.push(u);
+        });
+      }
+    });
+  }
+  const fallbackImg = "https://images.unsplash.com/photo-1507473885765-e6ed057f782c?q=80&w=800&auto=format&fit=crop";
+  const cleanMain = rawList[0] || p.imageUrl || fallbackImg;
+  const cleanImages = rawList.length > 0 ? rawList : [cleanMain];
+
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const payload: any = {
     title: p.title,
@@ -146,8 +164,8 @@ const toSupabaseProduct = (p: Partial<CatalogProduct>) => {
     old_price: p.oldPrice || null,
     discount: p.discount || null,
     badge: p.badge || null,
-    image_url: p.imageUrl,
-    images: p.images && p.images.length > 0 ? p.images : (p.imageUrl ? [p.imageUrl] : []),
+    image_url: cleanMain,
+    images: cleanImages,
     colors: p.colors || [],
     sizes: p.sizes || [],
     features: p.features || [],
@@ -163,22 +181,43 @@ const toSupabaseProduct = (p: Partial<CatalogProduct>) => {
 
 // Convert snake_case back to camelCase for frontend with canonical category formatting
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-const toFrontendProduct = (p: any): CatalogProduct => ({
-  id: p.id,
-  title: p.title,
-  titleHighlight: p.title_highlight,
-  description: p.description,
-  price: typeof p.price === 'string' ? parseFloat(p.price) : p.price,
-  oldPrice: p.old_price ? (typeof p.old_price === 'string' ? parseFloat(p.old_price) : p.old_price) : null,
-  discount: p.discount,
-  badge: p.badge,
-  imageUrl: p.image_url,
-  images: Array.isArray(p.images) ? p.images : (p.image_url ? [p.image_url] : []),
-  colors: Array.isArray(p.colors) ? p.colors : [],
-  sizes: Array.isArray(p.sizes) ? p.sizes : [],
-  features: Array.isArray(p.features) ? p.features : [],
-  category: canonicalCategory(p.category, DEFAULT_CATEGORIES),
-});
+const toFrontendProduct = (p: any): CatalogProduct => {
+  const parsedImages: string[] = [];
+  if (p.image_url && typeof p.image_url === 'string') {
+    p.image_url.split(/[\n,]+/).map((s: string) => s.trim().replace(/^['"]|['"]$/g, '')).filter((s: string) => s.startsWith('http')).forEach((u: string) => {
+      if (!parsedImages.includes(u)) parsedImages.push(u);
+    });
+  }
+  if (Array.isArray(p.images)) {
+    p.images.forEach((img: unknown) => {
+      if (typeof img === 'string') {
+        img.split(/[\n,]+/).map((s: string) => s.trim().replace(/^['"]|['"]$/g, '')).filter((s: string) => s.startsWith('http')).forEach((u: string) => {
+          if (!parsedImages.includes(u)) parsedImages.push(u);
+        });
+      }
+    });
+  }
+  const fallback = "https://images.unsplash.com/photo-1507473885765-e6ed057f782c?q=80&w=800&auto=format&fit=crop";
+  const frontMain = parsedImages[0] || p.image_url || fallback;
+  const frontImages = parsedImages.length > 0 ? parsedImages : [frontMain];
+
+  return {
+    id: p.id,
+    title: p.title,
+    titleHighlight: p.title_highlight,
+    description: p.description,
+    price: typeof p.price === 'string' ? parseFloat(p.price) : p.price,
+    oldPrice: p.old_price ? (typeof p.old_price === 'string' ? parseFloat(p.old_price) : p.old_price) : null,
+    discount: p.discount,
+    badge: p.badge,
+    imageUrl: frontMain,
+    images: frontImages,
+    colors: Array.isArray(p.colors) ? p.colors : [],
+    sizes: Array.isArray(p.sizes) ? p.sizes : [],
+    features: Array.isArray(p.features) ? p.features : [],
+    category: canonicalCategory(p.category, DEFAULT_CATEGORIES),
+  };
+};
 
 export const useCatalogStore = create<CatalogState>((set) => ({
   products: [],

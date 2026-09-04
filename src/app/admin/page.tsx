@@ -620,20 +620,54 @@ export default function AdminPage() {
               </div>
 
               {/* Section 3: Images */}
-              <div className="space-y-4">
-                <h3 className="text-xs font-bold uppercase tracking-wider text-gray-400">Fotografía y Galería</h3>
+              <div className="p-4 bg-gray-50/80 rounded-2xl border border-gray-100 space-y-3">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-xs font-bold uppercase tracking-wider text-gray-700">Fotografía y Galería</h3>
+                  <span className="text-[11px] text-[#8c9276] font-semibold">Vista previa en vivo</span>
+                </div>
+
+                <div className="p-3 bg-blue-50/70 border border-blue-100 rounded-xl text-xs text-blue-900 leading-relaxed">
+                  <p className="font-bold mb-1">💡 ¿Cómo obtener el enlace correcto de la imagen?</p>
+                  <p className="text-[11px] text-blue-800">
+                    No pegues el enlace de la página web de la tienda o artículo. Haz <strong>clic derecho sobre la foto</strong> en tu navegador y selecciona <strong>&ldquo;Copiar dirección de imagen&rdquo;</strong> (el enlace directo termina en .jpg, .png, .webp o proviene de Unsplash, Imgur, CDN).
+                  </p>
+                </div>
                 
                 <div>
                   <label className="block text-xs font-semibold text-gray-700 mb-1.5">URL de Imagen Principal *</label>
                   <input 
                     required 
-                    type="url" 
+                    type="text" 
                     value={imageUrl} 
                     onChange={e => setImageUrl(e.target.value)} 
-                    className="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm focus:border-gray-900 outline-none" 
-                    placeholder="https://images.unsplash.com/photo-..." 
+                    className="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm focus:border-gray-900 outline-none bg-white" 
+                    placeholder="https://images.unsplash.com/photo-... o enlace directo .jpg / .webp" 
                   />
+                  {imageUrl.trim() && (imageUrl.includes('.html') || (!imageUrl.match(/\.(jpg|jpeg|png|webp|avif|gif|svg)(\?.*)?$/i) && !imageUrl.includes('unsplash') && !imageUrl.includes('mlstatic') && !imageUrl.includes('cloudinary') && !imageUrl.includes('imgur'))) && (
+                    <p className="text-[11px] text-amber-700 mt-1.5 font-medium bg-amber-50 p-2 rounded-lg border border-amber-200">
+                      ⚠️ Atención: Parece que has pegado el enlace de una página web y no de una foto directa. Asegúrate de hacer clic derecho &gt; &ldquo;Copiar dirección de imagen&rdquo;.
+                    </p>
+                  )}
                 </div>
+
+                {/* Vista previa de imagen principal */}
+                {imageUrl.trim() && (
+                  <div className="flex items-center gap-3 p-3 bg-white rounded-xl border border-gray-200/80">
+                    <div className="relative w-16 h-16 rounded-lg overflow-hidden bg-gray-100 shrink-0 border border-gray-200">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img 
+                        src={imageUrl.trim().split(/[\n,]+/)[0]} 
+                        alt="Vista previa" 
+                        className="w-full h-full object-cover" 
+                        onError={(e) => { (e.currentTarget as HTMLImageElement).src = "https://images.unsplash.com/photo-1507473885765-e6ed057f782c?q=80&w=800&auto=format&fit=crop"; }}
+                      />
+                    </div>
+                    <div className="min-w-0 flex-1 text-xs">
+                      <p className="font-semibold text-gray-800">Vista previa de imagen principal</p>
+                      <p className="text-[11px] text-gray-400 truncate">{imageUrl.trim().split(/[\n,]+/)[0]}</p>
+                    </div>
+                  </div>
+                )}
 
                 <div>
                   <label className="block text-xs font-semibold text-gray-700 mb-1.5">URLs de Galería Adicional (Opcional)</label>
@@ -641,11 +675,31 @@ export default function AdminPage() {
                     type="text" 
                     value={extraImages} 
                     onChange={e => setExtraImages(e.target.value)} 
-                    className="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm focus:border-gray-900 outline-none" 
-                    placeholder="Separa varias URLs con coma: https://..., https://..." 
+                    className="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm focus:border-gray-900 outline-none bg-white" 
+                    placeholder="Separa varias URLs con coma: https://foto2.jpg, https://foto3.webp" 
                   />
                   <p className="text-[11px] text-gray-400 mt-1">Permite a los compradores ver diferentes ángulos o detalles del producto.</p>
                 </div>
+
+                {/* Miniaturas de galería adicional */}
+                {extraImages.trim() && (
+                  <div className="space-y-1.5 pt-1">
+                    <p className="text-[11px] font-semibold text-gray-500">Galería adicional detectada:</p>
+                    <div className="flex gap-2 flex-wrap">
+                      {extraImages.split(/[\n,]+/).map(u => u.trim()).filter(u => u.startsWith('http')).map((url, idx) => (
+                        <div key={idx} className="relative w-12 h-12 rounded-lg overflow-hidden bg-gray-100 border border-gray-200 shrink-0">
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img 
+                            src={url} 
+                            alt={`Galería ${idx}`} 
+                            className="w-full h-full object-cover" 
+                            onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }}
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Section 4: Description & Features */}

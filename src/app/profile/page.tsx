@@ -2671,14 +2671,89 @@ export default function ProfilePage() {
                 </div>
               </div>
 
-              <div>
-                <label className="block text-xs font-semibold text-gray-700 mb-1">URL de Imagen Principal *</label>
-                <input required type="url" value={prodImageUrl} onChange={e => setProdImageUrl(e.target.value)} className="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm outline-none" placeholder="https://images.unsplash.com/..." />
-              </div>
+              {/* Sección de Imágenes con Vista Previa y Guía */}
+              <div className="p-4 bg-gray-50/80 rounded-2xl border border-gray-100 space-y-3">
+                <div className="flex items-center justify-between">
+                  <label className="block text-xs font-bold uppercase tracking-wider text-gray-700">Fotografías del Producto</label>
+                  <span className="text-[11px] text-[#8c9276] font-semibold">Vista previa en vivo</span>
+                </div>
 
-              <div>
-                <label className="block text-xs font-semibold text-gray-700 mb-1">Galería de Imágenes Adicionales (separadas por coma)</label>
-                <input type="text" value={prodExtraImages} onChange={e => setProdExtraImages(e.target.value)} className="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm outline-none" placeholder="https://images.unsplash.com/... , https://..." />
+                {/* Explicación amigable */}
+                <div className="p-3 bg-blue-50/70 border border-blue-100 rounded-xl text-xs text-blue-900 leading-relaxed">
+                  <p className="font-bold mb-1">💡 ¿Cómo obtener el enlace correcto de la imagen?</p>
+                  <p className="text-[11px] text-blue-800">
+                    No pegues el enlace de la página web de la tienda o artículo. Abre la foto en tu navegador, haz <strong>clic derecho sobre la imagen</strong> y selecciona <strong>&ldquo;Copiar dirección de imagen&rdquo;</strong> (el enlace debe ser directo al archivo .jpg, .png, .webp o de Unsplash/Imgur/CDN).
+                  </p>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-gray-700 mb-1">URL de Imagen Principal *</label>
+                  <input 
+                    required 
+                    type="text" 
+                    value={prodImageUrl} 
+                    onChange={e => setProdImageUrl(e.target.value)} 
+                    className="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm outline-none bg-white" 
+                    placeholder="https://images.unsplash.com/photo-... o enlace directo .jpg / .webp" 
+                  />
+                  {/* Alerta si parece una página web */}
+                  {prodImageUrl.trim() && (prodImageUrl.includes('.html') || (!prodImageUrl.match(/\.(jpg|jpeg|png|webp|avif|gif|svg)(\?.*)?$/i) && !prodImageUrl.includes('unsplash') && !prodImageUrl.includes('mlstatic') && !prodImageUrl.includes('cloudinary') && !prodImageUrl.includes('imgur'))) && (
+                    <p className="text-[11px] text-amber-700 mt-1.5 flex items-center gap-1 font-medium bg-amber-50 p-2 rounded-lg border border-amber-200">
+                      ⚠️ Atención: Parece que pegaste el enlace de una página web y no de la imagen directa. Asegúrate de hacer clic derecho sobre la foto &gt; &ldquo;Copiar dirección de imagen&rdquo;.
+                    </p>
+                  )}
+                </div>
+
+                {/* Vista previa de Imagen Principal */}
+                {prodImageUrl.trim() && (
+                  <div className="flex items-center gap-3 p-3 bg-white rounded-xl border border-gray-200/80">
+                    <div className="relative w-16 h-16 rounded-lg overflow-hidden bg-gray-100 shrink-0 border border-gray-200">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img 
+                        src={prodImageUrl.trim().split(/[\n,]+/)[0]} 
+                        alt="Vista previa" 
+                        className="w-full h-full object-cover" 
+                        onError={(e) => { (e.currentTarget as HTMLImageElement).src = "https://images.unsplash.com/photo-1507473885765-e6ed057f782c?q=80&w=800&auto=format&fit=crop"; }}
+                      />
+                    </div>
+                    <div className="min-w-0 flex-1 text-xs">
+                      <p className="font-semibold text-gray-800">Vista previa de imagen principal</p>
+                      <p className="text-[11px] text-gray-400 truncate">{prodImageUrl.trim().split(/[\n,]+/)[0]}</p>
+                    </div>
+                  </div>
+                )}
+
+                <div>
+                  <label className="block text-xs font-semibold text-gray-700 mb-1">Galería de Imágenes Adicionales (Opcional)</label>
+                  <input 
+                    type="text" 
+                    value={prodExtraImages} 
+                    onChange={e => setProdExtraImages(e.target.value)} 
+                    className="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm outline-none bg-white" 
+                    placeholder="Separa varios enlaces con comas: https://foto2.jpg, https://foto3.webp" 
+                  />
+                  <p className="text-[11px] text-gray-400 mt-1">Permite a los clientes ver el producto desde varios ángulos.</p>
+                </div>
+
+                {/* Miniaturas de galería adicional */}
+                {prodExtraImages.trim() && (
+                  <div className="space-y-1.5 pt-1">
+                    <p className="text-[11px] font-semibold text-gray-500">Galería adicional detectada:</p>
+                    <div className="flex gap-2 flex-wrap">
+                      {prodExtraImages.split(/[\n,]+/).map(u => u.trim()).filter(u => u.startsWith('http')).map((url, idx) => (
+                        <div key={idx} className="relative w-12 h-12 rounded-lg overflow-hidden bg-gray-100 border border-gray-200 shrink-0">
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img 
+                            src={url} 
+                            alt={`Galería ${idx}`} 
+                            className="w-full h-full object-cover" 
+                            onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }}
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
 
               <div>
@@ -2847,23 +2922,46 @@ export default function ProfilePage() {
               </div>
 
               {/* Imagen y Vista Previa */}
-              <div className="space-y-3">
+              <div className="p-4 bg-gray-50/80 rounded-2xl border border-gray-100 space-y-3">
+                <div className="flex items-center justify-between">
+                  <label className="block text-xs font-bold uppercase tracking-wider text-gray-700">Fotografías del Producto</label>
+                  <span className="text-[11px] text-[#8c9276] font-semibold">Vista previa en vivo</span>
+                </div>
+
+                <div className="p-3 bg-blue-50/70 border border-blue-100 rounded-xl text-xs text-blue-900 leading-relaxed">
+                  <p className="font-bold mb-1">💡 Enlace directo a la foto</p>
+                  <p className="text-[11px] text-blue-800">
+                    Asegúrate de copiar el enlace directo del archivo de la foto (clic derecho sobre la imagen &gt; &ldquo;Copiar dirección de imagen&rdquo;), no el link de la página web.
+                  </p>
+                </div>
+
                 <div className="flex gap-4 items-start">
                   {editImageUrl && (
                     <div className="relative w-16 h-16 rounded-xl overflow-hidden bg-gray-100 border border-gray-200 shrink-0">
-                      <Image src={editImageUrl} alt="Preview" fill className="object-cover" />
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img 
+                        src={editImageUrl.trim().split(/[\n,]+/)[0]} 
+                        alt="Preview" 
+                        className="w-full h-full object-cover" 
+                        onError={(e) => { (e.currentTarget as HTMLImageElement).src = "https://images.unsplash.com/photo-1507473885765-e6ed057f782c?q=80&w=800&auto=format&fit=crop"; }}
+                      />
                     </div>
                   )}
                   <div className="flex-1">
                     <label className="block text-xs font-semibold text-gray-700 mb-1">URL de Imagen Principal *</label>
                     <input 
                       required 
-                      type="url" 
+                      type="text" 
                       value={editImageUrl} 
                       onChange={e => setEditImageUrl(e.target.value)} 
-                      className="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm outline-none" 
-                      placeholder="https://images.unsplash.com/..." 
+                      className="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm outline-none bg-white" 
+                      placeholder="https://images.unsplash.com/photo-... o .jpg / .webp" 
                     />
+                    {editImageUrl.trim() && (editImageUrl.includes('.html') || (!editImageUrl.match(/\.(jpg|jpeg|png|webp|avif|gif|svg)(\?.*)?$/i) && !editImageUrl.includes('unsplash') && !editImageUrl.includes('mlstatic') && !editImageUrl.includes('cloudinary') && !editImageUrl.includes('imgur'))) && (
+                      <p className="text-[11px] text-amber-700 mt-1.5 font-medium bg-amber-50 p-2 rounded-lg border border-amber-200">
+                        ⚠️ Atención: Asegúrate de que este enlace apunte al archivo directo de la foto (clic derecho &gt; &ldquo;Copiar dirección de imagen&rdquo;).
+                      </p>
+                    )}
                   </div>
                 </div>
 
@@ -2873,10 +2971,30 @@ export default function ProfilePage() {
                     type="text" 
                     value={editExtraImages} 
                     onChange={e => setEditExtraImages(e.target.value)} 
-                    className="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm outline-none" 
-                    placeholder="https://... , https://..." 
+                    className="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm outline-none bg-white" 
+                    placeholder="https://foto2.jpg , https://foto3.webp" 
                   />
                 </div>
+
+                {/* Miniaturas de galería adicional */}
+                {editExtraImages.trim() && (
+                  <div className="space-y-1.5 pt-1">
+                    <p className="text-[11px] font-semibold text-gray-500">Galería adicional:</p>
+                    <div className="flex gap-2 flex-wrap">
+                      {editExtraImages.split(/[\n,]+/).map(u => u.trim()).filter(u => u.startsWith('http')).map((url, idx) => (
+                        <div key={idx} className="relative w-12 h-12 rounded-lg overflow-hidden bg-gray-100 border border-gray-200 shrink-0">
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img 
+                            src={url} 
+                            alt={`Galería ${idx}`} 
+                            className="w-full h-full object-cover" 
+                            onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }}
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
 
               <div>
