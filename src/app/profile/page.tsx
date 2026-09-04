@@ -138,6 +138,10 @@ export default function ProfilePage() {
   const [newCatInput, setNewCatInput] = useState("");
   const [newBadgeInput, setNewBadgeInput] = useState("");
 
+  // Interactive Chart Hover States
+  const [hoveredNicheIdx, setHoveredNicheIdx] = useState<number | null>(null);
+  const [hoveredMonthIdx, setHoveredMonthIdx] = useState<number | null>(null);
+
   const handleAddBadgeSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (newBadgeInput.trim()) {
@@ -216,14 +220,17 @@ export default function ProfilePage() {
 
   // 3. Real Category Product Distribution Chart (for Admin)
   const categoryDistributionData = useMemo(() => {
+    const totalProds = products.length;
     const counts = categories.map(cat => {
       const count = products.filter(p => normalizeCategory(p.category) === normalizeCategory(cat)).length;
-      return { category: cat, count };
+      const pctOfTotal = totalProds > 0 ? Math.round((count / totalProds) * 100) : 0;
+      return { category: cat, count, pctOfTotal };
     });
     const maxCount = Math.max(...counts.map(c => c.count), 1);
     return counts.map(c => ({
       ...c,
-      heightPct: Math.max(Math.round((c.count / maxCount) * 100), 12)
+      // Scaled between 8% (minimum baseline for empty) and 82% (max so counts/tooltips have guaranteed headroom)
+      heightPct: c.count === 0 ? 8 : Math.max(Math.round((c.count / maxCount) * 82), 14)
     }));
   }, [categories, products]);
 
@@ -244,7 +251,7 @@ export default function ProfilePage() {
     return totals.map(t => ({
       month: t.month,
       total: t.total,
-      heightPct: hasAnyOrders && t.total > 0 ? Math.round((t.total / maxMonth) * 100) : 4,
+      heightPct: hasAnyOrders && t.total > 0 ? Math.max(Math.round((t.total / maxMonth) * 82), 12) : 6,
       hasData: t.total > 0
     }));
   }, [orders]);
@@ -911,20 +918,34 @@ export default function ProfilePage() {
                   <h3 className="text-sm font-bold text-gray-900 truncate">
                     {isAdmin ? "Inventario por Nicho" : "Frecuencia de Compras"}
                   </h3>
-                  <p className="text-xs text-gray-400 truncate">
-                    {isAdmin ? "Volumen real de piezas por categoría" : "Gastos calculados por mes (2026)"}
+                  <p className="text-xs text-gray-400 truncate transition-all duration-200">
+                    {isAdmin 
+                      ? (hoveredNicheIdx !== null && categoryDistributionData[hoveredNicheIdx] 
+                          ? `${categoryDistributionData[hoveredNicheIdx].category}: ${categoryDistributionData[hoveredNicheIdx].count} piezas (${categoryDistributionData[hoveredNicheIdx].pctOfTotal}% del catálogo)`
+                          : "Volumen real de piezas por categoría") 
+                      : (hoveredMonthIdx !== null && monthlySpendData[hoveredMonthIdx]
+                          ? `${monthlySpendData[hoveredMonthIdx].month}: $${monthlySpendData[hoveredMonthIdx].total.toFixed(2)} gastados`
+                          : "Gastos calculados por mes (2026)")}
                   </p>
                 </div>
                 <span className="text-[10px] font-bold px-2 py-1 bg-gray-100 rounded-lg text-gray-600 shrink-0">
-                  {isAdmin ? `${products.length} Total` : "Semestre"}
+                  {isAdmin 
+                    ? (hoveredNicheIdx !== null && categoryDistributionData[hoveredNicheIdx]
+                        ? `${categoryDistributionData[hoveredNicheIdx].count} piezas`
+                        : `${products.length} Total`)
+                    : "Semestre"}
                 </span>
               </div>
 
-              {/* Visual Dynamic Bar Chart with Internal Horizontal Scroll Container */}
-              <div className="relative w-full overflow-hidden my-auto">
+              {/* Visual Dynamic Bar Chart with Decoupled Anchored Labels and Smooth Column Hover Expansion */}
+              <div className="relative w-full my-auto">
                 <div 
-                  className={`flex items-end gap-3 h-36 pt-4 pb-2 px-1 overflow-x-auto overflow-y-hidden select-none cursor-grab active:cursor-grabbing ${
-                    categoryDistributionData.length <= 4 ? "justify-between" : "justify-start"
+                  className={`flex items-end h-40 pt-7 pb-1 px-1 overflow-x-auto overflow-y-hidden select-none cursor-grab active:cursor-grabbing ${
+                    categoryDistributionData.length <= 4 
+                      ? "justify-around gap-3" 
+                      : categoryDistributionData.length <= 7 
+                      ? "justify-start sm:justify-between gap-2.5" 
+                      : "justify-start gap-2"
                   }`}
                   style={{
                     scrollbarWidth: "thin",
@@ -937,38 +958,119 @@ export default function ProfilePage() {
                   }}
                 >
                   {isAdmin ? (
-                    categoryDistributionData.map((bar, idx) => (
-                      <div 
-                        key={idx} 
-                        className={`flex flex-col items-center gap-2 h-full justify-end group ${
-                          categoryDistributionData.length <= 4 ? "flex-1 min-w-0" : "w-14 shrink-0"
-                        }`} 
-                        title={`${bar.category}: ${bar.count} productos`}
-                      >
-                        <span className="text-[10px] font-bold text-gray-700 opacity-0 group-hover:opacity-100 transition-opacity">
-                          {bar.count}
-                        </span>
+                    categoryDistributionData.map((bar, idx) => {
+                      const isHovered = hoveredNicheIdx === idx;
+                      const hasItems = bar.count > 0;
+                      
+                      // Adaptive width classes based on number of niches:
+                      // Few items (<=4): wide baseline (w-16) expanding to w-24
+                      // Medium items (5-7): medium baseline (w-12) expanding to w-20
+                      // Many items (8+): compact baseline (w-10) expanding to w-18
+                      const widthClass = categoryDistributionData.length <= 4
+                        ? (isHovered ? "w-24 shrink-0" : "flex-1 max-w-[5rem] min-w-[3.5rem]")
+                        : categoryDistributionData.length <= 7
+                        ? (isHovered ? "w-20 shrink-0" : "w-12 shrink-0")
+                        : (isHovered ? "w-18 shrink-0" : "w-10 shrink-0");
+
+                      return (
                         <div 
-                          className={`w-full rounded-2xl transition-all duration-300 ${
-                            bar.count > 0 ? "bg-[#e07a3f] shadow-sm shadow-[#e07a3f]/20 hover:brightness-105" : "bg-gray-200"
-                          }`} 
-                          style={{ height: `${bar.heightPct}%` }}
-                        />
-                        <span className="text-[10px] font-medium text-gray-400 truncate max-w-full text-center" title={bar.category}>
-                          {bar.category}
-                        </span>
-                      </div>
-                    ))
+                          key={idx} 
+                          onMouseEnter={() => setHoveredNicheIdx(idx)}
+                          onMouseLeave={() => setHoveredNicheIdx(null)}
+                          className={`flex flex-col items-center h-full justify-between transition-all duration-300 ease-out group cursor-pointer relative ${widthClass} ${isHovered ? "z-20 scale-[1.02]" : "z-10"}`}
+                        >
+                          {/* 1. Bar Area (bounded in flex-1, bar grows upwards with capped max 82% height) */}
+                          <div className="relative w-full flex-1 flex flex-col justify-end items-center px-1">
+                            
+                            {/* Floating Popover / Tooltip when Hovered */}
+                            {isHovered && (
+                              <div className="absolute -top-7 z-30 flex flex-col items-center pointer-events-none animate-fade-in">
+                                <div className="bg-gray-950 text-white px-2 py-0.5 rounded-lg text-[10px] font-bold shadow-lg border border-white/10 whitespace-nowrap flex items-center gap-1">
+                                  <span className={`w-1.5 h-1.5 rounded-full ${hasItems ? "bg-[#e07a3f]" : "bg-gray-400"}`} />
+                                  <span>{bar.count}</span>
+                                  <span className="text-gray-400 font-normal">({bar.pctOfTotal}%)</span>
+                                </div>
+                                <div className="w-1.5 h-1 bg-gray-950 rotate-45 -mt-0.5" />
+                              </div>
+                            )}
+
+                            {/* Standard count text when NOT hovered */}
+                            {!isHovered && (
+                              <span className="text-[10px] font-bold text-gray-400 mb-1 opacity-60 group-hover:opacity-100 transition-opacity">
+                                {bar.count}
+                              </span>
+                            )}
+
+                            {/* The Bar itself */}
+                            <div 
+                              className={`w-full rounded-2xl transition-all duration-300 ${
+                                hasItems 
+                                  ? isHovered 
+                                    ? "bg-gradient-to-t from-[#c25e24] via-[#e07a3f] to-[#f59e0b] shadow-md shadow-[#e07a3f]/30 ring-2 ring-[#e07a3f]/40" 
+                                    : "bg-[#e07a3f] shadow-2xs shadow-[#e07a3f]/20 hover:brightness-105" 
+                                  : "bg-gray-200/90"
+                              }`} 
+                              style={{ height: `${bar.heightPct}%` }}
+                            />
+                          </div>
+
+                          {/* 2. Anchored Category Label Area (Fixed height, completely decoupled from bar height) */}
+                          <div className="w-full h-6 pt-1.5 flex items-center justify-center shrink-0 overflow-hidden">
+                            <span 
+                              className={`text-[10px] text-center transition-colors block truncate w-full ${
+                                isHovered ? "text-gray-950 font-bold" : "text-gray-400 font-medium"
+                              }`} 
+                              title={bar.category}
+                            >
+                              {bar.category}
+                            </span>
+                          </div>
+                        </div>
+                      );
+                    })
                   ) : (
-                    monthlySpendData.map((bar, idx) => (
-                      <div key={idx} className="flex-1 flex flex-col items-center gap-2 h-full justify-end" title={`${bar.month}: $${bar.total.toFixed(2)}`}>
+                    monthlySpendData.map((bar, idx) => {
+                      const isHovered = hoveredMonthIdx === idx;
+                      return (
                         <div 
-                          className={`w-full rounded-2xl transition-all ${bar.hasData ? "bg-[#e07a3f]" : "bg-gray-200"}`} 
-                          style={{ height: `${bar.heightPct}%` }}
-                        />
-                        <span className="text-[10px] font-medium text-gray-400">{bar.month}</span>
-                      </div>
-                    ))
+                          key={idx} 
+                          onMouseEnter={() => setHoveredMonthIdx(idx)}
+                          onMouseLeave={() => setHoveredMonthIdx(null)}
+                          className="flex-1 min-w-[2.5rem] flex flex-col items-center h-full justify-between transition-all duration-300 group cursor-pointer relative"
+                          title={`${bar.month}: $${bar.total.toFixed(2)}`}
+                        >
+                          {/* 1. Bar Area */}
+                          <div className="relative w-full flex-1 flex flex-col justify-end items-center px-1">
+                            {isHovered && bar.hasData && (
+                              <div className="absolute -top-7 z-30 flex flex-col items-center pointer-events-none animate-fade-in">
+                                <div className="bg-gray-950 text-white px-2 py-0.5 rounded-lg text-[10px] font-bold shadow-lg border border-white/10 whitespace-nowrap">
+                                  ${bar.total.toFixed(0)}
+                                </div>
+                                <div className="w-1.5 h-1 bg-gray-950 rotate-45 -mt-0.5" />
+                              </div>
+                            )}
+
+                            <div 
+                              className={`w-full rounded-2xl transition-all duration-300 ${
+                                bar.hasData 
+                                  ? isHovered 
+                                    ? "bg-gradient-to-t from-[#c25e24] via-[#e07a3f] to-[#f59e0b] shadow-md shadow-[#e07a3f]/30" 
+                                    : "bg-[#e07a3f]" 
+                                  : "bg-gray-200"
+                              }`} 
+                              style={{ height: `${bar.heightPct}%` }}
+                            />
+                          </div>
+
+                          {/* 2. Anchored Label Area */}
+                          <div className="w-full h-6 pt-1.5 flex items-center justify-center shrink-0">
+                            <span className={`text-[10px] text-center ${isHovered ? "text-gray-950 font-bold" : "text-gray-400 font-medium"}`}>
+                              {bar.month}
+                            </span>
+                          </div>
+                        </div>
+                      );
+                    })
                   )}
                 </div>
               </div>
@@ -980,7 +1082,7 @@ export default function ProfilePage() {
                 </span>
                 <span className="text-gray-400 text-right truncate pl-2">
                   {isAdmin 
-                    ? `${categories.length} nichos ${categoryDistributionData.length > 4 ? "• Desliza ↔" : ""}` 
+                    ? `${categories.length} nichos ${categoryDistributionData.length > 5 ? "• Pasa el cursor o desliza ↔" : "• Pasa el cursor para ver detalle"}` 
                     : (orders.length === 0 ? "0 transacciones aún" : `${orders.length} pedidos`)}
                 </span>
               </div>
