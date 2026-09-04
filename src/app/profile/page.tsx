@@ -29,7 +29,8 @@ import {
   ExternalLink, 
   MapPin, 
   Tag, 
-  Pencil 
+  Pencil,
+  Star 
 } from "lucide-react";
 import { useUserStore, Order } from "@/lib/userStore";
 import { useCatalogStore, normalizeCategory, CatalogProduct } from "@/lib/catalogStore";
@@ -1862,21 +1863,25 @@ export default function ProfilePage() {
                         }`}
                       >
                         <div>
-                          <div className="flex items-center justify-between gap-1.5 mb-1.5">
-                            <span className="font-bold text-gray-900 text-xs truncate flex items-center gap-1.5">
+                          <div className="flex items-center justify-between gap-2 mb-1.5">
+                            <div className="flex items-center gap-1.5 min-w-0 flex-1">
                               <UserIcon className="w-3.5 h-3.5 text-gray-400 shrink-0" />
-                              <span className="truncate">{addr.recipient || user.name}</span>
-                            </span>
+                              <span className="font-bold text-gray-900 text-xs truncate">
+                                {addr.recipient || user.name}
+                              </span>
+                            </div>
                             {addr.isDefault ? (
-                              <span className="inline-flex items-center gap-1 text-[9px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200 shrink-0">
-                                <Check className="w-2.5 h-2.5" /> Predeterminada
+                              <span className="inline-flex items-center gap-1 text-[9.5px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200 shrink-0">
+                                <Check className="w-2.5 h-2.5 text-emerald-700" /> Predeterminada
                               </span>
                             ) : (
                               <button 
                                 onClick={() => setDefaultAddress(addr.id)}
-                                className="text-[10px] font-semibold text-gray-500 hover:text-blue-600 hover:underline cursor-pointer shrink-0"
+                                className="inline-flex items-center gap-1 text-[9.5px] font-semibold px-2 py-0.5 rounded-full bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white border border-blue-200 hover:border-blue-600 transition-all cursor-pointer shadow-2xs shrink-0 group"
+                                title="Establecer como dirección predeterminada"
                               >
-                                Establecer como predeterminada
+                                <Star className="w-2.5 h-2.5 text-blue-500 group-hover:text-white transition-colors" />
+                                <span>Hacer predeterminada</span>
                               </button>
                             )}
                           </div>
@@ -1887,10 +1892,12 @@ export default function ProfilePage() {
                           <p className="text-gray-400 text-[10px] font-medium mt-0.5">{addr.country}</p>
                         </div>
 
-                        <div className="pt-2.5 mt-2.5 border-t border-gray-100 flex items-center justify-between">
-                          <span className="text-[10px] text-gray-400">
-                            {addr.isDefault ? "Usada por defecto en compras" : "Dirección secundaria"}
-                          </span>
+                        <div className={`pt-2.5 mt-2.5 border-t border-gray-100 flex items-center ${addr.isDefault ? 'justify-end' : 'justify-between'}`}>
+                          {!addr.isDefault && (
+                            <span className="text-[10px] text-gray-400 font-medium">
+                              Dirección secundaria
+                            </span>
+                          )}
                           <button 
                             onClick={() => removeAddress(addr.id)}
                             className="text-[11px] text-red-500 hover:text-red-700 hover:underline flex items-center gap-1 cursor-pointer"
