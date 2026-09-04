@@ -187,6 +187,7 @@ export function CartDrawer() {
 
   // Quick Address Inline Form
   const [isEditingAddress, setIsEditingAddress] = useState(false);
+  const [addrRecipient, setAddrRecipient] = useState("");
   const [addrStreet, setAddrStreet] = useState("");
   const [addrCity, setAddrCity] = useState("");
   const [addrPostal, setAddrPostal] = useState("");
@@ -205,21 +206,27 @@ export function CartDrawer() {
   // Initialize defaults from userStore cleanly scoped to the active account
   useEffect(() => {
     setSelectedCardId(cards && cards.length > 0 ? cards[0].id : "");
-    const activeAddr = address || (addresses && addresses.length > 0 ? addresses[0] : null);
+    const defaultAddr = addresses?.find(a => a.isDefault) || (addresses && addresses.length > 0 ? addresses[0] : null);
+    const activeAddr = address || defaultAddr;
     if (activeAddr) {
+      setAddrRecipient(activeAddr.recipient || user?.name || "");
       setAddrStreet(activeAddr.street);
       setAddrCity(activeAddr.city);
       setAddrPostal(activeAddr.postalCode);
       setAddrState(activeAddr.state || "");
       setAddrCountry(activeAddr.country || "España");
+      if (!address && defaultAddr) {
+        setAddress(defaultAddr);
+      }
     } else {
+      setAddrRecipient(user?.name || "");
       setAddrStreet("");
       setAddrCity("");
       setAddrPostal("");
       setAddrState("");
       setAddrCountry("España");
     }
-  }, [user?.id, cards, address, addresses]);
+  }, [user?.id, user?.name, cards, address, addresses, setAddress]);
 
   // Reset wallet hover if wallet closes
   useEffect(() => {
@@ -280,6 +287,7 @@ export function CartDrawer() {
       return;
     }
     await addAddress({
+      recipient: addrRecipient.trim() || user?.name || "Destinatario",
       street: addrStreet.trim(),
       city: addrCity.trim(),
       state: addrState.trim(),
@@ -287,6 +295,7 @@ export function CartDrawer() {
       country: addrCountry.trim(),
       isDefault: addresses.length === 0
     });
+    setAddrRecipient("");
     setAddrStreet("");
     setAddrCity("");
     setAddrPostal("");
@@ -301,6 +310,10 @@ export function CartDrawer() {
       router.push("/auth/login");
       return;
     }
+    const defaultAddr = addresses.find(a => a.isDefault) || addresses[0] || null;
+    if (defaultAddr) {
+      setAddress(defaultAddr);
+    }
     setStep("payment");
   };
 
@@ -310,7 +323,8 @@ export function CartDrawer() {
       return;
     }
     if (!address && addresses && addresses.length > 0) {
-      setAddress(addresses[0]);
+      const defaultAddr = addresses.find(a => a.isDefault) || addresses[0];
+      setAddress(defaultAddr);
     }
     setIsProcessing(true);
 
@@ -912,6 +926,7 @@ export function CartDrawer() {
                             <button 
                               onClick={() => {
                                 setIsEditingAddress(true);
+                                setAddrRecipient(user?.name || "");
                                 setAddrStreet("");
                                 setAddrCity("");
                                 setAddrPostal("");
@@ -933,8 +948,28 @@ export function CartDrawer() {
                           <form onSubmit={handleSaveAddress} className="space-y-3 pt-1">
                             <div className="flex items-center justify-between pb-1 border-b border-gray-100">
                               <span className="text-xs font-bold text-gray-800">
-                                Añadir dirección ({addresses.length + 1} de 4)
+                                Nueva Dirección de Entrega
                               </span>
+                              <button 
+                                type="button" 
+                                onClick={() => setIsEditingAddress(false)}
+                                className="text-xs text-gray-500 hover:text-gray-800 cursor-pointer"
+                              >
+                                Cancelar
+                              </button>
+                            </div>
+                            <div>
+                              <label className="block text-[11px] font-semibold text-gray-700 mb-1">
+                                ¿Quién recibe? (Nombre y apellidos)
+                              </label>
+                              <input 
+                                type="text" 
+                                value={addrRecipient} 
+                                onChange={e => setAddrRecipient(e.target.value)} 
+                                placeholder={user?.name || "Ej: Juan Pérez / Nombre del destinatario"}
+                                className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 text-xs outline-none focus:ring-1 focus:ring-blue-500"
+                                required
+                              />
                             </div>
                             <div>
                               <label className="block text-[11px] font-semibold text-gray-700 mb-1">Calle y número</label>
@@ -1014,7 +1049,7 @@ export function CartDrawer() {
                         ) : addresses.length > 0 ? (
                           <div className="space-y-2.5">
                             <p className="text-[11px] text-gray-500">
-                              Selecciona la dirección para este envío o añade hasta 4 direcciones:
+                              Selecciona la dirección para este envío:
                             </p>
                             <div className="space-y-2">
                               {addresses.map((addr) => {
@@ -1042,14 +1077,19 @@ export function CartDrawer() {
                                       </div>
                                       <div className="min-w-0">
                                         <div className="flex items-center gap-2">
-                                          <p className="font-bold text-xs text-gray-900 truncate">{addr.street}</p>
+                                          <span className="font-bold text-xs text-gray-900 truncate">
+                                            {addr.recipient || user?.name || "Destinatario"}
+                                          </span>
                                           {addr.isDefault && (
-                                            <span className="text-[9px] font-bold uppercase tracking-wider text-emerald-700 bg-emerald-100 px-1.5 py-0.2 rounded border border-emerald-200 shrink-0">
+                                            <span className="text-[9px] font-bold uppercase tracking-wider text-emerald-700 bg-emerald-100 px-1.5 py-0.5 rounded border border-emerald-200 shrink-0">
                                               Predeterminada
                                             </span>
                                           )}
                                         </div>
-                                        <p className="text-xs text-gray-500 truncate mt-0.5">
+                                        <p className="text-xs text-gray-700 font-medium truncate mt-0.5">
+                                          {addr.street}
+                                        </p>
+                                        <p className="text-[11px] text-gray-500 truncate mt-0.5">
                                           {addr.city}{addr.state ? `, ${addr.state}` : ""}, {addr.postalCode} • {addr.country}
                                         </p>
                                       </div>
@@ -1068,8 +1108,18 @@ export function CartDrawer() {
                         ) : address ? (
                           <div className="p-4 rounded-2xl bg-gray-50 border border-gray-100 flex items-center justify-between">
                             <div>
-                              <p className="font-bold text-xs text-gray-900">{address.street}</p>
-                              <p className="text-xs text-gray-500 mt-0.5">
+                              <div className="flex items-center gap-2">
+                                <p className="font-bold text-xs text-gray-900">
+                                  {address.recipient || user?.name || "Destinatario"}
+                                </p>
+                                {address.isDefault && (
+                                  <span className="text-[9px] font-bold uppercase tracking-wider text-emerald-700 bg-emerald-100 px-1.5 py-0.5 rounded border border-emerald-200 shrink-0">
+                                    Predeterminada
+                                  </span>
+                                )}
+                              </div>
+                              <p className="text-xs text-gray-700 font-medium mt-0.5">{address.street}</p>
+                              <p className="text-[11px] text-gray-500 mt-0.5">
                                 {address.city}{address.state ? `, ${address.state}` : ""}, {address.postalCode} • {address.country}
                               </p>
                             </div>
@@ -1083,6 +1133,7 @@ export function CartDrawer() {
                             <button 
                               onClick={() => {
                                 setIsEditingAddress(true);
+                                setAddrRecipient(user?.name || "");
                                 setAddrStreet("");
                                 setAddrCity("");
                                 setAddrPostal("");

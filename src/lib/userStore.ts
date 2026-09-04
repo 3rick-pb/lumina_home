@@ -29,6 +29,7 @@ export interface PaymentCard {
 
 export interface ShippingAddress {
   id: string;
+  recipient: string;
   street: string;
   city: string;
   state: string;
@@ -104,6 +105,7 @@ const fetchUserDataFromDatabase = async (userId: string) => {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         addresses = dbAddrs.map((dbAddr: any, index: number) => ({
           id: dbAddr.id || `addr-${index}`,
+          recipient: dbAddr.recipient || dbAddr.receiver_name || '',
           street: dbAddr.street || '',
           city: dbAddr.city || '',
           state: dbAddr.state || '',
@@ -151,12 +153,14 @@ const fetchUserDataFromDatabase = async (userId: string) => {
         addresses = currentUser.user_metadata.addresses.slice(0, 4).map((a: any, idx: number) => ({
           ...a,
           id: a.id || `addr-meta-${idx}`,
+          recipient: a.recipient || currentUser?.user_metadata?.name || '',
           isDefault: a.isDefault !== undefined ? a.isDefault : idx === 0,
         }));
       } else if (currentUser?.user_metadata?.address) {
         const single = currentUser.user_metadata.address;
         addresses = [{
           id: 'addr-default',
+          recipient: single.recipient || currentUser?.user_metadata?.name || '',
           street: single.street || '',
           city: single.city || '',
           state: single.state || '',
@@ -447,11 +451,13 @@ export const useUserStore = create<UserState>((set, get) => ({
     const current = get().addresses;
     if (current.length >= 4) return false;
 
+    const user = get().user;
     const newId = `addr_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
     const shouldBeDefault = current.length === 0 || !!addrData.isDefault;
 
     const newAddr: ShippingAddress = {
       ...addrData,
+      recipient: addrData.recipient?.trim() || user?.name || 'Destinatario',
       id: newId,
       isDefault: shouldBeDefault,
     };
@@ -466,12 +472,12 @@ export const useUserStore = create<UserState>((set, get) => ({
     const activeAddr = nextAddresses.find(a => a.isDefault) || nextAddresses[0] || null;
     set({ addresses: nextAddresses, address: activeAddr });
 
-    const user = get().user;
     if (user) {
       try {
         await supabase.from('addresses').insert({
           id: newAddr.id,
           user_id: user.id,
+          recipient: newAddr.recipient,
           street: newAddr.street,
           city: newAddr.city,
           state: newAddr.state,

@@ -84,6 +84,7 @@ export default function ProfilePage() {
 
   // Address Form State
   const [showAddressForm, setShowAddressForm] = useState(false);
+  const [recipient, setRecipient] = useState("");
   const [street, setStreet] = useState("");
   const [city, setCity] = useState("");
   const [stateProv, setStateProv] = useState("");
@@ -331,6 +332,7 @@ export default function ProfilePage() {
       return;
     }
     await addAddress({
+      recipient: recipient.trim() || user?.name || "Destinatario",
       street: street.trim(),
       city: city.trim(),
       state: stateProv.trim(),
@@ -338,6 +340,7 @@ export default function ProfilePage() {
       country: country.trim(),
       isDefault: addresses.length === 0,
     });
+    setRecipient("");
     setStreet("");
     setCity("");
     setStateProv("");
@@ -1860,19 +1863,20 @@ export default function ProfilePage() {
                       >
                         <div>
                           <div className="flex items-center justify-between gap-1.5 mb-1.5">
-                            <span className="font-bold text-gray-900 text-xs truncate">
-                              {user.name}
+                            <span className="font-bold text-gray-900 text-xs truncate flex items-center gap-1.5">
+                              <UserIcon className="w-3.5 h-3.5 text-gray-400 shrink-0" />
+                              <span className="truncate">{addr.recipient || user.name}</span>
                             </span>
                             {addr.isDefault ? (
-                              <span className="inline-flex items-center gap-1 text-[9px] font-bold px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800 border border-emerald-200 shrink-0">
-                                <Check className="w-2.5 h-2.5" /> Principal
+                              <span className="inline-flex items-center gap-1 text-[9px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200 shrink-0">
+                                <Check className="w-2.5 h-2.5" /> Predeterminada
                               </span>
                             ) : (
                               <button 
                                 onClick={() => setDefaultAddress(addr.id)}
-                                className="text-[10px] font-semibold text-gray-500 hover:text-blue-600 hover:underline cursor-pointer"
+                                className="text-[10px] font-semibold text-gray-500 hover:text-blue-600 hover:underline cursor-pointer shrink-0"
                               >
-                                Hacer principal
+                                Establecer como predeterminada
                               </button>
                             )}
                           </div>
@@ -1883,7 +1887,10 @@ export default function ProfilePage() {
                           <p className="text-gray-400 text-[10px] font-medium mt-0.5">{addr.country}</p>
                         </div>
 
-                        <div className="pt-2.5 mt-2.5 border-t border-gray-100 flex items-center justify-end">
+                        <div className="pt-2.5 mt-2.5 border-t border-gray-100 flex items-center justify-between">
+                          <span className="text-[10px] text-gray-400">
+                            {addr.isDefault ? "Usada por defecto en compras" : "Dirección secundaria"}
+                          </span>
                           <button 
                             onClick={() => removeAddress(addr.id)}
                             className="text-[11px] text-red-500 hover:text-red-700 hover:underline flex items-center gap-1 cursor-pointer"
@@ -1904,7 +1911,10 @@ export default function ProfilePage() {
                     </p>
                     {!showAddressForm && (
                       <button 
-                        onClick={() => setShowAddressForm(true)}
+                        onClick={() => {
+                          setRecipient(user.name);
+                          setShowAddressForm(true);
+                        }}
                         className="px-4 py-2 bg-gray-900 text-white rounded-xl text-xs font-semibold hover:bg-gray-800 transition-colors cursor-pointer"
                       >
                         + Agregar Primera Dirección
@@ -1914,12 +1924,12 @@ export default function ProfilePage() {
                 )}
               </div>
 
-              <div className="pt-4 border-t border-gray-100">
-                {showAddressForm ? (
-                  <form onSubmit={handleAddressSubmit} className="space-y-3 bg-gray-50/60 p-4 rounded-2xl border border-gray-100">
+              {showAddressForm && (
+                <div className="pt-4 border-t border-gray-100">
+                  <form onSubmit={handleAddressSubmit} className="space-y-3 bg-gray-50/70 p-4 rounded-2xl border border-gray-100">
                     <div className="flex items-center justify-between pb-1 border-b border-gray-200">
                       <span className="text-xs font-bold text-gray-900">
-                        Nueva Dirección ({addresses.length + 1} de 4)
+                        Nueva Dirección de Entrega
                       </span>
                       <button 
                         type="button" 
@@ -1930,6 +1940,19 @@ export default function ProfilePage() {
                       </button>
                     </div>
                     <div>
+                      <label className="block text-[11px] font-semibold text-gray-700 mb-1">
+                        ¿Quién recibe? (Nombre y apellidos)
+                      </label>
+                      <input 
+                        type="text" 
+                        required 
+                        value={recipient} 
+                        onChange={e => setRecipient(e.target.value)} 
+                        placeholder={user.name} 
+                        className="w-full px-3 py-2 rounded-xl border border-gray-200 text-xs outline-none bg-white focus:ring-1 focus:ring-blue-500"
+                      />
+                    </div>
+                    <div>
                       <label className="block text-[11px] font-semibold text-gray-700 mb-1">Calle y Número</label>
                       <input 
                         type="text" 
@@ -1937,7 +1960,7 @@ export default function ProfilePage() {
                         value={street} 
                         onChange={e => setStreet(e.target.value)} 
                         placeholder="Av. Diagonal 450, 3ro 2da" 
-                        className="w-full px-3 py-2 rounded-xl border border-gray-200 text-xs outline-none bg-white"
+                        className="w-full px-3 py-2 rounded-xl border border-gray-200 text-xs outline-none bg-white focus:ring-1 focus:ring-blue-500"
                       />
                     </div>
                     <div className="grid grid-cols-2 gap-2">
@@ -1949,7 +1972,7 @@ export default function ProfilePage() {
                           value={city} 
                           onChange={e => setCity(e.target.value)} 
                           placeholder="Barcelona" 
-                          className="w-full px-3 py-2 rounded-xl border border-gray-200 text-xs outline-none bg-white"
+                          className="w-full px-3 py-2 rounded-xl border border-gray-200 text-xs outline-none bg-white focus:ring-1 focus:ring-blue-500"
                         />
                       </div>
                       <div>
@@ -1960,7 +1983,7 @@ export default function ProfilePage() {
                           value={postalCode} 
                           onChange={e => setPostalCode(e.target.value)} 
                           placeholder="08006" 
-                          className="w-full px-3 py-2 rounded-xl border border-gray-200 text-xs outline-none bg-white"
+                          className="w-full px-3 py-2 rounded-xl border border-gray-200 text-xs outline-none bg-white focus:ring-1 focus:ring-blue-500"
                         />
                       </div>
                     </div>
@@ -1973,7 +1996,7 @@ export default function ProfilePage() {
                           value={stateProv} 
                           onChange={e => setStateProv(e.target.value)} 
                           placeholder="Cataluña" 
-                          className="w-full px-3 py-2 rounded-xl border border-gray-200 text-xs outline-none bg-white"
+                          className="w-full px-3 py-2 rounded-xl border border-gray-200 text-xs outline-none bg-white focus:ring-1 focus:ring-blue-500"
                         />
                       </div>
                       <div>
@@ -1984,7 +2007,7 @@ export default function ProfilePage() {
                           value={country} 
                           onChange={e => setCountry(e.target.value)} 
                           placeholder="España"
-                          className="w-full px-3 py-2 rounded-xl border border-gray-200 text-xs outline-none bg-white"
+                          className="w-full px-3 py-2 rounded-xl border border-gray-200 text-xs outline-none bg-white focus:ring-1 focus:ring-blue-500"
                         />
                       </div>
                     </div>
@@ -1993,19 +2016,8 @@ export default function ProfilePage() {
                       <button type="submit" className="px-4 py-1.5 text-xs font-semibold bg-gray-900 text-white rounded-xl hover:bg-gray-800 cursor-pointer">Guardar Dirección</button>
                     </div>
                   </form>
-                ) : addresses.length < 4 ? (
-                  <button 
-                    onClick={() => setShowAddressForm(true)}
-                    className="w-full py-2.5 bg-gray-100 text-gray-800 rounded-xl text-xs font-semibold hover:bg-gray-200 transition-colors cursor-pointer"
-                  >
-                    + Agregar Nueva Dirección ({addresses.length}/4)
-                  </button>
-                ) : (
-                  <div className="text-center py-2 text-xs font-semibold text-gray-400">
-                    Has completado el cupo máximo de 4 direcciones.
-                  </div>
-                )}
-              </div>
+                </div>
+              )}
             </div>
 
           </div>
