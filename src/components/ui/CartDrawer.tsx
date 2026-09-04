@@ -1106,8 +1106,8 @@ export function CartDrawer() {
                               {/* Background Base of Wallet Pocket with bottom-only rounded clipPath */}
                               <div 
                                 onClick={() => setIsWalletOpen(!isWalletOpen)}
-                                className="relative w-full h-[155px] rounded-3xl bg-gradient-to-b from-[#080e1c] via-[#0b1426] to-[#060a13] border border-slate-800/80 shadow-[0_18px_40px_rgba(6,10,19,0.5)] overflow-visible cursor-pointer"
-                                style={{ clipPath: "inset(-350px -20px 0px -20px round 0px 0px 1.5rem 1.5rem)" }}
+                                className="relative w-full h-[155px] rounded-3xl bg-gradient-to-b from-[#080e1c] via-[#0b1426] to-[#060a13] border border-slate-800/50 shadow-[0_12px_28px_-6px_rgba(15,23,42,0.18),0_4px_12px_-2px_rgba(15,23,42,0.08)] overflow-visible cursor-pointer"
+                                style={{ clipPath: "inset(-350px -12px 0px -12px round 0px 0px 1.5rem 1.5rem)" }}
                               >
                                 
                                 {/* Inner Shadow & Leather texture depth */}
@@ -1249,7 +1249,7 @@ export function CartDrawer() {
                                     e.stopPropagation();
                                     setIsWalletOpen(!isWalletOpen);
                                   }}
-                                  className="absolute bottom-0 inset-x-0 h-[115px] rounded-b-3xl rounded-t-2xl bg-gradient-to-b from-[#0e172a]/95 via-[#0b1324]/98 to-[#060a12] border-t border-sky-400/30 border-x border-b border-slate-800 shadow-[0_-10px_20px_rgba(0,0,0,0.35),0_15px_30px_rgba(5,9,18,0.5)] backdrop-blur-xl p-3.5 flex flex-col justify-between cursor-pointer z-30 transition-all hover:border-sky-400/50 active:scale-[0.99]"
+                                  className="absolute bottom-0 inset-x-0 h-[115px] rounded-b-3xl rounded-t-2xl bg-gradient-to-b from-[#0e172a]/95 via-[#0b1324]/98 to-[#060a12] border-t border-sky-400/30 border-x border-b border-slate-800/40 shadow-[0_-4px_12px_-2px_rgba(0,0,0,0.18),0_8px_20px_-4px_rgba(15,23,42,0.22)] backdrop-blur-xl p-3.5 flex flex-col justify-between cursor-pointer z-30 transition-all hover:border-sky-400/50 active:scale-[0.99]"
                                 >
                                   {/* Top Pocket Arc Lip & Specular Highlight */}
                                   <div className="absolute inset-x-6 top-0 h-[1.5px] bg-gradient-to-r from-transparent via-sky-300 to-transparent opacity-80" />
@@ -1266,7 +1266,7 @@ export function CartDrawer() {
                                       </span>
                                     </div>
                                     <span className="font-sans text-[10px] font-semibold text-sky-300/90 bg-sky-950/70 px-2.5 py-0.5 rounded-full border border-sky-800/60 shadow-2xs">
-                                      {isWalletOpen ? "Clic para cerrar wallet" : "Clic para abrir wallet"}
+                                      {isWalletOpen ? "Click para cerrar wallet" : "Click para abrir wallet"}
                                     </span>
                                   </div>
 
@@ -1437,23 +1437,33 @@ export function CartDrawer() {
                       <button 
                         onClick={handleConfirmOrder}
                         disabled={isProcessing}
-                        className="relative overflow-hidden w-full h-14 rounded-2xl font-bold text-white text-sm sm:text-base flex items-center justify-center gap-2.5 transition-all duration-300
-                        bg-gradient-to-r from-[#1e40af] via-[#2563eb] to-[#1d4ed8]
-                        shadow-[0_12px_36px_rgba(37,99,235,0.35),0_2px_8px_rgba(0,0,0,0.1)]
-                        border border-white/30
-                        hover:shadow-[0_16px_44px_rgba(37,99,235,0.45)] hover:scale-[1.01] active:scale-[0.99]
-                        before:absolute before:inset-0 before:bg-gradient-to-b before:from-white/35 before:via-white/10 before:to-transparent before:pointer-events-none before:rounded-2xl
-                        after:absolute after:inset-x-0 after:top-0 after:h-[1px] after:bg-white/60 cursor-pointer disabled:opacity-50"
+                        className="group relative overflow-hidden w-full h-14 rounded-2xl font-bold text-white text-sm sm:text-base flex items-center justify-center gap-2.5 transition-all duration-300
+                        bg-emerald-600/80 hover:bg-emerald-600/90 active:scale-[0.99]
+                        backdrop-blur-xl
+                        shadow-[0_12px_28px_-4px_rgba(16,185,129,0.35),0_4px_12px_rgba(0,0,0,0.06),inset_0_1.5px_2px_rgba(255,255,255,0.45),inset_0_-1.5px_2px_rgba(0,0,0,0.15)]
+                        border border-white/40 hover:border-white/60
+                        hover:shadow-[0_16px_36px_-2px_rgba(16,185,129,0.45),inset_0_2px_3px_rgba(255,255,255,0.6)]
+                        cursor-pointer disabled:opacity-50"
                       >
+                        {/* Specular curved liquid glass rim */}
+                        <div className="absolute inset-x-4 top-0 h-[1.5px] bg-gradient-to-r from-transparent via-white/90 to-transparent opacity-95 pointer-events-none" />
+                        
+                        {/* Caustic glass reflection glint */}
+                        <div className="absolute top-1.5 left-5 w-8 h-1 bg-white/80 rounded-full blur-[0.4px] pointer-events-none" />
+                        <div className="absolute inset-0 bg-gradient-to-b from-white/20 via-transparent to-black/10 pointer-events-none" />
+
                         {isProcessing ? (
                           <span className="relative z-10 flex items-center gap-2">
-                            <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                            <span className="w-5 h-5 border-2 border-white/40 border-t-white rounded-full animate-spin" />
                             <span>Procesando pago seguro...</span>
                           </span>
                         ) : (
                           <>
-                            <Lock className="relative z-10 w-4 h-4" />
-                            <span className="relative z-10 tracking-wide">Confirmar Pedido (${finalTotal.toFixed(2)})</span>
+                            <Lock className="relative z-10 w-4 h-4 text-emerald-100" />
+                            <span className="relative z-10 tracking-wide font-sans font-bold">
+                              Confirmar Pedido (${finalTotal.toFixed(2)})
+                            </span>
+                            <ArrowRight className="relative z-10 w-4 h-4 text-emerald-100 group-hover:translate-x-1 transition-transform" />
                           </>
                         )}
                       </button>
