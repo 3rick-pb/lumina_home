@@ -30,6 +30,65 @@ const polishRoadName = (name?: string | null) => {
   return n;
 };
 
+// Provincial / Regional Metropolitan Hubs (seeing from higher level "desde arriba en el mapa")
+const ECUADOR_METROPOLITAN_CITIES: Record<string, string> = {
+  'pichincha': 'Quito',
+  'guayas': 'Guayaquil',
+  'azuay': 'Cuenca',
+  'tungurahua': 'Ambato',
+  'manabi': 'Portoviejo',
+  'manabí': 'Portoviejo',
+  'el oro': 'Machala',
+  'loja': 'Loja',
+  'imbabura': 'Ibarra',
+  'chimborazo': 'Riobamba',
+  'santo domingo de los tsachilas': 'Santo Domingo',
+  'santo domingo de los tsáchilas': 'Santo Domingo',
+  'esmeraldas': 'Esmeraldas',
+  'los rios': 'Babahoyo',
+  'los ríos': 'Babahoyo',
+  'santa elena': 'Santa Elena',
+  'cotopaxi': 'Latacunga',
+  'carchi': 'Tulcán',
+  'cañar': 'Azogues',
+  'bolivar': 'Guaranda',
+  'bolívar': 'Guaranda',
+  'pastaza': 'Puyo',
+  'morona santiago': 'Macas',
+  'napo': 'Tena',
+  'zamora chinchipe': 'Zamora',
+  'orellana': 'El Coca',
+  'sucumbios': 'Lago Agrio',
+  'sucumbíos': 'Lago Agrio',
+  'galapagos': 'Galápagos',
+  'galápagos': 'Galápagos'
+};
+
+function resolveMajorCity(
+  rawCity?: string,
+  rawCounty?: string,
+  rawMunicipality?: string,
+  bdcCity?: string,
+  stateName?: string,
+  countryName?: string
+): string {
+  const normState = (stateName || '').toLowerCase().trim();
+  const isEcuador = !countryName || countryName.toLowerCase().includes('ecuador');
+
+  // In Ecuador and courier logistics, looking "más desde arriba en el mapa"
+  // always maps provincial / metropolitan areas to their primary metropolis (e.g. Pichincha -> Quito)
+  if (isEcuador && ECUADOR_METROPOLITAN_CITIES[normState]) {
+    return ECUADOR_METROPOLITAN_CITIES[normState];
+  }
+
+  const cCity = cleanAdmin(rawCity);
+  const cCounty = cleanAdmin(rawCounty);
+  const cMun = cleanAdmin(rawMunicipality);
+  const cBdc = cleanAdmin(bdcCity);
+
+  return cCity || cCounty || cMun || cBdc || '';
+}
+
 // 1. Topological Intersecting Street Discovery via OSM Junction Nodes
 async function getTopologicalCrossStreet(osmId: string | number, userLat: number, userLon: number, primaryRoadName: string) {
   try {
@@ -169,6 +228,11 @@ export async function POST(request: Request) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const off2Addr = (off2 && (off2 as any).address) || {};
 
+    // State / Province & Country
+    const state = addr.state || addr.province || addr.region || (bdc && bdc.principalSubdivision) || '';
+    const postalCode = addr.postcode || (bdc && bdc.postcode) || '';
+    const country = addr.country || (bdc && bdc.countryName) || 'Ecuador';
+
     // 1. Primary Road & House Number
     const rawPrimary = addr.road || addr.pedestrian || addr.footway || addr.path || addr.street || (bdc && bdc.locality) || '';
     const primaryRoad = polishRoadName(rawPrimary);
@@ -221,21 +285,17 @@ export async function POST(request: Request) {
       street += ` y ${crossRoad}`;
     }
 
-    // 3. Hierarchical City and Sub-locality / Parish (e.g. "Machachi - Uyumbicho" or "Quito - Guayllabamba")
-    const rawCounty = cleanAdmin(addr.county);
-    const rawCity = cleanAdmin(addr.city);
-    const rawTown = cleanAdmin(addr.town);
-    const rawMunicipality = cleanAdmin(addr.municipality);
+    // 3. Hierarchical City and Sub-locality / Parish (e.g. "Quito - Uyumbicho" or "Quito - Guayllabamba")
     const bdcCity = cleanAdmin(bdc && (bdc.city || bdc.principalSubdivision));
 
-    // Determine principal city/canton
-    const mainCity = rawCity || rawCounty || rawMunicipality || bdcCity || '';
+    // Determine principal city/canton looking "más desde arriba en el mapa"
+    const mainCity = resolveMajorCity(addr.city, addr.county, addr.municipality, bdcCity, state, country);
 
     // Determine sub-locality, parish, sector or neighbourhood
     let subLocality = (
-      addr.village ||
       landmarkPlace ||
-      (rawTown && rawTown.toLowerCase() !== mainCity.toLowerCase() ? rawTown : '') ||
+      addr.village ||
+      (addr.town && cleanAdmin(addr.town).toLowerCase() !== mainCity.toLowerCase() ? cleanAdmin(addr.town) : '') ||
       addr.suburb ||
       addr.neighbourhood ||
       addr.quarter ||
@@ -249,7 +309,7 @@ export async function POST(request: Request) {
       subLocality = landmarkPlace;
     }
 
-    // Format hierarchical city name
+    // Format hierarchical city name: e.g. "Quito - Uyumbicho"
     let finalCity = mainCity;
     if (
       mainCity &&
@@ -262,11 +322,6 @@ export async function POST(request: Request) {
     } else if (!mainCity && subLocality) {
       finalCity = subLocality;
     }
-
-    // 4. State / Province, Postal Code, Country
-    const state = addr.state || addr.province || addr.region || (bdc && bdc.principalSubdivision) || '';
-    const postalCode = addr.postcode || (bdc && bdc.postcode) || '';
-    const country = addr.country || (bdc && bdc.countryName) || 'Ecuador';
 
     return NextResponse.json({
       success: true,
