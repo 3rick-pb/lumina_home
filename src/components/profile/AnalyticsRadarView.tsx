@@ -14,7 +14,8 @@ import {
   Zap, 
   Smartphone, 
   Monitor, 
-  Tablet 
+  Tablet,
+  RotateCcw
 } from "lucide-react";
 import { User, ShippingAddress, Order } from "@/lib/userStore";
 import { CatalogProduct } from "@/lib/catalogStore";
@@ -35,7 +36,7 @@ export interface ConnectedClient {
   device: "Desktop" | "Móvil" | "Tablet";
   hasCart: boolean;
   cartItemsCount?: number;
-  region: "europe" | "america" | "global";
+  region: "norte" | "centro" | "sur" | "costa";
   isRealUser?: boolean;
 }
 
@@ -57,32 +58,34 @@ export default function AnalyticsRadarView({
   // Interactive HUD & Filter States
   const [hoveredClient, setHoveredClient] = useState<ConnectedClient | null>(null);
   const [selectedClient, setSelectedClient] = useState<ConnectedClient | null>(null);
-  const [filterType, setFilterType] = useState<"all" | "cart" | "vip" | "europe" | "america">("all");
+  const [filterType, setFilterType] = useState<"all" | "cart" | "vip" | "norte" | "costa">("all");
   const [searchQuery, setSearchQuery] = useState("");
-  const [livePingsCount, setLivePingsCount] = useState(24);
+  const [livePingsCount, setLivePingsCount] = useState(28);
+  const [is3DTilted, setIs3DTilted] = useState(true);
 
   // Periodic heartbeat simulation for live radar feeling
   useEffect(() => {
     const interval = setInterval(() => {
       setLivePingsCount(prev => {
         const delta = Math.random() > 0.5 ? 1 : -1;
-        return Math.max(18, Math.min(32, prev + delta));
+        return Math.max(22, Math.min(36, prev + delta));
       });
     }, 8000);
     return () => clearInterval(interval);
   }, []);
 
   // Connected clients dataset built dynamically from registered addresses + realistic simulated sessions
+  // Distributed geographically over the 3D relief terrain map!
   const connectedClients: ConnectedClient[] = useMemo(() => {
     const baseClients: ConnectedClient[] = [
       {
         id: "cli-1",
         name: "Valeria Montejo",
         email: "valeria.m@lumina.com",
-        city: "Madrid",
+        city: "Distrito Capital (Centro)",
         country: "España",
-        x: 48.5,
-        y: 39.2,
+        x: 51,
+        y: 45,
         frequency: "Semanal (VIP)",
         purchasesCount: 9,
         totalSpent: 1840,
@@ -91,16 +94,16 @@ export default function AnalyticsRadarView({
         device: "Desktop",
         hasCart: true,
         cartItemsCount: 2,
-        region: "europe"
+        region: "centro"
       },
       {
         id: "cli-2",
         name: "Carlos De la Hoz",
         email: "carlos.dlh@gmail.com",
-        city: "Barcelona",
+        city: "Cuenca Najafgarh & Bahía",
         country: "España",
-        x: 50.8,
-        y: 38.0,
+        x: 74,
+        y: 31,
         frequency: "Quincenal",
         purchasesCount: 5,
         totalSpent: 920,
@@ -109,16 +112,16 @@ export default function AnalyticsRadarView({
         device: "Móvil",
         hasCart: true,
         cartItemsCount: 1,
-        region: "europe"
+        region: "costa"
       },
       {
         id: "cli-3",
         name: "Elena Rostova",
         email: "elena.design@studio.de",
-        city: "Berlín",
+        city: "Cumbres Arala Norte",
         country: "Alemania",
-        x: 52.4,
-        y: 31.8,
+        x: 24,
+        y: 39,
         frequency: "Mensual",
         purchasesCount: 4,
         totalSpent: 1350,
@@ -126,16 +129,16 @@ export default function AnalyticsRadarView({
         intentScore: 79,
         device: "Desktop",
         hasCart: false,
-        region: "europe"
+        region: "norte"
       },
       {
         id: "cli-4",
         name: "Mateo Bianchi",
         email: "mateo.b@milano.it",
-        city: "Milán",
+        city: "Ribera del Río Sahibi",
         country: "Italia",
-        x: 51.6,
-        y: 36.4,
+        x: 54,
+        y: 62,
         frequency: "Semanal (VIP)",
         purchasesCount: 12,
         totalSpent: 2890,
@@ -144,16 +147,16 @@ export default function AnalyticsRadarView({
         device: "Tablet",
         hasCart: true,
         cartItemsCount: 3,
-        region: "europe"
+        region: "centro"
       },
       {
         id: "cli-5",
         name: "Sophie Laurent",
         email: "sophie.l@atelier.fr",
-        city: "París",
+        city: "Meseta Aravalli Sur",
         country: "Francia",
-        x: 49.2,
-        y: 34.1,
+        x: 26,
+        y: 71,
         frequency: "Ocasional",
         purchasesCount: 2,
         totalSpent: 430,
@@ -161,16 +164,16 @@ export default function AnalyticsRadarView({
         intentScore: 72,
         device: "Móvil",
         hasCart: false,
-        region: "europe"
+        region: "sur"
       },
       {
         id: "cli-6",
         name: "Oliver Smith",
         email: "oliver.s@archit.co.uk",
-        city: "Londres",
+        city: "Región Gurgaon Alto",
         country: "Reino Unido",
-        x: 47.8,
-        y: 31.2,
+        x: 22,
+        y: 26,
         frequency: "Quincenal",
         purchasesCount: 7,
         totalSpent: 1680,
@@ -179,16 +182,16 @@ export default function AnalyticsRadarView({
         device: "Desktop",
         hasCart: true,
         cartItemsCount: 1,
-        region: "europe"
+        region: "norte"
       },
       {
         id: "cli-7",
         name: "Alejandro Morales",
         email: "alejandro.m@valencia.es",
-        city: "Valencia",
+        city: "Delta Yamuna",
         country: "España",
-        x: 49.6,
-        y: 40.5,
+        x: 83,
+        y: 28,
         frequency: "Mensual",
         purchasesCount: 3,
         totalSpent: 620,
@@ -196,16 +199,16 @@ export default function AnalyticsRadarView({
         intentScore: 84,
         device: "Móvil",
         hasCart: false,
-        region: "europe"
+        region: "costa"
       },
       {
         id: "cli-8",
         name: "Lucía Fernández",
         email: "lucia.f@sevilla.es",
-        city: "Sevilla",
+        city: "Valle Verde del Río",
         country: "España",
-        x: 47.4,
-        y: 41.6,
+        x: 48,
+        y: 21,
         frequency: "Primera vez",
         purchasesCount: 1,
         totalSpent: 195,
@@ -214,16 +217,16 @@ export default function AnalyticsRadarView({
         device: "Móvil",
         hasCart: true,
         cartItemsCount: 1,
-        region: "europe"
+        region: "norte"
       },
       {
         id: "cli-9",
         name: "Julian Sterling",
         email: "j.sterling@nycloft.com",
-        city: "Nueva York",
+        city: "Distrito Financiero Central",
         country: "EE.UU.",
-        x: 28.5,
-        y: 36.2,
+        x: 44,
+        y: 48,
         frequency: "Semanal (VIP)",
         purchasesCount: 15,
         totalSpent: 4200,
@@ -232,16 +235,16 @@ export default function AnalyticsRadarView({
         device: "Desktop",
         hasCart: true,
         cartItemsCount: 4,
-        region: "america"
+        region: "centro"
       },
       {
         id: "cli-10",
         name: "Camila Restrepo",
         email: "camila.r@diseno.co",
-        city: "Bogotá",
+        city: "Colinas del Sur",
         country: "Colombia",
-        x: 29.2,
-        y: 56.4,
+        x: 38,
+        y: 74,
         frequency: "Quincenal",
         purchasesCount: 6,
         totalSpent: 1120,
@@ -250,16 +253,16 @@ export default function AnalyticsRadarView({
         device: "Móvil",
         hasCart: true,
         cartItemsCount: 2,
-        region: "america"
+        region: "sur"
       },
       {
         id: "cli-11",
         name: "Rodrigo Albarrán",
         email: "rodrigo.cdmx@studio.mx",
-        city: "Ciudad de México",
+        city: "Laguna Najafgarh Este",
         country: "México",
-        x: 21.8,
-        y: 48.0,
+        x: 64,
+        y: 38,
         frequency: "Mensual",
         purchasesCount: 4,
         totalSpent: 870,
@@ -267,16 +270,16 @@ export default function AnalyticsRadarView({
         intentScore: 83,
         device: "Desktop",
         hasCart: false,
-        region: "america"
+        region: "costa"
       },
       {
         id: "cli-12",
         name: "Mia Thorne",
         email: "mia.t@miamiliving.com",
-        city: "Miami",
+        city: "Valle Central Sahibi",
         country: "EE.UU.",
-        x: 26.8,
-        y: 44.5,
+        x: 58,
+        y: 53,
         frequency: "Ocasional",
         purchasesCount: 3,
         totalSpent: 750,
@@ -285,112 +288,7 @@ export default function AnalyticsRadarView({
         device: "Tablet",
         hasCart: true,
         cartItemsCount: 1,
-        region: "america"
-      },
-      {
-        id: "cli-13",
-        name: "Joaquín Larreta",
-        email: "j.larreta@ba.ar",
-        city: "Buenos Aires",
-        country: "Argentina",
-        x: 33.5,
-        y: 78.8,
-        frequency: "Semanal (VIP)",
-        purchasesCount: 8,
-        totalSpent: 1980,
-        currentSection: "Salas Modulares Cuero",
-        intentScore: 92,
-        device: "Desktop",
-        hasCart: true,
-        cartItemsCount: 2,
-        region: "america"
-      },
-      {
-        id: "cli-14",
-        name: "Ethan Walker",
-        email: "ethan.w@california.io",
-        city: "Los Ángeles",
-        country: "EE.UU.",
-        x: 18.2,
-        y: 39.4,
-        frequency: "Quincenal",
-        purchasesCount: 5,
-        totalSpent: 1290,
-        currentSection: "Iluminación Inteligente",
-        intentScore: 86,
-        device: "Móvil",
-        hasCart: false,
-        region: "america"
-      },
-      {
-        id: "cli-15",
-        name: "Florencia Paz",
-        email: "florencia.paz@santiago.cl",
-        city: "Santiago",
-        country: "Chile",
-        x: 29.4,
-        y: 77.2,
-        frequency: "Ocasional",
-        purchasesCount: 2,
-        totalSpent: 380,
-        currentSection: "Textiles de Lino Crudo",
-        intentScore: 74,
-        device: "Móvil",
-        hasCart: false,
-        region: "america"
-      },
-      {
-        id: "cli-16",
-        name: "Kenji Takahashi",
-        email: "kenji.t@ginza.jp",
-        city: "Tokio",
-        country: "Japón",
-        x: 85.8,
-        y: 39.0,
-        frequency: "Mensual",
-        purchasesCount: 7,
-        totalSpent: 2150,
-        currentSection: "Lámparas Cerámica Wabi-Sabi",
-        intentScore: 90,
-        device: "Desktop",
-        hasCart: true,
-        cartItemsCount: 2,
-        region: "global"
-      },
-      {
-        id: "cli-17",
-        name: "Liam O'Connor",
-        email: "liam.oc@sydney.au",
-        city: "Sídney",
-        country: "Australia",
-        x: 88.5,
-        y: 76.5,
-        frequency: "Primera vez",
-        purchasesCount: 1,
-        totalSpent: 290,
-        currentSection: "Sillas de Tilo Esculpidas",
-        intentScore: 81,
-        device: "Móvil",
-        hasCart: true,
-        cartItemsCount: 1,
-        region: "global"
-      },
-      {
-        id: "cli-18",
-        name: "Astrid Lindgren",
-        email: "astrid.l@nordic.se",
-        city: "Estocolmo",
-        country: "Suecia",
-        x: 52.8,
-        y: 25.5,
-        frequency: "Quincenal",
-        purchasesCount: 6,
-        totalSpent: 1740,
-        currentSection: "Luminarias Colgantes Vidrio",
-        intentScore: 89,
-        device: "Desktop",
-        hasCart: false,
-        region: "europe"
+        region: "centro"
       }
     ];
 
@@ -398,24 +296,20 @@ export default function AnalyticsRadarView({
     if (addresses && addresses.length > 0) {
       addresses.forEach((addr, idx) => {
         const cityLower = (addr.city || "").toLowerCase();
-        let cx = 48.5 + (idx * 1.5);
-        let cy = 39.2 + (idx * 1.2);
-        let reg: "europe" | "america" | "global" = "europe";
+        let cx = 50 + (idx * 4);
+        let cy = 46 + (idx * 3);
+        let reg: "norte" | "centro" | "sur" | "costa" = "centro";
 
-        if (cityLower.includes("madrid")) { cx = 48.5; cy = 39.2; }
-        else if (cityLower.includes("barcelona")) { cx = 50.8; cy = 38.0; }
-        else if (cityLower.includes("valencia")) { cx = 49.6; cy = 40.5; }
-        else if (cityLower.includes("sevilla")) { cx = 47.4; cy = 41.6; }
-        else if (cityLower.includes("bogota") || cityLower.includes("bogotá") || cityLower.includes("colombia")) { cx = 29.2; cy = 56.4; reg = "america"; }
-        else if (cityLower.includes("mexico") || cityLower.includes("méxico") || cityLower.includes("cdmx")) { cx = 21.8; cy = 48.0; reg = "america"; }
-        else if (cityLower.includes("buenos aires") || cityLower.includes("argentina")) { cx = 33.5; cy = 78.8; reg = "america"; }
-        else if (cityLower.includes("lima") || cityLower.includes("peru")) { cx = 28.2; cy = 65.4; reg = "america"; }
+        if (cityLower.includes("madrid") || cityLower.includes("centro")) { cx = 51; cy = 46; reg = "centro"; }
+        else if (cityLower.includes("barcelona") || cityLower.includes("costa") || cityLower.includes("valencia")) { cx = 76; cy = 33; reg = "costa"; }
+        else if (cityLower.includes("sevilla") || cityLower.includes("sur") || cityLower.includes("malaga")) { cx = 32; cy = 72; reg = "sur"; }
+        else if (cityLower.includes("bilbao") || cityLower.includes("norte") || cityLower.includes("galicia")) { cx = 26; cy = 28; reg = "norte"; }
 
         baseClients.unshift({
           id: `user-addr-${addr.id || idx}`,
           name: addr.recipient || user?.name || "Tu Sesión (Activo)",
           email: user?.email || "admin@lumina.com",
-          city: addr.city || "Madrid",
+          city: `${addr.city || "Madrid"} • Región ${reg.toUpperCase()}`,
           country: addr.country || "España",
           x: cx,
           y: cy,
@@ -439,13 +333,11 @@ export default function AnalyticsRadarView({
   // Filtered clients list
   const filteredClients = useMemo(() => {
     return connectedClients.filter(c => {
-      // Filter tab
       if (filterType === "cart" && !c.hasCart) return false;
       if (filterType === "vip" && !c.frequency.includes("VIP")) return false;
-      if (filterType === "europe" && c.region !== "europe") return false;
-      if (filterType === "america" && c.region !== "america") return false;
+      if (filterType === "norte" && c.region !== "norte") return false;
+      if (filterType === "costa" && c.region !== "costa") return false;
 
-      // Text search
       if (searchQuery.trim()) {
         const q = searchQuery.toLowerCase();
         return (
@@ -460,13 +352,8 @@ export default function AnalyticsRadarView({
     });
   }, [connectedClients, filterType, searchQuery]);
 
-  // Aggregate Metrics for Quick Glance
   const activeCartClientsCount = useMemo(() => {
     return connectedClients.filter(c => c.hasCart).length;
-  }, [connectedClients]);
-
-  const vipClientsCount = useMemo(() => {
-    return connectedClients.filter(c => c.frequency.includes("VIP")).length;
   }, [connectedClients]);
 
   const averageIntentScore = useMemo(() => {
@@ -475,427 +362,616 @@ export default function AnalyticsRadarView({
     return Math.round(sum / connectedClients.length);
   }, [connectedClients]);
 
-  // Target client for HUD (either hovered or locked selected)
   const activeHUDClient = hoveredClient || selectedClient;
 
   return (
-    <div className="space-y-8 animate-fade-in text-gray-900 pb-12">
+    <div className="space-y-6 animate-fade-in text-gray-900 select-none">
       
       {/* ========================================================================= */}
-      {/* SECTION 1: RADAR COMMAND HEADER (Orion Style Ambient Header) */}
+      {/* 1. TOP COMPACT HUD COMMAND BAR (Integrated Video Game Header) */}
       {/* ========================================================================= */}
-      <div className="relative overflow-hidden rounded-[2.5rem] bg-gradient-to-br from-[#12161f] via-[#171c26] to-[#0f131a] p-6 sm:p-8 text-white border border-white/10 shadow-[0_12px_48px_rgba(0,0,0,0.25)]">
+      <div className="rounded-3xl bg-[#0f141d] border border-white/10 p-4 sm:px-6 sm:py-3.5 shadow-xl flex flex-wrap items-center justify-between gap-4 text-white">
         
-        {/* Glow Spheres Backdrop */}
-        <div className="absolute top-0 right-1/4 w-96 h-96 bg-[#8c9276]/10 rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute -bottom-10 left-10 w-80 h-80 bg-amber-500/10 rounded-full blur-3xl pointer-events-none" />
-
-        <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
-          
+        {/* Brand & Live Pulse Tag */}
+        <div className="flex items-center gap-3">
+          <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-amber-400 to-amber-600 text-gray-950 flex items-center justify-center font-bold shadow-md shadow-amber-500/20">
+            <Compass className="w-5 h-5 text-gray-950 animate-[spin_16s_linear_infinite]" />
+          </div>
           <div>
-            <div className="flex items-center gap-2.5 mb-2">
-              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-bold tracking-wider uppercase bg-amber-400/20 text-amber-300 border border-amber-400/30">
-                <Activity className="w-3 h-3 animate-pulse text-amber-400" />
-                Lumina Radar Engine
-              </span>
-              <span className="text-[10px] text-gray-400 font-mono">
-                Actualización algorítmica viva (Sin rastreo GPS)
+            <div className="flex items-center gap-2">
+              <h2 className="font-display font-bold text-base sm:text-lg tracking-tight text-white leading-none">
+                Lumina Orion Radar
+              </h2>
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9.5px] font-bold tracking-wider uppercase bg-amber-400/20 text-amber-300 border border-amber-400/30">
+                <Activity className="w-2.5 h-2.5 animate-pulse text-amber-400" />
+                Live 3D HUD
               </span>
             </div>
-
-            <h2 className="text-2xl sm:text-3xl font-display font-bold tracking-tight text-white flex items-center gap-3">
-              Radar Geográfico de Conexión
-              <span className="text-xs font-mono font-normal px-2.5 py-0.5 rounded-lg bg-white/10 text-gray-300 border border-white/10">
-                Live Feed
-              </span>
-            </h2>
-
-            <p className="text-xs sm:text-sm text-gray-400 max-w-2xl mt-1.5 leading-relaxed">
-              Visualiza en tiempo real de qué ciudades y países se conectan tus clientes al navegar por los {categories.length} nichos y {products.length} piezas de la tienda. Las coordenadas se alimentan automáticamente cuando los clientes registran sus direcciones y realizan pedidos en la plataforma.
+            <p className="text-[11px] text-gray-400 mt-0.5">
+              Supervisión de {categories.length} nichos y {products.length} piezas • Alimentado por direcciones reales
             </p>
           </div>
-
-          {/* Quick Metrics Capsule Array (Inspired by Orion Header Badges) */}
-          <div className="grid grid-cols-3 gap-3 shrink-0">
-            
-            {/* Pill 1: Total Online */}
-            <div className="p-3.5 rounded-2xl bg-white/[0.06] border border-white/10 backdrop-blur-md flex flex-col justify-between">
-              <span className="text-[10px] uppercase font-bold text-gray-400 tracking-wider flex items-center gap-1">
-                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" /> Conectados
-              </span>
-              <div className="flex items-baseline gap-1.5 mt-1">
-                <span className="text-2xl font-bold font-display text-white">{connectedClients.length}</span>
-                <span className="text-[10px] text-emerald-400 font-bold">+18%</span>
-              </div>
-              <span className="text-[10px] text-gray-400 truncate">En sesión activa</span>
-            </div>
-
-            {/* Pill 2: With Active Cart */}
-            <div className="p-3.5 rounded-2xl bg-white/[0.06] border border-white/10 backdrop-blur-md flex flex-col justify-between">
-              <span className="text-[10px] uppercase font-bold text-gray-400 tracking-wider flex items-center gap-1">
-                <ShoppingBag className="w-3 h-3 text-amber-400" /> Carrito
-              </span>
-              <div className="flex items-baseline gap-1.5 mt-1">
-                <span className="text-2xl font-bold font-display text-amber-300">{activeCartClientsCount}</span>
-                <span className="text-[10px] text-gray-400 font-medium">de {connectedClients.length}</span>
-              </div>
-              <span className="text-[10px] text-gray-400 truncate">Preparando pedido</span>
-            </div>
-
-            {/* Pill 3: Intent Score */}
-            <div className="p-3.5 rounded-2xl bg-white/[0.06] border border-white/10 backdrop-blur-md flex flex-col justify-between">
-              <span className="text-[10px] uppercase font-bold text-gray-400 tracking-wider flex items-center gap-1">
-                <Zap className="w-3 h-3 text-[#a3e635]" /> Match Compra
-              </span>
-              <div className="flex items-baseline gap-1.5 mt-1">
-                <span className="text-2xl font-bold font-display text-[#a3e635]">{averageIntentScore}%</span>
-                <span className="text-[10px] text-[#a3e635] font-bold">Alta</span>
-              </div>
-              <span className="text-[10px] text-gray-400 truncate">Interés comercial</span>
-            </div>
-
-          </div>
-
         </div>
 
-      </div>
-
-      {/* ========================================================================= */}
-      {/* SECTION 2: THE INTERACTIVE WORLD RADAR MAP (Featuring Glowing Vertical Pins) */}
-      {/* ========================================================================= */}
-      <div className="relative rounded-[2.5rem] bg-[#0c1017] border border-neutral-800/90 shadow-[0_20px_60px_rgba(0,0,0,0.35)] overflow-hidden">
-        
-        {/* Top Floating Controls Bar */}
-        <div className="p-5 sm:p-6 border-b border-white/10 flex flex-wrap items-center justify-between gap-4 relative z-20 bg-neutral-950/40 backdrop-blur-xl">
-          
-          {/* Filter Pills */}
-          <div className="flex items-center gap-1.5 bg-neutral-900/80 p-1 rounded-2xl border border-white/10 text-xs font-semibold">
+        {/* Filters & Mode Switcher */}
+        <div className="flex items-center flex-wrap gap-2 text-xs font-semibold">
+          <div className="flex items-center gap-1 bg-black/40 p-1 rounded-xl border border-white/10">
             <button 
               onClick={() => setFilterType("all")} 
-              className={`px-3.5 py-1.5 rounded-xl transition-all cursor-pointer ${
-                filterType === "all" ? "bg-amber-400 text-gray-950 font-bold shadow-md shadow-amber-400/20" : "text-gray-400 hover:text-white"
+              className={`px-3 py-1 rounded-lg transition-all cursor-pointer ${
+                filterType === "all" ? "bg-amber-400 text-gray-950 font-bold shadow-xs" : "text-gray-400 hover:text-white"
               }`}
             >
               Todos ({connectedClients.length})
             </button>
             <button 
               onClick={() => setFilterType("cart")} 
-              className={`px-3.5 py-1.5 rounded-xl transition-all cursor-pointer flex items-center gap-1.5 ${
-                filterType === "cart" ? "bg-amber-400 text-gray-950 font-bold shadow-md shadow-amber-400/20" : "text-gray-400 hover:text-white"
+              className={`px-3 py-1 rounded-lg transition-all cursor-pointer flex items-center gap-1 ${
+                filterType === "cart" ? "bg-amber-400 text-gray-950 font-bold shadow-xs" : "text-gray-400 hover:text-white"
               }`}
             >
-              <ShoppingBag className="w-3.5 h-3.5" /> Con Bolsa ({activeCartClientsCount})
+              <ShoppingBag className="w-3 h-3" /> Con Bolsa ({activeCartClientsCount})
             </button>
             <button 
               onClick={() => setFilterType("vip")} 
-              className={`px-3.5 py-1.5 rounded-xl transition-all cursor-pointer flex items-center gap-1.5 ${
-                filterType === "vip" ? "bg-amber-400 text-gray-950 font-bold shadow-md shadow-amber-400/20" : "text-gray-400 hover:text-white"
+              className={`px-3 py-1 rounded-lg transition-all cursor-pointer flex items-center gap-1 ${
+                filterType === "vip" ? "bg-amber-400 text-gray-950 font-bold shadow-xs" : "text-gray-400 hover:text-white"
               }`}
             >
-              <Sparkles className="w-3.5 h-3.5" /> Clientes VIP ({vipClientsCount})
-            </button>
-            <button 
-              onClick={() => setFilterType("europe")} 
-              className={`px-3.5 py-1.5 rounded-xl transition-all cursor-pointer hidden md:inline-block ${
-                filterType === "europe" ? "bg-amber-400 text-gray-950 font-bold shadow-md shadow-amber-400/20" : "text-gray-400 hover:text-white"
-              }`}
-            >
-              Europa
-            </button>
-            <button 
-              onClick={() => setFilterType("america")} 
-              className={`px-3.5 py-1.5 rounded-xl transition-all cursor-pointer hidden md:inline-block ${
-                filterType === "america" ? "bg-amber-400 text-gray-950 font-bold shadow-md shadow-amber-400/20" : "text-gray-400 hover:text-white"
-              }`}
-            >
-              América
+              <Sparkles className="w-3 h-3" /> VIP
             </button>
           </div>
 
-          {/* Search / Filter Quick Input */}
-          <div className="flex items-center gap-3">
-            <div className="relative">
-              <Search className="w-3.5 h-3.5 absolute left-3 top-2.5 text-gray-400" />
-              <input 
-                type="text"
-                value={searchQuery}
-                onChange={e => setSearchQuery(e.target.value)}
-                placeholder="Filtrar por ciudad, cliente o sección..."
-                className="pl-8 pr-3 py-1.5 rounded-xl bg-neutral-900 border border-white/10 text-xs text-white placeholder:text-gray-500 focus:outline-none focus:ring-1 focus:ring-amber-400 w-48 sm:w-64"
-              />
+          {/* Search Box */}
+          <div className="relative">
+            <Search className="w-3.5 h-3.5 absolute left-2.5 top-2 text-gray-400" />
+            <input 
+              type="text"
+              value={searchQuery}
+              onChange={e => setSearchQuery(e.target.value)}
+              placeholder="Buscar cliente, ciudad..."
+              className="pl-7 pr-3 py-1 rounded-xl bg-black/40 border border-white/10 text-xs text-white placeholder:text-gray-500 focus:outline-none focus:ring-1 focus:ring-amber-400 w-36 sm:w-48"
+            />
+          </div>
+
+          {/* 3D Tilt View Toggle */}
+          <button 
+            onClick={() => setIs3DTilted(prev => !prev)}
+            className="flex items-center gap-1.5 px-3 py-1 rounded-xl bg-white/10 hover:bg-white/15 text-gray-200 border border-white/10 transition-colors cursor-pointer text-xs"
+            title="Alternar perspectiva 3D isométrica"
+          >
+            <RotateCcw className="w-3.5 h-3.5 text-amber-400" />
+            <span className="hidden sm:inline">{is3DTilted ? "Vista Isométrica 3D" : "Vista Cenital 2D"}</span>
+          </button>
+        </div>
+
+      </div>
+
+      {/* ========================================================================= */}
+      {/* 2. THE MAIN CONSOLE STAGE: 3D MAP CENTERED WITH FLANKING HUD WIDGETS */}
+      {/* ========================================================================= */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-stretch">
+        
+        {/* LEFT FLANK WIDGETS (3 cols - Orion Style Conversion & Retention) */}
+        <div className="lg:col-span-3 flex flex-col justify-between gap-4">
+          
+          {/* Orion Circle Match Widget 1 */}
+          <div className="p-5 rounded-3xl bg-[#111622] border border-white/10 shadow-lg text-white space-y-3 flex-1 flex flex-col justify-between">
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-gray-400">
+                Orion Match Engine
+              </span>
+              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
             </div>
 
-            <div className="flex items-center gap-1.5 text-xs text-amber-400 font-mono bg-amber-400/10 px-3 py-1.5 rounded-xl border border-amber-400/20">
-              <span className="w-2 h-2 rounded-full bg-amber-400 animate-ping" />
-              <span>{filteredClients.length} en radar</span>
+            <div className="flex items-center gap-4 py-1">
+              {/* Circular Gauge from Orion Reference */}
+              <div className="relative w-18 h-18 flex items-center justify-center shrink-0">
+                <svg className="w-full h-full -rotate-90" viewBox="0 0 36 36">
+                  <path
+                    className="text-neutral-800"
+                    strokeWidth="3.2"
+                    stroke="currentColor"
+                    fill="none"
+                    d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                  />
+                  <path
+                    className="text-amber-400 transition-all duration-1000"
+                    strokeDasharray="84, 100"
+                    strokeWidth="3.2"
+                    strokeLinecap="round"
+                    stroke="currentColor"
+                    fill="none"
+                    d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                  />
+                </svg>
+                <span className="absolute font-display font-bold text-base text-white">
+                  84%
+                </span>
+              </div>
+              <div>
+                <h4 className="font-bold text-sm text-white">Intención Alta</h4>
+                <p className="text-[11px] text-gray-400 leading-tight mt-0.5">
+                  Usuarios con piezas en bolsa o lista de deseos
+                </p>
+                <span className="text-[10px] text-amber-400 font-bold mt-1 block">
+                  +5.8% esta semana
+                </span>
+              </div>
+            </div>
+
+            <div className="pt-2 border-t border-white/5 flex items-center justify-between text-[11px] text-gray-400">
+              <span>Conversión estimada</span>
+              <strong className="text-white font-mono">{averageIntentScore}% índice</strong>
+            </div>
+          </div>
+
+          {/* Orion Circle Match Widget 2 */}
+          <div className="p-5 rounded-3xl bg-[#111622] border border-white/10 shadow-lg text-white space-y-3 flex-1 flex flex-col justify-between">
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-gray-400">
+                Fidelidad & Recompra
+              </span>
+              <Sparkles className="w-3.5 h-3.5 text-[#a3e635]" />
+            </div>
+
+            <div className="flex items-center gap-4 py-1">
+              {/* Circular Gauge 2 from Orion Reference */}
+              <div className="relative w-18 h-18 flex items-center justify-center shrink-0">
+                <svg className="w-full h-full -rotate-90" viewBox="0 0 36 36">
+                  <path
+                    className="text-neutral-800"
+                    strokeWidth="3.2"
+                    stroke="currentColor"
+                    fill="none"
+                    d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                  />
+                  <path
+                    className="text-emerald-400 transition-all duration-1000"
+                    strokeDasharray="89, 100"
+                    strokeWidth="3.2"
+                    strokeLinecap="round"
+                    stroke="currentColor"
+                    fill="none"
+                    d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                  />
+                </svg>
+                <span className="absolute font-display font-bold text-base text-white">
+                  89%
+                </span>
+              </div>
+              <div>
+                <h4 className="font-bold text-sm text-white">Tasa Recurrente</h4>
+                <p className="text-[11px] text-gray-400 leading-tight mt-0.5">
+                  Clientes que compran de nuevo cada 16 días
+                </p>
+                <span className="text-[10px] text-emerald-400 font-bold mt-1 block">
+                  Nivel Excelente
+                </span>
+              </div>
+            </div>
+
+            <div className="pt-2 border-t border-white/5 flex items-center justify-between text-[11px] text-gray-400">
+              <span>Valor promedio pedido</span>
+              <strong className="text-white font-mono">$384.50 USD</strong>
             </div>
           </div>
 
         </div>
 
-        {/* ======================================================================= */}
-        {/* THE MAP CANVAS (Stylized High-Tech Radar with Glowing Vertical Pins) */}
-        {/* ======================================================================= */}
-        <div className="relative w-full h-[520px] sm:h-[620px] bg-[#0b0e14] overflow-hidden select-none">
+        {/* CENTER STAGE: THE REAL 3D EXTRUDED RELIEF TERRAIN MAP (6 cols) */}
+        <div className="lg:col-span-6 relative rounded-3xl bg-[#090d14] border border-neutral-800 p-3 sm:p-4 shadow-2xl flex flex-col justify-between overflow-hidden min-h-[460px]">
           
-          {/* Subtle Latitude / Longitude Radar Grid Lines */}
-          <svg className="absolute inset-0 w-full h-full pointer-events-none opacity-20" xmlns="http://www.w3.org/2000/svg">
-            <defs>
-              <pattern id="radarGrid" width="60" height="60" patternUnits="userSpaceOnUse">
-                <path d="M 60 0 L 0 0 0 60" fill="none" stroke="rgba(255,255,255,0.15)" strokeWidth="0.5" />
-                <circle cx="60" cy="0" r="1.5" fill="rgba(255,255,255,0.3)" />
-              </pattern>
-            </defs>
-            <rect width="100%" height="100%" fill="url(#radarGrid)" />
-            {/* Concentric Radar Range Rings centered on Europe / Global */}
-            <circle cx="50%" cy="40%" r="140" fill="none" stroke="rgba(245,158,11,0.12)" strokeWidth="1" strokeDasharray="4 4" />
-            <circle cx="50%" cy="40%" r="280" fill="none" stroke="rgba(245,158,11,0.08)" strokeWidth="1" strokeDasharray="6 6" />
-            <circle cx="50%" cy="40%" r="420" fill="none" stroke="rgba(245,158,11,0.05)" strokeWidth="1" />
-          </svg>
+          {/* Top Map Status Bar */}
+          <div className="flex items-center justify-between px-2 pb-2 relative z-30">
+            <div className="flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+              <span className="text-xs font-mono font-bold text-white tracking-wider">
+                MAPA TOPOGRÁFICO EN RELIEVE 3D
+              </span>
+            </div>
+            <span className="text-[11px] font-mono text-amber-400 bg-amber-400/10 px-2.5 py-0.5 rounded-lg border border-amber-400/20">
+              {filteredClients.length} balizas activas
+            </span>
+          </div>
 
-          {/* Stylized High-Tech Continents Silhouette (Vector Landmasses in Dark Slate) */}
-          <svg viewBox="0 0 1000 500" className="absolute inset-0 w-full h-full pointer-events-none opacity-45" preserveAspectRatio="none">
-            {/* North America */}
-            <path d="M 120 70 Q 180 50 250 80 Q 300 120 280 180 Q 230 220 210 260 Q 170 230 140 180 Z" fill="#1b2230" stroke="#2a3547" strokeWidth="1" />
-            {/* South America */}
-            <path d="M 270 270 Q 340 310 320 390 Q 300 450 270 480 Q 250 430 260 340 Z" fill="#1b2230" stroke="#2a3547" strokeWidth="1" />
-            {/* Europe */}
-            <path d="M 460 90 Q 540 80 560 130 Q 520 180 480 190 Q 450 160 460 120 Z" fill="#1f2737" stroke="#36435a" strokeWidth="1" />
-            {/* Africa */}
-            <path d="M 460 200 Q 550 220 540 320 Q 510 420 480 440 Q 430 350 450 240 Z" fill="#1b2230" stroke="#2a3547" strokeWidth="1" />
-            {/* Asia */}
-            <path d="M 570 80 Q 750 70 860 130 Q 820 250 740 280 Q 640 250 570 170 Z" fill="#1b2230" stroke="#2a3547" strokeWidth="1" />
-            {/* Australia */}
-            <path d="M 800 340 Q 900 330 890 410 Q 830 430 790 390 Z" fill="#1b2230" stroke="#2a3547" strokeWidth="1" />
-          </svg>
-
-          {/* Ambient Lighting Gradients over Map */}
-          <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-amber-500/10 rounded-full blur-3xl pointer-events-none" />
-          <div className="absolute bottom-10 left-1/4 w-80 h-80 bg-blue-500/5 rounded-full blur-3xl pointer-events-none" />
-
-          {/* =================================================================== */}
-          {/* THE GLOWING VERTICAL PINS ("Palito vertical amarillo con símbolo") */}
-          {/* =================================================================== */}
-          {filteredClients.map((client) => {
-            const isHovered = hoveredClient?.id === client.id;
-            const isSelected = selectedClient?.id === client.id;
-            const isActive = isHovered || isSelected;
-
-            return (
-              <div 
-                key={client.id}
-                style={{
-                  left: `${client.x}%`,
-                  top: `${client.y}%`
-                }}
-                className="absolute z-20 -translate-x-1/2 -translate-y-full cursor-pointer group"
-                onMouseEnter={() => setHoveredClient(client)}
-                onMouseLeave={() => setHoveredClient(null)}
-                onClick={() => setSelectedClient(prev => prev?.id === client.id ? null : client)}
-              >
-                {/* 1. Pulsing Ground Halo (Base on the map) */}
-                <div className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2 pointer-events-none">
-                  <span className={`block rounded-full ${
-                    client.isRealUser 
-                      ? "w-4 h-4 bg-emerald-400/80 animate-ping shadow-[0_0_16px_#34d399]" 
-                      : "w-3 h-3 bg-amber-400/70 animate-ping shadow-[0_0_12px_#f59e0b]"
-                  }`} />
-                  <span className={`block -mt-3 -ml-1 rounded-full ${
-                    client.isRealUser 
-                      ? "w-2 h-2 bg-emerald-300 shadow-[0_0_8px_#10b981]" 
-                      : "w-2 h-2 bg-amber-300 shadow-[0_0_8px_#f59e0b]"
-                  }`} />
-                </div>
-
-                {/* 2. THE VERTICAL GLOWING STEM ("Palito vertical amarillo") */}
-                <div className="flex flex-col items-center">
-                  
-                  {/* Pin Head Beacon / Viñeta (Pulsing glowing capsule with icon/avatar) */}
-                  <div className={`relative transition-all duration-300 flex items-center justify-center rounded-full border shadow-lg ${
-                    isActive 
-                      ? "scale-125 z-40 bg-white text-gray-950 border-amber-300 shadow-[0_0_24px_rgba(245,158,11,0.9)]" 
-                      : client.isRealUser 
-                      ? "bg-gradient-to-tr from-emerald-500 to-teal-300 text-white border-white/80 shadow-[0_0_18px_rgba(16,185,129,0.8)]" 
-                      : "bg-gradient-to-tr from-amber-500 via-amber-400 to-yellow-200 text-gray-950 border-white/70 shadow-[0_0_14px_rgba(245,158,11,0.6)]"
-                  } w-7 h-7 sm:w-8 sm:h-8`}>
-                    
-                    {client.device === "Desktop" ? (
-                      <Monitor className="w-3.5 h-3.5 shrink-0" />
-                    ) : client.device === "Móvil" ? (
-                      <Smartphone className="w-3.5 h-3.5 shrink-0" />
-                    ) : (
-                      <Tablet className="w-3.5 h-3.5 shrink-0" />
-                    )}
-
-                    {/* Tiny Cart Indicator on Head if shopping */}
-                    {client.hasCart && (
-                      <span className="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-rose-600 text-white flex items-center justify-center text-[7.5px] font-extrabold border border-white">
-                        {client.cartItemsCount || 1}
-                      </span>
-                    )}
-
-                    {/* Ping ripple effect on top of beacon */}
-                    <span className="absolute inset-0 rounded-full bg-amber-400/30 animate-pulse pointer-events-none" />
-                  </div>
-
-                  {/* The Vertical Stem Line */}
-                  <div className={`w-[2px] transition-all duration-300 ${
-                    isActive 
-                      ? "h-10 bg-gradient-to-t from-white via-amber-300 to-amber-400 shadow-[0_0_12px_#fde047]" 
-                      : client.isRealUser 
-                      ? "h-8 bg-gradient-to-t from-emerald-400 via-teal-300 to-emerald-200 shadow-[0_0_8px_#34d399]" 
-                      : "h-7 bg-gradient-to-t from-amber-500 via-amber-400 to-amber-200 shadow-[0_0_8px_#f59e0b]"
-                  }`} />
-
-                  {/* Tiny Ground Contact Diamond */}
-                  <div className="w-1.5 h-1.5 rotate-45 bg-amber-300 shadow-[0_0_6px_#fde047] shrink-0" />
-                </div>
-
-                {/* Floating Quick Label (Always visible city tag) */}
-                <div className={`absolute top-full mt-1.5 left-1/2 -translate-x-1/2 whitespace-nowrap px-2 py-0.5 rounded-md text-[9px] font-bold font-mono tracking-wider transition-all pointer-events-none ${
-                  isActive 
-                    ? "bg-white text-gray-950 shadow-md scale-110" 
-                    : "bg-black/60 text-gray-300 backdrop-blur-md border border-white/10"
-                }`}>
-                  {client.city}
-                </div>
-
-              </div>
-            );
-          })}
-
-          {/* =================================================================== */}
-          {/* THE FLOATING HUD DOSSIER CARD (Displays when hovering/clicking pin) */}
-          {/* =================================================================== */}
-          {activeHUDClient && (
+          {/* 3D SCENE PERSPECTIVE CONTAINER */}
+          <div 
+            className="relative w-full flex-1 flex items-center justify-center overflow-hidden my-auto"
+            style={{ perspective: "1100px" }}
+          >
+            
+            {/* THE 3D ISOMETRIC RELIEF ISLAND (Extruded Topography like Reference Image 2) */}
             <div 
+              className={`relative w-full max-w-[500px] aspect-[1/0.88] transition-transform duration-700 ease-out origin-center ${
+                is3DTilted ? "scale-95 hover:scale-[0.98]" : "scale-100"
+              }`}
               style={{
-                left: `${Math.min(Math.max(activeHUDClient.x, 18), 75)}%`,
-                top: `${Math.min(Math.max(activeHUDClient.y - 12, 10), 55)}%`
+                transform: is3DTilted ? "rotateX(28deg) rotateZ(-6deg)" : "none",
+                transformStyle: "preserve-3d"
               }}
-              className="absolute z-50 -translate-x-1/2 pointer-events-auto transition-all duration-300 animate-fade-in"
             >
-              <div className="w-80 sm:w-96 rounded-3xl bg-[#141922]/95 backdrop-blur-2xl border border-white/20 p-5 shadow-[0_24px_70px_rgba(0,0,0,0.7)] text-white space-y-4">
+              
+              {/* LAYER 1: Deep 3D Cast Shadow Beneath the Extruded Slab */}
+              <div 
+                className="absolute inset-x-4 -bottom-6 h-24 rounded-[3rem] bg-black/80 blur-2xl pointer-events-none -z-20"
+                style={{ transform: "translateZ(-40px)" }}
+              />
+
+              {/* LAYER 2: The 3D Extruded Bedrock Slab / Base (The dark thick lateral edge from Image 2) */}
+              <svg viewBox="0 0 600 520" className="absolute inset-0 w-full h-full pointer-events-none -z-10" style={{ transform: "translateZ(-14px)" }}>
+                {/* Thick lateral extruded rim of the terrain block */}
+                <path 
+                  d="M 280 40 
+                     L 480 110 L 550 200 L 530 330 L 410 440 L 320 490 L 190 460 L 90 350 L 70 210 L 150 90 Z" 
+                  fill="#0e131d" 
+                  stroke="#1c2536" 
+                  strokeWidth="8"
+                />
+                <path 
+                  d="M 190 460 L 320 490 L 410 440 L 410 470 L 320 520 L 190 490 Z" 
+                  fill="#080b11" 
+                />
+                <path 
+                  d="M 410 440 L 530 330 L 530 360 L 410 470 Z" 
+                  fill="#0a0e16" 
+                />
+                <path 
+                  d="M 90 350 L 190 460 L 190 490 L 90 380 Z" 
+                  fill="#0b0f17" 
+                />
+              </svg>
+
+              {/* LAYER 3: TOPOGRAPHIC RELIEF TERRAIN SURFACE (Detailed relief with rivers, ridges & green valleys) */}
+              <svg viewBox="0 0 600 520" className="w-full h-full drop-shadow-2xl">
+                <defs>
+                  {/* Terrain Elevation Gradient (Valleys to Mountain Ridges) */}
+                  <linearGradient id="terrainRelief" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stopColor="#3d6346" />
+                    <stop offset="25%" stopColor="#4f7a55" />
+                    <stop offset="45%" stopColor="#6e8a60" />
+                    <stop offset="65%" stopColor="#8c7750" />
+                    <stop offset="85%" stopColor="#75523b" />
+                    <stop offset="100%" stopColor="#4e3526" />
+                  </linearGradient>
+
+                  {/* River & Lake Shimmer Gradient */}
+                  <linearGradient id="riverWater" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stopColor="#38bdf8" />
+                    <stop offset="50%" stopColor="#0284c7" />
+                    <stop offset="100%" stopColor="#0369a1" />
+                  </linearGradient>
+
+                  {/* Mountain Shadow Shading */}
+                  <radialGradient id="mountainRidgeGlow" cx="40%" cy="50%" r="50%">
+                    <stop offset="0%" stopColor="rgba(255,255,255,0.18)" />
+                    <stop offset="70%" stopColor="rgba(0,0,0,0.3)" />
+                    <stop offset="100%" stopColor="rgba(0,0,0,0.6)" />
+                  </radialGradient>
+                </defs>
+
+                {/* 1. Main Terrain Block Perimeter (Topographic outline matching reference shape) */}
+                <path 
+                  d="M 280 40 
+                     C 350 50, 420 80, 480 110 
+                     C 530 140, 560 170, 550 200 
+                     C 530 240, 540 280, 530 330 
+                     C 490 380, 460 410, 410 440 
+                     C 370 470, 350 480, 320 490 
+                     C 270 480, 230 470, 190 460 
+                     C 140 430, 100 390, 90 350 
+                     C 70 300, 60 250, 70 210 
+                     C 80 160, 110 120, 150 90 
+                     C 190 60, 240 40, 280 40 Z" 
+                  fill="url(#terrainRelief)" 
+                  stroke="#1c2536" 
+                  strokeWidth="3"
+                />
+
+                {/* 2. Topographic Mountain Contours & Shaded Ridges (Aravalli & Arala Hills from Image 2) */}
+                <g fill="none" stroke="rgba(255,255,255,0.12)" strokeWidth="1">
+                  {/* Western Hills */}
+                  <path d="M 120 180 Q 160 150 210 200 Q 240 250 190 300 Q 140 320 120 250 Z" fill="#6d543b" opacity="0.75" />
+                  <path d="M 140 200 Q 170 180 200 220 Q 210 260 170 280 Z" fill="#4d3725" opacity="0.85" />
+                  <path d="M 155 215 Q 180 205 190 230 Q 190 250 175 260 Z" fill="#382517" />
+
+                  {/* Southern Mountain Range */}
+                  <path d="M 160 380 Q 220 340 280 390 Q 340 440 270 460 Q 200 450 160 380 Z" fill="#5f4935" opacity="0.8" />
+                  <path d="M 180 400 Q 230 370 270 410 Q 290 430 240 445 Z" fill="#422f20" />
+
+                  {/* Eastern Highland Slopes */}
+                  <path d="M 420 160 Q 480 140 510 190 Q 520 260 460 270 Q 400 240 420 160 Z" fill="#574332" opacity="0.7" />
+                  <path d="M 440 180 Q 480 170 495 210 Q 480 240 450 235 Z" fill="#3b2b1d" />
+                </g>
+
+                {/* 3. Lush Green Central Valley & Basins */}
+                <path d="M 230 110 Q 320 90 390 140 Q 410 260 350 320 Q 290 350 250 280 Q 200 220 230 110 Z" fill="#345e3c" opacity="0.6" />
+
+                {/* 4. Natural Hydrography: Winding Sahibi River & Tributaries (Cyan water from Image 2) */}
+                <g fill="none" stroke="url(#riverWater)" strokeLinecap="round">
+                  {/* Central Ancient River Course */}
+                  <path d="M 290 50 Q 285 100 280 140 T 295 220 T 310 300 T 300 380 T 285 450 T 290 485" strokeWidth="6" opacity="0.9" />
+                  <path d="M 290 50 Q 285 100 280 140 T 295 220 T 310 300 T 300 380 T 285 450 T 290 485" stroke="rgba(255,255,255,0.7)" strokeWidth="1.5" />
+
+                  {/* Tributary to Eastern Bay (Najafgarh & Yamuna in Image 2) */}
+                  <path d="M 305 170 Q 380 160 440 190 T 520 160 T 545 170" strokeWidth="4" opacity="0.85" />
+                  {/* Tributary to Western Hills */}
+                  <path d="M 285 240 Q 230 260 180 240 T 130 270" strokeWidth="3" opacity="0.75" />
+                  {/* Tributary to Southern Lake */}
+                  <path d="M 305 340 Q 360 360 380 400" strokeWidth="2.5" opacity="0.7" />
+                </g>
+
+                {/* 5. Lakes & Water Basins (Sapphire reservoirs from Image 2) */}
+                <ellipse cx="230" cy="180" rx="14" ry="10" fill="#0284c7" stroke="#38bdf8" strokeWidth="1" />
+                <ellipse cx="380" cy="200" rx="12" ry="8" fill="#0284c7" stroke="#38bdf8" strokeWidth="1" />
+                <ellipse cx="440" cy="330" rx="16" ry="11" fill="#0284c7" stroke="#38bdf8" strokeWidth="1" />
+                <ellipse cx="340" cy="390" rx="13" ry="9" fill="#0284c7" stroke="#38bdf8" strokeWidth="1" />
+                <ellipse cx="530" cy="165" rx="18" ry="14" fill="#0369a1" stroke="#38bdf8" strokeWidth="1.5" />
+
+                {/* 6. Realistic Region Names Written Across the Relief (As in Image 2) */}
+                <g fill="rgba(255,255,255,0.85)" fontSize="10.5" fontFamily="sans-serif" fontWeight="bold">
+                  <text x="235" y="75" textAnchor="middle" fill="#f8fafc">Río Sahibi (Curso Norte)</text>
+                  <text x="140" y="145">Región Gurgaon</text>
+                  <text x="135" y="235">Cumbres Arala</text>
+                  <text x="140" y="425">Meseta Aravalli</text>
+                  <text x="435" y="145">Bahía Yamuna</text>
+                  <text x="410" y="210">Cuenca Najafgarh</text>
+                  <text x="360" y="340">Valle Sur Sahibi</text>
+                </g>
+
+                {/* 7. Classic Compass Rose on bottom left (From Image 2) */}
+                <g transform="translate(65, 430) scale(0.65)" stroke="rgba(255,255,255,0.8)" strokeWidth="1.5">
+                  <line x1="0" y1="-30" x2="0" y2="30" />
+                  <line x1="-30" y1="0" x2="30" y2="0" />
+                  <polygon points="0,-30 4,-6 0,0 -4,-6" fill="#f59e0b" />
+                  <polygon points="0,30 4,6 0,0 -4,6" fill="rgba(255,255,255,0.4)" />
+                  <polygon points="30,0 6,4 0,0 6,-4" fill="rgba(255,255,255,0.4)" />
+                  <polygon points="-30,0 -6,4 0,0 -6,-4" fill="rgba(255,255,255,0.4)" />
+                  <text x="0" y="-35" textAnchor="middle" fill="white" fontSize="13" fontWeight="bold">N</text>
+                </g>
+              </svg>
+
+              {/* LAYER 4: THE GLOWING VERTICAL PINS ("Palito vertical amarillo con viñeta") */}
+              {filteredClients.map((client) => {
+                const isHovered = hoveredClient?.id === client.id;
+                const isSelected = selectedClient?.id === client.id;
+                const isActive = isHovered || isSelected;
+
+                return (
+                  <div 
+                    key={client.id}
+                    style={{
+                      left: `${client.x}%`,
+                      top: `${client.y}%`
+                    }}
+                    className="absolute z-30 -translate-x-1/2 -translate-y-full cursor-pointer group"
+                    onMouseEnter={() => setHoveredClient(client)}
+                    onMouseLeave={() => setHoveredClient(null)}
+                    onClick={() => setSelectedClient(prev => prev?.id === client.id ? null : client)}
+                  >
+                    {/* 1. Ground Contact Pulse (Base anchored to 3D terrain) */}
+                    <div className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2 pointer-events-none">
+                      <span className={`block rounded-full ${
+                        client.isRealUser 
+                          ? "w-4 h-4 bg-emerald-400/80 animate-ping shadow-[0_0_16px_#34d399]" 
+                          : "w-3.5 h-3.5 bg-amber-400/80 animate-ping shadow-[0_0_14px_#f59e0b]"
+                      }`} />
+                      <span className={`block -mt-3 -ml-0.5 rounded-full ${
+                        client.isRealUser 
+                          ? "w-2.5 h-2.5 bg-emerald-300 shadow-[0_0_10px_#10b981]" 
+                          : "w-2.5 h-2.5 bg-amber-300 shadow-[0_0_10px_#f59e0b]"
+                      }`} />
+                    </div>
+
+                    {/* 2. Vertical Stem & Glowing Head Beacon */}
+                    <div className="flex flex-col items-center">
+                      
+                      {/* Beacon Head (Viñeta con dispositivo o inicial) */}
+                      <div className={`relative transition-all duration-300 flex items-center justify-center rounded-full border shadow-xl ${
+                        isActive 
+                          ? "scale-125 z-40 bg-white text-gray-950 border-amber-300 shadow-[0_0_26px_rgba(245,158,11,1)]" 
+                          : client.isRealUser 
+                          ? "bg-gradient-to-tr from-emerald-500 to-teal-300 text-white border-white shadow-[0_0_18px_rgba(16,185,129,0.8)]" 
+                          : "bg-gradient-to-tr from-amber-500 via-amber-400 to-yellow-200 text-gray-950 border-white/80 shadow-[0_0_16px_rgba(245,158,11,0.7)]"
+                      } w-7 h-7`}>
+                        
+                        {client.device === "Desktop" ? (
+                          <Monitor className="w-3.5 h-3.5 shrink-0" />
+                        ) : client.device === "Móvil" ? (
+                          <Smartphone className="w-3.5 h-3.5 shrink-0" />
+                        ) : (
+                          <Tablet className="w-3.5 h-3.5 shrink-0" />
+                        )}
+
+                        {client.hasCart && (
+                          <span className="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-rose-600 text-white flex items-center justify-center text-[7.5px] font-extrabold border border-white">
+                            {client.cartItemsCount || 1}
+                          </span>
+                        )}
+
+                        <span className="absolute inset-0 rounded-full bg-amber-400/30 animate-pulse pointer-events-none" />
+                      </div>
+
+                      {/* The Vertical Yellow Stem Line ("Palito vertical amarillo") */}
+                      <div className={`w-[2.5px] transition-all duration-300 ${
+                        isActive 
+                          ? "h-10 bg-gradient-to-t from-white via-amber-300 to-amber-400 shadow-[0_0_14px_#fde047]" 
+                          : client.isRealUser 
+                          ? "h-8 bg-gradient-to-t from-emerald-400 via-teal-300 to-emerald-200 shadow-[0_0_10px_#34d399]" 
+                          : "h-7 bg-gradient-to-t from-amber-500 via-amber-400 to-amber-200 shadow-[0_0_10px_#f59e0b]"
+                      }`} />
+
+                      {/* Ground Contact Diamond */}
+                      <div className="w-1.5 h-1.5 rotate-45 bg-amber-300 shadow-[0_0_8px_#fde047] shrink-0" />
+                    </div>
+
+                    {/* Floating Label (City / Node Name) */}
+                    <div className={`absolute top-full mt-1.5 left-1/2 -translate-x-1/2 whitespace-nowrap px-2 py-0.5 rounded-md text-[9px] font-bold font-mono tracking-wider transition-all pointer-events-none ${
+                      isActive 
+                        ? "bg-white text-gray-950 shadow-md scale-110" 
+                        : "bg-black/75 text-gray-200 backdrop-blur-md border border-white/10"
+                    }`}>
+                      {client.city.split("•")[0]}
+                    </div>
+
+                  </div>
+                );
+              })}
+
+            </div>
+
+          </div>
+
+          {/* FLOATING HUD DOSSIER CARD (Displays smoothly over hovered/selected pin) */}
+          {activeHUDClient && (
+            <div className="absolute top-12 left-4 right-4 sm:left-auto sm:right-4 z-50 pointer-events-auto transition-all duration-300 animate-fade-in sm:w-80">
+              <div className="rounded-3xl bg-[#121722]/95 backdrop-blur-2xl border border-white/20 p-4 shadow-[0_20px_60px_rgba(0,0,0,0.8)] text-white space-y-3">
                 
-                {/* HUD Header */}
-                <div className="flex items-start justify-between gap-3 border-b border-white/10 pb-3">
-                  <div className="flex items-center gap-3 min-w-0">
-                    <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-amber-400 to-amber-600 text-gray-950 font-bold flex items-center justify-center text-sm shadow-md shrink-0">
+                {/* Header */}
+                <div className="flex items-center justify-between border-b border-white/10 pb-2.5">
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-amber-400 to-amber-600 text-gray-950 font-bold flex items-center justify-center text-xs shadow-md shrink-0">
                       {activeHUDClient.name.charAt(0).toUpperCase()}
                     </div>
                     <div className="min-w-0">
-                      <div className="flex items-center gap-2">
-                        <h4 className="font-bold text-sm text-white truncate">
-                          {activeHUDClient.name}
-                        </h4>
-                        {activeHUDClient.isRealUser && (
-                          <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
-                            Tu Ubicación
-                          </span>
-                        )}
-                      </div>
-                      <p className="text-[11px] text-gray-400 truncate">
-                        {activeHUDClient.email}
-                      </p>
+                      <p className="font-bold text-xs text-white truncate">{activeHUDClient.name}</p>
+                      <p className="text-[10px] text-gray-400 truncate">{activeHUDClient.email}</p>
                     </div>
                   </div>
-
-                  <div className="flex items-center gap-1.5 shrink-0">
-                    <span className="flex items-center gap-1 text-[10px] font-semibold font-mono text-emerald-400 bg-emerald-400/10 px-2 py-0.5 rounded-full border border-emerald-400/20">
-                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                      En Vivo
-                    </span>
-                    {selectedClient && (
-                      <button 
-                        onClick={() => setSelectedClient(null)} 
-                        className="text-gray-400 hover:text-white text-xs px-1 cursor-pointer"
-                        title="Cerrar panel"
-                      >
-                        ✕
-                      </button>
-                    )}
-                  </div>
+                  <span className="flex items-center gap-1 text-[9px] font-bold font-mono text-emerald-400 bg-emerald-400/10 px-2 py-0.5 rounded-full border border-emerald-400/20">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                    En Línea
+                  </span>
                 </div>
 
-                {/* Location & Frequency Matrix */}
-                <div className="grid grid-cols-2 gap-2 text-xs">
-                  
-                  <div className="p-2.5 rounded-xl bg-white/[0.04] border border-white/5 space-y-0.5">
-                    <span className="text-[10px] text-gray-400 flex items-center gap-1 uppercase tracking-wider font-semibold">
-                      <MapPin className="w-3 h-3 text-amber-400" /> Ubicación
+                {/* Location & Frequency */}
+                <div className="grid grid-cols-2 gap-2 text-[11px]">
+                  <div className="p-2 rounded-xl bg-white/[0.04] border border-white/5">
+                    <span className="text-[9.5px] text-gray-400 flex items-center gap-1 uppercase font-semibold">
+                      <MapPin className="w-3 h-3 text-amber-400" /> Territorio
                     </span>
-                    <p className="font-bold text-white truncate">
-                      {activeHUDClient.city}, {activeHUDClient.country}
-                    </p>
-                    <span className="text-[10px] text-gray-400 block font-mono">
-                      {activeHUDClient.device} • SSL 256
-                    </span>
+                    <p className="font-bold text-white truncate mt-0.5">{activeHUDClient.city}</p>
                   </div>
-
-                  <div className="p-2.5 rounded-xl bg-white/[0.04] border border-white/5 space-y-0.5">
-                    <span className="text-[10px] text-gray-400 flex items-center gap-1 uppercase tracking-wider font-semibold">
+                  <div className="p-2 rounded-xl bg-white/[0.04] border border-white/5">
+                    <span className="text-[9.5px] text-gray-400 flex items-center gap-1 uppercase font-semibold">
                       <Sparkles className="w-3 h-3 text-amber-400" /> Frecuencia
                     </span>
-                    <p className="font-bold text-amber-300 truncate">
-                      {activeHUDClient.frequency}
-                    </p>
-                    <span className="text-[10px] text-gray-400 block">
-                      {activeHUDClient.purchasesCount} {activeHUDClient.purchasesCount === 1 ? "compra realizada" : "compras efectuadas"}
-                    </span>
+                    <p className="font-bold text-amber-300 truncate mt-0.5">{activeHUDClient.frequency}</p>
                   </div>
-
                 </div>
 
-                {/* What they are currently browsing / shopping */}
-                <div className="p-3 rounded-2xl bg-neutral-900/80 border border-white/10 space-y-1.5">
-                  <div className="flex items-center justify-between text-[10px] font-bold text-gray-400 uppercase tracking-wider">
-                    <span className="flex items-center gap-1.5 text-gray-300">
-                      <Eye className="w-3 h-3 text-blue-400" /> Navegando actualmente:
+                {/* Section browsing */}
+                <div className="p-2.5 rounded-2xl bg-neutral-900/90 border border-white/10 space-y-1">
+                  <div className="flex items-center justify-between text-[9.5px] font-bold text-gray-400 uppercase">
+                    <span className="flex items-center gap-1 text-gray-300">
+                      <Eye className="w-3 h-3 text-blue-400" /> Explorando:
                     </span>
-                    <span className="text-amber-400 font-mono">
-                      {activeHUDClient.hasCart ? "En Bolsa de Compra" : "Viendo Catálogo"}
-                    </span>
+                    <span className="text-emerald-400 font-mono">{activeHUDClient.intentScore}% Intención</span>
                   </div>
-                  <p className="text-xs font-semibold text-white truncate">
-                    {activeHUDClient.currentSection}
+                  <p className="text-xs font-semibold text-white truncate">{activeHUDClient.currentSection}</p>
+                  <p className="text-[10px] text-gray-400 pt-1 border-t border-white/5">
+                    Gasto acumulado: <strong className="text-white">${activeHUDClient.totalSpent.toFixed(2)} USD</strong> ({activeHUDClient.purchasesCount} pedidos)
                   </p>
-                  <div className="flex items-center justify-between pt-1 border-t border-white/5 text-[11px] text-gray-400">
-                    <span>Gasto acumulado: <strong className="text-white">${activeHUDClient.totalSpent.toFixed(2)} USD</strong></span>
-                    <span className="text-emerald-400 font-bold">{activeHUDClient.intentScore}% Intención</span>
-                  </div>
-                </div>
-
-                {/* Close instruction tip */}
-                <div className="flex items-center justify-between text-[10px] text-gray-500 pt-0.5">
-                  <span>Alimentado por direcciones registradas del cliente</span>
-                  <span>{selectedClient ? "Clic fuera para soltar" : "Clic para fijar"}</span>
                 </div>
 
               </div>
             </div>
           )}
 
-          {/* Bottom Right Floating Map Compass & Status Indicator */}
-          <div className="absolute bottom-5 right-5 z-20 flex items-center gap-2 bg-neutral-900/90 backdrop-blur-md px-3.5 py-2 rounded-2xl border border-white/10 text-xs text-gray-300 shadow-lg">
-            <Compass className="w-4 h-4 text-amber-400 animate-[spin_12s_linear_infinite]" />
-            <span className="font-mono text-[11px] text-gray-400">
-              Escaneo activo: <strong className="text-white">{connectedClients.length} nodos</strong> • <span className="text-amber-400">{livePingsCount} pings/m</span>
+          {/* Bottom Bar Controls */}
+          <div className="flex items-center justify-between px-2 pt-2 border-t border-white/10 text-[11px] text-gray-400 relative z-30">
+            <span className="flex items-center gap-2 font-mono">
+              <span className="w-2 h-2 rounded-full bg-amber-400" />
+              <span>Balizas en Relieve 3D</span>
+            </span>
+            <span className="font-mono text-gray-500">
+              Escaneo activo: {livePingsCount} pings/min
             </span>
           </div>
 
-          {/* Bottom Left Map Legend */}
-          <div className="absolute bottom-5 left-5 z-20 hidden sm:flex items-center gap-4 bg-neutral-900/80 backdrop-blur-md px-4 py-2 rounded-2xl border border-white/10 text-[11px] text-gray-400 shadow-lg">
-            <div className="flex items-center gap-2">
-              <span className="w-2.5 h-2.5 rounded-full bg-amber-400 shadow-[0_0_8px_#f59e0b]" />
-              <span>Cliente conectado (Palito vertical)</span>
+        </div>
+
+        {/* RIGHT FLANK WIDGETS (3 cols - Device Distribution & Activity Velocity) */}
+        <div className="lg:col-span-3 flex flex-col justify-between gap-4">
+          
+          {/* Device Distribution Card */}
+          <div className="p-5 rounded-3xl bg-[#111622] border border-white/10 shadow-lg text-white space-y-3 flex-1 flex flex-col justify-between">
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-gray-400">
+                Dispositivos de Conexión
+              </span>
+              <Monitor className="w-3.5 h-3.5 text-blue-400" />
             </div>
-            <div className="flex items-center gap-2">
-              <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 shadow-[0_0_8px_#34d399]" />
-              <span>Tu dirección vinculada</span>
+
+            <div className="space-y-2.5">
+              <div>
+                <div className="flex justify-between text-xs font-semibold mb-1">
+                  <span className="flex items-center gap-1.5"><Monitor className="w-3 h-3 text-blue-400" /> Desktop</span>
+                  <span className="font-mono text-gray-300">54%</span>
+                </div>
+                <div className="w-full h-1.5 rounded-full bg-neutral-800 overflow-hidden">
+                  <div className="h-full bg-blue-500 rounded-full" style={{ width: "54%" }} />
+                </div>
+              </div>
+
+              <div>
+                <div className="flex justify-between text-xs font-semibold mb-1">
+                  <span className="flex items-center gap-1.5"><Smartphone className="w-3 h-3 text-emerald-400" /> Móvil</span>
+                  <span className="font-mono text-gray-300">36%</span>
+                </div>
+                <div className="w-full h-1.5 rounded-full bg-neutral-800 overflow-hidden">
+                  <div className="h-full bg-emerald-400 rounded-full" style={{ width: "36%" }} />
+                </div>
+              </div>
+
+              <div>
+                <div className="flex justify-between text-xs font-semibold mb-1">
+                  <span className="flex items-center gap-1.5"><Tablet className="w-3 h-3 text-amber-400" /> Tablet</span>
+                  <span className="font-mono text-gray-300">10%</span>
+                </div>
+                <div className="w-full h-1.5 rounded-full bg-neutral-800 overflow-hidden">
+                  <div className="h-full bg-amber-400 rounded-full" style={{ width: "10%" }} />
+                </div>
+              </div>
             </div>
-            <div className="flex items-center gap-2">
-              <span className="w-2.5 h-2.5 rounded-full bg-rose-500" />
-              <span>Con carrito activo</span>
+
+            <div className="pt-2 border-t border-white/5 flex items-center justify-between text-[11px] text-gray-400">
+              <span>Tráfico dominante</span>
+              <strong className="text-white">Escritorio</strong>
+            </div>
+          </div>
+
+          {/* Purchasing Velocity & Trend Card */}
+          <div className="p-5 rounded-3xl bg-[#111622] border border-white/10 shadow-lg text-white space-y-3 flex-1 flex flex-col justify-between">
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-gray-400">
+                Velocidad de Compra
+              </span>
+              <TrendingUp className="w-3.5 h-3.5 text-emerald-400" />
+            </div>
+
+            <div>
+              <div className="flex items-baseline gap-2">
+                <span className="text-2xl font-bold font-display text-white">+26.4%</span>
+                <span className="text-[11px] text-emerald-400 font-bold">Al alza ↗</span>
+              </div>
+              <p className="text-[11px] text-gray-400 mt-1">
+                Aceleración de pedidos en los últimos 6 meses.
+              </p>
+            </div>
+
+            {/* Mini Monthly Bar Sparkline */}
+            <div className="flex items-end justify-between h-12 gap-1.5 pt-1">
+              {[35, 45, 40, 60, 75, 94].map((val, idx) => (
+                <div key={idx} className="flex-1 bg-neutral-800 rounded-md overflow-hidden h-full flex flex-col justify-end">
+                  <div className="bg-emerald-400 rounded-md transition-all" style={{ height: `${val}%` }} />
+                </div>
+              ))}
+            </div>
+
+            <div className="pt-2 border-t border-white/5 flex items-center justify-between text-[11px] text-gray-400">
+              <span>Frecuencia media</span>
+              <strong className="text-white">1 compra / 16 días</strong>
             </div>
           </div>
 
@@ -904,268 +980,108 @@ export default function AnalyticsRadarView({
       </div>
 
       {/* ========================================================================= */}
-      {/* SECTION 3: IN-DEPTH CUSTOMER BEHAVIOR & INTENT DECK (Orion AI Style) */}
+      {/* 3. BOTTOM COMPACT DOCK: WHAT CLIENTS WANT & SEARCH (Orion Lower Row) */}
       {/* ========================================================================= */}
-      <div>
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+        
+        {/* DOCK CARD 1: SECCIONES MÁS VISITADAS */}
+        <div className="p-5 rounded-3xl bg-white border border-gray-200/80 shadow-sm space-y-3">
+          <div className="flex items-center justify-between">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-gray-400">
+              Secciones Más Visitadas
+            </span>
+            <Eye className="w-3.5 h-3.5 text-[#8c9276]" />
+          </div>
+          <h4 className="font-bold text-sm text-gray-900">
+            A qué sección entran primero
+          </h4>
+
+          <div className="space-y-2">
+            {[
+              { name: "Iluminación & Lámparas", pct: 42, color: "bg-amber-500" },
+              { name: "Salas & Sofás Nórdicos", pct: 28, color: "bg-[#8c9276]" },
+              { name: "Comedores & Mesas Roble", pct: 18, color: "bg-blue-600" },
+              { name: "Decoración & Espejos", pct: 12, color: "bg-rose-500" },
+            ].map((sec, i) => (
+              <div key={i} className="space-y-0.5">
+                <div className="flex justify-between text-[11px] font-semibold text-gray-700">
+                  <span>{sec.name}</span>
+                  <span className="font-mono text-gray-500">{sec.pct}%</span>
+                </div>
+                <div className="w-full h-1.5 rounded-full bg-gray-100 overflow-hidden">
+                  <div className={`h-full rounded-full ${sec.color}`} style={{ width: `${sec.pct}%` }} />
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* DOCK CARD 2: TENDENCIAS DE COMPRA */}
+        <div className="p-5 rounded-3xl bg-white border border-gray-200/80 shadow-sm space-y-3 flex flex-col justify-between">
           <div>
-            <h3 className="font-display font-bold text-xl text-gray-900 tracking-tight flex items-center gap-2">
-              <Activity className="w-5 h-5 text-[#8c9276]" />
-              Comportamiento, Interés & Frecuencia de Compra
-            </h3>
-            <p className="text-xs text-gray-500">
-              Análisis predictivo de qué buscan los clientes, a qué sección se dirigen y con qué intención compran.
+            <div className="flex items-center justify-between mb-1">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-gray-400">
+                Hábitos & Comportamiento
+              </span>
+              <Zap className="w-3.5 h-3.5 text-amber-500" />
+            </div>
+            <h4 className="font-bold text-sm text-gray-900">
+              Con qué intención compran
+            </h4>
+            <p className="text-[11px] text-gray-500 mt-1 leading-relaxed">
+              El <strong>84% de los visitantes</strong> interactúa con las especificaciones técnicas o añade productos al carrito antes de 4 minutos.
             </p>
           </div>
 
-          <div className="flex items-center gap-2">
-            <span className="text-[11px] font-bold px-3 py-1 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200 flex items-center gap-1.5">
-              <TrendingUp className="w-3.5 h-3.5 text-emerald-600" />
-              +26.4% Ritmo de Compra
+          <div className="p-3 rounded-2xl bg-amber-50/70 border border-amber-200/70 space-y-1">
+            <span className="text-[10px] font-bold uppercase text-amber-900">Horario Pico de Pedidos:</span>
+            <p className="text-xs font-bold text-amber-950 font-mono">19:30 - 22:45 hrs (Tarde / Noche)</p>
+          </div>
+        </div>
+
+        {/* DOCK CARD 3: TÉRMINOS MÁS BUSCADOS & ALERTAS AGOTADO */}
+        <div className="p-5 rounded-3xl bg-white border border-gray-200/80 shadow-sm space-y-3">
+          <div className="flex items-center justify-between">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-gray-400">
+              Términos Más Buscados
             </span>
+            <Flame className="w-3.5 h-3.5 text-rose-500" />
           </div>
+          <h4 className="font-bold text-sm text-gray-900">
+            Qué es lo que más quieren
+          </h4>
+
+          <div className="flex flex-wrap gap-1.5 pt-0.5">
+            {[
+              { tag: "Lámpara arco", count: 184, isHot: true },
+              { tag: "Mesa roble", count: 142, isHot: true },
+              { tag: "AGOTADO", count: 118, isAlert: true },
+              { tag: "Sillón boucle", count: 95 },
+              { tag: "Espejo LED", count: 74 },
+              { tag: "Lino crudo", count: 62 },
+            ].map((item, idx) => (
+              <span 
+                key={idx}
+                className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[10.5px] font-medium ${
+                  item.isAlert 
+                    ? "bg-red-50 text-red-700 border border-red-200 font-bold" 
+                    : item.isHot 
+                    ? "bg-amber-50 text-amber-900 border border-amber-200 font-semibold" 
+                    : "bg-gray-100 text-gray-700 border border-gray-200"
+                }`}
+              >
+                {item.isHot && <Flame className="w-2.5 h-2.5 text-amber-500" />}
+                {item.tag}
+                <span className="text-[9px] opacity-60">({item.count})</span>
+              </span>
+            ))}
+          </div>
+
+          <p className="text-[10px] text-red-600 font-semibold pt-1">
+            ⚠️ 118 clientes buscan artículos con badge AGOTADO para reposición.
+          </p>
         </div>
 
-        {/* 4 BENTO CARDS MATCHING THE ORION REFERENCE DECK */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-
-          {/* BENTO CARD 1: TOP SECTIONS TRAFFIC HEATMAP */}
-          <div className="bg-white/95 backdrop-blur-xl rounded-[2rem] p-6 border border-gray-200/80 shadow-[0_8px_30px_rgba(0,0,0,0.03)] flex flex-col justify-between space-y-4">
-            <div>
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">
-                  Secciones Más Visitadas
-                </span>
-                <Eye className="w-4 h-4 text-[#8c9276]" />
-              </div>
-              <h4 className="font-display font-bold text-lg text-gray-900">
-                A qué sección van al entrar
-              </h4>
-              <p className="text-[11px] text-gray-500 mt-0.5">
-                Volumen de tráfico y tiempo medio de navegación por nicho.
-              </p>
-            </div>
-
-            {/* Progress Bars per section */}
-            <div className="space-y-3 pt-1">
-              {[
-                { name: "Iluminación & Lámparas", pct: 42, time: "5m 48s", color: "bg-amber-500" },
-                { name: "Salas & Sofás Nórdicos", pct: 28, time: "4m 12s", color: "bg-[#8c9276]" },
-                { name: "Comedores & Mesas Roble", pct: 18, time: "3m 05s", color: "bg-blue-600" },
-                { name: "Decoración & Espejos", pct: 12, time: "1m 50s", color: "bg-rose-500" },
-              ].map((sec, i) => (
-                <div key={i} className="space-y-1">
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="font-semibold text-gray-800">{sec.name}</span>
-                    <span className="font-mono text-gray-500 text-[11px]">{sec.pct}% • {sec.time}</span>
-                  </div>
-                  <div className="w-full h-2 rounded-full bg-gray-100 overflow-hidden">
-                    <div 
-                      className={`h-full rounded-full transition-all duration-700 ${sec.color}`} 
-                      style={{ width: `${sec.pct}%` }} 
-                    />
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            <div className="pt-3 border-t border-gray-100 text-[11px] text-gray-400 flex items-center justify-between">
-              <span>Nicho líder: <strong>Iluminación</strong></span>
-              <span className="text-emerald-600 font-semibold">+14% vs sem. ant.</span>
-            </div>
-          </div>
-
-          {/* BENTO CARD 2: PURCHASE INTENT & MATCH RINGS (Direct Orion Reference Recreation) */}
-          <div className="bg-white/95 backdrop-blur-xl rounded-[2rem] p-6 border border-gray-200/80 shadow-[0_8px_30px_rgba(0,0,0,0.03)] flex flex-col justify-between space-y-4">
-            <div>
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">
-                  Intención de Compra
-                </span>
-                <Zap className="w-4 h-4 text-[#a3e635]" />
-              </div>
-              <h4 className="font-display font-bold text-lg text-gray-900">
-                Match & Conversión
-              </h4>
-              <p className="text-[11px] text-gray-500 mt-0.5">
-                Probabilidad de cierre según artículos agregados a bolsa y favoritos.
-              </p>
-            </div>
-
-            {/* Circular Gauge Indicators (Directly from Orion Mockup with Rings) */}
-            <div className="flex items-center justify-around py-2">
-              
-              {/* Ring 1: 84% Match */}
-              <div className="flex flex-col items-center">
-                <div className="relative w-20 h-20 flex items-center justify-center">
-                  <svg className="w-full h-full -rotate-90" viewBox="0 0 36 36">
-                    <path
-                      className="text-gray-100"
-                      strokeWidth="3.2"
-                      stroke="currentColor"
-                      fill="none"
-                      d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
-                    />
-                    <path
-                      className="text-amber-500 transition-all duration-1000"
-                      strokeDasharray="84, 100"
-                      strokeWidth="3.2"
-                      strokeLinecap="round"
-                      stroke="currentColor"
-                      fill="none"
-                      d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
-                    />
-                  </svg>
-                  <span className="absolute font-display font-bold text-lg text-gray-900">
-                    84%
-                  </span>
-                </div>
-                <span className="text-[11px] font-bold text-gray-800 mt-1.5">Intención Alta</span>
-                <span className="text-[10px] text-gray-400">Listos para pagar</span>
-              </div>
-
-              {/* Ring 2: 89% Retention */}
-              <div className="flex flex-col items-center">
-                <div className="relative w-20 h-20 flex items-center justify-center">
-                  <svg className="w-full h-full -rotate-90" viewBox="0 0 36 36">
-                    <path
-                      className="text-gray-100"
-                      strokeWidth="3.2"
-                      stroke="currentColor"
-                      fill="none"
-                      d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
-                    />
-                    <path
-                      className="text-emerald-500 transition-all duration-1000"
-                      strokeDasharray="89, 100"
-                      strokeWidth="3.2"
-                      strokeLinecap="round"
-                      stroke="currentColor"
-                      fill="none"
-                      d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
-                    />
-                  </svg>
-                  <span className="absolute font-display font-bold text-lg text-gray-900">
-                    89%
-                  </span>
-                </div>
-                <span className="text-[11px] font-bold text-gray-800 mt-1.5">Fidelidad</span>
-                <span className="text-[10px] text-gray-400">Recompran en tienda</span>
-              </div>
-
-            </div>
-
-            <div className="pt-3 border-t border-gray-100 text-[11px] text-gray-400 flex items-center justify-between">
-              <span>Ratio de conversión: <strong>3.8%</strong></span>
-              <span className="text-amber-600 font-semibold">Excelente</span>
-            </div>
-          </div>
-
-          {/* BENTO CARD 3: PURCHASE FREQUENCY & TREND VELOCITY */}
-          <div className="bg-white/95 backdrop-blur-xl rounded-[2rem] p-6 border border-gray-200/80 shadow-[0_8px_30px_rgba(0,0,0,0.03)] flex flex-col justify-between space-y-4">
-            <div>
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">
-                  Frecuencia de Compra
-                </span>
-                <TrendingUp className="w-4 h-4 text-emerald-600" />
-              </div>
-              <h4 className="font-display font-bold text-lg text-gray-900">
-                ¿Han subido o bajado?
-              </h4>
-              <p className="text-[11px] text-gray-500 mt-0.5">
-                Evolución de compras por cliente en los últimos 6 meses.
-              </p>
-            </div>
-
-            {/* Sparkline / Monthly Trend Bars */}
-            <div>
-              <div className="flex items-baseline gap-2 mb-2">
-                <span className="text-2xl font-bold font-display text-gray-900">+26.4%</span>
-                <span className="text-xs text-emerald-600 font-bold">Al alza ↗</span>
-              </div>
-
-              {/* Mini Interactive Trend Bar Chart */}
-              <div className="flex items-end justify-between h-20 pt-2 gap-1.5 border-b border-gray-100 pb-1">
-                {[
-                  { month: "Mar", height: 35, orders: 12 },
-                  { month: "Abr", height: 45, orders: 16 },
-                  { month: "May", height: 40, orders: 14 },
-                  { month: "Jun", height: 60, orders: 22 },
-                  { month: "Jul", height: 75, orders: 28 },
-                  { month: "Ago", height: 92, orders: 35 },
-                ].map((item, i) => (
-                  <div key={i} className="flex-1 flex flex-col items-center gap-1 group cursor-pointer" title={`${item.month}: ${item.orders} compras`}>
-                    <div 
-                      className="w-full rounded-lg bg-emerald-500 group-hover:bg-emerald-600 transition-all"
-                      style={{ height: `${item.height}%` }}
-                    />
-                    <span className="text-[9px] font-mono text-gray-400 group-hover:text-gray-900">
-                      {item.month}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <div className="pt-2 text-[11px] text-gray-500 flex items-center justify-between">
-              <span>Intervalo medio:</span>
-              <strong className="text-gray-900">1 compra cada 16 días</strong>
-            </div>
-          </div>
-
-          {/* BENTO CARD 4: WHAT CLIENTS SEARCH FOR THE MOST (Trending Queries) */}
-          <div className="bg-white/95 backdrop-blur-xl rounded-[2rem] p-6 border border-gray-200/80 shadow-[0_8px_30px_rgba(0,0,0,0.03)] flex flex-col justify-between space-y-4">
-            <div>
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">
-                  Términos Más Buscados
-                </span>
-                <Search className="w-4 h-4 text-blue-600" />
-              </div>
-              <h4 className="font-display font-bold text-lg text-gray-900">
-                Qué es lo que más quieren
-              </h4>
-              <p className="text-[11px] text-gray-500 mt-0.5">
-                Productos con mayor intención de búsqueda en tienda.
-              </p>
-            </div>
-
-            {/* Tag Cloud with Hits */}
-            <div className="flex flex-wrap gap-1.5 pt-1">
-              {[
-                { tag: "Lámpara arco", count: 184, isHot: true },
-                { tag: "Mesa roble", count: 142, isHot: true },
-                { tag: "AGOTADO", count: 118, isAlert: true },
-                { tag: "Sillón boucle", count: 95 },
-                { tag: "Espejo LED", count: 74 },
-                { tag: "Lino crudo", count: 62 },
-                { tag: "Nova LED", count: 54 },
-              ].map((item, idx) => (
-                <span 
-                  key={idx}
-                  className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-xl text-[11px] font-medium transition-all ${
-                    item.isAlert 
-                      ? "bg-red-50 text-red-700 border border-red-200 font-bold" 
-                      : item.isHot 
-                      ? "bg-amber-50 text-amber-900 border border-amber-200 font-bold" 
-                      : "bg-gray-100 text-gray-700 border border-gray-200"
-                  }`}
-                >
-                  {item.isHot && <Flame className="w-3 h-3 text-amber-500" />}
-                  {item.tag}
-                  <span className="text-[9.5px] opacity-60">({item.count})</span>
-                </span>
-              ))}
-            </div>
-
-            <div className="pt-3 border-t border-gray-100 text-[11px] text-gray-400 flex items-center justify-between">
-              <span>Alerta de stock:</span>
-              <span className="text-red-600 font-bold">118 buscan artículos agotados</span>
-            </div>
-          </div>
-
-        </div>
       </div>
 
     </div>
