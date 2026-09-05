@@ -58,8 +58,9 @@ export default function AnalyticsRadarView({
   const [hoveredClient, setHoveredClient] = useState<ConnectedClient | null>(null);
   const [selectedClient, setSelectedClient] = useState<ConnectedClient | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
-  const [activeStage, setActiveStage] = useState<"all" | "cart" | "vip">("all");
+  const [activeStage, setActiveStage] = useState<"all" | "cart" | "frequent">("all");
   const [activeTab, setActiveTab] = useState<"metrics" | "clients">("metrics");
+  const [scrollProgress, setScrollProgress] = useState<number>(0);
 
   // Zoom & Pan states
   const [zoom, setZoom] = useState<number>(1);
@@ -67,6 +68,7 @@ export default function AnalyticsRadarView({
   const [isDragging, setIsDragging] = useState<boolean>(false);
   
   const mapContainerRef = useRef<HTMLDivElement>(null);
+  const clientsListRef = useRef<HTMLDivElement>(null);
   const dragStartRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
   const panStartRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
 
@@ -238,7 +240,7 @@ export default function AnalyticsRadarView({
   const filteredClients = useMemo(() => {
     return connectedClients.filter(c => {
       if (activeStage === "cart" && !c.hasCart) return false;
-      if (activeStage === "vip" && !c.frequency.includes("VIP")) return false;
+      if (activeStage === "frequent" && (c.purchasesCount < 3 || c.frequency === "Primera vez")) return false;
 
       if (searchQuery.trim()) {
         const q = searchQuery.toLowerCase();
@@ -256,11 +258,7 @@ export default function AnalyticsRadarView({
 
   // Natural Zoom handling via mouse wheel & laptop trackpad (2 fingers up / down)
   const handleWheel = useCallback((e: WheelEvent) => {
-    // Non-passive wheel interceptor to prevent page scrolling
     e.preventDefault();
-
-    // Two fingers up on trackpad / mouse wheel up: deltaY < 0 -> Zoom In
-    // Two fingers down on trackpad / mouse wheel down: deltaY > 0 -> Zoom Out
     const factor = e.deltaY < 0 ? 1.15 : 0.87;
 
     setZoom(prev => {
@@ -273,12 +271,21 @@ export default function AnalyticsRadarView({
     const el = mapContainerRef.current;
     if (!el) return;
 
-    // Attach non-passive wheel event listener
     el.addEventListener("wheel", handleWheel, { passive: false });
     return () => {
       el.removeEventListener("wheel", handleWheel);
     };
   }, [handleWheel]);
+
+  // Scroll handler for the clients list to update the luminous green vertical bar
+  const handleClientsScroll = () => {
+    const el = clientsListRef.current;
+    if (!el) return;
+    const maxScroll = el.scrollHeight - el.clientHeight;
+    if (maxScroll > 0) {
+      setScrollProgress(el.scrollTop / maxScroll);
+    }
+  };
 
   // Drag & Pan handlers
   const handleMouseDown = (e: React.MouseEvent) => {
@@ -488,13 +495,14 @@ export default function AnalyticsRadarView({
             <ZoomIn className="w-4 h-4" />
           </button>
 
-          {/* Compass Indicator (ShotScape Style) */}
-          <div 
-            title="Orientación Norte"
-            className="w-8 h-8 rounded-xl bg-black/50 border border-white/10 flex items-center justify-center text-[#ccff00] font-mono font-bold text-xs"
+          {/* Compass Indicator / Center on Ecuador Button */}
+          <button 
+            onClick={handleResetView}
+            title="Orientación Norte & Centrar Mapa"
+            className="w-8 h-8 rounded-xl bg-black/50 border border-white/15 hover:border-[#ccff00] flex items-center justify-center text-[#ccff00] transition-all hover:scale-110 active:scale-95 cursor-pointer shadow-[0_0_10px_rgba(204,255,0,0.15)] group"
           >
-            <Compass className="w-4 h-4" />
-          </div>
+            <Compass className="w-4 h-4 group-hover:rotate-45 transition-transform duration-300" />
+          </button>
 
           {/* Zoom Out Button */}
           <button 
@@ -613,7 +621,7 @@ export default function AnalyticsRadarView({
             {activeTab === "metrics" ? (
               <div className="space-y-4">
                 
-                {/* Metric 1: Online Volume & Stage Filter */}
+                {/* Metric 1: Online Volume & Stage Filter (Clarified: Todos, En Carrito, Recurrentes) */}
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-bold text-white/90">Tráfico Activo</span>
@@ -622,7 +630,7 @@ export default function AnalyticsRadarView({
                     </span>
                   </div>
                   
-                  {/* Stage filter pills */}
+                  {/* Stage filter pills: Todos | En Carrito | Recurrentes */}
                   <div className="grid grid-cols-3 gap-1 p-1 rounded-full bg-black/50 border border-white/10 text-[10px] text-center font-bold">
                     <button 
                       onClick={() => setActiveStage("all")}
@@ -638,15 +646,15 @@ export default function AnalyticsRadarView({
                         activeStage === "cart" ? "bg-white text-gray-950 shadow-sm" : "text-white/60 hover:text-white"
                       }`}
                     >
-                      En Bolsa
+                      En Carrito
                     </button>
                     <button 
-                      onClick={() => setActiveStage("vip")}
+                      onClick={() => setActiveStage("frequent")}
                       className={`py-1 rounded-full transition-all cursor-pointer ${
-                        activeStage === "vip" ? "bg-[#ccff00] text-gray-950 shadow-[0_0_10px_#ccff00]" : "text-white/60 hover:text-white"
+                        activeStage === "frequent" ? "bg-[#ccff00] text-gray-950 shadow-[0_0_10px_#ccff00]" : "text-white/60 hover:text-white"
                       }`}
                     >
-                      VIP
+                      Recurrentes
                     </button>
                   </div>
                 </div>
@@ -725,23 +733,65 @@ export default function AnalyticsRadarView({
 
               </div>
             ) : (
-              /* TAB CONTENT C: CLIENTS LIST SCROLLER */
-              <div className="space-y-1.5 max-h-60 overflow-y-auto pr-1">
-                {filteredClients.map(c => (
+              /* TAB CONTENT C: CLIENTS LIST WITH LUMINOUS NEON GREEN SLIDER BAR */
+              <div className="relative flex items-stretch gap-2 h-64">
+                {/* Scrollable List with Native Scrollbar Hidden */}
+                <div 
+                  ref={clientsListRef}
+                  onScroll={handleClientsScroll}
+                  className="flex-1 space-y-2 overflow-y-auto pr-1 select-none"
+                  style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+                >
+                  {filteredClients.map(c => {
+                    const isSelected = activeHUDClient?.id === c.id;
+                    return (
+                      <div 
+                        key={c.id}
+                        onClick={() => setSelectedClient(c)}
+                        className={`p-2.5 rounded-2xl flex items-center justify-between text-xs cursor-pointer transition-all border ${
+                          isSelected 
+                            ? "bg-white text-gray-950 font-bold border-[#ccff00] shadow-[0_0_16px_rgba(204,255,0,0.35)]" 
+                            : "bg-black/40 hover:bg-black/70 text-white/85 border-white/10 hover:border-white/20"
+                        }`}
+                      >
+                        <div className="flex items-center gap-2.5 truncate pr-2">
+                          <div className={`w-7 h-7 rounded-xl flex items-center justify-center text-xs font-black shrink-0 ${
+                            isSelected 
+                              ? "bg-gray-950 text-[#ccff00]" 
+                              : c.isRealUser 
+                              ? "bg-emerald-400 text-gray-950 shadow-[0_0_10px_#34d399]" 
+                              : "bg-gradient-to-tr from-amber-400 to-yellow-200 text-gray-950"
+                          }`}>
+                            {c.name.charAt(0)}
+                          </div>
+                          <div className="truncate">
+                            <p className="leading-tight truncate font-semibold">{c.name}</p>
+                            <p className={`text-[9.5px] mt-0.5 ${isSelected ? "text-gray-700 font-medium" : "text-white/45"}`}>
+                              {c.city.split(" ")[0]} • <span className="font-mono">${c.totalSpent}</span>
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          {c.hasCart && (
+                            <span className="w-2 h-2 rounded-full bg-rose-500 shadow-[0_0_6px_#f43f5e]" title="Con Carrito Activo" />
+                          )}
+                          <ChevronRight className="w-3.5 h-3.5 opacity-60" />
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* Elegant Luminous Neon Green Vertical Slider Track */}
+                <div className="relative w-1.5 bg-white/5 rounded-full overflow-hidden shrink-0 border border-white/10">
                   <div 
-                    key={c.id}
-                    onClick={() => setSelectedClient(c)}
-                    className={`p-2 rounded-xl flex items-center justify-between text-xs cursor-pointer transition-all ${
-                      activeHUDClient?.id === c.id ? "bg-white text-gray-950 font-bold" : "bg-black/40 hover:bg-black/60 text-white/80"
-                    }`}
-                  >
-                    <div className="truncate pr-2">
-                      <p className="leading-tight truncate">{c.name}</p>
-                      <p className={`text-[9.5px] ${activeHUDClient?.id === c.id ? "text-gray-700" : "text-white/40"}`}>{c.city.split(" ")[0]}</p>
-                    </div>
-                    <ChevronRight className="w-3.5 h-3.5 shrink-0 opacity-60" />
-                  </div>
-                ))}
+                    style={{
+                      height: "32%",
+                      top: `${scrollProgress * 68}%`
+                    }}
+                    className="absolute w-full bg-[#ccff00] rounded-full shadow-[0_0_12px_#ccff00] transition-all duration-75"
+                  />
+                </div>
               </div>
             )}
 
@@ -763,7 +813,7 @@ export default function AnalyticsRadarView({
       {/* ========================================================================= */}
       <div className="absolute bottom-5 left-6 right-6 lg:right-96 z-30 grid grid-cols-1 sm:grid-cols-3 gap-3 pointer-events-auto">
         
-        {/* Card 1: Cobertura Nacional */}
+        {/* Card 1: Cobertura Territorial (Conservada) */}
         <div className="rounded-2xl bg-black/60 backdrop-blur-xl border border-white/15 p-3.5 shadow-xl flex flex-col justify-between">
           <div className="flex items-center justify-between text-[11px] font-bold text-white mb-1">
             <span className="flex items-center gap-1.5">
@@ -779,7 +829,7 @@ export default function AnalyticsRadarView({
           </div>
         </div>
 
-        {/* Card 2: Embudo en Vivo */}
+        {/* Card 2: Embudo de Conversión (Catálogo, Carrito, Recurrentes) */}
         <div className="rounded-2xl bg-black/60 backdrop-blur-xl border border-white/15 p-3.5 shadow-xl flex flex-col justify-between">
           <div className="flex items-center justify-between text-[11px] font-bold text-white mb-1">
             <span className="flex items-center gap-1.5">
@@ -789,8 +839,8 @@ export default function AnalyticsRadarView({
           </div>
           <div className="flex items-center justify-between text-[9.5px] text-white/70">
             <span>Catálogo: <strong>62%</strong></span>
-            <span>Bolsa: <strong>24%</strong></span>
-            <span>VIP: <strong>14%</strong></span>
+            <span>Carrito: <strong>24%</strong></span>
+            <span>Recurrentes: <strong>14%</strong></span>
           </div>
           <div className="w-full h-1.5 rounded-full bg-white/10 flex overflow-hidden mt-1.5">
             <div className="h-full bg-white" style={{ width: "62%" }} />
@@ -799,20 +849,20 @@ export default function AnalyticsRadarView({
           </div>
         </div>
 
-        {/* Card 3: Estado de IA */}
+        {/* Card 3: IA Predictiva Radar (Reemplazo de latencia por métricas de negocio reales) */}
         <div className="rounded-2xl bg-black/60 backdrop-blur-xl border border-white/15 p-3.5 shadow-xl flex flex-col justify-between">
           <div className="flex items-center justify-between text-[11px] font-bold text-white mb-1">
             <span className="flex items-center gap-1.5">
               <Sparkles className="w-3 h-3 text-[#ccff00]" /> IA Predictiva Radar
             </span>
-            <span className="text-[9px] font-mono text-[#ccff00]">Activa</span>
+            <span className="text-[9px] font-mono text-[#ccff00] font-bold">En Vivo</span>
           </div>
           <p className="text-[10px] text-white/70">
             Detección de intención en tiempo real
           </p>
-          <div className="flex items-center justify-between text-[9px] font-mono text-white/50 mt-1">
-            <span>Latencia: <strong>16ms</strong></span>
-            <span className="text-white">Frecuencia: <strong>Alta</strong></span>
+          <div className="flex items-center justify-between text-[9px] font-mono text-white/60 mt-1 pt-1 border-t border-white/10">
+            <span>Ticket Promedio: <strong className="text-white">$185 USD</strong></span>
+            <span>Conversión: <strong className="text-[#ccff00]">3.8% Alta</strong></span>
           </div>
         </div>
 
