@@ -735,12 +735,12 @@ export default function AnalyticsRadarView({
             >
               {displayedDossierClient && (
                 <div className="rounded-2xl bg-black/55 border border-[#ccff00]/30 p-3.5 space-y-2.5 shadow-xl backdrop-blur-md transition-all duration-500 ease-out">
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="flex items-center gap-2.5 truncate">
-                      <div className="w-8 h-8 rounded-full bg-[#ccff00] text-gray-950 font-black flex items-center justify-center text-xs shrink-0 shadow-sm transition-transform duration-300 hover:scale-105">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex items-start gap-2.5 min-w-0 flex-1">
+                      <div className="w-8 h-8 rounded-full bg-[#ccff00] text-gray-950 font-black flex items-center justify-center text-xs shrink-0 shadow-sm transition-transform duration-300 hover:scale-105 mt-0.5">
                         {displayedDossierClient.name.charAt(0)}
                       </div>
-                      <div className="truncate">
+                      <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-1.5">
                           <h4 className="font-bold text-xs text-white leading-tight truncate">{displayedDossierClient.name}</h4>
                           {displayedDossierClient.isRealUser && (
@@ -749,31 +749,32 @@ export default function AnalyticsRadarView({
                             </span>
                           )}
                         </div>
-                        <p className="text-[10px] text-white/50 flex items-center gap-1 mt-0.5 truncate">
-                          <MapPin className="w-2.5 h-2.5 text-white/60 shrink-0" /> {displayedDossierClient.city}
+                        <p className="text-[10.5px] text-white/75 flex items-center gap-1 mt-0.5">
+                          <MapPin className="w-3 h-3 text-[#ccff00] shrink-0" /> 
+                          <span className="truncate">{displayedDossierClient.city}</span>
                         </p>
+                        <div className="mt-1.5">
+                          <span 
+                            className="inline-flex items-center text-[10.5px] font-mono px-2.5 py-0.5 rounded-full bg-white/10 text-[#ccff00] border border-white/15 font-bold tracking-tight shadow-sm"
+                            title="Frecuencia estimada de recompra del cliente"
+                          >
+                            Recompra: {displayedDossierClient.frequency}
+                          </span>
+                        </div>
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-2 shrink-0">
-                      <span 
-                        className="text-[11px] font-mono px-2.5 py-1 rounded-full bg-white/10 text-white border border-white/15 font-bold tracking-tight shrink-0 shadow-sm"
-                        title="Frecuencia estimada de recompra del cliente"
-                      >
-                        Recompra: {displayedDossierClient.frequency}
-                      </span>
-                      <button 
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setSelectedClient(null);
-                          setHoveredClient(null);
-                        }}
-                        className="w-6 h-6 rounded-full bg-white/10 hover:bg-white/20 text-white/70 hover:text-white flex items-center justify-center transition-all duration-200 cursor-pointer shrink-0"
-                        title="Cerrar detalle (Esc)"
-                      >
-                        <X className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
+                    <button 
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setSelectedClient(null);
+                        setHoveredClient(null);
+                      }}
+                      className="w-6 h-6 rounded-full bg-white/10 hover:bg-white/20 text-white/70 hover:text-white flex items-center justify-center transition-all duration-200 cursor-pointer shrink-0"
+                      title="Cerrar detalle (Esc)"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
                   </div>
 
                   <div className="space-y-1.5 text-[10.5px] pt-2 border-t border-white/10">
