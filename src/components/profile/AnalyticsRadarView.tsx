@@ -119,6 +119,19 @@ export default function AnalyticsRadarView({
   const [selectedClient, setSelectedClient] = useState<ConnectedClient | null>(null);
   const [lastActiveClient, setLastActiveClient] = useState<ConnectedClient | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [isSearchFocused, setIsSearchFocused] = useState<boolean>(false);
+  const searchContainerRef = useRef<HTMLDivElement>(null);
+
+  // Click outside listener to close search dropdown
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (searchContainerRef.current && !searchContainerRef.current.contains(e.target as Node)) {
+        setIsSearchFocused(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
   const [activeStage, setActiveStage] = useState<"all" | "cart" | "frequent">("all");
   const [activeTab, setActiveTab] = useState<"metrics" | "clients">("metrics");
   const [scrollProgress, setScrollProgress] = useState<number>(0);
@@ -362,14 +375,25 @@ export default function AnalyticsRadarView({
       if (activeStage === "frequent" && (c.purchasesCount < 3 || c.frequency === "Primera vez")) return false;
 
       if (searchQuery.trim()) {
-        const q = searchQuery.toLowerCase();
-        return (
+        const q = searchQuery.toLowerCase().trim();
+        // Direct match
+        if (
           c.name.toLowerCase().includes(q) ||
           c.city.toLowerCase().includes(q) ||
           c.country.toLowerCase().includes(q) ||
           c.email.toLowerCase().includes(q) ||
           c.currentSection.toLowerCase().includes(q)
-        );
+        ) return true;
+
+        // Province & Region match (e.g. Sierra, Costa, Oriente, Amazonía, Galápagos)
+        const matchedEntry = Object.entries(ECUADOR_PROVINCE_COORDINATES).find(([k]) => c.city.toLowerCase().includes(k));
+        if (matchedEntry) {
+          const { province, region } = matchedEntry[1];
+          if (province.toLowerCase().includes(q) || region.toLowerCase().includes(q)) return true;
+          if ((q === "amazonia" || q === "amazonía") && region.toLowerCase() === "oriente") return true;
+        }
+
+        return false;
       }
       return true;
     });
@@ -441,6 +465,14 @@ export default function AnalyticsRadarView({
     setPan({ x: 0, y: 0 });
   };
 
+  // Smooth camera fly-to function for cities and coordinates
+  const focusOnLocation = useCallback((xPct: number, yPct: number, zoomLevel: number = 1.6) => {
+    const targetPanX = Math.round((50 - xPct) * 5.4 * (zoomLevel / 1.5));
+    const targetPanY = Math.round((50 - yPct) * 3.8 * (zoomLevel / 1.5));
+    setZoom(zoomLevel);
+    setPan({ x: targetPanX, y: targetPanY });
+  }, []);
+
   const activeHUDClient = hoveredClient || selectedClient;
 
   // Helper to extract full clean city name (e.g. "Santo Domingo", "Quito") before parentheses or hyphens
@@ -499,7 +531,7 @@ export default function AnalyticsRadarView({
           style={{
             transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`,
             transformOrigin: "center center",
-            transition: isDragging ? "none" : "transform 0.15s ease-out"
+            transition: isDragging ? "none" : "transform 0.6s cubic-bezier(0.16, 1, 0.3, 1)"
           }}
           className="relative w-[780px] lg:w-[920px] aspect-[1024/682] flex items-center justify-center pointer-events-auto shrink-0"
         >
@@ -610,28 +642,195 @@ export default function AnalyticsRadarView({
       {/* ========================================================================= */}
       <div className="absolute top-5 left-6 right-6 lg:right-96 z-30 flex items-center justify-between gap-3 pointer-events-none">
         
-        {/* Left/Center Glass Search & Stage Capsule */}
-        <div className="flex items-center bg-black/60 backdrop-blur-xl border border-white/15 rounded-full px-3.5 py-1.5 shadow-xl text-xs text-white max-w-md w-full pointer-events-auto">
-          <div className="flex items-center gap-2 pr-3 border-r border-white/10 shrink-0">
-            <div className="w-6 h-6 rounded-full bg-white text-gray-950 font-black text-xs flex items-center justify-center">
-              L
+        {/* Interactive Dynamic Search Capsule & Live Suggester */}
+        <div 
+          ref={searchContainerRef}
+          className="relative max-w-md w-full pointer-events-auto"
+        >
+          {/* Main Search Pill */}
+          <div className={`flex items-center bg-black/75 backdrop-blur-2xl border rounded-full px-3.5 py-2 shadow-2xl text-xs text-white w-full transition-all duration-300 ${
+            isSearchFocused 
+              ? "border-[#ccff00] ring-2 ring-[#ccff00]/30 shadow-[0_0_24px_rgba(204,255,0,0.25)] bg-black/90" 
+              : "border-white/15 hover:border-white/30"
+          }`}>
+            <div className="flex items-center gap-2 pr-3 border-r border-white/10 shrink-0">
+              <div className="relative w-6 h-6 rounded-full bg-gradient-to-tr from-[#ccff00] to-white text-gray-950 font-black text-xs flex items-center justify-center shadow-[0_0_10px_#ccff00]/40">
+                L
+              </div>
+              <span className="font-extrabold tracking-wider text-xs hidden sm:inline font-mono text-[#ccff00]">RADAR</span>
             </div>
-            <span className="font-extrabold tracking-wider text-xs hidden sm:inline">RADAR</span>
+
+            <Search className={`w-3.5 h-3.5 mx-2 shrink-0 transition-colors duration-200 ${isSearchFocused ? "text-[#ccff00]" : "text-white/50"}`} />
+            
+            <input 
+              type="text"
+              value={searchQuery}
+              onFocus={() => setIsSearchFocused(true)}
+              onChange={e => setSearchQuery(e.target.value)}
+              placeholder="Buscar ciudad, provincia o región..."
+              className="bg-transparent border-none outline-none text-xs text-white placeholder:text-white/45 flex-1 min-w-0"
+            />
+
+            {/* Clear Search Button */}
+            {searchQuery && (
+              <button 
+                onClick={() => {
+                  setSearchQuery("");
+                  handleResetView();
+                }}
+                className="w-4 h-4 rounded-full bg-white/20 hover:bg-white/40 text-white flex items-center justify-center transition-all cursor-pointer mr-1.5 shrink-0"
+                title="Limpiar búsqueda"
+              >
+                <X className="w-2.5 h-2.5" />
+              </button>
+            )}
+
+            <div className="flex items-center gap-1.5 pl-2 border-l border-white/10 shrink-0">
+              <span className={`w-2 h-2 rounded-full transition-colors ${
+                searchQuery ? "bg-[#ccff00] shadow-[0_0_8px_#ccff00]" : "bg-emerald-400 animate-pulse"
+              }`} />
+              <span className="text-[10px] font-mono text-white/80 font-semibold">
+                {searchQuery ? `${filteredClients.length} en radar` : "24 Provincias"}
+              </span>
+            </div>
           </div>
 
-          <Search className="w-3.5 h-3.5 text-white/50 mx-2 shrink-0" />
-          <input 
-            type="text"
-            value={searchQuery}
-            onChange={e => setSearchQuery(e.target.value)}
-            placeholder="Buscar ciudad o provincia..."
-            className="bg-transparent border-none outline-none text-xs text-white placeholder:text-white/45 flex-1 min-w-0"
-          />
+          {/* FLOATING LIVE INTERACTIVE SUGGESTER & REGIONAL TELEPORT POPOVER */}
+          {isSearchFocused && (
+            <div className="absolute top-full left-0 right-0 mt-2 rounded-3xl bg-[#111614]/95 backdrop-blur-3xl border border-white/20 p-4 shadow-[0_20px_50px_rgba(0,0,0,0.8)] z-50 animate-fade-in space-y-3.5">
+              
+              {/* 1. Quick Regional Filters */}
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between text-[10px] font-mono text-white/50 font-bold uppercase tracking-wider">
+                  <span>Regiones Naturales</span>
+                  {searchQuery && (
+                    <button 
+                      onClick={() => { setSearchQuery(""); handleResetView(); }} 
+                      className="text-[#ccff00] hover:underline normal-case font-sans cursor-pointer text-[11px]"
+                    >
+                      Ver todo Ecuador
+                    </button>
+                  )}
+                </div>
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  {[
+                    { name: "Sierra", icon: "🏔️", query: "Sierra" },
+                    { name: "Costa", icon: "🌊", query: "Costa" },
+                    { name: "Amazonía", icon: "🌿", query: "Oriente" },
+                    { name: "Galápagos", icon: "🐢", query: "Galápagos" },
+                  ].map((reg) => {
+                    const isActive = searchQuery.toLowerCase() === reg.query.toLowerCase() || (reg.name === "Amazonía" && (searchQuery.toLowerCase() === "amazonia" || searchQuery.toLowerCase() === "oriente"));
+                    return (
+                      <button
+                        key={reg.name}
+                        onClick={() => {
+                          setSearchQuery(reg.query);
+                        }}
+                        className={`px-2.5 py-1 rounded-full text-[11px] font-semibold transition-all flex items-center gap-1.5 border cursor-pointer ${
+                          isActive
+                            ? "bg-[#ccff00] text-gray-950 font-bold border-[#ccff00] shadow-[0_0_12px_rgba(204,255,0,0.4)]"
+                            : "bg-white/5 hover:bg-white/15 text-white/80 border-white/10 hover:border-white/20 hover:text-white"
+                        }`}
+                      >
+                        <span>{reg.icon}</span>
+                        <span>{reg.name}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
 
-          <div className="flex items-center gap-1.5 pl-2 border-l border-white/10 shrink-0">
-            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-            <span className="text-[10px] font-mono text-white/70 font-semibold">24 Provincias</span>
-          </div>
+              {/* 2. Key Cities Quick Teleport */}
+              <div className="space-y-1.5 pt-2 border-t border-white/10">
+                <div className="flex items-center justify-between text-[10px] font-mono text-white/50 font-bold uppercase tracking-wider">
+                  <span>Explorar Ciudades</span>
+                  <span className="text-[9.5px] font-mono text-[#ccff00] flex items-center gap-1">
+                    <MapPin className="w-2.5 h-2.5" /> Clic para enfocar
+                  </span>
+                </div>
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  {[
+                    { city: "Quito", coords: ECUADOR_PROVINCE_COORDINATES["quito"] },
+                    { city: "Guayaquil", coords: ECUADOR_PROVINCE_COORDINATES["guayaquil"] },
+                    { city: "Cuenca", coords: ECUADOR_PROVINCE_COORDINATES["cuenca"] },
+                    { city: "Santo Domingo", coords: ECUADOR_PROVINCE_COORDINATES["santo domingo"] },
+                    { city: "Manta", coords: ECUADOR_PROVINCE_COORDINATES["manta"] },
+                    { city: "Ambato", coords: ECUADOR_PROVINCE_COORDINATES["ambato"] },
+                    { city: "Loja", coords: ECUADOR_PROVINCE_COORDINATES["loja"] },
+                    { city: "Puyo", coords: ECUADOR_PROVINCE_COORDINATES["puyo"] },
+                    { city: "Galápagos", coords: ECUADOR_PROVINCE_COORDINATES["galapagos"] },
+                  ].map(({ city, coords }) => {
+                    const clientMatch = connectedClients.find(c => c.city.toLowerCase().includes(city.toLowerCase()));
+                    return (
+                      <button
+                        key={city}
+                        onClick={() => {
+                          setSearchQuery(city);
+                          if (coords) {
+                            focusOnLocation(coords.x, coords.y, 1.8);
+                          }
+                          if (clientMatch) {
+                            setSelectedClient(clientMatch);
+                          }
+                          setIsSearchFocused(false);
+                        }}
+                        className="px-2.5 py-1 rounded-xl text-[10.5px] bg-white/5 hover:bg-[#ccff00]/15 hover:border-[#ccff00]/40 text-white/85 hover:text-[#ccff00] border border-white/10 transition-all flex items-center gap-1 cursor-pointer group"
+                      >
+                        <MapPin className="w-2.5 h-2.5 opacity-60 group-hover:opacity-100 group-hover:text-[#ccff00]" />
+                        <span>{city}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* 3. Live Matching Clients List */}
+              {searchQuery.trim().length > 0 && (
+                <div className="space-y-1.5 pt-2 border-t border-white/10">
+                  <div className="flex items-center justify-between text-[10px] font-mono text-white/50 font-bold uppercase tracking-wider">
+                    <span>Coincidencias en Vivo ({filteredClients.length})</span>
+                  </div>
+                  {filteredClients.length === 0 ? (
+                    <div className="py-3 text-center text-white/50 text-[11px]">
+                      No hay clientes conectados en &quot;{searchQuery}&quot;
+                    </div>
+                  ) : (
+                    <div className="max-h-44 overflow-y-auto space-y-1 pr-1" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+                      {filteredClients.map((client) => (
+                        <div
+                          key={client.id}
+                          onClick={() => {
+                            setSelectedClient(client);
+                            focusOnLocation(client.x, client.y, 1.9);
+                            setIsSearchFocused(false);
+                          }}
+                          className="p-2 rounded-xl bg-white/5 hover:bg-white/15 border border-white/10 hover:border-[#ccff00]/40 flex items-center justify-between cursor-pointer transition-all group"
+                        >
+                          <div className="flex items-center gap-2 truncate">
+                            <div className="w-6 h-6 rounded-full bg-[#ccff00] text-gray-950 font-black flex items-center justify-center text-[10px] shrink-0">
+                              {client.name.charAt(0)}
+                            </div>
+                            <div className="truncate">
+                              <p className="text-xs font-semibold text-white group-hover:text-[#ccff00] transition-colors truncate">
+                                {client.name}
+                              </p>
+                              <p className="text-[10px] text-white/50 truncate">
+                                {client.city} • <span className="font-mono text-white/80">${client.totalSpent}</span>
+                              </p>
+                            </div>
+                          </div>
+                          <span className="text-[9.5px] font-mono px-2 py-0.5 rounded bg-white/10 text-white/80 group-hover:bg-[#ccff00] group-hover:text-gray-950 font-bold transition-all shrink-0">
+                            Enfocar &rarr;
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+
+            </div>
+          )}
         </div>
 
         {/* Zoom Help Badge (Desktop/Trackpad reminder) */}
