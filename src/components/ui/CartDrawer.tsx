@@ -870,7 +870,7 @@ export function CartDrawer() {
                                     size={12}
                                     strokeWidth={2.3}
                                     style={{ width: "12px", height: "12px", minWidth: "12px", minHeight: "12px" }}
-                                    className="relative z-10 text-rose-600 group-hover/del:rotate-12 group-hover/del:text-rose-700 transition-all duration-300 shrink-0" 
+                                    className="relative z-10 text-rose-600 group-hover/del:rotate-12 group-hover/del:text-rose-700 transition-all duration-300 shrink-0 translate-y-[-1px]" 
                                   />
                                   <span className="relative z-10 tracking-tight text-rose-600 font-bold text-[11px] leading-none">Eliminar</span>
                                 </button>
