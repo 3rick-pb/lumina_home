@@ -17,7 +17,8 @@ import {
   Activity, 
   Users, 
   Sparkles,
-  ChevronRight
+  ChevronRight,
+  X
 } from "lucide-react";
 import { User, ShippingAddress, Order } from "@/lib/userStore";
 import { CatalogProduct } from "@/lib/catalogStore";
@@ -30,7 +31,7 @@ export interface ConnectedClient {
   country: string;
   x: number; // percentage horizontal position (0 - 100)
   y: number; // percentage vertical position (0 - 100)
-  frequency: "Semanal (VIP)" | "Quincenal" | "Mensual" | "Ocasional" | "Primera vez";
+  frequency: "Semanal" | "Quincenal" | "Mensual" | "Ocasional" | "Primera vez";
   purchasesCount: number;
   totalSpent: number;
   currentSection: string;
@@ -120,6 +121,26 @@ export default function AnalyticsRadarView({
   const [activeStage, setActiveStage] = useState<"all" | "cart" | "frequent">("all");
   const [activeTab, setActiveTab] = useState<"metrics" | "clients">("metrics");
   const [scrollProgress, setScrollProgress] = useState<number>(0);
+  const [isMapLoaded, setIsMapLoaded] = useState<boolean>(false);
+
+  // Preload optimized WebP 3D relief landmass (< 480KB) for instant load
+  useEffect(() => {
+    const img = new Image();
+    img.src = "/images/map_3d_relief_cutout.webp";
+    img.onload = () => setIsMapLoaded(true);
+  }, []);
+
+  // Keyboard shortcut: Escape to deselect active client
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        setSelectedClient(null);
+        setHoveredClient(null);
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, []);
 
   // Zoom & Pan states
   const [zoom, setZoom] = useState<number>(1);
@@ -142,7 +163,7 @@ export default function AnalyticsRadarView({
         country: "Ecuador",
         x: 48.8,
         y: 26.5,
-        frequency: "Semanal (VIP)",
+        frequency: "Semanal",
         purchasesCount: 9,
         totalSpent: 1840,
         currentSection: "Lámparas Nova LED",
@@ -192,7 +213,7 @@ export default function AnalyticsRadarView({
         country: "Ecuador",
         x: 50.5,
         y: 41.5,
-        frequency: "Semanal (VIP)",
+        frequency: "Semanal",
         purchasesCount: 12,
         totalSpent: 2890,
         currentSection: "Sillones Boucle Crudo",
@@ -258,7 +279,7 @@ export default function AnalyticsRadarView({
         country: "Ecuador",
         x: 37.5,
         y: 82.5,
-        frequency: "Semanal (VIP)",
+        frequency: "Semanal",
         purchasesCount: 15,
         totalSpent: 4200,
         currentSection: "Edición Limitada Bestseller",
@@ -317,7 +338,7 @@ export default function AnalyticsRadarView({
           country: addr.country || "Ecuador",
           x: coords.x + (idx * 1.5),
           y: coords.y + (idx * 1.5),
-          frequency: orders.length > 5 ? "Semanal (VIP)" : orders.length > 0 ? "Quincenal" : "Primera vez",
+          frequency: orders.length > 5 ? "Semanal" : orders.length > 0 ? "Quincenal" : "Primera vez",
           purchasesCount: orders.length,
           totalSpent: orders.reduce((acc, o) => acc + o.total, 0),
           currentSection: "Explorando: Radar Lumina",
@@ -441,6 +462,7 @@ export default function AnalyticsRadarView({
       <div 
         ref={mapContainerRef}
         onMouseDown={handleMouseDown}
+        onClick={() => setSelectedClient(null)}
         className={`absolute inset-0 z-10 flex items-center justify-center overflow-hidden ${
           isDragging ? "cursor-grabbing" : "cursor-grab"
         }`}
@@ -457,14 +479,29 @@ export default function AnalyticsRadarView({
           {/* Ambient Ground Shadow */}
           <div className="absolute inset-x-12 bottom-4 h-32 bg-black/75 blur-3xl rounded-full pointer-events-none -z-10" />
 
-          {/* Authentic 4K High-Res Transparent 3D Topographic Relief Landmass */}
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img 
-            src="/images/map_3d_relief_cutout.png" 
-            alt="Mapa 3D Topográfico en Relieve del Territorio de Ecuador en Alta Resolución"
-            draggable={false}
-            className="w-full h-full object-contain pointer-events-none select-none filter contrast-110 brightness-105 drop-shadow-[0_28px_40px_rgba(0,0,0,0.7)]"
-          />
+          {/* Smooth Radar Loading Spinner while WebP decodes (sub-100ms) */}
+          {!isMapLoaded && (
+            <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 pointer-events-none z-10">
+              <div className="w-9 h-9 rounded-full border-2 border-[#ccff00]/30 border-t-[#ccff00] animate-spin" />
+              <span className="text-[10px] font-mono text-white/50 tracking-wider">Cargando topografía 3D...</span>
+            </div>
+          )}
+
+          {/* Authentic 4K High-Res Transparent 3D Relief Landmass (Instant WebP < 480KB) */}
+          <picture className="w-full h-full pointer-events-none select-none">
+            <source srcSet="/images/map_3d_relief_cutout.webp" type="image/webp" />
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img 
+              src="/images/map_3d_relief_cutout.png" 
+              alt="Mapa 3D Topográfico en Relieve del Territorio de Ecuador en Alta Resolución"
+              draggable={false}
+              loading="eager"
+              onLoad={() => setIsMapLoaded(true)}
+              className={`w-full h-full object-contain pointer-events-none select-none filter contrast-110 brightness-105 drop-shadow-[0_28px_40px_rgba(0,0,0,0.7)] transition-opacity duration-300 ${
+                isMapLoaded ? "opacity-100" : "opacity-0"
+              }`}
+            />
+          </picture>
 
           {/* Interactive Geographic Beacons Calibrated by Province */}
           {filteredClients.map((client) => {
@@ -632,11 +669,11 @@ export default function AnalyticsRadarView({
       {/* ========================================================================= */}
       {/* 5. RIGHT FLOATING GLASS PANEL (Concise Metrics & Live Client Dossier)     */}
       {/* ========================================================================= */}
-      <div className="absolute right-6 top-5 bottom-24 w-80 lg:w-84 z-30 flex flex-col pointer-events-auto">
+      <div onClick={(e) => e.stopPropagation()} className="absolute right-6 top-5 bottom-24 w-80 lg:w-84 z-30 flex flex-col pointer-events-auto">
         <div className="flex-1 rounded-[2rem] bg-[#121615]/85 backdrop-blur-2xl border border-white/15 p-5 shadow-2xl flex flex-col justify-between overflow-hidden">
           
-          {/* Panel Top Navigation: Tabs */}
-          <div className="space-y-3.5">
+          {/* Panel Top Navigation & Scrollable Content Body */}
+          <div className="flex-1 min-h-0 overflow-y-auto pr-0.5 space-y-3.5" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
             <div className="flex items-center justify-between pb-3 border-b border-white/10">
               <div className="flex items-center gap-1 p-0.5 rounded-full bg-black/50 border border-white/10 text-[11px] font-semibold">
                 <button 
@@ -664,27 +701,51 @@ export default function AnalyticsRadarView({
               )}
             </div>
 
-            {/* TAB CONTENT A: ACTIVE CLIENT DOSSIER (When client pin is hovered/clicked) */}
+            {/* TAB CONTENT A: ACTIVE CLIENT DOSSIER (With prominent Close X and Circular Avatar) */}
             {activeHUDClient ? (
-              <div className="rounded-2xl bg-black/40 border border-[#ccff00]/30 p-4 space-y-3 animate-fade-in shadow-lg">
-                <div className="flex items-start justify-between">
-                  <div className="flex items-center gap-2.5">
-                    <div className="w-9 h-9 rounded-xl bg-[#ccff00] text-gray-950 font-bold flex items-center justify-center text-sm shadow-[0_0_12px_#ccff00]">
+              <div className="rounded-2xl bg-black/50 border border-[#ccff00]/30 p-3.5 space-y-2.5 animate-fade-in shadow-xl backdrop-blur-md">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex items-center gap-2.5 truncate">
+                    <div className="w-8 h-8 rounded-full bg-[#ccff00] text-gray-950 font-black flex items-center justify-center text-xs shrink-0 shadow-sm">
                       {activeHUDClient.name.charAt(0)}
                     </div>
-                    <div>
-                      <h4 className="font-bold text-xs text-white leading-tight">{activeHUDClient.name}</h4>
-                      <p className="text-[10px] text-white/50 flex items-center gap-1 mt-0.5">
-                        <MapPin className="w-2.5 h-2.5 text-white/60" /> {activeHUDClient.city}
+                    <div className="truncate">
+                      <div className="flex items-center gap-1.5">
+                        <h4 className="font-bold text-xs text-white leading-tight truncate">{activeHUDClient.name}</h4>
+                        {activeHUDClient.isRealUser && (
+                          <span className="text-[7.5px] font-mono px-1.5 py-0.2 rounded bg-emerald-400/20 text-emerald-400 border border-emerald-400/30 font-bold shrink-0">
+                            Tú
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-[10px] text-white/50 flex items-center gap-1 mt-0.5 truncate">
+                        <MapPin className="w-2.5 h-2.5 text-white/60 shrink-0" /> {activeHUDClient.city}
                       </p>
                     </div>
                   </div>
-                  <span className="text-[8.5px] font-mono px-2 py-0.5 rounded-full bg-white/10 text-white/90 border border-white/10 font-bold">
-                    {activeHUDClient.frequency}
-                  </span>
+
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    <span 
+                      className="text-[8.5px] font-mono px-2 py-0.5 rounded-full bg-white/10 text-white/90 border border-white/10 font-bold"
+                      title="Frecuencia estimada de recompra del cliente"
+                    >
+                      Recompra: {activeHUDClient.frequency}
+                    </span>
+                    <button 
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setSelectedClient(null);
+                        setHoveredClient(null);
+                      }}
+                      className="w-5 h-5 rounded-full bg-white/10 hover:bg-white/20 text-white/70 hover:text-white flex items-center justify-center transition-all cursor-pointer shrink-0"
+                      title="Cerrar detalle (Esc)"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  </div>
                 </div>
 
-                <div className="space-y-1.5 text-[11px] pt-2 border-t border-white/10">
+                <div className="space-y-1.5 text-[10.5px] pt-2 border-t border-white/10">
                   <div className="flex items-center justify-between">
                     <span className="text-white/60">Explorando:</span>
                     <strong className="text-white font-medium text-right truncate max-w-[140px]">{activeHUDClient.currentSection}</strong>
@@ -704,7 +765,7 @@ export default function AnalyticsRadarView({
                 </div>
 
                 {activeHUDClient.hasCart && (
-                  <div className="p-2 rounded-xl bg-rose-500/15 border border-rose-500/30 flex items-center justify-between text-[10.5px]">
+                  <div className="p-2 rounded-xl bg-rose-500/15 border border-rose-500/30 flex items-center justify-between text-[10px]">
                     <span className="text-rose-300 font-semibold flex items-center gap-1.5">
                       <ShoppingBag className="w-3 h-3" /> Con ítems en el carrito
                     </span>
@@ -844,7 +905,7 @@ export default function AnalyticsRadarView({
                     return (
                       <div 
                         key={c.id}
-                        onClick={() => setSelectedClient(c)}
+                        onClick={() => setSelectedClient(prev => prev?.id === c.id ? null : c)}
                         className={`p-2.5 rounded-2xl flex items-center justify-between text-xs cursor-pointer transition-all border ${
                           isSelected 
                             ? "bg-white text-gray-950 font-bold border-[#ccff00] shadow-[0_0_16px_rgba(204,255,0,0.35)]" 
@@ -852,17 +913,24 @@ export default function AnalyticsRadarView({
                         }`}
                       >
                         <div className="flex items-center gap-2.5 truncate pr-2">
-                          <div className={`w-7 h-7 rounded-xl flex items-center justify-center text-xs font-black shrink-0 ${
+                          <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold shrink-0 ${
                             isSelected 
                               ? "bg-gray-950 text-[#ccff00]" 
                               : c.isRealUser 
-                              ? "bg-emerald-400 text-gray-950 shadow-[0_0_10px_#34d399]" 
+                              ? "bg-emerald-500 text-gray-950 font-black" 
                               : "bg-gradient-to-tr from-amber-400 to-yellow-200 text-gray-950"
                           }`}>
                             {c.name.charAt(0)}
                           </div>
                           <div className="truncate">
-                            <p className="leading-tight truncate font-semibold">{c.name}</p>
+                            <div className="flex items-center gap-1.5">
+                              <p className="leading-tight truncate font-semibold">{c.name}</p>
+                              {c.isRealUser && (
+                                <span className="text-[7.5px] font-mono px-1.5 py-0.2 rounded bg-emerald-400/20 text-emerald-400 border border-emerald-400/30 font-bold shrink-0">
+                                  Tú
+                                </span>
+                              )}
+                            </div>
                             <p className={`text-[9.5px] mt-0.5 ${isSelected ? "text-gray-700 font-medium" : "text-white/45"}`}>
                               {c.city} • <span className="font-mono">${c.totalSpent}</span>
                             </p>
@@ -908,7 +976,8 @@ export default function AnalyticsRadarView({
       {/* ========================================================================= */}
       {/* 6. BOTTOM FLOATING WIDGETS (ShotScape 3-Card Dock along bottom)           */}
       {/* ========================================================================= */}
-      <div className="absolute bottom-5 left-6 right-6 lg:right-96 z-30 grid grid-cols-1 sm:grid-cols-3 gap-3 pointer-events-auto">
+      <div onClick={(e) => e.stopPropagation()}
+        className="absolute bottom-5 left-6 right-6 lg:right-96 z-30 grid grid-cols-1 sm:grid-cols-3 gap-3 pointer-events-auto">
         
         {/* Card 1: Cobertura Territorial (Actualizada con 24 Provincias) */}
         <div className="rounded-2xl bg-black/60 backdrop-blur-xl border border-white/15 p-3.5 shadow-xl flex flex-col justify-between">
