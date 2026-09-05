@@ -640,7 +640,7 @@ export default function AnalyticsRadarView({
       {/* ========================================================================= */}
       {/* 3. TOP FLOATING BAR (Minimal Header Capsule)                              */}
       {/* ========================================================================= */}
-      <div className="absolute top-5 left-6 right-6 lg:right-96 z-30 flex items-center justify-between gap-3 pointer-events-none">
+      <div className="absolute top-5 left-6 right-6 lg:right-96 z-50 flex items-center justify-between gap-3 pointer-events-none">
         
         {/* Interactive Dynamic Search Capsule & Live Suggester */}
         <div 
@@ -697,7 +697,7 @@ export default function AnalyticsRadarView({
 
           {/* FLOATING LIVE INTERACTIVE SUGGESTER & REGIONAL TELEPORT POPOVER */}
           {isSearchFocused && (
-            <div className="absolute top-full left-0 right-0 mt-2 rounded-3xl bg-[#111614]/95 backdrop-blur-3xl border border-white/20 p-4 shadow-[0_20px_50px_rgba(0,0,0,0.8)] z-50 animate-fade-in space-y-3.5">
+            <div className="absolute top-full left-0 right-0 mt-2 rounded-3xl bg-[#111614]/95 backdrop-blur-3xl border border-white/20 p-4 shadow-[0_20px_50px_rgba(0,0,0,0.8)] z-[70] animate-fade-in space-y-3.5 shadow-[0_25px_60px_rgba(0,0,0,0.9)]">
               
               {/* 1. Quick Regional Filters */}
               <div className="space-y-1.5">
@@ -843,7 +843,7 @@ export default function AnalyticsRadarView({
       {/* ========================================================================= */}
       {/* 4. LEFT HUD CONTROLS (ShotScape GIS Floating Toolstrip - Zero Widgets)    */}
       {/* ========================================================================= */}
-      <div className="absolute left-6 top-1/2 -translate-y-1/2 z-30 flex flex-col items-center gap-2 pointer-events-auto">
+      <div className="absolute left-6 top-1/2 -translate-y-1/2 z-20 flex flex-col items-center gap-2 pointer-events-auto">
         <div className="flex flex-col items-center bg-black/60 backdrop-blur-xl border border-white/15 rounded-2xl p-1.5 shadow-2xl space-y-1">
           
           {/* Zoom In Button */}
@@ -895,11 +895,11 @@ export default function AnalyticsRadarView({
       {/* ========================================================================= */}
       {/* 5. RIGHT FLOATING GLASS PANEL (Concise Metrics & Live Client Dossier)     */}
       {/* ========================================================================= */}
-      <div onClick={(e) => e.stopPropagation()} className="absolute right-6 top-5 bottom-24 w-80 lg:w-84 z-30 flex flex-col pointer-events-auto transition-all duration-500 ease-out">
-        <div className="flex-1 rounded-[2rem] bg-[#121615]/85 backdrop-blur-2xl border border-white/15 p-5 shadow-2xl flex flex-col justify-between overflow-hidden transition-all duration-500 ease-out">
+      <div onClick={(e) => e.stopPropagation()} className="absolute right-6 top-5 bottom-24 w-80 lg:w-84 z-30 flex flex-col pointer-events-auto transition-all duration-500 ease-out overflow-hidden">
+        <div className="flex-1 rounded-[2rem] bg-[#121615]/85 backdrop-blur-2xl border border-white/15 p-5 shadow-2xl flex flex-col justify-between overflow-hidden transition-all duration-500 ease-out w-full">
           
           {/* Panel Top Navigation & Scrollable Content Body */}
-          <div className="flex-1 min-h-0 overflow-y-auto pr-0.5 space-y-3.5" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+          <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden touch-pan-y overscroll-x-none w-full pr-0.5 space-y-3.5 select-none" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
             <div className="flex items-center justify-between pb-3 border-b border-white/10">
               <div className="flex items-center gap-1 p-0.5 rounded-full bg-black/50 border border-white/10 text-[11px] font-semibold">
                 <button 
@@ -1016,17 +1016,17 @@ export default function AnalyticsRadarView({
               )}
             </div>
 
-            {/* TABS CONTAINER: SILKY SMOOTH CROSSFADE & SLIDE ANIMATION */}
-            <div className="relative">
+            {/* TABS CONTAINER: SILKY SMOOTH CROSSFADE & SLIDE ANIMATION (LOCKED HORIZONTALLY) */}
+            <div className="relative w-full overflow-hidden">
               {/* TAB CONTENT B: CORE METRICS OVERVIEW */}
               <div 
-                className={`transition-all duration-500 ease-in-out ${
+                className={`w-full transition-all duration-500 ease-in-out ${
                   activeTab === "metrics" 
-                    ? "opacity-100 translate-x-0 relative z-10" 
-                    : "opacity-0 -translate-x-4 pointer-events-none absolute inset-x-0 top-0 z-0"
+                    ? "opacity-100 translate-x-0 relative z-10 pointer-events-auto" 
+                    : "opacity-0 -translate-x-2 pointer-events-none absolute inset-x-0 top-0 z-0 invisible"
                 }`}
               >
-                <div className="space-y-4">
+                <div className="space-y-4 w-full">
                 
                 {/* Metric 1: Online Volume & Stage Filter */}
                 <div className="space-y-2">
@@ -1143,18 +1143,18 @@ export default function AnalyticsRadarView({
 
               {/* TAB CONTENT C: CLIENTS LIST WITH LUMINOUS NEON GREEN SLIDER BAR */}
               <div 
-                className={`transition-all duration-500 ease-in-out ${
+                className={`w-full transition-all duration-500 ease-in-out ${
                   activeTab === "clients" 
-                    ? "opacity-100 translate-x-0 relative z-10" 
-                    : "opacity-0 translate-x-4 pointer-events-none absolute inset-x-0 top-0 z-0"
+                    ? "opacity-100 translate-x-0 relative z-10 pointer-events-auto" 
+                    : "opacity-0 translate-x-2 pointer-events-none absolute inset-x-0 top-0 z-0 invisible"
                 }`}
               >
-                <div className="relative flex items-stretch gap-2 h-64">
+                <div className="relative flex items-stretch gap-2 h-64 w-full overflow-hidden">
                 {/* Scrollable List with Native Scrollbar Hidden */}
                 <div 
                   ref={clientsListRef}
                   onScroll={handleClientsScroll}
-                  className="flex-1 space-y-2 overflow-y-auto pr-1 select-none"
+                  className="flex-1 space-y-2 overflow-y-auto overflow-x-hidden touch-pan-y overscroll-x-none pr-1 select-none"
                   style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
                 >
                   {filteredClients.map(c => {
