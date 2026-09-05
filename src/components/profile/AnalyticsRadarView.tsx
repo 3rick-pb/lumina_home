@@ -18,7 +18,8 @@ import {
   Tablet, 
   Share2,
   SlidersHorizontal,
-  Bell
+  Bell,
+  Activity
 } from "lucide-react";
 import { User, ShippingAddress, Order } from "@/lib/userStore";
 import { CatalogProduct } from "@/lib/catalogStore";
@@ -63,17 +64,17 @@ export default function AnalyticsRadarView({
   const [searchQuery, setSearchQuery] = useState("");
   const [activeStage, setActiveStage] = useState<"catalog" | "cart" | "vip">("vip");
 
-  // Connected clients dataset built dynamically from registered addresses + realistic simulated sessions
+  // Connected clients dataset distributed on the 3D relief topographic map
   const connectedClients: ConnectedClient[] = useMemo(() => {
     const baseClients: ConnectedClient[] = [
       {
         id: "cli-1",
         name: "Valeria Montejo",
         email: "valeria.m@lumina.com",
-        city: "Madrid Centro",
-        country: "España",
-        x: 48,
-        y: 44,
+        city: "Quito (Sierra Norte)",
+        country: "Ecuador",
+        x: 49,
+        y: 32,
         frequency: "Semanal (VIP)",
         purchasesCount: 9,
         totalSpent: 1840,
@@ -87,10 +88,10 @@ export default function AnalyticsRadarView({
         id: "cli-2",
         name: "Carlos De la Hoz",
         email: "carlos.dlh@gmail.com",
-        city: "Barcelona & Costa",
-        country: "España",
-        x: 68,
-        y: 34,
+        city: "Guayaquil (Costa)",
+        country: "Ecuador",
+        x: 31,
+        y: 56,
         frequency: "Quincenal",
         purchasesCount: 5,
         totalSpent: 920,
@@ -104,10 +105,10 @@ export default function AnalyticsRadarView({
         id: "cli-3",
         name: "Elena Rostova",
         email: "elena.design@studio.de",
-        city: "Cumbres Norte",
-        country: "Alemania",
-        x: 28,
-        y: 38,
+        city: "Cuenca (Sierra Sur)",
+        country: "Ecuador",
+        x: 41,
+        y: 67,
         frequency: "Mensual",
         purchasesCount: 4,
         totalSpent: 1350,
@@ -120,10 +121,10 @@ export default function AnalyticsRadarView({
         id: "cli-4",
         name: "Mateo Bianchi",
         email: "mateo.b@milano.it",
-        city: "Milán & Valle",
-        country: "Italia",
-        x: 54,
-        y: 58,
+        city: "Ambato (Sierra Centro)",
+        country: "Ecuador",
+        x: 47,
+        y: 45,
         frequency: "Semanal (VIP)",
         purchasesCount: 12,
         totalSpent: 2890,
@@ -137,10 +138,10 @@ export default function AnalyticsRadarView({
         id: "cli-5",
         name: "Sophie Laurent",
         email: "sophie.l@atelier.fr",
-        city: "París Centro",
-        country: "Francia",
-        x: 34,
-        y: 68,
+        city: "Islas Galápagos",
+        country: "Ecuador",
+        x: 10,
+        y: 22,
         frequency: "Ocasional",
         purchasesCount: 2,
         totalSpent: 430,
@@ -153,10 +154,10 @@ export default function AnalyticsRadarView({
         id: "cli-6",
         name: "Oliver Smith",
         email: "oliver.s@archit.co.uk",
-        city: "Londres Loft",
-        country: "Reino Unido",
-        x: 24,
-        y: 28,
+        city: "Manta / Manabí",
+        country: "Ecuador",
+        x: 22,
+        y: 38,
         frequency: "Quincenal",
         purchasesCount: 7,
         totalSpent: 1680,
@@ -170,10 +171,10 @@ export default function AnalyticsRadarView({
         id: "cli-7",
         name: "Alejandro Morales",
         email: "alejandro.m@valencia.es",
-        city: "Valencia Marina",
-        country: "España",
-        x: 74,
-        y: 48,
+        city: "El Oriente / Amazonía",
+        country: "Ecuador",
+        x: 68,
+        y: 46,
         frequency: "Mensual",
         purchasesCount: 3,
         totalSpent: 620,
@@ -186,10 +187,10 @@ export default function AnalyticsRadarView({
         id: "cli-8",
         name: "Julian Sterling",
         email: "j.sterling@nycloft.com",
-        city: "Nueva York",
-        country: "EE.UU.",
-        x: 42,
-        y: 49,
+        city: "Loja (Sur Andino)",
+        country: "Ecuador",
+        x: 37,
+        y: 80,
         frequency: "Semanal (VIP)",
         purchasesCount: 15,
         totalSpent: 4200,
@@ -208,10 +209,10 @@ export default function AnalyticsRadarView({
           id: `user-addr-${addr.id || idx}`,
           name: addr.recipient || user?.name || "Tu Sesión (Activo)",
           email: user?.email || "admin@lumina.com",
-          city: addr.city || "Madrid",
-          country: addr.country || "España",
-          x: 49 + (idx * 5),
-          y: 45 + (idx * 4),
+          city: addr.city || "Quito Centro",
+          country: addr.country || "Ecuador",
+          x: 50 + (idx * 4),
+          y: 36 + (idx * 5),
           frequency: orders.length > 5 ? "Semanal (VIP)" : orders.length > 0 ? "Quincenal" : "Primera vez",
           purchasesCount: orders.length,
           totalSpent: orders.reduce((acc, o) => acc + o.total, 0),
@@ -254,15 +255,15 @@ export default function AnalyticsRadarView({
     <div className="rounded-[2.5rem] overflow-hidden bg-[#2d3331] text-white shadow-2xl border border-white/10 select-none animate-fade-in font-sans">
       
       {/* ========================================================================= */}
-      {/* SECTION 1: TOP HERO DECK (Moody Olive/Slate #2d3331 with Floating Cards) */}
+      {/* SECTION 1: TOP SCENIC CANVAS (Moody Olive/Slate with Orion Floating Cards) */}
       {/* ========================================================================= */}
       <div className="p-6 sm:p-8 space-y-6 relative overflow-hidden bg-gradient-to-b from-[#383f3c] via-[#2f3533] to-[#262b29]">
         
         {/* Soft Ambient Light Gradient on Top */}
-        <div className="absolute -top-24 left-1/2 -translate-x-1/2 w-[650px] h-64 bg-white/10 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute -top-28 left-1/2 -translate-x-1/2 w-[700px] h-72 bg-white/10 rounded-full blur-3xl pointer-events-none" />
 
         {/* 1. TOP NAVIGATION CAPSULE BAR (Direct Orion Recreation) */}
-        <div className="relative z-20 flex flex-col md:flex-row items-center justify-between gap-4">
+        <div className="relative z-30 flex flex-col md:flex-row items-center justify-between gap-4">
           
           {/* Logo Lumina */}
           <div className="flex items-center gap-2.5">
@@ -285,7 +286,7 @@ export default function AnalyticsRadarView({
             <span className="text-white/30 px-2">|</span>
             <div className="flex items-center gap-1 text-white/80 shrink-0 cursor-pointer pr-2">
               <MapPin className="w-3.5 h-3.5 text-white/70" />
-              <span className="text-[11px] font-medium hidden sm:inline">Madrid, ES</span>
+              <span className="text-[11px] font-medium hidden sm:inline">Quito / España</span>
               <ChevronDown className="w-3 h-3 text-white/60" />
             </div>
             <button className="bg-white text-gray-950 font-bold px-4 py-1.5 rounded-full text-xs hover:bg-white/90 transition-colors shrink-0 shadow-sm cursor-pointer">
@@ -293,43 +294,44 @@ export default function AnalyticsRadarView({
             </button>
           </div>
 
-          {/* Right Header Controls (Support, Bell & Profile Avatar) */}
+          {/* Right Header Controls (Bell & Profile Avatar) */}
           <div className="flex items-center gap-3">
             <button className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition-colors text-white/80 cursor-pointer">
               <Bell className="w-3.5 h-3.5" />
             </button>
-            <div className="w-8 h-8 rounded-full overflow-hidden bg-amber-400 text-gray-950 font-bold flex items-center justify-center text-xs border border-white/30">
+            <div className="w-8 h-8 rounded-full overflow-hidden bg-[#ccff00] text-gray-950 font-bold flex items-center justify-center text-xs border border-white/30">
               {user?.name ? user.name.charAt(0).toUpperCase() : "A"}
             </div>
           </div>
 
         </div>
 
-        {/* 2. THE 3-COLUMN HERO STAGE (Orion Title + Central 3D Block + Candidates Online) */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-center pt-2 relative z-10">
+        {/* 2. THE MAIN HERO STAGE: LEFT FLOATING WIDGET, CENTER 3D MAP, RIGHT FLOATING CARDS */}
+        <div className="relative z-20 min-h-[480px] flex flex-col lg:flex-row items-center justify-between gap-6">
           
           {/* ----------------------------------------------------------------- */}
-          {/* LEFT COLUMN: TITLE & SALARY/PURCHASE EXPECTATIONS CARD (3.5 cols) */}
+          {/* LEFT COLUMN: TITLE & SALARY/PURCHASE EXPECTATIONS CARD            */}
           {/* ----------------------------------------------------------------- */}
-          <div className="lg:col-span-3.5 space-y-5">
+          <div className="w-full lg:w-[290px] space-y-5 shrink-0 z-20">
             
             {/* Big Bold Typography with AI-Powered Capsule */}
             <div>
               <div className="flex items-center gap-2 mb-1">
-                <h1 className="font-sans font-extrabold text-3xl sm:text-4xl lg:text-[42px] leading-tight text-white tracking-tight">
+                <h1 className="font-sans font-extrabold text-3xl sm:text-4xl leading-tight text-white tracking-tight">
                   YOUR
                 </h1>
-                <span className="px-3 py-0.5 rounded-full text-[10px] font-bold tracking-wider text-white/90 border border-white/30 bg-white/10 backdrop-blur-md">
+                <span className="px-3 py-0.5 rounded-full text-[10px] font-bold tracking-wider text-white/90 border border-white/30 bg-white/10 backdrop-blur-md flex items-center gap-1">
+                  <Activity className="w-2.5 h-2.5 text-[#ccff00] animate-pulse" />
                   AI - Powered
                 </span>
               </div>
-              <h1 className="font-sans font-extrabold text-3xl sm:text-4xl lg:text-[42px] leading-tight text-white tracking-tight">
+              <h1 className="font-sans font-extrabold text-3xl sm:text-4xl leading-tight text-white tracking-tight">
                 CLIENT RADAR
               </h1>
             </div>
 
             {/* FLOATING CARD: "Ritmo de Compras & Ventas" (Orion Salary Expectations Clone) */}
-            <div className="rounded-3xl bg-black/40 backdrop-blur-xl border border-white/15 p-5 shadow-2xl space-y-4">
+            <div className="rounded-[2rem] bg-black/45 backdrop-blur-xl border border-white/15 p-5 shadow-2xl space-y-3.5">
               <div className="flex items-center justify-between">
                 <span className="text-xs font-bold text-white tracking-tight">
                   Frecuencia de Compra
@@ -344,8 +346,8 @@ export default function AnalyticsRadarView({
               </div>
 
               {/* Striped Gradient Ribbon Chart with Floating Neon Pill */}
-              <div className="relative h-20 w-full flex items-center">
-                <svg viewBox="0 0 300 80" className="w-full h-full overflow-visible">
+              <div className="relative h-16 w-full flex items-center">
+                <svg viewBox="0 0 280 65" className="w-full h-full overflow-visible">
                   <defs>
                     <linearGradient id="chartRibbon" x1="0%" y1="0%" x2="100%" y2="0%">
                       <stop offset="0%" stopColor="rgba(255,255,255,0.05)" />
@@ -356,7 +358,7 @@ export default function AnalyticsRadarView({
                   
                   {/* Hatched Ribbon Band */}
                   <path 
-                    d="M 10 50 Q 80 42 150 35 T 290 20 L 290 32 Q 220 48 150 50 T 10 62 Z" 
+                    d="M 10 45 Q 70 36 140 28 T 270 16 L 270 26 Q 200 40 140 42 T 10 55 Z" 
                     fill="url(#chartRibbon)" 
                     stroke="rgba(255,255,255,0.4)" 
                     strokeWidth="1.5" 
@@ -365,14 +367,14 @@ export default function AnalyticsRadarView({
                   
                   {/* Center Line Curve */}
                   <path 
-                    d="M 10 56 Q 80 46 150 42 T 290 26" 
+                    d="M 10 50 Q 70 40 140 35 T 270 21" 
                     fill="none" 
                     stroke="#ffffff" 
                     strokeWidth="2" 
                   />
                 </svg>
 
-                {/* The Floating Neon Yellow/Lime Pill from Orion Mockup (48% or 84%) */}
+                {/* The Floating Neon Yellow/Lime Pill from Orion Mockup */}
                 <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 px-2.5 py-0.5 rounded-full bg-[#ccff00] text-gray-950 font-extrabold text-[10px] shadow-[0_0_16px_#ccff00] flex items-center gap-1 border border-black/20">
                   <span>84%</span>
                 </div>
@@ -392,118 +394,23 @@ export default function AnalyticsRadarView({
           </div>
 
           {/* ----------------------------------------------------------------- */}
-          {/* CENTER COLUMN: THE ISOMETRIC 3D STRUCTURE & RELIEF MAP (5 cols) */}
+          {/* CENTER HERO: 3D TOPOGRAPHIC RELIEF MAP OF A SPECIFIC COUNTRY      */}
+          {/* (Exact 3D visual provided in Estilo de como mostrar un mapa.jpg)  */}
           {/* ----------------------------------------------------------------- */}
-          <div className="lg:col-span-5 relative flex items-center justify-center py-4">
+          <div className="flex-1 w-full flex items-center justify-center relative min-h-[380px] lg:min-h-[460px]">
             
-            {/* The 3D Isometric Structure Container matching Orion & Image 2 */}
-            <div 
-              className="relative w-full max-w-[420px] aspect-[1/0.92] transition-transform duration-500 origin-center"
-              style={{
-                perspective: "1100px",
-                transform: "rotateX(26deg) rotateZ(-14deg)",
-                transformStyle: "preserve-3d"
-              }}
-            >
+            {/* The 3D Map Container */}
+            <div className="relative w-full max-w-[560px] aspect-[1/0.68] flex items-center justify-center">
               
-              {/* 3D Deep Ground Shadow */}
-              <div 
-                className="absolute inset-x-8 -bottom-6 h-28 rounded-full bg-black/70 blur-2xl pointer-events-none"
-                style={{ transform: "translateZ(-30px)" }}
+              {/* The High-Resolution 3D Relief Topographic Map Image */}
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img 
+                src="/images/map_3d_relief.jpg" 
+                alt="Mapa 3D Topográfico en Relieve del Territorio"
+                className="w-full h-full object-contain pointer-events-none select-none drop-shadow-[0_24px_50px_rgba(0,0,0,0.85)] filter contrast-110 brightness-105"
               />
 
-              {/* Extruded Lateral Dark Slab of the 3D Block (From Image 2 & Orion) */}
-              <svg viewBox="0 0 500 440" className="absolute inset-0 w-full h-full pointer-events-none" style={{ transform: "translateZ(-16px)" }}>
-                <path 
-                  d="M 230 30 L 410 90 L 470 170 L 450 280 L 350 370 L 270 410 L 160 380 L 70 290 L 60 170 L 130 70 Z" 
-                  fill="#151918" 
-                  stroke="#1e2422" 
-                  strokeWidth="8"
-                />
-                <path d="M 160 380 L 270 410 L 350 370 L 350 395 L 270 435 L 160 405 Z" fill="#0c0e0e" />
-                <path d="M 350 370 L 450 280 L 450 305 L 350 395 Z" fill="#0e1010" />
-                <path d="M 70 290 L 160 380 L 160 405 L 70 315 Z" fill="#101312" />
-              </svg>
-
-              {/* 3D Isometric Topographic & Wireframe Surface Block */}
-              <svg viewBox="0 0 500 440" className="w-full h-full drop-shadow-2xl">
-                <defs>
-                  {/* Lush Terrace & Relief Gradient matching Orion Green Rooftop Garden */}
-                  <linearGradient id="orionGreenTerrace" x1="0%" y1="0%" x2="100%" y2="100%">
-                    <stop offset="0%" stopColor="#416b4a" />
-                    <stop offset="35%" stopColor="#53825d" />
-                    <stop offset="65%" stopColor="#739777" />
-                    <stop offset="85%" stopColor="#5f7756" />
-                    <stop offset="100%" stopColor="#3d4f3b" />
-                  </linearGradient>
-
-                  <linearGradient id="waterFlow" x1="0%" y1="0%" x2="100%" y2="100%">
-                    <stop offset="0%" stopColor="#38bdf8" />
-                    <stop offset="100%" stopColor="#0284c7" />
-                  </linearGradient>
-                </defs>
-
-                {/* Main 3D Island Block Body */}
-                <path 
-                  d="M 230 30 
-                     C 300 40, 360 65, 410 90 
-                     C 450 115, 480 140, 470 170 
-                     C 450 200, 460 240, 450 280 
-                     C 420 320, 390 350, 350 370 
-                     C 310 395, 290 405, 270 410 
-                     C 230 400, 190 390, 160 380 
-                     C 120 355, 80 325, 70 290 
-                     C 55 250, 50 210, 60 170 
-                     C 70 130, 95 95, 130 70 
-                     C 165 45, 200 30, 230 30 Z" 
-                  fill="url(#orionGreenTerrace)" 
-                  stroke="#2d3831" 
-                  strokeWidth="3"
-                />
-
-                {/* Architectural Grid / Topographic Wireframe Overlay (Orion Style) */}
-                <g stroke="rgba(255,255,255,0.18)" strokeWidth="0.75" fill="none">
-                  {/* Isometric latitude lines */}
-                  <path d="M 120 100 Q 240 70 380 120" />
-                  <path d="M 90 160 Q 240 120 420 180" />
-                  <path d="M 80 220 Q 240 180 440 240" />
-                  <path d="M 90 280 Q 250 240 430 300" />
-                  <path d="M 130 340 Q 260 300 380 350" />
-
-                  {/* Isometric longitude lines */}
-                  <path d="M 170 50 Q 140 200 130 350" />
-                  <path d="M 240 40 Q 230 200 230 390" />
-                  <path d="M 320 50 Q 330 200 330 380" />
-                  <path d="M 400 80 Q 420 200 410 320" />
-                </g>
-
-                {/* Central Winding River Channel & Reservoirs (Sapphire Water) */}
-                <path 
-                  d="M 250 40 Q 245 100 235 150 T 260 230 T 275 310 T 260 370 T 255 405" 
-                  fill="none" 
-                  stroke="url(#waterFlow)" 
-                  strokeWidth="5" 
-                  strokeLinecap="round"
-                />
-                <ellipse cx="200" cy="160" rx="12" ry="8" fill="#0284c7" stroke="#38bdf8" strokeWidth="1" />
-                <ellipse cx="330" cy="180" rx="10" ry="7" fill="#0284c7" stroke="#38bdf8" strokeWidth="1" />
-                <ellipse cx="370" cy="270" rx="14" ry="9" fill="#0284c7" stroke="#38bdf8" strokeWidth="1" />
-
-                {/* Subtle Terraced Hills (Orion architectural garden steps) */}
-                <rect x="180" y="110" width="70" height="40" rx="6" fill="#4d7754" opacity="0.6" stroke="rgba(255,255,255,0.25)" strokeWidth="1" />
-                <rect x="290" y="210" width="65" height="45" rx="6" fill="#3b5e41" opacity="0.6" stroke="rgba(255,255,255,0.25)" strokeWidth="1" />
-
-                {/* Subtle White Region Labels */}
-                <g fill="rgba(255,255,255,0.85)" fontSize="10" fontWeight="bold" fontFamily="sans-serif">
-                  <text x="210" y="60">Sahibi North</text>
-                  <text x="120" y="130">Arala Hills</text>
-                  <text x="350" y="130">Najafgarh</text>
-                  <text x="120" y="340">Aravalli</text>
-                  <text x="310" y="320">South Valley</text>
-                </g>
-              </svg>
-
-              {/* Glowing Yellow Vertical Pins stationed on the 3D map */}
+              {/* Glowing Yellow Beacon Pins stationed directly on the 3D relief cities */}
               {filteredClients.map((client) => {
                 const isHovered = hoveredClient?.id === client.id;
                 const isSelected = selectedClient?.id === client.id;
@@ -568,7 +475,7 @@ export default function AnalyticsRadarView({
                     <div className={`absolute top-full mt-1 left-1/2 -translate-x-1/2 whitespace-nowrap px-1.5 py-0.5 rounded text-[8.5px] font-bold font-mono tracking-wider transition-all pointer-events-none ${
                       isActive 
                         ? "bg-white text-gray-950 shadow-md scale-105" 
-                        : "bg-black/80 text-white/90 border border-white/10"
+                        : "bg-black/85 text-white/90 border border-white/10 backdrop-blur-md"
                     }`}>
                       {client.city.split(" ")[0]}
                     </div>
@@ -577,38 +484,38 @@ export default function AnalyticsRadarView({
                 );
               })}
 
-            </div>
-
-            {/* FLOATING HUD DOSSIER POPOVER (Hover) */}
-            {activeHUDClient && (
-              <div className="absolute top-2 right-2 z-50 pointer-events-auto transition-all duration-300 animate-fade-in w-72">
-                <div className="rounded-2xl bg-[#141817]/95 backdrop-blur-2xl border border-white/20 p-3.5 shadow-2xl text-white space-y-2.5">
-                  <div className="flex items-center justify-between border-b border-white/10 pb-2">
-                    <div>
-                      <p className="font-bold text-xs text-white">{activeHUDClient.name}</p>
-                      <p className="text-[10px] text-white/50">{activeHUDClient.city}, {activeHUDClient.country}</p>
+              {/* FLOATING HUD DOSSIER POPOVER (Hover) */}
+              {activeHUDClient && (
+                <div className="absolute top-2 right-2 z-50 pointer-events-auto transition-all duration-300 animate-fade-in w-72">
+                  <div className="rounded-2xl bg-[#141817]/95 backdrop-blur-2xl border border-white/20 p-3.5 shadow-2xl text-white space-y-2.5">
+                    <div className="flex items-center justify-between border-b border-white/10 pb-2">
+                      <div>
+                        <p className="font-bold text-xs text-white">{activeHUDClient.name}</p>
+                        <p className="text-[10px] text-white/50">{activeHUDClient.city}, {activeHUDClient.country}</p>
+                      </div>
+                      <span className="text-[9px] font-mono px-2 py-0.5 rounded-full bg-[#ccff00]/20 text-[#ccff00] border border-[#ccff00]/30 font-bold">
+                        {activeHUDClient.frequency}
+                      </span>
                     </div>
-                    <span className="text-[9px] font-mono px-2 py-0.5 rounded-full bg-[#ccff00]/20 text-[#ccff00] border border-[#ccff00]/30 font-bold">
-                      {activeHUDClient.frequency}
-                    </span>
-                  </div>
-                  <div className="text-[11px] space-y-1">
-                    <p className="text-white/70">Navegando: <strong className="text-white">{activeHUDClient.currentSection}</strong></p>
-                    <p className="text-white/70">Gasto: <strong className="text-white">${activeHUDClient.totalSpent.toFixed(2)} USD</strong> ({activeHUDClient.purchasesCount} pedidos)</p>
+                    <div className="text-[11px] space-y-1">
+                      <p className="text-white/70">Navegando: <strong className="text-white">{activeHUDClient.currentSection}</strong></p>
+                      <p className="text-white/70">Gasto acumulado: <strong className="text-white">${activeHUDClient.totalSpent.toFixed(2)} USD</strong> ({activeHUDClient.purchasesCount} pedidos)</p>
+                    </div>
                   </div>
                 </div>
-              </div>
-            )}
+              )}
+
+            </div>
 
           </div>
 
           {/* ----------------------------------------------------------------- */}
-          {/* RIGHT COLUMN: ORION FLOATING STAT CARDS (3.5 cols)                */}
+          {/* RIGHT COLUMN: ORION FLOATING STAT CARDS (310px width)             */}
           {/* ----------------------------------------------------------------- */}
-          <div className="lg:col-span-3.5 space-y-4">
+          <div className="w-full lg:w-[310px] space-y-4 shrink-0 z-20">
             
             {/* 1. CANDIDATES / CLIENTS ONLINE CARD (Direct Orion Recreation) */}
-            <div className="rounded-3xl bg-black/40 backdrop-blur-xl border border-white/15 p-5 shadow-2xl space-y-4">
+            <div className="rounded-[2rem] bg-black/45 backdrop-blur-xl border border-white/15 p-5 shadow-2xl space-y-4">
               <div className="flex items-center justify-between">
                 <span className="text-xs font-bold text-white tracking-tight">
                   Clientes Online
@@ -665,7 +572,7 @@ export default function AnalyticsRadarView({
             <div className="grid grid-cols-2 gap-3">
               
               {/* Card A: Orion Index */}
-              <div className="rounded-3xl bg-black/40 backdrop-blur-xl border border-white/15 p-4 shadow-xl flex flex-col justify-between space-y-2">
+              <div className="rounded-[2rem] bg-black/45 backdrop-blur-xl border border-white/15 p-4 shadow-xl flex flex-col justify-between space-y-2">
                 <div className="flex items-center justify-between">
                   <span className="text-[11px] font-bold text-white">Lumina Index</span>
                   <ArrowUpRight className="w-3.5 h-3.5 text-white/60" />
@@ -684,7 +591,7 @@ export default function AnalyticsRadarView({
               </div>
 
               {/* Card B: Vacancies / Sesiones Activas with Equalizer Bars */}
-              <div className="rounded-3xl bg-black/40 backdrop-blur-xl border border-white/15 p-4 shadow-xl flex flex-col justify-between space-y-2">
+              <div className="rounded-[2rem] bg-black/45 backdrop-blur-xl border border-white/15 p-4 shadow-xl flex flex-col justify-between space-y-2">
                 <div className="flex items-center justify-between">
                   <span className="text-[11px] font-bold text-white">Actividad</span>
                   <ArrowUpRight className="w-3.5 h-3.5 text-white/60" />
@@ -764,7 +671,7 @@ export default function AnalyticsRadarView({
         {/* ---------------------------------------------------- */}
         {/* CARD 1: ILUMINACIÓN & LÁMPARAS (Amazon Style in Orion) */}
         {/* ---------------------------------------------------- */}
-        <div className="rounded-3xl bg-[#131715] border border-white/10 p-5 shadow-xl flex flex-col justify-between space-y-4 hover:border-white/20 transition-all">
+        <div className="rounded-[2rem] bg-[#131715] border border-white/10 p-5 shadow-xl flex flex-col justify-between space-y-4 hover:border-white/20 transition-all">
           
           <div className="flex items-start justify-between gap-4">
             
@@ -795,7 +702,7 @@ export default function AnalyticsRadarView({
 
               {/* Location */}
               <div className="flex items-center gap-2 text-[11px] text-white/60">
-                <span>Madrid, España</span>
+                <span>Quito & Madrid</span>
                 <span>•</span>
                 <span className="text-emerald-400 font-semibold">42% del tráfico</span>
               </div>
@@ -867,7 +774,7 @@ export default function AnalyticsRadarView({
         {/* ---------------------------------------------------- */}
         {/* CARD 2: SALAS & SOFÁS NÓRDICOS (BeReal Style in Orion) */}
         {/* ---------------------------------------------------- */}
-        <div className="rounded-3xl bg-[#131715] border border-white/10 p-5 shadow-xl flex flex-col justify-between space-y-4 hover:border-white/20 transition-all">
+        <div className="rounded-[2rem] bg-[#131715] border border-white/10 p-5 shadow-xl flex flex-col justify-between space-y-4 hover:border-white/20 transition-all">
           
           <div className="flex items-start justify-between gap-4">
             
@@ -898,7 +805,7 @@ export default function AnalyticsRadarView({
 
               {/* Location */}
               <div className="flex items-center gap-2 text-[11px] text-white/60">
-                <span>Barcelona & Costa</span>
+                <span>Guayaquil & Costa</span>
                 <span>•</span>
                 <span className="text-emerald-400 font-semibold">28% del tráfico</span>
               </div>
@@ -970,7 +877,7 @@ export default function AnalyticsRadarView({
         {/* ---------------------------------------------------- */}
         {/* CARD 3: COMEDORES & ROBLE MACIZO (Wise Style in Orion)*/}
         {/* ---------------------------------------------------- */}
-        <div className="rounded-3xl bg-[#131715] border border-white/10 p-5 shadow-xl flex flex-col justify-between space-y-4 hover:border-white/20 transition-all">
+        <div className="rounded-[2rem] bg-[#131715] border border-white/10 p-5 shadow-xl flex flex-col justify-between space-y-4 hover:border-white/20 transition-all">
           
           <div className="flex items-start justify-between gap-4">
             
@@ -1001,7 +908,7 @@ export default function AnalyticsRadarView({
 
               {/* Location */}
               <div className="flex items-center gap-2 text-[11px] text-white/60">
-                <span>Valencia & Global</span>
+                <span>Cuenca & Global</span>
                 <span>•</span>
                 <span className="text-emerald-400 font-semibold">18% del tráfico</span>
               </div>
