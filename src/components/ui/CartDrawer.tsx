@@ -866,7 +866,7 @@ export function CartDrawer() {
                                   {/* Caustic Glow Corner Spot */}
                                   <div className="absolute top-1 left-2.5 w-2.5 h-1 bg-white/80 rounded-full blur-[0.5px] pointer-events-none" />
 
-                                  <Trash2 className="relative z-10 w-3.5 h-3.5 text-rose-500 group-hover/del:rotate-12 group-hover/del:text-rose-600 transition-all duration-300" />
+                                  <Trash2 className="relative z-10 w-4 h-4 text-rose-500 group-hover/del:rotate-12 group-hover/del:text-rose-600 transition-all duration-300" />
                                   <span className="relative z-10 tracking-tight text-rose-600 font-bold text-[11px]">Eliminar</span>
                                 </button>
                               </div>
@@ -885,7 +885,9 @@ export function CartDrawer() {
                             <ArrowLeft className="w-3.5 h-3.5" /> Continuar Comprando
                           </button>
                           <span className="text-xs text-gray-400 font-medium">
-                            {items.length} productos listos para despacho
+                            {items.length === 1 
+                              ? "1 producto listo para despacho" 
+                              : `${items.length} productos listos para despacho`}
                           </span>
                         </div>
 
