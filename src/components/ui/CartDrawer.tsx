@@ -1056,7 +1056,7 @@ export function CartDrawer() {
                             className="p-4 rounded-2xl bg-white/70 hover:bg-white border border-gray-100 hover:border-gray-200 shadow-sm transition-all cursor-pointer flex items-center gap-3.5 group"
                           >
                             <div className="relative w-16 h-16 rounded-xl overflow-hidden bg-gray-100 shrink-0">
-                              <Image src={prod.imageUrl} alt={prod.title} fill className="object-cover group-hover:scale-105 transition-transform" />
+                              <Image src={prod.imageUrl} alt={prod.title} fill sizes="64px" className="object-cover group-hover:scale-105 transition-transform" />
                             </div>
                             <div className="min-w-0">
                               <h5 className="font-bold text-xs text-gray-900 truncate group-hover:text-blue-600 transition-colors">

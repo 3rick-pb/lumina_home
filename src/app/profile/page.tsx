@@ -40,7 +40,12 @@ import { useUserStore, Order } from "@/lib/userStore";
 import { useCatalogStore, normalizeCategory, CatalogProduct, isAgotadoBadge } from "@/lib/catalogStore";
 import { useCartStore } from "@/lib/store";
 import { normalizeSearchText } from "@/lib/utils";
-import AnalyticsRadarView from "@/components/profile/AnalyticsRadarView";
+import dynamic from 'next/dynamic';
+
+const AnalyticsRadarView = dynamic(() => import('@/components/profile/AnalyticsRadarView'), {
+  loading: () => <div className="h-[720px] w-full bg-[#181d1b] rounded-[2.5rem] flex items-center justify-center border border-white/10 shadow-2xl animate-pulse text-white/50 font-mono text-xs tracking-widest uppercase">Inicializando Radar Lumina...</div>,
+  ssr: false
+});
 
 export default function ProfilePage() {
   const router = useRouter();

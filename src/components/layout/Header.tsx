@@ -10,7 +10,10 @@ import { twMerge } from "tailwind-merge";
 import { useCartStore } from "@/lib/store";
 import { useUserStore } from "@/lib/userStore";
 import { useCatalogStore } from "@/lib/catalogStore";
-import { CartDrawer } from "@/components/ui/CartDrawer";
+import dynamic from 'next/dynamic';
+const CartDrawer = dynamic(() => import('@/components/ui/CartDrawer').then(mod => ({ default: mod.CartDrawer })), {
+  ssr: false
+});
 import { usePathname, useRouter } from "next/navigation";
 import { normalizeSearchText } from "@/lib/utils";
 

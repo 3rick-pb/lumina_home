@@ -134,7 +134,7 @@ export default function AnalyticsRadarView({
   }, []);
   const [activeStage, setActiveStage] = useState<"all" | "cart" | "frequent">("all");
   const [activeTab, setActiveTab] = useState<"metrics" | "clients">("metrics");
-  const [scrollProgress, setScrollProgress] = useState<number>(0);
+  const scrollTrackRef = useRef<HTMLDivElement>(null);
   const [isMapLoaded, setIsMapLoaded] = useState<boolean>(false);
 
   // Preload optimized WebP 3D relief landmass (< 480KB) for instant load
@@ -162,6 +162,7 @@ export default function AnalyticsRadarView({
   const [isDragging, setIsDragging] = useState<boolean>(false);
   
   const mapContainerRef = useRef<HTMLDivElement>(null);
+  const mapLayerTransformRef = useRef<HTMLDivElement>(null);
   const clientsListRef = useRef<HTMLDivElement>(null);
   const dragStartRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
   const panStartRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
@@ -426,7 +427,11 @@ export default function AnalyticsRadarView({
     if (!el) return;
     const maxScroll = el.scrollHeight - el.clientHeight;
     if (maxScroll > 0) {
-      setScrollProgress(el.scrollTop / maxScroll);
+      // DIRECT DOM MUTATION: Bypasses React rendering entirely during scroll frames for extreme performance
+      const progress = el.scrollTop / maxScroll;
+      if (scrollTrackRef.current) {
+        scrollTrackRef.current.style.top = `${progress * 68}%`;
+      }
     }
   };
 
@@ -442,14 +447,25 @@ export default function AnalyticsRadarView({
     if (!isDragging) return;
     const dx = e.clientX - dragStartRef.current.x;
     const dy = e.clientY - dragStartRef.current.y;
-    setPan({
-      x: panStartRef.current.x + dx,
-      y: panStartRef.current.y + dy
-    });
+    const newX = panStartRef.current.x + dx;
+    const newY = panStartRef.current.y + dy;
+    // DIRECT DOM MUTATION: Bypasses React rendering entirely during drag frames for extreme performance
+    if (mapLayerTransformRef.current) {
+      mapLayerTransformRef.current.style.transform = `translate(${newX}px, ${newY}px) scale(${zoom})`;
+    }
   };
 
-  const handleMouseUp = () => {
-    setIsDragging(false);
+  const handleMouseUp = (e: React.MouseEvent) => {
+    if (isDragging) {
+      setIsDragging(false);
+      // Sync state back on drag end to ensure consistency on next React render
+      const dx = e.clientX - dragStartRef.current.x;
+      const dy = e.clientY - dragStartRef.current.y;
+      setPan({
+        x: panStartRef.current.x + dx,
+        y: panStartRef.current.y + dy
+      });
+    }
   };
 
   const handleZoomIn = () => {
@@ -528,6 +544,7 @@ export default function AnalyticsRadarView({
       >
         {/* Zoomed & Panned 3D Terrain Wrapper */}
         <div 
+          ref={mapLayerTransformRef}
           style={{
             transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`,
             transformOrigin: "center center",
@@ -1207,9 +1224,10 @@ export default function AnalyticsRadarView({
                 {/* Elegant Luminous Neon Green Vertical Slider Track */}
                 <div className="relative w-1.5 bg-white/5 rounded-full overflow-hidden shrink-0 border border-white/10">
                   <div 
+                    ref={scrollTrackRef}
                     style={{
                       height: "32%",
-                      top: `${scrollProgress * 68}%`
+                      top: `0%`
                     }}
                     className="absolute w-full bg-[#ccff00] rounded-full shadow-[0_0_12px_#ccff00] transition-all duration-300 ease-out"
                   />
