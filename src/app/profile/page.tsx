@@ -33,12 +33,14 @@ import {
   Pencil,
   Star,
   Navigation,
-  Loader2 
+  Loader2,
+  Globe
 } from "lucide-react";
 import { useUserStore, Order } from "@/lib/userStore";
 import { useCatalogStore, normalizeCategory, CatalogProduct, isAgotadoBadge } from "@/lib/catalogStore";
 import { useCartStore } from "@/lib/store";
 import { normalizeSearchText } from "@/lib/utils";
+import AnalyticsRadarView from "@/components/profile/AnalyticsRadarView";
 
 export default function ProfilePage() {
   const router = useRouter();
@@ -68,7 +70,7 @@ export default function ProfilePage() {
   const { addItem, setIsOpen: setCartOpen } = useCartStore();
 
   // Navigation & Search State
-  const [activeTab, setActiveTab] = useState<"overview" | "orders" | "cards" | "favorites" | "catalog" | "niches" | "settings">("overview");
+  const [activeTab, setActiveTab] = useState<"overview" | "orders" | "cards" | "favorites" | "catalog" | "niches" | "analytics" | "settings">("overview");
   const [searchQuery, setSearchQuery] = useState("");
   const [isMounted, setIsMounted] = useState(false);
 
@@ -185,8 +187,8 @@ export default function ProfilePage() {
     if (typeof window !== "undefined") {
       const params = new URLSearchParams(window.location.search);
       const tabParam = params.get("tab");
-      if (tabParam && ["overview", "orders", "cards", "favorites", "catalog", "niches", "settings"].includes(tabParam)) {
-        setActiveTab(tabParam as "overview" | "orders" | "cards" | "favorites" | "catalog" | "niches" | "settings");
+      if (tabParam && ["overview", "orders", "cards", "favorites", "catalog", "niches", "analytics", "settings"].includes(tabParam)) {
+        setActiveTab(tabParam as "overview" | "orders" | "cards" | "favorites" | "catalog" | "niches" | "analytics" | "settings");
       }
     }
     if (isMounted && !isLoading && !isAuthenticated) {
@@ -733,6 +735,14 @@ export default function ProfilePage() {
                 >
                   <Layers className="w-5 h-5" />
                 </button>
+
+                <button 
+                  onClick={() => setActiveTab("analytics")} 
+                  className={`w-11 h-11 rounded-2xl flex items-center justify-center transition-all ${activeTab === "analytics" ? "bg-gray-900 text-white shadow-md shadow-gray-900/15" : "text-gray-400 hover:text-gray-900 hover:bg-gray-100"}`}
+                  title="Radar de Clientes & Analítica"
+                >
+                  <Globe className="w-5 h-5" />
+                </button>
               </>
             )}
 
@@ -811,6 +821,12 @@ export default function ProfilePage() {
                     className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all ${activeTab === "niches" ? "bg-white text-gray-900 shadow-sm" : "text-gray-500 hover:text-gray-900"}`}
                   >
                     Nichos & Badges ({categories.length})
+                  </button>
+                  <button 
+                    onClick={() => setActiveTab("analytics")} 
+                    className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all ${activeTab === "analytics" ? "bg-white text-gray-900 shadow-sm" : "text-gray-500 hover:text-gray-900"}`}
+                  >
+                    Radar en Vivo
                   </button>
                 </>
               )}
@@ -919,7 +935,7 @@ export default function ProfilePage() {
             </h1>
             <p className="text-xs md:text-sm text-gray-500 mt-0.5">
               {isAdmin 
-                ? "Panel de control maestro de catálogo, inventario y métricas reales de Lumina Home." 
+                ? "Panel de control maestro de catálogo, inventario, radar de clientes y analítica de Lumina Home." 
                 : "Supervisa tus pedidos, métodos de pago vinculados y artículos guardados."}
             </p>
           </div>
@@ -2070,6 +2086,19 @@ export default function ProfilePage() {
               </div>
             </div>
           </div>
+        )}
+
+        {/* ========================================================================= */}
+        {/* VIEW: RADAR GEOGRÁFICO DE CLIENTES & ANALÍTICA EN VIVO */}
+        {/* ========================================================================= */}
+        {activeTab === "analytics" && isAdmin && (
+          <AnalyticsRadarView 
+            user={user}
+            addresses={addresses}
+            orders={orders}
+            products={products}
+            categories={categories}
+          />
         )}
 
         {/* ========================================================================= */}
