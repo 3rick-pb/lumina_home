@@ -36,7 +36,7 @@ export interface ConnectedClient {
   totalSpent: number;
   currentSection: string;
   intentScore: number;
-  device: "Desktop" | "Móvil" | "Tablet";
+  device: "Computador" | "Celular" | "Tablet";
   hasCart: boolean;
   cartItemsCount?: number;
   isRealUser?: boolean;
@@ -169,7 +169,7 @@ export default function AnalyticsRadarView({
         totalSpent: 1840,
         currentSection: "Lámparas Nova LED",
         intentScore: 94,
-        device: "Desktop",
+        device: "Computador",
         hasCart: true,
         cartItemsCount: 2
       },
@@ -186,7 +186,7 @@ export default function AnalyticsRadarView({
         totalSpent: 920,
         currentSection: "Mesas de Roble Escandinavo",
         intentScore: 88,
-        device: "Móvil",
+        device: "Celular",
         hasCart: true,
         cartItemsCount: 1
       },
@@ -203,7 +203,7 @@ export default function AnalyticsRadarView({
         totalSpent: 1350,
         currentSection: "Colección Minimalista",
         intentScore: 79,
-        device: "Desktop",
+        device: "Computador",
         hasCart: false
       },
       {
@@ -236,7 +236,7 @@ export default function AnalyticsRadarView({
         totalSpent: 430,
         currentSection: "Espejos Orgánicos LED",
         intentScore: 72,
-        device: "Móvil",
+        device: "Celular",
         hasCart: false
       },
       {
@@ -252,7 +252,7 @@ export default function AnalyticsRadarView({
         totalSpent: 1680,
         currentSection: "Iluminación Arquitectónica",
         intentScore: 91,
-        device: "Desktop",
+        device: "Computador",
         hasCart: true,
         cartItemsCount: 1
       },
@@ -269,7 +269,7 @@ export default function AnalyticsRadarView({
         totalSpent: 620,
         currentSection: "Lámparas de Pie Artemide",
         intentScore: 84,
-        device: "Móvil",
+        device: "Celular",
         hasCart: false
       },
       {
@@ -285,7 +285,7 @@ export default function AnalyticsRadarView({
         totalSpent: 4200,
         currentSection: "Edición Limitada Bestseller",
         intentScore: 98,
-        device: "Desktop",
+        device: "Computador",
         hasCart: true,
         cartItemsCount: 4
       },
@@ -302,7 +302,7 @@ export default function AnalyticsRadarView({
         totalSpent: 1140,
         currentSection: "Aparadores Nórdicos",
         intentScore: 89,
-        device: "Móvil",
+        device: "Celular",
         hasCart: true,
         cartItemsCount: 1
       },
@@ -319,7 +319,7 @@ export default function AnalyticsRadarView({
         totalSpent: 890,
         currentSection: "Sillas de Cuero Natural",
         intentScore: 82,
-        device: "Desktop",
+        device: "Computador",
         hasCart: false
       }
     ];
@@ -344,7 +344,7 @@ export default function AnalyticsRadarView({
           totalSpent: orders.reduce((acc, o) => acc + o.total, 0),
           currentSection: "Explorando: Radar Lumina",
           intentScore: 99,
-          device: "Desktop",
+          device: "Computador",
           hasCart: true,
           cartItemsCount: 2,
           isRealUser: true
@@ -442,6 +442,18 @@ export default function AnalyticsRadarView({
   };
 
   const activeHUDClient = hoveredClient || selectedClient;
+
+  // Helper to extract full clean city name (e.g. "Santo Domingo", "Quito") before parentheses or hyphens
+  const formatBeaconCity = (cityStr: string) => {
+    if (!cityStr) return "Ecuador";
+    let clean = cityStr.split("(")[0].trim();
+    if (clean.includes(" - ")) {
+      clean = clean.split(" - ")[0].trim();
+    } else if (clean.includes("-")) {
+      clean = clean.split("-")[0].trim();
+    }
+    return clean || cityStr;
+  };
 
   // Preserve last active client data during collapse animation
   useEffect(() => {
@@ -552,9 +564,9 @@ export default function AnalyticsRadarView({
                       ? "bg-emerald-400 text-gray-950 border-white shadow-[0_0_16px_#34d399]" 
                       : "bg-gradient-to-tr from-amber-400 to-yellow-200 text-gray-950 border-white/80 shadow-[0_0_14px_#f59e0b]"
                   } w-6 h-6`}>
-                    {client.device === "Desktop" ? (
+                    {client.device === "Computador" ? (
                       <Monitor className="w-3 h-3 shrink-0" />
-                    ) : client.device === "Móvil" ? (
+                    ) : client.device === "Celular" ? (
                       <Smartphone className="w-3 h-3 shrink-0" />
                     ) : (
                       <Tablet className="w-3 h-3 shrink-0" />
@@ -574,13 +586,13 @@ export default function AnalyticsRadarView({
                   <div className="w-1 h-1 bg-[#ccff00] rotate-45 shadow-[0_0_6px_#ccff00]" />
                 </div>
 
-                {/* City & Province Tag Label */}
-                <div className={`absolute top-full mt-1 left-1/2 -translate-x-1/2 whitespace-nowrap px-1.5 py-0.5 rounded text-[8.5px] font-bold font-mono tracking-wider transition-all pointer-events-none ${
+                {/* City & Province Tag Label (Shows complete city name e.g. "Santo Domingo") */}
+                <div className={`absolute top-full mt-1 left-1/2 -translate-x-1/2 whitespace-nowrap px-2 py-0.5 rounded text-[9px] font-bold font-mono tracking-wider transition-all pointer-events-none ${
                   isActive 
                     ? "bg-white text-gray-950 shadow-md scale-105" 
                     : "bg-black/85 text-white/90 border border-white/10 backdrop-blur-md"
                 }`}>
-                  {client.city.split(" ")[0]}
+                  {formatBeaconCity(client.city)}
                 </div>
               </div>
             );
@@ -743,9 +755,9 @@ export default function AnalyticsRadarView({
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-1.5 shrink-0">
+                    <div className="flex items-center gap-2 shrink-0">
                       <span 
-                        className="text-[8.5px] font-mono px-2 py-0.5 rounded-full bg-white/10 text-white/90 border border-white/10 font-bold"
+                        className="text-[11px] font-mono px-2.5 py-1 rounded-full bg-white/10 text-white border border-white/15 font-bold tracking-tight shrink-0 shadow-sm"
                         title="Frecuencia estimada de recompra del cliente"
                       >
                         Recompra: {displayedDossierClient.frequency}
@@ -756,10 +768,10 @@ export default function AnalyticsRadarView({
                           setSelectedClient(null);
                           setHoveredClient(null);
                         }}
-                        className="w-5 h-5 rounded-full bg-white/10 hover:bg-white/20 text-white/70 hover:text-white flex items-center justify-center transition-all duration-200 cursor-pointer shrink-0"
+                        className="w-6 h-6 rounded-full bg-white/10 hover:bg-white/20 text-white/70 hover:text-white flex items-center justify-center transition-all duration-200 cursor-pointer shrink-0"
                         title="Cerrar detalle (Esc)"
                       >
-                        <X className="w-3 h-3" />
+                        <X className="w-3.5 h-3.5" />
                       </button>
                     </div>
                   </div>
