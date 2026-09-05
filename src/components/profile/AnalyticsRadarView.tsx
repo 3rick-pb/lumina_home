@@ -117,6 +117,7 @@ export default function AnalyticsRadarView({
   // Interaction & filter states
   const [hoveredClient, setHoveredClient] = useState<ConnectedClient | null>(null);
   const [selectedClient, setSelectedClient] = useState<ConnectedClient | null>(null);
+  const [lastActiveClient, setLastActiveClient] = useState<ConnectedClient | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [activeStage, setActiveStage] = useState<"all" | "cart" | "frequent">("all");
   const [activeTab, setActiveTab] = useState<"metrics" | "clients">("metrics");
@@ -442,6 +443,15 @@ export default function AnalyticsRadarView({
 
   const activeHUDClient = hoveredClient || selectedClient;
 
+  // Preserve last active client data during collapse animation
+  useEffect(() => {
+    if (activeHUDClient) {
+      setLastActiveClient(activeHUDClient);
+    }
+  }, [activeHUDClient]);
+
+  const displayedDossierClient = activeHUDClient || lastActiveClient;
+
   return (
     <div 
       className="relative w-full h-[660px] lg:h-[720px] rounded-[2.5rem] overflow-hidden bg-[#181d1b] text-white shadow-2xl border border-white/10 select-none animate-fade-in font-sans"
@@ -669,8 +679,8 @@ export default function AnalyticsRadarView({
       {/* ========================================================================= */}
       {/* 5. RIGHT FLOATING GLASS PANEL (Concise Metrics & Live Client Dossier)     */}
       {/* ========================================================================= */}
-      <div onClick={(e) => e.stopPropagation()} className="absolute right-6 top-5 bottom-24 w-80 lg:w-84 z-30 flex flex-col pointer-events-auto">
-        <div className="flex-1 rounded-[2rem] bg-[#121615]/85 backdrop-blur-2xl border border-white/15 p-5 shadow-2xl flex flex-col justify-between overflow-hidden">
+      <div onClick={(e) => e.stopPropagation()} className="absolute right-6 top-5 bottom-24 w-80 lg:w-84 z-30 flex flex-col pointer-events-auto transition-all duration-500 ease-out">
+        <div className="flex-1 rounded-[2rem] bg-[#121615]/85 backdrop-blur-2xl border border-white/15 p-5 shadow-2xl flex flex-col justify-between overflow-hidden transition-all duration-500 ease-out">
           
           {/* Panel Top Navigation & Scrollable Content Body */}
           <div className="flex-1 min-h-0 overflow-y-auto pr-0.5 space-y-3.5" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
@@ -678,7 +688,7 @@ export default function AnalyticsRadarView({
               <div className="flex items-center gap-1 p-0.5 rounded-full bg-black/50 border border-white/10 text-[11px] font-semibold">
                 <button 
                   onClick={() => setActiveTab("metrics")}
-                  className={`px-3 py-1 rounded-full transition-all cursor-pointer ${
+                  className={`px-3 py-1 rounded-full transition-all duration-300 ease-out cursor-pointer ${
                     activeTab === "metrics" ? "bg-white text-gray-950 font-bold shadow-sm" : "text-white/60 hover:text-white"
                   }`}
                 >
@@ -686,7 +696,7 @@ export default function AnalyticsRadarView({
                 </button>
                 <button 
                   onClick={() => setActiveTab("clients")}
-                  className={`px-3 py-1 rounded-full transition-all cursor-pointer ${
+                  className={`px-3 py-1 rounded-full transition-all duration-300 ease-out cursor-pointer ${
                     activeTab === "clients" ? "bg-white text-gray-950 font-bold shadow-sm" : "text-white/60 hover:text-white"
                   }`}
                 >
@@ -694,90 +704,108 @@ export default function AnalyticsRadarView({
                 </button>
               </div>
 
-              {activeHUDClient && (
-                <span className="text-[9px] font-mono px-2 py-0.5 rounded-full bg-[#ccff00]/20 text-[#ccff00] border border-[#ccff00]/30 font-bold">
-                  Selección
-                </span>
+              <span className={`text-[9px] font-mono px-2 py-0.5 rounded-full border font-bold transition-all duration-500 ease-in-out ${
+                activeHUDClient 
+                  ? "bg-[#ccff00]/20 text-[#ccff00] border-[#ccff00]/30 opacity-100 scale-100" 
+                  : "opacity-0 scale-75 pointer-events-none border-transparent"
+              }`}>
+                Selección
+              </span>
+            </div>
+
+            {/* TAB CONTENT A: ACTIVE CLIENT DOSSIER (Silky Smooth Collapsible Transition 500ms) */}
+            <div 
+              className={`transition-all duration-500 ease-in-out overflow-hidden transform-gpu ${
+                activeHUDClient 
+                  ? "max-h-[380px] opacity-100 translate-y-0 scale-100 mb-3.5" 
+                  : "max-h-0 opacity-0 -translate-y-2 scale-98 mb-0 pointer-events-none"
+              }`}
+            >
+              {displayedDossierClient && (
+                <div className="rounded-2xl bg-black/55 border border-[#ccff00]/30 p-3.5 space-y-2.5 shadow-xl backdrop-blur-md transition-all duration-500 ease-out">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex items-center gap-2.5 truncate">
+                      <div className="w-8 h-8 rounded-full bg-[#ccff00] text-gray-950 font-black flex items-center justify-center text-xs shrink-0 shadow-sm transition-transform duration-300 hover:scale-105">
+                        {displayedDossierClient.name.charAt(0)}
+                      </div>
+                      <div className="truncate">
+                        <div className="flex items-center gap-1.5">
+                          <h4 className="font-bold text-xs text-white leading-tight truncate">{displayedDossierClient.name}</h4>
+                          {displayedDossierClient.isRealUser && (
+                            <span className="text-[7.5px] font-mono px-1.5 py-0.2 rounded bg-emerald-400/20 text-emerald-400 border border-emerald-400/30 font-bold shrink-0">
+                              Tú
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-[10px] text-white/50 flex items-center gap-1 mt-0.5 truncate">
+                          <MapPin className="w-2.5 h-2.5 text-white/60 shrink-0" /> {displayedDossierClient.city}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      <span 
+                        className="text-[8.5px] font-mono px-2 py-0.5 rounded-full bg-white/10 text-white/90 border border-white/10 font-bold"
+                        title="Frecuencia estimada de recompra del cliente"
+                      >
+                        Recompra: {displayedDossierClient.frequency}
+                      </span>
+                      <button 
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedClient(null);
+                          setHoveredClient(null);
+                        }}
+                        className="w-5 h-5 rounded-full bg-white/10 hover:bg-white/20 text-white/70 hover:text-white flex items-center justify-center transition-all duration-200 cursor-pointer shrink-0"
+                        title="Cerrar detalle (Esc)"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="space-y-1.5 text-[10.5px] pt-2 border-t border-white/10">
+                    <div className="flex items-center justify-between">
+                      <span className="text-white/60">Explorando:</span>
+                      <strong className="text-white font-medium text-right truncate max-w-[140px]">{displayedDossierClient.currentSection}</strong>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-white/60">Total Compras:</span>
+                      <strong className="text-[#ccff00] font-mono font-bold">${displayedDossierClient.totalSpent.toFixed(2)} USD</strong>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-white/60">Historial:</span>
+                      <span className="text-white/80">{displayedDossierClient.purchasesCount} pedidos realizados</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-white/60">Dispositivo:</span>
+                      <span className="text-white/80">{displayedDossierClient.device}</span>
+                    </div>
+                  </div>
+
+                  {displayedDossierClient.hasCart && (
+                    <div className="p-2 rounded-xl bg-rose-500/15 border border-rose-500/30 flex items-center justify-between text-[10px]">
+                      <span className="text-rose-300 font-semibold flex items-center gap-1.5">
+                        <ShoppingBag className="w-3 h-3" /> Con ítems en el carrito
+                      </span>
+                      <span className="font-mono text-white font-bold">{displayedDossierClient.cartItemsCount || 1} pzs</span>
+                    </div>
+                  )}
+                </div>
               )}
             </div>
 
-            {/* TAB CONTENT A: ACTIVE CLIENT DOSSIER (With prominent Close X and Circular Avatar) */}
-            {activeHUDClient ? (
-              <div className="rounded-2xl bg-black/50 border border-[#ccff00]/30 p-3.5 space-y-2.5 animate-fade-in shadow-xl backdrop-blur-md">
-                <div className="flex items-start justify-between gap-2">
-                  <div className="flex items-center gap-2.5 truncate">
-                    <div className="w-8 h-8 rounded-full bg-[#ccff00] text-gray-950 font-black flex items-center justify-center text-xs shrink-0 shadow-sm">
-                      {activeHUDClient.name.charAt(0)}
-                    </div>
-                    <div className="truncate">
-                      <div className="flex items-center gap-1.5">
-                        <h4 className="font-bold text-xs text-white leading-tight truncate">{activeHUDClient.name}</h4>
-                        {activeHUDClient.isRealUser && (
-                          <span className="text-[7.5px] font-mono px-1.5 py-0.2 rounded bg-emerald-400/20 text-emerald-400 border border-emerald-400/30 font-bold shrink-0">
-                            Tú
-                          </span>
-                        )}
-                      </div>
-                      <p className="text-[10px] text-white/50 flex items-center gap-1 mt-0.5 truncate">
-                        <MapPin className="w-2.5 h-2.5 text-white/60 shrink-0" /> {activeHUDClient.city}
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center gap-1.5 shrink-0">
-                    <span 
-                      className="text-[8.5px] font-mono px-2 py-0.5 rounded-full bg-white/10 text-white/90 border border-white/10 font-bold"
-                      title="Frecuencia estimada de recompra del cliente"
-                    >
-                      Recompra: {activeHUDClient.frequency}
-                    </span>
-                    <button 
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setSelectedClient(null);
-                        setHoveredClient(null);
-                      }}
-                      className="w-5 h-5 rounded-full bg-white/10 hover:bg-white/20 text-white/70 hover:text-white flex items-center justify-center transition-all cursor-pointer shrink-0"
-                      title="Cerrar detalle (Esc)"
-                    >
-                      <X className="w-3 h-3" />
-                    </button>
-                  </div>
-                </div>
-
-                <div className="space-y-1.5 text-[10.5px] pt-2 border-t border-white/10">
-                  <div className="flex items-center justify-between">
-                    <span className="text-white/60">Explorando:</span>
-                    <strong className="text-white font-medium text-right truncate max-w-[140px]">{activeHUDClient.currentSection}</strong>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-white/60">Total Compras:</span>
-                    <strong className="text-[#ccff00] font-mono font-bold">${activeHUDClient.totalSpent.toFixed(2)} USD</strong>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-white/60">Historial:</span>
-                    <span className="text-white/80">{activeHUDClient.purchasesCount} pedidos realizados</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-white/60">Dispositivo:</span>
-                    <span className="text-white/80">{activeHUDClient.device}</span>
-                  </div>
-                </div>
-
-                {activeHUDClient.hasCart && (
-                  <div className="p-2 rounded-xl bg-rose-500/15 border border-rose-500/30 flex items-center justify-between text-[10px]">
-                    <span className="text-rose-300 font-semibold flex items-center gap-1.5">
-                      <ShoppingBag className="w-3 h-3" /> Con ítems en el carrito
-                    </span>
-                    <span className="font-mono text-white font-bold">{activeHUDClient.cartItemsCount || 1} pzs</span>
-                  </div>
-                )}
-              </div>
-            ) : null}
-
-            {/* TAB CONTENT B: CORE METRICS OVERVIEW */}
-            {activeTab === "metrics" ? (
-              <div className="space-y-4">
+            {/* TABS CONTAINER: SILKY SMOOTH CROSSFADE & SLIDE ANIMATION */}
+            <div className="relative">
+              {/* TAB CONTENT B: CORE METRICS OVERVIEW */}
+              <div 
+                className={`transition-all duration-500 ease-in-out ${
+                  activeTab === "metrics" 
+                    ? "opacity-100 translate-x-0 relative z-10" 
+                    : "opacity-0 -translate-x-4 pointer-events-none absolute inset-x-0 top-0 z-0"
+                }`}
+              >
+                <div className="space-y-4">
                 
                 {/* Metric 1: Online Volume & Stage Filter */}
                 <div className="space-y-2">
@@ -889,10 +917,18 @@ export default function AnalyticsRadarView({
                   </div>
                 </div>
 
+                </div>
               </div>
-            ) : (
-              /* TAB CONTENT C: CLIENTS LIST WITH LUMINOUS NEON GREEN SLIDER BAR */
-              <div className="relative flex items-stretch gap-2 h-64">
+
+              {/* TAB CONTENT C: CLIENTS LIST WITH LUMINOUS NEON GREEN SLIDER BAR */}
+              <div 
+                className={`transition-all duration-500 ease-in-out ${
+                  activeTab === "clients" 
+                    ? "opacity-100 translate-x-0 relative z-10" 
+                    : "opacity-0 translate-x-4 pointer-events-none absolute inset-x-0 top-0 z-0"
+                }`}
+              >
+                <div className="relative flex items-stretch gap-2 h-64">
                 {/* Scrollable List with Native Scrollbar Hidden */}
                 <div 
                   ref={clientsListRef}
@@ -906,7 +942,7 @@ export default function AnalyticsRadarView({
                       <div 
                         key={c.id}
                         onClick={() => setSelectedClient(prev => prev?.id === c.id ? null : c)}
-                        className={`p-2.5 rounded-2xl flex items-center justify-between text-xs cursor-pointer transition-all border ${
+                        className={`p-2.5 rounded-2xl flex items-center justify-between text-xs cursor-pointer transition-all duration-300 ease-out border ${
                           isSelected 
                             ? "bg-white text-gray-950 font-bold border-[#ccff00] shadow-[0_0_16px_rgba(204,255,0,0.35)]" 
                             : "bg-black/40 hover:bg-black/70 text-white/85 border-white/10 hover:border-white/20"
@@ -954,15 +990,16 @@ export default function AnalyticsRadarView({
                       height: "32%",
                       top: `${scrollProgress * 68}%`
                     }}
-                    className="absolute w-full bg-[#ccff00] rounded-full shadow-[0_0_12px_#ccff00] transition-all duration-75"
+                    className="absolute w-full bg-[#ccff00] rounded-full shadow-[0_0_12px_#ccff00] transition-all duration-300 ease-out"
                   />
                 </div>
               </div>
-            )}
-
+            </div>
           </div>
 
-          {/* Panel Footer */}
+        </div>
+
+        {/* Panel Footer */}
           <div className="pt-3 border-t border-white/10 flex items-center justify-between text-[10px] text-white/50">
             <span className="flex items-center gap-1.5">
               <Activity className="w-3 h-3 text-[#ccff00]" /> Radar Lumina Activo
