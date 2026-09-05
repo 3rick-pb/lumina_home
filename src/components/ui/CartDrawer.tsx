@@ -203,7 +203,6 @@ export function CartDrawer() {
   // Checkout Processing
   const [isProcessing, setIsProcessing] = useState(false);
   const [lastPlacedOrder, setLastPlacedOrder] = useState<Order | null>(null);
-  const [cartAlert, setCartAlert] = useState<string | null>(null);
 
   // Detect products with the "AGOTADO" badge in the user's cart
   const agotadoItems = useMemo(() => {
@@ -393,14 +392,8 @@ export function CartDrawer() {
 
   const handleProceedToPayment = () => {
     if (hasAgotadoItems) {
-      setCartAlert(
-        agotadoItems.length === 1
-          ? `El producto "${agotadoItems[0].product.title}" está marcado como AGOTADO. Por favor elimínalo de la bolsa para poder proceder al pago.`
-          : `Tienes ${agotadoItems.length} productos agotados en tu bolsa. Por favor elimínalos para poder continuar con tu compra.`
-      );
       return;
     }
-    setCartAlert(null);
 
     if (!isAuthenticated) {
       setIsOpen(false);
@@ -700,8 +693,8 @@ export function CartDrawer() {
                   </div>
 
                   {/* ALERTA DE PRODUCTOS AGOTADOS */}
-                  {(hasAgotadoItems || cartAlert) && (
-                    <div className="p-4 sm:p-5 rounded-2xl bg-red-50/90 border border-red-200 flex items-start gap-3.5 text-red-900 shadow-sm animate-fade-in">
+                  {hasAgotadoItems && (
+                    <div className="p-4 sm:p-5 rounded-2xl bg-red-50/90 border border-red-200 flex items-start gap-3.5 text-red-900 shadow-sm animate-fade-in transition-all">
                       <div className="w-9 h-9 rounded-xl bg-red-100 text-red-600 flex items-center justify-center shrink-0 mt-0.5 shadow-xs">
                         <AlertTriangle className="w-5 h-5" />
                       </div>
@@ -710,11 +703,9 @@ export function CartDrawer() {
                           {agotadoItems.length === 1 ? "Producto no disponible en tu bolsa" : "Productos no disponibles en tu bolsa"}
                         </p>
                         <p className="mt-1 text-red-700 leading-relaxed font-medium">
-                          {cartAlert || (
-                            agotadoItems.length === 1
-                              ? `El producto "${agotadoItems[0].product.title}" está marcado como AGOTADO. Debes eliminarlo de tu bolsa de compras para poder continuar hacia la pasarela de pago.`
-                              : `Tienes ${agotadoItems.length} productos marcados como AGOTADOS en tu bolsa. Debes eliminarlos para poder continuar con tu pedido.`
-                          )}
+                          {agotadoItems.length === 1
+                            ? `El producto "${agotadoItems[0].product.title}" está marcado como AGOTADO. Debes eliminarlo de tu bolsa de compras para poder continuar hacia la pasarela de pago.`
+                            : `Tienes ${agotadoItems.length} productos marcados como AGOTADOS en tu bolsa. Debes eliminarlos para poder continuar con tu pedido.`}
                         </p>
                       </div>
                     </div>
@@ -745,7 +736,7 @@ export function CartDrawer() {
                       {/* ---------------------------------------------------- */}
                       <div className="lg:col-span-8 bg-white/80 backdrop-blur-xl rounded-[2rem] border border-gray-200/60 p-6 sm:p-8 shadow-sm space-y-6">
                         {/* Table Column Headers (Directly from Reference Image) */}
-                        <div className="hidden sm:grid grid-cols-12 text-xs font-bold text-gray-400 uppercase tracking-wider pb-3 border-b border-gray-100">
+                        <div className="hidden sm:grid grid-cols-12 text-xs font-bold text-gray-400 uppercase tracking-wider pb-3 border-b border-gray-100 px-3.5 sm:px-4">
                           <span className="col-span-5">Producto</span>
                           <span className="col-span-3 text-center">Cantidad</span>
                           <span className="col-span-2 text-right pr-6">Subtotal</span>
@@ -753,7 +744,7 @@ export function CartDrawer() {
                         </div>
 
                         {/* Product Rows with generous breathing room */}
-                        <div className="divide-y divide-gray-100">
+                        <div className="space-y-3 pt-1">
                           {items.map((item) => {
                             // eslint-disable-next-line @typescript-eslint/no-explicit-any
                             const itemBadge = (item.product as any)?.badge;
@@ -763,8 +754,10 @@ export function CartDrawer() {
                             return (
                               <div 
                                 key={item.id} 
-                                className={`py-5 first:pt-0 last:pb-0 flex flex-col sm:grid sm:grid-cols-12 gap-4 sm:items-center group transition-all rounded-2xl ${
-                                  itemIsAgotado ? "bg-red-50/50 -mx-3 px-3 border border-red-200/80 shadow-xs" : ""
+                                className={`p-3.5 sm:p-4 flex flex-col sm:grid sm:grid-cols-12 gap-4 sm:items-center group transition-all rounded-2xl ${
+                                  itemIsAgotado 
+                                    ? "bg-red-50/40 border border-red-200/80 shadow-xs" 
+                                    : "border border-transparent hover:bg-gray-50/50 hover:border-gray-100/80"
                                 }`}
                               >
                                 {/* Product Info (5 cols) */}
@@ -790,7 +783,7 @@ export function CartDrawer() {
                                         {item.product.category}
                                       </span>
                                       {itemIsAgotado && (
-                                        <span className="px-2 py-0.5 rounded-full bg-red-500 text-white text-[9px] font-bold tracking-wider uppercase shadow-xs">
+                                        <span className="px-2 py-0.5 rounded-full bg-red-50 text-red-600 border border-red-200 text-[9px] font-bold tracking-wider uppercase">
                                           Agotado
                                         </span>
                                       )}
