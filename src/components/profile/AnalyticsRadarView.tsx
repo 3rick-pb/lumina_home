@@ -16,10 +16,11 @@ import {
   Smartphone, 
   Monitor, 
   Tablet, 
-  Share2,
-  SlidersHorizontal,
-  Bell,
-  Activity
+  Share2, 
+  SlidersHorizontal, 
+  Bell, 
+  Activity,
+  TrendingUp
 } from "lucide-react";
 import { User, ShippingAddress, Order } from "@/lib/userStore";
 import { CatalogProduct } from "@/lib/catalogStore";
@@ -51,6 +52,106 @@ interface AnalyticsRadarViewProps {
   categories: string[];
 }
 
+interface StrongMatchWidgetProps {
+  percentage: number;
+  isFavorite?: boolean;
+}
+
+function StrongMatchWidget({ percentage, isFavorite = false }: StrongMatchWidgetProps) {
+  // SVG radius 38, circumference = 2 * Math.PI * 38 = 238.76
+  const strokeDashoffset = 238.76 * (1 - percentage / 100);
+
+  return (
+    <div className="flex items-center justify-end gap-2.5 sm:gap-3.5 shrink-0">
+      {/* Orion Interconnected Action Nodes Constellation */}
+      <div className="relative flex flex-col items-center justify-between h-20 py-0.5">
+        <div className="absolute top-2.5 bottom-2.5 w-[1.5px] bg-white/10" />
+
+        {/* Top Node Cluster: Share & Close */}
+        <div className="flex items-center gap-1 relative z-10">
+          <button 
+            aria-label="Compartir"
+            className="w-5 h-5 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white/70 transition-all hover:scale-110 cursor-pointer"
+          >
+            <Share2 className="w-2.5 h-2.5" />
+          </button>
+          <button 
+            aria-label="Descartar"
+            className="w-5 h-5 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white/70 transition-all hover:scale-110 cursor-pointer"
+          >
+            <X className="w-2.5 h-2.5" />
+          </button>
+        </div>
+
+        {/* Middle Node: Active / Highlighted Heart (Neon Lime in Orion) */}
+        <button 
+          aria-label="Favorito"
+          className={`relative z-10 w-7 h-7 rounded-full flex items-center justify-center transition-all hover:scale-110 cursor-pointer ${
+            isFavorite 
+              ? "bg-[#ccff00] text-gray-950 shadow-[0_0_14px_#ccff00]" 
+              : "bg-white/10 text-white/70 hover:bg-white/20 hover:text-white"
+          }`}
+        >
+          <Heart className={`w-3.5 h-3.5 ${isFavorite ? "fill-gray-950" : ""}`} />
+        </button>
+
+        {/* Bottom Node: Checkmark */}
+        <button 
+          aria-label="Verificado"
+          className="relative z-10 w-5 h-5 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white/70 transition-all hover:scale-110 cursor-pointer"
+        >
+          <Check className="w-2.5 h-2.5" />
+        </button>
+      </div>
+
+      {/* Large High-End Circular Neon Gauge Ring (Direct Orion Recreation) */}
+      <div className="relative w-24 h-24 sm:w-26 sm:h-26 flex items-center justify-center shrink-0">
+        <svg className="w-full h-full -rotate-90" viewBox="0 0 100 100">
+          <defs>
+            <filter id={`neonGlow-${percentage}`} x="-30%" y="-30%" width="160%" height="160%">
+              <feDropShadow dx="0" dy="0" stdDeviation="3.5" floodColor="#ccff00" floodOpacity="0.85" />
+            </filter>
+          </defs>
+
+          {/* Neutral Background Track */}
+          <circle
+            cx="50"
+            cy="50"
+            r="38"
+            stroke="rgba(255,255,255,0.08)"
+            strokeWidth="7"
+            fill="none"
+          />
+
+          {/* Active Neon Lime Arc with Round Endcaps */}
+          <circle
+            cx="50"
+            cy="50"
+            r="38"
+            stroke="#ccff00"
+            strokeWidth="7"
+            strokeLinecap="round"
+            strokeDasharray="238.76"
+            strokeDashoffset={strokeDashoffset}
+            fill="none"
+            filter={`url(#neonGlow-${percentage})`}
+          />
+        </svg>
+
+        {/* Center Percentage & Strong Match Text */}
+        <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none select-none">
+          <span className="font-display font-extrabold text-2xl text-white leading-none tracking-tight">
+            {percentage}%
+          </span>
+          <span className="text-[7.5px] font-extrabold text-[#ccff00] uppercase tracking-widest mt-1">
+            Strong Match
+          </span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function AnalyticsRadarView({
   user,
   addresses,
@@ -64,17 +165,17 @@ export default function AnalyticsRadarView({
   const [searchQuery, setSearchQuery] = useState("");
   const [activeStage, setActiveStage] = useState<"catalog" | "cart" | "vip">("vip");
 
-  // Connected clients dataset distributed on the 3D relief topographic map
+  // Connected clients distributed realistically across the 3D terrain map without overlapping
   const connectedClients: ConnectedClient[] = useMemo(() => {
     const baseClients: ConnectedClient[] = [
       {
         id: "cli-1",
         name: "Valeria Montejo",
         email: "valeria.m@lumina.com",
-        city: "Quito (Sierra Norte)",
+        city: "Quito (Andes Norte)",
         country: "Ecuador",
-        x: 49,
-        y: 32,
+        x: 48,
+        y: 28,
         frequency: "Semanal (VIP)",
         purchasesCount: 9,
         totalSpent: 1840,
@@ -90,8 +191,8 @@ export default function AnalyticsRadarView({
         email: "carlos.dlh@gmail.com",
         city: "Guayaquil (Costa)",
         country: "Ecuador",
-        x: 31,
-        y: 56,
+        x: 29,
+        y: 54,
         frequency: "Quincenal",
         purchasesCount: 5,
         totalSpent: 920,
@@ -107,8 +208,8 @@ export default function AnalyticsRadarView({
         email: "elena.design@studio.de",
         city: "Cuenca (Sierra Sur)",
         country: "Ecuador",
-        x: 41,
-        y: 67,
+        x: 39,
+        y: 68,
         frequency: "Mensual",
         purchasesCount: 4,
         totalSpent: 1350,
@@ -123,8 +224,8 @@ export default function AnalyticsRadarView({
         email: "mateo.b@milano.it",
         city: "Ambato (Sierra Centro)",
         country: "Ecuador",
-        x: 47,
-        y: 45,
+        x: 52,
+        y: 42,
         frequency: "Semanal (VIP)",
         purchasesCount: 12,
         totalSpent: 2890,
@@ -140,8 +241,8 @@ export default function AnalyticsRadarView({
         email: "sophie.l@atelier.fr",
         city: "Islas Galápagos",
         country: "Ecuador",
-        x: 10,
-        y: 22,
+        x: 8,
+        y: 20,
         frequency: "Ocasional",
         purchasesCount: 2,
         totalSpent: 430,
@@ -154,9 +255,9 @@ export default function AnalyticsRadarView({
         id: "cli-6",
         name: "Oliver Smith",
         email: "oliver.s@archit.co.uk",
-        city: "Manta / Manabí",
+        city: "Manta (Costa Oeste)",
         country: "Ecuador",
-        x: 22,
+        x: 20,
         y: 38,
         frequency: "Quincenal",
         purchasesCount: 7,
@@ -171,9 +272,9 @@ export default function AnalyticsRadarView({
         id: "cli-7",
         name: "Alejandro Morales",
         email: "alejandro.m@valencia.es",
-        city: "El Oriente / Amazonía",
+        city: "Amazonía (El Oriente)",
         country: "Ecuador",
-        x: 68,
+        x: 72,
         y: 46,
         frequency: "Mensual",
         purchasesCount: 3,
@@ -189,8 +290,8 @@ export default function AnalyticsRadarView({
         email: "j.sterling@nycloft.com",
         city: "Loja (Sur Andino)",
         country: "Ecuador",
-        x: 37,
-        y: 80,
+        x: 36,
+        y: 82,
         frequency: "Semanal (VIP)",
         purchasesCount: 15,
         totalSpent: 4200,
@@ -211,8 +312,8 @@ export default function AnalyticsRadarView({
           email: user?.email || "admin@lumina.com",
           city: addr.city || "Quito Centro",
           country: addr.country || "Ecuador",
-          x: 50 + (idx * 4),
-          y: 36 + (idx * 5),
+          x: 48 + (idx * 5),
+          y: 24 + (idx * 6),
           frequency: orders.length > 5 ? "Semanal (VIP)" : orders.length > 0 ? "Quincenal" : "Primera vez",
           purchasesCount: orders.length,
           totalSpent: orders.reduce((acc, o) => acc + o.total, 0),
@@ -286,7 +387,7 @@ export default function AnalyticsRadarView({
             <span className="text-white/30 px-2">|</span>
             <div className="flex items-center gap-1 text-white/80 shrink-0 cursor-pointer pr-2">
               <MapPin className="w-3.5 h-3.5 text-white/70" />
-              <span className="text-[11px] font-medium hidden sm:inline">Quito / España</span>
+              <span className="text-[11px] font-medium hidden sm:inline">Quito / Nacional</span>
               <ChevronDown className="w-3 h-3 text-white/60" />
             </div>
             <button className="bg-white text-gray-950 font-bold px-4 py-1.5 rounded-full text-xs hover:bg-white/90 transition-colors shrink-0 shadow-sm cursor-pointer">
@@ -310,9 +411,9 @@ export default function AnalyticsRadarView({
         <div className="relative z-20 min-h-[480px] flex flex-col lg:flex-row items-center justify-between gap-6">
           
           {/* ----------------------------------------------------------------- */}
-          {/* LEFT COLUMN: TITLE & SALARY/PURCHASE EXPECTATIONS CARD            */}
+          {/* LEFT COLUMN: TITLE & REALISTIC PURCHASING TREND CHART WIDGET      */}
           {/* ----------------------------------------------------------------- */}
-          <div className="w-full lg:w-[290px] space-y-5 shrink-0 z-20">
+          <div className="w-full lg:w-[305px] space-y-5 shrink-0 z-20">
             
             {/* Big Bold Typography with AI-Powered Capsule */}
             <div>
@@ -330,87 +431,162 @@ export default function AnalyticsRadarView({
               </h1>
             </div>
 
-            {/* FLOATING CARD: "Ritmo de Compras & Ventas" (Orion Salary Expectations Clone) */}
-            <div className="rounded-[2rem] bg-black/45 backdrop-blur-xl border border-white/15 p-5 shadow-2xl space-y-3.5">
+            {/* REALISTIC NATURAL TREND CHART (Orion-style Dual-Spline Hatch Band) */}
+            <div className="rounded-[2rem] bg-black/50 backdrop-blur-xl border border-white/15 p-5 shadow-2xl space-y-3.5 hover:border-white/25 transition-all">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-white tracking-tight">
-                  Frecuencia de Compra
-                </span>
+                <div>
+                  <span className="text-xs font-bold text-white tracking-tight block">
+                    Frecuencia de Compra
+                  </span>
+                  <span className="text-[10px] text-[#ccff00] font-mono font-semibold flex items-center gap-1 mt-0.5">
+                    <TrendingUp className="w-3 h-3" /> +28.4% Crecimiento Orgánico
+                  </span>
+                </div>
                 <ArrowUpRight className="w-4 h-4 text-white/60" />
               </div>
 
-              {/* Subtitle labels */}
-              <div className="flex items-center justify-between text-[10px] text-white/50 font-mono">
-                <span>Recurrentes</span>
-                <span>Primera vez</span>
-              </div>
+              {/* Orion-Style Dual Boundary Trend Corridor with Diagonal Hatching */}
+              <div className="relative h-28 w-full flex items-center">
+                
+                {/* Subtle Left Y-Axis Levels */}
+                <div className="absolute left-0 top-0 bottom-4 flex flex-col justify-between text-[8px] font-mono text-white/30 pointer-events-none select-none">
+                  <span>Alto</span>
+                  <span>Medio</span>
+                  <span>Base</span>
+                </div>
 
-              {/* Striped Gradient Ribbon Chart with Floating Neon Pill */}
-              <div className="relative h-16 w-full flex items-center">
-                <svg viewBox="0 0 280 65" className="w-full h-full overflow-visible">
+                <svg viewBox="0 0 290 95" className="w-full h-full overflow-visible ml-4">
                   <defs>
-                    <linearGradient id="chartRibbon" x1="0%" y1="0%" x2="100%" y2="0%">
-                      <stop offset="0%" stopColor="rgba(255,255,255,0.05)" />
-                      <stop offset="50%" stopColor="rgba(255,255,255,0.25)" />
-                      <stop offset="100%" stopColor="rgba(255,255,255,0.05)" />
+                    {/* Diagonal Hatch Pattern (Direct Orion Styling) */}
+                    <pattern id="orionHatch" width="8" height="8" patternTransform="rotate(45 0 0)" patternUnits="userSpaceOnUse">
+                      <line x1="0" y1="0" x2="0" y2="8" stroke="#ccff00" strokeWidth="1.3" strokeOpacity="0.38" />
+                    </pattern>
+
+                    {/* Gradient for the Hatch Corridor Glow */}
+                    <linearGradient id="corridorGlow" x1="0%" y1="0%" x2="100%" y2="0%">
+                      <stop offset="0%" stopColor="#38bdf8" stopOpacity="0.15" />
+                      <stop offset="40%" stopColor="#a3e635" stopOpacity="0.25" />
+                      <stop offset="85%" stopColor="#ccff00" stopOpacity="0.35" />
+                      <stop offset="100%" stopColor="#ccff00" stopOpacity="0.45" />
+                    </linearGradient>
+
+                    {/* Gradient Stroke for Upper and Lower Boundary Splines */}
+                    <linearGradient id="splineStroke" x1="0%" y1="0%" x2="100%" y2="0%">
+                      <stop offset="0%" stopColor="#38bdf8" />
+                      <stop offset="50%" stopColor="#a3e635" />
+                      <stop offset="100%" stopColor="#ccff00" />
                     </linearGradient>
                   </defs>
-                  
-                  {/* Hatched Ribbon Band */}
+
+                  {/* Horizontal Guideline Grids */}
+                  <line x1="0" y1="18" x2="285" y2="18" stroke="rgba(255,255,255,0.06)" strokeDasharray="3 3" />
+                  <line x1="0" y1="46" x2="285" y2="46" stroke="rgba(255,255,255,0.06)" strokeDasharray="3 3" />
+                  <line x1="0" y1="74" x2="285" y2="74" stroke="rgba(255,255,255,0.06)" strokeDasharray="3 3" />
+
+                  {/* 1. Underlying Soft Color Wash for Trend Corridor */}
                   <path 
-                    d="M 10 45 Q 70 36 140 28 T 270 16 L 270 26 Q 200 40 140 42 T 10 55 Z" 
-                    fill="url(#chartRibbon)" 
-                    stroke="rgba(255,255,255,0.4)" 
-                    strokeWidth="1.5" 
-                    strokeDasharray="4 2"
+                    d="M 5 56
+                       C 45 60, 75 48, 115 50
+                       C 155 52, 175 32, 215 20
+                       C 245 10, 265 14, 285 12
+                       L 285 32
+                       C 265 34, 245 30, 215 40
+                       C 175 52, 155 72, 115 70
+                       C 75 68, 45 80, 5 76
+                       Z" 
+                    fill="url(#corridorGlow)" 
                   />
-                  
-                  {/* Center Line Curve */}
+
+                  {/* 2. Diagonal Hatch Striping Between Upper & Lower Curves (Orion Exact Recreation) */}
                   <path 
-                    d="M 10 50 Q 70 40 140 35 T 270 21" 
+                    d="M 5 56
+                       C 45 60, 75 48, 115 50
+                       C 155 52, 175 32, 215 20
+                       C 245 10, 265 14, 285 12
+                       L 285 32
+                       C 265 34, 245 30, 215 40
+                       C 175 52, 155 72, 115 70
+                       C 75 68, 45 80, 5 76
+                       Z" 
+                    fill="url(#orionHatch)" 
+                  />
+
+                  {/* 3. Upper Boundary Spline */}
+                  <path 
+                    d="M 5 56
+                       C 45 60, 75 48, 115 50
+                       C 155 52, 175 32, 215 20
+                       C 245 10, 265 14, 285 12" 
                     fill="none" 
-                    stroke="#ffffff" 
-                    strokeWidth="2" 
+                    stroke="url(#splineStroke)" 
+                    strokeWidth="2.2" 
+                    strokeLinecap="round"
                   />
+
+                  {/* 4. Lower Boundary Spline */}
+                  <path 
+                    d="M 5 76
+                       C 45 80, 75 68, 115 70
+                       C 155 72, 175 52, 215 40
+                       C 245 30, 265 34, 285 32" 
+                    fill="none" 
+                    stroke="url(#splineStroke)" 
+                    strokeWidth="1.8" 
+                    strokeOpacity="0.85"
+                    strokeLinecap="round"
+                  />
+
+                  {/* Pulsing Beacon Circle at the Surge Junction */}
+                  <circle cx="215" cy="30" r="3.5" fill="#ffffff" stroke="#ccff00" strokeWidth="2" />
+                  <circle cx="215" cy="30" r="8" fill="none" stroke="#ccff00" strokeWidth="1" opacity="0.6" className="animate-ping" />
                 </svg>
 
-                {/* The Floating Neon Yellow/Lime Pill from Orion Mockup */}
-                <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 px-2.5 py-0.5 rounded-full bg-[#ccff00] text-gray-950 font-extrabold text-[10px] shadow-[0_0_16px_#ccff00] flex items-center gap-1 border border-black/20">
+                {/* Floating Neon Pill Flag on the Trend Surge (Orion Style) */}
+                <div className="absolute left-[72%] top-2 -translate-x-1/2 px-2.5 py-0.5 rounded-full bg-[#ccff00] text-gray-950 font-black text-[9.5px] shadow-[0_0_16px_#ccff00] flex items-center gap-1 border border-black/25">
                   <span>84%</span>
                 </div>
               </div>
 
-              {/* Month Timeline */}
-              <div className="flex items-center justify-between text-[10px] font-mono text-white/50 pt-1 border-t border-white/10">
-                <span>Mar</span>
-                <span>Apr</span>
-                <span>May</span>
-                <span>Jun</span>
-                <span>Jul</span>
-                <span>Aug</span>
+              {/* Stats Footer & Month Timeline */}
+              <div className="pt-2 border-t border-white/10 space-y-1.5">
+                <div className="flex items-center justify-between text-[10px] text-white/70">
+                  <span>Recompra: <strong className="text-white font-mono">3.4x / cliente</strong></span>
+                  <span className="text-[#ccff00] font-mono font-bold">$6,420 USD</span>
+                </div>
+                <div className="flex items-center justify-between text-[9.5px] font-mono text-white/40 pt-1">
+                  <span>Ene</span>
+                  <span>Mar</span>
+                  <span>May</span>
+                  <span>Jun</span>
+                  <span>Jul</span>
+                  <span>Ago</span>
+                </div>
               </div>
             </div>
 
           </div>
 
           {/* ----------------------------------------------------------------- */}
-          {/* CENTER HERO: 3D TOPOGRAPHIC RELIEF MAP OF A SPECIFIC COUNTRY      */}
-          {/* (Exact 3D visual provided in Estilo de como mostrar un mapa.jpg)  */}
+          {/* CENTER HERO: SEAMLESS 3D TOPOGRAPHIC RELIEF MAP                   */}
+          {/* (Pristine 100% Transparent Cutout: Zero Box, Zero Rectangular Border)*/}
           {/* ----------------------------------------------------------------- */}
-          <div className="flex-1 w-full flex items-center justify-center relative min-h-[380px] lg:min-h-[460px]">
+          <div className="flex-1 w-full flex items-center justify-center relative min-h-[420px] lg:min-h-[500px]">
             
-            {/* The 3D Map Container */}
-            <div className="relative w-full max-w-[560px] aspect-[1/0.68] flex items-center justify-center">
+            {/* The Floating 3D Map Container */}
+            <div className="relative w-full max-w-[660px] aspect-[1024/682] flex items-center justify-center">
               
-              {/* The High-Resolution 3D Relief Topographic Map Image */}
+              {/* Soft Ground Reflection Shadow Beneath the 3D Landmass */}
+              <div className="absolute inset-x-10 bottom-4 h-28 bg-black/75 blur-3xl rounded-full pointer-events-none -z-10" />
+
+              {/* The Seamless 3D Relief Topographic Map (Pure Transparent Cutout - No rectangular PNG frame!) */}
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img 
-                src="/images/map_3d_relief.jpg" 
+                src="/images/map_3d_relief_cutout.png" 
                 alt="Mapa 3D Topográfico en Relieve del Territorio"
-                className="w-full h-full object-contain pointer-events-none select-none drop-shadow-[0_24px_50px_rgba(0,0,0,0.85)] filter contrast-110 brightness-105"
+                className="w-full h-full object-contain pointer-events-none select-none filter contrast-110 brightness-105 drop-shadow-[0_26px_36px_rgba(0,0,0,0.65)]"
               />
 
-              {/* Glowing Yellow Beacon Pins stationed directly on the 3D relief cities */}
+              {/* Glowing Yellow Beacon Pins stationed accurately on geographic cities */}
               {filteredClients.map((client) => {
                 const isHovered = hoveredClient?.id === client.id;
                 const isSelected = selectedClient?.id === client.id;
@@ -471,7 +647,7 @@ export default function AnalyticsRadarView({
                       <div className="w-1 h-1 bg-[#ccff00] rotate-45 shadow-[0_0_6px_#ccff00]" />
                     </div>
 
-                    {/* City Tag Label */}
+                    {/* City Tag Label with Clean Spacing */}
                     <div className={`absolute top-full mt-1 left-1/2 -translate-x-1/2 whitespace-nowrap px-1.5 py-0.5 rounded text-[8.5px] font-bold font-mono tracking-wider transition-all pointer-events-none ${
                       isActive 
                         ? "bg-white text-gray-950 shadow-md scale-105" 
@@ -671,14 +847,14 @@ export default function AnalyticsRadarView({
         {/* ---------------------------------------------------- */}
         {/* CARD 1: ILUMINACIÓN & LÁMPARAS (Amazon Style in Orion) */}
         {/* ---------------------------------------------------- */}
-        <div className="rounded-[2rem] bg-[#131715] border border-white/10 p-5 shadow-xl flex flex-col justify-between space-y-4 hover:border-white/20 transition-all">
+        <div className="rounded-[2rem] bg-[#121517] border border-white/10 p-5 shadow-xl flex flex-col justify-between space-y-4 hover:border-white/25 transition-all">
           
           <div className="flex items-start justify-between gap-4">
             
             {/* Left Content */}
             <div className="space-y-3 min-w-0">
               <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-2xl bg-white text-gray-950 font-bold flex items-center justify-center text-sm shadow-md shrink-0">
+                <div className="w-10 h-10 rounded-2xl bg-white text-gray-950 font-extrabold flex items-center justify-center text-sm shadow-md shrink-0">
                   a
                 </div>
                 <div>
@@ -687,7 +863,7 @@ export default function AnalyticsRadarView({
                 </div>
               </div>
 
-              {/* Tag Pills: $127k/yr • Full-time • Senior */}
+              {/* Tag Pills */}
               <div className="flex items-center gap-1.5 flex-wrap">
                 <span className="px-2.5 py-1 rounded-xl bg-white/10 text-[10.5px] font-mono text-white/90">
                   $185/promedio
@@ -708,62 +884,12 @@ export default function AnalyticsRadarView({
               </div>
             </div>
 
-            {/* Right Action Icons & THE ORION NEON RING (79% Strong Match) */}
-            <div className="flex flex-col items-center gap-2 shrink-0">
-              
-              {/* Top Icons Bar: Chain / Heart / Close */}
-              <div className="flex items-center gap-1.5 text-white/40">
-                <button className="w-6 h-6 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition-colors text-white/70">
-                  <Share2 className="w-3 h-3" />
-                </button>
-                <button className="w-6 h-6 rounded-full bg-[#ccff00] text-gray-950 flex items-center justify-center shadow-[0_0_10px_#ccff00]">
-                  <Heart className="w-3 h-3 fill-gray-950" />
-                </button>
-                <button className="w-6 h-6 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition-colors text-white/70">
-                  <X className="w-3 h-3" />
-                </button>
-              </div>
-
-              {/* The Iconic Neon Green Ring Gauge from Orion Mockup (79% Strong Match) */}
-              <div className="relative w-20 h-20 flex items-center justify-center my-1">
-                <svg className="w-full h-full -rotate-90" viewBox="0 0 36 36">
-                  <path
-                    className="text-neutral-800"
-                    strokeWidth="3.2"
-                    stroke="currentColor"
-                    fill="none"
-                    d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
-                  />
-                  <path
-                    className="text-[#ccff00] transition-all duration-1000 shadow-[0_0_12px_#ccff00]"
-                    strokeDasharray="79, 100"
-                    strokeWidth="3.2"
-                    strokeLinecap="round"
-                    stroke="currentColor"
-                    fill="none"
-                    d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
-                  />
-                </svg>
-                <div className="absolute text-center flex flex-col items-center">
-                  <span className="font-display font-bold text-lg text-white leading-none">
-                    79%
-                  </span>
-                  <span className="text-[8px] font-bold text-white/60 uppercase tracking-tighter mt-0.5">
-                    Strong Match
-                  </span>
-                </div>
-              </div>
-
-              {/* Bottom Check Button */}
-              <button className="text-white/40 hover:text-white">
-                <Check className="w-3.5 h-3.5" />
-              </button>
-
-            </div>
+            {/* Right Action Icons & HIGH-END NEON GAUGE (79% Strong Match) */}
+            <StrongMatchWidget percentage={79} isFavorite={true} />
 
           </div>
 
-          {/* Card Footer: More than 60 shoppers */}
+          {/* Card Footer */}
           <div className="pt-3 border-t border-white/10 flex items-center gap-2 text-[11px] text-white/50">
             <ShoppingBag className="w-3.5 h-3.5 text-white/70" />
             <span>Más de 14 clientes navegando en esta sección en vivo</span>
@@ -774,14 +900,14 @@ export default function AnalyticsRadarView({
         {/* ---------------------------------------------------- */}
         {/* CARD 2: SALAS & SOFÁS NÓRDICOS (BeReal Style in Orion) */}
         {/* ---------------------------------------------------- */}
-        <div className="rounded-[2rem] bg-[#131715] border border-white/10 p-5 shadow-xl flex flex-col justify-between space-y-4 hover:border-white/20 transition-all">
+        <div className="rounded-[2rem] bg-[#121517] border border-white/10 p-5 shadow-xl flex flex-col justify-between space-y-4 hover:border-white/25 transition-all">
           
           <div className="flex items-start justify-between gap-4">
             
             {/* Left Content */}
             <div className="space-y-3 min-w-0">
               <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-2xl bg-neutral-900 text-white font-bold flex items-center justify-center text-xs border border-white/20 shrink-0">
+                <div className="w-10 h-10 rounded-2xl bg-neutral-900 text-white font-extrabold flex items-center justify-center text-xs border border-white/20 shrink-0">
                   L
                 </div>
                 <div>
@@ -811,62 +937,12 @@ export default function AnalyticsRadarView({
               </div>
             </div>
 
-            {/* Right Action Icons & THE ORION NEON RING (86% Strong Match) */}
-            <div className="flex flex-col items-center gap-2 shrink-0">
-              
-              {/* Top Icons Bar */}
-              <div className="flex items-center gap-1.5 text-white/40">
-                <button className="w-6 h-6 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition-colors text-white/70">
-                  <Share2 className="w-3 h-3" />
-                </button>
-                <button className="w-6 h-6 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition-colors text-white/70">
-                  <Heart className="w-3 h-3" />
-                </button>
-                <button className="w-6 h-6 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition-colors text-white/70">
-                  <X className="w-3 h-3" />
-                </button>
-              </div>
-
-              {/* The Iconic Neon Green Ring Gauge from Orion Mockup (86% Strong Match) */}
-              <div className="relative w-20 h-20 flex items-center justify-center my-1">
-                <svg className="w-full h-full -rotate-90" viewBox="0 0 36 36">
-                  <path
-                    className="text-neutral-800"
-                    strokeWidth="3.2"
-                    stroke="currentColor"
-                    fill="none"
-                    d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
-                  />
-                  <path
-                    className="text-[#ccff00] transition-all duration-1000 shadow-[0_0_12px_#ccff00]"
-                    strokeDasharray="86, 100"
-                    strokeWidth="3.2"
-                    strokeLinecap="round"
-                    stroke="currentColor"
-                    fill="none"
-                    d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
-                  />
-                </svg>
-                <div className="absolute text-center flex flex-col items-center">
-                  <span className="font-display font-bold text-lg text-white leading-none">
-                    86%
-                  </span>
-                  <span className="text-[8px] font-bold text-white/60 uppercase tracking-tighter mt-0.5">
-                    Strong Match
-                  </span>
-                </div>
-              </div>
-
-              {/* Bottom Check Button */}
-              <button className="text-white/40 hover:text-white">
-                <Check className="w-3.5 h-3.5" />
-              </button>
-
-            </div>
+            {/* Right Action Icons & HIGH-END NEON GAUGE (86% Strong Match) */}
+            <StrongMatchWidget percentage={86} />
 
           </div>
 
-          {/* Card Footer: 8 orders completed */}
+          {/* Card Footer */}
           <div className="pt-3 border-t border-white/10 flex items-center gap-2 text-[11px] text-white/50">
             <ShoppingBag className="w-3.5 h-3.5 text-white/70" />
             <span>8 pedidos confirmados en las últimas 24 horas</span>
@@ -877,14 +953,14 @@ export default function AnalyticsRadarView({
         {/* ---------------------------------------------------- */}
         {/* CARD 3: COMEDORES & ROBLE MACIZO (Wise Style in Orion)*/}
         {/* ---------------------------------------------------- */}
-        <div className="rounded-[2rem] bg-[#131715] border border-white/10 p-5 shadow-xl flex flex-col justify-between space-y-4 hover:border-white/20 transition-all">
+        <div className="rounded-[2rem] bg-[#121517] border border-white/10 p-5 shadow-xl flex flex-col justify-between space-y-4 hover:border-white/25 transition-all">
           
           <div className="flex items-start justify-between gap-4">
             
             {/* Left Content */}
             <div className="space-y-3 min-w-0">
               <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-2xl bg-white text-gray-950 font-bold flex items-center justify-center text-sm shadow-md shrink-0">
+                <div className="w-10 h-10 rounded-2xl bg-white text-gray-950 font-extrabold flex items-center justify-center text-sm shadow-md shrink-0">
                   W
                 </div>
                 <div>
@@ -914,62 +990,12 @@ export default function AnalyticsRadarView({
               </div>
             </div>
 
-            {/* Right Action Icons & THE ORION NEON RING (92% Strong Match) */}
-            <div className="flex flex-col items-center gap-2 shrink-0">
-              
-              {/* Top Icons Bar */}
-              <div className="flex items-center gap-1.5 text-white/40">
-                <button className="w-6 h-6 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition-colors text-white/70">
-                  <Share2 className="w-3 h-3" />
-                </button>
-                <button className="w-6 h-6 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition-colors text-white/70">
-                  <Heart className="w-3 h-3" />
-                </button>
-                <button className="w-6 h-6 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition-colors text-white/70">
-                  <X className="w-3 h-3" />
-                </button>
-              </div>
-
-              {/* The Iconic Neon Green Ring Gauge from Orion Mockup (92% Strong Match) */}
-              <div className="relative w-20 h-20 flex items-center justify-center my-1">
-                <svg className="w-full h-full -rotate-90" viewBox="0 0 36 36">
-                  <path
-                    className="text-neutral-800"
-                    strokeWidth="3.2"
-                    stroke="currentColor"
-                    fill="none"
-                    d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
-                  />
-                  <path
-                    className="text-[#ccff00] transition-all duration-1000 shadow-[0_0_12px_#ccff00]"
-                    strokeDasharray="92, 100"
-                    strokeWidth="3.2"
-                    strokeLinecap="round"
-                    stroke="currentColor"
-                    fill="none"
-                    d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
-                  />
-                </svg>
-                <div className="absolute text-center flex flex-col items-center">
-                  <span className="font-display font-bold text-lg text-white leading-none">
-                    92%
-                  </span>
-                  <span className="text-[8px] font-bold text-white/60 uppercase tracking-tighter mt-0.5">
-                    Strong Match
-                  </span>
-                </div>
-              </div>
-
-              {/* Bottom Check Button */}
-              <button className="text-white/40 hover:text-white">
-                <Check className="w-3.5 h-3.5" />
-              </button>
-
-            </div>
+            {/* Right Action Icons & HIGH-END NEON GAUGE (92% Strong Match) */}
+            <StrongMatchWidget percentage={92} />
 
           </div>
 
-          {/* Card Footer: VIP retention */}
+          {/* Card Footer */}
           <div className="pt-3 border-t border-white/10 flex items-center gap-2 text-[11px] text-white/50">
             <Sparkles className="w-3.5 h-3.5 text-[#ccff00]" />
             <span>Alta tasa de clientes recurrentes VIP fidelizados</span>
