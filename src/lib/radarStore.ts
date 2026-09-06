@@ -10,7 +10,7 @@ export interface ConnectedClient {
   country: string;
   x: number;
   y: number;
-  frequency: "Semanal" | "Quincenal" | "Mensual" | "Ocasional" | "Primera vez";
+  frequency: "Semanal" | "Quincenal" | "Mensual" | "Ocasional" | "1ª Vez";
   purchasesCount: number;
   totalSpent: number;
   currentSection: string;
@@ -21,25 +21,48 @@ export interface ConnectedClient {
   isRealUser?: boolean;
 }
 
+const COMMON_FIRST_NAMES = [
+  'erick', 'eric', 'juan', 'carlos', 'luis', 'jose', 'maria', 'ana', 
+  'diego', 'david', 'jorge', 'pedro', 'valeria', 'fernando', 'andres', 
+  'gabriel', 'mateo', 'sebastian', 'camila', 'paula', 'sofia', 'daniel', 
+  'alejandro', 'manuel', 'miguel', 'angel', 'javier', 'pablo', 'mario'
+];
+
 /**
  * Normalizes names cleanly:
+ * - Separates email/username dots/underscores/hyphens (e.g. "erick.arteaga" -> "Erick Arteaga")
  * - Separates lowercase letter followed by uppercase (e.g. "ErickArteaga" -> "Erick Arteaga", "ErickADMIN" -> "Erick ADMIN")
+ * - Detects common first names followed by surname (e.g. "erickarteaga" -> "Erick Arteaga")
  * - Normalizes any glued "ADMIN" (e.g. "ErickADMIN" or "erickadmin" -> "Erick ADMIN")
- * - Normalizes whitespace
+ * - Properly capitalizes each word
  */
 export const cleanClientName = (rawName?: string) => {
   if (!rawName) return "Cliente Lumina";
   let formatted = rawName.trim();
-  // 1. Separate lowercase letter followed by uppercase letter (camelCase or glued surname like ErickArteaga -> Erick Arteaga, ErickADMIN -> Erick ADMIN)
+  // 1. Replace periods, underscores, dashes with space
+  formatted = formatted.replace(/[\._\-]+/g, ' ');
+  // 2. Separate lowercase letter followed by uppercase letter (camelCase: ErickArteaga -> Erick Arteaga, ErickADMIN -> Erick ADMIN)
   formatted = formatted.replace(/([a-zñáéíóú])([A-ZÑÁÉÍÓÚ])/g, '$1 $2');
-  // 2. Separate and normalize any variation of ADMIN glued to letters/numbers
+  // 3. Separate number followed by letter or letter followed by number
+  formatted = formatted.replace(/([a-zA-ZáéíóúÁÉÍÓÚñÑ])([0-9])/g, '$1 $2');
+  // 4. Separate and normalize any variation of ADMIN glued to letters/numbers
   formatted = formatted.replace(/([a-zA-Z0-9áéíóúÁÉÍÓÚñÑ])\s*(?:admin)\b/gi, '$1 ADMIN');
-  // 3. Normalize multiple spaces
-  formatted = formatted.replace(/\s+/g, ' ').trim();
-  return formatted;
+  // 5. If still a single continuous lowercase word without spaces, split if it starts with a common first name
+  if (!formatted.includes(' ')) {
+    const lower = formatted.toLowerCase();
+    for (const fn of COMMON_FIRST_NAMES) {
+      if (lower.startsWith(fn) && lower.length > fn.length + 2) {
+        formatted = formatted.slice(0, fn.length) + ' ' + formatted.slice(fn.length);
+        break;
+      }
+    }
+  }
+  // 6. Clean multiple spaces and capitalize words properly
+  const words = formatted.replace(/\s+/g, ' ').trim().split(' ');
+  return words.map(w => w.toUpperCase() === 'ADMIN' ? 'ADMIN' : w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ');
 };
 
-// ── Province coordinate lookup table ──
+// ── Province coordinate lookup table (Calibrated to 100% solid land on 3D Relief map) ──
 const CITY_COORDINATES: Record<string, { x: number; y: number }> = {
   // Sierra
   "quito": { x: 48.8, y: 26.5 },
@@ -61,9 +84,9 @@ const CITY_COORDINATES: Record<string, { x: number; y: number }> = {
   "cañar": { x: 42.0, y: 63.5 },
   "guaranda": { x: 45.0, y: 47.0 },
   "bolivar": { x: 45.0, y: 47.0 },
-  // Costa
-  "guayaquil": { x: 29.5, y: 53.5 },
-  "guayas": { x: 29.5, y: 53.5 },
+  // Costa (Calibrated to precise inland landmass coordinates, never in the ocean/water)
+  "guayaquil": { x: 35.5, y: 52.0 },
+  "guayas": { x: 35.5, y: 52.0 },
   "manta": { x: 21.0, y: 39.5 },
   "portoviejo": { x: 24.5, y: 41.0 },
   "manabi": { x: 24.5, y: 41.0 },
@@ -71,14 +94,14 @@ const CITY_COORDINATES: Record<string, { x: number; y: number }> = {
   "machala": { x: 27.5, y: 69.5 },
   "el oro": { x: 27.5, y: 69.5 },
   "esmeraldas": { x: 38.0, y: 12.0 },
-  "santa elena": { x: 19.5, y: 52.0 },
-  "salinas": { x: 17.5, y: 53.5 },
+  "santa elena": { x: 25.0, y: 50.0 },
+  "salinas": { x: 24.4, y: 50.5 },
   "babahoyo": { x: 34.0, y: 49.0 },
   "los rios": { x: 34.0, y: 49.0 },
   // Galápagos
   "galapagos": { x: 10.0, y: 22.0 },
   "baquerizo moreno": { x: 10.0, y: 22.0 },
-  "santa cruz": { x: 9.0, y: 21.0 },
+  "santa cruz": { x: 10.0, y: 22.0 },
   // Amazonía
   "nueva loja": { x: 75.0, y: 22.0 },
   "lago agrio": { x: 75.0, y: 22.0 },
@@ -89,8 +112,8 @@ const CITY_COORDINATES: Record<string, { x: number; y: number }> = {
   "napo": { x: 62.0, y: 39.0 },
   "puyo": { x: 63.0, y: 49.0 },
   "pastaza": { x: 63.0, y: 49.0 },
-  "macas": { x: 61.0, y: 61.0 },
-  "morona santiago": { x: 61.0, y: 61.0 },
+  "macas": { x: 58.0, y: 56.0 },
+  "morona santiago": { x: 58.0, y: 56.0 },
   "zamora": { x: 48.0, y: 83.0 },
   "zamora chinchipe": { x: 48.0, y: 83.0 },
 };
@@ -121,7 +144,7 @@ export function resolveFrequency(purchasesCount: number): ConnectedClient['frequ
   if (purchasesCount >= 6) return 'Quincenal';
   if (purchasesCount >= 3) return 'Mensual';
   if (purchasesCount >= 1) return 'Ocasional';
-  return 'Primera vez';
+  return '1ª Vez';
 }
 
 export function calculateIntentScore(purchasesCount: number, totalSpent: number, hasCart: boolean): number {
@@ -332,11 +355,11 @@ export const useRadarStore = create<RadarStore>((set, get) => ({
     // Initial fetch from activity endpoint
     get().fetchActiveClients();
 
-    // Start 3-second auto-poll fallback to ensure real-time responsiveness under any network condition
+    // Start 1.8-second auto-poll fallback to ensure real-time responsiveness under any network condition
     if (!get().pollIntervalId) {
       const intervalId = setInterval(() => {
         get().fetchActiveClients();
-      }, 3500);
+      }, 1800);
       set({ pollIntervalId: intervalId });
     }
 

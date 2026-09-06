@@ -82,13 +82,37 @@ interface UserState {
   updateUserPassword: (password: string) => Promise<{ error: string | null }>;
 }
 
+const COMMON_FIRST_NAMES = [
+  'erick', 'eric', 'juan', 'carlos', 'luis', 'jose', 'maria', 'ana', 
+  'diego', 'david', 'jorge', 'pedro', 'valeria', 'fernando', 'andres', 
+  'gabriel', 'mateo', 'sebastian', 'camila', 'paula', 'sofia', 'daniel', 
+  'alejandro', 'manuel', 'miguel', 'angel', 'javier', 'pablo', 'mario'
+];
+
 export const formatCleanName = (rawName: string) => {
   if (!rawName) return '';
   let formatted = rawName.trim();
+  // 1. Replace periods, underscores, dashes with space
+  formatted = formatted.replace(/[\._\-]+/g, ' ');
+  // 2. Separate lowercase letter followed by uppercase letter (camelCase: ErickArteaga -> Erick Arteaga, ErickADMIN -> Erick ADMIN)
   formatted = formatted.replace(/([a-zñáéíóú])([A-ZÑÁÉÍÓÚ])/g, '$1 $2');
+  // 3. Separate number followed by letter or letter followed by number
+  formatted = formatted.replace(/([a-zA-ZáéíóúÁÉÍÓÚñÑ])([0-9])/g, '$1 $2');
+  // 4. Separate and normalize any variation of ADMIN glued to letters/numbers
   formatted = formatted.replace(/([a-zA-Z0-9áéíóúÁÉÍÓÚñÑ])\s*(?:admin)\b/gi, '$1 ADMIN');
-  formatted = formatted.replace(/\s+/g, ' ').trim();
-  return formatted;
+  // 5. If still a single continuous lowercase word without spaces, split if it starts with a common first name
+  if (!formatted.includes(' ')) {
+    const lower = formatted.toLowerCase();
+    for (const fn of COMMON_FIRST_NAMES) {
+      if (lower.startsWith(fn) && lower.length > fn.length + 2) {
+        formatted = formatted.slice(0, fn.length) + ' ' + formatted.slice(fn.length);
+        break;
+      }
+    }
+  }
+  // 6. Clean multiple spaces and capitalize words properly
+  const words = formatted.replace(/\s+/g, ' ').trim().split(' ');
+  return words.map(w => w.toUpperCase() === 'ADMIN' ? 'ADMIN' : w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ');
 };
 
 const fetchUserDataFromDatabase = async (userId: string, role: 'USER' | 'ADMIN' = 'USER', email: string = '') => {
@@ -682,10 +706,11 @@ export const useUserStore = create<UserState>((set, get) => ({
   },
 
   updateUserName: async (name) => {
-    const { error } = await supabase.auth.updateUser({ data: { name } });
+    const cleanName = formatCleanName(name);
+    const { error } = await supabase.auth.updateUser({ data: { name: cleanName } });
     if (!error) {
       set((state) => ({
-        user: state.user ? { ...state.user, name } : null
+        user: state.user ? { ...state.user, name: cleanName } : null
       }));
     }
     return { error: error?.message || null };

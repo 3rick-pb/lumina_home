@@ -12,7 +12,7 @@ interface CachedClient {
   country: string;
   x: number;
   y: number;
-  frequency: "Semanal" | "Quincenal" | "Mensual" | "Ocasional" | "Primera vez";
+  frequency: "Semanal" | "Quincenal" | "Mensual" | "Ocasional" | "1ª Vez";
   purchasesCount: number;
   totalSpent: number;
   currentSection: string;
@@ -54,7 +54,7 @@ export async function GET() {
       for (const row of dbSessions) {
         if (row.user_id) {
           const purchases = Number(row.purchases_count) || 0;
-          const frequency = purchases >= 12 ? 'Semanal' : purchases >= 6 ? 'Quincenal' : purchases >= 3 ? 'Mensual' : purchases >= 1 ? 'Ocasional' : 'Primera vez';
+          const frequency = purchases >= 12 ? 'Semanal' : purchases >= 6 ? 'Quincenal' : purchases >= 3 ? 'Mensual' : purchases >= 1 ? 'Ocasional' : '1ª Vez';
           globalClients.set(row.user_id, {
             id: row.user_id,
             name: cleanClientName(row.name),
@@ -144,7 +144,7 @@ export async function POST(request: Request) {
       country: 'Ecuador',
       x: typeof x === 'number' ? x : 48.8,
       y: typeof y === 'number' ? y : 26.5,
-      frequency: frequency || 'Primera vez',
+      frequency: frequency || '1ª Vez',
       purchasesCount: purchasesCount || 0,
       totalSpent: totalSpent || 0,
       currentSection: currentSection || 'Explorando Tienda',

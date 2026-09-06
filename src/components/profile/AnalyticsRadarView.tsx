@@ -57,9 +57,9 @@ export const ECUADOR_PROVINCE_COORDINATES: Record<string, { x: number; y: number
   "guaranda": { x: 45.0, y: 47.0, province: "Bolívar", region: "Sierra" },
   "bolivar": { x: 45.0, y: 47.0, province: "Bolívar", region: "Sierra" },
 
-  // Costa (Litoral del Pacífico y Golfo de Guayaquil)
-  "guayaquil": { x: 29.5, y: 53.5, province: "Guayas", region: "Costa" },
-  "guayas": { x: 29.5, y: 53.5, province: "Guayas", region: "Costa" },
+  // Costa (Calibrado con precisión a tierra firme, fuera de aguas del golfo)
+  "guayaquil": { x: 35.5, y: 52.0, province: "Guayas", region: "Costa" },
+  "guayas": { x: 35.5, y: 52.0, province: "Guayas", region: "Costa" },
   "manta": { x: 21.0, y: 39.5, province: "Manabí", region: "Costa" },
   "portoviejo": { x: 24.5, y: 41.0, province: "Manabí", region: "Costa" },
   "manabi": { x: 24.5, y: 41.0, province: "Manabí", region: "Costa" },
@@ -67,15 +67,15 @@ export const ECUADOR_PROVINCE_COORDINATES: Record<string, { x: number; y: number
   "machala": { x: 27.5, y: 69.5, province: "El Oro", region: "Costa" },
   "el oro": { x: 27.5, y: 69.5, province: "El Oro", region: "Costa" },
   "esmeraldas": { x: 38.0, y: 12.0, province: "Esmeraldas", region: "Costa" },
-  "santa elena": { x: 19.5, y: 52.0, province: "Santa Elena", region: "Costa" },
-  "salinas": { x: 17.5, y: 53.5, province: "Santa Elena", region: "Costa" },
+  "santa elena": { x: 25.0, y: 50.0, province: "Santa Elena", region: "Costa" },
+  "salinas": { x: 24.4, y: 50.5, province: "Santa Elena", region: "Costa" },
   "babahoyo": { x: 34.0, y: 49.0, province: "Los Ríos", region: "Costa" },
   "los rios": { x: 34.0, y: 49.0, province: "Los Ríos", region: "Costa" },
 
   // Galápagos (Archipiélago)
   "galapagos": { x: 10.0, y: 22.0, province: "Galápagos", region: "Galápagos" },
   "baquerizo moreno": { x: 10.0, y: 22.0, province: "Galápagos", region: "Galápagos" },
-  "santa cruz": { x: 9.0, y: 21.0, province: "Galápagos", region: "Galápagos" },
+  "santa cruz": { x: 10.0, y: 22.0, province: "Galápagos", region: "Galápagos" },
 
   // Amazonía / El Oriente
   "nueva loja": { x: 75.0, y: 22.0, province: "Sucumbíos", region: "Oriente" },
@@ -87,8 +87,8 @@ export const ECUADOR_PROVINCE_COORDINATES: Record<string, { x: number; y: number
   "napo": { x: 62.0, y: 39.0, province: "Napo", region: "Oriente" },
   "puyo": { x: 63.0, y: 49.0, province: "Pastaza", region: "Oriente" },
   "pastaza": { x: 63.0, y: 49.0, province: "Pastaza", region: "Oriente" },
-  "macas": { x: 61.0, y: 61.0, province: "Morona Santiago", region: "Oriente" },
-  "morona santiago": { x: 61.0, y: 61.0, province: "Morona Santiago", region: "Oriente" },
+  "macas": { x: 58.0, y: 56.0, province: "Morona Santiago", region: "Oriente" },
+  "morona santiago": { x: 58.0, y: 56.0, province: "Morona Santiago", region: "Oriente" },
   "zamora": { x: 48.0, y: 83.0, province: "Zamora Chinchipe", region: "Oriente" },
   "zamora chinchipe": { x: 48.0, y: 83.0, province: "Zamora Chinchipe", region: "Oriente" }
 };
@@ -96,8 +96,8 @@ export const ECUADOR_PROVINCE_COORDINATES: Record<string, { x: number; y: number
 export default function AnalyticsRadarView(_props: AnalyticsRadarViewProps) {
   void _props;
   // Interaction & filter states
-  const [hoveredClient, setHoveredClient] = useState<ConnectedClient | null>(null);
-  const [selectedClient, setSelectedClient] = useState<ConnectedClient | null>(null);
+  const [hoveredClientId, setHoveredClientId] = useState<string | null>(null);
+  const [selectedClientId, setSelectedClientId] = useState<string | null>(null);
   const [lastActiveClient, setLastActiveClient] = useState<ConnectedClient | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [isSearchFocused, setIsSearchFocused] = useState<boolean>(false);
@@ -130,8 +130,8 @@ export default function AnalyticsRadarView(_props: AnalyticsRadarViewProps) {
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
-        setSelectedClient(null);
-        setHoveredClient(null);
+        setSelectedClientId(null);
+        setHoveredClientId(null);
       }
     };
     window.addEventListener("keydown", handleKeyDown);
@@ -154,14 +154,25 @@ export default function AnalyticsRadarView(_props: AnalyticsRadarViewProps) {
   const fetchActiveClients = useRadarStore((state) => state.fetchActiveClients);
   const currentUser = useUserStore((state) => state.user);
 
-  // Live polling fail-safe: ensures radar stays updated in real-time even under network lag
+  // Fast live polling (1.5s): ensures the dossier and metrics update live automatically
   useEffect(() => {
     fetchActiveClients();
     const pollInterval = setInterval(() => {
       fetchActiveClients();
-    }, 3000);
+    }, 1500);
     return () => clearInterval(pollInterval);
   }, [fetchActiveClients]);
+
+  // Dynamically resolve LIVE client objects from the reactive connectedClients array
+  const hoveredClient = useMemo(() => {
+    if (!hoveredClientId) return null;
+    return connectedClients.find(c => c.id === hoveredClientId) || null;
+  }, [hoveredClientId, connectedClients]);
+
+  const selectedClient = useMemo(() => {
+    if (!selectedClientId) return null;
+    return connectedClients.find(c => c.id === selectedClientId) || null;
+  }, [selectedClientId, connectedClients]);
 
   // Determine if a client is the current logged in viewer ("Tú")
   const isUserSelf = useCallback((c?: { id?: string; email?: string } | null) => {
@@ -177,7 +188,7 @@ export default function AnalyticsRadarView(_props: AnalyticsRadarViewProps) {
     return connectedClients.filter(c => {
       if (!c) return false;
       if (activeStage === "cart" && !c.hasCart) return false;
-      if (activeStage === "frequent" && ((c.purchasesCount || 0) < 3 || c.frequency === "Primera vez")) return false;
+      if (activeStage === "frequent" && ((c.purchasesCount || 0) < 3 || c.frequency === "1ª Vez")) return false;
 
       if (searchQuery && searchQuery.trim()) {
         const q = searchQuery.toLowerCase().trim();
@@ -342,7 +353,7 @@ export default function AnalyticsRadarView(_props: AnalyticsRadarViewProps) {
       <div 
         ref={mapContainerRef}
         onMouseDown={handleMouseDown}
-        onClick={() => setSelectedClient(null)}
+        onClick={() => setSelectedClientId(null)}
         className={`absolute inset-0 z-10 flex items-center justify-center overflow-hidden ${
           isDragging ? "cursor-grabbing" : "cursor-grab"
         }`}
@@ -399,11 +410,11 @@ export default function AnalyticsRadarView(_props: AnalyticsRadarViewProps) {
                   top: `${client.y}%`
                 }}
                 className="absolute z-30 -translate-x-1/2 -translate-y-full cursor-pointer group"
-                onMouseEnter={() => setHoveredClient(client)}
-                onMouseLeave={() => setHoveredClient(null)}
+                onMouseEnter={() => setHoveredClientId(client.id)}
+                onMouseLeave={() => setHoveredClientId(null)}
                 onClick={(e) => {
                   e.stopPropagation();
-                  setSelectedClient(prev => prev?.id === client.id ? null : client);
+                  setSelectedClientId(prev => prev === client.id ? null : client.id);
                 }}
               >
                 {/* Pulsing Ground Halo */}
@@ -595,7 +606,7 @@ export default function AnalyticsRadarView(_props: AnalyticsRadarViewProps) {
                             focusOnLocation(coords.x, coords.y, 1.8);
                           }
                           if (clientMatch) {
-                            setSelectedClient(clientMatch);
+                            setSelectedClientId(clientMatch.id);
                           }
                           setIsSearchFocused(false);
                         }}
@@ -625,7 +636,7 @@ export default function AnalyticsRadarView(_props: AnalyticsRadarViewProps) {
                         <div
                           key={client.id}
                           onClick={() => {
-                            setSelectedClient(client);
+                            setSelectedClientId(client.id);
                             focusOnLocation(client.x, client.y, 1.9);
                             setIsSearchFocused(false);
                           }}
@@ -791,7 +802,7 @@ export default function AnalyticsRadarView(_props: AnalyticsRadarViewProps) {
                             className="inline-flex items-center text-[12px] font-mono px-3 py-1 rounded-full bg-white/10 text-[#ccff00] border border-[#ccff00]/30 font-bold tracking-tight shadow-md"
                             title="Frecuencia estimada de recompra del cliente"
                           >
-                            Recompra: {displayedDossierClient.frequency || "Primera vez"}
+                            Recompra: {displayedDossierClient.frequency || "1ª Vez"}
                           </span>
                         </div>
                       </div>
@@ -800,8 +811,9 @@ export default function AnalyticsRadarView(_props: AnalyticsRadarViewProps) {
                     <button 
                       onClick={(e) => {
                         e.stopPropagation();
-                        setSelectedClient(null);
-                        setHoveredClient(null);
+                        setSelectedClientId(null);
+                        setHoveredClientId(null);
+                        setLastActiveClient(null);
                       }}
                       className="w-7 h-7 rounded-full bg-white/10 hover:bg-white/20 text-white/70 hover:text-white flex items-center justify-center transition-all duration-200 cursor-pointer shrink-0"
                       title="Cerrar detalle (Esc)"
@@ -1013,7 +1025,7 @@ export default function AnalyticsRadarView(_props: AnalyticsRadarViewProps) {
                     return (
                       <div 
                         key={c.id}
-                        onClick={() => setSelectedClient(prev => prev?.id === c.id ? null : c)}
+                        onClick={() => setSelectedClientId(prev => prev === c.id ? null : c.id)}
                         className={`p-2.5 rounded-2xl flex items-center justify-between text-xs cursor-pointer transition-all duration-300 ease-out border ${
                           isSelected 
                             ? "bg-white text-gray-950 font-bold border-[#ccff00] shadow-[0_0_16px_rgba(204,255,0,0.35)]" 

@@ -37,7 +37,7 @@ import {
  Loader2,
  Globe
 } from "lucide-react";
-import { useUserStore, Order } from "@/lib/userStore";
+import { useUserStore, Order, formatCleanName } from "@/lib/userStore";
 import { useThemeStore, getResolvedTheme } from "@/lib/themeStore";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
 import { useCatalogStore, normalizeCategory, CatalogProduct, isAgotadoBadge } from "@/lib/catalogStore";
@@ -1028,7 +1028,7 @@ export default function ProfilePage() {
  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 px-1">
  <div>
  <h1 className="text-2xl md:text-3xl font-display font-bold text-gray-900 dark:text-gray-100 tracking-tight">
- {getGreeting()}, <span className="italic font-normal">{user.name}</span>
+ {getGreeting()}, <span className="italic font-normal">{formatCleanName(user.name)}</span>
  </h1>
  <p className="text-xs md:text-sm text-gray-500 dark:text-gray-400 mt-0.5">
  {isAdmin 
