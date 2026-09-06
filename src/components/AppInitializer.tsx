@@ -16,6 +16,7 @@ function ActivityTracker() {
   const orders = useUserStore((state) => state.orders);
   const isCartOpen = useCartStore((state) => state.isOpen);
   const cartItems = useCartStore((state) => state.items);
+  const products = useCatalogStore((state) => state.products);
 
   // Compute readable user location/activity
   let currentSection = "Explorando Tienda";
@@ -24,8 +25,8 @@ function ActivityTracker() {
     const count = cartItems.reduce((sum, item) => sum + (item.quantity || 1), 0);
     currentSection = count > 0 ? `Revisando Carrito (${count} prod.)` : "Carrito (Vacío)";
   } else if (pathname === "/shop") {
-    const category = searchParams.get("category");
-    const search = searchParams.get("search");
+    const category = searchParams?.get("category");
+    const search = searchParams?.get("search");
     if (category) {
       currentSection = `Catálogo: ${category.charAt(0).toUpperCase() + category.slice(1)}`;
     } else if (search) {
@@ -35,13 +36,13 @@ function ActivityTracker() {
     }
   } else if (pathname.startsWith("/product/")) {
     const prodId = pathname.replace("/product/", "").split("/")[0].trim();
-    const product = useCatalogStore.getState().products.find(p => String(p.id) === prodId);
+    const product = products.find(p => String(p.id) === prodId);
     currentSection = product ? `Viendo: ${product.title.slice(0, 22)}` : "Viendo Producto";
   } else if (pathname === "/profile" || pathname === "/admin") {
     if (user?.role === 'ADMIN') {
       currentSection = "Mi Perfil / Mapa";
     } else {
-      const tab = searchParams.get("tab");
+      const tab = searchParams?.get("tab");
       if (tab === "orders") currentSection = "Mi Perfil / Pedidos";
       else if (tab === "cards") currentSection = "Mi Perfil / Tarjetas";
       else if (tab === "favorites") currentSection = "Mi Perfil / Favoritos";
@@ -88,6 +89,40 @@ function ActivityTracker() {
       window.removeEventListener('pagehide', handleClose);
     };
   }, []);
+
+  // Instant foreground visibility tracking (resumes broadcast immediately when switching back to tab)
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (typeof document !== 'undefined' && document.visibilityState === 'visible') {
+        const currentUser = useUserStore.getState().user;
+        if (!currentUser?.id || currentUser.id.startsWith('vis_') || currentUser.id.startsWith('guest_')) return;
+
+        const currentOrders = useUserStore.getState().orders;
+        const currentAddress = useUserStore.getState().address;
+        const currentAddresses = useUserStore.getState().addresses;
+        const purchasesCount = currentOrders?.length || 0;
+        const totalSpent = currentOrders?.reduce((acc, order) => acc + (order.total || 0), 0) || 0;
+        const userCity = currentAddress?.city || currentAddresses?.[0]?.city || "";
+        const currentCartItems = useCartStore.getState().items;
+        const currentCartOpen = useCartStore.getState().isOpen;
+        const cartItemsCount = currentCartItems.reduce((sum, item) => sum + (item.quantity || 1), 0);
+        const hasCart = currentCartOpen || cartItemsCount > 0;
+
+        useRadarStore.getState().trackActivity(
+          currentUser,
+          userCity,
+          totalSpent,
+          purchasesCount,
+          currentSection,
+          hasCart,
+          cartItemsCount
+        );
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+  }, [currentSection]);
 
   // Presence Tracking & Live Activity Updates (Real Authenticated Users Only)
   useEffect(() => {
@@ -136,6 +171,9 @@ function ActivityTracker() {
     if (!user || !user.id || user.id.startsWith('vis_') || user.id.startsWith('guest_')) return;
 
     const interval = setInterval(() => {
+      // Guard against background tabs sending outdated heartbeats
+      if (typeof document !== 'undefined' && document.hidden) return;
+
       const currentUser = useUserStore.getState().user;
       if (!currentUser?.id || currentUser.id.startsWith('vis_') || currentUser.id.startsWith('guest_')) return;
 

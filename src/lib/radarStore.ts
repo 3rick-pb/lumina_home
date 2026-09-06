@@ -19,6 +19,9 @@ export interface ConnectedClient {
   hasCart: boolean;
   cartItemsCount?: number;
   isRealUser?: boolean;
+  isOnline?: boolean;
+  lastSeen?: number;
+  lastUpdated?: number;
 }
 
 const COMMON_FIRST_NAMES = [
@@ -186,9 +189,89 @@ interface RadarStore {
 }
 
 /**
+ * Reconciles current in-memory live clients with newly fetched background data.
+ * Protects fresh WebSocket updates from being overwritten by stale HTTP/DB polling data.
+ */
+function reconcileClients(currentList: ConnectedClient[], fetchedList: ConnectedClient[]): ConnectedClient[] {
+  const now = Date.now();
+  const map = new Map<string, ConnectedClient>();
+
+  // 1. Keep all existing live clients that have been active within the last 35 seconds
+  for (const c of currentList) {
+    if (
+      c && 
+      c.id && 
+      !c.id.startsWith('vis_') && 
+      !c.id.startsWith('guest_') && 
+      !c.name?.toLowerCase().includes('visitante')
+    ) {
+      if (now - (c.lastSeen || now) < 35000) {
+        map.set(c.id, c);
+      }
+    }
+  }
+
+  // 2. Safely merge newly fetched data without clobbering recent WebSocket telemetry
+  for (const incoming of fetchedList) {
+    if (
+      incoming && 
+      incoming.id && 
+      !incoming.id.startsWith('vis_') && 
+      !incoming.id.startsWith('guest_') && 
+      !incoming.name?.toLowerCase().includes('visitante')
+    ) {
+      const existing = map.get(incoming.id);
+      const cleanCity = (incoming.city && incoming.city.trim()) ? incoming.city : (existing?.city || '');
+      const coords = resolveCoordinates(cleanCity);
+      const parsedX = incoming.x !== null && incoming.x !== undefined ? Number(incoming.x) : NaN;
+      const parsedY = incoming.y !== null && incoming.y !== undefined ? Number(incoming.y) : NaN;
+      const finalX = !isNaN(parsedX) && parsedX >= 0 ? parsedX : (coords.x >= 0 ? coords.x : (existing?.x ?? -100));
+      const finalY = !isNaN(parsedY) && parsedY >= 0 ? parsedY : (coords.y >= 0 ? coords.y : (existing?.y ?? -100));
+
+      if (!existing) {
+        map.set(incoming.id, {
+          ...incoming,
+          name: cleanClientName(incoming.name),
+          city: cleanCity,
+          x: finalX,
+          y: finalY,
+          lastSeen: incoming.lastSeen || now,
+          lastUpdated: incoming.lastUpdated || now,
+        });
+      } else {
+        // Protect recent live WebSocket broadcast telemetry from being overwritten by older DB records
+        const isRecentLiveBroadcast = existing.lastUpdated && (now - existing.lastUpdated < 6000);
+        const sectionToUse = isRecentLiveBroadcast 
+          ? existing.currentSection 
+          : (incoming.currentSection || existing.currentSection || 'Explorando Tienda');
+
+        map.set(incoming.id, {
+          ...existing,
+          ...incoming,
+          city: cleanCity,
+          x: finalX,
+          y: finalY,
+          name: cleanClientName(incoming.name || existing.name),
+          currentSection: sectionToUse,
+          hasCart: isRecentLiveBroadcast ? existing.hasCart : (incoming.hasCart !== undefined ? incoming.hasCart : existing.hasCart),
+          cartItemsCount: isRecentLiveBroadcast ? existing.cartItemsCount : (incoming.cartItemsCount !== undefined ? incoming.cartItemsCount : existing.cartItemsCount),
+          lastSeen: Math.max(existing.lastSeen || 0, incoming.lastSeen || 0, now),
+          lastUpdated: existing.lastUpdated || now,
+        });
+      }
+    }
+  }
+
+  const result: ConnectedClient[] = [];
+  map.forEach((client) => result.push(client));
+  return result;
+}
+
+/**
  * Merge two client lists without duplicates, preferring the most up-to-date entry
  */
 function mergeClientLists(listA: ConnectedClient[], listB: ConnectedClient[]): ConnectedClient[] {
+  const now = Date.now();
   const map = new Map<string, ConnectedClient>();
 
   for (const c of listA) {
@@ -199,7 +282,9 @@ function mergeClientLists(listA: ConnectedClient[], listB: ConnectedClient[]): C
       !c.id.startsWith('guest_') && 
       !c.name?.toLowerCase().includes('visitante')
     ) {
-      map.set(c.id, c);
+      if (now - (c.lastSeen || now) < 35000) {
+        map.set(c.id, c);
+      }
     }
   }
 
@@ -213,7 +298,20 @@ function mergeClientLists(listA: ConnectedClient[], listB: ConnectedClient[]): C
     ) {
       const existing = map.get(c.id);
       if (!existing) {
-        map.set(c.id, c);
+        const coords = resolveCoordinates(c.city);
+        const parsedX = c.x !== null && c.x !== undefined ? Number(c.x) : NaN;
+        const parsedY = c.y !== null && c.y !== undefined ? Number(c.y) : NaN;
+        const finalX = !isNaN(parsedX) && parsedX >= 0 ? parsedX : (coords.x >= 0 ? coords.x : -100);
+        const finalY = !isNaN(parsedY) && parsedY >= 0 ? parsedY : (coords.y >= 0 ? coords.y : -100);
+
+        map.set(c.id, {
+          ...c,
+          name: cleanClientName(c.name),
+          x: finalX,
+          y: finalY,
+          lastSeen: c.lastSeen || now,
+          lastUpdated: c.lastUpdated || now,
+        });
       } else {
         // Merge with newer info while protecting valid location coordinates
         const finalCity = (c.city && c.city.trim()) ? c.city : (existing.city || '');
@@ -246,6 +344,8 @@ function mergeClientLists(listA: ConnectedClient[], listB: ConnectedClient[]): C
           currentSection: c.currentSection || existing.currentSection,
           hasCart: c.hasCart !== undefined ? c.hasCart : existing.hasCart,
           cartItemsCount: c.cartItemsCount !== undefined ? c.cartItemsCount : existing.cartItemsCount,
+          lastSeen: Math.max(existing.lastSeen || 0, c.lastSeen || 0, now),
+          lastUpdated: Math.max(existing.lastUpdated || 0, c.lastUpdated || 0, now),
         });
       }
     }
@@ -281,13 +381,9 @@ export const useRadarStore = create<RadarStore>((set, get) => ({
       if (res.ok) {
         const json = await res.json();
         if (json.success && Array.isArray(json.clients)) {
-          set((state) => {
-            // Guard against momentary network glitches or empty responses wiping all pins
-            if (json.clients.length === 0 && state.clients.length > 0) {
-              return state;
-            }
-            return { clients: json.clients };
-          });
+          set((state) => ({
+            clients: reconcileClients(state.clients, json.clients),
+          }));
         }
       }
     } catch {
@@ -305,8 +401,9 @@ export const useRadarStore = create<RadarStore>((set, get) => ({
     const frequency = resolveFrequency(purchasesCount);
     const intentScore = calculateIntentScore(purchasesCount, totalSpent, hasCart);
     const cleanName = cleanClientName(user.name || user.email?.split('@')[0] || 'Cliente Lumina');
+    const now = Date.now();
 
-    const payload = {
+    const payload: ConnectedClient = {
       id: user.id,
       name: cleanName,
       email: user.email || '',
@@ -324,6 +421,8 @@ export const useRadarStore = create<RadarStore>((set, get) => ({
       cartItemsCount: cartItemsCount || 0,
       isRealUser: true,
       isOnline: true,
+      lastSeen: now,
+      lastUpdated: now,
     };
 
     // Immediately reflect the current logged-in user in local clients so "Tú" is visible right away
@@ -427,6 +526,7 @@ export const useRadarStore = create<RadarStore>((set, get) => ({
               }
 
               set((state) => {
+                const now = Date.now();
                 const idx = state.clients.findIndex((c) => c.id === row.user_id);
                 const coords = resolveCoordinates(row.city || '');
                 const purchases = Number(row.purchases_count) || 0;
@@ -437,6 +537,12 @@ export const useRadarStore = create<RadarStore>((set, get) => ({
                 const existingClient = state.clients.find((c) => c.id === row.user_id);
                 const finalX = !isNaN(parsedX) && parsedX >= 0 ? parsedX : (coords.x >= 0 ? coords.x : (existingClient?.x ?? -100));
                 const finalY = !isNaN(parsedY) && parsedY >= 0 ? parsedY : (coords.y >= 0 ? coords.y : (existingClient?.y ?? -100));
+
+                // Protect recent live WebSocket broadcast from being overwritten by delayed DB events
+                const isRecentLive = existingClient?.lastUpdated && (now - existingClient.lastUpdated < 6000);
+                const sectionToUse = isRecentLive 
+                  ? existingClient.currentSection 
+                  : (row.current_section || existingClient?.currentSection || 'Explorando Tienda');
 
                 const updatedClient: ConnectedClient = {
                   id: row.user_id,
@@ -449,12 +555,14 @@ export const useRadarStore = create<RadarStore>((set, get) => ({
                   frequency: resolveFrequency(purchases),
                   purchasesCount: purchases,
                   totalSpent: spent,
-                  currentSection: row.current_section || 'Explorando Tienda',
+                  currentSection: sectionToUse,
                   intentScore: calculateIntentScore(purchases, spent, hasCart),
                   device: (row.device as ConnectedClient['device']) || 'Computador',
-                  hasCart,
-                  cartItemsCount: Number(row.cart_items_count) || 0,
+                  hasCart: isRecentLive ? existingClient.hasCart : hasCart,
+                  cartItemsCount: isRecentLive ? existingClient.cartItemsCount : (Number(row.cart_items_count) || 0),
                   isRealUser: true,
+                  lastSeen: now,
+                  lastUpdated: existingClient?.lastUpdated || now,
                 };
                 if (idx >= 0) {
                   const next = [...state.clients];
@@ -485,6 +593,7 @@ export const useRadarStore = create<RadarStore>((set, get) => ({
           if (!payload || !payload.id || payload.id.startsWith('vis_') || payload.id.startsWith('guest_') || String(payload.name).toLowerCase().includes('visitante')) return;
 
           set((state) => {
+            const now = Date.now();
             const cleanCity = payload.city || '';
             const coords = resolveCoordinates(cleanCity);
             const parsedX = payload.x !== null && payload.x !== undefined ? Number(payload.x) : NaN;
@@ -513,6 +622,8 @@ export const useRadarStore = create<RadarStore>((set, get) => ({
               hasCart,
               cartItemsCount: Number(payload.cartItemsCount) || 0,
               isRealUser: true,
+              lastSeen: now,
+              lastUpdated: now,
             };
 
             const idx = state.clients.findIndex((c) => c.id === payload.id);

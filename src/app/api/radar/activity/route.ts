@@ -79,11 +79,14 @@ export async function GET() {
           const parsedY = row.y !== null && row.y !== undefined ? Number(row.y) : NaN;
           const finalX = !isNaN(parsedX) && parsedX >= 0 ? parsedX : (coords.x >= 0 ? coords.x : (existing && existing.x >= 0 ? existing.x : -100));
           const finalY = !isNaN(parsedY) && parsedY >= 0 ? parsedY : (coords.y >= 0 ? coords.y : (existing && existing.y >= 0 ? existing.y : -100));
+          const dbLastSeen = new Date(row.last_seen).getTime() || Date.now();
+          const existingLastSeen = existing?.lastSeen || 0;
+          const isDbNewer = dbLastSeen >= existingLastSeen;
 
           globalClients.set(row.user_id, {
             id: row.user_id,
             name: cleanClientName(row.name),
-            email: row.email || '',
+            email: row.email || (existing ? existing.email : ''),
             city: finalCity,
             country: row.country || 'Ecuador',
             x: finalX,
@@ -91,13 +94,13 @@ export async function GET() {
             frequency,
             purchasesCount: purchases,
             totalSpent: Number(row.total_spent) || 0,
-            currentSection: row.current_section || 'Explorando Tienda',
+            currentSection: (existing && !isDbNewer) ? existing.currentSection : (row.current_section || existing?.currentSection || 'Explorando Tienda'),
             intentScore: 85,
-            device: (row.device as CachedClient['device']) || 'Computador',
-            hasCart: Boolean(row.has_cart),
-            cartItemsCount: Number(row.cart_items_count) || 0,
+            device: (row.device as CachedClient['device']) || (existing ? existing.device : 'Computador'),
+            hasCart: (existing && !isDbNewer) ? existing.hasCart : Boolean(row.has_cart),
+            cartItemsCount: (existing && !isDbNewer) ? existing.cartItemsCount : (Number(row.cart_items_count) || 0),
             isOnline: true,
-            lastSeen: new Date(row.last_seen).getTime() || Date.now(),
+            lastSeen: Math.max(dbLastSeen, existingLastSeen),
           });
         }
       }
