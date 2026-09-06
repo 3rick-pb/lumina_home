@@ -3,7 +3,7 @@
 import { useEffect } from "react";
 import { useCatalogStore } from "@/lib/catalogStore";
 import { useUserStore } from "@/lib/userStore";
-import { supabase } from "@/lib/supabase";
+import { useRadarStore } from "@/lib/radarStore";
 
 export function AppInitializer() {
   const fetchProducts = useCatalogStore((state) => state.fetchProducts);
@@ -17,49 +17,21 @@ export function AppInitializer() {
     initializeAuth();
   }, [fetchProducts, initializeAuth]);
 
-  // Presence Tracking
+  // Presence Tracking via Centralized Radar Store
   useEffect(() => {
     if (!user) return;
 
-    const channel = supabase.channel('radar:clients');
-    
-    // Generate pseudo-coordinates around South America (Ecuador focused)
-    const x = 45 + Math.random() * 20;
-    const y = 20 + Math.random() * 15;
-    
     const purchasesCount = orders?.length || 0;
     const totalSpent = orders?.reduce((acc, order) => acc + (order.total || 0), 0) || 0;
+    const userCity = address?.city || 'Quito';
 
-    channel
-      .on('presence', { event: 'sync' }, () => {
-        // Handle sync if needed
-      })
-      .subscribe(async (status) => {
-        if (status === 'SUBSCRIBED') {
-          await channel.track({
-            id: user.id,
-            name: user.name,
-            email: user.email,
-            city: address?.city || 'Conectado',
-            country: address?.country || 'Local',
-            x: x,
-            y: y,
-            frequency: purchasesCount > 3 ? 'Frecuente' : 'Nuevo',
-            purchasesCount: purchasesCount,
-            totalSpent: totalSpent,
-            currentSection: 'Explorando Tienda',
-            intentScore: 85,
-            device: 'Navegador',
-            hasCart: true,
-            cartItemsCount: 1,
-            onlineAt: new Date().toISOString()
-          });
-        }
-      });
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
+    useRadarStore.getState().initRadar(
+      user,
+      userCity,
+      totalSpent,
+      purchasesCount,
+      'Explorando Tienda'
+    );
   }, [user, address, orders]);
 
   return null;

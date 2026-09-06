@@ -22,26 +22,9 @@ import {
 } from "lucide-react";
 import type { User, ShippingAddress, Order } from "@/lib/userStore";
 import type { CatalogProduct } from "@/lib/catalogStore";
-import { supabase } from "@/lib/supabase";
+import { useRadarStore, type ConnectedClient } from "@/lib/radarStore";
 
-export interface ConnectedClient {
-  id: string;
-  name: string;
-  email: string;
-  city: string;
-  country: string;
-  x: number; // percentage horizontal position (0 - 100)
-  y: number; // percentage vertical position (0 - 100)
-  frequency: "Semanal" | "Quincenal" | "Mensual" | "Ocasional" | "Primera vez";
-  purchasesCount: number;
-  totalSpent: number;
-  currentSection: string;
-  intentScore: number;
-  device: "Computador" | "Celular" | "Tablet";
-  hasCart: boolean;
-  cartItemsCount?: number;
-  isRealUser?: boolean;
-}
+export type { ConnectedClient } from "@/lib/radarStore";
 
 interface AnalyticsRadarViewProps {
   user: User | null;
@@ -140,6 +123,7 @@ export default function AnalyticsRadarView(_props: AnalyticsRadarViewProps) {
     const img = new Image();
     img.src = "/images/map_3d_relief_cutout.webp";
     img.onload = () => setIsMapLoaded(true);
+    img.onerror = () => setIsMapLoaded(true);
   }, []);
 
   // Keyboard shortcut: Escape to deselect active client
@@ -165,61 +149,35 @@ export default function AnalyticsRadarView(_props: AnalyticsRadarViewProps) {
   const dragStartRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
   const panStartRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
 
-  // Connected clients distributed accurately across Ecuador's calibrated 3D terrain
-  const [realtimeClients, setRealtimeClients] = useState<ConnectedClient[]>([]);
-  
-  useEffect(() => {
-    const channel = supabase.channel('radar:clients');
-    
-    channel
-      .on('presence', { event: 'sync' }, () => {
-        const newState = channel.presenceState();
-        const clients: ConnectedClient[] = [];
-        
-        for (const id in newState) {
-          const presenceArray = newState[id] as unknown[];
-          if (presenceArray && presenceArray.length > 0) {
-            // Take the most recent presence state for this user
-            clients.push(presenceArray[0] as ConnectedClient);
-          }
-        }
-        
-        setRealtimeClients(clients);
-      })
-      .subscribe();
-      
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, []);
-
-  const connectedClients = useMemo(() => {
-    return realtimeClients;
-  }, [realtimeClients]);
+    // Real-time clients synchronized via centralized radarStore (Supabase WebSockets)
+  const connectedClients = useRadarStore((state) => state.clients);
 
   // Filtered clients list
   const filteredClients = useMemo(() => {
+    if (!Array.isArray(connectedClients)) return [];
     return connectedClients.filter(c => {
+      if (!c) return false;
       if (activeStage === "cart" && !c.hasCart) return false;
-      if (activeStage === "frequent" && (c.purchasesCount < 3 || c.frequency === "Primera vez")) return false;
+      if (activeStage === "frequent" && ((c.purchasesCount || 0) < 3 || c.frequency === "Primera vez")) return false;
 
-      if (searchQuery.trim()) {
+      if (searchQuery && searchQuery.trim()) {
         const q = searchQuery.toLowerCase().trim();
-        // Direct match
         if (
-          c.name.toLowerCase().includes(q) ||
-          c.city.toLowerCase().includes(q) ||
-          c.country.toLowerCase().includes(q) ||
-          c.email.toLowerCase().includes(q) ||
-          c.currentSection.toLowerCase().includes(q)
+          (c.name && c.name.toLowerCase().includes(q)) ||
+          (c.city && c.city.toLowerCase().includes(q)) ||
+          (c.country && c.country.toLowerCase().includes(q)) ||
+          (c.email && c.email.toLowerCase().includes(q)) ||
+          (c.currentSection && c.currentSection.toLowerCase().includes(q))
         ) return true;
 
-        // Province & Region match (e.g. Sierra, Costa, Oriente, Amazonía, Galápagos)
-        const matchedEntry = Object.entries(ECUADOR_PROVINCE_COORDINATES).find(([k]) => c.city.toLowerCase().includes(k));
-        if (matchedEntry) {
-          const { province, region } = matchedEntry[1];
-          if (province.toLowerCase().includes(q) || region.toLowerCase().includes(q)) return true;
-          if ((q === "amazonia" || q === "amazonía") && region.toLowerCase() === "oriente") return true;
+        if (c.city) {
+          const matchedEntry = Object.entries(ECUADOR_PROVINCE_COORDINATES).find(([k]) => c.city && c.city.toLowerCase().includes(k));
+          if (matchedEntry) {
+            const { province, region } = matchedEntry[1];
+            if (province && province.toLowerCase().includes(q)) return true;
+            if (region && region.toLowerCase().includes(q)) return true;
+            if ((q === "amazonia" || q === "amazonía") && region && region.toLowerCase() === "oriente") return true;
+          }
         }
 
         return false;
@@ -474,7 +432,7 @@ export default function AnalyticsRadarView(_props: AnalyticsRadarViewProps) {
                     ? "bg-white text-gray-950 shadow-md scale-105" 
                     : "bg-black/85 text-white/90 border border-white/10 backdrop-blur-md"
                 }`}>
-                  {formatBeaconCity(client.city)}
+                  {formatBeaconCity(client.city || "Ecuador")}
                 </div>
               </div>
             );
@@ -605,7 +563,7 @@ export default function AnalyticsRadarView(_props: AnalyticsRadarViewProps) {
                     { city: "Puyo", coords: ECUADOR_PROVINCE_COORDINATES["puyo"] },
                     { city: "Galápagos", coords: ECUADOR_PROVINCE_COORDINATES["galapagos"] },
                   ].map(({ city, coords }) => {
-                    const clientMatch = connectedClients.find(c => c.city.toLowerCase().includes(city.toLowerCase()));
+                    const clientMatch = connectedClients.find(c => c && c.city && c.city.toLowerCase().includes(city.toLowerCase()));
                     return (
                       <button
                         key={city}
@@ -653,14 +611,14 @@ export default function AnalyticsRadarView(_props: AnalyticsRadarViewProps) {
                         >
                           <div className="flex items-center gap-2 truncate">
                             <div className="w-6 h-6 rounded-full bg-[#ccff00] text-gray-950 font-black flex items-center justify-center text-[10px] shrink-0">
-                              {client.name.charAt(0)}
+                              {(client.name || "C").charAt(0).toUpperCase()}
                             </div>
                             <div className="truncate">
                               <p className="text-xs font-semibold text-white group-hover:text-[#ccff00] transition-colors truncate">
-                                {client.name}
+                                {client.name || "Cliente"}
                               </p>
                               <p className="text-[10px] text-white/50 truncate">
-                                {client.city} • <span className="font-mono text-white/80">${client.totalSpent}</span>
+                                {client.city || "Ecuador"} • <span className="font-mono text-white/80">${client.totalSpent || 0}</span>
                               </p>
                             </div>
                           </div>
@@ -787,11 +745,11 @@ export default function AnalyticsRadarView(_props: AnalyticsRadarViewProps) {
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex items-start gap-3 min-w-0 flex-1">
                       <div className="w-9 h-9 rounded-full bg-[#ccff00] text-gray-950 font-black flex items-center justify-center text-sm shrink-0 shadow-md transition-transform duration-300 hover:scale-105 mt-0.5">
-                        {displayedDossierClient.name.charAt(0)}
+                        {(displayedDossierClient.name || "C").charAt(0).toUpperCase()}
                       </div>
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-1.5">
-                          <h4 className="font-bold text-sm text-white leading-tight truncate">{displayedDossierClient.name}</h4>
+                          <h4 className="font-bold text-sm text-white leading-tight truncate">{displayedDossierClient.name || "Cliente"}</h4>
                           {displayedDossierClient.isRealUser && (
                             <span className="text-[8px] font-mono px-1.5 py-0.5 rounded bg-emerald-400/20 text-emerald-400 border border-emerald-400/30 font-bold shrink-0">
                               Tú
@@ -802,7 +760,7 @@ export default function AnalyticsRadarView(_props: AnalyticsRadarViewProps) {
                         {/* Ubicación detallada del cliente con ancho completo */}
                         <p className="text-xs text-white/80 flex items-center gap-1.5 mt-1 font-medium">
                           <MapPin className="w-3.5 h-3.5 text-[#ccff00] shrink-0" /> 
-                          <span>{displayedDossierClient.city}</span>
+                          <span>{displayedDossierClient.city || "Ecuador"}</span>
                         </p>
                         
                         {/* Píldora de Recompra con mayor tamaño de fuente situada debajo de la ubicación */}
@@ -811,7 +769,7 @@ export default function AnalyticsRadarView(_props: AnalyticsRadarViewProps) {
                             className="inline-flex items-center text-[12px] font-mono px-3 py-1 rounded-full bg-white/10 text-[#ccff00] border border-[#ccff00]/30 font-bold tracking-tight shadow-md"
                             title="Frecuencia estimada de recompra del cliente"
                           >
-                            Recompra: {displayedDossierClient.frequency}
+                            Recompra: {displayedDossierClient.frequency || "Primera vez"}
                           </span>
                         </div>
                       </div>
@@ -833,19 +791,19 @@ export default function AnalyticsRadarView(_props: AnalyticsRadarViewProps) {
                   <div className="space-y-1.5 text-[10.5px] pt-2 border-t border-white/10">
                     <div className="flex items-center justify-between">
                       <span className="text-white/60">Explorando:</span>
-                      <strong className="text-white font-medium text-right truncate max-w-[140px]">{displayedDossierClient.currentSection}</strong>
+                      <strong className="text-white font-medium text-right truncate max-w-[140px]">{displayedDossierClient.currentSection || "Tienda"}</strong>
                     </div>
                     <div className="flex items-center justify-between">
                       <span className="text-white/60">Total Compras:</span>
-                      <strong className="text-[#ccff00] font-mono font-bold">${displayedDossierClient.totalSpent.toFixed(2)} USD</strong>
+                      <strong className="text-[#ccff00] font-mono font-bold">${Number(displayedDossierClient.totalSpent || 0).toFixed(2)} USD</strong>
                     </div>
                     <div className="flex items-center justify-between">
                       <span className="text-white/60">Historial:</span>
-                      <span className="text-white/80">{displayedDossierClient.purchasesCount} pedidos realizados</span>
+                      <span className="text-white/80">{displayedDossierClient.purchasesCount || 0} pedidos realizados</span>
                     </div>
                     <div className="flex items-center justify-between">
                       <span className="text-white/60">Dispositivo:</span>
-                      <span className="text-white/80">{displayedDossierClient.device}</span>
+                      <span className="text-white/80">{displayedDossierClient.device || "Computador"}</span>
                     </div>
                   </div>
 
@@ -1022,11 +980,11 @@ export default function AnalyticsRadarView(_props: AnalyticsRadarViewProps) {
                               ? "bg-emerald-500 text-gray-950 font-black" 
                               : "bg-gradient-to-tr from-amber-400 to-yellow-200 text-gray-950"
                           }`}>
-                            {c.name.charAt(0)}
+                            {(c.name || "C").charAt(0).toUpperCase()}
                           </div>
                           <div className="truncate">
                             <div className="flex items-center gap-1.5">
-                              <p className="leading-tight truncate font-semibold">{c.name}</p>
+                              <p className="leading-tight truncate font-semibold">{c.name || "Cliente"}</p>
                               {c.isRealUser && (
                                 <span className="text-[7.5px] font-mono px-1.5 py-0.2 rounded bg-emerald-400/20 text-emerald-400 border border-emerald-400/30 font-bold shrink-0">
                                   Tú
@@ -1034,7 +992,7 @@ export default function AnalyticsRadarView(_props: AnalyticsRadarViewProps) {
                               )}
                             </div>
                             <p className={`text-[9.5px] mt-0.5 ${isSelected ? "text-gray-700 font-medium" : "text-white/45"}`}>
-                              {c.city} • <span className="font-mono">${c.totalSpent}</span>
+                              {c.city || "Ecuador"} • <span className="font-mono">${c.totalSpent || 0}</span>
                             </p>
                           </div>
                         </div>
