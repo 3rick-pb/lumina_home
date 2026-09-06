@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
+import { clsx } from "clsx";
 import Image from "next/image";
 import Link from "next/link";
 import { 
@@ -37,6 +38,8 @@ import {
   Globe
 } from "lucide-react";
 import { useUserStore, Order } from "@/lib/userStore";
+import { useThemeStore, getResolvedTheme } from "@/lib/themeStore";
+import { ThemeToggle } from "@/components/ui/ThemeToggle";
 import { useCatalogStore, normalizeCategory, CatalogProduct, isAgotadoBadge } from "@/lib/catalogStore";
 import { useCartStore } from "@/lib/store";
 import { normalizeSearchText } from "@/lib/utils";
@@ -78,6 +81,16 @@ export default function ProfilePage() {
   const [activeTab, setActiveTab] = useState<"overview" | "orders" | "cards" | "favorites" | "catalog" | "niches" | "analytics" | "settings">("overview");
   const [searchQuery, setSearchQuery] = useState("");
   const [isMounted, setIsMounted] = useState(false);
+
+  const { mode } = useThemeStore();
+  const [resolvedTheme, setResolvedTheme] = useState<'light' | 'dark'>('light');
+
+  useEffect(() => {
+    const update = () => setResolvedTheme(getResolvedTheme(mode));
+    update();
+    const interval = setInterval(update, 60000);
+    return () => clearInterval(interval);
+  }, [mode]);
 
   const getGreeting = () => {
     const hour = new Date().getHours();
@@ -716,9 +729,17 @@ export default function ProfilePage() {
   };
 
   return (
-    <div className="min-h-screen w-full max-w-full overflow-x-hidden bg-[#f3f4f6] text-gray-900 flex p-3 md:p-6 lg:p-8 selection:bg-[#8c9276]/20">
-      
-      {/* 1. Left Vertical Icon Sidebar (Reference Style) */}
+    <div className={clsx(resolvedTheme === 'dark' ? 'dark' : '')}>
+      <style>{`
+        .theme-transition, .theme-transition * {
+          transition-property: background-color, border-color, color, fill, stroke, box-shadow;
+          transition-duration: 2500ms;
+          transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+        }
+      `}</style>
+      <div className="theme-transition min-h-screen w-full max-w-full overflow-x-hidden bg-[#f3f4f6] dark:bg-[#121212] text-gray-900 dark:text-gray-100 flex p-3 md:p-6 lg:p-8 selection:bg-[#8c9276]/20">
+        
+        {/* 1. Left Vertical Icon Sidebar (Reference Style) */}
       <aside className="w-16 md:w-20 bg-white/90 backdrop-blur-2xl rounded-3xl border border-white/80 shadow-[0_8px_32px_rgba(0,0,0,0.03)] flex flex-col items-center py-6 justify-between shrink-0 mr-4 md:mr-6">
         
         {/* Brand Logo Symbol */}
@@ -2151,12 +2172,16 @@ export default function ProfilePage() {
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 animate-fade-in">
             
             {/* Account & Credentials (7 cols) */}
-            <div className="lg:col-span-7 bg-white/90 backdrop-blur-xl p-6 md:p-8 rounded-[2.5rem] border border-white/80 shadow-[0_4px_24px_rgba(0,0,0,0.02)] space-y-6">
+            <div className="lg:col-span-7 bg-white/90 dark:bg-white/5 backdrop-blur-3xl p-8 md:p-10 rounded-[3rem] border border-white/80 dark:border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.04)] space-y-10 relative overflow-hidden">
+              
+              {/* Decorative glass glow */}
+              <div className="absolute top-0 right-0 w-64 h-64 bg-blue-500/10 dark:bg-[#ccff00]/10 blur-[80px] rounded-full pointer-events-none -z-10" />
+              <div className="absolute bottom-0 left-0 w-48 h-48 bg-purple-500/10 dark:bg-purple-500/10 blur-[60px] rounded-full pointer-events-none -z-10" />
               <div>
-                <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">
-                  <Settings className="w-5 h-5 text-[#8c9276]" /> Configuración de Cuenta & Seguridad
+                <h2 className="text-2xl font-display font-bold text-gray-900 dark:text-white flex items-center gap-3">
+                  <Settings className="w-6 h-6 text-[#8c9276]" /> Ajustes de Cuenta & Sistema
                 </h2>
-                <p className="text-xs text-gray-500">Actualiza tus credenciales de acceso y datos personales.</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400">Personaliza tu experiencia, apariencia visual y seguridad de acceso.</p>
               </div>
 
               {settingsFeedback && (
@@ -2169,32 +2194,42 @@ export default function ProfilePage() {
                 </div>
               )}
 
-              <form onSubmit={handleSaveSettings} className="space-y-4">
+              {/* Theme & Appearance */}
+              <div className="p-6 rounded-[2rem] bg-gray-50/50 dark:bg-black/20 border border-gray-100 dark:border-white/5 relative z-10">
+                <h3 className="text-sm font-bold text-gray-900 dark:text-white mb-1">Apariencia del Sistema</h3>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mb-6">Elige el modo visual. El modo automático usará una elegante paleta oscura a partir de las 18:00h para proteger tu vista.</p>
+                <div className="flex justify-center">
+                  <ThemeToggle />
+                </div>
+              </div>
+
+              {/* Form */}
+              <form onSubmit={handleSaveSettings} className="space-y-6 relative z-10">
                 <div>
-                  <label className="block text-xs font-semibold text-gray-700 mb-1">Nombre Completo</label>
+                  <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2 pl-1">Nombre Completo</label>
                   <div className="relative">
                     <UserIcon className="w-4 h-4 absolute left-3.5 top-3 text-gray-400" />
                     <input 
                       type="text" 
                       value={editName}
                       onChange={e => setEditName(e.target.value)}
-                      className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-200 text-xs focus:outline-none focus:ring-1 focus:ring-gray-900"
+                      className="w-full pl-11 pr-4 py-3.5 rounded-2xl bg-white dark:bg-black/40 border border-gray-200 dark:border-white/10 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#8c9276] transition-all"
                     />
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-gray-700 mb-1">Correo Electrónico (No editable)</label>
+                  <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2 pl-1">Correo Electrónico (No editable)</label>
                   <input 
                     type="email" 
                     readOnly 
                     value={user.email}
-                    className="w-full px-4 py-2.5 rounded-xl border border-gray-200 bg-gray-100 text-gray-500 text-xs cursor-not-allowed"
+                    className="w-full px-5 py-3.5 rounded-2xl border border-gray-200 dark:border-white/10 bg-gray-100 dark:bg-black/60 text-gray-500 dark:text-gray-500 text-sm cursor-not-allowed"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-gray-700 mb-1">Nueva Contraseña (Opcional)</label>
+                  <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2 pl-1">Nueva Contraseña (Opcional)</label>
                   <div className="relative">
                     <KeyRound className="w-4 h-4 absolute left-3.5 top-3 text-gray-400" />
                     <input 
@@ -2202,14 +2237,14 @@ export default function ProfilePage() {
                       value={newPass}
                       onChange={e => setNewPass(e.target.value)}
                       placeholder="Escribe al menos 6 caracteres para cambiarla"
-                      className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-200 text-xs focus:outline-none focus:ring-1 focus:ring-gray-900"
+                      className="w-full pl-11 pr-4 py-3.5 rounded-2xl bg-white dark:bg-black/40 border border-gray-200 dark:border-white/10 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#8c9276] transition-all"
                     />
                   </div>
                 </div>
 
                 {isAdmin && (
                   <div className="pt-2">
-                    <label className="block text-xs font-semibold text-gray-700 mb-1">
+                    <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2 pl-1">
                       Invitación de Administradores (Máx. 3, separados por coma)
                     </label>
                     <div className="relative">
@@ -2219,7 +2254,7 @@ export default function ProfilePage() {
                         value={adminEmails}
                         onChange={e => setAdminEmails(e.target.value)}
                         placeholder="admin1@ejemplo.com, admin2@ejemplo.com"
-                        className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-200 text-xs focus:outline-none focus:ring-1 focus:ring-gray-900"
+                        className="w-full pl-11 pr-4 py-3.5 rounded-2xl bg-white dark:bg-black/40 border border-gray-200 dark:border-white/10 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#8c9276] transition-all"
                       />
                     </div>
                     <p className="text-[10px] text-gray-500 mt-1">
@@ -2232,7 +2267,7 @@ export default function ProfilePage() {
                   <button 
                     type="submit" 
                     disabled={isUpdatingSettings}
-                    className="px-6 py-2.5 bg-gray-900 text-white rounded-xl text-xs font-semibold hover:bg-gray-800 transition-colors shadow-md disabled:opacity-50 cursor-pointer"
+                    className="px-8 py-3.5 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-2xl text-sm font-bold hover:bg-gray-800 dark:hover:bg-gray-100 transition-all shadow-lg hover:shadow-xl hover:-translate-y-0.5 disabled:opacity-50 disabled:hover:translate-y-0 cursor-pointer"
                   >
                     {isUpdatingSettings ? "Guardando..." : "Guardar Cambios"}
                   </button>
@@ -2664,7 +2699,7 @@ export default function ProfilePage() {
 
             <form onSubmit={handleAddCardSubmit} className="space-y-4">
               <div>
-                <label className="block text-xs font-semibold text-gray-700 mb-1">Tipo de Red</label>
+                <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2 pl-1">Tipo de Red</label>
                 <div className="grid grid-cols-2 gap-3">
                   <button 
                     type="button"
@@ -2684,7 +2719,7 @@ export default function ProfilePage() {
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-gray-700 mb-1">Titular de la Tarjeta</label>
+                <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2 pl-1">Titular de la Tarjeta</label>
                 <input 
                   type="text" 
                   value={newCardHolder} 
@@ -2695,7 +2730,7 @@ export default function ProfilePage() {
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-gray-700 mb-1">Número de Tarjeta (16 dígitos)</label>
+                <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2 pl-1">Número de Tarjeta (16 dígitos)</label>
                 <input 
                   type="text" 
                   required 
@@ -2711,7 +2746,7 @@ export default function ProfilePage() {
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-gray-700 mb-1">Fecha de Expiración (MM/AA)</label>
+                <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2 pl-1">Fecha de Expiración (MM/AA)</label>
                 <input 
                   type="text" 
                   required 
@@ -2769,11 +2804,11 @@ export default function ProfilePage() {
             <form onSubmit={handleAddProductSubmit} className="p-6 overflow-y-auto flex-1 space-y-5">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-semibold text-gray-700 mb-1">Nombre Principal *</label>
+                  <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2 pl-1">Nombre Principal *</label>
                   <input required type="text" value={prodTitle} onChange={e => setProdTitle(e.target.value)} className="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm outline-none" placeholder="Ej: Lámpara de Mesa" />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-gray-700 mb-1">Subtítulo Itálica</label>
+                  <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2 pl-1">Subtítulo Itálica</label>
                   <input type="text" value={prodHighlight} onChange={e => setProdHighlight(e.target.value)} className="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm outline-none" placeholder="Ej: Nova LED, Artesanal" />
                 </div>
               </div>
@@ -2872,7 +2907,7 @@ export default function ProfilePage() {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-gray-700 mb-1">URL de Imagen Principal *</label>
+                  <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2 pl-1">URL de Imagen Principal *</label>
                   <input 
                     required 
                     type="text" 
@@ -2909,7 +2944,7 @@ export default function ProfilePage() {
                 )}
 
                 <div>
-                  <label className="block text-xs font-semibold text-gray-700 mb-1">Galería de Imágenes Adicionales (Opcional)</label>
+                  <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2 pl-1">Galería de Imágenes Adicionales (Opcional)</label>
                   <input 
                     type="text" 
                     value={prodExtraImages} 
@@ -2942,12 +2977,12 @@ export default function ProfilePage() {
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-gray-700 mb-1">Descripción Completa *</label>
+                <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2 pl-1">Descripción Completa *</label>
                 <textarea required rows={3} value={prodDescription} onChange={e => setProdDescription(e.target.value)} className="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm outline-none resize-none" placeholder="Describe los detalles de este producto..." />
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-gray-700 mb-1">Características / Viñetas (una por línea)</label>
+                <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2 pl-1">Características / Viñetas (una por línea)</label>
                 <textarea rows={3} value={prodFeatures} onChange={e => setProdFeatures(e.target.value)} className="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm outline-none resize-none" placeholder="Material: Cerámica artesanal&#10;Acabado mate texturizado&#10;Garantía de 2 años" />
               </div>
 
@@ -2959,7 +2994,7 @@ export default function ProfilePage() {
                 </div>
                 
                 <div>
-                  <label className="block text-xs font-semibold text-gray-700 mb-1">Materiales y Acabados Nobles</label>
+                  <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2 pl-1">Materiales y Acabados Nobles</label>
                   <input 
                     type="text" 
                     value={prodMaterials} 
@@ -2972,7 +3007,7 @@ export default function ProfilePage() {
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-xs font-semibold text-gray-700 mb-1">Dimensiones y Peso</label>
+                    <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2 pl-1">Dimensiones y Peso</label>
                     <input 
                       type="text" 
                       value={prodDimensions} 
@@ -2982,7 +3017,7 @@ export default function ProfilePage() {
                     />
                   </div>
                   <div>
-                    <label className="block text-xs font-semibold text-gray-700 mb-1">Stock / Unidades en Inventario</label>
+                    <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2 pl-1">Stock / Unidades en Inventario</label>
                     <input 
                       type="number" 
                       min="0"
@@ -3003,7 +3038,7 @@ export default function ProfilePage() {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-gray-700 mb-1">Tiempos y Condiciones de Envío</label>
+                  <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2 pl-1">Tiempos y Condiciones de Envío</label>
                   <input 
                     type="text" 
                     value={prodShipping} 
@@ -3015,7 +3050,7 @@ export default function ProfilePage() {
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-xs font-semibold text-gray-700 mb-1">Garantía Oficial</label>
+                    <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2 pl-1">Garantía Oficial</label>
                     <input 
                       type="text" 
                       value={prodWarranty} 
@@ -3025,7 +3060,7 @@ export default function ProfilePage() {
                     />
                   </div>
                   <div>
-                    <label className="block text-xs font-semibold text-gray-700 mb-1">¿Qué incluye la caja?</label>
+                    <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2 pl-1">¿Qué incluye la caja?</label>
                     <input 
                       type="text" 
                       value={prodPackageContents} 
@@ -3037,7 +3072,7 @@ export default function ProfilePage() {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-gray-700 mb-1">Instrucciones de Cuidado y Limpieza</label>
+                  <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2 pl-1">Instrucciones de Cuidado y Limpieza</label>
                   <input 
                     type="text" 
                     value={prodCareInstructions} 
@@ -3092,7 +3127,7 @@ export default function ProfilePage() {
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-semibold text-gray-700 mb-1">Nombre Principal *</label>
+                  <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2 pl-1">Nombre Principal *</label>
                   <input 
                     required 
                     type="text" 
@@ -3103,7 +3138,7 @@ export default function ProfilePage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-gray-700 mb-1">Subtítulo Itálica</label>
+                  <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2 pl-1">Subtítulo Itálica</label>
                   <input 
                     type="text" 
                     value={editHighlight} 
@@ -3138,7 +3173,7 @@ export default function ProfilePage() {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-gray-700 mb-1">Badge de Marketing</label>
+                  <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2 pl-1">Badge de Marketing</label>
                   <select 
                     value={editBadge} 
                     onChange={e => setEditBadge(e.target.value)} 
@@ -3240,7 +3275,7 @@ export default function ProfilePage() {
                     </div>
                   )}
                   <div className="flex-1">
-                    <label className="block text-xs font-semibold text-gray-700 mb-1">URL de Imagen Principal *</label>
+                    <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2 pl-1">URL de Imagen Principal *</label>
                     <input 
                       required 
                       type="text" 
@@ -3258,7 +3293,7 @@ export default function ProfilePage() {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-gray-700 mb-1">Galería de Imágenes Adicionales (separadas por coma)</label>
+                  <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2 pl-1">Galería de Imágenes Adicionales (separadas por coma)</label>
                   <input 
                     type="text" 
                     value={editExtraImages} 
@@ -3290,7 +3325,7 @@ export default function ProfilePage() {
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-gray-700 mb-1">Descripción Completa *</label>
+                <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2 pl-1">Descripción Completa *</label>
                 <textarea 
                   required 
                   rows={3} 
@@ -3302,7 +3337,7 @@ export default function ProfilePage() {
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-gray-700 mb-1">Características / Viñetas (una por línea)</label>
+                <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2 pl-1">Características / Viñetas (una por línea)</label>
                 <textarea 
                   rows={3} 
                   value={editFeatures} 
@@ -3314,7 +3349,7 @@ export default function ProfilePage() {
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-semibold text-gray-700 mb-1">Tallas / Tamaños (separados por coma)</label>
+                  <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2 pl-1">Tallas / Tamaños (separados por coma)</label>
                   <input 
                     type="text" 
                     value={editSizes} 
@@ -3324,7 +3359,7 @@ export default function ProfilePage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-gray-700 mb-1">Colores (nombres separados por coma)</label>
+                  <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2 pl-1">Colores (nombres separados por coma)</label>
                   <input 
                     type="text" 
                     value={editColors} 
@@ -3343,7 +3378,7 @@ export default function ProfilePage() {
                 </div>
                 
                 <div>
-                  <label className="block text-xs font-semibold text-gray-700 mb-1">Materiales y Acabados Nobles</label>
+                  <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2 pl-1">Materiales y Acabados Nobles</label>
                   <input 
                     type="text" 
                     value={editMaterials} 
@@ -3355,7 +3390,7 @@ export default function ProfilePage() {
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-xs font-semibold text-gray-700 mb-1">Dimensiones y Peso</label>
+                    <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2 pl-1">Dimensiones y Peso</label>
                     <input 
                       type="text" 
                       value={editDimensions} 
@@ -3365,7 +3400,7 @@ export default function ProfilePage() {
                     />
                   </div>
                   <div>
-                    <label className="block text-xs font-semibold text-gray-700 mb-1">Stock / Unidades en Inventario</label>
+                    <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2 pl-1">Stock / Unidades en Inventario</label>
                     <input 
                       type="number" 
                       min="0"
@@ -3386,7 +3421,7 @@ export default function ProfilePage() {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-gray-700 mb-1">Tiempos y Condiciones de Envío</label>
+                  <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2 pl-1">Tiempos y Condiciones de Envío</label>
                   <input 
                     type="text" 
                     value={editShipping} 
@@ -3398,7 +3433,7 @@ export default function ProfilePage() {
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-xs font-semibold text-gray-700 mb-1">Garantía Oficial</label>
+                    <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2 pl-1">Garantía Oficial</label>
                     <input 
                       type="text" 
                       value={editWarranty} 
@@ -3408,7 +3443,7 @@ export default function ProfilePage() {
                     />
                   </div>
                   <div>
-                    <label className="block text-xs font-semibold text-gray-700 mb-1">¿Qué incluye la caja?</label>
+                    <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2 pl-1">¿Qué incluye la caja?</label>
                     <input 
                       type="text" 
                       value={editPackageContents} 
@@ -3420,7 +3455,7 @@ export default function ProfilePage() {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-gray-700 mb-1">Instrucciones de Cuidado y Limpieza</label>
+                  <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2 pl-1">Instrucciones de Cuidado y Limpieza</label>
                   <input 
                     type="text" 
                     value={editCareInstructions} 
@@ -3453,6 +3488,7 @@ export default function ProfilePage() {
         </div>
       )}
 
+      </div>
     </div>
   );
 }

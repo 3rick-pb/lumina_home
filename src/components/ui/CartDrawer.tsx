@@ -28,6 +28,8 @@ import {
   AlertTriangle
 } from "lucide-react";
 import { useCartStore } from "@/lib/store";
+import { useThemeStore, getResolvedTheme } from "@/lib/themeStore";
+import { clsx } from "clsx";
 import { useUserStore, Order, PaymentCard } from "@/lib/userStore";
 import { useCatalogStore, isAgotadoBadge } from "@/lib/catalogStore";
 
@@ -73,7 +75,7 @@ function GooglePayLogo({ className = "h-4" }: { className?: string }) {
   return (
     <div className={`flex items-center gap-1 font-sans ${className}`}>
       <GoogleIcon className="w-4 h-4 shrink-0" />
-      <span className="text-xs font-bold text-gray-800 tracking-tight">Pay</span>
+      <span className="text-xs font-bold text-gray-800 dark:text-gray-200 tracking-tight">Pay</span>
     </div>
   );
 }
@@ -202,6 +204,16 @@ export function CartDrawer() {
 
   // Checkout Processing
   const [isProcessing, setIsProcessing] = useState(false);
+
+  const { mode } = useThemeStore();
+  const [resolvedTheme, setResolvedTheme] = useState<'light' | 'dark'>('light');
+
+  useEffect(() => {
+    const update = () => setResolvedTheme(getResolvedTheme(mode));
+    update();
+    const interval = setInterval(update, 60000);
+    return () => clearInterval(interval);
+  }, [mode]);
   const [lastPlacedOrder, setLastPlacedOrder] = useState<Order | null>(null);
 
   // Detect products with the "AGOTADO" badge in the user's cart
@@ -581,7 +593,14 @@ export function CartDrawer() {
   return (
     <AnimatePresence>
       {isOpen && (
-        <div className="fixed inset-0 z-[90] flex items-center justify-center p-2 sm:p-4 md:p-6 lg:p-8 perspective-[2000px] overflow-hidden">
+        <div className={clsx("fixed inset-0 z-[90] flex items-center justify-center p-2 sm:p-4 md:p-6 lg:p-8 perspective-[2000px] overflow-hidden theme-transition", resolvedTheme === 'dark' ? 'dark' : '')}>
+          <style>{`
+            .theme-transition, .theme-transition * {
+              transition-property: background-color, border-color, color, fill, stroke, box-shadow;
+              transition-duration: 2500ms;
+              transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+            }
+          `}</style>
           
           {/* Backdrop with Deep Soft Blur */}
           <motion.div 
@@ -601,11 +620,11 @@ export function CartDrawer() {
             animate="visible"
             exit="exit"
             style={{ transformStyle: "preserve-3d", willChange: "transform, opacity" }}
-            className="relative w-full max-w-6xl h-full max-h-[92vh] bg-white/95 backdrop-blur-3xl rounded-[2.5rem] border border-white/90 shadow-[0_35px_120px_rgba(0,0,0,0.35)] flex flex-col overflow-hidden z-10"
+            className="relative w-full max-w-6xl h-full max-h-[92vh] bg-white dark:bg-[#1a1a1a]/95 backdrop-blur-3xl rounded-[2.5rem] border border-white/90 shadow-[0_35px_120px_rgba(0,0,0,0.35)] flex flex-col overflow-hidden z-10"
           >
 
             {/* Top Bar Header */}
-            <header className="px-6 sm:px-8 py-4 bg-white/80 backdrop-blur-xl border-b border-gray-100 flex items-center justify-between shrink-0 shadow-sm">
+            <header className="px-6 sm:px-8 py-4 bg-white dark:bg-[#1a1a1a]/80 backdrop-blur-xl border-b border-gray-100 dark:border-white/5 flex items-center justify-between shrink-0 shadow-sm">
               
               {/* Brand Logo & Studio Identity */}
               <div className="flex items-center gap-3">
@@ -613,21 +632,21 @@ export function CartDrawer() {
                   <ShoppingBag className="w-4 h-4" />
                 </div>
                 <div>
-                  <span className="font-display italic font-bold text-lg text-gray-900 tracking-tight">
+                  <span className="font-display italic font-bold text-lg text-gray-900 dark:text-white tracking-tight">
                     Lumina<span className="text-[#8c9276]">.</span>
                   </span>
-                  <span className="text-xs text-gray-400 font-medium ml-2 hidden sm:inline">
+                  <span className="text-xs text-gray-400 dark:text-gray-500 font-medium ml-2 hidden sm:inline">
                     • Bolsa de Compras & Pasarela
                   </span>
                 </div>
               </div>
 
               {/* Center Step Indicator */}
-              <div className="flex items-center gap-2 bg-gray-100/80 p-1 rounded-2xl">
+              <div className="flex items-center gap-2 bg-gray-100 dark:bg-white/5/80 p-1 rounded-2xl">
                 <button 
                   onClick={() => setStep("bag")}
                   className={`px-3.5 py-1 rounded-xl text-xs font-bold transition-all ${
-                    step === "bag" ? "bg-white text-gray-900 shadow-sm" : "text-gray-500 hover:text-gray-900"
+                    step === "bag" ? "bg-white dark:bg-[#1a1a1a] text-gray-900 dark:text-white shadow-sm" : "text-gray-500 dark:text-gray-400 dark:text-gray-500 hover:text-gray-900 dark:text-white"
                   }`}
                 >
                   1. Carrito ({items.length})
@@ -638,7 +657,7 @@ export function CartDrawer() {
                   }}
                   disabled={items.length === 0}
                   className={`px-3.5 py-1 rounded-xl text-xs font-bold transition-all disabled:opacity-40 ${
-                    step === "payment" ? "bg-white text-gray-900 shadow-sm" : "text-gray-500 hover:text-gray-900"
+                    step === "payment" ? "bg-white dark:bg-[#1a1a1a] text-gray-900 dark:text-white shadow-sm" : "text-gray-500 dark:text-gray-400 dark:text-gray-500 hover:text-gray-900 dark:text-white"
                   }`}
                 >
                   2. Pasarela de Pago
@@ -649,7 +668,7 @@ export function CartDrawer() {
               <div className="flex items-center gap-3">
                 <button 
                   onClick={() => setIsOpen(false)}
-                  className="px-4 py-1.5 rounded-xl bg-gray-100 hover:bg-gray-200 text-xs font-semibold text-gray-700 transition-colors flex items-center gap-1.5"
+                  className="px-4 py-1.5 rounded-xl bg-gray-100 dark:bg-white/5 hover:bg-gray-200 dark:bg-white/10 text-xs font-semibold text-gray-700 dark:text-gray-300 transition-colors flex items-center gap-1.5"
                 >
                   <span>Cerrar</span>
                   <X className="w-3.5 h-3.5" />
@@ -668,15 +687,15 @@ export function CartDrawer() {
               {step === "bag" && (
                 <>
                   {/* Page Title & Subtitle */}
-                  <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 border-b border-gray-100 pb-6">
+                  <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 border-b border-gray-100 dark:border-white/5 pb-6">
                     <div>
                       <span className="text-xs font-bold uppercase tracking-widest text-blue-600 block mb-1">
                         Estudio de Compra
                       </span>
-                      <h1 className="font-display font-bold text-3xl sm:text-4xl text-gray-900 tracking-tight">
+                      <h1 className="font-display font-bold text-3xl sm:text-4xl text-gray-900 dark:text-white tracking-tight">
                         Bolsa de Compras
                       </h1>
-                      <p className="text-xs sm:text-sm text-gray-500 mt-1">
+                      <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500 mt-1">
                         Piezas de autor seleccionadas con precisión artesanal para tu espacio.
                       </p>
                     </div>
@@ -684,7 +703,7 @@ export function CartDrawer() {
                     {items.length > 0 && (
                       <button 
                         onClick={clearCart}
-                        className="text-xs font-medium text-gray-400 hover:text-red-500 transition-colors flex items-center gap-1 self-start sm:self-auto"
+                        className="text-xs font-medium text-gray-400 dark:text-gray-500 hover:text-red-500 transition-colors flex items-center gap-1 self-start sm:self-auto"
                       >
                         <RotateCcw className="w-3.5 h-3.5" />
                         <span>Vaciar Bolsa</span>
@@ -716,8 +735,8 @@ export function CartDrawer() {
                       <div className="w-24 h-24 rounded-3xl bg-blue-50 text-blue-600 flex items-center justify-center mb-5 border border-blue-100 shadow-inner">
                         <ShoppingBag className="w-10 h-10 stroke-1" />
                       </div>
-                      <h3 className="font-display font-bold text-2xl text-gray-900 mb-2">Tu bolsa de autor está vacía</h3>
-                      <p className="text-sm text-gray-500 max-w-md leading-relaxed mb-8">
+                      <h3 className="font-display font-bold text-2xl text-gray-900 dark:text-white mb-2">Tu bolsa de autor está vacía</h3>
+                      <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500 max-w-md leading-relaxed mb-8">
                         Explora nuestra exclusiva colección de iluminación, aromaterapia, textiles y gadgets minimalistas para llenar tu hogar de calma.
                       </p>
                       <button 
@@ -734,9 +753,9 @@ export function CartDrawer() {
                       {/* ---------------------------------------------------- */}
                       {/* Left Column: Spacious Products Table (7 or 8 cols) */}
                       {/* ---------------------------------------------------- */}
-                      <div className="lg:col-span-8 bg-white/80 backdrop-blur-xl rounded-[2rem] border border-gray-200/60 p-6 sm:p-8 shadow-sm space-y-6">
+                      <div className="lg:col-span-8 bg-white dark:bg-[#1a1a1a]/80 backdrop-blur-xl rounded-[2rem] border border-gray-200 dark:border-white/10/60 p-6 sm:p-8 shadow-sm space-y-6">
                         {/* Table Column Headers (Directly from Reference Image) */}
-                        <div className="hidden sm:grid grid-cols-12 text-xs font-bold text-gray-400 uppercase tracking-wider pb-3 border-b border-gray-100 px-3.5 sm:px-4">
+                        <div className="hidden sm:grid grid-cols-12 text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider pb-3 border-b border-gray-100 dark:border-white/5 px-3.5 sm:px-4">
                           <span className="col-span-5">Producto</span>
                           <span className="col-span-3 text-center">Cantidad</span>
                           <span className="col-span-2 text-right pr-6">Subtotal</span>
@@ -757,12 +776,12 @@ export function CartDrawer() {
                                 className={`p-3.5 sm:p-4 flex flex-col sm:grid sm:grid-cols-12 gap-4 sm:items-center group transition-all rounded-2xl ${
                                   itemIsAgotado 
                                     ? "bg-red-50/40 border border-red-200/80 shadow-xs" 
-                                    : "border border-transparent hover:bg-gray-50/50 hover:border-gray-100/80"
+                                    : "border border-transparent hover:bg-gray-50 dark:bg-[#151515]/50 hover:border-gray-100 dark:border-white/5/80"
                                 }`}
                               >
                                 {/* Product Info (5 cols) */}
                                 <div className="sm:col-span-5 flex items-center gap-4">
-                                  <div className="relative w-20 h-20 sm:w-24 sm:h-24 rounded-2xl overflow-hidden bg-gray-100 shrink-0 border border-white shadow-sm">
+                                  <div className="relative w-20 h-20 sm:w-24 sm:h-24 rounded-2xl overflow-hidden bg-gray-100 dark:bg-white/5 shrink-0 border border-white shadow-sm">
                                     <Image 
                                       src={item.product.imageUrl} 
                                       alt={item.product.title} 
@@ -788,22 +807,22 @@ export function CartDrawer() {
                                         </span>
                                       )}
                                     </div>
-                                    <h4 className="font-bold text-sm sm:text-base text-gray-900 line-clamp-1 mt-0.5">
+                                    <h4 className="font-bold text-sm sm:text-base text-gray-900 dark:text-white line-clamp-1 mt-0.5">
                                       {item.product.title}
                                     </h4>
-                                    <div className="flex items-center gap-2 mt-1 text-xs text-gray-500 font-medium">
+                                    <div className="flex items-center gap-2 mt-1 text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500 font-medium">
                                       {item.color && (
-                                        <span className="px-2 py-0.5 rounded-lg bg-gray-100 text-[11px]">
+                                        <span className="px-2 py-0.5 rounded-lg bg-gray-100 dark:bg-white/5 text-[11px]">
                                           {item.color}
                                         </span>
                                       )}
                                       {item.size && (
-                                        <span className="px-2 py-0.5 rounded-lg bg-gray-100 text-[11px]">
+                                        <span className="px-2 py-0.5 rounded-lg bg-gray-100 dark:bg-white/5 text-[11px]">
                                           Talla: {item.size}
                                         </span>
                                       )}
                                     </div>
-                                    <p className="text-xs text-gray-400 mt-1 sm:hidden">
+                                    <p className="text-xs text-gray-400 dark:text-gray-500 mt-1 sm:hidden">
                                       Unitario: ${item.product.price.toFixed(2)}
                                     </p>
                                   </div>
@@ -811,15 +830,15 @@ export function CartDrawer() {
 
                                 {/* Quantity Capsule with Liquid Glass (3 cols) */}
                                 <div className="sm:col-span-3 flex sm:justify-center items-center">
-                                  <div className="flex items-center bg-gray-100/90 rounded-full px-2.5 py-1.5 border border-gray-200/70 shadow-inner">
+                                  <div className="flex items-center bg-gray-100 dark:bg-white/5/90 rounded-full px-2.5 py-1.5 border border-gray-200 dark:border-white/10/70 shadow-inner">
                                     <button 
                                       onClick={() => updateQuantity(item.id, item.quantity - 1)}
-                                      className="w-7 h-7 rounded-full bg-white/90 hover:bg-white text-gray-800 flex items-center justify-center border border-white shadow-[0_2px_6px_rgba(0,0,0,0.06),inset_0_1px_1px_rgba(255,255,255,0.9)] backdrop-blur-md active:scale-90 transition-all"
+                                      className="w-7 h-7 rounded-full bg-white dark:bg-[#1a1a1a]/90 hover:bg-white dark:bg-[#1a1a1a] text-gray-800 dark:text-gray-200 flex items-center justify-center border border-white shadow-[0_2px_6px_rgba(0,0,0,0.06),inset_0_1px_1px_rgba(255,255,255,0.9)] backdrop-blur-md active:scale-90 transition-all"
                                       title="Disminuir"
                                     >
                                       <Minus className="w-3.5 h-3.5" />
                                     </button>
-                                    <span className="w-10 text-center font-mono font-bold text-xs sm:text-sm text-gray-900">
+                                    <span className="w-10 text-center font-mono font-bold text-xs sm:text-sm text-gray-900 dark:text-white">
                                       {item.quantity < 10 ? `0${item.quantity}` : item.quantity}
                                     </span>
                                     <button 
@@ -827,8 +846,8 @@ export function CartDrawer() {
                                       onClick={() => updateQuantity(item.id, item.quantity + 1)}
                                       className={`w-7 h-7 rounded-full flex items-center justify-center border border-white shadow-[0_2px_6px_rgba(0,0,0,0.06),inset_0_1px_1px_rgba(255,255,255,0.9)] backdrop-blur-md transition-all ${
                                         itemIsAgotado 
-                                          ? "bg-gray-200 text-gray-400 cursor-not-allowed opacity-40" 
-                                          : "bg-white/90 hover:bg-white text-gray-800 active:scale-90"
+                                          ? "bg-gray-200 dark:bg-white/10 text-gray-400 dark:text-gray-500 cursor-not-allowed opacity-40" 
+                                          : "bg-white dark:bg-[#1a1a1a]/90 hover:bg-white dark:bg-[#1a1a1a] text-gray-800 dark:text-gray-200 active:scale-90"
                                       }`}
                                       title={itemIsAgotado ? "Producto sin existencias" : "Aumentar"}
                                     >
@@ -839,8 +858,8 @@ export function CartDrawer() {
 
                               {/* Subtotal Price (2 cols) */}
                               <div className="sm:col-span-2 sm:text-right flex items-center justify-between sm:block pr-6">
-                                <span className="text-xs text-gray-400 sm:hidden">Subtotal:</span>
-                                <span className="font-extrabold text-base sm:text-lg text-gray-900">
+                                <span className="text-xs text-gray-400 dark:text-gray-500 sm:hidden">Subtotal:</span>
+                                <span className="font-extrabold text-base sm:text-lg text-gray-900 dark:text-white">
                                   ${(item.product.price * item.quantity).toFixed(2)}
                                 </span>
                               </div>
@@ -850,7 +869,7 @@ export function CartDrawer() {
                                 <button 
                                   onClick={() => removeItem(item.id)}
                                   className="relative overflow-hidden group/del px-4 py-1.5 rounded-full text-xs font-semibold text-rose-600 
-                                  bg-white/40 hover:bg-white/65 backdrop-blur-2xl
+                                  bg-white dark:bg-[#1a1a1a]/40 hover:bg-white dark:bg-[#1a1a1a]/65 backdrop-blur-2xl
                                   border border-white/90 
                                   shadow-[0_4px_16px_rgba(0,0,0,0.06),inset_0_1.5px_2px_rgba(255,255,255,0.95),inset_0_-1px_2px_rgba(0,0,0,0.04)]
                                   hover:shadow-[0_8px_24px_rgba(225,29,72,0.18),inset_0_2px_3px_rgba(255,255,255,1)]
@@ -864,7 +883,7 @@ export function CartDrawer() {
                                   <div className="absolute inset-0 bg-gradient-to-b from-white/40 via-white/10 to-transparent pointer-events-none rounded-full" />
 
                                   {/* Caustic Glow Corner Spot */}
-                                  <div className="absolute top-1 left-2.5 w-2.5 h-1 bg-white/80 rounded-full blur-[0.5px] pointer-events-none" />
+                                  <div className="absolute top-1 left-2.5 w-2.5 h-1 bg-white dark:bg-[#1a1a1a]/80 rounded-full blur-[0.5px] pointer-events-none" />
 
                                   <Trash2 
                                     size={12}
@@ -882,14 +901,14 @@ export function CartDrawer() {
                       </div>
 
                         {/* Bottom Actions Row */}
-                        <div className="pt-4 border-t border-gray-100 flex items-center justify-between">
+                        <div className="pt-4 border-t border-gray-100 dark:border-white/5 flex items-center justify-between">
                           <button 
                             onClick={() => { setIsOpen(false); router.push("/shop"); }}
-                            className="text-xs font-semibold text-gray-600 hover:text-gray-900 transition-colors flex items-center gap-1"
+                            className="text-xs font-semibold text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:text-white transition-colors flex items-center gap-1"
                           >
                             <ArrowLeft className="w-3.5 h-3.5" /> Continuar Comprando
                           </button>
-                          <span className="text-xs text-gray-400 font-medium">
+                          <span className="text-xs text-gray-400 dark:text-gray-500 font-medium">
                             {items.length === 1 
                               ? "1 producto listo para despacho" 
                               : `${items.length} productos listos para despacho`}
@@ -901,22 +920,22 @@ export function CartDrawer() {
                       {/* ---------------------------------------------------- */}
                       {/* Right Column: Order Summary Card (4 cols) */}
                       {/* ---------------------------------------------------- */}
-                      <div className="lg:col-span-4 bg-white/90 backdrop-blur-2xl rounded-[2rem] border border-gray-200/70 p-6 sm:p-7 shadow-lg shadow-gray-200/50 space-y-6">
+                      <div className="lg:col-span-4 bg-white dark:bg-[#1a1a1a]/90 backdrop-blur-2xl rounded-[2rem] border border-gray-200 dark:border-white/10/70 p-6 sm:p-7 shadow-lg shadow-gray-200/50 space-y-6">
                         
-                        <h3 className="font-display font-bold text-xl text-gray-900 tracking-tight pb-3 border-b border-gray-100">
+                        <h3 className="font-display font-bold text-xl text-gray-900 dark:text-white tracking-tight pb-3 border-b border-gray-100 dark:border-white/5">
                           Resumen del Pedido
                         </h3>
 
                         {/* Free Shipping Progress Capsule */}
-                        <div className="p-4 rounded-2xl bg-gray-50 border border-gray-100 space-y-2">
+                        <div className="p-4 rounded-2xl bg-gray-50 dark:bg-[#151515] border border-gray-100 dark:border-white/5 space-y-2">
                           <div className="flex items-center justify-between text-xs font-semibold">
-                            <span className="text-gray-700 flex items-center gap-1.5">
+                            <span className="text-gray-700 dark:text-gray-300 flex items-center gap-1.5">
                               <Truck className="w-4 h-4 text-blue-600" />
                               {hasFreeShipping ? "¡Envío Gratuito Asegurado!" : `Faltan $${amountToFreeShipping.toFixed(2)}`}
                             </span>
                             <span className="text-blue-600 font-bold">{freeShippingProgress}%</span>
                           </div>
-                          <div className="w-full h-1.5 bg-gray-200 rounded-full overflow-hidden">
+                          <div className="w-full h-1.5 bg-gray-200 dark:bg-white/10 rounded-full overflow-hidden">
                             <div 
                               className="h-full bg-blue-600 rounded-full transition-all duration-500"
                               style={{ width: `${freeShippingProgress}%` }}
@@ -927,13 +946,13 @@ export function CartDrawer() {
                         {/* Coupon Code Form with Liquid Glass Apply */}
                         <form onSubmit={handleApplyCoupon} className="flex gap-2">
                           <div className="relative flex-1">
-                            <Tag className="w-3.5 h-3.5 absolute left-3 top-3 text-gray-400" />
+                            <Tag className="w-3.5 h-3.5 absolute left-3 top-3 text-gray-400 dark:text-gray-500" />
                             <input 
                               type="text" 
                               value={couponInput}
                               onChange={e => setCouponInput(e.target.value)}
                               placeholder="Código (ej: LUMINA10)"
-                              className="w-full pl-9 pr-3 py-2 rounded-xl border border-gray-200 bg-white text-xs font-medium outline-none focus:ring-1 focus:ring-blue-500"
+                              className="w-full pl-9 pr-3 py-2 rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-[#1a1a1a] text-xs font-medium outline-none focus:ring-1 focus:ring-blue-500"
                             />
                           </div>
                           <button 
@@ -964,10 +983,10 @@ export function CartDrawer() {
                         )}
 
                         {/* Breakdown Lines */}
-                        <div className="space-y-2.5 text-xs sm:text-sm text-gray-600 pt-1">
+                        <div className="space-y-2.5 text-xs sm:text-sm text-gray-600 dark:text-gray-400 pt-1">
                           <div className="flex justify-between">
                             <span>Subtotal</span>
-                            <span className="font-semibold text-gray-900">${subtotal.toFixed(2)} USD</span>
+                            <span className="font-semibold text-gray-900 dark:text-white">${subtotal.toFixed(2)} USD</span>
                           </div>
 
                           {discountAmount > 0 && (
@@ -988,10 +1007,10 @@ export function CartDrawer() {
                             </span>
                           </div>
 
-                          <div className="pt-3 border-t border-gray-200 flex justify-between items-baseline">
+                          <div className="pt-3 border-t border-gray-200 dark:border-white/10 flex justify-between items-baseline">
                             <div>
-                              <span className="text-sm font-bold text-gray-900">Total</span>
-                              <span className="text-[10px] text-gray-400 block">Impuestos incluidos</span>
+                              <span className="text-sm font-bold text-gray-900 dark:text-white">Total</span>
+                              <span className="text-[10px] text-gray-400 dark:text-gray-500 block">Impuestos incluidos</span>
                             </div>
                             <span className="font-display font-bold text-2xl sm:text-3xl text-blue-700">
                               ${finalTotal.toFixed(2)} USD
@@ -1000,7 +1019,7 @@ export function CartDrawer() {
                         </div>
 
                         {/* Warranty Note from Reference Image */}
-                        <div className="p-3.5 rounded-2xl bg-blue-50/60 border border-blue-100 flex items-start gap-2.5 text-xs text-gray-600">
+                        <div className="p-3.5 rounded-2xl bg-blue-50/60 border border-blue-100 flex items-start gap-2.5 text-xs text-gray-600 dark:text-gray-400">
                           <ShieldCheck className="w-4 h-4 text-blue-600 shrink-0 mt-0.5" />
                           <p className="text-[11px] leading-relaxed">
                             <strong>Garantía Oficial Lumina de 2 años.</strong> Devolución íntegra sin compromiso en los primeros 30 días.
@@ -1013,7 +1032,7 @@ export function CartDrawer() {
                           className={`relative overflow-hidden w-full h-14 rounded-2xl font-bold text-white text-sm sm:text-base flex items-center justify-center gap-2.5 transition-all duration-300
                           shadow-[0_12px_36px_rgba(0,0,0,0.12)] border border-white/30
                           before:absolute before:inset-0 before:bg-gradient-to-b before:from-white/35 before:via-white/10 before:to-transparent before:pointer-events-none before:rounded-2xl
-                          after:absolute after:inset-x-0 after:top-0 after:h-[1px] after:bg-white/60 cursor-pointer group ${
+                          after:absolute after:inset-x-0 after:top-0 after:h-[1px] after:bg-white dark:bg-[#1a1a1a]/60 cursor-pointer group ${
                             hasAgotadoItems
                               ? "bg-gradient-to-r from-red-600 via-red-700 to-rose-700 shadow-red-500/30 hover:scale-[1.01] active:scale-[0.99]"
                               : "bg-gradient-to-r from-[#1e40af] via-[#2563eb] to-[#1d4ed8] shadow-[0_12px_36px_rgba(37,99,235,0.35),0_2px_8px_rgba(0,0,0,0.1)] hover:shadow-[0_16px_44px_rgba(37,99,235,0.45)] hover:scale-[1.01] active:scale-[0.99]"
@@ -1032,13 +1051,13 @@ export function CartDrawer() {
 
                   {/* Recommended Pieces Row (Craft Own Furniture Section) */}
                   {recommendedProducts.length > 0 && (
-                    <div className="pt-8 border-t border-gray-100 space-y-4">
+                    <div className="pt-8 border-t border-gray-100 dark:border-white/5 space-y-4">
                       <div className="flex items-center justify-between">
                         <div>
-                          <h3 className="font-display font-bold text-xl text-gray-900">
+                          <h3 className="font-display font-bold text-xl text-gray-900 dark:text-white">
                             Piezas que complementan tu pedido
                           </h3>
-                          <p className="text-xs text-gray-500">Diseñadas para armonizar en iluminación y estética.</p>
+                          <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500">Diseñadas para armonizar en iluminación y estética.</p>
                         </div>
                         <button 
                           onClick={() => { setIsOpen(false); router.push("/shop"); }}
@@ -1053,17 +1072,17 @@ export function CartDrawer() {
                           <div 
                             key={prod.id}
                             onClick={() => { setIsOpen(false); router.push(`/product/${prod.id}`); }}
-                            className="p-4 rounded-2xl bg-white/70 hover:bg-white border border-gray-100 hover:border-gray-200 shadow-sm transition-all cursor-pointer flex items-center gap-3.5 group"
+                            className="p-4 rounded-2xl bg-white dark:bg-[#1a1a1a]/70 hover:bg-white dark:bg-[#1a1a1a] border border-gray-100 dark:border-white/5 hover:border-gray-200 dark:border-white/10 shadow-sm transition-all cursor-pointer flex items-center gap-3.5 group"
                           >
-                            <div className="relative w-16 h-16 rounded-xl overflow-hidden bg-gray-100 shrink-0">
+                            <div className="relative w-16 h-16 rounded-xl overflow-hidden bg-gray-100 dark:bg-white/5 shrink-0">
                               <Image src={prod.imageUrl} alt={prod.title} fill sizes="64px" className="object-cover group-hover:scale-105 transition-transform" />
                             </div>
                             <div className="min-w-0">
-                              <h5 className="font-bold text-xs text-gray-900 truncate group-hover:text-blue-600 transition-colors">
+                              <h5 className="font-bold text-xs text-gray-900 dark:text-white truncate group-hover:text-blue-600 transition-colors">
                                 {prod.title}
                               </h5>
-                              <p className="text-[11px] text-gray-400 mt-0.5">{prod.category}</p>
-                              <span className="font-extrabold text-xs text-gray-900 mt-1 block">
+                              <p className="text-[11px] text-gray-400 dark:text-gray-500 mt-0.5">{prod.category}</p>
+                              <span className="font-extrabold text-xs text-gray-900 dark:text-white mt-1 block">
                                 ${prod.price.toFixed(2)}
                               </span>
                             </div>
@@ -1081,7 +1100,7 @@ export function CartDrawer() {
               {step === "payment" && (
                 <div className="max-w-4xl mx-auto space-y-8 animate-fade-in">
                   
-                  <div className="border-b border-gray-100 pb-4">
+                  <div className="border-b border-gray-100 dark:border-white/5 pb-4">
                     <button 
                       onClick={() => setStep("bag")}
                       className="text-xs font-bold text-blue-600 hover:underline flex items-center gap-1 mb-2"
@@ -1091,7 +1110,7 @@ export function CartDrawer() {
                     <h2 className="font-sans font-extrabold text-2xl sm:text-3xl text-gray-950 tracking-tight">
                       Método de Pago y Entrega
                     </h2>
-                    <p className="text-xs text-gray-500 mt-0.5">
+                    <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500 mt-0.5">
                       Configura tu dirección y selecciona tu método de pago preferido.
                     </p>
                   </div>
@@ -1102,13 +1121,13 @@ export function CartDrawer() {
                     <div className="lg:col-span-7 space-y-6">
                       
                       {/* Shipping Address */}
-                      <div className="p-6 rounded-[2rem] bg-white border border-gray-200/70 shadow-sm space-y-4">
+                      <div className="p-6 rounded-[2rem] bg-white dark:bg-[#1a1a1a] border border-gray-200 dark:border-white/10/70 shadow-sm space-y-4">
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-2">
                             <MapPin className="w-4 h-4 text-blue-600" />
-                            <h4 className="font-bold text-sm text-gray-900">Dirección de Entrega</h4>
+                            <h4 className="font-bold text-sm text-gray-900 dark:text-white">Dirección de Entrega</h4>
                             {addresses.length > 0 && (
-                              <span className="text-[10px] font-mono font-semibold px-2 py-0.5 rounded-full bg-gray-100 text-gray-600 border border-gray-200">
+                              <span className="text-[10px] font-mono font-semibold px-2 py-0.5 rounded-full bg-gray-100 dark:bg-white/5 text-gray-600 dark:text-gray-400 border border-gray-200 dark:border-white/10">
                                 {addresses.length}/4
                               </span>
                             )}
@@ -1116,7 +1135,7 @@ export function CartDrawer() {
                           {isEditingAddress ? (
                             <button 
                               onClick={() => setIsEditingAddress(false)}
-                              className="text-xs font-semibold text-gray-500 hover:text-gray-800 hover:underline cursor-pointer"
+                              className="text-xs font-semibold text-gray-500 dark:text-gray-400 dark:text-gray-500 hover:text-gray-800 dark:text-gray-200 hover:underline cursor-pointer"
                             >
                               Cancelar
                             </button>
@@ -1136,7 +1155,7 @@ export function CartDrawer() {
                               + Añadir
                             </button>
                           ) : (
-                            <span className="text-[10px] font-semibold text-gray-400">
+                            <span className="text-[10px] font-semibold text-gray-400 dark:text-gray-500">
                               Límite (4 máx.)
                             </span>
                           )}
@@ -1144,8 +1163,8 @@ export function CartDrawer() {
 
                         {isEditingAddress ? (
                           <form onSubmit={handleSaveAddress} className="space-y-3 pt-1">
-                            <div className="flex items-center justify-between pb-1 border-b border-gray-100">
-                              <span className="text-xs font-bold text-gray-800">
+                            <div className="flex items-center justify-between pb-1 border-b border-gray-100 dark:border-white/5">
+                              <span className="text-xs font-bold text-gray-800 dark:text-gray-200">
                                 Nueva Dirección de Entrega
                               </span>
                               <button 
@@ -1155,7 +1174,7 @@ export function CartDrawer() {
                                   setLocationSuccess(false);
                                   setIsEditingAddress(false);
                                 }}
-                                className="text-xs text-gray-500 hover:text-gray-800 cursor-pointer"
+                                className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500 hover:text-gray-800 dark:text-gray-200 cursor-pointer"
                               >
                                 Cancelar
                               </button>
@@ -1198,13 +1217,13 @@ export function CartDrawer() {
                             </div>
 
                             <div className="relative flex py-0.5 items-center">
-                              <div className="flex-grow border-t border-gray-200"></div>
-                              <span className="flex-shrink mx-2 text-[10px] text-gray-400 font-semibold uppercase tracking-wider">o ingresa los datos manualmente</span>
-                              <div className="flex-grow border-t border-gray-200"></div>
+                              <div className="flex-grow border-t border-gray-200 dark:border-white/10"></div>
+                              <span className="flex-shrink mx-2 text-[10px] text-gray-400 dark:text-gray-500 font-semibold uppercase tracking-wider">o ingresa los datos manualmente</span>
+                              <div className="flex-grow border-t border-gray-200 dark:border-white/10"></div>
                             </div>
 
                             <div>
-                              <label className="block text-[11px] font-semibold text-gray-700 mb-1">
+                              <label className="block text-[11px] font-semibold text-gray-700 dark:text-gray-300 mb-1">
                                 ¿Quién recibe? (Nombre y apellidos)
                               </label>
                               <input 
@@ -1212,65 +1231,65 @@ export function CartDrawer() {
                                 value={addrRecipient} 
                                 onChange={e => setAddrRecipient(e.target.value)} 
                                 placeholder={user?.name || "Ej: Juan Pérez / Nombre del destinatario"}
-                                className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 text-xs outline-none focus:ring-1 focus:ring-blue-500"
+                                className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-xs outline-none focus:ring-1 focus:ring-blue-500"
                                 required
                               />
                             </div>
                             <div>
-                              <label className="block text-[11px] font-semibold text-gray-700 mb-1">Calle y número</label>
+                              <label className="block text-[11px] font-semibold text-gray-700 dark:text-gray-300 mb-1">Calle y número</label>
                               <input 
                                 type="text" 
                                 value={addrStreet} 
                                 onChange={e => setAddrStreet(e.target.value)} 
                                 placeholder="Calle Gran Vía 14, 3ºB"
-                                className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 text-xs outline-none focus:ring-1 focus:ring-blue-500"
+                                className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-xs outline-none focus:ring-1 focus:ring-blue-500"
                                 required
                               />
                             </div>
                             <div className="grid grid-cols-2 gap-3">
                               <div>
-                                <label className="block text-[11px] font-semibold text-gray-700 mb-1">Ciudad</label>
+                                <label className="block text-[11px] font-semibold text-gray-700 dark:text-gray-300 mb-1">Ciudad</label>
                                 <input 
                                   type="text" 
                                   value={addrCity} 
                                   onChange={e => setAddrCity(e.target.value)} 
                                   placeholder="Madrid"
-                                  className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 text-xs outline-none focus:ring-1 focus:ring-blue-500"
+                                  className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-xs outline-none focus:ring-1 focus:ring-blue-500"
                                   required
                                 />
                               </div>
                               <div>
-                                <label className="block text-[11px] font-semibold text-gray-700 mb-1">Código Postal</label>
+                                <label className="block text-[11px] font-semibold text-gray-700 dark:text-gray-300 mb-1">Código Postal</label>
                                 <input 
                                   type="text" 
                                   value={addrPostal} 
                                   onChange={e => setAddrPostal(e.target.value)} 
                                   placeholder="28001"
-                                  className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 text-xs outline-none focus:ring-1 focus:ring-blue-500"
+                                  className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-xs outline-none focus:ring-1 focus:ring-blue-500"
                                   required
                                 />
                               </div>
                             </div>
                             <div className="grid grid-cols-2 gap-3">
                               <div>
-                                <label className="block text-[11px] font-semibold text-gray-700 mb-1">Provincia/Estado</label>
+                                <label className="block text-[11px] font-semibold text-gray-700 dark:text-gray-300 mb-1">Provincia/Estado</label>
                                 <input 
                                   type="text" 
                                   value={addrState} 
                                   onChange={e => setAddrState(e.target.value)} 
                                   placeholder="Madrid"
-                                  className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 text-xs outline-none focus:ring-1 focus:ring-blue-500"
+                                  className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-xs outline-none focus:ring-1 focus:ring-blue-500"
                                   required
                                 />
                               </div>
                               <div>
-                                <label className="block text-[11px] font-semibold text-gray-700 mb-1">País</label>
+                                <label className="block text-[11px] font-semibold text-gray-700 dark:text-gray-300 mb-1">País</label>
                                 <input 
                                   type="text" 
                                   value={addrCountry} 
                                   onChange={e => setAddrCountry(e.target.value)} 
                                   placeholder="España"
-                                  className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 text-xs outline-none focus:ring-1 focus:ring-blue-500"
+                                  className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-xs outline-none focus:ring-1 focus:ring-blue-500"
                                   required
                                 />
                               </div>
@@ -1279,7 +1298,7 @@ export function CartDrawer() {
                               <button 
                                 type="button"
                                 onClick={() => setIsEditingAddress(false)}
-                                className="w-1/3 py-2.5 bg-gray-100 text-gray-700 rounded-xl text-xs font-semibold hover:bg-gray-200 transition-colors cursor-pointer"
+                                className="w-1/3 py-2.5 bg-gray-100 dark:bg-white/5 text-gray-700 dark:text-gray-300 rounded-xl text-xs font-semibold hover:bg-gray-200 dark:bg-white/10 transition-colors cursor-pointer"
                               >
                                 Cancelar
                               </button>
@@ -1293,7 +1312,7 @@ export function CartDrawer() {
                           </form>
                         ) : addresses.length > 0 ? (
                           <div className="space-y-2.5">
-                            <p className="text-[11px] text-gray-500">
+                            <p className="text-[11px] text-gray-500 dark:text-gray-400 dark:text-gray-500">
                               Selecciona la dirección para este envío:
                             </p>
                             <div className="space-y-2">
@@ -1309,20 +1328,20 @@ export function CartDrawer() {
                                     className={`p-3.5 rounded-2xl border transition-all cursor-pointer flex items-center justify-between gap-3 select-none ${
                                       isSelected
                                         ? "bg-blue-50/50 border-blue-500 shadow-xs ring-1 ring-blue-500/20"
-                                        : "bg-gray-50/70 hover:bg-gray-50 border-gray-200/80 hover:border-gray-300"
+                                        : "bg-gray-50 dark:bg-[#151515]/70 hover:bg-gray-50 dark:bg-[#151515] border-gray-200 dark:border-white/10/80 hover:border-gray-300"
                                     }`}
                                   >
                                     <div className="flex items-start gap-3 min-w-0">
                                       <div className={`mt-0.5 w-4 h-4 rounded-full border flex items-center justify-center shrink-0 transition-colors ${
                                         isSelected 
                                           ? "border-blue-600 bg-blue-600 text-white" 
-                                          : "border-gray-300 bg-white"
+                                          : "border-gray-300 bg-white dark:bg-[#1a1a1a]"
                                       }`}>
-                                        {isSelected && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
+                                        {isSelected && <div className="w-1.5 h-1.5 rounded-full bg-white dark:bg-[#1a1a1a]" />}
                                       </div>
                                       <div className="min-w-0">
                                         <div className="flex items-center gap-2">
-                                          <span className="font-bold text-xs text-gray-900 truncate">
+                                          <span className="font-bold text-xs text-gray-900 dark:text-white truncate">
                                             {addr.recipient || user?.name || "Destinatario"}
                                           </span>
                                           {addr.isDefault && (
@@ -1331,10 +1350,10 @@ export function CartDrawer() {
                                             </span>
                                           )}
                                         </div>
-                                        <p className="text-xs text-gray-700 font-medium truncate mt-0.5">
+                                        <p className="text-xs text-gray-700 dark:text-gray-300 font-medium truncate mt-0.5">
                                           {addr.street}
                                         </p>
-                                        <p className="text-[11px] text-gray-500 truncate mt-0.5">
+                                        <p className="text-[11px] text-gray-500 dark:text-gray-400 dark:text-gray-500 truncate mt-0.5">
                                           {addr.city}{addr.state ? `, ${addr.state}` : ""}, {addr.postalCode} • {addr.country}
                                         </p>
                                       </div>
@@ -1351,10 +1370,10 @@ export function CartDrawer() {
                             </div>
                           </div>
                         ) : address ? (
-                          <div className="p-4 rounded-2xl bg-gray-50 border border-gray-100 flex items-center justify-between">
+                          <div className="p-4 rounded-2xl bg-gray-50 dark:bg-[#151515] border border-gray-100 dark:border-white/5 flex items-center justify-between">
                             <div>
                               <div className="flex items-center gap-2">
-                                <p className="font-bold text-xs text-gray-900">
+                                <p className="font-bold text-xs text-gray-900 dark:text-white">
                                   {address.recipient || user?.name || "Destinatario"}
                                 </p>
                                 {address.isDefault && (
@@ -1363,8 +1382,8 @@ export function CartDrawer() {
                                   </span>
                                 )}
                               </div>
-                              <p className="text-xs text-gray-700 font-medium mt-0.5">{address.street}</p>
-                              <p className="text-[11px] text-gray-500 mt-0.5">
+                              <p className="text-xs text-gray-700 dark:text-gray-300 font-medium mt-0.5">{address.street}</p>
+                              <p className="text-[11px] text-gray-500 dark:text-gray-400 dark:text-gray-500 mt-0.5">
                                 {address.city}{address.state ? `, ${address.state}` : ""}, {address.postalCode} • {address.country}
                               </p>
                             </div>
@@ -1394,15 +1413,15 @@ export function CartDrawer() {
                       </div>
 
                       {/* Payment Method Selector (Liquid Glass Horizontal Pill with Apple Droplet) */}
-                      <div className="p-6 rounded-[2rem] bg-white border border-gray-200/70 shadow-sm space-y-5">
-                        <div className="flex items-center justify-between pb-1 border-b border-gray-100">
+                      <div className="p-6 rounded-[2rem] bg-white dark:bg-[#1a1a1a] border border-gray-200 dark:border-white/10/70 shadow-sm space-y-5">
+                        <div className="flex items-center justify-between pb-1 border-b border-gray-100 dark:border-white/5">
                           <div className="flex items-center gap-2">
                             <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0" />
-                            <h4 className="font-sans font-bold text-xs uppercase tracking-wider text-gray-900">
+                            <h4 className="font-sans font-bold text-xs uppercase tracking-wider text-gray-900 dark:text-white">
                               Método de Pago
                             </h4>
                           </div>
-                          <span className="font-mono text-[10px] font-medium text-gray-400 tracking-tight uppercase">
+                          <span className="font-mono text-[10px] font-medium text-gray-400 dark:text-gray-500 tracking-tight uppercase">
                             Cifrado Seguro SSL 256-Bit
                           </span>
                         </div>
@@ -1414,14 +1433,14 @@ export function CartDrawer() {
                               id: "card" as const, 
                               label: "Tarjeta", 
                               renderIcon: (active: boolean) => (
-                                <CreditCard className={`w-4 h-4 transition-colors duration-200 ${active ? "text-gray-900" : "text-gray-500"}`} />
+                                <CreditCard className={`w-4 h-4 transition-colors duration-200 ${active ? "text-gray-900 dark:text-white" : "text-gray-500 dark:text-gray-400 dark:text-gray-500"}`} />
                               ) 
                             },
                             { 
                               id: "apple" as const, 
                               label: "Apple Pay", 
                               renderIcon: (active: boolean) => (
-                                <AppleIcon className={`w-4 h-4 transition-colors duration-200 ${active ? "text-gray-900" : "text-gray-500"}`} />
+                                <AppleIcon className={`w-4 h-4 transition-colors duration-200 ${active ? "text-gray-900 dark:text-white" : "text-gray-500 dark:text-gray-400 dark:text-gray-500"}`} />
                               ) 
                             },
                             { 
@@ -1453,7 +1472,7 @@ export function CartDrawer() {
                             >
                               {/* The Single Sliding Active Liquid Glass Droplet (Strictly Horizontal, Zero Y Movement) */}
                               <motion.div
-                                className="absolute top-1.5 bottom-1.5 rounded-full bg-white/95 shadow-[0_4px_16px_rgba(0,0,0,0.08),inset_0_1.5px_2px_rgba(255,255,255,1)] border border-white pointer-events-none z-0"
+                                className="absolute top-1.5 bottom-1.5 rounded-full bg-white dark:bg-[#1a1a1a]/95 shadow-[0_4px_16px_rgba(0,0,0,0.08),inset_0_1.5px_2px_rgba(255,255,255,1)] border border-white pointer-events-none z-0"
                                 style={{
                                   width: "calc((100% - 12px) / 4)",
                                   left: "6px",
@@ -1471,13 +1490,13 @@ export function CartDrawer() {
                                 {/* Specular curved glass highlight rim */}
                                 <div className="absolute inset-x-3 top-0 h-[1.5px] bg-gradient-to-r from-transparent via-white to-transparent opacity-95" />
                                 {/* Caustic glass reflection glint in corner */}
-                                <div className="absolute top-1 left-3 w-3 h-1 bg-white/90 rounded-full blur-[0.4px]" />
+                                <div className="absolute top-1 left-3 w-3 h-1 bg-white dark:bg-[#1a1a1a]/90 rounded-full blur-[0.4px]" />
                               </motion.div>
 
                               {/* Hover Droplet Indicator */}
                               {hoveredMethodIndex !== null && hoveredMethodIndex !== activeMethodIndex && (
                                 <motion.div
-                                  className="absolute top-1.5 bottom-1.5 rounded-full bg-white/40 pointer-events-none z-0"
+                                  className="absolute top-1.5 bottom-1.5 rounded-full bg-white dark:bg-[#1a1a1a]/40 pointer-events-none z-0"
                                   style={{
                                     width: "calc((100% - 12px) / 4)",
                                     left: "6px",
@@ -1506,7 +1525,7 @@ export function CartDrawer() {
                                     onClick={() => setSelectedMethod(m.id)}
                                     onMouseEnter={() => setHoveredPaymentMethod(m.id)}
                                     className={`relative z-10 flex items-center justify-center gap-2 py-2.5 px-2 sm:px-3 rounded-full text-xs font-semibold font-sans tracking-tight outline-none cursor-pointer transition-colors duration-200 ${
-                                      isActive ? "text-gray-950 font-bold" : "text-gray-600 hover:text-gray-900"
+                                      isActive ? "text-gray-950 font-bold" : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:text-white"
                                     }`}
                                   >
                                     <span className="flex items-center justify-center shrink-0">
@@ -1532,10 +1551,10 @@ export function CartDrawer() {
                                   <CreditCard className="w-3.5 h-3.5" />
                                 </div>
                                 <div className="flex items-center gap-2">
-                                  <span className="font-sans font-bold text-xs text-gray-900 tracking-tight">
+                                  <span className="font-sans font-bold text-xs text-gray-900 dark:text-white tracking-tight">
                                     Mis Tarjetas
                                   </span>
-                                  <span className="text-[10px] font-mono font-semibold px-2 py-0.5 rounded-full bg-white text-gray-600 border border-gray-200 shadow-2xs">
+                                  <span className="text-[10px] font-mono font-semibold px-2 py-0.5 rounded-full bg-white dark:bg-[#1a1a1a] text-gray-600 dark:text-gray-400 border border-gray-200 dark:border-white/10 shadow-2xs">
                                     {availableCards.length} disponibles
                                   </span>
                                 </div>
@@ -1547,9 +1566,9 @@ export function CartDrawer() {
                                   setIsOpen(false);
                                   router.push("/profile?tab=cards");
                                 }}
-                                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white hover:bg-gray-50 text-gray-800 text-[11px] font-semibold transition-all border border-gray-200 shadow-2xs hover:shadow-xs hover:border-gray-300 cursor-pointer"
+                                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white dark:bg-[#1a1a1a] hover:bg-gray-50 dark:bg-[#151515] text-gray-800 dark:text-gray-200 text-[11px] font-semibold transition-all border border-gray-200 dark:border-white/10 shadow-2xs hover:shadow-xs hover:border-gray-300 cursor-pointer"
                               >
-                                <Plus className="w-3 h-3 text-gray-700" />
+                                <Plus className="w-3 h-3 text-gray-700 dark:text-gray-300" />
                                 <span>Nueva tarjeta</span>
                               </button>
                             </div>
@@ -1765,11 +1784,11 @@ export function CartDrawer() {
                             </div>
 
                             {/* 3. ACTIVE CARD INFORMATION PANEL ("Y ABAJO SALDRÁ PUES LA INFORMACIÓN DE LA TARJETA") */}
-                            <div className="p-4 rounded-2xl bg-white border border-gray-200/80 shadow-xs space-y-3 font-sans">
-                              <div className="flex items-center justify-between pb-2 border-b border-gray-100">
+                            <div className="p-4 rounded-2xl bg-white dark:bg-[#1a1a1a] border border-gray-200 dark:border-white/10/80 shadow-xs space-y-3 font-sans">
+                              <div className="flex items-center justify-between pb-2 border-b border-gray-100 dark:border-white/5">
                                 <div className="flex items-center gap-2">
                                   <div className="w-2 h-2 rounded-full bg-emerald-500" />
-                                  <span className="font-sans font-bold text-xs text-gray-900">
+                                  <span className="font-sans font-bold text-xs text-gray-900 dark:text-white">
                                     {activeCard.type === "visa" ? "Tarjeta Visa Seleccionada" : "Tarjeta Mastercard Seleccionada"}
                                   </span>
                                 </div>
@@ -1780,25 +1799,25 @@ export function CartDrawer() {
 
                               <div className="grid grid-cols-2 gap-3 text-xs">
                                 <div className="space-y-0.5">
-                                  <span className="text-[9px] font-mono text-gray-400 uppercase tracking-wider block">Número</span>
-                                  <p className="font-mono font-bold text-gray-900 tracking-wider">
+                                  <span className="text-[9px] font-mono text-gray-400 dark:text-gray-500 uppercase tracking-wider block">Número</span>
+                                  <p className="font-mono font-bold text-gray-900 dark:text-white tracking-wider">
                                     {activeCard.number}
                                   </p>
                                 </div>
                                 <div className="space-y-0.5 text-right">
-                                  <span className="text-[9px] font-mono text-gray-400 uppercase tracking-wider block">Vencimiento</span>
-                                  <p className="font-mono font-bold text-gray-900">
+                                  <span className="text-[9px] font-mono text-gray-400 dark:text-gray-500 uppercase tracking-wider block">Vencimiento</span>
+                                  <p className="font-mono font-bold text-gray-900 dark:text-white">
                                     {activeCard.exp}
                                   </p>
                                 </div>
                                 <div className="space-y-0.5">
-                                  <span className="text-[9px] font-mono text-gray-400 uppercase tracking-wider block">Titular</span>
-                                  <p className="font-sans font-semibold text-gray-800 uppercase truncate">
+                                  <span className="text-[9px] font-mono text-gray-400 dark:text-gray-500 uppercase tracking-wider block">Titular</span>
+                                  <p className="font-sans font-semibold text-gray-800 dark:text-gray-200 uppercase truncate">
                                     {activeCard.holder}
                                   </p>
                                 </div>
                                 <div className="space-y-0.5 text-right">
-                                  <span className="text-[9px] font-mono text-gray-400 uppercase tracking-wider block">Seguridad</span>
+                                  <span className="text-[9px] font-mono text-gray-400 dark:text-gray-500 uppercase tracking-wider block">Seguridad</span>
                                   <p className="font-sans font-semibold text-emerald-600 flex items-center justify-end gap-1">
                                     <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" /> SSL Cifrado
                                   </p>
@@ -1829,17 +1848,17 @@ export function CartDrawer() {
 
                         {/* VIEW 3: GOOGLE PAY HIGH-TICKET EXPERIENCE */}
                         {selectedMethod === "google" && (
-                          <div className="p-6 sm:p-8 rounded-3xl bg-white border border-gray-200 shadow-sm flex flex-col items-center justify-center text-center space-y-4">
-                            <div className="w-16 h-16 rounded-2xl bg-gray-50 border border-gray-200 flex items-center justify-center shadow-inner">
+                          <div className="p-6 sm:p-8 rounded-3xl bg-white dark:bg-[#1a1a1a] border border-gray-200 dark:border-white/10 shadow-sm flex flex-col items-center justify-center text-center space-y-4">
+                            <div className="w-16 h-16 rounded-2xl bg-gray-50 dark:bg-[#151515] border border-gray-200 dark:border-white/10 flex items-center justify-center shadow-inner">
                               <GooglePayLogo className="h-7" />
                             </div>
                             <div>
-                              <h4 className="font-sans font-bold text-base text-gray-900 tracking-tight">Google Pay</h4>
-                              <p className="text-xs text-gray-500 max-w-sm mt-1 leading-relaxed">
+                              <h4 className="font-sans font-bold text-base text-gray-900 dark:text-white tracking-tight">Google Pay</h4>
+                              <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500 max-w-sm mt-1 leading-relaxed">
                                 Completa tu compra en un toque utilizando las tarjetas y métodos de pago guardados en tu cuenta de Google.
                               </p>
                             </div>
-                            <div className="flex items-center gap-2 text-[11px] text-gray-700 font-medium px-4 py-2 rounded-full bg-blue-50 border border-blue-100">
+                            <div className="flex items-center gap-2 text-[11px] text-gray-700 dark:text-gray-300 font-medium px-4 py-2 rounded-full bg-blue-50 border border-blue-100">
                               <ShieldCheck className="w-4 h-4 text-blue-600" />
                               <span>Protección integral contra fraude respaldada por Google Security</span>
                             </div>
@@ -1849,12 +1868,12 @@ export function CartDrawer() {
                         {/* VIEW 4: PAYPAL HIGH-TICKET EXPERIENCE */}
                         {selectedMethod === "paypal" && (
                           <div className="p-6 sm:p-8 rounded-3xl bg-[#f8faff] border border-blue-100 shadow-sm flex flex-col items-center justify-center text-center space-y-4">
-                            <div className="w-16 h-16 rounded-2xl bg-white border border-blue-100 flex items-center justify-center shadow-sm">
+                            <div className="w-16 h-16 rounded-2xl bg-white dark:bg-[#1a1a1a] border border-blue-100 flex items-center justify-center shadow-sm">
                               <PayPalLogo className="h-7" />
                             </div>
                             <div>
-                              <h4 className="font-sans font-bold text-base text-gray-900 tracking-tight">PayPal</h4>
-                              <p className="text-xs text-gray-500 max-w-sm mt-1 leading-relaxed">
+                              <h4 className="font-sans font-bold text-base text-gray-900 dark:text-white tracking-tight">PayPal</h4>
+                              <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500 max-w-sm mt-1 leading-relaxed">
                                 Paga con tu saldo de PayPal, cuenta bancaria vinculada o financiamiento sin intereses en cómodos plazos.
                               </p>
                             </div>
@@ -1870,15 +1889,15 @@ export function CartDrawer() {
                     </div>
 
                     {/* Right 5 cols: Order Final Summary & Confirm */}
-                    <div className="lg:col-span-5 bg-white p-6 sm:p-7 rounded-[2rem] border border-gray-200/70 shadow-lg space-y-5">
-                      <h4 className="font-sans font-bold text-base text-gray-900 border-b border-gray-100 pb-3 tracking-tight uppercase">
+                    <div className="lg:col-span-5 bg-white dark:bg-[#1a1a1a] p-6 sm:p-7 rounded-[2rem] border border-gray-200 dark:border-white/10/70 shadow-lg space-y-5">
+                      <h4 className="font-sans font-bold text-base text-gray-900 dark:text-white border-b border-gray-100 dark:border-white/5 pb-3 tracking-tight uppercase">
                         Resumen del Pedido
                       </h4>
 
-                      <div className="space-y-3 text-xs sm:text-sm text-gray-600 font-sans">
+                      <div className="space-y-3 text-xs sm:text-sm text-gray-600 dark:text-gray-400 font-sans">
                         <div className="flex justify-between">
                           <span>Subtotal ({items.length} artículos)</span>
-                          <span className="font-semibold text-gray-900">${subtotal.toFixed(2)} USD</span>
+                          <span className="font-semibold text-gray-900 dark:text-white">${subtotal.toFixed(2)} USD</span>
                         </div>
                         {discountAmount > 0 && (
                           <div className="flex justify-between text-emerald-700 font-semibold">
@@ -1892,15 +1911,15 @@ export function CartDrawer() {
                             {shipping === 0 ? <span className="text-emerald-700 font-bold">GRATIS</span> : `$${shipping.toFixed(2)} USD`}
                           </span>
                         </div>
-                        <div className="pt-3 border-t border-gray-200 flex justify-between items-baseline">
-                          <span className="font-bold text-gray-900">Total Final</span>
+                        <div className="pt-3 border-t border-gray-200 dark:border-white/10 flex justify-between items-baseline">
+                          <span className="font-bold text-gray-900 dark:text-white">Total Final</span>
                           <span className="font-sans font-extrabold text-2xl text-gray-950 tracking-tight">
                             ${finalTotal.toFixed(2)} USD
                           </span>
                         </div>
                       </div>
 
-                      <div className="p-3.5 rounded-2xl bg-gray-50 border border-gray-100 flex items-center gap-3 text-xs text-gray-600">
+                      <div className="p-3.5 rounded-2xl bg-gray-50 dark:bg-[#151515] border border-gray-100 dark:border-white/5 flex items-center gap-3 text-xs text-gray-600 dark:text-gray-400">
                         <ShieldCheck className="w-5 h-5 text-blue-600 shrink-0" />
                         <span className="text-[11px] leading-relaxed">
                           Pago seguro SSL 256-bit y garantía oficial de devolución 30 días.
@@ -1923,7 +1942,7 @@ export function CartDrawer() {
                         <div className="absolute inset-x-4 top-0 h-[1.5px] bg-gradient-to-r from-transparent via-white/90 to-transparent opacity-95 pointer-events-none" />
                         
                         {/* Caustic glass reflection glint */}
-                        <div className="absolute top-1.5 left-5 w-8 h-1 bg-white/80 rounded-full blur-[0.4px] pointer-events-none" />
+                        <div className="absolute top-1.5 left-5 w-8 h-1 bg-white dark:bg-[#1a1a1a]/80 rounded-full blur-[0.4px] pointer-events-none" />
                         <div className="absolute inset-0 bg-gradient-to-b from-white/20 via-transparent to-black/10 pointer-events-none" />
 
                         {isProcessing ? (
@@ -1962,28 +1981,28 @@ export function CartDrawer() {
                   </div>
 
                   <div>
-                    <h3 className="font-display font-bold text-3xl sm:text-4xl text-gray-900">¡Pedido Confirmado!</h3>
-                    <p className="text-xs sm:text-sm text-gray-500 mt-2 max-w-sm leading-relaxed">
+                    <h3 className="font-display font-bold text-3xl sm:text-4xl text-gray-900 dark:text-white">¡Pedido Confirmado!</h3>
+                    <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500 mt-2 max-w-sm leading-relaxed">
                       Tu compra ha sido procesada con éxito. Ya estamos preparando cada pieza con el máximo cuidado artesanal.
                     </p>
                   </div>
 
                   {/* Receipt Card */}
-                  <div className="w-full p-6 sm:p-8 rounded-3xl bg-white border border-gray-100 shadow-md text-left space-y-4">
-                    <div className="flex items-center justify-between pb-3 border-b border-gray-100 text-xs sm:text-sm">
-                      <span className="text-gray-400 font-medium">Identificador</span>
-                      <span className="font-mono font-bold text-gray-900">{lastPlacedOrder.id}</span>
+                  <div className="w-full p-6 sm:p-8 rounded-3xl bg-white dark:bg-[#1a1a1a] border border-gray-100 dark:border-white/5 shadow-md text-left space-y-4">
+                    <div className="flex items-center justify-between pb-3 border-b border-gray-100 dark:border-white/5 text-xs sm:text-sm">
+                      <span className="text-gray-400 dark:text-gray-500 font-medium">Identificador</span>
+                      <span className="font-mono font-bold text-gray-900 dark:text-white">{lastPlacedOrder.id}</span>
                     </div>
-                    <div className="flex items-center justify-between pb-3 border-b border-gray-100 text-xs sm:text-sm">
-                      <span className="text-gray-400 font-medium">Nº de Seguimiento</span>
+                    <div className="flex items-center justify-between pb-3 border-b border-gray-100 dark:border-white/5 text-xs sm:text-sm">
+                      <span className="text-gray-400 dark:text-gray-500 font-medium">Nº de Seguimiento</span>
                       <span className="font-mono font-bold text-blue-600">{lastPlacedOrder.trackingNumber}</span>
                     </div>
-                    <div className="flex items-center justify-between pb-3 border-b border-gray-100 text-xs sm:text-sm">
-                      <span className="text-gray-400 font-medium">Entrega Estimada</span>
-                      <span className="font-semibold text-gray-800">3-5 días laborables</span>
+                    <div className="flex items-center justify-between pb-3 border-b border-gray-100 dark:border-white/5 text-xs sm:text-sm">
+                      <span className="text-gray-400 dark:text-gray-500 font-medium">Entrega Estimada</span>
+                      <span className="font-semibold text-gray-800 dark:text-gray-200">3-5 días laborables</span>
                     </div>
                     <div className="flex items-center justify-between pt-2 text-xs sm:text-sm">
-                      <span className="font-bold text-gray-700">Total Pagado</span>
+                      <span className="font-bold text-gray-700 dark:text-gray-300">Total Pagado</span>
                       <span className="font-display font-bold text-2xl text-blue-700">
                         ${lastPlacedOrder.total.toFixed(2)} USD
                       </span>
@@ -2009,7 +2028,7 @@ export function CartDrawer() {
                         setIsOpen(false);
                         setStep("bag");
                       }}
-                      className="w-full py-3.5 bg-gray-100 hover:bg-gray-200 text-gray-700 border border-gray-200/80 rounded-2xl text-xs sm:text-sm font-semibold transition-all shadow-sm"
+                      className="w-full py-3.5 bg-gray-100 dark:bg-white/5 hover:bg-gray-200 dark:bg-white/10 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-white/10/80 rounded-2xl text-xs sm:text-sm font-semibold transition-all shadow-sm"
                     >
                       Seguir Explorando Colecciones
                     </button>
