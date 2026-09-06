@@ -315,6 +315,7 @@ export const useUserStore = create<UserState>((set, get) => ({
 
       // Synchronize and load user's private cart from Supabase
       await useCartStore.getState().initCartForUser(data.user.id);
+        await useThemeStore.getState().loadFromDB(data.user.id);
 
       const { data: favs } = await supabase.from('favorites').select('product_id').eq('user_id', data.user.id);
       if (favs) set({ favorites: favs.map(f => f.product_id) });
@@ -367,6 +368,7 @@ export const useUserStore = create<UserState>((set, get) => ({
 
       // Initialize empty private cart for new user in Supabase
       await useCartStore.getState().initCartForUser(data.user.id);
+        await useThemeStore.getState().loadFromDB(data.user.id);
     }
     return { error: error?.message || null };
   },

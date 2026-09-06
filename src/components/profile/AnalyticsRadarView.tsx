@@ -20,7 +20,7 @@ import {
   ChevronRight,
   X
 } from "lucide-react";
-import { User, ShippingAddress, Order } from "@/lib/userStore";
+import { ShippingAddress, Order } from "@/lib/userStore";
 import { CatalogProduct } from "@/lib/catalogStore";
 import { supabase } from "@/lib/supabase";
 
@@ -111,9 +111,9 @@ export const ECUADOR_PROVINCE_COORDINATES: Record<string, { x: number; y: number
 };
 
 export default function AnalyticsRadarView({
-  user,
-  addresses,
-  orders,
+  /* user */
+  /* addresses */
+  /* orders */
 }: AnalyticsRadarViewProps) {
   // Interaction & filter states
   const [hoveredClient, setHoveredClient] = useState<ConnectedClient | null>(null);
@@ -169,206 +169,36 @@ export default function AnalyticsRadarView({
   const panStartRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
 
   // Connected clients distributed accurately across Ecuador's calibrated 3D terrain
-  const connectedClients: ConnectedClient[] = useMemo(() => {
-    const baseClients: ConnectedClient[] = [
-      {
-        id: "cli-1",
-        name: "Valeria Montejo",
-        email: "valeria.m@lumina.com",
-        city: "Quito (Pichincha)",
-        country: "Ecuador",
-        x: 48.8,
-        y: 26.5,
-        frequency: "Semanal",
-        purchasesCount: 9,
-        totalSpent: 1840,
-        currentSection: "Lámparas Nova LED",
-        intentScore: 94,
-        device: "Computador",
-        hasCart: true,
-        cartItemsCount: 2
-      },
-      {
-        id: "cli-2",
-        name: "Carlos De la Hoz",
-        email: "carlos.dlh@gmail.com",
-        city: "Guayaquil (Guayas)",
-        country: "Ecuador",
-        x: 29.5,
-        y: 53.5,
-        frequency: "Quincenal",
-        purchasesCount: 5,
-        totalSpent: 920,
-        currentSection: "Mesas de Roble Escandinavo",
-        intentScore: 88,
-        device: "Celular",
-        hasCart: true,
-        cartItemsCount: 1
-      },
-      {
-        id: "cli-3",
-        name: "Elena Rostova",
-        email: "elena.design@studio.de",
-        city: "Cuenca (Azuay)",
-        country: "Ecuador",
-        x: 40.5,
-        y: 67.5,
-        frequency: "Mensual",
-        purchasesCount: 4,
-        totalSpent: 1350,
-        currentSection: "Colección Minimalista",
-        intentScore: 79,
-        device: "Computador",
-        hasCart: false
-      },
-      {
-        id: "cli-4",
-        name: "Mateo Bianchi",
-        email: "mateo.b@milano.it",
-        city: "Ambato (Tungurahua)",
-        country: "Ecuador",
-        x: 50.5,
-        y: 41.5,
-        frequency: "Semanal",
-        purchasesCount: 12,
-        totalSpent: 2890,
-        currentSection: "Sillones Boucle Crudo",
-        intentScore: 96,
-        device: "Tablet",
-        hasCart: true,
-        cartItemsCount: 3
-      },
-      {
-        id: "cli-5",
-        name: "Sophie Laurent",
-        email: "sophie.l@atelier.fr",
-        city: "Galápagos (San Cristóbal)",
-        country: "Ecuador",
-        x: 10.0,
-        y: 22.0,
-        frequency: "Ocasional",
-        purchasesCount: 2,
-        totalSpent: 430,
-        currentSection: "Espejos Orgánicos LED",
-        intentScore: 72,
-        device: "Celular",
-        hasCart: false
-      },
-      {
-        id: "cli-6",
-        name: "Oliver Smith",
-        email: "oliver.s@archit.co.uk",
-        city: "Manta (Manabí)",
-        country: "Ecuador",
-        x: 21.0,
-        y: 39.5,
-        frequency: "Quincenal",
-        purchasesCount: 7,
-        totalSpent: 1680,
-        currentSection: "Iluminación Arquitectónica",
-        intentScore: 91,
-        device: "Computador",
-        hasCart: true,
-        cartItemsCount: 1
-      },
-      {
-        id: "cli-7",
-        name: "Alejandro Morales",
-        email: "alejandro.m@valencia.es",
-        city: "Puyo (Pastaza - Oriente)",
-        country: "Ecuador",
-        x: 63.0,
-        y: 49.0,
-        frequency: "Mensual",
-        purchasesCount: 3,
-        totalSpent: 620,
-        currentSection: "Lámparas de Pie Artemide",
-        intentScore: 84,
-        device: "Celular",
-        hasCart: false
-      },
-      {
-        id: "cli-8",
-        name: "Julian Sterling",
-        email: "j.sterling@nycloft.com",
-        city: "Loja (Loja)",
-        country: "Ecuador",
-        x: 37.5,
-        y: 82.5,
-        frequency: "Semanal",
-        purchasesCount: 15,
-        totalSpent: 4200,
-        currentSection: "Edición Limitada Bestseller",
-        intentScore: 98,
-        device: "Computador",
-        hasCart: true,
-        cartItemsCount: 4
-      },
-      {
-        id: "cli-9",
-        name: "Camila Navas",
-        email: "camila.n@decor.ec",
-        city: "Santo Domingo - La Concordia (Tsáchilas)",
-        country: "Ecuador",
-        x: 41.0,
-        y: 29.5,
-        frequency: "Quincenal",
-        purchasesCount: 6,
-        totalSpent: 1140,
-        currentSection: "Aparadores Nórdicos",
-        intentScore: 89,
-        device: "Celular",
-        hasCart: true,
-        cartItemsCount: 1
-      },
-      {
-        id: "cli-10",
-        name: "Diego Alvarado",
-        email: "diego.alv@estudio.ec",
-        city: "Machala (El Oro)",
-        country: "Ecuador",
-        x: 27.5,
-        y: 69.5,
-        frequency: "Mensual",
-        purchasesCount: 4,
-        totalSpent: 890,
-        currentSection: "Sillas de Cuero Natural",
-        intentScore: 82,
-        device: "Computador",
-        hasCart: false
-      }
-    ];
+  const [realtimeClients, setRealtimeClients] = useState<ConnectedClient[]>([]);
+  
+  useEffect(() => {
+    const channel = supabase.channel('radar:clients');
+    
+    channel
+      .on('presence', { event: 'sync' }, () => {
+        const newState = channel.presenceState();
+        const clients: ConnectedClient[] = [];
+        
+        for (const id in newState) {
+          const presenceArray = newState[id] as unknown[];
+          if (presenceArray && presenceArray.length > 0) {
+            // Take the most recent presence state for this user
+            clients.push(presenceArray[0] as ConnectedClient);
+          }
+        }
+        
+        setRealtimeClients(clients);
+      })
+      .subscribe();
+      
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
 
-    // Real User Dynamic Integration: Automatic Geographic Resolution from Database Addresses
-    if (addresses && addresses.length > 0) {
-      addresses.forEach((addr, idx) => {
-        const cityName = (addr.city || "Quito").toLowerCase().trim();
-        const matchedEntry = Object.entries(ECUADOR_PROVINCE_COORDINATES).find(([key]) => cityName.includes(key));
-        const coords = matchedEntry ? matchedEntry[1] : { x: 48.8, y: 26.5, province: "Pichincha" };
-
-        baseClients.unshift({
-          id: `user-addr-${addr.id || idx}`,
-          name: addr.recipient || user?.name || "Tu Sesión (Activa)",
-          email: user?.email || "admin@lumina.com",
-          city: `${addr.city || "Quito"} (${coords.province})`,
-          country: addr.country || "Ecuador",
-          x: coords.x + (idx * 1.5),
-          y: coords.y + (idx * 1.5),
-          frequency: orders.length > 5 ? "Semanal" : orders.length > 0 ? "Quincenal" : "Primera vez",
-          purchasesCount: orders.length,
-          totalSpent: orders.reduce((acc, o) => acc + o.total, 0),
-          currentSection: "Explorando: Radar Lumina",
-          intentScore: 99,
-          device: "Computador",
-          hasCart: true,
-          cartItemsCount: 2,
-          isRealUser: true
-        });
-      });
-    }
-
-    return baseClients;
-  }, [addresses, user, orders]);
+  const connectedClients = useMemo(() => {
+    return realtimeClients;
+  }, [realtimeClients]);
 
   // Filtered clients list
   const filteredClients = useMemo(() => {

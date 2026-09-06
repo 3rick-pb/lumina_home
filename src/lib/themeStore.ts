@@ -12,7 +12,7 @@ interface ThemeState {
 
 export const useThemeStore = create<ThemeState>()(
   persist(
-    (set, get) => ({
+    (set) => ({
       mode: 'light', // Default to light mode
       setMode: async (mode, userId) => {
         set({ mode });
@@ -21,12 +21,12 @@ export const useThemeStore = create<ThemeState>()(
             await supabase
               .from('user_settings')
               .upsert({ user_id: userId, theme: mode, updated_at: new Date().toISOString() }, { onConflict: 'user_id' });
-          } catch (err) {}
+          } catch {}
         }
       },
       loadFromDB: async (userId: string) => {
         try {
-          const { data, error } = await supabase
+          const { data } = await supabase
             .from('user_settings')
             .select('theme')
             .eq('user_id', userId)
@@ -37,7 +37,7 @@ export const useThemeStore = create<ThemeState>()(
           } else {
             set({ mode: 'light' });
           }
-        } catch (err) {}
+        } catch {}
       }
     }),
     {

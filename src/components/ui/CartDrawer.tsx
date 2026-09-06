@@ -30,7 +30,7 @@ import {
 import { useCartStore } from "@/lib/store";
 import { useThemeStore, getResolvedTheme } from "@/lib/themeStore";
 import { clsx } from "clsx";
-import { useUserStore, Order, PaymentCard } from "@/lib/userStore";
+import { useUserStore, Order } from "@/lib/userStore";
 import { useCatalogStore, isAgotadoBadge } from "@/lib/catalogStore";
 
 // High-Ticket Payment Method SVGs & Micro-Components (1:1 Aspect Ratio, Zero Cutoffs)
@@ -500,7 +500,7 @@ export function CartDrawer() {
  }, 1200);
  };
 
-  const availableCards = cards || [];
+  const availableCards = useMemo(() => cards || [], [cards]);
 
  const effectiveSelectedCardId = selectedCardId || availableCards[0]?.id;
  const activeCard = availableCards.find(c => c.id === effectiveSelectedCardId) || availableCards[0] || null;
