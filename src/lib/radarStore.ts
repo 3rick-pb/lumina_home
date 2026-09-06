@@ -120,10 +120,12 @@ const CITY_COORDINATES: Record<string, { x: number; y: number }> = {
 };
 
 export function resolveCoordinates(city?: string): { x: number; y: number } {
-  const fallback = { x: 48.8, y: 26.5 }; // Quito default
-  if (!city) return fallback;
+  if (!city || !city.trim()) return { x: -100, y: -100 };
 
   const normalized = city.toLowerCase().trim();
+  if (normalized === 'ecuador' || normalized === 'desconocido' || normalized === 'null' || normalized === 'undefined') {
+    return { x: -100, y: -100 };
+  }
 
   // 1. Exact match
   if (CITY_COORDINATES[normalized]) {
@@ -137,7 +139,7 @@ export function resolveCoordinates(city?: string): { x: number; y: number } {
     }
   }
 
-  return fallback;
+  return { x: -100, y: -100 };
 }
 
 export function resolveFrequency(purchasesCount: number): ConnectedClient['frequency'] {
@@ -293,7 +295,7 @@ export const useRadarStore = create<RadarStore>((set, get) => ({
     }
   },
 
-  trackActivity: async (user, city = 'Quito', totalSpent = 0, purchasesCount = 0, currentSection = 'Explorando Tienda', hasCart = false, cartItemsCount = 0) => {
+  trackActivity: async (user, city = '', totalSpent = 0, purchasesCount = 0, currentSection = 'Explorando Tienda', hasCart = false, cartItemsCount = 0) => {
     if (!user?.id || user.id.startsWith('vis_') || user.id.startsWith('guest_') || user.name?.toLowerCase().includes('visitante')) return;
 
     const coords = resolveCoordinates(city);
@@ -308,7 +310,7 @@ export const useRadarStore = create<RadarStore>((set, get) => ({
       id: user.id,
       name: cleanName,
       email: user.email || '',
-      city: city || 'Quito',
+      city: city || '',
       country: 'Ecuador',
       x: coords.x,
       y: coords.y,
@@ -376,7 +378,7 @@ export const useRadarStore = create<RadarStore>((set, get) => ({
     await Promise.allSettled(promises);
   },
 
-  initRadar: (user, city = 'Quito', totalSpent = 0, purchasesCount = 0, currentSection = 'Explorando Tienda', hasCart = false, cartItemsCount = 0) => {
+  initRadar: (user, city = '', totalSpent = 0, purchasesCount = 0, currentSection = 'Explorando Tienda', hasCart = false, cartItemsCount = 0) => {
     if (!user?.id || user.id.startsWith('vis_') || user.id.startsWith('guest_')) return;
 
     let activeChannel = get().channel;

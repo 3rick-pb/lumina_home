@@ -32,6 +32,7 @@ interface AnalyticsRadarViewProps {
   orders: Order[];
   products: CatalogProduct[];
   categories: string[];
+  onNavigateToAddresses?: () => void;
 }
 
 // Coordenadas geográficas calibradas con el mapa oficial de las 24 Provincias de Ecuador
@@ -93,8 +94,7 @@ export const ECUADOR_PROVINCE_COORDINATES: Record<string, { x: number; y: number
   "zamora chinchipe": { x: 48.0, y: 83.0, province: "Zamora Chinchipe", region: "Oriente" }
 };
 
-export default function AnalyticsRadarView(_props: AnalyticsRadarViewProps) {
-  void _props;
+export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
   // Interaction & filter states
   const [hoveredClientId, setHoveredClientId] = useState<string | null>(null);
   const [selectedClientId, setSelectedClientId] = useState<string | null>(null);
@@ -165,18 +165,39 @@ export default function AnalyticsRadarView(_props: AnalyticsRadarViewProps) {
   const fetchActiveClients = useRadarStore((state) => state.fetchActiveClients);
   const currentUser = useUserStore((state) => state.user);
   const userAddress = useUserStore((state) => state.address);
+  const userAddresses = useUserStore((state) => state.addresses);
   const userOrders = useUserStore((state) => state.orders);
+
+  const isAdmin = (currentUser?.role === 'ADMIN') || (props.user?.role === 'ADMIN');
+
+  // Verify whether the Admin has a configured shipping/location address
+  const hasAdminLocation = useMemo(() => {
+    if (!isAdmin) return true;
+    const hasPropsAddr = Array.isArray(props.addresses) && props.addresses.some(a => Boolean(a?.city?.trim()));
+    const hasStoreAddrs = Array.isArray(userAddresses) && userAddresses.some(a => Boolean(a?.city?.trim()));
+    const hasStoreDefault = Boolean(userAddress?.city?.trim());
+    return Boolean(hasPropsAddr || hasStoreAddrs || hasStoreDefault);
+  }, [isAdmin, props.addresses, userAddresses, userAddress]);
+
+  const handleNavigateToAddress = () => {
+    if (props.onNavigateToAddresses) {
+      props.onNavigateToAddresses();
+    } else if (typeof window !== "undefined") {
+      window.location.href = "/profile?tab=settings&addAddress=true";
+    }
+  };
 
   // Guarantee the active logged-in user is immediately registered and visible on the radar ("Tú")
   useEffect(() => {
     if (currentUser?.id && !currentUser.id.startsWith('vis_') && !currentUser.id.startsWith('guest_')) {
-      const city = userAddress?.city || "Quito";
+      const city = userAddress?.city || props.addresses?.[0]?.city || userAddresses?.[0]?.city || "";
       const spent = userOrders?.reduce((acc, o) => acc + (o.total || 0), 0) || 0;
       const purchases = userOrders?.length || 0;
-      useRadarStore.getState().initRadar(currentUser, city, spent, purchases, "Panel Radar / Métricas");
-      useRadarStore.getState().trackActivity(currentUser, city, spent, purchases, "Panel Radar / Métricas");
+      const section = isAdmin ? "Mi Perfil / Mapa" : "Panel Radar / Métricas";
+      useRadarStore.getState().initRadar(currentUser, city, spent, purchases, section);
+      useRadarStore.getState().trackActivity(currentUser, city, spent, purchases, section);
     }
-  }, [currentUser, userAddress, userOrders]);
+  }, [currentUser, userAddress, userAddresses, userOrders, props.addresses, isAdmin]);
 
   // Fast live polling (1.2s): ensures the dossier and metrics update live automatically
   useEffect(() => {
@@ -239,6 +260,17 @@ export default function AnalyticsRadarView(_props: AnalyticsRadarViewProps) {
       return true;
     });
   }, [connectedClients, activeStage, searchQuery]);
+
+  // Clients visible on the physical map terrain (Only those with registered addresses and valid coordinates)
+  const mapVisibleClients = useMemo(() => {
+    return filteredClients.filter(c => {
+      if (typeof c.x !== 'number' || typeof c.y !== 'number' || c.x < 0 || c.y < 0) return false;
+      if (!c.city || !c.city.trim()) return false;
+      const isSelf = isUserSelf(c);
+      if (isSelf && isAdmin && !hasAdminLocation) return false;
+      return true;
+    });
+  }, [filteredClients, isUserSelf, isAdmin, hasAdminLocation]);
 
   // Natural Zoom handling via mouse wheel & laptop trackpad (2 fingers up / down)
   const handleWheel = useCallback((e: WheelEvent) => {
@@ -419,8 +451,8 @@ export default function AnalyticsRadarView(_props: AnalyticsRadarViewProps) {
             />
           </picture>
 
-          {/* Interactive Geographic Beacons Calibrated by Province */}
-          {filteredClients.map((client) => {
+          {/* Interactive Geographic Beacons Calibrated by Province (Only clients with valid addresses) */}
+          {mapVisibleClients.map((client) => {
             const isHovered = hoveredClient?.id === client.id;
             const isSelected = selectedClient?.id === client.id;
             const isActive = isHovered || isSelected;
@@ -693,9 +725,28 @@ export default function AnalyticsRadarView(_props: AnalyticsRadarViewProps) {
           )}
         </div>
 
-        {/* Zoom Help Badge (Desktop/Trackpad reminder) */}
-        <div className="hidden md:flex items-center gap-1.5 px-3 py-1 rounded-full bg-black/45 backdrop-blur-md border border-white/10 text-[10.5px] font-mono text-white/60 pointer-events-auto">
-          <span>💡 Rueda o 2 dedos para Zoom</span>
+        {/* Right side controls: Location Prompt for Admin + Zoom Help Badge */}
+        <div className="flex items-center gap-2.5 pointer-events-auto shrink-0">
+          {isAdmin && !hasAdminLocation && (
+            <button
+              onClick={handleNavigateToAddress}
+              className="group relative flex items-center gap-2 px-3.5 py-1.5 sm:px-4 sm:py-2 rounded-full bg-black/90 hover:bg-black backdrop-blur-2xl border border-[#ccff00]/80 hover:border-[#ccff00] text-white text-xs font-semibold shadow-[0_0_24px_rgba(204,255,0,0.35)] transition-all duration-300 hover:scale-[1.03] active:scale-95 cursor-pointer shrink-0"
+              title="Añade tu dirección para mostrar tu ubicación en el mapa"
+            >
+              <div className="relative flex items-center justify-center w-5 h-5 rounded-full bg-[#ccff00] text-gray-950 font-black shrink-0 shadow-[0_0_10px_#ccff00]/50">
+                <MapPin className="w-3 h-3 text-gray-950" />
+                <span className="absolute inset-0 rounded-full bg-[#ccff00] animate-ping opacity-75 pointer-events-none" />
+              </div>
+              <span className="font-semibold text-xs text-white group-hover:text-[#ccff00] transition-colors whitespace-nowrap">
+                Mostrar mi ubicación también
+              </span>
+              <ArrowUpRight className="w-3.5 h-3.5 text-[#ccff00] transition-transform duration-300 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 shrink-0" />
+            </button>
+          )}
+
+          <div className="hidden md:flex items-center gap-1.5 px-3 py-1 rounded-full bg-black/45 backdrop-blur-md border border-white/10 text-[10.5px] font-mono text-white/60">
+            <span>💡 Rueda o 2 dedos para Zoom</span>
+          </div>
         </div>
 
       </div>
@@ -817,7 +868,7 @@ export default function AnalyticsRadarView(_props: AnalyticsRadarViewProps) {
                         {/* Ubicación detallada del cliente con ancho completo */}
                         <p className="text-xs text-white/80 flex items-center gap-1.5 mt-1 font-medium">
                           <MapPin className="w-3.5 h-3.5 text-[#ccff00] shrink-0" /> 
-                          <span>{displayedDossierClient.city || "Ecuador"}</span>
+                          <span>{displayedDossierClient.city || "Sin ubicación registrada"}</span>
                         </p>
                         
                         {/* Píldora de Recompra con mayor tamaño de fuente situada debajo de la ubicación */}
@@ -849,7 +900,11 @@ export default function AnalyticsRadarView(_props: AnalyticsRadarViewProps) {
                   <div className="space-y-1.5 text-[10.5px] pt-2 border-t border-white/10">
                     <div className="flex items-center justify-between">
                       <span className="text-white/60">Explorando:</span>
-                      <strong className="text-white font-medium text-right truncate max-w-[140px]">{displayedDossierClient.currentSection || "Tienda"}</strong>
+                      <strong className="text-white font-medium text-right truncate max-w-[140px]">
+                        {displayedDossierClient.name?.toLowerCase().includes("admin") || (isUserSelf(displayedDossierClient) && isAdmin)
+                          ? "Mi Perfil / Mapa"
+                          : (displayedDossierClient.currentSection || "Tienda")}
+                      </strong>
                     </div>
                     <div className="flex items-center justify-between">
                       <span className="text-white/60">Total Compras:</span>

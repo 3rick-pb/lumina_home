@@ -12,6 +12,7 @@ function ActivityTracker() {
   const searchParams = useSearchParams();
   const user = useUserStore((state) => state.user);
   const address = useUserStore((state) => state.address);
+  const addresses = useUserStore((state) => state.addresses);
   const orders = useUserStore((state) => state.orders);
   const isCartOpen = useCartStore((state) => state.isOpen);
   const cartItems = useCartStore((state) => state.items);
@@ -34,19 +35,36 @@ function ActivityTracker() {
     }
   } else if (pathname.startsWith("/product/")) {
     currentSection = "Viendo Producto";
-  } else if (pathname === "/profile") {
-    currentSection = "Mi Perfil / Pedidos";
-  } else if (pathname === "/admin") {
-    currentSection = "Panel Administrativo";
-  } else if (pathname === "/auth/login") {
-    currentSection = "Iniciando Sesión";
-  } else if (pathname === "/auth/register") {
-    currentSection = "Registrando Cuenta";
+  } else if (pathname === "/profile" || pathname === "/admin") {
+    currentSection = user?.role === 'ADMIN' ? "Mi Perfil / Mapa" : "Mi Perfil / Pedidos";
+  } else if (pathname.startsWith("/auth/")) {
+    // Stop tracking when navigating to login/register
+    currentSection = "";
   } else if (pathname === "/") {
     currentSection = "Inicio • Lumina Home";
   } else {
     currentSection = "Explorando Tienda";
   }
+
+  // Disconnect radar presence immediately when closing web or tab
+  useEffect(() => {
+    const handleClose = () => {
+      const activeUser = useUserStore.getState().user;
+      if (activeUser?.id && navigator.sendBeacon) {
+        navigator.sendBeacon(
+          '/api/radar/activity',
+          new Blob([JSON.stringify({ id: activeUser.id, isOnline: false })], { type: 'application/json' })
+        );
+      }
+    };
+
+    window.addEventListener('beforeunload', handleClose);
+    window.addEventListener('pagehide', handleClose);
+    return () => {
+      window.removeEventListener('beforeunload', handleClose);
+      window.removeEventListener('pagehide', handleClose);
+    };
+  }, []);
 
   // Presence Tracking & Live Activity Updates (Real Authenticated Users Only)
   useEffect(() => {
@@ -58,11 +76,12 @@ function ActivityTracker() {
       } catch {}
     }
 
+    if (pathname.startsWith("/auth/") || !currentSection) return;
     if (!user || !user.id || user.id.startsWith('vis_') || user.id.startsWith('guest_')) return;
 
     const purchasesCount = orders?.length || 0;
     const totalSpent = orders?.reduce((acc, order) => acc + (order.total || 0), 0) || 0;
-    const userCity = address?.city || "Quito";
+    const userCity = address?.city || addresses?.[0]?.city || "";
     const cartItemsCount = cartItems.reduce((sum, item) => sum + (item.quantity || 1), 0);
     const hasCart = isCartOpen || cartItemsCount > 0;
 
@@ -86,10 +105,11 @@ function ActivityTracker() {
       hasCart,
       cartItemsCount
     );
-  }, [user, address, orders, pathname, searchParams, isCartOpen, cartItems, currentSection]);
+  }, [user, address, addresses, orders, pathname, searchParams, isCartOpen, cartItems, currentSection]);
 
   // Fast 1.5-second heartbeat to refresh DB activity and maintain instant real-time live radar for the active user
   useEffect(() => {
+    if (pathname.startsWith("/auth/") || !currentSection) return;
     if (!user || !user.id || user.id.startsWith('vis_') || user.id.startsWith('guest_')) return;
 
     const interval = setInterval(() => {
@@ -98,9 +118,10 @@ function ActivityTracker() {
 
       const currentOrders = useUserStore.getState().orders;
       const currentAddress = useUserStore.getState().address;
+      const currentAddresses = useUserStore.getState().addresses;
       const purchasesCount = currentOrders?.length || 0;
       const totalSpent = currentOrders?.reduce((acc, order) => acc + (order.total || 0), 0) || 0;
-      const userCity = currentAddress?.city || "Quito";
+      const userCity = currentAddress?.city || currentAddresses?.[0]?.city || "";
       const currentCartItems = useCartStore.getState().items;
       const currentCartOpen = useCartStore.getState().isOpen;
       const cartItemsCount = currentCartItems.reduce((sum, item) => sum + (item.quantity || 1), 0);
@@ -118,7 +139,7 @@ function ActivityTracker() {
     }, 1500);
 
     return () => clearInterval(interval);
-  }, [user, address, orders, isCartOpen, cartItems, currentSection]);
+  }, [user, address, addresses, orders, pathname, isCartOpen, cartItems, currentSection]);
 
   return null;
 }

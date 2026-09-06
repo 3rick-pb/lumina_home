@@ -246,9 +246,12 @@ export default function ProfilePage() {
  if (typeof window !== "undefined") {
  const params = new URLSearchParams(window.location.search);
  const tabParam = params.get("tab");
- if (tabParam && ["overview", "orders", "cards", "favorites", "catalog", "niches", "analytics", "settings"].includes(tabParam)) {
- setActiveTab(tabParam as "overview" | "orders" | "cards" | "favorites" | "catalog" | "niches" | "analytics" | "settings");
- }
+    if (tabParam && ["overview", "orders", "cards", "favorites", "catalog", "niches", "analytics", "settings"].includes(tabParam)) {
+      setActiveTab(tabParam as "overview" | "orders" | "cards" | "favorites" | "catalog" | "niches" | "analytics" | "settings");
+    }
+    if (params.get("addAddress") === "true") {
+      setShowAddressForm(true);
+    }
  }
  if (isMounted && !isLoading && !isAuthenticated) {
  router.push("/auth/login");
@@ -2196,6 +2199,10 @@ export default function ProfilePage() {
  orders={orders}
  products={products}
  categories={categories}
+ onNavigateToAddresses={() => {
+ setActiveTab("settings");
+ setShowAddressForm(true);
+ }}
  />
  </RadarErrorBoundary>
  )}
