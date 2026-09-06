@@ -869,77 +869,92 @@ export default function AnalyticsRadarView(_props: AnalyticsRadarViewProps) {
                   </div>
                 </div>
 
-                {/* Metric 2: Frecuencia de Compra Organic Trend Mini Graph */}
+                {/* Metric 2: Resumen de Compra — Computed from real clients */}
                 <div className="rounded-2xl bg-black/45 border border-white/10 p-3.5 space-y-2">
                   <div className="flex items-center justify-between">
                     <div>
-                      <span className="text-[11px] font-bold text-white block">Tendencia de Compra</span>
+                      <span className="text-[11px] font-bold text-white block">Resumen de Compra</span>
                       <span className="text-[9.5px] text-[#ccff00] font-mono font-semibold flex items-center gap-1">
-                        <TrendingUp className="w-2.5 h-2.5" /> +28.4% al alza
+                        <TrendingUp className="w-2.5 h-2.5" /> {connectedClients.length} cliente{connectedClients.length !== 1 ? 's' : ''} en línea
                       </span>
                     </div>
                     <ArrowUpRight className="w-3.5 h-3.5 text-white/50" />
                   </div>
 
-                  {/* Clean SVG Spline Trend Curve */}
-                  <div className="relative h-14 w-full">
-                    <svg viewBox="0 0 200 60" className="w-full h-full overflow-visible">
-                      <defs>
-                        <linearGradient id="miniTrendGrad" x1="0%" y1="0%" x2="0%" y2="100%">
-                          <stop offset="0%" stopColor="#ccff00" stopOpacity="0.35" />
-                          <stop offset="100%" stopColor="#ccff00" stopOpacity="0" />
-                        </linearGradient>
-                      </defs>
-                      <path 
-                        d="M 5 45 C 35 48, 55 35, 85 38 C 115 42, 135 18, 165 20 C 180 22, 190 14, 195 10 L 195 55 L 5 55 Z" 
-                        fill="url(#miniTrendGrad)" 
-                      />
-                      <path 
-                        d="M 5 45 C 35 48, 55 35, 85 38 C 115 42, 135 18, 165 20 C 180 22, 190 14, 195 10" 
-                        fill="none" 
-                        stroke="#ccff00" 
-                        strokeWidth="2" 
-                        strokeLinecap="round"
-                      />
-                      <circle cx="165" cy="20" r="3" fill="#ffffff" stroke="#ccff00" strokeWidth="2" />
-                    </svg>
+                  {/* Live stats computed from real connected clients */}
+                  <div className="grid grid-cols-2 gap-2 pt-1">
+                    <div className="rounded-xl bg-white/5 border border-white/10 p-2 text-center">
+                      <span className="text-[9px] font-mono text-white/50 block">Total Ventas</span>
+                      <span className="text-sm font-bold text-[#ccff00] font-mono">
+                        ${connectedClients.reduce((sum, c) => sum + (c.totalSpent || 0), 0).toFixed(2)}
+                      </span>
+                    </div>
+                    <div className="rounded-xl bg-white/5 border border-white/10 p-2 text-center">
+                      <span className="text-[9px] font-mono text-white/50 block">Pedidos Totales</span>
+                      <span className="text-sm font-bold text-white font-mono">
+                        {connectedClients.reduce((sum, c) => sum + (c.purchasesCount || 0), 0)}
+                      </span>
+                    </div>
                   </div>
 
                   <div className="flex items-center justify-between text-[9.5px] font-mono text-white/60 pt-1 border-t border-white/10">
-                    <span>Recompra: <strong>1 cada 14d</strong></span>
-                    <span className="text-[#ccff00] font-bold">$6,420/mes</span>
+                    <span>Intent Promedio: <strong>{connectedClients.length > 0 ? Math.round(connectedClients.reduce((sum, c) => sum + (c.intentScore || 0), 0) / connectedClients.length) : 0}%</strong></span>
+                    <span className="text-[#ccff00] font-bold">
+                      Ticket: ${connectedClients.length > 0 ? (connectedClients.reduce((sum, c) => sum + (c.totalSpent || 0), 0) / Math.max(connectedClients.reduce((sum, c) => sum + (c.purchasesCount || 0), 0), 1)).toFixed(0) : '0'} USD
+                    </span>
                   </div>
                 </div>
 
-                {/* Metric 3: Concentración por Ciudades */}
-                <div className="space-y-1.5 text-xs">
-                  <span className="text-[11px] font-bold text-white/80 block">Distribución Geográfica</span>
-                  <div className="space-y-1">
-                    <div className="flex items-center justify-between text-[10px]">
-                      <span className="text-white/70">Quito / Pichincha</span>
-                      <strong className="font-mono text-white">42%</strong>
-                    </div>
-                    <div className="w-full h-1 rounded-full bg-white/10 overflow-hidden">
-                      <div className="h-full bg-white rounded-full" style={{ width: "42%" }} />
-                    </div>
+                {/* Metric 3: Distribución Geográfica — Computed dynamically from connected clients */}
+                {(() => {
+                  const total = connectedClients.length || 1;
+                  const regionCounts: Record<string, number> = {};
+                  
+                  connectedClients.forEach(c => {
+                    const cityLower = (c.city || 'otro').toLowerCase().trim();
+                    const matchedEntry = Object.entries(ECUADOR_PROVINCE_COORDINATES).find(([k]) => 
+                      cityLower.includes(k) || k.includes(cityLower)
+                    );
+                    const region = matchedEntry ? matchedEntry[1].region : 'Otro';
+                    regionCounts[region] = (regionCounts[region] || 0) + 1;
+                  });
 
-                    <div className="flex items-center justify-between text-[10px] pt-1">
-                      <span className="text-white/70">Guayaquil / Costa</span>
-                      <strong className="font-mono text-white">28%</strong>
-                    </div>
-                    <div className="w-full h-1 rounded-full bg-white/10 overflow-hidden">
-                      <div className="h-full bg-[#ccff00] rounded-full" style={{ width: "28%" }} />
-                    </div>
+                  const regionColors: Record<string, string> = {
+                    'Sierra': 'bg-white',
+                    'Costa': 'bg-[#ccff00]',
+                    'Oriente': 'bg-emerald-400',
+                    'Galápagos': 'bg-amber-400',
+                    'Otro': 'bg-white/50',
+                  };
 
-                    <div className="flex items-center justify-between text-[10px] pt-1">
-                      <span className="text-white/70">Cuenca & Austral</span>
-                      <strong className="font-mono text-white">18%</strong>
+                  const sortedRegions = Object.entries(regionCounts).sort((a, b) => b[1] - a[1]);
+
+                  return (
+                    <div className="space-y-1.5 text-xs">
+                      <span className="text-[11px] font-bold text-white/80 block">Distribución Geográfica</span>
+                      {connectedClients.length === 0 ? (
+                        <p className="text-[10px] text-white/40 font-mono">Sin clientes conectados</p>
+                      ) : (
+                        <div className="space-y-1">
+                          {sortedRegions.map(([region, count]) => {
+                            const pct = Math.round((count / total) * 100);
+                            return (
+                              <div key={region}>
+                                <div className="flex items-center justify-between text-[10px]">
+                                  <span className="text-white/70">{region}</span>
+                                  <strong className="font-mono text-white">{pct}% ({count})</strong>
+                                </div>
+                                <div className="w-full h-1 rounded-full bg-white/10 overflow-hidden">
+                                  <div className={`h-full ${regionColors[region] || 'bg-white/50'} rounded-full transition-all duration-500`} style={{ width: `${pct}%` }} />
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
                     </div>
-                    <div className="w-full h-1 rounded-full bg-white/10 overflow-hidden">
-                      <div className="h-full bg-emerald-400 rounded-full" style={{ width: "18%" }} />
-                    </div>
-                  </div>
-                </div>
+                  );
+                })()}
 
                 </div>
               </div>
@@ -1057,42 +1072,61 @@ export default function AnalyticsRadarView(_props: AnalyticsRadarViewProps) {
           </div>
         </div>
 
-        {/* Card 2: Embudo de Conversión (Catálogo, Carrito, Recurrentes) */}
-        <div className="rounded-2xl bg-black/60 backdrop-blur-xl border border-white/15 p-3.5 shadow-xl flex flex-col justify-between">
-          <div className="flex items-center justify-between text-[11px] font-bold text-white mb-1">
-            <span className="flex items-center gap-1.5">
-              <Users className="w-3 h-3 text-emerald-400" /> Embudo de Conversión
-            </span>
-            <span className="text-[9px] font-mono text-emerald-400 font-bold">+4.2%</span>
-          </div>
-          <div className="flex items-center justify-between text-[9.5px] text-white/70">
-            <span>Catálogo: <strong>62%</strong></span>
-            <span>Carrito: <strong>24%</strong></span>
-            <span>Recurrentes: <strong>14%</strong></span>
-          </div>
-          <div className="w-full h-1.5 rounded-full bg-white/10 flex overflow-hidden mt-1.5">
-            <div className="h-full bg-white" style={{ width: "62%" }} />
-            <div className="h-full bg-amber-400" style={{ width: "24%" }} />
-            <div className="h-full bg-[#ccff00]" style={{ width: "14%" }} />
-          </div>
-        </div>
+        {/* Card 2: Embudo de Conversión — Computed from real client data */}
+        {(() => {
+          const total = connectedClients.length || 1;
+          const cartCount = connectedClients.filter(c => c.hasCart).length;
+          const frequentCount = connectedClients.filter(c => (c.purchasesCount || 0) >= 3).length;
+          const browsingCount = total - cartCount - frequentCount;
+          const browsingPct = Math.round((Math.max(browsingCount, 0) / total) * 100);
+          const cartPct = Math.round((cartCount / total) * 100);
+          const frequentPct = Math.round((frequentCount / total) * 100);
+          return (
+            <div className="rounded-2xl bg-black/60 backdrop-blur-xl border border-white/15 p-3.5 shadow-xl flex flex-col justify-between">
+              <div className="flex items-center justify-between text-[11px] font-bold text-white mb-1">
+                <span className="flex items-center gap-1.5">
+                  <Users className="w-3 h-3 text-emerald-400" /> Embudo de Conversión
+                </span>
+                <span className="text-[9px] font-mono text-emerald-400 font-bold">{total} activos</span>
+              </div>
+              <div className="flex items-center justify-between text-[9.5px] text-white/70">
+                <span>Catálogo: <strong>{browsingPct}%</strong></span>
+                <span>Carrito: <strong>{cartPct}%</strong></span>
+                <span>Recurrentes: <strong>{frequentPct}%</strong></span>
+              </div>
+              <div className="w-full h-1.5 rounded-full bg-white/10 flex overflow-hidden mt-1.5">
+                <div className="h-full bg-white transition-all duration-500" style={{ width: `${browsingPct}%` }} />
+                <div className="h-full bg-amber-400 transition-all duration-500" style={{ width: `${cartPct}%` }} />
+                <div className="h-full bg-[#ccff00] transition-all duration-500" style={{ width: `${frequentPct}%` }} />
+              </div>
+            </div>
+          );
+        })()}
 
-        {/* Card 3: IA Predictiva Radar */}
-        <div className="rounded-2xl bg-black/60 backdrop-blur-xl border border-white/15 p-3.5 shadow-xl flex flex-col justify-between">
-          <div className="flex items-center justify-between text-[11px] font-bold text-white mb-1">
-            <span className="flex items-center gap-1.5">
-              <Sparkles className="w-3 h-3 text-[#ccff00]" /> IA Predictiva Radar
-            </span>
-            <span className="text-[9px] font-mono text-[#ccff00] font-bold">En Vivo</span>
-          </div>
-          <p className="text-[10px] text-white/70">
-            Detección de intención en tiempo real
-          </p>
-          <div className="flex items-center justify-between text-[9px] font-mono text-white/60 mt-1 pt-1 border-t border-white/10">
-            <span>Ticket Promedio: <strong className="text-white">$185 USD</strong></span>
-            <span>Conversión: <strong className="text-[#ccff00]">3.8% Alta</strong></span>
-          </div>
-        </div>
+        {/* Card 3: Resumen Radar — Live data */}
+        {(() => {
+          const totalOrders = connectedClients.reduce((sum, c) => sum + (c.purchasesCount || 0), 0);
+          const totalRevenue = connectedClients.reduce((sum, c) => sum + (c.totalSpent || 0), 0);
+          const avgTicket = totalOrders > 0 ? (totalRevenue / totalOrders) : 0;
+          const avgIntent = connectedClients.length > 0 ? Math.round(connectedClients.reduce((sum, c) => sum + (c.intentScore || 0), 0) / connectedClients.length) : 0;
+          return (
+            <div className="rounded-2xl bg-black/60 backdrop-blur-xl border border-white/15 p-3.5 shadow-xl flex flex-col justify-between">
+              <div className="flex items-center justify-between text-[11px] font-bold text-white mb-1">
+                <span className="flex items-center gap-1.5">
+                  <Sparkles className="w-3 h-3 text-[#ccff00]" /> Resumen Radar
+                </span>
+                <span className="text-[9px] font-mono text-[#ccff00] font-bold">En Vivo</span>
+              </div>
+              <p className="text-[10px] text-white/70">
+                {connectedClients.length} cliente{connectedClients.length !== 1 ? 's' : ''} conectado{connectedClients.length !== 1 ? 's' : ''} ahora
+              </p>
+              <div className="flex items-center justify-between text-[9px] font-mono text-white/60 mt-1 pt-1 border-t border-white/10">
+                <span>Ticket Promedio: <strong className="text-white">${avgTicket.toFixed(0)} USD</strong></span>
+                <span>Intent: <strong className="text-[#ccff00]">{avgIntent}%</strong></span>
+              </div>
+            </div>
+          );
+        })()}
 
       </div>
 
