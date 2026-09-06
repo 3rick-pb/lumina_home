@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Inter, Playfair_Display } from "next/font/google";
+import { Inter, Lora } from "next/font/google";
 import { Suspense } from "react";
 import "./globals.css";
 import { Header } from "@/components/layout/Header";
@@ -15,9 +15,9 @@ const inter = Inter({
   display: "swap",
 });
 
-const playfair = Playfair_Display({
+const lora = Lora({
   subsets: ["latin"],
-  variable: "--font-playfair",
+  variable: "--font-lora",
   display: "swap",
   style: ["normal", "italic"],
 });
@@ -35,7 +35,7 @@ export default function RootLayout({
   return (
     <html lang="es">
       <body
-        className={`${inter.variable} ${playfair.variable} font-sans antialiased text-gray-900 bg-transparent flex flex-col min-h-screen relative`}
+        className={`${inter.variable} ${lora.variable} font-sans antialiased text-gray-900 bg-transparent flex flex-col min-h-screen relative`}
       >
         <Suspense fallback={null}>
           <ScrollToTop />

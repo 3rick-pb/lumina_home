@@ -159,7 +159,7 @@ export default function AnalyticsRadarView(_props: AnalyticsRadarViewProps) {
     fetchActiveClients();
     const pollInterval = setInterval(() => {
       fetchActiveClients();
-    }, 1500);
+    }, 1200);
     return () => clearInterval(pollInterval);
   }, [fetchActiveClients]);
 
@@ -782,7 +782,7 @@ export default function AnalyticsRadarView(_props: AnalyticsRadarViewProps) {
                       </div>
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-1.5">
-                          <h4 className="font-bold text-sm text-white leading-tight truncate">{cleanClientName(displayedDossierClient.name)}</h4>
+                          <h4 className="font-sans font-bold text-sm text-white tracking-normal leading-tight truncate">{cleanClientName(displayedDossierClient.name)}</h4>
                           {isUserSelf(displayedDossierClient) && (
                             <span className="text-[8px] font-mono px-1.5 py-0.5 rounded bg-emerald-400/20 text-emerald-400 border border-emerald-400/30 font-bold shrink-0">
                               Tú

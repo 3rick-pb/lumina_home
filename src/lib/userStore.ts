@@ -83,28 +83,29 @@ interface UserState {
 }
 
 const COMMON_FIRST_NAMES = [
-  'erick', 'eric', 'juan', 'carlos', 'luis', 'jose', 'maria', 'ana', 
-  'diego', 'david', 'jorge', 'pedro', 'valeria', 'fernando', 'andres', 
-  'gabriel', 'mateo', 'sebastian', 'camila', 'paula', 'sofia', 'daniel', 
-  'alejandro', 'manuel', 'miguel', 'angel', 'javier', 'pablo', 'mario'
+  'alejandro', 'sebastian', 'valeria', 'fernando', 'gabriel', 'carlos', 
+  'daniel', 'manuel', 'miguel', 'javier', 'erick', 'david', 'jorge', 
+  'pedro', 'mateo', 'camila', 'paula', 'sofia', 'pablo', 'mario', 
+  'maria', 'diego', 'luis', 'jose', 'juan', 'eric', 'ana'
 ];
 
 export const formatCleanName = (rawName: string) => {
   if (!rawName) return '';
-  let formatted = rawName.trim();
+  let formatted = String(rawName).trim();
   // 1. Replace periods, underscores, dashes with space
   formatted = formatted.replace(/[\._\-]+/g, ' ');
   // 2. Separate lowercase letter followed by uppercase letter (camelCase: ErickArteaga -> Erick Arteaga, ErickADMIN -> Erick ADMIN)
   formatted = formatted.replace(/([a-zñáéíóú])([A-ZÑÁÉÍÓÚ])/g, '$1 $2');
   // 3. Separate number followed by letter or letter followed by number
   formatted = formatted.replace(/([a-zA-ZáéíóúÁÉÍÓÚñÑ])([0-9])/g, '$1 $2');
+  formatted = formatted.replace(/([0-9])([a-zA-ZáéíóúÁÉÍÓÚñÑ])/g, '$1 $2');
   // 4. Separate and normalize any variation of ADMIN glued to letters/numbers
   formatted = formatted.replace(/([a-zA-Z0-9áéíóúÁÉÍÓÚñÑ])\s*(?:admin)\b/gi, '$1 ADMIN');
   // 5. If still a single continuous lowercase word without spaces, split if it starts with a common first name
   if (!formatted.includes(' ')) {
     const lower = formatted.toLowerCase();
     for (const fn of COMMON_FIRST_NAMES) {
-      if (lower.startsWith(fn) && lower.length > fn.length + 2) {
+      if (lower.startsWith(fn) && lower.length > fn.length + 1) {
         formatted = formatted.slice(0, fn.length) + ' ' + formatted.slice(fn.length);
         break;
       }
@@ -269,6 +270,9 @@ export const useUserStore = create<UserState>((set, get) => ({
         const email = session.user.email || '';
         const role = (email.toLowerCase() === 'admin@lumina.com' || session.user.user_metadata?.role === 'ADMIN') ? 'ADMIN' : 'USER';
         const name = formatCleanName(session.user.user_metadata?.name || email.split('@')[0]);
+        if (name && session.user.user_metadata?.name !== name) {
+          supabase.auth.updateUser({ data: { name } }).catch(() => {});
+        }
         
         // Fetch all user private data directly from Supabase database and API
         const personalData = await fetchUserDataFromDatabase(session.user.id, role, email);
@@ -303,6 +307,9 @@ export const useUserStore = create<UserState>((set, get) => ({
         const email = session.user.email || '';
         const role = (email.toLowerCase() === 'admin@lumina.com' || session.user.user_metadata?.role === 'ADMIN') ? 'ADMIN' : 'USER';
         const name = formatCleanName(session.user.user_metadata?.name || email.split('@')[0]);
+        if (name && session.user.user_metadata?.name !== name) {
+          supabase.auth.updateUser({ data: { name } }).catch(() => {});
+        }
         const personalData = await fetchUserDataFromDatabase(session.user.id, role, email);
 
         set({ 
@@ -335,6 +342,9 @@ export const useUserStore = create<UserState>((set, get) => ({
       const userEmail = data.user.email || cleanEmail;
       const role = (userEmail.toLowerCase() === 'admin@lumina.com' || data.user.user_metadata?.role === 'ADMIN') ? 'ADMIN' : 'USER';
       const name = formatCleanName(data.user.user_metadata?.name || userEmail.split('@')[0]);
+      if (name && data.user.user_metadata?.name !== name) {
+        supabase.auth.updateUser({ data: { name } }).catch(() => {});
+      }
       const personalData = await fetchUserDataFromDatabase(data.user.id, role, userEmail);
 
       set({ 

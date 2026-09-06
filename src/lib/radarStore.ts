@@ -22,10 +22,10 @@ export interface ConnectedClient {
 }
 
 const COMMON_FIRST_NAMES = [
-  'erick', 'eric', 'juan', 'carlos', 'luis', 'jose', 'maria', 'ana', 
-  'diego', 'david', 'jorge', 'pedro', 'valeria', 'fernando', 'andres', 
-  'gabriel', 'mateo', 'sebastian', 'camila', 'paula', 'sofia', 'daniel', 
-  'alejandro', 'manuel', 'miguel', 'angel', 'javier', 'pablo', 'mario'
+  'alejandro', 'sebastian', 'valeria', 'fernando', 'gabriel', 'carlos', 
+  'daniel', 'manuel', 'miguel', 'javier', 'erick', 'david', 'jorge', 
+  'pedro', 'mateo', 'camila', 'paula', 'sofia', 'pablo', 'mario', 
+  'maria', 'diego', 'luis', 'jose', 'juan', 'eric', 'ana'
 ];
 
 /**
@@ -38,20 +38,21 @@ const COMMON_FIRST_NAMES = [
  */
 export const cleanClientName = (rawName?: string) => {
   if (!rawName) return "Cliente Lumina";
-  let formatted = rawName.trim();
+  let formatted = String(rawName).trim();
   // 1. Replace periods, underscores, dashes with space
   formatted = formatted.replace(/[\._\-]+/g, ' ');
   // 2. Separate lowercase letter followed by uppercase letter (camelCase: ErickArteaga -> Erick Arteaga, ErickADMIN -> Erick ADMIN)
   formatted = formatted.replace(/([a-zñáéíóú])([A-ZÑÁÉÍÓÚ])/g, '$1 $2');
   // 3. Separate number followed by letter or letter followed by number
   formatted = formatted.replace(/([a-zA-ZáéíóúÁÉÍÓÚñÑ])([0-9])/g, '$1 $2');
+  formatted = formatted.replace(/([0-9])([a-zA-ZáéíóúÁÉÍÓÚñÑ])/g, '$1 $2');
   // 4. Separate and normalize any variation of ADMIN glued to letters/numbers
   formatted = formatted.replace(/([a-zA-Z0-9áéíóúÁÉÍÓÚñÑ])\s*(?:admin)\b/gi, '$1 ADMIN');
   // 5. If still a single continuous lowercase word without spaces, split if it starts with a common first name
   if (!formatted.includes(' ')) {
     const lower = formatted.toLowerCase();
     for (const fn of COMMON_FIRST_NAMES) {
-      if (lower.startsWith(fn) && lower.length > fn.length + 2) {
+      if (lower.startsWith(fn) && lower.length > fn.length + 1) {
         formatted = formatted.slice(0, fn.length) + ' ' + formatted.slice(fn.length);
         break;
       }
@@ -303,49 +304,51 @@ export const useRadarStore = create<RadarStore>((set, get) => ({
       isOnline: true,
     };
 
-    // 1. Send to Supabase Presence Channel
+    // Concurrently broadcast to Presence Channel, Server In-Memory/DB API, and Supabase Table
     const activeChannel = get().channel;
+    const promises: Promise<unknown>[] = [];
+
+    // 1. Send to Supabase Presence Channel
     if (activeChannel) {
-      try {
-        await activeChannel.track(payload);
-      } catch {
-        // Retry or fallback
-      }
+      promises.push(activeChannel.track(payload).catch(() => {}));
     }
 
-    // 2. Send to /api/radar/activity (which updates server memory + Supabase active_sessions DB)
-    try {
-      await fetch('/api/radar/activity', {
+    // 2. Send to /api/radar/activity (updates server memory + active_sessions DB)
+    promises.push(
+      fetch('/api/radar/activity', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
-      });
-    } catch {
-      // Offline fallback
-    }
+        keepalive: true,
+      }).catch(() => {})
+    );
 
     // 3. Directly update Supabase active_sessions table for immediate postgres_changes broadcast
-    try {
-      await supabase.from('active_sessions').upsert({
-        user_id: payload.id,
-        name: payload.name,
-        email: payload.email,
-        city: payload.city,
-        country: 'Ecuador',
-        x: payload.x,
-        y: payload.y,
-        current_section: payload.currentSection,
-        is_online: true,
-        has_cart: payload.hasCart,
-        cart_items_count: payload.cartItemsCount,
-        total_spent: payload.totalSpent,
-        purchases_count: payload.purchasesCount,
-        device: payload.device,
-        last_seen: new Date().toISOString(),
-      }, { onConflict: 'user_id' });
-    } catch {
-      // Table may not exist yet
-    }
+    promises.push(
+      (async () => {
+        try {
+          await supabase.from('active_sessions').upsert({
+            user_id: payload.id,
+            name: payload.name,
+            email: payload.email,
+            city: payload.city,
+            country: 'Ecuador',
+            x: payload.x,
+            y: payload.y,
+            current_section: payload.currentSection,
+            is_online: true,
+            has_cart: payload.hasCart,
+            cart_items_count: payload.cartItemsCount,
+            total_spent: payload.totalSpent,
+            purchases_count: payload.purchasesCount,
+            device: payload.device,
+            last_seen: new Date().toISOString(),
+          }, { onConflict: 'user_id' });
+        } catch {}
+      })()
+    );
+
+    await Promise.allSettled(promises);
   },
 
   initRadar: (user, city = 'Quito', totalSpent = 0, purchasesCount = 0, currentSection = 'Explorando Tienda', hasCart = false, cartItemsCount = 0) => {
@@ -355,11 +358,11 @@ export const useRadarStore = create<RadarStore>((set, get) => ({
     // Initial fetch from activity endpoint
     get().fetchActiveClients();
 
-    // Start 1.8-second auto-poll fallback to ensure real-time responsiveness under any network condition
+    // Start 1.2-second auto-poll fallback to ensure real-time responsiveness under any network condition
     if (!get().pollIntervalId) {
       const intervalId = setInterval(() => {
         get().fetchActiveClients();
-      }, 1800);
+      }, 1200);
       set({ pollIntervalId: intervalId });
     }
 

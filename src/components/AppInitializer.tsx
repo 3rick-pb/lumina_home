@@ -50,17 +50,33 @@ function ActivityTracker() {
 
   // Presence Tracking & Live Activity Updates
   useEffect(() => {
-    if (!user?.id) return;
+    // Detect authenticated user or assign a stable anonymous visitor session
+    let activeUser = user;
+    if (!activeUser?.id && typeof window !== 'undefined') {
+      let guestId = sessionStorage.getItem('lumina_guest_id');
+      if (!guestId) {
+        guestId = 'vis_' + Math.random().toString(36).substring(2, 9);
+        sessionStorage.setItem('lumina_guest_id', guestId);
+      }
+      activeUser = {
+        id: guestId,
+        name: 'Visitante en Tienda',
+        email: '',
+        role: 'USER' as const,
+      };
+    }
+
+    if (!activeUser?.id) return;
 
     const purchasesCount = orders?.length || 0;
     const totalSpent = orders?.reduce((acc, order) => acc + (order.total || 0), 0) || 0;
-    const userCity = address?.city || "Quito";
+    const userCity = address?.city || (activeUser.id.startsWith('vis_') ? "Guayaquil" : "Quito");
     const cartItemsCount = cartItems.reduce((sum, item) => sum + (item.quantity || 1), 0);
     const hasCart = isCartOpen || cartItemsCount > 0;
 
     // Track on channel & Database immediately on navigation/state change
     useRadarStore.getState().initRadar(
-      user,
+      activeUser,
       userCity,
       totalSpent,
       purchasesCount,
@@ -70,7 +86,7 @@ function ActivityTracker() {
     );
 
     useRadarStore.getState().trackActivity(
-      user,
+      activeUser,
       userCity,
       totalSpent,
       purchasesCount,
@@ -80,19 +96,32 @@ function ActivityTracker() {
     );
   }, [user, address, orders, pathname, searchParams, isCartOpen, cartItems, currentSection]);
 
-  // Periodic 12-second heartbeat to refresh DB activity and maintain online state
+  // Fast 1.5-second heartbeat to refresh DB activity and maintain instant real-time live radar
   useEffect(() => {
-    if (!user?.id) return;
+    let activeUser = user;
+    if (!activeUser?.id && typeof window !== 'undefined') {
+      const guestId = sessionStorage.getItem('lumina_guest_id');
+      if (guestId) {
+        activeUser = {
+          id: guestId,
+          name: 'Visitante en Tienda',
+          email: '',
+          role: 'USER' as const,
+        };
+      }
+    }
+
+    if (!activeUser?.id) return;
 
     const interval = setInterval(() => {
       const purchasesCount = orders?.length || 0;
       const totalSpent = orders?.reduce((acc, order) => acc + (order.total || 0), 0) || 0;
-      const userCity = address?.city || "Quito";
+      const userCity = address?.city || (activeUser.id.startsWith('vis_') ? "Guayaquil" : "Quito");
       const cartItemsCount = cartItems.reduce((sum, item) => sum + (item.quantity || 1), 0);
       const hasCart = isCartOpen || cartItemsCount > 0;
 
       useRadarStore.getState().trackActivity(
-        user,
+        activeUser,
         userCity,
         totalSpent,
         purchasesCount,
@@ -100,7 +129,7 @@ function ActivityTracker() {
         hasCart,
         cartItemsCount
       );
-    }, 12000);
+    }, 1500);
 
     return () => clearInterval(interval);
   }, [user, address, orders, isCartOpen, cartItems, currentSection]);

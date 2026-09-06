@@ -1012,11 +1012,11 @@ export default function ProfilePage() {
 
  <div className="flex items-center gap-3 pl-3 border-l border-gray-200 dark:border-white/10">
  <div className="w-10 h-10 rounded-2xl bg-[#8c9276]/15 text-[#8c9276] flex items-center justify-center font-bold text-sm border border-[#8c9276]/20 shadow-sm dark:shadow-none">
- {user.name.charAt(0).toUpperCase()}
+ {formatCleanName(user.name).charAt(0).toUpperCase()}
  </div>
  <div className="hidden md:block text-left">
- <p className="text-xs font-bold text-gray-900 dark:text-gray-100 leading-tight">{user.name}</p>
- <span className={`inline-block text-[10px] font-bold px-2 py-0.5 rounded-full mt-0.5 ${isAdmin ? "bg-a dark:bg-[#202022]mber-100 text-amber-900 border border-amber-200" : "bg-emerald-100 text-emerald-800 border border-emerald-200"}`}>
+ <p className="text-xs font-bold text-gray-900 dark:text-gray-100 leading-tight tracking-normal">{formatCleanName(user.name)}</p>
+ <span className={`inline-block text-[10px] font-bold px-2 py-0.5 rounded-full mt-0.5 ${isAdmin ? "bg-amber-100 dark:bg-amber-950/40 text-amber-900 dark:text-amber-300 border border-amber-200 dark:border-amber-800/40" : "bg-emerald-100 text-emerald-800 border border-emerald-200"}`}>
  {isAdmin ? "ADMINISTRADOR" : "CLIENTE"}
  </span>
  </div>
@@ -1027,8 +1027,8 @@ export default function ProfilePage() {
  {/* Greeting Banner */}
  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 px-1">
  <div>
- <h1 className="text-2xl md:text-3xl font-display font-bold text-gray-900 dark:text-gray-100 tracking-tight">
- {getGreeting()}, <span className="italic font-normal">{formatCleanName(user.name)}</span>
+ <h1 className="text-2xl md:text-3xl font-display font-bold text-gray-900 dark:text-gray-100 tracking-normal">
+ {getGreeting()}, <span className="italic font-normal tracking-wide ml-1.5 inline-block">{formatCleanName(user.name)}</span>
  </h1>
  <p className="text-xs md:text-sm text-gray-500 dark:text-gray-400 mt-0.5">
  {isAdmin 

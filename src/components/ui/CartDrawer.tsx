@@ -30,7 +30,7 @@ import {
 import { useCartStore } from "@/lib/store";
 import { useThemeStore, getResolvedTheme } from "@/lib/themeStore";
 import { clsx } from "clsx";
-import { useUserStore, Order } from "@/lib/userStore";
+import { useUserStore, Order, formatCleanName } from "@/lib/userStore";
 import { useCatalogStore, isAgotadoBadge } from "@/lib/catalogStore";
 
 // High-Ticket Payment Method SVGs & Micro-Components (1:1 Aspect Ratio, Zero Cutoffs)
@@ -1312,7 +1312,7 @@ export function CartDrawer() {
  <div className="min-w-0">
  <div className="flex items-center gap-2">
  <span className="font-bold text-xs text-gray-900 dark:text-gray-100 truncate">
- {addr.recipient || user?.name || "Destinatario"}
+ {formatCleanName(addr.recipient || user?.name || "Destinatario")}
  </span>
  {addr.isDefault && (
  <span className="text-[9px] font-bold uppercase tracking-wider text-emerald-700 bg-emerald-100 px-1.5 py-0.5 rounded border border-emerald-200 shrink-0">
@@ -1344,7 +1344,7 @@ export function CartDrawer() {
  <div>
  <div className="flex items-center gap-2">
  <p className="font-bold text-xs text-gray-900 dark:text-gray-100 ">
- {address.recipient || user?.name || "Destinatario"}
+ {formatCleanName(address.recipient || user?.name || "Destinatario")}
  </p>
  {address.isDefault && (
  <span className="text-[9px] font-bold uppercase tracking-wider text-emerald-700 bg-emerald-100 px-1.5 py-0.5 rounded border border-emerald-200 shrink-0">

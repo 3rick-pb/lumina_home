@@ -3,6 +3,8 @@ import { supabase } from '@/lib/supabase';
 import { cleanClientName } from '@/lib/radarStore';
 
 export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+export const fetchCache = 'force-no-store';
 
 interface CachedClient {
   id: string;
@@ -89,11 +91,20 @@ export async function GET() {
     });
   });
 
-  return NextResponse.json({
-    success: true,
-    count: clientsList.length,
-    clients: clientsList,
-  });
+  return NextResponse.json(
+    {
+      success: true,
+      count: clientsList.length,
+      clients: clientsList,
+    },
+    {
+      headers: {
+        'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0',
+        'CDN-Cache-Control': 'no-store',
+        'Vercel-CDN-Cache-Control': 'no-store',
+      },
+    }
+  );
 }
 
 export async function POST(request: Request) {
