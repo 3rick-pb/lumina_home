@@ -149,12 +149,36 @@ export default function AnalyticsRadarView(_props: AnalyticsRadarViewProps) {
   const dragStartRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
   const panStartRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
 
-  // Real-time clients synchronized via centralized radarStore (Supabase WebSockets + DB)
-  const connectedClients = useRadarStore((state) => state.clients);
+  // Real-time clients synchronized via centralized radarStore (Real authenticated accounts only)
+  const rawConnectedClients = useRadarStore((state) => state.clients);
+  const connectedClients = useMemo(() => {
+    if (!Array.isArray(rawConnectedClients)) return [];
+    return rawConnectedClients.filter(c => 
+      c && 
+      c.id && 
+      !c.id.startsWith('vis_') && 
+      !c.id.startsWith('guest_') && 
+      !c.name?.toLowerCase().includes('visitante')
+    );
+  }, [rawConnectedClients]);
+
   const fetchActiveClients = useRadarStore((state) => state.fetchActiveClients);
   const currentUser = useUserStore((state) => state.user);
+  const userAddress = useUserStore((state) => state.address);
+  const userOrders = useUserStore((state) => state.orders);
 
-  // Fast live polling (1.5s): ensures the dossier and metrics update live automatically
+  // Guarantee the active logged-in user is immediately registered and visible on the radar ("Tú")
+  useEffect(() => {
+    if (currentUser?.id && !currentUser.id.startsWith('vis_') && !currentUser.id.startsWith('guest_')) {
+      const city = userAddress?.city || "Quito";
+      const spent = userOrders?.reduce((acc, o) => acc + (o.total || 0), 0) || 0;
+      const purchases = userOrders?.length || 0;
+      useRadarStore.getState().initRadar(currentUser, city, spent, purchases, "Panel Radar / Métricas");
+      useRadarStore.getState().trackActivity(currentUser, city, spent, purchases, "Panel Radar / Métricas");
+    }
+  }, [currentUser, userAddress, userOrders]);
+
+  // Fast live polling (1.2s): ensures the dossier and metrics update live automatically
   useEffect(() => {
     fetchActiveClients();
     const pollInterval = setInterval(() => {

@@ -34,7 +34,13 @@ const CLIENT_TIMEOUT_MS = 2 * 60 * 1000; // 2 minutes inactivity timeout
 function pruneStaleClients() {
   const now = Date.now();
   globalClients.forEach((client, id) => {
-    if (!client.isOnline || now - client.lastSeen > CLIENT_TIMEOUT_MS) {
+    if (
+      id.startsWith('vis_') || 
+      id.startsWith('guest_') || 
+      client.name.toLowerCase().includes('visitante') ||
+      !client.isOnline || 
+      now - client.lastSeen > CLIENT_TIMEOUT_MS
+    ) {
       globalClients.delete(id);
     }
   });
@@ -54,7 +60,12 @@ export async function GET() {
 
     if (!error && Array.isArray(dbSessions) && dbSessions.length > 0) {
       for (const row of dbSessions) {
-        if (row.user_id) {
+        if (
+          row.user_id && 
+          !row.user_id.startsWith('vis_') && 
+          !row.user_id.startsWith('guest_') &&
+          !String(row.name).toLowerCase().includes('visitante')
+        ) {
           const purchases = Number(row.purchases_count) || 0;
           const frequency = purchases >= 12 ? 'Semanal' : purchases >= 6 ? 'Quincenal' : purchases >= 3 ? 'Mensual' : purchases >= 1 ? 'Ocasional' : '1ª Vez';
           globalClients.set(row.user_id, {
@@ -85,10 +96,17 @@ export async function GET() {
 
   const clientsList: Array<CachedClient & { isRealUser: boolean }> = [];
   globalClients.forEach((c) => {
-    clientsList.push({
-      ...c,
-      isRealUser: true,
-    });
+    if (
+      c.isOnline &&
+      !c.id.startsWith('vis_') &&
+      !c.id.startsWith('guest_') &&
+      !c.name.toLowerCase().includes('visitante')
+    ) {
+      clientsList.push({
+        ...c,
+        isRealUser: true,
+      });
+    }
   });
 
   return NextResponse.json(
@@ -128,8 +146,8 @@ export async function POST(request: Request) {
       isOnline,
     } = body;
 
-    if (!id) {
-      return NextResponse.json({ success: false, error: 'User ID is required' }, { status: 400 });
+    if (!id || id.startsWith('vis_') || id.startsWith('guest_') || String(name).toLowerCase().includes('visitante')) {
+      return NextResponse.json({ success: false, error: 'Only real authenticated users are tracked' }, { status: 400 });
     }
 
     const cleanName = cleanClientName(name);

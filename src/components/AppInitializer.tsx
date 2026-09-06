@@ -48,35 +48,27 @@ function ActivityTracker() {
     currentSection = "Explorando Tienda";
   }
 
-  // Presence Tracking & Live Activity Updates
+  // Presence Tracking & Live Activity Updates (Real Authenticated Users Only)
   useEffect(() => {
-    // Detect authenticated user or assign a stable anonymous visitor session
-    let activeUser = user;
-    if (!activeUser?.id && typeof window !== 'undefined') {
-      let guestId = sessionStorage.getItem('lumina_guest_id');
-      if (!guestId) {
-        guestId = 'vis_' + Math.random().toString(36).substring(2, 9);
-        sessionStorage.setItem('lumina_guest_id', guestId);
-      }
-      activeUser = {
-        id: guestId,
-        name: 'Visitante en Tienda',
-        email: '',
-        role: 'USER' as const,
-      };
+    // Purge legacy guest tokens
+    if (typeof window !== 'undefined') {
+      try {
+        sessionStorage.removeItem('lumina_guest_id');
+        localStorage.removeItem('lumina_guest_id');
+      } catch {}
     }
 
-    if (!activeUser?.id) return;
+    if (!user || !user.id || user.id.startsWith('vis_') || user.id.startsWith('guest_')) return;
 
     const purchasesCount = orders?.length || 0;
     const totalSpent = orders?.reduce((acc, order) => acc + (order.total || 0), 0) || 0;
-    const userCity = address?.city || (activeUser.id.startsWith('vis_') ? "Guayaquil" : "Quito");
+    const userCity = address?.city || "Quito";
     const cartItemsCount = cartItems.reduce((sum, item) => sum + (item.quantity || 1), 0);
     const hasCart = isCartOpen || cartItemsCount > 0;
 
     // Track on channel & Database immediately on navigation/state change
     useRadarStore.getState().initRadar(
-      activeUser,
+      user,
       userCity,
       totalSpent,
       purchasesCount,
@@ -86,7 +78,7 @@ function ActivityTracker() {
     );
 
     useRadarStore.getState().trackActivity(
-      activeUser,
+      user,
       userCity,
       totalSpent,
       purchasesCount,
@@ -96,32 +88,26 @@ function ActivityTracker() {
     );
   }, [user, address, orders, pathname, searchParams, isCartOpen, cartItems, currentSection]);
 
-  // Fast 1.5-second heartbeat to refresh DB activity and maintain instant real-time live radar
+  // Fast 1.5-second heartbeat to refresh DB activity and maintain instant real-time live radar for the active user
   useEffect(() => {
-    let activeUser = user;
-    if (!activeUser?.id && typeof window !== 'undefined') {
-      const guestId = sessionStorage.getItem('lumina_guest_id');
-      if (guestId) {
-        activeUser = {
-          id: guestId,
-          name: 'Visitante en Tienda',
-          email: '',
-          role: 'USER' as const,
-        };
-      }
-    }
-
-    if (!activeUser?.id) return;
+    if (!user || !user.id || user.id.startsWith('vis_') || user.id.startsWith('guest_')) return;
 
     const interval = setInterval(() => {
-      const purchasesCount = orders?.length || 0;
-      const totalSpent = orders?.reduce((acc, order) => acc + (order.total || 0), 0) || 0;
-      const userCity = address?.city || (activeUser.id.startsWith('vis_') ? "Guayaquil" : "Quito");
-      const cartItemsCount = cartItems.reduce((sum, item) => sum + (item.quantity || 1), 0);
-      const hasCart = isCartOpen || cartItemsCount > 0;
+      const currentUser = useUserStore.getState().user;
+      if (!currentUser?.id || currentUser.id.startsWith('vis_') || currentUser.id.startsWith('guest_')) return;
+
+      const currentOrders = useUserStore.getState().orders;
+      const currentAddress = useUserStore.getState().address;
+      const purchasesCount = currentOrders?.length || 0;
+      const totalSpent = currentOrders?.reduce((acc, order) => acc + (order.total || 0), 0) || 0;
+      const userCity = currentAddress?.city || "Quito";
+      const currentCartItems = useCartStore.getState().items;
+      const currentCartOpen = useCartStore.getState().isOpen;
+      const cartItemsCount = currentCartItems.reduce((sum, item) => sum + (item.quantity || 1), 0);
+      const hasCart = currentCartOpen || cartItemsCount > 0;
 
       useRadarStore.getState().trackActivity(
-        activeUser,
+        currentUser,
         userCity,
         totalSpent,
         purchasesCount,

@@ -193,7 +193,13 @@ function parsePresenceState(channel: RealtimeChannel | null): ConnectedClient[] 
       const presenceArr = newState[key] as unknown[];
       if (presenceArr && presenceArr.length > 0) {
         const clientData = presenceArr[0] as ConnectedClient;
-        if (clientData && clientData.id) {
+        if (
+          clientData && 
+          clientData.id && 
+          !clientData.id.startsWith('vis_') && 
+          !clientData.id.startsWith('guest_') && 
+          !clientData.name?.toLowerCase().includes('visitante')
+        ) {
           clientList.push(clientData);
         }
       }
@@ -211,11 +217,25 @@ function mergeClientLists(listA: ConnectedClient[], listB: ConnectedClient[]): C
   const map = new Map<string, ConnectedClient>();
 
   for (const c of listA) {
-    if (c && c.id) map.set(c.id, c);
+    if (
+      c && 
+      c.id && 
+      !c.id.startsWith('vis_') && 
+      !c.id.startsWith('guest_') && 
+      !c.name?.toLowerCase().includes('visitante')
+    ) {
+      map.set(c.id, c);
+    }
   }
 
   for (const c of listB) {
-    if (c && c.id) {
+    if (
+      c && 
+      c.id && 
+      !c.id.startsWith('vis_') && 
+      !c.id.startsWith('guest_') && 
+      !c.name?.toLowerCase().includes('visitante')
+    ) {
       const existing = map.get(c.id);
       if (!existing) {
         map.set(c.id, c);
@@ -274,7 +294,7 @@ export const useRadarStore = create<RadarStore>((set, get) => ({
   },
 
   trackActivity: async (user, city = 'Quito', totalSpent = 0, purchasesCount = 0, currentSection = 'Explorando Tienda', hasCart = false, cartItemsCount = 0) => {
-    if (!user?.id) return;
+    if (!user?.id || user.id.startsWith('vis_') || user.id.startsWith('guest_') || user.name?.toLowerCase().includes('visitante')) return;
 
     const coords = resolveCoordinates(city);
     const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
@@ -303,6 +323,11 @@ export const useRadarStore = create<RadarStore>((set, get) => ({
       isRealUser: true,
       isOnline: true,
     };
+
+    // Immediately reflect the current logged-in user in local clients so "Tú" is visible right away
+    set((state) => ({
+      clients: mergeClientLists(state.clients, [payload]),
+    }));
 
     // Concurrently broadcast to Presence Channel, Server In-Memory/DB API, and Supabase Table
     const activeChannel = get().channel;
@@ -352,6 +377,8 @@ export const useRadarStore = create<RadarStore>((set, get) => ({
   },
 
   initRadar: (user, city = 'Quito', totalSpent = 0, purchasesCount = 0, currentSection = 'Explorando Tienda', hasCart = false, cartItemsCount = 0) => {
+    if (!user?.id || user.id.startsWith('vis_') || user.id.startsWith('guest_')) return;
+
     let activeChannel = get().channel;
     let dbChan = get().dbChannel;
 
