@@ -737,10 +737,10 @@ export default function ProfilePage() {
  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
  }
  `}</style>
- <div className="theme-transition min-h-screen w-full max-w-full overflow-x-hidden bg-[#f3f4f6] dark:bg-[#121212] text-gray-900 dark:text-gray-100 flex p-3 md:p-6 lg:p-8 selection:bg-[#8c9276]/20">
+ <div className="theme-transition min-h-screen w-full max-w-full overflow-x-hidden bg-[#f3f4f6] dark:bg-[#1c1c1e] text-gray-900 dark:text-gray-100 flex p-3 md:p-6 lg:p-8 selection:bg-[#8c9276]/20">
  
  {/* 1. Left Vertical Icon Sidebar (Reference Style) */}
- <aside className="w-16 md:w-20 bg-white/90 dark:bg-[#121212]/90 backdrop-blur-2xl rounded-3xl border border-white/80 shadow-[0_8px_32px_rgba(0,0,0,0.03)] flex flex-col items-center py-6 justify-between shrink-0 mr-4 md:mr-6">
+ <aside className="w-16 md:w-20 bg-white/90 dark:bg-[#1c1c1e]/90 backdrop-blur-2xl rounded-3xl border border-white/80 shadow-[0_8px_32px_rgba(0,0,0,0.03)] flex flex-col items-center py-6 justify-between shrink-0 mr-4 md:mr-6">
  
  {/* Brand Logo Symbol */}
  <div className="flex flex-col items-center gap-6">
@@ -752,7 +752,7 @@ export default function ProfilePage() {
  <nav className="flex flex-col items-center gap-3">
  <button 
  onClick={() => setActiveTab("overview")} 
- className={`w-11 h-11 rounded-2xl flex items-center justify-center transition-all ${activeTab === "overview" ? "bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 shadow-md dark:shadow-none shadow-gray-900/15" : "text-gray-400 hover:text-gray-900 dark:text-gray-100 hover:bg-gray-100 dark:bg-[#222222]"}`}
+ className={`w-11 h-11 rounded-2xl flex items-center justify-center transition-all ${activeTab === "overview" ? "bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 shadow-md dark:shadow-none shadow-gray-900/15" : "text-gray-400 hover:text-gray-900 dark:text-gray-100 hover:bg-gray-100 dark:bg-[#3a3a3c]"}`}
  title="Vista General"
  >
  <LayoutDashboard className="w-5 h-5" />
@@ -760,7 +760,7 @@ export default function ProfilePage() {
 
  <button 
  onClick={() => setActiveTab("orders")} 
- className={`w-11 h-11 rounded-2xl flex items-center justify-center transition-all ${activeTab === "orders" ? "bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 shadow-md dark:shadow-none shadow-gray-900/15" : "text-gray-400 hover:text-gray-900 dark:text-gray-100 hover:bg-gray-100 dark:bg-[#222222]"}`}
+ className={`w-11 h-11 rounded-2xl flex items-center justify-center transition-all ${activeTab === "orders" ? "bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 shadow-md dark:shadow-none shadow-gray-900/15" : "text-gray-400 hover:text-gray-900 dark:text-gray-100 hover:bg-gray-100 dark:bg-[#3a3a3c]"}`}
  title="Pedidos & Historial"
  >
  <ShoppingBag className="w-5 h-5" />
@@ -768,7 +768,7 @@ export default function ProfilePage() {
 
  <button 
  onClick={() => setActiveTab("cards")} 
- className={`w-11 h-11 rounded-2xl flex items-center justify-center transition-all ${activeTab === "cards" ? "bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 shadow-md dark:shadow-none shadow-gray-900/15" : "text-gray-400 hover:text-gray-900 dark:text-gray-100 hover:bg-gray-100 dark:bg-[#222222]"}`}
+ className={`w-11 h-11 rounded-2xl flex items-center justify-center transition-all ${activeTab === "cards" ? "bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 shadow-md dark:shadow-none shadow-gray-900/15" : "text-gray-400 hover:text-gray-900 dark:text-gray-100 hover:bg-gray-100 dark:bg-[#3a3a3c]"}`}
  title="Mis Tarjetas"
  >
  <CreditCard className="w-5 h-5" />
@@ -776,7 +776,7 @@ export default function ProfilePage() {
 
  <button 
  onClick={() => setActiveTab("favorites")} 
- className={`w-11 h-11 rounded-2xl flex items-center justify-center transition-all ${activeTab === "favorites" ? "bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 shadow-md dark:shadow-none shadow-gray-900/15" : "text-gray-400 hover:text-gray-900 dark:text-gray-100 hover:bg-gray-100 dark:bg-[#222222]"}`}
+ className={`w-11 h-11 rounded-2xl flex items-center justify-center transition-all ${activeTab === "favorites" ? "bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 shadow-md dark:shadow-none shadow-gray-900/15" : "text-gray-400 hover:text-gray-900 dark:text-gray-100 hover:bg-gray-100 dark:bg-[#3a3a3c]"}`}
  title="Favoritos Guardados"
  >
  <Heart className="w-5 h-5" />
@@ -786,7 +786,7 @@ export default function ProfilePage() {
  <>
  <button 
  onClick={() => setActiveTab("catalog")} 
- className={`w-11 h-11 rounded-2xl flex items-center justify-center transition-all ${activeTab === "catalog" ? "bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 shadow-md dark:shadow-none shadow-gray-900/15" : "text-gray-400 hover:text-gray-900 dark:text-gray-100 hover:bg-gray-100 dark:bg-[#222222]"}`}
+ className={`w-11 h-11 rounded-2xl flex items-center justify-center transition-all ${activeTab === "catalog" ? "bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 shadow-md dark:shadow-none shadow-gray-900/15" : "text-gray-400 hover:text-gray-900 dark:text-gray-100 hover:bg-gray-100 dark:bg-[#3a3a3c]"}`}
  title="Control de Catálogo"
  >
  <Package className="w-5 h-5" />
@@ -794,7 +794,7 @@ export default function ProfilePage() {
 
  <button 
  onClick={() => setActiveTab("niches")} 
- className={`w-11 h-11 rounded-2xl flex items-center justify-center transition-all ${activeTab === "niches" ? "bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 shadow-md dark:shadow-none shadow-gray-900/15" : "text-gray-400 hover:text-gray-900 dark:text-gray-100 hover:bg-gray-100 dark:bg-[#222222]"}`}
+ className={`w-11 h-11 rounded-2xl flex items-center justify-center transition-all ${activeTab === "niches" ? "bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 shadow-md dark:shadow-none shadow-gray-900/15" : "text-gray-400 hover:text-gray-900 dark:text-gray-100 hover:bg-gray-100 dark:bg-[#3a3a3c]"}`}
  title="Gestión de Nichos"
  >
  <Layers className="w-5 h-5" />
@@ -802,7 +802,7 @@ export default function ProfilePage() {
 
  <button 
  onClick={() => setActiveTab("analytics")} 
- className={`w-11 h-11 rounded-2xl flex items-center justify-center transition-all ${activeTab === "analytics" ? "bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 shadow-md dark:shadow-none shadow-gray-900/15" : "text-gray-400 hover:text-gray-900 dark:text-gray-100 hover:bg-gray-100 dark:bg-[#222222]"}`}
+ className={`w-11 h-11 rounded-2xl flex items-center justify-center transition-all ${activeTab === "analytics" ? "bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 shadow-md dark:shadow-none shadow-gray-900/15" : "text-gray-400 hover:text-gray-900 dark:text-gray-100 hover:bg-gray-100 dark:bg-[#3a3a3c]"}`}
  title="Radar de Clientes & Analítica"
  >
  <Globe className="w-5 h-5" />
@@ -812,7 +812,7 @@ export default function ProfilePage() {
 
  <button 
  onClick={() => setActiveTab("settings")} 
- className={`w-11 h-11 rounded-2xl flex items-center justify-center transition-all ${activeTab === "settings" ? "bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 shadow-md dark:shadow-none shadow-gray-900/15" : "text-gray-400 hover:text-gray-900 dark:text-gray-100 hover:bg-gray-100 dark:bg-[#222222]"}`}
+ className={`w-11 h-11 rounded-2xl flex items-center justify-center transition-all ${activeTab === "settings" ? "bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 shadow-md dark:shadow-none shadow-gray-900/15" : "text-gray-400 hover:text-gray-900 dark:text-gray-100 hover:bg-gray-100 dark:bg-[#3a3a3c]"}`}
  title="Ajustes de Cuenta"
  >
  <Settings className="w-5 h-5" />
@@ -822,7 +822,7 @@ export default function ProfilePage() {
 
  {/* Bottom Actions */}
  <div className="flex flex-col items-center gap-3">
- <Link href="/" className="w-10 h-10 rounded-2xl flex items-center justify-center text-gray-400 hover:text-gray-900 dark:text-gray-100 hover:bg-gray-100 dark:bg-[#222222] transition-colors" title="Volver a la Tienda">
+ <Link href="/" className="w-10 h-10 rounded-2xl flex items-center justify-center text-gray-400 hover:text-gray-900 dark:text-gray-100 hover:bg-gray-100 dark:bg-[#3a3a3c] transition-colors" title="Volver a la Tienda">
  <Store className="w-5 h-5" />
  </Link>
  <button 
@@ -839,7 +839,7 @@ export default function ProfilePage() {
  <main className="flex-1 flex flex-col min-w-0 max-w-7xl w-full mx-auto space-y-6 overflow-hidden">
  
  {/* Top App Bar (Reference Style) */}
- <header className="relative z-40 bg-white/80 dark:bg-[#121212]/80 backdrop-blur-2xl p-4 md:px-6 rounded-3xl border border-white/80 shadow-[0_4px_20px_rgba(0,0,0,0.02)] flex items-center justify-between gap-4">
+ <header className="relative z-40 bg-white/80 dark:bg-[#1c1c1e]/80 backdrop-blur-2xl p-4 md:px-6 rounded-3xl border border-white/80 shadow-[0_4px_20px_rgba(0,0,0,0.02)] flex items-center justify-between gap-4">
  
  {/* Brand & Tabs */}
  <div className="flex items-center gap-3 md:gap-6 overflow-x-auto hide-scrollbar">
@@ -847,28 +847,28 @@ export default function ProfilePage() {
  Lumina<span className="text-[#8c9276]">.</span>
  </span>
 
- <div className="flex items-center bg-gray-100/80 dark:bg-[#222222]/80 p-1 rounded-2xl shrink-0">
+ <div className="flex items-center bg-gray-100/80 dark:bg-[#3a3a3c]/80 p-1 rounded-2xl shrink-0">
  <button 
  onClick={() => setActiveTab("overview")} 
- className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all ${activeTab === "overview" ? "bg-white dark:bg-[#121212] text-gray-900 dark:text-gray-100 shadow-sm dark:shadow-none" : "text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:text-gray-100"}`}
+ className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all ${activeTab === "overview" ? "bg-white dark:bg-[#1c1c1e] text-gray-900 dark:text-gray-100 shadow-sm dark:shadow-none" : "text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:text-gray-100"}`}
  >
  Resumen
  </button>
  <button 
  onClick={() => setActiveTab("orders")} 
- className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all ${activeTab === "orders" ? "bg-white dark:bg-[#121212] text-gray-900 dark:text-gray-100 shadow-sm dark:shadow-none" : "text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:text-gray-100"}`}
+ className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all ${activeTab === "orders" ? "bg-white dark:bg-[#1c1c1e] text-gray-900 dark:text-gray-100 shadow-sm dark:shadow-none" : "text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:text-gray-100"}`}
  >
  Actividad ({orders.length})
  </button>
  <button 
  onClick={() => setActiveTab("cards")} 
- className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all ${activeTab === "cards" ? "bg-white dark:bg-[#121212] text-gray-900 dark:text-gray-100 shadow-sm dark:shadow-none" : "text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:text-gray-100"}`}
+ className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all ${activeTab === "cards" ? "bg-white dark:bg-[#1c1c1e] text-gray-900 dark:text-gray-100 shadow-sm dark:shadow-none" : "text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:text-gray-100"}`}
  >
  Tarjetas ({cards.length})
  </button>
  <button 
  onClick={() => setActiveTab("favorites")} 
- className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all ${activeTab === "favorites" ? "bg-white dark:bg-[#121212] text-gray-900 dark:text-gray-100 shadow-sm dark:shadow-none" : "text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:text-gray-100"}`}
+ className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all ${activeTab === "favorites" ? "bg-white dark:bg-[#1c1c1e] text-gray-900 dark:text-gray-100 shadow-sm dark:shadow-none" : "text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:text-gray-100"}`}
  >
  Favoritos ({favorites.length})
  </button>
@@ -876,19 +876,19 @@ export default function ProfilePage() {
  <>
  <button 
  onClick={() => setActiveTab("catalog")} 
- className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all ${activeTab === "catalog" ? "bg-white dark:bg-[#121212] text-gray-900 dark:text-gray-100 shadow-sm dark:shadow-none" : "text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:text-gray-100"}`}
+ className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all ${activeTab === "catalog" ? "bg-white dark:bg-[#1c1c1e] text-gray-900 dark:text-gray-100 shadow-sm dark:shadow-none" : "text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:text-gray-100"}`}
  >
  Inventario ({products.length})
  </button>
  <button 
  onClick={() => setActiveTab("niches")} 
- className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all ${activeTab === "niches" ? "bg-white dark:bg-[#121212] text-gray-900 dark:text-gray-100 shadow-sm dark:shadow-none" : "text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:text-gray-100"}`}
+ className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all ${activeTab === "niches" ? "bg-white dark:bg-[#1c1c1e] text-gray-900 dark:text-gray-100 shadow-sm dark:shadow-none" : "text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:text-gray-100"}`}
  >
  Nichos & Badges ({categories.length})
  </button>
  <button 
  onClick={() => setActiveTab("analytics")} 
- className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all ${activeTab === "analytics" ? "bg-white dark:bg-[#121212] text-gray-900 dark:text-gray-100 shadow-sm dark:shadow-none" : "text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:text-gray-100"}`}
+ className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all ${activeTab === "analytics" ? "bg-white dark:bg-[#1c1c1e] text-gray-900 dark:text-gray-100 shadow-sm dark:shadow-none" : "text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:text-gray-100"}`}
  >
  Radar en Vivo
  </button>
@@ -896,7 +896,7 @@ export default function ProfilePage() {
  )}
  <button 
  onClick={() => setActiveTab("settings")} 
- className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all ${activeTab === "settings" ? "bg-white dark:bg-[#121212] text-gray-900 dark:text-gray-100 shadow-sm dark:shadow-none" : "text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:text-gray-100"}`}
+ className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all ${activeTab === "settings" ? "bg-white dark:bg-[#1c1c1e] text-gray-900 dark:text-gray-100 shadow-sm dark:shadow-none" : "text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:text-gray-100"}`}
  >
  Ajustes
  </button>
@@ -906,7 +906,7 @@ export default function ProfilePage() {
  {/* Right Search Input & Profile Badge */}
  <div className="flex items-center gap-3 shrink-0">
  <div className="relative z-50">
- <div className="hidden sm:flex items-center bg-gray-100/70 dark:bg-[#222222]/70 px-3 py-1.5 rounded-2xl border border-gray-200/50 dark:border-white/10/50 text-xs text-gray-600 dark:text-gray-400 focus-within:ring-2 focus-within:ring-[#8c9276]/30 focus-within:bg-white dark:bg-[#121212] transition-all">
+ <div className="hidden sm:flex items-center bg-gray-100/70 dark:bg-[#3a3a3c]/70 px-3 py-1.5 rounded-2xl border border-gray-200/50 dark:border-white/10/50 text-xs text-gray-600 dark:text-gray-400 focus-within:ring-2 focus-within:ring-[#8c9276]/30 focus-within:bg-white dark:bg-[#1c1c1e] transition-all">
  <Search className="w-3.5 h-3.5 mr-2 text-gray-400" />
  <input 
  type="text" 
@@ -924,7 +924,7 @@ export default function ProfilePage() {
 
  {/* Floating Live Quick Search Results */}
  {searchQuery.trim().length > 0 && (
- <div className="absolute right-0 top-full mt-2 w-80 sm:w-96 bg-white/95 dark:bg-[#121212]/95 backdrop-blur-2xl border border-gray-200/80 dark:border-white/10/80 rounded-3xl shadow-[0_24px_70px_rgba(0,0,0,0.22)] p-4 z-[100] space-y-3 animate-fade-in text-xs pointer-events-auto">
+ <div className="absolute right-0 top-full mt-2 w-80 sm:w-96 bg-white/95 dark:bg-[#1c1c1e]/95 backdrop-blur-2xl border border-gray-200/80 dark:border-white/10/80 rounded-3xl shadow-[0_24px_70px_rgba(0,0,0,0.22)] p-4 z-[100] space-y-3 animate-fade-in text-xs pointer-events-auto">
  <div className="flex items-center justify-between pb-1 border-b border-gray-100 dark:border-white/5 text-[10px] text-gray-400 uppercase font-bold">
  <span>Resultados de búsqueda</span>
  <button onClick={() => setSearchQuery("")} className="hover:text-gray-700 dark:text-gray-300 font-medium text-xs normal-case">Cerrar</button>
@@ -938,10 +938,10 @@ export default function ProfilePage() {
  <div 
  key={ord.id} 
  onClick={() => { setActiveTab("orders"); setSelectedOrder(ord); setSearchQuery(""); }}
- className="p-1.5 rounded-lg hover:bg-gray-100 dark:bg-[#222222] cursor-pointer flex items-center justify-between transition-colors"
+ className="p-1.5 rounded-lg hover:bg-gray-100 dark:bg-[#3a3a3c] cursor-pointer flex items-center justify-between transition-colors"
  >
  <span className="font-mono font-bold text-gray-800 dark:text-gray-200">{ord.id}</span>
- <span className="text-[10px] px-1.5 py-0.5 rounded bg-gray-100 dark:bg-[#222222] text-gray-600 dark:text-gray-400 font-semibold">{ord.status}</span>
+ <span className="text-[10px] px-1.5 py-0.5 rounded bg-gray-100 dark:bg-[#3a3a3c] text-gray-600 dark:text-gray-400 font-semibold">{ord.status}</span>
  </div>
  ))}
  </div>
@@ -955,7 +955,7 @@ export default function ProfilePage() {
  <div 
  key={prod.id} 
  onClick={() => { setActiveTab(isAdmin ? "catalog" : "favorites"); setSearchQuery(""); }}
- className="p-1.5 rounded-lg hover:bg-gray-100 dark:bg-[#222222] cursor-pointer flex items-center justify-between transition-colors"
+ className="p-1.5 rounded-lg hover:bg-gray-100 dark:bg-[#3a3a3c] cursor-pointer flex items-center justify-between transition-colors"
  >
  <span className="font-medium text-gray-800 dark:text-gray-200 truncate max-w-[150px]">{prod.title}</span>
  <span className="font-bold text-gray-900 dark:text-gray-100">${prod.price.toFixed(2)}</span>
@@ -973,7 +973,7 @@ export default function ProfilePage() {
  )}
  </div>
 
- <Link href="/" className="hidden sm:flex text-xs font-medium text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:text-gray-100 px-3 py-1.5 rounded-xl hover:bg-gray-100 dark:bg-[#222222] transition-colors">
+ <Link href="/" className="hidden sm:flex text-xs font-medium text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:text-gray-100 px-3 py-1.5 rounded-xl hover:bg-gray-100 dark:bg-[#3a3a3c] transition-colors">
  Ver Tienda &rarr;
  </Link>
 
@@ -983,7 +983,7 @@ export default function ProfilePage() {
  </div>
  <div className="hidden md:block text-left">
  <p className="text-xs font-bold text-gray-900 dark:text-gray-100 leading-tight">{user.name}</p>
- <span className={`inline-block text-[10px] font-bold px-2 py-0.5 rounded-full mt-0.5 ${isAdmin ? "bg-a dark:bg-[#121212]mber-100 text-amber-900 border border-amber-200" : "bg-emerald-100 text-emerald-800 border border-emerald-200"}`}>
+ <span className={`inline-block text-[10px] font-bold px-2 py-0.5 rounded-full mt-0.5 ${isAdmin ? "bg-a dark:bg-[#1c1c1e]mber-100 text-amber-900 border border-amber-200" : "bg-emerald-100 text-emerald-800 border border-emerald-200"}`}>
  {isAdmin ? "ADMINISTRADOR" : "CLIENTE"}
  </span>
  </div>
@@ -1020,7 +1020,7 @@ export default function ProfilePage() {
  <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 animate-fade-in">
  
  {/* BENTO CARD 1: Financial Balance / Spendings (4 cols) */}
- <div className="lg:col-span-4 bg-white/90 dark:bg-[#121212]/90 backdrop-blur-xl p-6 rounded-[2rem] border border-white/80 shadow-[0_4px_24px_rgba(0,0,0,0.02)] flex flex-col justify-between">
+ <div className="lg:col-span-4 bg-white/90 dark:bg-[#1c1c1e]/90 backdrop-blur-xl p-6 rounded-[2rem] border border-white/80 shadow-[0_4px_24px_rgba(0,0,0,0.02)] flex flex-col justify-between">
  <div>
  <div className="flex items-center justify-between mb-4">
  <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">
@@ -1029,7 +1029,7 @@ export default function ProfilePage() {
  <span className={`text-xs font-bold px-2.5 py-1 rounded-full border flex items-center gap-1 ${
  (isAdmin ? totalInventoryValue > 0 : totalUserSpend > 0) 
  ? "text-emerald-700 bg-emerald-50 border-emerald-100" 
- : "text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-[#222222] border-gray-200 dark:border-white/10"
+ : "text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-[#3a3a3c] border-gray-200 dark:border-white/10"
  }`}>
  {isAdmin ? `${products.length} piezas` : `${orders.length} pedidos`}
  </span>
@@ -1054,7 +1054,7 @@ export default function ProfilePage() {
  </Link>
  <button 
  onClick={() => setActiveTab("orders")}
- className="py-3 px-4 bg-gray-100 dark:bg-[#222222] text-gray-700 dark:text-gray-300 rounded-2xl text-xs font-semibold hover:bg-gray-200 dark:bg-[#2a2a2a] transition-colors"
+ className="py-3 px-4 bg-gray-100 dark:bg-[#3a3a3c] text-gray-700 dark:text-gray-300 rounded-2xl text-xs font-semibold hover:bg-gray-200 dark:bg-[#48484a] transition-colors"
  >
  Historial
  </button>
@@ -1073,7 +1073,7 @@ export default function ProfilePage() {
  <span className="text-xs font-medium text-white/80 dark:text-gray-900/80">
  {isAdmin ? "Inventario" : "Mis Pedidos"}
  </span>
- <div className="w-8 h-8 rounded-xl bg-white/20 dark:bg-[#121212]/20 backdrop-blur-md flex items-center justify-center">
+ <div className="w-8 h-8 rounded-xl bg-white/20 dark:bg-[#1c1c1e]/20 backdrop-blur-md flex items-center justify-center">
  <Package className="w-4 h-4 text-white dark:text-gray-900" />
  </div>
  </div>
@@ -1088,13 +1088,13 @@ export default function ProfilePage() {
  {/* Box 2 (Nichos or Favoritos) */}
  <button 
  onClick={() => setActiveTab(isAdmin ? "niches" : "favorites")} 
- className="bg-white/90 dark:bg-[#121212]/90 backdrop-blur-xl p-5 rounded-[2rem] border border-white/80 shadow-[0_4px_24px_rgba(0,0,0,0.02)] flex flex-col justify-between text-left hover:scale-[1.02] transition-transform"
+ className="bg-white/90 dark:bg-[#1c1c1e]/90 backdrop-blur-xl p-5 rounded-[2rem] border border-white/80 shadow-[0_4px_24px_rgba(0,0,0,0.02)] flex flex-col justify-between text-left hover:scale-[1.02] transition-transform"
  >
  <div className="flex items-center justify-between">
  <span className="text-xs font-medium text-gray-500 dark:text-gray-400">
  {isAdmin ? "Nichos" : "Favoritos"}
  </span>
- <div className="w-8 h-8 rounded-xl bg-gray-100 dark:bg-[#222222] flex items-center justify-center text-gray-700 dark:text-gray-300">
+ <div className="w-8 h-8 rounded-xl bg-gray-100 dark:bg-[#3a3a3c] flex items-center justify-center text-gray-700 dark:text-gray-300">
  {isAdmin ? <Layers className="w-4 h-4" /> : <Heart className="w-4 h-4 text-red-500" />}
  </div>
  </div>
@@ -1111,12 +1111,12 @@ export default function ProfilePage() {
  </button>
 
  {/* Box 3 */}
- <div className="bg-white/90 dark:bg-[#121212]/90 backdrop-blur-xl p-5 rounded-[2rem] border border-white/80 shadow-[0_4px_24px_rgba(0,0,0,0.02)] flex flex-col justify-between">
+ <div className="bg-white/90 dark:bg-[#1c1c1e]/90 backdrop-blur-xl p-5 rounded-[2rem] border border-white/80 shadow-[0_4px_24px_rgba(0,0,0,0.02)] flex flex-col justify-between">
  <div className="flex items-center justify-between">
  <span className="text-xs font-medium text-gray-500 dark:text-gray-400">
  {isAdmin ? "Rebajas" : "Lumina Puntos"}
  </span>
- <div className="w-8 h-8 rounded-xl bg-gray-100 dark:bg-[#222222] flex items-center justify-center text-gray-700 dark:text-gray-300">
+ <div className="w-8 h-8 rounded-xl bg-gray-100 dark:bg-[#3a3a3c] flex items-center justify-center text-gray-700 dark:text-gray-300">
  <Sparkles className="w-4 h-4 text-[#8c9276]" />
  </div>
  </div>
@@ -1131,12 +1131,12 @@ export default function ProfilePage() {
  </div>
 
  {/* Box 4 */}
- <div className="bg-white/90 dark:bg-[#121212]/90 backdrop-blur-xl p-5 rounded-[2rem] border border-white/80 shadow-[0_4px_24px_rgba(0,0,0,0.02)] flex flex-col justify-between">
+ <div className="bg-white/90 dark:bg-[#1c1c1e]/90 backdrop-blur-xl p-5 rounded-[2rem] border border-white/80 shadow-[0_4px_24px_rgba(0,0,0,0.02)] flex flex-col justify-between">
  <div className="flex items-center justify-between">
  <span className="text-xs font-medium text-gray-500 dark:text-gray-400">
  {isAdmin ? "Ventas Brutas" : "Tarjetas"}
  </span>
- <div className="w-8 h-8 rounded-xl bg-gray-100 dark:bg-[#222222] flex items-center justify-center text-gray-700 dark:text-gray-300">
+ <div className="w-8 h-8 rounded-xl bg-gray-100 dark:bg-[#3a3a3c] flex items-center justify-center text-gray-700 dark:text-gray-300">
  <CreditCard className="w-4 h-4 text-[#8c9276]" />
  </div>
  </div>
@@ -1152,7 +1152,7 @@ export default function ProfilePage() {
  </div>
 
  {/* BENTO CARD 3: REAL DYNAMIC CHART (4 cols) */}
- <div className="lg:col-span-4 min-w-0 max-w-full bg-white/90 dark:bg-[#121212]/90 backdrop-blur-xl p-6 rounded-[2rem] border border-white/80 shadow-[0_4px_24px_rgba(0,0,0,0.02)] flex flex-col justify-between overflow-hidden">
+ <div className="lg:col-span-4 min-w-0 max-w-full bg-white/90 dark:bg-[#1c1c1e]/90 backdrop-blur-xl p-6 rounded-[2rem] border border-white/80 shadow-[0_4px_24px_rgba(0,0,0,0.02)] flex flex-col justify-between overflow-hidden">
  <div className="flex items-center justify-between mb-4">
  <div className="min-w-0 pr-2">
  <h3 className="text-sm font-bold text-gray-900 dark:text-gray-100 truncate">
@@ -1168,7 +1168,7 @@ export default function ProfilePage() {
  : "Gastos calculados por mes (2026)")}
  </p>
  </div>
- <span className="text-[10px] font-bold px-2 py-1 bg-gray-100 dark:bg-[#222222] rounded-lg text-gray-600 dark:text-gray-400 shrink-0">
+ <span className="text-[10px] font-bold px-2 py-1 bg-gray-100 dark:bg-[#3a3a3c] rounded-lg text-gray-600 dark:text-gray-400 shrink-0">
  {isAdmin 
  ? (hoveredNicheIdx !== null && categoryDistributionData[hoveredNicheIdx]
  ? `${categoryDistributionData[hoveredNicheIdx].count} piezas`
@@ -1248,7 +1248,7 @@ export default function ProfilePage() {
  ? isHovered 
  ? "bg-gradient-to-t from-[#c25e24] via-[#e07a3f] to-[#f59e0b] shadow-md dark:shadow-none shadow-[#e07a3f]/30 ring-2 ring-[#e07a3f]/40" 
  : "bg-[#e07a3f] shadow-2xs shadow-[#e07a3f]/20 hover:brightness-105" 
- : "bg-gray-200/90 dark:bg-[#2a2a2a]/90"
+ : "bg-gray-200/90 dark:bg-[#48484a]/90"
  }`} 
  style={{ height: `${bar.heightPct}%` }}
  />
@@ -1296,7 +1296,7 @@ export default function ProfilePage() {
  ? isHovered 
  ? "bg-gradient-to-t from-[#c25e24] via-[#e07a3f] to-[#f59e0b] shadow-md dark:shadow-none shadow-[#e07a3f]/30" 
  : "bg-[#e07a3f]" 
- : "bg-gray-200 dark:bg-[#2a2a2a]"
+ : "bg-gray-200 dark:bg-[#48484a]"
  }`} 
  style={{ height: `${bar.heightPct}%` }}
  />
@@ -1329,7 +1329,7 @@ export default function ProfilePage() {
  </div>
 
  {/* BENTO CARD 4: MY CARDS (Tarjetas Guardadas - 4 cols) */}
- <div className="lg:col-span-4 bg-white/90 dark:bg-[#121212]/90 backdrop-blur-xl p-6 rounded-[2rem] border border-white/80 shadow-[0_4px_24px_rgba(0,0,0,0.02)] flex flex-col justify-between">
+ <div className="lg:col-span-4 bg-white/90 dark:bg-[#1c1c1e]/90 backdrop-blur-xl p-6 rounded-[2rem] border border-white/80 shadow-[0_4px_24px_rgba(0,0,0,0.02)] flex flex-col justify-between">
  <div className="flex items-center justify-between mb-4">
  <h3 className="text-sm font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
  <CreditCard className="w-4 h-4 text-[#8c9276]" /> Mis Tarjetas ({cards.length})
@@ -1344,8 +1344,8 @@ export default function ProfilePage() {
 
  {/* Realistic Cards Stack or Empty State */}
  {cards.length === 0 ? (
- <div className="border-2 border-dashed border-gray-200/80 dark:border-white/10/80 rounded-3xl p-6 text-center flex flex-col items-center justify-center space-y-3 bg-gray-50/40 dark:bg-[#1a1a1a]/40 my-auto">
- <div className="w-10 h-10 rounded-2xl bg-white dark:bg-[#121212] shadow-sm dark:shadow-none flex items-center justify-center text-gray-400 border border-gray-100 dark:border-white/5">
+ <div className="border-2 border-dashed border-gray-200/80 dark:border-white/10/80 rounded-3xl p-6 text-center flex flex-col items-center justify-center space-y-3 bg-gray-50/40 dark:bg-[#2c2c2e]/40 my-auto">
+ <div className="w-10 h-10 rounded-2xl bg-white dark:bg-[#1c1c1e] shadow-sm dark:shadow-none flex items-center justify-center text-gray-400 border border-gray-100 dark:border-white/5">
  <CreditCard className="w-5 h-5" />
  </div>
  <div>
@@ -1375,7 +1375,7 @@ export default function ProfilePage() {
  }`}
  >
  <div className="flex items-center justify-between mb-6">
- <span className="text-[10px] font-bold tracking-widest uppercase px-2 py-0.5 rounded-md bg-white/20 dark:bg-[#121212]/20 backdrop-blur-md">
+ <span className="text-[10px] font-bold tracking-widest uppercase px-2 py-0.5 rounded-md bg-white/20 dark:bg-[#1c1c1e]/20 backdrop-blur-md">
  {c.isDefault ? "Predeterminada" : "Activa"}
  </span>
  <div className="flex items-center gap-2">
@@ -1418,7 +1418,7 @@ export default function ProfilePage() {
  </div>
 
  {/* BENTO CARD 5: RECENT ACTIVITIES / ORDERS (8 cols) */}
- <div className="lg:col-span-8 bg-white/90 dark:bg-[#121212]/90 backdrop-blur-xl p-6 rounded-[2rem] border border-white/80 shadow-[0_4px_24px_rgba(0,0,0,0.02)] flex flex-col justify-between">
+ <div className="lg:col-span-8 bg-white/90 dark:bg-[#1c1c1e]/90 backdrop-blur-xl p-6 rounded-[2rem] border border-white/80 shadow-[0_4px_24px_rgba(0,0,0,0.02)] flex flex-col justify-between">
  <div className="flex items-center justify-between mb-4">
  <div>
  <h3 className="text-sm font-bold text-gray-900 dark:text-gray-100">
@@ -1440,8 +1440,8 @@ export default function ProfilePage() {
 
  {/* Orders Table or Empty State */}
  {orders.length === 0 ? (
- <div className="py-12 text-center flex flex-col items-center justify-center space-y-3 bg-gray-50/40 dark:bg-[#1a1a1a]/40 rounded-2xl border border-gray-100 dark:border-white/5 my-auto">
- <div className="w-10 h-10 rounded-2xl bg-white dark:bg-[#121212] shadow-sm dark:shadow-none flex items-center justify-center text-gray-400 border border-gray-100 dark:border-white/5">
+ <div className="py-12 text-center flex flex-col items-center justify-center space-y-3 bg-gray-50/40 dark:bg-[#2c2c2e]/40 rounded-2xl border border-gray-100 dark:border-white/5 my-auto">
+ <div className="w-10 h-10 rounded-2xl bg-white dark:bg-[#1c1c1e] shadow-sm dark:shadow-none flex items-center justify-center text-gray-400 border border-gray-100 dark:border-white/5">
  <ShoppingBag className="w-5 h-5" />
  </div>
  <div>
@@ -1475,7 +1475,7 @@ export default function ProfilePage() {
  </thead>
  <tbody className="divide-y divide-gray-100">
  {orders.slice(0, 4).map((ord) => (
- <tr key={ord.id} className="hover:bg-gray-50/50 dark:bg-[#1a1a1a]/50 transition-colors cursor-pointer" onClick={() => setSelectedOrder(ord)}>
+ <tr key={ord.id} className="hover:bg-gray-50/50 dark:bg-[#2c2c2e]/50 transition-colors cursor-pointer" onClick={() => setSelectedOrder(ord)}>
  <td className="py-3.5 px-2 font-mono font-semibold text-gray-900 dark:text-gray-100">{ord.id}</td>
  {isAdmin && (
  <td className="py-3.5 px-2">
@@ -1484,7 +1484,7 @@ export default function ProfilePage() {
  </td>
  )}
  <td className="py-3.5 px-2 font-medium text-gray-800 dark:text-gray-200 flex items-center gap-2">
- <div className="w-7 h-7 rounded-lg bg-gray-100 dark:bg-[#222222] flex items-center justify-center text-gray-600 dark:text-gray-400">
+ <div className="w-7 h-7 rounded-lg bg-gray-100 dark:bg-[#3a3a3c] flex items-center justify-center text-gray-600 dark:text-gray-400">
  <Package className="w-3.5 h-3.5" />
  </div>
  <span>{ord.items.length > 0 ? `${ord.items.length} pieza(s) Lumina` : "Compra Lumina"}</span>
@@ -1501,7 +1501,7 @@ export default function ProfilePage() {
  ? "bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100" 
  : ord.status === "Enviado" 
  ? "bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100" 
- : "bg-a dark:bg-[#121212]mber-50 text-amber-700 border-amber-200 hover:bg-a dark:bg-[#121212]mber-100"
+ : "bg-a dark:bg-[#1c1c1e]mber-50 text-amber-700 border-amber-200 hover:bg-a dark:bg-[#1c1c1e]mber-100"
  }`}
  >
  <option value="Procesando">Procesando</option>
@@ -1520,10 +1520,10 @@ export default function ProfilePage() {
  ? "bg-emerald-50 text-emerald-700 border border-emerald-100" 
  : ord.status === "Enviado" 
  ? "bg-blue-50 text-blue-700 border border-blue-100" 
- : "bg-a dark:bg-[#121212]mber-50 text-amber-700 border border-amber-100"
+ : "bg-a dark:bg-[#1c1c1e]mber-50 text-amber-700 border border-amber-100"
  }`}>
  <span className={`w-1.5 h-1.5 rounded-full ${
- ord.status === "Entregado" ? "bg-emerald-500" : ord.status === "Enviado" ? "bg-blue-500" : "bg-a dark:bg-[#121212]mber-500"
+ ord.status === "Entregado" ? "bg-emerald-500" : ord.status === "Enviado" ? "bg-blue-500" : "bg-a dark:bg-[#1c1c1e]mber-500"
  }`} />
  {ord.status}
  </span>
@@ -1536,7 +1536,7 @@ export default function ProfilePage() {
  <td className="py-3.5 px-2 text-right">
  <button 
  onClick={(e) => { e.stopPropagation(); setSelectedOrder(ord); }} 
- className="p-1.5 rounded-lg text-gray-400 hover:text-gray-900 dark:text-gray-100 hover:bg-gray-100 dark:bg-[#222222] transition-colors"
+ className="p-1.5 rounded-lg text-gray-400 hover:text-gray-900 dark:text-gray-100 hover:bg-gray-100 dark:bg-[#3a3a3c] transition-colors"
  title="Ver detalles"
  >
  <Eye className="w-4 h-4" />
@@ -1557,9 +1557,9 @@ export default function ProfilePage() {
 
  {/* ADMIN ONLY: Empty Categories Warning */}
  {isAdmin && emptyCategories.length > 0 && (
- <div className="lg:col-span-12 bg-a dark:bg-[#121212]mber-50/90 backdrop-blur-md p-5 rounded-3xl border border-amber-200/80 shadow-sm dark:shadow-none flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+ <div className="lg:col-span-12 bg-a dark:bg-[#1c1c1e]mber-50/90 backdrop-blur-md p-5 rounded-3xl border border-amber-200/80 shadow-sm dark:shadow-none flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
  <div className="flex items-start gap-3.5">
- <div className="w-10 h-10 rounded-2xl bg-a dark:bg-[#121212]mber-100 flex items-center justify-center text-amber-800 shrink-0">
+ <div className="w-10 h-10 rounded-2xl bg-a dark:bg-[#1c1c1e]mber-100 flex items-center justify-center text-amber-800 shrink-0">
  <AlertTriangle className="w-5 h-5" />
  </div>
  <div>
@@ -1575,7 +1575,7 @@ export default function ProfilePage() {
  <button 
  key={c} 
  onClick={() => deleteCategory(c)}
- className="text-xs px-3 py-1.5 rounded-xl bg-a dark:bg-[#121212]mber-200/80 hover:bg-a dark:bg-[#121212]mber-300 text-amber-900 font-semibold transition-colors flex items-center gap-1"
+ className="text-xs px-3 py-1.5 rounded-xl bg-a dark:bg-[#1c1c1e]mber-200/80 hover:bg-a dark:bg-[#1c1c1e]mber-300 text-amber-900 font-semibold transition-colors flex items-center gap-1"
  >
  <Trash2 className="w-3.5 h-3.5" /> Quitar {c}
  </button>
@@ -1591,7 +1591,7 @@ export default function ProfilePage() {
  {/* VIEW 2: ORDERS & ACTIVITIES TAB */}
  {/* ========================================================================= */}
  {activeTab === "orders" && (
- <div className="bg-white/90 dark:bg-[#121212]/90 backdrop-blur-xl p-6 md:p-8 rounded-[2.5rem] border border-white/80 shadow-[0_4px_24px_rgba(0,0,0,0.02)] space-y-6 animate-fade-in">
+ <div className="bg-white/90 dark:bg-[#1c1c1e]/90 backdrop-blur-xl p-6 md:p-8 rounded-[2.5rem] border border-white/80 shadow-[0_4px_24px_rgba(0,0,0,0.02)] space-y-6 animate-fade-in">
  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
  <div>
  <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100">Historial Completo de Pedidos</h2>
@@ -1599,13 +1599,13 @@ export default function ProfilePage() {
  </div>
 
  {/* Status Filter Tabs */}
- <div className="flex items-center gap-2 bg-gray-100 dark:bg-[#222222] p-1 rounded-2xl overflow-x-auto">
+ <div className="flex items-center gap-2 bg-gray-100 dark:bg-[#3a3a3c] p-1 rounded-2xl overflow-x-auto">
  {["all", "Procesando", "Enviado", "Entregado"].map((st) => (
  <button 
  key={st}
  onClick={() => setOrderStatusFilter(st)}
  className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all ${
- orderStatusFilter === st ? "bg-white dark:bg-[#121212] text-gray-900 dark:text-gray-100 shadow-sm dark:shadow-none" : "text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:text-gray-100"
+ orderStatusFilter === st ? "bg-white dark:bg-[#1c1c1e] text-gray-900 dark:text-gray-100 shadow-sm dark:shadow-none" : "text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:text-gray-100"
  }`}
  >
  {st === "all" ? "Todos" : st}
@@ -1616,8 +1616,8 @@ export default function ProfilePage() {
 
  {/* Orders Table */}
  {filteredOrders.length === 0 ? (
- <div className="py-16 text-center space-y-3 bg-gray-50/50 dark:bg-[#1a1a1a]/50 rounded-2xl border border-gray-100 dark:border-white/5">
- <div className="w-12 h-12 rounded-2xl bg-white dark:bg-[#121212] shadow-sm dark:shadow-none flex items-center justify-center text-gray-400 border border-gray-100 dark:border-white/5 mx-auto">
+ <div className="py-16 text-center space-y-3 bg-gray-50/50 dark:bg-[#2c2c2e]/50 rounded-2xl border border-gray-100 dark:border-white/5">
+ <div className="w-12 h-12 rounded-2xl bg-white dark:bg-[#1c1c1e] shadow-sm dark:shadow-none flex items-center justify-center text-gray-400 border border-gray-100 dark:border-white/5 mx-auto">
  <ShoppingBag className="w-6 h-6" />
  </div>
  <h3 className="text-sm font-bold text-gray-800 dark:text-gray-200">No hay pedidos que coincidan</h3>
@@ -1649,7 +1649,7 @@ export default function ProfilePage() {
  </thead>
  <tbody className="divide-y divide-gray-100">
  {filteredOrders.map((ord) => (
- <tr key={ord.id} className="hover:bg-gray-50/70 dark:bg-[#1a1a1a]/70 transition-colors">
+ <tr key={ord.id} className="hover:bg-gray-50/70 dark:bg-[#2c2c2e]/70 transition-colors">
  <td className="py-4 px-3 font-mono font-bold text-gray-900 dark:text-gray-100">{ord.id}</td>
  {isAdmin && (
  <td className="py-4 px-3">
@@ -1668,10 +1668,10 @@ export default function ProfilePage() {
  ? "bg-emerald-50 text-emerald-700 border border-emerald-100" 
  : ord.status === "Enviado" 
  ? "bg-blue-50 text-blue-700 border border-blue-100" 
- : "bg-a dark:bg-[#121212]mber-50 text-amber-700 border border-amber-100"
+ : "bg-a dark:bg-[#1c1c1e]mber-50 text-amber-700 border border-amber-100"
  }`}>
  <span className={`w-1.5 h-1.5 rounded-full ${
- ord.status === "Entregado" ? "bg-emerald-500" : ord.status === "Enviado" ? "bg-blue-500" : "bg-a dark:bg-[#121212]mber-500"
+ ord.status === "Entregado" ? "bg-emerald-500" : ord.status === "Enviado" ? "bg-blue-500" : "bg-a dark:bg-[#1c1c1e]mber-500"
  }`} />
  {ord.status}
  </span>
@@ -1686,7 +1686,7 @@ export default function ProfilePage() {
  <select 
  value={ord.status} 
  onChange={(e) => updateOrderStatus(ord.id, e.target.value as "Procesando" | "Enviado" | "Entregado")}
- className="text-[11px] font-semibold bg-gray-100 dark:bg-[#222222] rounded-lg px-2.5 py-1.5 outline-none border border-gray-200 dark:border-white/10 cursor-pointer"
+ className="text-[11px] font-semibold bg-gray-100 dark:bg-[#3a3a3c] rounded-lg px-2.5 py-1.5 outline-none border border-gray-200 dark:border-white/10 cursor-pointer"
  >
  <option value="Procesando">Procesando</option>
  <option value="Enviado">Enviado</option>
@@ -1715,7 +1715,7 @@ export default function ProfilePage() {
  {/* ========================================================================= */}
  {activeTab === "cards" && (
  <div className="space-y-6 animate-fade-in">
- <div className="bg-white/90 dark:bg-[#121212]/90 backdrop-blur-xl p-6 md:p-8 rounded-[2.5rem] border border-white/80 shadow-[0_4px_24px_rgba(0,0,0,0.02)]">
+ <div className="bg-white/90 dark:bg-[#1c1c1e]/90 backdrop-blur-xl p-6 md:p-8 rounded-[2.5rem] border border-white/80 shadow-[0_4px_24px_rgba(0,0,0,0.02)]">
  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
  <div>
  <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
@@ -1733,8 +1733,8 @@ export default function ProfilePage() {
 
  {/* Cards Grid or Empty State */}
  {cards.length === 0 ? (
- <div className="border-2 border-dashed border-gray-200 dark:border-white/10 rounded-3xl p-12 text-center flex flex-col items-center justify-center space-y-3 bg-gray-50/40 dark:bg-[#1a1a1a]/40">
- <div className="w-14 h-14 rounded-2xl bg-white dark:bg-[#121212] shadow-sm dark:shadow-none flex items-center justify-center text-gray-400 border border-gray-100 dark:border-white/5">
+ <div className="border-2 border-dashed border-gray-200 dark:border-white/10 rounded-3xl p-12 text-center flex flex-col items-center justify-center space-y-3 bg-gray-50/40 dark:bg-[#2c2c2e]/40">
+ <div className="w-14 h-14 rounded-2xl bg-white dark:bg-[#1c1c1e] shadow-sm dark:shadow-none flex items-center justify-center text-gray-400 border border-gray-100 dark:border-white/5">
  <CreditCard className="w-7 h-7" />
  </div>
  <h3 className="text-sm font-bold text-gray-800 dark:text-gray-200">No hay tarjetas de crédito o débito guardadas</h3>
@@ -1765,7 +1765,7 @@ export default function ProfilePage() {
  <div className="flex items-center gap-2">
  <div className="w-8 h-6 bg-yellow-400/80 rounded-md shadow-inner border border-yellow-300" />
  {c.isDefault && (
- <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-white/25 dark:bg-[#121212]/25">
+ <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-white/25 dark:bg-[#1c1c1e]/25">
  Principal
  </span>
  )}
@@ -1819,7 +1819,7 @@ export default function ProfilePage() {
  {/* VIEW 4: FAVORITES TAB */}
  {/* ========================================================================= */}
  {activeTab === "favorites" && (
- <div className="bg-white/90 dark:bg-[#121212]/90 backdrop-blur-xl p-6 md:p-8 rounded-[2.5rem] border border-white/80 shadow-[0_4px_24px_rgba(0,0,0,0.02)] space-y-6 animate-fade-in">
+ <div className="bg-white/90 dark:bg-[#1c1c1e]/90 backdrop-blur-xl p-6 md:p-8 rounded-[2.5rem] border border-white/80 shadow-[0_4px_24px_rgba(0,0,0,0.02)] space-y-6 animate-fade-in">
  <div className="flex items-center justify-between">
  <div>
  <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
@@ -1827,13 +1827,13 @@ export default function ProfilePage() {
  </h2>
  <p className="text-xs text-gray-500 dark:text-gray-400">Colección personal de artículos que has marcado con el corazón.</p>
  </div>
- <span className="text-xs font-semibold text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-[#222222] px-3 py-1 rounded-full">
+ <span className="text-xs font-semibold text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-[#3a3a3c] px-3 py-1 rounded-full">
  {favoritedProductsList.length} guardados
  </span>
  </div>
 
  {favoritedProductsList.length === 0 ? (
- <div className="py-16 text-center space-y-4 bg-gray-50/50 dark:bg-[#1a1a1a]/50 rounded-3xl border border-gray-100 dark:border-white/5">
+ <div className="py-16 text-center space-y-4 bg-gray-50/50 dark:bg-[#2c2c2e]/50 rounded-3xl border border-gray-100 dark:border-white/5">
  <div className="w-14 h-14 rounded-full bg-red-50 text-red-400 mx-auto flex items-center justify-center">
  <Heart className="w-6 h-6" />
  </div>
@@ -1848,8 +1848,8 @@ export default function ProfilePage() {
  ) : (
  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
  {favoritedProductsList.map((prod) => (
- <div key={prod.id} className="bg-white dark:bg-[#121212] rounded-3xl border border-gray-100 dark:border-white/5 p-4 shadow-sm dark:shadow-none hover:shadow-md dark:shadow-none transition-shadow flex flex-col justify-between">
- <div className="relative aspect-square rounded-2xl overflow-hidden mb-3 bg-gray-50 dark:bg-[#1a1a1a]">
+ <div key={prod.id} className="bg-white dark:bg-[#1c1c1e] rounded-3xl border border-gray-100 dark:border-white/5 p-4 shadow-sm dark:shadow-none hover:shadow-md dark:shadow-none transition-shadow flex flex-col justify-between">
+ <div className="relative aspect-square rounded-2xl overflow-hidden mb-3 bg-gray-50 dark:bg-[#2c2c2e]">
  <Image 
  src={prod.imageUrl} 
  alt={prod.title} 
@@ -1858,7 +1858,7 @@ export default function ProfilePage() {
  />
  <button 
  onClick={() => toggleFavorite(prod.id)}
- className="absolute top-2 right-2 p-2 rounded-full bg-white/90 dark:bg-[#121212]/90 text-red-500 shadow-sm dark:shadow-none hover:scale-110 transition-transform"
+ className="absolute top-2 right-2 p-2 rounded-full bg-white/90 dark:bg-[#1c1c1e]/90 text-red-500 shadow-sm dark:shadow-none hover:scale-110 transition-transform"
  title="Quitar de favoritos"
  >
  <Heart className="w-4 h-4 fill-red-500" />
@@ -1874,7 +1874,7 @@ export default function ProfilePage() {
  <div className="mt-4 pt-3 border-t border-gray-100 dark:border-white/5 flex gap-2">
  <Link 
  href={`/product/${prod.id}`}
- className="flex-1 py-2 text-center text-xs font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-[#222222] rounded-xl hover:bg-gray-200 dark:bg-[#2a2a2a] transition-colors"
+ className="flex-1 py-2 text-center text-xs font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-[#3a3a3c] rounded-xl hover:bg-gray-200 dark:bg-[#48484a] transition-colors"
  >
  Ver Ficha
  </Link>
@@ -1900,7 +1900,7 @@ export default function ProfilePage() {
  {/* VIEW 5: ADMIN CATALOG & INVENTORY TAB */}
  {/* ========================================================================= */}
  {activeTab === "catalog" && isAdmin && (
- <div className="bg-white/90 dark:bg-[#121212]/90 backdrop-blur-xl p-6 md:p-8 rounded-[2.5rem] border border-white/80 shadow-[0_4px_24px_rgba(0,0,0,0.02)] space-y-6 animate-fade-in">
+ <div className="bg-white/90 dark:bg-[#1c1c1e]/90 backdrop-blur-xl p-6 md:p-8 rounded-[2.5rem] border border-white/80 shadow-[0_4px_24px_rgba(0,0,0,0.02)] space-y-6 animate-fade-in">
  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
  <div>
  <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
@@ -1915,7 +1915,7 @@ export default function ProfilePage() {
  <select 
  value={catalogCategoryFilter} 
  onChange={e => setCatalogCategoryFilter(e.target.value)}
- className="text-xs font-semibold bg-gray-100 dark:bg-[#222222] px-3 py-2 rounded-xl outline-none border border-gray-200 dark:border-white/10"
+ className="text-xs font-semibold bg-gray-100 dark:bg-[#3a3a3c] px-3 py-2 rounded-xl outline-none border border-gray-200 dark:border-white/10"
  >
  <option value="all">Todas las categorías</option>
  {categories.map(c => <option key={c} value={c}>{c}</option>)}
@@ -1945,9 +1945,9 @@ export default function ProfilePage() {
  </thead>
  <tbody className="divide-y divide-gray-100">
  {filteredCatalog.map(p => (
- <tr key={p.id} className="hover:bg-gray-50/70 dark:bg-[#1a1a1a]/70 transition-colors">
+ <tr key={p.id} className="hover:bg-gray-50/70 dark:bg-[#2c2c2e]/70 transition-colors">
  <td className="py-3 px-2 flex items-center gap-3">
- <div className="relative w-10 h-10 rounded-xl overflow-hidden bg-gray-100 dark:bg-[#222222] shrink-0">
+ <div className="relative w-10 h-10 rounded-xl overflow-hidden bg-gray-100 dark:bg-[#3a3a3c] shrink-0">
  <Image src={p.imageUrl} alt={p.title} fill className="object-cover" />
  </div>
  <div>
@@ -1956,7 +1956,7 @@ export default function ProfilePage() {
  </div>
  </td>
  <td className="py-3 px-2">
- <span className="px-2.5 py-1 rounded-full bg-gray-100 dark:bg-[#222222] text-gray-700 dark:text-gray-300 font-medium text-[11px]">
+ <span className="px-2.5 py-1 rounded-full bg-gray-100 dark:bg-[#3a3a3c] text-gray-700 dark:text-gray-300 font-medium text-[11px]">
  {p.category}
  </span>
  </td>
@@ -1975,7 +1975,7 @@ export default function ProfilePage() {
  <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
  isAgotadoBadge(p.badge)
  ? "bg-red-50 text-red-600 border border-red-200"
- : "bg-a dark:bg-[#121212]mber-50 text-amber-800 border border-amber-200"
+ : "bg-a dark:bg-[#1c1c1e]mber-50 text-amber-800 border border-amber-200"
  }`}>
  {p.badge}
  </span>
@@ -1994,7 +1994,7 @@ export default function ProfilePage() {
  </button>
  <Link 
  href={`/product/${p.id}`}
- className="p-1.5 text-gray-400 hover:text-gray-900 dark:text-gray-100 hover:bg-gray-100 dark:bg-[#222222] rounded-lg transition-colors"
+ className="p-1.5 text-gray-400 hover:text-gray-900 dark:text-gray-100 hover:bg-gray-100 dark:bg-[#3a3a3c] rounded-lg transition-colors"
  title="Ver en tienda"
  >
  <ExternalLink className="w-4 h-4" />
@@ -2027,7 +2027,7 @@ export default function ProfilePage() {
  {/* VIEW 6: ADMIN NICHES TAB */}
  {/* ========================================================================= */}
  {activeTab === "niches" && isAdmin && (
- <div className="bg-white/90 dark:bg-[#121212]/90 backdrop-blur-xl p-6 md:p-8 rounded-[2.5rem] border border-white/80 shadow-[0_4px_24px_rgba(0,0,0,0.02)] space-y-6 animate-fade-in">
+ <div className="bg-white/90 dark:bg-[#1c1c1e]/90 backdrop-blur-xl p-6 md:p-8 rounded-[2.5rem] border border-white/80 shadow-[0_4px_24px_rgba(0,0,0,0.02)] space-y-6 animate-fade-in">
  <div>
  <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
  <Layers className="w-5 h-5 text-[#8c9276]" /> Gestión de Nichos & Colecciones
@@ -2062,7 +2062,7 @@ export default function ProfilePage() {
  <div 
  key={cat} 
  className={`p-5 rounded-2xl border transition-all flex items-center justify-between ${
- isEmpty ? "bg-a dark:bg-[#121212]mber-50/70 border-amber-200" : "bg-white dark:bg-[#121212] border-gray-100 dark:border-white/5 shadow-sm dark:shadow-none"
+ isEmpty ? "bg-a dark:bg-[#1c1c1e]mber-50/70 border-amber-200" : "bg-white dark:bg-[#1c1c1e] border-gray-100 dark:border-white/5 shadow-sm dark:shadow-none"
  }`}
  >
  <div>
@@ -2122,13 +2122,13 @@ export default function ProfilePage() {
  return (
  <div 
  key={badge} 
- className="p-4 rounded-2xl border border-gray-100 dark:border-white/5 bg-white dark:bg-[#121212] shadow-sm dark:shadow-none flex items-center justify-between"
+ className="p-4 rounded-2xl border border-gray-100 dark:border-white/5 bg-white dark:bg-[#1c1c1e] shadow-sm dark:shadow-none flex items-center justify-between"
  >
  <div className="flex items-center gap-2.5">
  <span className={`px-2.5 py-1 rounded-full text-[11px] font-bold ${
  isAgotadoBadge(badge)
  ? "bg-red-50 text-red-600 border border-red-200"
- : "bg-a dark:bg-[#121212]mber-50 text-amber-900 border border-amber-200"
+ : "bg-a dark:bg-[#1c1c1e]mber-50 text-amber-900 border border-amber-200"
  }`}>
  {badge}
  </span>
@@ -2172,12 +2172,10 @@ export default function ProfilePage() {
  <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 animate-fade-in">
  
  {/* Account & Credentials (7 cols) */}
- <div className="lg:col-span-7 bg-white/9 dark:bg-[#121212]/5 backdrop-blur-3xl p-8 md:p-10 rounded-[3rem] border border-white/80 dark:border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.04)] space-y-10 relative overflow-hidden">
+ <div className="lg:col-span-7 bg-white/90 dark:bg-[#1c1c1e]/5 backdrop-blur-3xl p-8 md:p-10 rounded-[3rem] border border-white/80 dark:border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.04)] space-y-10 relative overflow-hidden">
  
  {/* Decorative glass glow */}
- <div className="absolute top-0 right-0 w-64 h-64 bg-blue-500/10 dark:bg-[#ccff00]/10 blur-[80px] rounded-full pointer-events-none -z-10" />
- <div className="absolute bottom-0 left-0 w-48 h-48 bg-purple-500/10 dark:bg-purple-500/10 blur-[60px] rounded-full pointer-events-none -z-10" />
- <div>
+   <div>
  <h2 className="text-2xl font-display font-bold text-gray-900 dark:text-gray-100 flex items-center gap-3">
  <Settings className="w-6 h-6 text-[#8c9276]" /> Ajustes de Cuenta & Sistema
  </h2>
@@ -2187,8 +2185,8 @@ export default function ProfilePage() {
  {settingsFeedback && (
  <div className={`p-3.5 rounded-2xl text-xs font-semibold text-center border ${
  settingsFeedback.type === "success" 
- ? "bg-emerald-50 text-emerald-800 border-emerald-100" 
- : "bg-red-50 text-red-800 border-red-100"
+ ? "bg-emerald-50 dark:bg-emerald-500/20 text-emerald-800 dark:text-emerald-200 border-emerald-100 dark:border-emerald-500/30" 
+ : "bg-red-50 dark:bg-red-500/20 text-red-800 dark:text-red-200 border-red-100 dark:border-red-500/30"
  }`}>
  {settingsFeedback.msg}
  </div>
@@ -2213,7 +2211,7 @@ export default function ProfilePage() {
  type="text" 
  value={editName}
  onChange={e => setEditName(e.target.value)}
- className="w-full pl-11 pr-4 py-3.5 rounded-2xl bg-white dark:bg-black/40 border border-gray-200 dark:border-white/10 text-sm text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-[#8c9276] transition-all"
+ className="w-full pl-11 pr-4 py-3.5 rounded-2xl bg-white dark:bg-black/20 border border-gray-200 dark:border-white/10 text-sm text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-[#8c9276] transition-all"
  />
  </div>
  </div>
@@ -2224,7 +2222,7 @@ export default function ProfilePage() {
  type="email" 
  readOnly 
  value={user.email}
- className="w-full px-5 py-3.5 rounded-2xl border border-gray-200 dark:border-white/10 bg-gray-100 dark:bg-black/60 text-gray-500 dark:text-gray-400 text-sm cursor-not-allowed"
+ className="w-full px-5 py-3.5 rounded-2xl border border-gray-200 dark:border-white/10 bg-gray-100 dark:bg-black/30 text-gray-500 dark:text-gray-400 text-sm cursor-not-allowed"
  />
  </div>
 
@@ -2237,7 +2235,7 @@ export default function ProfilePage() {
  value={newPass}
  onChange={e => setNewPass(e.target.value)}
  placeholder="Escribe al menos 6 caracteres para cambiarla"
- className="w-full pl-11 pr-4 py-3.5 rounded-2xl bg-white dark:bg-black/40 border border-gray-200 dark:border-white/10 text-sm text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-[#8c9276] transition-all"
+ className="w-full pl-11 pr-4 py-3.5 rounded-2xl bg-white dark:bg-black/20 border border-gray-200 dark:border-white/10 text-sm text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-[#8c9276] transition-all"
  />
  </div>
  </div>
@@ -2254,7 +2252,7 @@ export default function ProfilePage() {
  value={adminEmails}
  onChange={e => setAdminEmails(e.target.value)}
  placeholder="admin1@ejemplo.com, admin2@ejemplo.com"
- className="w-full pl-11 pr-4 py-3.5 rounded-2xl bg-white dark:bg-black/40 border border-gray-200 dark:border-white/10 text-sm text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-[#8c9276] transition-all"
+ className="w-full pl-11 pr-4 py-3.5 rounded-2xl bg-white dark:bg-black/20 border border-gray-200 dark:border-white/10 text-sm text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-[#8c9276] transition-all"
  />
  </div>
  <p className="text-[10px] text-gray-500 dark:text-gray-400 mt-1">
@@ -2267,7 +2265,7 @@ export default function ProfilePage() {
  <button 
  type="submit" 
  disabled={isUpdatingSettings}
- className="px-8 py-3.5 bg-gray-900 dark:bg-[#121212] text-white dark:text-gray-100 rounded-2xl text-sm font-bold hover:bg-gray-800 dark:hover:bg-gray-100 dark:bg-[#222222] transition-all shadow-lg dark:shadow-none hover:shadow-xl dark:shadow-none hover:-translate-y-0.5 disabled:opacity-50 disabled:hover:translate-y-0 cursor-pointer"
+ className="px-8 py-3.5 bg-gray-900 dark:bg-[#1c1c1e] text-white dark:text-gray-100 rounded-2xl text-sm font-bold hover:bg-gray-800 dark:hover:bg-gray-100 dark:bg-[#3a3a3c] transition-all shadow-lg dark:shadow-none hover:shadow-xl dark:shadow-none hover:-translate-y-0.5 disabled:opacity-50 disabled:hover:translate-y-0 cursor-pointer"
  >
  {isUpdatingSettings ? "Guardando..." : "Guardar Cambios"}
  </button>
@@ -2281,13 +2279,13 @@ export default function ProfilePage() {
  </div>
 
  {/* Shipping Address Manager (5 cols) */}
- <div className="lg:col-span-5 bg-white/90 dark:bg-[#121212]/90 backdrop-blur-xl p-6 md:p-8 rounded-[2.5rem] border border-white/80 shadow-[0_4px_24px_rgba(0,0,0,0.02)] flex flex-col justify-between space-y-4">
+ <div className="lg:col-span-5 bg-white/90 dark:bg-[#1c1c1e]/90 backdrop-blur-xl p-6 md:p-8 rounded-[2.5rem] border border-white/80 shadow-[0_4px_24px_rgba(0,0,0,0.02)] flex flex-col justify-between space-y-4">
  <div>
  <div className="flex items-center justify-between mb-4">
  <div className="flex items-center gap-2">
  <MapPin className="w-4 h-4 text-[#8c9276]" />
  <h3 className="text-base font-bold text-gray-900 dark:text-gray-100">Direcciones de Entrega</h3>
- <span className="text-xs px-2.5 py-0.5 rounded-full bg-gray-100 dark:bg-[#222222] text-gray-700 dark:text-gray-300 font-mono font-semibold">
+ <span className="text-xs px-2.5 py-0.5 rounded-full bg-gray-100 dark:bg-[#3a3a3c] text-gray-700 dark:text-gray-300 font-mono font-semibold">
  {addresses.length}/4
  </span>
  </div>
@@ -2308,8 +2306,8 @@ export default function ProfilePage() {
  key={addr.id}
  className={`p-4 rounded-2xl border transition-all flex flex-col justify-between ${
  addr.isDefault 
- ? "bg-white dark:bg-[#121212] border-emerald-500/60 shadow-sm dark:shadow-none ring-1 ring-emerald-500/20" 
- : "bg-gray-50/80 dark:bg-[#1a1a1a]/80 border-gray-100 dark:border-white/5 hover:border-gray-200 dark:border-white/10"
+ ? "bg-white dark:bg-[#1c1c1e] border-emerald-500/60 shadow-sm dark:shadow-none ring-1 ring-emerald-500/20" 
+ : "bg-gray-50/80 dark:bg-[#2c2c2e]/80 border-gray-100 dark:border-white/5 hover:border-gray-200 dark:border-white/10"
  }`}
  >
  <div>
@@ -2360,7 +2358,7 @@ export default function ProfilePage() {
  ))}
  </div>
  ) : (
- <div className="border-2 border-dashed border-gray-200 dark:border-white/10 rounded-2xl p-6 text-center space-y-2 bg-gray-50/40 dark:bg-[#1a1a1a]/40">
+ <div className="border-2 border-dashed border-gray-200 dark:border-white/10 rounded-2xl p-6 text-center space-y-2 bg-gray-50/40 dark:bg-[#2c2c2e]/40">
  <MapPin className="w-6 h-6 text-gray-400 mx-auto" />
  <p className="text-xs font-bold text-gray-800 dark:text-gray-200">Sin direcciones registradas</p>
  <p className="text-[11px] text-gray-500 dark:text-gray-400">
@@ -2383,7 +2381,7 @@ export default function ProfilePage() {
 
  {showAddressForm && (
  <div className="pt-4 border-t border-gray-100 dark:border-white/5">
- <form onSubmit={handleAddressSubmit} className="space-y-3 bg-gray-50/70 dark:bg-[#1a1a1a]/70 p-4 rounded-2xl border border-gray-100 dark:border-white/5">
+ <form onSubmit={handleAddressSubmit} className="space-y-3 bg-gray-50/70 dark:bg-[#2c2c2e]/70 p-4 rounded-2xl border border-gray-100 dark:border-white/5">
  <div className="flex items-center justify-between pb-1 border-b border-gray-200 dark:border-white/10">
  <span className="text-xs font-bold text-gray-900 dark:text-gray-100">
  Nueva Dirección de Entrega
@@ -2424,7 +2422,7 @@ export default function ProfilePage() {
  </button>
 
  {locationError && (
- <p className="text-[11px] text-amber-800 bg-a dark:bg-[#121212]mber-50 border border-amber-200 rounded-xl p-2.5 mt-2 leading-tight">
+ <p className="text-[11px] text-amber-800 bg-a dark:bg-[#1c1c1e]mber-50 border border-amber-200 rounded-xl p-2.5 mt-2 leading-tight">
  {locationError}
  </p>
  )}
@@ -2453,7 +2451,7 @@ export default function ProfilePage() {
  value={recipient} 
  onChange={e => setRecipient(e.target.value)} 
  placeholder={user.name} 
- className="w-full px-3 py-2 rounded-xl border border-gray-200 dark:border-white/10 text-xs outline-none bg-white dark:bg-[#121212] focus:ring-1 focus:ring-blue-500"
+ className="w-full px-3 py-2 rounded-xl border border-gray-200 dark:border-white/10 text-xs outline-none bg-white dark:bg-[#1c1c1e] focus:ring-1 focus:ring-blue-500"
  />
  </div>
  <div>
@@ -2464,7 +2462,7 @@ export default function ProfilePage() {
  value={street} 
  onChange={e => setStreet(e.target.value)} 
  placeholder="Av. Diagonal 450, 3ro 2da" 
- className="w-full px-3 py-2 rounded-xl border border-gray-200 dark:border-white/10 text-xs outline-none bg-white dark:bg-[#121212] focus:ring-1 focus:ring-blue-500"
+ className="w-full px-3 py-2 rounded-xl border border-gray-200 dark:border-white/10 text-xs outline-none bg-white dark:bg-[#1c1c1e] focus:ring-1 focus:ring-blue-500"
  />
  </div>
  <div className="grid grid-cols-2 gap-2">
@@ -2476,7 +2474,7 @@ export default function ProfilePage() {
  value={city} 
  onChange={e => setCity(e.target.value)} 
  placeholder="Barcelona" 
- className="w-full px-3 py-2 rounded-xl border border-gray-200 dark:border-white/10 text-xs outline-none bg-white dark:bg-[#121212] focus:ring-1 focus:ring-blue-500"
+ className="w-full px-3 py-2 rounded-xl border border-gray-200 dark:border-white/10 text-xs outline-none bg-white dark:bg-[#1c1c1e] focus:ring-1 focus:ring-blue-500"
  />
  </div>
  <div>
@@ -2487,7 +2485,7 @@ export default function ProfilePage() {
  value={postalCode} 
  onChange={e => setPostalCode(e.target.value)} 
  placeholder="08006" 
- className="w-full px-3 py-2 rounded-xl border border-gray-200 dark:border-white/10 text-xs outline-none bg-white dark:bg-[#121212] focus:ring-1 focus:ring-blue-500"
+ className="w-full px-3 py-2 rounded-xl border border-gray-200 dark:border-white/10 text-xs outline-none bg-white dark:bg-[#1c1c1e] focus:ring-1 focus:ring-blue-500"
  />
  </div>
  </div>
@@ -2500,7 +2498,7 @@ export default function ProfilePage() {
  value={stateProv} 
  onChange={e => setStateProv(e.target.value)} 
  placeholder="Cataluña" 
- className="w-full px-3 py-2 rounded-xl border border-gray-200 dark:border-white/10 text-xs outline-none bg-white dark:bg-[#121212] focus:ring-1 focus:ring-blue-500"
+ className="w-full px-3 py-2 rounded-xl border border-gray-200 dark:border-white/10 text-xs outline-none bg-white dark:bg-[#1c1c1e] focus:ring-1 focus:ring-blue-500"
  />
  </div>
  <div>
@@ -2511,12 +2509,12 @@ export default function ProfilePage() {
  value={country} 
  onChange={e => setCountry(e.target.value)} 
  placeholder="España"
- className="w-full px-3 py-2 rounded-xl border border-gray-200 dark:border-white/10 text-xs outline-none bg-white dark:bg-[#121212] focus:ring-1 focus:ring-blue-500"
+ className="w-full px-3 py-2 rounded-xl border border-gray-200 dark:border-white/10 text-xs outline-none bg-white dark:bg-[#1c1c1e] focus:ring-1 focus:ring-blue-500"
  />
  </div>
  </div>
  <div className="flex justify-end gap-2 pt-2">
- <button type="button" onClick={() => setShowAddressForm(false)} className="px-3 py-1.5 text-xs text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:bg-[#2a2a2a] rounded-xl cursor-pointer">Cancelar</button>
+ <button type="button" onClick={() => setShowAddressForm(false)} className="px-3 py-1.5 text-xs text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:bg-[#48484a] rounded-xl cursor-pointer">Cancelar</button>
  <button type="submit" className="px-4 py-1.5 text-xs font-semibold bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 rounded-xl hover:bg-gray-800 cursor-pointer">Guardar Dirección</button>
  </div>
  </form>
@@ -2534,23 +2532,23 @@ export default function ProfilePage() {
  {/* ========================================================================= */}
  {selectedOrder && (
  <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-fade-in">
- <div className="bg-white dark:bg-[#121212] rounded-3xl w-full max-w-xl shadow-2xl dark:shadow-none p-6 md:p-8 relative max-h-[90vh] overflow-y-auto">
+ <div className="bg-white dark:bg-[#1c1c1e] rounded-3xl w-full max-w-xl shadow-2xl dark:shadow-none p-6 md:p-8 relative max-h-[90vh] overflow-y-auto">
  <div className="flex items-center justify-between pb-4 border-b border-gray-100 dark:border-white/5">
  <div>
  <span className="text-[10px] font-bold uppercase tracking-wider text-[#8c9276]">Detalle de Envío</span>
  <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100 font-mono">{selectedOrder.id}</h3>
  </div>
- <button onClick={() => setSelectedOrder(null)} className="p-2 rounded-full hover:bg-gray-100 dark:bg-[#222222] text-gray-400 hover:text-gray-900 dark:text-gray-100 cursor-pointer">
+ <button onClick={() => setSelectedOrder(null)} className="p-2 rounded-full hover:bg-gray-100 dark:bg-[#3a3a3c] text-gray-400 hover:text-gray-900 dark:text-gray-100 cursor-pointer">
  <X className="w-5 h-5" />
  </button>
  </div>
 
  {/* Tracking Progress Bar */}
- <div className="my-5 p-4 bg-gray-50 dark:bg-[#1a1a1a] rounded-2xl border border-gray-100 dark:border-white/5">
+ <div className="my-5 p-4 bg-gray-50 dark:bg-[#2c2c2e] rounded-2xl border border-gray-100 dark:border-white/5">
  <div className="flex items-center justify-between mb-3 text-xs">
  <span className="font-semibold text-gray-700 dark:text-gray-300">Rastreo: <span className="font-mono">{selectedOrder.trackingNumber || "LM-982410"}</span></span>
  <span className={`px-2.5 py-0.5 rounded-full font-bold text-[10px] ${
- selectedOrder.status === "Entregado" ? "bg-emerald-100 text-emerald-800" : selectedOrder.status === "Enviado" ? "bg-blue-100 text-blue-800" : "bg-a dark:bg-[#121212]mber-100 text-amber-800"
+ selectedOrder.status === "Entregado" ? "bg-emerald-100 text-emerald-800" : selectedOrder.status === "Enviado" ? "bg-blue-100 text-blue-800" : "bg-a dark:bg-[#1c1c1e]mber-100 text-amber-800"
  }`}>
  {selectedOrder.status}
  </span>
@@ -2558,7 +2556,7 @@ export default function ProfilePage() {
 
  {/* Steps timeline */}
  <div className="flex items-center justify-between relative pt-2">
- <div className="absolute top-1/2 left-4 right-4 h-0.5 bg-gray-200 dark:bg-[#2a2a2a] -z-0" />
+ <div className="absolute top-1/2 left-4 right-4 h-0.5 bg-gray-200 dark:bg-[#48484a] -z-0" />
  {[
  { label: "Pagado", done: true },
  { label: "En Taller", done: true },
@@ -2566,7 +2564,7 @@ export default function ProfilePage() {
  { label: "Entregado", done: selectedOrder.status === "Entregado" },
  ].map((st, i) => (
  <div key={i} className="flex flex-col items-center gap-1 relative z-10">
- <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold ${st.done ? "bg-[#8c9276] text-white dark:text-gray-900" : "bg-gray-200 dark:bg-[#2a2a2a] text-gray-500 dark:text-gray-400"}`}>
+ <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold ${st.done ? "bg-[#8c9276] text-white dark:text-gray-900" : "bg-gray-200 dark:bg-[#48484a] text-gray-500 dark:text-gray-400"}`}>
  {st.done ? <CheckCircle2 className="w-4 h-4" /> : i + 1}
  </div>
  <span className="text-[10px] font-medium text-gray-600 dark:text-gray-400">{st.label}</span>
@@ -2578,7 +2576,7 @@ export default function ProfilePage() {
  {/* Customer & Order Metadata Card */}
  <div className="mb-5 grid grid-cols-1 sm:grid-cols-2 gap-3">
  {/* Comprador & Fecha */}
- <div className="p-3.5 bg-gray-50/80 dark:bg-[#1a1a1a]/80 rounded-2xl border border-gray-100 dark:border-white/5">
+ <div className="p-3.5 bg-gray-50/80 dark:bg-[#2c2c2e]/80 rounded-2xl border border-gray-100 dark:border-white/5">
  <p className="text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-1">Cliente / Comprador</p>
  <p className="text-xs font-bold text-gray-900 dark:text-gray-100">{selectedOrder.customerName || "Cliente Lumina"}</p>
  <p className="text-[11px] text-gray-500 dark:text-gray-400 truncate">{selectedOrder.customerEmail || "cliente@lumina.com"}</p>
@@ -2589,7 +2587,7 @@ export default function ProfilePage() {
  </div>
 
  {/* Entrega & Pago */}
- <div className="p-3.5 bg-gray-50/80 dark:bg-[#1a1a1a]/80 rounded-2xl border border-gray-100 dark:border-white/5">
+ <div className="p-3.5 bg-gray-50/80 dark:bg-[#2c2c2e]/80 rounded-2xl border border-gray-100 dark:border-white/5">
  <p className="text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-1">Dirección de Entrega</p>
  {selectedOrder.shippingAddress ? (
  <>
@@ -2611,15 +2609,15 @@ export default function ProfilePage() {
  <div className="space-y-3 mb-5">
  <h4 className="text-xs font-bold uppercase tracking-wider text-gray-400">Piezas Adquiridas ({selectedOrder.items.length})</h4>
  {selectedOrder.items.length === 0 ? (
- <div className="p-3 bg-gray-50 dark:bg-[#1a1a1a] rounded-xl flex items-center justify-between text-xs">
+ <div className="p-3 bg-gray-50 dark:bg-[#2c2c2e] rounded-xl flex items-center justify-between text-xs">
  <span>Pieza Colección Exclusiva Lumina</span>
  <span className="font-bold text-gray-900 dark:text-gray-100">${selectedOrder.total.toFixed(2)}</span>
  </div>
  ) : (
  selectedOrder.items.map((item, idx) => (
- <div key={idx} className="p-3 bg-gray-50 dark:bg-[#1a1a1a] rounded-xl flex items-center justify-between text-xs">
+ <div key={idx} className="p-3 bg-gray-50 dark:bg-[#2c2c2e] rounded-xl flex items-center justify-between text-xs">
  <div className="flex items-center gap-3">
- <div className="w-10 h-10 rounded-lg overflow-hidden bg-white dark:bg-[#121212] shrink-0 relative border border-gray-100 dark:border-white/5">
+ <div className="w-10 h-10 rounded-lg overflow-hidden bg-white dark:bg-[#1c1c1e] shrink-0 relative border border-gray-100 dark:border-white/5">
  <Image src={item.product.imageUrl} alt={item.product.title} fill className="object-cover" />
  </div>
  <div>
@@ -2641,7 +2639,7 @@ export default function ProfilePage() {
 
  {/* If Admin: live status changer */}
  {isAdmin && (
- <div className="mt-5 pt-4 border-t border-gray-100 dark:border-white/5 flex items-center justify-between bg-a dark:bg-[#121212]mber-50/70 p-3.5 rounded-2xl border border-amber-200/60">
+ <div className="mt-5 pt-4 border-t border-gray-100 dark:border-white/5 flex items-center justify-between bg-a dark:bg-[#1c1c1e]mber-50/70 p-3.5 rounded-2xl border border-amber-200/60">
  <div>
  <p className="text-xs font-bold text-amber-900">Actualizar Estado (Administrador)</p>
  <p className="text-[10px] text-amber-700">Cambia la etapa del pedido en tiempo real para el cliente</p>
@@ -2653,7 +2651,7 @@ export default function ProfilePage() {
  updateOrderStatus(selectedOrder.id, nextSt);
  setSelectedOrder({ ...selectedOrder, status: nextSt });
  }}
- className="text-xs font-bold bg-white dark:bg-[#121212] border border-amber-300 rounded-xl px-3.5 py-2 outline-none shadow-sm dark:shadow-none cursor-pointer text-gray-900 dark:text-gray-100"
+ className="text-xs font-bold bg-white dark:bg-[#1c1c1e] border border-amber-300 rounded-xl px-3.5 py-2 outline-none shadow-sm dark:shadow-none cursor-pointer text-gray-900 dark:text-gray-100"
  >
  <option value="Procesando">Procesando</option>
  <option value="Enviado">Enviado</option>
@@ -2670,7 +2668,7 @@ export default function ProfilePage() {
  {/* ========================================================================= */}
  {showCardModal && (
  <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-fade-in">
- <div className="bg-white dark:bg-[#121212] rounded-3xl w-full max-w-md shadow-2xl dark:shadow-none p-6 relative">
+ <div className="bg-white dark:bg-[#1c1c1e] rounded-3xl w-full max-w-md shadow-2xl dark:shadow-none p-6 relative">
  <div className="flex items-center justify-between mb-4 pb-3 border-b border-gray-100 dark:border-white/5">
  <h3 className="text-base font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
  <CreditCard className="w-5 h-5 text-[#8c9276]" /> Añadir Nueva Tarjeta
@@ -2704,14 +2702,14 @@ export default function ProfilePage() {
  <button 
  type="button"
  onClick={() => setNewCardType("mastercard")}
- className={`p-2.5 rounded-xl border text-xs font-bold transition-all ${newCardType === "mastercard" ? "border-gray-900 bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900" : "border-gray-200 dark:border-white/10 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:bg-[#1a1a1a]"}`}
+ className={`p-2.5 rounded-xl border text-xs font-bold transition-all ${newCardType === "mastercard" ? "border-gray-900 bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900" : "border-gray-200 dark:border-white/10 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:bg-[#2c2c2e]"}`}
  >
  Mastercard
  </button>
  <button 
  type="button"
  onClick={() => setNewCardType("visa")}
- className={`p-2.5 rounded-xl border text-xs font-bold transition-all ${newCardType === "visa" ? "border-gray-900 bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900" : "border-gray-200 dark:border-white/10 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:bg-[#1a1a1a]"}`}
+ className={`p-2.5 rounded-xl border text-xs font-bold transition-all ${newCardType === "visa" ? "border-gray-900 bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900" : "border-gray-200 dark:border-white/10 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:bg-[#2c2c2e]"}`}
  >
  Visa
  </button>
@@ -2763,7 +2761,7 @@ export default function ProfilePage() {
  </div>
 
  <div className="pt-3 flex justify-end gap-2">
- <button type="button" onClick={() => setShowCardModal(false)} className="px-4 py-2 text-xs font-semibold text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:bg-[#222222] rounded-xl">Cancelar</button>
+ <button type="button" onClick={() => setShowCardModal(false)} className="px-4 py-2 text-xs font-semibold text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:bg-[#3a3a3c] rounded-xl">Cancelar</button>
  <button type="submit" className="px-5 py-2 text-xs font-semibold bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 rounded-xl hover:bg-gray-800 shadow-md dark:shadow-none">Guardar Tarjeta</button>
  </div>
  </form>
@@ -2776,13 +2774,13 @@ export default function ProfilePage() {
  {/* ========================================================================= */}
  {showProductModal && (
  <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-fade-in">
- <div className="bg-white dark:bg-[#121212] rounded-3xl w-full max-w-3xl shadow-2xl dark:shadow-none overflow-hidden flex flex-col max-h-[90vh]">
- <div className="p-6 border-b border-gray-100 dark:border-white/5 flex items-center justify-between bg-gray-50/50 dark:bg-[#1a1a1a]/50">
+ <div className="bg-white dark:bg-[#1c1c1e] rounded-3xl w-full max-w-3xl shadow-2xl dark:shadow-none overflow-hidden flex flex-col max-h-[90vh]">
+ <div className="p-6 border-b border-gray-100 dark:border-white/5 flex items-center justify-between bg-gray-50/50 dark:bg-[#2c2c2e]/50">
  <div>
  <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100">Publicar Nuevo Producto</h2>
  <p className="text-xs text-gray-500 dark:text-gray-400">Se adaptará automáticamente a la estética Lumina y se sincronizará en Supabase.</p>
  </div>
- <button onClick={() => setShowProductModal(false)} className="p-2 text-gray-400 hover:text-gray-900 dark:text-gray-100 bg-white dark:bg-[#121212] rounded-full shadow-sm dark:shadow-none">
+ <button onClick={() => setShowProductModal(false)} className="p-2 text-gray-400 hover:text-gray-900 dark:text-gray-100 bg-white dark:bg-[#1c1c1e] rounded-full shadow-sm dark:shadow-none">
  <X className="w-5 h-5" />
  </button>
  </div>
@@ -2826,7 +2824,7 @@ export default function ProfilePage() {
  + Gestionar nichos y categorías
  </button>
  </div>
- <select required value={prodCategory} onChange={e => setProdCategory(e.target.value)} className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-sm outline-none bg-white dark:bg-[#121212]">
+ <select required value={prodCategory} onChange={e => setProdCategory(e.target.value)} className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-sm outline-none bg-white dark:bg-[#1c1c1e]">
  <option value="">Selecciona un nicho</option>
  {categories.map(c => <option key={c} value={c}>{c}</option>)}
  </select>
@@ -2842,7 +2840,7 @@ export default function ProfilePage() {
  + Gestionar badges
  </button>
  </div>
- <select value={prodBadge} onChange={e => setProdBadge(e.target.value)} className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-sm outline-none bg-white dark:bg-[#121212]">
+ <select value={prodBadge} onChange={e => setProdBadge(e.target.value)} className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-sm outline-none bg-white dark:bg-[#1c1c1e]">
  <option value="">Sin badge</option>
  {badges.map(b => (
  <option key={b} value={b}>{b}</option>
@@ -2852,7 +2850,7 @@ export default function ProfilePage() {
  </div>
 
  {/* Precios y Descuento */}
- <div className="p-4 bg-gray-50/70 dark:bg-[#1a1a1a]/70 rounded-2xl border border-gray-100 dark:border-white/5 space-y-3">
+ <div className="p-4 bg-gray-50/70 dark:bg-[#2c2c2e]/70 rounded-2xl border border-gray-100 dark:border-white/5 space-y-3">
  <div className="flex items-center justify-between">
  <span className="text-xs font-bold text-gray-700 dark:text-gray-300 uppercase">Precios y Rebajas</span>
  <div className="flex items-center gap-2">
@@ -2866,7 +2864,7 @@ export default function ProfilePage() {
  }}
  className={`w-10 h-5 rounded-full relative transition-colors ${hasDiscount ? "bg-gray-900 dark:bg-gray-100" : "bg-gray-300"}`}
  >
- <span className={`absolute top-0.5 w-4 h-4 rounded-full bg-white dark:bg-[#121212] transition-all ${hasDiscount ? "left-5" : "left-1"}`} />
+ <span className={`absolute top-0.5 w-4 h-4 rounded-full bg-white dark:bg-[#1c1c1e] transition-all ${hasDiscount ? "left-5" : "left-1"}`} />
  </button>
  </div>
  </div>
@@ -2884,7 +2882,7 @@ export default function ProfilePage() {
  </div>
  <div>
  <label className="block text-xs text-gray-600 dark:text-gray-400 mb-1">% Descuento Calculado</label>
- <input type="text" readOnly value={calculatedDiscount} className="w-full px-3 py-2 rounded-xl border border-gray-200 dark:border-white/10 text-sm bg-gray-100 dark:bg-[#222222] text-red-600 font-bold outline-none" placeholder="-25%" />
+ <input type="text" readOnly value={calculatedDiscount} className="w-full px-3 py-2 rounded-xl border border-gray-200 dark:border-white/10 text-sm bg-gray-100 dark:bg-[#3a3a3c] text-red-600 font-bold outline-none" placeholder="-25%" />
  </div>
  </>
  )}
@@ -2892,7 +2890,7 @@ export default function ProfilePage() {
  </div>
 
  {/* Sección de Imágenes con Vista Previa y Guía */}
- <div className="p-4 bg-gray-50/80 dark:bg-[#1a1a1a]/80 rounded-2xl border border-gray-100 dark:border-white/5 space-y-3">
+ <div className="p-4 bg-gray-50/80 dark:bg-[#2c2c2e]/80 rounded-2xl border border-gray-100 dark:border-white/5 space-y-3">
  <div className="flex items-center justify-between">
  <label className="block text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-gray-300">Fotografías del Producto</label>
  <span className="text-[11px] text-[#8c9276] font-semibold">Vista previa en vivo</span>
@@ -2913,12 +2911,12 @@ export default function ProfilePage() {
  type="text" 
  value={prodImageUrl} 
  onChange={e => setProdImageUrl(e.target.value)} 
- className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-sm outline-none bg-white dark:bg-[#121212]" 
+ className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-sm outline-none bg-white dark:bg-[#1c1c1e]" 
  placeholder="https://images.unsplash.com/photo-... o enlace directo .jpg / .webp" 
  />
  {/* Alerta si parece una página web */}
  {prodImageUrl.trim() && (prodImageUrl.includes('.html') || (!prodImageUrl.match(/\.(jpg|jpeg|png|webp|avif|gif|svg)(\?.*)?$/i) && !prodImageUrl.includes('unsplash') && !prodImageUrl.includes('mlstatic') && !prodImageUrl.includes('cloudinary') && !prodImageUrl.includes('imgur'))) && (
- <p className="text-[11px] text-amber-700 mt-1.5 flex items-center gap-1 font-medium bg-a dark:bg-[#121212]mber-50 p-2 rounded-lg border border-amber-200">
+ <p className="text-[11px] text-amber-700 mt-1.5 flex items-center gap-1 font-medium bg-a dark:bg-[#1c1c1e]mber-50 p-2 rounded-lg border border-amber-200">
  ⚠️ Atención: Parece que pegaste el enlace de una página web y no de la imagen directa. Asegúrate de hacer clic derecho sobre la foto &gt; &ldquo;Copiar dirección de imagen&rdquo;.
  </p>
  )}
@@ -2926,8 +2924,8 @@ export default function ProfilePage() {
 
  {/* Vista previa de Imagen Principal */}
  {prodImageUrl.trim() && (
- <div className="flex items-center gap-3 p-3 bg-white dark:bg-[#121212] rounded-xl border border-gray-200/80 dark:border-white/10/80">
- <div className="relative w-16 h-16 rounded-lg overflow-hidden bg-gray-100 dark:bg-[#222222] shrink-0 border border-gray-200 dark:border-white/10">
+ <div className="flex items-center gap-3 p-3 bg-white dark:bg-[#1c1c1e] rounded-xl border border-gray-200/80 dark:border-white/10/80">
+ <div className="relative w-16 h-16 rounded-lg overflow-hidden bg-gray-100 dark:bg-[#3a3a3c] shrink-0 border border-gray-200 dark:border-white/10">
  {/* eslint-disable-next-line @next/next/no-img-element */}
  <img 
  src={prodImageUrl.trim().split(/[\n,]+/)[0]} 
@@ -2949,7 +2947,7 @@ export default function ProfilePage() {
  type="text" 
  value={prodExtraImages} 
  onChange={e => setProdExtraImages(e.target.value)} 
- className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-sm outline-none bg-white dark:bg-[#121212]" 
+ className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-sm outline-none bg-white dark:bg-[#1c1c1e]" 
  placeholder="Separa varios enlaces con comas: https://foto2.jpg, https://foto3.webp" 
  />
  <p className="text-[11px] text-gray-400 mt-1">Permite a los clientes ver el producto desde varios ángulos.</p>
@@ -2961,7 +2959,7 @@ export default function ProfilePage() {
  <p className="text-[11px] font-semibold text-gray-500 dark:text-gray-400">Galería adicional detectada:</p>
  <div className="flex gap-2 flex-wrap">
  {prodExtraImages.split(/[\n,]+/).map(u => u.trim()).filter(u => u.startsWith('http')).map((url, idx) => (
- <div key={idx} className="relative w-12 h-12 rounded-lg overflow-hidden bg-gray-100 dark:bg-[#222222] border border-gray-200 dark:border-white/10 shrink-0">
+ <div key={idx} className="relative w-12 h-12 rounded-lg overflow-hidden bg-gray-100 dark:bg-[#3a3a3c] border border-gray-200 dark:border-white/10 shrink-0">
  {/* eslint-disable-next-line @next/next/no-img-element */}
  <img 
  src={url} 
@@ -2999,7 +2997,7 @@ export default function ProfilePage() {
  type="text" 
  value={prodMaterials} 
  onChange={e => setProdMaterials(e.target.value)} 
- className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-sm outline-none bg-white dark:bg-[#121212]" 
+ className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-sm outline-none bg-white dark:bg-[#1c1c1e]" 
  placeholder="Ej: Cerámica gres cocida a 1250°C, herrajes de latón macizo y esmalte satinado libre de tóxicos." 
  />
  <p className="text-[11px] text-gray-400 mt-1">El cliente sabrá exactamente de qué está hecha la pieza.</p>
@@ -3012,7 +3010,7 @@ export default function ProfilePage() {
  type="text" 
  value={prodDimensions} 
  onChange={e => setProdDimensions(e.target.value)} 
- className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-sm outline-none bg-white dark:bg-[#121212]" 
+ className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-sm outline-none bg-white dark:bg-[#1c1c1e]" 
  placeholder="Ej: 45 x 28 x 20 cm · Peso neto: 1.8 kg" 
  />
  </div>
@@ -3023,7 +3021,7 @@ export default function ProfilePage() {
  min="0"
  value={prodStock} 
  onChange={e => setProdStock(e.target.value)} 
- className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-sm outline-none bg-white dark:bg-[#121212]" 
+ className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-sm outline-none bg-white dark:bg-[#1c1c1e]" 
  placeholder="20" 
  />
  </div>
@@ -3043,7 +3041,7 @@ export default function ProfilePage() {
  type="text" 
  value={prodShipping} 
  onChange={e => setProdShipping(e.target.value)} 
- className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-sm outline-none bg-white dark:bg-[#121212]" 
+ className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-sm outline-none bg-white dark:bg-[#1c1c1e]" 
  placeholder="Ej: Entrega estándar en 24-48h. Embalaje reforzado anti-golpes. Devolución gratuita en 30 días." 
  />
  </div>
@@ -3055,7 +3053,7 @@ export default function ProfilePage() {
  type="text" 
  value={prodWarranty} 
  onChange={e => setProdWarranty(e.target.value)} 
- className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-sm outline-none bg-white dark:bg-[#121212]" 
+ className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-sm outline-none bg-white dark:bg-[#1c1c1e]" 
  placeholder="Ej: 2 años de garantía de fábrica" 
  />
  </div>
@@ -3065,7 +3063,7 @@ export default function ProfilePage() {
  type="text" 
  value={prodPackageContents} 
  onChange={e => setProdPackageContents(e.target.value)} 
- className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-sm outline-none bg-white dark:bg-[#121212]" 
+ className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-sm outline-none bg-white dark:bg-[#1c1c1e]" 
  placeholder="Ej: 1x Producto, 1x Cable USB-C, 1x Manual ilustrado" 
  />
  </div>
@@ -3077,14 +3075,14 @@ export default function ProfilePage() {
  type="text" 
  value={prodCareInstructions} 
  onChange={e => setProdCareInstructions(e.target.value)} 
- className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-sm outline-none bg-white dark:bg-[#121212]" 
+ className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-sm outline-none bg-white dark:bg-[#1c1c1e]" 
  placeholder="Ej: Limpiar con paño de microfibra seco. No usar productos abrasivos ni alcohol." 
  />
  </div>
  </div>
 
  <div className="pt-4 flex justify-end gap-3">
- <button type="button" onClick={() => setShowProductModal(false)} className="px-5 py-2.5 text-xs font-semibold text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:bg-[#222222] rounded-xl">Cancelar</button>
+ <button type="button" onClick={() => setShowProductModal(false)} className="px-5 py-2.5 text-xs font-semibold text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:bg-[#3a3a3c] rounded-xl">Cancelar</button>
  <button type="submit" disabled={isSubmittingProd} className="px-6 py-2.5 text-xs font-semibold bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 rounded-xl shadow-md dark:shadow-none hover:bg-gray-800 disabled:opacity-50">
  {isSubmittingProd ? "Guardando..." : "Publicar en Tienda"}
  </button>
@@ -3099,8 +3097,8 @@ export default function ProfilePage() {
  {/* ========================================================================= */}
  {showEditProductModal && (
  <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-fade-in">
- <div className="bg-white dark:bg-[#121212] rounded-3xl w-full max-w-3xl shadow-2xl dark:shadow-none overflow-hidden flex flex-col max-h-[90vh]">
- <div className="p-6 border-b border-gray-100 dark:border-white/5 flex items-center justify-between bg-gray-50/70 dark:bg-[#1a1a1a]/70">
+ <div className="bg-white dark:bg-[#1c1c1e] rounded-3xl w-full max-w-3xl shadow-2xl dark:shadow-none overflow-hidden flex flex-col max-h-[90vh]">
+ <div className="p-6 border-b border-gray-100 dark:border-white/5 flex items-center justify-between bg-gray-50/70 dark:bg-[#2c2c2e]/70">
  <div className="flex items-center gap-3">
  <div className="w-10 h-10 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center shadow-sm dark:shadow-none">
  <Pencil className="w-5 h-5" />
@@ -3112,7 +3110,7 @@ export default function ProfilePage() {
  </div>
  <button 
  onClick={() => setShowEditProductModal(false)} 
- className="p-2 text-gray-400 hover:text-gray-900 dark:text-gray-100 bg-white dark:bg-[#121212] rounded-full shadow-sm dark:shadow-none"
+ className="p-2 text-gray-400 hover:text-gray-900 dark:text-gray-100 bg-white dark:bg-[#1c1c1e] rounded-full shadow-sm dark:shadow-none"
  >
  <X className="w-5 h-5" />
  </button>
@@ -3166,7 +3164,7 @@ export default function ProfilePage() {
  required 
  value={editCategory} 
  onChange={e => setEditCategory(e.target.value)} 
- className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-sm outline-none bg-white dark:bg-[#121212]"
+ className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-sm outline-none bg-white dark:bg-[#1c1c1e]"
  >
  <option value="">Selecciona un nicho</option>
  {categories.map(c => <option key={c} value={c}>{c}</option>)}
@@ -3177,7 +3175,7 @@ export default function ProfilePage() {
  <select 
  value={editBadge} 
  onChange={e => setEditBadge(e.target.value)} 
- className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-sm outline-none bg-white dark:bg-[#121212]"
+ className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-sm outline-none bg-white dark:bg-[#1c1c1e]"
  >
  <option value="">Sin badge</option>
  {badges.map(b => (
@@ -3188,7 +3186,7 @@ export default function ProfilePage() {
  </div>
 
  {/* Precios y Descuento */}
- <div className="p-4 bg-gray-50/70 dark:bg-[#1a1a1a]/70 rounded-2xl border border-gray-100 dark:border-white/5 space-y-3">
+ <div className="p-4 bg-gray-50/70 dark:bg-[#2c2c2e]/70 rounded-2xl border border-gray-100 dark:border-white/5 space-y-3">
  <div className="flex items-center justify-between">
  <span className="text-xs font-bold text-gray-700 dark:text-gray-300 uppercase">Precios y Rebajas</span>
  <div className="flex items-center gap-2">
@@ -3202,7 +3200,7 @@ export default function ProfilePage() {
  }}
  className={`w-10 h-5 rounded-full relative transition-colors ${editHasDiscount ? "bg-gray-900 dark:bg-gray-100" : "bg-gray-300"}`}
  >
- <span className={`absolute top-0.5 w-4 h-4 rounded-full bg-white dark:bg-[#121212] transition-all ${editHasDiscount ? "left-5" : "left-1"}`} />
+ <span className={`absolute top-0.5 w-4 h-4 rounded-full bg-white dark:bg-[#1c1c1e] transition-all ${editHasDiscount ? "left-5" : "left-1"}`} />
  </button>
  </div>
  </div>
@@ -3239,7 +3237,7 @@ export default function ProfilePage() {
  type="text" 
  readOnly 
  value={editCalculatedDiscount} 
- className="w-full px-3 py-2 rounded-xl border border-gray-200 dark:border-white/10 text-sm bg-gray-100 dark:bg-[#222222] text-red-600 font-bold outline-none" 
+ className="w-full px-3 py-2 rounded-xl border border-gray-200 dark:border-white/10 text-sm bg-gray-100 dark:bg-[#3a3a3c] text-red-600 font-bold outline-none" 
  placeholder="-25%" 
  />
  </div>
@@ -3249,7 +3247,7 @@ export default function ProfilePage() {
  </div>
 
  {/* Imagen y Vista Previa */}
- <div className="p-4 bg-gray-50/80 dark:bg-[#1a1a1a]/80 rounded-2xl border border-gray-100 dark:border-white/5 space-y-3">
+ <div className="p-4 bg-gray-50/80 dark:bg-[#2c2c2e]/80 rounded-2xl border border-gray-100 dark:border-white/5 space-y-3">
  <div className="flex items-center justify-between">
  <label className="block text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-gray-300">Fotografías del Producto</label>
  <span className="text-[11px] text-[#8c9276] font-semibold">Vista previa en vivo</span>
@@ -3264,7 +3262,7 @@ export default function ProfilePage() {
 
  <div className="flex gap-4 items-start">
  {editImageUrl && (
- <div className="relative w-16 h-16 rounded-xl overflow-hidden bg-gray-100 dark:bg-[#222222] border border-gray-200 dark:border-white/10 shrink-0">
+ <div className="relative w-16 h-16 rounded-xl overflow-hidden bg-gray-100 dark:bg-[#3a3a3c] border border-gray-200 dark:border-white/10 shrink-0">
  {/* eslint-disable-next-line @next/next/no-img-element */}
  <img 
  src={editImageUrl.trim().split(/[\n,]+/)[0]} 
@@ -3281,11 +3279,11 @@ export default function ProfilePage() {
  type="text" 
  value={editImageUrl} 
  onChange={e => setEditImageUrl(e.target.value)} 
- className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-sm outline-none bg-white dark:bg-[#121212]" 
+ className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-sm outline-none bg-white dark:bg-[#1c1c1e]" 
  placeholder="https://images.unsplash.com/photo-... o .jpg / .webp" 
  />
  {editImageUrl.trim() && (editImageUrl.includes('.html') || (!editImageUrl.match(/\.(jpg|jpeg|png|webp|avif|gif|svg)(\?.*)?$/i) && !editImageUrl.includes('unsplash') && !editImageUrl.includes('mlstatic') && !editImageUrl.includes('cloudinary') && !editImageUrl.includes('imgur'))) && (
- <p className="text-[11px] text-amber-700 mt-1.5 font-medium bg-a dark:bg-[#121212]mber-50 p-2 rounded-lg border border-amber-200">
+ <p className="text-[11px] text-amber-700 mt-1.5 font-medium bg-a dark:bg-[#1c1c1e]mber-50 p-2 rounded-lg border border-amber-200">
  ⚠️ Atención: Asegúrate de que este enlace apunte al archivo directo de la foto (clic derecho &gt; &ldquo;Copiar dirección de imagen&rdquo;).
  </p>
  )}
@@ -3298,7 +3296,7 @@ export default function ProfilePage() {
  type="text" 
  value={editExtraImages} 
  onChange={e => setEditExtraImages(e.target.value)} 
- className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-sm outline-none bg-white dark:bg-[#121212]" 
+ className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-sm outline-none bg-white dark:bg-[#1c1c1e]" 
  placeholder="https://foto2.jpg , https://foto3.webp" 
  />
  </div>
@@ -3309,7 +3307,7 @@ export default function ProfilePage() {
  <p className="text-[11px] font-semibold text-gray-500 dark:text-gray-400">Galería adicional:</p>
  <div className="flex gap-2 flex-wrap">
  {editExtraImages.split(/[\n,]+/).map(u => u.trim()).filter(u => u.startsWith('http')).map((url, idx) => (
- <div key={idx} className="relative w-12 h-12 rounded-lg overflow-hidden bg-gray-100 dark:bg-[#222222] border border-gray-200 dark:border-white/10 shrink-0">
+ <div key={idx} className="relative w-12 h-12 rounded-lg overflow-hidden bg-gray-100 dark:bg-[#3a3a3c] border border-gray-200 dark:border-white/10 shrink-0">
  {/* eslint-disable-next-line @next/next/no-img-element */}
  <img 
  src={url} 
@@ -3383,7 +3381,7 @@ export default function ProfilePage() {
  type="text" 
  value={editMaterials} 
  onChange={e => setEditMaterials(e.target.value)} 
- className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-sm outline-none bg-white dark:bg-[#121212]" 
+ className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-sm outline-none bg-white dark:bg-[#1c1c1e]" 
  placeholder="Ej: Cerámica gres cocida a 1250°C, herrajes de latón macizo y esmalte satinado." 
  />
  </div>
@@ -3395,7 +3393,7 @@ export default function ProfilePage() {
  type="text" 
  value={editDimensions} 
  onChange={e => setEditDimensions(e.target.value)} 
- className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-sm outline-none bg-white dark:bg-[#121212]" 
+ className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-sm outline-none bg-white dark:bg-[#1c1c1e]" 
  placeholder="Ej: 45 x 28 x 20 cm · Peso neto: 1.8 kg" 
  />
  </div>
@@ -3406,7 +3404,7 @@ export default function ProfilePage() {
  min="0"
  value={editStock} 
  onChange={e => setEditStock(e.target.value)} 
- className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-sm outline-none bg-white dark:bg-[#121212]" 
+ className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-sm outline-none bg-white dark:bg-[#1c1c1e]" 
  placeholder="20" 
  />
  </div>
@@ -3426,7 +3424,7 @@ export default function ProfilePage() {
  type="text" 
  value={editShipping} 
  onChange={e => setEditShipping(e.target.value)} 
- className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-sm outline-none bg-white dark:bg-[#121212]" 
+ className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-sm outline-none bg-white dark:bg-[#1c1c1e]" 
  placeholder="Ej: Entrega estándar en 24-48h. Embalaje reforzado anti-golpes. Devolución gratuita en 30 días." 
  />
  </div>
@@ -3438,7 +3436,7 @@ export default function ProfilePage() {
  type="text" 
  value={editWarranty} 
  onChange={e => setEditWarranty(e.target.value)} 
- className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-sm outline-none bg-white dark:bg-[#121212]" 
+ className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-sm outline-none bg-white dark:bg-[#1c1c1e]" 
  placeholder="Ej: 2 años de garantía de fábrica" 
  />
  </div>
@@ -3448,7 +3446,7 @@ export default function ProfilePage() {
  type="text" 
  value={editPackageContents} 
  onChange={e => setEditPackageContents(e.target.value)} 
- className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-sm outline-none bg-white dark:bg-[#121212]" 
+ className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-sm outline-none bg-white dark:bg-[#1c1c1e]" 
  placeholder="Ej: 1x Producto, 1x Cable USB-C, 1x Manual ilustrado" 
  />
  </div>
@@ -3460,7 +3458,7 @@ export default function ProfilePage() {
  type="text" 
  value={editCareInstructions} 
  onChange={e => setEditCareInstructions(e.target.value)} 
- className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-sm outline-none bg-white dark:bg-[#121212]" 
+ className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-sm outline-none bg-white dark:bg-[#1c1c1e]" 
  placeholder="Ej: Limpiar con paño de microfibra seco. No usar productos abrasivos ni alcohol." 
  />
  </div>
@@ -3470,7 +3468,7 @@ export default function ProfilePage() {
  <button 
  type="button" 
  onClick={() => setShowEditProductModal(false)} 
- className="px-5 py-2.5 text-xs font-semibold text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:bg-[#222222] rounded-xl"
+ className="px-5 py-2.5 text-xs font-semibold text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:bg-[#3a3a3c] rounded-xl"
  >
  Cancelar
  </button>
