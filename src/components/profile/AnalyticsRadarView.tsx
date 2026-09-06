@@ -20,8 +20,8 @@ import {
   ChevronRight,
   X
 } from "lucide-react";
-import { ShippingAddress, Order } from "@/lib/userStore";
-import { CatalogProduct } from "@/lib/catalogStore";
+import type { User, ShippingAddress, Order } from "@/lib/userStore";
+import type { CatalogProduct } from "@/lib/catalogStore";
 import { supabase } from "@/lib/supabase";
 
 export interface ConnectedClient {
@@ -110,11 +110,8 @@ export const ECUADOR_PROVINCE_COORDINATES: Record<string, { x: number; y: number
   "zamora chinchipe": { x: 48.0, y: 83.0, province: "Zamora Chinchipe", region: "Oriente" }
 };
 
-export default function AnalyticsRadarView({
-  /* user */
-  /* addresses */
-  /* orders */
-}: AnalyticsRadarViewProps) {
+export default function AnalyticsRadarView(_props: AnalyticsRadarViewProps) {
+  void _props;
   // Interaction & filter states
   const [hoveredClient, setHoveredClient] = useState<ConnectedClient | null>(null);
   const [selectedClient, setSelectedClient] = useState<ConnectedClient | null>(null);
