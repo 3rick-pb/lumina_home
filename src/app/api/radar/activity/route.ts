@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
-import { cleanClientName } from '@/lib/radarStore';
+import { cleanClientName, resolveCoordinates } from '@/lib/radarStore';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -74,8 +74,11 @@ export async function GET() {
           const purchases = Number(row.purchases_count) || 0;
           const frequency = purchases >= 12 ? 'Semanal' : purchases >= 6 ? 'Quincenal' : purchases >= 3 ? 'Mensual' : purchases >= 1 ? 'Ocasional' : '1ª Vez';
           const finalCity = row.city || (existing ? existing.city : '');
-          const finalX = typeof row.x === 'number' && Number(row.x) >= 0 ? Number(row.x) : (existing ? existing.x : -100);
-          const finalY = typeof row.y === 'number' && Number(row.y) >= 0 ? Number(row.y) : (existing ? existing.y : -100);
+          const coords = resolveCoordinates(finalCity);
+          const parsedX = row.x !== null && row.x !== undefined ? Number(row.x) : NaN;
+          const parsedY = row.y !== null && row.y !== undefined ? Number(row.y) : NaN;
+          const finalX = !isNaN(parsedX) && parsedX >= 0 ? parsedX : (coords.x >= 0 ? coords.x : (existing && existing.x >= 0 ? existing.x : -100));
+          const finalY = !isNaN(parsedY) && parsedY >= 0 ? parsedY : (coords.y >= 0 ? coords.y : (existing && existing.y >= 0 ? existing.y : -100));
 
           globalClients.set(row.user_id, {
             id: row.user_id,
@@ -182,14 +185,21 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: true, status: 'offline' });
     }
 
+    const cleanCity = city || '';
+    const coords = resolveCoordinates(cleanCity);
+    const parsedX = x !== null && x !== undefined ? Number(x) : NaN;
+    const parsedY = y !== null && y !== undefined ? Number(y) : NaN;
+    const finalX = !isNaN(parsedX) && parsedX >= 0 ? parsedX : (coords.x >= 0 ? coords.x : -100);
+    const finalY = !isNaN(parsedY) && parsedY >= 0 ? parsedY : (coords.y >= 0 ? coords.y : -100);
+
     const clientRecord: CachedClient = {
       id,
       name: cleanName,
       email: email || '',
-      city: city || '',
+      city: cleanCity,
       country: 'Ecuador',
-      x: typeof x === 'number' ? x : -100,
-      y: typeof y === 'number' ? y : -100,
+      x: finalX,
+      y: finalY,
       frequency: frequency || '1ª Vez',
       purchasesCount: purchasesCount || 0,
       totalSpent: totalSpent || 0,

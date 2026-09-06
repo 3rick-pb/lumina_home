@@ -63,11 +63,21 @@ function ActivityTracker() {
   useEffect(() => {
     const handleClose = () => {
       const activeUser = useUserStore.getState().user;
-      if (activeUser?.id && navigator.sendBeacon) {
-        navigator.sendBeacon(
-          '/api/radar/activity',
-          new Blob([JSON.stringify({ id: activeUser.id, isOnline: false })], { type: 'application/json' })
-        );
+      if (activeUser?.id) {
+        try {
+          useRadarStore.getState().channel?.send({
+            type: 'broadcast',
+            event: 'offline',
+            payload: { id: activeUser.id },
+          });
+        } catch {}
+
+        if (navigator.sendBeacon) {
+          navigator.sendBeacon(
+            '/api/radar/activity',
+            new Blob([JSON.stringify({ id: activeUser.id, isOnline: false })], { type: 'application/json' })
+          );
+        }
       }
     };
 

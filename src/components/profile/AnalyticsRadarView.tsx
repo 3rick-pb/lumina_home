@@ -221,6 +221,18 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
           currentSection: isAdmin ? "Mi Perfil / Mapa" : (c.currentSection || "Explorando Tienda"),
         };
       }
+      // Guarantee valid coordinates for any external client with a registered city
+      const clientCity = c.city || "";
+      const parsedX = typeof c.x === 'number' ? c.x : Number(c.x);
+      const parsedY = typeof c.y === 'number' ? c.y : Number(c.y);
+      if (clientCity && (isNaN(parsedX) || parsedX < 0 || isNaN(parsedY) || parsedY < 0)) {
+        const coords = resolveCoordinates(clientCity);
+        return {
+          ...c,
+          x: coords.x >= 0 ? coords.x : (isNaN(parsedX) ? -100 : parsedX),
+          y: coords.y >= 0 ? coords.y : (isNaN(parsedY) ? -100 : parsedY),
+        };
+      }
       return c;
     });
 
@@ -332,11 +344,19 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
   // Map Beacons: Both actual clients and the Admin (if address exists) are visible on the physical map terrain
   const mapVisibleClients = useMemo(() => {
     return connectedClients.filter(c => {
-      if (typeof c.x !== 'number' || typeof c.y !== 'number' || c.x < 0 || c.y < 0) return false;
       const isSelf = isUserSelf(c);
       const city = isSelf ? currentUserCity : c.city;
       if (!city || !city.trim()) return false;
       if (isSelf && isAdmin && !hasAdminLocation) return false;
+
+      let x = typeof c.x === 'number' ? c.x : Number(c.x);
+      let y = typeof c.y === 'number' ? c.y : Number(c.y);
+      if (isNaN(x) || x < 0 || isNaN(y) || y < 0) {
+        const coords = resolveCoordinates(city);
+        x = coords.x;
+        y = coords.y;
+      }
+      if (x < 0 || y < 0) return false;
       return true;
     });
   }, [connectedClients, isUserSelf, currentUserCity, isAdmin, hasAdminLocation]);

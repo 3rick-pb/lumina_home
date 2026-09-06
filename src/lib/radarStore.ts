@@ -216,10 +216,25 @@ function mergeClientLists(listA: ConnectedClient[], listB: ConnectedClient[]): C
         map.set(c.id, c);
       } else {
         // Merge with newer info while protecting valid location coordinates
-        const hasIncomingCoords = typeof c.x === 'number' && c.x >= 0;
         const finalCity = (c.city && c.city.trim()) ? c.city : (existing.city || '');
-        const finalX = (c.city && hasIncomingCoords) ? c.x : (existing.city && typeof existing.x === 'number' && existing.x >= 0 ? existing.x : c.x);
-        const finalY = (c.city && hasIncomingCoords) ? c.y : (existing.city && typeof existing.y === 'number' && existing.y >= 0 ? existing.y : c.y);
+        const coords = resolveCoordinates(finalCity);
+        const parsedX = c.x !== null && c.x !== undefined ? Number(c.x) : NaN;
+        const parsedY = c.y !== null && c.y !== undefined ? Number(c.y) : NaN;
+        const hasIncomingCoords = !isNaN(parsedX) && parsedX >= 0;
+
+        let finalX = existing.x;
+        let finalY = existing.y;
+
+        if (hasIncomingCoords) {
+          finalX = parsedX;
+          finalY = parsedY;
+        } else if (coords.x >= 0) {
+          finalX = coords.x;
+          finalY = coords.y;
+        } else if (typeof existing.x === 'number' && existing.x >= 0) {
+          finalX = existing.x;
+          finalY = existing.y;
+        }
 
         map.set(c.id, {
           ...existing,
@@ -320,8 +335,15 @@ export const useRadarStore = create<RadarStore>((set, get) => ({
     const activeChannel = get().channel;
     const promises: Promise<unknown>[] = [];
 
-    // 1. Send to Supabase Presence Channel
+    // 1. Send Instant Peer-to-Peer WebSocket Broadcast (<40ms latency) & Presence
     if (activeChannel) {
+      promises.push(
+        activeChannel.send({
+          type: 'broadcast',
+          event: 'activity',
+          payload,
+        }).catch(() => {})
+      );
       promises.push(activeChannel.track(payload).catch(() => {}));
     }
 
@@ -377,7 +399,7 @@ export const useRadarStore = create<RadarStore>((set, get) => ({
     if (!get().pollIntervalId) {
       const intervalId = setInterval(() => {
         get().fetchActiveClients();
-      }, 4000);
+      }, 2000);
       set({ pollIntervalId: intervalId });
     }
 
@@ -410,14 +432,20 @@ export const useRadarStore = create<RadarStore>((set, get) => ({
                 const purchases = Number(row.purchases_count) || 0;
                 const spent = Number(row.total_spent) || 0;
                 const hasCart = Boolean(row.has_cart);
+                const parsedX = row.x !== null && row.x !== undefined ? Number(row.x) : NaN;
+                const parsedY = row.y !== null && row.y !== undefined ? Number(row.y) : NaN;
+                const existingClient = state.clients.find((c) => c.id === row.user_id);
+                const finalX = !isNaN(parsedX) && parsedX >= 0 ? parsedX : (coords.x >= 0 ? coords.x : (existingClient?.x ?? -100));
+                const finalY = !isNaN(parsedY) && parsedY >= 0 ? parsedY : (coords.y >= 0 ? coords.y : (existingClient?.y ?? -100));
+
                 const updatedClient: ConnectedClient = {
                   id: row.user_id,
                   name: cleanClientName(row.name),
                   email: row.email || '',
                   city: row.city || '',
                   country: row.country || 'Ecuador',
-                  x: typeof row.x === 'number' && Number(row.x) >= 0 ? Number(row.x) : coords.x,
-                  y: typeof row.y === 'number' && Number(row.y) >= 0 ? Number(row.y) : coords.y,
+                  x: finalX,
+                  y: finalY,
                   frequency: resolveFrequency(purchases),
                   purchasesCount: purchases,
                   totalSpent: spent,
@@ -443,9 +471,67 @@ export const useRadarStore = create<RadarStore>((set, get) => ({
       set({ dbChannel: dbChan });
     }
 
-    // ── Setup Realtime Presence channel ──
+    // ── Setup Realtime Broadcast & Presence channel ──
     if (!activeChannel) {
-      activeChannel = supabase.channel('radar:clients');
+      activeChannel = supabase.channel('radar:clients', {
+        config: {
+          broadcast: { self: false },
+        },
+      });
+
+      // Peer-to-peer instant broadcast for zero-latency tracking (<40ms)
+      activeChannel
+        .on('broadcast', { event: 'activity' }, ({ payload }) => {
+          if (!payload || !payload.id || payload.id.startsWith('vis_') || payload.id.startsWith('guest_') || String(payload.name).toLowerCase().includes('visitante')) return;
+
+          set((state) => {
+            const cleanCity = payload.city || '';
+            const coords = resolveCoordinates(cleanCity);
+            const parsedX = payload.x !== null && payload.x !== undefined ? Number(payload.x) : NaN;
+            const parsedY = payload.y !== null && payload.y !== undefined ? Number(payload.y) : NaN;
+            const existingClient = state.clients.find((c) => c.id === payload.id);
+            const finalX = !isNaN(parsedX) && parsedX >= 0 ? parsedX : (coords.x >= 0 ? coords.x : (existingClient?.x ?? -100));
+            const finalY = !isNaN(parsedY) && parsedY >= 0 ? parsedY : (coords.y >= 0 ? coords.y : (existingClient?.y ?? -100));
+            const purchases = Number(payload.purchasesCount) || 0;
+            const spent = Number(payload.totalSpent) || 0;
+            const hasCart = Boolean(payload.hasCart);
+
+            const updatedClient: ConnectedClient = {
+              id: payload.id,
+              name: cleanClientName(payload.name),
+              email: payload.email || '',
+              city: cleanCity,
+              country: payload.country || 'Ecuador',
+              x: finalX,
+              y: finalY,
+              frequency: payload.frequency || resolveFrequency(purchases),
+              purchasesCount: purchases,
+              totalSpent: spent,
+              currentSection: payload.currentSection || 'Explorando Tienda',
+              intentScore: payload.intentScore || calculateIntentScore(purchases, spent, hasCart),
+              device: (payload.device as ConnectedClient['device']) || 'Computador',
+              hasCart,
+              cartItemsCount: Number(payload.cartItemsCount) || 0,
+              isRealUser: true,
+            };
+
+            const idx = state.clients.findIndex((c) => c.id === payload.id);
+            if (idx >= 0) {
+              const next = [...state.clients];
+              next[idx] = { ...next[idx], ...updatedClient };
+              return { clients: next };
+            } else {
+              return { clients: [...state.clients, updatedClient] };
+            }
+          });
+        })
+        .on('broadcast', { event: 'offline' }, ({ payload }) => {
+          if (payload?.id) {
+            set((state) => ({
+              clients: state.clients.filter((c) => c.id !== payload.id),
+            }));
+          }
+        });
 
       const handlePresenceUpdate = () => {
         get().fetchActiveClients();

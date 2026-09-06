@@ -388,6 +388,14 @@ export const useUserStore = create<UserState>((set, get) => ({
           .from('active_sessions')
           .delete()
           .eq('user_id', currentUser.id);
+
+        try {
+          useRadarStore.getState().channel?.send({
+            type: 'broadcast',
+            event: 'offline',
+            payload: { id: currentUser.id },
+          });
+        } catch {}
       } catch {}
     }
 
