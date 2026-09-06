@@ -21,14 +21,25 @@ export interface ConnectedClient {
   isRealUser?: boolean;
 }
 
+/**
+ * Normalizes names cleanly:
+ * - Separates lowercase letter followed by uppercase (e.g. "ErickArteaga" -> "Erick Arteaga", "ErickADMIN" -> "Erick ADMIN")
+ * - Normalizes any glued "ADMIN" (e.g. "ErickADMIN" or "erickadmin" -> "Erick ADMIN")
+ * - Normalizes whitespace
+ */
 export const cleanClientName = (rawName?: string) => {
   if (!rawName) return "Cliente Lumina";
-  const formatted = rawName.trim().replace(/([a-zA-Z0-9áéíóúÁÉÍÓÚñÑ])ADMIN\b/g, '$1 ADMIN').trim();
+  let formatted = rawName.trim();
+  // 1. Separate lowercase letter followed by uppercase letter (camelCase or glued surname like ErickArteaga -> Erick Arteaga, ErickADMIN -> Erick ADMIN)
+  formatted = formatted.replace(/([a-zñáéíóú])([A-ZÑÁÉÍÓÚ])/g, '$1 $2');
+  // 2. Separate and normalize any variation of ADMIN glued to letters/numbers
+  formatted = formatted.replace(/([a-zA-Z0-9áéíóúÁÉÍÓÚñÑ])\s*(?:admin)\b/gi, '$1 ADMIN');
+  // 3. Normalize multiple spaces
+  formatted = formatted.replace(/\s+/g, ' ').trim();
   return formatted;
 };
 
-// ── Province coordinate lookup table (mirrors AnalyticsRadarView) ──
-// Maps lowercase city/province names to calibrated x/y map percentages
+// ── Province coordinate lookup table ──
 const CITY_COORDINATES: Record<string, { x: number; y: number }> = {
   // Sierra
   "quito": { x: 48.8, y: 26.5 },
@@ -84,12 +95,7 @@ const CITY_COORDINATES: Record<string, { x: number; y: number }> = {
   "zamora chinchipe": { x: 48.0, y: 83.0 },
 };
 
-/**
- * Resolve city string to calibrated x/y map coordinates.
- * Tries exact match first, then partial substring match.
- * Falls back to Quito coordinates if no match found.
- */
-function resolveCoordinates(city?: string): { x: number; y: number } {
+export function resolveCoordinates(city?: string): { x: number; y: number } {
   const fallback = { x: 48.8, y: 26.5 }; // Quito default
   if (!city) return fallback;
 
@@ -100,7 +106,7 @@ function resolveCoordinates(city?: string): { x: number; y: number } {
     return CITY_COORDINATES[normalized];
   }
 
-  // 2. Partial match: check if the city string contains any known key
+  // 2. Partial match
   for (const key of Object.keys(CITY_COORDINATES)) {
     if (normalized.includes(key) || key.includes(normalized)) {
       return CITY_COORDINATES[key];
@@ -110,10 +116,7 @@ function resolveCoordinates(city?: string): { x: number; y: number } {
   return fallback;
 }
 
-/**
- * Calculate a simple purchase frequency label from the purchase count.
- */
-function resolveFrequency(purchasesCount: number): ConnectedClient['frequency'] {
+export function resolveFrequency(purchasesCount: number): ConnectedClient['frequency'] {
   if (purchasesCount >= 12) return 'Semanal';
   if (purchasesCount >= 6) return 'Quincenal';
   if (purchasesCount >= 3) return 'Mensual';
@@ -121,34 +124,41 @@ function resolveFrequency(purchasesCount: number): ConnectedClient['frequency'] 
   return 'Primera vez';
 }
 
-/**
- * Calculate a basic intent score (0-100) from user behavior signals.
- */
-function calculateIntentScore(purchasesCount: number, totalSpent: number, hasCart: boolean): number {
-  let score = 10; // base
-  if (purchasesCount > 0) score += Math.min(purchasesCount * 8, 40);
-  if (totalSpent > 0) score += Math.min(Math.floor(totalSpent / 50) * 5, 30);
-  if (hasCart) score += 20;
-  return Math.min(score, 100);
+export function calculateIntentScore(purchasesCount: number, totalSpent: number, hasCart: boolean): number {
+  let score = 25; // base
+  if (purchasesCount > 0) score += Math.min(purchasesCount * 10, 35);
+  if (totalSpent > 0) score += Math.min(Math.floor(totalSpent / 50) * 5, 25);
+  if (hasCart) score += 15;
+  return Math.min(score, 98);
 }
 
 interface RadarStore {
   clients: ConnectedClient[];
   channel: RealtimeChannel | null;
+  dbChannel: RealtimeChannel | null;
+  pollIntervalId: ReturnType<typeof setInterval> | null;
   initRadar: (
     user: { id: string; name?: string; email?: string } | null,
     city?: string,
     totalSpent?: number,
     purchasesCount?: number,
-    currentSection?: string
+    currentSection?: string,
+    hasCart?: boolean,
+    cartItemsCount?: number
   ) => void;
+  trackActivity: (
+    user: { id: string; name?: string; email?: string } | null,
+    city?: string,
+    totalSpent?: number,
+    purchasesCount?: number,
+    currentSection?: string,
+    hasCart?: boolean,
+    cartItemsCount?: number
+  ) => Promise<void>;
+  fetchActiveClients: () => Promise<void>;
   cleanup: () => void;
 }
 
-/**
- * Parse presence state into a ConnectedClient array.
- * Used by sync, join, and leave handlers to keep a single source of truth.
- */
 function parsePresenceState(channel: RealtimeChannel | null): ConnectedClient[] {
   if (!channel) return [];
   try {
@@ -166,38 +176,94 @@ function parsePresenceState(channel: RealtimeChannel | null): ConnectedClient[] 
     }
     return clientList;
   } catch {
-    console.error('Error parsing presence state');
     return [];
   }
+}
+
+/**
+ * Merge two client lists without duplicates, preferring the most up-to-date entry
+ */
+function mergeClientLists(listA: ConnectedClient[], listB: ConnectedClient[]): ConnectedClient[] {
+  const map = new Map<string, ConnectedClient>();
+
+  for (const c of listA) {
+    if (c && c.id) map.set(c.id, c);
+  }
+
+  for (const c of listB) {
+    if (c && c.id) {
+      const existing = map.get(c.id);
+      if (!existing) {
+        map.set(c.id, c);
+      } else {
+        // Merge with newer info
+        map.set(c.id, {
+          ...existing,
+          ...c,
+          name: cleanClientName(c.name || existing.name),
+          currentSection: c.currentSection || existing.currentSection,
+          hasCart: c.hasCart !== undefined ? c.hasCart : existing.hasCart,
+          cartItemsCount: c.cartItemsCount !== undefined ? c.cartItemsCount : existing.cartItemsCount,
+        });
+      }
+    }
+  }
+  const merged: ConnectedClient[] = [];
+  map.forEach((client) => merged.push(client));
+  return merged;
 }
 
 export const useRadarStore = create<RadarStore>((set, get) => ({
   clients: [],
   channel: null,
+  dbChannel: null,
+  pollIntervalId: null,
 
   cleanup: () => {
-    const ch = get().channel;
-    if (ch) {
-      supabase.removeChannel(ch);
-      set({ channel: null, clients: [] });
+    const { channel, dbChannel, pollIntervalId } = get();
+    if (channel) {
+      supabase.removeChannel(channel);
+    }
+    if (dbChannel) {
+      supabase.removeChannel(dbChannel);
+    }
+    if (pollIntervalId) {
+      clearInterval(pollIntervalId);
+    }
+    set({ channel: null, dbChannel: null, pollIntervalId: null });
+  },
+
+  fetchActiveClients: async () => {
+    try {
+      const res = await fetch('/api/radar/activity', { cache: 'no-store' });
+      if (res.ok) {
+        const json = await res.json();
+        if (json.success && Array.isArray(json.clients)) {
+          const currentPresenceClients = parsePresenceState(get().channel);
+          const merged = mergeClientLists(currentPresenceClients, json.clients);
+          set({ clients: merged });
+        }
+      }
+    } catch {
+      // Network or offline fallback
     }
   },
 
-  initRadar: (user, city = 'Quito', totalSpent = 0, purchasesCount = 0, currentSection = 'Explorando Tienda') => {
-    let activeChannel = get().channel;
+  trackActivity: async (user, city = 'Quito', totalSpent = 0, purchasesCount = 0, currentSection = 'Explorando Tienda', hasCart = false, cartItemsCount = 0) => {
+    if (!user?.id) return;
 
-    // ── Resolve dynamic coordinates from city ──
     const coords = resolveCoordinates(city);
     const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
     const isTablet = typeof window !== 'undefined' && window.innerWidth >= 768 && window.innerWidth < 1024;
     const device: ConnectedClient['device'] = isMobile ? 'Celular' : isTablet ? 'Tablet' : 'Computador';
     const frequency = resolveFrequency(purchasesCount);
-    const intentScore = calculateIntentScore(purchasesCount, totalSpent, false);
+    const intentScore = calculateIntentScore(purchasesCount, totalSpent, hasCart);
+    const cleanName = cleanClientName(user.name || user.email?.split('@')[0] || 'Cliente Lumina');
 
-    const trackPayload = {
-      id: user?.id || '',
-      name: cleanClientName(user?.name || user?.email?.split('@')[0] || 'Cliente Lumina'),
-      email: user?.email || '',
+    const payload = {
+      id: user.id,
+      name: cleanName,
+      email: user.email || '',
       city: city || 'Quito',
       country: 'Ecuador',
       x: coords.x,
@@ -208,44 +274,109 @@ export const useRadarStore = create<RadarStore>((set, get) => ({
       currentSection,
       intentScore,
       device,
-      hasCart: false,
-      cartItemsCount: 0,
+      hasCart,
+      cartItemsCount: cartItemsCount || 0,
       isRealUser: true,
+      isOnline: true,
     };
 
+    // 1. Send to Supabase Presence Channel
+    const activeChannel = get().channel;
+    if (activeChannel) {
+      try {
+        await activeChannel.track(payload);
+      } catch {
+        // Retry or fallback
+      }
+    }
+
+    // 2. Send to /api/radar/activity (which updates server memory + Supabase active_sessions DB)
+    try {
+      await fetch('/api/radar/activity', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+    } catch {
+      // Offline fallback
+    }
+
+    // 3. Directly update Supabase active_sessions table for immediate postgres_changes broadcast
+    try {
+      await supabase.from('active_sessions').upsert({
+        user_id: payload.id,
+        name: payload.name,
+        email: payload.email,
+        city: payload.city,
+        country: 'Ecuador',
+        x: payload.x,
+        y: payload.y,
+        current_section: payload.currentSection,
+        is_online: true,
+        has_cart: payload.hasCart,
+        cart_items_count: payload.cartItemsCount,
+        total_spent: payload.totalSpent,
+        purchases_count: payload.purchasesCount,
+        device: payload.device,
+        last_seen: new Date().toISOString(),
+      }, { onConflict: 'user_id' });
+    } catch {
+      // Table may not exist yet
+    }
+  },
+
+  initRadar: (user, city = 'Quito', totalSpent = 0, purchasesCount = 0, currentSection = 'Explorando Tienda', hasCart = false, cartItemsCount = 0) => {
+    let activeChannel = get().channel;
+    let dbChan = get().dbChannel;
+
+    // Initial fetch from activity endpoint
+    get().fetchActiveClients();
+
+    // Start 3-second auto-poll fallback to ensure real-time responsiveness under any network condition
+    if (!get().pollIntervalId) {
+      const intervalId = setInterval(() => {
+        get().fetchActiveClients();
+      }, 3500);
+      set({ pollIntervalId: intervalId });
+    }
+
+    // ── Setup Postgres Changes listener on active_sessions table ──
+    if (!dbChan) {
+      dbChan = supabase.channel('radar:db_changes');
+      dbChan
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'active_sessions' }, () => {
+          // Re-fetch immediately when any database row is inserted/updated/deleted
+          get().fetchActiveClients();
+        })
+        .subscribe();
+      set({ dbChannel: dbChan });
+    }
+
+    // ── Setup Realtime Presence channel ──
     if (!activeChannel) {
       activeChannel = supabase.channel('radar:clients');
 
+      const handlePresenceUpdate = () => {
+        const presenceList = parsePresenceState(activeChannel);
+        // Merge with existing clients
+        set((state) => ({
+          clients: mergeClientLists(state.clients, presenceList),
+        }));
+      };
+
       activeChannel
-        // ── SYNC: Full state reconciliation (fires on initial load + any change) ──
-        .on('presence', { event: 'sync' }, () => {
-          const clientList = parsePresenceState(activeChannel);
-          set({ clients: clientList });
-        })
-        // ── JOIN: New client connected — immediate reactivity ──
-        .on('presence', { event: 'join' }, () => {
-          const clientList = parsePresenceState(activeChannel);
-          set({ clients: clientList });
-        })
-        // ── LEAVE: Client disconnected — immediate reactivity ──
-        .on('presence', { event: 'leave' }, () => {
-          const clientList = parsePresenceState(activeChannel);
-          set({ clients: clientList });
-        })
+        .on('presence', { event: 'sync' }, handlePresenceUpdate)
+        .on('presence', { event: 'join' }, handlePresenceUpdate)
+        .on('presence', { event: 'leave' }, handlePresenceUpdate)
         .subscribe(async (status) => {
           if (status === 'SUBSCRIBED' && user?.id) {
-            try {
-              await activeChannel?.track(trackPayload);
-            } catch (trackErr) {
-              console.error('Error tracking user presence:', trackErr);
-            }
+            get().trackActivity(user, city, totalSpent, purchasesCount, currentSection, hasCart, cartItemsCount);
           }
         });
 
       set({ channel: activeChannel });
     } else if (user?.id) {
-      // Channel already exists — just update the track payload (re-track with new data)
-      activeChannel.track(trackPayload).catch(() => {});
+      get().trackActivity(user, city, totalSpent, purchasesCount, currentSection, hasCart, cartItemsCount);
     }
   },
 }));

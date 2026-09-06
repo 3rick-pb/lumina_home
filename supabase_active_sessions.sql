@@ -1,31 +1,8 @@
 -- ==============================================================================
--- LUMINA HOME - PREFERENCIAS Y ACTIVIDAD EN TIEMPO REAL
+-- LUMINA HOME - TABLA DE SESIONES ACTIVAS EN VIVO PARA RADAR
+-- Pega y ejecuta este script en: Supabase Dashboard > SQL Editor > New query > Run
 -- ==============================================================================
 
--- 1. Crear tabla de preferencias de usuario
-CREATE TABLE IF NOT EXISTS public.user_settings (
-    user_id uuid PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
-    theme text DEFAULT 'light' CHECK (theme IN ('light', 'dark', 'auto')),
-    created_at timestamp with time zone DEFAULT timezone('utc'::text, now()) NOT NULL,
-    updated_at timestamp with time zone DEFAULT timezone('utc'::text, now()) NOT NULL
-);
-
-ALTER TABLE public.user_settings ENABLE ROW LEVEL SECURITY;
-
-DROP POLICY IF EXISTS "Users can read own settings" ON public.user_settings;
-CREATE POLICY "Users can read own settings" ON public.user_settings
-    FOR SELECT USING (auth.uid() = user_id);
-
-DROP POLICY IF EXISTS "Users can insert own settings" ON public.user_settings;
-CREATE POLICY "Users can insert own settings" ON public.user_settings
-    FOR INSERT WITH CHECK (auth.uid() = user_id);
-
-DROP POLICY IF EXISTS "Users can update own settings" ON public.user_settings;
-CREATE POLICY "Users can update own settings" ON public.user_settings
-    FOR UPDATE USING (auth.uid() = user_id);
-
-
--- 2. Crear tabla de sesiones y actividad en tiempo real para el Radar
 CREATE TABLE IF NOT EXISTS public.active_sessions (
     user_id text PRIMARY KEY,
     name text,
@@ -44,12 +21,13 @@ CREATE TABLE IF NOT EXISTS public.active_sessions (
     last_seen timestamp with time zone DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
+-- Habilitar RLS y permitir lectura/escritura pública para sincronización en vivo
 ALTER TABLE public.active_sessions ENABLE ROW LEVEL SECURITY;
 
 DROP POLICY IF EXISTS "Public active_sessions policy" ON public.active_sessions;
 CREATE POLICY "Public active_sessions policy" ON public.active_sessions FOR ALL USING (true) WITH CHECK (true);
 
--- 3. Habilitar replicación de Realtime en Supabase
+-- Habilitar replicación de Realtime en Supabase para capturar cambios instantáneos
 DO $$
 BEGIN
     IF NOT EXISTS (

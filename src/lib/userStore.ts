@@ -84,7 +84,11 @@ interface UserState {
 
 export const formatCleanName = (rawName: string) => {
   if (!rawName) return '';
-  return rawName.replace(/([a-zA-Z0-9áéíóúÁÉÍÓÚñÑ])ADMIN\b/g, '$1 ADMIN').trim();
+  let formatted = rawName.trim();
+  formatted = formatted.replace(/([a-zñáéíóú])([A-ZÑÁÉÍÓÚ])/g, '$1 $2');
+  formatted = formatted.replace(/([a-zA-Z0-9áéíóúÁÉÍÓÚñÑ])\s*(?:admin)\b/gi, '$1 ADMIN');
+  formatted = formatted.replace(/\s+/g, ' ').trim();
+  return formatted;
 };
 
 const fetchUserDataFromDatabase = async (userId: string, role: 'USER' | 'ADMIN' = 'USER', email: string = '') => {
@@ -329,6 +333,17 @@ export const useUserStore = create<UserState>((set, get) => ({
   },
   
   logout: async () => {
+    const currentUser = get().user;
+    if (currentUser?.id) {
+      try {
+        fetch('/api/radar/activity', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id: currentUser.id, isOnline: false }),
+        }).catch(() => {});
+      } catch {}
+    }
+
     await supabase.auth.signOut();
     
     // Disconnect and reset cart
@@ -355,15 +370,16 @@ export const useUserStore = create<UserState>((set, get) => ({
   
   register: async (email, password, name) => {
     const cleanEmail = email.trim();
+    const cleanName = formatCleanName(name);
     const role = cleanEmail.toLowerCase() === 'admin@lumina.com' ? 'ADMIN' : 'USER';
     const { data, error } = await supabase.auth.signUp({ 
       email: cleanEmail, 
       password,
-      options: { data: { name, role } } 
+      options: { data: { name: cleanName, role } } 
     });
     if (!error && data?.user) {
       set({ 
-        user: { id: data.user.id, email: cleanEmail, name, role }, 
+        user: { id: data.user.id, email: cleanEmail, name: cleanName, role }, 
         isAuthenticated: true,
         cards: [],
         orders: [],

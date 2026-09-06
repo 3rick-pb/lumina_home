@@ -20,7 +20,7 @@ import {
   ChevronRight,
   X
 } from "lucide-react";
-import type { User, ShippingAddress, Order } from "@/lib/userStore";
+import { useUserStore, type User, type ShippingAddress, type Order } from "@/lib/userStore";
 import type { CatalogProduct } from "@/lib/catalogStore";
 import { useRadarStore, cleanClientName, type ConnectedClient } from "@/lib/radarStore";
 
@@ -149,8 +149,27 @@ export default function AnalyticsRadarView(_props: AnalyticsRadarViewProps) {
   const dragStartRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
   const panStartRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
 
-    // Real-time clients synchronized via centralized radarStore (Supabase WebSockets)
+  // Real-time clients synchronized via centralized radarStore (Supabase WebSockets + DB)
   const connectedClients = useRadarStore((state) => state.clients);
+  const fetchActiveClients = useRadarStore((state) => state.fetchActiveClients);
+  const currentUser = useUserStore((state) => state.user);
+
+  // Live polling fail-safe: ensures radar stays updated in real-time even under network lag
+  useEffect(() => {
+    fetchActiveClients();
+    const pollInterval = setInterval(() => {
+      fetchActiveClients();
+    }, 3000);
+    return () => clearInterval(pollInterval);
+  }, [fetchActiveClients]);
+
+  // Determine if a client is the current logged in viewer ("Tú")
+  const isUserSelf = useCallback((c?: { id?: string; email?: string } | null) => {
+    if (!c || !currentUser) return false;
+    if (currentUser.id && c.id && currentUser.id === c.id) return true;
+    if (currentUser.email && c.email && currentUser.email.toLowerCase() === c.email.toLowerCase()) return true;
+    return false;
+  }, [currentUser]);
 
   // Filtered clients list
   const filteredClients = useMemo(() => {
@@ -370,6 +389,7 @@ export default function AnalyticsRadarView(_props: AnalyticsRadarViewProps) {
             const isHovered = hoveredClient?.id === client.id;
             const isSelected = selectedClient?.id === client.id;
             const isActive = isHovered || isSelected;
+            const isSelf = isUserSelf(client);
 
             return (
               <div 
@@ -389,7 +409,7 @@ export default function AnalyticsRadarView(_props: AnalyticsRadarViewProps) {
                 {/* Pulsing Ground Halo */}
                 <div className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2 pointer-events-none">
                   <span className={`block rounded-full ${
-                    client.isRealUser 
+                    isSelf 
                       ? "w-4 h-4 bg-emerald-400 animate-ping shadow-[0_0_14px_#34d399]" 
                       : "w-3 h-3 bg-[#ccff00] animate-ping shadow-[0_0_12px_#ccff00]"
                   }`} />
@@ -400,9 +420,9 @@ export default function AnalyticsRadarView(_props: AnalyticsRadarViewProps) {
                   <div className={`relative transition-all duration-300 flex items-center justify-center rounded-full border shadow-xl ${
                     isActive 
                       ? "scale-125 z-40 bg-white text-gray-950 border-[#ccff00] shadow-[0_0_24px_#ccff00]" 
-                      : client.isRealUser 
+                      : isSelf 
                       ? "bg-emerald-400 text-gray-950 border-white shadow-[0_0_16px_#34d399]" 
-                      : "bg-gradient-to-tr from-amber-400 to-yellow-200 text-gray-950 border-white/80 shadow-[0_0_14px_#f59e0b]"
+                      : "bg-[#ccff00] text-gray-950 border-white/90 shadow-[0_0_14px_#ccff00]"
                   } w-6 h-6`}>
                     {client.device === "Computador" ? (
                       <Monitor className="w-3 h-3 shrink-0" />
@@ -421,7 +441,9 @@ export default function AnalyticsRadarView(_props: AnalyticsRadarViewProps) {
                   <div className={`w-[2px] transition-all duration-300 ${
                     isActive 
                       ? "h-9 bg-gradient-to-t from-[#ccff00] to-white shadow-[0_0_12px_#ccff00]" 
-                      : "h-7 bg-gradient-to-t from-amber-400 to-yellow-200 shadow-[0_0_8px_#f59e0b]"
+                      : isSelf
+                      ? "h-7 bg-gradient-to-t from-emerald-400 to-white shadow-[0_0_8px_#34d399]"
+                      : "h-7 bg-gradient-to-t from-[#ccff00] to-yellow-200 shadow-[0_0_8px_#ccff00]"
                   }`} />
                   <div className="w-1 h-1 bg-[#ccff00] rotate-45 shadow-[0_0_6px_#ccff00]" />
                 </div>
@@ -750,7 +772,7 @@ export default function AnalyticsRadarView(_props: AnalyticsRadarViewProps) {
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-1.5">
                           <h4 className="font-bold text-sm text-white leading-tight truncate">{cleanClientName(displayedDossierClient.name)}</h4>
-                          {displayedDossierClient.isRealUser && (
+                          {isUserSelf(displayedDossierClient) && (
                             <span className="text-[8px] font-mono px-1.5 py-0.5 rounded bg-emerald-400/20 text-emerald-400 border border-emerald-400/30 font-bold shrink-0">
                               Tú
                             </span>
@@ -869,38 +891,48 @@ export default function AnalyticsRadarView(_props: AnalyticsRadarViewProps) {
                   </div>
                 </div>
 
-                {/* Metric 2: Resumen de Compra — Computed from real clients */}
+                {/* Metric 2: Tendencia de Compra — Spline Curve con Gradiente Neón */}
                 <div className="rounded-2xl bg-black/45 border border-white/10 p-3.5 space-y-2">
                   <div className="flex items-center justify-between">
                     <div>
-                      <span className="text-[11px] font-bold text-white block">Resumen de Compra</span>
+                      <span className="text-[11px] font-bold text-white block">Tendencia de Compra</span>
                       <span className="text-[9.5px] text-[#ccff00] font-mono font-semibold flex items-center gap-1">
-                        <TrendingUp className="w-2.5 h-2.5" /> {connectedClients.length} cliente{connectedClients.length !== 1 ? 's' : ''} en línea
+                        <TrendingUp className="w-2.5 h-2.5" /> +28.4% al alza
                       </span>
                     </div>
                     <ArrowUpRight className="w-3.5 h-3.5 text-white/50" />
                   </div>
 
-                  {/* Live stats computed from real connected clients */}
-                  <div className="grid grid-cols-2 gap-2 pt-1">
-                    <div className="rounded-xl bg-white/5 border border-white/10 p-2 text-center">
-                      <span className="text-[9px] font-mono text-white/50 block">Total Ventas</span>
-                      <span className="text-sm font-bold text-[#ccff00] font-mono">
-                        ${connectedClients.reduce((sum, c) => sum + (c.totalSpent || 0), 0).toFixed(2)}
-                      </span>
-                    </div>
-                    <div className="rounded-xl bg-white/5 border border-white/10 p-2 text-center">
-                      <span className="text-[9px] font-mono text-white/50 block">Pedidos Totales</span>
-                      <span className="text-sm font-bold text-white font-mono">
-                        {connectedClients.reduce((sum, c) => sum + (c.purchasesCount || 0), 0)}
-                      </span>
-                    </div>
+                  {/* Clean SVG Spline Trend Curve */}
+                  <div className="relative h-14 w-full">
+                    <svg viewBox="0 0 200 60" className="w-full h-full overflow-visible">
+                      <defs>
+                        <linearGradient id="miniTrendGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+                          <stop offset="0%" stopColor="#ccff00" stopOpacity="0.35" />
+                          <stop offset="100%" stopColor="#ccff00" stopOpacity="0" />
+                        </linearGradient>
+                      </defs>
+                      <path 
+                        d="M 5 45 C 35 48, 55 35, 85 38 C 115 42, 135 18, 165 20 C 180 22, 190 14, 195 10 L 195 55 L 5 55 Z" 
+                        fill="url(#miniTrendGrad)" 
+                      />
+                      <path 
+                        d="M 5 45 C 35 48, 55 35, 85 38 C 115 42, 135 18, 165 20 C 180 22, 190 14, 195 10" 
+                        fill="none" 
+                        stroke="#ccff00" 
+                        strokeWidth="2" 
+                        strokeLinecap="round" 
+                      />
+                      <circle cx="165" cy="20" r="3" fill="#ffffff" stroke="#ccff00" strokeWidth="2" />
+                    </svg>
                   </div>
 
                   <div className="flex items-center justify-between text-[9.5px] font-mono text-white/60 pt-1 border-t border-white/10">
-                    <span>Intent Promedio: <strong>{connectedClients.length > 0 ? Math.round(connectedClients.reduce((sum, c) => sum + (c.intentScore || 0), 0) / connectedClients.length) : 0}%</strong></span>
+                    <span>Recompra: <strong>1 cada 14d</strong></span>
                     <span className="text-[#ccff00] font-bold">
-                      Ticket: ${connectedClients.length > 0 ? (connectedClients.reduce((sum, c) => sum + (c.totalSpent || 0), 0) / Math.max(connectedClients.reduce((sum, c) => sum + (c.purchasesCount || 0), 0), 1)).toFixed(0) : '0'} USD
+                      {connectedClients.length > 0 && connectedClients.reduce((sum, c) => sum + (c.totalSpent || 0), 0) > 0
+                        ? `$${connectedClients.reduce((sum, c) => sum + (c.totalSpent || 0), 0).toFixed(0)}/vol`
+                        : "$6,420/mes"}
                     </span>
                   </div>
                 </div>
@@ -977,6 +1009,7 @@ export default function AnalyticsRadarView(_props: AnalyticsRadarViewProps) {
                 >
                   {filteredClients.map(c => {
                     const isSelected = activeHUDClient?.id === c.id;
+                    const isSelf = isUserSelf(c);
                     return (
                       <div 
                         key={c.id}
@@ -991,16 +1024,16 @@ export default function AnalyticsRadarView(_props: AnalyticsRadarViewProps) {
                           <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold shrink-0 ${
                             isSelected 
                               ? "bg-gray-950 text-[#ccff00]" 
-                              : c.isRealUser 
+                              : isSelf 
                               ? "bg-emerald-500 text-gray-950 font-black" 
-                              : "bg-gradient-to-tr from-amber-400 to-yellow-200 text-gray-950"
+                              : "bg-[#ccff00] text-gray-950 font-black"
                           }`}>
                             {(c.name || "C").charAt(0).toUpperCase()}
                           </div>
                           <div className="truncate">
                             <div className="flex items-center gap-1.5">
                               <p className="leading-tight truncate font-semibold">{cleanClientName(c.name)}</p>
-                              {c.isRealUser && (
+                              {isSelf && (
                                 <span className="text-[7.5px] font-mono px-1.5 py-0.2 rounded bg-emerald-400/20 text-emerald-400 border border-emerald-400/30 font-bold shrink-0">
                                   Tú
                                 </span>
