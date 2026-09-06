@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { supabase } from './supabase';
 import { CartItem, useCartStore } from './store';
 import { useThemeStore } from './themeStore';
+import { useRadarStore } from './radarStore';
 
 export interface User {
   id: string;
@@ -623,6 +624,13 @@ export const useUserStore = create<UserState>((set, get) => ({
 
     if (user) {
       try {
+        const orders = get().orders;
+        const totalSpent = orders?.reduce((acc, order) => acc + (order.total || 0), 0) || 0;
+        const purchasesCount = orders?.length || 0;
+        const section = user.role === 'ADMIN' ? 'Mi Perfil / Mapa' : 'Mi Perfil / Pedidos';
+        useRadarStore.getState().trackActivity(user, activeAddr?.city || '', totalSpent, purchasesCount, section);
+      } catch {}
+      try {
         await supabase.from('addresses').insert({
           id: newAddr.id,
           user_id: user.id,
@@ -661,6 +669,13 @@ export const useUserStore = create<UserState>((set, get) => ({
     const user = get().user;
     if (user) {
       try {
+        const orders = get().orders;
+        const totalSpent = orders?.reduce((acc, order) => acc + (order.total || 0), 0) || 0;
+        const purchasesCount = orders?.length || 0;
+        const section = user.role === 'ADMIN' ? 'Mi Perfil / Mapa' : 'Mi Perfil / Pedidos';
+        useRadarStore.getState().trackActivity(user, activeAddr?.city || '', totalSpent, purchasesCount, section);
+      } catch {}
+      try {
         await supabase.from('addresses').delete().eq('id', targetId);
       } catch {}
       try {
@@ -680,6 +695,13 @@ export const useUserStore = create<UserState>((set, get) => ({
 
     const user = get().user;
     if (user) {
+      try {
+        const orders = get().orders;
+        const totalSpent = orders?.reduce((acc, order) => acc + (order.total || 0), 0) || 0;
+        const purchasesCount = orders?.length || 0;
+        const section = user.role === 'ADMIN' ? 'Mi Perfil / Mapa' : 'Mi Perfil / Pedidos';
+        useRadarStore.getState().trackActivity(user, activeAddr?.city || '', totalSpent, purchasesCount, section);
+      } catch {}
       try {
         await supabase.from('addresses').update({ is_default: false }).eq('user_id', user.id);
         await supabase.from('addresses').update({ is_default: true }).eq('id', id);

@@ -22,7 +22,7 @@ import {
 } from "lucide-react";
 import { useUserStore, type User, type ShippingAddress, type Order } from "@/lib/userStore";
 import type { CatalogProduct } from "@/lib/catalogStore";
-import { useRadarStore, cleanClientName, type ConnectedClient } from "@/lib/radarStore";
+import { useRadarStore, cleanClientName, resolveCoordinates, type ConnectedClient } from "@/lib/radarStore";
 
 export type { ConnectedClient } from "@/lib/radarStore";
 
@@ -149,19 +149,6 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
   const dragStartRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
   const panStartRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
 
-  // Real-time clients synchronized via centralized radarStore (Real authenticated accounts only)
-  const rawConnectedClients = useRadarStore((state) => state.clients);
-  const connectedClients = useMemo(() => {
-    if (!Array.isArray(rawConnectedClients)) return [];
-    return rawConnectedClients.filter(c => 
-      c && 
-      c.id && 
-      !c.id.startsWith('vis_') && 
-      !c.id.startsWith('guest_') && 
-      !c.name?.toLowerCase().includes('visitante')
-    );
-  }, [rawConnectedClients]);
-
   const fetchActiveClients = useRadarStore((state) => state.fetchActiveClients);
   const currentUser = useUserStore((state) => state.user);
   const userAddress = useUserStore((state) => state.address);
@@ -170,14 +157,33 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
 
   const isAdmin = (currentUser?.role === 'ADMIN') || (props.user?.role === 'ADMIN');
 
+  // Authoritative location of the active viewer directly from the user store
+  const currentUserCity = useMemo(() => {
+    return userAddress?.city || props.addresses?.[0]?.city || userAddresses?.[0]?.city || "";
+  }, [userAddress, props.addresses, userAddresses]);
+
+  // Determine if a client is the current logged in viewer ("Tú")
+  const isUserSelf = useCallback((c?: { id?: string; email?: string } | null) => {
+    if (!c || !currentUser) return false;
+    if (currentUser.id && c.id && currentUser.id === c.id) return true;
+    if (currentUser.email && c.email && currentUser.email.toLowerCase() === c.email.toLowerCase()) return true;
+    return false;
+  }, [currentUser]);
+
+  // Check whether an entity is an administrator (Admins are NOT clients!)
+  const isClientAdmin = useCallback((c?: { id?: string; email?: string; name?: string } | null) => {
+    if (!c) return false;
+    if (isUserSelf(c) && isAdmin) return true;
+    if (c.name && c.name.toLowerCase().includes('admin')) return true;
+    if (c.email && c.email.toLowerCase().includes('admin')) return true;
+    return false;
+  }, [isUserSelf, isAdmin]);
+
   // Verify whether the Admin has a configured shipping/location address
   const hasAdminLocation = useMemo(() => {
     if (!isAdmin) return true;
-    const hasPropsAddr = Array.isArray(props.addresses) && props.addresses.some(a => Boolean(a?.city?.trim()));
-    const hasStoreAddrs = Array.isArray(userAddresses) && userAddresses.some(a => Boolean(a?.city?.trim()));
-    const hasStoreDefault = Boolean(userAddress?.city?.trim());
-    return Boolean(hasPropsAddr || hasStoreAddrs || hasStoreDefault);
-  }, [isAdmin, props.addresses, userAddresses, userAddress]);
+    return Boolean(currentUserCity.trim());
+  }, [isAdmin, currentUserCity]);
 
   const handleNavigateToAddress = () => {
     if (props.onNavigateToAddresses) {
@@ -187,17 +193,81 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
     }
   };
 
+  // Real-time clients synchronized via centralized radarStore (Real authenticated accounts only)
+  const rawConnectedClients = useRadarStore((state) => state.clients);
+  const connectedClients = useMemo(() => {
+    const list = Array.isArray(rawConnectedClients) 
+      ? rawConnectedClients.filter(c => 
+          c && 
+          c.id && 
+          !c.id.startsWith('vis_') && 
+          !c.id.startsWith('guest_') && 
+          !c.name?.toLowerCase().includes('visitante')
+        )
+      : [];
+
+    let foundSelf = false;
+    const mapped = list.map(c => {
+      if (isUserSelf(c)) {
+        foundSelf = true;
+        const selfCity = currentUserCity || c.city || "";
+        const coords = selfCity ? resolveCoordinates(selfCity) : { x: -100, y: -100 };
+        return {
+          ...c,
+          name: cleanClientName(currentUser?.name || c.name),
+          city: selfCity,
+          x: coords.x,
+          y: coords.y,
+          currentSection: isAdmin ? "Mi Perfil / Mapa" : (c.currentSection || "Explorando Tienda"),
+        };
+      }
+      return c;
+    });
+
+    if (!foundSelf && currentUser?.id && !currentUser.id.startsWith('vis_') && !currentUser.id.startsWith('guest_')) {
+      const selfCity = currentUserCity;
+      const coords = selfCity ? resolveCoordinates(selfCity) : { x: -100, y: -100 };
+      const spent = userOrders?.reduce((acc, o) => acc + (o.total || 0), 0) || 0;
+      const purchases = userOrders?.length || 0;
+      mapped.unshift({
+        id: currentUser.id,
+        name: cleanClientName(currentUser.name || currentUser.email.split('@')[0]),
+        email: currentUser.email || '',
+        city: selfCity,
+        country: 'Ecuador',
+        x: coords.x,
+        y: coords.y,
+        frequency: purchases >= 12 ? 'Semanal' : purchases >= 6 ? 'Quincenal' : purchases >= 3 ? 'Mensual' : purchases >= 1 ? 'Ocasional' : '1ª Vez',
+        purchasesCount: purchases,
+        totalSpent: spent,
+        currentSection: isAdmin ? "Mi Perfil / Mapa" : "Panel Radar / Métricas",
+        intentScore: 90,
+        device: typeof window !== 'undefined' && window.innerWidth < 768 ? 'Celular' : 'Computador',
+        hasCart: false,
+        cartItemsCount: 0,
+        isRealUser: true,
+      });
+    }
+
+    return mapped;
+  }, [rawConnectedClients, isUserSelf, currentUserCity, isAdmin, currentUser, userOrders]);
+
+  // Actual clients connected (Administrators do NOT count as clients!)
+  const actualClients = useMemo(() => {
+    return connectedClients.filter(c => !isClientAdmin(c));
+  }, [connectedClients, isClientAdmin]);
+
   // Guarantee the active logged-in user is immediately registered and visible on the radar ("Tú")
   useEffect(() => {
     if (currentUser?.id && !currentUser.id.startsWith('vis_') && !currentUser.id.startsWith('guest_')) {
-      const city = userAddress?.city || props.addresses?.[0]?.city || userAddresses?.[0]?.city || "";
+      const city = currentUserCity;
       const spent = userOrders?.reduce((acc, o) => acc + (o.total || 0), 0) || 0;
       const purchases = userOrders?.length || 0;
       const section = isAdmin ? "Mi Perfil / Mapa" : "Panel Radar / Métricas";
       useRadarStore.getState().initRadar(currentUser, city, spent, purchases, section);
       useRadarStore.getState().trackActivity(currentUser, city, spent, purchases, section);
     }
-  }, [currentUser, userAddress, userAddresses, userOrders, props.addresses, isAdmin]);
+  }, [currentUser, currentUserCity, userOrders, isAdmin]);
 
   // Fast live polling (1.2s): ensures the dossier and metrics update live automatically
   useEffect(() => {
@@ -219,18 +289,10 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
     return connectedClients.find(c => c.id === selectedClientId) || null;
   }, [selectedClientId, connectedClients]);
 
-  // Determine if a client is the current logged in viewer ("Tú")
-  const isUserSelf = useCallback((c?: { id?: string; email?: string } | null) => {
-    if (!c || !currentUser) return false;
-    if (currentUser.id && c.id && currentUser.id === c.id) return true;
-    if (currentUser.email && c.email && currentUser.email.toLowerCase() === c.email.toLowerCase()) return true;
-    return false;
-  }, [currentUser]);
-
-  // Filtered clients list
-  const filteredClients = useMemo(() => {
-    if (!Array.isArray(connectedClients)) return [];
-    return connectedClients.filter(c => {
+  // Filtered actual clients list (Excludes administrators from client lists and metrics)
+  const filteredActualClients = useMemo(() => {
+    if (!Array.isArray(actualClients)) return [];
+    return actualClients.filter(c => {
       if (!c) return false;
       if (activeStage === "cart" && !c.hasCart) return false;
       if (activeStage === "frequent" && ((c.purchasesCount || 0) < 3 || c.frequency === "1ª Vez")) return false;
@@ -259,18 +321,19 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
       }
       return true;
     });
-  }, [connectedClients, activeStage, searchQuery]);
+  }, [actualClients, activeStage, searchQuery]);
 
-  // Clients visible on the physical map terrain (Only those with registered addresses and valid coordinates)
+  // Map Beacons: Both actual clients and the Admin (if address exists) are visible on the physical map terrain
   const mapVisibleClients = useMemo(() => {
-    return filteredClients.filter(c => {
+    return connectedClients.filter(c => {
       if (typeof c.x !== 'number' || typeof c.y !== 'number' || c.x < 0 || c.y < 0) return false;
-      if (!c.city || !c.city.trim()) return false;
       const isSelf = isUserSelf(c);
+      const city = isSelf ? currentUserCity : c.city;
+      if (!city || !city.trim()) return false;
       if (isSelf && isAdmin && !hasAdminLocation) return false;
       return true;
     });
-  }, [filteredClients, isUserSelf, isAdmin, hasAdminLocation]);
+  }, [connectedClients, isUserSelf, currentUserCity, isAdmin, hasAdminLocation]);
 
   // Natural Zoom handling via mouse wheel & laptop trackpad (2 fingers up / down)
   const handleWheel = useCallback((e: WheelEvent) => {
@@ -582,7 +645,7 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
                 searchQuery ? "bg-[#ccff00] shadow-[0_0_8px_#ccff00]" : "bg-emerald-400 animate-pulse"
               }`} />
               <span className="text-[10px] font-mono text-white/80 font-semibold">
-                {searchQuery ? `${filteredClients.length} en radar` : "24 Provincias"}
+                {searchQuery ? `${filteredActualClients.length} en radar` : "24 Provincias"}
               </span>
             </div>
           </div>
@@ -680,15 +743,15 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
               {searchQuery.trim().length > 0 && (
                 <div className="space-y-1.5 pt-2 border-t border-white/10">
                   <div className="flex items-center justify-between text-[10px] font-mono text-white/50 font-bold uppercase tracking-wider">
-                    <span>Coincidencias en Vivo ({filteredClients.length})</span>
+                    <span>Coincidencias en Vivo ({filteredActualClients.length})</span>
                   </div>
-                  {filteredClients.length === 0 ? (
+                  {filteredActualClients.length === 0 ? (
                     <div className="py-3 text-center text-white/50 text-[11px]">
                       No hay clientes conectados en &quot;{searchQuery}&quot;
                     </div>
                   ) : (
                     <div className="max-h-44 overflow-y-auto space-y-1 pr-1" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
-                      {filteredClients.map((client) => (
+                      {filteredActualClients.map((client) => (
                         <div
                           key={client.id}
                           onClick={() => {
@@ -827,7 +890,7 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
                     activeTab === "clients" ? "bg-white text-gray-950 font-bold shadow-sm" : "text-white/60 hover:text-white"
                   }`}
                 >
-                  Clientes ({filteredClients.length})
+                  Clientes ({actualClients.length})
                 </button>
               </div>
 
@@ -860,7 +923,7 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
                           <h4 className="font-sans font-bold text-sm text-white tracking-normal leading-tight truncate">{cleanClientName(displayedDossierClient.name)}</h4>
                           {isUserSelf(displayedDossierClient) && (
                             <span className="text-[8px] font-mono px-1.5 py-0.5 rounded bg-emerald-400/20 text-emerald-400 border border-emerald-400/30 font-bold shrink-0">
-                              Tú
+                              {isAdmin ? "Tú (Admin)" : "Tú"}
                             </span>
                           )}
                         </div>
@@ -868,16 +931,20 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
                         {/* Ubicación detallada del cliente con ancho completo */}
                         <p className="text-xs text-white/80 flex items-center gap-1.5 mt-1 font-medium">
                           <MapPin className="w-3.5 h-3.5 text-[#ccff00] shrink-0" /> 
-                          <span>{displayedDossierClient.city || "Sin ubicación registrada"}</span>
+                          <span>
+                            {isUserSelf(displayedDossierClient)
+                              ? (currentUserCity || "Sin ubicación registrada")
+                              : (displayedDossierClient.city || "Sin ubicación registrada")}
+                          </span>
                         </p>
                         
                         {/* Píldora de Recompra con mayor tamaño de fuente situada debajo de la ubicación */}
                         <div className="mt-2">
                           <span 
                             className="inline-flex items-center text-[12px] font-mono px-3 py-1 rounded-full bg-white/10 text-[#ccff00] border border-[#ccff00]/30 font-bold tracking-tight shadow-md"
-                            title="Frecuencia estimada de recompra del cliente"
+                            title={isClientAdmin(displayedDossierClient) ? "Rol de la cuenta" : "Frecuencia estimada de recompra del cliente"}
                           >
-                            Recompra: {displayedDossierClient.frequency || "1ª Vez"}
+                            {isClientAdmin(displayedDossierClient) ? "Administrador de Tienda" : `Recompra: ${displayedDossierClient.frequency || "1ª Vez"}`}
                           </span>
                         </div>
                       </div>
@@ -949,7 +1016,7 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-bold text-white/90">Tráfico Activo</span>
                     <span className="text-[10px] font-mono text-[#ccff00] font-bold">
-                      {connectedClients.length} Clientes Radar
+                      {actualClients.length} Clientes Radar
                     </span>
                   </div>
                   
@@ -1021,19 +1088,19 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
                   <div className="flex items-center justify-between text-[9.5px] font-mono text-white/60 pt-1 border-t border-white/10">
                     <span>Recompra: <strong>1 cada 14d</strong></span>
                     <span className="text-[#ccff00] font-bold">
-                      {connectedClients.length > 0 && connectedClients.reduce((sum, c) => sum + (c.totalSpent || 0), 0) > 0
-                        ? `$${connectedClients.reduce((sum, c) => sum + (c.totalSpent || 0), 0).toFixed(0)}/vol`
-                        : "$6,420/mes"}
+                      {actualClients.length > 0 && actualClients.reduce((sum, c) => sum + (c.totalSpent || 0), 0) > 0
+                        ? `$${actualClients.reduce((sum, c) => sum + (c.totalSpent || 0), 0).toFixed(0)}/vol`
+                        : "$0/mes"}
                     </span>
                   </div>
                 </div>
 
-                {/* Metric 3: Distribución Geográfica — Computed dynamically from connected clients */}
+                {/* Metric 3: Distribución Geográfica — Computed dynamically from actual clients */}
                 {(() => {
-                  const total = connectedClients.length || 1;
+                  const total = actualClients.length || 1;
                   const regionCounts: Record<string, number> = {};
                   
-                  connectedClients.forEach(c => {
+                  actualClients.forEach(c => {
                     const cityLower = (c.city || 'otro').toLowerCase().trim();
                     const matchedEntry = Object.entries(ECUADOR_PROVINCE_COORDINATES).find(([k]) => 
                       cityLower.includes(k) || k.includes(cityLower)
@@ -1055,7 +1122,7 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
                   return (
                     <div className="space-y-1.5 text-xs">
                       <span className="text-[11px] font-bold text-white/80 block">Distribución Geográfica</span>
-                      {connectedClients.length === 0 ? (
+                      {actualClients.length === 0 ? (
                         <p className="text-[10px] text-white/40 font-mono">Sin clientes conectados</p>
                       ) : (
                         <div className="space-y-1">
@@ -1098,52 +1165,55 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
                   className="flex-1 space-y-2 overflow-y-auto overflow-x-hidden touch-pan-y overscroll-x-none pr-1 select-none"
                   style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
                 >
-                  {filteredClients.map(c => {
-                    const isSelected = activeHUDClient?.id === c.id;
-                    const isSelf = isUserSelf(c);
-                    return (
-                      <div 
-                        key={c.id}
-                        onClick={() => setSelectedClientId(prev => prev === c.id ? null : c.id)}
-                        className={`p-2.5 rounded-2xl flex items-center justify-between text-xs cursor-pointer transition-all duration-300 ease-out border ${
-                          isSelected 
-                            ? "bg-white text-gray-950 font-bold border-[#ccff00] shadow-[0_0_16px_rgba(204,255,0,0.35)]" 
-                            : "bg-black/40 hover:bg-black/70 text-white/85 border-white/10 hover:border-white/20"
-                        }`}
-                      >
-                        <div className="flex items-center gap-2.5 truncate pr-2">
-                          <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold shrink-0 ${
+                  {filteredActualClients.length === 0 ? (
+                    <div className="py-12 text-center text-white/40 text-xs flex flex-col items-center justify-center">
+                      <Users className="w-7 h-7 mx-auto mb-2 opacity-30 text-[#ccff00]" />
+                      <p className="font-semibold text-white/80">Sin clientes conectados</p>
+                      <p className="text-[10px] text-white/40 mt-1">El radar monitorea en vivo las 24 provincias</p>
+                    </div>
+                  ) : (
+                    filteredActualClients.map(c => {
+                      const isSelected = activeHUDClient?.id === c.id;
+                      return (
+                        <div 
+                          key={c.id}
+                          onClick={() => {
+                            setSelectedClientId(prev => prev === c.id ? null : c.id);
+                            if (c.x >= 0 && c.y >= 0) {
+                              focusOnLocation(c.x, c.y, 1.9);
+                            }
+                          }}
+                          className={`p-2.5 rounded-2xl flex items-center justify-between text-xs cursor-pointer transition-all duration-300 ease-out border ${
                             isSelected 
-                              ? "bg-gray-950 text-[#ccff00]" 
-                              : isSelf 
-                              ? "bg-emerald-500 text-gray-950 font-black" 
-                              : "bg-[#ccff00] text-gray-950 font-black"
-                          }`}>
-                            {(c.name || "C").charAt(0).toUpperCase()}
-                          </div>
-                          <div className="truncate">
-                            <div className="flex items-center gap-1.5">
-                              <p className="leading-tight truncate font-semibold">{cleanClientName(c.name)}</p>
-                              {isSelf && (
-                                <span className="text-[7.5px] font-mono px-1.5 py-0.2 rounded bg-emerald-400/20 text-emerald-400 border border-emerald-400/30 font-bold shrink-0">
-                                  Tú
-                                </span>
-                              )}
+                              ? "bg-white text-gray-950 font-bold border-[#ccff00] shadow-[0_0_16px_rgba(204,255,0,0.35)]" 
+                              : "bg-black/40 hover:bg-black/70 text-white/85 border-white/10 hover:border-white/20"
+                          }`}
+                        >
+                          <div className="flex items-center gap-2.5 truncate pr-2">
+                            <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold shrink-0 ${
+                              isSelected 
+                                ? "bg-gray-950 text-[#ccff00]" 
+                                : "bg-[#ccff00] text-gray-950 font-black"
+                            }`}>
+                              {(c.name || "C").charAt(0).toUpperCase()}
                             </div>
-                            <p className={`text-[9.5px] mt-0.5 ${isSelected ? "text-gray-700 font-medium" : "text-white/45"}`}>
-                              {c.city || "Ecuador"} • <span className="font-mono">${c.totalSpent || 0}</span>
-                            </p>
+                            <div className="truncate">
+                              <p className="leading-tight truncate font-semibold">{cleanClientName(c.name)}</p>
+                              <p className={`text-[9.5px] mt-0.5 ${isSelected ? "text-gray-700 font-medium" : "text-white/45"}`}>
+                                {c.city || "Ecuador"} • <span className="font-mono">${c.totalSpent || 0}</span>
+                              </p>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-1.5 shrink-0">
+                            {c.hasCart && (
+                              <span className="w-2 h-2 rounded-full bg-rose-500 shadow-[0_0_6px_#f43f5e]" title="Con Carrito Activo" />
+                            )}
+                            <ChevronRight className="w-3.5 h-3.5 opacity-60" />
                           </div>
                         </div>
-                        <div className="flex items-center gap-1.5 shrink-0">
-                          {c.hasCart && (
-                            <span className="w-2 h-2 rounded-full bg-rose-500 shadow-[0_0_6px_#f43f5e]" title="Con Carrito Activo" />
-                          )}
-                          <ChevronRight className="w-3.5 h-3.5 opacity-60" />
-                        </div>
-                      </div>
-                    );
-                  })}
+                      );
+                    })
+                  )}
                 </div>
 
                 {/* Elegant Luminous Neon Green Vertical Slider Track */}
@@ -1198,20 +1268,21 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
 
         {/* Card 2: Embudo de Conversión — Computed from real client data */}
         {(() => {
-          const total = connectedClients.length || 1;
-          const cartCount = connectedClients.filter(c => c.hasCart).length;
-          const frequentCount = connectedClients.filter(c => (c.purchasesCount || 0) >= 3).length;
-          const browsingCount = total - cartCount - frequentCount;
-          const browsingPct = Math.round((Math.max(browsingCount, 0) / total) * 100);
-          const cartPct = Math.round((cartCount / total) * 100);
-          const frequentPct = Math.round((frequentCount / total) * 100);
+          const total = actualClients.length;
+          const totalSafe = total || 1;
+          const cartCount = actualClients.filter(c => c.hasCart).length;
+          const frequentCount = actualClients.filter(c => (c.purchasesCount || 0) >= 3).length;
+          const browsingCount = Math.max(0, total - cartCount - frequentCount);
+          const browsingPct = total > 0 ? Math.round((browsingCount / totalSafe) * 100) : 0;
+          const cartPct = total > 0 ? Math.round((cartCount / totalSafe) * 100) : 0;
+          const frequentPct = total > 0 ? Math.round((frequentCount / totalSafe) * 100) : 0;
           return (
             <div className="rounded-2xl bg-black/60 backdrop-blur-xl border border-white/15 p-3.5 shadow-xl flex flex-col justify-between">
               <div className="flex items-center justify-between text-[11px] font-bold text-white mb-1">
                 <span className="flex items-center gap-1.5">
                   <Users className="w-3 h-3 text-emerald-400" /> Embudo de Conversión
                 </span>
-                <span className="text-[9px] font-mono text-emerald-400 font-bold">{total} activos</span>
+                <span className="text-[9px] font-mono text-emerald-400 font-bold">{total} {total === 1 ? 'cliente activo' : 'clientes activos'}</span>
               </div>
               <div className="flex items-center justify-between text-[9.5px] text-white/70">
                 <span>Catálogo: <strong>{browsingPct}%</strong></span>
@@ -1229,10 +1300,10 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
 
         {/* Card 3: Resumen Radar — Live data */}
         {(() => {
-          const totalOrders = connectedClients.reduce((sum, c) => sum + (c.purchasesCount || 0), 0);
-          const totalRevenue = connectedClients.reduce((sum, c) => sum + (c.totalSpent || 0), 0);
+          const totalOrders = actualClients.reduce((sum, c) => sum + (c.purchasesCount || 0), 0);
+          const totalRevenue = actualClients.reduce((sum, c) => sum + (c.totalSpent || 0), 0);
           const avgTicket = totalOrders > 0 ? (totalRevenue / totalOrders) : 0;
-          const avgIntent = connectedClients.length > 0 ? Math.round(connectedClients.reduce((sum, c) => sum + (c.intentScore || 0), 0) / connectedClients.length) : 0;
+          const avgIntent = actualClients.length > 0 ? Math.round(actualClients.reduce((sum, c) => sum + (c.intentScore || 0), 0) / actualClients.length) : 0;
           return (
             <div className="rounded-2xl bg-black/60 backdrop-blur-xl border border-white/15 p-3.5 shadow-xl flex flex-col justify-between">
               <div className="flex items-center justify-between text-[11px] font-bold text-white mb-1">
@@ -1242,7 +1313,7 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
                 <span className="text-[9px] font-mono text-[#ccff00] font-bold">En Vivo</span>
               </div>
               <p className="text-[10px] text-white/70">
-                {connectedClients.length} cliente{connectedClients.length !== 1 ? 's' : ''} conectado{connectedClients.length !== 1 ? 's' : ''} ahora
+                {actualClients.length} cliente{actualClients.length !== 1 ? 's' : ''} conectado{actualClients.length !== 1 ? 's' : ''} ahora
               </p>
               <div className="flex items-center justify-between text-[9px] font-mono text-white/60 mt-1 pt-1 border-t border-white/10">
                 <span>Ticket Promedio: <strong className="text-white">${avgTicket.toFixed(0)} USD</strong></span>

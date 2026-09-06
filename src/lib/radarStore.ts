@@ -242,10 +242,18 @@ function mergeClientLists(listA: ConnectedClient[], listB: ConnectedClient[]): C
       if (!existing) {
         map.set(c.id, c);
       } else {
-        // Merge with newer info
+        // Merge with newer info while protecting valid location coordinates
+        const hasIncomingCoords = typeof c.x === 'number' && c.x >= 0;
+        const finalCity = (c.city && c.city.trim()) ? c.city : (existing.city || '');
+        const finalX = (c.city && hasIncomingCoords) ? c.x : (existing.city && typeof existing.x === 'number' && existing.x >= 0 ? existing.x : c.x);
+        const finalY = (c.city && hasIncomingCoords) ? c.y : (existing.city && typeof existing.y === 'number' && existing.y >= 0 ? existing.y : c.y);
+
         map.set(c.id, {
           ...existing,
           ...c,
+          city: finalCity,
+          x: finalX,
+          y: finalY,
           name: cleanClientName(c.name || existing.name),
           currentSection: c.currentSection || existing.currentSection,
           hasCart: c.hasCart !== undefined ? c.hasCart : existing.hasCart,
@@ -286,8 +294,10 @@ export const useRadarStore = create<RadarStore>((set, get) => ({
         const json = await res.json();
         if (json.success && Array.isArray(json.clients)) {
           const currentPresenceClients = parsePresenceState(get().channel);
-          const merged = mergeClientLists(currentPresenceClients, json.clients);
-          set({ clients: merged });
+          const currentLocalClients = get().clients;
+          const mergedWithPresence = mergeClientLists(currentPresenceClients, json.clients);
+          const finalMerged = mergeClientLists(mergedWithPresence, currentLocalClients);
+          set({ clients: finalMerged });
         }
       }
     } catch {

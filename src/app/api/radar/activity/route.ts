@@ -66,16 +66,27 @@ export async function GET() {
           !row.user_id.startsWith('guest_') &&
           !String(row.name).toLowerCase().includes('visitante')
         ) {
+          const existing = globalClients.get(row.user_id);
+          const dbTime = new Date(row.last_seen).getTime() || 0;
+          if (existing && existing.lastSeen > dbTime) {
+            // Memory has a fresher activity update, keep it
+            continue;
+          }
+
           const purchases = Number(row.purchases_count) || 0;
           const frequency = purchases >= 12 ? 'Semanal' : purchases >= 6 ? 'Quincenal' : purchases >= 3 ? 'Mensual' : purchases >= 1 ? 'Ocasional' : '1ª Vez';
+          const finalCity = row.city || (existing ? existing.city : '');
+          const finalX = typeof row.x === 'number' && Number(row.x) >= 0 ? Number(row.x) : (existing ? existing.x : -100);
+          const finalY = typeof row.y === 'number' && Number(row.y) >= 0 ? Number(row.y) : (existing ? existing.y : -100);
+
           globalClients.set(row.user_id, {
             id: row.user_id,
             name: cleanClientName(row.name),
             email: row.email || '',
-            city: row.city || '',
+            city: finalCity,
             country: row.country || 'Ecuador',
-            x: typeof row.x === 'number' ? Number(row.x) : -100,
-            y: typeof row.y === 'number' ? Number(row.y) : -100,
+            x: finalX,
+            y: finalY,
             frequency,
             purchasesCount: purchases,
             totalSpent: Number(row.total_spent) || 0,
