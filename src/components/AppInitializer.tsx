@@ -48,6 +48,8 @@ function ActivityTracker() {
       else if (tab === "settings") currentSection = "Mi Perfil / Ajustes";
       else currentSection = "Mi Perfil / Resumen";
     }
+  } else if (pathname === "/checkout") {
+    currentSection = "En Proceso de Pago";
   } else if (pathname.startsWith("/auth/")) {
     // Stop tracking when navigating to login/register
     currentSection = "";

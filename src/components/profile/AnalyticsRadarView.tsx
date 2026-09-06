@@ -289,6 +289,16 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
     return connectedClients.find(c => c.id === selectedClientId) || null;
   }, [selectedClientId, connectedClients]);
 
+  // Auto-clear selection or hover if client disconnected from radar
+  useEffect(() => {
+    if (selectedClientId && !connectedClients.some(c => c.id === selectedClientId)) {
+      setSelectedClientId(null);
+    }
+    if (hoveredClientId && !connectedClients.some(c => c.id === hoveredClientId)) {
+      setHoveredClientId(null);
+    }
+  }, [selectedClientId, hoveredClientId, connectedClients]);
+
   // Filtered actual clients list (Excludes administrators from client lists and metrics)
   const filteredActualClients = useMemo(() => {
     if (!Array.isArray(actualClients)) return [];
@@ -521,6 +531,15 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
             const isActive = isHovered || isSelected;
             const isSelf = isUserSelf(client);
 
+            // Stage filtering logic for visual illumination
+            const isStageMatch =
+              activeStage === "all" ? true :
+              activeStage === "cart" ? Boolean(client.hasCart) :
+              ((client.purchasesCount || 0) >= 3 || (client.frequency && client.frequency !== "1ª Vez"));
+
+            // Dim beacons that don't match the current activeStage (never dim self)
+            const isDimmed = !isSelf && !isActive && !isStageMatch;
+
             return (
               <div 
                 key={client.id}
@@ -528,7 +547,9 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
                   left: `${client.x}%`,
                   top: `${client.y}%`
                 }}
-                className="absolute z-30 -translate-x-1/2 -translate-y-full cursor-pointer group"
+                className={`absolute z-30 -translate-x-1/2 -translate-y-full cursor-pointer group transition-all duration-500 ${
+                  isDimmed ? "opacity-20 scale-90 hover:opacity-100 hover:scale-100" : "opacity-100 scale-100"
+                }`}
                 onMouseEnter={() => setHoveredClientId(client.id)}
                 onMouseLeave={() => setHoveredClientId(null)}
                 onClick={(e) => {
@@ -541,6 +562,10 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
                   <span className={`block rounded-full ${
                     isSelf 
                       ? "w-4 h-4 bg-emerald-400 animate-ping shadow-[0_0_14px_#34d399]" 
+                      : activeStage === "cart" && client.hasCart
+                      ? "w-4 h-4 bg-rose-500 animate-ping shadow-[0_0_18px_#f43f5e]"
+                      : activeStage === "frequent" && isStageMatch
+                      ? "w-4 h-4 bg-amber-400 animate-ping shadow-[0_0_18px_#f59e0b]"
                       : "w-3 h-3 bg-[#ccff00] animate-ping shadow-[0_0_12px_#ccff00]"
                   }`} />
                 </div>
@@ -552,6 +577,10 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
                       ? "scale-125 z-40 bg-white text-gray-950 border-[#ccff00] shadow-[0_0_24px_#ccff00]" 
                       : isSelf 
                       ? "bg-emerald-400 text-gray-950 border-white shadow-[0_0_16px_#34d399]" 
+                      : activeStage === "cart" && client.hasCart
+                      ? "bg-rose-500 text-white border-white shadow-[0_0_18px_#f43f5e] scale-110"
+                      : activeStage === "frequent" && isStageMatch
+                      ? "bg-amber-400 text-gray-950 border-white shadow-[0_0_18px_#f59e0b] scale-110"
                       : "bg-[#ccff00] text-gray-950 border-white/90 shadow-[0_0_14px_#ccff00]"
                   } w-6 h-6`}>
                     {client.device === "Computador" ? (
@@ -573,15 +602,25 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
                       ? "h-9 bg-gradient-to-t from-[#ccff00] to-white shadow-[0_0_12px_#ccff00]" 
                       : isSelf
                       ? "h-7 bg-gradient-to-t from-emerald-400 to-white shadow-[0_0_8px_#34d399]"
+                      : activeStage === "cart" && client.hasCart
+                      ? "h-8 bg-gradient-to-t from-rose-500 to-white shadow-[0_0_10px_#f43f5e]"
+                      : activeStage === "frequent" && isStageMatch
+                      ? "h-8 bg-gradient-to-t from-amber-400 to-yellow-100 shadow-[0_0_10px_#f59e0b]"
                       : "h-7 bg-gradient-to-t from-[#ccff00] to-yellow-200 shadow-[0_0_8px_#ccff00]"
                   }`} />
-                  <div className="w-1 h-1 bg-[#ccff00] rotate-45 shadow-[0_0_6px_#ccff00]" />
+                  <div className={`w-1 h-1 rotate-45 ${
+                    activeStage === "cart" && client.hasCart ? "bg-rose-500 shadow-[0_0_6px_#f43f5e]" :
+                    activeStage === "frequent" && isStageMatch ? "bg-amber-400 shadow-[0_0_6px_#f59e0b]" :
+                    "bg-[#ccff00] shadow-[0_0_6px_#ccff00]"
+                  }`} />
                 </div>
 
                 {/* City & Province Tag Label (Shows complete city name e.g. "Santo Domingo") */}
                 <div className={`absolute top-full mt-1 left-1/2 -translate-x-1/2 whitespace-nowrap px-2 py-0.5 rounded text-[9px] font-bold font-mono tracking-wider transition-all pointer-events-none ${
                   isActive 
                     ? "bg-white text-gray-950 shadow-md scale-105" 
+                    : isDimmed
+                    ? "bg-black/40 text-white/50 border border-white/5"
                     : "bg-black/85 text-white/90 border border-white/10 backdrop-blur-md"
                 }`}>
                   {formatBeaconCity(client.city || "Ecuador")}
@@ -1037,15 +1076,15 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
                           Todos ({actualClients.length})
                         </button>
                         <button 
-                          onClick={() => { setActiveStage("cart"); setActiveTab("clients"); }}
+                          onClick={() => setActiveStage("cart")}
                           className={`py-1 rounded-full transition-all cursor-pointer ${
-                            activeStage === "cart" ? "bg-white text-gray-950 shadow-sm" : "text-white/60 hover:text-white"
+                            activeStage === "cart" ? "bg-rose-500 text-white shadow-[0_0_12px_#f43f5e]" : "text-white/60 hover:text-white"
                           }`}
                         >
                           En Carrito ({cartCount})
                         </button>
                         <button 
-                          onClick={() => { setActiveStage("frequent"); setActiveTab("clients"); }}
+                          onClick={() => setActiveStage("frequent")}
                           className={`py-1 rounded-full transition-all cursor-pointer ${
                             activeStage === "frequent" ? "bg-[#ccff00] text-gray-950 shadow-[0_0_10px_#ccff00]" : "text-white/60 hover:text-white"
                           }`}
@@ -1057,8 +1096,8 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
                   );
                 })()}
 
-                {/* Metric 2: Tendencia de Compra — 100% Dinámica en Tiempo Real */}
-                {(() => {
+                {/* Metric 2: Transforma dinámicamente según la etapa activa (Todos | En Carrito | Recurrentes) */}
+                {activeStage === "all" && (() => {
                   const clientOrders = actualClients.reduce((sum, c) => sum + (c.purchasesCount || 0), 0);
                   const totalSpent = actualClients.reduce((sum, c) => sum + (c.totalSpent || 0), 0);
                   const frequentClients = actualClients.filter(c => (c.purchasesCount || 0) >= 2);
@@ -1100,7 +1139,7 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
                     <div className="rounded-2xl bg-black/45 border border-white/10 p-3.5 space-y-2">
                       <div className="flex items-center justify-between">
                         <div>
-                          <span className="text-[11px] font-bold text-white block">Tendencia de Compra</span>
+                          <span className="text-[11px] font-bold text-white block">Tendencia de Compra General</span>
                           <span className={`text-[9.5px] font-mono font-semibold flex items-center gap-1 ${hasActivity ? 'text-[#ccff00]' : 'text-white/50'}`}>
                             <TrendingUp className="w-2.5 h-2.5" /> {trendText}
                           </span>
@@ -1134,6 +1173,100 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
                         <span className={hasActivity ? "text-[#ccff00] font-bold" : "text-white/50 font-bold"}>
                           ${totalSpent.toFixed(0)}/vol
                         </span>
+                      </div>
+                    </div>
+                  );
+                })()}
+
+                {/* Metric 2 (Stage: cart): Telemetría de Carritos Activos en Vivo */}
+                {activeStage === "cart" && (() => {
+                  const cartClients = actualClients.filter(c => c.hasCart);
+                  const totalCartPieces = cartClients.reduce((sum, c) => sum + (c.cartItemsCount || 1), 0);
+                  const cartConversionPct = actualClients.length > 0 
+                    ? Math.round((cartClients.length / actualClients.length) * 100) 
+                    : 0;
+
+                  return (
+                    <div className="rounded-2xl bg-black/45 border border-rose-500/30 p-3.5 space-y-2.5 shadow-[0_0_20px_rgba(244,63,94,0.1)]">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <span className="text-[11px] font-bold text-white block">Telemetría de Carritos</span>
+                          <span className="text-[9.5px] font-mono font-semibold flex items-center gap-1 text-rose-400">
+                            <ShoppingBag className="w-2.5 h-2.5" /> {cartClients.length} {cartClients.length === 1 ? "carrito activo" : "carritos activos"}
+                          </span>
+                        </div>
+                        <span className="text-[9px] font-mono px-2 py-0.5 rounded-full bg-rose-500/20 text-rose-300 border border-rose-500/30 font-bold">
+                          En Vivo
+                        </span>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-2 pt-1">
+                        <div className="p-2 rounded-xl bg-white/5 border border-white/10">
+                          <span className="text-[9px] text-white/50 block font-mono">Artículos en Curso</span>
+                          <span className="text-base font-bold text-white font-mono">{totalCartPieces} <span className="text-[10px] text-white/60">pzs</span></span>
+                        </div>
+                        <div className="p-2 rounded-xl bg-white/5 border border-white/10">
+                          <span className="text-[9px] text-white/50 block font-mono">Tasa de Intención</span>
+                          <span className="text-base font-bold text-rose-400 font-mono">{cartConversionPct}%</span>
+                        </div>
+                      </div>
+
+                      <div className="space-y-1 pt-1">
+                        <div className="flex items-center justify-between text-[9px] font-mono text-white/60">
+                          <span>Estado del Embudo</span>
+                          <span className="text-rose-300 font-bold">
+                            {cartClients.length > 0 ? "Flujo de compra caliente" : "Esperando carritos"}
+                          </span>
+                        </div>
+                        <div className="w-full h-1.5 rounded-full bg-white/10 overflow-hidden">
+                          <div 
+                            className="h-full bg-gradient-to-r from-rose-500 to-pink-400 rounded-full transition-all duration-500" 
+                            style={{ width: `${Math.max(cartConversionPct, cartClients.length > 0 ? 15 : 0)}%` }} 
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })()}
+
+                {/* Metric 2 (Stage: frequent): Fidelización de Clientes VIP & Recurrentes */}
+                {activeStage === "frequent" && (() => {
+                  const vipClients = actualClients.filter(c => (c.purchasesCount || 0) >= 3 || (c.frequency && c.frequency !== "1ª Vez"));
+                  const totalVipSpent = vipClients.reduce((sum, c) => sum + (c.totalSpent || 0), 0);
+                  const vipRetentionPct = actualClients.length > 0 
+                    ? Math.round((vipClients.length / actualClients.length) * 100) 
+                    : 0;
+
+                  return (
+                    <div className="rounded-2xl bg-black/45 border border-[#ccff00]/30 p-3.5 space-y-2.5 shadow-[0_0_20px_rgba(204,255,0,0.08)]">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <span className="text-[11px] font-bold text-white block">Fidelización VIP</span>
+                          <span className="text-[9.5px] font-mono font-semibold flex items-center gap-1 text-[#ccff00]">
+                            <Sparkles className="w-2.5 h-2.5" /> {vipClients.length} {vipClients.length === 1 ? "cliente frecuente" : "clientes frecuentes"}
+                          </span>
+                        </div>
+                        <span className="text-[9px] font-mono px-2 py-0.5 rounded-full bg-[#ccff00]/20 text-[#ccff00] border border-[#ccff00]/30 font-bold">
+                          VIP Tier
+                        </span>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-2 pt-1">
+                        <div className="p-2 rounded-xl bg-white/5 border border-white/10">
+                          <span className="text-[9px] text-white/50 block font-mono">LTV Acumulado</span>
+                          <span className="text-base font-bold text-[#ccff00] font-mono">${totalVipSpent.toFixed(0)} <span className="text-[10px] text-white/60">USD</span></span>
+                        </div>
+                        <div className="p-2 rounded-xl bg-white/5 border border-white/10">
+                          <span className="text-[9px] text-white/50 block font-mono">Tasa Retención</span>
+                          <span className="text-base font-bold text-white font-mono">{vipRetentionPct}%</span>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center justify-between text-[9.5px] font-mono text-white/60 pt-1 border-t border-white/10">
+                        <span>Frecuencia Media:</span>
+                        <strong className="text-[#ccff00]">
+                          {vipClients.length > 0 ? "Quincenal / Semanal" : "En acumulación"}
+                        </strong>
                       </div>
                     </div>
                   );

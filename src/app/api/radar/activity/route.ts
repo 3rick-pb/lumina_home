@@ -29,7 +29,7 @@ interface CachedClient {
 // In-memory global store to guarantee instant synchronization across clients
 const globalClients = new Map<string, CachedClient>();
 
-const CLIENT_TIMEOUT_MS = 2 * 60 * 1000; // 2 minutes inactivity timeout
+const CLIENT_TIMEOUT_MS = 45 * 1000; // 45s timeout protects against browser background-tab throttling while maintaining quick cleanup
 
 function pruneStaleClients() {
   const now = Date.now();
@@ -49,16 +49,19 @@ function pruneStaleClients() {
 export async function GET() {
   pruneStaleClients();
 
-  // 1. Try to fetch from Supabase active_sessions table
+  // 1. Fetch live active sessions from Supabase table
   try {
-    const twoMinutesAgo = new Date(Date.now() - CLIENT_TIMEOUT_MS).toISOString();
+    const cutoff = new Date(Date.now() - CLIENT_TIMEOUT_MS).toISOString();
     const { data: dbSessions, error } = await supabase
       .from('active_sessions')
       .select('*')
       .eq('is_online', true)
-      .gte('last_seen', twoMinutesAgo);
+      .gte('last_seen', cutoff)
+      .order('last_seen', { ascending: false });
 
-    if (!error && Array.isArray(dbSessions) && dbSessions.length > 0) {
+    if (!error && Array.isArray(dbSessions)) {
+      const activeDbUserIds = new Set<string>();
+
       for (const row of dbSessions) {
         if (
           row.user_id && 
@@ -66,13 +69,8 @@ export async function GET() {
           !row.user_id.startsWith('guest_') &&
           !String(row.name).toLowerCase().includes('visitante')
         ) {
+          activeDbUserIds.add(row.user_id);
           const existing = globalClients.get(row.user_id);
-          const dbTime = new Date(row.last_seen).getTime() || 0;
-          if (existing && existing.lastSeen > dbTime) {
-            // Memory has a fresher activity update, keep it
-            continue;
-          }
-
           const purchases = Number(row.purchases_count) || 0;
           const frequency = purchases >= 12 ? 'Semanal' : purchases >= 6 ? 'Quincenal' : purchases >= 3 ? 'Mensual' : purchases >= 1 ? 'Ocasional' : '1ª Vez';
           const finalCity = row.city || (existing ? existing.city : '');
@@ -100,6 +98,14 @@ export async function GET() {
           });
         }
       }
+
+      // If a user was deleted from the database (logged out / tab closed), remove from memory
+      const now = Date.now();
+      globalClients.forEach((client, id) => {
+        if (!activeDbUserIds.has(id) && (now - client.lastSeen > 6000)) {
+          globalClients.delete(id);
+        }
+      });
     }
   } catch (err) {
     void err;
@@ -168,7 +174,7 @@ export async function POST(request: Request) {
       try {
         await supabase
           .from('active_sessions')
-          .update({ is_online: false, last_seen: new Date().toISOString() })
+          .delete()
           .eq('user_id', id);
       } catch (e) {
         void e;

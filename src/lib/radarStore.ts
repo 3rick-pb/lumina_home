@@ -185,33 +185,6 @@ interface RadarStore {
   cleanup: () => void;
 }
 
-function parsePresenceState(channel: RealtimeChannel | null): ConnectedClient[] {
-  if (!channel) return [];
-  try {
-    const newState = channel.presenceState() || {};
-    const clientList: ConnectedClient[] = [];
-
-    for (const key in newState) {
-      const presenceArr = newState[key] as unknown[];
-      if (presenceArr && presenceArr.length > 0) {
-        const clientData = presenceArr[0] as ConnectedClient;
-        if (
-          clientData && 
-          clientData.id && 
-          !clientData.id.startsWith('vis_') && 
-          !clientData.id.startsWith('guest_') && 
-          !clientData.name?.toLowerCase().includes('visitante')
-        ) {
-          clientList.push(clientData);
-        }
-      }
-    }
-    return clientList;
-  } catch {
-    return [];
-  }
-}
-
 /**
  * Merge two client lists without duplicates, preferring the most up-to-date entry
  */
@@ -293,11 +266,7 @@ export const useRadarStore = create<RadarStore>((set, get) => ({
       if (res.ok) {
         const json = await res.json();
         if (json.success && Array.isArray(json.clients)) {
-          const currentPresenceClients = parsePresenceState(get().channel);
-          const currentLocalClients = get().clients;
-          const mergedWithPresence = mergeClientLists(currentPresenceClients, json.clients);
-          const finalMerged = mergeClientLists(mergedWithPresence, currentLocalClients);
-          set({ clients: finalMerged });
+          set({ clients: json.clients });
         }
       }
     } catch {
@@ -409,8 +378,61 @@ export const useRadarStore = create<RadarStore>((set, get) => ({
     if (!dbChan) {
       dbChan = supabase.channel('radar:db_changes');
       dbChan
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'active_sessions' }, () => {
-          // Re-fetch immediately when any database row is inserted/updated/deleted
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'active_sessions' }, (payload) => {
+          if (payload.eventType === 'DELETE') {
+            const oldUserId = (payload.old as { user_id?: string })?.user_id;
+            if (oldUserId) {
+              set((state) => ({
+                clients: state.clients.filter((c) => c.id !== oldUserId),
+              }));
+            }
+          } else if ((payload.eventType === 'UPDATE' || payload.eventType === 'INSERT') && payload.new) {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const row = payload.new as any;
+            if (row.user_id && !row.user_id.startsWith('vis_') && !row.user_id.startsWith('guest_')) {
+              if (row.is_online === false) {
+                set((state) => ({
+                  clients: state.clients.filter((c) => c.id !== row.user_id),
+                }));
+                get().fetchActiveClients();
+                return;
+              }
+
+              set((state) => {
+                const idx = state.clients.findIndex((c) => c.id === row.user_id);
+                const coords = resolveCoordinates(row.city || '');
+                const purchases = Number(row.purchases_count) || 0;
+                const spent = Number(row.total_spent) || 0;
+                const hasCart = Boolean(row.has_cart);
+                const updatedClient: ConnectedClient = {
+                  id: row.user_id,
+                  name: cleanClientName(row.name),
+                  email: row.email || '',
+                  city: row.city || '',
+                  country: row.country || 'Ecuador',
+                  x: typeof row.x === 'number' && Number(row.x) >= 0 ? Number(row.x) : coords.x,
+                  y: typeof row.y === 'number' && Number(row.y) >= 0 ? Number(row.y) : coords.y,
+                  frequency: resolveFrequency(purchases),
+                  purchasesCount: purchases,
+                  totalSpent: spent,
+                  currentSection: row.current_section || 'Explorando Tienda',
+                  intentScore: calculateIntentScore(purchases, spent, hasCart),
+                  device: (row.device as ConnectedClient['device']) || 'Computador',
+                  hasCart,
+                  cartItemsCount: Number(row.cart_items_count) || 0,
+                  isRealUser: true,
+                };
+                if (idx >= 0) {
+                  const next = [...state.clients];
+                  next[idx] = { ...next[idx], ...updatedClient };
+                  return { clients: next };
+                } else {
+                  return { clients: [...state.clients, updatedClient] };
+                }
+              });
+            }
+          }
+          // Also perform authoritative sync in the background
           get().fetchActiveClients();
         })
         .subscribe();
@@ -422,11 +444,7 @@ export const useRadarStore = create<RadarStore>((set, get) => ({
       activeChannel = supabase.channel('radar:clients');
 
       const handlePresenceUpdate = () => {
-        const presenceList = parsePresenceState(activeChannel);
-        // Merge with existing clients
-        set((state) => ({
-          clients: mergeClientLists(state.clients, presenceList),
-        }));
+        get().fetchActiveClients();
       };
 
       activeChannel

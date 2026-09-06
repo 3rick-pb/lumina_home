@@ -371,13 +371,27 @@ export const useUserStore = create<UserState>((set, get) => ({
     const currentUser = get().user;
     if (currentUser?.id) {
       try {
-        fetch('/api/radar/activity', {
+        if (typeof navigator !== 'undefined' && navigator.sendBeacon) {
+          navigator.sendBeacon(
+            '/api/radar/activity',
+            new Blob([JSON.stringify({ id: currentUser.id, isOnline: false })], { type: 'application/json' })
+          );
+        }
+        await fetch('/api/radar/activity', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ id: currentUser.id, isOnline: false }),
+          keepalive: true,
         }).catch(() => {});
+
+        await supabase
+          .from('active_sessions')
+          .delete()
+          .eq('user_id', currentUser.id);
       } catch {}
     }
+
+    useRadarStore.getState().cleanup();
 
     await supabase.auth.signOut();
     
