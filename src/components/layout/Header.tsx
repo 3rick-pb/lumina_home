@@ -44,6 +44,20 @@ export function Header() {
     setIsMounted(true);
   }, []);
 
+  // Sync "Inicio" (home) tab selection with the URL pathname
+  useEffect(() => {
+    if (pathname === "/") {
+      setActiveTab("home");
+    } else if (pathname === "/shop") {
+      if (typeof window !== "undefined") {
+        const search = window.location.search;
+        if (search.includes("category=iluminacion")) setActiveTab("iluminacion");
+        else if (search.includes("category=textiles")) setActiveTab("textiles");
+        else setActiveTab("shop");
+      }
+    }
+  }, [pathname]);
+
   // Real-time product search matches (accent/diacritic insensitive)
   const matchedProducts = useMemo(() => {
     if (!searchVal.trim()) return [];

@@ -79,6 +79,13 @@ export default function ProfilePage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [isMounted, setIsMounted] = useState(false);
 
+  const getGreeting = () => {
+    const hour = new Date().getHours();
+    if (hour >= 5 && hour < 12) return "Buenos días";
+    if (hour >= 12 && hour < 19) return "Buenas tardes";
+    return "Buenas noches";
+  };
+
   // Selected Order for Details Modal
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
 
@@ -936,7 +943,7 @@ export default function ProfilePage() {
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 px-1">
           <div>
             <h1 className="text-2xl md:text-3xl font-display font-bold text-gray-900 tracking-tight">
-              Buenos días, <span className="italic font-normal">{user.name}</span>
+              {getGreeting()}, <span className="italic font-normal">{user.name}</span>
             </h1>
             <p className="text-xs md:text-sm text-gray-500 mt-0.5">
               {isAdmin 
