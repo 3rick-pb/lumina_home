@@ -269,13 +269,9 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
     }
   }, [currentUser, currentUserCity, userOrders, isAdmin]);
 
-  // Fast live polling (1.2s): ensures the dossier and metrics update live automatically
+  // Initial live synchronization on mount (continuous updates are pushed live via WebSocket)
   useEffect(() => {
     fetchActiveClients();
-    const pollInterval = setInterval(() => {
-      fetchActiveClients();
-    }, 1200);
-    return () => clearInterval(pollInterval);
   }, [fetchActiveClients]);
 
   // Dynamically resolve LIVE client objects from the reactive connectedClients array
@@ -1229,43 +1225,43 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
                   );
                 })()}
 
-                {/* Metric 2 (Stage: frequent): Fidelización de Clientes VIP & Recurrentes */}
+                {/* Metric 2 (Stage: frequent): Fidelización de Clientes Recurrentes */}
                 {activeStage === "frequent" && (() => {
-                  const vipClients = actualClients.filter(c => (c.purchasesCount || 0) >= 3 || (c.frequency && c.frequency !== "1ª Vez"));
-                  const totalVipSpent = vipClients.reduce((sum, c) => sum + (c.totalSpent || 0), 0);
-                  const vipRetentionPct = actualClients.length > 0 
-                    ? Math.round((vipClients.length / actualClients.length) * 100) 
+                  const frequentClients = actualClients.filter(c => (c.purchasesCount || 0) >= 3 || (c.frequency && c.frequency !== "1ª Vez"));
+                  const totalFrequentSpent = frequentClients.reduce((sum, c) => sum + (c.totalSpent || 0), 0);
+                  const frequentRetentionPct = actualClients.length > 0 
+                    ? Math.round((frequentClients.length / actualClients.length) * 100) 
                     : 0;
 
                   return (
                     <div className="rounded-2xl bg-black/45 border border-[#ccff00]/30 p-3.5 space-y-2.5 shadow-[0_0_20px_rgba(204,255,0,0.08)]">
                       <div className="flex items-center justify-between">
                         <div>
-                          <span className="text-[11px] font-bold text-white block">Fidelización VIP</span>
+                          <span className="text-[11px] font-bold text-white block">Fidelización Recurrente</span>
                           <span className="text-[9.5px] font-mono font-semibold flex items-center gap-1 text-[#ccff00]">
-                            <Sparkles className="w-2.5 h-2.5" /> {vipClients.length} {vipClients.length === 1 ? "cliente frecuente" : "clientes frecuentes"}
+                            <Sparkles className="w-2.5 h-2.5" /> {frequentClients.length} {frequentClients.length === 1 ? "cliente frecuente" : "clientes frecuentes"}
                           </span>
                         </div>
                         <span className="text-[9px] font-mono px-2 py-0.5 rounded-full bg-[#ccff00]/20 text-[#ccff00] border border-[#ccff00]/30 font-bold">
-                          VIP Tier
+                          Recurrente
                         </span>
                       </div>
 
                       <div className="grid grid-cols-2 gap-2 pt-1">
                         <div className="p-2 rounded-xl bg-white/5 border border-white/10">
                           <span className="text-[9px] text-white/50 block font-mono">LTV Acumulado</span>
-                          <span className="text-base font-bold text-[#ccff00] font-mono">${totalVipSpent.toFixed(0)} <span className="text-[10px] text-white/60">USD</span></span>
+                          <span className="text-base font-bold text-[#ccff00] font-mono">${totalFrequentSpent.toFixed(0)} <span className="text-[10px] text-white/60">USD</span></span>
                         </div>
                         <div className="p-2 rounded-xl bg-white/5 border border-white/10">
                           <span className="text-[9px] text-white/50 block font-mono">Tasa Retención</span>
-                          <span className="text-base font-bold text-white font-mono">{vipRetentionPct}%</span>
+                          <span className="text-base font-bold text-white font-mono">{frequentRetentionPct}%</span>
                         </div>
                       </div>
 
                       <div className="flex items-center justify-between text-[9.5px] font-mono text-white/60 pt-1 border-t border-white/10">
                         <span>Frecuencia Media:</span>
                         <strong className="text-[#ccff00]">
-                          {vipClients.length > 0 ? "Quincenal / Semanal" : "En acumulación"}
+                          {frequentClients.length > 0 ? "Quincenal / Semanal" : "En acumulación"}
                         </strong>
                       </div>
                     </div>

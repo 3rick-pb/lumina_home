@@ -266,7 +266,13 @@ export const useRadarStore = create<RadarStore>((set, get) => ({
       if (res.ok) {
         const json = await res.json();
         if (json.success && Array.isArray(json.clients)) {
-          set({ clients: json.clients });
+          set((state) => {
+            // Guard against momentary network glitches or empty responses wiping all pins
+            if (json.clients.length === 0 && state.clients.length > 0) {
+              return state;
+            }
+            return { clients: json.clients };
+          });
         }
       }
     } catch {
@@ -357,7 +363,8 @@ export const useRadarStore = create<RadarStore>((set, get) => ({
     await Promise.allSettled(promises);
   },
 
-  initRadar: (user, city = '', totalSpent = 0, purchasesCount = 0, currentSection = 'Explorando Tienda', hasCart = false, cartItemsCount = 0) => {
+  initRadar: (user, _city = '', _totalSpent = 0, _purchasesCount = 0, _currentSection = '', _hasCart = false, _cartItemsCount = 0) => {
+    void _city; void _totalSpent; void _purchasesCount; void _currentSection; void _hasCart; void _cartItemsCount;
     if (!user?.id || user.id.startsWith('vis_') || user.id.startsWith('guest_')) return;
 
     let activeChannel = get().channel;
@@ -366,11 +373,11 @@ export const useRadarStore = create<RadarStore>((set, get) => ({
     // Initial fetch from activity endpoint
     get().fetchActiveClients();
 
-    // Start 1.2-second auto-poll fallback to ensure real-time responsiveness under any network condition
+    // Start calm 4-second auto-poll fallback to ensure real-time responsiveness without flooding
     if (!get().pollIntervalId) {
       const intervalId = setInterval(() => {
         get().fetchActiveClients();
-      }, 1200);
+      }, 4000);
       set({ pollIntervalId: intervalId });
     }
 
@@ -394,7 +401,6 @@ export const useRadarStore = create<RadarStore>((set, get) => ({
                 set((state) => ({
                   clients: state.clients.filter((c) => c.id !== row.user_id),
                 }));
-                get().fetchActiveClients();
                 return;
               }
 
@@ -432,8 +438,6 @@ export const useRadarStore = create<RadarStore>((set, get) => ({
               });
             }
           }
-          // Also perform authoritative sync in the background
-          get().fetchActiveClients();
         })
         .subscribe();
       set({ dbChannel: dbChan });
@@ -451,15 +455,9 @@ export const useRadarStore = create<RadarStore>((set, get) => ({
         .on('presence', { event: 'sync' }, handlePresenceUpdate)
         .on('presence', { event: 'join' }, handlePresenceUpdate)
         .on('presence', { event: 'leave' }, handlePresenceUpdate)
-        .subscribe(async (status) => {
-          if (status === 'SUBSCRIBED' && user?.id) {
-            get().trackActivity(user, city, totalSpent, purchasesCount, currentSection, hasCart, cartItemsCount);
-          }
-        });
+        .subscribe();
 
       set({ channel: activeChannel });
-    } else if (user?.id) {
-      get().trackActivity(user, city, totalSpent, purchasesCount, currentSection, hasCart, cartItemsCount);
     }
   },
 }));

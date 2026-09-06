@@ -99,10 +99,10 @@ export async function GET() {
         }
       }
 
-      // If a user was deleted from the database (logged out / tab closed), remove from memory
+      // Clean up memory clients whose session truly expired or went offline
       const now = Date.now();
       globalClients.forEach((client, id) => {
-        if (!activeDbUserIds.has(id) && (now - client.lastSeen > 6000)) {
+        if (!client.isOnline || (now - client.lastSeen > CLIENT_TIMEOUT_MS)) {
           globalClients.delete(id);
         }
       });
