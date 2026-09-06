@@ -454,7 +454,7 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
 
   return (
     <div 
-      className="relative w-full h-[660px] lg:h-[720px] rounded-[2.5rem] overflow-hidden bg-[#181d1b] text-white shadow-2xl border border-white/10 select-none animate-fade-in font-sans"
+      className="relative w-full h-[660px] lg:h-[720px] rounded-[2.5rem] overflow-hidden bg-[#181d1b] text-white shadow-xl shadow-black/20 dark:shadow-none border border-white/10 select-none animate-fade-in font-sans"
       onMouseMove={handleMouseMove}
       onMouseUp={handleMouseUp}
       onMouseLeave={handleMouseUp}
@@ -938,15 +938,17 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
                           </span>
                         </p>
                         
-                        {/* Píldora de Recompra con mayor tamaño de fuente situada debajo de la ubicación */}
-                        <div className="mt-2">
-                          <span 
-                            className="inline-flex items-center text-[12px] font-mono px-3 py-1 rounded-full bg-white/10 text-[#ccff00] border border-[#ccff00]/30 font-bold tracking-tight shadow-md"
-                            title={isClientAdmin(displayedDossierClient) ? "Rol de la cuenta" : "Frecuencia estimada de recompra del cliente"}
-                          >
-                            {isClientAdmin(displayedDossierClient) ? "Administrador de Tienda" : `Recompra: ${displayedDossierClient.frequency || "1ª Vez"}`}
-                          </span>
-                        </div>
+                        {/* Píldora de Recompra exclusiva para clientes reales (No aplica a cuentas administradoras) */}
+                        {!isClientAdmin(displayedDossierClient) && (
+                          <div className="mt-2">
+                            <span 
+                              className="inline-flex items-center text-[12px] font-mono px-3 py-1 rounded-full bg-white/10 text-[#ccff00] border border-[#ccff00]/30 font-bold tracking-tight shadow-md"
+                              title="Frecuencia estimada de recompra del cliente"
+                            >
+                              Recompra: {displayedDossierClient.frequency || "1ª Vez"}
+                            </span>
+                          </div>
+                        )}
                       </div>
                     </div>
 
@@ -1278,11 +1280,14 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
           const frequentPct = total > 0 ? Math.round((frequentCount / totalSafe) * 100) : 0;
           return (
             <div className="rounded-2xl bg-black/60 backdrop-blur-xl border border-white/15 p-3.5 shadow-xl flex flex-col justify-between">
-              <div className="flex items-center justify-between text-[11px] font-bold text-white mb-1">
-                <span className="flex items-center gap-1.5">
-                  <Users className="w-3 h-3 text-emerald-400" /> Embudo de Conversión
-                </span>
-                <span className="text-[9px] font-mono text-emerald-400 font-bold">{total} {total === 1 ? 'cliente activo' : 'clientes activos'}</span>
+              <div className="mb-1">
+                <div className="flex items-center gap-1.5 text-[11px] font-bold text-white whitespace-nowrap">
+                  <Users className="w-3 h-3 text-emerald-400 shrink-0" />
+                  <span>Embudo de Conversión</span>
+                </div>
+                <p className="text-[9.5px] font-mono text-emerald-400 font-bold mt-0.5 pl-4.5">
+                  {total} {total === 1 ? 'cliente activo' : 'clientes activos'}
+                </p>
               </div>
               <div className="flex items-center justify-between text-[9.5px] text-white/70">
                 <span>Catálogo: <strong>{browsingPct}%</strong></span>

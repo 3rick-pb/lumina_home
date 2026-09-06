@@ -872,7 +872,7 @@ export default function ProfilePage() {
  </aside>
 
  {/* 2. Main Bento Canvas */}
- <main className="flex-1 flex flex-col min-w-0 max-w-7xl w-full mx-auto space-y-6 overflow-hidden">
+ <main className="flex-1 flex flex-col min-w-0 max-w-7xl w-full mx-auto space-y-6">
  
  {/* Top App Bar (Reference Style) */}
  <header className="relative z-40 bg-white/80 dark:bg-[#202022]/80 backdrop-blur-2xl p-4 md:px-6 rounded-3xl border border-white/80 shadow-[0_4px_20px_rgba(0,0,0,0.02)] flex items-center justify-between gap-4">
@@ -2193,6 +2193,7 @@ export default function ProfilePage() {
  {/* ========================================================================= */}
  {activeTab === "analytics" && isAdmin && (
  <RadarErrorBoundary>
+ <div className="w-full pb-6">
  <AnalyticsRadarView 
  user={user}
  addresses={addresses}
@@ -2204,6 +2205,7 @@ export default function ProfilePage() {
  setShowAddressForm(true);
  }}
  />
+ </div>
  </RadarErrorBoundary>
  )}
 
