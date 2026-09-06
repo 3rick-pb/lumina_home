@@ -439,7 +439,7 @@ export function CartDrawer() {
  const customerEmail = user?.email || "cliente@lumina.com";
  const recipientName = shippingAddr?.recipient || addrRecipient || customerName;
 
- const effectiveCards = cards && cards.length > 0 ? cards : DEMO_CARDS;
+ const effectiveCards = cards || [];
  const chosenCard = effectiveCards.find(c => c.id === selectedCardId) || effectiveCards[0];
  
  let paymentDesc = "Tarjeta Bancaria";
@@ -500,40 +500,10 @@ export function CartDrawer() {
  }, 1200);
  };
 
- // Demo cards matching user's video exactly (4120 Sapphire, 4916 Platinum, 0019 Coral)
- const DEMO_CARDS: PaymentCard[] = useMemo(() => [
- {
- id: "card-demo-1",
- number: "•••• •••• •••• 4120",
- holder: user?.name ? user.name.toUpperCase() : "ERICK PÉREZ",
- exp: "09/29",
- type: "visa",
- isDefault: true,
- },
- {
- id: "card-demo-2",
- number: "•••• •••• •••• 4916",
- holder: user?.name ? user.name.toUpperCase() : "ERICK PÉREZ",
- exp: "04/28",
- type: "visa",
- isDefault: false,
- },
- {
- id: "card-demo-3",
- number: "•••• •••• •••• 0019",
- holder: user?.name ? user.name.toUpperCase() : "ERICK PÉREZ",
- exp: "11/27",
- type: "mastercard",
- isDefault: false,
- },
- ], [user?.name]);
-
- const availableCards = useMemo(() => {
- return cards && cards.length > 0 ? cards : DEMO_CARDS;
- }, [cards, DEMO_CARDS]);
+  const availableCards = cards || [];
 
  const effectiveSelectedCardId = selectedCardId || availableCards[0]?.id;
- const activeCard = availableCards.find(c => c.id === effectiveSelectedCardId) || availableCards[0];
+ const activeCard = availableCards.find(c => c.id === effectiveSelectedCardId) || availableCards[0] || null;
 
  const orderedCards = useMemo(() => {
  const others = availableCards.filter(c => c.id !== activeCard.id);
@@ -1591,7 +1561,11 @@ export function CartDrawer() {
  <div className="absolute inset-0 rounded-3xl bg-[radial-gradient(ellipse_at_top,rgba(30,58,138,0.25),transparent_70%)] pointer-events-none" />
 
  {/* The Layered Cards Rising Upwards with 1-finger separation (approx 24px) */}
- {orderedCards.map((card, idx) => {
+ {orderedCards.length === 0 && <div className="absolute inset-0 flex flex-col items-center justify-center bg-gray-50 dark:bg-[#1a1a1a] rounded-[1.8rem] text-center p-6 border-2 border-dashed border-gray-300 dark:border-white/10 z-10">
+                    <span className="text-gray-400 dark:text-gray-500 mb-2 font-semibold text-sm">Sin tarjetas registradas</span>
+                    <a href="/profile" className="px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-xl text-xs font-bold hover:bg-gray-800 transition-colors">Añadir Tarjeta</a>
+                  </div>}
+                        {orderedCards.map((card, idx) => {
  // Assign distinct luxury theme (matching video colors: Blue 4120, White 4916, Coral 0019)
  let theme = {
  bg: "bg-gradient-to-tr from-[#0a192f] via-[#10316b] to-[#0284c7]",

@@ -22,6 +22,7 @@ import {
 } from "lucide-react";
 import { User, ShippingAddress, Order } from "@/lib/userStore";
 import { CatalogProduct } from "@/lib/catalogStore";
+import { supabase } from "@/lib/supabase";
 
 export interface ConnectedClient {
   id: string;

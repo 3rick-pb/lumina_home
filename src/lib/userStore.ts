@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { supabase } from './supabase';
 import { CartItem, useCartStore } from './store';
+import { useThemeStore } from './themeStore';
 
 export interface User {
   id: string;

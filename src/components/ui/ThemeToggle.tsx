@@ -2,9 +2,11 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { Sun, Moon, Sparkles } from 'lucide-react';
 import { useThemeStore, ThemeMode } from '@/lib/themeStore';
+import { useUserStore } from '@/lib/userStore';
 
 export function ThemeToggle() {
   const { mode, setMode } = useThemeStore();
+  const user = useUserStore(state => state.user);
 
   const options: { id: ThemeMode; icon: React.ElementType; label: string }[] = [
     { id: 'light', icon: Sun, label: 'Claro' },
@@ -23,7 +25,7 @@ export function ThemeToggle() {
         return (
           <button
             key={option.id}
-            onClick={() => setMode(option.id)}
+            onClick={() => setMode(option.id, user?.id)}
             className={`relative flex-1 flex items-center justify-center gap-2 py-3 text-[13px] font-bold transition-all duration-700 cursor-pointer ${
               isActive ? "text-gray-900 dark:text-white scale-105" : "text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 hover:scale-100"
             }`}
