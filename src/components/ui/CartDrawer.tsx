@@ -567,7 +567,7 @@ export function CartDrawer() {
  <style>{`
  :where(.theme-transition), :where(.theme-transition *) {
  transition-property: background-color, border-color, color, fill, stroke;
- transition-duration: 2500ms;
+ transition-duration: 1500ms;
  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
  }
  `}</style>
@@ -1543,7 +1543,31 @@ export function CartDrawer() {
  </button>
  </div>
 
- {/* 2. THE BLUE WALLET SLEEVE ("EMPAQUE AZUL / BOLSITA") - 100% CLICK-ONLY */}
+ {!activeCard || availableCards.length === 0 ? (
+                  <div className="p-8 rounded-3xl bg-gray-50/80 dark:bg-[#202022] border-2 border-dashed border-gray-200 dark:border-white/10 text-center flex flex-col items-center justify-center space-y-3 font-sans my-4">
+                    <div className="w-12 h-12 rounded-2xl bg-white dark:bg-[#2a2a2c] shadow-sm flex items-center justify-center text-gray-400">
+                      <CreditCard className="w-6 h-6 text-gray-500 dark:text-gray-400" />
+                    </div>
+                    <div>
+                      <h4 className="text-sm font-bold text-gray-900 dark:text-gray-100">Sin tarjetas guardadas</h4>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 max-w-xs">
+                        Aún no tienes métodos de pago registrados en tu cuenta. Agrega una tarjeta desde tu perfil para pagar al instante.
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsOpen(false);
+                        router.push("/profile?tab=cards");
+                      }}
+                      className="px-5 py-2.5 rounded-full bg-gray-900 dark:bg-white text-white dark:text-gray-900 text-xs font-bold hover:scale-105 transition-all shadow-md cursor-pointer"
+                    >
+                      + Añadir Tarjeta a mi Cuenta
+                    </button>
+                  </div>
+                ) : (
+                  <>
+                  {/* 2. THE BLUE WALLET SLEEVE ("EMPAQUE AZUL / BOLSITA") - 100% CLICK-ONLY */}
  <div 
  className="relative w-full max-w-[370px] mx-auto pt-16 pb-2 select-none"
  >
@@ -1561,11 +1585,7 @@ export function CartDrawer() {
  <div className="absolute inset-0 rounded-3xl bg-[radial-gradient(ellipse_at_top,rgba(30,58,138,0.25),transparent_70%)] pointer-events-none" />
 
  {/* The Layered Cards Rising Upwards with 1-finger separation (approx 24px) */}
- {orderedCards.length === 0 && <div className="absolute inset-0 flex flex-col items-center justify-center bg-gray-50 dark:bg-[#1a1a1a] rounded-[1.8rem] text-center p-6 border-2 border-dashed border-gray-300 dark:border-white/10 z-10">
-                    <span className="text-gray-400 dark:text-gray-500 mb-2 font-semibold text-sm">Sin tarjetas registradas</span>
-                    <a href="/profile" className="px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-xl text-xs font-bold hover:bg-gray-800 transition-colors">Añadir Tarjeta</a>
-                  </div>}
-                        {orderedCards.map((card, idx) => {
+ {orderedCards.map((card, idx) => {
  // Assign distinct luxury theme (matching video colors: Blue 4120, White 4916, Coral 0019)
  let theme = {
  bg: "bg-gradient-to-tr from-[#0a192f] via-[#10316b] to-[#0284c7]",
@@ -1605,7 +1625,7 @@ export function CartDrawer() {
  };
  }
 
- const isSelected = card.id === activeCard.id;
+ const isSelected = activeCard ? card.id === activeCard.id : false;
  const isCardHovered = isWalletOpen && hoveredCardId === card.id;
 
  // Calculate vertical offsets for 1-finger upward accordion stacking (24px separation)
@@ -1796,12 +1816,14 @@ export function CartDrawer() {
  <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" /> SSL Cifrado
  </p>
  </div>
- </div>
- </div>
- </div>
- )}
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
+        )}
 
- {/* VIEW 2: APPLE PAY HIGH-TICKET EXPERIENCE */}
+                {/* VIEW 2: APPLE PAY HIGH-TICKET EXPERIENCE */}
  {selectedMethod === "apple" && (
  <div className="p-6 sm:p-8 rounded-3xl bg-slate-950 text-white dark:text-gray-900 shadow-xl dark:shadow-none flex flex-col items-center justify-center text-center space-y-4 border border-zinc-800">
  <div className="w-16 h-16 rounded-2xl bg-black border border-zinc-700 flex items-center justify-center shadow-2xl dark:shadow-none shadow-black/60">

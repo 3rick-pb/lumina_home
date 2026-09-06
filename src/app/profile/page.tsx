@@ -766,7 +766,7 @@ export default function ProfilePage() {
  <style>{`
  :where(.theme-transition), :where(.theme-transition *) {
  transition-property: background-color, border-color, color, fill, stroke;
- transition-duration: 2500ms;
+ transition-duration: 1500ms;
  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
  }
  `}</style>
@@ -939,17 +939,17 @@ export default function ProfilePage() {
  {/* Right Search Input & Profile Badge */}
  <div className="flex items-center gap-3 shrink-0">
  <div className="relative z-50">
- <div className="hidden sm:flex items-center bg-gray-100/70 dark:bg-[#3a3a3c]/70 px-3 py-1.5 rounded-2xl border border-gray-200/50 dark:border-white/10/50 text-xs text-gray-600 dark:text-gray-400 focus-within:ring-2 focus-within:ring-[#8c9276]/30 focus-within:bg-white dark:bg-[#202022] transition-all">
- <Search className="w-3.5 h-3.5 mr-2 text-gray-400" />
+ <div className="hidden sm:flex items-center bg-gray-100 dark:bg-[#2a2a2c] px-3 py-1.5 rounded-2xl border border-gray-200/80 dark:border-white/10 text-xs text-gray-600 dark:text-gray-300 focus-within:ring-2 focus-within:ring-gray-400/30 dark:focus-within:ring-white/20 transition-all">
+ <Search className="w-3.5 h-3.5 mr-2 text-gray-400 shrink-0" />
  <input 
  type="text" 
  value={searchQuery}
  onChange={e => setSearchQuery(e.target.value)}
  placeholder="Buscar en panel..."
- className="border-none outline-none text-xs w-28 md:w-44 dark: placeholder: font-medium bg-white dark:bg-[#1a1a1c] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500"
+ className="bg-transparent border-none outline-none text-xs w-28 md:w-44 font-medium text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500"
  />
  {searchQuery && (
- <button onClick={() => setSearchQuery("")} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-400 ml-1">
+ <button onClick={() => setSearchQuery("")} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 ml-1 shrink-0">
  <X className="w-3 h-3" />
  </button>
  )}

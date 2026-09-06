@@ -17,7 +17,7 @@ export function ThemeToggle() {
   
 
   return (
-    <div className="relative flex items-center bg-[#e5e5e5]/80 dark:bg-[#1a1a1a]/80 backdrop-blur-3xl rounded-[2rem] p-1.5 shadow-[inset_0_2px_12px_rgba(0,0,0,0.06),inset_0_4px_4px_rgba(0,0,0,0.04)] dark:shadow-[inset_0_2px_12px_rgba(0,0,0,0.4),inset_0_4px_4px_rgba(0,0,0,0.4)] border border-white/60 dark:border-white/5 w-full max-w-[340px] transition-colors duration-[2500ms]">
+    <div className="relative flex items-center bg-[#e5e5e5]/80 dark:bg-[#1a1a1a]/80 backdrop-blur-3xl rounded-[2rem] p-1.5 shadow-[inset_0_2px_12px_rgba(0,0,0,0.06),inset_0_4px_4px_rgba(0,0,0,0.04)] dark:shadow-[inset_0_2px_12px_rgba(0,0,0,0.4),inset_0_4px_4px_rgba(0,0,0,0.4)] border border-white/60 dark:border-white/5 w-full max-w-[340px] transition-colors duration-[1500ms]">
       {options.map((option) => {
         const Icon = option.icon;
         const isActive = mode === option.id;
