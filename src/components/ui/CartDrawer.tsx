@@ -620,11 +620,11 @@ export function CartDrawer() {
  animate="visible"
  exit="exit"
  style={{ transformStyle: "preserve-3d", willChange: "transform, opacity" }}
- className="relative w-full max-w-6xl h-full max-h-[92vh] bg-white dark:bg-[#2c2c2e]/95 backdrop-blur-3xl rounded-[2.5rem] border border-white/90 shadow-[0_35px_120px_rgba(0,0,0,0.35)] flex flex-col overflow-hidden z-10"
+ className="relative w-full max-w-6xl h-full max-h-[92vh] bg-white dark:bg-[#2a2a2c]/95 backdrop-blur-3xl rounded-[2.5rem] border border-white/90 shadow-[0_35px_120px_rgba(0,0,0,0.35)] flex flex-col overflow-hidden z-10"
  >
 
  {/* Top Bar Header */}
- <header className="px-6 sm:px-8 py-4 bg-white dark:bg-[#2c2c2e]/80 backdrop-blur-xl border-b border-gray-100 dark:border-white/5 flex items-center justify-between shrink-0 shadow-sm dark:shadow-none">
+ <header className="px-6 sm:px-8 py-4 bg-white dark:bg-[#2a2a2c]/80 backdrop-blur-xl border-b border-gray-100 dark:border-white/5 flex items-center justify-between shrink-0 shadow-sm dark:shadow-none">
  
  {/* Brand Logo & Studio Identity */}
  <div className="flex items-center gap-3">
@@ -642,11 +642,11 @@ export function CartDrawer() {
  </div>
 
  {/* Center Step Indicator */}
- <div className="flex items-center gap-2 bg-gray-100 dark:bg-[#1c1c1e]/5/80 p-1 rounded-2xl">
+ <div className="flex items-center gap-2 bg-gray-100 dark:bg-[#202022]/5/80 p-1 rounded-2xl">
  <button 
  onClick={() => setStep("bag")}
  className={`px-3.5 py-1 rounded-xl text-xs font-bold transition-all ${
- step === "bag" ? "bg-white dark:bg-[#2c2c2e] text-gray-900 dark:text-gray-100 shadow-sm dark:shadow-none" : "text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 "
+ step === "bag" ? "bg-white dark:bg-[#2a2a2c] text-gray-900 dark:text-gray-100 shadow-sm dark:shadow-none" : "text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 "
  }`}
  >
  1. Carrito ({items.length})
@@ -657,7 +657,7 @@ export function CartDrawer() {
  }}
  disabled={items.length === 0}
  className={`px-3.5 py-1 rounded-xl text-xs font-bold transition-all disabled:opacity-40 ${
- step === "payment" ? "bg-white dark:bg-[#2c2c2e] text-gray-900 dark:text-gray-100 shadow-sm dark:shadow-none" : "text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 "
+ step === "payment" ? "bg-white dark:bg-[#2a2a2c] text-gray-900 dark:text-gray-100 shadow-sm dark:shadow-none" : "text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 "
  }`}
  >
  2. Pasarela de Pago
@@ -668,7 +668,7 @@ export function CartDrawer() {
  <div className="flex items-center gap-3">
  <button 
  onClick={() => setIsOpen(false)}
- className="px-4 py-1.5 rounded-xl bg-gray-100 dark:bg-[#1c1c1e]/5 hover:bg-gray-200 dark:hover:bg-[#1c1c1e]/10 text-xs font-semibold text-gray-700 dark:text-gray-300 transition-colors flex items-center gap-1.5"
+ className="px-4 py-1.5 rounded-xl bg-gray-100 dark:bg-[#202022]/5 hover:bg-gray-200 dark:hover:bg-[#1c1c1e]/10 text-xs font-semibold text-gray-700 dark:text-gray-300 transition-colors flex items-center gap-1.5"
  >
  <span>Cerrar</span>
  <X className="w-3.5 h-3.5" />
@@ -753,7 +753,7 @@ export function CartDrawer() {
  {/* ---------------------------------------------------- */}
  {/* Left Column: Spacious Products Table (7 or 8 cols) */}
  {/* ---------------------------------------------------- */}
- <div className="lg:col-span-8 bg-white dark:bg-[#2c2c2e]/80 backdrop-blur-xl rounded-[2rem] border border-gray-200 dark:border-white/10/60 p-6 sm:p-8 shadow-sm dark:shadow-none space-y-6">
+ <div className="lg:col-span-8 bg-white dark:bg-[#2a2a2c]/80 backdrop-blur-xl rounded-[2rem] border border-gray-200 dark:border-white/10/60 p-6 sm:p-8 shadow-sm dark:shadow-none space-y-6">
  {/* Table Column Headers (Directly from Reference Image) */}
  <div className="hidden sm:grid grid-cols-12 text-xs font-bold text-gray-400 dark:text-gray-400 uppercase tracking-wider pb-3 border-b border-gray-100 dark:border-white/5 px-3.5 sm:px-4">
  <span className="col-span-5">Producto</span>
@@ -781,7 +781,7 @@ export function CartDrawer() {
  >
  {/* Product Info (5 cols) */}
  <div className="sm:col-span-5 flex items-center gap-4">
- <div className="relative w-20 h-20 sm:w-24 sm:h-24 rounded-2xl overflow-hidden bg-gray-100 dark:bg-[#1c1c1e]/5 shrink-0 border border-white shadow-sm dark:shadow-none">
+ <div className="relative w-20 h-20 sm:w-24 sm:h-24 rounded-2xl overflow-hidden bg-gray-100 dark:bg-[#202022]/5 shrink-0 border border-white shadow-sm dark:shadow-none">
  <Image 
  src={item.product.imageUrl} 
  alt={item.product.title} 
@@ -812,12 +812,12 @@ export function CartDrawer() {
  </h4>
  <div className="flex items-center gap-2 mt-1 text-xs text-gray-500 dark:text-gray-400 font-medium">
  {item.color && (
- <span className="px-2 py-0.5 rounded-lg bg-gray-100 dark:bg-[#1c1c1e]/5 text-[11px]">
+ <span className="px-2 py-0.5 rounded-lg bg-gray-100 dark:bg-[#202022]/5 text-[11px]">
  {item.color}
  </span>
  )}
  {item.size && (
- <span className="px-2 py-0.5 rounded-lg bg-gray-100 dark:bg-[#1c1c1e]/5 text-[11px]">
+ <span className="px-2 py-0.5 rounded-lg bg-gray-100 dark:bg-[#202022]/5 text-[11px]">
  Talla: {item.size}
  </span>
  )}
@@ -830,10 +830,10 @@ export function CartDrawer() {
 
  {/* Quantity Capsule with Liquid Glass (3 cols) */}
  <div className="sm:col-span-3 flex sm:justify-center items-center">
- <div className="flex items-center bg-gray-100 dark:bg-[#1c1c1e]/5/90 rounded-full px-2.5 py-1.5 border border-gray-200 dark:border-white/10/70 shadow-inner">
+ <div className="flex items-center bg-gray-100 dark:bg-[#202022]/5/90 rounded-full px-2.5 py-1.5 border border-gray-200 dark:border-white/10/70 shadow-inner">
  <button 
  onClick={() => updateQuantity(item.id, item.quantity - 1)}
- className="w-7 h-7 rounded-full bg-white dark:bg-[#2c2c2e]/90 hover:bg-white dark:hover:bg-[#2c2c2e] text-gray-800 dark:text-gray-200 flex items-center justify-center border border-white shadow-[0_2px_6px_rgba(0,0,0,0.06),inset_0_1px_1px_rgba(255,255,255,0.9)] backdrop-blur-md active:scale-90 transition-all"
+ className="w-7 h-7 rounded-full bg-white dark:bg-[#2a2a2c]/90 hover:bg-white dark:hover:bg-[#2c2c2e] text-gray-800 dark:text-gray-200 flex items-center justify-center border border-white shadow-[0_2px_6px_rgba(0,0,0,0.06),inset_0_1px_1px_rgba(255,255,255,0.9)] backdrop-blur-md active:scale-90 transition-all"
  title="Disminuir"
  >
  <Minus className="w-3.5 h-3.5" />
@@ -846,8 +846,8 @@ export function CartDrawer() {
  onClick={() => updateQuantity(item.id, item.quantity + 1)}
  className={`w-7 h-7 rounded-full flex items-center justify-center border border-white shadow-[0_2px_6px_rgba(0,0,0,0.06),inset_0_1px_1px_rgba(255,255,255,0.9)] backdrop-blur-md transition-all ${
  itemIsAgotado 
- ? "bg-gray-200 dark:bg-[#1c1c1e]/10 text-gray-400 dark:text-gray-400 cursor-not-allowed opacity-40" 
- : "bg-white dark:bg-[#2c2c2e]/90 hover:bg-white dark:hover:bg-[#2c2c2e] text-gray-800 dark:text-gray-200 active:scale-90"
+ ? "bg-gray-200 dark:bg-[#202022]/10 text-gray-400 dark:text-gray-400 cursor-not-allowed opacity-40" 
+ : "bg-white dark:bg-[#2a2a2c]/90 hover:bg-white dark:hover:bg-[#2c2c2e] text-gray-800 dark:text-gray-200 active:scale-90"
  }`}
  title={itemIsAgotado ? "Producto sin existencias" : "Aumentar"}
  >
@@ -869,7 +869,7 @@ export function CartDrawer() {
  <button 
  onClick={() => removeItem(item.id)}
  className="relative overflow-hidden group/del px-4 py-1.5 rounded-full text-xs font-semibold text-rose-600 
- bg-white dark:bg-[#2c2c2e]/40 hover:bg-white dark:hover:bg-[#2c2c2e]/65 backdrop-blur-2xl
+ bg-white dark:bg-[#2a2a2c]/40 hover:bg-white dark:hover:bg-[#2c2c2e]/65 backdrop-blur-2xl
  border border-white/90 
  shadow-[0_4px_16px_rgba(0,0,0,0.06),inset_0_1.5px_2px_rgba(255,255,255,0.95),inset_0_-1px_2px_rgba(0,0,0,0.04)]
  hover:shadow-[0_8px_24px_rgba(225,29,72,0.18),inset_0_2px_3px_rgba(255,255,255,1)]
@@ -883,7 +883,7 @@ export function CartDrawer() {
  <div className="absolute inset-0 bg-gradient-to-b from-white/40 via-white/10 to-transparent pointer-events-none rounded-full" />
 
  {/* Caustic Glow Corner Spot */}
- <div className="absolute top-1 left-2.5 w-2.5 h-1 bg-white dark:bg-[#2c2c2e]/80 rounded-full blur-[0.5px] pointer-events-none" />
+ <div className="absolute top-1 left-2.5 w-2.5 h-1 bg-white dark:bg-[#2a2a2c]/80 rounded-full blur-[0.5px] pointer-events-none" />
 
  <Trash2 
  size={12}
@@ -920,7 +920,7 @@ export function CartDrawer() {
  {/* ---------------------------------------------------- */}
  {/* Right Column: Order Summary Card (4 cols) */}
  {/* ---------------------------------------------------- */}
- <div className="lg:col-span-4 bg-white dark:bg-[#2c2c2e]/90 backdrop-blur-2xl rounded-[2rem] border border-gray-200 dark:border-white/10/70 p-6 sm:p-7 shadow-lg dark:shadow-none shadow-gray-200/50 space-y-6">
+ <div className="lg:col-span-4 bg-white dark:bg-[#2a2a2c]/90 backdrop-blur-2xl rounded-[2rem] border border-gray-200 dark:border-white/10/70 p-6 sm:p-7 shadow-lg dark:shadow-none shadow-gray-200/50 space-y-6">
  
  <h3 className="font-display font-bold text-xl text-gray-900 dark:text-gray-100 tracking-tight pb-3 border-b border-gray-100 dark:border-white/5">
  Resumen del Pedido
@@ -935,7 +935,7 @@ export function CartDrawer() {
  </span>
  <span className="text-blue-600 font-bold">{freeShippingProgress}%</span>
  </div>
- <div className="w-full h-1.5 bg-gray-200 dark:bg-[#1c1c1e]/10 rounded-full overflow-hidden">
+ <div className="w-full h-1.5 bg-gray-200 dark:bg-[#202022]/10 rounded-full overflow-hidden">
  <div 
  className="h-full bg-blue-600 rounded-full transition-all duration-500"
  style={{ width: `${freeShippingProgress}%` }}
@@ -952,7 +952,7 @@ export function CartDrawer() {
  value={couponInput}
  onChange={e => setCouponInput(e.target.value)}
  placeholder="Código (ej: LUMINA10)"
- className="w-full pl-9 pr-3 py-2 rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-[#2c2c2e] text-xs font-medium outline-none focus:ring-1 focus:ring-blue-500"
+ className="w-full pl-9 pr-3 py-2 rounded-xl border border-gray-200 dark:border-white/10 dark:] text-xs font-medium outline-none focus:ring-1 focus:ring-blue-500 bg-white dark:bg-[#1a1a1c] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500"
  />
  </div>
  <button 
@@ -1032,7 +1032,7 @@ export function CartDrawer() {
  className={`relative overflow-hidden w-full h-14 rounded-2xl font-bold text-white dark:text-gray-900 text-sm sm:text-base flex items-center justify-center gap-2.5 transition-all duration-300
  shadow-[0_12px_36px_rgba(0,0,0,0.12)] border border-white/30
  before:absolute before:inset-0 before:bg-gradient-to-b before:from-white/35 before:via-white/10 before:to-transparent before:pointer-events-none before:rounded-2xl
- after:absolute after:inset-x-0 after:top-0 after:h-[1px] after:bg-white dark:bg-[#2c2c2e]/60 cursor-pointer group ${
+ after:absolute after:inset-x-0 after:top-0 after:h-[1px] after:bg-white dark:bg-[#2a2a2c]/60 cursor-pointer group ${
  hasAgotadoItems
  ? "bg-gradient-to-r from-red-600 via-red-700 to-rose-700 shadow-red-500/30 hover:scale-[1.01] active:scale-[0.99]"
  : "bg-gradient-to-r from-[#1e40af] via-[#2563eb] to-[#1d4ed8] shadow-[0_12px_36px_rgba(37,99,235,0.35),0_2px_8px_rgba(0,0,0,0.1)] hover:shadow-[0_16px_44px_rgba(37,99,235,0.45)] hover:scale-[1.01] active:scale-[0.99]"
@@ -1072,9 +1072,9 @@ export function CartDrawer() {
  <div 
  key={prod.id}
  onClick={() => { setIsOpen(false); router.push(`/product/${prod.id}`); }}
- className="p-4 rounded-2xl bg-white dark:bg-[#2c2c2e]/70 hover:bg-white dark:hover:bg-[#2c2c2e] border border-gray-100 dark:border-white/5 hover:border-gray-200 dark:hover:border-white/10 shadow-sm dark:shadow-none transition-all cursor-pointer flex items-center gap-3.5 group"
+ className="p-4 rounded-2xl bg-white dark:bg-[#2a2a2c]/70 hover:bg-white dark:hover:bg-[#2c2c2e] border border-gray-100 dark:border-white/5 hover:border-gray-200 dark:hover:border-white/10 shadow-sm dark:shadow-none transition-all cursor-pointer flex items-center gap-3.5 group"
  >
- <div className="relative w-16 h-16 rounded-xl overflow-hidden bg-gray-100 dark:bg-[#1c1c1e]/5 shrink-0">
+ <div className="relative w-16 h-16 rounded-xl overflow-hidden bg-gray-100 dark:bg-[#202022]/5 shrink-0">
  <Image src={prod.imageUrl} alt={prod.title} fill sizes="64px" className="object-cover group-hover:scale-105 transition-transform" />
  </div>
  <div className="min-w-0">
@@ -1121,13 +1121,13 @@ export function CartDrawer() {
  <div className="lg:col-span-7 space-y-6">
  
  {/* Shipping Address */}
- <div className="p-6 rounded-[2rem] bg-white dark:bg-[#2c2c2e] border border-gray-200 dark:border-white/10/70 shadow-sm dark:shadow-none space-y-4">
+ <div className="p-6 rounded-[2rem] bg-white dark:bg-[#2a2a2c] border border-gray-200 dark:border-white/10/70 shadow-sm dark:shadow-none space-y-4">
  <div className="flex items-center justify-between">
  <div className="flex items-center gap-2">
  <MapPin className="w-4 h-4 text-blue-600" />
  <h4 className="font-bold text-sm text-gray-900 dark:text-gray-100 ">Dirección de Entrega</h4>
  {addresses.length > 0 && (
- <span className="text-[10px] font-mono font-semibold px-2 py-0.5 rounded-full bg-gray-100 dark:bg-[#1c1c1e]/5 text-gray-600 dark:text-gray-400 border border-gray-200 dark:border-white/10">
+ <span className="text-[10px] font-mono font-semibold px-2 py-0.5 rounded-full bg-gray-100 dark:bg-[#202022]/5 text-gray-600 dark:text-gray-400 border border-gray-200 dark:border-white/10">
  {addresses.length}/4
  </span>
  )}
@@ -1231,7 +1231,7 @@ export function CartDrawer() {
  value={addrRecipient} 
  onChange={e => setAddrRecipient(e.target.value)} 
  placeholder={user?.name || "Ej: Juan Pérez / Nombre del destinatario"}
- className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-xs outline-none focus:ring-1 focus:ring-blue-500"
+ className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-xs outline-none focus:ring-1 focus:ring-blue-500 bg-white dark:bg-[#1a1a1c] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500"
  required
  />
  </div>
@@ -1242,7 +1242,7 @@ export function CartDrawer() {
  value={addrStreet} 
  onChange={e => setAddrStreet(e.target.value)} 
  placeholder="Calle Gran Vía 14, 3ºB"
- className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-xs outline-none focus:ring-1 focus:ring-blue-500"
+ className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-xs outline-none focus:ring-1 focus:ring-blue-500 bg-white dark:bg-[#1a1a1c] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500"
  required
  />
  </div>
@@ -1254,7 +1254,7 @@ export function CartDrawer() {
  value={addrCity} 
  onChange={e => setAddrCity(e.target.value)} 
  placeholder="Madrid"
- className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-xs outline-none focus:ring-1 focus:ring-blue-500"
+ className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-xs outline-none focus:ring-1 focus:ring-blue-500 bg-white dark:bg-[#1a1a1c] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500"
  required
  />
  </div>
@@ -1265,7 +1265,7 @@ export function CartDrawer() {
  value={addrPostal} 
  onChange={e => setAddrPostal(e.target.value)} 
  placeholder="28001"
- className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-xs outline-none focus:ring-1 focus:ring-blue-500"
+ className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-xs outline-none focus:ring-1 focus:ring-blue-500 bg-white dark:bg-[#1a1a1c] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500"
  required
  />
  </div>
@@ -1278,7 +1278,7 @@ export function CartDrawer() {
  value={addrState} 
  onChange={e => setAddrState(e.target.value)} 
  placeholder="Madrid"
- className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-xs outline-none focus:ring-1 focus:ring-blue-500"
+ className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-xs outline-none focus:ring-1 focus:ring-blue-500 bg-white dark:bg-[#1a1a1c] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500"
  required
  />
  </div>
@@ -1289,7 +1289,7 @@ export function CartDrawer() {
  value={addrCountry} 
  onChange={e => setAddrCountry(e.target.value)} 
  placeholder="España"
- className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-xs outline-none focus:ring-1 focus:ring-blue-500"
+ className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-xs outline-none focus:ring-1 focus:ring-blue-500 bg-white dark:bg-[#1a1a1c] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500"
  required
  />
  </div>
@@ -1298,7 +1298,7 @@ export function CartDrawer() {
  <button 
  type="button"
  onClick={() => setIsEditingAddress(false)}
- className="w-1/3 py-2.5 bg-gray-100 dark:bg-[#1c1c1e]/5 text-gray-700 dark:text-gray-300 rounded-xl text-xs font-semibold hover:bg-gray-200 dark:hover:bg-[#1c1c1e]/10 transition-colors cursor-pointer"
+ className="w-1/3 py-2.5 bg-gray-100 dark:bg-[#202022]/5 text-gray-700 dark:text-gray-300 rounded-xl text-xs font-semibold hover:bg-gray-200 dark:hover:bg-[#1c1c1e]/10 transition-colors cursor-pointer"
  >
  Cancelar
  </button>
@@ -1335,9 +1335,9 @@ export function CartDrawer() {
  <div className={`mt-0.5 w-4 h-4 rounded-full border flex items-center justify-center shrink-0 transition-colors ${
  isSelected 
  ? "border-blue-600 bg-blue-600 text-white dark:text-gray-900" 
- : "border-gray-300 bg-white dark:bg-[#2c2c2e]"
+ : "border-gray-300 bg-white dark:bg-[#2a2a2c]"
  }`}>
- {isSelected && <div className="w-1.5 h-1.5 rounded-full bg-white dark:bg-[#2c2c2e]" />}
+ {isSelected && <div className="w-1.5 h-1.5 rounded-full bg-white dark:bg-[#2a2a2c]" />}
  </div>
  <div className="min-w-0">
  <div className="flex items-center gap-2">
@@ -1404,7 +1404,7 @@ export function CartDrawer() {
  setAddrState("");
  setAddrCountry("España");
  }}
- className="px-4 py-1.5 bg-a dark:bg-[#1c1c1e]mber-900 text-white dark:text-gray-900 rounded-xl text-xs font-semibold cursor-pointer"
+ className="px-4 py-1.5 bg-a dark:bg-[#202022]mber-900 text-white dark:text-gray-900 rounded-xl text-xs font-semibold cursor-pointer"
  >
  + Añadir Dirección Ahora
  </button>
@@ -1413,7 +1413,7 @@ export function CartDrawer() {
  </div>
 
  {/* Payment Method Selector (Liquid Glass Horizontal Pill with Apple Droplet) */}
- <div className="p-6 rounded-[2rem] bg-white dark:bg-[#2c2c2e] border border-gray-200 dark:border-white/10/70 shadow-sm dark:shadow-none space-y-5">
+ <div className="p-6 rounded-[2rem] bg-white dark:bg-[#2a2a2c] border border-gray-200 dark:border-white/10/70 shadow-sm dark:shadow-none space-y-5">
  <div className="flex items-center justify-between pb-1 border-b border-gray-100 dark:border-white/5">
  <div className="flex items-center gap-2">
  <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0" />
@@ -1472,7 +1472,7 @@ export function CartDrawer() {
  >
  {/* The Single Sliding Active Liquid Glass Droplet (Strictly Horizontal, Zero Y Movement) */}
  <motion.div
- className="absolute top-1.5 bottom-1.5 rounded-full bg-white dark:bg-[#2c2c2e]/95 shadow-[0_4px_16px_rgba(0,0,0,0.08),inset_0_1.5px_2px_rgba(255,255,255,1)] border border-white pointer-events-none z-0"
+ className="absolute top-1.5 bottom-1.5 rounded-full bg-white dark:bg-[#2a2a2c]/95 shadow-[0_4px_16px_rgba(0,0,0,0.08),inset_0_1.5px_2px_rgba(255,255,255,1)] border border-white pointer-events-none z-0"
  style={{
  width: "calc((100% - 12px) / 4)",
  left: "6px",
@@ -1490,13 +1490,13 @@ export function CartDrawer() {
  {/* Specular curved glass highlight rim */}
  <div className="absolute inset-x-3 top-0 h-[1.5px] bg-gradient-to-r from-transparent via-white to-transparent opacity-95" />
  {/* Caustic glass reflection glint in corner */}
- <div className="absolute top-1 left-3 w-3 h-1 bg-white dark:bg-[#2c2c2e]/90 rounded-full blur-[0.4px]" />
+ <div className="absolute top-1 left-3 w-3 h-1 bg-white dark:bg-[#2a2a2c]/90 rounded-full blur-[0.4px]" />
  </motion.div>
 
  {/* Hover Droplet Indicator */}
  {hoveredMethodIndex !== null && hoveredMethodIndex !== activeMethodIndex && (
  <motion.div
- className="absolute top-1.5 bottom-1.5 rounded-full bg-white dark:bg-[#2c2c2e]/40 pointer-events-none z-0"
+ className="absolute top-1.5 bottom-1.5 rounded-full bg-white dark:bg-[#2a2a2c]/40 pointer-events-none z-0"
  style={{
  width: "calc((100% - 12px) / 4)",
  left: "6px",
@@ -1554,7 +1554,7 @@ export function CartDrawer() {
  <span className="font-sans font-bold text-xs text-gray-900 dark:text-gray-100 tracking-tight">
  Mis Tarjetas
  </span>
- <span className="text-[10px] font-mono font-semibold px-2 py-0.5 rounded-full bg-white dark:bg-[#2c2c2e] text-gray-600 dark:text-gray-400 border border-gray-200 dark:border-white/10 shadow-2xs">
+ <span className="text-[10px] font-mono font-semibold px-2 py-0.5 rounded-full bg-white dark:bg-[#2a2a2c] text-gray-600 dark:text-gray-400 border border-gray-200 dark:border-white/10 shadow-2xs">
  {availableCards.length} disponibles
  </span>
  </div>
@@ -1566,7 +1566,7 @@ export function CartDrawer() {
  setIsOpen(false);
  router.push("/profile?tab=cards");
  }}
- className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white dark:bg-[#2c2c2e] hover:bg-gray-50 dark:hover:bg-[#151515] text-gray-800 dark:text-gray-200 text-[11px] font-semibold transition-all border border-gray-200 dark:border-white/10 shadow-2xs hover:shadow-xs hover:border-gray-300 cursor-pointer"
+ className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white dark:bg-[#2a2a2c] hover:bg-gray-50 dark:hover:bg-[#151515] text-gray-800 dark:text-gray-200 text-[11px] font-semibold transition-all border border-gray-200 dark:border-white/10 shadow-2xs hover:shadow-xs hover:border-gray-300 cursor-pointer"
  >
  <Plus className="w-3 h-3 text-gray-700 dark:text-gray-300" />
  <span>Nueva tarjeta</span>
@@ -1784,7 +1784,7 @@ export function CartDrawer() {
  </div>
 
  {/* 3. ACTIVE CARD INFORMATION PANEL ("Y ABAJO SALDRÁ PUES LA INFORMACIÓN DE LA TARJETA") */}
- <div className="p-4 rounded-2xl bg-white dark:bg-[#2c2c2e] border border-gray-200 dark:border-white/10/80 shadow-xs space-y-3 font-sans">
+ <div className="p-4 rounded-2xl bg-white dark:bg-[#2a2a2c] border border-gray-200 dark:border-white/10/80 shadow-xs space-y-3 font-sans">
  <div className="flex items-center justify-between pb-2 border-b border-gray-100 dark:border-white/5">
  <div className="flex items-center gap-2">
  <div className="w-2 h-2 rounded-full bg-emerald-500" />
@@ -1848,7 +1848,7 @@ export function CartDrawer() {
 
  {/* VIEW 3: GOOGLE PAY HIGH-TICKET EXPERIENCE */}
  {selectedMethod === "google" && (
- <div className="p-6 sm:p-8 rounded-3xl bg-white dark:bg-[#2c2c2e] border border-gray-200 dark:border-white/10 shadow-sm dark:shadow-none flex flex-col items-center justify-center text-center space-y-4">
+ <div className="p-6 sm:p-8 rounded-3xl bg-white dark:bg-[#2a2a2c] border border-gray-200 dark:border-white/10 shadow-sm dark:shadow-none flex flex-col items-center justify-center text-center space-y-4">
  <div className="w-16 h-16 rounded-2xl bg-gray-50 dark:bg-[#151515] border border-gray-200 dark:border-white/10 flex items-center justify-center shadow-inner">
  <GooglePayLogo className="h-7" />
  </div>
@@ -1868,7 +1868,7 @@ export function CartDrawer() {
  {/* VIEW 4: PAYPAL HIGH-TICKET EXPERIENCE */}
  {selectedMethod === "paypal" && (
  <div className="p-6 sm:p-8 rounded-3xl bg-[#f8faff] border border-blue-100 shadow-sm dark:shadow-none flex flex-col items-center justify-center text-center space-y-4">
- <div className="w-16 h-16 rounded-2xl bg-white dark:bg-[#2c2c2e] border border-blue-100 flex items-center justify-center shadow-sm dark:shadow-none">
+ <div className="w-16 h-16 rounded-2xl bg-white dark:bg-[#2a2a2c] border border-blue-100 flex items-center justify-center shadow-sm dark:shadow-none">
  <PayPalLogo className="h-7" />
  </div>
  <div>
@@ -1889,7 +1889,7 @@ export function CartDrawer() {
  </div>
 
  {/* Right 5 cols: Order Final Summary & Confirm */}
- <div className="lg:col-span-5 bg-white dark:bg-[#2c2c2e] p-6 sm:p-7 rounded-[2rem] border border-gray-200 dark:border-white/10/70 shadow-lg dark:shadow-none space-y-5">
+ <div className="lg:col-span-5 bg-white dark:bg-[#2a2a2c] p-6 sm:p-7 rounded-[2rem] border border-gray-200 dark:border-white/10/70 shadow-lg dark:shadow-none space-y-5">
  <h4 className="font-sans font-bold text-base text-gray-900 dark:text-gray-100 border-b border-gray-100 dark:border-white/5 pb-3 tracking-tight uppercase">
  Resumen del Pedido
  </h4>
@@ -1942,7 +1942,7 @@ export function CartDrawer() {
  <div className="absolute inset-x-4 top-0 h-[1.5px] bg-gradient-to-r from-transparent via-white/90 to-transparent opacity-95 pointer-events-none" />
  
  {/* Caustic glass reflection glint */}
- <div className="absolute top-1.5 left-5 w-8 h-1 bg-white dark:bg-[#2c2c2e]/80 rounded-full blur-[0.4px] pointer-events-none" />
+ <div className="absolute top-1.5 left-5 w-8 h-1 bg-white dark:bg-[#2a2a2c]/80 rounded-full blur-[0.4px] pointer-events-none" />
  <div className="absolute inset-0 bg-gradient-to-b from-white/20 via-transparent to-black/10 pointer-events-none" />
 
  {isProcessing ? (
@@ -1988,7 +1988,7 @@ export function CartDrawer() {
  </div>
 
  {/* Receipt Card */}
- <div className="w-full p-6 sm:p-8 rounded-3xl bg-white dark:bg-[#2c2c2e] border border-gray-100 dark:border-white/5 shadow-md dark:shadow-none text-left space-y-4">
+ <div className="w-full p-6 sm:p-8 rounded-3xl bg-white dark:bg-[#2a2a2c] border border-gray-100 dark:border-white/5 shadow-md dark:shadow-none text-left space-y-4">
  <div className="flex items-center justify-between pb-3 border-b border-gray-100 dark:border-white/5 text-xs sm:text-sm">
  <span className="text-gray-400 dark:text-gray-400 font-medium">Identificador</span>
  <span className="font-mono font-bold text-gray-900 dark:text-gray-100 ">{lastPlacedOrder.id}</span>
@@ -2028,7 +2028,7 @@ export function CartDrawer() {
  setIsOpen(false);
  setStep("bag");
  }}
- className="w-full py-3.5 bg-gray-100 dark:bg-[#1c1c1e]/5 hover:bg-gray-200 dark:hover:bg-[#1c1c1e]/10 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-white/10/80 rounded-2xl text-xs sm:text-sm font-semibold transition-all shadow-sm dark:shadow-none"
+ className="w-full py-3.5 bg-gray-100 dark:bg-[#202022]/5 hover:bg-gray-200 dark:hover:bg-[#1c1c1e]/10 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-white/10/80 rounded-2xl text-xs sm:text-sm font-semibold transition-all shadow-sm dark:shadow-none"
  >
  Seguir Explorando Colecciones
  </button>
