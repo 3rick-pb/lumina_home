@@ -22,7 +22,7 @@ import {
 } from "lucide-react";
 import type { User, ShippingAddress, Order } from "@/lib/userStore";
 import type { CatalogProduct } from "@/lib/catalogStore";
-import { useRadarStore, type ConnectedClient } from "@/lib/radarStore";
+import { useRadarStore, cleanClientName, type ConnectedClient } from "@/lib/radarStore";
 
 export type { ConnectedClient } from "@/lib/radarStore";
 
@@ -615,7 +615,7 @@ export default function AnalyticsRadarView(_props: AnalyticsRadarViewProps) {
                             </div>
                             <div className="truncate">
                               <p className="text-xs font-semibold text-white group-hover:text-[#ccff00] transition-colors truncate">
-                                {client.name || "Cliente"}
+                                {cleanClientName(client.name)}
                               </p>
                               <p className="text-[10px] text-white/50 truncate">
                                 {client.city || "Ecuador"} • <span className="font-mono text-white/80">${client.totalSpent || 0}</span>
@@ -749,7 +749,7 @@ export default function AnalyticsRadarView(_props: AnalyticsRadarViewProps) {
                       </div>
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-1.5">
-                          <h4 className="font-bold text-sm text-white leading-tight truncate">{displayedDossierClient.name || "Cliente"}</h4>
+                          <h4 className="font-bold text-sm text-white leading-tight truncate">{cleanClientName(displayedDossierClient.name)}</h4>
                           {displayedDossierClient.isRealUser && (
                             <span className="text-[8px] font-mono px-1.5 py-0.5 rounded bg-emerald-400/20 text-emerald-400 border border-emerald-400/30 font-bold shrink-0">
                               Tú
@@ -984,7 +984,7 @@ export default function AnalyticsRadarView(_props: AnalyticsRadarViewProps) {
                           </div>
                           <div className="truncate">
                             <div className="flex items-center gap-1.5">
-                              <p className="leading-tight truncate font-semibold">{c.name || "Cliente"}</p>
+                              <p className="leading-tight truncate font-semibold">{cleanClientName(c.name)}</p>
                               {c.isRealUser && (
                                 <span className="text-[7.5px] font-mono px-1.5 py-0.2 rounded bg-emerald-400/20 text-emerald-400 border border-emerald-400/30 font-bold shrink-0">
                                   Tú

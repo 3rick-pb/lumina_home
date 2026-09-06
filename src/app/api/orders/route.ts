@@ -38,93 +38,10 @@ export interface ApiOrder {
   }>;
 }
 
-// Initial mock orders to ensure immediate continuity with the user's dashboard
-const initialStoreOrders: ApiOrder[] = [
-  {
-    id: "INV_852138",
-    userId: "client-erick-demo",
-    customerName: "Erick Pérez",
-    customerEmail: "erick.perez@ejemplo.com",
-    recipient: "Erick Pérez",
-    shippingAddress: {
-      street: "Av. San Isidro y San Cristóbal",
-      city: "Quito - Uyumbicho",
-      state: "Pichincha",
-      postalCode: "170505",
-      country: "Ecuador",
-    },
-    paymentMethod: "VISA •••• 4120",
-    date: "4 de septiembre de 2026",
-    time: "11:42",
-    createdAt: "2026-09-04T11:42:00.000Z",
-    status: "Procesando",
-    trackingNumber: "LM-8521382",
-    total: 154.50,
-    items: [
-      {
-        product: {
-          id: "prod-1",
-          title: "Lámpara Nórdica Terra",
-          price: 89.50,
-          imageUrl: "https://images.unsplash.com/photo-1507473885765-e6ed057f782c?q=80&w=800&auto=format&fit=crop",
-          category: "Iluminación"
-        },
-        quantity: 1,
-        color: "Terracota"
-      },
-      {
-        product: {
-          id: "prod-2",
-          title: "Jarrón Cerámica Aura",
-          price: 65.00,
-          imageUrl: "https://images.unsplash.com/photo-1612196808214-b8e1d6145a8c?q=80&w=800&auto=format&fit=crop",
-          category: "Decoración"
-        },
-        quantity: 1,
-        color: "Blanco Marfil"
-      }
-    ]
-  },
-  {
-    id: "INV_741920",
-    userId: "client-valeria-demo",
-    customerName: "Valeria Gómez",
-    customerEmail: "valeria.gomez@gmail.com",
-    recipient: "Valeria Gómez",
-    shippingAddress: {
-      street: "Calle de Alcalá 45, 3ºB",
-      city: "Madrid",
-      state: "Madrid",
-      postalCode: "28014",
-      country: "España",
-    },
-    paymentMethod: "MASTERCARD •••• 0019",
-    date: "3 de septiembre de 2026",
-    time: "16:15",
-    createdAt: "2026-09-03T16:15:00.000Z",
-    status: "Enviado",
-    trackingNumber: "LM-7419205",
-    total: 210.00,
-    items: [
-      {
-        product: {
-          id: "prod-3",
-          title: "Sillón Lounge Minimal",
-          price: 210.00,
-          imageUrl: "https://images.unsplash.com/photo-1586023492125-27b2c045efd7?q=80&w=800&auto=format&fit=crop",
-          category: "Mobiliario"
-        },
-        quantity: 1,
-        color: "Gris Carbón"
-      }
-    ]
-  }
-];
-
 // In-memory persistent order repository for the Node process
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const globalOrdersRef: { orders: ApiOrder[] } = (globalThis as any).__lumina_orders_cache || {
-  orders: [...initialStoreOrders]
+  orders: []
 };
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 (globalThis as any).__lumina_orders_cache = globalOrdersRef;

@@ -82,6 +82,11 @@ interface UserState {
   updateUserPassword: (password: string) => Promise<{ error: string | null }>;
 }
 
+export const formatCleanName = (rawName: string) => {
+  if (!rawName) return '';
+  return rawName.replace(/([a-zA-Z0-9áéíóúÁÉÍÓÚñÑ])ADMIN\b/g, '$1 ADMIN').trim();
+};
+
 const fetchUserDataFromDatabase = async (userId: string, role: 'USER' | 'ADMIN' = 'USER', email: string = '') => {
   try {
     const isAdmin = role === 'ADMIN' || email.toLowerCase() === 'admin@lumina.com';
@@ -235,7 +240,7 @@ export const useUserStore = create<UserState>((set, get) => ({
       if (session?.user) {
         const email = session.user.email || '';
         const role = (email.toLowerCase() === 'admin@lumina.com' || session.user.user_metadata?.role === 'ADMIN') ? 'ADMIN' : 'USER';
-        const name = session.user.user_metadata?.name || email.split('@')[0];
+        const name = formatCleanName(session.user.user_metadata?.name || email.split('@')[0]);
         
         // Fetch all user private data directly from Supabase database and API
         const personalData = await fetchUserDataFromDatabase(session.user.id, role, email);
@@ -269,7 +274,7 @@ export const useUserStore = create<UserState>((set, get) => ({
       if (session?.user) {
         const email = session.user.email || '';
         const role = (email.toLowerCase() === 'admin@lumina.com' || session.user.user_metadata?.role === 'ADMIN') ? 'ADMIN' : 'USER';
-        const name = session.user.user_metadata?.name || email.split('@')[0];
+        const name = formatCleanName(session.user.user_metadata?.name || email.split('@')[0]);
         const personalData = await fetchUserDataFromDatabase(session.user.id, role, email);
 
         set({ 
@@ -301,7 +306,7 @@ export const useUserStore = create<UserState>((set, get) => ({
     if (!error && data?.user) {
       const userEmail = data.user.email || cleanEmail;
       const role = (userEmail.toLowerCase() === 'admin@lumina.com' || data.user.user_metadata?.role === 'ADMIN') ? 'ADMIN' : 'USER';
-      const name = data.user.user_metadata?.name || userEmail.split('@')[0];
+      const name = formatCleanName(data.user.user_metadata?.name || userEmail.split('@')[0]);
       const personalData = await fetchUserDataFromDatabase(data.user.id, role, userEmail);
 
       set({ 

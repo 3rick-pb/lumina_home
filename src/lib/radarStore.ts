@@ -21,6 +21,12 @@ export interface ConnectedClient {
   isRealUser?: boolean;
 }
 
+export const cleanClientName = (rawName?: string) => {
+  if (!rawName) return "Cliente Lumina";
+  const formatted = rawName.trim().replace(/([a-zA-Z0-9áéíóúÁÉÍÓÚñÑ])ADMIN\b/g, '$1 ADMIN').trim();
+  return formatted;
+};
+
 interface RadarStore {
   clients: ConnectedClient[];
   channel: RealtimeChannel | null;
@@ -69,7 +75,7 @@ export const useRadarStore = create<RadarStore>((set, get) => ({
               const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
               await activeChannel?.track({
                 id: user.id,
-                name: user.name || user.email?.split('@')[0] || 'Cliente Lumina',
+                name: cleanClientName(user.name || user.email?.split('@')[0] || 'Cliente Lumina'),
                 email: user.email || '',
                 city: city || 'Quito',
                 country: 'Ecuador',
@@ -96,7 +102,7 @@ export const useRadarStore = create<RadarStore>((set, get) => ({
       const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
       activeChannel.track({
         id: user.id,
-        name: user.name || user.email?.split('@')[0] || 'Cliente Lumina',
+        name: cleanClientName(user.name || user.email?.split('@')[0] || 'Cliente Lumina'),
         email: user.email || '',
         city: city || 'Quito',
         country: 'Ecuador',
