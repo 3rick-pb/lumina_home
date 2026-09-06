@@ -191,6 +191,7 @@ export default function ProfilePage() {
   // Settings State
   const [editName, setEditName] = useState("");
   const [newPass, setNewPass] = useState("");
+  const [adminEmails, setAdminEmails] = useState("");
   const [settingsFeedback, setSettingsFeedback] = useState<{ msg: string; type: "success" | "error" } | null>(null);
   const [isUpdatingSettings, setIsUpdatingSettings] = useState(false);
 
@@ -213,6 +214,15 @@ export default function ProfilePage() {
       setEditName(user.name);
     }
   }, [user]);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const savedAdmins = localStorage.getItem("lumina_admin_invites");
+      if (savedAdmins) {
+        setAdminEmails(savedAdmins);
+      }
+    }
+  }, []);
 
   // Real-time synchronization heartbeat and window focus listener
   useEffect(() => {
@@ -675,6 +685,27 @@ export default function ProfilePage() {
         if (error) throw new Error(error);
         setNewPass("");
       }
+
+      if (adminEmails) {
+        const emails = adminEmails.split(',').map(e => e.trim()).filter(e => e);
+        if (emails.length > 3) {
+          throw new Error("Solo puedes invitar hasta 3 administradores extra.");
+        }
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        for (const email of emails) {
+          if (!emailRegex.test(email)) {
+            throw new Error(`El correo '${email}' no es un correo electrónico válido.`);
+          }
+        }
+        if (typeof window !== "undefined") {
+          localStorage.setItem("lumina_admin_invites", emails.join(", "));
+        }
+      } else {
+        if (typeof window !== "undefined") {
+          localStorage.removeItem("lumina_admin_invites");
+        }
+      }
+
       setSettingsFeedback({ msg: "Configuración guardada correctamente.", type: "success" });
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : "Error al actualizar perfil.";
@@ -2175,6 +2206,27 @@ export default function ProfilePage() {
                     />
                   </div>
                 </div>
+
+                {isAdmin && (
+                  <div className="pt-2">
+                    <label className="block text-xs font-semibold text-gray-700 mb-1">
+                      Invitación de Administradores (Máx. 3, separados por coma)
+                    </label>
+                    <div className="relative">
+                      <UserIcon className="w-4 h-4 absolute left-3.5 top-3 text-gray-400" />
+                      <input 
+                        type="text" 
+                        value={adminEmails}
+                        onChange={e => setAdminEmails(e.target.value)}
+                        placeholder="admin1@ejemplo.com, admin2@ejemplo.com"
+                        className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-200 text-xs focus:outline-none focus:ring-1 focus:ring-gray-900"
+                      />
+                    </div>
+                    <p className="text-[10px] text-gray-500 mt-1">
+                      Estos correos tendrán acceso completo al panel de control maestro como administradores adicionales.
+                    </p>
+                  </div>
+                )}
 
                 <div className="pt-4 flex justify-end">
                   <button 
