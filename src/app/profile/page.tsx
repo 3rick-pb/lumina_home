@@ -740,7 +740,7 @@ export default function ProfilePage() {
  <div className="theme-transition min-h-screen w-full max-w-full overflow-x-hidden bg-[#f3f4f6] dark:bg-[#1c1c1e] text-gray-900 dark:text-gray-100 flex p-3 md:p-6 lg:p-8 selection:bg-[#8c9276]/20">
  
  {/* 1. Left Vertical Icon Sidebar (Reference Style) */}
- <aside className="w-16 md:w-20 bg-white/90 dark:bg-[#1c1c1e]/90 backdrop-blur-2xl rounded-3xl border border-white/80 shadow-[0_8px_32px_rgba(0,0,0,0.03)] flex flex-col items-center py-6 justify-between shrink-0 mr-4 md:mr-6">
+ <aside className="w-16 md:w-20 bg-white/90 dark:bg-[#1c1c1e]/90 backdrop-blur-2xl rounded-3xl border border-white/80 shadow-[0_8px_32px_rgba(0,0,0,0.03)] flex flex-col items-center py-6 gap-6 justify-between shrink-0 mr-4 md:mr-6">
  
  {/* Brand Logo Symbol */}
  <div className="flex flex-col items-center gap-6">
@@ -752,7 +752,7 @@ export default function ProfilePage() {
  <nav className="flex flex-col items-center gap-3">
  <button 
  onClick={() => setActiveTab("overview")} 
- className={`w-11 h-11 rounded-2xl flex items-center justify-center transition-all ${activeTab === "overview" ? "bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 shadow-md dark:shadow-none shadow-gray-900/15" : "text-gray-400 hover:text-gray-900 dark:text-gray-100 hover:bg-gray-100 dark:bg-[#3a3a3c]"}`}
+ className={`w-11 h-11 rounded-2xl flex items-center justify-center transition-all ${activeTab === "overview" ? "bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 shadow-md dark:shadow-none shadow-gray-900/15" : "text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-[#3a3a3c]"}`}
  title="Vista General"
  >
  <LayoutDashboard className="w-5 h-5" />
@@ -760,7 +760,7 @@ export default function ProfilePage() {
 
  <button 
  onClick={() => setActiveTab("orders")} 
- className={`w-11 h-11 rounded-2xl flex items-center justify-center transition-all ${activeTab === "orders" ? "bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 shadow-md dark:shadow-none shadow-gray-900/15" : "text-gray-400 hover:text-gray-900 dark:text-gray-100 hover:bg-gray-100 dark:bg-[#3a3a3c]"}`}
+ className={`w-11 h-11 rounded-2xl flex items-center justify-center transition-all ${activeTab === "orders" ? "bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 shadow-md dark:shadow-none shadow-gray-900/15" : "text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-[#3a3a3c]"}`}
  title="Pedidos & Historial"
  >
  <ShoppingBag className="w-5 h-5" />
@@ -768,7 +768,7 @@ export default function ProfilePage() {
 
  <button 
  onClick={() => setActiveTab("cards")} 
- className={`w-11 h-11 rounded-2xl flex items-center justify-center transition-all ${activeTab === "cards" ? "bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 shadow-md dark:shadow-none shadow-gray-900/15" : "text-gray-400 hover:text-gray-900 dark:text-gray-100 hover:bg-gray-100 dark:bg-[#3a3a3c]"}`}
+ className={`w-11 h-11 rounded-2xl flex items-center justify-center transition-all ${activeTab === "cards" ? "bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 shadow-md dark:shadow-none shadow-gray-900/15" : "text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-[#3a3a3c]"}`}
  title="Mis Tarjetas"
  >
  <CreditCard className="w-5 h-5" />
@@ -776,7 +776,7 @@ export default function ProfilePage() {
 
  <button 
  onClick={() => setActiveTab("favorites")} 
- className={`w-11 h-11 rounded-2xl flex items-center justify-center transition-all ${activeTab === "favorites" ? "bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 shadow-md dark:shadow-none shadow-gray-900/15" : "text-gray-400 hover:text-gray-900 dark:text-gray-100 hover:bg-gray-100 dark:bg-[#3a3a3c]"}`}
+ className={`w-11 h-11 rounded-2xl flex items-center justify-center transition-all ${activeTab === "favorites" ? "bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 shadow-md dark:shadow-none shadow-gray-900/15" : "text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-[#3a3a3c]"}`}
  title="Favoritos Guardados"
  >
  <Heart className="w-5 h-5" />
@@ -786,7 +786,7 @@ export default function ProfilePage() {
  <>
  <button 
  onClick={() => setActiveTab("catalog")} 
- className={`w-11 h-11 rounded-2xl flex items-center justify-center transition-all ${activeTab === "catalog" ? "bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 shadow-md dark:shadow-none shadow-gray-900/15" : "text-gray-400 hover:text-gray-900 dark:text-gray-100 hover:bg-gray-100 dark:bg-[#3a3a3c]"}`}
+ className={`w-11 h-11 rounded-2xl flex items-center justify-center transition-all ${activeTab === "catalog" ? "bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 shadow-md dark:shadow-none shadow-gray-900/15" : "text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-[#3a3a3c]"}`}
  title="Control de Catálogo"
  >
  <Package className="w-5 h-5" />
@@ -794,7 +794,7 @@ export default function ProfilePage() {
 
  <button 
  onClick={() => setActiveTab("niches")} 
- className={`w-11 h-11 rounded-2xl flex items-center justify-center transition-all ${activeTab === "niches" ? "bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 shadow-md dark:shadow-none shadow-gray-900/15" : "text-gray-400 hover:text-gray-900 dark:text-gray-100 hover:bg-gray-100 dark:bg-[#3a3a3c]"}`}
+ className={`w-11 h-11 rounded-2xl flex items-center justify-center transition-all ${activeTab === "niches" ? "bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 shadow-md dark:shadow-none shadow-gray-900/15" : "text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-[#3a3a3c]"}`}
  title="Gestión de Nichos"
  >
  <Layers className="w-5 h-5" />
@@ -802,7 +802,7 @@ export default function ProfilePage() {
 
  <button 
  onClick={() => setActiveTab("analytics")} 
- className={`w-11 h-11 rounded-2xl flex items-center justify-center transition-all ${activeTab === "analytics" ? "bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 shadow-md dark:shadow-none shadow-gray-900/15" : "text-gray-400 hover:text-gray-900 dark:text-gray-100 hover:bg-gray-100 dark:bg-[#3a3a3c]"}`}
+ className={`w-11 h-11 rounded-2xl flex items-center justify-center transition-all ${activeTab === "analytics" ? "bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 shadow-md dark:shadow-none shadow-gray-900/15" : "text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-[#3a3a3c]"}`}
  title="Radar de Clientes & Analítica"
  >
  <Globe className="w-5 h-5" />
@@ -812,7 +812,7 @@ export default function ProfilePage() {
 
  <button 
  onClick={() => setActiveTab("settings")} 
- className={`w-11 h-11 rounded-2xl flex items-center justify-center transition-all ${activeTab === "settings" ? "bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 shadow-md dark:shadow-none shadow-gray-900/15" : "text-gray-400 hover:text-gray-900 dark:text-gray-100 hover:bg-gray-100 dark:bg-[#3a3a3c]"}`}
+ className={`w-11 h-11 rounded-2xl flex items-center justify-center transition-all ${activeTab === "settings" ? "bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 shadow-md dark:shadow-none shadow-gray-900/15" : "text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-[#3a3a3c]"}`}
  title="Ajustes de Cuenta"
  >
  <Settings className="w-5 h-5" />
@@ -822,7 +822,7 @@ export default function ProfilePage() {
 
  {/* Bottom Actions */}
  <div className="flex flex-col items-center gap-3">
- <Link href="/" className="w-10 h-10 rounded-2xl flex items-center justify-center text-gray-400 hover:text-gray-900 dark:text-gray-100 hover:bg-gray-100 dark:bg-[#3a3a3c] transition-colors" title="Volver a la Tienda">
+ <Link href="/" className="w-10 h-10 rounded-2xl flex items-center justify-center text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-[#3a3a3c] transition-colors" title="Volver a la Tienda">
  <Store className="w-5 h-5" />
  </Link>
  <button 
@@ -850,25 +850,25 @@ export default function ProfilePage() {
  <div className="flex items-center bg-gray-100/80 dark:bg-[#3a3a3c]/80 p-1 rounded-2xl shrink-0">
  <button 
  onClick={() => setActiveTab("overview")} 
- className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all ${activeTab === "overview" ? "bg-white dark:bg-[#1c1c1e] text-gray-900 dark:text-gray-100 shadow-sm dark:shadow-none" : "text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:text-gray-100"}`}
+ className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all ${activeTab === "overview" ? "bg-white dark:bg-[#1c1c1e] text-gray-900 dark:text-gray-100 shadow-sm dark:shadow-none" : "text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100"}`}
  >
  Resumen
  </button>
  <button 
  onClick={() => setActiveTab("orders")} 
- className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all ${activeTab === "orders" ? "bg-white dark:bg-[#1c1c1e] text-gray-900 dark:text-gray-100 shadow-sm dark:shadow-none" : "text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:text-gray-100"}`}
+ className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all ${activeTab === "orders" ? "bg-white dark:bg-[#1c1c1e] text-gray-900 dark:text-gray-100 shadow-sm dark:shadow-none" : "text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100"}`}
  >
  Actividad ({orders.length})
  </button>
  <button 
  onClick={() => setActiveTab("cards")} 
- className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all ${activeTab === "cards" ? "bg-white dark:bg-[#1c1c1e] text-gray-900 dark:text-gray-100 shadow-sm dark:shadow-none" : "text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:text-gray-100"}`}
+ className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all ${activeTab === "cards" ? "bg-white dark:bg-[#1c1c1e] text-gray-900 dark:text-gray-100 shadow-sm dark:shadow-none" : "text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100"}`}
  >
  Tarjetas ({cards.length})
  </button>
  <button 
  onClick={() => setActiveTab("favorites")} 
- className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all ${activeTab === "favorites" ? "bg-white dark:bg-[#1c1c1e] text-gray-900 dark:text-gray-100 shadow-sm dark:shadow-none" : "text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:text-gray-100"}`}
+ className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all ${activeTab === "favorites" ? "bg-white dark:bg-[#1c1c1e] text-gray-900 dark:text-gray-100 shadow-sm dark:shadow-none" : "text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100"}`}
  >
  Favoritos ({favorites.length})
  </button>
@@ -876,19 +876,19 @@ export default function ProfilePage() {
  <>
  <button 
  onClick={() => setActiveTab("catalog")} 
- className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all ${activeTab === "catalog" ? "bg-white dark:bg-[#1c1c1e] text-gray-900 dark:text-gray-100 shadow-sm dark:shadow-none" : "text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:text-gray-100"}`}
+ className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all ${activeTab === "catalog" ? "bg-white dark:bg-[#1c1c1e] text-gray-900 dark:text-gray-100 shadow-sm dark:shadow-none" : "text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100"}`}
  >
  Inventario ({products.length})
  </button>
  <button 
  onClick={() => setActiveTab("niches")} 
- className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all ${activeTab === "niches" ? "bg-white dark:bg-[#1c1c1e] text-gray-900 dark:text-gray-100 shadow-sm dark:shadow-none" : "text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:text-gray-100"}`}
+ className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all ${activeTab === "niches" ? "bg-white dark:bg-[#1c1c1e] text-gray-900 dark:text-gray-100 shadow-sm dark:shadow-none" : "text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100"}`}
  >
  Nichos & Badges ({categories.length})
  </button>
  <button 
  onClick={() => setActiveTab("analytics")} 
- className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all ${activeTab === "analytics" ? "bg-white dark:bg-[#1c1c1e] text-gray-900 dark:text-gray-100 shadow-sm dark:shadow-none" : "text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:text-gray-100"}`}
+ className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all ${activeTab === "analytics" ? "bg-white dark:bg-[#1c1c1e] text-gray-900 dark:text-gray-100 shadow-sm dark:shadow-none" : "text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100"}`}
  >
  Radar en Vivo
  </button>
@@ -896,7 +896,7 @@ export default function ProfilePage() {
  )}
  <button 
  onClick={() => setActiveTab("settings")} 
- className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all ${activeTab === "settings" ? "bg-white dark:bg-[#1c1c1e] text-gray-900 dark:text-gray-100 shadow-sm dark:shadow-none" : "text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:text-gray-100"}`}
+ className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all ${activeTab === "settings" ? "bg-white dark:bg-[#1c1c1e] text-gray-900 dark:text-gray-100 shadow-sm dark:shadow-none" : "text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100"}`}
  >
  Ajustes
  </button>
@@ -916,7 +916,7 @@ export default function ProfilePage() {
  className="bg-transparent border-none outline-none text-xs w-28 md:w-44 text-gray-800 dark:text-gray-200 placeholder:text-gray-400 font-medium"
  />
  {searchQuery && (
- <button onClick={() => setSearchQuery("")} className="text-gray-400 hover:text-gray-600 dark:text-gray-400 ml-1">
+ <button onClick={() => setSearchQuery("")} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-400 ml-1">
  <X className="w-3 h-3" />
  </button>
  )}
@@ -927,7 +927,7 @@ export default function ProfilePage() {
  <div className="absolute right-0 top-full mt-2 w-80 sm:w-96 bg-white/95 dark:bg-[#1c1c1e]/95 backdrop-blur-2xl border border-gray-200/80 dark:border-white/10/80 rounded-3xl shadow-[0_24px_70px_rgba(0,0,0,0.22)] p-4 z-[100] space-y-3 animate-fade-in text-xs pointer-events-auto">
  <div className="flex items-center justify-between pb-1 border-b border-gray-100 dark:border-white/5 text-[10px] text-gray-400 uppercase font-bold">
  <span>Resultados de búsqueda</span>
- <button onClick={() => setSearchQuery("")} className="hover:text-gray-700 dark:text-gray-300 font-medium text-xs normal-case">Cerrar</button>
+ <button onClick={() => setSearchQuery("")} className="hover:text-gray-700 dark:hover:text-gray-300 font-medium text-xs normal-case">Cerrar</button>
  </div>
  
  {/* Matching Orders */}
@@ -938,7 +938,7 @@ export default function ProfilePage() {
  <div 
  key={ord.id} 
  onClick={() => { setActiveTab("orders"); setSelectedOrder(ord); setSearchQuery(""); }}
- className="p-1.5 rounded-lg hover:bg-gray-100 dark:bg-[#3a3a3c] cursor-pointer flex items-center justify-between transition-colors"
+ className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-[#3a3a3c] cursor-pointer flex items-center justify-between transition-colors"
  >
  <span className="font-mono font-bold text-gray-800 dark:text-gray-200">{ord.id}</span>
  <span className="text-[10px] px-1.5 py-0.5 rounded bg-gray-100 dark:bg-[#3a3a3c] text-gray-600 dark:text-gray-400 font-semibold">{ord.status}</span>
@@ -955,7 +955,7 @@ export default function ProfilePage() {
  <div 
  key={prod.id} 
  onClick={() => { setActiveTab(isAdmin ? "catalog" : "favorites"); setSearchQuery(""); }}
- className="p-1.5 rounded-lg hover:bg-gray-100 dark:bg-[#3a3a3c] cursor-pointer flex items-center justify-between transition-colors"
+ className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-[#3a3a3c] cursor-pointer flex items-center justify-between transition-colors"
  >
  <span className="font-medium text-gray-800 dark:text-gray-200 truncate max-w-[150px]">{prod.title}</span>
  <span className="font-bold text-gray-900 dark:text-gray-100">${prod.price.toFixed(2)}</span>
@@ -973,7 +973,7 @@ export default function ProfilePage() {
  )}
  </div>
 
- <Link href="/" className="hidden sm:flex text-xs font-medium text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:text-gray-100 px-3 py-1.5 rounded-xl hover:bg-gray-100 dark:bg-[#3a3a3c] transition-colors">
+ <Link href="/" className="hidden sm:flex text-xs font-medium text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 px-3 py-1.5 rounded-xl hover:bg-gray-100 dark:hover:bg-[#3a3a3c] transition-colors">
  Ver Tienda &rarr;
  </Link>
 
@@ -1054,7 +1054,7 @@ export default function ProfilePage() {
  </Link>
  <button 
  onClick={() => setActiveTab("orders")}
- className="py-3 px-4 bg-gray-100 dark:bg-[#3a3a3c] text-gray-700 dark:text-gray-300 rounded-2xl text-xs font-semibold hover:bg-gray-200 dark:bg-[#48484a] transition-colors"
+ className="py-3 px-4 bg-gray-100 dark:bg-[#3a3a3c] text-gray-700 dark:text-gray-300 rounded-2xl text-xs font-semibold hover:bg-gray-200 dark:hover:bg-[#48484a] transition-colors"
  >
  Historial
  </button>
@@ -1382,7 +1382,7 @@ export default function ProfilePage() {
  <span className="text-xs font-bold tracking-wider">{c.type.toUpperCase()}</span>
  <button 
  onClick={() => removeCard(c.id)} 
- className="text-white/60 dark:text-gray-900/60 hover:text-white dark:text-gray-900 transition-colors p-1"
+ className="text-white/60 dark:text-gray-900/60 hover:text-white dark:hover:text-gray-900 transition-colors p-1"
  title="Eliminar tarjeta"
  >
  <X className="w-3.5 h-3.5" />
@@ -1410,7 +1410,7 @@ export default function ProfilePage() {
  </p>
  <button 
  onClick={() => setActiveTab("cards")} 
- className="text-xs font-semibold text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:text-gray-100 hover:underline"
+ className="text-xs font-semibold text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100 hover:underline"
  >
  Gestionar billetera &rarr;
  </button>
@@ -1431,7 +1431,7 @@ export default function ProfilePage() {
  {orders.length > 0 && (
  <button 
  onClick={() => setActiveTab("orders")} 
- className="text-xs font-semibold text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:text-gray-100 hover:underline"
+ className="text-xs font-semibold text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100 hover:underline"
  >
  Ver todos ({orders.length}) &rarr;
  </button>
@@ -1475,7 +1475,7 @@ export default function ProfilePage() {
  </thead>
  <tbody className="divide-y divide-gray-100">
  {orders.slice(0, 4).map((ord) => (
- <tr key={ord.id} className="hover:bg-gray-50/50 dark:bg-[#2c2c2e]/50 transition-colors cursor-pointer" onClick={() => setSelectedOrder(ord)}>
+ <tr key={ord.id} className="hover:bg-gray-50/50 dark:hover:bg-[#2c2c2e]/50 transition-colors cursor-pointer" onClick={() => setSelectedOrder(ord)}>
  <td className="py-3.5 px-2 font-mono font-semibold text-gray-900 dark:text-gray-100">{ord.id}</td>
  {isAdmin && (
  <td className="py-3.5 px-2">
@@ -1501,7 +1501,7 @@ export default function ProfilePage() {
  ? "bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100" 
  : ord.status === "Enviado" 
  ? "bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100" 
- : "bg-a dark:bg-[#1c1c1e]mber-50 text-amber-700 border-amber-200 hover:bg-a dark:bg-[#1c1c1e]mber-100"
+ : "bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100"
  }`}
  >
  <option value="Procesando">Procesando</option>
@@ -1520,10 +1520,10 @@ export default function ProfilePage() {
  ? "bg-emerald-50 text-emerald-700 border border-emerald-100" 
  : ord.status === "Enviado" 
  ? "bg-blue-50 text-blue-700 border border-blue-100" 
- : "bg-a dark:bg-[#1c1c1e]mber-50 text-amber-700 border border-amber-100"
+ : "bg-amber-50 text-amber-700 border border-amber-100"
  }`}>
  <span className={`w-1.5 h-1.5 rounded-full ${
- ord.status === "Entregado" ? "bg-emerald-500" : ord.status === "Enviado" ? "bg-blue-500" : "bg-a dark:bg-[#1c1c1e]mber-500"
+ ord.status === "Entregado" ? "bg-emerald-500" : ord.status === "Enviado" ? "bg-blue-500" : "bg-amber-500"
  }`} />
  {ord.status}
  </span>
@@ -1536,7 +1536,7 @@ export default function ProfilePage() {
  <td className="py-3.5 px-2 text-right">
  <button 
  onClick={(e) => { e.stopPropagation(); setSelectedOrder(ord); }} 
- className="p-1.5 rounded-lg text-gray-400 hover:text-gray-900 dark:text-gray-100 hover:bg-gray-100 dark:bg-[#3a3a3c] transition-colors"
+ className="p-1.5 rounded-lg text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-[#3a3a3c] transition-colors"
  title="Ver detalles"
  >
  <Eye className="w-4 h-4" />
@@ -1557,7 +1557,7 @@ export default function ProfilePage() {
 
  {/* ADMIN ONLY: Empty Categories Warning */}
  {isAdmin && emptyCategories.length > 0 && (
- <div className="lg:col-span-12 bg-a dark:bg-[#1c1c1e]mber-50/90 backdrop-blur-md p-5 rounded-3xl border border-amber-200/80 shadow-sm dark:shadow-none flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+ <div className="lg:col-span-12 bg-amber-50/90 backdrop-blur-md p-5 rounded-3xl border border-amber-200/80 shadow-sm dark:shadow-none flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
  <div className="flex items-start gap-3.5">
  <div className="w-10 h-10 rounded-2xl bg-a dark:bg-[#1c1c1e]mber-100 flex items-center justify-center text-amber-800 shrink-0">
  <AlertTriangle className="w-5 h-5" />
@@ -1575,7 +1575,7 @@ export default function ProfilePage() {
  <button 
  key={c} 
  onClick={() => deleteCategory(c)}
- className="text-xs px-3 py-1.5 rounded-xl bg-a dark:bg-[#1c1c1e]mber-200/80 hover:bg-a dark:bg-[#1c1c1e]mber-300 text-amber-900 font-semibold transition-colors flex items-center gap-1"
+ className="text-xs px-3 py-1.5 rounded-xl bg-a dark:bg-[#1c1c1e]mber-200/80 hover:bg-a dark:hover:bg-[#1c1c1e]mber-300 text-amber-900 font-semibold transition-colors flex items-center gap-1"
  >
  <Trash2 className="w-3.5 h-3.5" /> Quitar {c}
  </button>
@@ -1605,7 +1605,7 @@ export default function ProfilePage() {
  key={st}
  onClick={() => setOrderStatusFilter(st)}
  className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all ${
- orderStatusFilter === st ? "bg-white dark:bg-[#1c1c1e] text-gray-900 dark:text-gray-100 shadow-sm dark:shadow-none" : "text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:text-gray-100"
+ orderStatusFilter === st ? "bg-white dark:bg-[#1c1c1e] text-gray-900 dark:text-gray-100 shadow-sm dark:shadow-none" : "text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100"
  }`}
  >
  {st === "all" ? "Todos" : st}
@@ -1649,7 +1649,7 @@ export default function ProfilePage() {
  </thead>
  <tbody className="divide-y divide-gray-100">
  {filteredOrders.map((ord) => (
- <tr key={ord.id} className="hover:bg-gray-50/70 dark:bg-[#2c2c2e]/70 transition-colors">
+ <tr key={ord.id} className="hover:bg-gray-50/70 dark:hover:bg-[#2c2c2e]/70 transition-colors">
  <td className="py-4 px-3 font-mono font-bold text-gray-900 dark:text-gray-100">{ord.id}</td>
  {isAdmin && (
  <td className="py-4 px-3">
@@ -1668,10 +1668,10 @@ export default function ProfilePage() {
  ? "bg-emerald-50 text-emerald-700 border border-emerald-100" 
  : ord.status === "Enviado" 
  ? "bg-blue-50 text-blue-700 border border-blue-100" 
- : "bg-a dark:bg-[#1c1c1e]mber-50 text-amber-700 border border-amber-100"
+ : "bg-amber-50 text-amber-700 border border-amber-100"
  }`}>
  <span className={`w-1.5 h-1.5 rounded-full ${
- ord.status === "Entregado" ? "bg-emerald-500" : ord.status === "Enviado" ? "bg-blue-500" : "bg-a dark:bg-[#1c1c1e]mber-500"
+ ord.status === "Entregado" ? "bg-emerald-500" : ord.status === "Enviado" ? "bg-blue-500" : "bg-amber-500"
  }`} />
  {ord.status}
  </span>
@@ -1792,7 +1792,7 @@ export default function ProfilePage() {
  {!c.isDefault ? (
  <button 
  onClick={() => setDefaultCard(c.id)} 
- className="text-white/80 dark:text-gray-900/80 hover:text-white dark:text-gray-900 underline underline-offset-2"
+ className="text-white/80 dark:text-gray-900/80 hover:text-white dark:hover:text-gray-900 underline underline-offset-2"
  >
  Hacer principal
  </button>
@@ -1801,7 +1801,7 @@ export default function ProfilePage() {
  )}
  <button 
  onClick={() => removeCard(c.id)} 
- className="text-red-200 hover:text-white dark:text-gray-900 flex items-center gap-1"
+ className="text-red-200 hover:text-white dark:hover:text-gray-900 flex items-center gap-1"
  >
  <Trash2 className="w-3.5 h-3.5" /> Eliminar
  </button>
@@ -1874,7 +1874,7 @@ export default function ProfilePage() {
  <div className="mt-4 pt-3 border-t border-gray-100 dark:border-white/5 flex gap-2">
  <Link 
  href={`/product/${prod.id}`}
- className="flex-1 py-2 text-center text-xs font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-[#3a3a3c] rounded-xl hover:bg-gray-200 dark:bg-[#48484a] transition-colors"
+ className="flex-1 py-2 text-center text-xs font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-[#3a3a3c] rounded-xl hover:bg-gray-200 dark:hover:bg-[#48484a] transition-colors"
  >
  Ver Ficha
  </Link>
@@ -1945,7 +1945,7 @@ export default function ProfilePage() {
  </thead>
  <tbody className="divide-y divide-gray-100">
  {filteredCatalog.map(p => (
- <tr key={p.id} className="hover:bg-gray-50/70 dark:bg-[#2c2c2e]/70 transition-colors">
+ <tr key={p.id} className="hover:bg-gray-50/70 dark:hover:bg-[#2c2c2e]/70 transition-colors">
  <td className="py-3 px-2 flex items-center gap-3">
  <div className="relative w-10 h-10 rounded-xl overflow-hidden bg-gray-100 dark:bg-[#3a3a3c] shrink-0">
  <Image src={p.imageUrl} alt={p.title} fill className="object-cover" />
@@ -1975,7 +1975,7 @@ export default function ProfilePage() {
  <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
  isAgotadoBadge(p.badge)
  ? "bg-red-50 text-red-600 border border-red-200"
- : "bg-a dark:bg-[#1c1c1e]mber-50 text-amber-800 border border-amber-200"
+ : "bg-amber-50 text-amber-800 border border-amber-200"
  }`}>
  {p.badge}
  </span>
@@ -1994,7 +1994,7 @@ export default function ProfilePage() {
  </button>
  <Link 
  href={`/product/${p.id}`}
- className="p-1.5 text-gray-400 hover:text-gray-900 dark:text-gray-100 hover:bg-gray-100 dark:bg-[#3a3a3c] rounded-lg transition-colors"
+ className="p-1.5 text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-[#3a3a3c] rounded-lg transition-colors"
  title="Ver en tienda"
  >
  <ExternalLink className="w-4 h-4" />
@@ -2062,7 +2062,7 @@ export default function ProfilePage() {
  <div 
  key={cat} 
  className={`p-5 rounded-2xl border transition-all flex items-center justify-between ${
- isEmpty ? "bg-a dark:bg-[#1c1c1e]mber-50/70 border-amber-200" : "bg-white dark:bg-[#1c1c1e] border-gray-100 dark:border-white/5 shadow-sm dark:shadow-none"
+ isEmpty ? "bg-amber-50/70 border-amber-200" : "bg-white dark:bg-[#1c1c1e] border-gray-100 dark:border-white/5 shadow-sm dark:shadow-none"
  }`}
  >
  <div>
@@ -2128,7 +2128,7 @@ export default function ProfilePage() {
  <span className={`px-2.5 py-1 rounded-full text-[11px] font-bold ${
  isAgotadoBadge(badge)
  ? "bg-red-50 text-red-600 border border-red-200"
- : "bg-a dark:bg-[#1c1c1e]mber-50 text-amber-900 border border-amber-200"
+ : "bg-amber-50 text-amber-900 border border-amber-200"
  }`}>
  {badge}
  </span>
@@ -2265,7 +2265,7 @@ export default function ProfilePage() {
  <button 
  type="submit" 
  disabled={isUpdatingSettings}
- className="px-8 py-3.5 bg-gray-900 dark:bg-[#1c1c1e] text-white dark:text-gray-100 rounded-2xl text-sm font-bold hover:bg-gray-800 dark:hover:bg-gray-100 dark:bg-[#3a3a3c] transition-all shadow-lg dark:shadow-none hover:shadow-xl dark:shadow-none hover:-translate-y-0.5 disabled:opacity-50 disabled:hover:translate-y-0 cursor-pointer"
+ className="px-8 py-3.5 bg-gray-900 dark:bg-[#1c1c1e] text-white dark:text-gray-100 rounded-2xl text-sm font-bold hover:bg-gray-800 dark:hover:bg-gray-100 dark:hover:bg-[#3a3a3c] transition-all shadow-lg dark:shadow-none hover:shadow-xl dark:shadow-none hover:-translate-y-0.5 disabled:opacity-50 disabled:hover:translate-y-0 cursor-pointer"
  >
  {isUpdatingSettings ? "Guardando..." : "Guardar Cambios"}
  </button>
@@ -2307,7 +2307,7 @@ export default function ProfilePage() {
  className={`p-4 rounded-2xl border transition-all flex flex-col justify-between ${
  addr.isDefault 
  ? "bg-white dark:bg-[#1c1c1e] border-emerald-500/60 shadow-sm dark:shadow-none ring-1 ring-emerald-500/20" 
- : "bg-gray-50/80 dark:bg-[#2c2c2e]/80 border-gray-100 dark:border-white/5 hover:border-gray-200 dark:border-white/10"
+ : "bg-gray-50/80 dark:bg-[#2c2c2e]/80 border-gray-100 dark:border-white/5 hover:border-gray-200 dark:hover:border-white/10"
  }`}
  >
  <div>
@@ -2325,10 +2325,10 @@ export default function ProfilePage() {
  ) : (
  <button 
  onClick={() => setDefaultAddress(addr.id)}
- className="inline-flex items-center gap-1 text-[9.5px] font-semibold px-2 py-0.5 rounded-full bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white dark:text-gray-900 border border-blue-200 hover:border-blue-600 transition-all cursor-pointer shadow-2xs shrink-0 group"
+ className="inline-flex items-center gap-1 text-[9.5px] font-semibold px-2 py-0.5 rounded-full bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white dark:hover:text-gray-900 border border-blue-200 hover:border-blue-600 transition-all cursor-pointer shadow-2xs shrink-0 group"
  title="Establecer como dirección predeterminada"
  >
- <Star className="w-2.5 h-2.5 text-blue-500 group-hover:text-white dark:text-gray-900 transition-colors" />
+ <Star className="w-2.5 h-2.5 text-blue-500 group-hover:text-white dark:hover:text-gray-900 transition-colors" />
  <span>Hacer predeterminada</span>
  </button>
  )}
@@ -2393,7 +2393,7 @@ export default function ProfilePage() {
  setLocationSuccess(false);
  setShowAddressForm(false);
  }} 
- className="text-xs text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:text-gray-200 cursor-pointer"
+ className="text-xs text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 cursor-pointer"
  >
  Cerrar
  </button>
@@ -2422,7 +2422,7 @@ export default function ProfilePage() {
  </button>
 
  {locationError && (
- <p className="text-[11px] text-amber-800 bg-a dark:bg-[#1c1c1e]mber-50 border border-amber-200 rounded-xl p-2.5 mt-2 leading-tight">
+ <p className="text-[11px] text-amber-800 bg-amber-50 border border-amber-200 rounded-xl p-2.5 mt-2 leading-tight">
  {locationError}
  </p>
  )}
@@ -2514,7 +2514,7 @@ export default function ProfilePage() {
  </div>
  </div>
  <div className="flex justify-end gap-2 pt-2">
- <button type="button" onClick={() => setShowAddressForm(false)} className="px-3 py-1.5 text-xs text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:bg-[#48484a] rounded-xl cursor-pointer">Cancelar</button>
+ <button type="button" onClick={() => setShowAddressForm(false)} className="px-3 py-1.5 text-xs text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-[#48484a] rounded-xl cursor-pointer">Cancelar</button>
  <button type="submit" className="px-4 py-1.5 text-xs font-semibold bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 rounded-xl hover:bg-gray-800 cursor-pointer">Guardar Dirección</button>
  </div>
  </form>
@@ -2538,7 +2538,7 @@ export default function ProfilePage() {
  <span className="text-[10px] font-bold uppercase tracking-wider text-[#8c9276]">Detalle de Envío</span>
  <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100 font-mono">{selectedOrder.id}</h3>
  </div>
- <button onClick={() => setSelectedOrder(null)} className="p-2 rounded-full hover:bg-gray-100 dark:bg-[#3a3a3c] text-gray-400 hover:text-gray-900 dark:text-gray-100 cursor-pointer">
+ <button onClick={() => setSelectedOrder(null)} className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-[#3a3a3c] text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 cursor-pointer">
  <X className="w-5 h-5" />
  </button>
  </div>
@@ -2639,7 +2639,7 @@ export default function ProfilePage() {
 
  {/* If Admin: live status changer */}
  {isAdmin && (
- <div className="mt-5 pt-4 border-t border-gray-100 dark:border-white/5 flex items-center justify-between bg-a dark:bg-[#1c1c1e]mber-50/70 p-3.5 rounded-2xl border border-amber-200/60">
+ <div className="mt-5 pt-4 border-t border-gray-100 dark:border-white/5 flex items-center justify-between bg-amber-50/70 p-3.5 rounded-2xl border border-amber-200/60">
  <div>
  <p className="text-xs font-bold text-amber-900">Actualizar Estado (Administrador)</p>
  <p className="text-[10px] text-amber-700">Cambia la etapa del pedido en tiempo real para el cliente</p>
@@ -2673,7 +2673,7 @@ export default function ProfilePage() {
  <h3 className="text-base font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
  <CreditCard className="w-5 h-5 text-[#8c9276]" /> Añadir Nueva Tarjeta
  </h3>
- <button onClick={() => setShowCardModal(false)} className="text-gray-400 hover:text-gray-900 dark:text-gray-100">
+ <button onClick={() => setShowCardModal(false)} className="text-gray-400 hover:text-gray-900 dark:hover:text-gray-100">
  <X className="w-5 h-5" />
  </button>
  </div>
@@ -2702,14 +2702,14 @@ export default function ProfilePage() {
  <button 
  type="button"
  onClick={() => setNewCardType("mastercard")}
- className={`p-2.5 rounded-xl border text-xs font-bold transition-all ${newCardType === "mastercard" ? "border-gray-900 bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900" : "border-gray-200 dark:border-white/10 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:bg-[#2c2c2e]"}`}
+ className={`p-2.5 rounded-xl border text-xs font-bold transition-all ${newCardType === "mastercard" ? "border-gray-900 bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900" : "border-gray-200 dark:border-white/10 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-[#2c2c2e]"}`}
  >
  Mastercard
  </button>
  <button 
  type="button"
  onClick={() => setNewCardType("visa")}
- className={`p-2.5 rounded-xl border text-xs font-bold transition-all ${newCardType === "visa" ? "border-gray-900 bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900" : "border-gray-200 dark:border-white/10 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:bg-[#2c2c2e]"}`}
+ className={`p-2.5 rounded-xl border text-xs font-bold transition-all ${newCardType === "visa" ? "border-gray-900 bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900" : "border-gray-200 dark:border-white/10 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-[#2c2c2e]"}`}
  >
  Visa
  </button>
@@ -2761,7 +2761,7 @@ export default function ProfilePage() {
  </div>
 
  <div className="pt-3 flex justify-end gap-2">
- <button type="button" onClick={() => setShowCardModal(false)} className="px-4 py-2 text-xs font-semibold text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:bg-[#3a3a3c] rounded-xl">Cancelar</button>
+ <button type="button" onClick={() => setShowCardModal(false)} className="px-4 py-2 text-xs font-semibold text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-[#3a3a3c] rounded-xl">Cancelar</button>
  <button type="submit" className="px-5 py-2 text-xs font-semibold bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 rounded-xl hover:bg-gray-800 shadow-md dark:shadow-none">Guardar Tarjeta</button>
  </div>
  </form>
@@ -2780,7 +2780,7 @@ export default function ProfilePage() {
  <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100">Publicar Nuevo Producto</h2>
  <p className="text-xs text-gray-500 dark:text-gray-400">Se adaptará automáticamente a la estética Lumina y se sincronizará en Supabase.</p>
  </div>
- <button onClick={() => setShowProductModal(false)} className="p-2 text-gray-400 hover:text-gray-900 dark:text-gray-100 bg-white dark:bg-[#1c1c1e] rounded-full shadow-sm dark:shadow-none">
+ <button onClick={() => setShowProductModal(false)} className="p-2 text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 bg-white dark:bg-[#1c1c1e] rounded-full shadow-sm dark:shadow-none">
  <X className="w-5 h-5" />
  </button>
  </div>
@@ -2916,7 +2916,7 @@ export default function ProfilePage() {
  />
  {/* Alerta si parece una página web */}
  {prodImageUrl.trim() && (prodImageUrl.includes('.html') || (!prodImageUrl.match(/\.(jpg|jpeg|png|webp|avif|gif|svg)(\?.*)?$/i) && !prodImageUrl.includes('unsplash') && !prodImageUrl.includes('mlstatic') && !prodImageUrl.includes('cloudinary') && !prodImageUrl.includes('imgur'))) && (
- <p className="text-[11px] text-amber-700 mt-1.5 flex items-center gap-1 font-medium bg-a dark:bg-[#1c1c1e]mber-50 p-2 rounded-lg border border-amber-200">
+ <p className="text-[11px] text-amber-700 mt-1.5 flex items-center gap-1 font-medium bg-amber-50 p-2 rounded-lg border border-amber-200">
  ⚠️ Atención: Parece que pegaste el enlace de una página web y no de la imagen directa. Asegúrate de hacer clic derecho sobre la foto &gt; &ldquo;Copiar dirección de imagen&rdquo;.
  </p>
  )}
@@ -3082,7 +3082,7 @@ export default function ProfilePage() {
  </div>
 
  <div className="pt-4 flex justify-end gap-3">
- <button type="button" onClick={() => setShowProductModal(false)} className="px-5 py-2.5 text-xs font-semibold text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:bg-[#3a3a3c] rounded-xl">Cancelar</button>
+ <button type="button" onClick={() => setShowProductModal(false)} className="px-5 py-2.5 text-xs font-semibold text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-[#3a3a3c] rounded-xl">Cancelar</button>
  <button type="submit" disabled={isSubmittingProd} className="px-6 py-2.5 text-xs font-semibold bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 rounded-xl shadow-md dark:shadow-none hover:bg-gray-800 disabled:opacity-50">
  {isSubmittingProd ? "Guardando..." : "Publicar en Tienda"}
  </button>
@@ -3110,7 +3110,7 @@ export default function ProfilePage() {
  </div>
  <button 
  onClick={() => setShowEditProductModal(false)} 
- className="p-2 text-gray-400 hover:text-gray-900 dark:text-gray-100 bg-white dark:bg-[#1c1c1e] rounded-full shadow-sm dark:shadow-none"
+ className="p-2 text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 bg-white dark:bg-[#1c1c1e] rounded-full shadow-sm dark:shadow-none"
  >
  <X className="w-5 h-5" />
  </button>
@@ -3283,7 +3283,7 @@ export default function ProfilePage() {
  placeholder="https://images.unsplash.com/photo-... o .jpg / .webp" 
  />
  {editImageUrl.trim() && (editImageUrl.includes('.html') || (!editImageUrl.match(/\.(jpg|jpeg|png|webp|avif|gif|svg)(\?.*)?$/i) && !editImageUrl.includes('unsplash') && !editImageUrl.includes('mlstatic') && !editImageUrl.includes('cloudinary') && !editImageUrl.includes('imgur'))) && (
- <p className="text-[11px] text-amber-700 mt-1.5 font-medium bg-a dark:bg-[#1c1c1e]mber-50 p-2 rounded-lg border border-amber-200">
+ <p className="text-[11px] text-amber-700 mt-1.5 font-medium bg-amber-50 p-2 rounded-lg border border-amber-200">
  ⚠️ Atención: Asegúrate de que este enlace apunte al archivo directo de la foto (clic derecho &gt; &ldquo;Copiar dirección de imagen&rdquo;).
  </p>
  )}
@@ -3468,7 +3468,7 @@ export default function ProfilePage() {
  <button 
  type="button" 
  onClick={() => setShowEditProductModal(false)} 
- className="px-5 py-2.5 text-xs font-semibold text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:bg-[#3a3a3c] rounded-xl"
+ className="px-5 py-2.5 text-xs font-semibold text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-[#3a3a3c] rounded-xl"
  >
  Cancelar
  </button>
