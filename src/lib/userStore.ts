@@ -371,31 +371,39 @@ export const useUserStore = create<UserState>((set, get) => ({
     const currentUser = get().user;
     if (currentUser?.id) {
       try {
+        const radarChannel = useRadarStore.getState().channel;
+        if (radarChannel) {
+          try {
+            await Promise.allSettled([
+              radarChannel.send({
+                type: 'broadcast',
+                event: 'offline',
+                payload: { id: currentUser.id },
+              }),
+              radarChannel.untrack(),
+            ]);
+          } catch {}
+        }
+
         if (typeof navigator !== 'undefined' && navigator.sendBeacon) {
           navigator.sendBeacon(
             '/api/radar/activity',
             new Blob([JSON.stringify({ id: currentUser.id, isOnline: false })], { type: 'application/json' })
           );
         }
-        await fetch('/api/radar/activity', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ id: currentUser.id, isOnline: false }),
-          keepalive: true,
-        }).catch(() => {});
 
-        await supabase
-          .from('active_sessions')
-          .delete()
-          .eq('user_id', currentUser.id);
-
-        try {
-          useRadarStore.getState().channel?.send({
-            type: 'broadcast',
-            event: 'offline',
-            payload: { id: currentUser.id },
-          });
-        } catch {}
+        await Promise.allSettled([
+          fetch('/api/radar/activity', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id: currentUser.id, isOnline: false }),
+            keepalive: true,
+          }).catch(() => {}),
+          supabase
+            .from('active_sessions')
+            .delete()
+            .eq('user_id', currentUser.id),
+        ]);
       } catch {}
     }
 

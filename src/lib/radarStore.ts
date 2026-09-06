@@ -190,28 +190,32 @@ interface RadarStore {
 
 /**
  * Reconciles current in-memory live clients with newly fetched background data.
- * Protects fresh WebSocket updates from being overwritten by stale HTTP/DB polling data.
+ * Protects fresh WebSocket updates from being overwritten while immediately purging disconnected clients.
  */
-function reconcileClients(currentList: ConnectedClient[], fetchedList: ConnectedClient[]): ConnectedClient[] {
+function reconcileClients(currentList: ConnectedClient[], fetchedList: ConnectedClient[], presenceChannel?: RealtimeChannel | null): ConnectedClient[] {
   const now = Date.now();
   const map = new Map<string, ConnectedClient>();
 
-  // 1. Keep all existing live clients that have been active within the last 35 seconds
-  for (const c of currentList) {
-    if (
-      c && 
-      c.id && 
-      !c.id.startsWith('vis_') && 
-      !c.id.startsWith('guest_') && 
-      !c.name?.toLowerCase().includes('visitante')
-    ) {
-      if (now - (c.lastSeen || now) < 35000) {
-        map.set(c.id, c);
+  // Fetch active connected presence keys from WebSocket channel
+  const activePresenceUserIds = new Set<string>();
+  if (presenceChannel) {
+    try {
+      const presenceState = presenceChannel.presenceState();
+      if (presenceState) {
+        Object.values(presenceState).forEach((presences) => {
+          if (Array.isArray(presences)) {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            presences.forEach((p: any) => {
+              if (p?.id) activePresenceUserIds.add(p.id);
+              if (p?.user_id) activePresenceUserIds.add(p.user_id);
+            });
+          }
+        });
       }
-    }
+    } catch {}
   }
 
-  // 2. Safely merge newly fetched data without clobbering recent WebSocket telemetry
+  // 1. Safely merge newly fetched data from active_sessions
   for (const incoming of fetchedList) {
     if (
       incoming && 
@@ -220,7 +224,7 @@ function reconcileClients(currentList: ConnectedClient[], fetchedList: Connected
       !incoming.id.startsWith('guest_') && 
       !incoming.name?.toLowerCase().includes('visitante')
     ) {
-      const existing = map.get(incoming.id);
+      const existing = currentList.find(c => c.id === incoming.id);
       const cleanCity = (incoming.city && incoming.city.trim()) ? incoming.city : (existing?.city || '');
       const coords = resolveCoordinates(cleanCity);
       const parsedX = incoming.x !== null && incoming.x !== undefined ? Number(incoming.x) : NaN;
@@ -228,36 +232,42 @@ function reconcileClients(currentList: ConnectedClient[], fetchedList: Connected
       const finalX = !isNaN(parsedX) && parsedX >= 0 ? parsedX : (coords.x >= 0 ? coords.x : (existing?.x ?? -100));
       const finalY = !isNaN(parsedY) && parsedY >= 0 ? parsedY : (coords.y >= 0 ? coords.y : (existing?.y ?? -100));
 
-      if (!existing) {
-        map.set(incoming.id, {
-          ...incoming,
-          name: cleanClientName(incoming.name),
-          city: cleanCity,
-          x: finalX,
-          y: finalY,
-          lastSeen: incoming.lastSeen || now,
-          lastUpdated: incoming.lastUpdated || now,
-        });
-      } else {
-        // Protect recent live WebSocket broadcast telemetry from being overwritten by older DB records
-        const isRecentLiveBroadcast = existing.lastUpdated && (now - existing.lastUpdated < 6000);
-        const sectionToUse = isRecentLiveBroadcast 
-          ? existing.currentSection 
-          : (incoming.currentSection || existing.currentSection || 'Explorando Tienda');
+      const isRecentLiveBroadcast = existing?.lastUpdated && (now - existing.lastUpdated < 6000);
+      const sectionToUse = isRecentLiveBroadcast 
+        ? existing.currentSection 
+        : (incoming.currentSection || existing?.currentSection || 'Explorando Tienda');
 
-        map.set(incoming.id, {
-          ...existing,
-          ...incoming,
-          city: cleanCity,
-          x: finalX,
-          y: finalY,
-          name: cleanClientName(incoming.name || existing.name),
-          currentSection: sectionToUse,
-          hasCart: isRecentLiveBroadcast ? existing.hasCart : (incoming.hasCart !== undefined ? incoming.hasCart : existing.hasCart),
-          cartItemsCount: isRecentLiveBroadcast ? existing.cartItemsCount : (incoming.cartItemsCount !== undefined ? incoming.cartItemsCount : existing.cartItemsCount),
-          lastSeen: Math.max(existing.lastSeen || 0, incoming.lastSeen || 0, now),
-          lastUpdated: existing.lastUpdated || now,
-        });
+      map.set(incoming.id, {
+        ...(existing || {}),
+        ...incoming,
+        city: cleanCity,
+        x: finalX,
+        y: finalY,
+        name: cleanClientName(incoming.name || existing?.name),
+        currentSection: sectionToUse,
+        hasCart: Boolean(isRecentLiveBroadcast ? existing?.hasCart : (incoming.hasCart !== undefined ? incoming.hasCart : existing?.hasCart)),
+        cartItemsCount: Number(isRecentLiveBroadcast ? existing?.cartItemsCount : (incoming.cartItemsCount !== undefined ? incoming.cartItemsCount : existing?.cartItemsCount)) || 0,
+        lastSeen: Math.max(existing?.lastSeen || 0, incoming.lastSeen || 0, now),
+        lastUpdated: existing?.lastUpdated || now,
+      });
+    }
+  }
+
+  // 2. Retain un-fetched clients ONLY if they are active in presence OR have very recent WebSocket activity (<8s)
+  for (const existing of currentList) {
+    if (
+      existing && 
+      existing.id && 
+      !map.has(existing.id) &&
+      !existing.id.startsWith('vis_') && 
+      !existing.id.startsWith('guest_') && 
+      !existing.name?.toLowerCase().includes('visitante')
+    ) {
+      const isConnectedInPresence = activePresenceUserIds.has(existing.id);
+      const isVeryFresh = existing.lastUpdated && (now - existing.lastUpdated < 8000);
+
+      if (isConnectedInPresence || isVeryFresh) {
+        map.set(existing.id, existing);
       }
     }
   }
@@ -381,8 +391,9 @@ export const useRadarStore = create<RadarStore>((set, get) => ({
       if (res.ok) {
         const json = await res.json();
         if (json.success && Array.isArray(json.clients)) {
+          const activeChannel = get().channel;
           set((state) => ({
-            clients: reconcileClients(state.clients, json.clients),
+            clients: reconcileClients(state.clients, json.clients, activeChannel),
           }));
         }
       }
@@ -644,14 +655,25 @@ export const useRadarStore = create<RadarStore>((set, get) => ({
           }
         });
 
-      const handlePresenceUpdate = () => {
-        get().fetchActiveClients();
-      };
-
       activeChannel
-        .on('presence', { event: 'sync' }, handlePresenceUpdate)
-        .on('presence', { event: 'join' }, handlePresenceUpdate)
-        .on('presence', { event: 'leave' }, handlePresenceUpdate)
+        .on('presence', { event: 'sync' }, () => {
+          get().fetchActiveClients();
+        })
+        .on('presence', { event: 'join' }, () => {
+          get().fetchActiveClients();
+        })
+        .on('presence', { event: 'leave' }, ({ leftPresences }) => {
+          if (Array.isArray(leftPresences)) {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const leftIds = new Set(leftPresences.map((p: any) => p.id || p.user_id).filter(Boolean));
+            if (leftIds.size > 0) {
+              set((state) => ({
+                clients: state.clients.filter((c) => !leftIds.has(c.id)),
+              }));
+            }
+          }
+          get().fetchActiveClients();
+        })
         .subscribe();
 
       set({ channel: activeChannel });

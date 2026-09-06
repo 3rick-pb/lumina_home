@@ -29,7 +29,7 @@ interface CachedClient {
 // In-memory global store to guarantee instant synchronization across clients
 const globalClients = new Map<string, CachedClient>();
 
-const CLIENT_TIMEOUT_MS = 45 * 1000; // 45s timeout protects against browser background-tab throttling while maintaining quick cleanup
+const CLIENT_TIMEOUT_MS = 12 * 1000; // 12s timeout for immediate cleanup when clients close browser
 
 function pruneStaleClients() {
   const now = Date.now();
@@ -105,10 +105,11 @@ export async function GET() {
         }
       }
 
-      // Clean up memory clients whose session truly expired or went offline
+      // Clean up memory clients whose session truly expired or was deleted from active_sessions
       const now = Date.now();
       globalClients.forEach((client, id) => {
-        if (!client.isOnline || (now - client.lastSeen > CLIENT_TIMEOUT_MS)) {
+        const isFreshMemoryOnly = now - client.lastSeen < 4000;
+        if (!client.isOnline || (now - client.lastSeen > CLIENT_TIMEOUT_MS) || (!activeDbUserIds.has(id) && !isFreshMemoryOnly)) {
           globalClients.delete(id);
         }
       });
