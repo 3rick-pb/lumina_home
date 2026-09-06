@@ -776,7 +776,7 @@ export default function ProfilePage() {
  <div className="theme-transition min-h-screen w-full max-w-full overflow-x-hidden bg-[#f3f4f6] dark:bg-[#202022] text-gray-900 dark:text-gray-100 flex p-3 md:p-6 lg:p-8 selection:bg-[#8c9276]/20">
  
  {/* 1. Left Vertical Icon Sidebar (Reference Style) */}
- <aside className="w-16 md:w-20 bg-white/90 dark:bg-[#202022]/90 backdrop-blur-2xl rounded-3xl border border-white/80 shadow-[0_8px_32px_rgba(0,0,0,0.03)] flex flex-col items-center py-6 gap-6 justify-between shrink-0 mr-4 md:mr-6">
+ <aside className="w-16 md:w-20 bg-white/90 dark:bg-[#202022]/90 backdrop-blur-2xl rounded-3xl border border-white/80 shadow-[0_8px_32px_rgba(0,0,0,0.03)] flex flex-col items-center py-6 gap-6 justify-between shrink-0 mr-4 md:mr-6 self-stretch">
  
  {/* Brand Logo Symbol */}
  <div className="flex flex-col items-center gap-6">
@@ -2193,7 +2193,6 @@ export default function ProfilePage() {
  {/* ========================================================================= */}
  {activeTab === "analytics" && isAdmin && (
  <RadarErrorBoundary>
- <div className="w-full pb-6">
  <AnalyticsRadarView 
  user={user}
  addresses={addresses}
@@ -2205,7 +2204,6 @@ export default function ProfilePage() {
  setShowAddressForm(true);
  }}
  />
- </div>
  </RadarErrorBoundary>
  )}
 

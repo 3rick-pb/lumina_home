@@ -1014,88 +1014,130 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
                 <div className="space-y-4 w-full">
                 
                 {/* Metric 1: Online Volume & Stage Filter */}
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold text-white/90">Tráfico Activo</span>
-                    <span className="text-[10px] font-mono text-[#ccff00] font-bold">
-                      {actualClients.length} Clientes Radar
-                    </span>
-                  </div>
-                  
-                  {/* Stage filter pills: Todos | En Carrito | Recurrentes */}
-                  <div className="grid grid-cols-3 gap-1 p-1 rounded-full bg-black/50 border border-white/10 text-[10px] text-center font-bold">
-                    <button 
-                      onClick={() => setActiveStage("all")}
-                      className={`py-1 rounded-full transition-all cursor-pointer ${
-                        activeStage === "all" ? "bg-white text-gray-950 shadow-sm" : "text-white/60 hover:text-white"
-                      }`}
-                    >
-                      Todos
-                    </button>
-                    <button 
-                      onClick={() => setActiveStage("cart")}
-                      className={`py-1 rounded-full transition-all cursor-pointer ${
-                        activeStage === "cart" ? "bg-white text-gray-950 shadow-sm" : "text-white/60 hover:text-white"
-                      }`}
-                    >
-                      En Carrito
-                    </button>
-                    <button 
-                      onClick={() => setActiveStage("frequent")}
-                      className={`py-1 rounded-full transition-all cursor-pointer ${
-                        activeStage === "frequent" ? "bg-[#ccff00] text-gray-950 shadow-[0_0_10px_#ccff00]" : "text-white/60 hover:text-white"
-                      }`}
-                    >
-                      Recurrentes
-                    </button>
-                  </div>
-                </div>
-
-                {/* Metric 2: Tendencia de Compra — Spline Curve con Gradiente Neón */}
-                <div className="rounded-2xl bg-black/45 border border-white/10 p-3.5 space-y-2">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <span className="text-[11px] font-bold text-white block">Tendencia de Compra</span>
-                      <span className="text-[9.5px] text-[#ccff00] font-mono font-semibold flex items-center gap-1">
-                        <TrendingUp className="w-2.5 h-2.5" /> +28.4% al alza
-                      </span>
+                {(() => {
+                  const cartCount = actualClients.filter(c => c.hasCart).length;
+                  const frequentCount = actualClients.filter(c => (c.purchasesCount || 0) >= 3).length;
+                  return (
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-bold text-white/90">Tráfico Activo</span>
+                        <span className="text-[10px] font-mono text-[#ccff00] font-bold">
+                          {actualClients.length} {actualClients.length === 1 ? 'Cliente' : 'Clientes'} Radar
+                        </span>
+                      </div>
+                      
+                      {/* Stage filter pills: Todos | En Carrito | Recurrentes */}
+                      <div className="grid grid-cols-3 gap-1 p-1 rounded-full bg-black/50 border border-white/10 text-[10px] text-center font-bold">
+                        <button 
+                          onClick={() => setActiveStage("all")}
+                          className={`py-1 rounded-full transition-all cursor-pointer ${
+                            activeStage === "all" ? "bg-white text-gray-950 shadow-sm" : "text-white/60 hover:text-white"
+                          }`}
+                        >
+                          Todos ({actualClients.length})
+                        </button>
+                        <button 
+                          onClick={() => { setActiveStage("cart"); setActiveTab("clients"); }}
+                          className={`py-1 rounded-full transition-all cursor-pointer ${
+                            activeStage === "cart" ? "bg-white text-gray-950 shadow-sm" : "text-white/60 hover:text-white"
+                          }`}
+                        >
+                          En Carrito ({cartCount})
+                        </button>
+                        <button 
+                          onClick={() => { setActiveStage("frequent"); setActiveTab("clients"); }}
+                          className={`py-1 rounded-full transition-all cursor-pointer ${
+                            activeStage === "frequent" ? "bg-[#ccff00] text-gray-950 shadow-[0_0_10px_#ccff00]" : "text-white/60 hover:text-white"
+                          }`}
+                        >
+                          Recurrentes ({frequentCount})
+                        </button>
+                      </div>
                     </div>
-                    <ArrowUpRight className="w-3.5 h-3.5 text-white/50" />
-                  </div>
+                  );
+                })()}
 
-                  {/* Clean SVG Spline Trend Curve */}
-                  <div className="relative h-14 w-full">
-                    <svg viewBox="0 0 200 60" className="w-full h-full overflow-visible">
-                      <defs>
-                        <linearGradient id="miniTrendGrad" x1="0%" y1="0%" x2="0%" y2="100%">
-                          <stop offset="0%" stopColor="#ccff00" stopOpacity="0.35" />
-                          <stop offset="100%" stopColor="#ccff00" stopOpacity="0" />
-                        </linearGradient>
-                      </defs>
-                      <path 
-                        d="M 5 45 C 35 48, 55 35, 85 38 C 115 42, 135 18, 165 20 C 180 22, 190 14, 195 10 L 195 55 L 5 55 Z" 
-                        fill="url(#miniTrendGrad)" 
-                      />
-                      <path 
-                        d="M 5 45 C 35 48, 55 35, 85 38 C 115 42, 135 18, 165 20 C 180 22, 190 14, 195 10" 
-                        fill="none" 
-                        stroke="#ccff00" 
-                        strokeWidth="2" 
-                        strokeLinecap="round" 
-                      />
-                      <circle cx="165" cy="20" r="3" fill="#ffffff" stroke="#ccff00" strokeWidth="2" />
-                    </svg>
-                  </div>
+                {/* Metric 2: Tendencia de Compra — 100% Dinámica en Tiempo Real */}
+                {(() => {
+                  const clientOrders = actualClients.reduce((sum, c) => sum + (c.purchasesCount || 0), 0);
+                  const totalSpent = actualClients.reduce((sum, c) => sum + (c.totalSpent || 0), 0);
+                  const frequentClients = actualClients.filter(c => (c.purchasesCount || 0) >= 2);
+                  const hasActivity = clientOrders > 0;
+                  const trendPct = (actualClients.length > 0 && hasActivity)
+                    ? ((frequentClients.length / actualClients.length) * 100).toFixed(1)
+                    : "0.0";
+                  const trendText = hasActivity ? `+${trendPct}% al alza` : "0.0% estable";
 
-                  <div className="flex items-center justify-between text-[9.5px] font-mono text-white/60 pt-1 border-t border-white/10">
-                    <span>Recompra: <strong>1 cada 14d</strong></span>
-                    <span className="text-[#ccff00] font-bold">
-                      {actualClients.length > 0 && actualClients.reduce((sum, c) => sum + (c.totalSpent || 0), 0) > 0
-                        ? `$${actualClients.reduce((sum, c) => sum + (c.totalSpent || 0), 0).toFixed(0)}/vol`
-                        : "$0/mes"}
-                    </span>
-                  </div>
-                </div>
+                  // Dynamic spline path: flat at baseline (y=50) when no purchases, or dynamic curve when purchases exist
+                  const points = hasActivity
+                    ? [
+                        { x: 5, y: Math.max(15, 50 - Math.min(30, totalSpent * 0.02)) },
+                        { x: 50, y: Math.max(15, 45 - Math.min(28, (frequentClients.length / (actualClients.length || 1)) * 30)) },
+                        { x: 100, y: Math.max(15, 40 - Math.min(25, clientOrders * 3)) },
+                        { x: 150, y: Math.max(12, 30 - Math.min(20, clientOrders * 4)) },
+                        { x: 195, y: Math.max(10, 18 - Math.min(12, totalSpent * 0.01)) },
+                      ]
+                    : [
+                        { x: 5, y: 50 },
+                        { x: 50, y: 50 },
+                        { x: 100, y: 50 },
+                        { x: 150, y: 50 },
+                        { x: 195, y: 50 },
+                      ];
+
+                  const pathD = hasActivity
+                    ? `M ${points[0].x} ${points[0].y} C 35 ${points[0].y}, 35 ${points[1].y}, ${points[1].x} ${points[1].y} C 75 ${points[1].y}, 80 ${points[2].y}, ${points[2].x} ${points[2].y} C 125 ${points[2].y}, 130 ${points[3].y}, ${points[3].x} ${points[3].y} C 165 ${points[3].y}, 175 ${points[4].y}, ${points[4].x} ${points[4].y}`
+                    : `M 5 50 L 195 50`;
+
+                  const areaD = `${pathD} L 195 55 L 5 55 Z`;
+                  const lastPoint = points[points.length - 1];
+
+                  const recompraText = frequentClients.length > 0 
+                    ? `1 cada ${Math.max(7, Math.round(30 / frequentClients.length))}d` 
+                    : "0 recompras";
+
+                  return (
+                    <div className="rounded-2xl bg-black/45 border border-white/10 p-3.5 space-y-2">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <span className="text-[11px] font-bold text-white block">Tendencia de Compra</span>
+                          <span className={`text-[9.5px] font-mono font-semibold flex items-center gap-1 ${hasActivity ? 'text-[#ccff00]' : 'text-white/50'}`}>
+                            <TrendingUp className="w-2.5 h-2.5" /> {trendText}
+                          </span>
+                        </div>
+                        <ArrowUpRight className="w-3.5 h-3.5 text-white/50" />
+                      </div>
+
+                      {/* Clean SVG Spline Trend Curve */}
+                      <div className="relative h-14 w-full">
+                        <svg viewBox="0 0 200 60" className="w-full h-full overflow-visible">
+                          <defs>
+                            <linearGradient id="miniTrendGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+                              <stop offset="0%" stopColor="#ccff00" stopOpacity={hasActivity ? 0.35 : 0.08} />
+                              <stop offset="100%" stopColor="#ccff00" stopOpacity="0" />
+                            </linearGradient>
+                          </defs>
+                          <path d={areaD} fill="url(#miniTrendGrad)" />
+                          <path 
+                            d={pathD} 
+                            fill="none" 
+                            stroke={hasActivity ? "#ccff00" : "rgba(255,255,255,0.25)"} 
+                            strokeWidth="2" 
+                            strokeLinecap="round" 
+                          />
+                          <circle cx={lastPoint.x} cy={lastPoint.y} r="3" fill="#ffffff" stroke={hasActivity ? "#ccff00" : "rgba(255,255,255,0.4)"} strokeWidth="2" />
+                        </svg>
+                      </div>
+
+                      <div className="flex items-center justify-between text-[9.5px] font-mono text-white/60 pt-1 border-t border-white/10">
+                        <span>Recompra: <strong>{recompraText}</strong></span>
+                        <span className={hasActivity ? "text-[#ccff00] font-bold" : "text-white/50 font-bold"}>
+                          ${totalSpent.toFixed(0)}/vol
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })()}
 
                 {/* Metric 3: Distribución Geográfica — Computed dynamically from actual clients */}
                 {(() => {
@@ -1236,12 +1278,19 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
         </div>
 
         {/* Panel Footer */}
-          <div className="pt-3 border-t border-white/10 flex items-center justify-between text-[10px] text-white/50">
-            <span className="flex items-center gap-1.5">
-              <Activity className="w-3 h-3 text-[#ccff00]" /> Radar Lumina Activo
-            </span>
-            <span className="font-mono text-emerald-400">99.8% Cobertura</span>
-          </div>
+        {(() => {
+          const activeProvincesCount = new Set(actualClients.map(c => c.city).filter(Boolean)).size;
+          return (
+            <div className="pt-3 border-t border-white/10 flex items-center justify-between text-[10px] text-white/50">
+              <span className="flex items-center gap-1.5">
+                <Activity className="w-3 h-3 text-[#ccff00]" /> Radar Lumina Activo
+              </span>
+              <span className="font-mono text-emerald-400 font-semibold">
+                {activeProvincesCount > 0 ? `${activeProvincesCount}/24 Provincias Activas` : '24 Provincias en Espera'}
+              </span>
+            </div>
+          );
+        })()}
 
         </div>
       </div>
@@ -1253,20 +1302,29 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
         className="absolute bottom-5 left-6 right-6 lg:right-96 z-30 grid grid-cols-1 sm:grid-cols-3 gap-3 pointer-events-auto">
         
         {/* Card 1: Cobertura Territorial (Actualizada con 24 Provincias) */}
-        <div className="rounded-2xl bg-black/60 backdrop-blur-xl border border-white/15 p-3.5 shadow-xl flex flex-col justify-between">
-          <div className="flex items-center justify-between text-[11px] font-bold text-white mb-1">
-            <span className="flex items-center gap-1.5">
-              <MapPin className="w-3 h-3 text-[#ccff00]" /> Alcance Territorial
-            </span>
-            <span className="text-[9px] font-mono text-white/50">24 Provincias</span>
-          </div>
-          <p className="text-[10px] text-white/70">
-            Sierra • Costa • Amazonía • Galápagos
-          </p>
-          <div className="flex items-center gap-1 text-[9.5px] font-mono text-[#ccff00] mt-1">
-            <span>Monitoreo en tiempo real • 24 Provincias</span>
-          </div>
-        </div>
+        {(() => {
+          const activeProvincesCount = new Set(actualClients.map(c => c.city).filter(Boolean)).size;
+          return (
+            <div className="rounded-2xl bg-black/60 backdrop-blur-xl border border-white/15 p-3.5 shadow-xl flex flex-col justify-between">
+              <div className="flex items-center justify-between text-[11px] font-bold text-white mb-1">
+                <span className="flex items-center gap-1.5">
+                  <MapPin className="w-3 h-3 text-[#ccff00]" /> Alcance Territorial
+                </span>
+                <span className="text-[9px] font-mono text-white/50">24 Provincias</span>
+              </div>
+              <p className="text-[10px] text-white/70">
+                Sierra • Costa • Amazonía • Galápagos
+              </p>
+              <div className="flex items-center gap-1 text-[9.5px] font-mono text-[#ccff00] mt-1">
+                <span>
+                  {activeProvincesCount > 0 
+                    ? `${activeProvincesCount} ${activeProvincesCount === 1 ? 'provincia activa' : 'provincias activas'} en vivo` 
+                    : 'Monitoreo en tiempo real • 24 Provincias'}
+                </span>
+              </div>
+            </div>
+          );
+        })()}
 
         {/* Card 2: Embudo de Conversión — Computed from real client data */}
         {(() => {

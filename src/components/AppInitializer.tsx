@@ -29,14 +29,25 @@ function ActivityTracker() {
     if (category) {
       currentSection = `Catálogo: ${category.charAt(0).toUpperCase() + category.slice(1)}`;
     } else if (search) {
-      currentSection = `Buscando: ${search.slice(0, 20)}`;
+      currentSection = `Buscando: "${search.slice(0, 18)}"`;
     } else {
       currentSection = "Catálogo General";
     }
   } else if (pathname.startsWith("/product/")) {
-    currentSection = "Viendo Producto";
+    const prodId = pathname.replace("/product/", "").split("/")[0].trim();
+    const product = useCatalogStore.getState().products.find(p => String(p.id) === prodId);
+    currentSection = product ? `Viendo: ${product.title.slice(0, 22)}` : "Viendo Producto";
   } else if (pathname === "/profile" || pathname === "/admin") {
-    currentSection = user?.role === 'ADMIN' ? "Mi Perfil / Mapa" : "Mi Perfil / Pedidos";
+    if (user?.role === 'ADMIN') {
+      currentSection = "Mi Perfil / Mapa";
+    } else {
+      const tab = searchParams.get("tab");
+      if (tab === "orders") currentSection = "Mi Perfil / Pedidos";
+      else if (tab === "cards") currentSection = "Mi Perfil / Tarjetas";
+      else if (tab === "favorites") currentSection = "Mi Perfil / Favoritos";
+      else if (tab === "settings") currentSection = "Mi Perfil / Ajustes";
+      else currentSection = "Mi Perfil / Resumen";
+    }
   } else if (pathname.startsWith("/auth/")) {
     // Stop tracking when navigating to login/register
     currentSection = "";
