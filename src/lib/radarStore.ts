@@ -3,7 +3,8 @@ import { supabase } from './supabase';
 import type { RealtimeChannel } from '@supabase/supabase-js';
 
 export interface ConnectedClient {
-  id: string;
+  id: string; // user_id
+  sessionId?: string;
   name: string;
   email: string;
   city: string;
@@ -22,7 +23,10 @@ export interface ConnectedClient {
   isOnline?: boolean;
   lastSeen?: number;
   lastUpdated?: number;
+  activeSessionsCount?: number;
 }
+
+export const RADAR_CLIENT_TTL_MS = 60 * 1000; // 60s Enterprise TTL
 
 const COMMON_FIRST_NAMES = [
   'alejandro', 'sebastian', 'valeria', 'fernando', 'gabriel', 'carlos', 
@@ -88,7 +92,7 @@ const CITY_COORDINATES: Record<string, { x: number; y: number }> = {
   "cañar": { x: 42.0, y: 63.5 },
   "guaranda": { x: 45.0, y: 47.0 },
   "bolivar": { x: 45.0, y: 47.0 },
-  // Costa (Calibrated to precise inland landmass coordinates, never in the ocean/water)
+  // Costa
   "guayaquil": { x: 35.5, y: 52.0 },
   "guayas": { x: 35.5, y: 52.0 },
   "manta": { x: 21.0, y: 39.5 },
@@ -164,7 +168,6 @@ export function calculateIntentScore(purchasesCount: number, totalSpent: number,
 interface RadarStore {
   clients: ConnectedClient[];
   channel: RealtimeChannel | null;
-  dbChannel: RealtimeChannel | null;
   pollIntervalId: ReturnType<typeof setInterval> | null;
   initRadar: (
     user: { id: string; name?: string; email?: string } | null,
@@ -173,7 +176,8 @@ interface RadarStore {
     purchasesCount?: number,
     currentSection?: string,
     hasCart?: boolean,
-    cartItemsCount?: number
+    cartItemsCount?: number,
+    sessionId?: string
   ) => void;
   trackActivity: (
     user: { id: string; name?: string; email?: string } | null,
@@ -183,7 +187,9 @@ interface RadarStore {
     currentSection?: string,
     hasCart?: boolean,
     cartItemsCount?: number,
-    isOnline?: boolean
+    isOnline?: boolean,
+    sessionId?: string,
+    allSessions?: boolean
   ) => Promise<void>;
   fetchActiveClients: () => Promise<void>;
   cleanup: () => void;
@@ -191,13 +197,13 @@ interface RadarStore {
 
 /**
  * Reconciles current in-memory live clients with newly fetched background data.
- * Adheres strictly to the 30-second window: anchors disappear only on explicit logout, DB is_online = false, or inactivity > 30s.
+ * Adheres strictly to the 60-second TTL: anchors disappear only on explicit logout, DB is_online = false, or inactivity > 60s.
  */
 function reconcileClients(currentList: ConnectedClient[], fetchedList: ConnectedClient[]): ConnectedClient[] {
   const now = Date.now();
   const map = new Map<string, ConnectedClient>();
 
-  // 1. Index fetched clients from active_sessions DB
+  // 1. Index fetched clients from backend
   for (const incoming of fetchedList) {
     if (
       incoming && 
@@ -215,7 +221,8 @@ function reconcileClients(currentList: ConnectedClient[], fetchedList: Connected
       const finalX = !isNaN(parsedX) && parsedX >= 0 ? parsedX : (coords.x >= 0 ? coords.x : (existing?.x ?? -100));
       const finalY = !isNaN(parsedY) && parsedY >= 0 ? parsedY : (coords.y >= 0 ? coords.y : (existing?.y ?? -100));
 
-      const isRecentLiveBroadcast = existing?.lastUpdated && (now - existing.lastUpdated < 8000);
+      // Protect recent live broadcast updates (< 15s) from being clobbered by slightly delayed server responses
+      const isRecentLiveBroadcast = existing?.lastUpdated && (now - existing.lastUpdated < 15000);
       const sectionToUse = isRecentLiveBroadcast 
         ? existing.currentSection 
         : (incoming.currentSection || existing?.currentSection || 'Explorando Tienda');
@@ -237,7 +244,7 @@ function reconcileClients(currentList: ConnectedClient[], fetchedList: Connected
     }
   }
 
-  // 2. Protect only very fresh WebSocket live updates (<3s) that might still be in flight to DB
+  // 2. Retain existing active clients that haven't expired within the 60s TTL
   for (const existing of currentList) {
     if (
       existing && 
@@ -248,8 +255,8 @@ function reconcileClients(currentList: ConnectedClient[], fetchedList: Connected
       !existing.name?.toLowerCase().includes('visitante') &&
       existing.isOnline !== false
     ) {
-      const isVeryFresh = existing.lastUpdated && (now - existing.lastUpdated < 3000);
-      if (isVeryFresh) {
+      const timeSinceLastSeen = now - (existing.lastSeen || existing.lastUpdated || 0);
+      if (timeSinceLastSeen < RADAR_CLIENT_TTL_MS) {
         map.set(existing.id, existing);
       }
     }
@@ -261,7 +268,7 @@ function reconcileClients(currentList: ConnectedClient[], fetchedList: Connected
 }
 
 /**
- * Merge two client lists without duplicates, preferring the most up-to-date entry
+ * Merge two client lists without duplicates, preserving newer live timestamps and valid coordinates
  */
 function mergeClientLists(listA: ConnectedClient[], listB: ConnectedClient[]): ConnectedClient[] {
   const now = Date.now();
@@ -276,7 +283,7 @@ function mergeClientLists(listA: ConnectedClient[], listB: ConnectedClient[]): C
       !c.name?.toLowerCase().includes('visitante') &&
       c.isOnline !== false
     ) {
-      if (now - (c.lastSeen || c.lastUpdated || now) < 30000) {
+      if (now - (c.lastSeen || c.lastUpdated || now) < RADAR_CLIENT_TTL_MS) {
         map.set(c.id, c);
       }
     }
@@ -309,7 +316,6 @@ function mergeClientLists(listA: ConnectedClient[], listB: ConnectedClient[]): C
           isOnline: true,
         });
       } else {
-        // Merge with newer info while protecting valid location coordinates
         const finalCity = (c.city && c.city.trim()) ? c.city : (existing.city || '');
         const coords = resolveCoordinates(finalCity);
         const parsedX = c.x !== null && c.x !== undefined ? Number(c.x) : NaN;
@@ -347,6 +353,7 @@ function mergeClientLists(listA: ConnectedClient[], listB: ConnectedClient[]): C
       }
     }
   }
+
   const merged: ConnectedClient[] = [];
   map.forEach((client) => merged.push(client));
   return merged;
@@ -355,21 +362,17 @@ function mergeClientLists(listA: ConnectedClient[], listB: ConnectedClient[]): C
 export const useRadarStore = create<RadarStore>((set, get) => ({
   clients: [],
   channel: null,
-  dbChannel: null,
   pollIntervalId: null,
 
   cleanup: () => {
-    const { channel, dbChannel, pollIntervalId } = get();
+    const { channel, pollIntervalId } = get();
     if (channel) {
       supabase.removeChannel(channel);
-    }
-    if (dbChannel) {
-      supabase.removeChannel(dbChannel);
     }
     if (pollIntervalId) {
       clearInterval(pollIntervalId);
     }
-    set({ channel: null, dbChannel: null, pollIntervalId: null });
+    set({ channel: null, pollIntervalId: null });
   },
 
   fetchActiveClients: async () => {
@@ -388,14 +391,28 @@ export const useRadarStore = create<RadarStore>((set, get) => ({
     }
   },
 
-  trackActivity: async (user, city = '', totalSpent = 0, purchasesCount = 0, currentSection = 'Explorando Tienda', hasCart = false, cartItemsCount = 0, isOnline = true) => {
+  trackActivity: async (
+    user, 
+    city = '', 
+    totalSpent = 0, 
+    purchasesCount = 0, 
+    currentSection = 'Explorando Tienda', 
+    hasCart = false, 
+    cartItemsCount = 0, 
+    isOnline = true,
+    sessionId,
+    allSessions = false
+  ) => {
     if (!user?.id || user.id.startsWith('vis_') || user.id.startsWith('guest_') || user.name?.toLowerCase().includes('visitante')) return;
 
-    // Handle explicit offline transition (inactivity > 30s or logout)
+    // ── Handle Offline Transition ──
     if (isOnline === false) {
-      set((state) => ({
-        clients: state.clients.filter((c) => c.id !== user.id),
-      }));
+      // If explicit logout for all sessions: remove immediately from state
+      if (allSessions) {
+        set((state) => ({
+          clients: state.clients.filter((c) => c.id !== user.id),
+        }));
+      }
 
       const activeChannel = get().channel;
       const offlinePromises: Promise<unknown>[] = [];
@@ -405,7 +422,7 @@ export const useRadarStore = create<RadarStore>((set, get) => ({
           activeChannel.send({
             type: 'broadcast',
             event: 'offline',
-            payload: { id: user.id },
+            payload: { id: user.id, sessionId, allSessions },
           }).catch(() => {})
         );
       }
@@ -414,24 +431,27 @@ export const useRadarStore = create<RadarStore>((set, get) => ({
         fetch('/api/radar/activity', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ id: user.id, isOnline: false }),
+          body: JSON.stringify({ id: user.id, sessionId, isOnline: false, allSessions }),
           keepalive: true,
         }).catch(() => {})
       );
 
-      offlinePromises.push(
-        (async () => {
-          try {
-            await supabase.from('active_sessions').update({ is_online: false }).eq('user_id', user.id);
-            await supabase.from('active_sessions').delete().eq('user_id', user.id);
-          } catch {}
-        })()
-      );
+      if (allSessions) {
+        offlinePromises.push(
+          (async () => {
+            try {
+              await supabase.from('active_sessions').update({ is_online: false }).eq('user_id', user.id);
+              await supabase.from('active_sessions').delete().eq('user_id', user.id);
+            } catch {}
+          })()
+        );
+      }
 
       await Promise.allSettled(offlinePromises);
       return;
     }
 
+    // ── Handle Online Heartbeat / Navigation ──
     const coords = resolveCoordinates(city);
     const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
     const isTablet = typeof window !== 'undefined' && window.innerWidth >= 768 && window.innerWidth < 1024;
@@ -443,6 +463,7 @@ export const useRadarStore = create<RadarStore>((set, get) => ({
 
     const payload: ConnectedClient = {
       id: user.id,
+      sessionId,
       name: cleanName,
       email: user.email || '',
       city: city || '',
@@ -463,16 +484,15 @@ export const useRadarStore = create<RadarStore>((set, get) => ({
       lastUpdated: now,
     };
 
-    // Immediately reflect the current logged-in user in local clients so "Tú" is visible right away
+    // Immediately reflect in local state so the active client has instant UI feedback
     set((state) => ({
       clients: mergeClientLists(state.clients, [payload]),
     }));
 
-    // Concurrently broadcast to Presence Channel, Server In-Memory/DB API, and Supabase Table
     const activeChannel = get().channel;
     const promises: Promise<unknown>[] = [];
 
-    // 1. Send Instant Peer-to-Peer WebSocket Broadcast (<40ms latency) & Presence
+    // 1. Send Peer-to-Peer WebSocket Broadcast (<40ms latency)
     if (activeChannel) {
       promises.push(
         activeChannel.send({
@@ -481,10 +501,9 @@ export const useRadarStore = create<RadarStore>((set, get) => ({
           payload,
         }).catch(() => {})
       );
-      promises.push(activeChannel.track(payload).catch(() => {}));
     }
 
-    // 2. Send to /api/radar/activity (updates server memory + active_sessions DB)
+    // 2. Send to /api/radar/activity (updates server multi-session cache + DB)
     promises.push(
       fetch('/api/radar/activity', {
         method: 'POST',
@@ -494,55 +513,28 @@ export const useRadarStore = create<RadarStore>((set, get) => ({
       }).catch(() => {})
     );
 
-    // 3. Directly update Supabase active_sessions table for immediate postgres_changes broadcast
-    promises.push(
-      (async () => {
-        try {
-          await supabase.from('active_sessions').upsert({
-            user_id: payload.id,
-            name: payload.name,
-            email: payload.email,
-            city: payload.city,
-            country: 'Ecuador',
-            x: payload.x,
-            y: payload.y,
-            current_section: payload.currentSection,
-            is_online: true,
-            has_cart: payload.hasCart,
-            cart_items_count: payload.cartItemsCount,
-            total_spent: payload.totalSpent,
-            purchases_count: payload.purchasesCount,
-            device: payload.device,
-            last_seen: new Date().toISOString(),
-          }, { onConflict: 'user_id' });
-        } catch {}
-      })()
-    );
-
     await Promise.allSettled(promises);
   },
 
-  initRadar: (user, _city = '', _totalSpent = 0, _purchasesCount = 0, _currentSection = '', _hasCart = false, _cartItemsCount = 0) => {
-    void _city; void _totalSpent; void _purchasesCount; void _currentSection; void _hasCart; void _cartItemsCount;
+  initRadar: (user, _city = '', _totalSpent = 0, _purchasesCount = 0, _currentSection = '', _hasCart = false, _cartItemsCount = 0, sessionId) => {
+    void _city; void _totalSpent; void _purchasesCount; void _currentSection; void _hasCart; void _cartItemsCount; void sessionId;
     if (!user?.id || user.id.startsWith('vis_') || user.id.startsWith('guest_')) return;
 
     let activeChannel = get().channel;
-    let dbChan = get().dbChannel;
 
     // Initial fetch from activity endpoint
     get().fetchActiveClients();
 
-    // 1-second watchdog to strictly enforce the 30-second rule and prune inactive clients
+    // Unified 5-second maintenance cycle: purges expired clients (>60s TTL) and syncs from backend
     if (!get().pollIntervalId) {
-      let tickCount = 0;
       const intervalId = setInterval(() => {
         const now = Date.now();
-        // Prune any client inactive for >= 30s or marked offline
+        // 1. Logical TTL evaluation: purge clients whose lastSeen exceeds 60s
         set((state) => {
           const activeOnly = state.clients.filter((c) => {
             if (c.isOnline === false) return false;
             const idle = now - (c.lastSeen || c.lastUpdated || now);
-            return idle < 30000;
+            return idle < RADAR_CLIENT_TTL_MS;
           });
           if (activeOnly.length !== state.clients.length) {
             return { clients: activeOnly };
@@ -550,93 +542,13 @@ export const useRadarStore = create<RadarStore>((set, get) => ({
           return state;
         });
 
-        // Periodic background poll every 5 seconds to inspect true/false database state
-        tickCount++;
-        if (tickCount % 5 === 0) {
-          get().fetchActiveClients();
-        }
-      }, 1000);
+        // 2. Reconcile with backend multi-session cache
+        get().fetchActiveClients();
+      }, 5000);
       set({ pollIntervalId: intervalId });
     }
 
-    // ── Setup Postgres Changes listener on active_sessions table ──
-    if (!dbChan) {
-      dbChan = supabase.channel('radar:db_changes');
-      dbChan
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'active_sessions' }, (payload) => {
-          if (payload.eventType === 'DELETE') {
-            const oldUserId = (payload.old as { user_id?: string })?.user_id;
-            if (oldUserId) {
-              set((state) => ({
-                clients: state.clients.filter((c) => c.id !== oldUserId),
-              }));
-            }
-          } else if ((payload.eventType === 'UPDATE' || payload.eventType === 'INSERT') && payload.new) {
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            const row = payload.new as any;
-            if (row.user_id && !row.user_id.startsWith('vis_') && !row.user_id.startsWith('guest_')) {
-              if (row.is_online === false) {
-                set((state) => ({
-                  clients: state.clients.filter((c) => c.id !== row.user_id),
-                }));
-                return;
-              }
-
-              set((state) => {
-                const now = Date.now();
-                const idx = state.clients.findIndex((c) => c.id === row.user_id);
-                const coords = resolveCoordinates(row.city || '');
-                const purchases = Number(row.purchases_count) || 0;
-                const spent = Number(row.total_spent) || 0;
-                const hasCart = Boolean(row.has_cart);
-                const parsedX = row.x !== null && row.x !== undefined ? Number(row.x) : NaN;
-                const parsedY = row.y !== null && row.y !== undefined ? Number(row.y) : NaN;
-                const existingClient = state.clients.find((c) => c.id === row.user_id);
-                const finalX = !isNaN(parsedX) && parsedX >= 0 ? parsedX : (coords.x >= 0 ? coords.x : (existingClient?.x ?? -100));
-                const finalY = !isNaN(parsedY) && parsedY >= 0 ? parsedY : (coords.y >= 0 ? coords.y : (existingClient?.y ?? -100));
-
-                // Protect recent live WebSocket broadcast from being overwritten by delayed DB events
-                const isRecentLive = existingClient?.lastUpdated && (now - existingClient.lastUpdated < 6000);
-                const sectionToUse = isRecentLive 
-                  ? existingClient.currentSection 
-                  : (row.current_section || existingClient?.currentSection || 'Explorando Tienda');
-
-                const updatedClient: ConnectedClient = {
-                  id: row.user_id,
-                  name: cleanClientName(row.name),
-                  email: row.email || '',
-                  city: row.city || '',
-                  country: row.country || 'Ecuador',
-                  x: finalX,
-                  y: finalY,
-                  frequency: resolveFrequency(purchases),
-                  purchasesCount: purchases,
-                  totalSpent: spent,
-                  currentSection: sectionToUse,
-                  intentScore: calculateIntentScore(purchases, spent, hasCart),
-                  device: (row.device as ConnectedClient['device']) || 'Computador',
-                  hasCart: isRecentLive ? existingClient.hasCart : hasCart,
-                  cartItemsCount: isRecentLive ? existingClient.cartItemsCount : (Number(row.cart_items_count) || 0),
-                  isRealUser: true,
-                  lastSeen: now,
-                  lastUpdated: existingClient?.lastUpdated || now,
-                };
-                if (idx >= 0) {
-                  const next = [...state.clients];
-                  next[idx] = { ...next[idx], ...updatedClient };
-                  return { clients: next };
-                } else {
-                  return { clients: [...state.clients, updatedClient] };
-                }
-              });
-            }
-          }
-        })
-        .subscribe();
-      set({ dbChannel: dbChan });
-    }
-
-    // ── Setup Realtime Broadcast & Presence channel ──
+    // ── Setup Realtime Broadcast channel (low-overhead, zero cascading fetches) ──
     if (!activeChannel) {
       activeChannel = supabase.channel('radar:clients', {
         config: {
@@ -664,6 +576,7 @@ export const useRadarStore = create<RadarStore>((set, get) => ({
 
             const updatedClient: ConnectedClient = {
               id: payload.id,
+              sessionId: payload.sessionId,
               name: cleanClientName(payload.name),
               email: payload.email || '',
               city: cleanCity,
@@ -694,22 +607,12 @@ export const useRadarStore = create<RadarStore>((set, get) => ({
           });
         })
         .on('broadcast', { event: 'offline' }, ({ payload }) => {
-          if (payload?.id) {
+          if (payload?.id && payload?.allSessions) {
+            // Explicit logout: remove user from map
             set((state) => ({
               clients: state.clients.filter((c) => c.id !== payload.id),
             }));
           }
-        });
-
-      activeChannel
-        .on('presence', { event: 'sync' }, () => {
-          get().fetchActiveClients();
-        })
-        .on('presence', { event: 'join' }, () => {
-          get().fetchActiveClients();
-        })
-        .on('presence', { event: 'leave' }, () => {
-          get().fetchActiveClients();
         })
         .subscribe();
 

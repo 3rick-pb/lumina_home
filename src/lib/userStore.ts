@@ -371,24 +371,23 @@ export const useUserStore = create<UserState>((set, get) => ({
     const currentUser = get().user;
     if (currentUser?.id) {
       try {
-        const radarChannel = useRadarStore.getState().channel;
-        if (radarChannel) {
-          try {
-            await Promise.allSettled([
-              radarChannel.send({
-                type: 'broadcast',
-                event: 'offline',
-                payload: { id: currentUser.id },
-              }),
-              radarChannel.untrack(),
-            ]);
-          } catch {}
-        }
+        await useRadarStore.getState().trackActivity(
+          currentUser,
+          '',
+          0,
+          0,
+          '',
+          false,
+          0,
+          false,
+          undefined,
+          true
+        );
 
         if (typeof navigator !== 'undefined' && navigator.sendBeacon) {
           navigator.sendBeacon(
             '/api/radar/activity',
-            new Blob([JSON.stringify({ id: currentUser.id, isOnline: false })], { type: 'application/json' })
+            new Blob([JSON.stringify({ id: currentUser.id, isOnline: false, allSessions: true })], { type: 'application/json' })
           );
         }
 
@@ -396,7 +395,7 @@ export const useUserStore = create<UserState>((set, get) => ({
           fetch('/api/radar/activity', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ id: currentUser.id, isOnline: false }),
+            body: JSON.stringify({ id: currentUser.id, isOnline: false, allSessions: true }),
             keepalive: true,
           }).catch(() => {}),
           supabase

@@ -7,6 +7,21 @@ import { useUserStore } from "@/lib/userStore";
 import { useRadarStore } from "@/lib/radarStore";
 import { useCartStore } from "@/lib/store";
 
+function getOrCreateSessionId(userId: string): string {
+  if (typeof window === 'undefined') return `sess_${userId}_init`;
+  try {
+    const key = `lumina_radar_sess_${userId}`;
+    let sId = sessionStorage.getItem(key);
+    if (!sId) {
+      sId = `sess_${userId}_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+      sessionStorage.setItem(key, sId);
+    }
+    return sId;
+  } catch {
+    return `sess_${userId}_${Date.now()}`;
+  }
+}
+
 function ActivityTracker() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -52,7 +67,6 @@ function ActivityTracker() {
   } else if (pathname === "/checkout") {
     currentSection = "En Proceso de Pago";
   } else if (pathname.startsWith("/auth/")) {
-    // Stop tracking when navigating to login/register
     currentSection = "";
   } else if (pathname === "/") {
     currentSection = "Inicio • Lumina Home";
@@ -60,14 +74,25 @@ function ActivityTracker() {
     currentSection = "Explorando Tienda";
   }
 
-  const lastInteractionRef = useRef<number>(Date.now());
-  const isOnlineRef = useRef<boolean>(true);
   const lastKeepAliveRef = useRef<number>(Date.now());
+  const sessionIdRef = useRef<string>("");
 
-  // Reports online status to Store, Broadcast & Database
-  const reportOnline = useCallback((section?: string) => {
+  // Initialize or retrieve sessionId for this tab
+  useEffect(() => {
+    if (user?.id && !user.id.startsWith('vis_') && !user.id.startsWith('guest_')) {
+      sessionIdRef.current = getOrCreateSessionId(user.id);
+    } else {
+      sessionIdRef.current = "";
+    }
+  }, [user?.id]);
+
+  // Sends active presence heartbeat
+  const sendHeartbeat = useCallback((sectionOverride?: string) => {
     const currentUser = useUserStore.getState().user;
     if (!currentUser?.id || currentUser.id.startsWith('vis_') || currentUser.id.startsWith('guest_')) return;
+
+    const sId = sessionIdRef.current || getOrCreateSessionId(currentUser.id);
+    sessionIdRef.current = sId;
 
     const currentOrders = useUserStore.getState().orders;
     const currentAddress = useUserStore.getState().address;
@@ -79,20 +104,9 @@ function ActivityTracker() {
     const currentCartOpen = useCartStore.getState().isOpen;
     const cartItemsCount = currentCartItems.reduce((sum, item) => sum + (item.quantity || 1), 0);
     const hasCart = currentCartOpen || cartItemsCount > 0;
-    const targetSection = section || currentSection;
+    const targetSection = sectionOverride || currentSection;
 
-    isOnlineRef.current = true;
     lastKeepAliveRef.current = Date.now();
-
-    useRadarStore.getState().initRadar(
-      currentUser,
-      userCity,
-      totalSpent,
-      purchasesCount,
-      targetSection,
-      hasCart,
-      cartItemsCount
-    );
 
     useRadarStore.getState().trackActivity(
       currentUser,
@@ -102,38 +116,31 @@ function ActivityTracker() {
       targetSection,
       hasCart,
       cartItemsCount,
-      true
+      true,
+      sId,
+      false
     );
   }, [currentSection]);
 
-  // Reports offline status upon 30 seconds of inactivity or tab close
-  const reportOffline = useCallback(() => {
-    const currentUser = useUserStore.getState().user;
-    if (!currentUser?.id || currentUser.id.startsWith('vis_') || currentUser.id.startsWith('guest_')) return;
-
-    isOnlineRef.current = false;
-    useRadarStore.getState().trackActivity(
-      currentUser,
-      '',
-      0,
-      0,
-      '',
-      false,
-      0,
-      false
-    );
-  }, []);
-
-  // Disconnect immediately on page close / unload
+  // Tab Close / Unload: Report close for this specific tab session
   useEffect(() => {
     const handleClose = () => {
-      reportOffline();
       const activeUser = useUserStore.getState().user;
-      if (activeUser?.id && navigator.sendBeacon) {
-        navigator.sendBeacon(
-          '/api/radar/activity',
-          new Blob([JSON.stringify({ id: activeUser.id, isOnline: false })], { type: 'application/json' })
-        );
+      const sId = sessionIdRef.current;
+      if (activeUser?.id && sId) {
+        if (navigator.sendBeacon) {
+          navigator.sendBeacon(
+            '/api/radar/activity',
+            new Blob([JSON.stringify({ id: activeUser.id, sessionId: sId, isOnline: false, allSessions: false })], { type: 'application/json' })
+          );
+        } else {
+          fetch('/api/radar/activity', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id: activeUser.id, sessionId: sId, isOnline: false, allSessions: false }),
+            keepalive: true,
+          }).catch(() => {});
+        }
       }
     };
 
@@ -143,9 +150,10 @@ function ActivityTracker() {
       window.removeEventListener('beforeunload', handleClose);
       window.removeEventListener('pagehide', handleClose);
     };
-  }, [reportOffline]);
+  }, []);
 
-  // Exploration change: URL, section, or cart navigation constitutes active exploration
+  // Exploration Navigation Tracker: immediately dispatches section change
+  const lastNavDispatchRef = useRef<number>(0);
   useEffect(() => {
     // Purge legacy guest tokens
     if (typeof window !== 'undefined') {
@@ -158,25 +166,42 @@ function ActivityTracker() {
     if (pathname.startsWith("/auth/") || !currentSection) return;
     if (!user || !user.id || user.id.startsWith('vis_') || user.id.startsWith('guest_')) return;
 
-    // Navigation is active exploration: update timestamp and trigger online state
-    lastInteractionRef.current = Date.now();
-    reportOnline(currentSection);
-  }, [user, address, addresses, orders, pathname, searchParams, isCartOpen, cartItems.length, currentSection, reportOnline]);
+    const now = Date.now();
+    // Immediate dispatch on navigation, throttled to 2.5s for hyper-fast consecutive clicks
+    if (now - lastNavDispatchRef.current > 2500) {
+      lastNavDispatchRef.current = now;
+      sendHeartbeat(currentSection);
+    } else {
+      const timeout = setTimeout(() => {
+        lastNavDispatchRef.current = Date.now();
+        sendHeartbeat(currentSection);
+      }, 2500);
+      return () => clearTimeout(timeout);
+    }
+  }, [user, address, addresses, orders, pathname, searchParams, isCartOpen, cartItems.length, currentSection, sendHeartbeat]);
 
-  // User DOM interaction tracker: clicks, typing, mouse movement, touches, scrolls
+  // Periodic Heartbeat: Dispatches a keepalive every 25 seconds while tab is open
+  useEffect(() => {
+    if (!user || !user.id || user.id.startsWith('vis_') || user.id.startsWith('guest_')) return;
+
+    // Send initial heartbeat upon login/load
+    sendHeartbeat();
+
+    const heartbeatInterval = setInterval(() => {
+      sendHeartbeat();
+    }, 25000); // 25s regular heartbeat
+
+    return () => clearInterval(heartbeatInterval);
+  }, [user, sendHeartbeat]);
+
+  // User Interaction detector: If user interacts after 15s since last heartbeat, trigger keepalive
   useEffect(() => {
     if (!user || !user.id || user.id.startsWith('vis_') || user.id.startsWith('guest_')) return;
 
     const handleUserActivity = () => {
       const now = Date.now();
-      lastInteractionRef.current = now;
-
-      // If user was offline/inactive, reactivate instantly!
-      if (!isOnlineRef.current) {
-        reportOnline();
-      } else if (now - lastKeepAliveRef.current > 8000) {
-        // Active keepalive sent every 8s while interacting to maintain freshness
-        reportOnline();
+      if (now - lastKeepAliveRef.current > 15000) {
+        sendHeartbeat();
       }
     };
 
@@ -186,7 +211,7 @@ function ActivityTracker() {
         throttleTimer = setTimeout(() => {
           throttleTimer = null;
           handleUserActivity();
-        }, 500);
+        }, 1000);
       }
     };
 
@@ -206,38 +231,19 @@ function ActivityTracker() {
       window.removeEventListener('touchstart', handleUserActivity);
       window.removeEventListener('click', handleUserActivity);
     };
-  }, [user, reportOnline]);
+  }, [user, sendHeartbeat]);
 
-  // Tab visibility tracker: resume immediately when returning to tab
+  // Tab Visibility Tracker: Wake up and send instant heartbeat when returning to tab
   useEffect(() => {
     const handleVisibilityChange = () => {
       if (typeof document !== 'undefined' && document.visibilityState === 'visible') {
-        lastInteractionRef.current = Date.now();
-        reportOnline();
+        sendHeartbeat();
       }
     };
 
     document.addEventListener('visibilitychange', handleVisibilityChange);
     return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
-  }, [reportOnline]);
-
-  // 30-Second Inactivity Watchdog: Automatically sets isOnline to false when idle on same section for 30s
-  useEffect(() => {
-    if (!user || !user.id || user.id.startsWith('vis_') || user.id.startsWith('guest_')) return;
-
-    const watchdogInterval = setInterval(() => {
-      const now = Date.now();
-      const idleTime = now - lastInteractionRef.current;
-
-      if (idleTime >= 30000) {
-        if (isOnlineRef.current) {
-          reportOffline();
-        }
-      }
-    }, 1000);
-
-    return () => clearInterval(watchdogInterval);
-  }, [user, reportOffline]);
+  }, [sendHeartbeat]);
 
   return null;
 }
