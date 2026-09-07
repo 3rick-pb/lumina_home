@@ -190,39 +190,21 @@ interface RadarStore {
 
 /**
  * Reconciles current in-memory live clients with newly fetched background data.
- * Protects fresh WebSocket updates from being overwritten while immediately purging disconnected clients.
+ * Adheres strictly to the 30-second window: anchors disappear only on explicit logout, DB is_online = false, or inactivity > 30s.
  */
-function reconcileClients(currentList: ConnectedClient[], fetchedList: ConnectedClient[], presenceChannel?: RealtimeChannel | null): ConnectedClient[] {
+function reconcileClients(currentList: ConnectedClient[], fetchedList: ConnectedClient[]): ConnectedClient[] {
   const now = Date.now();
   const map = new Map<string, ConnectedClient>();
 
-  // Fetch active connected presence keys from WebSocket channel
-  const activePresenceUserIds = new Set<string>();
-  if (presenceChannel) {
-    try {
-      const presenceState = presenceChannel.presenceState();
-      if (presenceState) {
-        Object.values(presenceState).forEach((presences) => {
-          if (Array.isArray(presences)) {
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            presences.forEach((p: any) => {
-              if (p?.id) activePresenceUserIds.add(p.id);
-              if (p?.user_id) activePresenceUserIds.add(p.user_id);
-            });
-          }
-        });
-      }
-    } catch {}
-  }
-
-  // 1. Safely merge newly fetched data from active_sessions
+  // 1. Index fetched clients from active_sessions DB
   for (const incoming of fetchedList) {
     if (
       incoming && 
       incoming.id && 
       !incoming.id.startsWith('vis_') && 
       !incoming.id.startsWith('guest_') && 
-      !incoming.name?.toLowerCase().includes('visitante')
+      !incoming.name?.toLowerCase().includes('visitante') &&
+      incoming.isOnline !== false
     ) {
       const existing = currentList.find(c => c.id === incoming.id);
       const cleanCity = (incoming.city && incoming.city.trim()) ? incoming.city : (existing?.city || '');
@@ -232,7 +214,7 @@ function reconcileClients(currentList: ConnectedClient[], fetchedList: Connected
       const finalX = !isNaN(parsedX) && parsedX >= 0 ? parsedX : (coords.x >= 0 ? coords.x : (existing?.x ?? -100));
       const finalY = !isNaN(parsedY) && parsedY >= 0 ? parsedY : (coords.y >= 0 ? coords.y : (existing?.y ?? -100));
 
-      const isRecentLiveBroadcast = existing?.lastUpdated && (now - existing.lastUpdated < 6000);
+      const isRecentLiveBroadcast = existing?.lastUpdated && (now - existing.lastUpdated < 8000);
       const sectionToUse = isRecentLiveBroadcast 
         ? existing.currentSection 
         : (incoming.currentSection || existing?.currentSection || 'Explorando Tienda');
@@ -249,11 +231,12 @@ function reconcileClients(currentList: ConnectedClient[], fetchedList: Connected
         cartItemsCount: Number(isRecentLiveBroadcast ? existing?.cartItemsCount : (incoming.cartItemsCount !== undefined ? incoming.cartItemsCount : existing?.cartItemsCount)) || 0,
         lastSeen: Math.max(existing?.lastSeen || 0, incoming.lastSeen || 0, now),
         lastUpdated: existing?.lastUpdated || now,
+        isOnline: true,
       });
     }
   }
 
-  // 2. Retain un-fetched clients ONLY if they are active in presence OR have very recent WebSocket activity (<8s)
+  // 2. Retain existing active clients within the 30-second window
   for (const existing of currentList) {
     if (
       existing && 
@@ -261,12 +244,11 @@ function reconcileClients(currentList: ConnectedClient[], fetchedList: Connected
       !map.has(existing.id) &&
       !existing.id.startsWith('vis_') && 
       !existing.id.startsWith('guest_') && 
-      !existing.name?.toLowerCase().includes('visitante')
+      !existing.name?.toLowerCase().includes('visitante') &&
+      existing.isOnline !== false
     ) {
-      const isConnectedInPresence = activePresenceUserIds.has(existing.id);
-      const isVeryFresh = existing.lastUpdated && (now - existing.lastUpdated < 8000);
-
-      if (isConnectedInPresence || isVeryFresh) {
+      const timeSinceLastSeen = now - (existing.lastSeen || existing.lastUpdated || now);
+      if (timeSinceLastSeen < 30000) {
         map.set(existing.id, existing);
       }
     }
@@ -290,9 +272,10 @@ function mergeClientLists(listA: ConnectedClient[], listB: ConnectedClient[]): C
       c.id && 
       !c.id.startsWith('vis_') && 
       !c.id.startsWith('guest_') && 
-      !c.name?.toLowerCase().includes('visitante')
+      !c.name?.toLowerCase().includes('visitante') &&
+      c.isOnline !== false
     ) {
-      if (now - (c.lastSeen || now) < 35000) {
+      if (now - (c.lastSeen || c.lastUpdated || now) < 30000) {
         map.set(c.id, c);
       }
     }
@@ -304,7 +287,8 @@ function mergeClientLists(listA: ConnectedClient[], listB: ConnectedClient[]): C
       c.id && 
       !c.id.startsWith('vis_') && 
       !c.id.startsWith('guest_') && 
-      !c.name?.toLowerCase().includes('visitante')
+      !c.name?.toLowerCase().includes('visitante') &&
+      c.isOnline !== false
     ) {
       const existing = map.get(c.id);
       if (!existing) {
@@ -321,6 +305,7 @@ function mergeClientLists(listA: ConnectedClient[], listB: ConnectedClient[]): C
           y: finalY,
           lastSeen: c.lastSeen || now,
           lastUpdated: c.lastUpdated || now,
+          isOnline: true,
         });
       } else {
         // Merge with newer info while protecting valid location coordinates
@@ -356,6 +341,7 @@ function mergeClientLists(listA: ConnectedClient[], listB: ConnectedClient[]): C
           cartItemsCount: c.cartItemsCount !== undefined ? c.cartItemsCount : existing.cartItemsCount,
           lastSeen: Math.max(existing.lastSeen || 0, c.lastSeen || 0, now),
           lastUpdated: Math.max(existing.lastUpdated || 0, c.lastUpdated || 0, now),
+          isOnline: true,
         });
       }
     }
@@ -391,9 +377,8 @@ export const useRadarStore = create<RadarStore>((set, get) => ({
       if (res.ok) {
         const json = await res.json();
         if (json.success && Array.isArray(json.clients)) {
-          const activeChannel = get().channel;
           set((state) => ({
-            clients: reconcileClients(state.clients, json.clients, activeChannel),
+            clients: reconcileClients(state.clients, json.clients),
           }));
         }
       }
@@ -662,16 +647,7 @@ export const useRadarStore = create<RadarStore>((set, get) => ({
         .on('presence', { event: 'join' }, () => {
           get().fetchActiveClients();
         })
-        .on('presence', { event: 'leave' }, ({ leftPresences }) => {
-          if (Array.isArray(leftPresences)) {
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            const leftIds = new Set(leftPresences.map((p: any) => p.id || p.user_id).filter(Boolean));
-            if (leftIds.size > 0) {
-              set((state) => ({
-                clients: state.clients.filter((c) => !leftIds.has(c.id)),
-              }));
-            }
-          }
+        .on('presence', { event: 'leave' }, () => {
           get().fetchActiveClients();
         })
         .subscribe();

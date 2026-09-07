@@ -29,7 +29,7 @@ interface CachedClient {
 // In-memory global store to guarantee instant synchronization across clients
 const globalClients = new Map<string, CachedClient>();
 
-const CLIENT_TIMEOUT_MS = 12 * 1000; // 12s timeout for immediate cleanup when clients close browser
+const CLIENT_TIMEOUT_MS = 30 * 1000; // 30s max timeout as requested: anchors disappear only after logout or 30s inactivity
 
 function pruneStaleClients() {
   const now = Date.now();
@@ -108,7 +108,7 @@ export async function GET() {
       // Clean up memory clients whose session truly expired or was deleted from active_sessions
       const now = Date.now();
       globalClients.forEach((client, id) => {
-        const isFreshMemoryOnly = now - client.lastSeen < 4000;
+        const isFreshMemoryOnly = now - client.lastSeen < CLIENT_TIMEOUT_MS;
         if (!client.isOnline || (now - client.lastSeen > CLIENT_TIMEOUT_MS) || (!activeDbUserIds.has(id) && !isFreshMemoryOnly)) {
           globalClients.delete(id);
         }
@@ -179,6 +179,10 @@ export async function POST(request: Request) {
     if (isOnline === false) {
       globalClients.delete(id);
       try {
+        await supabase
+          .from('active_sessions')
+          .update({ is_online: false })
+          .eq('user_id', id);
         await supabase
           .from('active_sessions')
           .delete()
