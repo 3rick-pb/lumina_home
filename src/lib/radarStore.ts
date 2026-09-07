@@ -36,26 +36,16 @@ const COMMON_FIRST_NAMES = [
 ];
 
 /**
- * Normalizes names cleanly:
- * - Separates email/username dots/underscores/hyphens (e.g. "erick.arteaga" -> "Erick Arteaga")
- * - Separates lowercase letter followed by uppercase (e.g. "ErickArteaga" -> "Erick Arteaga", "ErickADMIN" -> "Erick ADMIN")
- * - Detects common first names followed by surname (e.g. "erickarteaga" -> "Erick Arteaga")
- * - Normalizes any glued "ADMIN" (e.g. "ErickADMIN" or "erickadmin" -> "Erick ADMIN")
- * - Properly capitalizes each word
+ * Normalizes names cleanly
  */
 export const cleanClientName = (rawName?: string) => {
   if (!rawName) return "Cliente Lumina";
   let formatted = String(rawName).trim();
-  // 1. Replace periods, underscores, dashes with space
   formatted = formatted.replace(/[\._\-]+/g, ' ');
-  // 2. Separate lowercase letter followed by uppercase letter (camelCase: ErickArteaga -> Erick Arteaga, ErickADMIN -> Erick ADMIN)
   formatted = formatted.replace(/([a-zñáéíóú])([A-ZÑÁÉÍÓÚ])/g, '$1 $2');
-  // 3. Separate number followed by letter or letter followed by number
   formatted = formatted.replace(/([a-zA-ZáéíóúÁÉÍÓÚñÑ])([0-9])/g, '$1 $2');
   formatted = formatted.replace(/([0-9])([a-zA-ZáéíóúÁÉÍÓÚñÑ])/g, '$1 $2');
-  // 4. Separate and normalize any variation of ADMIN glued to letters/numbers
   formatted = formatted.replace(/([a-zA-Z0-9áéíóúÁÉÍÓÚñÑ])\s*(?:admin)\b/gi, '$1 ADMIN');
-  // 5. If still a single continuous lowercase word without spaces, split if it starts with a common first name
   if (!formatted.includes(' ')) {
     const lower = formatted.toLowerCase();
     for (const fn of COMMON_FIRST_NAMES) {
@@ -65,12 +55,11 @@ export const cleanClientName = (rawName?: string) => {
       }
     }
   }
-  // 6. Clean multiple spaces and capitalize words properly
   const words = formatted.replace(/\s+/g, ' ').trim().split(' ');
   return words.map(w => w.toUpperCase() === 'ADMIN' ? 'ADMIN' : w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ');
 };
 
-// ── Province coordinate lookup table (Calibrated to 100% solid land on 3D Relief map) ──
+// ── Province coordinate lookup table ──
 const CITY_COORDINATES: Record<string, { x: number; y: number }> = {
   // Sierra
   "quito": { x: 48.8, y: 26.5 },
@@ -134,12 +123,10 @@ export function resolveCoordinates(city?: string): { x: number; y: number } {
     return { x: -100, y: -100 };
   }
 
-  // 1. Exact match
   if (CITY_COORDINATES[normalized]) {
     return CITY_COORDINATES[normalized];
   }
 
-  // 2. Partial match
   for (const key of Object.keys(CITY_COORDINATES)) {
     if (normalized.includes(key) || key.includes(normalized)) {
       return CITY_COORDINATES[key];
@@ -158,12 +145,73 @@ export function resolveFrequency(purchasesCount: number): ConnectedClient['frequ
 }
 
 export function calculateIntentScore(purchasesCount: number, totalSpent: number, hasCart: boolean): number {
-  let score = 25; // base
+  let score = 25;
   if (purchasesCount > 0) score += Math.min(purchasesCount * 10, 35);
   if (totalSpent > 0) score += Math.min(Math.floor(totalSpent / 50) * 5, 25);
   if (hasCart) score += 15;
   return Math.min(score, 98);
 }
+
+/**
+ * Extracts connected clients from Supabase Realtime presenceState
+ */
+export function parsePresenceState(state: Record<string, unknown>): ConnectedClient[] {
+  const map = new Map<string, ConnectedClient>();
+  const now = Date.now();
+
+  for (const key of Object.keys(state)) {
+    const presences = state[key] as unknown[];
+    if (Array.isArray(presences)) {
+      for (const raw of presences) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const p = raw as any;
+        if (!p || !p.id || p.id.startsWith('vis_') || p.id.startsWith('guest_') || String(p.name).toLowerCase().includes('visitante')) {
+          continue;
+        }
+        const cleanCity = p.city || '';
+        const coords = resolveCoordinates(cleanCity);
+        const parsedX = p.x !== null && p.x !== undefined ? Number(p.x) : NaN;
+        const parsedY = p.y !== null && p.y !== undefined ? Number(p.y) : NaN;
+        const finalX = !isNaN(parsedX) && parsedX >= 0 ? parsedX : (coords.x >= 0 ? coords.x : -100);
+        const finalY = !isNaN(parsedY) && parsedY >= 0 ? parsedY : (coords.y >= 0 ? coords.y : -100);
+        const purchases = Number(p.purchasesCount) || 0;
+        const spent = Number(p.totalSpent) || 0;
+        const hasCart = Boolean(p.hasCart);
+
+        map.set(p.id, {
+          id: p.id,
+          sessionId: p.sessionId,
+          name: cleanClientName(p.name),
+          email: p.email || '',
+          city: cleanCity,
+          country: p.country || 'Ecuador',
+          x: finalX,
+          y: finalY,
+          frequency: p.frequency || resolveFrequency(purchases),
+          purchasesCount: purchases,
+          totalSpent: spent,
+          currentSection: p.currentSection || 'Explorando Tienda',
+          intentScore: Number(p.intentScore) || calculateIntentScore(purchases, spent, hasCart),
+          device: (p.device as ConnectedClient['device']) || 'Computador',
+          hasCart,
+          cartItemsCount: Number(p.cartItemsCount) || 0,
+          isRealUser: true,
+          isOnline: true,
+          lastSeen: p.lastSeen || now,
+          lastUpdated: p.lastUpdated || now,
+        });
+      }
+    }
+  }
+
+  const result: ConnectedClient[] = [];
+  map.forEach(c => result.push(c));
+  return result;
+}
+
+// Track WebSocket connection readiness and pending broadcast queue
+let channelSubscribed = false;
+let pendingBroadcastQueue: Array<() => void> = [];
 
 interface RadarStore {
   clients: ConnectedClient[];
@@ -178,7 +226,7 @@ interface RadarStore {
     hasCart?: boolean,
     cartItemsCount?: number,
     sessionId?: string
-  ) => void;
+  ) => RealtimeChannel | null;
   trackActivity: (
     user: { id: string; name?: string; email?: string } | null,
     city?: string,
@@ -197,7 +245,6 @@ interface RadarStore {
 
 /**
  * Reconciles current in-memory live clients with newly fetched background data.
- * Adheres strictly to the 60-second TTL: anchors disappear only on explicit logout, DB is_online = false, or inactivity > 60s.
  */
 function reconcileClients(currentList: ConnectedClient[], fetchedList: ConnectedClient[]): ConnectedClient[] {
   const now = Date.now();
@@ -221,9 +268,9 @@ function reconcileClients(currentList: ConnectedClient[], fetchedList: Connected
       const finalX = !isNaN(parsedX) && parsedX >= 0 ? parsedX : (coords.x >= 0 ? coords.x : (existing?.x ?? -100));
       const finalY = !isNaN(parsedY) && parsedY >= 0 ? parsedY : (coords.y >= 0 ? coords.y : (existing?.y ?? -100));
 
-      // Protect recent live broadcast updates (< 15s) from being clobbered by slightly delayed server responses
-      const isRecentLiveBroadcast = existing?.lastUpdated && (now - existing.lastUpdated < 15000);
-      const sectionToUse = isRecentLiveBroadcast 
+      // If existing had a very fresh WebSocket broadcast (<4s), preserve section to prevent race conditions
+      const isVeryFreshLiveBroadcast = existing?.lastUpdated && (now - existing.lastUpdated < 4000);
+      const sectionToUse = isVeryFreshLiveBroadcast 
         ? existing.currentSection 
         : (incoming.currentSection || existing?.currentSection || 'Explorando Tienda');
 
@@ -235,8 +282,8 @@ function reconcileClients(currentList: ConnectedClient[], fetchedList: Connected
         y: finalY,
         name: cleanClientName(incoming.name || existing?.name),
         currentSection: sectionToUse,
-        hasCart: Boolean(isRecentLiveBroadcast ? existing?.hasCart : (incoming.hasCart !== undefined ? incoming.hasCart : existing?.hasCart)),
-        cartItemsCount: Number(isRecentLiveBroadcast ? existing?.cartItemsCount : (incoming.cartItemsCount !== undefined ? incoming.cartItemsCount : existing?.cartItemsCount)) || 0,
+        hasCart: Boolean(isVeryFreshLiveBroadcast ? existing?.hasCart : (incoming.hasCart !== undefined ? incoming.hasCart : existing?.hasCart)),
+        cartItemsCount: Number(isVeryFreshLiveBroadcast ? existing?.cartItemsCount : (incoming.cartItemsCount !== undefined ? incoming.cartItemsCount : existing?.cartItemsCount)) || 0,
         lastSeen: Math.max(existing?.lastSeen || 0, incoming.lastSeen || 0, now),
         lastUpdated: existing?.lastUpdated || now,
         isOnline: true,
@@ -366,6 +413,8 @@ export const useRadarStore = create<RadarStore>((set, get) => ({
 
   cleanup: () => {
     const { channel, pollIntervalId } = get();
+    channelSubscribed = false;
+    pendingBroadcastQueue = [];
     if (channel) {
       supabase.removeChannel(channel);
     }
@@ -387,7 +436,7 @@ export const useRadarStore = create<RadarStore>((set, get) => ({
         }
       }
     } catch {
-      // Network or offline fallback
+      // Network fallback
     }
   },
 
@@ -405,16 +454,20 @@ export const useRadarStore = create<RadarStore>((set, get) => ({
   ) => {
     if (!user?.id || user.id.startsWith('vis_') || user.id.startsWith('guest_') || user.name?.toLowerCase().includes('visitante')) return;
 
+    // Self-heal: ensure channel is initialized
+    let activeChannel = get().channel;
+    if (!activeChannel) {
+      activeChannel = get().initRadar(user, city, totalSpent, purchasesCount, currentSection, hasCart, cartItemsCount, sessionId);
+    }
+
     // ── Handle Offline Transition ──
     if (isOnline === false) {
-      // If explicit logout for all sessions: remove immediately from state
       if (allSessions) {
         set((state) => ({
           clients: state.clients.filter((c) => c.id !== user.id),
         }));
       }
 
-      const activeChannel = get().channel;
       const offlinePromises: Promise<unknown>[] = [];
 
       if (activeChannel) {
@@ -425,6 +478,7 @@ export const useRadarStore = create<RadarStore>((set, get) => ({
             payload: { id: user.id, sessionId, allSessions },
           }).catch(() => {})
         );
+        offlinePromises.push(activeChannel.untrack().catch(() => {}));
       }
 
       offlinePromises.push(
@@ -484,41 +538,42 @@ export const useRadarStore = create<RadarStore>((set, get) => ({
       lastUpdated: now,
     };
 
-    // Immediately reflect in local state so the active client has instant UI feedback
+    // Immediately reflect in local state
     set((state) => ({
       clients: mergeClientLists(state.clients, [payload]),
     }));
 
-    const activeChannel = get().channel;
-    const promises: Promise<unknown>[] = [];
-
-    // 1. Send Peer-to-Peer WebSocket Broadcast (<40ms latency)
-    if (activeChannel) {
-      promises.push(
-        activeChannel.send({
+    // 1. Send Peer-to-Peer WebSocket Broadcast & update Presence cluster
+    const dispatchRealtime = () => {
+      const chan = get().channel;
+      if (chan) {
+        chan.send({
           type: 'broadcast',
           event: 'activity',
           payload,
-        }).catch(() => {})
-      );
+        }).catch(() => {});
+        chan.track(payload).catch(() => {});
+      }
+    };
+
+    if (activeChannel && channelSubscribed) {
+      dispatchRealtime();
+    } else {
+      pendingBroadcastQueue.push(dispatchRealtime);
     }
 
     // 2. Send to /api/radar/activity (updates server multi-session cache + DB)
-    promises.push(
-      fetch('/api/radar/activity', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-        keepalive: true,
-      }).catch(() => {})
-    );
-
-    await Promise.allSettled(promises);
+    fetch('/api/radar/activity', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+      keepalive: true,
+    }).catch(() => {});
   },
 
   initRadar: (user, _city = '', _totalSpent = 0, _purchasesCount = 0, _currentSection = '', _hasCart = false, _cartItemsCount = 0, sessionId) => {
     void _city; void _totalSpent; void _purchasesCount; void _currentSection; void _hasCart; void _cartItemsCount; void sessionId;
-    if (!user?.id || user.id.startsWith('vis_') || user.id.startsWith('guest_')) return;
+    if (!user?.id || user.id.startsWith('vis_') || user.id.startsWith('guest_')) return null;
 
     let activeChannel = get().channel;
 
@@ -529,7 +584,6 @@ export const useRadarStore = create<RadarStore>((set, get) => ({
     if (!get().pollIntervalId) {
       const intervalId = setInterval(() => {
         const now = Date.now();
-        // 1. Logical TTL evaluation: purge clients whose lastSeen exceeds 60s
         set((state) => {
           const activeOnly = state.clients.filter((c) => {
             if (c.isOnline === false) return false;
@@ -542,21 +596,21 @@ export const useRadarStore = create<RadarStore>((set, get) => ({
           return state;
         });
 
-        // 2. Reconcile with backend multi-session cache
         get().fetchActiveClients();
       }, 5000);
       set({ pollIntervalId: intervalId });
     }
 
-    // ── Setup Realtime Broadcast channel (low-overhead, zero cascading fetches) ──
+    // ── Setup Realtime Broadcast & Presence channel ──
     if (!activeChannel) {
       activeChannel = supabase.channel('radar:clients', {
         config: {
           broadcast: { self: false },
+          presence: { key: user.id },
         },
       });
 
-      // Peer-to-peer instant broadcast for zero-latency tracking (<40ms)
+      // 1. Peer-to-peer instant broadcast for zero-latency tracking (<40ms)
       activeChannel
         .on('broadcast', { event: 'activity' }, ({ payload }) => {
           if (!payload || !payload.id || payload.id.startsWith('vis_') || payload.id.startsWith('guest_') || String(payload.name).toLowerCase().includes('visitante')) return;
@@ -608,15 +662,63 @@ export const useRadarStore = create<RadarStore>((set, get) => ({
         })
         .on('broadcast', { event: 'offline' }, ({ payload }) => {
           if (payload?.id && payload?.allSessions) {
-            // Explicit logout: remove user from map
             set((state) => ({
               clients: state.clients.filter((c) => c.id !== payload.id),
             }));
           }
+        });
+
+      // 2. Global Presence Synchronization (Discovers all online clients across all browsers without page reload)
+      activeChannel
+        .on('presence', { event: 'sync' }, () => {
+          if (!activeChannel) return;
+          const presenceState = activeChannel.presenceState();
+          const presenceClients = parsePresenceState(presenceState);
+          if (presenceClients.length > 0) {
+            set((state) => ({
+              clients: mergeClientLists(state.clients, presenceClients),
+            }));
+          }
         })
-        .subscribe();
+        .on('presence', { event: 'join' }, ({ newPresences }) => {
+          if (Array.isArray(newPresences) && newPresences.length > 0) {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const joinedClients = parsePresenceState({ join: newPresences } as any);
+            if (joinedClients.length > 0) {
+              set((state) => ({
+                clients: mergeClientLists(state.clients, joinedClients),
+              }));
+            }
+          }
+        })
+        .on('presence', { event: 'leave' }, ({ leftPresences }) => {
+          if (Array.isArray(leftPresences) && leftPresences.length > 0) {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const leftIds = new Set(leftPresences.map((p: any) => p.id).filter(Boolean));
+            if (leftIds.size > 0) {
+              set((state) => ({
+                clients: state.clients.filter(c => !leftIds.has(c.id)),
+              }));
+            }
+          }
+        });
+
+      // 3. Connect & flush pending queue once subscribed
+      activeChannel.subscribe((status) => {
+        if (status === 'SUBSCRIBED') {
+          channelSubscribed = true;
+          while (pendingBroadcastQueue.length > 0) {
+            const fn = pendingBroadcastQueue.shift();
+            fn?.();
+          }
+        } else if (status === 'CLOSED' || status === 'CHANNEL_ERROR') {
+          channelSubscribed = false;
+        }
+      });
 
       set({ channel: activeChannel });
     }
+
+    return activeChannel;
   },
 }));

@@ -77,14 +77,15 @@ function ActivityTracker() {
   const lastKeepAliveRef = useRef<number>(Date.now());
   const sessionIdRef = useRef<string>("");
 
-  // Initialize or retrieve sessionId for this tab
+  // Initialize or retrieve sessionId for this tab and connect to real-time radar channel
   useEffect(() => {
     if (user?.id && !user.id.startsWith('vis_') && !user.id.startsWith('guest_')) {
       sessionIdRef.current = getOrCreateSessionId(user.id);
+      useRadarStore.getState().initRadar(user);
     } else {
       sessionIdRef.current = "";
     }
-  }, [user?.id]);
+  }, [user]);
 
   // Sends active presence heartbeat
   const sendHeartbeat = useCallback((sectionOverride?: string) => {
