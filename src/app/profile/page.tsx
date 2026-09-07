@@ -927,7 +927,7 @@ export default function ProfilePage() {
  <div className="theme-transition min-h-screen w-full max-w-full overflow-x-hidden bg-[#f3f4f6] dark:bg-[#202022] text-gray-900 dark:text-gray-100 flex p-3 md:p-6 lg:p-8 selection:bg-[#8c9276]/20">
  
  {/* 1. Left Vertical Icon Sidebar (Redesigned Elevated Dock) */}
- <aside className="sidebar-dock-nav w-16 md:w-20 bg-white/95 dark:bg-[#1e1e20]/95 backdrop-blur-2xl rounded-[2.5rem] border border-gray-200/80 dark:border-white/10 shadow-[0_12px_40px_rgba(0,0,0,0.05)] dark:shadow-[0_12px_40px_rgba(0,0,0,0.4)] flex flex-col items-center py-6 gap-6 justify-between shrink-0 mr-4 md:mr-6 self-stretch relative z-30">
+ <aside className="sidebar-dock-nav w-16 md:w-20 bg-white/95 dark:bg-[#1e1e20]/95 backdrop-blur-2xl rounded-3xl border border-gray-200/80 dark:border-white/10 shadow-[0_12px_40px_rgba(0,0,0,0.05)] dark:shadow-[0_12px_40px_rgba(0,0,0,0.4)] flex flex-col items-center py-6 gap-6 justify-between shrink-0 mr-4 md:mr-6 self-stretch relative z-30">
  
  {/* Brand Logo Symbol */}
  <div className="flex flex-col items-center gap-5 w-full">
@@ -940,8 +940,8 @@ export default function ProfilePage() {
    <span className="absolute -bottom-1 w-1.5 h-1.5 rounded-full bg-[#ccff00] opacity-0 group-hover:opacity-100 transition-opacity duration-[600ms]" />
  </Link>
 
- {/* Thin luxury divider */}
- <div className="w-8 h-[1px] bg-gradient-to-r from-transparent via-gray-200 dark:via-white/10 to-transparent" />
+ {/* Visible section divider */}
+ <div className="w-9 md:w-10 h-[2px] bg-gray-300/80 dark:bg-white/20 rounded-full my-0.5 transition-colors shrink-0" />
 
  {/* Navigation Icons */}
  <nav className="flex flex-col items-center gap-2.5 w-full px-2">
@@ -1013,7 +1013,7 @@ export default function ProfilePage() {
 
  {isAdmin && (
    <>
-     <div className="w-6 h-[1px] bg-gradient-to-r from-transparent via-gray-200 dark:via-white/10 to-transparent my-1" />
+     <div className="w-9 md:w-10 h-[2px] bg-gray-300/80 dark:bg-white/20 rounded-full my-0.5 transition-colors shrink-0" />
 
      <button 
        onClick={() => setActiveTab("catalog")} 
@@ -1062,7 +1062,7 @@ export default function ProfilePage() {
    </>
  )}
 
- <div className="w-6 h-[1px] bg-gradient-to-r from-transparent via-gray-200 dark:via-white/10 to-transparent my-1" />
+ <div className="w-9 md:w-10 h-[2px] bg-gray-300/80 dark:bg-white/20 rounded-full my-0.5 transition-colors shrink-0" />
 
  <button 
    onClick={() => setActiveTab("settings")} 
@@ -1083,7 +1083,7 @@ export default function ProfilePage() {
 
  {/* Bottom Actions */}
  <div className="flex flex-col items-center gap-3 w-full px-2">
- <div className="w-8 h-[1px] bg-gradient-to-r from-transparent via-gray-200 dark:via-white/10 to-transparent" />
+ <div className="w-9 md:w-10 h-[2px] bg-gray-300/80 dark:bg-white/20 rounded-full my-0.5 transition-colors shrink-0" />
  <Link 
    href="/" 
    className="sidebar-dock-btn relative w-10 h-10 md:w-11 md:h-11 rounded-2xl flex items-center justify-center text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100/80 dark:hover:bg-white/5 transition-all duration-[600ms] group" 
@@ -1468,22 +1468,19 @@ export default function ProfilePage() {
  const isHovered = hoveredNicheIdx === idx;
  const hasItems = bar.count > 0;
  
- // Adaptive width classes based on number of niches:
- // Few items (<=4): wide baseline (w-16) expanding to w-24
- // Medium items (5-7): medium baseline (w-12) expanding to w-20
- // Many items (8+): compact baseline (w-10) expanding to w-18
+ // Stable, fixed width per column with zero hover expansion to prevent jitter/jumping:
  const widthClass = categoryDistributionData.length <= 4
- ? (isHovered ? "w-24 shrink-0" : "flex-1 max-w-[5rem] min-w-[3.5rem]")
+ ? "flex-1 min-w-[3.5rem] max-w-[5.5rem]"
  : categoryDistributionData.length <= 7
- ? (isHovered ? "w-20 shrink-0" : "w-12 shrink-0")
- : (isHovered ? "w-18 shrink-0" : "w-10 shrink-0");
+ ? "w-14 shrink-0"
+ : "w-12 shrink-0";
 
  return (
  <div 
  key={idx} 
  onMouseEnter={() => setHoveredNicheIdx(idx)}
  onMouseLeave={() => setHoveredNicheIdx(null)}
- className={`flex flex-col items-center h-full justify-between transition-all duration-300 ease-out group cursor-pointer relative ${widthClass} ${isHovered ? "z-20 scale-[1.02]" : "z-10"}`}
+ className={`flex flex-col items-center h-full justify-between group cursor-pointer relative ${widthClass} z-10`}
  >
  {/* 1. Bar Area (bounded in flex-1, bar grows upwards with capped max 82% height) */}
  <div className="relative w-full flex-1 flex flex-col justify-end items-center px-1">
@@ -1491,12 +1488,12 @@ export default function ProfilePage() {
  {/* Floating Popover / Tooltip when Hovered */}
  {isHovered && (
  <div className="absolute -top-7 z-30 flex flex-col items-center pointer-events-none animate-fade-in">
- <div className="bg-gray-950 text-white dark:text-gray-900 px-2 py-0.5 rounded-lg text-[10px] font-bold shadow-lg dark:shadow-none border border-white/10 whitespace-nowrap flex items-center gap-1">
+ <div className="bg-gray-950 dark:bg-white text-white dark:text-gray-950 px-2 py-0.5 rounded-lg text-[10px] font-bold shadow-lg border border-white/10 dark:border-gray-800 whitespace-nowrap flex items-center gap-1">
  <span className={`w-1.5 h-1.5 rounded-full ${hasItems ? "bg-[#e07a3f]" : "bg-gray-400"}`} />
  <span>{bar.count}</span>
- <span className="text-gray-400 font-normal">({bar.pctOfTotal}%)</span>
+ <span className="text-gray-400 dark:text-gray-600 font-normal">({bar.pctOfTotal}%)</span>
  </div>
- <div className="w-1.5 h-1 bg-gray-950 rotate-45 -mt-0.5" />
+ <div className="w-1.5 h-1 bg-gray-950 dark:bg-white rotate-45 -mt-0.5" />
  </div>
  )}
 
@@ -1509,11 +1506,11 @@ export default function ProfilePage() {
 
  {/* The Bar itself */}
  <div 
- className={`w-full rounded-2xl transition-all duration-300 ${
+ className={`w-full rounded-2xl transition-all duration-200 ${
  hasItems 
  ? isHovered 
- ? "bg-gradient-to-t from-[#c25e24] via-[#e07a3f] to-[#f59e0b] shadow-md dark:shadow-none shadow-[#e07a3f]/30 ring-2 ring-[#e07a3f]/40" 
- : "bg-[#e07a3f] shadow-2xs shadow-[#e07a3f]/20 hover:brightness-105" 
+ ? "bg-gradient-to-t from-[#c25e24] via-[#e07a3f] to-[#f59e0b] shadow-md shadow-[#e07a3f]/30 ring-2 ring-[#e07a3f]/40" 
+ : "bg-[#e07a3f] shadow-2xs hover:brightness-105" 
  : "bg-gray-200/90 dark:bg-[#48484a]/90"
  }`} 
  style={{ height: `${bar.heightPct}%` }}
@@ -1524,7 +1521,7 @@ export default function ProfilePage() {
  <div className="w-full h-6 pt-1.5 flex items-center justify-center shrink-0 overflow-hidden">
  <span 
  className={`text-[10px] text-center transition-colors block truncate w-full ${
- isHovered ? "text-gray-950 font-bold" : "text-gray-400 font-medium"
+ isHovered ? "text-gray-950 dark:text-white font-bold" : "text-gray-400 font-medium"
  }`} 
  title={bar.category}
  >

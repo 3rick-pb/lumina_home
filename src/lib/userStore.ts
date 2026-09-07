@@ -284,6 +284,9 @@ const fetchUserDataFromDatabase = async (userId: string, role: 'USER' | 'ADMIN' 
   }
 };
 
+let isAuthListenerAttached = false;
+let isInitializingAuth = false;
+
 export const useUserStore = create<UserState>((set, get) => ({
   user: null,
   isAuthenticated: false,
@@ -295,15 +298,16 @@ export const useUserStore = create<UserState>((set, get) => ({
   address: null,
   
   initializeAuth: async () => {
+    // If already in progress, avoid duplicate concurrent getSession calls
+    if (isInitializingAuth) return;
+    isInitializingAuth = true;
+
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session?.user) {
+      const { data: { session }, error } = await supabase.auth.getSession();
+      if (!error && session?.user) {
         const email = session.user.email || '';
         const { role, isRootAdmin } = await checkIsAdmin(email, session.user.user_metadata?.role);
         const name = formatCleanName(session.user.user_metadata?.name || email.split('@')[0]);
-        if (name && session.user.user_metadata?.name !== name) {
-          supabase.auth.updateUser({ data: { name } }).catch(() => {});
-        }
         
         // Fetch all user private data directly from Supabase database and API
         const personalData = await fetchUserDataFromDatabase(session.user.id, role, email);
@@ -311,6 +315,7 @@ export const useUserStore = create<UserState>((set, get) => ({
         set({ 
           user: { id: session.user.id, email, name, role, isRootAdmin }, 
           isAuthenticated: true,
+          isLoading: false,
           cards: personalData.cards,
           orders: personalData.orders,
           addresses: personalData.addresses,
@@ -326,44 +331,66 @@ export const useUserStore = create<UserState>((set, get) => ({
           set({ favorites: favs.map(f => f.product_id) });
         }
       } else {
-        await useCartStore.getState().initCartForUser(null);
-        set({ user: null, isAuthenticated: false, cards: [], orders: [], addresses: [], address: null, favorites: [] });
+        // If user is already authenticated in store, don't wipe on transient getSession glitch
+        if (!get().isAuthenticated) {
+          await useCartStore.getState().initCartForUser(null);
+          set({ user: null, isAuthenticated: false, cards: [], orders: [], addresses: [], address: null, favorites: [], isLoading: false });
+        } else {
+          set({ isLoading: false });
+        }
       }
+    } catch {
+      set({ isLoading: false });
     } finally {
+      isInitializingAuth = false;
       set({ isLoading: false });
     }
     
-    supabase.auth.onAuthStateChange(async (event, session) => {
-      if (session?.user) {
-        const email = session.user.email || '';
-        const { role, isRootAdmin } = await checkIsAdmin(email, session.user.user_metadata?.role);
-        const name = formatCleanName(session.user.user_metadata?.name || email.split('@')[0]);
-        if (name && session.user.user_metadata?.name !== name) {
-          supabase.auth.updateUser({ data: { name } }).catch(() => {});
+    // Attach onAuthStateChange listener ONCE across application lifetime
+    if (!isAuthListenerAttached) {
+      isAuthListenerAttached = true;
+
+      supabase.auth.onAuthStateChange(async (event, session) => {
+        // ONLY wipe state and sign out if this is an explicit user sign out
+        if (event === 'SIGNED_OUT') {
+          await useCartStore.getState().initCartForUser(null);
+          set({ user: null, isAuthenticated: false, favorites: [], cards: [], orders: [], address: null, isLoading: false });
+          return;
         }
-        const personalData = await fetchUserDataFromDatabase(session.user.id, role, email);
 
-        set({ 
-          user: { id: session.user.id, email, name, role, isRootAdmin }, 
-          isAuthenticated: true, 
-          isLoading: false,
-          cards: personalData.cards,
-          orders: personalData.orders,
-          addresses: personalData.addresses,
-          address: personalData.address
-        });
+        if (session?.user) {
+          const email = session.user.email || '';
+          const { role, isRootAdmin } = await checkIsAdmin(email, session.user.user_metadata?.role);
+          const name = formatCleanName(session.user.user_metadata?.name || email.split('@')[0]);
 
-        // Switch active cart strictly to this account from Supabase
-        await useCartStore.getState().initCartForUser(session.user.id);
+          const currentUserId = get().user?.id;
+          if (currentUserId !== session.user.id) {
+            const personalData = await fetchUserDataFromDatabase(session.user.id, role, email);
 
-        const { data: favs } = await supabase.from('favorites').select('product_id').eq('user_id', session.user.id);
-        if (favs) set({ favorites: favs.map(f => f.product_id) });
-      } else {
-        // Reset and wipe data when signed out
-        await useCartStore.getState().initCartForUser(null);
-        set({ user: null, isAuthenticated: false, favorites: [], cards: [], orders: [], address: null, isLoading: false });
-      }
-    });
+            set({ 
+              user: { id: session.user.id, email, name, role, isRootAdmin }, 
+              isAuthenticated: true, 
+              isLoading: false,
+              cards: personalData.cards,
+              orders: personalData.orders,
+              addresses: personalData.addresses,
+              address: personalData.address
+            });
+
+            await useCartStore.getState().initCartForUser(session.user.id);
+            const { data: favs } = await supabase.from('favorites').select('product_id').eq('user_id', session.user.id);
+            if (favs) set({ favorites: favs.map(f => f.product_id) });
+          } else {
+            // Maintain authentication and update fields smoothly without wiping
+            set((state) => ({
+              user: state.user ? { ...state.user, email, name, role, isRootAdmin } : { id: session.user.id, email, name, role, isRootAdmin },
+              isAuthenticated: true,
+              isLoading: false,
+            }));
+          }
+        }
+      });
+    }
   },
 
   login: async (email, password) => {
