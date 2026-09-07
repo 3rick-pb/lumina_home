@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState, useMemo } from "react";
+import React, { useEffect, useState, useMemo, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { clsx } from "clsx";
 import Image from "next/image";
@@ -225,9 +225,51 @@ export default function ProfilePage() {
  const [newCatInput, setNewCatInput] = useState("");
  const [newBadgeInput, setNewBadgeInput] = useState("");
 
- // Interactive Chart Hover States
- const [hoveredNicheIdx, setHoveredNicheIdx] = useState<number | null>(null);
- const [hoveredMonthIdx, setHoveredMonthIdx] = useState<number | null>(null);
+  // Interactive Chart Hover States
+  const [hoveredNicheIdx, setHoveredNicheIdx] = useState<number | null>(null);
+  const [hoveredMonthIdx, setHoveredMonthIdx] = useState<number | null>(null);
+  const nicheHoverTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const monthHoverTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  const handleNicheMouseEnter = (idx: number) => {
+    if (nicheHoverTimeoutRef.current) {
+      clearTimeout(nicheHoverTimeoutRef.current);
+      nicheHoverTimeoutRef.current = null;
+    }
+    setHoveredNicheIdx(idx);
+  };
+
+  const handleNicheMouseLeave = () => {
+    if (nicheHoverTimeoutRef.current) clearTimeout(nicheHoverTimeoutRef.current);
+    nicheHoverTimeoutRef.current = setTimeout(() => {
+      setHoveredNicheIdx(null);
+    }, 150);
+  };
+
+  const handleNicheContainerLeave = () => {
+    if (nicheHoverTimeoutRef.current) clearTimeout(nicheHoverTimeoutRef.current);
+    setHoveredNicheIdx(null);
+  };
+
+  const handleMonthMouseEnter = (idx: number) => {
+    if (monthHoverTimeoutRef.current) {
+      clearTimeout(monthHoverTimeoutRef.current);
+      monthHoverTimeoutRef.current = null;
+    }
+    setHoveredMonthIdx(idx);
+  };
+
+  const handleMonthMouseLeave = () => {
+    if (monthHoverTimeoutRef.current) clearTimeout(monthHoverTimeoutRef.current);
+    monthHoverTimeoutRef.current = setTimeout(() => {
+      setHoveredMonthIdx(null);
+    }, 150);
+  };
+
+  const handleMonthContainerLeave = () => {
+    if (monthHoverTimeoutRef.current) clearTimeout(monthHoverTimeoutRef.current);
+    setHoveredMonthIdx(null);
+  };
 
  const handleAddBadgeSubmit = (e: React.FormEvent) => {
  e.preventDefault();
@@ -1424,22 +1466,31 @@ export default function ProfilePage() {
  <h3 className="text-sm font-bold text-gray-900 dark:text-gray-100 truncate">
  {isAdmin ? "Inventario por Nicho" : "Frecuencia de Compras"}
  </h3>
- <p className="text-xs text-gray-400 truncate">
+ <p className="text-xs text-gray-500 dark:text-gray-400 truncate transition-all duration-200">
  {isAdmin 
- ? "Volumen real de piezas por categoría" 
- : "Gastos calculados por mes (2026)"}
+ ? (hoveredNicheIdx !== null && categoryDistributionData[hoveredNicheIdx] 
+ ? `${categoryDistributionData[hoveredNicheIdx].category}: ${categoryDistributionData[hoveredNicheIdx].count} piezas (${categoryDistributionData[hoveredNicheIdx].pctOfTotal}% del catálogo)`
+ : "Volumen real de piezas por categoría") 
+ : (hoveredMonthIdx !== null && monthlySpendData[hoveredMonthIdx]
+ ? `${monthlySpendData[hoveredMonthIdx].month}: $${monthlySpendData[hoveredMonthIdx].total.toFixed(2)} gastados`
+ : "Gastos calculados por mes (2026)")}
  </p>
  </div>
- <span className="text-[10px] font-bold px-2 py-1 bg-gray-100 dark:bg-[#3a3a3c] rounded-lg text-gray-600 dark:text-gray-400 shrink-0">
+ <span className="text-[10px] font-bold px-2 py-1 bg-gray-100 dark:bg-[#3a3a3c] rounded-lg text-gray-600 dark:text-gray-400 shrink-0 transition-all duration-200">
  {isAdmin 
- ? `${products.length} Total`
- : "Semestre"}
+ ? (hoveredNicheIdx !== null && categoryDistributionData[hoveredNicheIdx]
+ ? `${categoryDistributionData[hoveredNicheIdx].count} piezas`
+ : `${products.length} Total`)
+ : (hoveredMonthIdx !== null && monthlySpendData[hoveredMonthIdx]
+ ? `$${monthlySpendData[hoveredMonthIdx].total.toFixed(0)}`
+ : "Semestre")}
  </span>
  </div>
 
  {/* Visual Dynamic Bar Chart with Decoupled Anchored Labels and Smooth Column Hover Expansion */}
  <div className="relative w-full my-auto">
  <div 
+ onMouseLeave={isAdmin ? handleNicheContainerLeave : handleMonthContainerLeave}
  className={`flex items-end h-40 pt-7 pb-1 px-1 overflow-x-auto overflow-y-hidden select-none cursor-grab active:cursor-grabbing ${
  categoryDistributionData.length <= 4 
  ? "justify-around gap-3" 
@@ -1472,8 +1523,8 @@ export default function ProfilePage() {
  return (
  <div 
  key={idx} 
- onMouseEnter={() => setHoveredNicheIdx(idx)}
- onMouseLeave={() => setHoveredNicheIdx(null)}
+ onMouseEnter={() => handleNicheMouseEnter(idx)}
+ onMouseLeave={handleNicheMouseLeave}
  className={`flex flex-col items-center h-full justify-between group cursor-pointer relative ${widthClass} z-10`}
  >
  {/* 1. Bar Area (bounded in flex-1, bar grows upwards with capped max 82% height) */}
@@ -1531,8 +1582,8 @@ export default function ProfilePage() {
  return (
  <div 
  key={idx} 
- onMouseEnter={() => setHoveredMonthIdx(idx)}
- onMouseLeave={() => setHoveredMonthIdx(null)}
+ onMouseEnter={() => handleMonthMouseEnter(idx)}
+ onMouseLeave={handleMonthMouseLeave}
  className="flex-1 min-w-[2.5rem] flex flex-col items-center h-full justify-between transition-all duration-300 group cursor-pointer relative"
  title={`${bar.month}: $${bar.total.toFixed(2)}`}
  >
