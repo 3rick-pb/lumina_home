@@ -9,6 +9,7 @@ export interface User {
   email: string;
   name: string;
   role: 'USER' | 'ADMIN';
+  isRootAdmin?: boolean;
 }
 
 export interface Order {
@@ -115,6 +116,35 @@ export const formatCleanName = (rawName: string) => {
   // 6. Clean multiple spaces and capitalize words properly
   const words = formatted.replace(/\s+/g, ' ').trim().split(' ');
   return words.map(w => w.toUpperCase() === 'ADMIN' ? 'ADMIN' : w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ');
+};
+
+export const checkIsAdmin = async (email: string, metadataRole?: string): Promise<{ role: 'USER' | 'ADMIN'; isRootAdmin: boolean }> => {
+  const normalized = (email || '').toLowerCase().trim();
+  if (normalized === 'admin@lumina.com') {
+    return { role: 'ADMIN', isRootAdmin: true };
+  }
+  if (metadataRole === 'ADMIN') {
+    return { role: 'ADMIN', isRootAdmin: false };
+  }
+  try {
+    const res = await fetch('/api/admin/invitations', { cache: 'no-store' });
+    if (res.ok) {
+      const data = await res.json();
+      if (Array.isArray(data.invitedAdmins) && data.invitedAdmins.includes(normalized)) {
+        return { role: 'ADMIN', isRootAdmin: false };
+      }
+    }
+  } catch {
+    // Non-critical
+  }
+
+  if (typeof window !== 'undefined') {
+    const saved = localStorage.getItem('lumina_admin_invites');
+    if (saved && saved.toLowerCase().includes(normalized)) {
+      return { role: 'ADMIN', isRootAdmin: false };
+    }
+  }
+  return { role: 'USER', isRootAdmin: false };
 };
 
 const fetchUserDataFromDatabase = async (userId: string, role: 'USER' | 'ADMIN' = 'USER', email: string = '') => {
@@ -269,7 +299,7 @@ export const useUserStore = create<UserState>((set, get) => ({
       const { data: { session } } = await supabase.auth.getSession();
       if (session?.user) {
         const email = session.user.email || '';
-        const role = (email.toLowerCase() === 'admin@lumina.com' || session.user.user_metadata?.role === 'ADMIN') ? 'ADMIN' : 'USER';
+        const { role, isRootAdmin } = await checkIsAdmin(email, session.user.user_metadata?.role);
         const name = formatCleanName(session.user.user_metadata?.name || email.split('@')[0]);
         if (name && session.user.user_metadata?.name !== name) {
           supabase.auth.updateUser({ data: { name } }).catch(() => {});
@@ -279,7 +309,7 @@ export const useUserStore = create<UserState>((set, get) => ({
         const personalData = await fetchUserDataFromDatabase(session.user.id, role, email);
 
         set({ 
-          user: { id: session.user.id, email, name, role }, 
+          user: { id: session.user.id, email, name, role, isRootAdmin }, 
           isAuthenticated: true,
           cards: personalData.cards,
           orders: personalData.orders,
@@ -306,7 +336,7 @@ export const useUserStore = create<UserState>((set, get) => ({
     supabase.auth.onAuthStateChange(async (event, session) => {
       if (session?.user) {
         const email = session.user.email || '';
-        const role = (email.toLowerCase() === 'admin@lumina.com' || session.user.user_metadata?.role === 'ADMIN') ? 'ADMIN' : 'USER';
+        const { role, isRootAdmin } = await checkIsAdmin(email, session.user.user_metadata?.role);
         const name = formatCleanName(session.user.user_metadata?.name || email.split('@')[0]);
         if (name && session.user.user_metadata?.name !== name) {
           supabase.auth.updateUser({ data: { name } }).catch(() => {});
@@ -314,7 +344,7 @@ export const useUserStore = create<UserState>((set, get) => ({
         const personalData = await fetchUserDataFromDatabase(session.user.id, role, email);
 
         set({ 
-          user: { id: session.user.id, email, name, role }, 
+          user: { id: session.user.id, email, name, role, isRootAdmin }, 
           isAuthenticated: true, 
           isLoading: false,
           cards: personalData.cards,
@@ -341,7 +371,7 @@ export const useUserStore = create<UserState>((set, get) => ({
     const { data, error } = await supabase.auth.signInWithPassword({ email: cleanEmail, password });
     if (!error && data?.user) {
       const userEmail = data.user.email || cleanEmail;
-      const role = (userEmail.toLowerCase() === 'admin@lumina.com' || data.user.user_metadata?.role === 'ADMIN') ? 'ADMIN' : 'USER';
+      const { role, isRootAdmin } = await checkIsAdmin(userEmail, data.user.user_metadata?.role);
       const name = formatCleanName(data.user.user_metadata?.name || userEmail.split('@')[0]);
       if (name && data.user.user_metadata?.name !== name) {
         supabase.auth.updateUser({ data: { name } }).catch(() => {});
@@ -349,7 +379,7 @@ export const useUserStore = create<UserState>((set, get) => ({
       const personalData = await fetchUserDataFromDatabase(data.user.id, role, userEmail);
 
       set({ 
-        user: { id: data.user.id, email: userEmail, name, role }, 
+        user: { id: data.user.id, email: userEmail, name, role, isRootAdmin }, 
         isAuthenticated: true,
         cards: personalData.cards,
         orders: personalData.orders,
@@ -444,7 +474,7 @@ export const useUserStore = create<UserState>((set, get) => ({
   register: async (email, password, name) => {
     const cleanEmail = email.trim();
     const cleanName = formatCleanName(name);
-    const role = cleanEmail.toLowerCase() === 'admin@lumina.com' ? 'ADMIN' : 'USER';
+    const { role, isRootAdmin } = await checkIsAdmin(cleanEmail);
     const { data, error } = await supabase.auth.signUp({ 
       email: cleanEmail, 
       password,
@@ -452,7 +482,7 @@ export const useUserStore = create<UserState>((set, get) => ({
     });
     if (!error && data?.user) {
       set({ 
-        user: { id: data.user.id, email: cleanEmail, name: cleanName, role }, 
+        user: { id: data.user.id, email: cleanEmail, name: cleanName, role, isRootAdmin }, 
         isAuthenticated: true,
         cards: [],
         orders: [],

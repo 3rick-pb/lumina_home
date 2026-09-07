@@ -35,7 +35,10 @@ import {
  Star,
  Navigation,
  Loader2,
- Globe
+ Globe,
+ Lock,
+ Crown,
+ Mail
 } from "lucide-react";
 import { useUserStore, Order, formatCleanName } from "@/lib/userStore";
 import { useThemeStore, getResolvedTheme } from "@/lib/themeStore";
@@ -238,8 +241,95 @@ export default function ProfilePage() {
  const [editName, setEditName] = useState("");
  const [newPass, setNewPass] = useState("");
  const [adminEmails, setAdminEmails] = useState("");
+ const [invitedAdmins, setInvitedAdmins] = useState<string[]>([]);
+ const [adminInviteInput, setAdminInviteInput] = useState("");
+ const [isSyncingAdmins, setIsSyncingAdmins] = useState(false);
+ const [inviteError, setInviteError] = useState<string | null>(null);
+ const [inviteSuccess, setInviteSuccess] = useState<string | null>(null);
  const [settingsFeedback, setSettingsFeedback] = useState<{ msg: string; type: "success" | "error" } | null>(null);
  const [isUpdatingSettings, setIsUpdatingSettings] = useState(false);
+
+ const fetchInvitedAdmins = async () => {
+   try {
+     const res = await fetch('/api/admin/invitations', { cache: 'no-store' });
+     if (res.ok) {
+       const data = await res.json();
+       if (Array.isArray(data.invitedAdmins)) {
+         setInvitedAdmins(data.invitedAdmins);
+         setAdminEmails(data.invitedAdmins.join(', '));
+       }
+     }
+   } catch {
+     // Non-critical fallback
+   }
+ };
+
+ const handleAddAdminInvite = async (emailsToAdd?: string) => {
+   const raw = (emailsToAdd !== undefined ? emailsToAdd : adminInviteInput).trim();
+   if (!raw) return;
+   setInviteError(null);
+   setInviteSuccess(null);
+   setIsSyncingAdmins(true);
+   try {
+     const res = await fetch('/api/admin/invitations', {
+       method: 'POST',
+       headers: { 'Content-Type': 'application/json' },
+       body: JSON.stringify({
+         requesterEmail: user?.email,
+         action: 'add',
+         emails: raw,
+       }),
+     });
+     const data = await res.json();
+     if (!res.ok || !data.success) {
+       throw new Error(data.error || 'Error al agregar administrador.');
+     }
+     setInvitedAdmins(data.invitedAdmins);
+     setAdminEmails(data.invitedAdmins.join(', '));
+     setAdminInviteInput("");
+     setInviteSuccess("Administrador(es) invitado(s) con éxito.");
+     if (typeof window !== "undefined") {
+       localStorage.setItem("lumina_admin_invites", data.invitedAdmins.join(", "));
+     }
+   } catch (err: unknown) {
+     const msg = err instanceof Error ? err.message : 'Error al procesar la invitación.';
+     setInviteError(msg);
+   } finally {
+     setIsSyncingAdmins(false);
+   }
+ };
+
+ const handleRemoveAdminInvite = async (targetEmail: string) => {
+   setInviteError(null);
+   setInviteSuccess(null);
+   setIsSyncingAdmins(true);
+   try {
+     const res = await fetch('/api/admin/invitations', {
+       method: 'POST',
+       headers: { 'Content-Type': 'application/json' },
+       body: JSON.stringify({
+         requesterEmail: user?.email,
+         action: 'remove',
+         email: targetEmail,
+       }),
+     });
+     const data = await res.json();
+     if (!res.ok || !data.success) {
+       throw new Error(data.error || 'Error al revocar administrador.');
+     }
+     setInvitedAdmins(data.invitedAdmins);
+     setAdminEmails(data.invitedAdmins.join(', '));
+     setInviteSuccess(`Acceso revocado para '${targetEmail}'.`);
+     if (typeof window !== "undefined") {
+       localStorage.setItem("lumina_admin_invites", data.invitedAdmins.join(", "));
+     }
+   } catch (err: unknown) {
+     const msg = err instanceof Error ? err.message : 'Error al revocar administrador.';
+     setInviteError(msg);
+   } finally {
+     setIsSyncingAdmins(false);
+   }
+ };
 
  useEffect(() => {
  setIsMounted(true);
@@ -261,6 +351,9 @@ export default function ProfilePage() {
  useEffect(() => {
  if (user?.name) {
  setEditName(user.name);
+ }
+ if (user?.role === 'ADMIN') {
+ fetchInvitedAdmins();
  }
  }, [user]);
 
@@ -416,6 +509,7 @@ export default function ProfilePage() {
  }
 
  const isAdmin = user.role === "ADMIN";
+ const isRootAdmin = Boolean(user.isRootAdmin ?? (user.email.toLowerCase() === 'admin@lumina.com'));
 
  // Auto calculate discount
  const handlePriceChange = (newP: string, newOldP: string, withDisc: boolean) => {
@@ -735,24 +829,42 @@ export default function ProfilePage() {
  setNewPass("");
  }
 
- if (adminEmails) {
- const emails = adminEmails.split(',').map(e => e.trim()).filter(e => e);
- if (emails.length > 3) {
- throw new Error("Solo puedes invitar hasta 3 administradores extra.");
- }
- const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
- for (const email of emails) {
- if (!emailRegex.test(email)) {
- throw new Error(`El correo '${email}' no es un correo electrónico válido.`);
- }
- }
- if (typeof window !== "undefined") {
- localStorage.setItem("lumina_admin_invites", emails.join(", "));
- }
- } else {
- if (typeof window !== "undefined") {
- localStorage.removeItem("lumina_admin_invites");
- }
+ if (isRootAdmin) {
+   if (adminEmails) {
+     const emails = adminEmails.split(',').map(e => e.trim()).filter(Boolean);
+     if (emails.length > 3) {
+       throw new Error("Solo puedes invitar hasta 3 administradores extra (máximo 4 administradores en total).");
+     }
+     const res = await fetch('/api/admin/invitations', {
+       method: 'POST',
+       headers: { 'Content-Type': 'application/json' },
+       body: JSON.stringify({
+         requesterEmail: user.email,
+         emails,
+       }),
+     });
+     const data = await res.json();
+     if (!res.ok || !data.success) {
+       throw new Error(data.error || "Error al actualizar administradores.");
+     }
+     setInvitedAdmins(data.invitedAdmins);
+     if (typeof window !== "undefined") {
+       localStorage.setItem("lumina_admin_invites", data.invitedAdmins.join(", "));
+     }
+   } else {
+     await fetch('/api/admin/invitations', {
+       method: 'POST',
+       headers: { 'Content-Type': 'application/json' },
+       body: JSON.stringify({
+         requesterEmail: user.email,
+         emails: [],
+       }),
+     });
+     setInvitedAdmins([]);
+     if (typeof window !== "undefined") {
+       localStorage.removeItem("lumina_admin_invites");
+     }
+   }
  }
 
  setSettingsFeedback({ msg: "Configuración guardada correctamente.", type: "success" });
@@ -772,101 +884,219 @@ export default function ProfilePage() {
  transition-duration: 1500ms;
  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
  }
+ /* Left Vertical Navigation Dock: Precisely 0.6s (600ms) transition */
+ .sidebar-dock-nav,
+ .sidebar-dock-nav *,
+ .sidebar-dock-btn,
+ .sidebar-dock-btn * {
+ transition-property: all !important;
+ transition-duration: 600ms !important;
+ transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1) !important;
+ }
+ /* Custom sleek scrollbar for order details modal */
+ .lumina-order-modal-scroll::-webkit-scrollbar {
+ width: 6px;
+ }
+ .lumina-order-modal-scroll::-webkit-scrollbar-track {
+ background: transparent;
+ margin: 16px 0;
+ }
+ .lumina-order-modal-scroll::-webkit-scrollbar-thumb {
+ background: rgba(140, 146, 118, 0.4);
+ border-radius: 9999px;
+ border: 1px solid transparent;
+ transition: background 0.3s ease;
+ }
+ .lumina-order-modal-scroll::-webkit-scrollbar-thumb:hover {
+ background: rgba(140, 146, 118, 0.85);
+ }
+ .dark .lumina-order-modal-scroll::-webkit-scrollbar-thumb {
+ background: rgba(255, 255, 255, 0.22);
+ }
+ .dark .lumina-order-modal-scroll::-webkit-scrollbar-thumb:hover {
+ background: rgba(255, 255, 255, 0.45);
+ }
+ .lumina-order-modal-scroll {
+ scrollbar-width: thin;
+ scrollbar-color: rgba(140, 146, 118, 0.4) transparent;
+ }
+ .dark .lumina-order-modal-scroll {
+ scrollbar-color: rgba(255, 255, 255, 0.22) transparent;
+ }
  `}</style>
  <div className="theme-transition min-h-screen w-full max-w-full overflow-x-hidden bg-[#f3f4f6] dark:bg-[#202022] text-gray-900 dark:text-gray-100 flex p-3 md:p-6 lg:p-8 selection:bg-[#8c9276]/20">
  
- {/* 1. Left Vertical Icon Sidebar (Reference Style) */}
- <aside className="w-16 md:w-20 bg-white/90 dark:bg-[#202022]/90 backdrop-blur-2xl rounded-3xl border border-white/80 shadow-[0_8px_32px_rgba(0,0,0,0.03)] flex flex-col items-center py-6 gap-6 justify-between shrink-0 mr-4 md:mr-6 self-stretch">
+ {/* 1. Left Vertical Icon Sidebar (Redesigned Elevated Dock) */}
+ <aside className="sidebar-dock-nav w-16 md:w-20 bg-white/95 dark:bg-[#1e1e20]/95 backdrop-blur-2xl rounded-[2.5rem] border border-gray-200/80 dark:border-white/10 shadow-[0_12px_40px_rgba(0,0,0,0.05)] dark:shadow-[0_12px_40px_rgba(0,0,0,0.4)] flex flex-col items-center py-6 gap-6 justify-between shrink-0 mr-4 md:mr-6 self-stretch relative z-30">
  
  {/* Brand Logo Symbol */}
- <div className="flex flex-col items-center gap-6">
- <Link href="/" className="w-11 h-11 rounded-2xl bg-gradient-to-tr from-[#8c9276] to-[#a4ab8c] flex items-center justify-center text-white dark:text-gray-900 shadow-md dark:shadow-none shadow-[#8c9276]/20 hover:scale-105 transition-transform" title="Volver a la Tienda Lumina">
- <span className="font-display font-bold text-xl italic">L</span>
+ <div className="flex flex-col items-center gap-5 w-full">
+ <Link 
+   href="/" 
+   className="sidebar-dock-btn group relative w-11 h-11 md:w-12 md:h-12 rounded-2xl bg-gradient-to-tr from-[#8c9276] via-[#9ca383] to-[#ccff00]/70 flex items-center justify-center text-white dark:text-gray-950 shadow-md shadow-[#8c9276]/30 hover:scale-105 active:scale-95 transition-all duration-[600ms]" 
+   title="Volver a la Tienda Lumina"
+ >
+   <span className="font-display font-bold text-xl italic group-hover:scale-110 transition-transform duration-[600ms]">L</span>
+   <span className="absolute -bottom-1 w-1.5 h-1.5 rounded-full bg-[#ccff00] opacity-0 group-hover:opacity-100 transition-opacity duration-[600ms]" />
  </Link>
 
+ {/* Thin luxury divider */}
+ <div className="w-8 h-[1px] bg-gradient-to-r from-transparent via-gray-200 dark:via-white/10 to-transparent" />
+
  {/* Navigation Icons */}
- <nav className="flex flex-col items-center gap-3">
+ <nav className="flex flex-col items-center gap-2.5 w-full px-2">
  <button 
- onClick={() => setActiveTab("overview")} 
- className={`w-11 h-11 rounded-2xl flex items-center justify-center transition-all ${activeTab === "overview" ? "bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 shadow-md dark:shadow-none shadow-gray-900/15" : "text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-[#3a3a3c]"}`}
- title="Vista General"
+   onClick={() => setActiveTab("overview")} 
+   className={`sidebar-dock-btn relative w-11 h-11 md:w-12 md:h-12 rounded-2xl flex items-center justify-center transition-all duration-[600ms] cursor-pointer group ${
+     activeTab === "overview" 
+       ? "bg-gray-950 dark:bg-white text-white dark:text-gray-950 shadow-lg shadow-gray-950/20 dark:shadow-white/15 scale-105" 
+       : "text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100/80 dark:hover:bg-white/5 hover:scale-105 active:scale-95"
+   }`}
+   title="Vista General"
  >
- <LayoutDashboard className="w-5 h-5" />
+   {activeTab === "overview" && (
+     <span className="absolute -left-2 w-1 h-5 bg-[#8c9276] dark:bg-[#ccff00] rounded-r-full transition-all duration-[600ms]" />
+   )}
+   <LayoutDashboard className="w-5 h-5 transition-transform duration-[600ms] group-hover:scale-110" />
  </button>
 
  <button 
- onClick={() => setActiveTab("orders")} 
- className={`w-11 h-11 rounded-2xl flex items-center justify-center transition-all ${activeTab === "orders" ? "bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 shadow-md dark:shadow-none shadow-gray-900/15" : "text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-[#3a3a3c]"}`}
- title="Pedidos & Historial"
+   onClick={() => setActiveTab("orders")} 
+   className={`sidebar-dock-btn relative w-11 h-11 md:w-12 md:h-12 rounded-2xl flex items-center justify-center transition-all duration-[600ms] cursor-pointer group ${
+     activeTab === "orders" 
+       ? "bg-gray-950 dark:bg-white text-white dark:text-gray-950 shadow-lg shadow-gray-950/20 dark:shadow-white/15 scale-105" 
+       : "text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100/80 dark:hover:bg-white/5 hover:scale-105 active:scale-95"
+   }`}
+   title="Pedidos & Historial"
  >
- <ShoppingBag className="w-5 h-5" />
+   {activeTab === "orders" && (
+     <span className="absolute -left-2 w-1 h-5 bg-[#8c9276] dark:bg-[#ccff00] rounded-r-full transition-all duration-[600ms]" />
+   )}
+   <ShoppingBag className="w-5 h-5 transition-transform duration-[600ms] group-hover:scale-110" />
+   {orders.length > 0 && activeTab !== "orders" && (
+     <span className="absolute top-2 right-2 w-2 h-2 rounded-full bg-[#8c9276] ring-2 ring-white dark:ring-[#1e1e20]" />
+   )}
  </button>
 
  <button 
- onClick={() => setActiveTab("cards")} 
- className={`w-11 h-11 rounded-2xl flex items-center justify-center transition-all ${activeTab === "cards" ? "bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 shadow-md dark:shadow-none shadow-gray-900/15" : "text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-[#3a3a3c]"}`}
- title="Mis Tarjetas"
+   onClick={() => setActiveTab("cards")} 
+   className={`sidebar-dock-btn relative w-11 h-11 md:w-12 md:h-12 rounded-2xl flex items-center justify-center transition-all duration-[600ms] cursor-pointer group ${
+     activeTab === "cards" 
+       ? "bg-gray-950 dark:bg-white text-white dark:text-gray-950 shadow-lg shadow-gray-950/20 dark:shadow-white/15 scale-105" 
+       : "text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100/80 dark:hover:bg-white/5 hover:scale-105 active:scale-95"
+   }`}
+   title="Mis Tarjetas"
  >
- <CreditCard className="w-5 h-5" />
+   {activeTab === "cards" && (
+     <span className="absolute -left-2 w-1 h-5 bg-[#8c9276] dark:bg-[#ccff00] rounded-r-full transition-all duration-[600ms]" />
+   )}
+   <CreditCard className="w-5 h-5 transition-transform duration-[600ms] group-hover:scale-110" />
  </button>
 
  <button 
- onClick={() => setActiveTab("favorites")} 
- className={`w-11 h-11 rounded-2xl flex items-center justify-center transition-all ${activeTab === "favorites" ? "bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 shadow-md dark:shadow-none shadow-gray-900/15" : "text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-[#3a3a3c]"}`}
- title="Favoritos Guardados"
+   onClick={() => setActiveTab("favorites")} 
+   className={`sidebar-dock-btn relative w-11 h-11 md:w-12 md:h-12 rounded-2xl flex items-center justify-center transition-all duration-[600ms] cursor-pointer group ${
+     activeTab === "favorites" 
+       ? "bg-gray-950 dark:bg-white text-white dark:text-gray-950 shadow-lg shadow-gray-950/20 dark:shadow-white/15 scale-105" 
+       : "text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100/80 dark:hover:bg-white/5 hover:scale-105 active:scale-95"
+   }`}
+   title="Favoritos Guardados"
  >
- <Heart className="w-5 h-5" />
+   {activeTab === "favorites" && (
+     <span className="absolute -left-2 w-1 h-5 bg-[#8c9276] dark:bg-[#ccff00] rounded-r-full transition-all duration-[600ms]" />
+   )}
+   <Heart className="w-5 h-5 transition-transform duration-[600ms] group-hover:scale-110" />
+   {favorites.length > 0 && activeTab !== "favorites" && (
+     <span className="absolute top-2 right-2 w-2 h-2 rounded-full bg-rose-500 ring-2 ring-white dark:ring-[#1e1e20]" />
+   )}
  </button>
 
  {isAdmin && (
- <>
- <button 
- onClick={() => setActiveTab("catalog")} 
- className={`w-11 h-11 rounded-2xl flex items-center justify-center transition-all ${activeTab === "catalog" ? "bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 shadow-md dark:shadow-none shadow-gray-900/15" : "text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-[#3a3a3c]"}`}
- title="Control de Catálogo"
- >
- <Package className="w-5 h-5" />
- </button>
+   <>
+     <div className="w-6 h-[1px] bg-gradient-to-r from-transparent via-gray-200 dark:via-white/10 to-transparent my-1" />
 
- <button 
- onClick={() => setActiveTab("niches")} 
- className={`w-11 h-11 rounded-2xl flex items-center justify-center transition-all ${activeTab === "niches" ? "bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 shadow-md dark:shadow-none shadow-gray-900/15" : "text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-[#3a3a3c]"}`}
- title="Gestión de Nichos"
- >
- <Layers className="w-5 h-5" />
- </button>
+     <button 
+       onClick={() => setActiveTab("catalog")} 
+       className={`sidebar-dock-btn relative w-11 h-11 md:w-12 md:h-12 rounded-2xl flex items-center justify-center transition-all duration-[600ms] cursor-pointer group ${
+         activeTab === "catalog" 
+           ? "bg-gray-950 dark:bg-white text-white dark:text-gray-950 shadow-lg shadow-gray-950/20 dark:shadow-white/15 scale-105" 
+           : "text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100/80 dark:hover:bg-white/5 hover:scale-105 active:scale-95"
+       }`}
+       title="Control de Catálogo"
+     >
+       {activeTab === "catalog" && (
+         <span className="absolute -left-2 w-1 h-5 bg-[#8c9276] dark:bg-[#ccff00] rounded-r-full transition-all duration-[600ms]" />
+       )}
+       <Package className="w-5 h-5 transition-transform duration-[600ms] group-hover:scale-110" />
+     </button>
 
- <button 
- onClick={() => setActiveTab("analytics")} 
- className={`w-11 h-11 rounded-2xl flex items-center justify-center transition-all ${activeTab === "analytics" ? "bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 shadow-md dark:shadow-none shadow-gray-900/15" : "text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-[#3a3a3c]"}`}
- title="Radar de Clientes & Analítica"
- >
- <Globe className="w-5 h-5" />
- </button>
- </>
+     <button 
+       onClick={() => setActiveTab("niches")} 
+       className={`sidebar-dock-btn relative w-11 h-11 md:w-12 md:h-12 rounded-2xl flex items-center justify-center transition-all duration-[600ms] cursor-pointer group ${
+         activeTab === "niches" 
+           ? "bg-gray-950 dark:bg-white text-white dark:text-gray-950 shadow-lg shadow-gray-950/20 dark:shadow-white/15 scale-105" 
+           : "text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100/80 dark:hover:bg-white/5 hover:scale-105 active:scale-95"
+       }`}
+       title="Gestión de Nichos"
+     >
+       {activeTab === "niches" && (
+         <span className="absolute -left-2 w-1 h-5 bg-[#8c9276] dark:bg-[#ccff00] rounded-r-full transition-all duration-[600ms]" />
+       )}
+       <Layers className="w-5 h-5 transition-transform duration-[600ms] group-hover:scale-110" />
+     </button>
+
+     <button 
+       onClick={() => setActiveTab("analytics")} 
+       className={`sidebar-dock-btn relative w-11 h-11 md:w-12 md:h-12 rounded-2xl flex items-center justify-center transition-all duration-[600ms] cursor-pointer group ${
+         activeTab === "analytics" 
+           ? "bg-gray-950 dark:bg-white text-white dark:text-gray-950 shadow-lg shadow-gray-950/20 dark:shadow-white/15 scale-105" 
+           : "text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100/80 dark:hover:bg-white/5 hover:scale-105 active:scale-95"
+       }`}
+       title="Radar de Clientes & Analítica"
+     >
+       {activeTab === "analytics" && (
+         <span className="absolute -left-2 w-1 h-5 bg-[#8c9276] dark:bg-[#ccff00] rounded-r-full transition-all duration-[600ms]" />
+       )}
+       <Globe className="w-5 h-5 transition-transform duration-[600ms] group-hover:scale-110" />
+     </button>
+   </>
  )}
 
+ <div className="w-6 h-[1px] bg-gradient-to-r from-transparent via-gray-200 dark:via-white/10 to-transparent my-1" />
+
  <button 
- onClick={() => setActiveTab("settings")} 
- className={`w-11 h-11 rounded-2xl flex items-center justify-center transition-all ${activeTab === "settings" ? "bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 shadow-md dark:shadow-none shadow-gray-900/15" : "text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-[#3a3a3c]"}`}
- title="Ajustes de Cuenta"
+   onClick={() => setActiveTab("settings")} 
+   className={`sidebar-dock-btn relative w-11 h-11 md:w-12 md:h-12 rounded-2xl flex items-center justify-center transition-all duration-[600ms] cursor-pointer group ${
+     activeTab === "settings" 
+       ? "bg-gray-950 dark:bg-white text-white dark:text-gray-950 shadow-lg shadow-gray-950/20 dark:shadow-white/15 scale-105" 
+       : "text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100/80 dark:hover:bg-white/5 hover:scale-105 active:scale-95"
+   }`}
+   title="Ajustes de Cuenta"
  >
- <Settings className="w-5 h-5" />
+   {activeTab === "settings" && (
+     <span className="absolute -left-2 w-1 h-5 bg-[#8c9276] dark:bg-[#ccff00] rounded-r-full transition-all duration-[600ms]" />
+   )}
+   <Settings className="w-5 h-5 transition-transform duration-[600ms] group-hover:scale-110" />
  </button>
  </nav>
  </div>
 
  {/* Bottom Actions */}
- <div className="flex flex-col items-center gap-3">
- <Link href="/" className="w-10 h-10 rounded-2xl flex items-center justify-center text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-[#3a3a3c] transition-colors" title="Volver a la Tienda">
- <Store className="w-5 h-5" />
+ <div className="flex flex-col items-center gap-3 w-full px-2">
+ <div className="w-8 h-[1px] bg-gradient-to-r from-transparent via-gray-200 dark:via-white/10 to-transparent" />
+ <Link 
+   href="/" 
+   className="sidebar-dock-btn relative w-10 h-10 md:w-11 md:h-11 rounded-2xl flex items-center justify-center text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100/80 dark:hover:bg-white/5 transition-all duration-[600ms] group" 
+   title="Volver a la Tienda"
+ >
+   <Store className="w-5 h-5 transition-transform duration-[600ms] group-hover:scale-110" />
  </Link>
  <button 
- onClick={() => { logout(); router.push("/auth/login"); }} 
- className="w-10 h-10 rounded-2xl flex items-center justify-center text-red-400 hover:text-red-600 hover:bg-red-50 transition-colors"
- title="Cerrar Sesión"
+   onClick={() => { logout(); router.push("/auth/login"); }} 
+   className="sidebar-dock-btn relative w-10 h-10 md:w-11 md:h-11 rounded-2xl flex items-center justify-center text-red-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/40 transition-all duration-[600ms] group cursor-pointer"
+   title="Cerrar Sesión"
  >
- <LogOut className="w-5 h-5" />
+   <LogOut className="w-5 h-5 transition-transform duration-[600ms] group-hover:scale-110" />
  </button>
  </div>
  </aside>
@@ -2241,7 +2471,7 @@ export default function ProfilePage() {
  <div className="flex justify-center">
  <ThemeToggle />
  </div>
- </div>
+</div>
 
  {/* Form */}
  <form onSubmit={handleSaveSettings} className="space-y-6 relative z-10">
@@ -2283,25 +2513,148 @@ export default function ProfilePage() {
  </div>
 
  {isAdmin && (
- <div className="pt-2">
- <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2 pl-1">
- Invitación de Administradores (Máx. 3, separados por coma)
- </label>
- <div className="relative">
- <UserIcon className="w-4 h-4 absolute left-3.5 top-3 text-gray-400" />
- <input 
- type="text" 
- value={adminEmails}
- onChange={e => setAdminEmails(e.target.value)}
- placeholder="admin1@ejemplo.com, admin2@ejemplo.com"
- className="w-full pl-11 pr-4 py-3.5 rounded-2xl dark: border border-gray-200 dark:border-white/10 text-sm dark: focus:outline-none focus:ring-2 focus:ring-[#8c9276] transition-all bg-white dark:bg-[#1a1a1c] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500"
- />
- </div>
- <p className="text-[10px] text-gray-500 dark:text-gray-400 mt-1">
- Estos correos tendrán acceso completo al panel de control maestro como administradores adicionales.
- </p>
- </div>
- )}
+  <div className="pt-4 border-t border-gray-100 dark:border-white/5 space-y-4">
+    {isRootAdmin ? (
+      /* Root Admin Management Card */
+      <div className="p-5 rounded-2xl bg-gradient-to-br from-gray-50 to-gray-100/50 dark:from-[#2a2a2c]/80 dark:to-[#222224]/80 border border-gray-200/80 dark:border-white/10 space-y-4 shadow-sm">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center font-bold">
+              <Crown className="w-4 h-4" />
+            </div>
+            <div>
+              <h4 className="text-xs font-bold text-gray-900 dark:text-gray-100">
+                Invitación de Administradores
+              </h4>
+              <p className="text-[11px] text-gray-500 dark:text-gray-400">
+                Exclusivo para la cuenta principal <span className="font-semibold text-gray-700 dark:text-gray-300">admin@lumina.com</span>
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2 self-start sm:self-auto">
+            <span className={`text-[11px] font-bold px-2.5 py-1 rounded-full border ${
+              invitedAdmins.length >= 3 
+                ? 'bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400 border-amber-200 dark:border-amber-800/40' 
+                : 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800/40'
+            }`}>
+              {invitedAdmins.length} / 3 cupos utilizados
+            </span>
+          </div>
+        </div>
+
+        {/* Quick invite input */}
+        <div className="space-y-2">
+          <div className="flex gap-2">
+            <div className="relative flex-1">
+              <Mail className="w-4 h-4 absolute left-3.5 top-3.5 text-gray-400" />
+              <input
+                type="text"
+                value={adminInviteInput}
+                onChange={e => setAdminInviteInput(e.target.value)}
+                placeholder="colaborador@lumina.com (o varios separados por coma)"
+                disabled={invitedAdmins.length >= 3 || isSyncingAdmins}
+                className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-xs bg-white dark:bg-[#1a1a1c] text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#8c9276] disabled:opacity-50"
+              />
+            </div>
+            <button
+              type="button"
+              onClick={() => handleAddAdminInvite()}
+              disabled={!adminInviteInput.trim() || invitedAdmins.length >= 3 || isSyncingAdmins}
+              className="px-4 py-2.5 rounded-xl bg-[#8c9276] hover:bg-[#7b8166] text-white text-xs font-bold transition-all disabled:opacity-50 cursor-pointer shrink-0 shadow-sm flex items-center gap-1.5"
+            >
+              {isSyncingAdmins ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Plus className="w-3.5 h-3.5" />}
+              <span>Invitar</span>
+            </button>
+          </div>
+          <p className="text-[10px] text-gray-400 dark:text-gray-500">
+            Puedes invitar hasta 3 administradores adicionales (total 4 administradores). Tienen acceso al catálogo, pedidos y radar.
+          </p>
+        </div>
+
+        {inviteError && (
+          <div className="p-3 rounded-xl bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800/30 text-red-600 dark:text-red-400 text-xs flex items-center gap-2">
+            <AlertCircle className="w-4 h-4 shrink-0" />
+            <span>{inviteError}</span>
+          </div>
+        )}
+
+        {inviteSuccess && (
+          <div className="p-3 rounded-xl bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800/30 text-emerald-600 dark:text-emerald-400 text-xs flex items-center gap-2">
+            <CheckCircle2 className="w-4 h-4 shrink-0" />
+            <span>{inviteSuccess}</span>
+          </div>
+        )}
+
+        {/* Invited Admin List */}
+        <div className="space-y-2 pt-1">
+          <p className="text-[10px] font-bold uppercase tracking-wider text-gray-400">
+            Administradores Adicionales Activos ({invitedAdmins.length})
+          </p>
+          {invitedAdmins.length === 0 ? (
+            <p className="text-xs text-gray-400 dark:text-gray-500 italic bg-white/60 dark:bg-[#1a1a1c]/60 p-3 rounded-xl border border-dashed border-gray-200 dark:border-white/10 text-center">
+              No hay administradores invitados actualmente. Los 3 cupos están disponibles.
+            </p>
+          ) : (
+            <div className="space-y-1.5">
+              {invitedAdmins.map((admEmail) => (
+                <div
+                  key={admEmail}
+                  className="flex items-center justify-between p-2.5 px-3 rounded-xl bg-white dark:bg-[#1e1e20] border border-gray-100 dark:border-white/5 text-xs shadow-xs"
+                >
+                  <div className="flex items-center gap-2 min-w-0">
+                    <ShieldCheck className="w-4 h-4 text-[#8c9276] shrink-0" />
+                    <span className="font-semibold text-gray-900 dark:text-gray-100 truncate">{admEmail}</span>
+                    <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-gray-100 dark:bg-white/10 text-gray-600 dark:text-gray-300">ADMIN</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => handleRemoveAdminInvite(admEmail)}
+                    disabled={isSyncingAdmins}
+                    className="p-1.5 rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/40 transition-colors cursor-pointer shrink-0"
+                    title="Revocar acceso de administrador"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    ) : (
+      /* Invited Administrator: Read-only card explaining root authority */
+      <div className="p-5 rounded-2xl bg-gray-50/80 dark:bg-[#2a2a2c]/80 border border-gray-200/80 dark:border-white/10 space-y-3">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-xl bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center justify-center font-bold">
+              <ShieldCheck className="w-4 h-4" />
+            </div>
+            <div>
+              <h4 className="text-xs font-bold text-gray-900 dark:text-gray-100">
+                Rol: Administrador Invitado
+              </h4>
+              <p className="text-[11px] text-gray-500 dark:text-gray-400">
+                Privilegios administrativos delegados
+              </p>
+            </div>
+          </div>
+          <span className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-800/40 flex items-center gap-1">
+            <Lock className="w-3 h-3" /> Solo Lectura
+          </span>
+        </div>
+        <p className="text-xs text-gray-600 dark:text-gray-300 leading-relaxed">
+          Tu cuenta posee permisos completos para gestionar el catálogo de productos, nichos de mercado, métricas comerciales, pedidos y el radar en tiempo real.
+        </p>
+        <div className="p-3 rounded-xl bg-white/70 dark:bg-[#1e1e20]/70 border border-gray-200/60 dark:border-white/5 text-[11px] text-gray-500 dark:text-gray-400 flex items-start gap-2">
+          <AlertCircle className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
+          <span>
+            La invitación y remoción de otros administradores está reservada exclusivamente a la cuenta principal de raíz (<strong className="text-gray-700 dark:text-gray-300">admin@lumina.com</strong>).
+          </span>
+        </div>
+      </div>
+    )}
+  </div>
+  )}
 
  <div className="pt-4 flex justify-end">
  <button 
@@ -2574,7 +2927,7 @@ export default function ProfilePage() {
  {/* ========================================================================= */}
  {selectedOrder && (
  <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-fade-in">
- <div className="bg-white dark:bg-[#202022] rounded-3xl w-full max-w-xl shadow-2xl dark:shadow-none p-6 md:p-8 relative max-h-[90vh] overflow-y-auto">
+ <div className="bg-white dark:bg-[#202022] rounded-[2.5rem] w-full max-w-xl shadow-2xl dark:shadow-[0_20px_60px_rgba(0,0,0,0.5)] p-6 md:p-8 relative max-h-[90vh] overflow-y-auto lumina-order-modal-scroll border border-gray-100 dark:border-white/10">
  <div className="flex items-center justify-between pb-4 border-b border-gray-100 dark:border-white/5">
  <div>
  <span className="text-[10px] font-bold uppercase tracking-wider text-[#8c9276]">Detalle de Envío</span>
@@ -2590,7 +2943,7 @@ export default function ProfilePage() {
  <div className="flex items-center justify-between mb-3 text-xs">
  <span className="font-semibold text-gray-700 dark:text-gray-300">Rastreo: <span className="font-mono">{selectedOrder.trackingNumber || "LM-982410"}</span></span>
  <span className={`px-2.5 py-0.5 rounded-full font-bold text-[10px] ${
- selectedOrder.status === "Entregado" ? "bg-emerald-100 text-emerald-800" : selectedOrder.status === "Enviado" ? "bg-blue-100 text-blue-800" : "bg-a dark:bg-[#202022]mber-100 text-amber-800"
+ selectedOrder.status === "Entregado" ? "bg-emerald-100 text-emerald-800" : selectedOrder.status === "Enviado" ? "bg-blue-100 text-blue-800" : "bg-amber-100 dark:bg-amber-950/40 text-amber-800 dark:text-amber-400"
  }`}>
  {selectedOrder.status}
  </span>
