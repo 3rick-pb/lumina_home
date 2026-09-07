@@ -7,7 +7,7 @@ import { notFound } from "next/navigation";
 import { ShoppingBag, Heart, ShieldCheck, Truck, RotateCcw, Check, Star, ChevronDown, Layers, Ruler, Sparkles, Box, CheckCircle2, X } from "lucide-react";
 import { ProductCard } from "@/components/ui/ProductCard";
 import { useCartStore } from "@/lib/store";
-import { useCatalogStore, isAgotadoBadge } from "@/lib/catalogStore";
+import { useCatalogStore, isAgotadoBadge, ProductCombo } from "@/lib/catalogStore";
 import { useUserStore } from "@/lib/userStore";
 import { useAmbientStore } from "@/lib/ambientStore";
 import { ProductLandingView } from "@/components/product/ProductLandingView";
@@ -28,6 +28,7 @@ export default function ProductDetail({ params }: { params: { id: string } }) {
   const [activeColor, setActiveColor] = useState(0);
   const [activeSize, setActiveSize] = useState(product.sizes?.[0] || "M");
   const [activeTab, setActiveTab] = useState<'detalles' | 'materiales' | 'dimensiones' | 'envios' | 'cuidados'>('detalles');
+  const [selectedCombo, setSelectedCombo] = useState<ProductCombo | null>(null);
   const [isAdding, setIsAdding] = useState(false);
   
   const { addItem } = useCartStore();
@@ -42,10 +43,25 @@ export default function ProductDetail({ params }: { params: { id: string } }) {
     return () => resetTheme();
   }, [product?.category, setCategoryTheme, resetTheme]);
 
+  const effectivePrice = React.useMemo(() => {
+    if (!selectedCombo) return product.price;
+    if (selectedCombo.customPrice) return selectedCombo.customPrice;
+    const companionObjs = products.filter(p => selectedCombo.companionProductIds?.includes(p.id));
+    const rawTotal = companionObjs.reduce((acc, p) => acc + p.price, product.price);
+    if (selectedCombo.discountPercentage) {
+      return Number((rawTotal * (1 - selectedCombo.discountPercentage / 100)).toFixed(2));
+    }
+    return rawTotal;
+  }, [selectedCombo, product.price, products]);
+
   const handleAddToCart = () => {
     if (isAgotado) return;
     setIsAdding(true);
     addItem(product, 1, product.colors?.[activeColor]?.name, activeSize);
+    if (selectedCombo?.companionProductIds) {
+      const companions = products.filter(p => selectedCombo.companionProductIds?.includes(p.id));
+      companions.forEach(c => addItem(c, 1, c.colors?.[0]?.name, c.sizes?.[0] || "Estándar"));
+    }
     setTimeout(() => setIsAdding(false), 1500);
   };
 
@@ -160,17 +176,27 @@ export default function ProductDetail({ params }: { params: { id: string } }) {
             {/* Price */}
             <div className="flex items-center gap-3 mb-6">
               <span className="text-4xl font-bold text-gray-900">
-                ${product.price.toFixed(2)}
+                ${effectivePrice.toFixed(2)}
               </span>
-              {product.oldPrice && (
-                <span className="text-lg text-gray-400 line-through font-medium">
-                  ${product.oldPrice.toFixed(2)}
-                </span>
-              )}
-              {product.discount && (
-                <span className="px-2 py-1 bg-gray-900 text-white text-xs font-bold rounded">
-                  {product.discount}
-                </span>
+              {selectedCombo ? (
+                selectedCombo.discountPercentage ? (
+                  <span className="px-2.5 py-1 bg-emerald-600 text-white text-xs font-bold rounded-lg shadow-sm">
+                    Combo -{selectedCombo.discountPercentage}%
+                  </span>
+                ) : null
+              ) : (
+                <>
+                  {product.oldPrice && (
+                    <span className="text-lg text-gray-400 line-through font-medium">
+                      ${product.oldPrice.toFixed(2)}
+                    </span>
+                  )}
+                  {product.discount && (
+                    <span className="px-2 py-1 bg-gray-900 text-white text-xs font-bold rounded">
+                      {product.discount}
+                    </span>
+                  )}
+                </>
               )}
             </div>
 
@@ -241,6 +267,90 @@ export default function ProductDetail({ params }: { params: { id: string } }) {
                       {size}
                     </button>
                   ))}
+                </div>
+              </div>
+            )}
+
+            {/* Combo Selection in Standard View */}
+            {product.combos && product.combos.length > 0 && (
+              <div className="mb-8 p-4 bg-white/40 backdrop-blur-md border border-white/60 rounded-2xl shadow-sm space-y-3">
+                <div className="flex items-center justify-between">
+                  <p className="text-xs font-bold uppercase tracking-wider text-gray-900 flex items-center gap-1.5">
+                    <Sparkles className="w-3.5 h-3.5 text-[#8c9276]" />
+                    Opciones de Paquete & Combos:
+                  </p>
+                  <span className="text-[10px] font-bold text-emerald-600">Ahorro Preferencial</span>
+                </div>
+
+                <div className="space-y-2">
+                  {/* Standalone Option */}
+                  <div
+                    onClick={() => setSelectedCombo(null)}
+                    className={`p-3 rounded-xl cursor-pointer flex items-center justify-between text-xs transition-all border ${
+                      selectedCombo === null
+                        ? "bg-white/90 border-gray-900 shadow-sm ring-1 ring-gray-950/20 font-bold"
+                        : "border-gray-200/80 hover:bg-white/60 text-gray-700"
+                    }`}
+                  >
+                    <div className="flex items-center gap-2.5">
+                      <div className={`w-4 h-4 rounded-full border flex items-center justify-center ${
+                        selectedCombo === null ? 'bg-gray-900 text-white' : 'border-gray-300'
+                      }`}>
+                        {selectedCombo === null && <Check className="w-2.5 h-2.5" />}
+                      </div>
+                      <span>Solo esta pieza individual</span>
+                    </div>
+                    <span className="font-bold">${product.price.toFixed(2)}</span>
+                  </div>
+
+                  {/* Configured Combos */}
+                  {product.combos.map((combo) => {
+                    const isSelected = selectedCombo?.id === combo.id;
+                    const companionObjs = products.filter(p => combo.companionProductIds?.includes(p.id));
+                    const calculatedTotal = companionObjs.reduce((acc, p) => acc + p.price, product.price);
+                    const comboFinalPrice = combo.customPrice || (combo.discountPercentage 
+                      ? Number((calculatedTotal * (1 - combo.discountPercentage / 100)).toFixed(2)) 
+                      : calculatedTotal);
+
+                    return (
+                      <div
+                        key={combo.id}
+                        onClick={() => setSelectedCombo(combo)}
+                        className={`p-3 rounded-xl cursor-pointer flex items-center justify-between text-xs transition-all border ${
+                          isSelected
+                            ? "bg-white/90 border-gray-900 shadow-sm ring-1 ring-gray-950/20 font-bold"
+                            : "border-gray-200/80 hover:bg-white/60 text-gray-700"
+                        }`}
+                      >
+                        <div className="flex items-center gap-2.5">
+                          <div className={`w-4 h-4 rounded-full border flex items-center justify-center ${
+                            isSelected ? 'bg-gray-900 text-white' : 'border-gray-300'
+                          }`}>
+                            {isSelected && <Check className="w-2.5 h-2.5" />}
+                          </div>
+                          <div>
+                            <span className="font-semibold text-gray-900">{combo.name}</span>
+                            {combo.badge && (
+                              <span className="ml-2 px-1.5 py-0.5 rounded text-[9px] font-bold bg-emerald-100 text-emerald-700">
+                                {combo.badge}
+                              </span>
+                            )}
+                            {combo.description && (
+                              <p className="text-[11px] text-gray-500 font-normal mt-0.5">{combo.description}</p>
+                            )}
+                          </div>
+                        </div>
+                        <div className="text-right shrink-0 ml-3">
+                          <span className="font-bold text-gray-900">${comboFinalPrice.toFixed(2)}</span>
+                          {combo.discountPercentage && (
+                            <span className="ml-1 text-[10px] text-emerald-600 font-bold">
+                              (-{combo.discountPercentage}%)
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             )}
@@ -365,6 +475,17 @@ export default function ProductDetail({ params }: { params: { id: string } }) {
                         </li>
                       ))}
                     </ul>
+                  </div>
+                )}
+                {product.howToUse && (
+                  <div className="p-4 bg-amber-50/70 rounded-2xl border border-amber-200/70">
+                    <div className="flex items-center gap-2 mb-2 text-xs font-bold text-amber-950 uppercase tracking-wider">
+                      <Sparkles className="w-4 h-4 text-amber-700" />
+                      <span>¿Cómo se usa / Aplicaciones recomendadas?</span>
+                    </div>
+                    <p className="text-xs text-amber-900 leading-relaxed whitespace-pre-line">
+                      {product.howToUse}
+                    </p>
                   </div>
                 )}
                 {product.packageContents && (

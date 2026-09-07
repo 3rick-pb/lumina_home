@@ -56,11 +56,12 @@ import {
 import { useUserStore, Order, formatCleanName } from "@/lib/userStore";
 import { useThemeStore, getResolvedTheme } from "@/lib/themeStore";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
-import { useCatalogStore, normalizeCategory, CatalogProduct, isAgotadoBadge } from "@/lib/catalogStore";
+import { useCatalogStore, normalizeCategory, CatalogProduct, isAgotadoBadge, ProductCombo } from "@/lib/catalogStore";
 import { useCartStore } from "@/lib/store";
 import { normalizeSearchText } from "@/lib/utils";
 import { supabase } from "@/lib/supabase";
 import { ProductArchitectureSelector } from "@/components/profile/ProductArchitectureSelector";
+import { ProductCombosManager } from "@/components/profile/ProductCombosManager";
 import dynamic from 'next/dynamic';
 
 const AnalyticsRadarView = dynamic(() => import('@/components/profile/AnalyticsRadarView'), {
@@ -205,11 +206,15 @@ export default function ProfilePage() {
  const [prodPackageContents, setProdPackageContents] = useState("");
  const [prodStock, setProdStock] = useState("20");
  const [prodLayoutType, setProdLayoutType] = useState<'standard' | 'landing'>('standard');
- const [prodLandingSpecs, setProdLandingSpecs] = useState<Array<{ title: string; description: string; side?: 'left' | 'right' }>>([
-    { title: "Chasis de Aluminio y Acabado Mate", description: "Estructura aeroespacial ultraligera anodizada resistente a corrosión.", side: "left" },
-    { title: "Óptica Lumina Difusa 360°", description: "Difusor de vidrio opalino tratado térmicamente para dispersión uniforme.", side: "left" },
-    { title: "Gestión Térmica Inteligente", description: "Disipación pasiva silenciosa que alarga la vida útil de los componentes.", side: "right" },
-    { title: "Carga Ultra Rápida USB-C", description: "Protocolo universal con selector touch de 4 temperaturas de luz.", side: "right" },
+ const [prodCombos, setProdCombos] = useState<ProductCombo[]>([]);
+ const [prodHowToUse, setProdHowToUse] = useState("");
+ const [prodBundleMode, setProdBundleMode] = useState<'companion' | 'volume_tiers' | 'care_pass'>('companion');
+ const [prodBundleCompanionIds, setProdBundleCompanionIds] = useState<string[]>([]);
+ const [prodLandingSpecs, setProdLandingSpecs] = useState<Array<{ title: string; description: string; side?: 'left' | 'right'; pinX?: number; pinY?: number }>>([
+    { title: "Chasis de Aluminio y Acabado Mate", description: "Estructura aeroespacial ultraligera anodizada resistente a corrosión.", side: "left", pinX: 28, pinY: 32 },
+    { title: "Óptica Lumina Difusa 360°", description: "Difusor de vidrio opalino tratado térmicamente para dispersión uniforme.", side: "left", pinX: 30, pinY: 70 },
+    { title: "Gestión Térmica Inteligente", description: "Disipación pasiva silenciosa que alarga la vida útil de los componentes.", side: "right", pinX: 72, pinY: 28 },
+    { title: "Carga Ultra Rápida USB-C", description: "Protocolo universal con selector touch de 4 temperaturas de luz.", side: "right", pinX: 70, pinY: 68 },
   ]);
   const [prodLandingReviews, setProdLandingReviews] = useState<Array<{ author: string; role?: string; rating: number; comment: string }>>([
     { author: "Valentina M.", role: "Arquitecta de Interiores", rating: 5, comment: "La calidad de los acabados es insuperable. Transforma cualquier rincón." },
@@ -248,7 +253,11 @@ export default function ProfilePage() {
  const [editPackageContents, setEditPackageContents] = useState("");
  const [editStock, setEditStock] = useState("20");
  const [editLayoutType, setEditLayoutType] = useState<'standard' | 'landing'>('standard');
- const [editLandingSpecs, setEditLandingSpecs] = useState<Array<{ title: string; description: string; side?: 'left' | 'right' }>>([]);
+ const [editCombos, setEditCombos] = useState<ProductCombo[]>([]);
+ const [editHowToUse, setEditHowToUse] = useState("");
+ const [editBundleMode, setEditBundleMode] = useState<'companion' | 'volume_tiers' | 'care_pass'>('companion');
+ const [editBundleCompanionIds, setEditBundleCompanionIds] = useState<string[]>([]);
+ const [editLandingSpecs, setEditLandingSpecs] = useState<Array<{ title: string; description: string; side?: 'left' | 'right'; pinX?: number; pinY?: number }>>([]);
  const [editLandingReviews, setEditLandingReviews] = useState<Array<{ author: string; role?: string; rating: number; comment: string }>>([]);
  const [editLandingBundleEnabled, setEditLandingBundleEnabled] = useState(true);
  const [editLandingBundleDiscount, setEditLandingBundleDiscount] = useState("15");
@@ -824,12 +833,14 @@ export default function ProfilePage() {
  category: prodCategory.trim(),
  price: parseFloat(prodPrice) || 0,
  oldPrice: hasDiscount && oldPrice ? parseFloat(oldPrice) : null,
- discount: hasDiscount && calculatedDiscount ? calculatedDiscount : undefined,
+discount: hasDiscount && calculatedDiscount ? calculatedDiscount : undefined,
  badge: prodBadge.trim() || undefined,
  imageUrl: prodImageUrl.trim() || "https://images.unsplash.com/photo-1507473885765-e6ed057f782c?q=80&w=800&auto=format&fit=crop",
  images: imagesList,
  description: prodDescription.trim(),
  features: prodFeatures.trim() ? prodFeatures.split("\n").map(f => f.trim()).filter(Boolean) : undefined,
+ howToUse: prodHowToUse.trim() || undefined,
+ combos: prodCombos.length > 0 ? prodCombos : undefined,
  sizes: hasSizes && prodSizes.trim() ? prodSizes.split(",").map(s => s.trim()).filter(Boolean) : undefined,
  colors: hasColors && prodColors.trim() ? prodColors.split(",").map(c => ({ name: c.trim(), hex: "#94a3b8" })) : undefined,
  materials: prodMaterials.trim() || undefined,
@@ -844,6 +855,8 @@ export default function ProfilePage() {
  landingReviews: prodLayoutType === 'landing' ? prodLandingReviews : undefined,
  landingBundle: prodLayoutType === 'landing' ? {
    enabled: prodLandingBundleEnabled,
+   mode: prodBundleMode,
+   companionProductIds: prodBundleCompanionIds.length > 0 ? prodBundleCompanionIds : undefined,
    discountPercentage: parseInt(prodLandingBundleDiscount, 10) || 15
  } : undefined,
  });
@@ -878,6 +891,10 @@ export default function ProfilePage() {
  setProdPackageContents("");
  setProdStock("20");
  setProdLayoutType("standard");
+ setProdCombos([]);
+ setProdHowToUse("");
+ setProdBundleMode('companion');
+ setProdBundleCompanionIds([]);
  }, 900);
  } else {
  setProdSubmitError(res.error || "No se pudo publicar el producto. Verifica tu conexión o base de datos.");
@@ -927,6 +944,10 @@ export default function ProfilePage() {
  setEditPackageContents(p.packageContents || "");
  setEditStock(p.stock !== undefined ? p.stock.toString() : "20");
  setEditLayoutType(p.layoutType || 'standard');
+ setEditCombos(p.combos || []);
+ setEditHowToUse(p.howToUse || "");
+ setEditBundleMode(p.landingBundle?.mode || 'companion');
+ setEditBundleCompanionIds(p.landingBundle?.companionProductIds || []);
  setEditLandingSpecs(p.landingSpecs || []);
  setEditLandingReviews(p.landingReviews || []);
  setEditLandingBundleEnabled(p.landingBundle?.enabled ?? true);
@@ -959,6 +980,8 @@ export default function ProfilePage() {
  images: imagesList,
  description: editDescription.trim(),
  features: editFeatures.trim() ? editFeatures.split("\n").map(f => f.trim()).filter(Boolean) : undefined,
+ howToUse: editHowToUse.trim() || undefined,
+ combos: editCombos.length > 0 ? editCombos : undefined,
  sizes: editHasSizes && editSizes.trim() ? editSizes.split(",").map(s => s.trim()).filter(Boolean) : undefined,
  colors: editHasColors && editColors.trim() ? editColors.split(",").map(c => ({ name: c.trim(), hex: "#94a3b8" })) : undefined,
  materials: editMaterials.trim() || undefined,
@@ -973,6 +996,8 @@ export default function ProfilePage() {
  landingReviews: editLayoutType === 'landing' && editLandingReviews.length > 0 ? editLandingReviews : undefined,
  landingBundle: editLayoutType === 'landing' ? {
    enabled: editLandingBundleEnabled,
+   mode: editBundleMode,
+   companionProductIds: editBundleCompanionIds.length > 0 ? editBundleCompanionIds : undefined,
    discountPercentage: parseInt(editLandingBundleDiscount, 10) || 15
  } : undefined,
  });
@@ -3817,14 +3842,29 @@ export default function ProfilePage() {
  <ProductArchitectureSelector
     layoutType={prodLayoutType}
     onLayoutTypeChange={setProdLayoutType}
+    productImage={prodImageUrl || "https://images.unsplash.com/photo-1507473885765-e6ed057f782c?q=80&w=800&auto=format&fit=crop"}
+    allProducts={products}
     bundleEnabled={prodLandingBundleEnabled}
     onBundleEnabledChange={setProdLandingBundleEnabled}
+    bundleMode={prodBundleMode}
+    onBundleModeChange={setProdBundleMode}
     bundleDiscount={prodLandingBundleDiscount}
     onBundleDiscountChange={setProdLandingBundleDiscount}
+    bundleCompanionIds={prodBundleCompanionIds}
+    onBundleCompanionIdsChange={setProdBundleCompanionIds}
     landingSpecs={prodLandingSpecs}
     onLandingSpecsChange={setProdLandingSpecs}
     landingReviews={prodLandingReviews}
     onLandingReviewsChange={setProdLandingReviews}
+    howToUse={prodHowToUse}
+    onHowToUseChange={setProdHowToUse}
+  />
+
+ <ProductCombosManager
+    combos={prodCombos}
+    onChange={setProdCombos}
+    allProducts={products}
+    currentProductPrice={parseFloat(prodPrice) || 0}
   />
 
   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -4153,14 +4193,29 @@ export default function ProfilePage() {
  <ProductArchitectureSelector
     layoutType={editLayoutType}
     onLayoutTypeChange={setEditLayoutType}
+    productImage={editImageUrl || "https://images.unsplash.com/photo-1507473885765-e6ed057f782c?q=80&w=800&auto=format&fit=crop"}
+    allProducts={products}
     bundleEnabled={editLandingBundleEnabled}
     onBundleEnabledChange={setEditLandingBundleEnabled}
+    bundleMode={editBundleMode}
+    onBundleModeChange={setEditBundleMode}
     bundleDiscount={editLandingBundleDiscount}
     onBundleDiscountChange={setEditLandingBundleDiscount}
+    bundleCompanionIds={editBundleCompanionIds}
+    onBundleCompanionIdsChange={setEditBundleCompanionIds}
     landingSpecs={editLandingSpecs}
     onLandingSpecsChange={setEditLandingSpecs}
     landingReviews={editLandingReviews}
     onLandingReviewsChange={setEditLandingReviews}
+    howToUse={editHowToUse}
+    onHowToUseChange={setEditHowToUse}
+  />
+
+ <ProductCombosManager
+    combos={editCombos}
+    onChange={setEditCombos}
+    allProducts={products}
+    currentProductPrice={parseFloat(editPrice) || 0}
   />
 
  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

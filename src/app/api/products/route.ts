@@ -95,6 +95,8 @@ const stripExtendedFields = (obj: Record<string, unknown>) => {
   delete clean.landing_reviews;
   delete clean.landing_benefits;
   delete clean.landing_bundle;
+  delete clean.combos;
+  delete clean.how_to_use;
   return clean;
 };
 

@@ -5,6 +5,8 @@ export interface LandingSpec {
   title: string;
   description: string;
   side?: 'left' | 'right';
+  pinX?: number;
+  pinY?: number;
 }
 
 export interface LandingReview {
@@ -21,8 +23,22 @@ export interface LandingBenefit {
 
 export interface LandingBundle {
   enabled: boolean;
+  mode?: 'companion' | 'volume_tiers' | 'care_pass';
   discountPercentage?: number;
   companionProductIds?: string[];
+  customTitle?: string;
+  customSubtitle?: string;
+}
+
+export interface ProductCombo {
+  id: string;
+  name: string;
+  badge?: string;
+  description?: string;
+  companionProductIds?: string[];
+  companionTitles?: string[];
+  customPrice?: number;
+  discountPercentage?: number;
 }
 
 export interface CatalogProduct {
@@ -47,6 +63,8 @@ export interface CatalogProduct {
   careInstructions?: string;
   packageContents?: string;
   stock?: number;
+  howToUse?: string;
+  combos?: ProductCombo[];
   layoutType?: 'standard' | 'landing';
   landingSpecs?: LandingSpec[];
   landingReviews?: LandingReview[];
@@ -252,6 +270,8 @@ const toSupabaseProduct = (p: Partial<CatalogProduct>) => {
     landing_reviews: p.landingReviews || null,
     landing_benefits: p.landingBenefits || null,
     landing_bundle: p.landingBundle || null,
+    combos: p.combos || null,
+    how_to_use: p.howToUse || null,
   };
 
   // Only pass id if it looks like a valid UUID (has dashes)
@@ -324,6 +344,8 @@ const toFrontendProduct = (p: any): CatalogProduct => {
     careInstructions: p.care_instructions || extraMeta.careInstructions || undefined,
     packageContents: p.package_contents || extraMeta.packageContents || undefined,
     stock: typeof p.stock === 'number' ? p.stock : (typeof extraMeta.stock === 'number' ? extraMeta.stock : 18),
+    howToUse: p.how_to_use || extraMeta.howToUse || undefined,
+    combos: p.combos || extraMeta.combos || undefined,
     layoutType: p.layout_type || extraMeta.layoutType || 'standard',
     landingSpecs: p.landing_specs || extraMeta.landingSpecs || undefined,
     landingReviews: p.landing_reviews || extraMeta.landingReviews || undefined,
@@ -407,6 +429,8 @@ export const useCatalogStore = create<CatalogState>((set) => ({
       delete basicProduct.landing_reviews;
       delete basicProduct.landing_benefits;
       delete basicProduct.landing_bundle;
+      delete basicProduct.combos;
+      delete basicProduct.how_to_use;
       const retry = await supabase.from('products').insert([basicProduct]).select().single();
       data = retry.data;
       error = retry.error;
@@ -449,6 +473,8 @@ export const useCatalogStore = create<CatalogState>((set) => ({
             landingReviews: product.landingReviews,
             landingBenefits: product.landingBenefits,
             landingBundle: product.landingBundle,
+            combos: product.combos,
+            howToUse: product.howToUse,
           };
           localStorage.setItem(`lumina_prod_meta_${data.id}`, JSON.stringify(meta));
         } catch {}
@@ -493,6 +519,8 @@ export const useCatalogStore = create<CatalogState>((set) => ({
         delete basicProduct.landing_reviews;
         delete basicProduct.landing_benefits;
         delete basicProduct.landing_bundle;
+        delete basicProduct.combos;
+        delete basicProduct.how_to_use;
         const retry = await supabase.from('products').update(basicProduct).eq('id', id).select().single();
         data = retry.data;
         error = retry.error;
@@ -535,6 +563,8 @@ export const useCatalogStore = create<CatalogState>((set) => ({
               landingReviews: updatedProduct.landingReviews,
               landingBenefits: updatedProduct.landingBenefits,
               landingBundle: updatedProduct.landingBundle,
+              combos: updatedProduct.combos,
+              howToUse: updatedProduct.howToUse,
             };
             localStorage.setItem(`lumina_prod_meta_${id}`, JSON.stringify(meta));
           } catch {}
