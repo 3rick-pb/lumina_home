@@ -2,13 +2,31 @@ import { create } from 'zustand';
 import { Product } from './data';
 import { supabase } from './supabase';
 
+export interface CartBundleProduct {
+  id: string;
+  title: string;
+  category?: string;
+  imageUrl: string;
+  price: number;
+  color?: string;
+  size?: string;
+}
+
 export interface CartItem {
-  id: string; // Unique cart item ID (product.id + color + size)
+  id: string; // Unique cart item ID (product.id + color + size or bundle-id)
   productId: string;
   product: Product;
   quantity: number;
   color?: string;
   size?: string;
+
+  // Bundle / Combo fields
+  isBundle?: boolean;
+  bundleName?: string;
+  bundleBadge?: string;
+  bundleDiscountPercent?: number;
+  bundleCustomPrice?: number;
+  bundleProducts?: CartBundleProduct[];
 }
 
 export interface CartStoragePayload {
@@ -29,6 +47,13 @@ interface CartState {
   
   initCartForUser: (userId: string | null) => Promise<void>;
   addItem: (product: Product, quantity?: number, color?: string, size?: string) => void;
+  addBundle: (bundle: {
+    bundleName: string;
+    bundleBadge?: string;
+    bundleDiscountPercent?: number;
+    bundleCustomPrice: number;
+    products: Array<{ product: Product; color?: string; size?: string }>;
+  }) => void;
   removeItem: (id: string) => void;
   updateQuantity: (id: string, quantity: number) => void;
   clearCart: () => void;
@@ -180,6 +205,60 @@ export const useCartStore = create<CartState>((set, get) => ({
 
     set({ items: newItems, isOpen: true });
   },
+
+  addBundle: (bundle) => {
+    const currentUserId = get().currentUserId;
+    const bundleKey = `${bundle.bundleName}-${bundle.products.map(p => `${p.product.id}_${p.color || ''}_${p.size || ''}`).join('-')}`;
+    const cartItemId = `bundle-${bundleKey}`;
+    const existingItem = get().items.find((item) => item.id === cartItemId);
+
+    const bundleProducts: CartBundleProduct[] = bundle.products.map(p => ({
+      id: p.product.id,
+      title: p.product.title,
+      category: p.product.category,
+      imageUrl: p.product.imageUrl,
+      price: p.product.price,
+      color: p.color,
+      size: p.size,
+    }));
+
+    const mainProd = bundle.products[0]?.product;
+
+    let newItems: CartItem[];
+    if (existingItem) {
+      newItems = get().items.map((item) =>
+        item.id === cartItemId ? { ...item, quantity: item.quantity + 1 } : item
+      );
+    } else {
+      newItems = [
+        ...get().items,
+        {
+          id: cartItemId,
+          productId: mainProd?.id || 'bundle',
+          product: mainProd,
+          quantity: 1,
+          isBundle: true,
+          bundleName: bundle.bundleName,
+          bundleBadge: bundle.bundleBadge,
+          bundleDiscountPercent: bundle.bundleDiscountPercent,
+          bundleCustomPrice: bundle.bundleCustomPrice,
+          bundleProducts,
+        },
+      ];
+    }
+
+    const payload: CartStoragePayload = {
+      items: newItems,
+      couponCode: get().couponCode,
+      discountPercent: get().discountPercent,
+      isFreeShippingCoupon: get().isFreeShippingCoupon,
+    };
+
+    // Sync to Supabase cloud database
+    syncCartToDatabase(currentUserId, payload);
+
+    set({ items: newItems, isOpen: true });
+  },
   
   removeItem: (id) => {
     const currentUserId = get().currentUserId;
@@ -244,11 +323,21 @@ export const useCartStore = create<CartState>((set, get) => ({
   })),
   
   getTotalItems: () => {
-    return get().items.reduce((total, item) => total + item.quantity, 0);
+    return get().items.reduce((total, item) => {
+      if (item.isBundle && item.bundleProducts) {
+        return total + (item.bundleProducts.length * item.quantity);
+      }
+      return total + item.quantity;
+    }, 0);
   },
   
   getSubtotal: () => {
-    return get().items.reduce((total, item) => total + (item.product.price * item.quantity), 0);
+    return get().items.reduce((total, item) => {
+      const itemPrice = (item.isBundle && item.bundleCustomPrice !== undefined)
+        ? item.bundleCustomPrice
+        : item.product.price;
+      return total + (itemPrice * item.quantity);
+    }, 0);
   },
 
   getDiscountAmount: () => {

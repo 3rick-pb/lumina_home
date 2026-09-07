@@ -62,7 +62,7 @@ export function ProductLandingView({
   isAdding,
   isAgotado,
 }: ProductLandingViewProps) {
-  const { addItem } = useCartStore();
+  const { addItem, addBundle } = useCartStore();
   const { toggleFavorite, isFavorite } = useUserStore();
   const isFav = isFavorite(product.id);
 
@@ -215,10 +215,28 @@ export function ProductLandingView({
   const handleAddBundleToCart = () => {
     if (isAgotado) return;
     setIsAddingBundle(true);
-    addItem(product, 1, product.colors?.[activeColor]?.name, activeSize);
-    bundleCompanionProducts.forEach((comp) => {
-      addItem(comp, 1, comp.colors?.[0]?.name, comp.sizes?.[0] || "Estándar");
+
+    const bundleItems = [
+      {
+        product,
+        color: product.colors?.[activeColor]?.name,
+        size: activeSize,
+      },
+      ...bundleCompanionProducts.map((comp) => ({
+        product: comp,
+        color: comp.colors?.[0]?.name,
+        size: comp.sizes?.[0] || "Estándar",
+      })),
+    ];
+
+    addBundle({
+      bundleName: product.landingBundle?.customTitle || "Pack Comprados Juntos",
+      bundleBadge: `-${bundleDiscountPct}% DTO`,
+      bundleDiscountPercent: bundleDiscountPct,
+      bundleCustomPrice: discountedBundleTotal,
+      products: bundleItems,
     });
+
     setTimeout(() => {
       setIsAddingBundle(false);
       setBundleSuccess(true);
@@ -236,9 +254,29 @@ export function ProductLandingView({
   const handleAddTierToCart = () => {
     if (isAgotado) return;
     setIsAddingBundle(true);
-    for (let i = 0; i < selectedTierQty; i++) {
-      addItem(product, 1, product.colors?.[activeColor]?.name, activeSize);
+
+    if (tierDiscount > 0) {
+      const tierItems = [];
+      for (let i = 0; i < selectedTierQty; i++) {
+        tierItems.push({
+          product,
+          color: product.colors?.[activeColor]?.name,
+          size: activeSize,
+        });
+      }
+      addBundle({
+        bundleName: `Pack Ahorro x${selectedTierQty} Piezas`,
+        bundleBadge: `-${tierDiscount}% DTO`,
+        bundleDiscountPercent: tierDiscount,
+        bundleCustomPrice: finalTierTotal,
+        products: tierItems,
+      });
+    } else {
+      for (let i = 0; i < selectedTierQty; i++) {
+        addItem(product, 1, product.colors?.[activeColor]?.name, activeSize);
+      }
     }
+
     setTimeout(() => {
       setIsAddingBundle(false);
       setBundleSuccess(true);
@@ -262,13 +300,28 @@ export function ProductLandingView({
   const handleBuyBoxAction = () => {
     if (isAgotado) return;
     if (selectedCombo) {
-      // Add main product + companion products of the combo
+      const companions = allProducts.filter(p => selectedCombo.companionProductIds?.includes(p.id));
+      const comboProductsList = [
+        {
+          product,
+          color: product.colors?.[activeColor]?.name,
+          size: activeSize,
+        },
+        ...companions.map(c => ({
+          product: c,
+          color: c.colors?.[0]?.name,
+          size: c.sizes?.[0] || "Estándar",
+        })),
+      ];
+
       for (let i = 0; i < quantity; i++) {
-        addItem(product, 1, product.colors?.[activeColor]?.name, activeSize);
-        if (selectedCombo.companionProductIds) {
-          const companions = allProducts.filter(p => selectedCombo.companionProductIds?.includes(p.id));
-          companions.forEach(c => addItem(c, 1, c.colors?.[0]?.name, c.sizes?.[0] || "Estándar"));
-        }
+        addBundle({
+          bundleName: selectedCombo.name,
+          bundleBadge: selectedCombo.badge || (selectedCombo.discountPercentage ? `-${selectedCombo.discountPercentage}% DTO` : undefined),
+          bundleDiscountPercent: selectedCombo.discountPercentage,
+          bundleCustomPrice: currentEffectivePrice,
+          products: comboProductsList,
+        });
       }
       handleAddToCart();
     } else {

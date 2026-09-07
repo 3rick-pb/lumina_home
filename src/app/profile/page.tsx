@@ -263,9 +263,19 @@ export default function ProfilePage() {
  const [editLandingBundleDiscount, setEditLandingBundleDiscount] = useState("15");
  const [editFeedback, setEditFeedback] = useState<{ msg: string; success: boolean } | null>(null);
 
- // Category & Badge manager state
- const [newCatInput, setNewCatInput] = useState("");
- const [newBadgeInput, setNewBadgeInput] = useState("");
+  // Delete Product Confirmation Modal State
+  const [productToDelete, setProductToDelete] = useState<CatalogProduct | null>(null);
+  const [isDeletingProduct, setIsDeletingProduct] = useState(false);
+  const [deleteProductError, setDeleteProductError] = useState<string | null>(null);
+
+  // Niche / Category Delete Alert & Confirm States
+  const [nicheBlockedModal, setNicheBlockedModal] = useState<{ category: string; count: number } | null>(null);
+  const [nicheToDelete, setNicheToDelete] = useState<string | null>(null);
+  const [isDeletingNiche, setIsDeletingNiche] = useState(false);
+
+  // Category & Badge manager state
+  const [newCatInput, setNewCatInput] = useState("");
+  const [newBadgeInput, setNewBadgeInput] = useState("");
 
   // Interactive Chart Hover States
   const [hoveredNicheIdx, setHoveredNicheIdx] = useState<number | null>(null);
@@ -1004,17 +1014,50 @@ discount: hasDiscount && calculatedDiscount ? calculatedDiscount : undefined,
 
  setIsSubmittingEdit(false);
  if (res.success) {
- setEditFeedback({ msg: "¡Producto actualizado exitosamente!", success: true });
- setTimeout(() => {
- setShowEditProductModal(false);
- setEditFeedback(null);
- }, 700);
- } else {
- setEditFeedback({ msg: res.error || "Error al actualizar", success: false });
- }
- };
+    setEditFeedback({ msg: "¡Producto actualizado exitosamente!", success: true });
+    setTimeout(() => {
+      setShowEditProductModal(false);
+      setEditFeedback(null);
+    }, 700);
+  } else {
+    setEditFeedback({ msg: res.error || "Error al actualizar", success: false });
+  }
+};
 
- // Update Settings
+// Delete Product Confirmation Handler
+const handleConfirmDeleteProduct = async () => {
+  if (!productToDelete) return;
+  setIsDeletingProduct(true);
+  setDeleteProductError(null);
+  const res = await deleteProduct(productToDelete.id);
+  setIsDeletingProduct(false);
+  if (res.success) {
+    setProductToDelete(null);
+  } else {
+    setDeleteProductError(res.error || "No se pudo eliminar el producto de la base de datos.");
+  }
+};
+
+// Niche / Category Delete Handlers (with product count protection)
+const handleRequestDeleteNiche = (catName: string) => {
+  const norm = normalizeCategory(catName);
+  const count = products.filter(p => normalizeCategory(p.category) === norm).length;
+  if (count > 0) {
+    setNicheBlockedModal({ category: catName, count });
+  } else {
+    setNicheToDelete(catName);
+  }
+};
+
+const handleConfirmDeleteNiche = async () => {
+  if (!nicheToDelete) return;
+  setIsDeletingNiche(true);
+  await deleteCategory(nicheToDelete);
+  setIsDeletingNiche(false);
+  setNicheToDelete(null);
+};
+
+// Update Settings
  const handleSaveSettings = async (e: React.FormEvent) => {
  e.preventDefault();
  setSettingsFeedback(null);
@@ -2005,8 +2048,8 @@ discount: hasDiscount && calculatedDiscount ? calculatedDiscount : undefined,
  {emptyCategories.map((c) => (
  <button 
  key={c} 
- onClick={() => deleteCategory(c)}
- className="text-xs px-3 py-1.5 rounded-xl bg-a dark:bg-[#202022]mber-200/80 hover:bg-a dark:hover:bg-[#1c1c1e]mber-300 text-amber-900 font-semibold transition-colors flex items-center gap-1"
+ onClick={() => handleRequestDeleteNiche(c)}
+ className="text-xs px-3 py-1.5 rounded-xl bg-amber-200/80 dark:bg-amber-900/40 hover:bg-amber-300 dark:hover:bg-amber-900/60 text-amber-900 dark:text-amber-200 font-semibold transition-colors flex items-center gap-1"
  >
  <Trash2 className="w-3.5 h-3.5" /> Quitar {c}
  </button>
@@ -2431,13 +2474,9 @@ discount: hasDiscount && calculatedDiscount ? calculatedDiscount : undefined,
  <ExternalLink className="w-4 h-4" />
  </Link>
  <button 
- onClick={async () => {
- if (confirm(`¿Estás seguro de que deseas eliminar permanentemente "${p.title}" del catálogo y de la base de datos?`)) {
- const res = await deleteProduct(p.id);
- if (!res.success && res.error) {
- alert(`Aviso de Base de Datos: ${res.error}\n\nPor favor asegúrate de ejecutar supabase_products_fix.sql en Supabase para autorizar la eliminación permanente.`);
- }
- }
+ onClick={() => {
+   setDeleteProductError(null);
+   setProductToDelete(p);
  }}
  className="p-1.5 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
  title="Eliminar producto"
@@ -2982,8 +3021,8 @@ discount: hasDiscount && calculatedDiscount ? calculatedDiscount : undefined,
  </div>
 
  <button 
- onClick={() => deleteCategory(cat)}
- className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-colors"
+ onClick={() => handleRequestDeleteNiche(cat)}
+ className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/40 rounded-xl transition-colors"
  title="Eliminar nicho"
  >
  <Trash2 className="w-4 h-4" />
@@ -4559,29 +4598,225 @@ discount: hasDiscount && calculatedDiscount ? calculatedDiscount : undefined,
  </div>
  </div>
 
- <div className="pt-4 flex justify-end gap-3 border-t border-gray-100 dark:border-white/5">
- <button 
- type="button" 
- onClick={() => setShowEditProductModal(false)} 
- className="px-5 py-2.5 text-xs font-semibold text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-[#3a3a3c] rounded-xl"
- >
- Cancelar
- </button>
- <button 
- type="submit" 
- disabled={isSubmittingEdit} 
- className="px-6 py-2.5 text-xs font-semibold bg-blue-600 text-white dark:text-gray-900 rounded-xl shadow-md dark:shadow-none hover:bg-blue-700 disabled:opacity-50 flex items-center gap-1.5"
- >
- <Pencil className="w-3.5 h-3.5" />
- {isSubmittingEdit ? "Actualizando..." : "Guardar Cambios"}
- </button>
- </div>
- </form>
- </div>
- </div>
- )}
+            <div className="pt-4 flex justify-end gap-3 border-t border-gray-100 dark:border-white/5">
+              <button 
+                type="button" 
+                onClick={() => setShowEditProductModal(false)} 
+                className="px-5 py-2.5 text-xs font-semibold text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-[#3a3a3c] rounded-xl"
+              >
+                Cancelar
+              </button>
+              <button 
+                type="submit" 
+                disabled={isSubmittingEdit} 
+                className="px-6 py-2.5 text-xs font-semibold bg-blue-600 text-white dark:text-gray-900 rounded-xl shadow-md dark:shadow-none hover:bg-blue-700 disabled:opacity-50 flex items-center gap-1.5"
+              >
+                <Pencil className="w-3.5 h-3.5" />
+                {isSubmittingEdit ? "Actualizando..." : "Guardar Cambios"}
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    )}
 
- </div>
- </div>
+      {/* MODAL: Confirmar Eliminación de Producto */}
+      {productToDelete && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in duration-200">
+          <div className="bg-white dark:bg-[#1a1a1c] border border-gray-100 dark:border-white/10 rounded-3xl max-w-md w-full p-6 shadow-2xl space-y-5 animate-in zoom-in-95 duration-150">
+            {/* Header with Icon */}
+            <div className="flex items-start gap-4">
+              <div className="w-12 h-12 rounded-2xl bg-red-50 dark:bg-red-950/40 text-red-600 dark:text-red-400 flex items-center justify-center shrink-0">
+                <Trash2 className="w-6 h-6" />
+              </div>
+              <div className="space-y-1">
+                <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100">
+                  ¿Eliminar este producto?
+                </h3>
+                <p className="text-xs text-gray-500 dark:text-gray-400 leading-relaxed">
+                  Esta acción es irreversible y retirará el producto del catálogo y de la tienda permanentemente.
+                </p>
+              </div>
+            </div>
+
+            {/* Product Snapshot */}
+            <div className="p-3.5 rounded-2xl bg-gray-50 dark:bg-[#202022] border border-gray-100 dark:border-white/5 flex items-center gap-3.5">
+              <div className="w-14 h-14 rounded-xl overflow-hidden bg-gray-200 dark:bg-gray-800 shrink-0 relative">
+                {productToDelete.images && productToDelete.images.length > 0 ? (
+                  <Image 
+                    src={productToDelete.images[0]} 
+                    alt={productToDelete.title} 
+                    fill 
+                    className="object-cover"
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center text-gray-400">
+                    <Package className="w-6 h-6" />
+                  </div>
+                )}
+              </div>
+              <div className="min-w-0 flex-1">
+                <h4 className="font-bold text-sm text-gray-900 dark:text-gray-100 truncate">
+                  {productToDelete.title}
+                </h4>
+                <div className="flex items-center gap-2 mt-1">
+                  <span className="text-[11px] px-2 py-0.5 rounded-full bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 font-medium">
+                    {productToDelete.category}
+                  </span>
+                  <span className="text-xs font-bold text-gray-900 dark:text-gray-100">
+                    ${productToDelete.price.toFixed(2)}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Error if database delete failed */}
+            {deleteProductError && (
+              <div className="p-3.5 rounded-2xl bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800/40 text-xs text-red-700 dark:text-red-300 space-y-1">
+                <p className="font-bold flex items-center gap-1.5">
+                  <AlertCircle className="w-4 h-4 text-red-600 dark:text-red-400 shrink-0" />
+                  Aviso de Base de Datos
+                </p>
+                <p className="leading-relaxed">{deleteProductError}</p>
+                <p className="text-[11px] text-red-600/80 dark:text-red-400/80 mt-1">
+                  Si la política RLS de Supabase lo bloquea, asegúrate de ejecutar las directivas de eliminación en Supabase SQL Editor.
+                </p>
+              </div>
+            )}
+
+            {/* Buttons */}
+            <div className="pt-2 flex items-center justify-end gap-3 border-t border-gray-100 dark:border-white/5">
+              <button
+                type="button"
+                onClick={() => {
+                  setProductToDelete(null);
+                  setDeleteProductError(null);
+                }}
+                disabled={isDeletingProduct}
+                className="px-4 py-2.5 rounded-xl text-xs font-semibold text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-[#2c2c2e] transition-colors"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmDeleteProduct}
+                disabled={isDeletingProduct}
+                className="px-5 py-2.5 rounded-xl text-xs font-semibold bg-red-600 hover:bg-red-700 text-white shadow-md shadow-red-500/20 disabled:opacity-50 transition-all flex items-center gap-1.5"
+              >
+                {isDeletingProduct ? (
+                  <>
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    <span>Eliminando...</span>
+                  </>
+                ) : (
+                  <>
+                    <Trash2 className="w-3.5 h-3.5" />
+                    <span>Sí, eliminar producto</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL: Alerta Nicho Bloqueado por Tener Productos */}
+      {nicheBlockedModal && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in duration-200">
+          <div className="bg-white dark:bg-[#1a1a1c] border border-gray-100 dark:border-white/10 rounded-3xl max-w-md w-full p-6 shadow-2xl space-y-5 animate-in zoom-in-95 duration-150">
+            {/* Warning Shield Header */}
+            <div className="flex items-start gap-4">
+              <div className="w-12 h-12 rounded-2xl bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0">
+                <AlertTriangle className="w-6 h-6" />
+              </div>
+              <div className="space-y-1">
+                <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100">
+                  No se puede eliminar el nicho
+                </h3>
+                <p className="text-xs text-gray-500 dark:text-gray-400">
+                  Protección de integridad de catálogo
+                </p>
+              </div>
+            </div>
+
+            {/* Explanatory Box */}
+            <div className="p-4 rounded-2xl bg-amber-50/70 dark:bg-amber-950/30 border border-amber-200/70 dark:border-amber-800/40 text-xs text-amber-950 dark:text-amber-200 space-y-2 leading-relaxed">
+              <p>
+                El nicho <span className="font-bold underline decoration-amber-400">«{nicheBlockedModal.category}»</span> tiene actualmente <span className="font-bold">{nicheBlockedModal.count} {nicheBlockedModal.count === 1 ? "producto asignado" : "productos asignados"}</span>.
+              </p>
+              <p className="text-amber-800 dark:text-amber-300/90 text-[11.5px]">
+                Para evitar dejar productos sin categoría o errores en la navegación de tus clientes, no es posible eliminar un nicho que contenga productos.
+              </p>
+              <div className="mt-2 pt-2 border-t border-amber-200/50 dark:border-amber-800/30 text-[11px] text-amber-700 dark:text-amber-400 flex items-center gap-1.5 font-medium">
+                <span>💡 Sugerencia:</span> Edita esos productos para asignarlos a otro nicho o elimínalos antes de quitar esta categoría.
+              </div>
+            </div>
+
+            {/* Action */}
+            <div className="pt-2 flex justify-end">
+              <button
+                type="button"
+                onClick={() => setNicheBlockedModal(null)}
+                className="w-full py-2.5 rounded-xl text-xs font-bold bg-gray-900 dark:bg-white text-white dark:text-gray-900 hover:opacity-90 transition-opacity"
+              >
+                Entendido
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+
+      {nicheToDelete && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in duration-200">
+          <div className="bg-white dark:bg-[#1a1a1c] border border-gray-100 dark:border-white/10 rounded-3xl max-w-sm w-full p-6 shadow-2xl space-y-5 animate-in zoom-in-95 duration-150">
+            <div className="flex items-start gap-4">
+              <div className="w-12 h-12 rounded-2xl bg-red-50 dark:bg-red-950/40 text-red-600 dark:text-red-400 flex items-center justify-center shrink-0">
+                <Trash2 className="w-6 h-6" />
+              </div>
+              <div className="space-y-1">
+                <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100">
+                  ¿Eliminar nicho?
+                </h3>
+                <p className="text-xs text-gray-500 dark:text-gray-400 leading-relaxed">
+                  ¿Deseas retirar <span className="font-semibold text-gray-800 dark:text-gray-200">«{nicheToDelete}»</span> de la lista de categorías activas?
+                </p>
+              </div>
+            </div>
+
+            <div className="pt-2 flex items-center justify-end gap-3 border-t border-gray-100 dark:border-white/5">
+              <button
+                type="button"
+                onClick={() => setNicheToDelete(null)}
+                disabled={isDeletingNiche}
+                className="px-4 py-2.5 rounded-xl text-xs font-semibold text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-[#2c2c2e] transition-colors"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmDeleteNiche}
+                disabled={isDeletingNiche}
+                className="px-5 py-2.5 rounded-xl text-xs font-semibold bg-red-600 hover:bg-red-700 text-white shadow-md shadow-red-500/20 disabled:opacity-50 transition-all flex items-center gap-1.5"
+              >
+                {isDeletingNiche ? (
+                  <>
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    <span>Eliminando...</span>
+                  </>
+                ) : (
+                  <>
+                    <Trash2 className="w-3.5 h-3.5" />
+                    <span>Eliminar nicho</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+  </div>
+  </div>
  );
 }

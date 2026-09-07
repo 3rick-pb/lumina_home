@@ -25,7 +25,8 @@ import {
  CreditCard,
  Navigation,
  Loader2,
- AlertTriangle
+ AlertTriangle,
+ Package
 } from "lucide-react";
 import { useCartStore } from "@/lib/store";
 import { useThemeStore, getResolvedTheme } from "@/lib/themeStore";
@@ -735,12 +736,157 @@ export function CartDrawer() {
  {/* Product Rows with generous breathing room */}
  <div className="space-y-3 pt-1">
  {items.map((item) => {
- // eslint-disable-next-line @typescript-eslint/no-explicit-any
- const itemBadge = (item.product as any)?.badge;
- const liveProduct = products.find(p => p.id === item.productId);
- const itemIsAgotado = isAgotadoBadge(itemBadge) || isAgotadoBadge(liveProduct?.badge);
+  if (item.isBundle) {
+    const bundleProducts = item.bundleProducts || [
+      {
+        id: item.productId,
+        title: item.product.title,
+        category: item.product.category,
+        imageUrl: item.product.imageUrl,
+        price: item.product.price,
+        color: item.color,
+        size: item.size,
+      },
+    ];
+    const regularSum = bundleProducts.reduce((acc, bp) => acc + bp.price, 0);
+    const originalTotal = regularSum * item.quantity;
+    const discountedUnit = item.bundleCustomPrice ?? item.product.price;
+    const discountedTotal = discountedUnit * item.quantity;
+    const totalSavings = Math.max(0, originalTotal - discountedTotal);
 
- return (
+    return (
+      <div
+        key={item.id}
+        className="p-4 sm:p-5 rounded-2xl border border-emerald-500/30 bg-gradient-to-br from-emerald-50/40 via-white to-emerald-50/20 dark:from-emerald-950/20 dark:via-[#1e1e20] dark:to-[#1a1a1c] shadow-sm space-y-4 transition-all"
+      >
+        {/* Bundle Header Bar */}
+        <div className="flex flex-wrap items-center justify-between gap-2 pb-3 border-b border-emerald-500/15">
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-xl bg-emerald-600 text-white flex items-center justify-center shadow-sm">
+              <Package className="w-4 h-4" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2 flex-wrap">
+                <h4 className="font-extrabold text-sm sm:text-base text-gray-950 dark:text-white">
+                  {item.bundleName || "Pack Promocional"}
+                </h4>
+                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black tracking-wide bg-emerald-600 text-white shadow-xs flex items-center gap-1">
+                  <Sparkles className="w-2.5 h-2.5" />
+                  {item.bundleBadge || `-${item.bundleDiscountPercent || 15}% DTO APLICADO`}
+                </span>
+              </div>
+              <p className="text-[11px] text-emerald-800 dark:text-emerald-300 font-medium mt-0.5">
+                Descuento de pack aplicado a los productos de este cuadro
+              </p>
+            </div>
+          </div>
+          <span className="text-[11px] font-semibold text-gray-500 dark:text-gray-400 bg-white/70 dark:bg-white/5 px-2.5 py-1 rounded-lg border border-emerald-500/10">
+            {bundleProducts.length} {bundleProducts.length === 1 ? "pieza incluida" : "piezas incluidas"}
+          </span>
+        </div>
+
+        {/* List of products inside this bundle card */}
+        <div className="space-y-2.5">
+          {bundleProducts.map((bp, bpIdx) => (
+            <div 
+              key={`${bp.id}-${bpIdx}`}
+              className="flex items-center justify-between p-2.5 sm:p-3 rounded-xl bg-white/90 dark:bg-[#252528] border border-gray-100 dark:border-white/5 shadow-2xs"
+            >
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="relative w-12 h-12 rounded-xl overflow-hidden bg-gray-100 dark:bg-white/5 shrink-0 border border-black/5">
+                  <Image src={bp.imageUrl} alt={bp.title} fill className="object-cover" />
+                </div>
+                <div className="min-w-0">
+                  <span className="text-[9px] font-bold text-emerald-600 uppercase tracking-wider block">
+                    {bp.category || "Pieza Complementaria"}
+                  </span>
+                  <p className="text-xs font-bold text-gray-900 dark:text-white truncate">
+                    {bp.title}
+                  </p>
+                  <div className="flex items-center gap-2 text-[10px] text-gray-400 mt-0.5">
+                    {bp.color && <span>Color: {bp.color}</span>}
+                    {bp.size && <span>• Talla: {bp.size}</span>}
+                  </div>
+                </div>
+              </div>
+
+              <div className="text-right shrink-0 ml-3">
+                <span className="text-xs text-gray-400 line-through block">
+                  ${bp.price.toFixed(2)}
+                </span>
+                <span className="text-[11px] font-bold text-emerald-600">
+                  Con dto. aplicado
+                </span>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Bottom Actions Row: Quantity, Subtotal and Delete */}
+        <div className="pt-3 border-t border-emerald-500/15 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          {/* Quantity Stepper for the Bundle */}
+          <div className="flex items-center gap-3">
+            <span className="text-xs text-gray-500 dark:text-gray-400 font-medium">Cantidad de packs:</span>
+            <div className="flex items-center bg-white dark:bg-[#202022] rounded-full px-2 py-1 border border-gray-200 dark:border-white/10 shadow-inner">
+              <button 
+                onClick={() => updateQuantity(item.id, item.quantity - 1)}
+                className="w-6 h-6 rounded-full bg-gray-100 dark:bg-white/10 hover:bg-gray-200 text-gray-800 dark:text-gray-200 flex items-center justify-center transition-all"
+                title="Disminuir packs"
+              >
+                <Minus className="w-3 h-3" />
+              </button>
+              <span className="w-8 text-center font-mono font-bold text-xs text-gray-900 dark:text-white">
+                {item.quantity < 10 ? `0${item.quantity}` : item.quantity}
+              </span>
+              <button 
+                onClick={() => updateQuantity(item.id, item.quantity + 1)}
+                className="w-6 h-6 rounded-full bg-gray-100 dark:bg-white/10 hover:bg-gray-200 text-gray-800 dark:text-gray-200 flex items-center justify-center transition-all"
+                title="Aumentar packs"
+              >
+                <Plus className="w-3 h-3" />
+              </button>
+            </div>
+          </div>
+
+          {/* Subtotal with discount display */}
+          <div className="flex items-center justify-between sm:justify-end gap-5">
+            <div className="text-right">
+              {totalSavings > 0 && (
+                <span className="text-xs text-gray-400 line-through mr-2">
+                  ${originalTotal.toFixed(2)}
+                </span>
+              )}
+              <span className="font-extrabold text-base sm:text-lg text-emerald-700 dark:text-emerald-400">
+                ${discountedTotal.toFixed(2)} USD
+              </span>
+              {totalSavings > 0 && (
+                <p className="text-[10px] text-emerald-600 font-bold">
+                  Ahorro de ${totalSavings.toFixed(2)} USD en este pack
+                </p>
+              )}
+            </div>
+
+            {/* Delete Bundle button */}
+            <button 
+              onClick={() => removeItem(item.id)}
+              className="relative overflow-hidden group/del px-3.5 py-1.5 rounded-full text-xs font-semibold text-rose-600 bg-white dark:bg-[#2a2a2c]/60 hover:bg-rose-50 border border-rose-200 shadow-xs transition-all flex items-center gap-1.5 cursor-pointer"
+              title="Eliminar este pack"
+            >
+              <Trash2 size={12} className="text-rose-600" />
+              <span className="font-bold text-[11px]">Eliminar pack</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const itemBadge = (item.product as any)?.badge;
+  const liveProduct = products.find(p => p.id === item.productId);
+  const itemIsAgotado = isAgotadoBadge(itemBadge) || isAgotadoBadge(liveProduct?.badge);
+
+  return (
  <div 
  key={item.id} 
  className={`p-3.5 sm:p-4 flex flex-col sm:grid sm:grid-cols-12 gap-4 sm:items-center group transition-all rounded-2xl ${

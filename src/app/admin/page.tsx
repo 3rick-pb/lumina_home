@@ -310,7 +310,15 @@ export default function AdminPage() {
                     {count} prod.
                   </span>
                   <button 
-                    onClick={() => deleteCategory(cat)}
+                    onClick={() => {
+                      if (count > 0) {
+                        alert(`No se puede eliminar el nicho "${cat}" porque contiene ${count} producto(s) activo(s). Primero reasigna o elimina sus productos.`);
+                        return;
+                      }
+                      if (confirm(`¿Estás seguro de que deseas eliminar el nicho vacío "${cat}"?`)) {
+                        deleteCategory(cat);
+                      }
+                    }}
                     className="text-gray-400 hover:text-red-500 transition-colors ml-1"
                     title={`Eliminar categoría ${cat}`}
                   >

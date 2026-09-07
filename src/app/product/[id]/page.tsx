@@ -31,7 +31,7 @@ export default function ProductDetail({ params }: { params: { id: string } }) {
   const [selectedCombo, setSelectedCombo] = useState<ProductCombo | null>(null);
   const [isAdding, setIsAdding] = useState(false);
   
-  const { addItem } = useCartStore();
+  const { addItem, addBundle } = useCartStore();
   const { toggleFavorite, isFavorite, isAuthenticated } = useUserStore();
   const [isMounted, setIsMounted] = useState(false);
   
@@ -57,11 +57,33 @@ export default function ProductDetail({ params }: { params: { id: string } }) {
   const handleAddToCart = () => {
     if (isAgotado) return;
     setIsAdding(true);
-    addItem(product, 1, product.colors?.[activeColor]?.name, activeSize);
-    if (selectedCombo?.companionProductIds) {
+
+    if (selectedCombo) {
       const companions = products.filter(p => selectedCombo.companionProductIds?.includes(p.id));
-      companions.forEach(c => addItem(c, 1, c.colors?.[0]?.name, c.sizes?.[0] || "Estándar"));
+      const bundleProductsList = [
+        {
+          product,
+          color: product.colors?.[activeColor]?.name,
+          size: activeSize,
+        },
+        ...companions.map(c => ({
+          product: c,
+          color: c.colors?.[0]?.name,
+          size: c.sizes?.[0] || "Estándar",
+        })),
+      ];
+
+      addBundle({
+        bundleName: selectedCombo.name,
+        bundleBadge: selectedCombo.badge || (selectedCombo.discountPercentage ? `-${selectedCombo.discountPercentage}% DTO` : undefined),
+        bundleDiscountPercent: selectedCombo.discountPercentage,
+        bundleCustomPrice: effectivePrice,
+        products: bundleProductsList,
+      });
+    } else {
+      addItem(product, 1, product.colors?.[activeColor]?.name, activeSize);
     }
+
     setTimeout(() => setIsAdding(false), 1500);
   };
 
