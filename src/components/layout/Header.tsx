@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { Search, ShoppingBag, Menu, Home, Sparkles, Bed, Lamp, User, X, ArrowRight, Layers } from "lucide-react";
+import { Search, ShoppingBag, Menu, Home, Sparkles, User, X, ArrowRight, Layers } from "lucide-react";
 import { motion } from "framer-motion";
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
@@ -16,22 +16,17 @@ const CartDrawer = dynamic(() => import('@/components/ui/CartDrawer').then(mod =
 });
 import { usePathname, useRouter } from "next/navigation";
 import { normalizeSearchText } from "@/lib/utils";
+import { getSavedNicheSlots, getNicheIconByName, type NicheSlotConfig, DEFAULT_NICHE_SLOTS } from "@/lib/nicheIcons";
 
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
-const TABS = [
-  { id: "home", label: "Inicio", icon: Home, href: "/" },
-  { id: "shop", label: "Todo", icon: Sparkles, href: "/shop" },
-  { id: "iluminacion", label: "Iluminación", icon: Lamp, href: "/shop?category=iluminacion" },
-  { id: "textiles", label: "Textiles", icon: Bed, href: "/shop?category=textiles" },
-];
-
 export function Header() {
   const pathname = usePathname();
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState(TABS[0].id);
+  const [nicheSlots, setNicheSlots] = useState<NicheSlotConfig[]>(DEFAULT_NICHE_SLOTS);
+  const [activeTab, setActiveTab] = useState("home");
   const [hoveredTab, setHoveredTab] = useState<string | null>(null);
   const [searchVal, setSearchVal] = useState("");
   
@@ -42,7 +37,32 @@ export function Header() {
 
   useEffect(() => {
     setIsMounted(true);
+    setNicheSlots(getSavedNicheSlots());
+
+    const handleUpdate = () => {
+      setNicheSlots(getSavedNicheSlots());
+    };
+    window.addEventListener("lumina_header_niches_updated", handleUpdate);
+    window.addEventListener("storage", handleUpdate);
+    return () => {
+      window.removeEventListener("lumina_header_niches_updated", handleUpdate);
+      window.removeEventListener("storage", handleUpdate);
+    };
   }, []);
+
+  const navTabs = useMemo(() => {
+    const slot1 = nicheSlots[0] || DEFAULT_NICHE_SLOTS[0];
+    const slot2 = nicheSlots[1] || DEFAULT_NICHE_SLOTS[1];
+    const Icon1 = getNicheIconByName(slot1.iconName);
+    const Icon2 = getNicheIconByName(slot2.iconName);
+
+    return [
+      { id: "home", label: "Inicio", icon: Home, href: "/" },
+      { id: "shop", label: "Todo", icon: Sparkles, href: "/shop" },
+      { id: slot1.category || "niche1", label: slot1.label, icon: Icon1, href: `/shop?category=${encodeURIComponent(slot1.category)}` },
+      { id: slot2.category || "niche2", label: slot2.label, icon: Icon2, href: `/shop?category=${encodeURIComponent(slot2.category)}` },
+    ];
+  }, [nicheSlots]);
 
   // Sync "Inicio" (home) tab selection with the URL pathname
   useEffect(() => {
@@ -51,12 +71,14 @@ export function Header() {
     } else if (pathname === "/shop") {
       if (typeof window !== "undefined") {
         const search = window.location.search;
-        if (search.includes("category=iluminacion")) setActiveTab("iluminacion");
-        else if (search.includes("category=textiles")) setActiveTab("textiles");
+        const slot1Cat = nicheSlots[0]?.category?.toLowerCase();
+        const slot2Cat = nicheSlots[1]?.category?.toLowerCase();
+        if (slot1Cat && search.includes(`category=${slot1Cat}`)) setActiveTab(slot1Cat);
+        else if (slot2Cat && search.includes(`category=${slot2Cat}`)) setActiveTab(slot2Cat);
         else setActiveTab("shop");
       }
     }
-  }, [pathname]);
+  }, [pathname, nicheSlots]);
 
   // Real-time product search matches (accent/diacritic insensitive)
   const matchedProducts = useMemo(() => {
@@ -106,7 +128,7 @@ export function Header() {
 
           {/* Liquid Glass Navigation */}
           <nav className="hidden md:flex items-center gap-1 relative" onMouseLeave={() => setHoveredTab(null)}>
-            {TABS.map((tab) => {
+            {navTabs.map((tab) => {
               const isActive = activeTab === tab.id;
               const isHovered = hoveredTab === tab.id;
               const Icon = tab.icon;
