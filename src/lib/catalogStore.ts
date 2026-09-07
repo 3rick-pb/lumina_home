@@ -1,6 +1,30 @@
 import { create } from 'zustand';
 import { supabase } from './supabase';
 
+export interface LandingSpec {
+  title: string;
+  description: string;
+  side?: 'left' | 'right';
+}
+
+export interface LandingReview {
+  author: string;
+  role?: string;
+  rating: number;
+  comment: string;
+}
+
+export interface LandingBenefit {
+  title: string;
+  description: string;
+}
+
+export interface LandingBundle {
+  enabled: boolean;
+  discountPercentage?: number;
+  companionProductIds?: string[];
+}
+
 export interface CatalogProduct {
   id: string;
   title: string;
@@ -23,6 +47,11 @@ export interface CatalogProduct {
   careInstructions?: string;
   packageContents?: string;
   stock?: number;
+  layoutType?: 'standard' | 'landing';
+  landingSpecs?: LandingSpec[];
+  landingReviews?: LandingReview[];
+  landingBenefits?: LandingBenefit[];
+  landingBundle?: LandingBundle;
 }
 
 interface CatalogState {
@@ -218,6 +247,11 @@ const toSupabaseProduct = (p: Partial<CatalogProduct>) => {
     care_instructions: p.careInstructions || null,
     package_contents: p.packageContents || null,
     stock: typeof p.stock === 'number' ? p.stock : 20,
+    layout_type: p.layoutType || 'standard',
+    landing_specs: p.landingSpecs || null,
+    landing_reviews: p.landingReviews || null,
+    landing_benefits: p.landingBenefits || null,
+    landing_bundle: p.landingBundle || null,
   };
 
   // Only pass id if it looks like a valid UUID (has dashes)
@@ -290,6 +324,11 @@ const toFrontendProduct = (p: any): CatalogProduct => {
     careInstructions: p.care_instructions || extraMeta.careInstructions || undefined,
     packageContents: p.package_contents || extraMeta.packageContents || undefined,
     stock: typeof p.stock === 'number' ? p.stock : (typeof extraMeta.stock === 'number' ? extraMeta.stock : 18),
+    layoutType: p.layout_type || extraMeta.layoutType || 'standard',
+    landingSpecs: p.landing_specs || extraMeta.landingSpecs || undefined,
+    landingReviews: p.landing_reviews || extraMeta.landingReviews || undefined,
+    landingBenefits: p.landing_benefits || extraMeta.landingBenefits || undefined,
+    landingBundle: p.landing_bundle || extraMeta.landingBundle || undefined,
   };
 };
 
@@ -363,6 +402,11 @@ export const useCatalogStore = create<CatalogState>((set) => ({
       delete basicProduct.care_instructions;
       delete basicProduct.package_contents;
       delete basicProduct.stock;
+      delete basicProduct.layout_type;
+      delete basicProduct.landing_specs;
+      delete basicProduct.landing_reviews;
+      delete basicProduct.landing_benefits;
+      delete basicProduct.landing_bundle;
       const retry = await supabase.from('products').insert([basicProduct]).select().single();
       data = retry.data;
       error = retry.error;
@@ -399,7 +443,12 @@ export const useCatalogStore = create<CatalogState>((set) => ({
             warranty: product.warranty,
             careInstructions: product.careInstructions,
             packageContents: product.packageContents,
-            stock: product.stock
+            stock: product.stock,
+            layoutType: product.layoutType || 'standard',
+            landingSpecs: product.landingSpecs,
+            landingReviews: product.landingReviews,
+            landingBenefits: product.landingBenefits,
+            landingBundle: product.landingBundle,
           };
           localStorage.setItem(`lumina_prod_meta_${data.id}`, JSON.stringify(meta));
         } catch {}
@@ -439,6 +488,11 @@ export const useCatalogStore = create<CatalogState>((set) => ({
         delete basicProduct.care_instructions;
         delete basicProduct.package_contents;
         delete basicProduct.stock;
+        delete basicProduct.layout_type;
+        delete basicProduct.landing_specs;
+        delete basicProduct.landing_reviews;
+        delete basicProduct.landing_benefits;
+        delete basicProduct.landing_bundle;
         const retry = await supabase.from('products').update(basicProduct).eq('id', id).select().single();
         data = retry.data;
         error = retry.error;
@@ -475,7 +529,12 @@ export const useCatalogStore = create<CatalogState>((set) => ({
               warranty: updatedProduct.warranty,
               careInstructions: updatedProduct.careInstructions,
               packageContents: updatedProduct.packageContents,
-              stock: updatedProduct.stock
+              stock: updatedProduct.stock,
+              layoutType: updatedProduct.layoutType || 'standard',
+              landingSpecs: updatedProduct.landingSpecs,
+              landingReviews: updatedProduct.landingReviews,
+              landingBenefits: updatedProduct.landingBenefits,
+              landingBundle: updatedProduct.landingBundle,
             };
             localStorage.setItem(`lumina_prod_meta_${id}`, JSON.stringify(meta));
           } catch {}

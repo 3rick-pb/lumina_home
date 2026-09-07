@@ -60,6 +60,7 @@ import { useCatalogStore, normalizeCategory, CatalogProduct, isAgotadoBadge } fr
 import { useCartStore } from "@/lib/store";
 import { normalizeSearchText } from "@/lib/utils";
 import { supabase } from "@/lib/supabase";
+import { ProductArchitectureSelector } from "@/components/profile/ProductArchitectureSelector";
 import dynamic from 'next/dynamic';
 
 const AnalyticsRadarView = dynamic(() => import('@/components/profile/AnalyticsRadarView'), {
@@ -203,6 +204,19 @@ export default function ProfilePage() {
  const [prodCareInstructions, setProdCareInstructions] = useState("");
  const [prodPackageContents, setProdPackageContents] = useState("");
  const [prodStock, setProdStock] = useState("20");
+ const [prodLayoutType, setProdLayoutType] = useState<'standard' | 'landing'>('standard');
+ const [prodLandingSpecs, setProdLandingSpecs] = useState<Array<{ title: string; description: string; side?: 'left' | 'right' }>>([
+    { title: "Chasis de Aluminio y Acabado Mate", description: "Estructura aeroespacial ultraligera anodizada resistente a corrosión.", side: "left" },
+    { title: "Óptica Lumina Difusa 360°", description: "Difusor de vidrio opalino tratado térmicamente para dispersión uniforme.", side: "left" },
+    { title: "Gestión Térmica Inteligente", description: "Disipación pasiva silenciosa que alarga la vida útil de los componentes.", side: "right" },
+    { title: "Carga Ultra Rápida USB-C", description: "Protocolo universal con selector touch de 4 temperaturas de luz.", side: "right" },
+  ]);
+  const [prodLandingReviews, setProdLandingReviews] = useState<Array<{ author: string; role?: string; rating: number; comment: string }>>([
+    { author: "Valentina M.", role: "Arquitecta de Interiores", rating: 5, comment: "La calidad de los acabados es insuperable. Transforma cualquier rincón." },
+    { author: "Carlos E.", role: "Comprador Verificado", rating: 5, comment: "El empaque llegó blindado en 24 horas. Impresiona todavía más en persona." },
+  ]);
+  const [prodLandingBundleEnabled, setProdLandingBundleEnabled] = useState(true);
+  const [prodLandingBundleDiscount, setProdLandingBundleDiscount] = useState("15");
  const [prodSubmitError, setProdSubmitError] = useState<string | null>(null);
  const [prodSubmitSuccess, setProdSubmitSuccess] = useState<string | null>(null);
 
@@ -233,6 +247,11 @@ export default function ProfilePage() {
  const [editCareInstructions, setEditCareInstructions] = useState("");
  const [editPackageContents, setEditPackageContents] = useState("");
  const [editStock, setEditStock] = useState("20");
+ const [editLayoutType, setEditLayoutType] = useState<'standard' | 'landing'>('standard');
+ const [editLandingSpecs, setEditLandingSpecs] = useState<Array<{ title: string; description: string; side?: 'left' | 'right' }>>([]);
+ const [editLandingReviews, setEditLandingReviews] = useState<Array<{ author: string; role?: string; rating: number; comment: string }>>([]);
+ const [editLandingBundleEnabled, setEditLandingBundleEnabled] = useState(true);
+ const [editLandingBundleDiscount, setEditLandingBundleDiscount] = useState("15");
  const [editFeedback, setEditFeedback] = useState<{ msg: string; success: boolean } | null>(null);
 
  // Category & Badge manager state
@@ -820,6 +839,13 @@ export default function ProfilePage() {
  careInstructions: prodCareInstructions.trim() || undefined,
  packageContents: prodPackageContents.trim() || undefined,
  stock: prodStock ? parseInt(prodStock, 10) : 20,
+ layoutType: prodLayoutType,
+ landingSpecs: prodLayoutType === 'landing' ? prodLandingSpecs : undefined,
+ landingReviews: prodLayoutType === 'landing' ? prodLandingReviews : undefined,
+ landingBundle: prodLayoutType === 'landing' ? {
+   enabled: prodLandingBundleEnabled,
+   discountPercentage: parseInt(prodLandingBundleDiscount, 10) || 15
+ } : undefined,
  });
 
  setIsSubmittingProd(false);
@@ -851,6 +877,7 @@ export default function ProfilePage() {
  setProdCareInstructions("");
  setProdPackageContents("");
  setProdStock("20");
+ setProdLayoutType("standard");
  }, 900);
  } else {
  setProdSubmitError(res.error || "No se pudo publicar el producto. Verifica tu conexión o base de datos.");
@@ -899,6 +926,11 @@ export default function ProfilePage() {
  setEditCareInstructions(p.careInstructions || "");
  setEditPackageContents(p.packageContents || "");
  setEditStock(p.stock !== undefined ? p.stock.toString() : "20");
+ setEditLayoutType(p.layoutType || 'standard');
+ setEditLandingSpecs(p.landingSpecs || []);
+ setEditLandingReviews(p.landingReviews || []);
+ setEditLandingBundleEnabled(p.landingBundle?.enabled ?? true);
+ setEditLandingBundleDiscount(p.landingBundle?.discountPercentage ? p.landingBundle.discountPercentage.toString() : "15");
  setEditFeedback(null);
  setShowEditProductModal(true);
  };
@@ -936,6 +968,13 @@ export default function ProfilePage() {
  careInstructions: editCareInstructions.trim() || undefined,
  packageContents: editPackageContents.trim() || undefined,
  stock: editStock ? parseInt(editStock, 10) : 20,
+ layoutType: editLayoutType,
+ landingSpecs: editLayoutType === 'landing' && editLandingSpecs.length > 0 ? editLandingSpecs : undefined,
+ landingReviews: editLayoutType === 'landing' && editLandingReviews.length > 0 ? editLandingReviews : undefined,
+ landingBundle: editLayoutType === 'landing' ? {
+   enabled: editLandingBundleEnabled,
+   discountPercentage: parseInt(editLandingBundleDiscount, 10) || 15
+ } : undefined,
  });
 
  setIsSubmittingEdit(false);
@@ -3775,7 +3814,20 @@ export default function ProfilePage() {
  )}
 
  <form onSubmit={handleAddProductSubmit} className="p-6 overflow-y-auto flex-1 space-y-5">
- <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+ <ProductArchitectureSelector
+    layoutType={prodLayoutType}
+    onLayoutTypeChange={setProdLayoutType}
+    bundleEnabled={prodLandingBundleEnabled}
+    onBundleEnabledChange={setProdLandingBundleEnabled}
+    bundleDiscount={prodLandingBundleDiscount}
+    onBundleDiscountChange={setProdLandingBundleDiscount}
+    landingSpecs={prodLandingSpecs}
+    onLandingSpecsChange={setProdLandingSpecs}
+    landingReviews={prodLandingReviews}
+    onLandingReviewsChange={setProdLandingReviews}
+  />
+
+  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
  <div>
  <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2 pl-1">Nombre Principal *</label>
  <input required type="text" value={prodTitle} onChange={e => setProdTitle(e.target.value)} className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-sm outline-none bg-white dark:bg-[#1a1a1c] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500" placeholder="Ej: Lámpara de Mesa" />
@@ -4097,6 +4149,19 @@ export default function ProfilePage() {
  {editFeedback.msg}
  </div>
  )}
+
+ <ProductArchitectureSelector
+    layoutType={editLayoutType}
+    onLayoutTypeChange={setEditLayoutType}
+    bundleEnabled={editLandingBundleEnabled}
+    onBundleEnabledChange={setEditLandingBundleEnabled}
+    bundleDiscount={editLandingBundleDiscount}
+    onBundleDiscountChange={setEditLandingBundleDiscount}
+    landingSpecs={editLandingSpecs}
+    onLandingSpecsChange={setEditLandingSpecs}
+    landingReviews={editLandingReviews}
+    onLandingReviewsChange={setEditLandingReviews}
+  />
 
  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
  <div>

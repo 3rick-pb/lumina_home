@@ -10,6 +10,7 @@ import { useCartStore } from "@/lib/store";
 import { useCatalogStore, isAgotadoBadge } from "@/lib/catalogStore";
 import { useUserStore } from "@/lib/userStore";
 import { useAmbientStore } from "@/lib/ambientStore";
+import { ProductLandingView } from "@/components/product/ProductLandingView";
 
 export default function ProductDetail({ params }: { params: { id: string } }) {
   const { products } = useCatalogStore();
@@ -69,7 +70,25 @@ export default function ProductDetail({ params }: { params: { id: string } }) {
       </div>
 
       <div className="container mx-auto px-4 md:px-6 relative z-10">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12">
+        {product.layoutType === "landing" ? (
+          <ProductLandingView
+            product={product}
+            allProducts={products}
+            currentImage={currentImage}
+            images={images}
+            activeImage={activeImage}
+            setActiveImage={setActiveImage}
+            activeColor={activeColor}
+            setActiveColor={setActiveColor}
+            activeSize={activeSize}
+            setActiveSize={setActiveSize}
+            handleAddToCart={handleAddToCart}
+            isAdding={isAdding}
+            isAgotado={isAgotado}
+          />
+        ) : (
+          <>
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12">
           
           {/* Gallery Section */}
           <div className="lg:col-span-7 flex flex-col-reverse md:flex-row gap-4 h-full">
@@ -460,6 +479,8 @@ export default function ProductDetail({ params }: { params: { id: string } }) {
              <Image src={images[1] || images[0]} fill alt={product.title} className="object-cover" />
           </div>
         </div>
+        </>
+        )}
 
         {/* You May Also Like */}
         <div className="mt-24 pt-12 border-t border-gray-200">
