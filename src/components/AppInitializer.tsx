@@ -129,6 +129,17 @@ function ActivityTracker() {
       const activeUser = useUserStore.getState().user;
       const sId = sessionIdRef.current;
       if (activeUser?.id && sId) {
+        const chan = useRadarStore.getState().channel;
+        if (chan) {
+          try {
+            chan.send({
+              type: 'broadcast',
+              event: 'offline',
+              payload: { id: activeUser.id, sessionId: sId, allSessions: true },
+            }).catch(() => {});
+            chan.untrack().catch(() => {});
+          } catch {}
+        }
         if (navigator.sendBeacon) {
           navigator.sendBeacon(
             '/api/radar/activity',

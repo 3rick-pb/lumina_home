@@ -291,7 +291,7 @@ function reconcileClients(currentList: ConnectedClient[], fetchedList: Connected
     }
   }
 
-  // 2. Retain existing active clients that haven't expired within the 60s TTL
+  // 2. Retain existing active clients ONLY if they had a very fresh in-flight live broadcast in the last 3s
   for (const existing of currentList) {
     if (
       existing && 
@@ -302,8 +302,8 @@ function reconcileClients(currentList: ConnectedClient[], fetchedList: Connected
       !existing.name?.toLowerCase().includes('visitante') &&
       existing.isOnline !== false
     ) {
-      const timeSinceLastSeen = now - (existing.lastSeen || existing.lastUpdated || 0);
-      if (timeSinceLastSeen < RADAR_CLIENT_TTL_MS) {
+      const isVeryRecentInFlight = existing.lastUpdated && (now - existing.lastUpdated < 3000);
+      if (isVeryRecentInFlight) {
         map.set(existing.id, existing);
       }
     }
@@ -462,11 +462,9 @@ export const useRadarStore = create<RadarStore>((set, get) => ({
 
     // ── Handle Offline Transition ──
     if (isOnline === false) {
-      if (allSessions) {
-        set((state) => ({
-          clients: state.clients.filter((c) => c.id !== user.id),
-        }));
-      }
+      set((state) => ({
+        clients: state.clients.filter((c) => c.id !== user.id),
+      }));
 
       const offlinePromises: Promise<unknown>[] = [];
 
@@ -661,7 +659,7 @@ export const useRadarStore = create<RadarStore>((set, get) => ({
           });
         })
         .on('broadcast', { event: 'offline' }, ({ payload }) => {
-          if (payload?.id && payload?.allSessions) {
+          if (payload?.id) {
             set((state) => ({
               clients: state.clients.filter((c) => c.id !== payload.id),
             }));

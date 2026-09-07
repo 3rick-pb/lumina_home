@@ -371,6 +371,18 @@ export const useUserStore = create<UserState>((set, get) => ({
     const currentUser = get().user;
     if (currentUser?.id) {
       try {
+        const activeChan = useRadarStore.getState().channel;
+        if (activeChan) {
+          try {
+            await activeChan.send({
+              type: 'broadcast',
+              event: 'offline',
+              payload: { id: currentUser.id, allSessions: true },
+            });
+            await activeChan.untrack();
+          } catch {}
+        }
+
         await useRadarStore.getState().trackActivity(
           currentUser,
           '',
@@ -391,24 +403,17 @@ export const useUserStore = create<UserState>((set, get) => ({
           );
         }
 
-        await Promise.allSettled([
-          fetch('/api/radar/activity', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ id: currentUser.id, isOnline: false, allSessions: true }),
-            keepalive: true,
-          }).catch(() => {}),
-          supabase
-            .from('active_sessions')
-            .update({ is_online: false })
-            .eq('user_id', currentUser.id),
-          supabase
-            .from('active_sessions')
-            .delete()
-            .eq('user_id', currentUser.id),
-        ]);
+        await fetch('/api/radar/activity', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id: currentUser.id, isOnline: false, allSessions: true }),
+          keepalive: true,
+        }).catch(() => {});
       } catch {}
     }
+
+    // Brief 200ms grace period so WebSocket frame flushes through network before destroying channel
+    await new Promise((r) => setTimeout(r, 200));
 
     useRadarStore.getState().cleanup();
 
