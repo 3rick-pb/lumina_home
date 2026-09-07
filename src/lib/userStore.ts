@@ -401,6 +401,10 @@ export const useUserStore = create<UserState>((set, get) => ({
           }).catch(() => {}),
           supabase
             .from('active_sessions')
+            .update({ is_online: false })
+            .eq('user_id', currentUser.id),
+          supabase
+            .from('active_sessions')
             .delete()
             .eq('user_id', currentUser.id),
         ]);

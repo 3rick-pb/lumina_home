@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, Suspense } from "react";
+import { useEffect, Suspense, useRef, useCallback } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
 import { useCatalogStore } from "@/lib/catalogStore";
 import { useUserStore } from "@/lib/userStore";
@@ -60,25 +60,80 @@ function ActivityTracker() {
     currentSection = "Explorando Tienda";
   }
 
-  // Disconnect radar presence immediately when closing web or tab
+  const lastInteractionRef = useRef<number>(Date.now());
+  const isOnlineRef = useRef<boolean>(true);
+  const lastKeepAliveRef = useRef<number>(Date.now());
+
+  // Reports online status to Store, Broadcast & Database
+  const reportOnline = useCallback((section?: string) => {
+    const currentUser = useUserStore.getState().user;
+    if (!currentUser?.id || currentUser.id.startsWith('vis_') || currentUser.id.startsWith('guest_')) return;
+
+    const currentOrders = useUserStore.getState().orders;
+    const currentAddress = useUserStore.getState().address;
+    const currentAddresses = useUserStore.getState().addresses;
+    const purchasesCount = currentOrders?.length || 0;
+    const totalSpent = currentOrders?.reduce((acc, order) => acc + (order.total || 0), 0) || 0;
+    const userCity = currentAddress?.city || currentAddresses?.[0]?.city || "";
+    const currentCartItems = useCartStore.getState().items;
+    const currentCartOpen = useCartStore.getState().isOpen;
+    const cartItemsCount = currentCartItems.reduce((sum, item) => sum + (item.quantity || 1), 0);
+    const hasCart = currentCartOpen || cartItemsCount > 0;
+    const targetSection = section || currentSection;
+
+    isOnlineRef.current = true;
+    lastKeepAliveRef.current = Date.now();
+
+    useRadarStore.getState().initRadar(
+      currentUser,
+      userCity,
+      totalSpent,
+      purchasesCount,
+      targetSection,
+      hasCart,
+      cartItemsCount
+    );
+
+    useRadarStore.getState().trackActivity(
+      currentUser,
+      userCity,
+      totalSpent,
+      purchasesCount,
+      targetSection,
+      hasCart,
+      cartItemsCount,
+      true
+    );
+  }, [currentSection]);
+
+  // Reports offline status upon 30 seconds of inactivity or tab close
+  const reportOffline = useCallback(() => {
+    const currentUser = useUserStore.getState().user;
+    if (!currentUser?.id || currentUser.id.startsWith('vis_') || currentUser.id.startsWith('guest_')) return;
+
+    isOnlineRef.current = false;
+    useRadarStore.getState().trackActivity(
+      currentUser,
+      '',
+      0,
+      0,
+      '',
+      false,
+      0,
+      false
+    );
+  }, []);
+
+  // Disconnect immediately on page close / unload
   useEffect(() => {
     const handleClose = () => {
+      reportOffline();
       const activeUser = useUserStore.getState().user;
-      if (activeUser?.id) {
-        try {
-          useRadarStore.getState().channel?.send({
-            type: 'broadcast',
-            event: 'offline',
-            payload: { id: activeUser.id },
-          });
-        } catch {}
-
-        if (navigator.sendBeacon) {
-          navigator.sendBeacon(
-            '/api/radar/activity',
-            new Blob([JSON.stringify({ id: activeUser.id, isOnline: false })], { type: 'application/json' })
-          );
-        }
+      if (activeUser?.id && navigator.sendBeacon) {
+        navigator.sendBeacon(
+          '/api/radar/activity',
+          new Blob([JSON.stringify({ id: activeUser.id, isOnline: false })], { type: 'application/json' })
+        );
       }
     };
 
@@ -88,43 +143,9 @@ function ActivityTracker() {
       window.removeEventListener('beforeunload', handleClose);
       window.removeEventListener('pagehide', handleClose);
     };
-  }, []);
+  }, [reportOffline]);
 
-  // Instant foreground visibility tracking (resumes broadcast immediately when switching back to tab)
-  useEffect(() => {
-    const handleVisibilityChange = () => {
-      if (typeof document !== 'undefined' && document.visibilityState === 'visible') {
-        const currentUser = useUserStore.getState().user;
-        if (!currentUser?.id || currentUser.id.startsWith('vis_') || currentUser.id.startsWith('guest_')) return;
-
-        const currentOrders = useUserStore.getState().orders;
-        const currentAddress = useUserStore.getState().address;
-        const currentAddresses = useUserStore.getState().addresses;
-        const purchasesCount = currentOrders?.length || 0;
-        const totalSpent = currentOrders?.reduce((acc, order) => acc + (order.total || 0), 0) || 0;
-        const userCity = currentAddress?.city || currentAddresses?.[0]?.city || "";
-        const currentCartItems = useCartStore.getState().items;
-        const currentCartOpen = useCartStore.getState().isOpen;
-        const cartItemsCount = currentCartItems.reduce((sum, item) => sum + (item.quantity || 1), 0);
-        const hasCart = currentCartOpen || cartItemsCount > 0;
-
-        useRadarStore.getState().trackActivity(
-          currentUser,
-          userCity,
-          totalSpent,
-          purchasesCount,
-          currentSection,
-          hasCart,
-          cartItemsCount
-        );
-      }
-    };
-
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
-  }, [currentSection]);
-
-  // Presence Tracking & Live Activity Updates (Real Authenticated Users Only)
+  // Exploration change: URL, section, or cart navigation constitutes active exploration
   useEffect(() => {
     // Purge legacy guest tokens
     if (typeof window !== 'undefined') {
@@ -137,70 +158,86 @@ function ActivityTracker() {
     if (pathname.startsWith("/auth/") || !currentSection) return;
     if (!user || !user.id || user.id.startsWith('vis_') || user.id.startsWith('guest_')) return;
 
-    const purchasesCount = orders?.length || 0;
-    const totalSpent = orders?.reduce((acc, order) => acc + (order.total || 0), 0) || 0;
-    const userCity = address?.city || addresses?.[0]?.city || "";
-    const cartItemsCount = cartItems.reduce((sum, item) => sum + (item.quantity || 1), 0);
-    const hasCart = isCartOpen || cartItemsCount > 0;
+    // Navigation is active exploration: update timestamp and trigger online state
+    lastInteractionRef.current = Date.now();
+    reportOnline(currentSection);
+  }, [user, address, addresses, orders, pathname, searchParams, isCartOpen, cartItems.length, currentSection, reportOnline]);
 
-    // Track on channel & Database immediately on navigation/state change
-    useRadarStore.getState().initRadar(
-      user,
-      userCity,
-      totalSpent,
-      purchasesCount,
-      currentSection,
-      hasCart,
-      cartItemsCount
-    );
-
-    useRadarStore.getState().trackActivity(
-      user,
-      userCity,
-      totalSpent,
-      purchasesCount,
-      currentSection,
-      hasCart,
-      cartItemsCount
-    );
-  }, [user, address, addresses, orders, pathname, searchParams, isCartOpen, cartItems, currentSection]);
-
-  // Fast 1.5-second heartbeat to refresh DB activity and maintain instant real-time live radar for the active user
+  // User DOM interaction tracker: clicks, typing, mouse movement, touches, scrolls
   useEffect(() => {
-    if (pathname.startsWith("/auth/") || !currentSection) return;
     if (!user || !user.id || user.id.startsWith('vis_') || user.id.startsWith('guest_')) return;
 
-    const interval = setInterval(() => {
-      // Guard against background tabs sending outdated heartbeats
-      if (typeof document !== 'undefined' && document.hidden) return;
+    const handleUserActivity = () => {
+      const now = Date.now();
+      lastInteractionRef.current = now;
 
-      const currentUser = useUserStore.getState().user;
-      if (!currentUser?.id || currentUser.id.startsWith('vis_') || currentUser.id.startsWith('guest_')) return;
+      // If user was offline/inactive, reactivate instantly!
+      if (!isOnlineRef.current) {
+        reportOnline();
+      } else if (now - lastKeepAliveRef.current > 8000) {
+        // Active keepalive sent every 8s while interacting to maintain freshness
+        reportOnline();
+      }
+    };
 
-      const currentOrders = useUserStore.getState().orders;
-      const currentAddress = useUserStore.getState().address;
-      const currentAddresses = useUserStore.getState().addresses;
-      const purchasesCount = currentOrders?.length || 0;
-      const totalSpent = currentOrders?.reduce((acc, order) => acc + (order.total || 0), 0) || 0;
-      const userCity = currentAddress?.city || currentAddresses?.[0]?.city || "";
-      const currentCartItems = useCartStore.getState().items;
-      const currentCartOpen = useCartStore.getState().isOpen;
-      const cartItemsCount = currentCartItems.reduce((sum, item) => sum + (item.quantity || 1), 0);
-      const hasCart = currentCartOpen || cartItemsCount > 0;
+    let throttleTimer: NodeJS.Timeout | null = null;
+    const throttledActivity = () => {
+      if (!throttleTimer) {
+        throttleTimer = setTimeout(() => {
+          throttleTimer = null;
+          handleUserActivity();
+        }, 500);
+      }
+    };
 
-      useRadarStore.getState().trackActivity(
-        currentUser,
-        userCity,
-        totalSpent,
-        purchasesCount,
-        currentSection,
-        hasCart,
-        cartItemsCount
-      );
-    }, 1500);
+    window.addEventListener('mousemove', throttledActivity, { passive: true });
+    window.addEventListener('scroll', throttledActivity, { passive: true });
+    window.addEventListener('mousedown', handleUserActivity, { passive: true });
+    window.addEventListener('keydown', handleUserActivity, { passive: true });
+    window.addEventListener('touchstart', handleUserActivity, { passive: true });
+    window.addEventListener('click', handleUserActivity, { passive: true });
 
-    return () => clearInterval(interval);
-  }, [user, address, addresses, orders, pathname, isCartOpen, cartItems, currentSection]);
+    return () => {
+      if (throttleTimer) clearTimeout(throttleTimer);
+      window.removeEventListener('mousemove', throttledActivity);
+      window.removeEventListener('scroll', throttledActivity);
+      window.removeEventListener('mousedown', handleUserActivity);
+      window.removeEventListener('keydown', handleUserActivity);
+      window.removeEventListener('touchstart', handleUserActivity);
+      window.removeEventListener('click', handleUserActivity);
+    };
+  }, [user, reportOnline]);
+
+  // Tab visibility tracker: resume immediately when returning to tab
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (typeof document !== 'undefined' && document.visibilityState === 'visible') {
+        lastInteractionRef.current = Date.now();
+        reportOnline();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+  }, [reportOnline]);
+
+  // 30-Second Inactivity Watchdog: Automatically sets isOnline to false when idle on same section for 30s
+  useEffect(() => {
+    if (!user || !user.id || user.id.startsWith('vis_') || user.id.startsWith('guest_')) return;
+
+    const watchdogInterval = setInterval(() => {
+      const now = Date.now();
+      const idleTime = now - lastInteractionRef.current;
+
+      if (idleTime >= 30000) {
+        if (isOnlineRef.current) {
+          reportOffline();
+        }
+      }
+    }, 1000);
+
+    return () => clearInterval(watchdogInterval);
+  }, [user, reportOffline]);
 
   return null;
 }

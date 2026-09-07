@@ -182,7 +182,8 @@ interface RadarStore {
     purchasesCount?: number,
     currentSection?: string,
     hasCart?: boolean,
-    cartItemsCount?: number
+    cartItemsCount?: number,
+    isOnline?: boolean
   ) => Promise<void>;
   fetchActiveClients: () => Promise<void>;
   cleanup: () => void;
@@ -387,8 +388,49 @@ export const useRadarStore = create<RadarStore>((set, get) => ({
     }
   },
 
-  trackActivity: async (user, city = '', totalSpent = 0, purchasesCount = 0, currentSection = 'Explorando Tienda', hasCart = false, cartItemsCount = 0) => {
+  trackActivity: async (user, city = '', totalSpent = 0, purchasesCount = 0, currentSection = 'Explorando Tienda', hasCart = false, cartItemsCount = 0, isOnline = true) => {
     if (!user?.id || user.id.startsWith('vis_') || user.id.startsWith('guest_') || user.name?.toLowerCase().includes('visitante')) return;
+
+    // Handle explicit offline transition (inactivity > 30s or logout)
+    if (isOnline === false) {
+      set((state) => ({
+        clients: state.clients.filter((c) => c.id !== user.id),
+      }));
+
+      const activeChannel = get().channel;
+      const offlinePromises: Promise<unknown>[] = [];
+
+      if (activeChannel) {
+        offlinePromises.push(
+          activeChannel.send({
+            type: 'broadcast',
+            event: 'offline',
+            payload: { id: user.id },
+          }).catch(() => {})
+        );
+      }
+
+      offlinePromises.push(
+        fetch('/api/radar/activity', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id: user.id, isOnline: false }),
+          keepalive: true,
+        }).catch(() => {})
+      );
+
+      offlinePromises.push(
+        (async () => {
+          try {
+            await supabase.from('active_sessions').update({ is_online: false }).eq('user_id', user.id);
+            await supabase.from('active_sessions').delete().eq('user_id', user.id);
+          } catch {}
+        })()
+      );
+
+      await Promise.allSettled(offlinePromises);
+      return;
+    }
 
     const coords = resolveCoordinates(city);
     const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
@@ -490,11 +532,30 @@ export const useRadarStore = create<RadarStore>((set, get) => ({
     // Initial fetch from activity endpoint
     get().fetchActiveClients();
 
-    // Start calm 4-second auto-poll fallback to ensure real-time responsiveness without flooding
+    // 1-second watchdog to strictly enforce the 30-second rule and prune inactive clients
     if (!get().pollIntervalId) {
+      let tickCount = 0;
       const intervalId = setInterval(() => {
-        get().fetchActiveClients();
-      }, 2000);
+        const now = Date.now();
+        // Prune any client inactive for >= 30s or marked offline
+        set((state) => {
+          const activeOnly = state.clients.filter((c) => {
+            if (c.isOnline === false) return false;
+            const idle = now - (c.lastSeen || c.lastUpdated || now);
+            return idle < 30000;
+          });
+          if (activeOnly.length !== state.clients.length) {
+            return { clients: activeOnly };
+          }
+          return state;
+        });
+
+        // Periodic background poll every 2 seconds
+        tickCount++;
+        if (tickCount % 2 === 0) {
+          get().fetchActiveClients();
+        }
+      }, 1000);
       set({ pollIntervalId: intervalId });
     }
 

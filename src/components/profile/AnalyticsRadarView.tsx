@@ -200,6 +200,7 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
       ? rawConnectedClients.filter(c => 
           c && 
           c.id && 
+          c.isOnline !== false &&
           !c.id.startsWith('vis_') && 
           !c.id.startsWith('guest_') && 
           !c.name?.toLowerCase().includes('visitante')
@@ -297,15 +298,23 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
     return connectedClients.find(c => c.id === selectedClientId) || null;
   }, [selectedClientId, connectedClients]);
 
-  // Auto-clear selection or hover if client disconnected from radar
+  // Auto-clear selection, hover, or dossier when client disconnected or went offline
   useEffect(() => {
-    if (selectedClientId && !connectedClients.some(c => c.id === selectedClientId)) {
+    const isClientOnline = (id: string | null) => {
+      if (!id) return false;
+      return connectedClients.some(c => c.id === id && c.isOnline !== false);
+    };
+
+    if (selectedClientId && !isClientOnline(selectedClientId)) {
       setSelectedClientId(null);
     }
-    if (hoveredClientId && !connectedClients.some(c => c.id === hoveredClientId)) {
+    if (hoveredClientId && !isClientOnline(hoveredClientId)) {
       setHoveredClientId(null);
     }
-  }, [selectedClientId, hoveredClientId, connectedClients]);
+    if (lastActiveClient && !isClientOnline(lastActiveClient.id)) {
+      setLastActiveClient(null);
+    }
+  }, [selectedClientId, hoveredClientId, lastActiveClient, connectedClients]);
 
   // Filtered actual clients list (Excludes administrators from client lists and metrics)
   const filteredActualClients = useMemo(() => {
@@ -469,14 +478,21 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
     return clean.trim() || cityStr;
   };
 
-  // Preserve last active client data during collapse animation
-  useEffect(() => {
-    if (activeHUDClient) {
-      setLastActiveClient(activeHUDClient);
-    }
-  }, [activeHUDClient]);
+  // Target client is displayed in dossier only while strictly active and online
+  const isTargetClientOnline = Boolean(
+    activeHUDClient && 
+    connectedClients.some(c => c.id === activeHUDClient.id && c.isOnline !== false)
+  );
 
-  const displayedDossierClient = activeHUDClient || lastActiveClient;
+  useEffect(() => {
+    if (activeHUDClient && isTargetClientOnline) {
+      setLastActiveClient(activeHUDClient);
+    } else if (!isTargetClientOnline) {
+      setLastActiveClient(null);
+    }
+  }, [activeHUDClient, isTargetClientOnline]);
+
+  const displayedDossierClient = isTargetClientOnline ? activeHUDClient : null;
 
   return (
     <div 
@@ -950,7 +966,7 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
               </div>
 
               <span className={`text-[9px] font-mono px-2 py-0.5 rounded-full border font-bold transition-all duration-500 ease-in-out ${
-                activeHUDClient 
+                displayedDossierClient 
                   ? "bg-[#ccff00]/20 text-[#ccff00] border-[#ccff00]/30 opacity-100 scale-100" 
                   : "opacity-0 scale-75 pointer-events-none border-transparent"
               }`}>
@@ -961,7 +977,7 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
             {/* TAB CONTENT A: ACTIVE CLIENT DOSSIER (Silky Smooth Collapsible Transition 500ms) */}
             <div 
               className={`transition-all duration-500 ease-in-out overflow-hidden transform-gpu ${
-                activeHUDClient 
+                displayedDossierClient 
                   ? "max-h-[380px] opacity-100 translate-y-0 scale-100 mb-3.5" 
                   : "max-h-0 opacity-0 -translate-y-2 scale-98 mb-0 pointer-events-none"
               }`}
@@ -1514,7 +1530,13 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
         {(() => {
           const totalOrders = actualClients.reduce((sum, c) => sum + (c.purchasesCount || 0), 0);
           const totalRevenue = actualClients.reduce((sum, c) => sum + (c.totalSpent || 0), 0);
-          const avgTicket = totalOrders > 0 ? (totalRevenue / totalOrders) : 0;
+          const storeOrders = props.orders || [];
+          const storeRevenue = storeOrders.reduce((sum, o) => sum + (o.total || 0), 0);
+          const avgTicket = totalOrders > 0 
+            ? (totalRevenue / totalOrders) 
+            : storeOrders.length > 0 
+            ? (storeRevenue / storeOrders.length) 
+            : 0;
           const avgIntent = actualClients.length > 0 ? Math.round(actualClients.reduce((sum, c) => sum + (c.intentScore || 0), 0) / actualClients.length) : 0;
           return (
             <div className="rounded-2xl bg-black/60 backdrop-blur-xl border border-white/15 p-3.5 shadow-xl flex flex-col justify-between">
