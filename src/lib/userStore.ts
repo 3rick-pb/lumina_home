@@ -284,13 +284,29 @@ const fetchUserDataFromDatabase = async (userId: string, role: 'USER' | 'ADMIN' 
   }
 };
 
+const getStoredUser = (): User | null => {
+  if (typeof window === 'undefined') return null;
+  try {
+    const raw = localStorage.getItem('lumina_auth_user');
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (parsed && parsed.id && parsed.email) {
+        return parsed;
+      }
+    }
+  } catch {}
+  return null;
+};
+
 let isAuthListenerAttached = false;
 let isInitializingAuth = false;
 
+const initialStoredUser = getStoredUser();
+
 export const useUserStore = create<UserState>((set, get) => ({
-  user: null,
-  isAuthenticated: false,
-  isLoading: true,
+  user: initialStoredUser,
+  isAuthenticated: !!initialStoredUser,
+  isLoading: !initialStoredUser,
   favorites: [],
   orders: [],
   cards: [],
@@ -303,40 +319,79 @@ export const useUserStore = create<UserState>((set, get) => ({
     isInitializingAuth = true;
 
     try {
-      const { data: { session }, error } = await supabase.auth.getSession();
+      let { data: { session }, error } = await supabase.auth.getSession();
+
+      // If getSession() returned no session but we have a stored/in-memory user, attempt an explicit token refresh
+      if (!session && (get().user || getStoredUser())) {
+        try {
+          const refreshed = await supabase.auth.refreshSession();
+          if (refreshed.data?.session) {
+            session = refreshed.data.session;
+            error = null;
+          }
+        } catch {}
+      }
+
       if (!error && session?.user) {
         const email = session.user.email || '';
         const { role, isRootAdmin } = await checkIsAdmin(email, session.user.user_metadata?.role);
         const name = formatCleanName(session.user.user_metadata?.name || email.split('@')[0]);
-        
-        // Fetch all user private data directly from Supabase database and API
-        const personalData = await fetchUserDataFromDatabase(session.user.id, role, email);
+        const userObj: User = { id: session.user.id, email, name, role, isRootAdmin };
 
+        // Save persistent user identity to localStorage for zero-latency reload hydration
+        if (typeof window !== 'undefined') {
+          try {
+            localStorage.setItem('lumina_auth_user', JSON.stringify(userObj));
+          } catch {}
+        }
+
+        // Set authenticated user state IMMEDIATELY so auth checks never fail or bounce
         set({ 
-          user: { id: session.user.id, email, name, role, isRootAdmin }, 
+          user: userObj, 
           isAuthenticated: true,
           isLoading: false,
-          cards: personalData.cards,
-          orders: personalData.orders,
-          addresses: personalData.addresses,
-          address: personalData.address
         });
 
-        // Initialize and isolate cart from Supabase cloud database
+        // Initialize user cart
         await useCartStore.getState().initCartForUser(session.user.id);
+
+        // Fetch secondary database items in background without blocking authentication state
+        fetchUserDataFromDatabase(session.user.id, role, email).then((personalData) => {
+          set({
+            cards: personalData.cards,
+            orders: personalData.orders,
+            addresses: personalData.addresses,
+            address: personalData.address
+          });
+        }).catch(() => {});
         
-        // Load favorites from Supabase
-        const { data: favs } = await supabase.from('favorites').select('product_id').eq('user_id', session.user.id);
-        if (favs) {
-          set({ favorites: favs.map(f => f.product_id) });
-        }
+        // Load favorites in background
+        (async () => {
+          try {
+            const { data: favs } = await supabase.from('favorites').select('product_id').eq('user_id', session.user.id);
+            if (favs) {
+              set({ favorites: favs.map(f => f.product_id) });
+            }
+          } catch {}
+        })();
       } else {
-        // If user is already authenticated in store, don't wipe on transient getSession glitch
-        if (!get().isAuthenticated) {
+        // Only wipe state if there is truly no session AND no valid cached user
+        const storedUser = getStoredUser();
+        if (!get().user && !storedUser) {
           await useCartStore.getState().initCartForUser(null);
           set({ user: null, isAuthenticated: false, cards: [], orders: [], addresses: [], address: null, favorites: [], isLoading: false });
+          if (typeof window !== 'undefined') {
+            try {
+              localStorage.removeItem('lumina_auth_user');
+            } catch {}
+          }
         } else {
-          set({ isLoading: false });
+          // Maintain cached user identity so transient getSession latency or offline state never causes logout
+          if (storedUser && !get().user) {
+            set({ user: storedUser, isAuthenticated: true, isLoading: false });
+          } else {
+            set({ isLoading: false });
+          }
         }
       }
     } catch {
@@ -353,6 +408,11 @@ export const useUserStore = create<UserState>((set, get) => ({
       supabase.auth.onAuthStateChange(async (event, session) => {
         // ONLY wipe state and sign out if this is an explicit user sign out
         if (event === 'SIGNED_OUT') {
+          if (typeof window !== 'undefined') {
+            try {
+              localStorage.removeItem('lumina_auth_user');
+            } catch {}
+          }
           await useCartStore.getState().initCartForUser(null);
           set({ user: null, isAuthenticated: false, favorites: [], cards: [], orders: [], address: null, isLoading: false });
           return;
@@ -362,15 +422,24 @@ export const useUserStore = create<UserState>((set, get) => ({
           const email = session.user.email || '';
           const { role, isRootAdmin } = await checkIsAdmin(email, session.user.user_metadata?.role);
           const name = formatCleanName(session.user.user_metadata?.name || email.split('@')[0]);
+          const userObj: User = { id: session.user.id, email, name, role, isRootAdmin };
+
+          if (typeof window !== 'undefined') {
+            try {
+              localStorage.setItem('lumina_auth_user', JSON.stringify(userObj));
+            } catch {}
+          }
 
           const currentUserId = get().user?.id;
           if (currentUserId !== session.user.id) {
-            const personalData = await fetchUserDataFromDatabase(session.user.id, role, email);
-
             set({ 
-              user: { id: session.user.id, email, name, role, isRootAdmin }, 
+              user: userObj, 
               isAuthenticated: true, 
               isLoading: false,
+            });
+
+            const personalData = await fetchUserDataFromDatabase(session.user.id, role, email);
+            set({
               cards: personalData.cards,
               orders: personalData.orders,
               addresses: personalData.addresses,
@@ -383,7 +452,7 @@ export const useUserStore = create<UserState>((set, get) => ({
           } else {
             // Maintain authentication and update fields smoothly without wiping
             set((state) => ({
-              user: state.user ? { ...state.user, email, name, role, isRootAdmin } : { id: session.user.id, email, name, role, isRootAdmin },
+              user: state.user ? { ...state.user, email, name, role, isRootAdmin } : userObj,
               isAuthenticated: true,
               isLoading: false,
             }));
@@ -404,10 +473,18 @@ export const useUserStore = create<UserState>((set, get) => ({
         supabase.auth.updateUser({ data: { name } }).catch(() => {});
       }
       const personalData = await fetchUserDataFromDatabase(data.user.id, role, userEmail);
+      const userObj: User = { id: data.user.id, email: userEmail, name, role, isRootAdmin };
+
+      if (typeof window !== 'undefined') {
+        try {
+          localStorage.setItem('lumina_auth_user', JSON.stringify(userObj));
+        } catch {}
+      }
 
       set({ 
-        user: { id: data.user.id, email: userEmail, name, role, isRootAdmin }, 
+        user: userObj, 
         isAuthenticated: true,
+        isLoading: false,
         cards: personalData.cards,
         orders: personalData.orders,
         addresses: personalData.addresses,
@@ -508,9 +585,17 @@ export const useUserStore = create<UserState>((set, get) => ({
       options: { data: { name: cleanName, role } } 
     });
     if (!error && data?.user) {
+      const userObj: User = { id: data.user.id, email: cleanEmail, name: cleanName, role, isRootAdmin };
+      if (typeof window !== 'undefined') {
+        try {
+          localStorage.setItem('lumina_auth_user', JSON.stringify(userObj));
+        } catch {}
+      }
+
       set({ 
-        user: { id: data.user.id, email: cleanEmail, name: cleanName, role, isRootAdmin }, 
+        user: userObj, 
         isAuthenticated: true,
+        isLoading: false,
         cards: [],
         orders: [],
         address: null,
@@ -519,7 +604,7 @@ export const useUserStore = create<UserState>((set, get) => ({
 
       // Initialize empty private cart for new user in Supabase
       await useCartStore.getState().initCartForUser(data.user.id);
-        await useThemeStore.getState().loadFromDB(data.user.id);
+      await useThemeStore.getState().loadFromDB(data.user.id);
     }
     return { error: error?.message || null };
   },

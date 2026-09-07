@@ -1424,21 +1424,15 @@ export default function ProfilePage() {
  <h3 className="text-sm font-bold text-gray-900 dark:text-gray-100 truncate">
  {isAdmin ? "Inventario por Nicho" : "Frecuencia de Compras"}
  </h3>
- <p className="text-xs text-gray-400 truncate transition-all duration-200">
+ <p className="text-xs text-gray-400 truncate">
  {isAdmin 
- ? (hoveredNicheIdx !== null && categoryDistributionData[hoveredNicheIdx] 
- ? `${categoryDistributionData[hoveredNicheIdx].category}: ${categoryDistributionData[hoveredNicheIdx].count} piezas (${categoryDistributionData[hoveredNicheIdx].pctOfTotal}% del catálogo)`
- : "Volumen real de piezas por categoría") 
- : (hoveredMonthIdx !== null && monthlySpendData[hoveredMonthIdx]
- ? `${monthlySpendData[hoveredMonthIdx].month}: $${monthlySpendData[hoveredMonthIdx].total.toFixed(2)} gastados`
- : "Gastos calculados por mes (2026)")}
+ ? "Volumen real de piezas por categoría" 
+ : "Gastos calculados por mes (2026)"}
  </p>
  </div>
  <span className="text-[10px] font-bold px-2 py-1 bg-gray-100 dark:bg-[#3a3a3c] rounded-lg text-gray-600 dark:text-gray-400 shrink-0">
  {isAdmin 
- ? (hoveredNicheIdx !== null && categoryDistributionData[hoveredNicheIdx]
- ? `${categoryDistributionData[hoveredNicheIdx].count} piezas`
- : `${products.length} Total`)
+ ? `${products.length} Total`
  : "Semestre"}
  </span>
  </div>

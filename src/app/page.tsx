@@ -4,7 +4,7 @@ import React, { useEffect, useState, useRef, useMemo } from "react";
 import Image from "next/image";
 import { Button } from "@/components/ui/Button";
 import { ProductCard } from "@/components/ui/ProductCard";
-import { Percent, Truck, Wrench, ShieldCheck, CreditCard, ArrowRight } from "lucide-react";
+import { Percent, Truck, ShieldCheck, ArrowRight, RotateCcw, Lock } from "lucide-react";
 import Link from "next/link";
 import { useCatalogStore } from "@/lib/catalogStore";
 import { useAmbientStore } from "@/lib/ambientStore";
@@ -65,6 +65,34 @@ const NICHE_METADATA_MAP: Record<string, { subtitle: string; img: string; defaul
 const normalizeText = (text: string) => {
   return text.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
 };
+
+const TRUST_BADGES = [
+  {
+    icon: Truck,
+    title: "Envíos nacionales",
+    subtitle: "A todo el país",
+  },
+  {
+    icon: ShieldCheck,
+    title: "2 años de garantía",
+    subtitle: "Calidad certificada",
+  },
+  {
+    icon: RotateCcw,
+    title: "Devoluciones 30 días",
+    subtitle: "Sin complicaciones",
+  },
+  {
+    icon: Percent,
+    title: "Financiación 0%",
+    subtitle: "Hasta 12 cuotas",
+  },
+  {
+    icon: Lock,
+    title: "Pagos seguros",
+    subtitle: "100% cifrado SSL",
+  },
+];
 
 export default function Home() {
   const { products, categories } = useCatalogStore();
@@ -178,15 +206,31 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Trust Badges Bar */}
-      <div className="bg-[#5c5a52] text-white/90 py-5 border-y border-white/10 relative z-20">
-        <div className="container mx-auto px-4 md:px-8">
-          <div className="flex flex-wrap items-center justify-between gap-6 text-sm font-light">
-            <div className="flex items-center gap-2"><Truck className="w-4 h-4 text-[#d2b48c]" /> Envíos nacionales</div>
-            <div className="hidden sm:flex items-center gap-2"><Wrench className="w-4 h-4 text-[#d2b48c]" /> 2 años de garantía</div>
-            <div className="flex items-center gap-2"><ShieldCheck className="w-4 h-4 text-[#d2b48c]" /> Devoluciones 30 días</div>
-            <div className="hidden md:flex items-center gap-2"><Percent className="w-4 h-4 text-[#d2b48c]" /> Financiación 0%</div>
-            <div className="flex items-center gap-2"><CreditCard className="w-4 h-4 text-[#d2b48c]" /> Pagos seguros</div>
+      {/* Trust Badges Bar - Floating Glassmorphic Pill Banner */}
+      <div className="relative z-30 -mt-7 sm:-mt-9 mb-3 container mx-auto px-4 md:px-8">
+        <div className="bg-white/95 dark:bg-[#1e1e20]/95 backdrop-blur-2xl rounded-2xl md:rounded-[2rem] border border-black/[0.06] dark:border-white/[0.08] shadow-[0_16px_40px_-8px_rgba(0,0,0,0.08),0_4px_16px_rgba(0,0,0,0.03)] p-3 sm:p-4 md:p-5">
+          <div className="flex lg:grid lg:grid-cols-5 items-center justify-start lg:justify-items-center gap-6 sm:gap-8 lg:gap-0 overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden py-1 px-2">
+            {TRUST_BADGES.map((badge, idx) => (
+              <div 
+                key={idx} 
+                className="flex items-center gap-3 shrink-0 lg:w-full lg:justify-center relative group px-2"
+              >
+                <div className="w-10 h-10 rounded-2xl bg-[#8c9276]/10 dark:bg-[#8c9276]/20 text-[#8c9276] dark:text-[#a8b092] flex items-center justify-center shrink-0 transition-transform duration-300 group-hover:scale-110 shadow-2xs">
+                  <badge.icon className="w-4 h-4 sm:w-[18px] sm:h-[18px]" />
+                </div>
+                <div className="min-w-0 select-none">
+                  <p className="text-xs sm:text-sm font-semibold text-gray-900 dark:text-gray-100 tracking-tight leading-snug whitespace-nowrap">
+                    {badge.title}
+                  </p>
+                  <p className="text-[10px] sm:text-[11px] text-gray-400 dark:text-gray-400 font-normal leading-tight whitespace-nowrap">
+                    {badge.subtitle}
+                  </p>
+                </div>
+                {idx < TRUST_BADGES.length - 1 && (
+                  <div className="hidden lg:block absolute right-0 top-1/2 -translate-y-1/2 h-8 w-px bg-gray-200/80 dark:bg-white/10" />
+                )}
+              </div>
+            ))}
           </div>
         </div>
       </div>

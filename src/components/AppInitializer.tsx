@@ -135,7 +135,7 @@ function ActivityTracker() {
             chan.send({
               type: 'broadcast',
               event: 'offline',
-              payload: { id: activeUser.id, sessionId: sId, allSessions: true },
+              payload: { id: activeUser.id, sessionId: sId, allSessions: false },
             }).catch(() => {});
             chan.untrack().catch(() => {});
           } catch {}
