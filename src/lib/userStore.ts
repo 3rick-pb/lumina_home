@@ -168,28 +168,33 @@ const fetchUserDataFromDatabase = async (userId: string, role: 'USER' | 'ADMIN' 
     // Supabase fallback if API returned no orders
     if (orders.length === 0) {
       try {
-        let query = supabase.from('orders').select('*').order('created_at', { ascending: false });
+        let query = supabase
+          .from('orders')
+          .select('*')
+          .not('id', 'like', 'SYS_%')
+          .order('created_at', { ascending: false });
         if (!isAdmin) {
           query = query.eq('user_id', userId);
         }
         const { data: dbOrders } = await query;
         if (dbOrders && dbOrders.length > 0) {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          orders = dbOrders.map((o: any) => ({
-            id: o.id,
-            userId: o.user_id,
-            customerName: o.customer_name || 'Cliente Lumina',
-            customerEmail: o.customer_email || email,
-            recipient: o.recipient || '',
-            shippingAddress: o.shipping_address,
-            paymentMethod: o.payment_method,
-            date: o.created_at ? new Date(o.created_at).toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: 'numeric' }) : 'Reciente',
-            time: o.created_at ? new Date(o.created_at).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }) : '12:00',
-            createdAt: o.created_at,
-            status: o.status || 'Procesando',
-            trackingNumber: o.tracking_number,
-            total: Number(o.total) || 0,
-            items: Array.isArray(o.items) ? o.items : [],
+          orders = (dbOrders as Array<Record<string, unknown>>)
+            .filter((o) => !String(o.id || '').startsWith('SYS_'))
+            .map((o) => ({
+              id: String(o.id || ''),
+              userId: String(o.user_id || ''),
+              customerName: String(o.customer_name || 'Cliente Lumina'),
+              customerEmail: String(o.customer_email || email),
+              recipient: String(o.recipient || ''),
+              shippingAddress: o.shipping_address as Order['shippingAddress'],
+              paymentMethod: String(o.payment_method || ''),
+              date: o.created_at ? new Date(String(o.created_at)).toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: 'numeric' }) : 'Reciente',
+              time: o.created_at ? new Date(String(o.created_at)).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }) : '12:00',
+              createdAt: String(o.created_at || new Date().toISOString()),
+              status: (o.status as Order['status']) || 'Procesando',
+              trackingNumber: o.tracking_number ? String(o.tracking_number) : undefined,
+              total: Number(o.total) || 0,
+              items: Array.isArray(o.items) ? (o.items as Order['items']) : [],
           }));
         }
       } catch {}
@@ -335,6 +340,12 @@ export const useUserStore = create<UserState>((set, get) => ({
       if (!error && session?.user) {
         const email = session.user.email || '';
         const { role, isRootAdmin } = await checkIsAdmin(email, session.user.user_metadata?.role);
+        // Persist delegated role into Supabase Auth user metadata
+        if (role === 'ADMIN' && session.user.user_metadata?.role !== 'ADMIN' && !isRootAdmin) {
+          supabase.auth.updateUser({ data: { role: 'ADMIN' } }).catch(() => {});
+        } else if (role === 'USER' && session.user.user_metadata?.role === 'ADMIN') {
+          supabase.auth.updateUser({ data: { role: 'USER' } }).catch(() => {});
+        }
         const name = formatCleanName(session.user.user_metadata?.name || email.split('@')[0]);
         const userObj: User = { id: session.user.id, email, name, role, isRootAdmin };
 
@@ -421,6 +432,12 @@ export const useUserStore = create<UserState>((set, get) => ({
         if (session?.user) {
           const email = session.user.email || '';
           const { role, isRootAdmin } = await checkIsAdmin(email, session.user.user_metadata?.role);
+          // Persist delegated role into Supabase Auth user metadata
+          if (role === 'ADMIN' && session.user.user_metadata?.role !== 'ADMIN' && !isRootAdmin) {
+            supabase.auth.updateUser({ data: { role: 'ADMIN' } }).catch(() => {});
+          } else if (role === 'USER' && session.user.user_metadata?.role === 'ADMIN') {
+            supabase.auth.updateUser({ data: { role: 'USER' } }).catch(() => {});
+          }
           const name = formatCleanName(session.user.user_metadata?.name || email.split('@')[0]);
           const userObj: User = { id: session.user.id, email, name, role, isRootAdmin };
 
@@ -468,6 +485,12 @@ export const useUserStore = create<UserState>((set, get) => ({
     if (!error && data?.user) {
       const userEmail = data.user.email || cleanEmail;
       const { role, isRootAdmin } = await checkIsAdmin(userEmail, data.user.user_metadata?.role);
+      // Persist delegated role into Supabase Auth user metadata
+      if (role === 'ADMIN' && data.user.user_metadata?.role !== 'ADMIN' && !isRootAdmin) {
+        supabase.auth.updateUser({ data: { role: 'ADMIN' } }).catch(() => {});
+      } else if (role === 'USER' && data.user.user_metadata?.role === 'ADMIN') {
+        supabase.auth.updateUser({ data: { role: 'USER' } }).catch(() => {});
+      }
       const name = formatCleanName(data.user.user_metadata?.name || userEmail.split('@')[0]);
       if (name && data.user.user_metadata?.name !== name) {
         supabase.auth.updateUser({ data: { name } }).catch(() => {});

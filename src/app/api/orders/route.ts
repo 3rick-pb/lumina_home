@@ -57,29 +57,34 @@ export async function GET(request: Request) {
     // 1. Try to fetch from Supabase if connected
     let supabaseOrders: ApiOrder[] = [];
     try {
-      let query = supabase.from('orders').select('*').order('created_at', { ascending: false });
+      let query = supabase
+        .from('orders')
+        .select('*')
+        .not('id', 'like', 'SYS_%')
+        .order('created_at', { ascending: false });
       if (!isAdmin && userId) {
         query = query.eq('user_id', userId);
       }
       const { data, error } = await query;
       if (!error && Array.isArray(data)) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        supabaseOrders = data.map((o: any) => ({
-          id: o.id,
-          userId: o.user_id,
-          customerName: o.customer_name || 'Cliente Lumina',
-          customerEmail: o.customer_email || 'cliente@lumina.com',
-          recipient: o.recipient || o.customer_name || 'Cliente',
-          shippingAddress: o.shipping_address || undefined,
-          paymentMethod: o.payment_method || 'Tarjeta de Crédito',
-          date: o.created_at ? new Date(o.created_at).toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: 'numeric' }) : 'Reciente',
-          time: o.created_at ? new Date(o.created_at).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }) : '12:00',
-          createdAt: o.created_at || new Date().toISOString(),
-          status: (o.status as ApiOrder['status']) || 'Procesando',
-          trackingNumber: o.tracking_number,
-          total: Number(o.total) || 0,
-          items: Array.isArray(o.items) ? o.items : []
-        }));
+        supabaseOrders = (data as Array<Record<string, unknown>>)
+          .filter((o) => !String(o.id || '').startsWith('SYS_'))
+          .map((o) => ({
+            id: String(o.id || ''),
+            userId: o.user_id ? String(o.user_id) : undefined,
+            customerName: String(o.customer_name || 'Cliente Lumina'),
+            customerEmail: String(o.customer_email || 'cliente@lumina.com'),
+            recipient: String(o.recipient || o.customer_name || 'Cliente'),
+            shippingAddress: (o.shipping_address as ApiOrder['shippingAddress']) || undefined,
+            paymentMethod: String(o.payment_method || 'Tarjeta de Crédito'),
+            date: o.created_at ? new Date(String(o.created_at)).toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: 'numeric' }) : 'Reciente',
+            time: o.created_at ? new Date(String(o.created_at)).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }) : '12:00',
+            createdAt: String(o.created_at || new Date().toISOString()),
+            status: (o.status as ApiOrder['status']) || 'Procesando',
+            trackingNumber: o.tracking_number ? String(o.tracking_number) : undefined,
+            total: Number(o.total) || 0,
+            items: Array.isArray(o.items) ? (o.items as ApiOrder['items']) : []
+          }));
       }
     } catch {
       // Supabase RLS fallback
@@ -89,7 +94,9 @@ export async function GET(request: Request) {
     const mergedMap = new Map<string, ApiOrder>();
     
     // Add server memory orders first
-    globalOrdersRef.orders.forEach(o => mergedMap.set(o.id, o));
+    globalOrdersRef.orders
+      .filter(o => !String(o.id || '').startsWith('SYS_'))
+      .forEach(o => mergedMap.set(o.id, o));
     
     // Override/supplement with Supabase orders
     supabaseOrders.forEach(o => mergedMap.set(o.id, o));

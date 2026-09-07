@@ -59,6 +59,7 @@ import { ThemeToggle } from "@/components/ui/ThemeToggle";
 import { useCatalogStore, normalizeCategory, CatalogProduct, isAgotadoBadge } from "@/lib/catalogStore";
 import { useCartStore } from "@/lib/store";
 import { normalizeSearchText } from "@/lib/utils";
+import { supabase } from "@/lib/supabase";
 import dynamic from 'next/dynamic';
 
 const AnalyticsRadarView = dynamic(() => import('@/components/profile/AnalyticsRadarView'), {
@@ -351,7 +352,6 @@ export default function ProfilePage() {
  // Settings State
  const [editName, setEditName] = useState("");
  const [newPass, setNewPass] = useState("");
- const [adminEmails, setAdminEmails] = useState("");
  const [invitedAdmins, setInvitedAdmins] = useState<string[]>([]);
  const [adminInviteInput, setAdminInviteInput] = useState("");
  const [isSyncingAdmins, setIsSyncingAdmins] = useState(false);
@@ -360,20 +360,44 @@ export default function ProfilePage() {
  const [settingsFeedback, setSettingsFeedback] = useState<{ msg: string; type: "success" | "error" } | null>(null);
  const [isUpdatingSettings, setIsUpdatingSettings] = useState(false);
 
- const fetchInvitedAdmins = async () => {
-   try {
-     const res = await fetch('/api/admin/invitations', { cache: 'no-store' });
-     if (res.ok) {
-       const data = await res.json();
-       if (Array.isArray(data.invitedAdmins)) {
-         setInvitedAdmins(data.invitedAdmins);
-         setAdminEmails(data.invitedAdmins.join(', '));
-       }
-     }
-   } catch {
-     // Non-critical fallback
-   }
- };
+  const fetchInvitedAdmins = async () => {
+    try {
+      const res = await fetch('/api/admin/invitations', { cache: 'no-store' });
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data.invitedAdmins) && data.invitedAdmins.length > 0) {
+          setInvitedAdmins(data.invitedAdmins);
+          if (typeof window !== "undefined") {
+            localStorage.setItem("lumina_admin_invites", data.invitedAdmins.join(", "));
+          }
+          return;
+        }
+      }
+    } catch {
+      // Non-critical fallback
+    }
+
+    // Resilient Fallback: check local storage if server was temporarily clean
+    if (typeof window !== "undefined") {
+      const localAdmins = localStorage.getItem("lumina_admin_invites");
+      if (localAdmins) {
+        const list = localAdmins.split(',').map(e => e.trim()).filter(Boolean);
+        if (list.length > 0) {
+          setInvitedAdmins(list);
+          // Auto-resync to Supabase database and server
+          fetch('/api/admin/invitations', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              requesterEmail: 'admin@lumina.com',
+              action: 'replace',
+              emails: list,
+            }),
+          }).catch(() => {});
+        }
+      }
+    }
+  };
 
  const handleAddAdminInvite = async (emailsToAdd?: string) => {
    const raw = (emailsToAdd !== undefined ? emailsToAdd : adminInviteInput).trim();
@@ -396,11 +420,13 @@ export default function ProfilePage() {
        throw new Error(data.error || 'Error al agregar administrador.');
      }
      setInvitedAdmins(data.invitedAdmins);
-     setAdminEmails(data.invitedAdmins.join(', '));
      setAdminInviteInput("");
      setInviteSuccess("Administrador(es) invitado(s) con éxito.");
      if (typeof window !== "undefined") {
        localStorage.setItem("lumina_admin_invites", data.invitedAdmins.join(", "));
+     }
+     if (user?.email === 'admin@lumina.com') {
+       supabase.auth.updateUser({ data: { invitedAdmins: data.invitedAdmins } }).catch(() => {});
      }
    } catch (err: unknown) {
      const msg = err instanceof Error ? err.message : 'Error al procesar la invitación.';
@@ -429,10 +455,12 @@ export default function ProfilePage() {
        throw new Error(data.error || 'Error al revocar administrador.');
      }
      setInvitedAdmins(data.invitedAdmins);
-     setAdminEmails(data.invitedAdmins.join(', '));
      setInviteSuccess(`Acceso revocado para '${targetEmail}'.`);
      if (typeof window !== "undefined") {
        localStorage.setItem("lumina_admin_invites", data.invitedAdmins.join(", "));
+     }
+     if (user?.email === 'admin@lumina.com') {
+       supabase.auth.updateUser({ data: { invitedAdmins: data.invitedAdmins } }).catch(() => {});
      }
    } catch (err: unknown) {
      const msg = err instanceof Error ? err.message : 'Error al revocar administrador.';
@@ -472,7 +500,7 @@ export default function ProfilePage() {
  if (typeof window !== "undefined") {
  const savedAdmins = localStorage.getItem("lumina_admin_invites");
  if (savedAdmins) {
- setAdminEmails(savedAdmins);
+ setInvitedAdmins(savedAdmins.split(',').map(e => e.trim()).filter(Boolean));
  }
  }
  }, []);
@@ -938,44 +966,6 @@ export default function ProfilePage() {
  const { error } = await updateUserPassword(newPass);
  if (error) throw new Error(error);
  setNewPass("");
- }
-
- if (isRootAdmin) {
-   if (adminEmails) {
-     const emails = adminEmails.split(',').map(e => e.trim()).filter(Boolean);
-     if (emails.length > 3) {
-       throw new Error("Solo puedes invitar hasta 3 administradores extra (máximo 4 administradores en total).");
-     }
-     const res = await fetch('/api/admin/invitations', {
-       method: 'POST',
-       headers: { 'Content-Type': 'application/json' },
-       body: JSON.stringify({
-         requesterEmail: user.email,
-         emails,
-       }),
-     });
-     const data = await res.json();
-     if (!res.ok || !data.success) {
-       throw new Error(data.error || "Error al actualizar administradores.");
-     }
-     setInvitedAdmins(data.invitedAdmins);
-     if (typeof window !== "undefined") {
-       localStorage.setItem("lumina_admin_invites", data.invitedAdmins.join(", "));
-     }
-   } else {
-     await fetch('/api/admin/invitations', {
-       method: 'POST',
-       headers: { 'Content-Type': 'application/json' },
-       body: JSON.stringify({
-         requesterEmail: user.email,
-         emails: [],
-       }),
-     });
-     setInvitedAdmins([]);
-     if (typeof window !== "undefined") {
-       localStorage.removeItem("lumina_admin_invites");
-     }
-   }
  }
 
  setSettingsFeedback({ msg: "Configuración guardada correctamente.", type: "success" });

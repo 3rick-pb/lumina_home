@@ -1,40 +1,108 @@
 import { NextResponse } from 'next/server';
 import fs from 'fs/promises';
 import path from 'path';
+import { createClient } from '@supabase/supabase-js';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
 const ROOT_ADMIN_EMAIL = 'admin@lumina.com';
 const MAX_INVITED_ADMINS = 3;
+const SYS_CONFIG_ID = 'SYS_CONFIG_ADMIN_INVITES';
 
-// In-memory cache backed by file
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
+const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || supabaseAnonKey;
+const supabase = createClient(supabaseUrl, supabaseKey);
+
+// In-memory cache backed by Supabase DB + local file
 let cachedInvitedAdmins: string[] = [];
 let isLoaded = false;
 
 const DATA_FILE_PATH = path.join(process.cwd(), 'src', 'lib', 'admin_invites.json');
 
 async function loadInvitedAdmins(): Promise<string[]> {
+  // 1. Primary Source: Supabase Database (survives server restarts, multi-device, rebuilds)
+  try {
+    const { data, error } = await supabase
+      .from('orders')
+      .select('items')
+      .eq('id', SYS_CONFIG_ID)
+      .maybeSingle();
+
+    if (!error && data && Array.isArray(data.items)) {
+      const dbEmails = (data.items as Array<{ email?: string } | string>)
+        .map((item) => (typeof item === 'object' && item !== null ? String(item.email || '') : String(item || '')).toLowerCase().trim())
+        .filter(Boolean);
+
+      cachedInvitedAdmins = Array.from(new Set(dbEmails)).slice(0, MAX_INVITED_ADMINS);
+      isLoaded = true;
+
+      // Mirror to local file
+      try {
+        await fs.writeFile(
+          DATA_FILE_PATH,
+          JSON.stringify({ invitedAdmins: cachedInvitedAdmins, updatedAt: new Date().toISOString() }, null, 2),
+          'utf-8'
+        );
+      } catch {}
+
+      return cachedInvitedAdmins;
+    }
+  } catch (dbErr) {
+    console.warn('Notice: Could not load invited admins from Supabase, trying local file fallback:', dbErr);
+  }
+
+  // 2. Secondary Fallback: Local JSON file
   try {
     const raw = await fs.readFile(DATA_FILE_PATH, 'utf-8');
     const data = JSON.parse(raw);
     if (Array.isArray(data.invitedAdmins)) {
-      cachedInvitedAdmins = data.invitedAdmins.map((e: string) => String(e).toLowerCase().trim()).filter(Boolean);
+      cachedInvitedAdmins = data.invitedAdmins
+        .map((e: string) => String(e).toLowerCase().trim())
+        .filter(Boolean)
+        .slice(0, MAX_INVITED_ADMINS);
       isLoaded = true;
       return cachedInvitedAdmins;
     }
   } catch {
-    // Return cached or empty array
+    // Non-critical fallback
   }
+
   return cachedInvitedAdmins;
 }
 
 async function persistInvitedAdmins(emails: string[]): Promise<void> {
-  cachedInvitedAdmins = emails;
+  const cleanEmails = Array.from(
+    new Set(emails.map((e) => String(e).toLowerCase().trim()).filter(Boolean))
+  ).slice(0, MAX_INVITED_ADMINS);
+
+  cachedInvitedAdmins = cleanEmails;
+  isLoaded = true;
+
+  // 1. Persist to Supabase Database (Primary source of truth in the cloud)
+  try {
+    const { error: sbErr } = await supabase.from('orders').upsert({
+      id: SYS_CONFIG_ID,
+      user_id: null,
+      status: 'Procesando',
+      total: 0,
+      tracking_number: 'LUMINA_ADMIN_INVITES',
+      items: cleanEmails.map((email) => ({ email })),
+      created_at: new Date().toISOString(),
+    });
+    if (sbErr) {
+      console.warn('Warning: Failed to persist admin invites to Supabase:', sbErr.message);
+    }
+  } catch (sbErr) {
+    console.warn('Warning: Supabase upsert error:', sbErr);
+  }
+
+  // 2. Persist to Local JSON File (Secondary fallback)
   try {
     const payload = JSON.stringify(
       {
-        invitedAdmins: emails,
+        invitedAdmins: cleanEmails,
         updatedAt: new Date().toISOString(),
       },
       null,
@@ -106,6 +174,18 @@ export async function POST(request: Request) {
       });
     }
 
+    // Handle explicit clear
+    if (action === 'clear') {
+      await persistInvitedAdmins([]);
+      return NextResponse.json({
+        success: true,
+        message: 'Lista de administradores invitados vaciada.',
+        invitedAdmins: [],
+        count: 0,
+        availableSlots: MAX_INVITED_ADMINS,
+      });
+    }
+
     // Handle incoming list of emails (comma-separated or array)
     let candidateEmails: string[] = [];
     if (Array.isArray(emails)) {
@@ -114,6 +194,19 @@ export async function POST(request: Request) {
       candidateEmails = emails.split(',').map((e) => e.trim());
     } else if (email) {
       candidateEmails = [email];
+    }
+
+    // Defensive Guard: If no action is specified and candidate list is empty, DO NOT wipe!
+    if (!action && candidateEmails.length === 0) {
+      return NextResponse.json({
+        success: true,
+        message: 'No se realizaron cambios en la lista de administradores.',
+        invitedAdmins: currentList,
+        count: currentList.length,
+        maxInvited: MAX_INVITED_ADMINS,
+        totalCapacity: MAX_INVITED_ADMINS + 1,
+        availableSlots: MAX_INVITED_ADMINS - currentList.length,
+      });
     }
 
     // Clean, validate and normalize candidate emails
@@ -146,12 +239,16 @@ export async function POST(request: Request) {
     let finalEmails: string[] = [];
 
     if (action === 'add') {
-      // Add new candidates to existing list
+      // Add new candidates to existing list without duplicates
       const combined = new Set([...currentList, ...cleanedCandidates]);
       finalEmails = Array.from(combined);
-    } else {
-      // Direct replacement of the list (e.g. from comma separated input form)
+    } else if (action === 'replace') {
+      // Explicit replacement of the entire list
       finalEmails = cleanedCandidates;
+    } else {
+      // Default: If candidates were provided, merge them safely rather than wiping
+      const combined = new Set([...currentList, ...cleanedCandidates]);
+      finalEmails = Array.from(combined);
     }
 
     // Strict capacity enforcement: max 3 invited admins
