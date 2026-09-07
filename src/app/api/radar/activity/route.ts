@@ -49,14 +49,25 @@ function pruneStaleClients() {
 export async function GET() {
   pruneStaleClients();
 
-  // 1. Fetch live active sessions from Supabase table
+  const now = Date.now();
+  const cutoff = new Date(now - CLIENT_TIMEOUT_MS).toISOString();
+
+  // 1. Actively synchronize the database: mark any sessions idle for >30s as is_online = false
   try {
-    const cutoff = new Date(Date.now() - CLIENT_TIMEOUT_MS).toISOString();
+    await supabase
+      .from('active_sessions')
+      .update({ is_online: false })
+      .eq('is_online', true)
+      .lt('last_seen', cutoff);
+  } catch (err) {
+    void err;
+  }
+
+  // 2. Fetch all current sessions from Supabase table to inspect true/false transitions
+  try {
     const { data: dbSessions, error } = await supabase
       .from('active_sessions')
       .select('*')
-      .eq('is_online', true)
-      .gte('last_seen', cutoff)
       .order('last_seen', { ascending: false });
 
     if (!error && Array.isArray(dbSessions)) {
@@ -64,52 +75,59 @@ export async function GET() {
 
       for (const row of dbSessions) {
         if (
-          row.user_id && 
-          !row.user_id.startsWith('vis_') && 
-          !row.user_id.startsWith('guest_') &&
-          !String(row.name).toLowerCase().includes('visitante')
+          !row.user_id || 
+          row.user_id.startsWith('vis_') || 
+          row.user_id.startsWith('guest_') ||
+          String(row.name).toLowerCase().includes('visitante')
         ) {
-          activeDbUserIds.add(row.user_id);
-          const existing = globalClients.get(row.user_id);
-          const purchases = Number(row.purchases_count) || 0;
-          const frequency = purchases >= 12 ? 'Semanal' : purchases >= 6 ? 'Quincenal' : purchases >= 3 ? 'Mensual' : purchases >= 1 ? 'Ocasional' : '1ª Vez';
-          const finalCity = row.city || (existing ? existing.city : '');
-          const coords = resolveCoordinates(finalCity);
-          const parsedX = row.x !== null && row.x !== undefined ? Number(row.x) : NaN;
-          const parsedY = row.y !== null && row.y !== undefined ? Number(row.y) : NaN;
-          const finalX = !isNaN(parsedX) && parsedX >= 0 ? parsedX : (coords.x >= 0 ? coords.x : (existing && existing.x >= 0 ? existing.x : -100));
-          const finalY = !isNaN(parsedY) && parsedY >= 0 ? parsedY : (coords.y >= 0 ? coords.y : (existing && existing.y >= 0 ? existing.y : -100));
-          const dbLastSeen = new Date(row.last_seen).getTime() || Date.now();
-          const existingLastSeen = existing?.lastSeen || 0;
-          const isDbNewer = dbLastSeen >= existingLastSeen;
-
-          globalClients.set(row.user_id, {
-            id: row.user_id,
-            name: cleanClientName(row.name),
-            email: row.email || (existing ? existing.email : ''),
-            city: finalCity,
-            country: row.country || 'Ecuador',
-            x: finalX,
-            y: finalY,
-            frequency,
-            purchasesCount: purchases,
-            totalSpent: Number(row.total_spent) || 0,
-            currentSection: (existing && !isDbNewer) ? existing.currentSection : (row.current_section || existing?.currentSection || 'Explorando Tienda'),
-            intentScore: 85,
-            device: (row.device as CachedClient['device']) || (existing ? existing.device : 'Computador'),
-            hasCart: (existing && !isDbNewer) ? existing.hasCart : Boolean(row.has_cart),
-            cartItemsCount: (existing && !isDbNewer) ? existing.cartItemsCount : (Number(row.cart_items_count) || 0),
-            isOnline: true,
-            lastSeen: Math.max(dbLastSeen, existingLastSeen),
-          });
+          continue;
         }
+
+        const dbLastSeen = new Date(row.last_seen).getTime() || 0;
+        const isDbIdle = (now - dbLastSeen) > CLIENT_TIMEOUT_MS;
+
+        // If the database marks is_online = false or session is idle > 30s, remove immediately
+        if (row.is_online === false || isDbIdle) {
+          globalClients.delete(row.user_id);
+          continue;
+        }
+
+        // Otherwise this client is strictly TRUE (online and active)
+        activeDbUserIds.add(row.user_id);
+        const existing = globalClients.get(row.user_id);
+        const purchases = Number(row.purchases_count) || 0;
+        const frequency = purchases >= 12 ? 'Semanal' : purchases >= 6 ? 'Quincenal' : purchases >= 3 ? 'Mensual' : purchases >= 1 ? 'Ocasional' : '1ª Vez';
+        const finalCity = row.city || (existing ? existing.city : '');
+        const coords = resolveCoordinates(finalCity);
+        const parsedX = row.x !== null && row.x !== undefined ? Number(row.x) : NaN;
+        const parsedY = row.y !== null && row.y !== undefined ? Number(row.y) : NaN;
+        const finalX = !isNaN(parsedX) && parsedX >= 0 ? parsedX : (coords.x >= 0 ? coords.x : (existing && existing.x >= 0 ? existing.x : -100));
+        const finalY = !isNaN(parsedY) && parsedY >= 0 ? parsedY : (coords.y >= 0 ? coords.y : (existing && existing.y >= 0 ? existing.y : -100));
+
+        globalClients.set(row.user_id, {
+          id: row.user_id,
+          name: cleanClientName(row.name),
+          email: row.email || (existing ? existing.email : ''),
+          city: finalCity,
+          country: row.country || 'Ecuador',
+          x: finalX,
+          y: finalY,
+          frequency,
+          purchasesCount: purchases,
+          totalSpent: Number(row.total_spent) || 0,
+          currentSection: row.current_section || existing?.currentSection || 'Explorando Tienda',
+          intentScore: 85,
+          device: (row.device as CachedClient['device']) || (existing ? existing.device : 'Computador'),
+          hasCart: Boolean(row.has_cart),
+          cartItemsCount: Number(row.cart_items_count) || 0,
+          isOnline: true,
+          lastSeen: Math.max(dbLastSeen, existing?.lastSeen || 0, now),
+        });
       }
 
-      // Clean up memory clients whose session truly expired or was deleted from active_sessions
-      const now = Date.now();
+      // Purge any memory client not found active in database
       globalClients.forEach((client, id) => {
-        const isFreshMemoryOnly = now - client.lastSeen < CLIENT_TIMEOUT_MS;
-        if (!client.isOnline || (now - client.lastSeen > CLIENT_TIMEOUT_MS) || (!activeDbUserIds.has(id) && !isFreshMemoryOnly)) {
+        if (!activeDbUserIds.has(id)) {
           globalClients.delete(id);
         }
       });
@@ -122,8 +140,8 @@ export async function GET() {
   globalClients.forEach((c) => {
     if (
       c.isOnline &&
-      !c.id.startsWith('vis_') &&
-      !c.id.startsWith('guest_') &&
+      !c.id.startsWith('vis_') && 
+      !c.id.startsWith('guest_') && 
       !c.name.toLowerCase().includes('visitante')
     ) {
       clientsList.push({
@@ -138,6 +156,7 @@ export async function GET() {
       success: true,
       count: clientsList.length,
       clients: clientsList,
+      timestamp: Date.now(),
     },
     {
       headers: {

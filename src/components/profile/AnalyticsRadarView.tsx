@@ -282,9 +282,13 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
     }
   }, [currentUser, currentUserCity, userOrders, isAdmin]);
 
-  // Initial live synchronization on mount (continuous updates are pushed live via WebSocket)
+  // 5-Second automatic synchronization cycle with backend & database (inspects true/false changes across all accounts)
   useEffect(() => {
     fetchActiveClients();
+    const interval = setInterval(() => {
+      fetchActiveClients();
+    }, 5000);
+    return () => clearInterval(interval);
   }, [fetchActiveClients]);
 
   // Dynamically resolve LIVE client objects from the reactive connectedClients array

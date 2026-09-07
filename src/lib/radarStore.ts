@@ -237,7 +237,7 @@ function reconcileClients(currentList: ConnectedClient[], fetchedList: Connected
     }
   }
 
-  // 2. Retain existing active clients within the 30-second window
+  // 2. Protect only very fresh WebSocket live updates (<3s) that might still be in flight to DB
   for (const existing of currentList) {
     if (
       existing && 
@@ -248,8 +248,8 @@ function reconcileClients(currentList: ConnectedClient[], fetchedList: Connected
       !existing.name?.toLowerCase().includes('visitante') &&
       existing.isOnline !== false
     ) {
-      const timeSinceLastSeen = now - (existing.lastSeen || existing.lastUpdated || now);
-      if (timeSinceLastSeen < 30000) {
+      const isVeryFresh = existing.lastUpdated && (now - existing.lastUpdated < 3000);
+      if (isVeryFresh) {
         map.set(existing.id, existing);
       }
     }
@@ -550,9 +550,9 @@ export const useRadarStore = create<RadarStore>((set, get) => ({
           return state;
         });
 
-        // Periodic background poll every 2 seconds
+        // Periodic background poll every 5 seconds to inspect true/false database state
         tickCount++;
-        if (tickCount % 2 === 0) {
+        if (tickCount % 5 === 0) {
           get().fetchActiveClients();
         }
       }, 1000);
