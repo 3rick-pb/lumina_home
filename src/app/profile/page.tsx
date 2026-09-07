@@ -36,7 +36,6 @@ import {
  Navigation,
  Loader2,
  Globe,
- Lock,
  Crown,
  Mail,
  ChevronLeft,
@@ -123,7 +122,8 @@ export default function ProfilePage() {
  updateOrderStatus,
  refreshOrders,
  updateUserName,
- updateUserPassword
+ updateUserPassword,
+ recheckUserRole
  } = useUserStore();
 
  const { products, categories, badges, addProduct, updateProduct, deleteProduct, addCategory, deleteCategory, addBadge, deleteBadge } = useCatalogStore();
@@ -400,10 +400,13 @@ export default function ProfilePage() {
 
   const fetchInvitedAdmins = async () => {
     try {
-      const res = await fetch('/api/admin/invitations', { cache: 'no-store' });
+      const res = await fetch('/api/admin/invitations', { 
+        cache: 'no-store',
+        headers: { 'Cache-Control': 'no-cache', 'Pragma': 'no-cache' }
+      });
       if (res.ok) {
         const data = await res.json();
-        if (Array.isArray(data.invitedAdmins) && data.invitedAdmins.length > 0) {
+        if (Array.isArray(data.invitedAdmins)) {
           setInvitedAdmins(data.invitedAdmins);
           if (typeof window !== "undefined") {
             localStorage.setItem("lumina_admin_invites", data.invitedAdmins.join(", "));
@@ -415,98 +418,104 @@ export default function ProfilePage() {
       // Non-critical fallback
     }
 
+    // Direct Supabase query fallback
+    try {
+      const { data: dbConfig } = await supabase
+        .from('orders')
+        .select('items')
+        .eq('id', 'SYS_CONFIG_ADMIN_INVITES')
+        .maybeSingle();
+
+      if (dbConfig && Array.isArray(dbConfig.items)) {
+        const dbEmails = (dbConfig.items as Array<{ email?: string } | string>)
+          .map((item) => (typeof item === 'object' && item !== null ? String(item.email || '') : String(item || '')).toLowerCase().trim())
+          .filter(Boolean);
+        setInvitedAdmins(dbEmails);
+        if (typeof window !== "undefined") {
+          localStorage.setItem("lumina_admin_invites", dbEmails.join(", "));
+        }
+        return;
+      }
+    } catch {}
+
     // Resilient Fallback: check local storage if server was temporarily clean
     if (typeof window !== "undefined") {
       const localAdmins = localStorage.getItem("lumina_admin_invites");
       if (localAdmins) {
         const list = localAdmins.split(',').map(e => e.trim()).filter(Boolean);
-        if (list.length > 0) {
-          setInvitedAdmins(list);
-          // Auto-resync to Supabase database and server
-          fetch('/api/admin/invitations', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              requesterEmail: 'admin@lumina.com',
-              action: 'replace',
-              emails: list,
-            }),
-          }).catch(() => {});
-        }
+        setInvitedAdmins(list);
       }
     }
   };
 
- const handleAddAdminInvite = async (emailsToAdd?: string) => {
-   const raw = (emailsToAdd !== undefined ? emailsToAdd : adminInviteInput).trim();
-   if (!raw) return;
-   setInviteError(null);
-   setInviteSuccess(null);
-   setIsSyncingAdmins(true);
-   try {
-     const res = await fetch('/api/admin/invitations', {
-       method: 'POST',
-       headers: { 'Content-Type': 'application/json' },
-       body: JSON.stringify({
-         requesterEmail: user?.email,
-         action: 'add',
-         emails: raw,
-       }),
-     });
-     const data = await res.json();
-     if (!res.ok || !data.success) {
-       throw new Error(data.error || 'Error al agregar administrador.');
-     }
-     setInvitedAdmins(data.invitedAdmins);
-     setAdminInviteInput("");
-     setInviteSuccess("Administrador(es) invitado(s) con éxito.");
-     if (typeof window !== "undefined") {
-       localStorage.setItem("lumina_admin_invites", data.invitedAdmins.join(", "));
-     }
-     if (user?.email === 'admin@lumina.com') {
-       supabase.auth.updateUser({ data: { invitedAdmins: data.invitedAdmins } }).catch(() => {});
-     }
-   } catch (err: unknown) {
-     const msg = err instanceof Error ? err.message : 'Error al procesar la invitación.';
-     setInviteError(msg);
-   } finally {
-     setIsSyncingAdmins(false);
-   }
- };
+  const handleAddAdminInvite = async (emailsToAdd?: string) => {
+    const raw = (emailsToAdd !== undefined ? emailsToAdd : adminInviteInput).trim();
+    if (!raw) return;
+    setInviteError(null);
+    setInviteSuccess(null);
+    setIsSyncingAdmins(true);
+    try {
+      const res = await fetch('/api/admin/invitations', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          requesterEmail: user?.email,
+          userRole: user?.role,
+          isRootAdmin,
+          action: 'add',
+          emails: raw,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        throw new Error(data.error || 'Error al agregar administrador.');
+      }
+      setInvitedAdmins(data.invitedAdmins);
+      setAdminInviteInput("");
+      setInviteSuccess(`¡Administrador "${raw}" agregado y sincronizado con éxito!`);
+      if (typeof window !== "undefined") {
+        localStorage.setItem("lumina_admin_invites", data.invitedAdmins.join(", "));
+      }
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Error al procesar la invitación.';
+      setInviteError(msg);
+    } finally {
+      setIsSyncingAdmins(false);
+    }
+  };
 
- const handleRemoveAdminInvite = async (targetEmail: string) => {
-   setInviteError(null);
-   setInviteSuccess(null);
-   setIsSyncingAdmins(true);
-   try {
-     const res = await fetch('/api/admin/invitations', {
-       method: 'POST',
-       headers: { 'Content-Type': 'application/json' },
-       body: JSON.stringify({
-         requesterEmail: user?.email,
-         action: 'remove',
-         email: targetEmail,
-       }),
-     });
-     const data = await res.json();
-     if (!res.ok || !data.success) {
-       throw new Error(data.error || 'Error al revocar administrador.');
-     }
-     setInvitedAdmins(data.invitedAdmins);
-     setInviteSuccess(`Acceso revocado para '${targetEmail}'.`);
-     if (typeof window !== "undefined") {
-       localStorage.setItem("lumina_admin_invites", data.invitedAdmins.join(", "));
-     }
-     if (user?.email === 'admin@lumina.com') {
-       supabase.auth.updateUser({ data: { invitedAdmins: data.invitedAdmins } }).catch(() => {});
-     }
-   } catch (err: unknown) {
-     const msg = err instanceof Error ? err.message : 'Error al revocar administrador.';
-     setInviteError(msg);
-   } finally {
-     setIsSyncingAdmins(false);
-   }
- };
+  const handleRemoveAdminInvite = async (targetEmail: string) => {
+    setInviteError(null);
+    setInviteSuccess(null);
+    setIsSyncingAdmins(true);
+    try {
+      const res = await fetch('/api/admin/invitations', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          requesterEmail: user?.email,
+          userRole: user?.role,
+          isRootAdmin,
+          action: 'remove',
+          email: targetEmail,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        throw new Error(data.error || 'Error al revocar administrador.');
+      }
+      setInvitedAdmins(data.invitedAdmins);
+      setInviteSuccess(`Acceso revocado para '${targetEmail}'.`);
+      if (typeof window !== "undefined") {
+        localStorage.setItem("lumina_admin_invites", data.invitedAdmins.join(", "));
+      }
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Error al revocar administrador.';
+      setInviteError(msg);
+    } finally {
+      setIsSyncingAdmins(false);
+    }
+  };
 
  useEffect(() => {
  setIsMounted(true);
@@ -525,44 +534,50 @@ export default function ProfilePage() {
  }
  }, [isAuthenticated, isLoading, isMounted, router]);
 
- useEffect(() => {
- if (user?.name) {
- setEditName(user.name);
- }
- if (user?.role === 'ADMIN') {
- fetchInvitedAdmins();
- }
- }, [user]);
+  useEffect(() => {
+    if (user?.name) {
+      setEditName(user.name);
+    }
+    if (user?.role === 'ADMIN') {
+      fetchInvitedAdmins();
+    } else if (user?.role === 'USER') {
+      recheckUserRole();
+    }
+  }, [user, recheckUserRole]);
 
- useEffect(() => {
- if (typeof window !== "undefined") {
- const savedAdmins = localStorage.getItem("lumina_admin_invites");
- if (savedAdmins) {
- setInvitedAdmins(savedAdmins.split(',').map(e => e.trim()).filter(Boolean));
- }
- }
- }, []);
+  useEffect(() => {
+    // Initial fetch from fresh cloud database
+    fetchInvitedAdmins();
+  }, []);
 
- // Real-time synchronization heartbeat and window focus listener
- useEffect(() => {
- if (!isAuthenticated || !user) return;
+  // Real-time synchronization heartbeat and window focus listener
+  useEffect(() => {
+    if (!isAuthenticated || !user) return;
 
- // Refresh immediately on window focus
- const onFocus = () => {
- refreshOrders();
- };
- window.addEventListener("focus", onFocus);
+    // Refresh immediately on window focus
+    const onFocus = () => {
+      refreshOrders();
+      if (user?.role === 'USER') {
+        recheckUserRole();
+      } else if (user?.role === 'ADMIN') {
+        fetchInvitedAdmins();
+      }
+    };
+    window.addEventListener("focus", onFocus);
 
- // Refresh every 5 seconds for live store monitoring across devices
- const interval = setInterval(() => {
- refreshOrders();
- }, 5000);
+    // Refresh every 5 seconds for live store monitoring across devices
+    const interval = setInterval(() => {
+      refreshOrders();
+      if (user?.role === 'USER') {
+        recheckUserRole();
+      }
+    }, 5000);
 
- return () => {
- window.removeEventListener("focus", onFocus);
- clearInterval(interval);
- };
- }, [isAuthenticated, user, refreshOrders]);
+    return () => {
+      window.removeEventListener("focus", onFocus);
+      clearInterval(interval);
+    };
+  }, [isAuthenticated, user, refreshOrders, recheckUserRole]);
 
  // =========================================================================
  // REAL-TIME MATHEMATICAL CALCULATIONS & METRICS
@@ -3197,8 +3212,7 @@ const handleConfirmDeleteNiche = async () => {
 
  {isAdmin && (
   <div className="pt-4 border-t border-gray-100 dark:border-white/5 space-y-4">
-    {isRootAdmin ? (
-      /* Root Admin Management Card */
+      {/* Admin Management Card */}
       <div className="p-5 rounded-2xl bg-gradient-to-br from-gray-50 to-gray-100/50 dark:from-[#2a2a2c]/80 dark:to-[#222224]/80 border border-gray-200/80 dark:border-white/10 space-y-4 shadow-sm">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
           <div className="flex items-center gap-2.5">
@@ -3207,10 +3221,10 @@ const handleConfirmDeleteNiche = async () => {
             </div>
             <div>
               <h4 className="text-xs font-bold text-gray-900 dark:text-gray-100">
-                Invitación de Administradores
+                Gestión de Administradores Extras
               </h4>
               <p className="text-[11px] text-gray-500 dark:text-gray-400">
-                Exclusivo para la cuenta principal <span className="font-semibold text-gray-700 dark:text-gray-300">admin@lumina.com</span>
+                Otorga acceso de administrador a tus colaboradores para catálogo, pedidos y radar.
               </p>
             </div>
           </div>
@@ -3234,7 +3248,13 @@ const handleConfirmDeleteNiche = async () => {
                 type="text"
                 value={adminInviteInput}
                 onChange={e => setAdminInviteInput(e.target.value)}
-                placeholder="colaborador@lumina.com (o varios separados por coma)"
+                onKeyDown={e => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    handleAddAdminInvite();
+                  }
+                }}
+                placeholder="correo@amigo.com (o varios separados por coma)"
                 disabled={invitedAdmins.length >= 3 || isSyncingAdmins}
                 className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-xs bg-white dark:bg-[#1a1a1c] text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#8c9276] disabled:opacity-50"
               />
@@ -3249,9 +3269,6 @@ const handleConfirmDeleteNiche = async () => {
               <span>Invitar</span>
             </button>
           </div>
-          <p className="text-[10px] text-gray-400 dark:text-gray-500">
-            Puedes invitar hasta 3 administradores adicionales (total 4 administradores). Tienen acceso al catálogo, pedidos y radar.
-          </p>
         </div>
 
         {inviteError && (
@@ -3275,7 +3292,7 @@ const handleConfirmDeleteNiche = async () => {
           </p>
           {invitedAdmins.length === 0 ? (
             <p className="text-xs text-gray-400 dark:text-gray-500 italic bg-white/60 dark:bg-[#1a1a1c]/60 p-3 rounded-xl border border-dashed border-gray-200 dark:border-white/10 text-center">
-              No hay administradores invitados actualmente. Los 3 cupos están disponibles.
+              No hay administradores adicionales registrados. Los 3 cupos están disponibles.
             </p>
           ) : (
             <div className="space-y-1.5">
@@ -3287,7 +3304,7 @@ const handleConfirmDeleteNiche = async () => {
                   <div className="flex items-center gap-2 min-w-0">
                     <ShieldCheck className="w-4 h-4 text-[#8c9276] shrink-0" />
                     <span className="font-semibold text-gray-900 dark:text-gray-100 truncate">{admEmail}</span>
-                    <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-gray-100 dark:bg-white/10 text-gray-600 dark:text-gray-300">ADMIN</span>
+                    <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-amber-100 dark:bg-amber-900/40 text-amber-800 dark:text-amber-300">ADMINISTRADOR</span>
                   </div>
                   <button
                     type="button"
@@ -3304,38 +3321,6 @@ const handleConfirmDeleteNiche = async () => {
           )}
         </div>
       </div>
-    ) : (
-      /* Invited Administrator: Read-only card explaining root authority */
-      <div className="p-5 rounded-2xl bg-gray-50/80 dark:bg-[#2a2a2c]/80 border border-gray-200/80 dark:border-white/10 space-y-3">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-xl bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center justify-center font-bold">
-              <ShieldCheck className="w-4 h-4" />
-            </div>
-            <div>
-              <h4 className="text-xs font-bold text-gray-900 dark:text-gray-100">
-                Rol: Administrador Invitado
-              </h4>
-              <p className="text-[11px] text-gray-500 dark:text-gray-400">
-                Privilegios administrativos delegados
-              </p>
-            </div>
-          </div>
-          <span className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-800/40 flex items-center gap-1">
-            <Lock className="w-3 h-3" /> Solo Lectura
-          </span>
-        </div>
-        <p className="text-xs text-gray-600 dark:text-gray-300 leading-relaxed">
-          Tu cuenta posee permisos completos para gestionar el catálogo de productos, nichos de mercado, métricas comerciales, pedidos y el radar en tiempo real.
-        </p>
-        <div className="p-3 rounded-xl bg-white/70 dark:bg-[#1e1e20]/70 border border-gray-200/60 dark:border-white/5 text-[11px] text-gray-500 dark:text-gray-400 flex items-start gap-2">
-          <AlertCircle className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
-          <span>
-            La invitación y remoción de otros administradores está reservada exclusivamente a la cuenta principal de raíz (<strong className="text-gray-700 dark:text-gray-300">admin@lumina.com</strong>).
-          </span>
-        </div>
-      </div>
-    )}
   </div>
   )}
 

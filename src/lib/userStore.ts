@@ -82,6 +82,7 @@ interface UserState {
 
   updateUserName: (name: string) => Promise<{ error: string | null }>;
   updateUserPassword: (password: string) => Promise<{ error: string | null }>;
+  recheckUserRole: () => Promise<boolean>;
 }
 
 const COMMON_FIRST_NAMES = [
@@ -118,38 +119,79 @@ export const formatCleanName = (rawName: string) => {
   return words.map(w => w.toUpperCase() === 'ADMIN' ? 'ADMIN' : w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ');
 };
 
+export const ROOT_ADMIN_EMAILS = ['admin@lumina.com', 'arteagae796@gmail.com'];
+
 export const checkIsAdmin = async (email: string, metadataRole?: string): Promise<{ role: 'USER' | 'ADMIN'; isRootAdmin: boolean }> => {
   const normalized = (email || '').toLowerCase().trim();
-  if (normalized === 'admin@lumina.com') {
+  if (!normalized) {
+    return { role: 'USER', isRootAdmin: false };
+  }
+
+  // 1. Root admin / owner accounts
+  if (ROOT_ADMIN_EMAILS.includes(normalized)) {
     return { role: 'ADMIN', isRootAdmin: true };
   }
+
+  // 2. Explicit metadata role
   if (metadataRole === 'ADMIN') {
     return { role: 'ADMIN', isRootAdmin: false };
   }
+
+  // 3. Direct Supabase cloud database query for SYS_CONFIG_ADMIN_INVITES (zero cold-start, multi-device)
   try {
-    const res = await fetch('/api/admin/invitations', { cache: 'no-store' });
-    if (res.ok) {
-      const data = await res.json();
-      if (Array.isArray(data.invitedAdmins) && data.invitedAdmins.includes(normalized)) {
+    const { data: dbConfig, error: dbErr } = await supabase
+      .from('orders')
+      .select('items')
+      .eq('id', 'SYS_CONFIG_ADMIN_INVITES')
+      .maybeSingle();
+
+    if (!dbErr && dbConfig && Array.isArray(dbConfig.items)) {
+      const dbEmails = (dbConfig.items as Array<{ email?: string } | string>)
+        .map((item) => (typeof item === 'object' && item !== null ? String(item.email || '') : String(item || '')).toLowerCase().trim())
+        .filter(Boolean);
+
+      if (dbEmails.includes(normalized)) {
         return { role: 'ADMIN', isRootAdmin: false };
       }
     }
   } catch {
-    // Non-critical
+    // Non-critical fallback
   }
 
+  // 4. Secondary fallback: query server API route
+  try {
+    const res = await fetch('/api/admin/invitations', { 
+      cache: 'no-store',
+      headers: { 'Cache-Control': 'no-cache' }
+    });
+    if (res.ok) {
+      const data = await res.json();
+      if (Array.isArray(data.invitedAdmins)) {
+        const cleanList = data.invitedAdmins.map((e: string) => String(e).toLowerCase().trim());
+        if (cleanList.includes(normalized)) {
+          return { role: 'ADMIN', isRootAdmin: false };
+        }
+      }
+    }
+  } catch {
+    // Non-critical fallback
+  }
+
+  // 5. Tertiary fallback: check localStorage on current device
   if (typeof window !== 'undefined') {
     const saved = localStorage.getItem('lumina_admin_invites');
     if (saved && saved.toLowerCase().includes(normalized)) {
       return { role: 'ADMIN', isRootAdmin: false };
     }
   }
+
   return { role: 'USER', isRootAdmin: false };
 };
 
 const fetchUserDataFromDatabase = async (userId: string, role: 'USER' | 'ADMIN' = 'USER', email: string = '') => {
   try {
-    const isAdmin = role === 'ADMIN' || email.toLowerCase() === 'admin@lumina.com';
+    const cleanEmail = (email || '').toLowerCase().trim();
+    const isAdmin = role === 'ADMIN' || ROOT_ADMIN_EMAILS.includes(cleanEmail);
 
     // 1. Fetch store/user orders from persistent API with instant synchronization
     let orders: Order[] = [];
@@ -954,5 +996,41 @@ export const useUserStore = create<UserState>((set, get) => ({
   updateUserPassword: async (password) => {
     const { error } = await supabase.auth.updateUser({ password });
     return { error: error?.message || null };
+  },
+
+  recheckUserRole: async () => {
+    const currentUser = get().user;
+    if (!currentUser || !currentUser.email) return false;
+
+    const { role, isRootAdmin } = await checkIsAdmin(currentUser.email);
+    if (role !== currentUser.role || isRootAdmin !== currentUser.isRootAdmin) {
+      const updatedUser: User = {
+        ...currentUser,
+        role,
+        isRootAdmin,
+      };
+
+      if (typeof window !== 'undefined') {
+        try {
+          localStorage.setItem('lumina_auth_user', JSON.stringify(updatedUser));
+        } catch {}
+      }
+
+      set({ user: updatedUser });
+
+      if (role === 'ADMIN') {
+        supabase.auth.updateUser({ data: { role: 'ADMIN' } }).catch(() => {});
+        // Refresh store orders and administrative data immediately
+        try {
+          const personalData = await fetchUserDataFromDatabase(currentUser.id, 'ADMIN', currentUser.email);
+          set({
+            orders: personalData.orders,
+          });
+        } catch {}
+      }
+
+      return true;
+    }
+    return false;
   },
 }));

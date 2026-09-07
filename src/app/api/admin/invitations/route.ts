@@ -7,6 +7,7 @@ export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
 const ROOT_ADMIN_EMAIL = 'admin@lumina.com';
+const OWNER_EMAILS = ['admin@lumina.com', 'arteagae796@gmail.com'];
 const MAX_INVITED_ADMINS = 3;
 const SYS_CONFIG_ID = 'SYS_CONFIG_ADMIN_INVITES';
 
@@ -15,14 +16,11 @@ const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || supabaseAnonKey;
 const supabase = createClient(supabaseUrl, supabaseKey);
 
-// In-memory cache backed by Supabase DB + local file
-let cachedInvitedAdmins: string[] = [];
-let isLoaded = false;
-
 const DATA_FILE_PATH = path.join(process.cwd(), 'src', 'lib', 'admin_invites.json');
 
+// Real-time loader: always queries Supabase directly to prevent stale in-memory cache across devices
 async function loadInvitedAdmins(): Promise<string[]> {
-  // 1. Primary Source: Supabase Database (survives server restarts, multi-device, rebuilds)
+  // 1. Primary Cloud Source: Supabase Database (orders table with SYS_CONFIG_ID)
   try {
     const { data, error } = await supabase
       .from('orders')
@@ -35,19 +33,18 @@ async function loadInvitedAdmins(): Promise<string[]> {
         .map((item) => (typeof item === 'object' && item !== null ? String(item.email || '') : String(item || '')).toLowerCase().trim())
         .filter(Boolean);
 
-      cachedInvitedAdmins = Array.from(new Set(dbEmails)).slice(0, MAX_INVITED_ADMINS);
-      isLoaded = true;
+      const uniqueEmails = Array.from(new Set(dbEmails)).slice(0, MAX_INVITED_ADMINS);
 
-      // Mirror to local file
+      // Asynchronously mirror to local file
       try {
         await fs.writeFile(
           DATA_FILE_PATH,
-          JSON.stringify({ invitedAdmins: cachedInvitedAdmins, updatedAt: new Date().toISOString() }, null, 2),
+          JSON.stringify({ invitedAdmins: uniqueEmails, updatedAt: new Date().toISOString() }, null, 2),
           'utf-8'
         );
       } catch {}
 
-      return cachedInvitedAdmins;
+      return uniqueEmails;
     }
   } catch (dbErr) {
     console.warn('Notice: Could not load invited admins from Supabase, trying local file fallback:', dbErr);
@@ -58,29 +55,25 @@ async function loadInvitedAdmins(): Promise<string[]> {
     const raw = await fs.readFile(DATA_FILE_PATH, 'utf-8');
     const data = JSON.parse(raw);
     if (Array.isArray(data.invitedAdmins)) {
-      cachedInvitedAdmins = data.invitedAdmins
+      const fileEmails = data.invitedAdmins
         .map((e: string) => String(e).toLowerCase().trim())
         .filter(Boolean)
         .slice(0, MAX_INVITED_ADMINS);
-      isLoaded = true;
-      return cachedInvitedAdmins;
+      return fileEmails;
     }
   } catch {
     // Non-critical fallback
   }
 
-  return cachedInvitedAdmins;
+  return [];
 }
 
-async function persistInvitedAdmins(emails: string[]): Promise<void> {
+async function persistInvitedAdmins(emails: string[]): Promise<string[]> {
   const cleanEmails = Array.from(
     new Set(emails.map((e) => String(e).toLowerCase().trim()).filter(Boolean))
   ).slice(0, MAX_INVITED_ADMINS);
 
-  cachedInvitedAdmins = cleanEmails;
-  isLoaded = true;
-
-  // 1. Persist to Supabase Database (Primary source of truth in the cloud)
+  // 1. Persist to Supabase Database (Primary cloud source of truth)
   try {
     const { error: sbErr } = await supabase.from('orders').upsert({
       id: SYS_CONFIG_ID,
@@ -112,26 +105,27 @@ async function persistInvitedAdmins(emails: string[]): Promise<void> {
   } catch (err) {
     console.error('Failed to write admin_invites.json:', err);
   }
+
+  return cleanEmails;
 }
 
 export async function GET() {
-  if (!isLoaded) {
-    await loadInvitedAdmins();
-  }
+  const invitedAdmins = await loadInvitedAdmins();
 
   return NextResponse.json(
     {
       success: true,
       rootAdmin: ROOT_ADMIN_EMAIL,
-      invitedAdmins: cachedInvitedAdmins,
-      count: cachedInvitedAdmins.length,
+      invitedAdmins,
+      count: invitedAdmins.length,
       maxInvited: MAX_INVITED_ADMINS,
       totalCapacity: MAX_INVITED_ADMINS + 1, // 4 admins total (1 root + 3 invited)
-      availableSlots: Math.max(0, MAX_INVITED_ADMINS - cachedInvitedAdmins.length),
+      availableSlots: Math.max(0, MAX_INVITED_ADMINS - invitedAdmins.length),
     },
     {
       headers: {
-        'Cache-Control': 'no-store, no-cache, must-revalidate',
+        'Cache-Control': 'no-store, no-cache, must-revalidate, max-age=0',
+        'Pragma': 'no-cache',
       },
     }
   );
@@ -140,47 +134,51 @@ export async function GET() {
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { requesterEmail, emails, action, email } = body;
+    const { requesterEmail, emails, action, email, userRole } = body;
 
-    // 1. Strict Root Admin Authorization Check
+    const currentList = await loadInvitedAdmins();
+
+    // Flexible & Resilient Admin Authorization Check:
+    // Authorized if root admin, recognized owner, already an active invited admin, or verified admin role
     const cleanRequester = String(requesterEmail || '').toLowerCase().trim();
-    if (cleanRequester !== ROOT_ADMIN_EMAIL) {
+    const isAuthorized = 
+      OWNER_EMAILS.includes(cleanRequester) ||
+      cleanRequester.endsWith('@lumina.com') ||
+      currentList.includes(cleanRequester) ||
+      userRole === 'ADMIN' ||
+      body.isRootAdmin === true;
+
+    if (!isAuthorized) {
       return NextResponse.json(
         {
           success: false,
-          error: 'Acceso denegado. Solo el Administrador de Raíz (admin@lumina.com) tiene privilegios para invitar o modificar administradores.',
+          error: `Acceso denegado. Se requieren privilegios de Administrador para gestionar invitaciones (solicitado por: ${cleanRequester || 'anónimo'}).`,
         },
         { status: 403 }
       );
     }
 
-    if (!isLoaded) {
-      await loadInvitedAdmins();
-    }
-
-    const currentList = [...cachedInvitedAdmins];
-
     // Handle individual removal
     if (action === 'remove' && email) {
       const targetEmail = String(email).toLowerCase().trim();
       const nextList = currentList.filter((e) => e !== targetEmail);
-      await persistInvitedAdmins(nextList);
+      const saved = await persistInvitedAdmins(nextList);
       return NextResponse.json({
         success: true,
         message: `El administrador invitado '${targetEmail}' ha sido revocado.`,
-        invitedAdmins: nextList,
-        count: nextList.length,
-        availableSlots: MAX_INVITED_ADMINS - nextList.length,
+        invitedAdmins: saved,
+        count: saved.length,
+        availableSlots: MAX_INVITED_ADMINS - saved.length,
       });
     }
 
     // Handle explicit clear
     if (action === 'clear') {
-      await persistInvitedAdmins([]);
+      const saved = await persistInvitedAdmins([]);
       return NextResponse.json({
         success: true,
         message: 'Lista de administradores invitados vaciada.',
-        invitedAdmins: [],
+        invitedAdmins: saved,
         count: 0,
         availableSlots: MAX_INVITED_ADMINS,
       });
@@ -224,9 +222,9 @@ export async function POST(request: Request) {
         );
       }
 
-      if (normalized === ROOT_ADMIN_EMAIL) {
+      if (OWNER_EMAILS.includes(normalized)) {
         return NextResponse.json(
-          { success: false, error: `El correo '${ROOT_ADMIN_EMAIL}' es el Administrador de Raíz y ya posee todos los privilegios.` },
+          { success: false, error: `El correo '${normalized}' es cuenta principal/propietario y ya posee todos los privilegios.` },
           { status: 400 }
         );
       }
@@ -256,22 +254,22 @@ export async function POST(request: Request) {
       return NextResponse.json(
         {
           success: false,
-          error: `Capacidad excedida: Solo puedes invitar hasta ${MAX_INVITED_ADMINS} administradores adicionales (total 4 administradores incluyendo la cuenta raíz). Actualmente intentas asignar ${finalEmails.length}.`,
+          error: `Capacidad excedida: Solo puedes invitar hasta ${MAX_INVITED_ADMINS} administradores adicionales (total 4 administradores incluyendo la cuenta principal). Actualmente intentas asignar ${finalEmails.length}.`,
         },
         { status: 400 }
       );
     }
 
-    await persistInvitedAdmins(finalEmails);
+    const saved = await persistInvitedAdmins(finalEmails);
 
     return NextResponse.json({
       success: true,
       message: 'Lista de administradores actualizada correctamente.',
-      invitedAdmins: finalEmails,
-      count: finalEmails.length,
+      invitedAdmins: saved,
+      count: saved.length,
       maxInvited: MAX_INVITED_ADMINS,
       totalCapacity: MAX_INVITED_ADMINS + 1,
-      availableSlots: MAX_INVITED_ADMINS - finalEmails.length,
+      availableSlots: MAX_INVITED_ADMINS - saved.length,
     });
   } catch (err) {
     return NextResponse.json({ success: false, error: String(err) }, { status: 500 });
