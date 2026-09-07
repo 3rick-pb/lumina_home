@@ -119,7 +119,7 @@ export const formatCleanName = (rawName: string) => {
   return words.map(w => w.toUpperCase() === 'ADMIN' ? 'ADMIN' : w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ');
 };
 
-export const ROOT_ADMIN_EMAILS = ['admin@lumina.com', 'arteagae796@gmail.com'];
+export const ROOT_ADMIN_EMAILS = ['admin@lumina.com'];
 
 export const checkIsAdmin = async (email: string, metadataRole?: string): Promise<{ role: 'USER' | 'ADMIN'; isRootAdmin: boolean }> => {
   const normalized = (email || '').toLowerCase().trim();

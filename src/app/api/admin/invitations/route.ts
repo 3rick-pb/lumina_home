@@ -222,9 +222,9 @@ export async function POST(request: Request) {
         );
       }
 
-      if (OWNER_EMAILS.includes(normalized)) {
+      if (normalized === ROOT_ADMIN_EMAIL) {
         return NextResponse.json(
-          { success: false, error: `El correo '${normalized}' es cuenta principal/propietario y ya posee todos los privilegios.` },
+          { success: false, error: `El correo '${ROOT_ADMIN_EMAIL}' es la cuenta principal del sistema y ya posee acceso de Administrador.` },
           { status: 400 }
         );
       }
