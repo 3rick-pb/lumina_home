@@ -73,7 +73,7 @@ interface CartState {
 const syncCartToDatabase = async (userId: string | null, payload: CartStoragePayload) => {
   if (!userId) return;
   try {
-    // 1. Persist to user_carts table in Supabase
+    // 1. Persist directly to user_carts table in Supabase
     const { error } = await supabase.from('user_carts').upsert({
       user_id: userId,
       items: payload.items,
@@ -83,11 +83,8 @@ const syncCartToDatabase = async (userId: string | null, payload: CartStoragePay
       updated_at: new Date().toISOString()
     });
 
-    // 2. Also keep user_metadata synced as reliable cloud backup
     if (error) {
-      await supabase.auth.updateUser({
-        data: { cart: payload }
-      });
+      console.warn("Could not sync cart to user_carts table:", error.message);
     }
   } catch (e) {
     console.error("Error syncing cart to database:", e);
@@ -109,13 +106,11 @@ export const useCartStore = create<CartState>((set, get) => ({
       try {
         localStorage.removeItem('lumina-cart-storage');
         localStorage.removeItem('lumina_cart_guest');
-        if (!newUserId) {
-          const keysToRemove: string[] = [];
-          for (let i = 0; i < localStorage.length; i++) {
-            const k = localStorage.key(i);
-            if (k && k.startsWith('lumina_cart_')) keysToRemove.push(k);
+        for (let i = 0; i < localStorage.length; i++) {
+          const k = localStorage.key(i);
+          if (k && k.startsWith('lumina_cart_')) {
+            localStorage.removeItem(k);
           }
-          keysToRemove.forEach(k => localStorage.removeItem(k));
         }
       } catch {}
     }
@@ -139,7 +134,7 @@ export const useCartStore = create<CartState>((set, get) => ({
     let isFreeShippingCoupon = false;
 
     try {
-      // 1. Fetch from Supabase user_carts table
+      // 1. Fetch from Supabase user_carts table (single source of truth)
       const { data: dbCart, error } = await supabase
         .from('user_carts')
         .select('*')
@@ -151,16 +146,6 @@ export const useCartStore = create<CartState>((set, get) => ({
         couponCode = dbCart.coupon_code || null;
         discountPercent = Number(dbCart.discount_percent) || 0;
         isFreeShippingCoupon = !!dbCart.is_free_shipping;
-      } else {
-        // 2. Fallback to Supabase auth user_metadata
-        const { data: { user } } = await supabase.auth.getUser();
-        if (user?.user_metadata?.cart) {
-          const c = user.user_metadata.cart;
-          items = Array.isArray(c.items) ? c.items : [];
-          couponCode = c.couponCode || null;
-          discountPercent = Number(c.discountPercent) || 0;
-          isFreeShippingCoupon = !!c.isFreeShippingCoupon;
-        }
       }
     } catch (e) {
       console.error("Error loading cart from database:", e);

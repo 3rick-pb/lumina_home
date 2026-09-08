@@ -1,6 +1,4 @@
 import { NextResponse } from 'next/server';
-import fs from 'fs/promises';
-import path from 'path';
 import { createClient } from '@supabase/supabase-js';
 
 export const dynamic = 'force-dynamic';
@@ -16,54 +14,42 @@ const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || supabaseAnonKey;
 const supabase = createClient(supabaseUrl, supabaseKey);
 
-const DATA_FILE_PATH = path.join(process.cwd(), 'src', 'lib', 'admin_invites.json');
-
-// Real-time loader: always queries Supabase directly to prevent stale in-memory cache across devices
+// Real-time loader: queries dedicated admin_invitations table directly
 async function loadInvitedAdmins(): Promise<string[]> {
-  // 1. Primary Cloud Source: Supabase Database (orders table with SYS_CONFIG_ID)
+  // 1. Primary Source: Dedicated admin_invitations table
   try {
     const { data, error } = await supabase
+      .from('admin_invitations')
+      .select('email, is_active')
+      .eq('is_active', true)
+      .order('created_at', { ascending: true });
+
+    if (!error && Array.isArray(data)) {
+      const activeEmails = data
+        .map((row) => String(row.email || '').toLowerCase().trim())
+        .filter(Boolean);
+      return Array.from(new Set(activeEmails)).slice(0, MAX_INVITED_ADMINS);
+    }
+  } catch (err) {
+    console.warn('Notice: Failed reading admin_invitations, checking orders fallback:', err);
+  }
+
+  // 2. Transition Fallback: orders table with SYS_CONFIG_ID (until migration executes)
+  try {
+    const { data: orderConfig, error: orderErr } = await supabase
       .from('orders')
       .select('items')
       .eq('id', SYS_CONFIG_ID)
       .maybeSingle();
 
-    if (!error && data && Array.isArray(data.items)) {
-      const dbEmails = (data.items as Array<{ email?: string } | string>)
+    if (!orderErr && orderConfig && Array.isArray(orderConfig.items)) {
+      const dbEmails = (orderConfig.items as Array<{ email?: string } | string>)
         .map((item) => (typeof item === 'object' && item !== null ? String(item.email || '') : String(item || '')).toLowerCase().trim())
         .filter(Boolean);
 
-      const uniqueEmails = Array.from(new Set(dbEmails)).slice(0, MAX_INVITED_ADMINS);
-
-      // Asynchronously mirror to local file
-      try {
-        await fs.writeFile(
-          DATA_FILE_PATH,
-          JSON.stringify({ invitedAdmins: uniqueEmails, updatedAt: new Date().toISOString() }, null, 2),
-          'utf-8'
-        );
-      } catch {}
-
-      return uniqueEmails;
+      return Array.from(new Set(dbEmails)).slice(0, MAX_INVITED_ADMINS);
     }
-  } catch (dbErr) {
-    console.warn('Notice: Could not load invited admins from Supabase, trying local file fallback:', dbErr);
-  }
-
-  // 2. Secondary Fallback: Local JSON file
-  try {
-    const raw = await fs.readFile(DATA_FILE_PATH, 'utf-8');
-    const data = JSON.parse(raw);
-    if (Array.isArray(data.invitedAdmins)) {
-      const fileEmails = data.invitedAdmins
-        .map((e: string) => String(e).toLowerCase().trim())
-        .filter(Boolean)
-        .slice(0, MAX_INVITED_ADMINS);
-      return fileEmails;
-    }
-  } catch {
-    // Non-critical fallback
-  }
+  } catch {}
 
   return [];
 }
@@ -73,9 +59,42 @@ async function persistInvitedAdmins(emails: string[]): Promise<string[]> {
     new Set(emails.map((e) => String(e).toLowerCase().trim()).filter(Boolean))
   ).slice(0, MAX_INVITED_ADMINS);
 
-  // 1. Persist to Supabase Database (Primary cloud source of truth)
+  // 1. Persist to dedicated admin_invitations table
   try {
-    const { error: sbErr } = await supabase.from('orders').upsert({
+    // Read all existing records
+    const { data: existing } = await supabase
+      .from('admin_invitations')
+      .select('email');
+
+    const existingEmails = Array.isArray(existing) ? existing.map(r => String(r.email).toLowerCase().trim()) : [];
+    
+    // Deactivate / remove ones not in cleanEmails
+    const emailsToRemove = existingEmails.filter(e => !cleanEmails.includes(e));
+    if (emailsToRemove.length > 0) {
+      await supabase
+        .from('admin_invitations')
+        .delete()
+        .in('email', emailsToRemove);
+    }
+
+    // Upsert new/remaining records
+    if (cleanEmails.length > 0) {
+      for (const email of cleanEmails) {
+        await supabase
+          .from('admin_invitations')
+          .upsert(
+            { email, is_active: true, created_at: new Date().toISOString() },
+            { onConflict: 'email' }
+          );
+      }
+    }
+  } catch (dbErr) {
+    console.warn('Warning: Could not save to admin_invitations table:', dbErr);
+  }
+
+  // 2. Transition mirror to orders table (backward compatibility until cleanup phase)
+  try {
+    await supabase.from('orders').upsert({
       id: SYS_CONFIG_ID,
       user_id: null,
       status: 'Procesando',
@@ -84,27 +103,7 @@ async function persistInvitedAdmins(emails: string[]): Promise<string[]> {
       items: cleanEmails.map((email) => ({ email })),
       created_at: new Date().toISOString(),
     });
-    if (sbErr) {
-      console.warn('Warning: Failed to persist admin invites to Supabase:', sbErr.message);
-    }
-  } catch (sbErr) {
-    console.warn('Warning: Supabase upsert error:', sbErr);
-  }
-
-  // 2. Persist to Local JSON File (Secondary fallback)
-  try {
-    const payload = JSON.stringify(
-      {
-        invitedAdmins: cleanEmails,
-        updatedAt: new Date().toISOString(),
-      },
-      null,
-      2
-    );
-    await fs.writeFile(DATA_FILE_PATH, payload, 'utf-8');
-  } catch (err) {
-    console.error('Failed to write admin_invites.json:', err);
-  }
+  } catch {}
 
   return cleanEmails;
 }
@@ -138,11 +137,10 @@ export async function POST(request: Request) {
 
     const currentList = await loadInvitedAdmins();
 
-    // Strict Root / Owner Admin Check for mutations (adding/removing admins):
-    // Only the primary admin (admin@lumina.com or arteagae796@gmail.com) can invite or revoke other admins.
-    // Delegated / invited admins can NOT add or remove other administrators.
+    // Strict Root / Owner Admin Check for mutations:
+    // Only primary owners can invite or revoke other administrators.
     const cleanRequester = String(requesterEmail || '').toLowerCase().trim();
-    const isRootOrOwner = 
+    const isRootOrOwner =
       OWNER_EMAILS.includes(cleanRequester) ||
       cleanRequester === 'admin@lumina.com' ||
       body.isRootAdmin === true;
@@ -161,6 +159,12 @@ export async function POST(request: Request) {
     if (action === 'remove' && email) {
       const targetEmail = String(email).toLowerCase().trim();
       const nextList = currentList.filter((e) => e !== targetEmail);
+      
+      // Also explicitly delete from table
+      try {
+        await supabase.from('admin_invitations').delete().eq('email', targetEmail);
+      } catch {}
+
       const saved = await persistInvitedAdmins(nextList);
       return NextResponse.json({
         success: true,
@@ -173,6 +177,10 @@ export async function POST(request: Request) {
 
     // Handle explicit clear
     if (action === 'clear') {
+      try {
+        await supabase.from('admin_invitations').delete().neq('email', '');
+      } catch {}
+
       const saved = await persistInvitedAdmins([]);
       return NextResponse.json({
         success: true,
@@ -183,7 +191,7 @@ export async function POST(request: Request) {
       });
     }
 
-    // Handle incoming list of emails (comma-separated or array)
+    // Handle incoming list of emails
     let candidateEmails: string[] = [];
     if (Array.isArray(emails)) {
       candidateEmails = emails;
@@ -221,7 +229,7 @@ export async function POST(request: Request) {
         );
       }
 
-      if (normalized === ROOT_ADMIN_EMAIL) {
+      if (ROOT_ADMIN_EMAIL === normalized) {
         return NextResponse.json(
           { success: false, error: `El correo '${ROOT_ADMIN_EMAIL}' es la cuenta principal del sistema y ya posee acceso de Administrador.` },
           { status: 400 }
@@ -236,14 +244,11 @@ export async function POST(request: Request) {
     let finalEmails: string[] = [];
 
     if (action === 'add') {
-      // Add new candidates to existing list without duplicates
       const combined = new Set([...currentList, ...cleanedCandidates]);
       finalEmails = Array.from(combined);
     } else if (action === 'replace') {
-      // Explicit replacement of the entire list
       finalEmails = cleanedCandidates;
     } else {
-      // Default: If candidates were provided, merge them safely rather than wiping
       const combined = new Set([...currentList, ...cleanedCandidates]);
       finalEmails = Array.from(combined);
     }

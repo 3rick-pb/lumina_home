@@ -405,9 +405,6 @@ export default function ProfilePage() {
         const data = await res.json();
         if (Array.isArray(data.invitedAdmins)) {
           setInvitedAdmins(data.invitedAdmins);
-          if (typeof window !== "undefined") {
-            localStorage.setItem("lumina_admin_invites", data.invitedAdmins.join(", "));
-          }
           return;
         }
       }
@@ -415,7 +412,21 @@ export default function ProfilePage() {
       // Non-critical fallback
     }
 
-    // Direct Supabase query fallback
+    // Direct Supabase query to dedicated admin_invitations table
+    try {
+      const { data: dbInvites, error } = await supabase
+        .from('admin_invitations')
+        .select('email')
+        .eq('is_active', true);
+
+      if (!error && dbInvites && Array.isArray(dbInvites)) {
+        const emails = dbInvites.map((i) => String(i.email || '').toLowerCase().trim()).filter(Boolean);
+        setInvitedAdmins(emails);
+        return;
+      }
+    } catch {}
+
+    // Transition fallback to orders table
     try {
       const { data: dbConfig } = await supabase
         .from('orders')
@@ -428,21 +439,9 @@ export default function ProfilePage() {
           .map((item) => (typeof item === 'object' && item !== null ? String(item.email || '') : String(item || '')).toLowerCase().trim())
           .filter(Boolean);
         setInvitedAdmins(dbEmails);
-        if (typeof window !== "undefined") {
-          localStorage.setItem("lumina_admin_invites", dbEmails.join(", "));
-        }
         return;
       }
     } catch {}
-
-    // Resilient Fallback: check local storage if server was temporarily clean
-    if (typeof window !== "undefined") {
-      const localAdmins = localStorage.getItem("lumina_admin_invites");
-      if (localAdmins) {
-        const list = localAdmins.split(',').map(e => e.trim()).filter(Boolean);
-        setInvitedAdmins(list);
-      }
-    }
   };
 
   const handleAddAdminInvite = async (emailsToAdd?: string) => {
@@ -470,9 +469,6 @@ export default function ProfilePage() {
       setInvitedAdmins(data.invitedAdmins);
       setAdminInviteInput("");
       setInviteSuccess(`¡Administrador "${raw}" agregado y sincronizado con éxito!`);
-      if (typeof window !== "undefined") {
-        localStorage.setItem("lumina_admin_invites", data.invitedAdmins.join(", "));
-      }
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Error al procesar la invitación.';
       setInviteError(msg);
@@ -503,9 +499,6 @@ export default function ProfilePage() {
       }
       setInvitedAdmins(data.invitedAdmins);
       setInviteSuccess(`Acceso revocado para '${targetEmail}'.`);
-      if (typeof window !== "undefined") {
-        localStorage.setItem("lumina_admin_invites", data.invitedAdmins.join(", "));
-      }
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Error al revocar administrador.';
       setInviteError(msg);

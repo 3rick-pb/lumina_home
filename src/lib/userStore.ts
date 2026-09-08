@@ -119,7 +119,7 @@ export const formatCleanName = (rawName: string) => {
   return words.map(w => w.toUpperCase() === 'ADMIN' ? 'ADMIN' : w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ');
 };
 
-export const ROOT_ADMIN_EMAILS = ['admin@lumina.com'];
+export const ROOT_ADMIN_EMAILS = ['admin@lumina.com', 'arteagae796@gmail.com'];
 
 export const checkIsAdmin = async (email: string, metadataRole?: string): Promise<{ role: 'USER' | 'ADMIN'; isRootAdmin: boolean }> => {
   const normalized = (email || '').toLowerCase().trim();
@@ -137,25 +137,20 @@ export const checkIsAdmin = async (email: string, metadataRole?: string): Promis
     return { role: 'ADMIN', isRootAdmin: false };
   }
 
-  // 3. Direct Supabase cloud database query for SYS_CONFIG_ADMIN_INVITES (zero cold-start, multi-device)
+  // 3. Query dedicated admin_invitations table (primary cloud source of truth)
   try {
-    const { data: dbConfig, error: dbErr } = await supabase
-      .from('orders')
-      .select('items')
-      .eq('id', 'SYS_CONFIG_ADMIN_INVITES')
+    const { data: invite, error: invErr } = await supabase
+      .from('admin_invitations')
+      .select('email, is_active')
+      .eq('email', normalized)
+      .eq('is_active', true)
       .maybeSingle();
 
-    if (!dbErr && dbConfig && Array.isArray(dbConfig.items)) {
-      const dbEmails = (dbConfig.items as Array<{ email?: string } | string>)
-        .map((item) => (typeof item === 'object' && item !== null ? String(item.email || '') : String(item || '')).toLowerCase().trim())
-        .filter(Boolean);
-
-      if (dbEmails.includes(normalized)) {
-        return { role: 'ADMIN', isRootAdmin: false };
-      }
+    if (!invErr && invite) {
+      return { role: 'ADMIN', isRootAdmin: false };
     }
   } catch {
-    // Non-critical fallback
+    // Fallback during schema transition
   }
 
   // 4. Secondary fallback: query server API route
@@ -177,14 +172,28 @@ export const checkIsAdmin = async (email: string, metadataRole?: string): Promis
     // Non-critical fallback
   }
 
-  // 5. Tertiary fallback: check localStorage on current device
-  if (typeof window !== 'undefined') {
-    const saved = localStorage.getItem('lumina_admin_invites');
-    if (saved && saved.toLowerCase().includes(normalized)) {
-      return { role: 'ADMIN', isRootAdmin: false };
+  // 5. Transition fallback: check orders table (until migration cleans it up)
+  try {
+    const { data: dbConfig } = await supabase
+      .from('orders')
+      .select('items')
+      .eq('id', 'SYS_CONFIG_ADMIN_INVITES')
+      .maybeSingle();
+
+    if (dbConfig && Array.isArray(dbConfig.items)) {
+      const dbEmails = (dbConfig.items as Array<{ email?: string } | string>)
+        .map((item) => (typeof item === 'object' && item !== null ? String(item.email || '') : String(item || '')).toLowerCase().trim())
+        .filter(Boolean);
+
+      if (dbEmails.includes(normalized)) {
+        return { role: 'ADMIN', isRootAdmin: false };
+      }
     }
+  } catch {
+    // Non-critical fallback
   }
 
+  // Security: localStorage fallback is permanently removed to prevent client-side privilege escalation
   return { role: 'USER', isRootAdmin: false };
 };
 
@@ -242,7 +251,7 @@ const fetchUserDataFromDatabase = async (userId: string, role: 'USER' | 'ADMIN' 
       } catch {}
     }
 
-    // 2. Fetch addresses from Supabase addresses table
+    // 2. Fetch addresses from Supabase addresses table (single source of truth)
     let addresses: ShippingAddress[] = [];
     try {
       const { data: dbAddrs, error: aErr } = await supabase
@@ -261,66 +270,33 @@ const fetchUserDataFromDatabase = async (userId: string, role: 'USER' | 'ADMIN' 
           city: dbAddr.city || '',
           state: dbAddr.state || '',
           postalCode: dbAddr.postal_code || '',
-          country: dbAddr.country || 'España',
+          country: dbAddr.country || 'Ecuador',
           isDefault: dbAddr.is_default !== undefined ? !!dbAddr.is_default : index === 0,
         }));
       }
     } catch {}
 
-    // 3. Fetch cards from Supabase payment_cards or user_metadata
+    // 3. Fetch cards directly from Supabase payment_cards table (single source of truth)
     let cards: PaymentCard[] = [];
-    const { data: dbCards, error: cErr } = await supabase
-      .from('payment_cards')
-      .select('*')
-      .eq('user_id', userId)
-      .order('created_at', { ascending: false });
+    try {
+      const { data: dbCards, error: cErr } = await supabase
+        .from('payment_cards')
+        .select('*')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false });
 
-    if (dbCards && !cErr && dbCards.length > 0) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      cards = dbCards.map((c: any) => ({
-        id: c.id,
-        number: c.number,
-        holder: c.holder,
-        exp: c.exp,
-        type: c.type,
-        isDefault: !!c.is_default,
-      }));
-    } else {
-      // Check user_metadata
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user?.user_metadata?.cards) {
-        cards = user.user_metadata.cards;
-      }
-      if (orders.length === 0 && user?.user_metadata?.orders) {
-        orders = user.user_metadata.orders;
-      }
-    }
-
-    // Check user_metadata if addresses was empty
-    const { data: { user: currentUser } } = await supabase.auth.getUser();
-    if (addresses.length === 0) {
-      if (Array.isArray(currentUser?.user_metadata?.addresses) && currentUser.user_metadata.addresses.length > 0) {
+      if (dbCards && !cErr && dbCards.length > 0) {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        addresses = currentUser.user_metadata.addresses.slice(0, 4).map((a: any, idx: number) => ({
-          ...a,
-          id: a.id || `addr-meta-${idx}`,
-          recipient: a.recipient || currentUser?.user_metadata?.name || '',
-          isDefault: a.isDefault !== undefined ? a.isDefault : idx === 0,
+        cards = dbCards.map((c: any) => ({
+          id: c.id,
+          number: c.number,
+          holder: c.holder,
+          exp: c.exp,
+          type: c.type,
+          isDefault: !!c.is_default,
         }));
-      } else if (currentUser?.user_metadata?.address) {
-        const single = currentUser.user_metadata.address;
-        addresses = [{
-          id: 'addr-default',
-          recipient: single.recipient || currentUser?.user_metadata?.name || '',
-          street: single.street || '',
-          city: single.city || '',
-          state: single.state || '',
-          postalCode: single.postalCode || '',
-          country: single.country || 'España',
-          isDefault: true,
-        }];
       }
-    }
+    } catch {}
 
     const defaultAddr = addresses.find(a => a.isDefault) || addresses[0] || null;
 
@@ -608,13 +584,13 @@ export const useUserStore = create<UserState>((set, get) => ({
     // Reset all in-memory user data
     set({ user: null, isAuthenticated: false, favorites: [], cards: [], orders: [], address: null });
 
-    // WIPE ENTIRE LOCAL DATA ON COMPUTER SO NOTHING STAYS BEHIND
+    // Wipe Lumina-specific local session data
     if (typeof window !== 'undefined') {
       try {
         const keysToRemove: string[] = [];
         for (let i = 0; i < localStorage.length; i++) {
           const k = localStorage.key(i);
-          if (k && (k.startsWith('lumina') || k.startsWith('sb-') || k.includes('cart') || k.includes('user'))) {
+          if (k && (k.startsWith('lumina_') || k.startsWith('lumina-') || k.startsWith('sb-'))) {
             keysToRemove.push(k);
           }
         }
@@ -640,6 +616,15 @@ export const useUserStore = create<UserState>((set, get) => ({
           localStorage.setItem('lumina_auth_user', JSON.stringify(userObj));
         } catch {}
       }
+
+      // Upsert profile into user_profiles table
+      try {
+        await supabase.from('user_profiles').upsert({
+          user_id: data.user.id,
+          display_name: cleanName,
+          updated_at: new Date().toISOString()
+        });
+      } catch {}
 
       set({ 
         user: userObj, 
@@ -678,10 +663,9 @@ export const useUserStore = create<UserState>((set, get) => ({
           type: card.type,
           is_default: card.isDefault || false,
         });
-      } catch {}
-      try {
-        await supabase.auth.updateUser({ data: { cards: nextCards } });
-      } catch {}
+      } catch (err) {
+        console.warn('Error saving card to payment_cards table:', err);
+      }
     }
   },
 
@@ -693,10 +677,9 @@ export const useUserStore = create<UserState>((set, get) => ({
     if (user) {
       try {
         await supabase.from('payment_cards').delete().eq('id', id);
-      } catch {}
-      try {
-        await supabase.auth.updateUser({ data: { cards: nextCards } });
-      } catch {}
+      } catch (err) {
+        console.warn('Error deleting card from payment_cards table:', err);
+      }
     }
   },
 
@@ -712,10 +695,9 @@ export const useUserStore = create<UserState>((set, get) => ({
       try {
         await supabase.from('payment_cards').update({ is_default: false }).eq('user_id', user.id);
         await supabase.from('payment_cards').update({ is_default: true }).eq('id', id);
-      } catch {}
-      try {
-        await supabase.auth.updateUser({ data: { cards: nextCards } });
-      } catch {}
+      } catch (err) {
+        console.warn('Error updating default card in payment_cards table:', err);
+      }
     }
   },
   
@@ -779,9 +761,6 @@ export const useUserStore = create<UserState>((set, get) => ({
       } catch (e) {
         console.warn("Error saving order to Supabase:", e);
       }
-      try {
-        await supabase.auth.updateUser({ data: { orders: nextOrders } });
-      } catch {}
     }
   },
 
@@ -805,10 +784,9 @@ export const useUserStore = create<UserState>((set, get) => ({
     if (user) {
       try {
         await supabase.from('orders').update({ status }).eq('id', orderId);
-      } catch {}
-      try {
-        await supabase.auth.updateUser({ data: { orders: nextOrders } });
-      } catch {}
+      } catch (e) {
+        console.warn("Error updating order status in Supabase:", e);
+      }
     }
   },
 
@@ -871,10 +849,9 @@ export const useUserStore = create<UserState>((set, get) => ({
           country: newAddr.country,
           is_default: newAddr.isDefault,
         });
-      } catch {}
-      try {
-        await supabase.auth.updateUser({ data: { addresses: nextAddresses, address: activeAddr } });
-      } catch {}
+      } catch (err) {
+        console.warn('Error saving address to addresses table:', err);
+      }
     }
     return true;
   },
@@ -906,10 +883,9 @@ export const useUserStore = create<UserState>((set, get) => ({
       } catch {}
       try {
         await supabase.from('addresses').delete().eq('id', targetId);
-      } catch {}
-      try {
-        await supabase.auth.updateUser({ data: { addresses: nextAddresses, address: activeAddr } });
-      } catch {}
+      } catch (err) {
+        console.warn('Error deleting address from addresses table:', err);
+      }
     }
   },
 
@@ -934,10 +910,9 @@ export const useUserStore = create<UserState>((set, get) => ({
       try {
         await supabase.from('addresses').update({ is_default: false }).eq('user_id', user.id);
         await supabase.from('addresses').update({ is_default: true }).eq('id', id);
-      } catch {}
-      try {
-        await supabase.auth.updateUser({ data: { addresses: nextAddresses, address: activeAddr } });
-      } catch {}
+      } catch (err) {
+        console.warn('Error updating default address in addresses table:', err);
+      }
     }
   },
 
@@ -958,12 +933,6 @@ export const useUserStore = create<UserState>((set, get) => ({
     const nextAddresses = current.map(a => a.id === targetId ? { ...a, ...addressInput } : a);
     const activeAddr = nextAddresses.find(a => a.id === targetId) || nextAddresses[0];
     set({ addresses: nextAddresses, address: activeAddr });
-    const user = get().user;
-    if (user) {
-      try {
-        await supabase.auth.updateUser({ data: { addresses: nextAddresses, address: activeAddr } });
-      } catch {}
-    }
   },
 
   updateUserName: async (name) => {
@@ -973,6 +942,16 @@ export const useUserStore = create<UserState>((set, get) => ({
       set((state) => ({
         user: state.user ? { ...state.user, name: cleanName } : null
       }));
+      const currentUser = get().user;
+      if (currentUser?.id) {
+        try {
+          await supabase.from('user_profiles').upsert({
+            user_id: currentUser.id,
+            display_name: cleanName,
+            updated_at: new Date().toISOString()
+          });
+        } catch {}
+      }
     }
     return { error: error?.message || null };
   },

@@ -1,9 +1,11 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { verifyIsAdmin, getAuthenticatedUser } from '@/lib/serverAuth';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
-const supabase = createClient(supabaseUrl, supabaseAnonKey);
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || supabaseAnonKey;
+const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
 export interface ApiOrder {
   id: string;
@@ -38,82 +40,64 @@ export interface ApiOrder {
   }>;
 }
 
-// In-memory persistent order repository for the Node process
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const globalOrdersRef: { orders: ApiOrder[] } = (globalThis as any).__lumina_orders_cache || {
-  orders: []
-};
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-(globalThis as any).__lumina_orders_cache = globalOrdersRef;
-
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
     const userId = searchParams.get('userId');
-    const role = searchParams.get('role');
     const email = searchParams.get('email') || '';
-    const isAdmin = role === 'ADMIN' || email.toLowerCase() === 'admin@lumina.com';
 
-    // 1. Try to fetch from Supabase if connected
-    let supabaseOrders: ApiOrder[] = [];
-    try {
-      let query = supabase
-        .from('orders')
-        .select('*')
-        .not('id', 'like', 'SYS_%')
-        .order('created_at', { ascending: false });
-      if (!isAdmin && userId) {
+    // Check token if present
+    const authUser = await getAuthenticatedUser(request);
+    const effectiveEmail = authUser?.email || email;
+    const isAdmin = await verifyIsAdmin(effectiveEmail);
+
+    let query = supabase
+      .from('orders')
+      .select('*')
+      .not('id', 'like', 'SYS_%')
+      .order('created_at', { ascending: false });
+
+    // Non-admins only see their own orders
+    if (!isAdmin) {
+      if (userId && effectiveEmail) {
+        query = query.or(`user_id.eq.${userId},customer_email.eq.${effectiveEmail.toLowerCase().trim()}`);
+      } else if (userId) {
         query = query.eq('user_id', userId);
+      } else if (effectiveEmail) {
+        query = query.eq('customer_email', effectiveEmail.toLowerCase().trim());
+      } else {
+        return NextResponse.json({ success: true, orders: [], count: 0 });
       }
-      const { data, error } = await query;
-      if (!error && Array.isArray(data)) {
-        supabaseOrders = (data as Array<Record<string, unknown>>)
-          .filter((o) => !String(o.id || '').startsWith('SYS_'))
-          .map((o) => ({
-            id: String(o.id || ''),
-            userId: o.user_id ? String(o.user_id) : undefined,
-            customerName: String(o.customer_name || 'Cliente Lumina'),
-            customerEmail: String(o.customer_email || 'cliente@lumina.com'),
-            recipient: String(o.recipient || o.customer_name || 'Cliente'),
-            shippingAddress: (o.shipping_address as ApiOrder['shippingAddress']) || undefined,
-            paymentMethod: String(o.payment_method || 'Tarjeta de Crédito'),
-            date: o.created_at ? new Date(String(o.created_at)).toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: 'numeric' }) : 'Reciente',
-            time: o.created_at ? new Date(String(o.created_at)).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }) : '12:00',
-            createdAt: String(o.created_at || new Date().toISOString()),
-            status: (o.status as ApiOrder['status']) || 'Procesando',
-            trackingNumber: o.tracking_number ? String(o.tracking_number) : undefined,
-            total: Number(o.total) || 0,
-            items: Array.isArray(o.items) ? (o.items as ApiOrder['items']) : []
-          }));
-      }
-    } catch {
-      // Supabase RLS fallback
     }
 
-    // Merge Supabase with server cache ensuring no duplicate IDs
-    const mergedMap = new Map<string, ApiOrder>();
-    
-    // Add server memory orders first
-    globalOrdersRef.orders
-      .filter(o => !String(o.id || '').startsWith('SYS_'))
-      .forEach(o => mergedMap.set(o.id, o));
-    
-    // Override/supplement with Supabase orders
-    supabaseOrders.forEach(o => mergedMap.set(o.id, o));
+    const { data, error } = await query;
 
-    let finalOrders = Array.from(mergedMap.values());
-
-    // Filter if not admin
-    if (!isAdmin && userId) {
-      finalOrders = finalOrders.filter(o => o.userId === userId || o.customerEmail?.toLowerCase() === email.toLowerCase());
+    if (error) {
+      return NextResponse.json({ success: false, error: error.message, orders: [] }, { status: 500 });
     }
 
-    // Sort newest first
-    finalOrders.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    const formattedOrders: ApiOrder[] = (data || [])
+      .filter((o: Record<string, unknown>) => !String(o.id || '').startsWith('SYS_'))
+      .map((o: Record<string, unknown>) => ({
+        id: String(o.id || ''),
+        userId: o.user_id ? String(o.user_id) : undefined,
+        customerName: String(o.customer_name || 'Cliente Lumina'),
+        customerEmail: String(o.customer_email || 'cliente@lumina.com'),
+        recipient: String(o.recipient || o.customer_name || 'Cliente'),
+        shippingAddress: (o.shipping_address as ApiOrder['shippingAddress']) || undefined,
+        paymentMethod: String(o.payment_method || 'Tarjeta de Crédito'),
+        date: o.created_at ? new Date(String(o.created_at)).toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: 'numeric' }) : 'Reciente',
+        time: o.created_at ? new Date(String(o.created_at)).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }) : '12:00',
+        createdAt: String(o.created_at || new Date().toISOString()),
+        status: (o.status as ApiOrder['status']) || 'Procesando',
+        trackingNumber: o.tracking_number ? String(o.tracking_number) : undefined,
+        total: Number(o.total) || 0,
+        items: Array.isArray(o.items) ? (o.items as ApiOrder['items']) : []
+      }));
 
-    return NextResponse.json({ success: true, orders: finalOrders, count: finalOrders.length });
+    return NextResponse.json({ success: true, orders: formattedOrders, count: formattedOrders.length });
   } catch (error) {
-    return NextResponse.json({ success: false, error: String(error), orders: globalOrdersRef.orders }, { status: 500 });
+    return NextResponse.json({ success: false, error: String(error), orders: [] }, { status: 500 });
   }
 }
 
@@ -143,32 +127,24 @@ export async function POST(request: Request) {
       items: Array.isArray(order.items) ? order.items : []
     };
 
-    // 1. Save in server memory cache
-    const existingIndex = globalOrdersRef.orders.findIndex(o => o.id === newApiOrder.id);
-    if (existingIndex >= 0) {
-      globalOrdersRef.orders[existingIndex] = newApiOrder;
-    } else {
-      globalOrdersRef.orders.unshift(newApiOrder);
-    }
+    const { error } = await supabase.from('orders').upsert({
+      id: newApiOrder.id,
+      user_id: newApiOrder.userId || null,
+      status: newApiOrder.status,
+      total: newApiOrder.total,
+      items: newApiOrder.items,
+      tracking_number: newApiOrder.trackingNumber,
+      customer_name: newApiOrder.customerName,
+      customer_email: newApiOrder.customerEmail,
+      recipient: newApiOrder.recipient,
+      shipping_address: newApiOrder.shippingAddress,
+      payment_method: newApiOrder.paymentMethod,
+      created_at: newApiOrder.createdAt
+    });
 
-    // 2. Attempt to save to Supabase
-    try {
-      await supabase.from('orders').upsert({
-        id: newApiOrder.id,
-        user_id: newApiOrder.userId || null,
-        status: newApiOrder.status,
-        total: newApiOrder.total,
-        items: newApiOrder.items,
-        tracking_number: newApiOrder.trackingNumber,
-        customer_name: newApiOrder.customerName,
-        customer_email: newApiOrder.customerEmail,
-        recipient: newApiOrder.recipient,
-        shipping_address: newApiOrder.shippingAddress,
-        payment_method: newApiOrder.paymentMethod,
-        created_at: newApiOrder.createdAt
-      });
-    } catch (sbErr) {
-      console.warn('Notice: Supabase save fallback to local sync cache', sbErr);
+    if (error) {
+      console.error('Supabase orders save error:', error);
+      return NextResponse.json({ success: false, error: error.message }, { status: 500 });
     }
 
     return NextResponse.json({ success: true, order: newApiOrder });
@@ -180,30 +156,29 @@ export async function POST(request: Request) {
 export async function PATCH(request: Request) {
   try {
     const body = await request.json();
-    const { orderId, status } = body;
+    const { orderId, status, requesterEmail } = body;
 
     if (!orderId || !status) {
       return NextResponse.json({ success: false, error: 'orderId and status are required' }, { status: 400 });
     }
 
-    // 1. Update in server cache
-    let foundOrder: ApiOrder | null = null;
-    globalOrdersRef.orders = globalOrdersRef.orders.map(o => {
-      if (o.id === orderId) {
-        foundOrder = { ...o, status };
-        return foundOrder;
+    // Optional admin check if email/auth provided
+    const authUser = await getAuthenticatedUser(request);
+    const emailToCheck = authUser?.email || requesterEmail;
+    if (emailToCheck) {
+      const isAdmin = await verifyIsAdmin(emailToCheck);
+      if (!isAdmin) {
+        return NextResponse.json({ success: false, error: 'No autorizado para cambiar estado de orden' }, { status: 403 });
       }
-      return o;
-    });
-
-    // 2. Attempt to update in Supabase
-    try {
-      await supabase.from('orders').update({ status }).eq('id', orderId);
-    } catch (sbErr) {
-      console.warn('Notice: Supabase update fallback to local sync cache', sbErr);
     }
 
-    return NextResponse.json({ success: true, order: foundOrder });
+    const { error } = await supabase.from('orders').update({ status }).eq('id', orderId);
+
+    if (error) {
+      return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+    }
+
+    return NextResponse.json({ success: true, orderId, status });
   } catch (error) {
     return NextResponse.json({ success: false, error: String(error) }, { status: 500 });
   }
