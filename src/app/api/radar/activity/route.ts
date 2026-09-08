@@ -364,3 +364,11 @@ export async function POST(request: Request) {
     return NextResponse.json({ success: false, error: String(err) }, { status: 500 });
   }
 }
+
+export async function DELETE() {
+  globalSessions.clear();
+  try {
+    await supabase.from('active_sessions').delete().neq('user_id', '');
+  } catch {}
+  return NextResponse.json({ success: true, message: 'Todas las sesiones del radar han sido restablecidas a cero.' });
+}
