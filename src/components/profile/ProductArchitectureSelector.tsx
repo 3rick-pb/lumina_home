@@ -368,7 +368,170 @@ export function ProductArchitectureSelector({
       </div>
 
       {/* ========================================================================= */}
-      {/* 2. CAMPOS ENRIQUECIDOS ADAPTATIVOS DE LANDING PAGE                        */}
+      {/* 2. BLOQUE 2: OFERTA COMPLEMENTARIA O AHORRO POR VOLUMEN (AMBAS VISTAS)    */}
+      {/* ========================================================================= */}
+      <div className="p-5 rounded-3xl bg-emerald-50/30 dark:bg-emerald-950/10 border border-emerald-200/70 dark:border-emerald-500/20 space-y-4 animate-fade-in">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-xl bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300 flex items-center justify-center">
+              <Package className="w-4 h-4" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <h3 className="text-sm font-bold text-gray-950 dark:text-white">
+                  Bloque 2: Oferta Complementaria o Ahorro por Volumen
+                </h3>
+                <span className="text-[10px] font-black px-2 py-0.5 rounded-md bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/20">
+                  Estándar & Detallado
+                </span>
+              </div>
+              <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-0.5">
+                Configura paquetes de ahorro o productos accesorios sugeridos para aumentar el valor medio del pedido.
+              </p>
+            </div>
+          </div>
+          <label className="relative inline-flex items-center cursor-pointer shrink-0">
+            <input
+              type="checkbox"
+              checked={bundleEnabled}
+              onChange={(e) => onBundleEnabledChange(e.target.checked)}
+              className="sr-only peer"
+            />
+            <div className="w-9 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all dark:border-gray-600 peer-checked:bg-emerald-600" />
+          </label>
+        </div>
+
+        {bundleEnabled && (
+          <div className="p-4 rounded-2xl bg-white dark:bg-[#1a1a1c] border border-gray-200/80 dark:border-white/10 space-y-4 shadow-sm">
+            {/* Mode Selector */}
+            {onBundleModeChange && (
+              <div className="space-y-2">
+                <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300">
+                  Modo de este bloque:
+                </label>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => onBundleModeChange('companion')}
+                    className={`p-3 rounded-xl border text-left transition-all ${
+                      bundleMode === 'companion'
+                        ? 'border-gray-950 dark:border-white bg-gray-50 dark:bg-white/10 font-bold'
+                        : 'border-gray-200 dark:border-white/10 opacity-70'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2 mb-1">
+                      <Package className="w-4 h-4 text-emerald-600" />
+                      <span className="text-xs">Comprados Juntos (Accesorios Reales)</span>
+                    </div>
+                    <p className="text-[10px] text-gray-500 font-normal">
+                      Elige productos específicos del catálogo para acompañar esta pieza.
+                    </p>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => onBundleModeChange('volume_tiers')}
+                    className={`p-3 rounded-xl border text-left transition-all ${
+                      bundleMode === 'volume_tiers'
+                        ? 'border-gray-950 dark:border-white bg-gray-50 dark:bg-white/10 font-bold'
+                        : 'border-gray-200 dark:border-white/10 opacity-70'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2 mb-1">
+                      <TrendingUp className="w-4 h-4 text-blue-600" />
+                      <span className="text-xs">Packs de Ahorro por Volumen (Tier Pricing)</span>
+                    </div>
+                    <p className="text-[10px] text-gray-500 font-normal">
+                      Ideal si no tienes accesorios: Lleva 1, 2 (-15%) o 3 piezas (-25%).
+                    </p>
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Companion Products Picker if mode is 'companion' */}
+            {bundleMode === 'companion' && onBundleCompanionIdsChange && (
+              <div className="space-y-2.5 pt-2 border-t border-gray-100 dark:border-white/5">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-semibold text-gray-700 dark:text-gray-300">
+                    Selecciona los productos complementarios reales para este combo:
+                  </label>
+                  <span className="text-[10px] font-bold text-emerald-600">
+                    {bundleCompanionIds.length} seleccionados
+                  </span>
+                </div>
+
+                <div className="relative">
+                  <Search className="w-3.5 h-3.5 text-gray-400 absolute left-2.5 top-2.5" />
+                  <input
+                    type="text"
+                    value={companionSearch}
+                    onChange={e => setCompanionSearch(e.target.value)}
+                    placeholder="Buscar por nombre o categoría..."
+                    className="w-full pl-8 pr-3 py-1.5 rounded-lg border border-gray-200 dark:border-white/10 text-xs outline-none bg-white dark:bg-[#202022]"
+                  />
+                </div>
+
+                <div className="max-h-36 overflow-y-auto space-y-1 p-1 rounded-xl bg-gray-50 dark:bg-black/20 border border-gray-200/60 dark:border-white/5">
+                  {filteredCompanions.slice(0, 15).map(prod => {
+                    const isChecked = bundleCompanionIds.includes(prod.id);
+                    return (
+                      <div
+                        key={prod.id}
+                        onClick={() => toggleCompanion(prod.id)}
+                        className={`p-2 rounded-lg cursor-pointer flex items-center justify-between transition-all ${
+                          isChecked
+                            ? "bg-white dark:bg-[#202022] shadow-sm border border-gray-950/20 dark:border-white/20"
+                            : "hover:bg-gray-100 dark:hover:bg-white/5 opacity-80"
+                        }`}
+                      >
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="checkbox"
+                            checked={isChecked}
+                            onChange={() => {}}
+                            className="w-3.5 h-3.5 text-gray-900 rounded cursor-pointer"
+                          />
+                          <span className="text-xs font-medium text-gray-900 dark:text-white line-clamp-1">
+                            {prod.title}
+                          </span>
+                        </div>
+                        <span className="text-xs font-bold text-gray-500">
+                          ${prod.price.toFixed(2)}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* Discount input */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 items-center">
+              <div>
+                <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
+                  Descuento del Paquete (%)
+                </label>
+                <input
+                  type="number"
+                  min="5"
+                  max="50"
+                  value={bundleDiscount}
+                  onChange={(e) => onBundleDiscountChange(e.target.value)}
+                  className="w-full px-3 py-2 rounded-xl border border-gray-200 dark:border-white/10 text-xs outline-none bg-white dark:bg-[#202022] text-gray-900 dark:text-gray-100"
+                  placeholder="15"
+                />
+              </div>
+              <p className="text-[11px] text-gray-500 dark:text-gray-400">
+                Aparecerá en badge destacado calculando el ahorro exacto en dólares.
+              </p>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* ========================================================================= */}
+      {/* 3. CAMPOS ENRIQUECIDOS ADAPTATIVOS DE LANDING PAGE                        */}
       {/* ========================================================================= */}
       {layoutType === 'landing' && (
         <div className="p-5 rounded-3xl bg-amber-50/30 dark:bg-amber-950/10 border border-amber-200/70 dark:border-amber-500/20 space-y-6 animate-fade-in">
@@ -407,155 +570,6 @@ export function ProductArchitectureSelector({
               />
             </div>
           )}
-
-          {/* Bloque A: Pack Comprados Juntos vs. Modo Alternativo (Tiered Pricing / Care) */}
-          <div className="p-4 rounded-2xl bg-white dark:bg-[#1a1a1c] border border-gray-200/80 dark:border-white/10 space-y-4 shadow-sm">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Package className="w-4 h-4 text-emerald-600" />
-                <span className="text-xs font-bold text-gray-900 dark:text-white uppercase tracking-wider">
-                  Bloque 2: Oferta Complementaria o Ahorro por Volumen
-                </span>
-              </div>
-              <label className="relative inline-flex items-center cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={bundleEnabled}
-                  onChange={(e) => onBundleEnabledChange(e.target.checked)}
-                  className="sr-only peer"
-                />
-                <div className="w-9 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all dark:border-gray-600 peer-checked:bg-emerald-600" />
-              </label>
-            </div>
-
-            {bundleEnabled && (
-              <div className="space-y-4 pt-1">
-                {/* Mode Selector */}
-                {onBundleModeChange && (
-                  <div className="space-y-2">
-                    <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300">
-                      Modo de este bloque:
-                    </label>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                      <button
-                        type="button"
-                        onClick={() => onBundleModeChange('companion')}
-                        className={`p-3 rounded-xl border text-left transition-all ${
-                          bundleMode === 'companion'
-                            ? 'border-gray-950 dark:border-white bg-gray-50 dark:bg-white/10 font-bold'
-                            : 'border-gray-200 dark:border-white/10 opacity-70'
-                        }`}
-                      >
-                        <div className="flex items-center gap-2 mb-1">
-                          <Package className="w-4 h-4 text-emerald-600" />
-                          <span className="text-xs">Comprados Juntos (Accesorios Reales)</span>
-                        </div>
-                        <p className="text-[10px] text-gray-500 font-normal">
-                          Elige productos específicos del catálogo para acompañar esta pieza.
-                        </p>
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={() => onBundleModeChange('volume_tiers')}
-                        className={`p-3 rounded-xl border text-left transition-all ${
-                          bundleMode === 'volume_tiers'
-                            ? 'border-gray-950 dark:border-white bg-gray-50 dark:bg-white/10 font-bold'
-                            : 'border-gray-200 dark:border-white/10 opacity-70'
-                        }`}
-                      >
-                        <div className="flex items-center gap-2 mb-1">
-                          <TrendingUp className="w-4 h-4 text-blue-600" />
-                          <span className="text-xs">Packs de Ahorro por Volumen (Tier Pricing)</span>
-                        </div>
-                        <p className="text-[10px] text-gray-500 font-normal">
-                          Ideal si no tienes accesorios: Lleva 1, 2 (-15%) o 3 piezas (-25%).
-                        </p>
-                      </button>
-                    </div>
-                  </div>
-                )}
-
-                {/* Companion Products Picker if mode is 'companion' */}
-                {bundleMode === 'companion' && onBundleCompanionIdsChange && (
-                  <div className="space-y-2.5 pt-2 border-t border-gray-100 dark:border-white/5">
-                    <div className="flex items-center justify-between">
-                      <label className="text-xs font-semibold text-gray-700 dark:text-gray-300">
-                        Selecciona los productos complementarios reales para este combo:
-                      </label>
-                      <span className="text-[10px] font-bold text-emerald-600">
-                        {bundleCompanionIds.length} seleccionados
-                      </span>
-                    </div>
-
-                    <div className="relative">
-                      <Search className="w-3.5 h-3.5 text-gray-400 absolute left-2.5 top-2.5" />
-                      <input
-                        type="text"
-                        value={companionSearch}
-                        onChange={e => setCompanionSearch(e.target.value)}
-                        placeholder="Buscar por nombre o categoría..."
-                        className="w-full pl-8 pr-3 py-1.5 rounded-lg border border-gray-200 dark:border-white/10 text-xs outline-none bg-white dark:bg-[#202022]"
-                      />
-                    </div>
-
-                    <div className="max-h-36 overflow-y-auto space-y-1 p-1 rounded-xl bg-gray-50 dark:bg-black/20 border border-gray-200/60 dark:border-white/5">
-                      {filteredCompanions.slice(0, 15).map(prod => {
-                        const isChecked = bundleCompanionIds.includes(prod.id);
-                        return (
-                          <div
-                            key={prod.id}
-                            onClick={() => toggleCompanion(prod.id)}
-                            className={`p-2 rounded-lg cursor-pointer flex items-center justify-between transition-all ${
-                              isChecked
-                                ? "bg-white dark:bg-[#202022] shadow-sm border border-gray-950/20 dark:border-white/20"
-                                : "hover:bg-gray-100 dark:hover:bg-white/5 opacity-80"
-                            }`}
-                          >
-                            <div className="flex items-center gap-2">
-                              <input
-                                type="checkbox"
-                                checked={isChecked}
-                                onChange={() => {}}
-                                className="w-3.5 h-3.5 text-gray-900 rounded cursor-pointer"
-                              />
-                              <span className="text-xs font-medium text-gray-900 dark:text-white line-clamp-1">
-                                {prod.title}
-                              </span>
-                            </div>
-                            <span className="text-xs font-bold text-gray-500">
-                              ${prod.price.toFixed(2)}
-                            </span>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                )}
-
-                {/* Discount input */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 items-center">
-                  <div>
-                    <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
-                      Descuento del Paquete (%)
-                    </label>
-                    <input
-                      type="number"
-                      min="5"
-                      max="50"
-                      value={bundleDiscount}
-                      onChange={(e) => onBundleDiscountChange(e.target.value)}
-                      className="w-full px-3 py-2 rounded-xl border border-gray-200 dark:border-white/10 text-xs outline-none bg-white dark:bg-[#202022] text-gray-900 dark:text-gray-100"
-                      placeholder="15"
-                    />
-                  </div>
-                  <p className="text-[11px] text-gray-500 dark:text-gray-400">
-                    Aparecerá en badge destacado calculando el ahorro exacto en dólares.
-                  </p>
-                </div>
-              </div>
-            )}
-          </div>
 
           {/* Bloque B: Anatomía Técnica con Editor Interactivo de Pines en Vivo */}
           <div className="p-4 rounded-2xl bg-white dark:bg-[#1a1a1c] border border-gray-200/80 dark:border-white/10 space-y-4 shadow-sm">

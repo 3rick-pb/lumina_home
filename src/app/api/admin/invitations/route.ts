@@ -134,25 +134,24 @@ export async function GET() {
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { requesterEmail, emails, action, email, userRole } = body;
+    const { requesterEmail, emails, action, email } = body;
 
     const currentList = await loadInvitedAdmins();
 
-    // Flexible & Resilient Admin Authorization Check:
-    // Authorized if root admin, recognized owner, already an active invited admin, or verified admin role
+    // Strict Root / Owner Admin Check for mutations (adding/removing admins):
+    // Only the primary admin (admin@lumina.com or arteagae796@gmail.com) can invite or revoke other admins.
+    // Delegated / invited admins can NOT add or remove other administrators.
     const cleanRequester = String(requesterEmail || '').toLowerCase().trim();
-    const isAuthorized = 
+    const isRootOrOwner = 
       OWNER_EMAILS.includes(cleanRequester) ||
-      cleanRequester.endsWith('@lumina.com') ||
-      currentList.includes(cleanRequester) ||
-      userRole === 'ADMIN' ||
+      cleanRequester === 'admin@lumina.com' ||
       body.isRootAdmin === true;
 
-    if (!isAuthorized) {
+    if (!isRootOrOwner) {
       return NextResponse.json(
         {
           success: false,
-          error: `Acceso denegado. Se requieren privilegios de Administrador para gestionar invitaciones (solicitado por: ${cleanRequester || 'anónimo'}).`,
+          error: `Acceso restringido. Solo el Administrador Principal puede invitar o revocar administradores adicionales (solicitado por: ${cleanRequester || 'anónimo'}).`,
         },
         { status: 403 }
       );

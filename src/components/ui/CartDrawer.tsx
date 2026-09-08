@@ -1680,7 +1680,7 @@ export function CartDrawer() {
  type="button"
  onClick={() => {
  setIsOpen(false);
- router.push("/profile?tab=cards");
+ router.push("/profile?tab=cards&addCard=true");
  }}
  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white dark:bg-[#2a2a2c] hover:bg-gray-50 dark:hover:bg-[#151515] text-gray-800 dark:text-gray-200 text-[11px] font-semibold transition-all border border-gray-200 dark:border-white/10 shadow-2xs hover:shadow-xs hover:border-gray-300 cursor-pointer"
  >
@@ -1704,7 +1704,7 @@ export function CartDrawer() {
                       type="button"
                       onClick={() => {
                         setIsOpen(false);
-                        router.push("/profile?tab=cards");
+                        router.push("/profile?tab=cards&addCard=true");
                       }}
                       className="px-5 py-2.5 rounded-full bg-gray-900 dark:bg-white text-white dark:text-gray-900 text-xs font-bold hover:scale-105 transition-all shadow-md cursor-pointer"
                     >

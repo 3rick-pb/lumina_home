@@ -528,6 +528,9 @@ export default function ProfilePage() {
     if (params.get("addAddress") === "true") {
       setShowAddressForm(true);
     }
+    if (params.get("addCard") === "true" || params.get("add") === "true") {
+      setShowCardModal(true);
+    }
  }
  if (isMounted && !isLoading && !isAuthenticated) {
  router.push("/auth/login");
@@ -878,12 +881,12 @@ discount: hasDiscount && calculatedDiscount ? calculatedDiscount : undefined,
  layoutType: prodLayoutType,
  landingSpecs: prodLayoutType === 'landing' ? prodLandingSpecs : undefined,
  landingReviews: prodLayoutType === 'landing' ? prodLandingReviews : undefined,
- landingBundle: prodLayoutType === 'landing' ? {
-   enabled: prodLandingBundleEnabled,
-   mode: prodBundleMode,
-   companionProductIds: prodBundleCompanionIds.length > 0 ? prodBundleCompanionIds : undefined,
-   discountPercentage: parseInt(prodLandingBundleDiscount, 10) || 15
- } : undefined,
+ landingBundle: prodLandingBundleEnabled ? {
+    enabled: true,
+    mode: prodBundleMode,
+    companionProductIds: prodBundleCompanionIds.length > 0 ? prodBundleCompanionIds : undefined,
+    discountPercentage: parseInt(prodLandingBundleDiscount, 10) || 15
+  } : undefined,
  });
 
  setIsSubmittingProd(false);
@@ -975,7 +978,7 @@ discount: hasDiscount && calculatedDiscount ? calculatedDiscount : undefined,
  setEditBundleCompanionIds(p.landingBundle?.companionProductIds || []);
  setEditLandingSpecs(p.landingSpecs || []);
  setEditLandingReviews(p.landingReviews || []);
- setEditLandingBundleEnabled(p.landingBundle?.enabled ?? true);
+ setEditLandingBundleEnabled(Boolean(p.landingBundle?.enabled));
  setEditLandingBundleDiscount(p.landingBundle?.discountPercentage ? p.landingBundle.discountPercentage.toString() : "15");
  setEditFeedback(null);
  setShowEditProductModal(true);
@@ -1019,12 +1022,12 @@ discount: hasDiscount && calculatedDiscount ? calculatedDiscount : undefined,
  layoutType: editLayoutType,
  landingSpecs: editLayoutType === 'landing' && editLandingSpecs.length > 0 ? editLandingSpecs : undefined,
  landingReviews: editLayoutType === 'landing' && editLandingReviews.length > 0 ? editLandingReviews : undefined,
- landingBundle: editLayoutType === 'landing' ? {
-   enabled: editLandingBundleEnabled,
-   mode: editBundleMode,
-   companionProductIds: editBundleCompanionIds.length > 0 ? editBundleCompanionIds : undefined,
-   discountPercentage: parseInt(editLandingBundleDiscount, 10) || 15
- } : undefined,
+ landingBundle: editLandingBundleEnabled ? {
+    enabled: true,
+    mode: editBundleMode,
+    companionProductIds: editBundleCompanionIds.length > 0 ? editBundleCompanionIds : undefined,
+    discountPercentage: parseInt(editLandingBundleDiscount, 10) || 15
+  } : undefined,
  });
 
  setIsSubmittingEdit(false);
@@ -3228,60 +3231,63 @@ const handleConfirmDeleteNiche = async () => {
               </p>
             </div>
           </div>
-          <div className="flex items-center gap-2 self-start sm:self-auto">
-            <span className={`text-[11px] font-bold px-2.5 py-1 rounded-full border ${
-              invitedAdmins.length >= 3 
-                ? 'bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400 border-amber-200 dark:border-amber-800/40' 
-                : 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800/40'
-            }`}>
-              {invitedAdmins.length} / 3 cupos utilizados
-            </span>
-          </div>
         </div>
 
-        {/* Quick invite input */}
-        <div className="space-y-2">
-          <div className="flex gap-2">
-            <div className="relative flex-1">
-              <Mail className="w-4 h-4 absolute left-3.5 top-3.5 text-gray-400" />
-              <input
-                type="text"
-                value={adminInviteInput}
-                onChange={e => setAdminInviteInput(e.target.value)}
-                onKeyDown={e => {
-                  if (e.key === 'Enter') {
-                    e.preventDefault();
-                    handleAddAdminInvite();
-                  }
-                }}
-                placeholder="correo@amigo.com (o varios separados por coma)"
-                disabled={invitedAdmins.length >= 3 || isSyncingAdmins}
-                className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-xs bg-white dark:bg-[#1a1a1c] text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#8c9276] disabled:opacity-50"
-              />
+        {/* Pastilla fina horizontal de corrido */}
+        <div className="w-full py-1 px-4 rounded-full bg-emerald-500/10 dark:bg-emerald-500/15 border border-emerald-500/20 text-center text-xs font-semibold text-emerald-700 dark:text-emerald-300">
+          {invitedAdmins.length} de 3 cupos utilizados
+        </div>
+
+        {!isRootAdmin ? (
+          <div className="p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-amber-800 dark:text-amber-300 text-xs flex items-center gap-2.5">
+            <Crown className="w-4 h-4 text-amber-600 shrink-0" />
+            <span>Tu cuenta tiene acceso como <strong>Administrador Delegado</strong>. Solo el Administrador Principal puede invitar o revocar otros administradores.</span>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {/* Quick invite input */}
+            <div className="flex gap-2">
+              <div className="relative flex-1">
+                <Mail className="w-4 h-4 absolute left-3.5 top-3.5 text-gray-400" />
+                <input
+                  type="text"
+                  value={adminInviteInput}
+                  onChange={e => setAdminInviteInput(e.target.value)}
+                  onKeyDown={e => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      handleAddAdminInvite();
+                    }
+                  }}
+                  placeholder="correo@amigo.com (o varios separados por coma)"
+                  disabled={invitedAdmins.length >= 3 || isSyncingAdmins}
+                  className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-xs bg-white dark:bg-[#1a1a1c] text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#8c9276] disabled:opacity-50"
+                />
+              </div>
+              <button
+                type="button"
+                onClick={() => handleAddAdminInvite()}
+                disabled={!adminInviteInput.trim() || invitedAdmins.length >= 3 || isSyncingAdmins}
+                className="px-4 py-2.5 rounded-xl bg-[#8c9276] hover:bg-[#7b8166] text-white text-xs font-bold transition-all disabled:opacity-50 cursor-pointer shrink-0 shadow-sm flex items-center gap-1.5"
+              >
+                {isSyncingAdmins ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Plus className="w-3.5 h-3.5" />}
+                <span>Invitar</span>
+              </button>
             </div>
-            <button
-              type="button"
-              onClick={() => handleAddAdminInvite()}
-              disabled={!adminInviteInput.trim() || invitedAdmins.length >= 3 || isSyncingAdmins}
-              className="px-4 py-2.5 rounded-xl bg-[#8c9276] hover:bg-[#7b8166] text-white text-xs font-bold transition-all disabled:opacity-50 cursor-pointer shrink-0 shadow-sm flex items-center gap-1.5"
-            >
-              {isSyncingAdmins ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Plus className="w-3.5 h-3.5" />}
-              <span>Invitar</span>
-            </button>
-          </div>
-        </div>
 
-        {inviteError && (
-          <div className="p-3 rounded-xl bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800/30 text-red-600 dark:text-red-400 text-xs flex items-center gap-2">
-            <AlertCircle className="w-4 h-4 shrink-0" />
-            <span>{inviteError}</span>
-          </div>
-        )}
+            {inviteError && (
+              <div className="p-3 rounded-xl bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800/30 text-red-600 dark:text-red-400 text-xs flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 shrink-0" />
+                <span>{inviteError}</span>
+              </div>
+            )}
 
-        {inviteSuccess && (
-          <div className="p-3 rounded-xl bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800/30 text-emerald-600 dark:text-emerald-400 text-xs flex items-center gap-2">
-            <CheckCircle2 className="w-4 h-4 shrink-0" />
-            <span>{inviteSuccess}</span>
+            {inviteSuccess && (
+              <div className="p-3 rounded-xl bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800/30 text-emerald-600 dark:text-emerald-400 text-xs flex items-center gap-2">
+                <CheckCircle2 className="w-4 h-4 shrink-0" />
+                <span>{inviteSuccess}</span>
+              </div>
+            )}
           </div>
         )}
 
@@ -3306,15 +3312,17 @@ const handleConfirmDeleteNiche = async () => {
                     <span className="font-semibold text-gray-900 dark:text-gray-100 truncate">{admEmail}</span>
                     <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-amber-100 dark:bg-amber-900/40 text-amber-800 dark:text-amber-300">ADMINISTRADOR</span>
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => handleRemoveAdminInvite(admEmail)}
-                    disabled={isSyncingAdmins}
-                    className="p-1.5 rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/40 transition-colors cursor-pointer shrink-0"
-                    title="Revocar acceso de administrador"
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </button>
+                  {isRootAdmin && (
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveAdminInvite(admEmail)}
+                      disabled={isSyncingAdmins}
+                      className="p-1.5 rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/40 transition-colors cursor-pointer shrink-0"
+                      title="Revocar acceso de administrador"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  )}
                 </div>
               ))}
             </div>

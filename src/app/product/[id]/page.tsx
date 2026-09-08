@@ -11,6 +11,7 @@ import { useCatalogStore, isAgotadoBadge, ProductCombo } from "@/lib/catalogStor
 import { useUserStore } from "@/lib/userStore";
 import { useAmbientStore } from "@/lib/ambientStore";
 import { ProductLandingView } from "@/components/product/ProductLandingView";
+import { ProductBundleSection } from "@/components/product/ProductBundleSection";
 
 export default function ProductDetail({ params }: { params: { id: string } }) {
   const { products } = useCatalogStore();
@@ -442,6 +443,15 @@ export default function ProductDetail({ params }: { params: { id: string } }) {
 
           </div>
         </div>
+
+        {/* BLOQUE 2: OFERTA COMPLEMENTARIA O AHORRO POR VOLUMEN (STANDARD VIEW) */}
+        <ProductBundleSection
+          product={product}
+          allProducts={products}
+          activeColorName={product.colors?.[activeColor]?.name}
+          activeSize={activeSize}
+          isAgotado={isAgotado}
+        />
 
         {/* Tabs Section */}
         <div className="mt-24 pt-12 border-t border-gray-200 grid grid-cols-1 lg:grid-cols-12 gap-12 items-start">
