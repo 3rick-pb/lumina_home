@@ -382,12 +382,6 @@ export const useUserStore = create<UserState>((set, get) => ({
       if (!error && session?.user) {
         const email = session.user.email || '';
         const { role, isRootAdmin } = await checkIsAdmin(email, session.user.user_metadata?.role);
-        // Persist delegated role into Supabase Auth user metadata
-        if (role === 'ADMIN' && session.user.user_metadata?.role !== 'ADMIN' && !isRootAdmin) {
-          supabase.auth.updateUser({ data: { role: 'ADMIN' } }).catch(() => {});
-        } else if (role === 'USER' && session.user.user_metadata?.role === 'ADMIN') {
-          supabase.auth.updateUser({ data: { role: 'USER' } }).catch(() => {});
-        }
         const name = formatCleanName(session.user.user_metadata?.name || email.split('@')[0]);
         const userObj: User = { id: session.user.id, email, name, role, isRootAdmin };
 
@@ -461,6 +455,11 @@ export const useUserStore = create<UserState>((set, get) => ({
       supabase.auth.onAuthStateChange(async (event, session) => {
         // ONLY wipe state and sign out if this is an explicit user sign out
         if (event === 'SIGNED_OUT') {
+          // Double-check if there is still a valid active session or user before wiping
+          const { data: checkData } = await supabase.auth.getSession();
+          if (checkData?.session?.user) {
+            return;
+          }
           if (typeof window !== 'undefined') {
             try {
               localStorage.removeItem('lumina_auth_user');
@@ -474,12 +473,6 @@ export const useUserStore = create<UserState>((set, get) => ({
         if (session?.user) {
           const email = session.user.email || '';
           const { role, isRootAdmin } = await checkIsAdmin(email, session.user.user_metadata?.role);
-          // Persist delegated role into Supabase Auth user metadata
-          if (role === 'ADMIN' && session.user.user_metadata?.role !== 'ADMIN' && !isRootAdmin) {
-            supabase.auth.updateUser({ data: { role: 'ADMIN' } }).catch(() => {});
-          } else if (role === 'USER' && session.user.user_metadata?.role === 'ADMIN') {
-            supabase.auth.updateUser({ data: { role: 'USER' } }).catch(() => {});
-          }
           const name = formatCleanName(session.user.user_metadata?.name || email.split('@')[0]);
           const userObj: User = { id: session.user.id, email, name, role, isRootAdmin };
 
@@ -527,16 +520,7 @@ export const useUserStore = create<UserState>((set, get) => ({
     if (!error && data?.user) {
       const userEmail = data.user.email || cleanEmail;
       const { role, isRootAdmin } = await checkIsAdmin(userEmail, data.user.user_metadata?.role);
-      // Persist delegated role into Supabase Auth user metadata
-      if (role === 'ADMIN' && data.user.user_metadata?.role !== 'ADMIN' && !isRootAdmin) {
-        supabase.auth.updateUser({ data: { role: 'ADMIN' } }).catch(() => {});
-      } else if (role === 'USER' && data.user.user_metadata?.role === 'ADMIN') {
-        supabase.auth.updateUser({ data: { role: 'USER' } }).catch(() => {});
-      }
       const name = formatCleanName(data.user.user_metadata?.name || userEmail.split('@')[0]);
-      if (name && data.user.user_metadata?.name !== name) {
-        supabase.auth.updateUser({ data: { name } }).catch(() => {});
-      }
       const personalData = await fetchUserDataFromDatabase(data.user.id, role, userEmail);
       const userObj: User = { id: data.user.id, email: userEmail, name, role, isRootAdmin };
 
@@ -1019,7 +1003,6 @@ export const useUserStore = create<UserState>((set, get) => ({
       set({ user: updatedUser });
 
       if (role === 'ADMIN') {
-        supabase.auth.updateUser({ data: { role: 'ADMIN' } }).catch(() => {});
         // Refresh store orders and administrative data immediately
         try {
           const personalData = await fetchUserDataFromDatabase(currentUser.id, 'ADMIN', currentUser.email);

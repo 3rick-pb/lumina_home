@@ -18,7 +18,8 @@ import {
   Users, 
   Sparkles,
   ChevronRight,
-  X
+  X,
+  Layers
 } from "lucide-react";
 import { useUserStore, type User, type ShippingAddress, type Order } from "@/lib/userStore";
 import type { CatalogProduct } from "@/lib/catalogStore";
@@ -94,6 +95,43 @@ export const ECUADOR_PROVINCE_COORDINATES: Record<string, { x: number; y: number
   "zamora chinchipe": { x: 48.0, y: 83.0, province: "Zamora Chinchipe", region: "Oriente" }
 };
 
+// Helper to extract full clean city name (e.g. "Santo Domingo", "Quito") before parentheses or hyphens
+export const formatBeaconCity = (cityStr: string) => {
+  if (!cityStr) return "Ecuador";
+  let clean = cityStr;
+  if (clean.includes(" - ")) {
+    clean = clean.split(" - ")[0].trim();
+  } else if (clean.includes("-") && !clean.includes(" (")) {
+    clean = clean.split("-")[0].trim();
+  }
+  if (clean.includes("(")) {
+    clean = clean.split("(")[0].trim();
+  }
+  return clean.trim() || cityStr;
+};
+
+export interface DispersedMapBeacon {
+  client: ConnectedClient;
+  dispX: number;
+  dispY: number;
+  baseX: number;
+  baseY: number;
+  cityKey: string;
+  cityName: string;
+  isSelf: boolean;
+  clusterTotal: number;
+}
+
+export interface ClusterMapBeacon {
+  cityKey: string;
+  cityName: string;
+  baseX: number;
+  baseY: number;
+  clients: ConnectedClient[];
+  hasCart: boolean;
+  hasFrequent: boolean;
+}
+
 export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
   // Interaction & filter states
   const [hoveredClientId, setHoveredClientId] = useState<string | null>(null);
@@ -118,6 +156,12 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
   const scrollTrackRef = useRef<HTMLDivElement>(null);
   const [isMapLoaded, setIsMapLoaded] = useState<boolean>(false);
 
+  // Map Density & Cluster Mode States
+  const [clusterMode, setClusterMode] = useState<"dispersed" | "clustered">("dispersed");
+  const [scatterRadius, setScatterRadius] = useState<"normal" | "wide">("normal");
+  const [expandedClusterCity, setExpandedClusterCity] = useState<string | null>(null);
+  const [hoveredClusterKey, setHoveredClusterKey] = useState<string | null>(null);
+
   // Preload optimized WebP 3D relief landmass (< 480KB) for instant load
   useEffect(() => {
     const img = new Image();
@@ -126,12 +170,14 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
     img.onerror = () => setIsMapLoaded(true);
   }, []);
 
-  // Keyboard shortcut: Escape to deselect active client
+  // Keyboard shortcut: Escape to deselect active client or close expanded cluster
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
         setSelectedClientId(null);
         setHoveredClientId(null);
+        setExpandedClusterCity(null);
+        setHoveredClusterKey(null);
       }
     };
     window.addEventListener("keydown", handleKeyDown);
@@ -355,7 +401,7 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
   }, [actualClients, activeStage, searchQuery]);
 
   // Map Beacons: Both actual clients and the Admin (if address exists) are visible on the physical map terrain
-  const mapVisibleClients = useMemo(() => {
+  const rawMapClients = useMemo(() => {
     return connectedClients.filter(c => {
       const isSelf = isUserSelf(c);
       const city = isSelf ? currentUserCity : c.city;
@@ -373,6 +419,103 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
       return true;
     });
   }, [connectedClients, isUserSelf, currentUserCity, isAdmin, hasAdminLocation]);
+
+  // Spatial Organization: Organic Radial Dispersion (anti-overlap) + Smart City Clustering (anti-saturation)
+  const { dispersedPins, clusterPins } = useMemo(() => {
+    const groups = new Map<string, {
+      cityName: string;
+      baseX: number;
+      baseY: number;
+      clients: Array<{ client: ConnectedClient; isSelf: boolean }>;
+    }>();
+
+    rawMapClients.forEach(c => {
+      const isSelf = isUserSelf(c);
+      const city = isSelf ? currentUserCity : c.city;
+      let x = typeof c.x === 'number' ? c.x : Number(c.x);
+      let y = typeof c.y === 'number' ? c.y : Number(c.y);
+      if (isNaN(x) || x < 0 || isNaN(y) || y < 0) {
+        const coords = resolveCoordinates(city);
+        x = coords.x;
+        y = coords.y;
+      }
+
+      const cityName = formatBeaconCity(city || "Ecuador");
+      const key = `${cityName.toLowerCase().trim()}_${Math.round(x * 10)}_${Math.round(y * 10)}`;
+
+      const current = groups.get(key) || {
+        cityName,
+        baseX: x,
+        baseY: y,
+        clients: [],
+      };
+      current.clients.push({ client: c, isSelf });
+      groups.set(key, current);
+    });
+
+    const dispersed: DispersedMapBeacon[] = [];
+    const clusters: ClusterMapBeacon[] = [];
+
+    groups.forEach((grp, cityKey) => {
+      const total = grp.clients.length;
+      // In clustered mode, groups with > 1 client become a Cluster Beacon unless explicitly expanded
+      const isClustered = clusterMode === "clustered" && total > 1 && expandedClusterCity !== cityKey;
+
+      if (isClustered) {
+        clusters.push({
+          cityKey,
+          cityName: grp.cityName,
+          baseX: grp.baseX,
+          baseY: grp.baseY,
+          clients: grp.clients.map(g => g.client),
+          hasCart: grp.clients.some(g => g.client.hasCart),
+          hasFrequent: grp.clients.some(g => (g.client.purchasesCount || 0) >= 3 || (g.client.frequency && g.client.frequency !== "1ª Vez")),
+        });
+      } else {
+        // Disperse clients in this city organically so no pins overlap
+        const sorted = [...grp.clients].sort((a, b) => a.client.id.localeCompare(b.client.id));
+        const baseRadius = scatterRadius === "wide" ? 3.8 : 2.5;
+
+        // Stable city angle seed from name characters
+        const citySeed = grp.cityName.split("").reduce((acc, char) => acc + char.charCodeAt(0), 0);
+        const startAngle = ((citySeed % 360) * Math.PI) / 180;
+
+        sorted.forEach((item, idx) => {
+          let dispX = grp.baseX;
+          let dispY = grp.baseY;
+
+          if (total > 1) {
+            const ringIndex = Math.floor(idx / 6);
+            const ringOffset = idx % 6;
+            const ringTotal = Math.min(6, total - ringIndex * 6);
+            const radius = baseRadius * (1 + ringIndex * 0.8);
+
+            const angle = startAngle + (ringOffset * ((2 * Math.PI) / Math.max(ringTotal, 1)));
+            const dx = radius * Math.cos(angle);
+            // 1.25 aspect ratio correction for 1024/682 container
+            const dy = radius * Math.sin(angle) * 1.25;
+
+            dispX = Math.max(5, Math.min(95, Number((grp.baseX + dx).toFixed(2))));
+            dispY = Math.max(5, Math.min(95, Number((grp.baseY + dy).toFixed(2))));
+          }
+
+          dispersed.push({
+            client: item.client,
+            dispX,
+            dispY,
+            baseX: grp.baseX,
+            baseY: grp.baseY,
+            cityKey,
+            cityName: grp.cityName,
+            isSelf: item.isSelf,
+            clusterTotal: total,
+          });
+        });
+      }
+    });
+
+    return { dispersedPins: dispersed, clusterPins: clusters };
+  }, [rawMapClients, isUserSelf, currentUserCity, clusterMode, scatterRadius, expandedClusterCity]);
 
   // Natural Zoom handling via mouse wheel & laptop trackpad (2 fingers up / down)
   const handleWheel = useCallback((e: WheelEvent) => {
@@ -465,22 +608,6 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
 
   const activeHUDClient = hoveredClient || selectedClient;
 
-  // Helper to extract full clean city name (e.g. "Santo Domingo", "Quito") before parentheses or hyphens
-  const formatBeaconCity = (cityStr: string) => {
-    if (!cityStr) return "Ecuador";
-    let clean = cityStr;
-    // If formatted like "Santo Domingo - La Concordia", extract city before hyphen
-    if (clean.includes(" - ")) {
-      clean = clean.split(" - ")[0].trim();
-    } else if (clean.includes("-") && !clean.includes(" (")) {
-      clean = clean.split("-")[0].trim();
-    }
-    // Remove province or additional info in parentheses
-    if (clean.includes("(")) {
-      clean = clean.split("(")[0].trim();
-    }
-    return clean.trim() || cityStr;
-  };
 
   // Target client is displayed in dossier only while strictly active and online
   const isTargetClientOnline = Boolean(
@@ -560,12 +687,100 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
             />
           </picture>
 
-          {/* Interactive Geographic Beacons Calibrated by Province (Only clients with valid addresses) */}
-          {mapVisibleClients.map((client) => {
+          {/* ========================================================================= */}
+          {/* 1. CLUSTER BEACONS (Rendered when multiple clients exist in the same city) */}
+          {/* ========================================================================= */}
+          {clusterPins.map((cluster) => {
+            const isHovered = hoveredClusterKey === cluster.cityKey;
+            const count = cluster.clients.length;
+            const isStageMatch =
+              activeStage === "all" ? true :
+              activeStage === "cart" ? cluster.hasCart :
+              cluster.hasFrequent;
+            const isDimmed = !isHovered && !isStageMatch;
+
+            return (
+              <div
+                key={cluster.cityKey}
+                style={{
+                  left: `${cluster.baseX}%`,
+                  top: `${cluster.baseY}%`,
+                }}
+                className={`absolute -translate-x-1/2 -translate-y-full cursor-pointer group transition-all duration-500 ${
+                  isHovered ? "z-50 scale-110" : "z-30"
+                } ${isDimmed ? "opacity-30 scale-90 hover:opacity-100 hover:scale-100" : "opacity-100 scale-100"}`}
+                onMouseEnter={() => setHoveredClusterKey(cluster.cityKey)}
+                onMouseLeave={() => setHoveredClusterKey(null)}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  focusOnLocation(cluster.baseX, cluster.baseY, 2.0);
+                  setExpandedClusterCity(cluster.cityKey);
+                }}
+              >
+                {/* Pulsing Ground Halo */}
+                <div className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2 pointer-events-none">
+                  <span className="block rounded-full w-5 h-5 bg-[#ccff00] animate-ping shadow-[0_0_18px_#ccff00]" />
+                </div>
+
+                {/* Cluster Head & Stem */}
+                <div className="flex flex-col items-center">
+                  <div className="relative transition-all duration-300 flex items-center justify-center rounded-full border border-white bg-gray-950 text-white shadow-2xl px-2.5 py-0.5 min-w-[32px] h-7 gap-1 shadow-[0_0_18px_rgba(204,255,0,0.6)] group-hover:bg-[#ccff00] group-hover:text-gray-950 group-hover:border-[#ccff00]">
+                    <Users className="w-3.5 h-3.5 shrink-0" />
+                    <span className="font-mono text-xs font-black">{count}</span>
+                    {cluster.hasCart && (
+                      <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-rose-500 border border-white" />
+                    )}
+                  </div>
+
+                  {/* Vertical Pin Line */}
+                  <div className="w-[2px] h-8 bg-gradient-to-t from-[#ccff00] to-white shadow-[0_0_10px_#ccff00]" />
+                  <div className="w-1.5 h-1.5 rotate-45 bg-[#ccff00] shadow-[0_0_6px_#ccff00]" />
+                </div>
+
+                {/* Tag Label */}
+                <div className="absolute top-full mt-1 left-1/2 -translate-x-1/2 whitespace-nowrap px-2.5 py-0.5 rounded-full text-[9px] font-bold font-mono tracking-wider transition-all pointer-events-none bg-black/90 text-white border border-[#ccff00]/40 backdrop-blur-md shadow-md flex items-center gap-1">
+                  <span>{cluster.cityName}</span>
+                  <span className="text-[#ccff00] font-black">({count})</span>
+                </div>
+
+                {/* Floating Hover Tooltip showing preview of clients */}
+                {isHovered && (
+                  <div className="absolute bottom-full mb-2.5 left-1/2 -translate-x-1/2 w-52 p-3 rounded-2xl bg-[#111614]/95 backdrop-blur-2xl border border-[#ccff00]/50 shadow-[0_15px_35px_rgba(0,0,0,0.8)] z-50 pointer-events-none space-y-2 animate-fade-in">
+                    <div className="flex items-center justify-between text-[10px] font-mono border-b border-white/10 pb-1.5">
+                      <span className="text-white font-bold">{cluster.cityName}</span>
+                      <span className="text-[#ccff00] font-bold">{count} clientes en vivo</span>
+                    </div>
+                    <div className="space-y-1">
+                      {cluster.clients.slice(0, 4).map(c => (
+                        <div key={c.id} className="flex items-center justify-between text-[9.5px]">
+                          <span className="text-white/85 truncate max-w-[120px]">{cleanClientName(c.name)}</span>
+                          <span className="text-[#ccff00] font-mono font-semibold">${c.totalSpent || 0}</span>
+                        </div>
+                      ))}
+                      {count > 4 && (
+                        <div className="text-[8.5px] text-white/50 text-center font-mono">
+                          +{count - 4} clientes adicionales
+                        </div>
+                      )}
+                    </div>
+                    <div className="text-[8.5px] text-center text-[#ccff00] font-mono pt-1 border-t border-white/10 flex items-center justify-center gap-1">
+                      <span>Clic para acercar y desplegar</span> &rarr;
+                    </div>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+
+          {/* ========================================================================= */}
+          {/* 2. DISPERSED INDIVIDUAL BEACONS (Anti-overlap radial spacing per city)    */}
+          {/* ========================================================================= */}
+          {dispersedPins.map((beacon) => {
+            const client = beacon.client;
             const isHovered = hoveredClient?.id === client.id;
             const isSelected = selectedClient?.id === client.id;
             const isActive = isHovered || isSelected;
-            const isSelf = isUserSelf(client);
+            const isSelf = beacon.isSelf;
 
             // Stage filtering logic for visual illumination
             const isStageMatch =
@@ -576,16 +791,22 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
             // Dim beacons that don't match the current activeStage (never dim self)
             const isDimmed = !isSelf && !isActive && !isStageMatch;
 
+            // Personalized label: if multiple clients in same city, include first name to easily distinguish them!
+            const clientFirstName = cleanClientName(client.name).split(' ')[0] || '';
+            const beaconLabel = beacon.clusterTotal > 1 && clientFirstName
+              ? `${clientFirstName} • ${beacon.cityName}`
+              : beacon.cityName;
+
             return (
               <div 
                 key={client.id}
                 style={{
-                  left: `${client.x}%`,
-                  top: `${client.y}%`
+                  left: `${beacon.dispX}%`,
+                  top: `${beacon.dispY}%`
                 }}
-                className={`absolute z-30 -translate-x-1/2 -translate-y-full cursor-pointer group transition-all duration-500 ${
-                  isDimmed ? "opacity-20 scale-90 hover:opacity-100 hover:scale-100" : "opacity-100 scale-100"
-                }`}
+                className={`absolute -translate-x-1/2 -translate-y-full cursor-pointer group transition-all duration-500 ${
+                  isActive ? "z-50" : "z-30"
+                } ${isDimmed ? "opacity-20 scale-90 hover:opacity-100 hover:scale-100" : "opacity-100 scale-100"}`}
                 onMouseEnter={() => setHoveredClientId(client.id)}
                 onMouseLeave={() => setHoveredClientId(null)}
                 onClick={(e) => {
@@ -610,7 +831,7 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
                 <div className="flex flex-col items-center">
                   <div className={`relative transition-all duration-300 flex items-center justify-center rounded-full border shadow-xl ${
                     isActive 
-                      ? "scale-125 z-40 bg-white text-gray-950 border-[#ccff00] shadow-[0_0_24px_#ccff00]" 
+                      ? "scale-125 z-50 bg-white text-gray-950 border-[#ccff00] shadow-[0_0_24px_#ccff00]" 
                       : isSelf 
                       ? "bg-emerald-400 text-gray-950 border-white shadow-[0_0_16px_#34d399]" 
                       : activeStage === "cart" && client.hasCart
@@ -651,15 +872,15 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
                   }`} />
                 </div>
 
-                {/* City & Province Tag Label (Shows complete city name e.g. "Santo Domingo") */}
+                {/* City & Client Tag Label */}
                 <div className={`absolute top-full mt-1 left-1/2 -translate-x-1/2 whitespace-nowrap px-2 py-0.5 rounded text-[9px] font-bold font-mono tracking-wider transition-all pointer-events-none ${
                   isActive 
-                    ? "bg-white text-gray-950 shadow-md scale-105" 
+                    ? "bg-white text-gray-950 shadow-md scale-105 z-50" 
                     : isDimmed
                     ? "bg-black/40 text-white/50 border border-white/5"
                     : "bg-black/85 text-white/90 border border-white/10 backdrop-blur-md"
                 }`}>
-                  {formatBeaconCity(client.city || "Ecuador")}
+                  {beaconLabel}
                 </div>
               </div>
             );
@@ -863,8 +1084,54 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
           )}
         </div>
 
-        {/* Right side controls: Location Prompt for Admin + Zoom Help Badge */}
-        <div className="flex items-center gap-2.5 pointer-events-auto shrink-0">
+        {/* Right side controls: Density Mode Selector + Admin Location Prompt + Zoom Help Badge */}
+        <div className="flex items-center gap-2 pointer-events-auto shrink-0 flex-wrap justify-end">
+          {/* Futuristic Map Density & Cluster Mode Selector Pill */}
+          <div className="flex items-center bg-black/80 backdrop-blur-2xl border border-white/15 rounded-full p-1 shadow-2xl text-xs font-semibold text-white">
+            <button
+              type="button"
+              onClick={() => {
+                setClusterMode("dispersed");
+                setExpandedClusterCity(null);
+              }}
+              className={`px-3 py-1.5 rounded-full transition-all duration-300 flex items-center gap-1.5 cursor-pointer ${
+                clusterMode === "dispersed"
+                  ? "bg-[#ccff00] text-gray-950 font-bold shadow-[0_0_14px_rgba(204,255,0,0.5)]"
+                  : "text-white/70 hover:text-white hover:bg-white/10"
+              }`}
+              title="Ver cada cliente con su propia estaca dispersa en la ciudad"
+            >
+              <Sparkles className="w-3.5 h-3.5 shrink-0" />
+              <span>Disperso</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setClusterMode("clustered");
+                setExpandedClusterCity(null);
+              }}
+              className={`px-3 py-1.5 rounded-full transition-all duration-300 flex items-center gap-1.5 cursor-pointer ${
+                clusterMode === "clustered"
+                  ? "bg-[#ccff00] text-gray-950 font-bold shadow-[0_0_14px_rgba(204,255,0,0.5)]"
+                  : "text-white/70 hover:text-white hover:bg-white/10"
+              }`}
+              title="Agrupar ciudades con múltiples clientes en un pin numérico para evitar saturación"
+            >
+              <Layers className="w-3.5 h-3.5 shrink-0" />
+              <span>Agrupar {clusterPins.length > 0 ? `(${clusterPins.length})` : ""}</span>
+            </button>
+            {clusterMode === "dispersed" && (
+              <button
+                type="button"
+                onClick={() => setScatterRadius(r => r === "normal" ? "wide" : "normal")}
+                className="hidden sm:inline-flex px-2 py-1 ml-0.5 rounded-full bg-white/10 hover:bg-white/20 text-[10px] font-mono text-white/80 cursor-pointer border border-white/10 transition-colors"
+                title="Radio de dispersión: Normal o Amplio"
+              >
+                Radio: {scatterRadius === "normal" ? "1x" : "2x"}
+              </button>
+            )}
+          </div>
+
           {isAdmin && !hasAdminLocation && (
             <button
               onClick={handleNavigateToAddress}
@@ -882,7 +1149,7 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
             </button>
           )}
 
-          <div className="hidden md:flex items-center gap-1.5 px-3 py-1 rounded-full bg-black/45 backdrop-blur-md border border-white/10 text-[10.5px] font-mono text-white/60">
+          <div className="hidden xl:flex items-center gap-1.5 px-3 py-1 rounded-full bg-black/45 backdrop-blur-md border border-white/10 text-[10.5px] font-mono text-white/60">
             <span>💡 Rueda o 2 dedos para Zoom</span>
           </div>
         </div>
@@ -923,6 +1190,22 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
           </button>
 
           <div className="w-5 h-[1px] bg-white/10 my-0.5" />
+
+          {/* Quick Density & Cluster Toggle Button */}
+          <button 
+            onClick={() => {
+              setClusterMode(prev => prev === "dispersed" ? "clustered" : "dispersed");
+              setExpandedClusterCity(null);
+            }}
+            title={clusterMode === "dispersed" ? "Agrupar pines en clústeres por ciudad" : "Dispersar todos los pines por el mapa"}
+            className={`w-8 h-8 rounded-xl flex items-center justify-center transition-all hover:scale-110 active:scale-95 cursor-pointer ${
+              clusterMode === "clustered"
+                ? "bg-[#ccff00] text-gray-950 font-bold shadow-[0_0_12px_#ccff00]"
+                : "bg-white/10 hover:bg-white/25 text-white/80 hover:text-white"
+            }`}
+          >
+            <Layers className="w-4 h-4" />
+          </button>
 
           {/* Reset Zoom & Pan */}
           <button 

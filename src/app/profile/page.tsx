@@ -3213,101 +3213,103 @@ const handleConfirmDeleteNiche = async () => {
           </div>
         </div>
 
-        {/* Pastilla fina horizontal de corrido */}
-        <div className="w-full py-1 px-4 rounded-full bg-emerald-500/10 dark:bg-emerald-500/15 border border-emerald-500/20 text-center text-xs font-semibold text-emerald-700 dark:text-emerald-300">
-          {invitedAdmins.length} de 3 cupos utilizados
-        </div>
-
         {!isRootAdmin ? (
-          <div className="p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-amber-800 dark:text-amber-300 text-xs flex items-center gap-2.5">
-            <Crown className="w-4 h-4 text-amber-600 shrink-0" />
-            <span>Tu cuenta tiene acceso como <strong>Administrador Delegado</strong>. Solo el Administrador Principal puede invitar o revocar otros administradores.</span>
+          <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-amber-800 dark:text-amber-300 text-xs flex items-center gap-3">
+            <Crown className="w-5 h-5 text-amber-600 shrink-0" />
+            <p className="leading-relaxed">
+              Tu cuenta tiene acceso como <strong>Administrador Delegado</strong>. Solo el Administrador Principal puede invitar o revocar otros administradores.
+            </p>
           </div>
         ) : (
-          <div className="space-y-3">
-            {/* Quick invite input */}
-            <div className="flex gap-2">
-              <div className="relative flex-1">
-                <Mail className="w-4 h-4 absolute left-3.5 top-3.5 text-gray-400" />
-                <input
-                  type="text"
-                  value={adminInviteInput}
-                  onChange={e => setAdminInviteInput(e.target.value)}
-                  onKeyDown={e => {
-                    if (e.key === 'Enter') {
-                      e.preventDefault();
-                      handleAddAdminInvite();
-                    }
-                  }}
-                  placeholder="correo@amigo.com (o varios separados por coma)"
-                  disabled={invitedAdmins.length >= 3 || isSyncingAdmins}
-                  className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-xs bg-white dark:bg-[#1a1a1c] text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#8c9276] disabled:opacity-50"
-                />
-              </div>
-              <button
-                type="button"
-                onClick={() => handleAddAdminInvite()}
-                disabled={!adminInviteInput.trim() || invitedAdmins.length >= 3 || isSyncingAdmins}
-                className="px-4 py-2.5 rounded-xl bg-[#8c9276] hover:bg-[#7b8166] text-white text-xs font-bold transition-all disabled:opacity-50 cursor-pointer shrink-0 shadow-sm flex items-center gap-1.5"
-              >
-                {isSyncingAdmins ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Plus className="w-3.5 h-3.5" />}
-                <span>Invitar</span>
-              </button>
+          <>
+            {/* Pastilla fina horizontal de corrido */}
+            <div className="w-full py-1 px-4 rounded-full bg-emerald-500/10 dark:bg-emerald-500/15 border border-emerald-500/20 text-center text-xs font-semibold text-emerald-700 dark:text-emerald-300">
+              {invitedAdmins.length} de 3 cupos utilizados
             </div>
 
-            {inviteError && (
-              <div className="p-3 rounded-xl bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800/30 text-red-600 dark:text-red-400 text-xs flex items-center gap-2">
-                <AlertCircle className="w-4 h-4 shrink-0" />
-                <span>{inviteError}</span>
-              </div>
-            )}
-
-            {inviteSuccess && (
-              <div className="p-3 rounded-xl bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800/30 text-emerald-600 dark:text-emerald-400 text-xs flex items-center gap-2">
-                <CheckCircle2 className="w-4 h-4 shrink-0" />
-                <span>{inviteSuccess}</span>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* Invited Admin List */}
-        <div className="space-y-2 pt-1">
-          <p className="text-[10px] font-bold uppercase tracking-wider text-gray-400">
-            Administradores Adicionales Activos ({invitedAdmins.length})
-          </p>
-          {invitedAdmins.length === 0 ? (
-            <p className="text-xs text-gray-400 dark:text-gray-500 italic bg-white/60 dark:bg-[#1a1a1c]/60 p-3 rounded-xl border border-dashed border-gray-200 dark:border-white/10 text-center">
-              No hay administradores adicionales registrados. Los 3 cupos están disponibles.
-            </p>
-          ) : (
-            <div className="space-y-1.5">
-              {invitedAdmins.map((admEmail) => (
-                <div
-                  key={admEmail}
-                  className="flex items-center justify-between p-2.5 px-3 rounded-xl bg-white dark:bg-[#1e1e20] border border-gray-100 dark:border-white/5 text-xs shadow-xs"
-                >
-                  <div className="flex items-center gap-2 min-w-0">
-                    <ShieldCheck className="w-4 h-4 text-[#8c9276] shrink-0" />
-                    <span className="font-semibold text-gray-900 dark:text-gray-100 truncate">{admEmail}</span>
-                    <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-amber-100 dark:bg-amber-900/40 text-amber-800 dark:text-amber-300">ADMINISTRADOR</span>
-                  </div>
-                  {isRootAdmin && (
-                    <button
-                      type="button"
-                      onClick={() => handleRemoveAdminInvite(admEmail)}
-                      disabled={isSyncingAdmins}
-                      className="p-1.5 rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/40 transition-colors cursor-pointer shrink-0"
-                      title="Revocar acceso de administrador"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
-                  )}
+            <div className="space-y-3">
+              {/* Quick invite input */}
+              <div className="flex gap-2">
+                <div className="relative flex-1">
+                  <Mail className="w-4 h-4 absolute left-3.5 top-3.5 text-gray-400" />
+                  <input
+                    type="text"
+                    value={adminInviteInput}
+                    onChange={e => setAdminInviteInput(e.target.value)}
+                    onKeyDown={e => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        handleAddAdminInvite();
+                      }
+                    }}
+                    placeholder="correo@amigo.com (o varios separados por coma)"
+                    disabled={invitedAdmins.length >= 3 || isSyncingAdmins}
+                    className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-xs bg-white dark:bg-[#1a1a1c] text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#8c9276] disabled:opacity-50"
+                  />
                 </div>
-              ))}
+                <button
+                  type="button"
+                  onClick={() => handleAddAdminInvite()}
+                  disabled={!adminInviteInput.trim() || invitedAdmins.length >= 3 || isSyncingAdmins}
+                  className="px-4 py-2.5 rounded-xl bg-[#8c9276] hover:bg-[#7b8166] text-white text-xs font-bold transition-all disabled:opacity-50 cursor-pointer shrink-0 shadow-sm flex items-center gap-1.5"
+                >
+                  {isSyncingAdmins ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Plus className="w-3.5 h-3.5" />}
+                  <span>Invitar</span>
+                </button>
+              </div>
+
+              {inviteError && (
+                <div className="p-3 rounded-xl bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800/30 text-red-600 dark:text-red-400 text-xs flex items-center gap-2">
+                  <AlertCircle className="w-4 h-4 shrink-0" />
+                  <span>{inviteError}</span>
+                </div>
+              )}
+
+              {inviteSuccess && (
+                <div className="p-3 rounded-xl bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800/30 text-emerald-600 dark:text-emerald-400 text-xs flex items-center gap-2">
+                  <CheckCircle2 className="w-4 h-4 shrink-0" />
+                  <span>{inviteSuccess}</span>
+                </div>
+              )}
             </div>
-          )}
-        </div>
+
+            {/* Invited Admin List */}
+            <div className="space-y-2 pt-1">
+              <p className="text-[10px] font-bold uppercase tracking-wider text-gray-400">
+                Administradores Adicionales Activos ({invitedAdmins.length})
+              </p>
+              {invitedAdmins.length === 0 ? (
+                <p className="text-xs text-gray-400 dark:text-gray-500 italic bg-white/60 dark:bg-[#1a1a1c]/60 p-3 rounded-xl border border-dashed border-gray-200 dark:border-white/10 text-center">
+                  No hay administradores adicionales registrados. Los 3 cupos están disponibles.
+                </p>
+              ) : (
+                <div className="space-y-1.5">
+                  {invitedAdmins.map((admEmail) => (
+                    <div
+                      key={admEmail}
+                      className="flex items-center justify-between p-2.5 px-3 rounded-xl bg-white dark:bg-[#1e1e20] border border-gray-100 dark:border-white/5 text-xs shadow-xs"
+                    >
+                      <div className="flex items-center gap-2 min-w-0">
+                        <ShieldCheck className="w-4 h-4 text-[#8c9276] shrink-0" />
+                        <span className="font-semibold text-gray-900 dark:text-gray-100 truncate">{admEmail}</span>
+                        <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-amber-100 dark:bg-amber-900/40 text-amber-800 dark:text-amber-300">ADMINISTRADOR</span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveAdminInvite(admEmail)}
+                        disabled={isSyncingAdmins}
+                        className="p-1.5 rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/40 transition-colors cursor-pointer shrink-0"
+                        title="Revocar acceso de administrador"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </>
+        )}
       </div>
   </div>
   )}
