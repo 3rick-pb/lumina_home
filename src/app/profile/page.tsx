@@ -61,6 +61,7 @@ import { normalizeSearchText } from "@/lib/utils";
 import { supabase } from "@/lib/supabase";
 import { ProductArchitectureSelector } from "@/components/profile/ProductArchitectureSelector";
 import { ProductCombosManager } from "@/components/profile/ProductCombosManager";
+import { AddCardAnimatedModal } from "@/components/profile/AddCardAnimatedModal";
 import dynamic from 'next/dynamic';
 
 const AnalyticsRadarView = dynamic(() => import('@/components/profile/AnalyticsRadarView'), {
@@ -160,12 +161,8 @@ export default function ProfilePage() {
  // Filter for catalog tab
  const [catalogCategoryFilter, setCatalogCategoryFilter] = useState<string>("all");
 
- // New Card Modal State with live preview
- const [showCardModal, setShowCardModal] = useState(false);
- const [newCardNumber, setNewCardNumber] = useState("");
- const [newCardHolder, setNewCardHolder] = useState("");
- const [newCardExp, setNewCardExp] = useState("");
- const [newCardType, setNewCardType] = useState<"mastercard" | "visa">("mastercard");
+  // Card Modal State
+  const [showCardModal, setShowCardModal] = useState(false);
 
  // Address Form State
  const [showAddressForm, setShowAddressForm] = useState(false);
@@ -720,23 +717,6 @@ export default function ProfilePage() {
  }
  }
  setCalculatedDiscount("");
- };
-
- // Add Card Submit
- const handleAddCardSubmit = (e: React.FormEvent) => {
- e.preventDefault();
- if (!newCardNumber || !newCardExp) return;
- addCard({
- number: `•••• •••• ${newCardNumber.replace(/\s+/g, "").slice(-4) || "8888"}`,
- holder: newCardHolder.trim() || user.name,
- exp: newCardExp.trim(),
- type: newCardType,
- isDefault: cards.length === 0
- });
- setShowCardModal(false);
- setNewCardNumber("");
- setNewCardHolder("");
- setNewCardExp("");
  };
 
  // Add Category Submit
@@ -3735,110 +3715,22 @@ const handleConfirmDeleteNiche = async () => {
  )}
 
  {/* ========================================================================= */}
- {/* MODAL: AGREGAR TARJETA CON LIVE PREVIEW */}
+ {/* MODAL: AGREGAR TARJETA CON 3D LIVE PREVIEW & ANIMACIÓN BANCARIA           */}
  {/* ========================================================================= */}
- {showCardModal && (
- <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-fade-in">
- <div className="bg-white dark:bg-[#202022] rounded-3xl w-full max-w-md shadow-2xl dark:shadow-none p-6 relative">
- <div className="flex items-center justify-between mb-4 pb-3 border-b border-gray-100 dark:border-white/5">
- <h3 className="text-base font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
- <CreditCard className="w-5 h-5 text-[#8c9276]" /> Añadir Nueva Tarjeta
- </h3>
- <button onClick={() => setShowCardModal(false)} className="text-gray-400 hover:text-gray-900 dark:hover:text-gray-100">
- <X className="w-5 h-5" />
- </button>
- </div>
-
- {/* Live Interactive Card Preview */}
- <div className={`p-5 rounded-2xl mb-5 text-white dark:text-gray-900 shadow-md dark:shadow-none transition-colors ${
- newCardType === "mastercard" ? "bg-gradient-to-tr from-neutral-950 to-neutral-800" : "bg-gradient-to-tr from-[#d97736] to-[#b8541c]"
- }`}>
- <div className="flex items-center justify-between mb-4">
- <div className="w-8 h-6 bg-yellow-400/80 rounded-md border border-yellow-300 shadow-inner" />
- <span className="text-xs font-bold tracking-widest">{newCardType.toUpperCase()}</span>
- </div>
- <p className="font-mono text-base tracking-widest font-semibold mb-3">
- {newCardNumber || "•••• •••• •••• 8888"}
- </p>
- <div className="flex items-center justify-between text-xs text-white/80 dark:text-gray-900/80">
- <span>{newCardHolder.toUpperCase() || user.name.toUpperCase()}</span>
- <span>EXP {newCardExp || "MM/AA"}</span>
- </div>
- </div>
-
- <form onSubmit={handleAddCardSubmit} className="space-y-4">
- <div>
- <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2 pl-1">Tipo de Red</label>
- <div className="grid grid-cols-2 gap-3">
- <button 
- type="button"
- onClick={() => setNewCardType("mastercard")}
- className={`p-2.5 rounded-xl border text-xs font-bold transition-all ${newCardType === "mastercard" ? "border-gray-900 bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900" : "border-gray-200 dark:border-white/10 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-[#2c2c2e]"}`}
- >
- Mastercard
- </button>
- <button 
- type="button"
- onClick={() => setNewCardType("visa")}
- className={`p-2.5 rounded-xl border text-xs font-bold transition-all ${newCardType === "visa" ? "border-gray-900 bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900" : "border-gray-200 dark:border-white/10 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-[#2c2c2e]"}`}
- >
- Visa
- </button>
- </div>
- </div>
-
- <div>
- <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2 pl-1">Titular de la Tarjeta</label>
- <input 
- type="text" 
- value={newCardHolder} 
- onChange={e => setNewCardHolder(e.target.value)} 
- placeholder={user.name} 
- className="w-full px-4 py-2 rounded-xl border border-gray-200 dark:border-white/10 text-xs focus:outline-none focus:ring-1 focus:ring-gray-900 bg-white dark:bg-[#1a1a1c] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500"
- />
- </div>
-
- <div>
- <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2 pl-1">Número de Tarjeta (16 dígitos)</label>
- <input 
- type="text" 
- required 
- maxLength={19}
- value={newCardNumber} 
- onChange={e => {
- const v = e.target.value.replace(/\D/g, '').replace(/(\d{4})/g, '$1 ').trim();
- setNewCardNumber(v);
- }} 
- placeholder="4532 8921 7321 8888" 
- className="w-full px-4 py-2 rounded-xl border border-gray-200 dark:border-white/10 text-xs font-mono focus:outline-none focus:ring-1 focus:ring-gray-900 bg-white dark:bg-[#1a1a1c] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500"
- />
- </div>
-
- <div>
- <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2 pl-1">Fecha de Expiración (MM/AA)</label>
- <input 
- type="text" 
- required 
- maxLength={5}
- value={newCardExp} 
- onChange={e => {
- let v = e.target.value.replace(/\D/g, '');
- if (v.length > 2) v = `${v.slice(0, 2)}/${v.slice(2, 4)}`;
- setNewCardExp(v);
- }} 
- placeholder="08/29" 
- className="w-full px-4 py-2 rounded-xl border border-gray-200 dark:border-white/10 text-xs font-mono focus:outline-none focus:ring-1 focus:ring-gray-900 bg-white dark:bg-[#1a1a1c] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500"
- />
- </div>
-
- <div className="pt-3 flex justify-end gap-2">
- <button type="button" onClick={() => setShowCardModal(false)} className="px-4 py-2 text-xs font-semibold text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-[#3a3a3c] rounded-xl">Cancelar</button>
- <button type="submit" className="px-5 py-2 text-xs font-semibold bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 rounded-xl hover:bg-gray-800 shadow-md dark:shadow-none">Guardar Tarjeta</button>
- </div>
- </form>
- </div>
- </div>
- )}
+ <AddCardAnimatedModal
+    isOpen={showCardModal}
+    onClose={() => setShowCardModal(false)}
+    defaultHolder={user.name}
+    onSaveCard={async (cardData) => {
+      await addCard({
+        number: `•••• •••• ${cardData.number.replace(/\s+/g, "").slice(-4) || "8888"}`,
+        holder: cardData.holder,
+        exp: cardData.exp,
+        type: cardData.type,
+        isDefault: cards.length === 0,
+      });
+    }}
+  />
 
  {/* ========================================================================= */}
  {/* MODAL: ADMIN NUEVO PRODUCTO */}
