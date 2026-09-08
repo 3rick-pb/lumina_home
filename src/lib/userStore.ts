@@ -119,22 +119,43 @@ export const formatCleanName = (rawName: string) => {
   return words.map(w => w.toUpperCase() === 'ADMIN' ? 'ADMIN' : w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ');
 };
 
-export const ROOT_ADMIN_EMAILS = ['admin@lumina.com', 'arteagae796@gmail.com'];
+export const ROOT_ADMIN_EMAILS = ['admin@lumina.com'];
 
-export const checkIsAdmin = async (email: string, metadataRole?: string): Promise<{ role: 'USER' | 'ADMIN'; isRootAdmin: boolean }> => {
+const adminCache = new Map<string, { role: 'USER' | 'ADMIN'; isRootAdmin: boolean; timestamp: number }>();
+const ADMIN_CACHE_TTL_MS = 60 * 1000; // 60 seconds
+
+export const clearAdminCache = () => {
+  adminCache.clear();
+};
+
+export const checkIsAdmin = async (
+  email: string, 
+  metadataRole?: string,
+  skipCache = false
+): Promise<{ role: 'USER' | 'ADMIN'; isRootAdmin: boolean }> => {
   const normalized = (email || '').toLowerCase().trim();
   if (!normalized) {
     return { role: 'USER', isRootAdmin: false };
   }
 
-  // 1. Root admin / owner accounts
+  // 1. Root admin / owner accounts (strictly admin@lumina.com only)
   if (ROOT_ADMIN_EMAILS.includes(normalized)) {
     return { role: 'ADMIN', isRootAdmin: true };
   }
 
+  // Fast in-memory cache to prevent token rotation spam and network storms
+  if (!skipCache) {
+    const cached = adminCache.get(normalized);
+    if (cached && (Date.now() - cached.timestamp < ADMIN_CACHE_TTL_MS)) {
+      return { role: cached.role, isRootAdmin: cached.isRootAdmin };
+    }
+  }
+
   // 2. Explicit metadata role
   if (metadataRole === 'ADMIN') {
-    return { role: 'ADMIN', isRootAdmin: false };
+    const res = { role: 'ADMIN' as const, isRootAdmin: false };
+    adminCache.set(normalized, { ...res, timestamp: Date.now() });
+    return res;
   }
 
   // 3. Query dedicated admin_invitations table (primary cloud source of truth)
@@ -147,7 +168,9 @@ export const checkIsAdmin = async (email: string, metadataRole?: string): Promis
       .maybeSingle();
 
     if (!invErr && invite) {
-      return { role: 'ADMIN', isRootAdmin: false };
+      const res = { role: 'ADMIN' as const, isRootAdmin: false };
+      adminCache.set(normalized, { ...res, timestamp: Date.now() });
+      return res;
     }
   } catch {
     // Fallback during schema transition
@@ -164,7 +187,9 @@ export const checkIsAdmin = async (email: string, metadataRole?: string): Promis
       if (Array.isArray(data.invitedAdmins)) {
         const cleanList = data.invitedAdmins.map((e: string) => String(e).toLowerCase().trim());
         if (cleanList.includes(normalized)) {
-          return { role: 'ADMIN', isRootAdmin: false };
+          const res = { role: 'ADMIN' as const, isRootAdmin: false };
+          adminCache.set(normalized, { ...res, timestamp: Date.now() });
+          return res;
         }
       }
     }
@@ -186,7 +211,9 @@ export const checkIsAdmin = async (email: string, metadataRole?: string): Promis
         .filter(Boolean);
 
       if (dbEmails.includes(normalized)) {
-        return { role: 'ADMIN', isRootAdmin: false };
+        const res = { role: 'ADMIN' as const, isRootAdmin: false };
+        adminCache.set(normalized, { ...res, timestamp: Date.now() });
+        return res;
       }
     }
   } catch {
@@ -194,7 +221,9 @@ export const checkIsAdmin = async (email: string, metadataRole?: string): Promis
   }
 
   // Security: localStorage fallback is permanently removed to prevent client-side privilege escalation
-  return { role: 'USER', isRootAdmin: false };
+  const finalRes = { role: 'USER' as const, isRootAdmin: false };
+  adminCache.set(normalized, { ...finalRes, timestamp: Date.now() });
+  return finalRes;
 };
 
 const fetchUserDataFromDatabase = async (userId: string, role: 'USER' | 'ADMIN' = 'USER', email: string = '') => {
@@ -323,6 +352,7 @@ const getStoredUser = (): User | null => {
 
 let isAuthListenerAttached = false;
 let isInitializingAuth = false;
+let isExplicitLogout = false;
 
 const initialStoredUser = getStoredUser();
 
@@ -344,7 +374,7 @@ export const useUserStore = create<UserState>((set, get) => ({
     try {
       let { data: { session }, error } = await supabase.auth.getSession();
 
-      // If getSession() returned no session but we have a stored/in-memory user, attempt an explicit token refresh
+      // If getSession() returned no session but we have a stored/in-memory user, attempt a graceful session refresh
       if (!session && (get().user || getStoredUser())) {
         try {
           const refreshed = await supabase.auth.refreshSession();
@@ -375,28 +405,25 @@ export const useUserStore = create<UserState>((set, get) => ({
           isLoading: false,
         });
 
-        // Initialize user cart
-        await useCartStore.getState().initCartForUser(session.user.id);
-
-        // Fetch secondary database items in background without blocking authentication state
-        fetchUserDataFromDatabase(session.user.id, role, email).then((personalData) => {
-          set({
-            cards: personalData.cards,
-            orders: personalData.orders,
-            addresses: personalData.addresses,
-            address: personalData.address
-          });
-        }).catch(() => {});
-        
-        // Load favorites in background
-        (async () => {
+        // Initialize user cart and secondary database items in background without blocking authentication state
+        const currentUserId = session.user.id;
+        setTimeout(async () => {
           try {
-            const { data: favs } = await supabase.from('favorites').select('product_id').eq('user_id', session.user.id);
+            useCartStore.getState().initCartForUser(currentUserId);
+            const personalData = await fetchUserDataFromDatabase(currentUserId, role, email);
+            set({
+              cards: personalData.cards,
+              orders: personalData.orders,
+              addresses: personalData.addresses,
+              address: personalData.address
+            });
+
+            const { data: favs } = await supabase.from('favorites').select('product_id').eq('user_id', currentUserId);
             if (favs) {
               set({ favorites: favs.map(f => f.product_id) });
             }
           } catch {}
-        })();
+        }, 0);
       } else {
         // Only wipe state if there is truly no session AND no valid cached user
         const storedUser = getStoredUser();
@@ -431,11 +458,17 @@ export const useUserStore = create<UserState>((set, get) => ({
       supabase.auth.onAuthStateChange(async (event, session) => {
         // ONLY wipe state and sign out if this is an explicit user sign out
         if (event === 'SIGNED_OUT') {
-          // Double-check if there is still a valid active session or user before wiping
-          const { data: checkData } = await supabase.auth.getSession();
-          if (checkData?.session?.user) {
-            return;
+          if (!isExplicitLogout) {
+            // Guard against spurious GoTrue signout events caused by transient token refresh issues
+            const { data: checkData } = await supabase.auth.getSession();
+            if (checkData?.session?.user) {
+              return;
+            }
+            if (get().user || getStoredUser()) {
+              return;
+            }
           }
+          isExplicitLogout = false;
           if (typeof window !== 'undefined') {
             try {
               localStorage.removeItem('lumina_auth_user');
@@ -443,6 +476,18 @@ export const useUserStore = create<UserState>((set, get) => ({
           }
           await useCartStore.getState().initCartForUser(null);
           set({ user: null, isAuthenticated: false, favorites: [], cards: [], orders: [], address: null, isLoading: false });
+          return;
+        }
+
+        // On TOKEN_REFRESHED: simply maintain valid session without running heavy queries or mutating role
+        if (event === 'TOKEN_REFRESHED') {
+          if (session?.user) {
+            set((state) => ({
+              isAuthenticated: true,
+              isLoading: false,
+              user: state.user ? { ...state.user, id: session.user.id, email: session.user.email || state.user.email } : state.user,
+            }));
+          }
           return;
         }
 
@@ -466,17 +511,22 @@ export const useUserStore = create<UserState>((set, get) => ({
               isLoading: false,
             });
 
-            const personalData = await fetchUserDataFromDatabase(session.user.id, role, email);
-            set({
-              cards: personalData.cards,
-              orders: personalData.orders,
-              addresses: personalData.addresses,
-              address: personalData.address
-            });
+            const newUserId = session.user.id;
+            setTimeout(async () => {
+              try {
+                const personalData = await fetchUserDataFromDatabase(newUserId, role, email);
+                set({
+                  cards: personalData.cards,
+                  orders: personalData.orders,
+                  addresses: personalData.addresses,
+                  address: personalData.address
+                });
 
-            await useCartStore.getState().initCartForUser(session.user.id);
-            const { data: favs } = await supabase.from('favorites').select('product_id').eq('user_id', session.user.id);
-            if (favs) set({ favorites: favs.map(f => f.product_id) });
+                useCartStore.getState().initCartForUser(newUserId);
+                const { data: favs } = await supabase.from('favorites').select('product_id').eq('user_id', newUserId);
+                if (favs) set({ favorites: favs.map(f => f.product_id) });
+              } catch {}
+            }, 0);
           } else {
             // Maintain authentication and update fields smoothly without wiping
             set((state) => ({
@@ -527,6 +577,7 @@ export const useUserStore = create<UserState>((set, get) => ({
   },
   
   logout: async () => {
+    isExplicitLogout = true;
     const currentUser = get().user;
     if (currentUser?.id) {
       try {
@@ -965,7 +1016,7 @@ export const useUserStore = create<UserState>((set, get) => ({
     const currentUser = get().user;
     if (!currentUser || !currentUser.email) return false;
 
-    const { role, isRootAdmin } = await checkIsAdmin(currentUser.email);
+    const { role, isRootAdmin } = await checkIsAdmin(currentUser.email, undefined, true);
     if (role !== currentUser.role || isRootAdmin !== currentUser.isRootAdmin) {
       const updatedUser: User = {
         ...currentUser,

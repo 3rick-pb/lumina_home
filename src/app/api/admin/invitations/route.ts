@@ -5,7 +5,6 @@ export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
 const ROOT_ADMIN_EMAIL = 'admin@lumina.com';
-const OWNER_EMAILS = ['admin@lumina.com', 'arteagae796@gmail.com'];
 const MAX_INVITED_ADMINS = 3;
 const SYS_CONFIG_ID = 'SYS_CONFIG_ADMIN_INVITES';
 
@@ -137,19 +136,16 @@ export async function POST(request: Request) {
 
     const currentList = await loadInvitedAdmins();
 
-    // Strict Root / Owner Admin Check for mutations:
-    // Only primary owners can invite or revoke other administrators.
+    // Strict Root Admin Check for mutations:
+    // Only primary root owner (admin@lumina.com) can invite or revoke other administrators.
     const cleanRequester = String(requesterEmail || '').toLowerCase().trim();
-    const isRootOrOwner =
-      OWNER_EMAILS.includes(cleanRequester) ||
-      cleanRequester === 'admin@lumina.com' ||
-      body.isRootAdmin === true;
+    const isRootOrOwner = cleanRequester === ROOT_ADMIN_EMAIL;
 
     if (!isRootOrOwner) {
       return NextResponse.json(
         {
           success: false,
-          error: `Acceso restringido. Solo el Administrador Principal puede invitar o revocar administradores adicionales (solicitado por: ${cleanRequester || 'anónimo'}).`,
+          error: `Acceso restringido. Solo el Administrador Principal (${ROOT_ADMIN_EMAIL}) puede invitar o revocar administradores adicionales (solicitado por: ${cleanRequester || 'anónimo'}).`,
         },
         { status: 403 }
       );

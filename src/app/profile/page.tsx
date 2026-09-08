@@ -52,7 +52,7 @@ import {
   DEFAULT_NICHE_SLOTS, 
   type NicheSlotConfig 
 } from "@/lib/nicheIcons";
-import { useUserStore, Order, formatCleanName } from "@/lib/userStore";
+import { useUserStore, Order, formatCleanName, clearAdminCache } from "@/lib/userStore";
 import { useThemeStore, getResolvedTheme } from "@/lib/themeStore";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
 import { useCatalogStore, normalizeCategory, CatalogProduct, isAgotadoBadge, ProductCombo } from "@/lib/catalogStore";
@@ -467,6 +467,7 @@ export default function ProfilePage() {
         throw new Error(data.error || 'Error al agregar administrador.');
       }
       setInvitedAdmins(data.invitedAdmins);
+      clearAdminCache();
       setAdminInviteInput("");
       setInviteSuccess(`¡Administrador "${raw}" agregado y sincronizado con éxito!`);
     } catch (err: unknown) {
@@ -498,6 +499,7 @@ export default function ProfilePage() {
         throw new Error(data.error || 'Error al revocar administrador.');
       }
       setInvitedAdmins(data.invitedAdmins);
+      clearAdminCache();
       setInviteSuccess(`Acceso revocado para '${targetEmail}'.`);
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Error al revocar administrador.';
@@ -531,17 +533,20 @@ export default function ProfilePage() {
     if (user?.name) {
       setEditName(user.name);
     }
-    if (user?.role === 'ADMIN') {
+    if (user?.role === 'ADMIN' && user?.email?.toLowerCase().trim() === 'admin@lumina.com') {
       fetchInvitedAdmins();
     } else if (user?.role === 'USER') {
       recheckUserRole();
     }
-  }, [user, recheckUserRole]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id, user?.role, user?.name, user?.email, recheckUserRole]);
 
   useEffect(() => {
-    // Initial fetch from fresh cloud database
-    fetchInvitedAdmins();
-  }, []);
+    // Initial fetch from fresh cloud database ONLY if root admin
+    if (user?.email?.toLowerCase().trim() === 'admin@lumina.com') {
+      fetchInvitedAdmins();
+    }
+  }, [user?.email]);
 
   // Real-time synchronization heartbeat and window focus listener
   useEffect(() => {
@@ -552,25 +557,23 @@ export default function ProfilePage() {
       refreshOrders();
       if (user?.role === 'USER') {
         recheckUserRole();
-      } else if (user?.role === 'ADMIN') {
+      } else if (user?.role === 'ADMIN' && user?.email?.toLowerCase().trim() === 'admin@lumina.com') {
         fetchInvitedAdmins();
       }
     };
     window.addEventListener("focus", onFocus);
 
-    // Refresh every 5 seconds for live store monitoring across devices
+    // Refresh store orders periodically (every 30s) without spamming auth
     const interval = setInterval(() => {
       refreshOrders();
-      if (user?.role === 'USER') {
-        recheckUserRole();
-      }
-    }, 5000);
+    }, 30000);
 
     return () => {
       window.removeEventListener("focus", onFocus);
       clearInterval(interval);
     };
-  }, [isAuthenticated, user, refreshOrders, recheckUserRole]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isAuthenticated, user?.id, user?.role, user?.email, refreshOrders, recheckUserRole]);
 
  // =========================================================================
  // REAL-TIME MATHEMATICAL CALCULATIONS & METRICS
@@ -693,8 +696,8 @@ export default function ProfilePage() {
  );
  }
 
- const isAdmin = user.role === "ADMIN";
- const isRootAdmin = Boolean(user.isRootAdmin ?? (user.email.toLowerCase() === 'admin@lumina.com'));
+  const isAdmin = user.role === "ADMIN";
+  const isRootAdmin = Boolean(user.isRootAdmin && user.email.toLowerCase().trim() === 'admin@lumina.com');
 
  // Auto calculate discount
  const handlePriceChange = (newP: string, newOldP: string, withDisc: boolean) => {
@@ -3210,7 +3213,7 @@ const handleConfirmDeleteNiche = async () => {
           <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-amber-800 dark:text-amber-300 text-xs flex items-center gap-3">
             <Crown className="w-5 h-5 text-amber-600 shrink-0" />
             <p className="leading-relaxed">
-              Tu cuenta tiene acceso como <strong>Administrador Delegado</strong>. Solo el Administrador Principal puede invitar o revocar otros administradores.
+              Tu cuenta tiene acceso como <strong>Administrador Secundario</strong>. Solo el Administrador Principal (admin@lumina.com) puede invitar o revocar otros administradores y gestionar los cupos del sistema.
             </p>
           </div>
         ) : (
