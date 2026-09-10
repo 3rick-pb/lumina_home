@@ -3,7 +3,7 @@
 import React, { useEffect } from "react";
 import { Toaster } from "sileo";
 import { useUserStore } from "@/lib/userStore";
-import { useAdminAlertStore } from "@/lib/adminAlertStore";
+import { useAdminAlertStore, hexToRgb, getLuminance } from "@/lib/adminAlertStore";
 import { supabase } from "@/lib/supabase";
 import { useRouter } from "next/navigation";
 
@@ -51,5 +51,8 @@ export function AdminCartNotifier() {
 
   if (!isAdmin) return null;
 
-  return <Toaster position={config.position} />;
+  const [bgR, bgG, bgB] = hexToRgb(config.bgColor);
+  const isLight = getLuminance(bgR, bgG, bgB) > 0.45;
+
+  return <Toaster position={config.position} theme={isLight ? "light" : "dark"} />;
 }
