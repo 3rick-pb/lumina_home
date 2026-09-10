@@ -408,11 +408,16 @@ export function CartDrawer() {
  return;
  }
 
- if (!isAuthenticated) {
- setIsOpen(false);
- router.push("/auth/login");
- return;
- }
+  if (!isAuthenticated) {
+  if (typeof window !== "undefined") {
+    try {
+      sessionStorage.setItem("lumina_cart_reopen", "true");
+    } catch {}
+  }
+  setIsOpen(false);
+  router.push("/auth/login?redirect=cart");
+  return;
+  }
  const defaultAddr = addresses.find(a => a.isDefault) || addresses[0] || null;
  if (defaultAddr) {
  setAddress(defaultAddr);
@@ -597,20 +602,29 @@ export function CartDrawer() {
  {/* Top Bar Header */}
  <header className="px-6 sm:px-8 py-4 bg-white dark:bg-[#2a2a2c]/80 backdrop-blur-xl border-b border-gray-100 dark:border-white/5 flex items-center justify-between shrink-0 shadow-sm dark:shadow-none">
  
- {/* Brand Logo & Studio Identity */}
- <div className="flex items-center gap-3">
- <div className="w-8 h-8 rounded-xl bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 flex items-center justify-center shadow-md dark:shadow-none">
- <ShoppingBag className="w-4 h-4" />
- </div>
- <div>
- <span className="font-display italic font-bold text-lg text-gray-900 dark:text-gray-100 tracking-tight">
- Lumina<span className="text-[#8c9276]">.</span>
- </span>
- <span className="text-xs text-gray-400 dark:text-gray-400 font-medium ml-2 hidden sm:inline">
- • Bolsa de Compras & Pasarela
- </span>
- </div>
- </div>
+  {/* Brand Logo & Studio Identity (3D Liquid Glass Emblem) */}
+  <div className="flex items-center gap-3.5">
+    <div className="relative group">
+      <div className="absolute -inset-1 rounded-2xl bg-gradient-to-r from-[#8c9276] via-[#d4af37] to-[#8c9276] opacity-40 blur-sm group-hover:opacity-75 transition-opacity" />
+      <div className="relative w-10 h-10 rounded-2xl bg-gradient-to-b from-stone-900 via-stone-800 to-black dark:from-white dark:via-stone-100 dark:to-stone-200 text-white dark:text-stone-900 flex items-center justify-center shadow-[0_8px_20px_rgba(0,0,0,0.25)] border border-white/20 dark:border-black/10 transition-transform group-hover:scale-105 duration-300">
+        <ShoppingBag className="w-4 h-4 text-white dark:text-stone-900 drop-shadow-sm" />
+        <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-[#ccff00] ring-2 ring-white dark:ring-stone-900 animate-pulse" />
+      </div>
+    </div>
+    <div>
+      <div className="flex items-center gap-2">
+        <span className="font-display italic font-bold text-xl text-gray-900 dark:text-gray-100 tracking-tight">
+          Lumina<span className="text-[#8c9276] dark:text-[#ccff00]">.</span>
+        </span>
+        <span className="px-2 py-0.5 rounded-full bg-[#8c9276]/15 dark:bg-[#ccff00]/15 text-[#676c54] dark:text-[#ccff00] text-[10px] font-extrabold uppercase tracking-widest border border-[#8c9276]/20">
+          Studio 3D
+        </span>
+      </div>
+      <p className="text-[11px] text-gray-400 dark:text-gray-400 font-medium hidden sm:block">
+        Bolsa de Autor • Pasarela Segura
+      </p>
+    </div>
+  </div>
 
  {/* Center Step Indicator */}
  <div className="flex items-center gap-2 bg-gray-100 dark:bg-[#202022]/5/80 p-1 rounded-2xl">
@@ -657,68 +671,117 @@ export function CartDrawer() {
  {/* ======================================================================= */}
  {step === "bag" && (
  <>
- {/* Page Title & Subtitle */}
- <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 border-b border-gray-100 dark:border-white/5 pb-6">
- <div>
- <span className="text-xs font-bold uppercase tracking-widest text-blue-600 block mb-1">
- Estudio de Compra
- </span>
- <h1 className="font-display font-bold text-3xl sm:text-4xl text-gray-900 dark:text-gray-100 tracking-tight">
- Bolsa de Compras
- </h1>
- <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-1">
- Piezas de autor seleccionadas con precisión artesanal para tu espacio.
- </p>
- </div>
+  {/* Page Title & 3D Ambient Hero Banner */}
+  <div className="relative overflow-hidden rounded-3xl p-6 sm:p-7 border border-white/80 dark:border-white/10 bg-gradient-to-br from-white/90 via-blue-50/30 to-indigo-50/20 dark:from-[#202023] dark:via-[#1c1c1f] dark:to-[#17171a] shadow-[0_12px_36px_rgba(0,0,0,0.04),inset_0_1.5px_2px_rgba(255,255,255,0.9)] backdrop-blur-2xl transition-all">
+    {/* Ambient Glows */}
+    <div className="absolute -top-16 -right-16 w-56 h-56 bg-blue-500/10 dark:bg-blue-400/10 rounded-full blur-3xl pointer-events-none" />
+    <div className="absolute -bottom-16 -left-16 w-56 h-56 bg-indigo-500/10 dark:bg-indigo-400/10 rounded-full blur-3xl pointer-events-none" />
+    <div className="absolute inset-x-8 top-0 h-[1.5px] bg-gradient-to-r from-transparent via-white dark:via-white/30 to-transparent pointer-events-none" />
 
- {items.length > 0 && (
- <button 
- onClick={clearCart}
- className="text-xs font-medium text-gray-400 dark:text-gray-400 hover:text-red-500 transition-colors flex items-center gap-1 self-start sm:self-auto"
- >
- <RotateCcw className="w-3.5 h-3.5" />
- <span>Vaciar Bolsa</span>
- </button>
- )}
- </div>
+    <div className="relative z-10 flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+      <div>
+        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-600/10 dark:bg-blue-500/15 border border-blue-500/20 text-blue-600 dark:text-blue-400 text-[11px] font-bold tracking-wider uppercase mb-2 shadow-2xs">
+          <Sparkles className="w-3 h-3 animate-spin text-blue-500" style={{ animationDuration: '6s' }} />
+          <span>Lumina 3D Studio • Luxury Living</span>
+        </div>
+        <h1 className="font-display font-extrabold text-3xl sm:text-4xl text-gray-950 dark:text-white tracking-tight">
+          Bolsa de Compras
+        </h1>
+        <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mt-1 max-w-xl leading-relaxed">
+          Piezas de autor seleccionadas con precisión artesanal, diseño dimensional y confort absoluto para tu espacio.
+        </p>
+      </div>
 
- {/* ALERTA DE PRODUCTOS AGOTADOS */}
- {hasAgotadoItems && (
- <div className="p-4 sm:p-5 rounded-2xl bg-red-50/90 border border-red-200 flex items-start gap-3.5 text-red-900 shadow-sm dark:shadow-none animate-fade-in transition-all">
- <div className="w-9 h-9 rounded-xl bg-red-100 text-red-600 flex items-center justify-center shrink-0 mt-0.5 shadow-xs">
- <AlertTriangle className="w-5 h-5" />
- </div>
- <div className="flex-1 text-xs">
- <p className="font-bold text-sm text-red-900">
- {agotadoItems.length === 1 ? "Producto no disponible en tu bolsa" : "Productos no disponibles en tu bolsa"}
- </p>
- <p className="mt-1 text-red-700 leading-relaxed font-medium">
- {agotadoItems.length === 1
- ? `El producto "${agotadoItems[0].product.title}" está marcado como AGOTADO. Debes eliminarlo de tu bolsa de compras para poder continuar hacia la pasarela de pago.`
- : `Tienes ${agotadoItems.length} productos marcados como AGOTADOS en tu bolsa. Debes eliminarlos para poder continuar con tu pedido.`}
- </p>
- </div>
- </div>
- )}
+      {items.length > 0 && (
+        <button 
+          onClick={clearCart}
+          className="px-3.5 py-1.5 rounded-xl text-xs font-semibold text-gray-500 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400 bg-white/70 dark:bg-white/5 hover:bg-red-50 dark:hover:bg-red-950/20 border border-gray-200/80 dark:border-white/10 shadow-xs transition-all flex items-center gap-1.5 self-start sm:self-auto cursor-pointer active:scale-95"
+        >
+          <RotateCcw className="w-3.5 h-3.5" />
+          <span>Vaciar Bolsa</span>
+        </button>
+      )}
+    </div>
+  </div>
 
- {items.length === 0 ? (
- <div className="flex flex-col items-center justify-center py-20 text-center">
- <div className="w-24 h-24 rounded-3xl bg-blue-50 text-blue-600 flex items-center justify-center mb-5 border border-blue-100 shadow-inner">
- <ShoppingBag className="w-10 h-10 stroke-1" />
- </div>
- <h3 className="font-display font-bold text-2xl text-gray-900 dark:text-gray-100 mb-2">Tu bolsa de autor está vacía</h3>
- <p className="text-sm text-gray-500 dark:text-gray-400 max-w-md leading-relaxed mb-8">
- Explora nuestra exclusiva colección de iluminación, aromaterapia, textiles y gadgets minimalistas para llenar tu hogar de calma.
- </p>
- <button 
- onClick={() => { setIsOpen(false); router.push("/shop"); }}
- className="relative overflow-hidden px-8 py-3.5 rounded-2xl font-bold text-white dark:text-gray-900 text-sm bg-gradient-to-r from-blue-600 via-blue-700 to-indigo-700 shadow-[0_10px_30px_rgba(37,99,235,0.3)] border border-white/30 hover:scale-[1.02] active:scale-[0.98] transition-all"
- >
- <span className="relative z-10">Explorar Catálogo Completo</span>
- <div className="absolute inset-0 bg-gradient-to-b from-white/25 to-transparent pointer-events-none" />
- </button>
- </div>
- ) : (
+  {/* ALERTA DE PRODUCTOS AGOTADOS */}
+  {hasAgotadoItems && (
+  <div className="p-4 sm:p-5 rounded-2xl bg-red-50/90 border border-red-200 flex items-start gap-3.5 text-red-900 shadow-sm dark:shadow-none animate-fade-in transition-all">
+  <div className="w-9 h-9 rounded-xl bg-red-100 text-red-600 flex items-center justify-center shrink-0 mt-0.5 shadow-xs">
+  <AlertTriangle className="w-5 h-5" />
+  </div>
+  <div className="flex-1 text-xs">
+  <p className="font-bold text-sm text-red-900">
+  {agotadoItems.length === 1 ? "Producto no disponible en tu bolsa" : "Productos no disponibles en tu bolsa"}
+  </p>
+  <p className="mt-1 text-red-700 leading-relaxed font-medium">
+  {agotadoItems.length === 1
+  ? `El producto "${agotadoItems[0].product.title}" está marcado como AGOTADO. Debes eliminarlo de tu bolsa de compras para poder continuar hacia la pasarela de pago.`
+  : `Tienes ${agotadoItems.length} productos marcados como AGOTADOS en tu bolsa. Debes eliminarlos para poder continuar con tu pedido.`}
+  </p>
+  </div>
+  </div>
+  )}
+
+  {items.length === 0 ? (
+  <div className="relative overflow-hidden my-6 rounded-[2.5rem] p-10 sm:p-16 border border-white/80 dark:border-white/10 bg-gradient-to-b from-white/95 via-gray-50/70 to-blue-50/30 dark:from-[#222226] dark:via-[#1c1c1f] dark:to-[#161619] shadow-[0_25px_60px_rgba(0,0,0,0.06),inset_0_2px_3px_rgba(255,255,255,0.9)] backdrop-blur-2xl text-center flex flex-col items-center justify-center">
+    {/* 3D Radial Aura & Background Effects */}
+    <div className="absolute w-80 h-80 rounded-full bg-gradient-to-tr from-blue-500/15 via-indigo-500/10 to-amber-400/10 blur-3xl pointer-events-none" />
+    <div className="absolute inset-x-12 top-0 h-[1.5px] bg-gradient-to-r from-transparent via-blue-400/40 to-transparent pointer-events-none" />
+
+    {/* 3D Floating Bag Pedestal Showcase */}
+    <div className="relative mb-8 group cursor-default">
+      {/* 3D Pedestal Shadow Disc */}
+      <div className="absolute -bottom-4 left-1/2 -translate-x-1/2 w-36 h-8 bg-gradient-to-r from-blue-600/20 via-indigo-600/30 to-blue-600/20 rounded-full blur-md" />
+      
+      {/* Specular Floating Pedestal */}
+      <div className="relative w-28 h-28 sm:w-32 sm:h-32 rounded-3xl bg-gradient-to-br from-white via-blue-50 to-indigo-100 dark:from-[#2a2a2e] dark:via-[#222226] dark:to-[#1a1a1e] border-2 border-white dark:border-white/20 shadow-[0_20px_40px_rgba(37,99,235,0.22),inset_0_3px_6px_rgba(255,255,255,1)] flex items-center justify-center transition-transform duration-500 hover:scale-105 hover:-rotate-1">
+        {/* Specular Inner Glare */}
+        <div className="absolute inset-x-3 top-1.5 h-[1.5px] bg-white dark:bg-white/40 rounded-full" />
+        <div className="absolute top-2 left-3 w-4 h-1.5 bg-white/90 rounded-full blur-[0.5px]" />
+        
+        {/* Glowing Bag Icon */}
+        <ShoppingBag className="w-12 h-12 sm:w-14 sm:h-14 text-blue-600 dark:text-blue-400 stroke-[1.5] drop-shadow-[0_8px_16px_rgba(37,99,235,0.35)]" />
+
+        {/* Floating 3D Sparkle Pin */}
+        <div className="absolute -top-2.5 -right-2.5 w-8 h-8 rounded-full bg-gradient-to-tr from-amber-400 to-amber-300 text-amber-950 flex items-center justify-center shadow-lg border-2 border-white dark:border-[#222226] animate-bounce" style={{ animationDuration: '3s' }}>
+          <Sparkles className="w-4 h-4 text-amber-900" />
+        </div>
+      </div>
+    </div>
+
+    {/* Floating Feature Pills */}
+    <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-3 mb-6">
+      <span className="px-3 py-1 rounded-full text-[11px] font-bold bg-white/80 dark:bg-white/5 border border-gray-200/80 dark:border-white/10 text-gray-700 dark:text-gray-300 shadow-xs flex items-center gap-1.5">
+        <Package className="w-3.5 h-3.5 text-blue-500" /> Curaduría Exclusiva
+      </span>
+      <span className="px-3 py-1 rounded-full text-[11px] font-bold bg-white/80 dark:bg-white/5 border border-gray-200/80 dark:border-white/10 text-gray-700 dark:text-gray-300 shadow-xs flex items-center gap-1.5">
+        <Truck className="w-3.5 h-3.5 text-emerald-500" /> Despacho Protegido
+      </span>
+      <span className="px-3 py-1 rounded-full text-[11px] font-bold bg-white/80 dark:bg-white/5 border border-gray-200/80 dark:border-white/10 text-gray-700 dark:text-gray-300 shadow-xs flex items-center gap-1.5">
+        <ShieldCheck className="w-3.5 h-3.5 text-indigo-500" /> Garantía de Autor
+      </span>
+    </div>
+
+    <h3 className="font-display font-extrabold text-2xl sm:text-3xl text-gray-950 dark:text-white mb-2.5 tracking-tight">
+      Tu bolsa de autor está vacía
+    </h3>
+    <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 max-w-md leading-relaxed mb-8">
+      Descubre piezas de diseño lumínico, aromaterapia orgánica y mobiliario minimalista confeccionadas para transformar la energía de tus espacios.
+    </p>
+
+    {/* 3D Action Button with High-Impact Gradient & Bevel */}
+    <button 
+      onClick={() => { setIsOpen(false); router.push("/shop"); }}
+      className="relative overflow-hidden group/btn px-8 py-4 rounded-2xl font-extrabold text-white text-sm bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 shadow-[0_16px_36px_rgba(37,99,235,0.4),inset_0_1.5px_2px_rgba(255,255,255,0.4)] border border-white/30 hover:shadow-[0_20px_45px_rgba(37,99,235,0.55)] hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center gap-2.5 cursor-pointer"
+    >
+      <span className="relative z-10">Explorar Catálogo Lumina</span>
+      <ArrowRight className="w-4 h-4 relative z-10 transition-transform group-hover/btn:translate-x-1" />
+      <div className="absolute inset-0 bg-gradient-to-b from-white/25 via-transparent to-black/10 pointer-events-none" />
+      <div className="absolute inset-0 -translate-x-full group-hover/btn:translate-x-full transition-transform duration-700 bg-gradient-to-r from-transparent via-white/30 to-transparent pointer-events-none" />
+    </button>
+  </div>
+  ) : (
  <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-10 items-start">
  
  {/* ---------------------------------------------------- */}

@@ -8,6 +8,7 @@ import { AmbientBackground } from "@/components/ui/AmbientBackground";
 import { AuthGuard } from "@/components/auth/AuthGuard";
 import { AppInitializer } from "@/components/AppInitializer";
 import { ScrollToTop } from "@/components/layout/ScrollToTop";
+import { AdminCartNotifier } from "@/components/admin/AdminCartNotifier";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -44,6 +45,7 @@ export default function RootLayout({
           <AmbientBackground />
         </Suspense>
         <AppInitializer />
+        <AdminCartNotifier />
         <AuthGuard>
           <Header />
           <main className="flex-1">

@@ -5,6 +5,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useUserStore, isValidEmail } from "@/lib/userStore";
+import { useCartStore } from "@/lib/store";
 import { useCatalogStore, CatalogProduct } from "@/lib/catalogStore";
 import { ArrowRight, Mail, Lock, Sparkles, ShieldCheck, Search, X, Eye, Compass } from "lucide-react";
 import { normalizeSearchText } from "@/lib/utils";
@@ -65,7 +66,15 @@ export default function LoginPage() {
     if (error) {
       setErrorMsg(error === "Invalid login credentials" ? "Credenciales incorrectas. Verifica tu correo y contraseña." : error);
     } else {
-      router.push("/");
+      if (typeof window !== "undefined" && sessionStorage.getItem("lumina_cart_reopen") === "true") {
+        sessionStorage.removeItem("lumina_cart_reopen");
+        router.push("/");
+        setTimeout(() => {
+          useCartStore.getState().setIsOpen(true);
+        }, 400);
+      } else {
+        router.push("/");
+      }
     }
   };
 
@@ -81,12 +90,8 @@ export default function LoginPage() {
           </span>
         </div>
 
-        <div 
-          onClick={handleContinueAsGuest} 
-          className="block group cursor-pointer"
-          title="Explorar tienda sin cuenta"
-        >
-          <h1 className="font-display text-5xl sm:text-6xl font-bold tracking-tight text-gray-900 group-hover:opacity-90 transition-opacity">
+        <div className="block select-none cursor-default">
+          <h1 className="font-display text-5xl sm:text-6xl font-bold tracking-tight text-gray-900">
             Lumina<span className="text-[#8c9276]">.</span>
           </h1>
         </div>

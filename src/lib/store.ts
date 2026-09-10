@@ -91,6 +91,63 @@ const syncCartToDatabase = async (userId: string | null, payload: CartStoragePay
   }
 };
 
+const getGuestCartItems = (): CartItem[] => {
+  if (typeof window === 'undefined') return [];
+  try {
+    const raw = sessionStorage.getItem('lumina_guest_cart');
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) return parsed;
+    }
+  } catch {}
+  return [];
+};
+
+const setGuestCartItems = (items: CartItem[]) => {
+  if (typeof window === 'undefined') return;
+  try {
+    if (items.length > 0) {
+      sessionStorage.setItem('lumina_guest_cart', JSON.stringify(items));
+    } else {
+      sessionStorage.removeItem('lumina_guest_cart');
+    }
+  } catch {}
+};
+
+// Triggers real-time alert exclusively for registered customers in the store
+const triggerRegisteredUserAlert = (product: Product, quantity: number) => {
+  if (typeof window === 'undefined') return;
+  try {
+    import('./userStore').then(({ useUserStore }) => {
+      const { user, isAuthenticated, address, addresses } = useUserStore.getState();
+      if (isAuthenticated && user && !user.id.startsWith('anon_')) {
+        const userLoc = address?.city 
+          ? `${address.city}${address.country ? `, ${address.country}` : ''}`
+          : addresses?.[0]?.city
+          ? `${addresses[0].city}${addresses[0].country ? `, ${addresses[0].country}` : ''}`
+          : 'Ecuador';
+
+        import('./adminAlertStore').then(({ broadcastCartAddition }) => {
+          broadcastCartAddition({
+            userId: user.id,
+            userName: user.name || user.email.split('@')[0],
+            userEmail: user.email,
+            location: userLoc,
+            product: {
+              id: product.id,
+              title: product.title,
+              price: product.price,
+              imageUrl: product.imageUrl,
+              quantity,
+            },
+            timestamp: Date.now(),
+          });
+        }).catch(() => {});
+      }
+    }).catch(() => {});
+  } catch {}
+};
+
 export const useCartStore = create<CartState>((set, get) => ({
   currentUserId: null,
   items: [],
@@ -101,25 +158,12 @@ export const useCartStore = create<CartState>((set, get) => ({
   originCoords: null,
   
   initCartForUser: async (newUserId: string | null) => {
-    // Purge any local computer storage so nothing stays on disk
-    if (typeof window !== 'undefined') {
-      try {
-        localStorage.removeItem('lumina-cart-storage');
-        localStorage.removeItem('lumina_cart_guest');
-        for (let i = 0; i < localStorage.length; i++) {
-          const k = localStorage.key(i);
-          if (k && k.startsWith('lumina_cart_')) {
-            localStorage.removeItem(k);
-          }
-        }
-      } catch {}
-    }
-
     if (!newUserId) {
-      // Guest or logged out: completely empty cart in memory, nothing on computer
+      // Guest or unauthenticated: restore items from active guest session
+      const guestItems = getGuestCartItems();
       set({
         currentUserId: null,
-        items: [],
+        items: guestItems,
         couponCode: null,
         discountPercent: 0,
         isFreeShippingCoupon: false,
@@ -127,6 +171,12 @@ export const useCartStore = create<CartState>((set, get) => ({
       });
       return;
     }
+
+    // Authenticated / registered customer!
+    // Retrieve any guest items that were added prior to login/registration
+    const currentMemoryItems = get().items;
+    const guestStoredItems = getGuestCartItems();
+    const preLoginGuestItems = currentMemoryItems.length > 0 ? currentMemoryItems : guestStoredItems;
 
     let items: CartItem[] = [];
     let couponCode: string | null = null;
@@ -149,6 +199,38 @@ export const useCartStore = create<CartState>((set, get) => ({
       }
     } catch (e) {
       console.error("Error loading cart from database:", e);
+    }
+
+    // Merge pre-login guest items with user's permanent account cart
+    if (preLoginGuestItems.length > 0) {
+      const mergedMap = new Map<string, CartItem>();
+      for (const it of items) {
+        mergedMap.set(it.id, { ...it });
+      }
+      for (const git of preLoginGuestItems) {
+        if (mergedMap.has(git.id)) {
+          const existing = mergedMap.get(git.id)!;
+          mergedMap.set(git.id, {
+            ...existing,
+            quantity: existing.quantity + git.quantity,
+          });
+        } else {
+          mergedMap.set(git.id, { ...git });
+        }
+      }
+      items = Array.from(mergedMap.values());
+
+      // Sync merged cart to Supabase for this user
+      const payload: CartStoragePayload = {
+        items,
+        couponCode,
+        discountPercent,
+        isFreeShippingCoupon,
+      };
+      await syncCartToDatabase(newUserId, payload);
+
+      // Clean up temporary guest storage
+      setGuestCartItems([]);
     }
 
     set({
@@ -185,8 +267,14 @@ export const useCartStore = create<CartState>((set, get) => ({
       isFreeShippingCoupon: get().isFreeShippingCoupon,
     };
 
-    // Sync to Supabase cloud database
-    syncCartToDatabase(currentUserId, payload);
+    if (currentUserId) {
+      syncCartToDatabase(currentUserId, payload);
+    } else {
+      setGuestCartItems(newItems);
+    }
+
+    // Trigger real-time alert for registered customers
+    triggerRegisteredUserAlert(product, quantity);
 
     set({ items: newItems, isOpen: true });
   },
@@ -239,8 +327,15 @@ export const useCartStore = create<CartState>((set, get) => ({
       isFreeShippingCoupon: get().isFreeShippingCoupon,
     };
 
-    // Sync to Supabase cloud database
-    syncCartToDatabase(currentUserId, payload);
+    if (currentUserId) {
+      syncCartToDatabase(currentUserId, payload);
+    } else {
+      setGuestCartItems(newItems);
+    }
+
+    if (mainProd) {
+      triggerRegisteredUserAlert(mainProd, 1);
+    }
 
     set({ items: newItems, isOpen: true });
   },
@@ -255,8 +350,11 @@ export const useCartStore = create<CartState>((set, get) => ({
       isFreeShippingCoupon: get().isFreeShippingCoupon,
     };
 
-    // Sync to Supabase cloud database
-    syncCartToDatabase(currentUserId, payload);
+    if (currentUserId) {
+      syncCartToDatabase(currentUserId, payload);
+    } else {
+      setGuestCartItems(newItems);
+    }
 
     set({ items: newItems });
   },
@@ -277,8 +375,11 @@ export const useCartStore = create<CartState>((set, get) => ({
       isFreeShippingCoupon: get().isFreeShippingCoupon,
     };
 
-    // Sync to Supabase cloud database
-    syncCartToDatabase(currentUserId, payload);
+    if (currentUserId) {
+      syncCartToDatabase(currentUserId, payload);
+    } else {
+      setGuestCartItems(newItems);
+    }
 
     set({ items: newItems });
   },
@@ -292,8 +393,11 @@ export const useCartStore = create<CartState>((set, get) => ({
       isFreeShippingCoupon: false,
     };
 
-    // Sync empty cart to Supabase cloud database
-    syncCartToDatabase(currentUserId, payload);
+    if (currentUserId) {
+      syncCartToDatabase(currentUserId, payload);
+    } else {
+      setGuestCartItems([]);
+    }
 
     set({ items: [], couponCode: null, discountPercent: 0, isFreeShippingCoupon: false });
   },

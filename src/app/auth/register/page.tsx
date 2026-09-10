@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useUserStore, isValidEmail, sanitizeText } from "@/lib/userStore";
+import { useCartStore } from "@/lib/store";
 import { ArrowRight, Mail, Lock, User, Sparkles, ShieldCheck, Compass } from "lucide-react";
 
 export default function RegisterPage() {
@@ -53,7 +54,15 @@ export default function RegisterPage() {
     if (error) {
       setErrorMsg(error);
     } else {
-      router.push("/");
+      if (typeof window !== "undefined" && sessionStorage.getItem("lumina_cart_reopen") === "true") {
+        sessionStorage.removeItem("lumina_cart_reopen");
+        router.push("/");
+        setTimeout(() => {
+          useCartStore.getState().setIsOpen(true);
+        }, 400);
+      } else {
+        router.push("/");
+      }
     }
   };
 
@@ -69,12 +78,8 @@ export default function RegisterPage() {
           </span>
         </div>
 
-        <div 
-          onClick={handleContinueAsGuest} 
-          className="block group cursor-pointer"
-          title="Explorar tienda sin cuenta"
-        >
-          <h1 className="font-display text-5xl sm:text-6xl font-bold tracking-tight text-gray-900 group-hover:opacity-90 transition-opacity">
+        <div className="block select-none cursor-default">
+          <h1 className="font-display text-5xl sm:text-6xl font-bold tracking-tight text-gray-900">
             Lumina<span className="text-[#8c9276]">.</span>
           </h1>
         </div>

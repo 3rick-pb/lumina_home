@@ -24,7 +24,8 @@ import {
   Settings, 
   Pencil,
   Loader2,
-  Globe
+  Globe,
+  BellRing
 } from "lucide-react";
 import { useUserStore, Order, formatCleanName } from "@/lib/userStore";
 import { useThemeStore, getResolvedTheme } from "@/lib/themeStore";
@@ -40,6 +41,7 @@ import { FavoritesTab } from "@/components/profile/tabs/FavoritesTab";
 import { CatalogTab } from "@/components/profile/tabs/CatalogTab";
 import { NichesTab } from "@/components/profile/tabs/NichesTab";
 import { AnalyticsTab } from "@/components/profile/tabs/AnalyticsTab";
+import { CartAlertsTab } from "@/components/profile/tabs/CartAlertsTab";
 import { SettingsTab } from "@/components/profile/tabs/SettingsTab";
 import { OrderDetailModal } from "@/components/profile/modals/OrderDetailModal";
 
@@ -60,19 +62,28 @@ export default function ProfilePage() {
 
  const { products, categories, badges, addProduct, updateProduct, deleteProduct, deleteCategory } = useCatalogStore();
 
- // Navigation & Search State
- const [activeTab, setActiveTab] = useState<"overview" | "orders" | "cards" | "favorites" | "catalog" | "niches" | "analytics" | "settings">("overview");
- const [searchQuery, setSearchQuery] = useState("");
- const [isMounted, setIsMounted] = useState(false);
+  type ProfileTab = "overview" | "orders" | "cards" | "favorites" | "catalog" | "niches" | "analytics" | "cart_alerts" | "settings";
+  const [activeTab, setActiveTab] = useState<ProfileTab>("overview");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [isMounted, setIsMounted] = useState(false);
 
- const { mode } = useThemeStore();
- const [resolvedTheme, setResolvedTheme] = useState<'light' | 'dark'>('light');
+  const { mode } = useThemeStore();
+  const [resolvedTheme, setResolvedTheme] = useState<'light' | 'dark'>('light');
 
   useEffect(() => {
     setIsMounted(true);
     const update = () => setResolvedTheme(getResolvedTheme(mode));
     update();
     const interval = setInterval(update, 60000);
+
+    try {
+      const urlTab = new URLSearchParams(window.location.search).get('tab');
+      const validTabs: ProfileTab[] = ["overview", "orders", "cards", "favorites", "catalog", "niches", "analytics", "cart_alerts", "settings"];
+      if (urlTab && validTabs.includes(urlTab as ProfileTab)) {
+        setActiveTab(urlTab as ProfileTab);
+      }
+    } catch {}
+
     return () => clearInterval(interval);
   }, [mode]);
 
@@ -665,6 +676,21 @@ const handleConfirmDeleteNiche = async () => {
        )}
        <Globe className="w-5 h-5 transition-transform duration-[600ms] group-hover:scale-110" />
      </button>
+
+     <button 
+       onClick={() => setActiveTab("cart_alerts")} 
+       className={`sidebar-dock-btn relative w-11 h-11 md:w-12 md:h-12 rounded-2xl flex items-center justify-center transition-all duration-[600ms] cursor-pointer group ${
+         activeTab === "cart_alerts" 
+           ? "bg-gray-950 dark:bg-white text-white dark:text-gray-950 shadow-lg shadow-gray-950/20 dark:shadow-white/15 scale-105" 
+           : "text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100/80 dark:hover:bg-white/5 hover:scale-105 active:scale-95"
+       }`}
+       title="Alertas de Carrito (Sileo)"
+     >
+       {activeTab === "cart_alerts" && (
+         <span className="absolute -left-2 w-1 h-5 bg-[#8c9276] dark:bg-[#ccff00] rounded-r-full transition-all duration-[600ms]" />
+       )}
+       <BellRing className="w-5 h-5 transition-transform duration-[600ms] group-hover:scale-110" />
+     </button>
    </>
  )}
 
@@ -965,7 +991,14 @@ const handleConfirmDeleteNiche = async () => {
         )}
 
         {/* ========================================================================= */}
-        {/* VIEW 8: SETTINGS & ADDRESS TAB */}
+        {/* VIEW 8: ADMIN CART ALERTS TAB (SILEO PLAYGROUND) */}
+        {/* ========================================================================= */}
+        {activeTab === "cart_alerts" && isAdmin && (
+          <CartAlertsTab />
+        )}
+
+        {/* ========================================================================= */}
+        {/* VIEW 9: SETTINGS & ADDRESS TAB */}
         {/* ========================================================================= */}
         {activeTab === "settings" && (
           <SettingsTab
