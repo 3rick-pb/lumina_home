@@ -19,7 +19,7 @@ import {
   Navigation 
 } from "lucide-react";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
-import { useUserStore, clearAdminCache, ROOT_ADMIN_EMAILS } from "@/lib/userStore";
+import { useUserStore, clearAdminCache } from "@/lib/userStore";
 import { supabase } from "@/lib/supabase";
 
 interface SettingsTabProps {
@@ -93,7 +93,7 @@ export function SettingsTab({
         if (Array.isArray(data.invitedAdmins)) {
           const filtered = data.invitedAdmins
             .map((e: string) => String(e).toLowerCase().trim())
-            .filter((e: string) => Boolean(e) && e !== 'admin@lumina.com' && !ROOT_ADMIN_EMAILS.includes(e));
+            .filter((e: string) => Boolean(e) && e !== 'admin@lumina.com');
           setInvitedAdmins(filtered);
           return;
         }
@@ -115,7 +115,7 @@ export function SettingsTab({
           if (Array.isArray(parsed)) {
             const filtered = parsed
               .map((e: string) => String(e).toLowerCase().trim())
-              .filter((e: string) => Boolean(e) && e !== 'admin@lumina.com' && !ROOT_ADMIN_EMAILS.includes(e));
+              .filter((e: string) => Boolean(e) && e !== 'admin@lumina.com');
             setInvitedAdmins(filtered);
             return;
           }
@@ -151,7 +151,7 @@ export function SettingsTab({
       const filtered = Array.isArray(data.invitedAdmins)
         ? data.invitedAdmins
             .map((e: string) => String(e).toLowerCase().trim())
-            .filter((e: string) => Boolean(e) && e !== 'admin@lumina.com' && !ROOT_ADMIN_EMAILS.includes(e))
+            .filter((e: string) => Boolean(e) && e !== 'admin@lumina.com')
         : [];
       setInvitedAdmins(filtered);
       clearAdminCache();
@@ -189,7 +189,7 @@ export function SettingsTab({
       const filtered = Array.isArray(data.invitedAdmins)
         ? data.invitedAdmins
             .map((e: string) => String(e).toLowerCase().trim())
-            .filter((e: string) => Boolean(e) && e !== 'admin@lumina.com' && !ROOT_ADMIN_EMAILS.includes(e))
+            .filter((e: string) => Boolean(e) && e !== 'admin@lumina.com')
         : [];
       setInvitedAdmins(filtered);
       clearAdminCache();

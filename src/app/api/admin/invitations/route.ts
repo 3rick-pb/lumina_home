@@ -6,7 +6,6 @@ export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
 const MASTER_ADMIN_EMAIL = 'admin@lumina.com';
-const ROOT_ADMIN_EMAILS = ['admin@lumina.com', 'arteagae796@gmail.com'];
 const MAX_INVITED_ADMINS = 3;
 const SYS_SESSION_ID = 'SYS_ADMIN_INVITES';
 
@@ -34,7 +33,7 @@ async function loadInvitedAdmins(): Promise<string[]> {
           const clean = parsed
             .map((e) => String(e || '').toLowerCase().trim())
             .filter(Boolean)
-            .filter((e) => e !== MASTER_ADMIN_EMAIL && !ROOT_ADMIN_EMAILS.includes(e));
+            .filter((e) => e !== MASTER_ADMIN_EMAIL);
 
           return Array.from(new Set(clean)).slice(0, MAX_INVITED_ADMINS);
         }
@@ -57,7 +56,7 @@ async function persistInvitedAdmins(emails: string[]): Promise<string[]> {
       emails
         .map((e) => String(e).toLowerCase().trim())
         .filter(Boolean)
-        .filter((e) => e !== MASTER_ADMIN_EMAIL && !ROOT_ADMIN_EMAILS.includes(e))
+        .filter((e) => e !== MASTER_ADMIN_EMAIL)
     )
   ).slice(0, MAX_INVITED_ADMINS);
 
@@ -228,7 +227,7 @@ export async function POST(request: Request) {
         );
       }
 
-      if (normalized === MASTER_ADMIN_EMAIL || ROOT_ADMIN_EMAILS.includes(normalized)) {
+      if (normalized === MASTER_ADMIN_EMAIL) {
         return NextResponse.json(
           { success: false, error: `El correo '${normalized}' es la cuenta Principal del sistema.` },
           { status: 400 }

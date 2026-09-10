@@ -7,7 +7,6 @@ const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || supabaseAnon
 export const supabaseServer = createClient(supabaseUrl, supabaseServiceKey);
 
 export const MASTER_ADMIN_EMAIL = 'admin@lumina.com';
-export const ROOT_ADMIN_EMAILS = ['admin@lumina.com', 'arteagae796@gmail.com'];
 
 /**
  * Extracts and verifies the Supabase Auth user from the Request Authorization header
@@ -29,14 +28,14 @@ export async function getAuthenticatedUser(request: Request) {
 }
 
 /**
- * Checks whether an email belongs to an authorized administrator (master, root or invited)
+ * Checks whether an email belongs to an authorized administrator (master or invited)
  */
 export async function verifyIsAdmin(email?: string | null): Promise<boolean> {
   if (!email) return false;
   const cleanEmail = email.toLowerCase().trim();
 
-  // 1. Master & Root admin check
-  if (cleanEmail === MASTER_ADMIN_EMAIL || ROOT_ADMIN_EMAILS.includes(cleanEmail)) {
+  // 1. Master admin check
+  if (cleanEmail === MASTER_ADMIN_EMAIL) {
     return true;
   }
 

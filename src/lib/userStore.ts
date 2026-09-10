@@ -122,7 +122,6 @@ export const formatCleanName = (rawName: string) => {
 };
 
 export const MASTER_ADMIN_EMAIL = 'admin@lumina.com';
-export const ROOT_ADMIN_EMAILS = ['admin@lumina.com', 'arteagae796@gmail.com'];
 
 const adminCache = new Map<string, { role: 'USER' | 'ADMIN'; isRootAdmin: boolean; timestamp: number }>();
 const ADMIN_CACHE_TTL_MS = 30 * 1000; // 30 seconds
@@ -141,9 +140,9 @@ export const checkIsAdmin = async (
     return { role: 'USER', isRootAdmin: false };
   }
 
-  // 1. Master & Root accounts
-  if (normalized === MASTER_ADMIN_EMAIL || ROOT_ADMIN_EMAILS.includes(normalized)) {
-    return { role: 'ADMIN', isRootAdmin: normalized === MASTER_ADMIN_EMAIL || ROOT_ADMIN_EMAILS.includes(normalized) };
+  // 1. Master system account
+  if (normalized === MASTER_ADMIN_EMAIL) {
+    return { role: 'ADMIN', isRootAdmin: true };
   }
 
   // Fast in-memory cache
@@ -208,7 +207,7 @@ export const checkIsAdmin = async (
 const fetchUserDataFromDatabase = async (userId: string, role: 'USER' | 'ADMIN' = 'USER', email: string = '') => {
   try {
     const cleanEmail = (email || '').toLowerCase().trim();
-    const isAdmin = role === 'ADMIN' || ROOT_ADMIN_EMAILS.includes(cleanEmail);
+    const isAdmin = role === 'ADMIN' || cleanEmail === MASTER_ADMIN_EMAIL;
 
     // 1. Fetch store/user orders from persistent API with instant synchronization
     let orders: Order[] = [];
