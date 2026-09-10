@@ -20,6 +20,7 @@ export interface ConnectedClient {
   hasCart: boolean;
   cartItemsCount?: number;
   isRealUser?: boolean;
+  isAnonymous?: boolean;
   isOnline?: boolean;
   lastSeen?: number;
   lastUpdated?: number;
@@ -152,8 +153,11 @@ export function calculateIntentScore(purchasesCount: number, totalSpent: number,
   return Math.min(score, 98);
 }
 
+const DEFAULT_ECUADOR_CITIES = ['Quito', 'Guayaquil', 'Cuenca', 'Santo Domingo', 'Manta', 'Ambato', 'Loja', 'Puyo'];
+
 /**
- * Extracts connected clients from Supabase Realtime presenceState
+ * Extracts connected clients from Supabase Realtime presenceState.
+ * Groups multi-session tabs for registered users and tracks anonymous visitors cleanly.
  */
 export function parsePresenceState(state: Record<string, unknown>): ConnectedClient[] {
   const map = new Map<string, ConnectedClient>();
@@ -165,41 +169,55 @@ export function parsePresenceState(state: Record<string, unknown>): ConnectedCli
       for (const raw of presences) {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const p = raw as any;
-        if (!p || !p.id || p.id.startsWith('vis_') || p.id.startsWith('guest_') || String(p.name).toLowerCase().includes('visitante')) {
-          continue;
+        if (!p || !p.id) continue;
+
+        const isAnon = Boolean(p.isAnonymous || p.id.startsWith('anon_') || p.id.startsWith('vis_') || p.id.startsWith('guest_') || !p.email);
+
+        let cleanCity = (p.city && typeof p.city === 'string') ? p.city.trim() : '';
+        if (!cleanCity && isAnon) {
+          const charCodeSum = String(p.sessionId || p.id).split('').reduce((acc, ch) => acc + ch.charCodeAt(0), 0);
+          cleanCity = DEFAULT_ECUADOR_CITIES[charCodeSum % DEFAULT_ECUADOR_CITIES.length];
         }
-        const cleanCity = p.city || '';
+
         const coords = resolveCoordinates(cleanCity);
         const parsedX = p.x !== null && p.x !== undefined ? Number(p.x) : NaN;
         const parsedY = p.y !== null && p.y !== undefined ? Number(p.y) : NaN;
-        const finalX = !isNaN(parsedX) && parsedX >= 0 ? parsedX : (coords.x >= 0 ? coords.x : -100);
-        const finalY = !isNaN(parsedY) && parsedY >= 0 ? parsedY : (coords.y >= 0 ? coords.y : -100);
+        const finalX = !isNaN(parsedX) && parsedX >= 0 ? parsedX : (coords.x >= 0 ? coords.x : 48.8);
+        const finalY = !isNaN(parsedY) && parsedY >= 0 ? parsedY : (coords.y >= 0 ? coords.y : 26.5);
+
         const purchases = Number(p.purchasesCount) || 0;
         const spent = Number(p.totalSpent) || 0;
         const hasCart = Boolean(p.hasCart);
 
-        map.set(p.id, {
+        const clientKey = isAnon ? (p.sessionId || p.id) : p.id;
+        const existing = map.get(clientKey);
+
+        const clientObj: ConnectedClient = {
           id: p.id,
           sessionId: p.sessionId,
-          name: cleanClientName(p.name),
-          email: p.email || '',
-          city: cleanCity,
+          name: isAnon ? 'Visitante Anónimo' : cleanClientName(p.name),
+          email: isAnon ? '' : (p.email || ''),
+          city: cleanCity || 'Ecuador',
           country: p.country || 'Ecuador',
           x: finalX,
           y: finalY,
-          frequency: p.frequency || resolveFrequency(purchases),
-          purchasesCount: purchases,
-          totalSpent: spent,
+          frequency: isAnon ? '1ª Vez' : (p.frequency || resolveFrequency(purchases)),
+          purchasesCount: isAnon ? 0 : purchases,
+          totalSpent: isAnon ? 0 : spent,
           currentSection: p.currentSection || 'Explorando Tienda',
-          intentScore: Number(p.intentScore) || calculateIntentScore(purchases, spent, hasCart),
+          intentScore: isAnon ? 15 : (Number(p.intentScore) || calculateIntentScore(purchases, spent, hasCart)),
           device: (p.device as ConnectedClient['device']) || 'Computador',
           hasCart,
           cartItemsCount: Number(p.cartItemsCount) || 0,
-          isRealUser: true,
+          isRealUser: !isAnon,
+          isAnonymous: isAnon,
           isOnline: true,
-          lastSeen: p.lastSeen || now,
-          lastUpdated: p.lastUpdated || now,
-        });
+          lastSeen: Math.max(existing?.lastSeen || 0, p.lastSeen || now),
+          lastUpdated: Math.max(existing?.lastUpdated || 0, p.lastUpdated || now),
+          activeSessionsCount: (existing?.activeSessionsCount || 0) + 1,
+        };
+
+        map.set(clientKey, clientObj);
       }
     }
   }
@@ -218,13 +236,7 @@ interface RadarStore {
   channel: RealtimeChannel | null;
   pollIntervalId: ReturnType<typeof setInterval> | null;
   initRadar: (
-    user: { id: string; name?: string; email?: string } | null,
-    city?: string,
-    totalSpent?: number,
-    purchasesCount?: number,
-    currentSection?: string,
-    hasCart?: boolean,
-    cartItemsCount?: number,
+    user?: { id: string; name?: string; email?: string } | null,
     sessionId?: string
   ) => RealtimeChannel | null;
   trackActivity: (
@@ -243,305 +255,108 @@ interface RadarStore {
   cleanup: () => void;
 }
 
-/**
- * Reconciles current in-memory live clients with newly fetched background data.
- */
-function reconcileClients(currentList: ConnectedClient[], fetchedList: ConnectedClient[]): ConnectedClient[] {
-  const now = Date.now();
-  const map = new Map<string, ConnectedClient>();
-
-  // 1. Index fetched clients from backend
-  for (const incoming of fetchedList) {
-    if (
-      incoming && 
-      incoming.id && 
-      !incoming.id.startsWith('vis_') && 
-      !incoming.id.startsWith('guest_') && 
-      !incoming.name?.toLowerCase().includes('visitante') &&
-      incoming.isOnline !== false
-    ) {
-      const existing = currentList.find(c => c.id === incoming.id);
-      const cleanCity = (incoming.city && incoming.city.trim()) ? incoming.city : (existing?.city || '');
-      const coords = resolveCoordinates(cleanCity);
-      const parsedX = incoming.x !== null && incoming.x !== undefined ? Number(incoming.x) : NaN;
-      const parsedY = incoming.y !== null && incoming.y !== undefined ? Number(incoming.y) : NaN;
-      const finalX = !isNaN(parsedX) && parsedX >= 0 ? parsedX : (coords.x >= 0 ? coords.x : (existing?.x ?? -100));
-      const finalY = !isNaN(parsedY) && parsedY >= 0 ? parsedY : (coords.y >= 0 ? coords.y : (existing?.y ?? -100));
-
-      // If existing had a very fresh WebSocket broadcast (<4s), preserve section to prevent race conditions
-      const isVeryFreshLiveBroadcast = existing?.lastUpdated && (now - existing.lastUpdated < 4000);
-      const sectionToUse = isVeryFreshLiveBroadcast 
-        ? existing.currentSection 
-        : (incoming.currentSection || existing?.currentSection || 'Explorando Tienda');
-
-      map.set(incoming.id, {
-        ...(existing || {}),
-        ...incoming,
-        city: cleanCity,
-        x: finalX,
-        y: finalY,
-        name: cleanClientName(incoming.name || existing?.name),
-        currentSection: sectionToUse,
-        hasCart: Boolean(isVeryFreshLiveBroadcast ? existing?.hasCart : (incoming.hasCart !== undefined ? incoming.hasCart : existing?.hasCart)),
-        cartItemsCount: Number(isVeryFreshLiveBroadcast ? existing?.cartItemsCount : (incoming.cartItemsCount !== undefined ? incoming.cartItemsCount : existing?.cartItemsCount)) || 0,
-        lastSeen: Math.max(existing?.lastSeen || 0, incoming.lastSeen || 0, now),
-        lastUpdated: existing?.lastUpdated || now,
-        isOnline: true,
-      });
-    }
-  }
-
-  // 2. Retain existing active clients ONLY if they had a very fresh in-flight live broadcast in the last 3s
-  for (const existing of currentList) {
-    if (
-      existing && 
-      existing.id && 
-      !map.has(existing.id) &&
-      !existing.id.startsWith('vis_') && 
-      !existing.id.startsWith('guest_') && 
-      !existing.name?.toLowerCase().includes('visitante') &&
-      existing.isOnline !== false
-    ) {
-      const isVeryRecentInFlight = existing.lastUpdated && (now - existing.lastUpdated < 3000);
-      if (isVeryRecentInFlight) {
-        map.set(existing.id, existing);
-      }
-    }
-  }
-
-  const result: ConnectedClient[] = [];
-  map.forEach((client) => result.push(client));
-  return result;
-}
-
-/**
- * Merge two client lists without duplicates, preserving newer live timestamps and valid coordinates
- */
-function mergeClientLists(listA: ConnectedClient[], listB: ConnectedClient[]): ConnectedClient[] {
-  const now = Date.now();
-  const map = new Map<string, ConnectedClient>();
-
-  for (const c of listA) {
-    if (
-      c && 
-      c.id && 
-      !c.id.startsWith('vis_') && 
-      !c.id.startsWith('guest_') && 
-      !c.name?.toLowerCase().includes('visitante') &&
-      c.isOnline !== false
-    ) {
-      if (now - (c.lastSeen || c.lastUpdated || now) < RADAR_CLIENT_TTL_MS) {
-        map.set(c.id, c);
-      }
-    }
-  }
-
-  for (const c of listB) {
-    if (
-      c && 
-      c.id && 
-      !c.id.startsWith('vis_') && 
-      !c.id.startsWith('guest_') && 
-      !c.name?.toLowerCase().includes('visitante') &&
-      c.isOnline !== false
-    ) {
-      const existing = map.get(c.id);
-      if (!existing) {
-        const coords = resolveCoordinates(c.city);
-        const parsedX = c.x !== null && c.x !== undefined ? Number(c.x) : NaN;
-        const parsedY = c.y !== null && c.y !== undefined ? Number(c.y) : NaN;
-        const finalX = !isNaN(parsedX) && parsedX >= 0 ? parsedX : (coords.x >= 0 ? coords.x : -100);
-        const finalY = !isNaN(parsedY) && parsedY >= 0 ? parsedY : (coords.y >= 0 ? coords.y : -100);
-
-        map.set(c.id, {
-          ...c,
-          name: cleanClientName(c.name),
-          x: finalX,
-          y: finalY,
-          lastSeen: c.lastSeen || now,
-          lastUpdated: c.lastUpdated || now,
-          isOnline: true,
-        });
-      } else {
-        const finalCity = (c.city && c.city.trim()) ? c.city : (existing.city || '');
-        const coords = resolveCoordinates(finalCity);
-        const parsedX = c.x !== null && c.x !== undefined ? Number(c.x) : NaN;
-        const parsedY = c.y !== null && c.y !== undefined ? Number(c.y) : NaN;
-        const hasIncomingCoords = !isNaN(parsedX) && parsedX >= 0;
-
-        let finalX = existing.x;
-        let finalY = existing.y;
-
-        if (hasIncomingCoords) {
-          finalX = parsedX;
-          finalY = parsedY;
-        } else if (coords.x >= 0) {
-          finalX = coords.x;
-          finalY = coords.y;
-        } else if (typeof existing.x === 'number' && existing.x >= 0) {
-          finalX = existing.x;
-          finalY = existing.y;
-        }
-
-        map.set(c.id, {
-          ...existing,
-          ...c,
-          city: finalCity,
-          x: finalX,
-          y: finalY,
-          name: cleanClientName(c.name || existing.name),
-          currentSection: c.currentSection || existing.currentSection,
-          hasCart: c.hasCart !== undefined ? c.hasCart : existing.hasCart,
-          cartItemsCount: c.cartItemsCount !== undefined ? c.cartItemsCount : existing.cartItemsCount,
-          lastSeen: Math.max(existing.lastSeen || 0, c.lastSeen || 0, now),
-          lastUpdated: Math.max(existing.lastUpdated || 0, c.lastUpdated || 0, now),
-          isOnline: true,
-        });
-      }
-    }
-  }
-
-  const merged: ConnectedClient[] = [];
-  map.forEach((client) => merged.push(client));
-  return merged;
-}
-
 export const useRadarStore = create<RadarStore>((set, get) => ({
   clients: [],
   channel: null,
   pollIntervalId: null,
 
   cleanup: () => {
-    const { channel, pollIntervalId } = get();
+    const { channel } = get();
     channelSubscribed = false;
     pendingBroadcastQueue = [];
     if (channel) {
       supabase.removeChannel(channel);
     }
-    if (pollIntervalId) {
-      clearInterval(pollIntervalId);
-    }
     set({ channel: null, pollIntervalId: null });
   },
 
   fetchActiveClients: async () => {
-    try {
-      const res = await fetch('/api/radar/activity', { cache: 'no-store' });
-      if (res.ok) {
-        const json = await res.json();
-        if (json.success && Array.isArray(json.clients)) {
-          set((state) => ({
-            clients: reconcileClients(state.clients, json.clients),
-          }));
-        }
+    const chan = get().channel;
+    if (chan) {
+      const presenceState = chan.presenceState();
+      const presenceClients = parsePresenceState(presenceState);
+      if (presenceClients.length > 0) {
+        set({ clients: presenceClients });
       }
-    } catch {
-      // Network fallback
     }
   },
 
   trackActivity: async (
-    user, 
-    city = '', 
-    totalSpent = 0, 
-    purchasesCount = 0, 
-    currentSection = 'Explorando Tienda', 
-    hasCart = false, 
-    cartItemsCount = 0, 
+    user,
+    city = '',
+    totalSpent = 0,
+    purchasesCount = 0,
+    currentSection = 'Explorando Tienda',
+    hasCart = false,
+    cartItemsCount = 0,
     isOnline = true,
     sessionId,
     allSessions = false
   ) => {
-    if (!user?.id || user.id.startsWith('vis_') || user.id.startsWith('guest_') || user.name?.toLowerCase().includes('visitante')) return;
-
-    // Self-heal: ensure channel is initialized
+    void allSessions;
     let activeChannel = get().channel;
     if (!activeChannel) {
-      activeChannel = get().initRadar(user, city, totalSpent, purchasesCount, currentSection, hasCart, cartItemsCount, sessionId);
+      activeChannel = get().initRadar(user, sessionId);
     }
+
+    const clientId = user?.id || `anon_${sessionId || 'tab'}`;
+    const isAnon = !user?.id;
 
     // ── Handle Offline Transition ──
     if (isOnline === false) {
       set((state) => ({
-        clients: state.clients.filter((c) => c.id !== user.id),
+        clients: state.clients.filter((c) => c.id !== clientId && c.sessionId !== sessionId),
       }));
 
-      const offlinePromises: Promise<unknown>[] = [];
-
       if (activeChannel) {
-        offlinePromises.push(
-          activeChannel.send({
+        try {
+          await activeChannel.send({
             type: 'broadcast',
             event: 'offline',
-            payload: { id: user.id, sessionId, allSessions },
-          }).catch(() => {})
-        );
-        offlinePromises.push(activeChannel.untrack().catch(() => {}));
+            payload: { id: clientId, sessionId },
+          });
+          await activeChannel.untrack();
+        } catch {}
       }
-
-      offlinePromises.push(
-        fetch('/api/radar/activity', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ id: user.id, sessionId, isOnline: false, allSessions }),
-          keepalive: true,
-        }).catch(() => {})
-      );
-
-      if (allSessions) {
-        offlinePromises.push(
-          (async () => {
-            try {
-              await supabase.from('active_sessions').update({ is_online: false }).eq('user_id', user.id);
-              await supabase.from('active_sessions').delete().eq('user_id', user.id);
-            } catch {}
-          })()
-        );
-      }
-
-      await Promise.allSettled(offlinePromises);
       return;
     }
 
-    // ── Handle Online Heartbeat / Navigation ──
-    const coords = resolveCoordinates(city);
+    // ── Handle Online Presence ──
+    let cleanCity = (city && typeof city === 'string') ? city.trim() : '';
+    if (!cleanCity && isAnon) {
+      const charCodeSum = String(sessionId || clientId).split('').reduce((acc, ch) => acc + ch.charCodeAt(0), 0);
+      cleanCity = DEFAULT_ECUADOR_CITIES[charCodeSum % DEFAULT_ECUADOR_CITIES.length];
+    }
+    const coords = resolveCoordinates(cleanCity);
     const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
     const isTablet = typeof window !== 'undefined' && window.innerWidth >= 768 && window.innerWidth < 1024;
     const device: ConnectedClient['device'] = isMobile ? 'Celular' : isTablet ? 'Tablet' : 'Computador';
-    const frequency = resolveFrequency(purchasesCount);
-    const intentScore = calculateIntentScore(purchasesCount, totalSpent, hasCart);
-    const cleanName = cleanClientName(user.name || user.email?.split('@')[0] || 'Cliente Lumina');
     const now = Date.now();
 
     const payload: ConnectedClient = {
-      id: user.id,
+      id: clientId,
       sessionId,
-      name: cleanName,
-      email: user.email || '',
-      city: city || '',
+      name: isAnon ? 'Visitante Anónimo' : cleanClientName(user?.name || user?.email?.split('@')[0] || 'Cliente Lumina'),
+      email: isAnon ? '' : (user?.email || ''),
+      city: cleanCity || 'Ecuador',
       country: 'Ecuador',
-      x: coords.x,
-      y: coords.y,
-      frequency,
-      purchasesCount: purchasesCount || 0,
-      totalSpent: totalSpent || 0,
+      x: coords.x >= 0 ? coords.x : 48.8,
+      y: coords.y >= 0 ? coords.y : 26.5,
+      frequency: isAnon ? '1ª Vez' : resolveFrequency(purchasesCount),
+      purchasesCount: isAnon ? 0 : purchasesCount,
+      totalSpent: isAnon ? 0 : totalSpent,
       currentSection,
-      intentScore,
+      intentScore: isAnon ? 15 : calculateIntentScore(purchasesCount, totalSpent, hasCart),
       device,
       hasCart,
-      cartItemsCount: cartItemsCount || 0,
-      isRealUser: true,
+      cartItemsCount,
+      isRealUser: !isAnon,
+      isAnonymous: isAnon,
       isOnline: true,
       lastSeen: now,
       lastUpdated: now,
     };
 
-    // Immediately reflect in local state
-    set((state) => ({
-      clients: mergeClientLists(state.clients, [payload]),
-    }));
-
-    // 1. Send Peer-to-Peer WebSocket Broadcast & update Presence cluster
     const dispatchRealtime = () => {
       const chan = get().channel;
       if (chan) {
@@ -559,59 +374,25 @@ export const useRadarStore = create<RadarStore>((set, get) => ({
     } else {
       pendingBroadcastQueue.push(dispatchRealtime);
     }
-
-    // 2. Send to /api/radar/activity (updates server multi-session cache + DB)
-    fetch('/api/radar/activity', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
-      keepalive: true,
-    }).catch(() => {});
   },
 
-  initRadar: (user, _city = '', _totalSpent = 0, _purchasesCount = 0, _currentSection = '', _hasCart = false, _cartItemsCount = 0, sessionId) => {
-    void _city; void _totalSpent; void _purchasesCount; void _currentSection; void _hasCart; void _cartItemsCount; void sessionId;
-    if (!user?.id || user.id.startsWith('vis_') || user.id.startsWith('guest_')) return null;
-
+  initRadar: (user, sessionId) => {
     let activeChannel = get().channel;
 
-    // Initial fetch from activity endpoint
-    get().fetchActiveClients();
-
-    // Unified 5-second maintenance cycle: purges expired clients (>60s TTL) and syncs from backend
-    if (!get().pollIntervalId) {
-      const intervalId = setInterval(() => {
-        const now = Date.now();
-        set((state) => {
-          const activeOnly = state.clients.filter((c) => {
-            if (c.isOnline === false) return false;
-            const idle = now - (c.lastSeen || c.lastUpdated || now);
-            return idle < RADAR_CLIENT_TTL_MS;
-          });
-          if (activeOnly.length !== state.clients.length) {
-            return { clients: activeOnly };
-          }
-          return state;
-        });
-
-        get().fetchActiveClients();
-      }, 5000);
-      set({ pollIntervalId: intervalId });
-    }
-
-    // ── Setup Realtime Broadcast & Presence channel ──
     if (!activeChannel) {
+      const presenceKey = sessionId || (user?.id ? user.id : `anon_${Date.now()}`);
+
       activeChannel = supabase.channel('radar:clients', {
         config: {
           broadcast: { self: false },
-          presence: { key: user.id },
+          presence: { key: presenceKey },
         },
       });
 
       // 1. Peer-to-peer instant broadcast for zero-latency tracking (<40ms)
       activeChannel
         .on('broadcast', { event: 'activity' }, ({ payload }) => {
-          if (!payload || !payload.id || payload.id.startsWith('vis_') || payload.id.startsWith('guest_') || String(payload.name).toLowerCase().includes('visitante')) return;
+          if (!payload || !payload.id) return;
 
           set((state) => {
             const now = Date.now();
@@ -620,32 +401,32 @@ export const useRadarStore = create<RadarStore>((set, get) => ({
             const parsedX = payload.x !== null && payload.x !== undefined ? Number(payload.x) : NaN;
             const parsedY = payload.y !== null && payload.y !== undefined ? Number(payload.y) : NaN;
             const existingClient = state.clients.find((c) => c.id === payload.id);
-            const finalX = !isNaN(parsedX) && parsedX >= 0 ? parsedX : (coords.x >= 0 ? coords.x : (existingClient?.x ?? -100));
-            const finalY = !isNaN(parsedY) && parsedY >= 0 ? parsedY : (coords.y >= 0 ? coords.y : (existingClient?.y ?? -100));
-            const purchases = Number(payload.purchasesCount) || 0;
-            const spent = Number(payload.totalSpent) || 0;
-            const hasCart = Boolean(payload.hasCart);
+            const finalX = !isNaN(parsedX) && parsedX >= 0 ? parsedX : (coords.x >= 0 ? coords.x : (existingClient?.x ?? 48.8));
+            const finalY = !isNaN(parsedY) && parsedY >= 0 ? parsedY : (coords.y >= 0 ? coords.y : (existingClient?.y ?? 26.5));
+            const isAnon = Boolean(payload.isAnonymous || !payload.email || payload.id.startsWith('anon_'));
 
             const updatedClient: ConnectedClient = {
               id: payload.id,
               sessionId: payload.sessionId,
-              name: cleanClientName(payload.name),
-              email: payload.email || '',
-              city: cleanCity,
+              name: isAnon ? 'Visitante Anónimo' : cleanClientName(payload.name),
+              email: isAnon ? '' : (payload.email || ''),
+              city: cleanCity || 'Ecuador',
               country: payload.country || 'Ecuador',
               x: finalX,
               y: finalY,
-              frequency: payload.frequency || resolveFrequency(purchases),
-              purchasesCount: purchases,
-              totalSpent: spent,
+              frequency: isAnon ? '1ª Vez' : (payload.frequency || resolveFrequency(payload.purchasesCount || 0)),
+              purchasesCount: isAnon ? 0 : (Number(payload.purchasesCount) || 0),
+              totalSpent: isAnon ? 0 : (Number(payload.totalSpent) || 0),
               currentSection: payload.currentSection || 'Explorando Tienda',
-              intentScore: payload.intentScore || calculateIntentScore(purchases, spent, hasCart),
+              intentScore: isAnon ? 15 : (payload.intentScore || 25),
               device: (payload.device as ConnectedClient['device']) || 'Computador',
-              hasCart,
+              hasCart: Boolean(payload.hasCart),
               cartItemsCount: Number(payload.cartItemsCount) || 0,
-              isRealUser: true,
+              isRealUser: !isAnon,
+              isAnonymous: isAnon,
               lastSeen: now,
               lastUpdated: now,
+              isOnline: true,
             };
 
             const idx = state.clients.findIndex((c) => c.id === payload.id);
@@ -661,47 +442,25 @@ export const useRadarStore = create<RadarStore>((set, get) => ({
         .on('broadcast', { event: 'offline' }, ({ payload }) => {
           if (payload?.id) {
             set((state) => ({
-              clients: state.clients.filter((c) => c.id !== payload.id),
+              clients: state.clients.filter((c) => c.id !== payload.id && c.sessionId !== payload.sessionId),
             }));
           }
         });
 
-      // 2. Global Presence Synchronization (Discovers all online clients across all browsers without page reload)
+      // 2. Pure Supabase Realtime Presence Synchronizer (reactive, zero-polling)
+      const updatePresenceClients = () => {
+        if (!activeChannel) return;
+        const presenceState = activeChannel.presenceState();
+        const clients = parsePresenceState(presenceState);
+        set({ clients });
+      };
+
       activeChannel
-        .on('presence', { event: 'sync' }, () => {
-          if (!activeChannel) return;
-          const presenceState = activeChannel.presenceState();
-          const presenceClients = parsePresenceState(presenceState);
-          if (presenceClients.length > 0) {
-            set((state) => ({
-              clients: mergeClientLists(state.clients, presenceClients),
-            }));
-          }
-        })
-        .on('presence', { event: 'join' }, ({ newPresences }) => {
-          if (Array.isArray(newPresences) && newPresences.length > 0) {
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            const joinedClients = parsePresenceState({ join: newPresences } as any);
-            if (joinedClients.length > 0) {
-              set((state) => ({
-                clients: mergeClientLists(state.clients, joinedClients),
-              }));
-            }
-          }
-        })
-        .on('presence', { event: 'leave' }, ({ leftPresences }) => {
-          if (Array.isArray(leftPresences) && leftPresences.length > 0) {
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            const leftIds = new Set(leftPresences.map((p: any) => p.id).filter(Boolean));
-            if (leftIds.size > 0) {
-              set((state) => ({
-                clients: state.clients.filter(c => !leftIds.has(c.id)),
-              }));
-            }
-          }
-        });
+        .on('presence', { event: 'sync' }, updatePresenceClients)
+        .on('presence', { event: 'join' }, updatePresenceClients)
+        .on('presence', { event: 'leave' }, updatePresenceClients);
 
-      // 3. Connect & flush pending queue once subscribed
+      // 3. Connect & flush pending queue
       activeChannel.subscribe((status) => {
         if (status === 'SUBSCRIBED') {
           channelSubscribed = true;

@@ -79,9 +79,13 @@ export function SettingsTab({
 
   const fetchInvitedAdmins = async () => {
     try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const headers: Record<string, string> = { 'Cache-Control': 'no-cache', 'Pragma': 'no-cache' };
+      if (session?.access_token) headers['Authorization'] = `Bearer ${session.access_token}`;
+
       const res = await fetch('/api/admin/invitations', { 
         cache: 'no-store',
-        headers: { 'Cache-Control': 'no-cache', 'Pragma': 'no-cache' }
+        headers
       });
       if (res.ok) {
         const data = await res.json();
@@ -131,13 +135,14 @@ export function SettingsTab({
     setInviteSuccess(null);
     setIsSyncingAdmins(true);
     try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+      if (session?.access_token) headers['Authorization'] = `Bearer ${session.access_token}`;
+
       const res = await fetch('/api/admin/invitations', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify({
-          requesterEmail: user?.email,
-          userRole: user?.role,
-          isRootAdmin,
           action: 'add',
           emails: raw,
         }),
@@ -163,13 +168,14 @@ export function SettingsTab({
     setInviteSuccess(null);
     setIsSyncingAdmins(true);
     try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+      if (session?.access_token) headers['Authorization'] = `Bearer ${session.access_token}`;
+
       const res = await fetch('/api/admin/invitations', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify({
-          requesterEmail: user?.email,
-          userRole: user?.role,
-          isRootAdmin,
           action: 'remove',
           email: targetEmail,
         }),

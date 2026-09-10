@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { getAuthenticatedUser, verifyIsAdmin } from '@/lib/serverAuth';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -107,7 +108,39 @@ async function persistInvitedAdmins(emails: string[]): Promise<string[]> {
   return cleanEmails;
 }
 
-export async function GET() {
+async function broadcastRoleChange(targetEmail: string, role: 'USER' | 'ADMIN') {
+  try {
+    const rolesChan = supabase.channel(`srv_roles_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`);
+    await new Promise<void>((resolve) => {
+      rolesChan.subscribe(async (status) => {
+        if (status === 'SUBSCRIBED') {
+          await rolesChan.send({
+            type: 'broadcast',
+            event: 'role_change',
+            payload: { email: targetEmail, role, timestamp: Date.now() },
+          });
+          supabase.removeChannel(rolesChan);
+          resolve();
+        } else if (status === 'CHANNEL_ERROR' || status === 'CLOSED') {
+          resolve();
+        }
+      });
+      setTimeout(resolve, 800);
+    });
+  } catch {}
+}
+
+export async function GET(request: Request) {
+  const authUser = await getAuthenticatedUser(request);
+  const isAdmin = authUser?.email ? await verifyIsAdmin(authUser.email) : false;
+
+  if (!isAdmin) {
+    return NextResponse.json(
+      { success: false, error: 'Acceso no autorizado. Se requieren credenciales de administrador.' },
+      { status: 401 }
+    );
+  }
+
   const invitedAdmins = await loadInvitedAdmins();
 
   return NextResponse.json(
@@ -131,25 +164,24 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
-    const body = await request.json();
-    const { requesterEmail, emails, action, email } = body;
-
-    const currentList = await loadInvitedAdmins();
-
-    // Strict Root Admin Check for mutations:
-    // Only primary root owner (admin@lumina.com) can invite or revoke other administrators.
-    const cleanRequester = String(requesterEmail || '').toLowerCase().trim();
+    const authUser = await getAuthenticatedUser(request);
+    const cleanRequester = (authUser?.email || '').toLowerCase().trim();
     const isRootOrOwner = cleanRequester === ROOT_ADMIN_EMAIL;
 
     if (!isRootOrOwner) {
       return NextResponse.json(
         {
           success: false,
-          error: `Acceso restringido. Solo el Administrador Principal (${ROOT_ADMIN_EMAIL}) puede invitar o revocar administradores adicionales (solicitado por: ${cleanRequester || 'anónimo'}).`,
+          error: `Acceso restringido. Solo el Administrador Principal (${ROOT_ADMIN_EMAIL}) autenticado puede invitar o revocar administradores.`,
         },
         { status: 403 }
       );
     }
+
+    const body = await request.json();
+    const { emails, action, email } = body;
+
+    const currentList = await loadInvitedAdmins();
 
     // Handle individual removal
     if (action === 'remove' && email) {
@@ -162,6 +194,10 @@ export async function POST(request: Request) {
       } catch {}
 
       const saved = await persistInvitedAdmins(nextList);
+
+      // Broadcast role revocation in realtime
+      await broadcastRoleChange(targetEmail, 'USER');
+
       return NextResponse.json({
         success: true,
         message: `El administrador invitado '${targetEmail}' ha sido revocado.`,
@@ -178,6 +214,12 @@ export async function POST(request: Request) {
       } catch {}
 
       const saved = await persistInvitedAdmins([]);
+
+      // Broadcast role revocation for all previously invited admins
+      for (const prevEmail of currentList) {
+        await broadcastRoleChange(prevEmail, 'USER');
+      }
+
       return NextResponse.json({
         success: true,
         message: 'Lista de administradores invitados vaciada.',
@@ -261,6 +303,11 @@ export async function POST(request: Request) {
     }
 
     const saved = await persistInvitedAdmins(finalEmails);
+
+    // Broadcast realtime promotion to newly added admins
+    for (const addedEmail of cleanedCandidates) {
+      await broadcastRoleChange(addedEmail, 'ADMIN');
+    }
 
     return NextResponse.json({
       success: true,

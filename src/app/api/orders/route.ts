@@ -46,10 +46,9 @@ export async function GET(request: Request) {
     const userId = searchParams.get('userId');
     const email = searchParams.get('email') || '';
 
-    // Check token if present
+    // Verify authenticated user via JWT Bearer
     const authUser = await getAuthenticatedUser(request);
-    const effectiveEmail = authUser?.email || email;
-    const isAdmin = await verifyIsAdmin(effectiveEmail);
+    const isAdmin = authUser?.email ? await verifyIsAdmin(authUser.email) : false;
 
     let query = supabase
       .from('orders')
@@ -57,14 +56,17 @@ export async function GET(request: Request) {
       .not('id', 'like', 'SYS_%')
       .order('created_at', { ascending: false });
 
-    // Non-admins only see their own orders
+    // Non-admins only see their own orders (prioritizing verified JWT identity)
     if (!isAdmin) {
-      if (userId && effectiveEmail) {
-        query = query.or(`user_id.eq.${userId},customer_email.eq.${effectiveEmail.toLowerCase().trim()}`);
-      } else if (userId) {
-        query = query.eq('user_id', userId);
-      } else if (effectiveEmail) {
-        query = query.eq('customer_email', effectiveEmail.toLowerCase().trim());
+      const targetUserId = authUser?.id || userId;
+      const targetEmail = authUser?.email ? authUser.email.toLowerCase().trim() : (email ? email.toLowerCase().trim() : '');
+
+      if (targetUserId && targetEmail) {
+        query = query.or(`user_id.eq.${targetUserId},customer_email.eq.${targetEmail}`);
+      } else if (targetUserId) {
+        query = query.eq('user_id', targetUserId);
+      } else if (targetEmail) {
+        query = query.eq('customer_email', targetEmail);
       } else {
         return NextResponse.json({ success: true, orders: [], count: 0 });
       }

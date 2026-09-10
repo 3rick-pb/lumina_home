@@ -239,17 +239,14 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
     }
   };
 
-  // Real-time clients synchronized via centralized radarStore (Real authenticated accounts only)
+  // Real-time clients synchronized via centralized radarStore (both authenticated accounts and anonymous visitors)
   const rawConnectedClients = useRadarStore((state) => state.clients);
   const connectedClients = useMemo(() => {
     const list = Array.isArray(rawConnectedClients) 
       ? rawConnectedClients.filter(c => 
           c && 
           c.id && 
-          c.isOnline !== false &&
-          !c.id.startsWith('vis_') && 
-          !c.id.startsWith('guest_') && 
-          !c.name?.toLowerCase().includes('visitante')
+          c.isOnline !== false
         )
       : [];
 
@@ -268,7 +265,7 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
           currentSection: isAdmin ? "Mi Perfil / Mapa" : (c.currentSection || "Explorando Tienda"),
         };
       }
-      // Guarantee valid coordinates for any external client with a registered city
+      // Guarantee valid coordinates for any external client or anonymous visitor with a city
       const clientCity = c.city || "";
       const parsedX = typeof c.x === 'number' ? c.x : Number(c.x);
       const parsedY = typeof c.y === 'number' ? c.y : Number(c.y);
@@ -311,9 +308,9 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
     return mapped;
   }, [rawConnectedClients, isUserSelf, currentUserCity, isAdmin, currentUser, userOrders]);
 
-  // Actual clients connected (Administrators do NOT count as clients!)
+  // Actual clients connected (Administrators and Anonymous visitors are NOT registered clients!)
   const actualClients = useMemo(() => {
-    return connectedClients.filter(c => !isClientAdmin(c));
+    return connectedClients.filter(c => !isClientAdmin(c) && !c.isAnonymous);
   }, [connectedClients, isClientAdmin]);
 
   // Guarantee the active logged-in user is immediately registered and visible on the radar ("Tú")
@@ -323,18 +320,14 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
       const spent = userOrders?.reduce((acc, o) => acc + (o.total || 0), 0) || 0;
       const purchases = userOrders?.length || 0;
       const section = isAdmin ? "Mi Perfil / Mapa" : "Panel Radar / Métricas";
-      useRadarStore.getState().initRadar(currentUser, city, spent, purchases, section);
+      useRadarStore.getState().initRadar(currentUser);
       useRadarStore.getState().trackActivity(currentUser, city, spent, purchases, section);
     }
   }, [currentUser, currentUserCity, userOrders, isAdmin]);
 
-  // 5-Second automatic synchronization cycle with backend & database (inspects true/false changes across all accounts)
+  // Pure Supabase Realtime synchronization (reads current state on mount, updates reactively via WebSocket)
   useEffect(() => {
     fetchActiveClients();
-    const interval = setInterval(() => {
-      fetchActiveClients();
-    }, 5000);
-    return () => clearInterval(interval);
   }, [fetchActiveClients]);
 
   // Dynamically resolve LIVE client objects from the reactive connectedClients array
@@ -744,30 +737,42 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
                 </div>
 
                 {/* Floating Hover Tooltip showing preview of clients */}
-                {isHovered && (
-                  <div className="absolute bottom-full mb-2.5 left-1/2 -translate-x-1/2 w-52 p-3 rounded-2xl bg-[#111614]/95 backdrop-blur-2xl border border-[#ccff00]/50 shadow-[0_15px_35px_rgba(0,0,0,0.8)] z-50 pointer-events-none space-y-2 animate-fade-in">
-                    <div className="flex items-center justify-between text-[10px] font-mono border-b border-white/10 pb-1.5">
-                      <span className="text-white font-bold">{cluster.cityName}</span>
-                      <span className="text-[#ccff00] font-bold">{count} clientes en vivo</span>
+                {isHovered && (() => {
+                  const anonCount = cluster.clients.filter(c => c.isAnonymous).length;
+                  const regCount = count - anonCount;
+                  return (
+                    <div className="absolute bottom-full mb-2.5 left-1/2 -translate-x-1/2 w-56 p-3 rounded-2xl bg-[#111614]/95 backdrop-blur-2xl border border-[#ccff00]/50 shadow-[0_15px_35px_rgba(0,0,0,0.8)] z-50 pointer-events-none space-y-2 animate-fade-in">
+                      <div className="flex items-center justify-between text-[10px] font-mono border-b border-white/10 pb-1.5">
+                        <span className="text-white font-bold">{cluster.cityName}</span>
+                        <span className="text-[#ccff00] font-bold">
+                          {regCount > 0 ? `${regCount} reg.` : ''}
+                          {regCount > 0 && anonCount > 0 ? ' • ' : ''}
+                          {anonCount > 0 ? `${anonCount} anon.` : ''}
+                        </span>
+                      </div>
+                      <div className="space-y-1">
+                        {cluster.clients.slice(0, 4).map(c => (
+                          <div key={c.id} className="flex items-center justify-between text-[9.5px]">
+                            <span className={`truncate max-w-[120px] ${c.isAnonymous ? "text-sky-300 font-medium" : "text-white/85"}`}>
+                              {c.isAnonymous ? "Visitante Anónimo" : cleanClientName(c.name)}
+                            </span>
+                            <span className={`font-mono font-semibold ${c.isAnonymous ? "text-sky-400" : "text-[#ccff00]"}`}>
+                              {c.isAnonymous ? "Explorando" : `$${c.totalSpent || 0}`}
+                            </span>
+                          </div>
+                        ))}
+                        {count > 4 && (
+                          <div className="text-[8.5px] text-white/50 text-center font-mono">
+                            +{count - 4} clientes adicionales
+                          </div>
+                        )}
+                      </div>
+                      <div className="text-[8.5px] text-center text-[#ccff00] font-mono pt-1 border-t border-white/10 flex items-center justify-center gap-1">
+                        <span>Clic para acercar y desplegar</span> &rarr;
+                      </div>
                     </div>
-                    <div className="space-y-1">
-                      {cluster.clients.slice(0, 4).map(c => (
-                        <div key={c.id} className="flex items-center justify-between text-[9.5px]">
-                          <span className="text-white/85 truncate max-w-[120px]">{cleanClientName(c.name)}</span>
-                          <span className="text-[#ccff00] font-mono font-semibold">${c.totalSpent || 0}</span>
-                        </div>
-                      ))}
-                      {count > 4 && (
-                        <div className="text-[8.5px] text-white/50 text-center font-mono">
-                          +{count - 4} clientes adicionales
-                        </div>
-                      )}
-                    </div>
-                    <div className="text-[8.5px] text-center text-[#ccff00] font-mono pt-1 border-t border-white/10 flex items-center justify-center gap-1">
-                      <span>Clic para acercar y desplegar</span> &rarr;
-                    </div>
-                  </div>
-                )}
+                  );
+                })()}
               </div>
             );
           })}
@@ -811,7 +816,9 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
                 onMouseLeave={() => setHoveredClientId(null)}
                 onClick={(e) => {
                   e.stopPropagation();
-                  setSelectedClientId(prev => prev === client.id ? null : client.id);
+                  if (!client.isAnonymous) {
+                    setSelectedClientId(prev => prev === client.id ? null : client.id);
+                  }
                 }}
               >
                 {/* Pulsing Ground Halo */}
@@ -819,6 +826,8 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
                   <span className={`block rounded-full ${
                     isSelf 
                       ? "w-4 h-4 bg-emerald-400 animate-ping shadow-[0_0_14px_#34d399]" 
+                      : client.isAnonymous
+                      ? "w-3.5 h-3.5 bg-sky-400 animate-ping shadow-[0_0_14px_#38bdf8]"
                       : activeStage === "cart" && client.hasCart
                       ? "w-4 h-4 bg-rose-500 animate-ping shadow-[0_0_18px_#f43f5e]"
                       : activeStage === "frequent" && isStageMatch
@@ -831,9 +840,13 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
                 <div className="flex flex-col items-center">
                   <div className={`relative transition-all duration-300 flex items-center justify-center rounded-full border shadow-xl ${
                     isActive 
-                      ? "scale-125 z-50 bg-white text-gray-950 border-[#ccff00] shadow-[0_0_24px_#ccff00]" 
+                      ? client.isAnonymous
+                        ? "scale-125 z-50 bg-sky-400 text-gray-950 border-white shadow-[0_0_24px_#38bdf8]"
+                        : "scale-125 z-50 bg-white text-gray-950 border-[#ccff00] shadow-[0_0_24px_#ccff00]" 
                       : isSelf 
                       ? "bg-emerald-400 text-gray-950 border-white shadow-[0_0_16px_#34d399]" 
+                      : client.isAnonymous
+                      ? "bg-sky-400 text-gray-950 border-white/90 shadow-[0_0_14px_#38bdf8]"
                       : activeStage === "cart" && client.hasCart
                       ? "bg-rose-500 text-white border-white shadow-[0_0_18px_#f43f5e] scale-110"
                       : activeStage === "frequent" && isStageMatch
@@ -856,9 +869,13 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
                   {/* Vertical Pin Line */}
                   <div className={`w-[2px] transition-all duration-300 ${
                     isActive 
-                      ? "h-9 bg-gradient-to-t from-[#ccff00] to-white shadow-[0_0_12px_#ccff00]" 
+                      ? client.isAnonymous
+                        ? "h-9 bg-gradient-to-t from-sky-400 to-white shadow-[0_0_12px_#38bdf8]"
+                        : "h-9 bg-gradient-to-t from-[#ccff00] to-white shadow-[0_0_12px_#ccff00]" 
                       : isSelf
                       ? "h-7 bg-gradient-to-t from-emerald-400 to-white shadow-[0_0_8px_#34d399]"
+                      : client.isAnonymous
+                      ? "h-7 bg-gradient-to-t from-sky-400 to-sky-100 shadow-[0_0_8px_#38bdf8]"
                       : activeStage === "cart" && client.hasCart
                       ? "h-8 bg-gradient-to-t from-rose-500 to-white shadow-[0_0_10px_#f43f5e]"
                       : activeStage === "frequent" && isStageMatch
@@ -866,6 +883,7 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
                       : "h-7 bg-gradient-to-t from-[#ccff00] to-yellow-200 shadow-[0_0_8px_#ccff00]"
                   }`} />
                   <div className={`w-1 h-1 rotate-45 ${
+                    client.isAnonymous ? "bg-sky-400 shadow-[0_0_6px_#38bdf8]" :
                     activeStage === "cart" && client.hasCart ? "bg-rose-500 shadow-[0_0_6px_#f43f5e]" :
                     activeStage === "frequent" && isStageMatch ? "bg-amber-400 shadow-[0_0_6px_#f59e0b]" :
                     "bg-[#ccff00] shadow-[0_0_6px_#ccff00]"
@@ -875,13 +893,56 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
                 {/* City & Client Tag Label */}
                 <div className={`absolute top-full mt-1 left-1/2 -translate-x-1/2 whitespace-nowrap px-2 py-0.5 rounded text-[9px] font-bold font-mono tracking-wider transition-all pointer-events-none ${
                   isActive 
-                    ? "bg-white text-gray-950 shadow-md scale-105 z-50" 
+                    ? client.isAnonymous
+                      ? "bg-sky-400 text-gray-950 shadow-md scale-105 z-50"
+                      : "bg-white text-gray-950 shadow-md scale-105 z-50" 
                     : isDimmed
                     ? "bg-black/40 text-white/50 border border-white/5"
+                    : client.isAnonymous
+                    ? "bg-black/85 text-sky-300 border border-sky-400/30 backdrop-blur-md"
                     : "bg-black/85 text-white/90 border border-white/10 backdrop-blur-md"
                 }`}>
-                  {beaconLabel}
+                  {client.isAnonymous ? `Visitante • ${beacon.cityName}` : beaconLabel}
                 </div>
+
+                {/* Lightweight Hover Tooltip for Anonymous Visitors */}
+                {isHovered && client.isAnonymous && (
+                  <div className="absolute bottom-full mb-3 left-1/2 -translate-x-1/2 w-48 p-2.5 rounded-2xl bg-[#0b131b]/95 backdrop-blur-xl border border-sky-400/50 shadow-[0_10px_30px_rgba(56,189,248,0.25)] z-50 pointer-events-none space-y-1.5 animate-fade-in text-left">
+                    <div className="flex items-center justify-between border-b border-white/10 pb-1">
+                      <div className="flex items-center gap-1.5">
+                        <span className="w-2 h-2 rounded-full bg-sky-400 animate-pulse" />
+                        <span className="text-[11px] font-bold text-white font-sans">Visitante Anónimo</span>
+                      </div>
+                      <span className="text-[8.5px] font-mono px-1.5 py-0.5 rounded bg-sky-400/20 text-sky-300 font-bold border border-sky-400/30">
+                        En Vivo
+                      </span>
+                    </div>
+                    <div className="space-y-1 text-[10px] text-white/80">
+                      <div className="flex items-center justify-between">
+                        <span className="text-white/50">Ubicación:</span>
+                        <span className="font-semibold text-white">{beacon.cityName}</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-white/50">Dispositivo:</span>
+                        <span className="font-mono text-white/90">{client.device || "Computador"}</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-white/50">Sección:</span>
+                        <span className="font-medium text-sky-300 truncate max-w-[105px]" title={client.currentSection}>
+                          {client.currentSection || "Explorando"}
+                        </span>
+                      </div>
+                      {client.hasCart && (
+                        <div className="flex items-center justify-between text-rose-300 pt-0.5 border-t border-white/10 text-[9.5px]">
+                          <span className="flex items-center gap-1">
+                            <ShoppingBag className="w-2.5 h-2.5" /> En carrito:
+                          </span>
+                          <span className="font-mono font-bold">{client.cartItemsCount || 1} pzs</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
               </div>
             );
           })}
@@ -1834,7 +1895,8 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
                 <span className="text-[9px] font-mono text-[#ccff00] font-bold">En Vivo</span>
               </div>
               <p className="text-[10px] text-white/70">
-                {actualClients.length} cliente{actualClients.length !== 1 ? 's' : ''} conectado{actualClients.length !== 1 ? 's' : ''} ahora
+                {actualClients.length} cliente{actualClients.length !== 1 ? 's' : ''}
+                {connectedClients.filter(c => c.isAnonymous).length > 0 ? ` • ${connectedClients.filter(c => c.isAnonymous).length} visitante${connectedClients.filter(c => c.isAnonymous).length !== 1 ? 's' : ''}` : ''} conectado{actualClients.length + connectedClients.filter(c => c.isAnonymous).length !== 1 ? 's' : ''} ahora
               </p>
               <div className="flex items-center justify-between text-[9px] font-mono text-white/60 mt-1 pt-1 border-t border-white/10">
                 <span>Ticket Promedio: <strong className="text-white">${avgTicket.toFixed(0)} USD</strong></span>
