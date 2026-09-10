@@ -31,7 +31,6 @@ interface SettingsTabProps {
 
 export function SettingsTab({
   isAdmin,
-  isRootAdmin,
   showAddressForm,
   setShowAddressForm
 }: SettingsTabProps) {
@@ -67,15 +66,17 @@ export function SettingsTab({
   const [locationError, setLocationError] = useState<string | null>(null);
   const [locationSuccess, setLocationSuccess] = useState(false);
 
+  const isMasterAdmin = (user?.email || '').toLowerCase().trim() === 'admin@lumina.com';
+
   useEffect(() => {
     if (user?.name) setEditName(user.name);
   }, [user?.name]);
 
   useEffect(() => {
-    if (isAdmin) {
+    if (isAdmin && isMasterAdmin) {
       fetchInvitedAdmins();
     }
-  }, [isAdmin]);
+  }, [isAdmin, isMasterAdmin]);
 
   const fetchInvitedAdmins = async () => {
     try {
@@ -92,7 +93,7 @@ export function SettingsTab({
         if (Array.isArray(data.invitedAdmins)) {
           const filtered = data.invitedAdmins
             .map((e: string) => String(e).toLowerCase().trim())
-            .filter((e: string) => Boolean(e) && !ROOT_ADMIN_EMAILS.includes(e));
+            .filter((e: string) => Boolean(e) && e !== 'admin@lumina.com' && !ROOT_ADMIN_EMAILS.includes(e));
           setInvitedAdmins(filtered);
           return;
         }
@@ -114,42 +115,11 @@ export function SettingsTab({
           if (Array.isArray(parsed)) {
             const filtered = parsed
               .map((e: string) => String(e).toLowerCase().trim())
-              .filter((e: string) => Boolean(e) && !ROOT_ADMIN_EMAILS.includes(e));
+              .filter((e: string) => Boolean(e) && e !== 'admin@lumina.com' && !ROOT_ADMIN_EMAILS.includes(e));
             setInvitedAdmins(filtered);
             return;
           }
         } catch {}
-      }
-    } catch {}
-
-    try {
-      const { data: dbInvites, error } = await supabase
-        .from('admin_invitations')
-        .select('email')
-        .eq('is_active', true);
-
-      if (!error && dbInvites && Array.isArray(dbInvites)) {
-        const emails = dbInvites
-          .map((i) => String(i.email || '').toLowerCase().trim())
-          .filter((e) => Boolean(e) && !ROOT_ADMIN_EMAILS.includes(e));
-        setInvitedAdmins(emails);
-        return;
-      }
-    } catch {}
-
-    try {
-      const { data: dbConfig } = await supabase
-        .from('orders')
-        .select('items')
-        .eq('id', 'SYS_CONFIG_ADMIN_INVITES')
-        .maybeSingle();
-
-      if (dbConfig && Array.isArray(dbConfig.items)) {
-        const dbEmails = (dbConfig.items as Array<{ email?: string } | string>)
-          .map((item) => (typeof item === 'object' && item !== null ? String(item.email || '') : String(item || '')).toLowerCase().trim())
-          .filter((e) => Boolean(e) && !ROOT_ADMIN_EMAILS.includes(e));
-        setInvitedAdmins(dbEmails);
-        return;
       }
     } catch {}
   };
@@ -157,11 +127,6 @@ export function SettingsTab({
   const handleAddAdminInvite = async (emailsToAdd?: string) => {
     const raw = (emailsToAdd !== undefined ? emailsToAdd : adminInviteInput).trim().toLowerCase();
     if (!raw) return;
-
-    if (ROOT_ADMIN_EMAILS.includes(raw)) {
-      setInviteError(`"${raw}" ya es una cuenta Root de Super Administrador permanente.`);
-      return;
-    }
 
     setInviteError(null);
     setInviteSuccess(null);
@@ -181,17 +146,17 @@ export function SettingsTab({
       });
       const data = await res.json();
       if (!res.ok || !data.success) {
-        throw new Error(data.error || 'Error al agregar administrador.');
+        throw new Error(data.error || 'Error al agregar administradores.');
       }
       const filtered = Array.isArray(data.invitedAdmins)
         ? data.invitedAdmins
             .map((e: string) => String(e).toLowerCase().trim())
-            .filter((e: string) => Boolean(e) && !ROOT_ADMIN_EMAILS.includes(e))
+            .filter((e: string) => Boolean(e) && e !== 'admin@lumina.com' && !ROOT_ADMIN_EMAILS.includes(e))
         : [];
       setInvitedAdmins(filtered);
       clearAdminCache();
       setAdminInviteInput("");
-      setInviteSuccess(`¡Administrador "${raw}" agregado y sincronizado con éxito!`);
+      setInviteSuccess(data.message || '¡Administrador(es) agregados con éxito!');
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Error al procesar la invitación.';
       setInviteError(msg);
@@ -224,7 +189,7 @@ export function SettingsTab({
       const filtered = Array.isArray(data.invitedAdmins)
         ? data.invitedAdmins
             .map((e: string) => String(e).toLowerCase().trim())
-            .filter((e: string) => Boolean(e) && !ROOT_ADMIN_EMAILS.includes(e))
+            .filter((e: string) => Boolean(e) && e !== 'admin@lumina.com' && !ROOT_ADMIN_EMAILS.includes(e))
         : [];
       setInvitedAdmins(filtered);
       clearAdminCache();
@@ -408,118 +373,116 @@ export function SettingsTab({
 
           {isAdmin && (
             <div className="pt-4 border-t border-gray-100 dark:border-white/5 space-y-4">
-              <div className="p-5 rounded-2xl bg-gradient-to-br from-gray-50 to-gray-100/50 dark:from-[#2a2a2c]/80 dark:to-[#222224]/80 border border-gray-200/80 dark:border-white/10 space-y-4 shadow-sm">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                  <div className="flex items-center gap-2.5">
-                    <div className="w-8 h-8 rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center font-bold">
-                      <Crown className="w-4 h-4" />
+              {!isMasterAdmin ? (
+                <div className="p-5 rounded-2xl bg-amber-500/10 dark:bg-amber-500/15 border border-amber-500/20 text-amber-900 dark:text-amber-200 text-xs flex items-center gap-3 shadow-xs">
+                  <ShieldCheck className="w-5 h-5 text-amber-600 dark:text-amber-400 shrink-0" />
+                  <p className="font-semibold text-xs tracking-wide leading-relaxed">
+                    Su cuenta ha sido otorgada con acceso de administrador.
+                  </p>
+                </div>
+              ) : (
+                <div className="p-5 rounded-2xl bg-gradient-to-br from-gray-50 to-gray-100/50 dark:from-[#2a2a2c]/80 dark:to-[#222224]/80 border border-gray-200/80 dark:border-white/10 space-y-4 shadow-sm">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-8 h-8 rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center font-bold">
+                        <Crown className="w-4 h-4" />
+                      </div>
+                      <div>
+                        <h4 className="text-xs font-bold text-gray-900 dark:text-gray-100">
+                          Gestión de Administradores Extras
+                        </h4>
+                        <p className="text-[11px] text-gray-500 dark:text-gray-400">
+                          Otorga acceso de administrador ingresando correos separados por comas (máximo 3 cupos adicionales).
+                        </p>
+                      </div>
                     </div>
-                    <div>
-                      <h4 className="text-xs font-bold text-gray-900 dark:text-gray-100">
-                        Gestión de Administradores Extras
-                      </h4>
-                      <p className="text-[11px] text-gray-500 dark:text-gray-400">
-                        Otorga acceso de administrador a tus colaboradores para catálogo, pedidos y radar.
+                  </div>
+
+                  <div className="w-full py-1 px-4 rounded-full bg-emerald-500/10 dark:bg-emerald-500/15 border border-emerald-500/20 text-center text-xs font-semibold text-emerald-700 dark:text-emerald-300">
+                    {invitedAdmins.length} de 3 cupos utilizados
+                  </div>
+
+                  <div className="space-y-3">
+                    <div className="flex gap-2">
+                      <div className="relative flex-1">
+                        <Mail className="w-4 h-4 absolute left-3.5 top-3.5 text-gray-400" />
+                        <input
+                          type="text"
+                          value={adminInviteInput}
+                          onChange={e => setAdminInviteInput(e.target.value)}
+                          onKeyDown={e => {
+                            if (e.key === 'Enter') {
+                              e.preventDefault();
+                              handleAddAdminInvite();
+                            }
+                          }}
+                          placeholder="correo1@amigo.com, correo2@amigo.com (separados por coma)"
+                          disabled={invitedAdmins.length >= 3 || isSyncingAdmins}
+                          className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-xs bg-white dark:bg-[#1a1a1c] text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#8c9276] disabled:opacity-50"
+                        />
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => handleAddAdminInvite()}
+                        disabled={!adminInviteInput.trim() || invitedAdmins.length >= 3 || isSyncingAdmins}
+                        className="px-4 py-2.5 rounded-xl bg-[#8c9276] hover:bg-[#7b8166] text-white text-xs font-bold transition-all disabled:opacity-50 cursor-pointer shrink-0 shadow-sm flex items-center gap-1.5"
+                      >
+                        {isSyncingAdmins ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Plus className="w-3.5 h-3.5" />}
+                        <span>Invitar</span>
+                      </button>
+                    </div>
+
+                    {inviteError && (
+                      <div className="p-3 rounded-xl bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800/30 text-red-600 dark:text-red-400 text-xs flex items-center gap-2">
+                        <AlertCircle className="w-4 h-4 shrink-0" />
+                        <span>{inviteError}</span>
+                      </div>
+                    )}
+
+                    {inviteSuccess && (
+                      <div className="p-3 rounded-xl bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800/30 text-emerald-600 dark:text-emerald-400 text-xs flex items-center gap-2">
+                        <CheckCircle2 className="w-4 h-4 shrink-0" />
+                        <span>{inviteSuccess}</span>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="space-y-2 pt-1">
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-gray-400">
+                      Administradores Adicionales Activos ({invitedAdmins.length})
+                    </p>
+                    {invitedAdmins.length === 0 ? (
+                      <p className="text-xs text-gray-400 dark:text-gray-500 italic bg-white/60 dark:bg-[#1a1a1c]/60 p-3 rounded-xl border border-dashed border-gray-200 dark:border-white/10 text-center">
+                        No hay administradores adicionales registrados. Los 3 cupos están disponibles.
                       </p>
-                    </div>
+                    ) : (
+                      <div className="space-y-1.5">
+                        {invitedAdmins.map((admEmail) => (
+                          <div
+                            key={admEmail}
+                            className="flex items-center justify-between p-2.5 px-3 rounded-xl bg-white dark:bg-[#1e1e20] border border-gray-100 dark:border-white/5 text-xs shadow-xs"
+                          >
+                            <div className="flex items-center gap-2 min-w-0">
+                              <ShieldCheck className="w-4 h-4 text-[#8c9276] shrink-0" />
+                              <span className="font-semibold text-gray-900 dark:text-gray-100 truncate">{admEmail}</span>
+                              <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-amber-100 dark:bg-amber-900/40 text-amber-800 dark:text-amber-300">ADMINISTRADOR</span>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => handleRemoveAdminInvite(admEmail)}
+                              disabled={isSyncingAdmins}
+                              className="p-1.5 rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/40 transition-colors cursor-pointer shrink-0"
+                              title="Revocar acceso de administrador"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 </div>
-
-                {!isRootAdmin ? (
-                  <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-amber-800 dark:text-amber-300 text-xs flex items-center gap-3">
-                    <Crown className="w-5 h-5 text-amber-600 shrink-0" />
-                    <p className="leading-relaxed">
-                      Tu cuenta tiene acceso como <strong>Administrador Secundario</strong>. Solo el Administrador Principal (admin@lumina.com) puede invitar o revocar otros administradores y gestionar los cupos del sistema.
-                    </p>
-                  </div>
-                ) : (
-                  <>
-                    <div className="w-full py-1 px-4 rounded-full bg-emerald-500/10 dark:bg-emerald-500/15 border border-emerald-500/20 text-center text-xs font-semibold text-emerald-700 dark:text-emerald-300">
-                      {invitedAdmins.length} de 3 cupos utilizados
-                    </div>
-
-                    <div className="space-y-3">
-                      <div className="flex gap-2">
-                        <div className="relative flex-1">
-                          <Mail className="w-4 h-4 absolute left-3.5 top-3.5 text-gray-400" />
-                          <input
-                            type="text"
-                            value={adminInviteInput}
-                            onChange={e => setAdminInviteInput(e.target.value)}
-                            onKeyDown={e => {
-                              if (e.key === 'Enter') {
-                                e.preventDefault();
-                                handleAddAdminInvite();
-                              }
-                            }}
-                            placeholder="correo@amigo.com (o varios separados por coma)"
-                            disabled={invitedAdmins.length >= 3 || isSyncingAdmins}
-                            className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-xs bg-white dark:bg-[#1a1a1c] text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#8c9276] disabled:opacity-50"
-                          />
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => handleAddAdminInvite()}
-                          disabled={!adminInviteInput.trim() || invitedAdmins.length >= 3 || isSyncingAdmins}
-                          className="px-4 py-2.5 rounded-xl bg-[#8c9276] hover:bg-[#7b8166] text-white text-xs font-bold transition-all disabled:opacity-50 cursor-pointer shrink-0 shadow-sm flex items-center gap-1.5"
-                        >
-                          {isSyncingAdmins ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Plus className="w-3.5 h-3.5" />}
-                          <span>Invitar</span>
-                        </button>
-                      </div>
-
-                      {inviteError && (
-                        <div className="p-3 rounded-xl bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800/30 text-red-600 dark:text-red-400 text-xs flex items-center gap-2">
-                          <AlertCircle className="w-4 h-4 shrink-0" />
-                          <span>{inviteError}</span>
-                        </div>
-                      )}
-
-                      {inviteSuccess && (
-                        <div className="p-3 rounded-xl bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800/30 text-emerald-600 dark:text-emerald-400 text-xs flex items-center gap-2">
-                          <CheckCircle2 className="w-4 h-4 shrink-0" />
-                          <span>{inviteSuccess}</span>
-                        </div>
-                      )}
-                    </div>
-
-                    <div className="space-y-2 pt-1">
-                      <p className="text-[10px] font-bold uppercase tracking-wider text-gray-400">
-                        Administradores Adicionales Activos ({invitedAdmins.length})
-                      </p>
-                      {invitedAdmins.length === 0 ? (
-                        <p className="text-xs text-gray-400 dark:text-gray-500 italic bg-white/60 dark:bg-[#1a1a1c]/60 p-3 rounded-xl border border-dashed border-gray-200 dark:border-white/10 text-center">
-                          No hay administradores adicionales registrados. Los 3 cupos están disponibles.
-                        </p>
-                      ) : (
-                        <div className="space-y-1.5">
-                          {invitedAdmins.map((admEmail) => (
-                            <div
-                              key={admEmail}
-                              className="flex items-center justify-between p-2.5 px-3 rounded-xl bg-white dark:bg-[#1e1e20] border border-gray-100 dark:border-white/5 text-xs shadow-xs"
-                            >
-                              <div className="flex items-center gap-2 min-w-0">
-                                <ShieldCheck className="w-4 h-4 text-[#8c9276] shrink-0" />
-                                <span className="font-semibold text-gray-900 dark:text-gray-100 truncate">{admEmail}</span>
-                                <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-amber-100 dark:bg-amber-900/40 text-amber-800 dark:text-amber-300">ADMINISTRADOR</span>
-                              </div>
-                              <button
-                                type="button"
-                                onClick={() => handleRemoveAdminInvite(admEmail)}
-                                disabled={isSyncingAdmins}
-                                className="p-1.5 rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/40 transition-colors cursor-pointer shrink-0"
-                                title="Revocar acceso de administrador"
-                              >
-                                <Trash2 className="w-3.5 h-3.5" />
-                              </button>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  </>
-                )}
-              </div>
+              )}
             </div>
           )}
 

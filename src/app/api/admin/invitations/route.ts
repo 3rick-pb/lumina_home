@@ -5,9 +5,9 @@ import { getAuthenticatedUser, verifyIsAdmin } from '@/lib/serverAuth';
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
+const MASTER_ADMIN_EMAIL = 'admin@lumina.com';
 const ROOT_ADMIN_EMAILS = ['admin@lumina.com', 'arteagae796@gmail.com'];
 const MAX_INVITED_ADMINS = 3;
-const SYS_CONFIG_ID = 'SYS_CONFIG_ADMIN_INVITES';
 const SYS_SESSION_ID = 'SYS_ADMIN_INVITES';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
@@ -16,54 +16,12 @@ const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || supabaseAnon
 const baseSupabase = createClient(supabaseUrl, supabaseServiceKey);
 
 /**
- * Returns a Supabase client that forwards the caller's JWT Authorization header
- * so that Postgres RLS policies evaluate with the authenticated user's privileges.
+ * Loads the current list of invited secondary admins from the cloud source of truth:
+ * active_sessions row with user_id = 'SYS_ADMIN_INVITES'
  */
-function getSupabaseClient(request?: Request) {
-  const authHeader = request ? (request.headers.get('Authorization') || request.headers.get('authorization')) : null;
-  if (!authHeader) return baseSupabase;
-
-  return createClient(supabaseUrl, supabaseAnonKey, {
-    global: {
-      headers: { Authorization: authHeader },
-    },
-    auth: { persistSession: false },
-  });
-}
-
-/**
- * Real-time loader: queries both admin_invitations table and the cloud SYS_ADMIN_INVITES config.
- * Strict Rule: ROOT_ADMIN_EMAILS are NEVER returned as invited admins.
- */
-async function loadInvitedAdmins(request?: Request): Promise<string[]> {
-  const client = getSupabaseClient(request);
-  let loadedEmails: string[] = [];
-
-  // 1. Primary Source: Dedicated admin_invitations table
+async function loadInvitedAdmins(): Promise<string[]> {
   try {
-    const { data, error } = await client
-      .from('admin_invitations')
-      .select('email, is_active')
-      .eq('is_active', true)
-      .order('created_at', { ascending: true });
-
-    if (!error && Array.isArray(data)) {
-      loadedEmails = data
-        .map((row) => String(row.email || '').toLowerCase().trim())
-        .filter(Boolean)
-        .filter((email) => !ROOT_ADMIN_EMAILS.includes(email));
-
-      if (loadedEmails.length > 0) {
-        return Array.from(new Set(loadedEmails)).slice(0, MAX_INVITED_ADMINS);
-      }
-    }
-  } catch (err) {
-    console.warn('Notice: Failed reading admin_invitations, checking cloud fallback:', err);
-  }
-
-  // 2. Dual-Layer Cloud Source: active_sessions SYS_ADMIN_INVITES
-  try {
-    const { data: sysRow, error: sysErr } = await client
+    const { data: sysRow, error: sysErr } = await baseSupabase
       .from('active_sessions')
       .select('email')
       .eq('user_id', SYS_SESSION_ID)
@@ -73,94 +31,36 @@ async function loadInvitedAdmins(request?: Request): Promise<string[]> {
       try {
         const parsed = JSON.parse(sysRow.email);
         if (Array.isArray(parsed)) {
-          loadedEmails = parsed
+          const clean = parsed
             .map((e) => String(e || '').toLowerCase().trim())
             .filter(Boolean)
-            .filter((e) => !ROOT_ADMIN_EMAILS.includes(e));
+            .filter((e) => e !== MASTER_ADMIN_EMAIL && !ROOT_ADMIN_EMAILS.includes(e));
 
-          if (loadedEmails.length > 0) {
-            return Array.from(new Set(loadedEmails)).slice(0, MAX_INVITED_ADMINS);
-          }
+          return Array.from(new Set(clean)).slice(0, MAX_INVITED_ADMINS);
         }
       } catch {}
     }
-  } catch {}
-
-  // 3. Transition Fallback: orders table with SYS_CONFIG_ID
-  try {
-    const { data: orderConfig, error: orderErr } = await client
-      .from('orders')
-      .select('items')
-      .eq('id', SYS_CONFIG_ID)
-      .maybeSingle();
-
-    if (!orderErr && orderConfig && Array.isArray(orderConfig.items)) {
-      const dbEmails = (orderConfig.items as Array<{ email?: string } | string>)
-        .map((item) => (typeof item === 'object' && item !== null ? String(item.email || '') : String(item || '')).toLowerCase().trim())
-        .filter(Boolean)
-        .filter((e) => !ROOT_ADMIN_EMAILS.includes(e));
-
-      return Array.from(new Set(dbEmails)).slice(0, MAX_INVITED_ADMINS);
-    }
-  } catch {}
+  } catch (err) {
+    console.warn('Notice: Failed reading active_sessions for admin invites:', err);
+  }
 
   return [];
 }
 
 /**
- * Persists the list of secondary invited admins in both admin_invitations and active_sessions.
- * Guarantees that deletions are permanent across refreshes and additions persist in the cloud.
+ * Persists the list of secondary invited admins in active_sessions (SYS_ADMIN_INVITES).
+ * Guarantees permanent updates and deletes across refreshes.
  */
-async function persistInvitedAdmins(emails: string[], request?: Request): Promise<string[]> {
-  const client = getSupabaseClient(request);
+async function persistInvitedAdmins(emails: string[]): Promise<string[]> {
   const cleanEmails = Array.from(
     new Set(
       emails
         .map((e) => String(e).toLowerCase().trim())
         .filter(Boolean)
-        .filter((e) => !ROOT_ADMIN_EMAILS.includes(e))
+        .filter((e) => e !== MASTER_ADMIN_EMAIL && !ROOT_ADMIN_EMAILS.includes(e))
     )
   ).slice(0, MAX_INVITED_ADMINS);
 
-  // 1. Persist to dedicated admin_invitations table
-  try {
-    const { data: existing } = await client
-      .from('admin_invitations')
-      .select('email');
-
-    const existingEmails = Array.isArray(existing) ? existing.map(r => String(r.email).toLowerCase().trim()) : [];
-    
-    // Deactivate / delete ones not in cleanEmails
-    const emailsToRemove = existingEmails.filter(e => !cleanEmails.includes(e));
-    if (emailsToRemove.length > 0) {
-      await client
-        .from('admin_invitations')
-        .delete()
-        .in('email', emailsToRemove);
-
-      // Also soft-deactivate to ensure backwards compatibility with any queries
-      await client
-        .from('admin_invitations')
-        .update({ is_active: false })
-        .in('email', emailsToRemove);
-    }
-
-    // Upsert active clean records
-    if (cleanEmails.length > 0) {
-      for (const email of cleanEmails) {
-        await client
-          .from('admin_invitations')
-          .upsert(
-            { email, is_active: true, created_at: new Date().toISOString() },
-            { onConflict: 'email' }
-          );
-      }
-    }
-  } catch (dbErr) {
-    console.warn('Warning: Could not save to admin_invitations table:', dbErr);
-  }
-
-  // 2. Dual-Layer Cloud Source: active_sessions SYS_ADMIN_INVITES (guaranteed zero RLS block)
   try {
     await baseSupabase.from('active_sessions').upsert({
       user_id: SYS_SESSION_ID,
@@ -171,21 +71,8 @@ async function persistInvitedAdmins(emails: string[], request?: Request): Promis
       last_seen: new Date().toISOString(),
     }, { onConflict: 'user_id' });
   } catch (sysErr) {
-    console.warn('Warning: Could not save to active_sessions cloud store:', sysErr);
+    console.error('Error saving to active_sessions cloud store:', sysErr);
   }
-
-  // 3. Transition mirror to orders table
-  try {
-    await client.from('orders').upsert({
-      id: SYS_CONFIG_ID,
-      user_id: null,
-      status: 'Procesando',
-      total: 0,
-      tracking_number: 'LUMINA_ADMIN_INVITES',
-      items: cleanEmails.map((email) => ({ email })),
-      created_at: new Date().toISOString(),
-    });
-  } catch {}
 
   return cleanEmails;
 }
@@ -209,7 +96,7 @@ async function broadcastRoleChange(targetEmail: string, role: 'USER' | 'ADMIN') 
           resolve();
         }
       });
-      setTimeout(resolve, 800);
+      setTimeout(resolve, 600);
     });
   } catch {}
 }
@@ -225,17 +112,17 @@ export async function GET(request: Request) {
     );
   }
 
-  const invitedAdmins = await loadInvitedAdmins(request);
+  const invitedAdmins = await loadInvitedAdmins();
 
   return NextResponse.json(
     {
       success: true,
-      rootAdmin: ROOT_ADMIN_EMAILS[0],
-      rootAdmins: ROOT_ADMIN_EMAILS,
+      masterAdmin: MASTER_ADMIN_EMAIL,
+      rootAdmin: MASTER_ADMIN_EMAIL,
       invitedAdmins,
       count: invitedAdmins.length,
       maxInvited: MAX_INVITED_ADMINS,
-      totalCapacity: MAX_INVITED_ADMINS + 1, // 4 admins total (1 root + 3 invited)
+      totalCapacity: MAX_INVITED_ADMINS + 1, // 4 admins total (1 master + 3 invited)
       availableSlots: Math.max(0, MAX_INVITED_ADMINS - invitedAdmins.length),
     },
     {
@@ -251,13 +138,13 @@ export async function POST(request: Request) {
   try {
     const authUser = await getAuthenticatedUser(request);
     const cleanRequester = (authUser?.email || '').toLowerCase().trim();
-    const isRootOrOwner = ROOT_ADMIN_EMAILS.includes(cleanRequester);
 
-    if (!isRootOrOwner) {
+    // STRICT USER REQUIREMENT: Only admin@lumina.com has the right to invite or remove administrators!
+    if (cleanRequester !== MASTER_ADMIN_EMAIL) {
       return NextResponse.json(
         {
           success: false,
-          error: `Acceso restringido. Solo los Administradores Principales autorizados pueden invitar o revocar administradores.`,
+          error: `Acceso denegado. Solo la cuenta de Lumina (${MASTER_ADMIN_EMAIL}) tiene autorización para asignar o revocar administradores.`,
         },
         { status: 403 }
       );
@@ -266,58 +153,45 @@ export async function POST(request: Request) {
     const body = await request.json();
     const { emails, action, email } = body;
 
-    const currentList = await loadInvitedAdmins(request);
+    const currentList = await loadInvitedAdmins();
 
-    // Handle individual removal
+    // 1. Handle individual removal
     if (action === 'remove' && email) {
       const targetEmail = String(email).toLowerCase().trim();
       const nextList = currentList.filter((e) => e !== targetEmail);
-      
-      const client = getSupabaseClient(request);
-      try {
-        await client.from('admin_invitations').delete().eq('email', targetEmail);
-        await client.from('admin_invitations').update({ is_active: false }).eq('email', targetEmail);
-      } catch {}
 
-      const saved = await persistInvitedAdmins(nextList, request);
+      const saved = await persistInvitedAdmins(nextList);
 
       // Broadcast role revocation in realtime
       await broadcastRoleChange(targetEmail, 'USER');
 
       return NextResponse.json({
         success: true,
-        message: `El administrador invitado '${targetEmail}' ha sido revocado.`,
+        message: `El administrador '${targetEmail}' ha sido revocado.`,
         invitedAdmins: saved,
         count: saved.length,
         availableSlots: MAX_INVITED_ADMINS - saved.length,
       });
     }
 
-    // Handle explicit clear
+    // 2. Handle explicit clear
     if (action === 'clear') {
-      const client = getSupabaseClient(request);
-      try {
-        await client.from('admin_invitations').delete().neq('email', '');
-        await client.from('admin_invitations').update({ is_active: false }).neq('email', '');
-      } catch {}
+      const saved = await persistInvitedAdmins([]);
 
-      const saved = await persistInvitedAdmins([], request);
-
-      // Broadcast role revocation for all previously invited admins
       for (const prevEmail of currentList) {
         await broadcastRoleChange(prevEmail, 'USER');
       }
 
       return NextResponse.json({
         success: true,
-        message: 'Lista de administradores invitados vaciada.',
+        message: 'Lista de administradores adicionales vaciada.',
         invitedAdmins: saved,
         count: 0,
         availableSlots: MAX_INVITED_ADMINS,
       });
     }
 
-    // Handle incoming list of emails
+    // 3. Handle incoming list of emails (comma-separated string or array)
     let candidateEmails: string[] = [];
     if (Array.isArray(emails)) {
       candidateEmails = emails;
@@ -327,11 +201,10 @@ export async function POST(request: Request) {
       candidateEmails = [email];
     }
 
-    // Defensive Guard: If no action is specified and candidate list is empty, return current state
     if (!action && candidateEmails.length === 0) {
       return NextResponse.json({
         success: true,
-        message: 'No se realizaron cambios en la lista de administradores.',
+        message: 'No se indicaron correos para agregar.',
         invitedAdmins: currentList,
         count: currentList.length,
         maxInvited: MAX_INVITED_ADMINS,
@@ -350,14 +223,14 @@ export async function POST(request: Request) {
 
       if (!emailRegex.test(normalized)) {
         return NextResponse.json(
-          { success: false, error: `El correo '${raw}' no tiene un formato de correo electrónico válido.` },
+          { success: false, error: `El correo '${raw}' no tiene un formato válido.` },
           { status: 400 }
         );
       }
 
-      if (ROOT_ADMIN_EMAILS.includes(normalized)) {
+      if (normalized === MASTER_ADMIN_EMAIL || ROOT_ADMIN_EMAILS.includes(normalized)) {
         return NextResponse.json(
-          { success: false, error: `El correo '${normalized}' es una cuenta Principal del sistema y ya posee acceso de Administrador.` },
+          { success: false, error: `El correo '${normalized}' es la cuenta Principal del sistema.` },
           { status: 400 }
         );
       }
@@ -367,30 +240,21 @@ export async function POST(request: Request) {
       }
     }
 
-    let finalEmails: string[] = [];
+    // Merge with current list
+    const combined = Array.from(new Set([...currentList, ...cleanedCandidates]));
 
-    if (action === 'add') {
-      const combined = new Set([...currentList, ...cleanedCandidates]);
-      finalEmails = Array.from(combined);
-    } else if (action === 'replace') {
-      finalEmails = cleanedCandidates;
-    } else {
-      const combined = new Set([...currentList, ...cleanedCandidates]);
-      finalEmails = Array.from(combined);
-    }
-
-    // Strict capacity enforcement: max 3 invited admins
-    if (finalEmails.length > MAX_INVITED_ADMINS) {
+    // Capacity enforcement: max 3 invited admins
+    if (combined.length > MAX_INVITED_ADMINS) {
       return NextResponse.json(
         {
           success: false,
-          error: `Capacidad excedida: Solo puedes invitar hasta ${MAX_INVITED_ADMINS} administradores adicionales (total 4 administradores incluyendo la cuenta principal). Actualmente intentas asignar ${finalEmails.length}.`,
+          error: `Capacidad excedida: Solo puedes dar acceso a hasta ${MAX_INVITED_ADMINS} correos administradores adicionales. Actualmente tendrías ${combined.length}.`,
         },
         { status: 400 }
       );
     }
 
-    const saved = await persistInvitedAdmins(finalEmails, request);
+    const saved = await persistInvitedAdmins(combined);
 
     // Broadcast realtime promotion to newly added admins
     for (const addedEmail of cleanedCandidates) {
@@ -399,7 +263,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json({
       success: true,
-      message: 'Lista de administradores actualizada correctamente.',
+      message: 'Lista de administradores actualizada con éxito.',
       invitedAdmins: saved,
       count: saved.length,
       maxInvited: MAX_INVITED_ADMINS,

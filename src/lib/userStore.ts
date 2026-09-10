@@ -121,10 +121,11 @@ export const formatCleanName = (rawName: string) => {
   return words.map(w => w.toUpperCase() === 'ADMIN' ? 'ADMIN' : w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ');
 };
 
+export const MASTER_ADMIN_EMAIL = 'admin@lumina.com';
 export const ROOT_ADMIN_EMAILS = ['admin@lumina.com', 'arteagae796@gmail.com'];
 
 const adminCache = new Map<string, { role: 'USER' | 'ADMIN'; isRootAdmin: boolean; timestamp: number }>();
-const ADMIN_CACHE_TTL_MS = 60 * 1000; // 60 seconds
+const ADMIN_CACHE_TTL_MS = 30 * 1000; // 30 seconds
 
 export const clearAdminCache = () => {
   adminCache.clear();
@@ -140,12 +141,12 @@ export const checkIsAdmin = async (
     return { role: 'USER', isRootAdmin: false };
   }
 
-  // 1. Root admin / owner accounts
-  if (ROOT_ADMIN_EMAILS.includes(normalized)) {
-    return { role: 'ADMIN', isRootAdmin: true };
+  // 1. Master & Root accounts
+  if (normalized === MASTER_ADMIN_EMAIL || ROOT_ADMIN_EMAILS.includes(normalized)) {
+    return { role: 'ADMIN', isRootAdmin: normalized === MASTER_ADMIN_EMAIL || ROOT_ADMIN_EMAILS.includes(normalized) };
   }
 
-  // Fast in-memory cache to prevent token rotation spam and network storms
+  // Fast in-memory cache
   if (!skipCache) {
     const cached = adminCache.get(normalized);
     if (cached && (Date.now() - cached.timestamp < ADMIN_CACHE_TTL_MS)) {
@@ -160,25 +161,7 @@ export const checkIsAdmin = async (
     return res;
   }
 
-  // 3. Query dedicated admin_invitations table (primary cloud source of truth)
-  try {
-    const { data: invite, error: invErr } = await supabase
-      .from('admin_invitations')
-      .select('email, is_active')
-      .eq('email', normalized)
-      .eq('is_active', true)
-      .maybeSingle();
-
-    if (!invErr && invite) {
-      const res = { role: 'ADMIN' as const, isRootAdmin: false };
-      adminCache.set(normalized, { ...res, timestamp: Date.now() });
-      return res;
-    }
-  } catch {
-    // Fallback during schema transition
-  }
-
-  // 4. Dual-Layer Cloud Source: active_sessions SYS_ADMIN_INVITES
+  // 3. Primary cloud source of truth: active_sessions SYS_ADMIN_INVITES
   try {
     const { data: sysRow } = await supabase
       .from('active_sessions')
@@ -198,7 +181,7 @@ export const checkIsAdmin = async (
     }
   } catch {}
 
-  // 5. Secondary fallback: query server API route
+  // 4. Secondary fallback: query server API route
   try {
     const res = await fetch('/api/admin/invitations', { 
       cache: 'no-store',
@@ -215,32 +198,7 @@ export const checkIsAdmin = async (
         }
       }
     }
-  } catch {
-    // Non-critical fallback
-  }
-
-  // 6. Transition fallback: check orders table (until migration cleans it up)
-  try {
-    const { data: dbConfig } = await supabase
-      .from('orders')
-      .select('items')
-      .eq('id', 'SYS_CONFIG_ADMIN_INVITES')
-      .maybeSingle();
-
-    if (dbConfig && Array.isArray(dbConfig.items)) {
-      const dbEmails = (dbConfig.items as Array<{ email?: string } | string>)
-        .map((item) => (typeof item === 'object' && item !== null ? String(item.email || '') : String(item || '')).toLowerCase().trim())
-        .filter(Boolean);
-
-      if (dbEmails.includes(normalized)) {
-        const res = { role: 'ADMIN' as const, isRootAdmin: false };
-        adminCache.set(normalized, { ...res, timestamp: Date.now() });
-        return res;
-      }
-    }
-  } catch {
-    // Non-critical fallback
-  }
+  } catch {}
 
   const finalRes = { role: 'USER' as const, isRootAdmin: false };
   adminCache.set(normalized, { ...finalRes, timestamp: Date.now() });
@@ -403,27 +361,11 @@ function setupRolesRealtimeListener(
     .subscribe();
 }
 
-const getStoredUser = (): User | null => {
-  if (typeof window === 'undefined') return null;
-  try {
-    const raw = localStorage.getItem('lumina_auth_user');
-    if (raw) {
-      const parsed = JSON.parse(raw);
-      if (parsed && parsed.id && parsed.email) {
-        return parsed;
-      }
-    }
-  } catch {}
-  return null;
-};
-
-const initialUser = getStoredUser();
-
 export const useUserStore = create<UserState>((set, get) => ({
-  user: initialUser,
-  isAuthenticated: Boolean(initialUser),
-  isLoading: !initialUser,
-  isAuthInitialized: Boolean(initialUser),
+  user: null,
+  isAuthenticated: false,
+  isLoading: true,
+  isAuthInitialized: false,
   favorites: [],
   orders: [],
   cards: [],
@@ -434,24 +376,83 @@ export const useUserStore = create<UserState>((set, get) => ({
     // Attach realtime role listener once
     setupRolesRealtimeListener(get, set);
 
-    // If already in progress, avoid duplicate concurrent getSession calls
+    // Attach onAuthStateChange listener ONCE across application lifetime
+    if (!isAuthListenerAttached) {
+      isAuthListenerAttached = true;
+
+      supabase.auth.onAuthStateChange(async (event, session) => {
+        // Explicit Sign out event
+        if (event === 'SIGNED_OUT' || (!session && event !== 'INITIAL_SESSION')) {
+          await useCartStore.getState().initCartForUser(null);
+          set({
+            user: null,
+            isAuthenticated: false,
+            favorites: [],
+            cards: [],
+            orders: [],
+            address: null,
+            addresses: [],
+            isLoading: false,
+            isAuthInitialized: true,
+          });
+          return;
+        }
+
+        // Active Session Events: INITIAL_SESSION, SIGNED_IN, TOKEN_REFRESHED, USER_UPDATED
+        if (session?.user) {
+          const email = session.user.email || '';
+          const { role, isRootAdmin } = await checkIsAdmin(email, session.user.user_metadata?.role);
+          const name = formatCleanName(session.user.user_metadata?.name || email.split('@')[0]);
+          const userObj: User = { id: session.user.id, email, name, role, isRootAdmin };
+
+          const currentUserId = get().user?.id;
+          if (currentUserId !== session.user.id) {
+            set({ 
+              user: userObj, 
+              isAuthenticated: true, 
+              isLoading: false,
+              isAuthInitialized: true,
+            });
+
+            const newUserId = session.user.id;
+            setTimeout(async () => {
+              try {
+                const personalData = await fetchUserDataFromDatabase(newUserId, role, email);
+                set({
+                  cards: personalData.cards,
+                  orders: personalData.orders,
+                  addresses: personalData.addresses,
+                  address: personalData.address
+                });
+
+                useCartStore.getState().initCartForUser(newUserId);
+                const { data: favs } = await supabase.from('favorites').select('product_id').eq('user_id', newUserId);
+                if (favs) set({ favorites: favs.map(f => f.product_id) });
+              } catch {}
+            }, 0);
+          } else {
+            set((state) => ({
+              user: state.user ? { ...state.user, email, name, role, isRootAdmin } : userObj,
+              isAuthenticated: true,
+              isLoading: false,
+              isAuthInitialized: true,
+            }));
+          }
+        }
+      });
+    }
+
     if (isInitializingAuth) return;
     isInitializingAuth = true;
 
     try {
-      const { data: { session }, error } = await supabase.auth.getSession();
+      const { data: { session } } = await supabase.auth.getSession();
 
-      if (!error && session?.user) {
+      if (session?.user) {
         const email = session.user.email || '';
         const { role, isRootAdmin } = await checkIsAdmin(email, session.user.user_metadata?.role);
         const name = formatCleanName(session.user.user_metadata?.name || email.split('@')[0]);
         const userObj: User = { id: session.user.id, email, name, role, isRootAdmin };
-
-        if (typeof window !== 'undefined') {
-          try {
-            localStorage.setItem('lumina_auth_user', JSON.stringify(userObj));
-          } catch {}
-        }
 
         set({ 
           user: userObj, 
@@ -460,7 +461,6 @@ export const useUserStore = create<UserState>((set, get) => ({
           isAuthInitialized: true,
         });
 
-        // Initialize user cart and secondary database items in background without blocking authentication state
         const currentUserId = session.user.id;
         setTimeout(async () => {
           try {
@@ -474,147 +474,21 @@ export const useUserStore = create<UserState>((set, get) => ({
             });
 
             const { data: favs } = await supabase.from('favorites').select('product_id').eq('user_id', currentUserId);
-            if (favs) {
-              set({ favorites: favs.map(f => f.product_id) });
-            }
+            if (favs) set({ favorites: favs.map(f => f.product_id) });
           } catch {}
         }, 0);
       } else {
-        // If Supabase returned no session but we have local user, attempt silent refresh before clearing
-        const localUser = get().user;
-        if (localUser) {
-          try {
-            const { data: refData, error: refErr } = await supabase.auth.refreshSession();
-            if (!refErr && refData?.session?.user) {
-              const email = refData.session.user.email || '';
-              const { role, isRootAdmin } = await checkIsAdmin(email, refData.session.user.user_metadata?.role);
-              const name = formatCleanName(refData.session.user.user_metadata?.name || email.split('@')[0]);
-              const userObj: User = { id: refData.session.user.id, email, name, role, isRootAdmin };
-
-              if (typeof window !== 'undefined') {
-                try {
-                  localStorage.setItem('lumina_auth_user', JSON.stringify(userObj));
-                } catch {}
-              }
-
-              set({ 
-                user: userObj, 
-                isAuthenticated: true, 
-                isLoading: false, 
-                isAuthInitialized: true,
-              });
-              return;
-            }
-          } catch {}
-        }
-
-        // Truly unauthenticated visitor
-        await useCartStore.getState().initCartForUser(null);
-        set({
-          user: null,
-          isAuthenticated: false,
-          cards: [],
-          orders: [],
-          addresses: [],
-          address: null,
-          favorites: [],
-          isLoading: false,
-          isAuthInitialized: true,
+        set({ 
+          user: null, 
+          isAuthenticated: false, 
+          isLoading: false, 
+          isAuthInitialized: true 
         });
-        if (typeof window !== 'undefined') {
-          try {
-            localStorage.removeItem('lumina_auth_user');
-          } catch {}
-        }
       }
     } catch {
-      if (!get().user) {
-        set({ user: null, isAuthenticated: false, isLoading: false, isAuthInitialized: true });
-      } else {
-        set({ isLoading: false, isAuthInitialized: true });
-      }
+      set({ isLoading: false, isAuthInitialized: true });
     } finally {
       isInitializingAuth = false;
-      set({ isLoading: false, isAuthInitialized: true });
-    }
-    
-    // Attach onAuthStateChange listener ONCE across application lifetime
-    if (!isAuthListenerAttached) {
-      isAuthListenerAttached = true;
-
-      supabase.auth.onAuthStateChange(async (event, session) => {
-        // Multi-tab logout synchronization:
-        if (event === 'SIGNED_OUT') {
-          await useCartStore.getState().initCartForUser(null);
-          set({
-            user: null,
-            isAuthenticated: false,
-            favorites: [],
-            cards: [],
-            orders: [],
-            address: null,
-            addresses: [],
-            isLoading: false,
-            isAuthInitialized: true,
-          });
-          if (typeof window !== 'undefined') {
-            try {
-              localStorage.removeItem('lumina_auth_user');
-            } catch {}
-          }
-          return;
-        }
-
-        // On TOKEN_REFRESHED, INITIAL_SESSION, SIGNED_IN, USER_UPDATED:
-        if (event === 'TOKEN_REFRESHED' || event === 'INITIAL_SESSION' || event === 'SIGNED_IN' || event === 'USER_UPDATED') {
-          if (session?.user) {
-            const email = session.user.email || '';
-            const { role, isRootAdmin } = await checkIsAdmin(email, session.user.user_metadata?.role);
-            const name = formatCleanName(session.user.user_metadata?.name || email.split('@')[0]);
-            const userObj: User = { id: session.user.id, email, name, role, isRootAdmin };
-
-            if (typeof window !== 'undefined') {
-              try {
-                localStorage.setItem('lumina_auth_user', JSON.stringify(userObj));
-              } catch {}
-            }
-
-            const currentUserId = get().user?.id;
-            if (currentUserId !== session.user.id) {
-              set({ 
-                user: userObj, 
-                isAuthenticated: true, 
-                isLoading: false,
-                isAuthInitialized: true,
-              });
-
-              const newUserId = session.user.id;
-              setTimeout(async () => {
-                try {
-                  const personalData = await fetchUserDataFromDatabase(newUserId, role, email);
-                  set({
-                    cards: personalData.cards,
-                    orders: personalData.orders,
-                    addresses: personalData.addresses,
-                    address: personalData.address
-                  });
-
-                  useCartStore.getState().initCartForUser(newUserId);
-                  const { data: favs } = await supabase.from('favorites').select('product_id').eq('user_id', newUserId);
-                  if (favs) set({ favorites: favs.map(f => f.product_id) });
-                } catch {}
-              }, 0);
-            } else {
-              set((state) => ({
-                user: state.user ? { ...state.user, email, name, role, isRootAdmin } : userObj,
-                isAuthenticated: true,
-                isLoading: false,
-                isAuthInitialized: true,
-              }));
-            }
-          }
-        }
-      });
     }
   },
 
@@ -627,12 +501,6 @@ export const useUserStore = create<UserState>((set, get) => ({
       const name = formatCleanName(data.user.user_metadata?.name || userEmail.split('@')[0]);
       const personalData = await fetchUserDataFromDatabase(data.user.id, role, userEmail);
       const userObj: User = { id: data.user.id, email: userEmail, name, role, isRootAdmin };
-
-      if (typeof window !== 'undefined') {
-        try {
-          localStorage.setItem('lumina_auth_user', JSON.stringify(userObj));
-        } catch {}
-      }
 
       set({ 
         user: userObj, 
@@ -687,14 +555,6 @@ export const useUserStore = create<UserState>((set, get) => ({
       isLoading: false,
       isAuthInitialized: true,
     });
-
-    if (typeof window !== 'undefined') {
-      try {
-        sessionStorage.clear();
-        localStorage.removeItem('lumina_guest_id');
-        localStorage.removeItem('lumina_auth_user');
-      } catch {}
-    }
   },
   
   register: async (email, password, name) => {

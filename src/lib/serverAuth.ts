@@ -6,6 +6,7 @@ const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || supabaseAnon
 
 export const supabaseServer = createClient(supabaseUrl, supabaseServiceKey);
 
+export const MASTER_ADMIN_EMAIL = 'admin@lumina.com';
 export const ROOT_ADMIN_EMAILS = ['admin@lumina.com', 'arteagae796@gmail.com'];
 
 /**
@@ -28,34 +29,18 @@ export async function getAuthenticatedUser(request: Request) {
 }
 
 /**
- * Checks whether an email belongs to an authorized administrator (root or invited)
+ * Checks whether an email belongs to an authorized administrator (master, root or invited)
  */
 export async function verifyIsAdmin(email?: string | null): Promise<boolean> {
   if (!email) return false;
   const cleanEmail = email.toLowerCase().trim();
 
-  // 1. Root admin check
-  if (ROOT_ADMIN_EMAILS.includes(cleanEmail)) {
+  // 1. Master & Root admin check
+  if (cleanEmail === MASTER_ADMIN_EMAIL || ROOT_ADMIN_EMAILS.includes(cleanEmail)) {
     return true;
   }
 
-  // 2. Query admin_invitations table directly
-  try {
-    const { data, error } = await supabaseServer
-      .from('admin_invitations')
-      .select('email, is_active')
-      .eq('email', cleanEmail)
-      .eq('is_active', true)
-      .maybeSingle();
-
-    if (!error && data) {
-      return true;
-    }
-  } catch {
-    // Non-critical fallback
-  }
-
-  // 3. Fallback: Query active_sessions SYS_ADMIN_INVITES
+  // 2. Query active_sessions SYS_ADMIN_INVITES (sole cloud source of truth)
   try {
     const { data: sysRow } = await supabaseServer
       .from('active_sessions')
