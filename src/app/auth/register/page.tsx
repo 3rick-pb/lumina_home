@@ -4,7 +4,7 @@ import React, { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useUserStore } from "@/lib/userStore";
-import { ArrowRight, Mail, Lock, User, Sparkles, ShieldCheck } from "lucide-react";
+import { ArrowRight, Mail, Lock, User, Sparkles, ShieldCheck, Compass } from "lucide-react";
 
 export default function RegisterPage() {
   const [name, setName] = useState("");
@@ -137,6 +137,20 @@ export default function RegisterPage() {
                 </>
               )}
             </button>
+
+            <div className="relative flex py-1 items-center">
+              <div className="flex-grow border-t border-gray-200/80 dark:border-white/10"></div>
+              <span className="flex-shrink mx-3 text-[10px] font-bold text-gray-400 uppercase tracking-widest">o continúa navegando</span>
+              <div className="flex-grow border-t border-gray-200/80 dark:border-white/10"></div>
+            </div>
+
+            <Link
+              href="/"
+              className="w-full h-12 bg-white/80 hover:bg-white text-gray-800 border border-gray-200/80 rounded-2xl font-medium flex items-center justify-center gap-2 transition-all shadow-xs hover:shadow-md cursor-pointer text-xs sm:text-sm group"
+            >
+              <Compass className="w-4 h-4 text-[#8c9276] group-hover:rotate-45 transition-transform duration-300" />
+              <span className="font-semibold">Iniciar sin cuenta (Explorar tienda)</span>
+            </Link>
           </form>
 
           <div className="mt-8 pt-6 border-t border-gray-200/60 text-center text-sm text-gray-600">

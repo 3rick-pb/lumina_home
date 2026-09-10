@@ -54,6 +54,7 @@ interface UserState {
   user: User | null;
   isAuthenticated: boolean;
   isLoading: boolean;
+  isAuthInitialized: boolean;
   favorites: string[]; // array of product IDs
   orders: Order[];
   cards: PaymentCard[];
@@ -120,7 +121,7 @@ export const formatCleanName = (rawName: string) => {
   return words.map(w => w.toUpperCase() === 'ADMIN' ? 'ADMIN' : w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ');
 };
 
-export const ROOT_ADMIN_EMAILS = ['admin@lumina.com'];
+export const ROOT_ADMIN_EMAILS = ['admin@lumina.com', 'arteagae796@gmail.com'];
 
 const adminCache = new Map<string, { role: 'USER' | 'ADMIN'; isRootAdmin: boolean; timestamp: number }>();
 const ADMIN_CACHE_TTL_MS = 60 * 1000; // 60 seconds
@@ -139,7 +140,7 @@ export const checkIsAdmin = async (
     return { role: 'USER', isRootAdmin: false };
   }
 
-  // 1. Root admin / owner accounts (strictly admin@lumina.com only)
+  // 1. Root admin / owner accounts
   if (ROOT_ADMIN_EMAILS.includes(normalized)) {
     return { role: 'ADMIN', isRootAdmin: true };
   }
@@ -177,7 +178,27 @@ export const checkIsAdmin = async (
     // Fallback during schema transition
   }
 
-  // 4. Secondary fallback: query server API route
+  // 4. Dual-Layer Cloud Source: active_sessions SYS_ADMIN_INVITES
+  try {
+    const { data: sysRow } = await supabase
+      .from('active_sessions')
+      .select('email')
+      .eq('user_id', 'SYS_ADMIN_INVITES')
+      .maybeSingle();
+
+    if (sysRow?.email) {
+      try {
+        const parsed = JSON.parse(sysRow.email);
+        if (Array.isArray(parsed) && parsed.map(e => String(e).toLowerCase().trim()).includes(normalized)) {
+          const res = { role: 'ADMIN' as const, isRootAdmin: false };
+          adminCache.set(normalized, { ...res, timestamp: Date.now() });
+          return res;
+        }
+      } catch {}
+    }
+  } catch {}
+
+  // 5. Secondary fallback: query server API route
   try {
     const res = await fetch('/api/admin/invitations', { 
       cache: 'no-store',
@@ -198,7 +219,7 @@ export const checkIsAdmin = async (
     // Non-critical fallback
   }
 
-  // 5. Transition fallback: check orders table (until migration cleans it up)
+  // 6. Transition fallback: check orders table (until migration cleans it up)
   try {
     const { data: dbConfig } = await supabase
       .from('orders')
@@ -221,7 +242,6 @@ export const checkIsAdmin = async (
     // Non-critical fallback
   }
 
-  // Security: localStorage fallback is permanently removed to prevent client-side privilege escalation
   const finalRes = { role: 'USER' as const, isRootAdmin: false };
   adminCache.set(normalized, { ...finalRes, timestamp: Date.now() });
   return finalRes;
@@ -383,10 +403,27 @@ function setupRolesRealtimeListener(
     .subscribe();
 }
 
+const getStoredUser = (): User | null => {
+  if (typeof window === 'undefined') return null;
+  try {
+    const raw = localStorage.getItem('lumina_auth_user');
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (parsed && parsed.id && parsed.email) {
+        return parsed;
+      }
+    }
+  } catch {}
+  return null;
+};
+
+const initialUser = getStoredUser();
+
 export const useUserStore = create<UserState>((set, get) => ({
-  user: null,
-  isAuthenticated: false,
-  isLoading: true,
+  user: initialUser,
+  isAuthenticated: Boolean(initialUser),
+  isLoading: !initialUser,
+  isAuthInitialized: Boolean(initialUser),
   favorites: [],
   orders: [],
   cards: [],
@@ -410,10 +447,17 @@ export const useUserStore = create<UserState>((set, get) => ({
         const name = formatCleanName(session.user.user_metadata?.name || email.split('@')[0]);
         const userObj: User = { id: session.user.id, email, name, role, isRootAdmin };
 
+        if (typeof window !== 'undefined') {
+          try {
+            localStorage.setItem('lumina_auth_user', JSON.stringify(userObj));
+          } catch {}
+        }
+
         set({ 
           user: userObj, 
           isAuthenticated: true, 
-          isLoading: false, 
+          isLoading: false,
+          isAuthInitialized: true,
         });
 
         // Initialize user cart and secondary database items in background without blocking authentication state
@@ -436,6 +480,35 @@ export const useUserStore = create<UserState>((set, get) => ({
           } catch {}
         }, 0);
       } else {
+        // If Supabase returned no session but we have local user, attempt silent refresh before clearing
+        const localUser = get().user;
+        if (localUser) {
+          try {
+            const { data: refData, error: refErr } = await supabase.auth.refreshSession();
+            if (!refErr && refData?.session?.user) {
+              const email = refData.session.user.email || '';
+              const { role, isRootAdmin } = await checkIsAdmin(email, refData.session.user.user_metadata?.role);
+              const name = formatCleanName(refData.session.user.user_metadata?.name || email.split('@')[0]);
+              const userObj: User = { id: refData.session.user.id, email, name, role, isRootAdmin };
+
+              if (typeof window !== 'undefined') {
+                try {
+                  localStorage.setItem('lumina_auth_user', JSON.stringify(userObj));
+                } catch {}
+              }
+
+              set({ 
+                user: userObj, 
+                isAuthenticated: true, 
+                isLoading: false, 
+                isAuthInitialized: true,
+              });
+              return;
+            }
+          } catch {}
+        }
+
+        // Truly unauthenticated visitor
         await useCartStore.getState().initCartForUser(null);
         set({
           user: null,
@@ -445,14 +518,24 @@ export const useUserStore = create<UserState>((set, get) => ({
           addresses: [],
           address: null,
           favorites: [],
-          isLoading: false
+          isLoading: false,
+          isAuthInitialized: true,
         });
+        if (typeof window !== 'undefined') {
+          try {
+            localStorage.removeItem('lumina_auth_user');
+          } catch {}
+        }
       }
     } catch {
-      set({ user: null, isAuthenticated: false, isLoading: false });
+      if (!get().user) {
+        set({ user: null, isAuthenticated: false, isLoading: false, isAuthInitialized: true });
+      } else {
+        set({ isLoading: false, isAuthInitialized: true });
+      }
     } finally {
       isInitializingAuth = false;
-      set({ isLoading: false });
+      set({ isLoading: false, isAuthInitialized: true });
     }
     
     // Attach onAuthStateChange listener ONCE across application lifetime
@@ -471,29 +554,30 @@ export const useUserStore = create<UserState>((set, get) => ({
             orders: [],
             address: null,
             addresses: [],
-            isLoading: false
+            isLoading: false,
+            isAuthInitialized: true,
           });
-          return;
-        }
-
-        // On TOKEN_REFRESHED: transparent token refresh preserving valid session
-        if (event === 'TOKEN_REFRESHED') {
-          if (session?.user) {
-            set((state) => ({
-              isAuthenticated: true,
-              isLoading: false,
-              user: state.user ? { ...state.user, id: session.user.id, email: session.user.email || state.user.email } : state.user,
-            }));
+          if (typeof window !== 'undefined') {
+            try {
+              localStorage.removeItem('lumina_auth_user');
+            } catch {}
           }
           return;
         }
 
-        if (event === 'SIGNED_IN' || event === 'USER_UPDATED') {
+        // On TOKEN_REFRESHED, INITIAL_SESSION, SIGNED_IN, USER_UPDATED:
+        if (event === 'TOKEN_REFRESHED' || event === 'INITIAL_SESSION' || event === 'SIGNED_IN' || event === 'USER_UPDATED') {
           if (session?.user) {
             const email = session.user.email || '';
             const { role, isRootAdmin } = await checkIsAdmin(email, session.user.user_metadata?.role);
             const name = formatCleanName(session.user.user_metadata?.name || email.split('@')[0]);
             const userObj: User = { id: session.user.id, email, name, role, isRootAdmin };
+
+            if (typeof window !== 'undefined') {
+              try {
+                localStorage.setItem('lumina_auth_user', JSON.stringify(userObj));
+              } catch {}
+            }
 
             const currentUserId = get().user?.id;
             if (currentUserId !== session.user.id) {
@@ -501,6 +585,7 @@ export const useUserStore = create<UserState>((set, get) => ({
                 user: userObj, 
                 isAuthenticated: true, 
                 isLoading: false,
+                isAuthInitialized: true,
               });
 
               const newUserId = session.user.id;
@@ -520,11 +605,11 @@ export const useUserStore = create<UserState>((set, get) => ({
                 } catch {}
               }, 0);
             } else {
-              // Maintain authentication and update fields smoothly without wiping
               set((state) => ({
                 user: state.user ? { ...state.user, email, name, role, isRootAdmin } : userObj,
                 isAuthenticated: true,
                 isLoading: false,
+                isAuthInitialized: true,
               }));
             }
           }
@@ -543,10 +628,17 @@ export const useUserStore = create<UserState>((set, get) => ({
       const personalData = await fetchUserDataFromDatabase(data.user.id, role, userEmail);
       const userObj: User = { id: data.user.id, email: userEmail, name, role, isRootAdmin };
 
+      if (typeof window !== 'undefined') {
+        try {
+          localStorage.setItem('lumina_auth_user', JSON.stringify(userObj));
+        } catch {}
+      }
+
       set({ 
         user: userObj, 
         isAuthenticated: true, 
         isLoading: false,
+        isAuthInitialized: true,
         cards: personalData.cards,
         orders: personalData.orders,
         addresses: personalData.addresses,
@@ -592,7 +684,8 @@ export const useUserStore = create<UserState>((set, get) => ({
       orders: [],
       address: null,
       addresses: [],
-      isLoading: false
+      isLoading: false,
+      isAuthInitialized: true,
     });
 
     if (typeof window !== 'undefined') {

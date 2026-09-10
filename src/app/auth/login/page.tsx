@@ -6,7 +6,7 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useUserStore } from "@/lib/userStore";
 import { useCatalogStore, CatalogProduct } from "@/lib/catalogStore";
-import { ArrowRight, Mail, Lock, Sparkles, ShieldCheck, Search, X, Eye } from "lucide-react";
+import { ArrowRight, Mail, Lock, Sparkles, ShieldCheck, Search, X, Eye, Compass } from "lucide-react";
 import { normalizeSearchText } from "@/lib/utils";
 
 export default function LoginPage() {
@@ -226,6 +226,20 @@ export default function LoginPage() {
                 </>
               )}
             </button>
+
+            <div className="relative flex py-1 items-center">
+              <div className="flex-grow border-t border-gray-200/80 dark:border-white/10"></div>
+              <span className="flex-shrink mx-3 text-[10px] font-bold text-gray-400 uppercase tracking-widest">o continúa navegando</span>
+              <div className="flex-grow border-t border-gray-200/80 dark:border-white/10"></div>
+            </div>
+
+            <Link
+              href="/"
+              className="w-full h-12 bg-white/80 hover:bg-white text-gray-800 border border-gray-200/80 rounded-2xl font-medium flex items-center justify-center gap-2 transition-all shadow-xs hover:shadow-md cursor-pointer text-xs sm:text-sm group"
+            >
+              <Compass className="w-4 h-4 text-[#8c9276] group-hover:rotate-45 transition-transform duration-300" />
+              <span className="font-semibold">Iniciar sin cuenta (Explorar tienda)</span>
+            </Link>
           </form>
 
           <div className="mt-6 pt-5 border-t border-gray-200/60 text-center text-xs text-gray-600">
@@ -268,15 +282,19 @@ export default function LoginPage() {
               {previewProduct.description || "Diseño minimalista fabricado con materiales nobles para elevar cualquier rincón de tu hogar."}
             </p>
 
-            <div className="mt-5 pt-4 border-t border-gray-100">
-              <p className="text-[11px] font-semibold text-gray-700 mb-3 text-center">
-                Inicia sesión en el formulario para adquirir esta pieza.
-              </p>
+            <div className="mt-5 pt-4 border-t border-gray-100 flex gap-2">
+              <Link 
+                href={`/product/${previewProduct.id}`}
+                className="flex-1 py-2.5 bg-gray-900 text-white rounded-xl text-xs font-semibold hover:bg-gray-800 transition-colors shadow-sm text-center flex items-center justify-center gap-1.5"
+              >
+                <span>Ver pieza completa</span>
+                <ArrowRight className="w-3.5 h-3.5" />
+              </Link>
               <button 
                 onClick={() => setPreviewProduct(null)}
-                className="w-full py-2.5 bg-gray-900 text-white rounded-xl text-xs font-semibold hover:bg-gray-800 transition-colors shadow-sm"
+                className="px-3 py-2.5 bg-gray-100 text-gray-700 rounded-xl text-xs font-medium hover:bg-gray-200 transition-colors cursor-pointer"
               >
-                Entendido, ir al login
+                Cerrar
               </button>
             </div>
           </div>

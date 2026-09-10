@@ -5,7 +5,7 @@ import { useUserStore } from "@/lib/userStore";
 import { usePathname, useRouter } from "next/navigation";
 
 export function AuthGuard({ children }: { children: React.ReactNode }) {
-  const { isAuthenticated, isLoading } = useUserStore();
+  const { isAuthenticated, isLoading, isAuthInitialized } = useUserStore();
   const pathname = usePathname();
   const router = useRouter();
   const [mounted, setMounted] = useState(false);
@@ -17,20 +17,24 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
   }, []);
 
   useEffect(() => {
-    // Only redirect to login if the user is trying to access a private dashboard without authentication
-    if (mounted && !isLoading && !isAuthenticated && isProtected) {
+    // Only redirect to login if auth is fully initialized and the user is trying to access a private dashboard without authentication
+    if (mounted && isAuthInitialized && !isLoading && !isAuthenticated && isProtected) {
       router.push("/auth/login");
     }
-  }, [mounted, isLoading, isAuthenticated, isProtected, router]);
+  }, [mounted, isAuthInitialized, isLoading, isAuthenticated, isProtected, router]);
 
   // To prevent Next.js build errors (PageNotFoundError), always render children during SSR
   if (!mounted) {
     return <div style={{ visibility: "hidden" }}>{children}</div>;
   }
 
-  // If trying to access a protected dashboard route while unauthenticated, hide while redirecting
-  if (!isLoading && !isAuthenticated && isProtected) {
-    return <div style={{ visibility: "hidden" }}>{children}</div>;
+  // If trying to access a protected dashboard route while unauthenticated or initializing, show loader while redirecting
+  if (isProtected && (!isAuthInitialized || isLoading || !isAuthenticated)) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-stone-50 dark:bg-stone-950">
+        <div className="w-8 h-8 border-2 border-amber-600 border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
   }
 
   return <>{children}</>;

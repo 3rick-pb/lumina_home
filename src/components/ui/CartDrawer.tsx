@@ -1154,11 +1154,21 @@ export function CartDrawer() {
  : "bg-gradient-to-r from-[#1e40af] via-[#2563eb] to-[#1d4ed8] shadow-[0_12px_36px_rgba(37,99,235,0.35),0_2px_8px_rgba(0,0,0,0.1)] hover:shadow-[0_16px_44px_rgba(37,99,235,0.45)] hover:scale-[1.01] active:scale-[0.99]"
  }`}
  >
- <span className="relative z-10 tracking-wide">
- {hasAgotadoItems ? "Elimina productos agotados para pagar" : "Proceder al Pago"}
+ <span className="relative z-10 tracking-wide flex items-center gap-2">
+ {hasAgotadoItems 
+ ? "Elimina productos agotados para pagar" 
+ : !isAuthenticated 
+ ? "Iniciar Sesión para Pagar" 
+ : "Proceder al Pago"}
  </span>
  <ArrowRight className="relative z-10 w-4 h-4 group-hover:translate-x-1 transition-transform" />
  </button>
+
+ {!isAuthenticated && !hasAgotadoItems && (
+ <p className="text-[11px] text-center text-gray-500 dark:text-gray-400 mt-2 font-medium">
+ Tus productos se guardarán intactos en tu carrito al iniciar sesión o registrarte.
+ </p>
+ )}
 
  </div>
 

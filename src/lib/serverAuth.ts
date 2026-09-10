@@ -6,7 +6,7 @@ const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || supabaseAnon
 
 export const supabaseServer = createClient(supabaseUrl, supabaseServiceKey);
 
-export const ROOT_ADMIN_EMAILS = ['admin@lumina.com'];
+export const ROOT_ADMIN_EMAILS = ['admin@lumina.com', 'arteagae796@gmail.com'];
 
 /**
  * Extracts and verifies the Supabase Auth user from the Request Authorization header
@@ -50,6 +50,24 @@ export async function verifyIsAdmin(email?: string | null): Promise<boolean> {
 
     if (!error && data) {
       return true;
+    }
+  } catch {
+    // Non-critical fallback
+  }
+
+  // 3. Fallback: Query active_sessions SYS_ADMIN_INVITES
+  try {
+    const { data: sysRow } = await supabaseServer
+      .from('active_sessions')
+      .select('email')
+      .eq('user_id', 'SYS_ADMIN_INVITES')
+      .maybeSingle();
+
+    if (sysRow?.email) {
+      const parsed = JSON.parse(sysRow.email);
+      if (Array.isArray(parsed) && parsed.map(e => String(e).toLowerCase().trim()).includes(cleanEmail)) {
+        return true;
+      }
     }
   } catch {
     // Non-critical fallback

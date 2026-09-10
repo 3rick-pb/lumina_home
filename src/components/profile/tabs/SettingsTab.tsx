@@ -19,7 +19,7 @@ import {
   Navigation 
 } from "lucide-react";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
-import { useUserStore, clearAdminCache } from "@/lib/userStore";
+import { useUserStore, clearAdminCache, ROOT_ADMIN_EMAILS } from "@/lib/userStore";
 import { supabase } from "@/lib/supabase";
 
 interface SettingsTabProps {
@@ -90,7 +90,10 @@ export function SettingsTab({
       if (res.ok) {
         const data = await res.json();
         if (Array.isArray(data.invitedAdmins)) {
-          setInvitedAdmins(data.invitedAdmins);
+          const filtered = data.invitedAdmins
+            .map((e: string) => String(e).toLowerCase().trim())
+            .filter((e: string) => Boolean(e) && !ROOT_ADMIN_EMAILS.includes(e));
+          setInvitedAdmins(filtered);
           return;
         }
       }
@@ -99,13 +102,36 @@ export function SettingsTab({
     }
 
     try {
+      const { data: sysRow } = await supabase
+        .from('active_sessions')
+        .select('email')
+        .eq('user_id', 'SYS_ADMIN_INVITES')
+        .maybeSingle();
+
+      if (sysRow?.email) {
+        try {
+          const parsed = JSON.parse(sysRow.email);
+          if (Array.isArray(parsed)) {
+            const filtered = parsed
+              .map((e: string) => String(e).toLowerCase().trim())
+              .filter((e: string) => Boolean(e) && !ROOT_ADMIN_EMAILS.includes(e));
+            setInvitedAdmins(filtered);
+            return;
+          }
+        } catch {}
+      }
+    } catch {}
+
+    try {
       const { data: dbInvites, error } = await supabase
         .from('admin_invitations')
         .select('email')
         .eq('is_active', true);
 
       if (!error && dbInvites && Array.isArray(dbInvites)) {
-        const emails = dbInvites.map((i) => String(i.email || '').toLowerCase().trim()).filter(Boolean);
+        const emails = dbInvites
+          .map((i) => String(i.email || '').toLowerCase().trim())
+          .filter((e) => Boolean(e) && !ROOT_ADMIN_EMAILS.includes(e));
         setInvitedAdmins(emails);
         return;
       }
@@ -121,7 +147,7 @@ export function SettingsTab({
       if (dbConfig && Array.isArray(dbConfig.items)) {
         const dbEmails = (dbConfig.items as Array<{ email?: string } | string>)
           .map((item) => (typeof item === 'object' && item !== null ? String(item.email || '') : String(item || '')).toLowerCase().trim())
-          .filter(Boolean);
+          .filter((e) => Boolean(e) && !ROOT_ADMIN_EMAILS.includes(e));
         setInvitedAdmins(dbEmails);
         return;
       }
@@ -129,8 +155,14 @@ export function SettingsTab({
   };
 
   const handleAddAdminInvite = async (emailsToAdd?: string) => {
-    const raw = (emailsToAdd !== undefined ? emailsToAdd : adminInviteInput).trim();
+    const raw = (emailsToAdd !== undefined ? emailsToAdd : adminInviteInput).trim().toLowerCase();
     if (!raw) return;
+
+    if (ROOT_ADMIN_EMAILS.includes(raw)) {
+      setInviteError(`"${raw}" ya es una cuenta Root de Super Administrador permanente.`);
+      return;
+    }
+
     setInviteError(null);
     setInviteSuccess(null);
     setIsSyncingAdmins(true);
@@ -151,7 +183,12 @@ export function SettingsTab({
       if (!res.ok || !data.success) {
         throw new Error(data.error || 'Error al agregar administrador.');
       }
-      setInvitedAdmins(data.invitedAdmins);
+      const filtered = Array.isArray(data.invitedAdmins)
+        ? data.invitedAdmins
+            .map((e: string) => String(e).toLowerCase().trim())
+            .filter((e: string) => Boolean(e) && !ROOT_ADMIN_EMAILS.includes(e))
+        : [];
+      setInvitedAdmins(filtered);
       clearAdminCache();
       setAdminInviteInput("");
       setInviteSuccess(`¡Administrador "${raw}" agregado y sincronizado con éxito!`);
@@ -184,7 +221,12 @@ export function SettingsTab({
       if (!res.ok || !data.success) {
         throw new Error(data.error || 'Error al revocar administrador.');
       }
-      setInvitedAdmins(data.invitedAdmins);
+      const filtered = Array.isArray(data.invitedAdmins)
+        ? data.invitedAdmins
+            .map((e: string) => String(e).toLowerCase().trim())
+            .filter((e: string) => Boolean(e) && !ROOT_ADMIN_EMAILS.includes(e))
+        : [];
+      setInvitedAdmins(filtered);
       clearAdminCache();
       setInviteSuccess(`Administrador "${targetEmail}" revocado correctamente.`);
     } catch (err: unknown) {

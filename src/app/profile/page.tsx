@@ -26,7 +26,7 @@ import {
   Loader2,
   Globe
 } from "lucide-react";
-import { useUserStore, Order, formatCleanName } from "@/lib/userStore";
+import { useUserStore, Order, formatCleanName, ROOT_ADMIN_EMAILS } from "@/lib/userStore";
 import { useThemeStore, getResolvedTheme } from "@/lib/themeStore";
 import { useCatalogStore, normalizeCategory, CatalogProduct, ProductCombo } from "@/lib/catalogStore";
 import { normalizeSearchText } from "@/lib/utils";
@@ -231,7 +231,7 @@ export default function ProfilePage() {
  }
 
   const isAdmin = user.role === "ADMIN";
-  const isRootAdmin = Boolean(user.isRootAdmin && user.email.toLowerCase().trim() === 'admin@lumina.com');
+  const isRootAdmin = Boolean(user.isRootAdmin || ROOT_ADMIN_EMAILS.includes(user.email.toLowerCase().trim()));
 
  // Auto calculate discount
  const handlePriceChange = (newP: string, newOldP: string, withDisc: boolean) => {
