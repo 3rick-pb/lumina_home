@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useUserStore } from "@/lib/userStore";
+import { useUserStore, isValidEmail, sanitizeText } from "@/lib/userStore";
 import { ArrowRight, Mail, Lock, User, Sparkles, ShieldCheck, Compass } from "lucide-react";
 
 export default function RegisterPage() {
@@ -18,18 +18,36 @@ export default function RegisterPage() {
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMsg("");
-    setIsLoading(true);
 
-    if (email && name && password) {
-      const { error } = await register(email, password, name);
-      setIsLoading(false);
-      if (error) {
-        setErrorMsg(error);
-      } else {
-        router.push("/");
-      }
+    const cleanName = sanitizeText(name, 70);
+    if (!cleanName || cleanName.length < 2) {
+      setErrorMsg("Por favor, ingresa tu nombre y apellido (mínimo 2 letras, sin símbolos especiales).");
+      return;
+    }
+
+    const cleanEmail = email.trim().toLowerCase();
+    if (!cleanEmail || !isValidEmail(cleanEmail)) {
+      setErrorMsg("Por favor, ingresa un formato de correo electrónico válido.");
+      return;
+    }
+
+    if (!password || password.length < 6) {
+      setErrorMsg("La contraseña debe tener un mínimo de 6 caracteres.");
+      return;
+    }
+
+    if (password.length > 72) {
+      setErrorMsg("La contraseña excede el límite seguro de 72 caracteres.");
+      return;
+    }
+
+    setIsLoading(true);
+    const { error } = await register(cleanEmail, password, cleanName);
+    setIsLoading(false);
+    if (error) {
+      setErrorMsg(error);
     } else {
-      setIsLoading(false);
+      router.push("/");
     }
   };
 

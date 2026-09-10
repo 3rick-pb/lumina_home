@@ -439,9 +439,13 @@ export const useCatalogStore = create<CatalogState>((set) => ({
     // Fallback to server API if needed
     if (error) {
       try {
+        const { data: { session } } = await supabase.auth.getSession();
+        const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+        if (session?.access_token) headers['Authorization'] = `Bearer ${session.access_token}`;
+
         const res = await fetch('/api/products', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers,
           body: JSON.stringify(dbProduct)
         });
         if (res.ok) {
@@ -529,9 +533,13 @@ export const useCatalogStore = create<CatalogState>((set) => ({
       // Fallback to server API if needed
       if (error) {
         try {
+          const { data: { session } } = await supabase.auth.getSession();
+          const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+          if (session?.access_token) headers['Authorization'] = `Bearer ${session.access_token}`;
+
           const res = await fetch('/api/products', {
             method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
+            headers,
             body: JSON.stringify({ id, ...dbProduct })
           });
           if (res.ok) {
@@ -617,7 +625,11 @@ export const useCatalogStore = create<CatalogState>((set) => ({
       // 2. Server API fallback if direct delete was blocked by client RLS
       if (!deletedInDb) {
         try {
-          const res = await fetch(`/api/products?id=${encodeURIComponent(id)}`, { method: 'DELETE' });
+          const { data: { session } } = await supabase.auth.getSession();
+          const headers: Record<string, string> = {};
+          if (session?.access_token) headers['Authorization'] = `Bearer ${session.access_token}`;
+
+          const res = await fetch(`/api/products?id=${encodeURIComponent(id)}`, { method: 'DELETE', headers });
           if (res.ok) {
             const json = await res.json();
             if (json.success && json.deletedCount > 0) {

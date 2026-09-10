@@ -116,12 +116,38 @@ export const formatCleanName = (rawName: string) => {
       }
     }
   }
-  // 6. Clean multiple spaces and capitalize words properly
+// 6. Clean multiple spaces and capitalize words properly
   const words = formatted.replace(/\s+/g, ' ').trim().split(' ');
   return words.map(w => w.toUpperCase() === 'ADMIN' ? 'ADMIN' : w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ');
 };
 
 export const MASTER_ADMIN_EMAIL = 'admin@lumina.com';
+
+/**
+ * Security: Validates email against standard RFC 5322 pattern and blocks SQL/PostgREST injection attempts
+ */
+export const isValidEmail = (email?: string | null): boolean => {
+  if (!email || typeof email !== 'string') return false;
+  const clean = email.trim();
+  if (clean.length > 100 || clean.length < 5) return false;
+  // Block any dangerous injection characters (quotes, semicolons, parentheses, null bytes)
+  if (/['";`<>\\\0\r\n]/.test(clean)) return false;
+  // RFC 5322 standard email regex
+  const emailRegex = /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)+$/;
+  return emailRegex.test(clean);
+};
+
+/**
+ * Security: Strips all HTML/script tags and special characters from user inputs to prevent stored XSS
+ */
+export const sanitizeText = (text?: string | null, maxLength = 80): string => {
+  if (!text || typeof text !== 'string') return '';
+  return text
+    .replace(/<[^>]*>?/gm, '') // Strip HTML tags
+    .replace(/['";`<>\\\0]/g, '') // Strip script injection chars
+    .trim()
+    .slice(0, maxLength);
+};
 
 const adminCache = new Map<string, { role: 'USER' | 'ADMIN'; isRootAdmin: boolean; timestamp: number }>();
 const ADMIN_CACHE_TTL_MS = 30 * 1000; // 30 seconds
@@ -132,11 +158,10 @@ export const clearAdminCache = () => {
 
 export const checkIsAdmin = async (
   email: string, 
-  metadataRole?: string,
   skipCache = false
 ): Promise<{ role: 'USER' | 'ADMIN'; isRootAdmin: boolean }> => {
   const normalized = (email || '').toLowerCase().trim();
-  if (!normalized) {
+  if (!normalized || !isValidEmail(normalized)) {
     return { role: 'USER', isRootAdmin: false };
   }
 
@@ -153,14 +178,7 @@ export const checkIsAdmin = async (
     }
   }
 
-  // 2. Explicit metadata role
-  if (metadataRole === 'ADMIN') {
-    const res = { role: 'ADMIN' as const, isRootAdmin: false };
-    adminCache.set(normalized, { ...res, timestamp: Date.now() });
-    return res;
-  }
-
-  // 3. Primary cloud source of truth: active_sessions SYS_ADMIN_INVITES
+  // 2. Primary cloud source of truth: active_sessions SYS_ADMIN_INVITES
   try {
     const { data: sysRow } = await supabase
       .from('active_sessions')
@@ -400,7 +418,7 @@ export const useUserStore = create<UserState>((set, get) => ({
         // Active Session Events: INITIAL_SESSION, SIGNED_IN, TOKEN_REFRESHED, USER_UPDATED
         if (session?.user) {
           const email = session.user.email || '';
-          const { role, isRootAdmin } = await checkIsAdmin(email, session.user.user_metadata?.role);
+          const { role, isRootAdmin } = await checkIsAdmin(email);
           const name = formatCleanName(session.user.user_metadata?.name || email.split('@')[0]);
           const userObj: User = { id: session.user.id, email, name, role, isRootAdmin };
 
@@ -449,7 +467,7 @@ export const useUserStore = create<UserState>((set, get) => ({
 
       if (session?.user) {
         const email = session.user.email || '';
-        const { role, isRootAdmin } = await checkIsAdmin(email, session.user.user_metadata?.role);
+        const { role, isRootAdmin } = await checkIsAdmin(email);
         const name = formatCleanName(session.user.user_metadata?.name || email.split('@')[0]);
         const userObj: User = { id: session.user.id, email, name, role, isRootAdmin };
 
@@ -492,11 +510,21 @@ export const useUserStore = create<UserState>((set, get) => ({
   },
 
   login: async (email, password) => {
-    const cleanEmail = email.trim();
+    const cleanEmail = (email || '').trim().toLowerCase();
+    if (!cleanEmail || !isValidEmail(cleanEmail)) {
+      return { error: 'Por favor, ingresa un formato de correo electrónico válido.' };
+    }
+    if (!password || typeof password !== 'string') {
+      return { error: 'Por favor, introduce tu contraseña.' };
+    }
+    if (password.length > 72) {
+      return { error: 'La contraseña excede el límite máximo de seguridad permitido.' };
+    }
+
     const { data, error } = await supabase.auth.signInWithPassword({ email: cleanEmail, password });
     if (!error && data?.user) {
       const userEmail = data.user.email || cleanEmail;
-      const { role, isRootAdmin } = await checkIsAdmin(userEmail, data.user.user_metadata?.role);
+      const { role, isRootAdmin } = await checkIsAdmin(userEmail);
       const name = formatCleanName(data.user.user_metadata?.name || userEmail.split('@')[0]);
       const personalData = await fetchUserDataFromDatabase(data.user.id, role, userEmail);
       const userObj: User = { id: data.user.id, email: userEmail, name, role, isRootAdmin };
@@ -504,7 +532,7 @@ export const useUserStore = create<UserState>((set, get) => ({
       set({ 
         user: userObj, 
         isAuthenticated: true, 
-        isLoading: false,
+        isLoading: false, 
         isAuthInitialized: true,
         cards: personalData.cards,
         orders: personalData.orders,
@@ -557,9 +585,25 @@ export const useUserStore = create<UserState>((set, get) => ({
   },
   
   register: async (email, password, name) => {
-    const cleanEmail = email.trim();
-    const cleanName = formatCleanName(name);
+    const cleanEmail = (email || '').trim().toLowerCase();
+    if (!cleanEmail || !isValidEmail(cleanEmail)) {
+      return { error: 'Por favor, ingresa un correo electrónico válido (ej. usuario@dominio.com).' };
+    }
+
+    const cleanName = sanitizeText(name, 70);
+    if (!cleanName || cleanName.length < 2) {
+      return { error: 'Por favor, ingresa un nombre válido (mínimo 2 letras, sin símbolos especiales).' };
+    }
+
+    if (!password || typeof password !== 'string' || password.length < 6) {
+      return { error: 'La contraseña debe contener al menos 6 caracteres.' };
+    }
+    if (password.length > 72) {
+      return { error: 'La contraseña excede el límite máximo de seguridad permitido.' };
+    }
+
     const { role, isRootAdmin } = await checkIsAdmin(cleanEmail);
+    // Security: Never allow client to control metadata role; role is computed by server-checked logic
     const { data, error } = await supabase.auth.signUp({ 
       email: cleanEmail, 
       password,
@@ -930,7 +974,7 @@ export const useUserStore = create<UserState>((set, get) => ({
     const currentUser = get().user;
     if (!currentUser || !currentUser.email) return false;
 
-    const { role, isRootAdmin } = await checkIsAdmin(currentUser.email, undefined, true);
+    const { role, isRootAdmin } = await checkIsAdmin(currentUser.email, true);
     if (role !== currentUser.role || isRootAdmin !== currentUser.isRootAdmin) {
       const updatedUser: User = {
         ...currentUser,

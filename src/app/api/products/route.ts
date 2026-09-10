@@ -56,15 +56,31 @@ const stripExtendedFields = (obj: Record<string, unknown>) => {
 // DELETE: Delete a product by ID (Admin only)
 export async function DELETE(request: Request) {
   try {
+    // 1. Mandatory JWT Authentication
+    const authUser = await getAuthenticatedUser(request);
+    if (!authUser?.email) {
+      return NextResponse.json(
+        { success: false, error: 'Acceso no autorizado. Se requiere autenticación administrativa.' },
+        { status: 401 }
+      );
+    }
+
+    // 2. Strict Admin Role Verification
+    const isAdmin = await verifyIsAdmin(authUser.email);
+    if (!isAdmin) {
+      return NextResponse.json(
+        { success: false, error: 'Permisos insuficientes. Acción reservada para administradores.' },
+        { status: 403 }
+      );
+    }
+
     const { searchParams } = new URL(request.url);
     let id = searchParams.get('id');
-    let requesterEmail = searchParams.get('requesterEmail');
 
     if (!id) {
       try {
         const body = await request.json();
         id = body.id;
-        if (body.requesterEmail) requesterEmail = body.requesterEmail;
       } catch {
         // No body
       }
@@ -74,20 +90,12 @@ export async function DELETE(request: Request) {
       return NextResponse.json({ success: false, error: 'ID de producto requerido' }, { status: 400 });
     }
 
-    // Verify admin privileges
-    const authUser = await getAuthenticatedUser(request);
-    const emailToCheck = authUser?.email || requesterEmail;
-    if (emailToCheck) {
-      const isAdmin = await verifyIsAdmin(emailToCheck);
-      if (!isAdmin) {
-        return NextResponse.json({ success: false, error: 'No autorizado para eliminar productos' }, { status: 403 });
-      }
-    }
+    const cleanId = String(id).trim();
 
     const { data, error } = await supabase
       .from('products')
       .delete()
-      .eq('id', id)
+      .eq('id', cleanId)
       .select();
 
     if (error) {
@@ -99,7 +107,7 @@ export async function DELETE(request: Request) {
 
     return NextResponse.json({
       success: true,
-      deletedId: id,
+      deletedId: cleanId,
       deletedCount,
       data: data || []
     });
@@ -112,20 +120,28 @@ export async function DELETE(request: Request) {
 // POST: Add new product (Admin only)
 export async function POST(request: Request) {
   try {
+    // 1. Mandatory JWT Authentication
+    const authUser = await getAuthenticatedUser(request);
+    if (!authUser?.email) {
+      return NextResponse.json(
+        { success: false, error: 'Acceso no autorizado. Se requiere autenticación administrativa.' },
+        { status: 401 }
+      );
+    }
+
+    // 2. Strict Admin Role Verification
+    const isAdmin = await verifyIsAdmin(authUser.email);
+    if (!isAdmin) {
+      return NextResponse.json(
+        { success: false, error: 'Permisos insuficientes. Acción reservada para administradores.' },
+        { status: 403 }
+      );
+    }
+
     const body = await request.json();
 
     if (!body || !body.title) {
       return NextResponse.json({ success: false, error: 'Título de producto requerido' }, { status: 400 });
-    }
-
-    // Verify admin privileges
-    const authUser = await getAuthenticatedUser(request);
-    const emailToCheck = authUser?.email || body.requesterEmail;
-    if (emailToCheck) {
-      const isAdmin = await verifyIsAdmin(emailToCheck);
-      if (!isAdmin) {
-        return NextResponse.json({ success: false, error: 'No autorizado para agregar productos' }, { status: 403 });
-      }
     }
 
     const productPayload = { ...body };
@@ -157,33 +173,44 @@ export async function POST(request: Request) {
 // PUT: Update product (Admin only)
 export async function PUT(request: Request) {
   try {
+    // 1. Mandatory JWT Authentication
+    const authUser = await getAuthenticatedUser(request);
+    if (!authUser?.email) {
+      return NextResponse.json(
+        { success: false, error: 'Acceso no autorizado. Se requiere autenticación administrativa.' },
+        { status: 401 }
+      );
+    }
+
+    // 2. Strict Admin Role Verification
+    const isAdmin = await verifyIsAdmin(authUser.email);
+    if (!isAdmin) {
+      return NextResponse.json(
+        { success: false, error: 'Permisos insuficientes. Acción reservada para administradores.' },
+        { status: 403 }
+      );
+    }
+
     const body = await request.json();
-    const { id, requesterEmail, ...updates } = body;
+    const { id, ...updates } = body;
+    delete updates.requesterEmail;
 
     if (!id) {
       return NextResponse.json({ success: false, error: 'ID requerido para actualizar' }, { status: 400 });
     }
 
-    // Verify admin privileges
-    const authUser = await getAuthenticatedUser(request);
-    const emailToCheck = authUser?.email || requesterEmail;
-    if (emailToCheck) {
-      const isAdmin = await verifyIsAdmin(emailToCheck);
-      if (!isAdmin) {
-        return NextResponse.json({ success: false, error: 'No autorizado para actualizar productos' }, { status: 403 });
-      }
-    }
+    const cleanId = String(id).trim();
 
     let { data, error } = await supabase
       .from('products')
       .update(updates)
-      .eq('id', id)
+      .eq('id', cleanId)
       .select()
       .single();
 
     if (isMissingColumn(error)) {
       const basic = stripExtendedFields(updates);
-      const retry = await supabase.from('products').update(basic).eq('id', id).select().single();
+      const retry = await supabase.from('products').update(basic).eq('id', cleanId).select().single();
       data = retry.data;
       error = retry.error;
     }

@@ -4,7 +4,7 @@ import React, { useState, useMemo } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { useUserStore } from "@/lib/userStore";
+import { useUserStore, isValidEmail } from "@/lib/userStore";
 import { useCatalogStore, CatalogProduct } from "@/lib/catalogStore";
 import { ArrowRight, Mail, Lock, Sparkles, ShieldCheck, Search, X, Eye, Compass } from "lucide-react";
 import { normalizeSearchText } from "@/lib/utils";
@@ -36,18 +36,30 @@ export default function LoginPage() {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMsg("");
-    setIsLoading(true);
 
-    if (email && password) {
-      const { error } = await login(email, password);
-      setIsLoading(false);
-      if (error) {
-        setErrorMsg(error === "Invalid login credentials" ? "Credenciales incorrectas. Verifica tu correo y contraseña." : error);
-      } else {
-        router.push("/");
-      }
+    const cleanEmail = email.trim().toLowerCase();
+    if (!cleanEmail || !isValidEmail(cleanEmail)) {
+      setErrorMsg("Por favor, ingresa un correo electrónico con formato válido.");
+      return;
+    }
+
+    if (!password || password.length < 6) {
+      setErrorMsg("La contraseña debe tener al menos 6 caracteres.");
+      return;
+    }
+
+    if (password.length > 72) {
+      setErrorMsg("La contraseña excede el límite máximo de caracteres permitido.");
+      return;
+    }
+
+    setIsLoading(true);
+    const { error } = await login(cleanEmail, password);
+    setIsLoading(false);
+    if (error) {
+      setErrorMsg(error === "Invalid login credentials" ? "Credenciales incorrectas. Verifica tu correo y contraseña." : error);
     } else {
-      setIsLoading(false);
+      router.push("/");
     }
   };
 

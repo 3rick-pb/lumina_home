@@ -42,10 +42,6 @@ export interface ApiOrder {
 
 export async function GET(request: Request) {
   try {
-    const { searchParams } = new URL(request.url);
-    const userId = searchParams.get('userId');
-    const email = searchParams.get('email') || '';
-
     // Verify authenticated user via JWT Bearer
     const authUser = await getAuthenticatedUser(request);
     const isAdmin = authUser?.email ? await verifyIsAdmin(authUser.email) : false;
@@ -56,19 +52,22 @@ export async function GET(request: Request) {
       .not('id', 'like', 'SYS_%')
       .order('created_at', { ascending: false });
 
-    // Non-admins only see their own orders (prioritizing verified JWT identity)
+    // Non-admins only see their own orders (strict zero-trust: must be authenticated)
     if (!isAdmin) {
-      const targetUserId = authUser?.id || userId;
-      const targetEmail = authUser?.email ? authUser.email.toLowerCase().trim() : (email ? email.toLowerCase().trim() : '');
-
-      if (targetUserId && targetEmail) {
-        query = query.or(`user_id.eq.${targetUserId},customer_email.eq.${targetEmail}`);
-      } else if (targetUserId) {
-        query = query.eq('user_id', targetUserId);
-      } else if (targetEmail) {
-        query = query.eq('customer_email', targetEmail);
-      } else {
+      if (!authUser || !authUser.id) {
+        // Unauthenticated callers have no access to private customer orders
         return NextResponse.json({ success: true, orders: [], count: 0 });
+      }
+
+      const verifiedUserId = authUser.id;
+      const verifiedEmail = (authUser.email || '').toLowerCase().trim();
+
+      if (verifiedUserId && verifiedEmail) {
+        query = query.or(`user_id.eq.${verifiedUserId},customer_email.eq.${verifiedEmail}`);
+      } else if (verifiedUserId) {
+        query = query.eq('user_id', verifiedUserId);
+      } else {
+        query = query.eq('customer_email', verifiedEmail);
       }
     }
 
@@ -112,20 +111,30 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: false, error: 'Order data is missing' }, { status: 400 });
     }
 
+    // Bind authenticated user identity if logged in
+    const authUser = await getAuthenticatedUser(request);
+    const userId = authUser?.id || order.userId || undefined;
+
+    // Sanitize string inputs against XSS and injection
+    const cleanCustomerName = String(order.customerName || 'Cliente Lumina').replace(/<[^>]*>?/gm, '').trim().slice(0, 80);
+    const cleanRecipient = String(order.recipient || cleanCustomerName).replace(/<[^>]*>?/gm, '').trim().slice(0, 80);
+    const cleanEmail = String(order.customerEmail || authUser?.email || 'cliente@lumina.com').toLowerCase().trim().slice(0, 100);
+    const cleanPayment = String(order.paymentMethod || 'Tarjeta de Crédito').replace(/<[^>]*>?/gm, '').trim().slice(0, 50);
+
     const newApiOrder: ApiOrder = {
-      id: order.id,
-      userId: order.userId || undefined,
-      customerName: order.customerName || 'Cliente Lumina',
-      customerEmail: order.customerEmail || 'cliente@lumina.com',
-      recipient: order.recipient || order.customerName || 'Cliente',
+      id: String(order.id).trim().slice(0, 60),
+      userId,
+      customerName: cleanCustomerName,
+      customerEmail: cleanEmail,
+      recipient: cleanRecipient,
       shippingAddress: order.shippingAddress || undefined,
-      paymentMethod: order.paymentMethod || 'Tarjeta de Crédito',
+      paymentMethod: cleanPayment,
       date: order.date || new Date().toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: 'numeric' }),
       time: order.time || new Date().toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }),
       createdAt: order.createdAt || new Date().toISOString(),
-      status: order.status || 'Procesando',
+      status: 'Procesando', // Enforce default state on initial creation
       trackingNumber: order.trackingNumber || `LM-${Math.floor(1000000 + Math.random() * 9000000)}`,
-      total: Number(order.total) || 0,
+      total: Math.max(0, Number(order.total) || 0),
       items: Array.isArray(order.items) ? order.items : []
     };
 
@@ -157,30 +166,45 @@ export async function POST(request: Request) {
 
 export async function PATCH(request: Request) {
   try {
+    // 1. Mandatory JWT Authentication
+    const authUser = await getAuthenticatedUser(request);
+    if (!authUser?.email) {
+      return NextResponse.json(
+        { success: false, error: 'Acceso no autorizado. Se requiere inicio de sesión administrativo.' },
+        { status: 401 }
+      );
+    }
+
+    // 2. Strict Zero-Trust Admin Role Verification
+    const isAdmin = await verifyIsAdmin(authUser.email);
+    if (!isAdmin) {
+      return NextResponse.json(
+        { success: false, error: 'Permisos insuficientes. Solo administradores autorizados pueden modificar estados de órdenes.' },
+        { status: 403 }
+      );
+    }
+
     const body = await request.json();
-    const { orderId, status, requesterEmail } = body;
+    const { orderId, status } = body;
 
     if (!orderId || !status) {
-      return NextResponse.json({ success: false, error: 'orderId and status are required' }, { status: 400 });
+      return NextResponse.json({ success: false, error: 'orderId y status son campos requeridos.' }, { status: 400 });
     }
 
-    // Optional admin check if email/auth provided
-    const authUser = await getAuthenticatedUser(request);
-    const emailToCheck = authUser?.email || requesterEmail;
-    if (emailToCheck) {
-      const isAdmin = await verifyIsAdmin(emailToCheck);
-      if (!isAdmin) {
-        return NextResponse.json({ success: false, error: 'No autorizado para cambiar estado de orden' }, { status: 403 });
-      }
+    // Whitelist valid order status transitions
+    const validStatuses = ['Procesando', 'Enviado', 'Entregado'];
+    if (!validStatuses.includes(status)) {
+      return NextResponse.json({ success: false, error: 'Estado de orden no válido.' }, { status: 400 });
     }
 
-    const { error } = await supabase.from('orders').update({ status }).eq('id', orderId);
+    const cleanOrderId = String(orderId).trim();
+    const { error } = await supabase.from('orders').update({ status }).eq('id', cleanOrderId);
 
     if (error) {
       return NextResponse.json({ success: false, error: error.message }, { status: 500 });
     }
 
-    return NextResponse.json({ success: true, orderId, status });
+    return NextResponse.json({ success: true, orderId: cleanOrderId, status });
   } catch (error) {
     return NextResponse.json({ success: false, error: String(error) }, { status: 500 });
   }
