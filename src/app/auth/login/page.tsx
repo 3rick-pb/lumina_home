@@ -16,6 +16,12 @@ export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
   const login = useUserStore((state) => state.login);
+  const continueAsGuest = useUserStore((state) => state.continueAsGuest);
+
+  const handleContinueAsGuest = () => {
+    continueAsGuest();
+    router.push("/");
+  };
 
   // Search Bar State
   const { products } = useCatalogStore();
@@ -75,11 +81,15 @@ export default function LoginPage() {
           </span>
         </div>
 
-        <Link href="/" className="block group">
+        <div 
+          onClick={handleContinueAsGuest} 
+          className="block group cursor-pointer"
+          title="Explorar tienda sin cuenta"
+        >
           <h1 className="font-display text-5xl sm:text-6xl font-bold tracking-tight text-gray-900 group-hover:opacity-90 transition-opacity">
             Lumina<span className="text-[#8c9276]">.</span>
           </h1>
-        </Link>
+        </div>
         <p className="mt-2 text-xs sm:text-sm text-gray-600 font-light leading-relaxed">
           Espacios diseñados para perdurar. Inicia sesión con tus credenciales para acceder a la boutique y gestionar tus pedidos.
         </p>
@@ -251,13 +261,14 @@ export default function LoginPage() {
               <div className="flex-grow border-t border-gray-200/80 dark:border-white/10"></div>
             </div>
 
-            <Link
-              href="/"
+            <button
+              type="button"
+              onClick={handleContinueAsGuest}
               className="w-full h-12 bg-white/80 hover:bg-white text-gray-800 border border-gray-200/80 rounded-2xl font-medium flex items-center justify-center gap-2 transition-all shadow-xs hover:shadow-md cursor-pointer text-xs sm:text-sm group"
             >
               <Compass className="w-4 h-4 text-[#8c9276] group-hover:rotate-45 transition-transform duration-300" />
-              <span className="font-semibold">Iniciar sin cuenta (Explorar tienda)</span>
-            </Link>
+              <span className="font-semibold">Continuar sin cuenta (Explorar tienda)</span>
+            </button>
           </form>
 
           <div className="mt-6 pt-5 border-t border-gray-200/60 text-center text-xs text-gray-600">
@@ -301,13 +312,17 @@ export default function LoginPage() {
             </p>
 
             <div className="mt-5 pt-4 border-t border-gray-100 flex gap-2">
-              <Link 
-                href={`/product/${previewProduct.id}`}
-                className="flex-1 py-2.5 bg-gray-900 text-white rounded-xl text-xs font-semibold hover:bg-gray-800 transition-colors shadow-sm text-center flex items-center justify-center gap-1.5"
+              <button 
+                type="button"
+                onClick={() => {
+                  continueAsGuest();
+                  router.push(`/product/${previewProduct.id}`);
+                }}
+                className="flex-1 py-2.5 bg-gray-900 text-white rounded-xl text-xs font-semibold hover:bg-gray-800 transition-colors shadow-sm text-center flex items-center justify-center gap-1.5 cursor-pointer"
               >
                 <span>Ver pieza completa</span>
                 <ArrowRight className="w-3.5 h-3.5" />
-              </Link>
+              </button>
               <button 
                 onClick={() => setPreviewProduct(null)}
                 className="px-3 py-2.5 bg-gray-100 text-gray-700 rounded-xl text-xs font-medium hover:bg-gray-200 transition-colors cursor-pointer"

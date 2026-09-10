@@ -14,6 +14,12 @@ export default function RegisterPage() {
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
   const register = useUserStore((state) => state.register);
+  const continueAsGuest = useUserStore((state) => state.continueAsGuest);
+
+  const handleContinueAsGuest = () => {
+    continueAsGuest();
+    router.push("/");
+  };
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -63,11 +69,15 @@ export default function RegisterPage() {
           </span>
         </div>
 
-        <Link href="/" className="block group">
+        <div 
+          onClick={handleContinueAsGuest} 
+          className="block group cursor-pointer"
+          title="Explorar tienda sin cuenta"
+        >
           <h1 className="font-display text-5xl sm:text-6xl font-bold tracking-tight text-gray-900 group-hover:opacity-90 transition-opacity">
             Lumina<span className="text-[#8c9276]">.</span>
           </h1>
-        </Link>
+        </div>
         <p className="mt-3 text-xs sm:text-sm text-gray-600 font-light leading-relaxed">
           Crea tu cuenta para disfrutar de atención personalizada, lista de deseos y seguimiento de tus piezas exclusivas.
         </p>
@@ -171,13 +181,14 @@ export default function RegisterPage() {
               <div className="flex-grow border-t border-gray-200/80 dark:border-white/10"></div>
             </div>
 
-            <Link
-              href="/"
+            <button
+              type="button"
+              onClick={handleContinueAsGuest}
               className="w-full h-12 bg-white/80 hover:bg-white text-gray-800 border border-gray-200/80 rounded-2xl font-medium flex items-center justify-center gap-2 transition-all shadow-xs hover:shadow-md cursor-pointer text-xs sm:text-sm group"
             >
               <Compass className="w-4 h-4 text-[#8c9276] group-hover:rotate-45 transition-transform duration-300" />
-              <span className="font-semibold">Iniciar sin cuenta (Explorar tienda)</span>
-            </Link>
+              <span className="font-semibold">Continuar sin cuenta (Explorar tienda)</span>
+            </button>
           </form>
 
           <div className="mt-8 pt-6 border-t border-gray-200/60 text-center text-sm text-gray-600">

@@ -60,11 +60,14 @@ interface UserState {
   cards: PaymentCard[];
   address: ShippingAddress | null;
   addresses: ShippingAddress[];
+  isGuestMode: boolean;
   
   initializeAuth: () => Promise<void>;
   login: (email: string, password: string) => Promise<{ error: string | null }>;
   logout: () => Promise<void>;
   register: (email: string, password: string, name: string) => Promise<{ error: string | null }>;
+  continueAsGuest: () => void;
+  exitGuestMode: () => void;
   
   toggleFavorite: (productId: string) => Promise<void>;
   isFavorite: (productId: string) => boolean;
@@ -378,16 +381,51 @@ function setupRolesRealtimeListener(
     .subscribe();
 }
 
+export const getInitialGuestMode = (): boolean => {
+  if (typeof window === 'undefined') return false;
+  try {
+    if (sessionStorage.getItem('lumina_guest_mode') === 'true') return true;
+    if (document.cookie.split('; ').some(row => row.startsWith('lumina_guest_mode=true'))) return true;
+    return false;
+  } catch {
+    return false;
+  }
+};
+
+export const setGuestModeStorage = (val: boolean) => {
+  if (typeof window === 'undefined') return;
+  try {
+    if (val) {
+      sessionStorage.setItem('lumina_guest_mode', 'true');
+      document.cookie = "lumina_guest_mode=true; path=/; SameSite=Lax";
+    } else {
+      sessionStorage.removeItem('lumina_guest_mode');
+      document.cookie = "lumina_guest_mode=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax";
+    }
+  } catch {}
+};
+
 export const useUserStore = create<UserState>((set, get) => ({
   user: null,
   isAuthenticated: false,
   isLoading: true,
   isAuthInitialized: false,
+  isGuestMode: getInitialGuestMode(),
   favorites: [],
   orders: [],
   cards: [],
   addresses: [],
   address: null,
+
+  continueAsGuest: () => {
+    setGuestModeStorage(true);
+    set({ isGuestMode: true });
+  },
+
+  exitGuestMode: () => {
+    setGuestModeStorage(false);
+    set({ isGuestMode: false });
+  },
   
   initializeAuth: async () => {
     // Attach realtime role listener once
@@ -400,10 +438,12 @@ export const useUserStore = create<UserState>((set, get) => ({
       supabase.auth.onAuthStateChange(async (event, session) => {
         // Explicit Sign out event
         if (event === 'SIGNED_OUT' || (!session && event !== 'INITIAL_SESSION')) {
+          setGuestModeStorage(false);
           await useCartStore.getState().initCartForUser(null);
           set({
             user: null,
             isAuthenticated: false,
+            isGuestMode: false,
             favorites: [],
             cards: [],
             orders: [],
@@ -498,6 +538,7 @@ export const useUserStore = create<UserState>((set, get) => ({
         set({ 
           user: null, 
           isAuthenticated: false, 
+          isGuestMode: getInitialGuestMode(),
           isLoading: false, 
           isAuthInitialized: true 
         });
@@ -523,6 +564,7 @@ export const useUserStore = create<UserState>((set, get) => ({
 
     const { data, error } = await supabase.auth.signInWithPassword({ email: cleanEmail, password });
     if (!error && data?.user) {
+      setGuestModeStorage(false);
       const userEmail = data.user.email || cleanEmail;
       const { role, isRootAdmin } = await checkIsAdmin(userEmail);
       const name = formatCleanName(data.user.user_metadata?.name || userEmail.split('@')[0]);
@@ -532,6 +574,7 @@ export const useUserStore = create<UserState>((set, get) => ({
       set({ 
         user: userObj, 
         isAuthenticated: true, 
+        isGuestMode: false,
         isLoading: false, 
         isAuthInitialized: true,
         cards: personalData.cards,
@@ -564,6 +607,8 @@ export const useUserStore = create<UserState>((set, get) => ({
       } catch {}
     }
 
+    setGuestModeStorage(false);
+
     // Formal Supabase sign out
     await supabase.auth.signOut();
     
@@ -574,6 +619,7 @@ export const useUserStore = create<UserState>((set, get) => ({
     set({
       user: null,
       isAuthenticated: false,
+      isGuestMode: false,
       favorites: [],
       cards: [],
       orders: [],
@@ -592,7 +638,7 @@ export const useUserStore = create<UserState>((set, get) => ({
 
     const cleanName = sanitizeText(name, 70);
     if (!cleanName || cleanName.length < 2) {
-      return { error: 'Por favor, ingresa un nombre válido (mínimo 2 letras, sin símbolos especiales).' };
+      return { error: 'Por favor, ingresa un nombre válido (mínimo 2 caracteres, sin símbolos).' };
     }
 
     if (!password || typeof password !== 'string' || password.length < 6) {
@@ -610,6 +656,7 @@ export const useUserStore = create<UserState>((set, get) => ({
       options: { data: { name: cleanName, role } } 
     });
     if (!error && data?.user) {
+      setGuestModeStorage(false);
       const userObj: User = { id: data.user.id, email: cleanEmail, name: cleanName, role, isRootAdmin };
 
       // Upsert profile into user_profiles table
@@ -624,6 +671,7 @@ export const useUserStore = create<UserState>((set, get) => ({
       set({ 
         user: userObj, 
         isAuthenticated: true,
+        isGuestMode: false,
         isLoading: false,
         cards: [],
         orders: [],
