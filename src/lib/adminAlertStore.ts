@@ -563,28 +563,76 @@ export const useAdminAlertStore = create<AdminAlertState>((set, get) => ({
   },
 }));
 
-// Realtime broadcast for registered customers adding items to their cart
+// Single persistent channel for sending cart addition broadcasts reliably across multiple products
+let broadcastChannel: ReturnType<typeof supabase.channel> | null = null;
+let broadcastChannelPromise: Promise<boolean> | null = null;
+
+const getOrInitBroadcastChannel = async (): Promise<ReturnType<typeof supabase.channel> | null> => {
+  if (typeof window === 'undefined') return null;
+
+  // 1. If already joined and healthy, reuse immediately (0ms latency for 2nd, 3rd, 10th product)
+  if (broadcastChannel && broadcastChannel.state === 'joined') {
+    return broadcastChannel;
+  }
+
+  // 2. If currently in handshake, wait for existing connection promise
+  if (broadcastChannel && broadcastChannel.state === 'joining' && broadcastChannelPromise) {
+    await broadcastChannelPromise;
+    return broadcastChannel && (broadcastChannel.state as string) === 'joined' ? broadcastChannel : null;
+  }
+
+  // 3. If closed or errored, remove dead instance and recreate cleanly
+  if (broadcastChannel && (broadcastChannel.state === 'closed' || broadcastChannel.state === 'errored')) {
+    try {
+      supabase.removeChannel(broadcastChannel);
+    } catch {}
+    broadcastChannel = null;
+  }
+
+  // 4. Initialize dedicated cart alerts channel
+  broadcastChannel = supabase.channel('lumina:cart_alerts', {
+    config: { broadcast: { self: false } },
+  });
+
+  broadcastChannelPromise = new Promise<boolean>((resolve) => {
+    let resolved = false;
+    const finish = (ok: boolean) => {
+      if (!resolved) {
+        resolved = true;
+        resolve(ok);
+      }
+    };
+
+    const timeout = setTimeout(() => {
+      finish(broadcastChannel?.state === 'joined');
+    }, 1500);
+
+    broadcastChannel!.subscribe((status) => {
+      if (status === 'SUBSCRIBED') {
+        clearTimeout(timeout);
+        finish(true);
+      } else if (status === 'CHANNEL_ERROR' || status === 'CLOSED') {
+        clearTimeout(timeout);
+        finish(false);
+      }
+    });
+  });
+
+  await broadcastChannelPromise;
+  return broadcastChannel && broadcastChannel.state === 'joined' ? broadcastChannel : null;
+};
+
+// Realtime broadcast for registered customers adding items to their cart (works seamlessly on 1st, 2nd, and all consecutive adds)
 export const broadcastCartAddition = async (payload: CartItemAddedPayload) => {
   try {
-    const channel = supabase.channel('lumina:cart_alerts', {
-      config: { broadcast: { self: false } },
-    });
-
-    await new Promise<void>((resolve) => {
-      channel.subscribe(async (status) => {
-        if (status === 'SUBSCRIBED') {
-          await channel.send({
-            type: 'broadcast',
-            event: 'cart_item_added',
-            payload,
-          });
-          resolve();
-        } else if (status === 'CHANNEL_ERROR' || status === 'CLOSED') {
-          resolve();
-        }
+    const channel = await getOrInitBroadcastChannel();
+    if (channel) {
+      await channel.send({
+        type: 'broadcast',
+        event: 'cart_item_added',
+        payload,
       });
-      setTimeout(resolve, 600);
-    });
+    }
   } catch (err) {
     console.warn('Could not broadcast cart addition:', err);
   }

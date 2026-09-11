@@ -27,6 +27,11 @@ export function AdminCartNotifier() {
     hydrateAlertConfigFromClient();
   }, []);
 
+  const fireToastRef = React.useRef(fireToast);
+  useEffect(() => {
+    fireToastRef.current = fireToast;
+  }, [fireToast]);
+
   // Realtime Supabase listener
   useEffect(() => {
     if (!isAdmin) return;
@@ -49,15 +54,17 @@ export function AdminCartNotifier() {
         );
 
         if (isRegistered) {
-          fireToast(payload);
+          fireToastRef.current(payload);
         }
       })
       .subscribe();
 
     return () => {
-      channel.unsubscribe();
+      try {
+        supabase.removeChannel(channel);
+      } catch {}
     };
-  }, [isAdmin, fireToast]);
+  }, [isAdmin]);
 
   // Auto-dismiss timer based on configured duration
   useEffect(() => {
@@ -106,7 +113,7 @@ export function AdminCartNotifier() {
       aria-label="Notificaciones de actividad en vivo"
       className={`fixed z-[99999] pointer-events-none flex flex-col ${getPositionClasses()}`}
     >
-      <AnimatePresence mode="wait">
+      <AnimatePresence mode="sync">
         {activeAlert && (
           <motion.div
             key={activeAlertKey}

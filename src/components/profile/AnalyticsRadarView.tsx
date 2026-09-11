@@ -195,6 +195,36 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
   const dragStartRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
   const panStartRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
 
+  // Zoom help tooltip hover visibility with 1s fade-out delay
+  const [showZoomHelp, setShowZoomHelp] = useState<boolean>(false);
+  const zoomHelpTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  const handleZoomHelpMouseEnter = () => {
+    if (zoomHelpTimeoutRef.current) {
+      clearTimeout(zoomHelpTimeoutRef.current);
+      zoomHelpTimeoutRef.current = null;
+    }
+    setShowZoomHelp(true);
+  };
+
+  const handleZoomHelpMouseLeave = () => {
+    if (zoomHelpTimeoutRef.current) {
+      clearTimeout(zoomHelpTimeoutRef.current);
+    }
+    zoomHelpTimeoutRef.current = setTimeout(() => {
+      setShowZoomHelp(false);
+      zoomHelpTimeoutRef.current = null;
+    }, 1000);
+  };
+
+  useEffect(() => {
+    return () => {
+      if (zoomHelpTimeoutRef.current) {
+        clearTimeout(zoomHelpTimeoutRef.current);
+      }
+    };
+  }, []);
+
   const fetchActiveClients = useRadarStore((state) => state.fetchActiveClients);
   const currentUser = useUserStore((state) => state.user);
   const userAddress = useUserStore((state) => state.address);
@@ -1147,7 +1177,11 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
         {/* Right side controls: Density Mode Selector + Admin Location Prompt + Zoom Help Badge */}
         <div className="flex items-center gap-2 pointer-events-auto shrink-0 flex-wrap justify-end">
           {/* Futuristic Map Density & Cluster Mode Selector Pill */}
-          <div className="flex items-center bg-black/80 backdrop-blur-2xl border border-white/15 rounded-full p-1 shadow-2xl text-xs font-semibold text-white">
+          <div 
+            className="relative flex items-center bg-black/80 backdrop-blur-2xl border border-white/15 rounded-full p-1 shadow-2xl text-xs font-semibold text-white"
+            onMouseEnter={handleZoomHelpMouseEnter}
+            onMouseLeave={handleZoomHelpMouseLeave}
+          >
             <button
               type="button"
               onClick={() => {
@@ -1190,6 +1224,17 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
                 Radio: {scatterRadius === "normal" ? "1x" : "2x"}
               </button>
             )}
+
+            {/* Hover Tooltip: Rueda o dos dedos para zoom */}
+            <div
+              className={`absolute top-full mt-2.5 left-1/2 -translate-x-1/2 z-30 pointer-events-none flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-black/90 backdrop-blur-xl border border-white/15 text-[11px] font-mono text-[#ccff00] shadow-[0_8px_24px_rgba(0,0,0,0.6)] whitespace-nowrap transition-all duration-500 ease-out ${
+                showZoomHelp 
+                  ? "opacity-100 translate-y-0" 
+                  : "opacity-0 -translate-y-1 pointer-events-none"
+              }`}
+            >
+              <span>💡 Rueda o dos dedos para zoom</span>
+            </div>
           </div>
 
           {isAdmin && !hasAdminLocation && (
@@ -1208,10 +1253,6 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
               <ArrowUpRight className="w-3.5 h-3.5 text-[#ccff00] transition-transform duration-300 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 shrink-0" />
             </button>
           )}
-
-          <div className="hidden xl:flex items-center gap-1.5 px-3 py-1 rounded-full bg-black/45 backdrop-blur-md border border-white/10 text-[10.5px] font-mono text-white/60">
-            <span>💡 Rueda o 2 dedos para Zoom</span>
-          </div>
         </div>
 
       </div>
