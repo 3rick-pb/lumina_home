@@ -1,10 +1,10 @@
 'use client';
 
 import React, { useState } from 'react';
+import { motion } from 'framer-motion';
 import { 
   Volume2, 
   VolumeX, 
-  Sliders, 
   Play, 
   RotateCcw, 
   CheckCircle2, 
@@ -15,7 +15,9 @@ import {
   Palette, 
   AlertTriangle, 
   Zap, 
-  Eye
+  Eye,
+  Monitor,
+  Sparkles
 } from 'lucide-react';
 import { 
   useAdminAlertStore, 
@@ -40,6 +42,7 @@ export function CartAlertsTab() {
   } = useAdminAlertStore();
   
   const [testSent, setTestSent] = useState(false);
+  const [previewExpanded, setPreviewExpanded] = useState(true);
 
   const sampleCustomers: CartItemAddedPayload[] = [
     {
@@ -92,19 +95,40 @@ export function CartAlertsTab() {
     setTimeout(() => setTestSent(false), 2200);
   };
 
-  const positions: { id: AlertPosition; label: string; desc: string; iconPos: string }[] = [
-    { id: 'bottom-right', label: 'Inferior Derecho', desc: 'Recomendado para monitoreo continuo', iconPos: 'bottom-2 right-2' },
-    { id: 'bottom-left', label: 'Inferior Izquierdo', desc: 'Alineado con el dock vertical izquierdo', iconPos: 'bottom-2 left-2' },
-    { id: 'top-right', label: 'Superior Derecho', desc: 'Área de alta visibilidad e impacto', iconPos: 'top-2 right-2' },
-    { id: 'top-left', label: 'Superior Izquierdo', desc: 'Lateral superior sobre la cabecera', iconPos: 'top-2 left-2' },
+  const positions: { id: AlertPosition; label: string; desc: string; cornerClass: string }[] = [
+    { 
+      id: 'bottom-right', 
+      label: 'Inferior Derecho', 
+      desc: 'Esquina natural y ergonómica. Mantiene el foco en el centro de la pantalla.', 
+      cornerClass: 'bottom-3 right-3' 
+    },
+    { 
+      id: 'bottom-left', 
+      label: 'Inferior Izquierdo', 
+      desc: 'Alineado armónicamente con la base del dock y menú lateral de navegación.', 
+      cornerClass: 'bottom-3 left-3' 
+    },
+    { 
+      id: 'top-right', 
+      label: 'Superior Derecho', 
+      desc: 'Área de máxima prioridad visual. Imposible de pasar por alto.', 
+      cornerClass: 'top-3 right-3' 
+    },
+    { 
+      id: 'top-left', 
+      label: 'Superior Izquierdo', 
+      desc: 'Inmediatamente junto a la cabecera superior de la tienda.', 
+      cornerClass: 'top-3 left-3' 
+    },
   ];
 
   const currentAudit = auditContrast(config.bgColor, config.textColor);
+  const isDynamicIsland = config.layout !== 'split_capsule';
 
   return (
-    <div className="space-y-8 animate-fade-in pb-12">
+    <div className="space-y-8 animate-fade-in pb-16 w-full">
       {/* Top Hero Banner */}
-      <div className="relative overflow-hidden rounded-[2rem] p-7 sm:p-9 border border-gray-200/80 dark:border-white/10 bg-white/95 dark:bg-[#202023] shadow-sm backdrop-blur-2xl">
+      <div className="relative overflow-hidden rounded-[2rem] p-7 sm:p-9 border border-gray-200/80 dark:border-white/10 bg-white/95 dark:bg-[#202023] shadow-sm backdrop-blur-2xl w-full">
         <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div>
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-50 dark:bg-blue-950/40 border border-blue-200/60 dark:border-blue-900/40 text-blue-700 dark:text-blue-400 text-[11px] font-semibold uppercase tracking-wider mb-2.5">
@@ -115,7 +139,7 @@ export function CartAlertsTab() {
               Notificaciones de Carrito en Vivo
             </h2>
             <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-1 max-w-2xl leading-relaxed">
-              Configura la presentación visual, la trayectoria de envío animada con paquete en tránsito, colores de alto contraste y el aviso sonoro cuando un comprador registrado añade un producto.
+              Configura la presentación visual, la apertura y cierre fluidos estilo Isla Dinámica, la trayectoria de envío con paquete animado y el simulador de pantalla en tiempo real.
             </p>
           </div>
 
@@ -125,7 +149,7 @@ export function CartAlertsTab() {
               className="px-5 py-2.5 rounded-xl font-semibold text-white text-xs bg-gray-900 dark:bg-white dark:text-gray-950 hover:bg-gray-800 dark:hover:bg-gray-100 shadow-sm active:scale-95 transition-all flex items-center gap-2 cursor-pointer"
             >
               <Play className="w-3.5 h-3.5 fill-current" />
-              <span>Probar notificación</span>
+              <span>Probar en pantalla</span>
             </button>
             <button
               onClick={resetConfig}
@@ -140,11 +164,11 @@ export function CartAlertsTab() {
       </div>
 
       {/* Main Grid: Settings (7 cols) + Live Simulator (5 cols) */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start w-full">
         {/* Left Column: Settings (7 cols) */}
         <div className="lg:col-span-7 space-y-6">
 
-          {/* SECTION 1: 4 Genuine Layout Structures */}
+          {/* SECTION 1: 4 Genuine Layout Structures with Dynamic Island Support */}
           <div className="bg-white dark:bg-[#202022] rounded-3xl border border-gray-200/80 dark:border-white/10 p-6 sm:p-7 shadow-sm space-y-5">
             <div className="flex items-center justify-between">
               <div>
@@ -153,7 +177,7 @@ export function CartAlertsTab() {
                   Estructura de Notificación
                 </h3>
                 <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-                  Cuatro formatos con geometrías y distribuciones de información realmente distintas.
+                  Apertura y cierre estilo Isla Dinámica con resortes fluidos (excepto en Cápsula Dividida).
                 </p>
               </div>
               <span className="text-[10px] font-mono font-bold uppercase tracking-wider px-2.5 py-1 rounded-lg bg-gray-100 dark:bg-white/10 text-gray-700 dark:text-gray-300">
@@ -164,11 +188,16 @@ export function CartAlertsTab() {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
               {LAYOUT_OPTIONS.map((lo) => {
                 const isSelected = config.layout === lo.id;
+                const hasDynamicIsland = lo.id !== 'split_capsule';
+
                 return (
                   <button
                     key={lo.id}
-                    onClick={() => updateConfig({ layout: lo.id })}
-                    className={`relative p-4 rounded-2xl border text-left transition-all cursor-pointer flex flex-col justify-between min-h-[110px] ${
+                    onClick={() => {
+                      updateConfig({ layout: lo.id });
+                      setPreviewExpanded(true);
+                    }}
+                    className={`relative p-4 rounded-2xl border text-left transition-all cursor-pointer flex flex-col justify-between min-h-[115px] ${
                       isSelected
                         ? 'border-gray-900 dark:border-white bg-gray-50/80 dark:bg-white/5 ring-1 ring-gray-900/10 dark:ring-white/20 shadow-xs'
                         : 'border-gray-200/80 dark:border-white/10 bg-white dark:bg-transparent hover:bg-gray-50 dark:hover:bg-white/[0.03]'
@@ -176,10 +205,21 @@ export function CartAlertsTab() {
                   >
                     <div>
                       <div className="flex items-center justify-between mb-1.5">
-                        <span className="text-[10px] font-semibold px-2 py-0.5 rounded-md bg-gray-100 dark:bg-white/10 text-gray-700 dark:text-gray-300">
-                          {lo.badge}
-                        </span>
-                        {isSelected && <CheckCircle2 className="w-4 h-4 text-gray-900 dark:text-white" />}
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <span className="text-[10px] font-semibold px-2 py-0.5 rounded-md bg-gray-100 dark:bg-white/10 text-gray-700 dark:text-gray-300">
+                            {lo.badge}
+                          </span>
+                          {hasDynamicIsland ? (
+                            <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-md bg-amber-500/15 text-amber-600 dark:text-amber-400">
+                              Isla Dinámica
+                            </span>
+                          ) : (
+                            <span className="text-[9px] font-medium px-1.5 py-0.5 rounded-md bg-gray-200/60 dark:bg-white/10 text-gray-500">
+                              Fija Compacta
+                            </span>
+                          )}
+                        </div>
+                        {isSelected && <CheckCircle2 className="w-4 h-4 text-gray-900 dark:text-white shrink-0" />}
                       </div>
                       <h4 className="text-xs font-bold text-gray-900 dark:text-white mt-1">
                         {lo.title}
@@ -194,7 +234,207 @@ export function CartAlertsTab() {
             </div>
           </div>
 
-          {/* SECTION 2: Color Palette & Contrast Audit */}
+          {/* SECTION 2: Realistic Desktop Viewport Simulator for Location & Duration */}
+          <div className="bg-white dark:bg-[#202022] rounded-3xl border border-gray-200/80 dark:border-white/10 p-6 sm:p-7 shadow-sm space-y-6">
+            <div>
+              <h3 className="font-display font-bold text-base text-gray-900 dark:text-white flex items-center gap-2">
+                <Monitor className="w-4 h-4 text-blue-600" />
+                Ubicación y Tiempo de Muestra en Pantalla
+              </h3>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                Simulador realista de tu monitor para previsualizar la posición exacta respecto a la tienda y al menú lateral.
+              </p>
+            </div>
+
+            {/* REALISTIC DESKTOP MONITOR VIEWPORT MOCKUP */}
+            <div className="relative rounded-2xl border border-gray-300/80 dark:border-white/15 bg-gray-100 dark:bg-[#151517] overflow-hidden shadow-inner p-3">
+              {/* Browser Window Chrome */}
+              <div className="flex items-center justify-between pb-2 mb-2 border-b border-gray-200 dark:border-white/10 text-[10px] text-gray-400">
+                <div className="flex items-center gap-1.5">
+                  <span className="w-2.5 h-2.5 rounded-full bg-rose-500/80 inline-block" />
+                  <span className="w-2.5 h-2.5 rounded-full bg-amber-500/80 inline-block" />
+                  <span className="w-2.5 h-2.5 rounded-full bg-emerald-500/80 inline-block" />
+                </div>
+                <div className="px-3 py-0.5 rounded-md bg-white dark:bg-[#202023] border border-gray-200 dark:border-white/10 text-[10px] font-mono text-gray-500 dark:text-gray-400 truncate max-w-[200px]">
+                  https://luminahome.ec/tienda
+                </div>
+                <div className="text-[10px] font-semibold text-gray-400">
+                  Monitor 16:9
+                </div>
+              </div>
+
+              {/* Simulated Browser Webpage Content */}
+              <div className="relative h-44 sm:h-52 rounded-xl bg-white dark:bg-[#1a1a1c] border border-gray-200/70 dark:border-white/10 overflow-hidden flex">
+                {/* Simulated Left Sidebar Dock (Lumina's exact menu dock) */}
+                <div className="w-8 sm:w-10 bg-gray-50 dark:bg-[#18181a] border-r border-gray-200/80 dark:border-white/10 p-1.5 flex flex-col items-center gap-2 shrink-0">
+                  <div className="w-5 h-5 rounded-md bg-emerald-600/30 text-emerald-500 flex items-center justify-center text-[9px] font-bold">
+                    L
+                  </div>
+                  <div className="w-3.5 h-[1px] bg-gray-300 dark:bg-white/10 my-0.5" />
+                  <div className="w-4 h-4 rounded bg-gray-200 dark:bg-white/10" />
+                  <div className="w-4 h-4 rounded bg-gray-200 dark:bg-white/10" />
+                  <div className="w-4 h-4 rounded bg-emerald-500 text-white flex items-center justify-center text-[8px]">
+                    🔔
+                  </div>
+                  <div className="w-4 h-4 rounded bg-gray-200 dark:bg-white/10 mt-auto" />
+                </div>
+
+                {/* Simulated Main Webpage Area */}
+                <div className="flex-1 p-3 flex flex-col justify-between relative overflow-hidden bg-dot-pattern">
+                  {/* Wireframe Header */}
+                  <div className="flex items-center justify-between pb-2 border-b border-gray-100 dark:border-white/5">
+                    <div className="flex items-center gap-2">
+                      <div className="w-14 h-3 rounded bg-gray-300 dark:bg-white/20" />
+                      <div className="w-8 h-2.5 rounded bg-gray-200 dark:bg-white/10" />
+                      <div className="w-8 h-2.5 rounded bg-gray-200 dark:bg-white/10" />
+                    </div>
+                    <div className="w-12 h-3 rounded-full bg-gray-200 dark:bg-white/10" />
+                  </div>
+
+                  {/* Wireframe Catalog Grid Cards */}
+                  <div className="grid grid-cols-3 gap-2 my-auto opacity-40">
+                    <div className="h-12 rounded-lg bg-gray-200 dark:bg-white/10 p-1 space-y-1">
+                      <div className="w-full h-6 rounded bg-gray-300 dark:bg-white/15" />
+                      <div className="w-8 h-1.5 rounded bg-gray-300 dark:bg-white/20" />
+                    </div>
+                    <div className="h-12 rounded-lg bg-gray-200 dark:bg-white/10 p-1 space-y-1">
+                      <div className="w-full h-6 rounded bg-gray-300 dark:bg-white/15" />
+                      <div className="w-8 h-1.5 rounded bg-gray-300 dark:bg-white/20" />
+                    </div>
+                    <div className="h-12 rounded-lg bg-gray-200 dark:bg-white/10 p-1 space-y-1">
+                      <div className="w-full h-6 rounded bg-gray-300 dark:bg-white/15" />
+                      <div className="w-8 h-1.5 rounded bg-gray-300 dark:bg-white/20" />
+                    </div>
+                  </div>
+
+                  {/* THE ANIMATED MINI NOTIFICATION AT EXACT CONFIG POSITION */}
+                  <motion.div
+                    layout
+                    transition={{ type: 'spring', stiffness: 450, damping: 30 }}
+                    className={`absolute z-20 pointer-events-none ${
+                      config.position === 'bottom-right'
+                        ? 'bottom-2.5 right-2.5'
+                        : config.position === 'bottom-left'
+                        ? 'bottom-2.5 left-2.5'
+                        : config.position === 'top-right'
+                        ? 'top-2.5 right-2.5'
+                        : 'top-2.5 left-2.5'
+                    }`}
+                  >
+                    <div 
+                      className="rounded-xl p-2 border shadow-lg flex items-center gap-2 backdrop-blur-md transition-all"
+                      style={{ 
+                        backgroundColor: config.bgColor,
+                        borderColor: config.bgColor.toLowerCase() === '#ffffff' ? '#d1d5db' : 'rgba(255,255,255,0.2)',
+                        color: config.textColor
+                      }}
+                    >
+                      <div className="w-5 h-5 rounded-md bg-emerald-500/20 text-emerald-500 flex items-center justify-center text-[10px]">
+                        📦
+                      </div>
+                      <div className="leading-none pr-1">
+                        <div className="text-[9px] font-extrabold tracking-tight">
+                          LUMINA ALERT
+                        </div>
+                        <div className="text-[8px] font-mono mt-0.5 opacity-70" style={{ color: config.subtextColor }}>
+                          {config.position}
+                        </div>
+                      </div>
+                      <div className="w-2 h-2 rounded-full bg-emerald-500 animate-ping shrink-0" />
+                    </div>
+                  </motion.div>
+                </div>
+              </div>
+            </div>
+
+            {/* Position Selector Cards */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+              {positions.map((pos) => {
+                const isSelected = config.position === pos.id;
+                return (
+                  <button
+                    key={pos.id}
+                    onClick={() => updateConfig({ position: pos.id })}
+                    className={`relative p-4 rounded-2xl border text-left transition-all cursor-pointer flex flex-col justify-between min-h-[105px] ${
+                      isSelected
+                        ? 'border-gray-900 dark:border-white bg-gray-50/80 dark:bg-white/5 ring-1 ring-gray-900/10 dark:ring-white/20 shadow-xs'
+                        : 'border-gray-200/80 dark:border-white/10 bg-white dark:bg-transparent hover:bg-gray-50 dark:hover:bg-white/[0.03]'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-xs font-bold text-gray-900 dark:text-white">
+                        {pos.label}
+                      </span>
+                      {isSelected && <Check className="w-4 h-4 text-emerald-600 dark:text-emerald-400 stroke-[3]" />}
+                    </div>
+
+                    <p className="text-[11px] text-gray-500 dark:text-gray-400 leading-relaxed">
+                      {pos.desc}
+                    </p>
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Non-repeating Durations & Sound */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2 border-t border-gray-100 dark:border-white/5">
+              <div>
+                <label className="text-xs font-semibold text-gray-700 dark:text-gray-300 block mb-2">
+                  Permanencia en pantalla:
+                </label>
+                <div className="grid grid-cols-2 gap-1.5">
+                  {DURATION_OPTIONS.map((dur) => (
+                    <button
+                      key={dur.ms}
+                      onClick={() => updateConfig({ duration: dur.ms })}
+                      className={`py-2 px-2.5 rounded-xl text-xs font-semibold border text-center transition-all cursor-pointer ${
+                        config.duration === dur.ms
+                          ? 'border-gray-900 bg-gray-900 text-white dark:border-white dark:bg-white dark:text-gray-950 shadow-xs'
+                          : 'border-gray-200 dark:border-white/10 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/5'
+                      }`}
+                    >
+                      {dur.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <label className="text-xs font-semibold text-gray-700 dark:text-gray-300 block mb-2">
+                  Aviso sonoro discreto:
+                </label>
+                <div className="p-2.5 rounded-2xl bg-gray-50 dark:bg-[#18181a] border border-gray-200/80 dark:border-white/10 flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div className={`w-8 h-8 rounded-xl flex items-center justify-center ${config.soundEnabled ? 'bg-gray-200 text-gray-900 dark:bg-white/15 dark:text-white' : 'bg-gray-200 text-gray-400 dark:bg-white/10'}`}>
+                      {config.soundEnabled ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
+                    </div>
+                    <button
+                      type="button"
+                      onClick={playAcousticChime}
+                      className="text-[11px] font-semibold text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors cursor-pointer"
+                    >
+                      Probar sonido
+                    </button>
+                  </div>
+                  <button
+                    onClick={() => updateConfig({ soundEnabled: !config.soundEnabled })}
+                    className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                      config.soundEnabled ? 'bg-gray-900 dark:bg-white' : 'bg-gray-300 dark:bg-gray-700'
+                    }`}
+                  >
+                    <span
+                      className={`inline-block h-5 w-5 transform rounded-full ${config.soundEnabled ? 'bg-white dark:bg-gray-950' : 'bg-white'} shadow ring-0 transition duration-200 ease-in-out ${
+                        config.soundEnabled ? 'translate-x-5' : 'translate-x-0'
+                      }`}
+                    />
+                  </button>
+                </div>
+              </div>
+            </div>
+
+          </div>
+
+          {/* SECTION 3: Color Palette & Contrast Audit */}
           <div className="bg-white dark:bg-[#202022] rounded-3xl border border-gray-200/80 dark:border-white/10 p-6 sm:p-7 shadow-sm space-y-5">
             <div>
               <h3 className="font-display font-bold text-base text-gray-900 dark:text-white flex items-center gap-2">
@@ -342,7 +582,7 @@ export function CartAlertsTab() {
               </div>
             </div>
 
-            {/* Contrast Audit & Recommendation Banner */}
+            {/* Contrast Audit Banner */}
             <div className="pt-2">
               {!currentAudit.isAccessible ? (
                 <div className="p-4 rounded-2xl bg-amber-50 dark:bg-amber-950/30 border border-amber-300/80 dark:border-amber-700/60 flex flex-col sm:flex-row sm:items-center justify-between gap-3 animate-fade-in shadow-sm">
@@ -387,103 +627,6 @@ export function CartAlertsTab() {
             </div>
           </div>
 
-          {/* SECTION 3: Screen Position & Clean Durations */}
-          <div className="bg-white dark:bg-[#202022] rounded-3xl border border-gray-200/80 dark:border-white/10 p-6 sm:p-7 shadow-sm space-y-5">
-            <h3 className="font-display font-bold text-base text-gray-900 dark:text-white flex items-center gap-2">
-              <Sliders className="w-4 h-4 text-blue-600" />
-              Ubicación y Tiempo de Muestra
-            </h3>
-
-            {/* Position Selector */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-              {positions.map((pos) => {
-                const isSelected = config.position === pos.id;
-                return (
-                  <button
-                    key={pos.id}
-                    onClick={() => updateConfig({ position: pos.id })}
-                    className={`relative p-4 rounded-2xl border text-left transition-all cursor-pointer flex flex-col justify-between min-h-[95px] ${
-                      isSelected
-                        ? 'border-gray-900 dark:border-white bg-gray-50/80 dark:bg-white/5 ring-1 ring-gray-900/10'
-                        : 'border-gray-200/80 dark:border-white/10 bg-white dark:bg-transparent hover:bg-gray-50 dark:hover:bg-white/[0.03]'
-                    }`}
-                  >
-                    <div className="w-full h-7 rounded-lg bg-gray-100 dark:bg-[#18181a] border border-gray-200 dark:border-white/10 relative mb-2.5 overflow-hidden shadow-2xs">
-                      <div
-                        className={`absolute w-2 h-2 rounded-full transition-all ${
-                          isSelected ? 'bg-gray-900 dark:bg-white' : 'bg-gray-300 dark:bg-white/20'
-                        } ${pos.iconPos}`}
-                      />
-                    </div>
-
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs font-bold text-gray-900 dark:text-white">
-                        {pos.label}
-                      </span>
-                      {isSelected && <Check className="w-3.5 h-3.5 text-gray-900 dark:text-white" />}
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
-
-            {/* Non-repeating Durations & Sound */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
-              <div>
-                <label className="text-xs font-semibold text-gray-700 dark:text-gray-300 block mb-2">
-                  Permanencia en pantalla:
-                </label>
-                <div className="grid grid-cols-2 gap-1.5">
-                  {DURATION_OPTIONS.map((dur) => (
-                    <button
-                      key={dur.ms}
-                      onClick={() => updateConfig({ duration: dur.ms })}
-                      className={`py-2 px-2.5 rounded-xl text-xs font-semibold border text-center transition-all cursor-pointer ${
-                        config.duration === dur.ms
-                          ? 'border-gray-900 bg-gray-900 text-white dark:border-white dark:bg-white dark:text-gray-950 shadow-xs'
-                          : 'border-gray-200 dark:border-white/10 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/5'
-                      }`}
-                    >
-                      {dur.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <div>
-                <label className="text-xs font-semibold text-gray-700 dark:text-gray-300 block mb-2">
-                  Aviso sonoro discreto:
-                </label>
-                <div className="p-2.5 rounded-2xl bg-gray-50 dark:bg-[#18181a] border border-gray-200/80 dark:border-white/10 flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <div className={`w-8 h-8 rounded-xl flex items-center justify-center ${config.soundEnabled ? 'bg-gray-200 text-gray-900 dark:bg-white/15 dark:text-white' : 'bg-gray-200 text-gray-400 dark:bg-white/10'}`}>
-                      {config.soundEnabled ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
-                    </div>
-                    <button
-                      type="button"
-                      onClick={playAcousticChime}
-                      className="text-[11px] font-semibold text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors cursor-pointer"
-                    >
-                      Probar sonido
-                    </button>
-                  </div>
-                  <button
-                    onClick={() => updateConfig({ soundEnabled: !config.soundEnabled })}
-                    className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
-                      config.soundEnabled ? 'bg-gray-900 dark:bg-white' : 'bg-gray-300 dark:bg-gray-700'
-                    }`}
-                  >
-                    <span
-                      className={`inline-block h-5 w-5 transform rounded-full ${config.soundEnabled ? 'bg-white dark:bg-gray-950' : 'bg-white'} shadow ring-0 transition duration-200 ease-in-out ${
-                        config.soundEnabled ? 'translate-x-5' : 'translate-x-0'
-                      }`}
-                    />
-                  </button>
-                </div>
-              </div>
-            </div>
-
-          </div>
         </div>
 
         {/* Right Column: Live Simulator (5 cols) */}
@@ -499,17 +642,40 @@ export function CartAlertsTab() {
               </span>
             </div>
 
-            {/* The Live Interactive Component (Exact replica of the floating alert) */}
-            <div className="p-6 rounded-2xl bg-gray-50 dark:bg-black/25 border border-dashed border-gray-300 dark:border-white/10 flex flex-col items-center justify-center min-h-[280px]">
+            {/* Dynamic Island Expansion / Collapse Test Button (for non-split layouts) */}
+            {isDynamicIsland && (
+              <div className="flex items-center justify-between p-3 rounded-2xl bg-gray-50 dark:bg-white/5 border border-gray-200/80 dark:border-white/10">
+                <div className="flex items-center gap-2">
+                  <Sparkles className="w-4 h-4 text-amber-500" />
+                  <span className="text-xs font-semibold text-gray-800 dark:text-gray-200">
+                    Isla Dinámica: {previewExpanded ? 'Abierta' : 'Cerrada'}
+                  </span>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setPreviewExpanded(!previewExpanded)}
+                  className="px-3 py-1.5 rounded-xl text-xs font-bold text-gray-900 dark:text-white bg-gray-200 dark:bg-white/15 hover:bg-gray-300 dark:hover:bg-white/25 active:scale-95 transition-all cursor-pointer flex items-center gap-1.5"
+                >
+                  <span>{previewExpanded ? 'Cerrar Isla' : 'Abrir Isla'}</span>
+                </button>
+              </div>
+            )}
+
+            {/* The Live Interactive Component */}
+            <div className="p-6 rounded-2xl bg-gray-50 dark:bg-black/25 border border-dashed border-gray-300 dark:border-white/10 flex flex-col items-center justify-center min-h-[300px]">
               <CartAlertCard
                 payload={sampleCustomers[0]}
                 config={config}
                 isPreview={true}
+                isExpanded={previewExpanded}
+                onToggleExpand={() => setPreviewExpanded(!previewExpanded)}
               />
 
-              <span className="text-[10px] text-gray-400 mt-4 font-mono">
-                {config.position} • {config.duration / 1000}s de permanencia
-              </span>
+              <div className="flex items-center justify-between w-full mt-4 text-[10px] text-gray-400 font-mono">
+                <span>{config.position}</span>
+                <span>{config.duration / 1000}s permanencia</span>
+              </div>
             </div>
 
             {/* Test Triggers with sample registered customer profiles */}

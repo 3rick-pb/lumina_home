@@ -55,16 +55,48 @@ export function AdminCartNotifier() {
     };
   }, [isAdmin, fireToast]);
 
-  // Auto-dismiss timer based on configured duration
+  // Dynamic Island open / close state
+  const isDynamicIsland = config.layout !== "split_capsule";
+  const [isExpanded, setIsExpanded] = React.useState(!isDynamicIsland);
+
+  // Auto-dismiss and dynamic island open/close schedule based on configured duration
   useEffect(() => {
     if (!activeAlert || !activeAlertKey) return;
 
-    const timer = setTimeout(() => {
+    if (!isDynamicIsland) {
+      setIsExpanded(true);
+      const timer = setTimeout(() => {
+        dismissAlert();
+      }, config.duration);
+      return () => clearTimeout(timer);
+    }
+
+    // Dynamic Island sequence:
+    // 1. Starts compact
+    setIsExpanded(false);
+
+    // 2. Opens smoothly after 220ms
+    const openTimer = setTimeout(() => {
+      setIsExpanded(true);
+    }, 220);
+
+    // 3. Collapses smoothly before dismissal
+    const collapseDelay = Math.max(1200, config.duration - 650);
+    const closeTimer = setTimeout(() => {
+      setIsExpanded(false);
+    }, collapseDelay);
+
+    // 4. Final dismissal
+    const dismissTimer = setTimeout(() => {
       dismissAlert();
     }, config.duration);
 
-    return () => clearTimeout(timer);
-  }, [activeAlert, activeAlertKey, config.duration, dismissAlert]);
+    return () => {
+      clearTimeout(openTimer);
+      clearTimeout(closeTimer);
+      clearTimeout(dismissTimer);
+    };
+  }, [activeAlert, activeAlertKey, config.duration, dismissAlert, isDynamicIsland]);
 
   if (!isAdmin) return null;
 
@@ -91,6 +123,15 @@ export function AdminCartNotifier() {
       onViewDetailsCallback();
     } else {
       router.push("/profile?tab=analytics");
+    }
+  };
+
+  const handleClose = () => {
+    if (isDynamicIsland) {
+      setIsExpanded(false);
+      setTimeout(() => dismissAlert(), 250);
+    } else {
+      dismissAlert();
     }
   };
 
@@ -132,7 +173,9 @@ export function AdminCartNotifier() {
             <CartAlertCard
               payload={activeAlert}
               config={config}
-              onClose={dismissAlert}
+              isExpanded={isExpanded}
+              onToggleExpand={() => setIsExpanded(!isExpanded)}
+              onClose={handleClose}
               onAction={handleAction}
               isPreview={false}
             />

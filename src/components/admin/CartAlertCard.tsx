@@ -1,7 +1,7 @@
 'use client';
 /* eslint-disable @next/next/no-img-element */
 
-import React from 'react';
+import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { 
   Package, 
@@ -10,7 +10,8 @@ import {
   ArrowDownRight, 
   Check, 
   X, 
-  ExternalLink
+  ExternalLink,
+  ChevronDown
 } from 'lucide-react';
 import { 
   CartAlertConfig, 
@@ -26,6 +27,8 @@ interface CartAlertCardProps {
   onClose?: () => void;
   onAction?: () => void;
   isPreview?: boolean;
+  isExpanded?: boolean;
+  onToggleExpand?: () => void;
 }
 
 export function CartAlertCard({
@@ -34,7 +37,20 @@ export function CartAlertCard({
   onClose,
   onAction,
   isPreview = false,
+  isExpanded: controlledExpanded,
+  onToggleExpand,
 }: CartAlertCardProps) {
+  const [internalExpanded, setInternalExpanded] = useState(true);
+  const isExpanded = controlledExpanded !== undefined ? controlledExpanded : internalExpanded;
+
+  const handleToggle = () => {
+    if (onToggleExpand) {
+      onToggleExpand();
+    } else {
+      setInternalExpanded(!internalExpanded);
+    }
+  };
+
   const [bgR, bgG, bgB] = hexToRgb(config.bgColor);
   const isLight = getLuminance(bgR, bgG, bgB) > 0.45;
   const borderColor = isLight ? 'rgba(0,0,0,0.08)' : 'rgba(255,255,255,0.12)';
@@ -48,12 +64,69 @@ export function CartAlertCard({
   const originCode = getCityAirportCode(payload.location);
   const orderRef = `ORD ${payload.product?.id ? payload.product.id.slice(0, 5).toUpperCase() : '8492'}`;
 
+  // Check if this layout participates in Dynamic Island opening/closing
+  // Requirement: "excepto la que se llama: 'Cápsula Dividida.'"
+  const isDynamicIsland = config.layout !== 'split_capsule';
+
   // -------------------------------------------------------------
-  // STRUCTURE 1: Ruta de Despacho (Reference Flight Trajectory Image)
+  // DYNAMIC ISLAND COMPACT PILL (Closed State)
+  // -------------------------------------------------------------
+  if (isDynamicIsland && !isExpanded) {
+    return (
+      <motion.div
+        layoutId="dynamic-island-card"
+        onClick={handleToggle}
+        initial={{ scale: 0.88, opacity: 0, y: 10 }}
+        animate={{ scale: 1, opacity: 1, y: 0 }}
+        exit={{ scale: 0.88, opacity: 0, y: 10 }}
+        transition={{ type: 'spring', stiffness: 420, damping: 28 }}
+        className="relative cursor-pointer overflow-hidden rounded-full shadow-[0_16px_36px_rgba(0,0,0,0.18)] border flex items-center justify-between px-4 py-2 gap-3 select-none hover:scale-[1.02] active:scale-[0.98] transition-transform"
+        style={{
+          backgroundColor: config.bgColor,
+          borderColor,
+          minWidth: 220,
+          maxWidth: 250,
+          height: 44,
+        }}
+        title="Clic para expandir notificación"
+      >
+        <div className="flex items-center gap-2 min-w-0">
+          <div className="w-5 h-5 rounded-full bg-emerald-500/20 text-emerald-500 flex items-center justify-center shrink-0">
+            <Package className="w-3 h-3 text-emerald-500 animate-pulse" />
+          </div>
+          <span 
+            className="font-display font-black text-xs tracking-wider uppercase truncate"
+            style={{ color: config.textColor }}
+          >
+            LUMINA
+          </span>
+        </div>
+
+        <div className="flex items-center gap-1.5 shrink-0">
+          <span 
+            className="text-xs font-bold font-mono"
+            style={{ color: config.textColor }}
+          >
+            {originCode} ↗
+          </span>
+          <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-400">
+            ${itemPrice}
+          </span>
+        </div>
+      </motion.div>
+    );
+  }
+
+  // -------------------------------------------------------------
+  // STRUCTURE 1: Ruta de Despacho (Flight Route / Reference Image)
   // -------------------------------------------------------------
   if (config.layout === 'flight_route') {
     return (
-      <div className="relative w-full max-w-[360px] select-none text-left">
+      <motion.div 
+        layoutId={isDynamicIsland ? 'dynamic-island-card' : undefined}
+        transition={{ type: 'spring', stiffness: 380, damping: 28 }}
+        className="relative w-full max-w-[360px] select-none text-left"
+      >
         {/* Main Ticket Body */}
         <div 
           className="relative overflow-hidden rounded-[26px] p-5 shadow-[0_16px_40px_rgba(0,0,0,0.14)] border transition-all"
@@ -81,6 +154,18 @@ export function CartAlertCard({
               >
                 {orderRef}
               </span>
+
+              {isDynamicIsland && (
+                <button
+                  type="button"
+                  onClick={handleToggle}
+                  className="p-1 rounded-full hover:bg-black/10 dark:hover:bg-white/10 transition-colors"
+                  style={{ color: config.subtextColor }}
+                  title="Contraer a Isla Dinámica"
+                >
+                  <ChevronDown className="w-3.5 h-3.5" />
+                </button>
+              )}
 
               {!isPreview && onClose && (
                 <button
@@ -290,7 +375,7 @@ export function CartAlertCard({
             </span>
           </div>
         </div>
-      </div>
+      </motion.div>
     );
   }
 
@@ -299,7 +384,11 @@ export function CartAlertCard({
   // -------------------------------------------------------------
   if (config.layout === 'stacked_ticket') {
     return (
-      <div className="relative w-full max-w-[360px] select-none text-left">
+      <motion.div 
+        layoutId={isDynamicIsland ? 'dynamic-island-card' : undefined}
+        transition={{ type: 'spring', stiffness: 380, damping: 28 }}
+        className="relative w-full max-w-[360px] select-none text-left"
+      >
         <div 
           className="relative overflow-hidden rounded-2xl shadow-[0_16px_40px_rgba(0,0,0,0.14)] border transition-all"
           style={{ 
@@ -313,16 +402,29 @@ export function CartAlertCard({
               <span className="text-[9px] font-mono font-bold uppercase tracking-wider px-2 py-0.5 rounded-md bg-blue-500/15 text-blue-600 dark:text-blue-400">
                 TICKET DE DESPACHO
               </span>
-              {!isPreview && onClose && (
-                <button
-                  type="button"
-                  onClick={onClose}
-                  className="p-1 rounded-full hover:bg-black/10 dark:hover:bg-white/10 transition-colors"
-                  style={{ color: config.subtextColor }}
-                >
-                  <X className="w-3.5 h-3.5" />
-                </button>
-              )}
+              <div className="flex items-center gap-1.5">
+                {isDynamicIsland && (
+                  <button
+                    type="button"
+                    onClick={handleToggle}
+                    className="p-1 rounded-full hover:bg-black/10 dark:hover:bg-white/10 transition-colors"
+                    style={{ color: config.subtextColor }}
+                    title="Contraer a Isla Dinámica"
+                  >
+                    <ChevronDown className="w-3.5 h-3.5" />
+                  </button>
+                )}
+                {!isPreview && onClose && (
+                  <button
+                    type="button"
+                    onClick={onClose}
+                    className="p-1 rounded-full hover:bg-black/10 dark:hover:bg-white/10 transition-colors"
+                    style={{ color: config.subtextColor }}
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                )}
+              </div>
             </div>
 
             <div className="flex items-center gap-3">
@@ -421,12 +523,13 @@ export function CartAlertCard({
             </button>
           </div>
         </div>
-      </div>
+      </motion.div>
     );
   }
 
   // -------------------------------------------------------------
   // STRUCTURE 3: Cápsula Dividida (Dual Compartment Split Capsule)
+  // EXPLICIT REQUIREMENT: Does NOT morph like Dynamic Island!
   // -------------------------------------------------------------
   if (config.layout === 'split_capsule') {
     return (
@@ -507,7 +610,11 @@ export function CartAlertCard({
   // STRUCTURE 4: Bento Modular (2x2 Matrix Grid)
   // -------------------------------------------------------------
   return (
-    <div className="relative w-full max-w-[360px] select-none text-left">
+    <motion.div 
+      layoutId={isDynamicIsland ? 'dynamic-island-card' : undefined}
+      transition={{ type: 'spring', stiffness: 380, damping: 28 }}
+      className="relative w-full max-w-[360px] select-none text-left"
+    >
       <div 
         className="relative overflow-hidden rounded-3xl p-4 shadow-[0_16px_40px_rgba(0,0,0,0.14)] border transition-all space-y-2.5"
         style={{ 
@@ -524,16 +631,29 @@ export function CartAlertCard({
             </span>
           </div>
 
-          {!isPreview && onClose && (
-            <button
-              type="button"
-              onClick={onClose}
-              className="p-1 rounded-full hover:bg-black/10 dark:hover:bg-white/10 transition-colors"
-              style={{ color: config.subtextColor }}
-            >
-              <X className="w-3.5 h-3.5" />
-            </button>
-          )}
+          <div className="flex items-center gap-1.5">
+            {isDynamicIsland && (
+              <button
+                type="button"
+                onClick={handleToggle}
+                className="p-1 rounded-full hover:bg-black/10 dark:hover:bg-white/10 transition-colors"
+                style={{ color: config.subtextColor }}
+                title="Contraer a Isla Dinámica"
+              >
+                <ChevronDown className="w-3.5 h-3.5" />
+              </button>
+            )}
+            {!isPreview && onClose && (
+              <button
+                type="button"
+                onClick={onClose}
+                className="p-1 rounded-full hover:bg-black/10 dark:hover:bg-white/10 transition-colors"
+                style={{ color: config.subtextColor }}
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            )}
+          </div>
         </div>
 
         {/* 2x2 Bento Matrix */}
@@ -615,6 +735,6 @@ export function CartAlertCard({
           </button>
         </div>
       </div>
-    </div>
+    </motion.div>
   );
 }

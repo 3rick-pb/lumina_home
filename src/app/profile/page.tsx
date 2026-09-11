@@ -733,17 +733,17 @@ const handleConfirmDeleteNiche = async () => {
  </div>
  </aside>
 
- {/* 2. Main Bento Canvas */}
- <main className="flex-1 flex flex-col min-w-0 max-w-7xl w-full mx-auto space-y-6">
- 
- {/* Top App Bar (Reference Style) */}
- <header className="relative z-40 bg-white/80 dark:bg-[#202022]/80 backdrop-blur-2xl p-4 md:px-6 rounded-3xl border border-white/80 shadow-[0_4px_20px_rgba(0,0,0,0.02)] flex items-center justify-between gap-4">
- 
- {/* Brand & Tabs */}
- <div className="flex items-center gap-3 md:gap-6 overflow-x-auto hide-scrollbar">
- <span className="font-display font-bold text-xl text-gray-900 dark:text-gray-100 tracking-tight shrink-0">
- Lumina<span className="text-[#8c9276]">.</span>
- </span>
+  {/* 2. Main Bento Canvas */}
+  <main className={`flex-1 flex flex-col min-w-0 w-full space-y-6 ${activeTab === "cart_alerts" || activeTab === "analytics" ? "max-w-none" : "max-w-7xl mx-auto"}`}>
+  
+  {/* Top App Bar (Reference Style) */}
+  <header className="relative z-40 bg-white/80 dark:bg-[#202022]/80 backdrop-blur-2xl p-4 md:px-6 rounded-3xl border border-white/80 shadow-[0_4px_20px_rgba(0,0,0,0.02)] flex items-center justify-between gap-4">
+  
+  {/* Brand & Tabs */}
+  <div className="flex items-center gap-3 md:gap-6 overflow-x-auto hide-scrollbar">
+  <span className="font-display font-bold text-xl text-gray-900 dark:text-gray-100 tracking-tight shrink-0">
+  Lumina<span className="text-[#8c9276]">.</span>
+  </span>
 
  <div className="flex items-center bg-gray-100/80 dark:bg-[#3a3a3c]/80 p-1 rounded-2xl shrink-0">
  <button 
@@ -789,6 +789,12 @@ const handleConfirmDeleteNiche = async () => {
  className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all ${activeTab === "analytics" ? "bg-white dark:bg-[#202022] text-gray-900 dark:text-gray-100 shadow-sm dark:shadow-none" : "text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100"}`}
  >
  Radar en Vivo
+ </button>
+ <button 
+ onClick={() => setActiveTab("cart_alerts")} 
+ className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all ${activeTab === "cart_alerts" ? "bg-white dark:bg-[#202022] text-gray-900 dark:text-gray-100 shadow-sm dark:shadow-none" : "text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100"}`}
+ >
+ Alertas de Carrito
  </button>
  </>
  )}
