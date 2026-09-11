@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { verifyIsAdmin, getAuthenticatedUser } from '@/lib/serverAuth';
+import { sendOrderEmails, getAllAdminEmails } from '@/lib/emailService';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
@@ -13,7 +14,13 @@ export interface ApiOrder {
   customerName: string;
   customerEmail: string;
   recipient: string;
+  customerIdNumber?: string;
+  customerPhone?: string;
   shippingAddress?: {
+    recipient?: string;
+    idNumber?: string;
+    phone?: string;
+    email?: string;
     street: string;
     city: string;
     state: string;
@@ -85,6 +92,8 @@ export async function GET(request: Request) {
         customerName: String(o.customer_name || 'Cliente Lumina'),
         customerEmail: String(o.customer_email || 'cliente@lumina.com'),
         recipient: String(o.recipient || o.customer_name || 'Cliente'),
+        customerIdNumber: o.customer_id_number ? String(o.customer_id_number) : undefined,
+        customerPhone: o.customer_phone ? String(o.customer_phone) : undefined,
         shippingAddress: (o.shipping_address as ApiOrder['shippingAddress']) || undefined,
         paymentMethod: String(o.payment_method || 'Tarjeta de Crédito'),
         date: o.created_at ? new Date(String(o.created_at)).toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: 'numeric' }) : 'Reciente',
@@ -120,6 +129,8 @@ export async function POST(request: Request) {
     const cleanRecipient = String(order.recipient || cleanCustomerName).replace(/<[^>]*>?/gm, '').trim().slice(0, 80);
     const cleanEmail = String(order.customerEmail || authUser?.email || 'cliente@lumina.com').toLowerCase().trim().slice(0, 100);
     const cleanPayment = String(order.paymentMethod || 'Tarjeta de Crédito').replace(/<[^>]*>?/gm, '').trim().slice(0, 50);
+    const cleanIdNumber = String(order.customerIdNumber || order.shippingAddress?.idNumber || '').replace(/<[^>]*>?/gm, '').trim().slice(0, 40);
+    const cleanPhone = String(order.customerPhone || order.shippingAddress?.phone || '').replace(/<[^>]*>?/gm, '').trim().slice(0, 40);
 
     const newApiOrder: ApiOrder = {
       id: String(order.id).trim().slice(0, 60),
@@ -127,6 +138,8 @@ export async function POST(request: Request) {
       customerName: cleanCustomerName,
       customerEmail: cleanEmail,
       recipient: cleanRecipient,
+      customerIdNumber: cleanIdNumber || undefined,
+      customerPhone: cleanPhone || undefined,
       shippingAddress: order.shippingAddress || undefined,
       paymentMethod: cleanPayment,
       date: order.date || new Date().toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: 'numeric' }),
@@ -147,6 +160,8 @@ export async function POST(request: Request) {
       tracking_number: newApiOrder.trackingNumber,
       customer_name: newApiOrder.customerName,
       customer_email: newApiOrder.customerEmail,
+      customer_id_number: newApiOrder.customerIdNumber || null,
+      customer_phone: newApiOrder.customerPhone || null,
       recipient: newApiOrder.recipient,
       shipping_address: newApiOrder.shippingAddress,
       payment_method: newApiOrder.paymentMethod,
@@ -156,6 +171,20 @@ export async function POST(request: Request) {
     if (error) {
       console.error('Supabase orders save error:', error);
       return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+    }
+
+    // Trigger customer invoice and store admin dispatch notice asynchronously
+    try {
+      const adminEmails = await getAllAdminEmails();
+      // Non-blocking background call: catch any unexpected issues
+      sendOrderEmails({
+        order: newApiOrder,
+        adminEmails
+      }).catch(emailErr => {
+        console.warn('[emailService] Background email sending warning:', emailErr);
+      });
+    } catch (emailInitErr) {
+      console.warn('[emailService] Could not trigger email dispatch:', emailInitErr);
     }
 
     return NextResponse.json({ success: true, order: newApiOrder });

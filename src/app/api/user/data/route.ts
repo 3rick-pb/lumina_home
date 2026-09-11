@@ -4,6 +4,9 @@ import { supabaseServer, getAuthenticatedUser } from '@/lib/serverAuth';
 export interface ShippingAddress {
   id: string;
   recipient: string;
+  idNumber?: string;
+  phone?: string;
+  email?: string;
   street: string;
   city: string;
   state: string;
@@ -93,6 +96,9 @@ export async function GET(request: Request) {
           addresses = dbAddrs.map((a: any) => ({
             id: a.id,
             recipient: a.recipient || 'Destinatario',
+            idNumber: a.id_number || '',
+            phone: a.phone || '',
+            email: a.email || '',
             street: a.street || '',
             city: a.city || '',
             state: a.state || '',
@@ -242,6 +248,9 @@ export async function POST(request: Request) {
                 id: a.id,
                 user_id: targetUserId,
                 recipient: a.recipient || 'Destinatario',
+                id_number: a.idNumber || null,
+                phone: a.phone || null,
+                email: a.email || null,
                 street: a.street || '',
                 city: a.city || '',
                 state: a.state || '',

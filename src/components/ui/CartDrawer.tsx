@@ -191,17 +191,20 @@ export function CartDrawer() {
  const [isWalletOpen, setIsWalletOpen] = useState(false);
  const [hoveredCardId, setHoveredCardId] = useState<string | null>(null);
 
- // Quick Address Inline Form
- const [isEditingAddress, setIsEditingAddress] = useState(false);
- const [addrRecipient, setAddrRecipient] = useState("");
- const [addrStreet, setAddrStreet] = useState("");
- const [addrCity, setAddrCity] = useState("");
- const [addrPostal, setAddrPostal] = useState("");
- const [addrState, setAddrState] = useState("");
- const [addrCountry, setAddrCountry] = useState("España");
- const [isDetectingLocation, setIsDetectingLocation] = useState(false);
- const [locationError, setLocationError] = useState<string | null>(null);
- const [locationSuccess, setLocationSuccess] = useState(false);
+  // Quick Address Inline Form
+  const [isEditingAddress, setIsEditingAddress] = useState(false);
+  const [addrRecipient, setAddrRecipient] = useState("");
+  const [addrIdNumber, setAddrIdNumber] = useState("");
+  const [addrPhone, setAddrPhone] = useState("");
+  const [addrEmail, setAddrEmail] = useState("");
+  const [addrStreet, setAddrStreet] = useState("");
+  const [addrCity, setAddrCity] = useState("");
+  const [addrPostal, setAddrPostal] = useState("");
+  const [addrState, setAddrState] = useState("");
+  const [addrCountry, setAddrCountry] = useState("Ecuador");
+  const [isDetectingLocation, setIsDetectingLocation] = useState(false);
+  const [locationError, setLocationError] = useState<string | null>(null);
+  const [locationSuccess, setLocationSuccess] = useState(false);
 
  // Checkout Processing
  const [isProcessing, setIsProcessing] = useState(false);
@@ -241,23 +244,29 @@ export function CartDrawer() {
  const activeAddr = address || defaultAddr;
  if (activeAddr) {
  setAddrRecipient(activeAddr.recipient || user?.name || "");
+ setAddrIdNumber(activeAddr.idNumber || "");
+ setAddrPhone(activeAddr.phone || "");
+ setAddrEmail(activeAddr.email || user?.email || "");
  setAddrStreet(activeAddr.street);
  setAddrCity(activeAddr.city);
  setAddrPostal(activeAddr.postalCode);
  setAddrState(activeAddr.state || "");
- setAddrCountry(activeAddr.country || "España");
+ setAddrCountry(activeAddr.country || "Ecuador");
  if (!address && defaultAddr) {
  setAddress(defaultAddr);
  }
  } else {
  setAddrRecipient(user?.name || "");
+ setAddrIdNumber("");
+ setAddrPhone("");
+ setAddrEmail(user?.email || "");
  setAddrStreet("");
  setAddrCity("");
  setAddrPostal("");
  setAddrState("");
- setAddrCountry("España");
+ setAddrCountry("Ecuador");
  }
- }, [user?.id, user?.name, cards, address, addresses, setAddress]);
+ }, [user?.id, user?.name, user?.email, cards, address, addresses, setAddress]);
 
  // Reset wallet hover if wallet closes
  useEffect(() => {
@@ -385,6 +394,9 @@ export function CartDrawer() {
  }
  await addAddress({
  recipient: addrRecipient.trim() || user?.name || "Destinatario",
+ idNumber: addrIdNumber.trim() || undefined,
+ phone: addrPhone.trim() || undefined,
+ email: addrEmail.trim() || user?.email || undefined,
  street: addrStreet.trim(),
  city: addrCity.trim(),
  state: addrState.trim(),
@@ -392,12 +404,15 @@ export function CartDrawer() {
  country: addrCountry.trim(),
  isDefault: addresses.length === 0
  });
- setAddrRecipient("");
+ setAddrRecipient(user?.name || "");
+ setAddrIdNumber("");
+ setAddrPhone("");
+ setAddrEmail(user?.email || "");
  setAddrStreet("");
  setAddrCity("");
  setAddrPostal("");
  setAddrState("");
- setAddrCountry("España");
+ setAddrCountry("Ecuador");
  setLocationError(null);
  setLocationSuccess(false);
  setIsEditingAddress(false);
@@ -473,11 +488,16 @@ export function CartDrawer() {
  total: finalTotal,
  items: [...items],
  customerName,
- customerEmail,
+ customerEmail: shippingAddr?.email || addrEmail.trim() || customerEmail,
+ customerIdNumber: shippingAddr?.idNumber || addrIdNumber.trim() || undefined,
+ customerPhone: shippingAddr?.phone || addrPhone.trim() || undefined,
  recipient: recipientName,
  shippingAddress: shippingAddr ? {
  id: shippingAddr.id,
  recipient: recipientName,
+ idNumber: shippingAddr.idNumber,
+ phone: shippingAddr.phone,
+ email: shippingAddr.email || customerEmail,
  street: shippingAddr.street,
  city: shippingAddr.city,
  state: shippingAddr.state,
@@ -487,6 +507,9 @@ export function CartDrawer() {
  } : (addrStreet ? {
  id: "addr-order",
  recipient: recipientName,
+ idNumber: addrIdNumber.trim() || undefined,
+ phone: addrPhone.trim() || undefined,
+ email: addrEmail.trim() || customerEmail,
  street: addrStreet,
  city: addrCity,
  state: addrState,
@@ -1423,6 +1446,44 @@ export function CartDrawer() {
  placeholder={user?.name || "Ej: Juan Pérez / Nombre del destinatario"}
  className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-xs outline-none focus:ring-1 focus:ring-blue-500 bg-white dark:bg-[#1a1a1c] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500"
  required
+ />
+ </div>
+ <div className="grid grid-cols-2 gap-3">
+ <div>
+ <label className="block text-[11px] font-semibold text-gray-700 dark:text-gray-300 mb-1">
+ Cédula / Identificación
+ </label>
+ <input 
+ type="text" 
+ value={addrIdNumber} 
+ onChange={e => setAddrIdNumber(e.target.value)} 
+ placeholder="Ej: 1712345678"
+ className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-xs outline-none focus:ring-1 focus:ring-blue-500 bg-white dark:bg-[#1a1a1c] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500"
+ />
+ </div>
+ <div>
+ <label className="block text-[11px] font-semibold text-gray-700 dark:text-gray-300 mb-1">
+ Número con WhatsApp
+ </label>
+ <input 
+ type="tel" 
+ value={addrPhone} 
+ onChange={e => setAddrPhone(e.target.value)} 
+ placeholder="Ej: +593 99 123 4567"
+ className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-xs outline-none focus:ring-1 focus:ring-blue-500 bg-white dark:bg-[#1a1a1c] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500"
+ />
+ </div>
+ </div>
+ <div>
+ <label className="block text-[11px] font-semibold text-gray-700 dark:text-gray-300 mb-1">
+ Correo Electrónico (Facturación & Aviso)
+ </label>
+ <input 
+ type="email" 
+ value={addrEmail} 
+ onChange={e => setAddrEmail(e.target.value)} 
+ placeholder={user?.email || "correo@ejemplo.com"}
+ className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-xs outline-none focus:ring-1 focus:ring-blue-500 bg-white dark:bg-[#1a1a1c] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500"
  />
  </div>
  <div>

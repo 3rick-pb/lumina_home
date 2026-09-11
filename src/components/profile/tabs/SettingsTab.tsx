@@ -92,15 +92,25 @@ export function SettingsTab({
   };
 
   // Address form fields
-  const [recipient, setRecipient] = useState("");
+  const [recipient, setRecipient] = useState(user?.name || "");
+  const [idNumber, setIdNumber] = useState("");
+  const [phone, setPhone] = useState("");
+  const [addrEmail, setAddrEmail] = useState(user?.email || "");
   const [street, setStreet] = useState("");
   const [city, setCity] = useState("");
   const [stateProv, setStateProv] = useState("");
   const [postalCode, setPostalCode] = useState("");
-  const [country, setCountry] = useState("España");
+  const [country, setCountry] = useState("Ecuador");
   const [isDetectingLocation, setIsDetectingLocation] = useState(false);
   const [locationError, setLocationError] = useState<string | null>(null);
   const [locationSuccess, setLocationSuccess] = useState(false);
+
+  useEffect(() => {
+    if (user) {
+      setRecipient(prev => prev || user.name || '');
+      setAddrEmail(prev => prev || user.email || '');
+    }
+  }, [user]);
 
   const isMasterAdmin = (user?.email || '').toLowerCase().trim() === 'admin@lumina.com';
 
@@ -365,6 +375,9 @@ export function SettingsTab({
     }
     await addAddress({
       recipient: recipient.trim() || user?.name || "Destinatario",
+      idNumber: idNumber.trim() || undefined,
+      phone: phone.trim() || undefined,
+      email: addrEmail.trim() || user?.email || undefined,
       street: street.trim(),
       city: city.trim(),
       state: stateProv.trim(),
@@ -372,12 +385,15 @@ export function SettingsTab({
       country: country.trim(),
       isDefault: addresses.length === 0,
     });
-    setRecipient("");
+    setRecipient(user?.name || "");
+    setIdNumber("");
+    setPhone("");
+    setAddrEmail(user?.email || "");
     setStreet("");
     setCity("");
     setStateProv("");
     setPostalCode("");
-    setCountry("España");
+    setCountry("Ecuador");
     setLocationError(null);
     setLocationSuccess(false);
     setShowAddressForm(false);
@@ -783,6 +799,33 @@ export function SettingsTab({
                       {addr.city}{addr.state ? `, ${addr.state}` : ""} {addr.postalCode}
                     </p>
                     <p className="text-gray-400 text-[10px] font-medium mt-0.5">{addr.country}</p>
+
+                    {(addr.idNumber || addr.phone || addr.email) && (
+                      <div className="flex flex-wrap items-center gap-1.5 mt-2 pt-1.5 border-t border-gray-100 dark:border-white/5">
+                        {addr.idNumber && (
+                          <span className="text-[10px] px-2 py-0.5 rounded-md bg-gray-100 dark:bg-[#3a3a3c] text-gray-700 dark:text-gray-300 font-mono font-medium">
+                            C.I.: {addr.idNumber}
+                          </span>
+                        )}
+                        {addr.phone && (
+                          <a 
+                            href={`https://wa.me/${addr.phone.replace(/[^0-9]/g, '')}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-[10px] px-2 py-0.5 rounded-md bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200/50 dark:border-emerald-800/40 font-mono font-medium hover:underline flex items-center gap-1"
+                            title="Contactar vía WhatsApp"
+                          >
+                            <span>WhatsApp:</span>
+                            <span>{addr.phone}</span>
+                          </a>
+                        )}
+                        {addr.email && (
+                          <span className="text-[10px] px-2 py-0.5 rounded-md bg-sky-50 dark:bg-sky-950/40 text-sky-700 dark:text-sky-300 border border-sky-200/50 dark:border-sky-800/40 truncate max-w-[180px]" title={addr.email}>
+                            {addr.email}
+                          </span>
+                        )}
+                      </div>
+                    )}
                   </div>
 
                   <div className={`pt-2.5 mt-2.5 border-t border-gray-100 dark:border-white/5 flex items-center ${addr.isDefault ? 'justify-end' : 'justify-between'}`}>
@@ -896,6 +939,47 @@ export function SettingsTab({
                   value={recipient} 
                   onChange={e => setRecipient(e.target.value)} 
                   placeholder={user.name} 
+                  className="w-full px-3 py-2 rounded-xl border border-gray-200 dark:border-white/10 text-xs outline-none focus:ring-1 focus:ring-blue-500 bg-white dark:bg-[#1a1a1c] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500"
+                />
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                <div>
+                  <label className="block text-[11px] font-semibold text-gray-700 dark:text-gray-300 mb-1">
+                    Cédula / Identificación
+                  </label>
+                  <input 
+                    type="text" 
+                    value={idNumber} 
+                    onChange={e => setIdNumber(e.target.value)} 
+                    placeholder="Ej: 1712345678" 
+                    className="w-full px-3 py-2 rounded-xl border border-gray-200 dark:border-white/10 text-xs outline-none focus:ring-1 focus:ring-blue-500 bg-white dark:bg-[#1a1a1c] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[11px] font-semibold text-gray-700 dark:text-gray-300 mb-1">
+                    Número con WhatsApp
+                  </label>
+                  <input 
+                    type="tel" 
+                    value={phone} 
+                    onChange={e => setPhone(e.target.value)} 
+                    placeholder="+593 99 123 4567" 
+                    className="w-full px-3 py-2 rounded-xl border border-gray-200 dark:border-white/10 text-xs outline-none focus:ring-1 focus:ring-blue-500 bg-white dark:bg-[#1a1a1c] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-semibold text-gray-700 dark:text-gray-300 mb-1 flex items-center justify-between">
+                  <span>Correo Electrónico (Facturación & Entrega)</span>
+                  <span className="text-[10px] text-gray-400 font-normal">Por defecto tu cuenta, modificable</span>
+                </label>
+                <input 
+                  type="email" 
+                  value={addrEmail} 
+                  onChange={e => setAddrEmail(e.target.value)} 
+                  placeholder={user.email} 
                   className="w-full px-3 py-2 rounded-xl border border-gray-200 dark:border-white/10 text-xs outline-none focus:ring-1 focus:ring-blue-500 bg-white dark:bg-[#1a1a1c] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500"
                 />
               </div>

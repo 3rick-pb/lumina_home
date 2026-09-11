@@ -438,10 +438,11 @@ export function ExcelExportRadialMenu() {
             <>
               {/* Vibrant ambient light bloom behind bubbles */}
               <motion.div
+                style={{ willChange: "transform, opacity" }}
                 initial={{ scale: 0, opacity: 0 }}
                 animate={{ scale: 1.6, opacity: 0.8 }}
                 exit={{ scale: 0, opacity: 0 }}
-                transition={{ duration: 0.35 }}
+                transition={{ duration: 0.25 }}
                 className="absolute -inset-12 rounded-full bg-gradient-to-tr from-emerald-500/30 via-emerald-400/20 to-transparent blur-2xl pointer-events-none -z-10"
               />
 
@@ -454,41 +455,36 @@ export function ExcelExportRadialMenu() {
                   <motion.div
                     key={btn.id}
                     className="absolute z-50 pointer-events-auto"
-                    // Sequential budding: each orb starts at the position of previous orb
+                    style={{ willChange: "transform, opacity" }}
                     initial={{ 
                       x: btn.originX, 
                       y: btn.originY, 
-                      scale: 0.1, 
-                      opacity: 0,
-                      filter: "blur(6px)"
+                      scale: 0.2, 
+                      opacity: 0
                     }}
                     animate={{ 
                       x: btn.targetX, 
                       y: btn.targetY, 
                       scale: 1, 
-                      opacity: 1,
-                      filter: "blur(0px)"
+                      opacity: 1
                     }}
                     exit={{ 
                       x: btn.originX, 
                       y: btn.originY, 
-                      scale: 0.1, 
+                      scale: 0.2, 
                       opacity: 0,
-                      filter: "blur(6px)",
                       transition: { 
-                        duration: 0.2, 
+                        duration: 0.16, 
                         ease: [0.32, 0, 0.67, 0],
-                        delay: (2 - index) * 0.04 
+                        delay: (2 - index) * 0.03 
                       }
                     }}
-                    // Exaggerated liquid spring bounce
                     transition={{
                       type: "spring",
-                      stiffness: 230,
-                      damping: 10,
-                      mass: 0.75,
-                      bounce: 0.75,
-                      delay: index * 0.08,
+                      stiffness: 280,
+                      damping: 18,
+                      mass: 0.6,
+                      delay: index * 0.05,
                     }}
                   >
                     <div className="relative group flex items-center">

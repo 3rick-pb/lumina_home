@@ -95,6 +95,29 @@ export function OrderDetailModal({
                 <p className="text-xs font-semibold text-gray-900 dark:text-gray-100 truncate">{order.shippingAddress.street}</p>
                 <p className="text-[11px] text-gray-500 dark:text-gray-400 truncate">{order.shippingAddress.city}{order.shippingAddress.state ? `, ${order.shippingAddress.state}` : ""}</p>
                 <p className="text-[10px] text-gray-400">{order.shippingAddress.postalCode} • {order.shippingAddress.country}</p>
+                
+                {/* Metadatos adicionales de entrega: Cédula & WhatsApp */}
+                {(order.customerIdNumber || order.shippingAddress.idNumber || order.customerPhone || order.shippingAddress.phone) && (
+                  <div className="flex flex-wrap items-center gap-1.5 mt-2 pt-1.5 border-t border-gray-200/60 dark:border-white/10/60">
+                    {(order.customerIdNumber || order.shippingAddress.idNumber) && (
+                      <span className="text-[10px] font-mono px-2 py-0.5 rounded-md bg-gray-100 dark:bg-[#3a3a3c] text-gray-700 dark:text-gray-300 font-semibold">
+                        C.I.: {order.customerIdNumber || order.shippingAddress.idNumber}
+                      </span>
+                    )}
+                    {(order.customerPhone || order.shippingAddress.phone) && (
+                      <a
+                        href={`https://wa.me/${(order.customerPhone || order.shippingAddress.phone || '').replace(/[^0-9]/g, '')}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-[10px] font-mono px-2 py-0.5 rounded-md bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200/50 dark:border-emerald-800/40 font-semibold hover:underline flex items-center gap-1"
+                        title="Abrir chat en WhatsApp"
+                      >
+                        <span>WhatsApp:</span>
+                        <span>{order.customerPhone || order.shippingAddress.phone}</span>
+                      </a>
+                    )}
+                  </div>
+                )}
               </>
             ) : (
               <p className="text-xs text-gray-500 dark:text-gray-400 italic">Dirección registrada por defecto</p>

@@ -24,6 +24,8 @@ export interface Order {
   items: CartItem[];
   customerName?: string;
   customerEmail?: string;
+  customerIdNumber?: string;
+  customerPhone?: string;
   recipient?: string;
   shippingAddress?: ShippingAddress;
   paymentMethod?: string;
@@ -42,6 +44,9 @@ export interface PaymentCard {
 export interface ShippingAddress {
   id: string;
   recipient: string;
+  idNumber?: string;
+  phone?: string;
+  email?: string;
   street: string;
   city: string;
   state: string;
@@ -1124,7 +1129,10 @@ export const useUserStore = create<UserState>((set, get) => ({
       ...order,
       userId: user?.id,
       customerName: order.customerName || user?.name || 'Cliente Lumina',
-      customerEmail: order.customerEmail || user?.email || 'cliente@lumina.com',
+      customerEmail: order.customerEmail || order.shippingAddress?.email || user?.email || 'cliente@lumina.com',
+      customerIdNumber: order.customerIdNumber || order.shippingAddress?.idNumber,
+      customerPhone: order.customerPhone || order.shippingAddress?.phone,
+      recipient: order.recipient || order.shippingAddress?.recipient || order.customerName || user?.name || 'Cliente',
       time: order.time || new Date().toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }),
       createdAt: order.createdAt || new Date().toISOString()
     };
@@ -1156,6 +1164,8 @@ export const useUserStore = create<UserState>((set, get) => ({
           tracking_number: enrichedOrder.trackingNumber,
           customer_name: enrichedOrder.customerName,
           customer_email: enrichedOrder.customerEmail,
+          customer_id_number: enrichedOrder.customerIdNumber || enrichedOrder.shippingAddress?.idNumber || null,
+          customer_phone: enrichedOrder.customerPhone || enrichedOrder.shippingAddress?.phone || null,
           recipient: enrichedOrder.recipient,
           shipping_address: enrichedOrder.shippingAddress,
           payment_method: enrichedOrder.paymentMethod,
