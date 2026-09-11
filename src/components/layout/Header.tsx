@@ -35,7 +35,7 @@ export function Header() {
   
   const { toggleCart, getTotalItems } = useCartStore();
   const { isAuthenticated, user } = useUserStore();
-  const { showAvatarInNavbar } = useAvatarSettingsStore();
+  const { showAvatarInNavbar, customSeed } = useAvatarSettingsStore();
   const { products, categories } = useCatalogStore();
   const [isMounted, setIsMounted] = useState(false);
 
@@ -195,7 +195,7 @@ export function Header() {
             >
               {isAuthenticated && user && showAvatarInNavbar ? (
                 <BlobatarAvatar
-                  name={user.id || user.email || user.name}
+                  name={customSeed || user.id || user.email || user.name}
                   size={32}
                   animate="hover"
                   background="circle"

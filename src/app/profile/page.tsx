@@ -46,6 +46,7 @@ import { SettingsTab } from "@/components/profile/tabs/SettingsTab";
 import { OrderDetailModal } from "@/components/profile/modals/OrderDetailModal";
 import { ExcelExportRadialMenu } from "@/components/profile/ExcelExportRadialMenu";
 import { BlobatarAvatar } from "@/components/ui/BlobatarAvatar";
+import { useAvatarSettingsStore } from "@/lib/avatarSettingsStore";
 
 
 
@@ -63,6 +64,7 @@ export default function ProfilePage() {
   } = useUserStore();
 
  const { products, categories, badges, addProduct, updateProduct, deleteProduct, deleteCategory } = useCatalogStore();
+ const { backgroundShape, customSeed } = useAvatarSettingsStore();
 
   type ProfileTab = "overview" | "orders" | "cards" | "favorites" | "catalog" | "niches" | "analytics" | "cart_alerts" | "settings";
   const [activeTab, setActiveTab] = useState<ProfileTab>("overview");
@@ -885,10 +887,10 @@ const handleConfirmDeleteNiche = async () => {
 
  <div className="flex items-center gap-3 pl-3 border-l border-gray-200 dark:border-white/10">
  <BlobatarAvatar
-   name={user.id || user.email || user.name}
+   name={customSeed || user.id || user.email || user.name}
    size={42}
    animate="always"
-   background="squircle"
+   background={backgroundShape || "squircle"}
    role={user.role}
    showGlow
    title={`Avatar de ${formatCleanName(user.name)}`}

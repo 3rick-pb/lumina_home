@@ -17,7 +17,8 @@ import {
   Check, 
   Star, 
   Navigation,
-  Sparkles 
+  Sparkles,
+  Database 
 } from "lucide-react";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
 import { useUserStore, clearAdminCache, syncAddressesToCloud } from "@/lib/userStore";
@@ -48,8 +49,24 @@ export function SettingsTab({
     updateUserPassword 
   } = useUserStore();
 
-  // Avatar Settings (Navbar vs Rest of App)
-  const { showAvatarInNavbar, setShowAvatarInNavbar } = useAvatarSettingsStore();
+  // Avatar Settings vinculados a la tabla dedicada public.user_avatar_settings
+  const { 
+    showAvatarInNavbar, 
+    setShowAvatarInNavbar,
+    backgroundShape,
+    setBackgroundShape,
+    customSeed,
+    setCustomSeed,
+    loadSettingsFromDatabase,
+    isSyncing: isAvatarSyncing,
+    tableReady: avatarTableReady,
+  } = useAvatarSettingsStore();
+
+  useEffect(() => {
+    if (user?.id) {
+      loadSettingsFromDatabase(user.id);
+    }
+  }, [user?.id, loadSettingsFromDatabase]);
 
   // Settings State
   const [editName, setEditName] = useState("");
@@ -401,15 +418,15 @@ export function SettingsTab({
           </div>
         </div>
 
-        {/* Blobatar Avatar Showcase Card */}
+        {/* Blobatar Avatar Showcase Card con sincronización a tabla dedicada Supabase */}
         <div className="p-6 rounded-[2rem] bg-gradient-to-br from-[#8c9276]/10 via-gray-50/50 to-white/40 dark:from-[#8c9276]/15 dark:via-black/20 dark:to-transparent border border-[#8c9276]/20 dark:border-white/10 relative z-10 space-y-5">
           <div className="flex flex-col sm:flex-row items-center gap-5">
             <div className="relative group shrink-0">
               <BlobatarAvatar
-                name={user.id || user.email || user.name}
-                size={80}
+                name={customSeed || user.id || user.email || user.name}
+                size={84}
                 animate="always"
-                background="squircle"
+                background={backgroundShape}
                 role={user.role}
                 showGlow
                 title={`Avatar oficial de ${user.name}`}
@@ -427,6 +444,42 @@ export function SettingsTab({
             </div>
           </div>
 
+          {/* Selector de Forma Geométrica */}
+          <div className="pt-4 border-t border-gray-200/60 dark:border-white/10 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="space-y-0.5">
+              <p className="text-xs font-bold text-gray-900 dark:text-gray-100">
+                Forma del Contenedor
+              </p>
+              <p className="text-[11px] text-gray-500 dark:text-gray-400">
+                Elige entre el contorno squircle orgánico Liquid Glass o círculo completo.
+              </p>
+            </div>
+            <div className="flex items-center gap-1.5 bg-gray-100/90 dark:bg-[#2c2c2e]/90 p-1 rounded-xl shrink-0">
+              <button
+                type="button"
+                onClick={() => setBackgroundShape("squircle", user?.id, user?.email)}
+                className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-all cursor-pointer ${
+                  backgroundShape === "squircle"
+                    ? "bg-white dark:bg-[#3a3a3c] text-gray-900 dark:text-white shadow-sm"
+                    : "text-gray-500 hover:text-gray-900 dark:hover:text-white"
+                }`}
+              >
+                Squircle
+              </button>
+              <button
+                type="button"
+                onClick={() => setBackgroundShape("circle", user?.id, user?.email)}
+                className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-all cursor-pointer ${
+                  backgroundShape === "circle"
+                    ? "bg-white dark:bg-[#3a3a3c] text-gray-900 dark:text-white shadow-sm"
+                    : "text-gray-500 hover:text-gray-900 dark:hover:text-white"
+                }`}
+              >
+                Círculo
+              </button>
+            </div>
+          </div>
+
           {/* Toggle para la barra de navegación de Inicio (Pastilla Liquid Glass) */}
           <div className="pt-4 border-t border-gray-200/60 dark:border-white/10 flex items-center justify-between gap-4">
             <div className="space-y-0.5">
@@ -434,14 +487,14 @@ export function SettingsTab({
                 Mostrar avatar en la barra de Inicio
               </p>
               <p className="text-[11px] text-gray-500 dark:text-gray-400">
-                Muestra tu criatura en el menú pastilla Liquid Glass del inicio. Por defecto está apagado conservando el icono clásico, y tu avatar se muestra en perfil, pedidos y radar.
+                Muestra tu criatura en el menú pastilla Liquid Glass del inicio. Por defecto está apagado conservando el icono clásico.
               </p>
             </div>
             <button
               type="button"
               role="switch"
               aria-checked={showAvatarInNavbar}
-              onClick={() => setShowAvatarInNavbar(!showAvatarInNavbar)}
+              onClick={() => setShowAvatarInNavbar(!showAvatarInNavbar, user?.id, user?.email)}
               className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-[#8c9276] ${
                 showAvatarInNavbar ? "bg-[#8c9276] dark:bg-[#ccff00]" : "bg-gray-200 dark:bg-gray-700"
               }`}
@@ -453,6 +506,69 @@ export function SettingsTab({
                 }`}
               />
             </button>
+          </div>
+
+          {/* Variación / Personalización de Criatura */}
+          <div className="pt-4 border-t border-gray-200/60 dark:border-white/10 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="space-y-0.5">
+              <p className="text-xs font-bold text-gray-900 dark:text-gray-100">
+                Variante y Semilla de Criatura
+              </p>
+              <p className="text-[11px] text-gray-500 dark:text-gray-400">
+                Genera variaciones de tu personaje o vuelve a la semilla nativa original.
+              </p>
+            </div>
+            <div className="flex items-center gap-2 shrink-0">
+              <button
+                type="button"
+                onClick={() => {
+                  const rand = `${user?.id || 'lumina'}-${Math.random().toString(36).substring(2, 7)}`;
+                  setCustomSeed(rand, user?.id, user?.email);
+                }}
+                className="px-3 py-1.5 text-xs font-semibold rounded-xl bg-gray-100 dark:bg-[#2c2c2e] hover:bg-gray-200 dark:hover:bg-[#3a3a3c] text-gray-700 dark:text-gray-200 transition-all flex items-center gap-1.5 cursor-pointer"
+                title="Generar nueva variación de criatura"
+              >
+                <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+                <span>Nueva Criatura</span>
+              </button>
+              {customSeed && (
+                <button
+                  type="button"
+                  onClick={() => setCustomSeed(null, user?.id, user?.email)}
+                  className="px-2.5 py-1.5 text-xs font-medium rounded-xl text-gray-500 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors cursor-pointer"
+                  title="Restablecer a la criatura nativa original de la cuenta"
+                >
+                  Restablecer
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* Estado de Persistencia en Base de Datos Dedicada Supabase */}
+          <div className="pt-4 border-t border-gray-200/60 dark:border-white/10 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-[11px] text-gray-500 dark:text-gray-400">
+            <div className="flex items-center gap-2">
+              <Database className="w-3.5 h-3.5 text-[#8c9276] dark:text-[#ccff00] shrink-0" />
+              <span>
+                Tabla Supabase Exclusiva: <code className="font-mono font-semibold text-gray-700 dark:text-gray-300">public.user_avatar_settings</code>
+              </span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              {isAvatarSyncing ? (
+                <>
+                  <Loader2 className="w-3 h-3 animate-spin text-amber-500 shrink-0" />
+                  <span className="text-amber-600 dark:text-amber-400 font-medium">Sincronizando con Supabase...</span>
+                </>
+              ) : avatarTableReady === false ? (
+                <span className="text-amber-500 dark:text-amber-400 font-medium" title="Ejecuta supabase_avatar_settings.sql en Supabase Dashboard > SQL Editor">
+                  Almacenamiento local activo (ejecuta script SQL en Supabase)
+                </span>
+              ) : (
+                <>
+                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+                  <span className="text-emerald-600 dark:text-emerald-400 font-medium">Sincronizado en la nube</span>
+                </>
+              )}
+            </div>
           </div>
         </div>
 
