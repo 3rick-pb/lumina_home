@@ -8,10 +8,6 @@
     --foreground: #111827;
   }
 
-  html {
-    scroll-behavior: smooth;
-  }
-
   body {
     @apply bg-[#f8f9fa] text-gray-900;
   }
@@ -26,14 +22,12 @@
     text-wrap: balance;
   }
   .hide-scrollbar::-webkit-scrollbar {
-    display: none !important;
+    display: none;
   }
   .hide-scrollbar {
-    -ms-overflow-style: none !important;
-    scrollbar-width: none !important;
+    -ms-overflow-style: none;
+    scrollbar-width: none;
   }
-
-
 
   /* Product Media Anti-Theft & DRM Protection */
   img, picture, video, [data-protected-media], .product-image {
@@ -157,74 +151,3 @@
   opacity: 1 !important;
   pointer-events: auto !important;
 }
-
-/* ========================================================================= */
-/* Apple macOS / iOS Minimalist Custom Scrollbar                             */
-/* ========================================================================= */
-
-/* Firefox & Standards-compliant modern browsers */
-html, body {
-  scrollbar-width: thin;
-  scrollbar-color: rgba(0, 0, 0, 0.25) transparent;
-}
-html.dark, html.dark body {
-  scrollbar-color: rgba(255, 255, 255, 0.25) transparent;
-}
-
-/* Chrome, Edge, Safari, Opera (WebKit & Blink) */
-::-webkit-scrollbar {
-  width: 7px;
-  height: 7px;
-  background-color: transparent;
-}
-
-/* Eliminate native clunky top & bottom arrow buttons from Windows scrollbar */
-::-webkit-scrollbar-button {
-  display: none !important;
-  width: 0 !important;
-  height: 0 !important;
-}
-
-/* Clean transparent track (Zero visual clutter) */
-::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-/* Minimalist macOS Floating Capsule Thumb */
-::-webkit-scrollbar-thumb {
-  background-color: rgba(0, 0, 0, 0.22);
-  border-radius: 9999px;
-  border: 1.5px solid transparent;
-  background-clip: padding-box;
-  transition: background-color 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-.dark ::-webkit-scrollbar-thumb {
-  background-color: rgba(255, 255, 255, 0.22);
-  border: 1.5px solid transparent;
-  background-clip: padding-box;
-}
-
-/* Hover State: Subtle graphite / silver deepen */
-::-webkit-scrollbar-thumb:hover {
-  background-color: rgba(0, 0, 0, 0.45);
-}
-
-.dark ::-webkit-scrollbar-thumb:hover {
-  background-color: rgba(255, 255, 255, 0.45);
-}
-
-/* Active / Dragging State */
-::-webkit-scrollbar-thumb:active {
-  background-color: rgba(0, 0, 0, 0.65);
-}
-
-.dark ::-webkit-scrollbar-thumb:active {
-  background-color: rgba(255, 255, 255, 0.68);
-}
-
-/* Seamless Corner */
-::-webkit-scrollbar-corner {
-  background: transparent;
-}
-
