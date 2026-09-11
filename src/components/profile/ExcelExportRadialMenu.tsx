@@ -3,7 +3,6 @@
 import React, { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
-  FileSpreadsheet, 
   ShoppingBag, 
   Package, 
   Layers, 
@@ -15,6 +14,54 @@ import {
 import * as XLSX from "xlsx";
 import { useUserStore, Order } from "@/lib/userStore";
 import { useCatalogStore, CatalogProduct } from "@/lib/catalogStore";
+
+/**
+ * Excel 2025 Fluent Modern Icon
+ * Multi-layer 3D emerald spreadsheet sheet + front badge with bold X
+ */
+function Excel2025Icon({ className = "w-6 h-6" }: { className?: string }) {
+  return (
+    <svg 
+      className={className} 
+      viewBox="0 0 28 28" 
+      fill="none" 
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <defs>
+        <linearGradient id="exBackGrad" x1="7" y1="3" x2="24" y2="25" gradientUnits="userSpaceOnUse">
+          <stop stopColor="#107C41" />
+          <stop offset="0.6" stopColor="#0E6837" />
+          <stop offset="1" stopColor="#084222" />
+        </linearGradient>
+        <linearGradient id="exFrontGrad" x1="2.5" y1="8" x2="15" y2="21" gradientUnits="userSpaceOnUse">
+          <stop stopColor="#22C55E" />
+          <stop offset="0.45" stopColor="#16A34A" />
+          <stop offset="1" stopColor="#107C41" />
+        </linearGradient>
+        <filter id="exShadow" x="0.5" y="6.5" width="17" height="17" filterUnits="userSpaceOnUse">
+          <feDropShadow dx="0" dy="2" stdDeviation="1.5" floodColor="#000000" floodOpacity="0.4" />
+        </filter>
+      </defs>
+
+      {/* Back Spreadsheet Card */}
+      <rect x="7.5" y="3.5" width="16" height="21" rx="3.5" fill="url(#exBackGrad)" stroke="rgba(255,255,255,0.25)" strokeWidth="0.8" />
+      
+      {/* Grid lines inside back card */}
+      <path d="M12.5 8.5H20.5M12.5 13.5H20.5M12.5 18.5H20.5" stroke="white" strokeOpacity="0.5" strokeWidth="1.2" strokeLinecap="round" />
+      <path d="M16 5.5V22.5" stroke="white" strokeOpacity="0.4" strokeWidth="1.2" strokeLinecap="round" />
+
+      {/* Front Excel Badge with 3D Shadow */}
+      <g filter="url(#exShadow)">
+        <rect x="2.5" y="8" width="12" height="12" rx="2.8" fill="url(#exFrontGrad)" stroke="rgba(255,255,255,0.4)" strokeWidth="0.8" />
+        {/* Bold Modern X */}
+        <path d="M5.5 11.2L11.5 16.8M11.5 11.2L5.5 16.8" stroke="white" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
+      </g>
+
+      {/* Specular gloss sheen across top */}
+      <path d="M7.5 4.5C9 6.5 14 7.5 23 5V9.5C16 10.5 10 9 7.5 7V4.5Z" fill="white" fillOpacity="0.22" />
+    </svg>
+  );
+}
 
 export function ExcelExportRadialMenu() {
   const [isOpen, setIsOpen] = useState(false);
@@ -285,59 +332,66 @@ export function ExcelExportRadialMenu() {
     }
   };
 
-  // 3 Liquid Glass sub-buttons:
-  // Enlarged and further separated with high-elasticity liquid bounce:
-  // - Circle 1 starts from Center (0, 0) and blooms to P1 (-78, -38)
-  // - Circle 2 starts from P1 (-78, -38) and blooms to P2 (-108, 20)
-  // - Circle 3 starts from P2 (-108, 20) and blooms to P3 (-60, 82)
+  /**
+   * EQUIDISTANT RADIAL ARCHITECTURE (Exact Trigonometry):
+   * Radius R = 95px
+   * Sat 1: 135 deg (up-left)     -> (-67, -67) (distance = 95px)
+   * Sat 2: 180 deg (pure left)   -> (-95, 0)   (distance = 95px)
+   * Sat 3: 225 deg (down-left)   -> (-67, 67)  (distance = 95px)
+   * Distance between Sat 1 and Sat 2 = 72.7px
+   * Distance between Sat 2 and Sat 3 = 72.7px (100% IDENTICAL)
+   */
   const subButtons = [
     {
       id: "orders",
       label: "Exportar Todos los Pedidos",
       icon: ShoppingBag,
       onClick: handleExportOrders,
-      // Target position: more separated
-      targetX: -78,
-      targetY: -38,
-      // Origin point when emerging (center trigger)
+      targetX: -67,
+      targetY: -67,
       originX: 0,
       originY: 0,
-      accentColor: "text-[#8c9276] dark:text-[#ccff00]",
-      glowColor: "rgba(204, 255, 0, 0.35)",
+      accentColor: "text-emerald-500 dark:text-emerald-300",
+      glowColor: "rgba(16, 185, 129, 0.45)",
+      badgeColor: "bg-emerald-500/20 text-emerald-700 dark:text-emerald-300",
+      borderGlow: "border-emerald-400/50 dark:border-emerald-400/40",
+      bgGradient: "from-emerald-500/15 via-white/80 to-emerald-50/90 dark:from-emerald-950/40 dark:via-[#1f2822] dark:to-[#171f1a]",
     },
     {
       id: "products",
       label: "Exportar Catálogo Completo",
       icon: Package,
       onClick: handleExportProducts,
-      // Target position: more separated
-      targetX: -108,
-      targetY: 20,
-      // Origin point when emerging (emerges directly from Circle 1)
-      originX: -78,
-      originY: -38,
-      accentColor: "text-emerald-600 dark:text-emerald-400",
-      glowColor: "rgba(16, 185, 129, 0.35)",
+      targetX: -95,
+      targetY: 0,
+      originX: -67,
+      originY: -67,
+      accentColor: "text-sky-500 dark:text-cyan-300",
+      glowColor: "rgba(6, 182, 212, 0.45)",
+      badgeColor: "bg-sky-500/20 text-sky-700 dark:text-cyan-300",
+      borderGlow: "border-sky-400/50 dark:border-cyan-400/40",
+      bgGradient: "from-sky-500/15 via-white/80 to-sky-50/90 dark:from-sky-950/40 dark:via-[#1a232b] dark:to-[#141b22]",
     },
     {
       id: "niches",
       label: "Exportar Inventario por Nicho",
       icon: Layers,
       onClick: handleExportNiches,
-      // Target position: more separated
-      targetX: -60,
-      targetY: 82,
-      // Origin point when emerging (emerges directly from Circle 2)
-      originX: -108,
-      originY: 20,
-      accentColor: "text-amber-600 dark:text-amber-400",
-      glowColor: "rgba(245, 158, 11, 0.35)",
+      targetX: -67,
+      targetY: 67,
+      originX: -95,
+      originY: 0,
+      accentColor: "text-amber-500 dark:text-amber-300",
+      glowColor: "rgba(245, 158, 11, 0.45)",
+      badgeColor: "bg-amber-500/20 text-amber-700 dark:text-amber-300",
+      borderGlow: "border-amber-400/50 dark:border-amber-400/40",
+      bgGradient: "from-amber-500/15 via-white/80 to-amber-50/90 dark:from-amber-950/40 dark:via-[#2b241a] dark:to-[#1f1a14]",
     },
   ];
 
   return (
     <>
-      {/* 1. CINEMATIC FULLSCREEN BACKDROP: Dims the page for high-focus spotlight */}
+      {/* 1. CINEMATIC FULLSCREEN BACKDROP: Dims page for spotlight focus */}
       <AnimatePresence>
         {isOpen && (
           <motion.div
@@ -346,28 +400,28 @@ export function ExcelExportRadialMenu() {
             exit={{ opacity: 0 }}
             transition={{ duration: 0.28, ease: "easeOut" }}
             onClick={() => setIsOpen(false)}
-            className="fixed inset-0 z-40 bg-black/45 dark:bg-black/65 backdrop-blur-[3.5px] pointer-events-auto"
+            className="fixed inset-0 z-40 bg-black/50 dark:bg-black/70 backdrop-blur-[4px] pointer-events-auto"
             aria-hidden="true"
           />
         )}
       </AnimatePresence>
 
-      {/* 2. RADIAL INTERACTIVE MENU CONTAINER */}
+      {/* 2. RADIAL INTERACTIVE MENU CONTAINER: Exactly 44x44px (w-11 h-11) for Pixel-Perfect Vertical Alignment */}
       <div 
         ref={menuRef} 
-        className={`relative inline-flex items-center justify-center select-none ${isOpen ? "z-50" : "z-20"}`}
+        className={`relative inline-flex items-center justify-center w-11 h-11 shrink-0 select-none ${isOpen ? "z-50" : "z-20"}`}
       >
         {/* Liquid Glass Emergence Orbit */}
         <AnimatePresence>
           {isOpen && (
             <>
-              {/* Subtle ambient light bloom behind the active glass bubbles */}
+              {/* Vibrant ambient light bloom behind bubbles */}
               <motion.div
                 initial={{ scale: 0, opacity: 0 }}
-                animate={{ scale: 1.6, opacity: 0.7 }}
+                animate={{ scale: 1.6, opacity: 0.8 }}
                 exit={{ scale: 0, opacity: 0 }}
                 transition={{ duration: 0.35 }}
-                className="absolute -inset-12 rounded-full bg-gradient-to-tr from-[#8c9276]/30 via-[#ccff00]/20 to-transparent blur-2xl pointer-events-none -z-10"
+                className="absolute -inset-12 rounded-full bg-gradient-to-tr from-emerald-500/30 via-emerald-400/20 to-transparent blur-2xl pointer-events-none -z-10"
               />
 
               {subButtons.map((btn, index) => {
@@ -379,13 +433,13 @@ export function ExcelExportRadialMenu() {
                   <motion.div
                     key={btn.id}
                     className="absolute z-50 pointer-events-auto"
-                    // Sequential budding: each orb starts at the position of the previous orb
+                    // Sequential budding: each orb starts at the position of previous orb
                     initial={{ 
                       x: btn.originX, 
                       y: btn.originY, 
                       scale: 0.1, 
                       opacity: 0,
-                      filter: "blur(5px)"
+                      filter: "blur(6px)"
                     }}
                     animate={{ 
                       x: btn.targetX, 
@@ -399,7 +453,7 @@ export function ExcelExportRadialMenu() {
                       y: btn.originY, 
                       scale: 0.1, 
                       opacity: 0,
-                      filter: "blur(5px)",
+                      filter: "blur(6px)",
                       transition: { 
                         duration: 0.2, 
                         ease: [0.32, 0, 0.67, 0],
@@ -409,11 +463,11 @@ export function ExcelExportRadialMenu() {
                     // Exaggerated liquid spring bounce
                     transition={{
                       type: "spring",
-                      stiffness: 220,
-                      damping: 9.5,   // Low damping = exaggerated tactile liquid oscillation
+                      stiffness: 230,
+                      damping: 10,
                       mass: 0.75,
-                      bounce: 0.72,   // Exaggerated bounce
-                      delay: index * 0.09, // Fluid sequential extrusion
+                      bounce: 0.75,
+                      delay: index * 0.08,
                     }}
                   >
                     <div className="relative group">
@@ -426,19 +480,18 @@ export function ExcelExportRadialMenu() {
                         disabled={isExporting}
                         title={btn.label}
                         style={{
-                          boxShadow: `0 16px 36px rgba(0,0,0,0.22), inset 0 2px 2px rgba(255,255,255,0.85), inset 0 -2px 2.5px rgba(0,0,0,0.12), 0 0 24px ${btn.glowColor}`
+                          boxShadow: `0 16px 36px rgba(0,0,0,0.22), inset 0 2px 2px rgba(255,255,255,0.85), inset 0 -2px 2px rgba(0,0,0,0.12), 0 0 24px ${btn.glowColor}`
                         }}
-                        // Enlarged button: w-[50px] h-[50px]
-                        className={`relative w-[50px] h-[50px] rounded-full flex items-center justify-center border border-white/85 dark:border-white/25 bg-white/65 dark:bg-[#1f1f22]/80 backdrop-blur-2xl hover:scale-115 active:scale-90 transition-all duration-200 cursor-pointer text-gray-800 dark:text-gray-100 overflow-hidden`}
+                        className={`relative w-[50px] h-[50px] rounded-full flex items-center justify-center border ${btn.borderGlow} bg-gradient-to-br ${btn.bgGradient} backdrop-blur-2xl hover:scale-115 active:scale-90 transition-all duration-200 cursor-pointer text-gray-800 dark:text-gray-100 overflow-hidden`}
                       >
-                        {/* Liquid glass glossy top specular highlight reflection */}
-                        <div className="pointer-events-none absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-white/70 via-white/20 to-transparent rounded-t-full opacity-90 dark:opacity-40" />
+                        {/* Liquid glass glossy top specular highlight */}
+                        <div className="pointer-events-none absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-white/80 via-white/20 to-transparent rounded-t-full opacity-90 dark:opacity-40" />
 
-                        {/* Liquid ripple gradient glow on hover */}
-                        <div className="pointer-events-none absolute inset-0 rounded-full bg-gradient-to-tr from-transparent via-white/15 to-white/50 opacity-0 group-hover:opacity-100 transition-opacity duration-200" />
+                        {/* Liquid ripple glow on hover */}
+                        <div className="pointer-events-none absolute inset-0 rounded-full bg-gradient-to-tr from-transparent via-white/15 to-white/60 opacity-0 group-hover:opacity-100 transition-opacity duration-200" />
 
                         {isExporting ? (
-                          <Loader2 className="w-5 h-5 animate-spin text-[#8c9276] dark:text-[#ccff00] relative z-10" />
+                          <Loader2 className="w-5 h-5 animate-spin text-emerald-500 relative z-10" />
                         ) : isSuccess ? (
                           <Check className="w-5 h-5 text-emerald-500 stroke-[3] relative z-10" />
                         ) : (
@@ -447,8 +500,8 @@ export function ExcelExportRadialMenu() {
                       </button>
 
                       {/* Floating Glass Tooltip Pill */}
-                      <div className="absolute right-full top-1/2 -translate-y-1/2 mr-3.5 px-3 py-1.5 rounded-2xl bg-white/95 dark:bg-[#1f1f22]/95 backdrop-blur-xl border border-white/80 dark:border-white/15 shadow-[0_8px_24px_rgba(0,0,0,0.12)] text-gray-900 dark:text-white text-[11px] font-bold tracking-tight whitespace-nowrap pointer-events-none opacity-0 group-hover:opacity-100 transition-all duration-200 group-hover:-translate-x-0.5 z-50 flex items-center gap-1.5">
-                        <Sparkles className="w-3.5 h-3.5 text-[#8c9276] dark:text-[#ccff00]" />
+                      <div className="absolute right-full top-1/2 -translate-y-1/2 mr-3.5 px-3 py-1.5 rounded-2xl bg-white/95 dark:bg-[#1a1f1c]/95 backdrop-blur-xl border border-white/80 dark:border-white/15 shadow-[0_8px_24px_rgba(0,0,0,0.15)] text-gray-900 dark:text-white text-[11px] font-bold tracking-tight whitespace-nowrap pointer-events-none opacity-0 group-hover:opacity-100 transition-all duration-200 group-hover:-translate-x-0.5 z-50 flex items-center gap-1.5">
+                        <Sparkles className="w-3.5 h-3.5 text-emerald-500" />
                         <span>{btn.label}</span>
                         <span className="text-[9px] font-mono opacity-60 font-normal">.xlsx</span>
                       </div>
@@ -460,7 +513,8 @@ export function ExcelExportRadialMenu() {
           )}
         </AnimatePresence>
 
-        {/* 3. MAIN CENTRAL LIQUID GLASS TRIGGER BUTTON */}
+        {/* 3. MAIN CENTRAL LIQUID GLASS TRIGGER BUTTON WITH EXCEL 2025 ICON */}
+        {/* Perfectly circular, 100% symmetric, vibrant energetic emerald styling */}
         <button
           type="button"
           onClick={() => setIsOpen(!isOpen)}
@@ -468,47 +522,42 @@ export function ExcelExportRadialMenu() {
           title={isOpen ? "Cerrar menú" : "Exportar reportes a Excel (.xlsx)"}
           style={{
             boxShadow: isOpen 
-              ? "0 0 32px rgba(204, 255, 0, 0.4), 0 16px 38px rgba(0,0,0,0.25), inset 0 2px 2px rgba(255,255,255,0.95), inset 0 -2px 2px rgba(0,0,0,0.18)"
-              : "0 8px 24px rgba(0,0,0,0.08), inset 0 1.5px 1.5px rgba(255,255,255,0.85), inset 0 -1.5px 1.5px rgba(0,0,0,0.08)"
+              ? "0 0 32px rgba(34, 197, 94, 0.5), 0 16px 36px rgba(0,0,0,0.25), inset 0 2px 2px rgba(255,255,255,0.9), inset 0 -2px 2px rgba(0,0,0,0.2)"
+              : "0 4px 18px rgba(16, 124, 65, 0.3), 0 8px 24px rgba(0,0,0,0.08), inset 0 1.5px 1.5px rgba(255,255,255,0.85), inset 0 -1.5px 1.5px rgba(0,0,0,0.1)"
           }}
           className={`relative z-50 w-11 h-11 rounded-full flex items-center justify-center border transition-all duration-300 cursor-pointer backdrop-blur-3xl overflow-hidden active:scale-95 ${
             isOpen
-              ? "border-[#8c9276] dark:border-[#ccff00] bg-white/85 dark:bg-[#232327]/90 text-[#3b4028] dark:text-[#ccff00] scale-105"
-              : "border-white/85 dark:border-white/20 bg-white/60 dark:bg-[#1f1f22]/70 text-gray-700 dark:text-gray-200 hover:scale-108 hover:border-[#8c9276]/60 dark:hover:border-[#ccff00]/40"
+              ? "border-emerald-400 bg-emerald-600 text-white scale-105"
+              : "border-emerald-500/40 dark:border-emerald-400/50 bg-gradient-to-br from-white via-emerald-50/80 to-emerald-100/70 dark:from-[#1b3826] dark:via-[#142c1e] dark:to-[#0f2317] hover:scale-108 hover:border-emerald-500 dark:hover:border-emerald-300"
           }`}
         >
-          {/* Liquid glass top reflection highlight */}
-          <div className="pointer-events-none absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-white/70 via-white/20 to-transparent rounded-t-full opacity-90 dark:opacity-40" />
+          {/* Liquid glass top specular reflection */}
+          <div className="pointer-events-none absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-white/80 via-white/25 to-transparent rounded-t-full opacity-90 dark:opacity-40" />
 
-          {/* Liquid glow wave on open */}
+          {/* Liquid pulse wave on open */}
           {isOpen && (
             <motion.div 
               initial={{ scale: 0.8, opacity: 0.8 }}
               animate={{ scale: 1.4, opacity: 0 }}
               transition={{ repeat: Infinity, duration: 1.8, ease: "easeOut" }}
-              className="pointer-events-none absolute inset-0 rounded-full border-2 border-[#8c9276] dark:border-[#ccff00]"
+              className="pointer-events-none absolute inset-0 rounded-full border-2 border-emerald-400"
             />
           )}
 
           <motion.div
             animate={{ 
               rotate: isOpen ? 90 : 0, 
-              scale: isOpen ? 1.1 : 1 
+              scale: isOpen ? 1.05 : 1 
             }}
             transition={{ type: "spring", stiffness: 380, damping: 20 }}
-            className="relative z-10"
+            className="relative z-10 flex items-center justify-center"
           >
             {isOpen ? (
-              <X className="w-4 h-4" />
+              <X className="w-5 h-5 text-white" />
             ) : (
-              <FileSpreadsheet className="w-4 h-4 text-[#8c9276] dark:text-[#ccff00]" />
+              <Excel2025Icon className="w-6 h-6 transition-transform duration-200" />
             )}
           </motion.div>
-
-          {/* Green active status indicator pip */}
-          {!isOpen && (
-            <span className="absolute top-1 right-1 w-2.5 h-2.5 rounded-full bg-[#8c9276] dark:bg-[#ccff00] border-2 border-white dark:border-[#1f1f22] shadow-xs" />
-          )}
         </button>
       </div>
     </>
