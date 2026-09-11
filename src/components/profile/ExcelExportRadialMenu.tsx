@@ -67,7 +67,22 @@ export function ExcelExportRadialMenu() {
   const [isOpen, setIsOpen] = useState(false);
   const [activeExport, setActiveExport] = useState<string | null>(null);
   const [successExport, setSuccessExport] = useState<string | null>(null);
+  const [isTouchOrMobile, setIsTouchOrMobile] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
+
+  // Detect mobile / tablet / touch devices to permanently display descriptions
+  useEffect(() => {
+    const updateDevice = () => {
+      setIsTouchOrMobile(
+        window.innerWidth <= 1024 ||
+        'ontouchstart' in window ||
+        navigator.maxTouchPoints > 0
+      );
+    };
+    updateDevice();
+    window.addEventListener('resize', updateDevice);
+    return () => window.removeEventListener('resize', updateDevice);
+  }, []);
 
   // Close when clicking outside
   useEffect(() => {
@@ -344,7 +359,7 @@ export function ExcelExportRadialMenu() {
   const subButtons = [
     {
       id: "orders",
-      label: "Exportar Todos los Pedidos",
+      label: "Exportar Pedidos",
       icon: ShoppingBag,
       onClick: handleExportOrders,
       targetX: -67,
@@ -353,13 +368,13 @@ export function ExcelExportRadialMenu() {
       originY: 0,
       accentColor: "text-emerald-500 dark:text-emerald-300",
       glowColor: "rgba(16, 185, 129, 0.45)",
-      badgeColor: "bg-emerald-500/20 text-emerald-700 dark:text-emerald-300",
+      badgeColor: "bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border-emerald-500/30",
       borderGlow: "border-emerald-400/50 dark:border-emerald-400/40",
       bgGradient: "from-emerald-500/15 via-white/80 to-emerald-50/90 dark:from-emerald-950/40 dark:via-[#1f2822] dark:to-[#171f1a]",
     },
     {
       id: "products",
-      label: "Exportar Catálogo Completo",
+      label: "Exportar Catálogo",
       icon: Package,
       onClick: handleExportProducts,
       targetX: -95,
@@ -368,13 +383,13 @@ export function ExcelExportRadialMenu() {
       originY: -67,
       accentColor: "text-sky-500 dark:text-cyan-300",
       glowColor: "rgba(6, 182, 212, 0.45)",
-      badgeColor: "bg-sky-500/20 text-sky-700 dark:text-cyan-300",
+      badgeColor: "bg-sky-500/20 text-sky-700 dark:text-cyan-300 border-sky-500/30",
       borderGlow: "border-sky-400/50 dark:border-cyan-400/40",
       bgGradient: "from-sky-500/15 via-white/80 to-sky-50/90 dark:from-sky-950/40 dark:via-[#1a232b] dark:to-[#141b22]",
     },
     {
       id: "niches",
-      label: "Exportar Inventario por Nicho",
+      label: "Inventario por Nicho",
       icon: Layers,
       onClick: handleExportNiches,
       targetX: -67,
@@ -383,7 +398,7 @@ export function ExcelExportRadialMenu() {
       originY: 0,
       accentColor: "text-amber-500 dark:text-amber-300",
       glowColor: "rgba(245, 158, 11, 0.45)",
-      badgeColor: "bg-amber-500/20 text-amber-700 dark:text-amber-300",
+      badgeColor: "bg-amber-500/20 text-amber-700 dark:text-amber-300 border-amber-500/30",
       borderGlow: "border-amber-400/50 dark:border-amber-400/40",
       bgGradient: "from-amber-500/15 via-white/80 to-amber-50/90 dark:from-amber-950/40 dark:via-[#2b241a] dark:to-[#1f1a14]",
     },
@@ -470,7 +485,8 @@ export function ExcelExportRadialMenu() {
                       delay: index * 0.08,
                     }}
                   >
-                    <div className="relative group">
+                    <div className="relative group flex items-center">
+                      {/* Interactive Circular Button */}
                       <button
                         type="button"
                         onClick={(e) => {
@@ -482,7 +498,7 @@ export function ExcelExportRadialMenu() {
                         style={{
                           boxShadow: `0 16px 36px rgba(0,0,0,0.22), inset 0 2px 2px rgba(255,255,255,0.85), inset 0 -2px 2px rgba(0,0,0,0.12), 0 0 24px ${btn.glowColor}`
                         }}
-                        className={`relative w-[50px] h-[50px] rounded-full flex items-center justify-center border ${btn.borderGlow} bg-gradient-to-br ${btn.bgGradient} backdrop-blur-2xl hover:scale-115 active:scale-90 transition-all duration-200 cursor-pointer text-gray-800 dark:text-gray-100 overflow-hidden`}
+                        className={`relative w-[50px] h-[50px] rounded-full flex items-center justify-center border ${btn.borderGlow} bg-gradient-to-br ${btn.bgGradient} backdrop-blur-2xl hover:scale-115 active:scale-90 transition-all duration-200 cursor-pointer text-gray-800 dark:text-gray-100 overflow-hidden shrink-0`}
                       >
                         {/* Liquid glass glossy top specular highlight */}
                         <div className="pointer-events-none absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-white/80 via-white/20 to-transparent rounded-t-full opacity-90 dark:opacity-40" />
@@ -499,12 +515,26 @@ export function ExcelExportRadialMenu() {
                         )}
                       </button>
 
-                      {/* Floating Glass Tooltip Pill */}
-                      <div className="absolute right-full top-1/2 -translate-y-1/2 mr-3.5 px-3 py-1.5 rounded-2xl bg-white/95 dark:bg-[#1a1f1c]/95 backdrop-blur-xl border border-white/80 dark:border-white/15 shadow-[0_8px_24px_rgba(0,0,0,0.15)] text-gray-900 dark:text-white text-[11px] font-bold tracking-tight whitespace-nowrap pointer-events-none opacity-0 group-hover:opacity-100 transition-all duration-200 group-hover:-translate-x-0.5 z-50 flex items-center gap-1.5">
-                        <Sparkles className="w-3.5 h-3.5 text-emerald-500" />
+                      {/* Interactive Description Capsule (Always visible on mobile/tablets, hoverable on desktop) */}
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          btn.onClick();
+                        }}
+                        disabled={isExporting}
+                        className={`absolute right-full top-1/2 -translate-y-1/2 mr-3 px-3.5 py-1.5 rounded-2xl bg-white/95 dark:bg-[#1a1f1c]/95 backdrop-blur-xl border border-white/80 dark:border-white/15 shadow-[0_8px_24px_rgba(0,0,0,0.15)] text-gray-900 dark:text-white text-xs font-bold tracking-tight whitespace-nowrap cursor-pointer active:scale-95 transition-all duration-200 z-50 flex items-center gap-2 ${
+                          isTouchOrMobile 
+                            ? "opacity-100 pointer-events-auto translate-x-0 scale-100" 
+                            : "opacity-0 group-hover:opacity-100 pointer-events-none group-hover:pointer-events-auto group-hover:-translate-x-0.5"
+                        }`}
+                      >
+                        <Sparkles className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
                         <span>{btn.label}</span>
-                        <span className="text-[9px] font-mono opacity-60 font-normal">.xlsx</span>
-                      </div>
+                        <span className={`text-[9px] font-mono font-semibold px-1.5 py-0.5 rounded-md border ${btn.badgeColor}`}>
+                          .xlsx
+                        </span>
+                      </button>
                     </div>
                   </motion.div>
                 );

@@ -909,7 +909,7 @@ const handleConfirmDeleteNiche = async () => {
  </p>
  </div>
  {isAdmin && (
- <div className="self-start sm:self-auto flex items-center gap-3">
+ <div className="self-end sm:self-auto flex items-center gap-3">
  <ExcelExportRadialMenu />
  <button 
  onClick={() => setShowProductModal(true)}
