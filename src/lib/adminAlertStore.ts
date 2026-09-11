@@ -20,18 +20,18 @@ export interface ColorPreset {
 export const COLOR_PRESETS: ColorPreset[] = [
   {
     id: 'apple_white',
-    name: 'Blanco Puro iPhone (Predeterminado)',
-    description: 'Fondo blanco cristalino con tipografía negra profunda y máxima legibilidad',
+    name: 'Blanco Puro (Predeterminado)',
+    description: 'Fondo blanco con tipografía negra profunda y máxima legibilidad',
     bgColor: '#ffffff',
     textColor: '#0a0a0a',
-    subtextColor: '#4b5563',
+    subtextColor: '#374151',
     accentColor: '#111827',
     isLight: true,
   },
   {
     id: 'apple_dark',
-    name: 'Negro Oled iPhone',
-    description: 'Oscuro refinado estilo iOS nocturno con botones contrastantes',
+    name: 'Negro Profundo',
+    description: 'Oscuro refinado estilo iOS nocturno con alta visibilidad',
     bgColor: '#121214',
     textColor: '#ffffff',
     subtextColor: '#9ca3af',
@@ -40,8 +40,8 @@ export const COLOR_PRESETS: ColorPreset[] = [
   },
   {
     id: 'lumina_studio',
-    name: 'Lumina Studio (Oliva Atelier)',
-    description: 'Estética nórdica de autor con acentos lima de alta gama',
+    name: 'Lumina Studio',
+    description: 'Oliva atelier con acentos lima de autor',
     bgColor: '#1b1e17',
     textColor: '#f4f5f0',
     subtextColor: '#a8af8e',
@@ -51,7 +51,7 @@ export const COLOR_PRESETS: ColorPreset[] = [
   {
     id: 'glacier_ice',
     name: 'Nieve Glaciar',
-    description: 'Tono marfil frío suave con contrastes en azul cobalto',
+    description: 'Marfil frío suave con contrastes en azul cobalto',
     bgColor: '#f8fafc',
     textColor: '#0f172a',
     subtextColor: '#64748b',
@@ -60,8 +60,8 @@ export const COLOR_PRESETS: ColorPreset[] = [
   },
   {
     id: 'emerald_cyber',
-    name: 'Verde Esmeralda Cyber',
-    description: 'Contraste botánico oscuro con reflejos menta luminosos',
+    name: 'Esmeralda',
+    description: 'Verde botánico oscuro con reflejos menta luminosos',
     bgColor: '#061a12',
     textColor: '#ffffff',
     subtextColor: '#6ee7b7',
@@ -70,8 +70,8 @@ export const COLOR_PRESETS: ColorPreset[] = [
   },
   {
     id: 'royal_sapphire',
-    name: 'Zafiro Medianoche',
-    description: 'Azul cobalto nocturno con acentos celestes brillantes',
+    name: 'Zafiro',
+    description: 'Azul cobalto nocturno con acentos celestes',
     bgColor: '#0a1128',
     textColor: '#ffffff',
     subtextColor: '#93c5fd',
@@ -91,30 +91,30 @@ export interface LayoutOption {
 export const LAYOUT_OPTIONS: LayoutOption[] = [
   {
     id: 'island',
-    title: 'Dynamic Island iPhone',
-    badge: '📱 Cápsula Apple',
-    description: 'Diseño tipo píldora ultra-redondeada con emojis de estado compactos y elegantes',
+    title: 'Cápsula Apple',
+    badge: 'Compacta',
+    description: 'Formato píldora redondeada con diseño fluido y directo',
     roundness: 26,
   },
   {
     id: 'card',
-    title: 'Tarjeta Boutique Lumina',
-    badge: '🛍️ Doble Nivel',
-    description: 'Estructura en dos alturas con división de cliente, ubicación y producto enmarcado',
+    title: 'Tarjeta Detallada',
+    badge: 'Doble Nivel',
+    description: 'Estructura en dos alturas con separación de cliente, ubicación y producto',
     roundness: 18,
   },
   {
     id: 'minimal',
     title: 'Línea Minimalista',
-    badge: '⚡ Ultra Limpia',
-    description: 'Formato directo y sin distracciones, ideal para trabajar en paralelo',
+    badge: 'Limpia',
+    description: 'Formato sobrio en una sola línea, ideal para monitoreo discreto',
     roundness: 14,
   },
   {
     id: 'bento',
-    title: 'Bento Dimensional',
-    badge: '📦 Foco en Producto',
-    description: 'Diseño contemporáneo con énfasis visual en la pieza agregada al carrito',
+    title: 'Bento Compacto',
+    badge: 'Destacada',
+    description: 'Diseño contemporáneo centrado en la pieza agregada al carrito',
     roundness: 20,
   },
 ];
@@ -199,14 +199,14 @@ export const auditContrast = (bgColor: string, textColor: string): ContrastAudit
   const isLightBg = bgLum > 0.45;
 
   const suggestedTextColor = isLightBg ? '#0a0a0a' : '#ffffff';
-  const suggestedSubtextColor = isLightBg ? '#4b5563' : '#d1d5db';
+  const suggestedSubtextColor = isLightBg ? '#374151' : '#d1d5db';
 
   let recommendation: string | undefined;
   if (!isAccessible) {
     if (isLightBg) {
-      recommendation = `El fondo es claro y el texto actual tiene contraste bajo (${titleRatio.toFixed(1)}:1). Te recomendamos usar un texto negro o carbón (#0a0a0a) para garantizar visibilidad nítida.`;
+      recommendation = `El fondo es claro y el texto actual tiene contraste bajo (${titleRatio.toFixed(1)}:1). Te recomendamos usar texto negro o carbón (#0a0a0a) para que se lea con total claridad.`;
     } else {
-      recommendation = `El fondo es oscuro y el texto actual tiene contraste bajo (${titleRatio.toFixed(1)}:1). Te recomendamos usar texto blanco puro (#ffffff) para que no se pierda en la pantalla.`;
+      recommendation = `El fondo es oscuro y el texto actual tiene contraste bajo (${titleRatio.toFixed(1)}:1). Te recomendamos usar texto blanco (#ffffff) para garantizar lectura nítida.`;
     }
   }
 
@@ -228,31 +228,31 @@ export const formatAlertContent = (
   const itemPrice = typeof payload.product?.price === 'number'
     ? payload.product.price.toFixed(2)
     : String(payload.product?.price || '0.00');
-  const city = payload.location || 'Ubicación confidencial';
+  const city = payload.location ? `📍 ${payload.location}` : '';
   const prodTitle = payload.product?.title || 'Artículo Lumina';
-  const customer = payload.userName || 'Cliente registrado';
+  const customer = payload.userName || 'Cliente';
 
   switch (layout) {
     case 'island':
       return {
-        title: customTitle || '🛒 Carrito Actualizado',
-        description: `👤 ${customer} (📍 ${city}) sumó 📦 "${prodTitle}" • 🏷️ $${itemPrice}`,
+        title: customTitle || 'Carrito actualizado',
+        description: `${customer} (${city}) sumó 📦 ${prodTitle} ($${itemPrice})`,
       };
     case 'minimal':
       return {
-        title: customTitle || '📦 Nuevo artículo agregado',
-        description: `👤 ${customer} en 📍 ${city} • 🛍️ ${prodTitle} ($${itemPrice})`,
+        title: customTitle || 'Artículo agregado',
+        description: `${customer} (${city}) sumó 📦 ${prodTitle} ($${itemPrice})`,
       };
     case 'bento':
       return {
-        title: customTitle || '✨ Actividad de Compra en Vivo',
-        description: `📦 ${prodTitle} (🏷️ $${itemPrice}) agregado por 👤 ${customer} desde 📍 ${city}`,
+        title: customTitle || 'Actividad de compra',
+        description: `📦 ${prodTitle} ($${itemPrice}) • ${customer} (${city})`,
       };
     case 'card':
     default:
       return {
-        title: customTitle || '🛍️ ¡Nuevo artículo en carrito!',
-        description: `👤 ${customer} • 📍 ${city} — 📦 ${prodTitle} (🏷️ $${itemPrice})`,
+        title: customTitle || 'Nuevo producto en el carrito',
+        description: `${customer} (${city}) sumó 📦 ${prodTitle} ($${itemPrice})`,
       };
   }
 };
@@ -264,15 +264,15 @@ const DEFAULT_CONFIG: CartAlertConfig = {
   presetId: 'apple_white',
   bgColor: '#ffffff',
   textColor: '#0a0a0a',
-  subtextColor: '#4b5563',
+  subtextColor: '#374151',
   accentColor: '#111827',
-  title: '🛒 ¡Nuevo artículo en carrito!',
+  title: 'Nuevo producto en el carrito',
   duration: 6500,
   soundEnabled: true,
   toastType: 'action',
 };
 
-const STORAGE_KEY = 'lumina_admin_cart_alert_config_v2';
+const STORAGE_KEY = 'lumina_admin_cart_alert_config_v3';
 
 const loadSavedConfig = (): CartAlertConfig => {
   if (typeof window === 'undefined') return DEFAULT_CONFIG;
@@ -386,6 +386,12 @@ export const useAdminAlertStore = create<AdminAlertState>((set, get) => ({
       playAcousticChime();
     }
 
+    // Set CSS custom properties on documentElement so Sileo CSS receives the exact colors
+    if (typeof document !== 'undefined') {
+      document.documentElement.style.setProperty('--sileo-custom-title', config.textColor);
+      document.documentElement.style.setProperty('--sileo-custom-desc', config.subtextColor);
+    }
+
     const { title, description } = formatAlertContent(config.layout, payload, config.title);
 
     const [bgR, bgG, bgB] = hexToRgb(config.bgColor);
@@ -400,11 +406,12 @@ export const useAdminAlertStore = create<AdminAlertState>((set, get) => ({
       duration: config.duration,
       fill: config.bgColor,
       roundness: layoutMeta.roundness,
+      autopilot: { expand: 100, collapse: Math.max(1000, config.duration - 800) },
       styles: {
-        title: `font-display font-extrabold text-sm tracking-tight ${isLightBg ? 'text-gray-950!' : 'text-white!'}`,
-        description: `text-xs font-medium leading-relaxed ${isLightBg ? 'text-gray-700!' : 'text-gray-300!'}`,
-        badge: `font-bold text-[10px] tracking-wider uppercase ${isLightBg ? 'bg-black/10 text-gray-900!' : 'bg-white/15 text-white!'}`,
-        button: `text-xs font-bold px-3.5 py-1.5 rounded-xl transition-all cursor-pointer ${isLightBg ? 'bg-gray-900 text-white hover:bg-gray-800' : 'bg-white text-gray-950 hover:bg-gray-100'}`,
+        title: 'font-display font-extrabold text-sm tracking-tight',
+        description: 'text-xs font-medium leading-relaxed',
+        badge: 'font-bold text-[10px] tracking-wider uppercase',
+        button: `text-xs font-bold px-3.5 py-1.5 rounded-xl transition-all cursor-pointer ${isLightBg ? 'bg-gray-950 text-white hover:bg-gray-800' : 'bg-white text-gray-950 hover:bg-gray-100'}`,
       },
     };
 
@@ -412,7 +419,7 @@ export const useAdminAlertStore = create<AdminAlertState>((set, get) => ({
       sileo.action({
         ...commonOptions,
         button: {
-          title: '⚡ Ver Radar',
+          title: 'Ver Radar',
           onClick: () => {
             if (onViewDetails) {
               onViewDetails();
