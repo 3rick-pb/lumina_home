@@ -286,55 +286,52 @@ export function ExcelExportRadialMenu() {
   };
 
   // 3 Liquid Glass sub-buttons:
-  // Designed so each emerges sequentially out of the previous one:
-  // - Circle 1 starts from Center (0, 0) and blooms to P1 (-58, -26)
-  // - Circle 2 starts from P1 (-58, -26) (as if budding off Circle 1) and blooms to P2 (-76, 18)
-  // - Circle 3 starts from P2 (-76, 18) (as if budding off Circle 2) and blooms to P3 (-44, 60)
+  // Enlarged and further separated with high-elasticity liquid bounce:
+  // - Circle 1 starts from Center (0, 0) and blooms to P1 (-78, -38)
+  // - Circle 2 starts from P1 (-78, -38) and blooms to P2 (-108, 20)
+  // - Circle 3 starts from P2 (-108, 20) and blooms to P3 (-60, 82)
   const subButtons = [
     {
       id: "orders",
-      label: "Exportar Pedidos",
+      label: "Exportar Todos los Pedidos",
       icon: ShoppingBag,
       onClick: handleExportOrders,
-      // Target position
-      targetX: -58,
-      targetY: -26,
+      // Target position: more separated
+      targetX: -78,
+      targetY: -38,
       // Origin point when emerging (center trigger)
       originX: 0,
       originY: 0,
       accentColor: "text-[#8c9276] dark:text-[#ccff00]",
-      glowColor: "rgba(204, 255, 0, 0.25)",
-      badgeBg: "bg-[#8c9276]/20 text-[#494e37] dark:text-[#cbd1b2]",
+      glowColor: "rgba(204, 255, 0, 0.35)",
     },
     {
       id: "products",
-      label: "Exportar Catálogo",
+      label: "Exportar Catálogo Completo",
       icon: Package,
       onClick: handleExportProducts,
-      // Target position
-      targetX: -76,
-      targetY: 18,
+      // Target position: more separated
+      targetX: -108,
+      targetY: 20,
       // Origin point when emerging (emerges directly from Circle 1)
-      originX: -58,
-      originY: -26,
+      originX: -78,
+      originY: -38,
       accentColor: "text-emerald-600 dark:text-emerald-400",
-      glowColor: "rgba(16, 185, 129, 0.25)",
-      badgeBg: "bg-emerald-500/20 text-emerald-700 dark:text-emerald-300",
+      glowColor: "rgba(16, 185, 129, 0.35)",
     },
     {
       id: "niches",
-      label: "Inventario por Nicho",
+      label: "Exportar Inventario por Nicho",
       icon: Layers,
       onClick: handleExportNiches,
-      // Target position
-      targetX: -44,
-      targetY: 60,
+      // Target position: more separated
+      targetX: -60,
+      targetY: 82,
       // Origin point when emerging (emerges directly from Circle 2)
-      originX: -76,
-      originY: 18,
+      originX: -108,
+      originY: 20,
       accentColor: "text-amber-600 dark:text-amber-400",
-      glowColor: "rgba(245, 158, 11, 0.25)",
-      badgeBg: "bg-amber-500/20 text-amber-700 dark:text-amber-300",
+      glowColor: "rgba(245, 158, 11, 0.35)",
     },
   ];
 
@@ -367,10 +364,10 @@ export function ExcelExportRadialMenu() {
               {/* Subtle ambient light bloom behind the active glass bubbles */}
               <motion.div
                 initial={{ scale: 0, opacity: 0 }}
-                animate={{ scale: 1.4, opacity: 0.6 }}
+                animate={{ scale: 1.6, opacity: 0.7 }}
                 exit={{ scale: 0, opacity: 0 }}
-                transition={{ duration: 0.3 }}
-                className="absolute -inset-10 rounded-full bg-gradient-to-tr from-[#8c9276]/25 via-[#ccff00]/15 to-transparent blur-2xl pointer-events-none -z-10"
+                transition={{ duration: 0.35 }}
+                className="absolute -inset-12 rounded-full bg-gradient-to-tr from-[#8c9276]/30 via-[#ccff00]/20 to-transparent blur-2xl pointer-events-none -z-10"
               />
 
               {subButtons.map((btn, index) => {
@@ -386,9 +383,9 @@ export function ExcelExportRadialMenu() {
                     initial={{ 
                       x: btn.originX, 
                       y: btn.originY, 
-                      scale: 0.15, 
+                      scale: 0.1, 
                       opacity: 0,
-                      filter: "blur(4px)"
+                      filter: "blur(5px)"
                     }}
                     animate={{ 
                       x: btn.targetX, 
@@ -400,22 +397,23 @@ export function ExcelExportRadialMenu() {
                     exit={{ 
                       x: btn.originX, 
                       y: btn.originY, 
-                      scale: 0.15, 
+                      scale: 0.1, 
                       opacity: 0,
-                      filter: "blur(4px)",
+                      filter: "blur(5px)",
                       transition: { 
-                        duration: 0.18, 
+                        duration: 0.2, 
                         ease: [0.32, 0, 0.67, 0],
                         delay: (2 - index) * 0.04 
                       }
                     }}
+                    // Exaggerated liquid spring bounce
                     transition={{
                       type: "spring",
-                      stiffness: 270,
-                      damping: 14.5,
-                      mass: 0.65,
-                      bounce: 0.52,
-                      delay: index * 0.085, // Fluid sequential extrusion
+                      stiffness: 220,
+                      damping: 9.5,   // Low damping = exaggerated tactile liquid oscillation
+                      mass: 0.75,
+                      bounce: 0.72,   // Exaggerated bounce
+                      delay: index * 0.09, // Fluid sequential extrusion
                     }}
                   >
                     <div className="relative group">
@@ -428,28 +426,29 @@ export function ExcelExportRadialMenu() {
                         disabled={isExporting}
                         title={btn.label}
                         style={{
-                          boxShadow: `0 14px 32px rgba(0,0,0,0.18), inset 0 1.5px 1.5px rgba(255,255,255,0.75), inset 0 -1.5px 2px rgba(0,0,0,0.12), 0 0 20px ${btn.glowColor}`
+                          boxShadow: `0 16px 36px rgba(0,0,0,0.22), inset 0 2px 2px rgba(255,255,255,0.85), inset 0 -2px 2.5px rgba(0,0,0,0.12), 0 0 24px ${btn.glowColor}`
                         }}
-                        className={`relative w-11 h-11 rounded-full flex items-center justify-center border border-white/80 dark:border-white/25 bg-white/60 dark:bg-[#1f1f22]/75 backdrop-blur-2xl hover:scale-115 active:scale-95 transition-all duration-200 cursor-pointer text-gray-800 dark:text-gray-100 overflow-hidden`}
+                        // Enlarged button: w-[50px] h-[50px]
+                        className={`relative w-[50px] h-[50px] rounded-full flex items-center justify-center border border-white/85 dark:border-white/25 bg-white/65 dark:bg-[#1f1f22]/80 backdrop-blur-2xl hover:scale-115 active:scale-90 transition-all duration-200 cursor-pointer text-gray-800 dark:text-gray-100 overflow-hidden`}
                       >
                         {/* Liquid glass glossy top specular highlight reflection */}
-                        <div className="pointer-events-none absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-white/60 via-white/15 to-transparent rounded-t-full opacity-85 dark:opacity-40" />
+                        <div className="pointer-events-none absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-white/70 via-white/20 to-transparent rounded-t-full opacity-90 dark:opacity-40" />
 
                         {/* Liquid ripple gradient glow on hover */}
-                        <div className="pointer-events-none absolute inset-0 rounded-full bg-gradient-to-tr from-transparent via-white/10 to-white/40 opacity-0 group-hover:opacity-100 transition-opacity duration-200" />
+                        <div className="pointer-events-none absolute inset-0 rounded-full bg-gradient-to-tr from-transparent via-white/15 to-white/50 opacity-0 group-hover:opacity-100 transition-opacity duration-200" />
 
                         {isExporting ? (
-                          <Loader2 className="w-4 h-4 animate-spin text-[#8c9276] dark:text-[#ccff00] relative z-10" />
+                          <Loader2 className="w-5 h-5 animate-spin text-[#8c9276] dark:text-[#ccff00] relative z-10" />
                         ) : isSuccess ? (
-                          <Check className="w-4 h-4 text-emerald-500 stroke-[3] relative z-10" />
+                          <Check className="w-5 h-5 text-emerald-500 stroke-[3] relative z-10" />
                         ) : (
-                          <Icon className={`w-4 h-4 relative z-10 transition-transform duration-200 group-hover:scale-115 ${btn.accentColor}`} />
+                          <Icon className={`w-5 h-5 relative z-10 transition-transform duration-200 group-hover:scale-115 ${btn.accentColor}`} />
                         )}
                       </button>
 
                       {/* Floating Glass Tooltip Pill */}
-                      <div className="absolute right-full top-1/2 -translate-y-1/2 mr-3 px-3 py-1.5 rounded-2xl bg-white/90 dark:bg-[#1f1f22]/90 backdrop-blur-xl border border-white/70 dark:border-white/15 shadow-[0_8px_24px_rgba(0,0,0,0.12)] text-gray-900 dark:text-white text-[11px] font-bold tracking-tight whitespace-nowrap pointer-events-none opacity-0 group-hover:opacity-100 transition-all duration-200 group-hover:-translate-x-0.5 z-50 flex items-center gap-1.5">
-                        <Sparkles className="w-3 h-3 text-[#8c9276] dark:text-[#ccff00]" />
+                      <div className="absolute right-full top-1/2 -translate-y-1/2 mr-3.5 px-3 py-1.5 rounded-2xl bg-white/95 dark:bg-[#1f1f22]/95 backdrop-blur-xl border border-white/80 dark:border-white/15 shadow-[0_8px_24px_rgba(0,0,0,0.12)] text-gray-900 dark:text-white text-[11px] font-bold tracking-tight whitespace-nowrap pointer-events-none opacity-0 group-hover:opacity-100 transition-all duration-200 group-hover:-translate-x-0.5 z-50 flex items-center gap-1.5">
+                        <Sparkles className="w-3.5 h-3.5 text-[#8c9276] dark:text-[#ccff00]" />
                         <span>{btn.label}</span>
                         <span className="text-[9px] font-mono opacity-60 font-normal">.xlsx</span>
                       </div>
@@ -469,12 +468,12 @@ export function ExcelExportRadialMenu() {
           title={isOpen ? "Cerrar menú" : "Exportar reportes a Excel (.xlsx)"}
           style={{
             boxShadow: isOpen 
-              ? "0 0 28px rgba(204, 255, 0, 0.35), 0 14px 34px rgba(0,0,0,0.22), inset 0 2px 2px rgba(255,255,255,0.9), inset 0 -2px 2px rgba(0,0,0,0.15)"
+              ? "0 0 32px rgba(204, 255, 0, 0.4), 0 16px 38px rgba(0,0,0,0.25), inset 0 2px 2px rgba(255,255,255,0.95), inset 0 -2px 2px rgba(0,0,0,0.18)"
               : "0 8px 24px rgba(0,0,0,0.08), inset 0 1.5px 1.5px rgba(255,255,255,0.85), inset 0 -1.5px 1.5px rgba(0,0,0,0.08)"
           }}
           className={`relative z-50 w-11 h-11 rounded-full flex items-center justify-center border transition-all duration-300 cursor-pointer backdrop-blur-3xl overflow-hidden active:scale-95 ${
             isOpen
-              ? "border-[#8c9276] dark:border-[#ccff00] bg-white/80 dark:bg-[#232327]/85 text-[#3b4028] dark:text-[#ccff00] scale-105"
+              ? "border-[#8c9276] dark:border-[#ccff00] bg-white/85 dark:bg-[#232327]/90 text-[#3b4028] dark:text-[#ccff00] scale-105"
               : "border-white/85 dark:border-white/20 bg-white/60 dark:bg-[#1f1f22]/70 text-gray-700 dark:text-gray-200 hover:scale-108 hover:border-[#8c9276]/60 dark:hover:border-[#ccff00]/40"
           }`}
         >

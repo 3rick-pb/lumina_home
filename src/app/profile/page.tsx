@@ -897,7 +897,7 @@ const handleConfirmDeleteNiche = async () => {
  </header>
 
  {/* Greeting Banner */}
- <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 px-1">
+ <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
  <div>
  <h1 className="text-2xl md:text-3xl font-display font-bold text-gray-900 dark:text-gray-100 tracking-normal">
  {getGreeting()}, <span className="italic font-normal tracking-wide ml-1.5 inline-block">{formatCleanName(user.name)}</span>
@@ -913,7 +913,7 @@ const handleConfirmDeleteNiche = async () => {
  <ExcelExportRadialMenu />
  <button 
  onClick={() => setShowProductModal(true)}
- className="flex items-center gap-2 px-5 py-2.5 bg-gray-900 dark:bg-gray-100 hover:bg-gray-800 text-white dark:text-gray-900 text-xs font-semibold rounded-2xl transition-all shadow-md dark:shadow-none shadow-gray-900/10 cursor-pointer shrink-0"
+ className="h-11 flex items-center gap-2 px-5 bg-gray-900 dark:bg-gray-100 hover:bg-gray-800 text-white dark:text-gray-900 text-xs font-semibold rounded-2xl transition-all shadow-md dark:shadow-none shadow-gray-900/10 cursor-pointer shrink-0"
  >
  <Plus className="w-4 h-4" /> Nuevo Producto
  </button>
