@@ -67,22 +67,7 @@ export function ExcelExportRadialMenu() {
   const [isOpen, setIsOpen] = useState(false);
   const [activeExport, setActiveExport] = useState<string | null>(null);
   const [successExport, setSuccessExport] = useState<string | null>(null);
-  const [isTouchOrMobile, setIsTouchOrMobile] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
-
-  // Detect mobile / tablet / touch devices to permanently display descriptions
-  useEffect(() => {
-    const updateDevice = () => {
-      setIsTouchOrMobile(
-        window.innerWidth <= 1024 ||
-        'ontouchstart' in window ||
-        navigator.maxTouchPoints > 0
-      );
-    };
-    updateDevice();
-    window.addEventListener('resize', updateDevice);
-    return () => window.removeEventListener('resize', updateDevice);
-  }, []);
 
   // Close when clicking outside
   useEffect(() => {
@@ -515,7 +500,7 @@ export function ExcelExportRadialMenu() {
                         )}
                       </button>
 
-                      {/* Interactive Description Capsule (Always visible on mobile/tablets, hoverable on desktop) */}
+                      {/* Interactive Description Capsule (Always visible by default on all devices) */}
                       <button
                         type="button"
                         onClick={(e) => {
@@ -523,11 +508,7 @@ export function ExcelExportRadialMenu() {
                           btn.onClick();
                         }}
                         disabled={isExporting}
-                        className={`absolute right-full top-1/2 -translate-y-1/2 mr-3 px-3.5 py-1.5 rounded-2xl bg-white/95 dark:bg-[#1a1f1c]/95 backdrop-blur-xl border border-white/80 dark:border-white/15 shadow-[0_8px_24px_rgba(0,0,0,0.15)] text-gray-900 dark:text-white text-xs font-bold tracking-tight whitespace-nowrap cursor-pointer active:scale-95 transition-all duration-200 z-50 flex items-center gap-2 ${
-                          isTouchOrMobile 
-                            ? "opacity-100 pointer-events-auto translate-x-0 scale-100" 
-                            : "opacity-0 group-hover:opacity-100 pointer-events-none group-hover:pointer-events-auto group-hover:-translate-x-0.5"
-                        }`}
+                        className={`absolute right-full top-1/2 -translate-y-1/2 mr-3 px-3.5 py-1.5 rounded-2xl bg-white/95 dark:bg-[#1a1f1c]/95 backdrop-blur-xl border border-white/80 dark:border-white/15 shadow-[0_8px_24px_rgba(0,0,0,0.15)] text-gray-900 dark:text-white text-xs font-bold tracking-tight whitespace-nowrap cursor-pointer hover:scale-105 active:scale-95 transition-all duration-200 z-50 flex items-center gap-2 opacity-100 pointer-events-auto`}
                       >
                         <Sparkles className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
                         <span>{btn.label}</span>
