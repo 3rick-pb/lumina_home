@@ -152,23 +152,27 @@ export interface CartItemAddedPayload {
 // -------------------------------------------------------------
 // City Airport Code Helper (for Flight Route Trajectory)
 // -------------------------------------------------------------
-export function getCityAirportCode(location: string): string {
-  if (!location) return 'ECU';
-  const clean = location.toLowerCase();
-  if (clean.includes('guayaquil')) return 'GYE';
-  if (clean.includes('quito')) return 'UIO';
-  if (clean.includes('cuenca')) return 'CUE';
-  if (clean.includes('manta')) return 'MEC';
-  if (clean.includes('ambato')) return 'ATF';
-  if (clean.includes('loja')) return 'LOH';
-  if (clean.includes('machala')) return 'MCH';
-  if (clean.includes('galapagos') || clean.includes('galápagos')) return 'GPS';
-  if (clean.includes('bogota') || clean.includes('bogotá')) return 'BOG';
-  if (clean.includes('lima')) return 'LIM';
-  if (clean.includes('madrid')) return 'MAD';
-  if (clean.includes('miami')) return 'MIA';
-  const firstWord = location.split(',')[0].replace(/[^a-zA-Z]/g, '').trim();
-  return (firstWord.slice(0, 3) || 'LUM').toUpperCase();
+export function getCityAirportCode(location?: string | null): string {
+  if (!location || typeof location !== 'string') return 'ECU';
+  try {
+    const clean = location.toLowerCase().trim();
+    if (clean.includes('guayaquil')) return 'GYE';
+    if (clean.includes('quito')) return 'UIO';
+    if (clean.includes('cuenca')) return 'CUE';
+    if (clean.includes('manta')) return 'MEC';
+    if (clean.includes('ambato')) return 'ATF';
+    if (clean.includes('loja')) return 'LOH';
+    if (clean.includes('machala')) return 'MCH';
+    if (clean.includes('galapagos') || clean.includes('galápagos')) return 'GPS';
+    if (clean.includes('bogota') || clean.includes('bogotá')) return 'BOG';
+    if (clean.includes('lima')) return 'LIM';
+    if (clean.includes('madrid')) return 'MAD';
+    if (clean.includes('miami')) return 'MIA';
+    const firstWord = (location.split(',')[0] || '').replace(/[^a-zA-Z]/g, '').trim();
+    return (firstWord.slice(0, 3) || 'LUM').toUpperCase();
+  } catch {
+    return 'LUM';
+  }
 }
 
 // -------------------------------------------------------------

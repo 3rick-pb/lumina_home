@@ -41,12 +41,19 @@ export function CartAlertCard({
   const subtleBg = isLight ? 'rgba(0,0,0,0.035)' : 'rgba(255,255,255,0.06)';
   const subtleBorder = isLight ? 'rgba(0,0,0,0.06)' : 'rgba(255,255,255,0.08)';
 
-  const itemPrice = typeof payload.product?.price === 'number'
-    ? payload.product.price.toFixed(2)
-    : String(payload.product?.price || '0.00');
+  const safePayload = payload || ({} as Partial<CartItemAddedPayload>);
+  const safeUser = safePayload.userName || 'Cliente';
+  const safeInitial = (safeUser.trim().charAt(0) || 'C').toUpperCase();
+  const safeLocation = safePayload.location || 'Ecuador';
+  const safeProduct = safePayload.product || {};
+  const safeProductTitle = safeProduct.title || 'Artículo Lumina';
+  const safeProductImg = safeProduct.imageUrl;
+  const safeQuantity = safeProduct.quantity || 1;
+  const rawPrice = typeof safeProduct.price === 'number' ? safeProduct.price : parseFloat(String(safeProduct.price || 0));
+  const itemPrice = isNaN(rawPrice) ? '0.00' : rawPrice.toFixed(2);
 
-  const originCode = getCityAirportCode(payload.location);
-  const orderRef = `ORD ${payload.product?.id ? payload.product.id.slice(0, 5).toUpperCase() : '8492'}`;
+  const originCode = getCityAirportCode(safeLocation);
+  const orderRef = `ORD ${safeProduct.id ? String(safeProduct.id).slice(0, 5).toUpperCase() : '8492'}`;
 
   // -------------------------------------------------------------
   // STRUCTURE 1: Ruta de Despacho (Reference Flight Trajectory Image)
@@ -184,21 +191,21 @@ export function CartAlertCard({
                     color: config.textColor 
                   }}
                 >
-                  {payload.userName.charAt(0).toUpperCase()}
+                  {safeInitial}
                 </div>
                 <div className="min-w-0">
                   <span 
                     className="text-xs font-bold block truncate leading-tight"
                     style={{ color: config.textColor }}
                   >
-                    {payload.userName}
+                    {safeUser}
                   </span>
                   <span 
                     className="text-[10px] flex items-center gap-1 truncate mt-0.5"
                     style={{ color: config.subtextColor }}
                   >
                     <MapPin className="w-2.5 h-2.5 shrink-0" />
-                    <span>{payload.location}</span>
+                    <span>{safeLocation}</span>
                   </span>
                 </div>
               </div>
@@ -214,10 +221,10 @@ export function CartAlertCard({
               style={{ backgroundColor: subtleBg, borderColor: subtleBorder }}
             >
               <div className="flex items-center gap-2 min-w-0">
-                {payload.product?.imageUrl ? (
+                {safeProductImg ? (
                   <img
-                    src={payload.product.imageUrl}
-                    alt={payload.product.title}
+                    src={safeProductImg}
+                    alt={safeProductTitle}
                     className="w-7 h-7 rounded-lg object-cover shrink-0 border"
                     style={{ borderColor: subtleBorder }}
                   />
@@ -234,13 +241,13 @@ export function CartAlertCard({
                     className="text-xs font-bold block truncate leading-tight"
                     style={{ color: config.textColor }}
                   >
-                    {payload.product?.title || 'Artículo Lumina'}
+                    {safeProductTitle}
                   </span>
                   <span 
                     className="text-[10px] block mt-0.5 font-medium"
                     style={{ color: config.subtextColor }}
                   >
-                    Cantidad: {payload.product?.quantity || 1}
+                    Cantidad: {safeQuantity}
                   </span>
                 </div>
               </div>
@@ -327,10 +334,10 @@ export function CartAlertCard({
             </div>
 
             <div className="flex items-center gap-3">
-              {payload.product?.imageUrl ? (
+              {safeProductImg ? (
                 <img
-                  src={payload.product.imageUrl}
-                  alt={payload.product.title}
+                  src={safeProductImg}
+                  alt={safeProductTitle}
                   className="w-11 h-11 rounded-xl object-cover shrink-0 border"
                   style={{ borderColor: subtleBorder }}
                 />
@@ -347,7 +354,7 @@ export function CartAlertCard({
                   className="text-xs font-bold truncate leading-snug"
                   style={{ color: config.textColor }}
                 >
-                  {payload.product?.title || 'Artículo'}
+                  {safeProductTitle}
                 </h4>
                 <div className="flex items-center gap-2 mt-1">
                   <span 
@@ -360,7 +367,7 @@ export function CartAlertCard({
                     className="text-[10px] px-1.5 py-0.2 rounded bg-black/5 dark:bg-white/10"
                     style={{ color: config.subtextColor }}
                   >
-                    x{payload.product?.quantity || 1}
+                    x{safeQuantity}
                   </span>
                 </div>
               </div>
@@ -391,14 +398,14 @@ export function CartAlertCard({
                     color: config.textColor 
                   }}
                 >
-                  {payload.userName.charAt(0).toUpperCase()}
+                  {safeInitial}
                 </div>
                 <div className="min-w-0">
                   <span className="text-xs font-bold block truncate" style={{ color: config.textColor }}>
-                    {payload.userName}
+                    {safeUser}
                   </span>
                   <span className="text-[10px] block truncate" style={{ color: config.subtextColor }}>
-                    {payload.location}
+                    {safeLocation}
                   </span>
                 </div>
               </div>
@@ -448,11 +455,11 @@ export function CartAlertCard({
                 color: config.textColor 
               }}
             >
-              {payload.userName.charAt(0).toUpperCase()}
+              {safeInitial}
             </div>
             <div className="min-w-0">
               <span className="text-xs font-bold block truncate" style={{ color: config.textColor }}>
-                {payload.userName}
+                {safeUser}
               </span>
               <span className="text-[9px] font-semibold text-emerald-600 dark:text-emerald-400 block truncate">
                 {originCode} • Carrito
@@ -469,7 +476,7 @@ export function CartAlertCard({
           <div className="flex items-center gap-1.5 shrink-0">
             <div className="text-right min-w-0 max-w-[95px]">
               <span className="text-[10px] font-bold block truncate" style={{ color: config.textColor }}>
-                {payload.product?.title || 'Producto'}
+                {safeProductTitle}
               </span>
               <span className="text-[10px] font-mono font-bold block" style={{ color: config.subtextColor }}>
                 ${itemPrice}
@@ -549,7 +556,7 @@ export function CartAlertCard({
             </span>
             <div className="mt-1">
               <h5 className="text-xs font-bold truncate" style={{ color: config.textColor }}>
-                {payload.userName}
+                {safeUser}
               </h5>
               <span className="text-[9px] block truncate" style={{ color: config.subtextColor }}>
                 {originCode}
@@ -570,7 +577,7 @@ export function CartAlertCard({
                 ${itemPrice}
               </h5>
               <span className="text-[9px] block" style={{ color: config.subtextColor }}>
-                {payload.product?.quantity || 1} ud.
+                {safeQuantity} ud.
               </span>
             </div>
           </div>
@@ -580,10 +587,10 @@ export function CartAlertCard({
             className="p-2 rounded-xl border flex items-center gap-1.5"
             style={{ backgroundColor: subtleBg, borderColor: subtleBorder }}
           >
-            {payload.product?.imageUrl ? (
+            {safeProductImg ? (
               <img
-                src={payload.product.imageUrl}
-                alt={payload.product.title}
+                src={safeProductImg}
+                alt={safeProductTitle}
                 className="w-6 h-6 rounded-md object-cover shrink-0"
               />
             ) : (
@@ -592,7 +599,7 @@ export function CartAlertCard({
               </div>
             )}
             <span className="text-[10px] font-bold line-clamp-2 leading-tight" style={{ color: config.textColor }}>
-              {payload.product?.title || 'Artículo'}
+              {safeProductTitle}
             </span>
           </div>
 

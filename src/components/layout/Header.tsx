@@ -282,7 +282,7 @@ export function Header() {
                                 <h4 className="text-xs font-bold text-gray-900 line-clamp-1 group-hover:text-[#8c9276] transition-colors">
                                   {prod.title}
                                 </h4>
-                                <p className="text-xs font-extrabold text-gray-900 mt-0.5">${prod.price.toFixed(2)}</p>
+                                <p className="text-xs font-extrabold text-gray-900 mt-0.5">${Number(prod.price || 0).toFixed(2)}</p>
                               </div>
                             </div>
                             <div className="p-1.5 text-gray-300 group-hover:text-gray-800 rounded-xl transition-colors">

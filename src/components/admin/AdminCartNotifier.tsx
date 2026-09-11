@@ -69,8 +69,9 @@ export function AdminCartNotifier() {
   if (!isAdmin) return null;
 
   // Determine fixed positioning CSS classes and macOS transform origin
+  const position = config?.position || "bottom-right";
   const getPositionClasses = () => {
-    switch (config.position) {
+    switch (position) {
       case "bottom-left":
         return "bottom-6 left-6 items-start";
       case "top-right":
@@ -83,8 +84,8 @@ export function AdminCartNotifier() {
     }
   };
 
-  const isBottom = config.position.startsWith("bottom");
-  const isRight = config.position.endsWith("right");
+  const isBottom = typeof position === 'string' && position.startsWith("bottom");
+  const isRight = typeof position === 'string' && position.endsWith("right");
   const transformOrigin = `${isBottom ? "bottom" : "top"} ${isRight ? "right" : "left"}`;
 
   const handleAction = () => {

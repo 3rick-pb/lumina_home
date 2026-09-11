@@ -111,8 +111,11 @@ export default function Home() {
 
       const catProducts = products.filter(p => normalizeText(p.category) === norm);
       let priceText = meta?.defaultPrice || "Colección activa";
-      if (catProducts.length > 0) {
-        const minPrice = Math.min(...catProducts.map(p => p.price));
+      const validPrices = catProducts
+        .map(p => Number(p.price))
+        .filter(val => !isNaN(val) && isFinite(val) && val > 0);
+      if (validPrices.length > 0) {
+        const minPrice = Math.min(...validPrices);
         priceText = `desde $${minPrice.toFixed(0)}`;
       }
 

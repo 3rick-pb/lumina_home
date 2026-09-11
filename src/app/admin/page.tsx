@@ -424,10 +424,10 @@ export default function AdminPage() {
                     </span>
                   </td>
                   <td className="px-6 py-4 font-bold text-gray-900">
-                    ${prod.price.toFixed(2)}
+                    ${Number(prod.price || 0).toFixed(2)}
                     {prod.oldPrice && (
                       <span className="ml-1.5 text-xs text-gray-400 font-normal line-through">
-                        ${prod.oldPrice.toFixed(2)}
+                        ${Number(prod.oldPrice || 0).toFixed(2)}
                       </span>
                     )}
                   </td>

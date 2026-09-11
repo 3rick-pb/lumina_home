@@ -225,32 +225,46 @@ export function AppInitializer() {
   // Completely prevents: "Copiar imagen", "Copiar dirección de imagen", "Guardar imagen como...",
   // "Abrir en nueva pestaña", "Buscar en Google Lens", "Crear código QR", drag-to-desktop, etc.
   useEffect(() => {
-    const isProtectedTarget = (target: HTMLElement | null): boolean => {
+    const isProtectedTarget = (target: EventTarget | null): boolean => {
       if (!target) return false;
-      const tag = target.tagName?.toUpperCase();
-      if (tag === "IMG" || tag === "PICTURE" || tag === "VIDEO" || tag === "CANVAS") {
-        return true;
+      try {
+        // Resolve target safely: if it's a Text node or non-Element, traverse to parent element
+        const el = target instanceof Element 
+          ? target 
+          : (target as Node).parentElement instanceof Element 
+          ? (target as Node).parentElement 
+          : null;
+
+        if (!el || typeof el.closest !== 'function') return false;
+
+        const tag = el.tagName?.toUpperCase();
+        if (tag === "IMG" || tag === "PICTURE" || tag === "VIDEO" || tag === "CANVAS") {
+          return true;
+        }
+        return Boolean(el.closest("img, picture, video, [data-protected-media], .product-image, [role='img']"));
+      } catch {
+        return false;
       }
-      if (target.closest("img, picture, video, [data-protected-media], .product-image, [role='img']")) {
-        return true;
-      }
-      return false;
     };
 
     const handleContextMenu = (e: MouseEvent) => {
-      if (isProtectedTarget(e.target as HTMLElement)) {
-        e.preventDefault();
-        e.stopPropagation();
-        return false;
-      }
+      try {
+        if (isProtectedTarget(e.target)) {
+          e.preventDefault();
+          e.stopPropagation();
+          return false;
+        }
+      } catch {}
     };
 
     const handleDragStart = (e: DragEvent) => {
-      if (isProtectedTarget(e.target as HTMLElement)) {
-        e.preventDefault();
-        e.stopPropagation();
-        return false;
-      }
+      try {
+        if (isProtectedTarget(e.target)) {
+          e.preventDefault();
+          e.stopPropagation();
+          return false;
+        }
+      } catch {}
     };
 
     document.addEventListener("contextmenu", handleContextMenu, { capture: true });

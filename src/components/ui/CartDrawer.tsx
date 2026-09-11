@@ -1002,7 +1002,7 @@ export function CartDrawer() {
  )}
  </div>
  <p className="text-xs text-gray-400 dark:text-gray-400 mt-1 sm:hidden">
- Unitario: ${item.product.price.toFixed(2)}
+ Unitario: ${Number(item.product?.price || 0).toFixed(2)}
  </p>
  </div>
  </div>
@@ -1039,7 +1039,7 @@ export function CartDrawer() {
  <div className="sm:col-span-2 sm:text-right flex items-center justify-between sm:block pr-6">
  <span className="text-xs text-gray-400 dark:text-gray-400 sm:hidden">Subtotal:</span>
  <span className="font-extrabold text-base sm:text-lg text-gray-900 dark:text-gray-100 ">
- ${(item.product.price * item.quantity).toFixed(2)}
+ ${(Number(item.product?.price || 0) * (item.quantity || 1)).toFixed(2)}
  </span>
  </div>
 
@@ -1272,7 +1272,7 @@ export function CartDrawer() {
  </h5>
  <p className="text-[11px] text-gray-400 dark:text-gray-400 mt-0.5">{prod.category}</p>
  <span className="font-extrabold text-xs text-gray-900 dark:text-gray-100 mt-1 block">
- ${prod.price.toFixed(2)}
+ ${Number(prod.price || 0).toFixed(2)}
  </span>
  </div>
  </div>
@@ -2219,7 +2219,7 @@ export function CartDrawer() {
  <div className="flex items-center justify-between pt-2 text-xs sm:text-sm">
  <span className="font-bold text-gray-700 dark:text-gray-300">Total Pagado</span>
  <span className="font-display font-bold text-2xl text-blue-700">
- ${lastPlacedOrder.total.toFixed(2)} USD
+ ${Number(lastPlacedOrder?.total || 0).toFixed(2)} USD
  </span>
  </div>
  </div>

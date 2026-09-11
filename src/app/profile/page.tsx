@@ -862,7 +862,7 @@ const handleConfirmDeleteNiche = async () => {
  className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-[#3a3a3c] cursor-pointer flex items-center justify-between transition-colors"
  >
  <span className="font-medium text-gray-800 dark:text-gray-200 truncate max-w-[150px]">{prod.title}</span>
- <span className="font-bold text-gray-900 dark:text-gray-100">${prod.price.toFixed(2)}</span>
+ <span className="font-bold text-gray-900 dark:text-gray-100">${Number(prod.price || 0).toFixed(2)}</span>
  </div>
  ))}
  </div>
@@ -1870,7 +1870,7 @@ const handleConfirmDeleteNiche = async () => {
                     {productToDelete.category}
                   </span>
                   <span className="text-xs font-bold text-gray-900 dark:text-gray-100">
-                    ${productToDelete.price.toFixed(2)}
+                    ${Number(productToDelete.price || 0).toFixed(2)}
                   </span>
                 </div>
               </div>

@@ -435,7 +435,7 @@ export function ProductLandingView({
               </span>
               {product.oldPrice && product.oldPrice > currentEffectivePrice && (
                 <span className="text-xl text-gray-400 dark:text-gray-500 line-through">
-                  ${product.oldPrice.toFixed(2)}
+                  ${Number(product.oldPrice || 0).toFixed(2)}
                 </span>
               )}
               {selectedCombo?.badge ? (
@@ -484,7 +484,7 @@ export function ProductLandingView({
                       </div>
                       <span>Solo esta pieza</span>
                     </div>
-                    <span className="font-bold">${product.price.toFixed(2)}</span>
+                    <span className="font-bold">${Number(product.price || 0).toFixed(2)}</span>
                   </div>
 
                   {/* Configured Combos */}
@@ -708,11 +708,11 @@ export function ProductLandingView({
                     <span className="text-xs font-bold uppercase tracking-wider text-gray-400">1 Unidad</span>
                     <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-gray-200/60 dark:bg-white/10 text-gray-600 dark:text-gray-300">Estándar</span>
                   </div>
-                  <h3 className="text-lg font-black text-gray-950 dark:text-white">${product.price.toFixed(2)}</h3>
+                  <h3 className="text-lg font-black text-gray-950 dark:text-white">${Number(product.price || 0).toFixed(2)}</h3>
                   <p className="text-xs text-gray-500 mt-1">Para uso personal en tu espacio favorito.</p>
                 </div>
                 <div className="pt-3 border-t border-gray-100 dark:border-white/5 flex items-center justify-between">
-                  <span className="text-xs text-gray-400 font-semibold">${product.price.toFixed(2)} / ud</span>
+                  <span className="text-xs text-gray-400 font-semibold">${Number(product.price || 0).toFixed(2)} / ud</span>
                   <div className={`w-4 h-4 rounded-full border flex items-center justify-center ${selectedTierQty === 1 ? 'bg-gray-950 text-white' : 'border-gray-300'}`}>
                     {selectedTierQty === 1 && <Check className="w-2.5 h-2.5" />}
                   </div>
@@ -843,7 +843,7 @@ export function ProductLandingView({
                     <Image src={currentImage} alt={product.title} fill className="object-cover" />
                   </div>
                   <p className="text-xs font-bold text-gray-900 dark:text-white line-clamp-1">{product.title}</p>
-                  <p className="text-xs font-semibold text-gray-500 dark:text-gray-400">${product.price.toFixed(2)}</p>
+                  <p className="text-xs font-semibold text-gray-500 dark:text-gray-400">${Number(product.price || 0).toFixed(2)}</p>
                   <span className="inline-block mt-1 text-[10px] font-bold text-[#8c9276] dark:text-[#ccff00]">Este artículo</span>
                 </div>
 
@@ -874,7 +874,7 @@ export function ProductLandingView({
                         </div>
                       </div>
                       <p className="text-xs font-bold text-gray-900 dark:text-white line-clamp-1">{comp.title}</p>
-                      <p className="text-xs font-semibold text-gray-500 dark:text-gray-400">${comp.price.toFixed(2)}</p>
+                      <p className="text-xs font-semibold text-gray-500 dark:text-gray-400">${Number(comp.price || 0).toFixed(2)}</p>
                       <span className="inline-block mt-1 text-[10px] text-gray-400">Pieza complementaria</span>
                     </div>
                   </React.Fragment>

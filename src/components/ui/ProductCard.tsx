@@ -67,9 +67,9 @@ export function ProductCard({ id, title, price, oldPrice, discount, badge, image
       <div className="flex flex-col flex-1 px-1">
         <h3 className="text-base font-medium text-gray-900 line-clamp-1 mb-1">{title}</h3>
         <div className="flex items-center gap-2 mb-3">
-          <span className="text-lg font-bold text-gray-900">${price.toFixed(2)}</span>
+          <span className="text-lg font-bold text-gray-900">${Number(price || 0).toFixed(2)}</span>
           {oldPrice && (
-            <span className="text-sm text-gray-400 line-through">${oldPrice.toFixed(2)}</span>
+            <span className="text-sm text-gray-400 line-through">${Number(oldPrice || 0).toFixed(2)}</span>
           )}
           {discount && (
             <span className="text-[10px] font-bold text-gray-900 bg-white/40 backdrop-blur-md border border-white/60 px-1.5 py-0.5 rounded-full shadow-sm">
