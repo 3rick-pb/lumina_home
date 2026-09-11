@@ -67,7 +67,28 @@ export function ExcelExportRadialMenu() {
   const [isOpen, setIsOpen] = useState(false);
   const [activeExport, setActiveExport] = useState<string | null>(null);
   const [successExport, setSuccessExport] = useState<string | null>(null);
+  const [isMobile, setIsMobile] = useState(false);
+  const [mobileXOffset, setMobileXOffset] = useState(-130);
   const menuRef = useRef<HTMLDivElement>(null);
+
+  // Detect mobile viewport and calculate safe X offset so satellites and labels never cut off
+  useEffect(() => {
+    const updateMobileLayout = () => {
+      const mobile = window.innerWidth < 640;
+      setIsMobile(mobile);
+      if (mobile && menuRef.current) {
+        const rect = menuRef.current.getBoundingClientRect();
+        // Target bubble center at 38px from the left edge of the viewport (left edge at 38 - 25 = 13px)
+        // Trigger button center is rect.left + 22px.
+        const offset = 38 - (rect.left + 22);
+        setMobileXOffset(offset);
+      }
+    };
+
+    updateMobileLayout();
+    window.addEventListener("resize", updateMobileLayout);
+    return () => window.removeEventListener("resize", updateMobileLayout);
+  }, [isOpen]);
 
   // Close when clicking outside
   useEffect(() => {
@@ -347,8 +368,8 @@ export function ExcelExportRadialMenu() {
       label: "Exportar Pedidos",
       icon: ShoppingBag,
       onClick: handleExportOrders,
-      targetX: -67,
-      targetY: -67,
+      targetX: isMobile ? mobileXOffset : -67,
+      targetY: isMobile ? 65 : -67,
       originX: 0,
       originY: 0,
       accentColor: "text-emerald-500 dark:text-emerald-300",
@@ -362,10 +383,10 @@ export function ExcelExportRadialMenu() {
       label: "Exportar Catálogo",
       icon: Package,
       onClick: handleExportProducts,
-      targetX: -95,
-      targetY: 0,
-      originX: -67,
-      originY: -67,
+      targetX: isMobile ? mobileXOffset : -95,
+      targetY: isMobile ? 128 : 0,
+      originX: isMobile ? mobileXOffset : -67,
+      originY: isMobile ? 65 : -67,
       accentColor: "text-sky-500 dark:text-cyan-300",
       glowColor: "rgba(6, 182, 212, 0.45)",
       badgeColor: "bg-sky-500/20 text-sky-700 dark:text-cyan-300 border-sky-500/30",
@@ -377,10 +398,10 @@ export function ExcelExportRadialMenu() {
       label: "Inventario por Nicho",
       icon: Layers,
       onClick: handleExportNiches,
-      targetX: -67,
-      targetY: 67,
-      originX: -95,
-      originY: 0,
+      targetX: isMobile ? mobileXOffset : -67,
+      targetY: isMobile ? 191 : 67,
+      originX: isMobile ? mobileXOffset : -95,
+      originY: isMobile ? 128 : 0,
       accentColor: "text-amber-500 dark:text-amber-300",
       glowColor: "rgba(245, 158, 11, 0.45)",
       badgeColor: "bg-amber-500/20 text-amber-700 dark:text-amber-300 border-amber-500/30",
@@ -508,7 +529,7 @@ export function ExcelExportRadialMenu() {
                           btn.onClick();
                         }}
                         disabled={isExporting}
-                        className={`absolute right-full top-1/2 -translate-y-1/2 mr-3 px-3.5 py-1.5 rounded-2xl bg-white/95 dark:bg-[#1a1f1c]/95 backdrop-blur-xl border border-white/80 dark:border-white/15 shadow-[0_8px_24px_rgba(0,0,0,0.15)] text-gray-900 dark:text-white text-xs font-bold tracking-tight whitespace-nowrap cursor-pointer hover:scale-105 active:scale-95 transition-all duration-200 z-50 flex items-center gap-2 opacity-100 pointer-events-auto`}
+                        className={`absolute ${isMobile ? "left-full ml-3" : "right-full mr-3"} top-1/2 -translate-y-1/2 px-3.5 py-1.5 rounded-2xl bg-white/95 dark:bg-[#1a1f1c]/95 backdrop-blur-xl border border-white/80 dark:border-white/15 shadow-[0_8px_24px_rgba(0,0,0,0.15)] text-gray-900 dark:text-white text-xs font-bold tracking-tight whitespace-nowrap cursor-pointer hover:scale-105 active:scale-95 transition-all duration-200 z-50 flex items-center gap-2 opacity-100 pointer-events-auto`}
                       >
                         <Sparkles className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
                         <span>{btn.label}</span>

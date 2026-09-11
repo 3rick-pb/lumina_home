@@ -46,10 +46,10 @@ export function CloudSyncStatus({
   };
 
   return (
-    <div className={`flex flex-wrap items-center gap-2.5 ${className}`}>
+    <div className={`flex items-center flex-nowrap gap-2 sm:gap-2.5 overflow-x-auto hide-scrollbar max-w-full py-0.5 ${className}`}>
       {/* 1. Supabase Connection Status Badge */}
       {effectiveSyncing ? (
-        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-50 dark:bg-amber-950/40 border border-amber-200/60 dark:border-amber-900/40 text-amber-700 dark:text-amber-400 text-[11px] font-semibold animate-pulse select-none">
+        <div className="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1 rounded-full bg-amber-50 dark:bg-amber-950/40 border border-amber-200/60 dark:border-amber-900/40 text-amber-700 dark:text-amber-400 text-[10.5px] sm:text-[11px] font-semibold animate-pulse select-none whitespace-nowrap shrink-0">
           <div className="w-2 h-2 rounded-full bg-amber-500 animate-ping" />
           <span>Sincronizando con base de datos...</span>
         </div>
@@ -57,14 +57,14 @@ export function CloudSyncStatus({
         <button
           type="button"
           onClick={onRetry || handleManualSave}
-          className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-red-50 dark:bg-red-950/40 border border-red-200/60 text-red-700 dark:text-red-400 text-[11px] font-semibold hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors cursor-pointer select-none"
+          className="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1 rounded-full bg-red-50 dark:bg-red-950/40 border border-red-200/60 text-red-700 dark:text-red-400 text-[10.5px] sm:text-[11px] font-semibold hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors cursor-pointer select-none whitespace-nowrap shrink-0"
           title="Hacer clic para reintentar sincronización"
         >
           <AlertTriangle className="w-3.5 h-3.5 text-red-500" />
           <span>Error al sincronizar (reintentar)</span>
         </button>
       ) : (
-        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200/60 dark:border-emerald-900/40 text-emerald-700 dark:text-emerald-400 text-[11px] font-semibold select-none">
+        <div className="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1 rounded-full bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200/60 dark:border-emerald-900/40 text-emerald-700 dark:text-emerald-400 text-[10.5px] sm:text-[11px] font-semibold select-none whitespace-nowrap shrink-0">
           <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
           <span>Base de datos Supabase conectada</span>
         </div>
@@ -76,8 +76,8 @@ export function CloudSyncStatus({
           type="button"
           onClick={handleManualSave}
           disabled={effectiveSyncing}
-          className={`font-semibold text-xs rounded-xl shadow-xs transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-60 active:scale-95 select-none ${
-            compact ? "px-3 py-1.5 text-[11px]" : "px-4 py-2"
+          className={`font-semibold rounded-xl shadow-xs transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-60 active:scale-95 select-none whitespace-nowrap shrink-0 ${
+            compact ? "px-2.5 sm:px-3 py-1.5 text-[10.5px] sm:text-[11px]" : "px-3 sm:px-4 py-1.5 sm:py-2 text-[11px] sm:text-xs"
           } ${
             internalJustSaved
               ? "bg-emerald-700 text-white"

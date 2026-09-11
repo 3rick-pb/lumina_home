@@ -892,6 +892,15 @@ const handleConfirmDeleteNiche = async () => {
  {isAdmin ? "ADMINISTRADOR" : "CLIENTE"}
  </span>
  </div>
+ <button 
+   onClick={() => { logout(); router.push("/auth/login"); }}
+   className="md:hidden flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/40 border border-red-200/60 dark:border-red-900/40 transition-colors shrink-0 cursor-pointer"
+   title="Cerrar Sesión"
+   aria-label="Cerrar Sesión"
+ >
+   <LogOut className="w-3.5 h-3.5" />
+   <span className="text-[11px] font-semibold">Salir</span>
+ </button>
  </div>
  </div>
  </header>
@@ -2153,6 +2162,20 @@ const handleConfirmDeleteNiche = async () => {
         >
           <Store className="w-4 h-4" />
         </Link>
+
+        <div className="w-px h-4 bg-gray-200 dark:bg-white/10 shrink-0" />
+
+        <button
+          onClick={() => {
+            logout();
+            router.push("/auth/login");
+          }}
+          className="relative p-2 rounded-xl flex items-center justify-center text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/40 transition-all shrink-0 cursor-pointer"
+          title="Cerrar Sesión"
+          aria-label="Cerrar Sesión"
+        >
+          <LogOut className="w-4 h-4" />
+        </button>
       </nav>
 
   </div>
