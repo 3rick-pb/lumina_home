@@ -1,6 +1,6 @@
-"use client";
+'use client';
 
-import React, { useState } from "react";
+import React, { useState } from 'react';
 import { 
   Volume2, 
   VolumeX, 
@@ -16,17 +16,18 @@ import {
   AlertTriangle, 
   Zap, 
   Eye
-} from "lucide-react";
+} from 'lucide-react';
 import { 
   useAdminAlertStore, 
   AlertPosition, 
   COLOR_PRESETS,
   LAYOUT_OPTIONS,
+  DURATION_OPTIONS,
   auditContrast,
-  formatAlertContent,
   playAcousticChime,
   CartItemAddedPayload 
-} from "@/lib/adminAlertStore";
+} from '@/lib/adminAlertStore';
+import { CartAlertCard } from '@/components/admin/CartAlertCard';
 
 export function CartAlertsTab() {
   const { 
@@ -42,43 +43,43 @@ export function CartAlertsTab() {
 
   const sampleCustomers: CartItemAddedPayload[] = [
     {
-      userId: "user-sample-1",
-      userName: "Valentina M.",
-      userEmail: "valentina.m@example.com",
-      location: "Guayaquil, Ecuador",
+      userId: 'user-sample-1',
+      userName: 'Valentina M.',
+      userEmail: 'valentina.m@example.com',
+      location: 'Guayaquil, Ecuador',
       product: {
-        id: "prod-sample-1",
-        title: "Silla Nórdica Minimalista Nogal",
+        id: 'prod-sample-1',
+        title: 'Silla Nórdica Minimalista Nogal',
         price: 145.0,
-        imageUrl: "https://images.unsplash.com/photo-1592078615290-033ee584e267?q=80&w=300&auto=format&fit=crop",
+        imageUrl: 'https://images.unsplash.com/photo-1592078615290-033ee584e267?q=80&w=300&auto=format&fit=crop',
         quantity: 1,
       },
       timestamp: Date.now(),
     },
     {
-      userId: "user-sample-2",
-      userName: "Carlos E.",
-      userEmail: "carlos.e@example.com",
-      location: "Quito, Pichincha",
+      userId: 'user-sample-2',
+      userName: 'Carlos E.',
+      userEmail: 'carlos.e@example.com',
+      location: 'Quito, Pichincha',
       product: {
-        id: "prod-sample-2",
-        title: "Difusor Ultrasónico Piedra Volcánica",
+        id: 'prod-sample-2',
+        title: 'Difusor Ultrasónico Piedra Volcánica',
         price: 68.5,
-        imageUrl: "https://images.unsplash.com/photo-1608571423902-eed4a5ad8108?q=80&w=300&auto=format&fit=crop",
+        imageUrl: 'https://images.unsplash.com/photo-1608571423902-eed4a5ad8108?q=80&w=300&auto=format&fit=crop',
         quantity: 2,
       },
       timestamp: Date.now(),
     },
     {
-      userId: "user-sample-3",
-      userName: "Elena R.",
-      userEmail: "elena.r@example.com",
-      location: "Cuenca, Azuay",
+      userId: 'user-sample-3',
+      userName: 'Elena R.',
+      userEmail: 'elena.r@example.com',
+      location: 'Cuenca, Azuay',
       product: {
-        id: "prod-sample-3",
-        title: "Lámpara de Mesa Eclipse Minimal",
+        id: 'prod-sample-3',
+        title: 'Lámpara de Mesa Eclipse Minimal',
         price: 110.0,
-        imageUrl: "https://images.unsplash.com/photo-1507473885765-e6ed057f782c?q=80&w=300&auto=format&fit=crop",
+        imageUrl: 'https://images.unsplash.com/photo-1507473885765-e6ed057f782c?q=80&w=300&auto=format&fit=crop',
         quantity: 1,
       },
       timestamp: Date.now(),
@@ -88,25 +89,17 @@ export function CartAlertsTab() {
   const handleFireLiveTest = (sampleIndex = 0) => {
     fireToast(sampleCustomers[sampleIndex]);
     setTestSent(true);
-    setTimeout(() => setTestSent(false), 2000);
+    setTimeout(() => setTestSent(false), 2200);
   };
 
   const positions: { id: AlertPosition; label: string; desc: string; iconPos: string }[] = [
-    { id: "bottom-right", label: "Inferior Derecho", desc: "Recomendado para monitoreo natural", iconPos: "bottom-2 right-2" },
-    { id: "bottom-left", label: "Inferior Izquierdo", desc: "Alineado con el dock vertical izquierdo", iconPos: "bottom-2 left-2" },
-    { id: "top-right", label: "Superior Derecho", desc: "Área de máxima visibilidad e impacto", iconPos: "top-2 right-2" },
-    { id: "top-left", label: "Superior Izquierdo", desc: "Lateral superior sobre la cabecera", iconPos: "top-2 left-2" },
-  ];
-
-  const durations = [
-    { ms: 4500, label: "4.5s (Rápido)" },
-    { ms: 6500, label: "6.5s (Óptimo)" },
-    { ms: 8500, label: "8.5s (Extendido)" },
-    { ms: 12000, label: "12s (Persistente)" },
+    { id: 'bottom-right', label: 'Inferior Derecho', desc: 'Recomendado para monitoreo continuo', iconPos: 'bottom-2 right-2' },
+    { id: 'bottom-left', label: 'Inferior Izquierdo', desc: 'Alineado con el dock vertical izquierdo', iconPos: 'bottom-2 left-2' },
+    { id: 'top-right', label: 'Superior Derecho', desc: 'Área de alta visibilidad e impacto', iconPos: 'top-2 right-2' },
+    { id: 'top-left', label: 'Superior Izquierdo', desc: 'Lateral superior sobre la cabecera', iconPos: 'top-2 left-2' },
   ];
 
   const currentAudit = auditContrast(config.bgColor, config.textColor);
-  const currentPreviewContent = formatAlertContent(config.layout, sampleCustomers[0], config.title);
 
   return (
     <div className="space-y-8 animate-fade-in pb-12">
@@ -119,10 +112,10 @@ export function CartAlertsTab() {
               <span>Panel exclusivo de administración</span>
             </div>
             <h2 className="text-2xl sm:text-3xl font-display font-bold text-gray-900 dark:text-white tracking-tight">
-              Notificaciones de Carrito en Tiempo Real
+              Notificaciones de Carrito en Vivo
             </h2>
             <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-1 max-w-2xl leading-relaxed">
-              Personaliza el diseño, los colores con verificación de contraste accesible, la posición en pantalla y el aviso acústico cuando un cliente registrado añade un producto.
+              Configura la presentación visual, la trayectoria de envío animada con paquete en tránsito, colores de alto contraste y el aviso sonoro cuando un comprador registrado añade un producto.
             </p>
           </div>
 
@@ -137,7 +130,7 @@ export function CartAlertsTab() {
             <button
               onClick={resetConfig}
               className="px-4 py-2.5 rounded-xl text-xs font-medium text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white bg-gray-100 dark:bg-white/5 hover:bg-gray-200 dark:hover:bg-white/10 active:scale-95 transition-all flex items-center gap-1.5 cursor-pointer"
-              title="Restablecer a Blanco por defecto"
+              title="Restablecer configuración predeterminada"
             >
               <RotateCcw className="w-3.5 h-3.5" />
               <span>Restablecer</span>
@@ -146,21 +139,21 @@ export function CartAlertsTab() {
         </div>
       </div>
 
-      {/* Main Grid: Interactive Controls (7 cols) + Live Simulator (5 cols) */}
+      {/* Main Grid: Settings (7 cols) + Live Simulator (5 cols) */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
         {/* Left Column: Settings (7 cols) */}
         <div className="lg:col-span-7 space-y-6">
 
-          {/* SECTION 1: Multiple Layout Options */}
+          {/* SECTION 1: 4 Genuine Layout Structures */}
           <div className="bg-white dark:bg-[#202022] rounded-3xl border border-gray-200/80 dark:border-white/10 p-6 sm:p-7 shadow-sm space-y-5">
             <div className="flex items-center justify-between">
               <div>
                 <h3 className="font-display font-bold text-base text-gray-900 dark:text-white flex items-center gap-2">
                   <Layers className="w-4 h-4 text-blue-600" />
-                  Estructura de la Notificación
+                  Estructura de Notificación
                 </h3>
                 <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-                  Selecciona la presentación visual que prefieras en tu pantalla.
+                  Cuatro formatos con geometrías y distribuciones de información realmente distintas.
                 </p>
               </div>
               <span className="text-[10px] font-mono font-bold uppercase tracking-wider px-2.5 py-1 rounded-lg bg-gray-100 dark:bg-white/10 text-gray-700 dark:text-gray-300">
@@ -175,15 +168,15 @@ export function CartAlertsTab() {
                   <button
                     key={lo.id}
                     onClick={() => updateConfig({ layout: lo.id })}
-                    className={`relative p-4 rounded-2xl border text-left transition-all cursor-pointer flex flex-col justify-between min-h-[105px] ${
+                    className={`relative p-4 rounded-2xl border text-left transition-all cursor-pointer flex flex-col justify-between min-h-[110px] ${
                       isSelected
-                        ? "border-gray-900 dark:border-white bg-gray-50/80 dark:bg-white/5 ring-1 ring-gray-900/10 dark:ring-white/20 shadow-xs"
-                        : "border-gray-200/80 dark:border-white/10 bg-white dark:bg-transparent hover:bg-gray-50 dark:hover:bg-white/[0.03]"
+                        ? 'border-gray-900 dark:border-white bg-gray-50/80 dark:bg-white/5 ring-1 ring-gray-900/10 dark:ring-white/20 shadow-xs'
+                        : 'border-gray-200/80 dark:border-white/10 bg-white dark:bg-transparent hover:bg-gray-50 dark:hover:bg-white/[0.03]'
                     }`}
                   >
                     <div>
-                      <div className="flex items-center justify-between mb-1">
-                        <span className="text-[10px] font-semibold px-2 py-0.5 rounded-md bg-gray-100 dark:bg-white/10 text-gray-600 dark:text-gray-300">
+                      <div className="flex items-center justify-between mb-1.5">
+                        <span className="text-[10px] font-semibold px-2 py-0.5 rounded-md bg-gray-100 dark:bg-white/10 text-gray-700 dark:text-gray-300">
                           {lo.badge}
                         </span>
                         {isSelected && <CheckCircle2 className="w-4 h-4 text-gray-900 dark:text-white" />}
@@ -192,7 +185,7 @@ export function CartAlertsTab() {
                         {lo.title}
                       </h4>
                     </div>
-                    <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-1 leading-relaxed">
+                    <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-2 leading-relaxed">
                       {lo.description}
                     </p>
                   </button>
@@ -201,7 +194,7 @@ export function CartAlertsTab() {
             </div>
           </div>
 
-          {/* SECTION 2: Color Palette & Custom Color Pickers */}
+          {/* SECTION 2: Color Palette & Contrast Audit */}
           <div className="bg-white dark:bg-[#202022] rounded-3xl border border-gray-200/80 dark:border-white/10 p-6 sm:p-7 shadow-sm space-y-5">
             <div>
               <h3 className="font-display font-bold text-base text-gray-900 dark:text-white flex items-center gap-2">
@@ -209,7 +202,7 @@ export function CartAlertsTab() {
                 Colores y Legibilidad
               </h3>
               <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-                Personaliza fondo y tipografía. La opción por defecto es fondo blanco con texto negro nítido.
+                Elige entre combinaciones sobrias de autor o ajusta los tonos manualmente con verificación WCAG.
               </p>
             </div>
 
@@ -228,8 +221,8 @@ export function CartAlertsTab() {
                       onClick={() => applyPreset(preset.id)}
                       className={`p-3 rounded-xl border text-left transition-all cursor-pointer flex items-center gap-2.5 ${
                         isSelected
-                          ? "border-gray-900 dark:border-white bg-gray-50/80 dark:bg-white/5 ring-1 ring-gray-900/10"
-                          : "border-gray-200/80 dark:border-white/10 bg-white dark:bg-transparent hover:bg-gray-50 dark:hover:bg-white/[0.03]"
+                          ? 'border-gray-900 dark:border-white bg-gray-50/80 dark:bg-white/5 ring-1 ring-gray-900/10'
+                          : 'border-gray-200/80 dark:border-white/10 bg-white dark:bg-transparent hover:bg-gray-50 dark:hover:bg-white/[0.03]'
                       }`}
                     >
                       <div 
@@ -259,11 +252,11 @@ export function CartAlertsTab() {
             {/* Manual Color Pickers */}
             <div className="pt-3 border-t border-gray-100 dark:border-white/5 space-y-3">
               <label className="text-xs font-semibold text-gray-700 dark:text-gray-300 block">
-                Personalización manual de colores:
+                Ajuste manual de tonos:
               </label>
 
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                {/* Background Color */}
+                {/* Background */}
                 <div className="p-3 rounded-xl bg-gray-50 dark:bg-[#18181a] border border-gray-200/80 dark:border-white/10 space-y-1">
                   <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider block">
                     Fondo
@@ -284,7 +277,7 @@ export function CartAlertsTab() {
                   </div>
                 </div>
 
-                {/* Text Color */}
+                {/* Main Text */}
                 <div className="p-3 rounded-xl bg-gray-50 dark:bg-[#18181a] border border-gray-200/80 dark:border-white/10 space-y-1">
                   <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider block">
                     Texto Principal
@@ -305,7 +298,7 @@ export function CartAlertsTab() {
                   </div>
                 </div>
 
-                {/* Subtext Color */}
+                {/* Subtext */}
                 <div className="p-3 rounded-xl bg-gray-50 dark:bg-[#18181a] border border-gray-200/80 dark:border-white/10 space-y-1">
                   <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider block">
                     Detalles
@@ -326,10 +319,10 @@ export function CartAlertsTab() {
                   </div>
                 </div>
 
-                {/* Accent Button Color */}
+                {/* Accent Button */}
                 <div className="p-3 rounded-xl bg-gray-50 dark:bg-[#18181a] border border-gray-200/80 dark:border-white/10 space-y-1">
                   <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider block">
-                    Botón
+                    Botón Acción
                   </span>
                   <div className="flex items-center gap-2">
                     <input
@@ -349,7 +342,7 @@ export function CartAlertsTab() {
               </div>
             </div>
 
-            {/* Contrast Audit & Smart Recommendation Banner */}
+            {/* Contrast Audit & Recommendation Banner */}
             <div className="pt-2">
               {!currentAudit.isAccessible ? (
                 <div className="p-4 rounded-2xl bg-amber-50 dark:bg-amber-950/30 border border-amber-300/80 dark:border-amber-700/60 flex flex-col sm:flex-row sm:items-center justify-between gap-3 animate-fade-in shadow-sm">
@@ -394,7 +387,7 @@ export function CartAlertsTab() {
             </div>
           </div>
 
-          {/* SECTION 3: Screen Position & Title */}
+          {/* SECTION 3: Screen Position & Clean Durations */}
           <div className="bg-white dark:bg-[#202022] rounded-3xl border border-gray-200/80 dark:border-white/10 p-6 sm:p-7 shadow-sm space-y-5">
             <h3 className="font-display font-bold text-base text-gray-900 dark:text-white flex items-center gap-2">
               <Sliders className="w-4 h-4 text-blue-600" />
@@ -411,15 +404,14 @@ export function CartAlertsTab() {
                     onClick={() => updateConfig({ position: pos.id })}
                     className={`relative p-4 rounded-2xl border text-left transition-all cursor-pointer flex flex-col justify-between min-h-[95px] ${
                       isSelected
-                        ? "border-gray-900 dark:border-white bg-gray-50/80 dark:bg-white/5 ring-1 ring-gray-900/10"
-                        : "border-gray-200/80 dark:border-white/10 bg-white dark:bg-transparent hover:bg-gray-50 dark:hover:bg-white/[0.03]"
+                        ? 'border-gray-900 dark:border-white bg-gray-50/80 dark:bg-white/5 ring-1 ring-gray-900/10'
+                        : 'border-gray-200/80 dark:border-white/10 bg-white dark:bg-transparent hover:bg-gray-50 dark:hover:bg-white/[0.03]'
                     }`}
                   >
-                    {/* Simulated Screen */}
                     <div className="w-full h-7 rounded-lg bg-gray-100 dark:bg-[#18181a] border border-gray-200 dark:border-white/10 relative mb-2.5 overflow-hidden shadow-2xs">
                       <div
                         className={`absolute w-2 h-2 rounded-full transition-all ${
-                          isSelected ? "bg-gray-900 dark:bg-white" : "bg-gray-300 dark:bg-white/20"
+                          isSelected ? 'bg-gray-900 dark:bg-white' : 'bg-gray-300 dark:bg-white/20'
                         } ${pos.iconPos}`}
                       />
                     </div>
@@ -435,35 +427,21 @@ export function CartAlertsTab() {
               })}
             </div>
 
-            {/* Title Input */}
-            <div>
-              <label className="text-xs font-semibold text-gray-700 dark:text-gray-300 block mb-1.5">
-                Título de la notificación:
-              </label>
-              <input
-                type="text"
-                value={config.title}
-                onChange={(e) => updateConfig({ title: e.target.value })}
-                placeholder="Nuevo producto en el carrito"
-                className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-[#18181a] text-xs font-medium text-gray-900 dark:text-white outline-none focus:ring-1 focus:ring-gray-900 dark:focus:ring-white"
-              />
-            </div>
-
-            {/* Duration & Sound */}
+            {/* Non-repeating Durations & Sound */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
               <div>
                 <label className="text-xs font-semibold text-gray-700 dark:text-gray-300 block mb-2">
                   Permanencia en pantalla:
                 </label>
                 <div className="grid grid-cols-2 gap-1.5">
-                  {durations.map((dur) => (
+                  {DURATION_OPTIONS.map((dur) => (
                     <button
                       key={dur.ms}
                       onClick={() => updateConfig({ duration: dur.ms })}
                       className={`py-2 px-2.5 rounded-xl text-xs font-semibold border text-center transition-all cursor-pointer ${
                         config.duration === dur.ms
-                          ? "border-gray-900 bg-gray-900 text-white dark:border-white dark:bg-white dark:text-gray-950 shadow-xs"
-                          : "border-gray-200 dark:border-white/10 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/5"
+                          ? 'border-gray-900 bg-gray-900 text-white dark:border-white dark:bg-white dark:text-gray-950 shadow-xs'
+                          : 'border-gray-200 dark:border-white/10 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/5'
                       }`}
                     >
                       {dur.label}
@@ -478,7 +456,7 @@ export function CartAlertsTab() {
                 </label>
                 <div className="p-2.5 rounded-2xl bg-gray-50 dark:bg-[#18181a] border border-gray-200/80 dark:border-white/10 flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <div className={`w-8 h-8 rounded-xl flex items-center justify-center ${config.soundEnabled ? "bg-gray-200 text-gray-900 dark:bg-white/15 dark:text-white" : "bg-gray-200 text-gray-400 dark:bg-white/10"}`}>
+                    <div className={`w-8 h-8 rounded-xl flex items-center justify-center ${config.soundEnabled ? 'bg-gray-200 text-gray-900 dark:bg-white/15 dark:text-white' : 'bg-gray-200 text-gray-400 dark:bg-white/10'}`}>
                       {config.soundEnabled ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
                     </div>
                     <button
@@ -492,12 +470,12 @@ export function CartAlertsTab() {
                   <button
                     onClick={() => updateConfig({ soundEnabled: !config.soundEnabled })}
                     className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
-                      config.soundEnabled ? "bg-gray-900 dark:bg-white" : "bg-gray-300 dark:bg-gray-700"
+                      config.soundEnabled ? 'bg-gray-900 dark:bg-white' : 'bg-gray-300 dark:bg-gray-700'
                     }`}
                   >
                     <span
-                      className={`inline-block h-5 w-5 transform rounded-full ${config.soundEnabled ? "bg-white dark:bg-gray-950" : "bg-white"} shadow ring-0 transition duration-200 ease-in-out ${
-                        config.soundEnabled ? "translate-x-5" : "translate-x-0"
+                      className={`inline-block h-5 w-5 transform rounded-full ${config.soundEnabled ? 'bg-white dark:bg-gray-950' : 'bg-white'} shadow ring-0 transition duration-200 ease-in-out ${
+                        config.soundEnabled ? 'translate-x-5' : 'translate-x-0'
                       }`}
                     />
                   </button>
@@ -508,7 +486,7 @@ export function CartAlertsTab() {
           </div>
         </div>
 
-        {/* Right Column: Live Simulated Sileo Toast Preview (5 cols) */}
+        {/* Right Column: Live Simulator (5 cols) */}
         <div className="lg:col-span-5 space-y-6">
           <div className="bg-white dark:bg-[#202022] rounded-3xl border border-gray-200/80 dark:border-white/10 p-6 sm:p-7 shadow-sm space-y-5 sticky top-6">
             <div className="flex items-center justify-between">
@@ -516,90 +494,25 @@ export function CartAlertsTab() {
                 <Eye className="w-3.5 h-3.5 text-gray-700 dark:text-gray-300" />
                 Vista previa en vivo
               </span>
-              <span className="text-[10px] font-semibold text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 px-2 py-0.5 rounded-full border border-emerald-200 dark:border-emerald-800">
+              <span className="text-[10px] font-semibold text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 px-2.5 py-0.5 rounded-full border border-emerald-200 dark:border-emerald-800">
                 Fiel a pantalla
               </span>
             </div>
 
-            {/* The Visual Replica of the Sileo Toast */}
-            <div className="p-6 rounded-2xl bg-gray-50 dark:bg-black/25 border border-dashed border-gray-300 dark:border-white/10 flex flex-col items-center justify-center min-h-[200px]">
-              <div 
-                className="relative overflow-hidden w-full max-w-sm p-4 shadow-[0_12px_36px_rgba(0,0,0,0.08)] border transition-all duration-300"
-                style={{ 
-                  backgroundColor: config.bgColor, 
-                  borderRadius: config.layout === 'island' ? 26 : config.layout === 'card' ? 18 : config.layout === 'bento' ? 20 : 14,
-                  borderColor: config.bgColor.toLowerCase() === '#ffffff' ? '#e5e7eb' : 'rgba(255,255,255,0.15)' 
-                }}
-              >
-                {/* Toast Header */}
-                <div className="flex items-start justify-between gap-3">
-                  <div className="flex items-center gap-2.5">
-                    <div 
-                      className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0 shadow-2xs text-sm"
-                      style={{ 
-                        backgroundColor: config.bgColor.toLowerCase() === '#ffffff' ? '#f3f4f6' : 'rgba(255,255,255,0.12)',
-                        border: '1px solid rgba(0,0,0,0.06)'
-                      }}
-                    >
-                      <span>📦</span>
-                    </div>
-                    <div>
-                      <h4 
-                        className="font-display font-bold text-xs tracking-tight"
-                        style={{ color: config.textColor }}
-                      >
-                        {currentPreviewContent.title}
-                      </h4>
-                      <div className="flex items-center gap-1 text-[10px] font-medium" style={{ color: config.subtextColor }}>
-                        <span>📍</span>
-                        <span>Valentina M. • Guayaquil</span>
-                      </div>
-                    </div>
-                  </div>
+            {/* The Live Interactive Component (Exact replica of the floating alert) */}
+            <div className="p-6 rounded-2xl bg-gray-50 dark:bg-black/25 border border-dashed border-gray-300 dark:border-white/10 flex flex-col items-center justify-center min-h-[280px]">
+              <CartAlertCard
+                payload={sampleCustomers[0]}
+                config={config}
+                isPreview={true}
+              />
 
-                  <span 
-                    className="px-2 py-0.5 rounded-md text-[9px] font-medium uppercase tracking-wider"
-                    style={{ 
-                      backgroundColor: config.bgColor.toLowerCase() === '#ffffff' ? '#f3f4f6' : 'rgba(255,255,255,0.12)',
-                      color: config.textColor 
-                    }}
-                  >
-                    {config.layout}
-                  </span>
-                </div>
-
-                {/* Toast Body */}
-                <div 
-                  className="mt-3 pt-2.5 border-t flex items-center justify-between gap-2"
-                  style={{ borderColor: config.bgColor.toLowerCase() === '#ffffff' ? '#f3f4f6' : 'rgba(255,255,255,0.1)' }}
-                >
-                  <p 
-                    className="text-[11px] font-medium leading-relaxed truncate"
-                    style={{ color: config.subtextColor }}
-                  >
-                    Sumó <strong style={{ color: config.textColor }}>Silla Nórdica Minimalista</strong> ($145.00)
-                  </p>
-                  
-                  {config.toastType === "action" && (
-                    <span 
-                      className="shrink-0 text-[10px] font-semibold px-2.5 py-1 rounded-lg transition-all shadow-xs"
-                      style={{ 
-                        backgroundColor: config.accentColor, 
-                        color: '#ffffff'
-                      }}
-                    >
-                      Ver Radar
-                    </span>
-                  )}
-                </div>
-              </div>
-
-              <span className="text-[10px] text-gray-400 mt-3 font-mono">
-                {config.position} • {config.duration / 1000}s
+              <span className="text-[10px] text-gray-400 mt-4 font-mono">
+                {config.position} • {config.duration / 1000}s de permanencia
               </span>
             </div>
 
-            {/* Test Triggers */}
+            {/* Test Triggers with sample registered customer profiles */}
             <div className="space-y-2">
               <label className="text-xs font-semibold text-gray-700 dark:text-gray-300 block">
                 Probar con perfiles de cliente:
@@ -616,7 +529,7 @@ export function CartAlertsTab() {
                       {sc.userName}
                     </span>
                     <span className="text-[10px] text-gray-400 block truncate">
-                      {sc.location.split(",")[0]}
+                      {sc.location.split(',')[0]}
                     </span>
                   </button>
                 ))}
@@ -627,9 +540,9 @@ export function CartAlertsTab() {
             <div className="p-3.5 rounded-2xl bg-gray-50 dark:bg-white/5 border border-gray-200/80 dark:border-white/10 flex items-start gap-2.5">
               <Info className="w-4 h-4 text-gray-500 shrink-0 mt-0.5" />
               <div className="text-xs text-gray-600 dark:text-gray-400 leading-relaxed">
-                <strong className="font-semibold text-gray-900 dark:text-white">Filtro de privacidad:</strong>
+                <strong className="font-semibold text-gray-900 dark:text-white">Filtro de privacidad estricto:</strong>
                 <p className="mt-0.5 text-[11px]">
-                  Solo las adiciones al carrito realizadas por clientes registrados emiten notificaciones en vivo. Las visitas anónimas se descartan para mantener la pantalla despejada.
+                  Solo las adiciones de clientes registrados y verificados emiten notificaciones en vivo. La actividad anónima no genera alertas para preservar una pantalla limpia y enfocada.
                 </p>
               </div>
             </div>
