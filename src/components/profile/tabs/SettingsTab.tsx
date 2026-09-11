@@ -16,12 +16,14 @@ import {
   MapPin, 
   Check, 
   Star, 
-  Navigation 
+  Navigation,
+  Sparkles 
 } from "lucide-react";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
 import { useUserStore, clearAdminCache, syncAddressesToCloud } from "@/lib/userStore";
 import { supabase } from "@/lib/supabase";
 import { CloudSyncStatus } from "../CloudSyncStatus";
+import { BlobatarAvatar } from "@/components/ui/BlobatarAvatar";
 
 interface SettingsTabProps {
   isAdmin: boolean;
@@ -392,6 +394,31 @@ export function SettingsTab({
           <p className="text-xs text-gray-500 dark:text-gray-400 mb-6">Elige el modo visual. El modo automático usará una elegante paleta oscura a partir de las 18:00h para proteger tu vista.</p>
           <div className="flex justify-center">
             <ThemeToggle />
+          </div>
+        </div>
+
+        {/* Blobatar Avatar Showcase Card */}
+        <div className="p-6 rounded-[2rem] bg-gradient-to-br from-[#8c9276]/10 via-gray-50/50 to-white/40 dark:from-[#8c9276]/15 dark:via-black/20 dark:to-transparent border border-[#8c9276]/20 dark:border-white/10 relative z-10 flex flex-col sm:flex-row items-center gap-5">
+          <div className="relative group shrink-0">
+            <BlobatarAvatar
+              name={user.id || user.email || user.name}
+              size={80}
+              animate="always"
+              background="squircle"
+              role={user.role}
+              showGlow
+              title={`Avatar oficial de ${user.name}`}
+            />
+          </div>
+          <div className="space-y-1.5 text-center sm:text-left flex-1">
+            <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-[#8c9276]/20 text-[#8c9276] dark:text-[#ccff00] text-[10.5px] font-bold tracking-tight">
+              <Sparkles className="w-3 h-3" />
+              <span>Avatar Automático Blobatar</span>
+            </div>
+            <h4 className="text-sm font-bold text-gray-900 dark:text-gray-100">Identidad Geométrica Determinística</h4>
+            <p className="text-xs text-gray-500 dark:text-gray-400 leading-relaxed">
+              Tu avatar es generado de forma matemática a partir de tu identidad digital. Cada cuenta tiene una criatura viviente única con expresión, silueta geométrica y paleta cromática propia.
+            </p>
           </div>
         </div>
 

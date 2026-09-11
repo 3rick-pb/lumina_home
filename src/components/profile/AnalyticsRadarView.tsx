@@ -24,6 +24,7 @@ import {
 import { useUserStore, type User, type ShippingAddress, type Order } from "@/lib/userStore";
 import type { CatalogProduct } from "@/lib/catalogStore";
 import { useRadarStore, cleanClientName, resolveCoordinates, type ConnectedClient } from "@/lib/radarStore";
+import { BlobatarAvatar } from "@/components/ui/BlobatarAvatar";
 
 export type { ConnectedClient } from "@/lib/radarStore";
 
@@ -1153,9 +1154,13 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
                           className="p-2 rounded-xl bg-white/5 hover:bg-white/15 border border-white/10 hover:border-[#ccff00]/40 flex items-center justify-between cursor-pointer transition-all group"
                         >
                           <div className="flex items-center gap-2 truncate">
-                            <div className="w-6 h-6 rounded-full bg-[#ccff00] text-gray-950 font-black flex items-center justify-center text-[10px] shrink-0">
-                              {(client.name || "C").charAt(0).toUpperCase()}
-                            </div>
+                            <BlobatarAvatar
+                              name={client.id || client.name}
+                              size={26}
+                              animate="hover"
+                              background="circle"
+                              className="shrink-0"
+                            />
                             <div className="truncate">
                               <p className="text-xs font-semibold text-white group-hover:text-[#ccff00] transition-colors truncate">
                                 {cleanClientName(client.name)}
@@ -1408,9 +1413,13 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
                 <div className="rounded-2xl bg-black/55 border border-[#ccff00]/30 p-3.5 space-y-2.5 shadow-xl backdrop-blur-md transition-all duration-500 ease-out">
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex items-start gap-3 min-w-0 flex-1">
-                      <div className="w-9 h-9 rounded-full bg-[#ccff00] text-gray-950 font-black flex items-center justify-center text-sm shrink-0 shadow-md transition-transform duration-300 hover:scale-105 mt-0.5">
-                        {(displayedDossierClient.name || "C").charAt(0).toUpperCase()}
-                      </div>
+                      <BlobatarAvatar
+                        name={displayedDossierClient.id || displayedDossierClient.name}
+                        size={38}
+                        animate="always"
+                        background="circle"
+                        className="shrink-0 mt-0.5 shadow-md hover:scale-105"
+                      />
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-1.5">
                           <h4 className="font-sans font-bold text-sm text-white tracking-normal leading-tight truncate">{cleanClientName(displayedDossierClient.name)}</h4>
@@ -1821,13 +1830,13 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
                           }`}
                         >
                           <div className="flex items-center gap-2.5 truncate pr-2">
-                            <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold shrink-0 ${
-                              isSelected 
-                                ? "bg-gray-950 text-[#ccff00]" 
-                                : "bg-[#ccff00] text-gray-950 font-black"
-                            }`}>
-                              {(c.name || "C").charAt(0).toUpperCase()}
-                            </div>
+                            <BlobatarAvatar
+                              name={c.id || c.name}
+                              size={28}
+                              animate="hover"
+                              background="circle"
+                              className="shrink-0"
+                            />
                             <div className="truncate">
                               <p className="leading-tight truncate font-semibold">{cleanClientName(c.name)}</p>
                               <p className={`text-[9.5px] mt-0.5 ${isSelected ? "text-gray-700 font-medium" : "text-white/45"}`}>

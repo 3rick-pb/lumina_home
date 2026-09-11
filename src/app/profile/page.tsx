@@ -45,6 +45,7 @@ import { CartAlertsTab } from "@/components/profile/tabs/CartAlertsTab";
 import { SettingsTab } from "@/components/profile/tabs/SettingsTab";
 import { OrderDetailModal } from "@/components/profile/modals/OrderDetailModal";
 import { ExcelExportRadialMenu } from "@/components/profile/ExcelExportRadialMenu";
+import { BlobatarAvatar } from "@/components/ui/BlobatarAvatar";
 
 
 
@@ -883,9 +884,15 @@ const handleConfirmDeleteNiche = async () => {
  </Link>
 
  <div className="flex items-center gap-3 pl-3 border-l border-gray-200 dark:border-white/10">
- <div className="w-10 h-10 rounded-2xl bg-[#8c9276]/15 text-[#8c9276] flex items-center justify-center font-bold text-sm border border-[#8c9276]/20 shadow-sm dark:shadow-none">
- {formatCleanName(user.name).charAt(0).toUpperCase()}
- </div>
+ <BlobatarAvatar
+   name={user.id || user.email || user.name}
+   size={42}
+   animate="always"
+   background="squircle"
+   role={user.role}
+   showGlow
+   title={`Avatar de ${formatCleanName(user.name)}`}
+ />
  <div className="hidden md:block text-left">
  <p className="text-xs font-bold text-gray-900 dark:text-gray-100 leading-tight tracking-normal">{formatCleanName(user.name)}</p>
  <span className={`inline-block text-[10px] font-bold px-2 py-0.5 rounded-full mt-0.5 ${isAdmin ? "bg-amber-100 dark:bg-amber-950/40 text-amber-900 dark:text-amber-300 border border-amber-200 dark:border-amber-800/40" : "bg-emerald-100 text-emerald-800 border border-emerald-200"}`}>

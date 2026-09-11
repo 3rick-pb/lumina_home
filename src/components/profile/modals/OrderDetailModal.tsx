@@ -4,6 +4,7 @@ import React from "react";
 import Image from "next/image";
 import { X, CheckCircle2 } from "lucide-react";
 import { Order } from "@/lib/userStore";
+import { BlobatarAvatar } from "@/components/ui/BlobatarAvatar";
 
 interface OrderDetailModalProps {
   order: Order | null;
@@ -67,9 +68,19 @@ export function OrderDetailModal({
         <div className="mb-5 grid grid-cols-1 sm:grid-cols-2 gap-3">
           {/* Comprador & Fecha */}
           <div className="p-3.5 bg-gray-50/80 dark:bg-[#2a2a2c]/80 rounded-2xl border border-gray-100 dark:border-white/5">
-            <p className="text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-1">Cliente / Comprador</p>
-            <p className="text-xs font-bold text-gray-900 dark:text-gray-100">{order.customerName || "Cliente Lumina"}</p>
-            <p className="text-[11px] text-gray-500 dark:text-gray-400 truncate">{order.customerEmail || "cliente@lumina.com"}</p>
+            <p className="text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-1.5">Cliente / Comprador</p>
+            <div className="flex items-center gap-2.5 mb-1">
+              <BlobatarAvatar
+                name={order.userId || order.customerEmail || order.customerName}
+                size={34}
+                animate="always"
+                background="squircle"
+              />
+              <div className="min-w-0">
+                <p className="text-xs font-bold text-gray-900 dark:text-gray-100 truncate">{order.customerName || "Cliente Lumina"}</p>
+                <p className="text-[11px] text-gray-500 dark:text-gray-400 truncate">{order.customerEmail || "cliente@lumina.com"}</p>
+              </div>
+            </div>
             <div className="mt-2 pt-2 border-t border-gray-200/60 dark:border-white/10/60 text-[11px] text-gray-600 dark:text-gray-400 flex items-center justify-between">
               <span className="text-[10px] text-gray-400">Fecha y Hora:</span>
               <span className="font-semibold text-gray-800 dark:text-gray-200">{order.date} {order.time ? `• ${order.time}` : ""}</span>

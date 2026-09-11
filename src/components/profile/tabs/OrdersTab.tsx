@@ -6,6 +6,7 @@ import { ShoppingBag, Eye } from "lucide-react";
 import { useUserStore, Order } from "@/lib/userStore";
 import { normalizeSearchText } from "@/lib/utils";
 import { CloudSyncStatus } from "../CloudSyncStatus";
+import { BlobatarAvatar } from "@/components/ui/BlobatarAvatar";
 
 interface OrdersTabProps {
   isAdmin: boolean;
@@ -122,8 +123,18 @@ export function OrdersTab({
                   <td className="py-4 px-3 font-mono font-bold text-gray-900 dark:text-gray-100">{ord.id}</td>
                   {isAdmin && (
                     <td className="py-4 px-3">
-                      <p className="font-semibold text-gray-900 dark:text-gray-100">{ord.customerName || "Cliente Lumina"}</p>
-                      <p className="text-[10px] text-gray-400">{ord.customerEmail || "cliente@lumina.com"}</p>
+                      <div className="flex items-center gap-2.5">
+                        <BlobatarAvatar
+                          name={ord.userId || ord.customerEmail || ord.customerName}
+                          size={30}
+                          animate="hover"
+                          background="circle"
+                        />
+                        <div>
+                          <p className="font-semibold text-gray-900 dark:text-gray-100">{ord.customerName || "Cliente Lumina"}</p>
+                          <p className="text-[10px] text-gray-400">{ord.customerEmail || "cliente@lumina.com"}</p>
+                        </div>
+                      </div>
                     </td>
                   )}
                   <td className="py-4 px-3 font-mono text-gray-500 dark:text-gray-400">{ord.trackingNumber || "TRK-PENDIENTE"}</td>

@@ -9,7 +9,9 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@blobatar/react": "^2.7.0",
     "@supabase/supabase-js": "^2.114.0",
+    "blobatar": "^2.7.0",
     "clsx": "^2.1.1",
     "framer-motion": "^13.2.0",
     "lucide-react": "^1.39.0",
