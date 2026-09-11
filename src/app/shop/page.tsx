@@ -37,25 +37,25 @@ export default function ShopPage({ searchParams }: { searchParams: { category?: 
   return (
     <div className="min-h-screen pt-32 pb-24 bg-transparent relative">
       <div className="container mx-auto px-4 md:px-8 relative z-10">
-        <div className="mb-12">
-          <h1 className="text-4xl font-display italic font-bold text-gray-900 mb-4">
+        <div className="mb-8 sm:mb-12">
+          <h1 className="text-2xl sm:text-4xl font-display italic font-bold text-gray-900 mb-3 sm:mb-4">
             {categoryFilter ? `Colección: ${categoryFilter.charAt(0).toUpperCase() + categoryFilter.slice(1)}` : "Todos los Productos"}
           </h1>
-          <p className="text-gray-600 max-w-2xl">
+          <p className="text-sm sm:text-base text-gray-600 max-w-2xl">
             Descubre nuestra selección de artículos diseñados para convertir tu hogar en tu refugio ideal. 
             Mezcla de estética, comodidad y tecnología.
           </p>
         </div>
 
-        <div className="flex flex-wrap gap-3 mb-10">
-          <Link href="/shop" className={`px-5 py-2 rounded-full text-sm font-medium transition-all ${!categoryFilter ? 'bg-white/40 backdrop-blur-xl border border-white/60 text-gray-900 shadow-sm' : 'bg-transparent text-gray-600 border border-gray-200 hover:bg-white/40 hover:backdrop-blur-md'}`}>
+        <div className="flex items-center gap-2 sm:gap-3 mb-8 sm:mb-10 overflow-x-auto pb-2 hide-scrollbar">
+          <Link href="/shop" className={`px-4 sm:px-5 py-2 rounded-full text-xs sm:text-sm font-medium transition-all whitespace-nowrap shrink-0 ${!categoryFilter ? 'bg-white/40 backdrop-blur-xl border border-white/60 text-gray-900 shadow-sm' : 'bg-transparent text-gray-600 border border-gray-200 hover:bg-white/40 hover:backdrop-blur-md'}`}>
             Todos
           </Link>
           {categories.map((cat) => (
             <Link 
               key={cat} 
               href={`/shop?category=${cat.toLowerCase()}`}
-              className={`px-5 py-2 rounded-full text-sm font-medium transition-all ${categoryFilter?.toLowerCase() === cat.toLowerCase() ? 'bg-white/40 backdrop-blur-xl border border-white/60 text-gray-900 shadow-sm' : 'bg-transparent text-gray-600 border border-gray-200 hover:bg-white/40 hover:backdrop-blur-md'}`}
+              className={`px-4 sm:px-5 py-2 rounded-full text-xs sm:text-sm font-medium transition-all whitespace-nowrap shrink-0 ${categoryFilter?.toLowerCase() === cat.toLowerCase() ? 'bg-white/40 backdrop-blur-xl border border-white/60 text-gray-900 shadow-sm' : 'bg-transparent text-gray-600 border border-gray-200 hover:bg-white/40 hover:backdrop-blur-md'}`}
             >
               {cat}
             </Link>
@@ -68,7 +68,7 @@ export default function ShopPage({ searchParams }: { searchParams: { category?: 
             <p className="text-gray-500 mt-2">Prueba seleccionando otra categoría.</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
             {filteredProducts.map((product) => (
               <ProductCard key={product.id} {...product} />
             ))}

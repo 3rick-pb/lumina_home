@@ -55,7 +55,7 @@ export function CatalogTab({
   }, [products, catalogCategoryFilter, searchQuery]);
 
   return (
-    <div className="bg-white/90 dark:bg-[#202022]/90 backdrop-blur-xl p-6 md:p-8 rounded-[2.5rem] border border-white/80 dark:border-white/10 shadow-[0_4px_24px_rgba(0,0,0,0.02)] space-y-6 animate-fade-in">
+    <div className="bg-white/90 dark:bg-[#202022]/90 backdrop-blur-xl p-4 sm:p-6 md:p-8 rounded-3xl sm:rounded-[2.5rem] border border-white/80 dark:border-white/10 shadow-[0_4px_24px_rgba(0,0,0,0.02)] space-y-6 animate-fade-in">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <div className="mb-2">
@@ -67,7 +67,7 @@ export function CatalogTab({
               savedLabel="Guardado en nube"
             />
           </div>
-          <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
+          <h2 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
             <Package className="w-5 h-5 text-[#8c9276]" /> Control Total del Inventario
           </h2>
           <p className="text-xs text-gray-500 dark:text-gray-400">
@@ -75,11 +75,11 @@ export function CatalogTab({
           </p>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap sm:flex-nowrap items-center gap-2.5 sm:gap-3">
           <select 
             value={catalogCategoryFilter} 
             onChange={e => setCatalogCategoryFilter(e.target.value)}
-            className="text-xs font-semibold bg-gray-100 dark:bg-[#3a3a3c] px-3 py-2 rounded-xl outline-none border border-gray-200 dark:border-white/10"
+            className="text-xs font-semibold bg-gray-100 dark:bg-[#3a3a3c] px-3 py-2 rounded-xl outline-none border border-gray-200 dark:border-white/10 flex-1 sm:flex-initial"
           >
             <option value="all">Todas las categorías</option>
             {categories.map(c => <option key={c} value={c}>{c}</option>)}
@@ -87,7 +87,7 @@ export function CatalogTab({
 
           <button 
             onClick={onOpenCreateProduct}
-            className="flex items-center gap-2 px-4 py-2 bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 text-xs font-semibold rounded-xl hover:bg-gray-800 shadow-sm dark:shadow-none"
+            className="flex items-center justify-center gap-2 px-4 py-2 bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 text-xs font-semibold rounded-xl hover:bg-gray-800 shadow-sm dark:shadow-none flex-1 sm:flex-initial"
           >
             <Plus className="w-4 h-4" /> Crear Producto
           </button>
@@ -96,7 +96,7 @@ export function CatalogTab({
 
       {/* Inventory Table */}
       <div className="overflow-x-auto">
-        <table className="w-full text-left text-xs">
+        <table className="w-full text-left text-xs min-w-[620px]">
           <thead>
             <tr className="border-b border-gray-200 dark:border-white/10 text-gray-400 uppercase tracking-wider font-semibold">
               <th className="pb-3 px-2">Producto</th>

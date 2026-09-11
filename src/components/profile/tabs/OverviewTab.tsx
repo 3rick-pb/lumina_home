@@ -199,11 +199,11 @@ export function OverviewTab({
       </div>
 
       {/* BENTO CARD 2: Quick Metrics 2x2 Grid (4 cols) */}
-      <div className="lg:col-span-4 grid grid-cols-2 gap-4">
+      <div className="lg:col-span-4 grid grid-cols-2 gap-3 sm:gap-4">
         {/* Box 1 (Orange/Coral Accent) */}
         <button 
           onClick={() => setActiveTab(isAdmin ? "catalog" : "orders")} 
-          className="bg-gradient-to-br from-[#e07a3f] to-[#c75e24] p-5 rounded-[2rem] text-white dark:text-gray-900 shadow-md dark:shadow-none shadow-[#e07a3f]/15 flex flex-col justify-between text-left hover:scale-[1.02] transition-transform"
+          className="bg-gradient-to-br from-[#e07a3f] to-[#c75e24] p-4 sm:p-5 rounded-2xl sm:rounded-[2rem] text-white dark:text-gray-900 shadow-md dark:shadow-none shadow-[#e07a3f]/15 flex flex-col justify-between text-left hover:scale-[1.02] transition-transform"
         >
           <div className="flex items-center justify-between">
             <span className="text-xs font-medium text-white/80 dark:text-gray-900/80">
@@ -224,7 +224,7 @@ export function OverviewTab({
         {/* Box 2 (Nichos or Favoritos) */}
         <button 
           onClick={() => setActiveTab(isAdmin ? "niches" : "favorites")} 
-          className="bg-white/90 dark:bg-[#202022]/90 backdrop-blur-xl p-5 rounded-[2rem] border border-white/80 shadow-[0_4px_24px_rgba(0,0,0,0.02)] flex flex-col justify-between text-left hover:scale-[1.02] transition-transform"
+          className="bg-white/90 dark:bg-[#202022]/90 backdrop-blur-xl p-4 sm:p-5 rounded-2xl sm:rounded-[2rem] border border-white/80 shadow-[0_4px_24px_rgba(0,0,0,0.02)] flex flex-col justify-between text-left hover:scale-[1.02] transition-transform"
         >
           <div className="flex items-center justify-between">
             <span className="text-xs font-medium text-gray-500 dark:text-gray-400">
@@ -247,7 +247,7 @@ export function OverviewTab({
         </button>
 
         {/* Box 3 */}
-        <div className="bg-white/90 dark:bg-[#202022]/90 backdrop-blur-xl p-5 rounded-[2rem] border border-white/80 shadow-[0_4px_24px_rgba(0,0,0,0.02)] flex flex-col justify-between">
+        <div className="bg-white/90 dark:bg-[#202022]/90 backdrop-blur-xl p-4 sm:p-5 rounded-2xl sm:rounded-[2rem] border border-white/80 shadow-[0_4px_24px_rgba(0,0,0,0.02)] flex flex-col justify-between">
           <div className="flex items-center justify-between">
             <span className="text-xs font-medium text-gray-500 dark:text-gray-400">
               {isAdmin ? "Rebajas" : "Lumina Puntos"}
@@ -267,7 +267,7 @@ export function OverviewTab({
         </div>
 
         {/* Box 4 */}
-        <div className="bg-white/90 dark:bg-[#202022]/90 backdrop-blur-xl p-5 rounded-[2rem] border border-white/80 shadow-[0_4px_24px_rgba(0,0,0,0.02)] flex flex-col justify-between">
+        <div className="bg-white/90 dark:bg-[#202022]/90 backdrop-blur-xl p-4 sm:p-5 rounded-2xl sm:rounded-[2rem] border border-white/80 shadow-[0_4px_24px_rgba(0,0,0,0.02)] flex flex-col justify-between">
           <div className="flex items-center justify-between">
             <span className="text-xs font-medium text-gray-500 dark:text-gray-400">
               {isAdmin ? "Ventas Brutas" : "Tarjetas"}
@@ -590,7 +590,7 @@ export function OverviewTab({
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs">
+            <table className="w-full text-left text-xs min-w-[560px]">
               <thead>
                 <tr className="border-b border-gray-100 dark:border-white/5 text-gray-400 uppercase tracking-wider font-semibold">
                   <th className="pb-3 px-2">ID Pedido</th>

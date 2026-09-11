@@ -4,7 +4,7 @@ import React, { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { Search, ShoppingBag, Menu, Home, Sparkles, User, X, ArrowRight, Layers } from "lucide-react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
 import { useCartStore } from "@/lib/store";
@@ -29,11 +29,17 @@ export function Header() {
   const [activeTab, setActiveTab] = useState("home");
   const [hoveredTab, setHoveredTab] = useState<string | null>(null);
   const [searchVal, setSearchVal] = useState("");
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   
   const { toggleCart, getTotalItems } = useCartStore();
   const { isAuthenticated } = useUserStore();
   const { products, categories } = useCatalogStore();
   const [isMounted, setIsMounted] = useState(false);
+
+  // Close mobile menu on route change
+  useEffect(() => {
+    setIsMobileMenuOpen(false);
+  }, [pathname]);
 
   useEffect(() => {
     setIsMounted(true);
@@ -198,8 +204,8 @@ export function Header() {
                   className={cn(
                     "h-10 transition-all duration-300 rounded-full pl-10 text-xs text-gray-900 placeholder:text-gray-500 outline-none bg-white/50 backdrop-blur-md border border-white/60 focus:bg-white/90 focus:border-white/80 shadow-[0_4px_16px_rgba(0,0,0,0.05)]",
                     searchVal 
-                      ? "w-56 sm:w-64 pr-8 opacity-100" 
-                      : "w-10 pr-0 opacity-0 group-hover:w-48 sm:group-hover:w-56 group-hover:pr-8 group-hover:opacity-100 focus:w-56 sm:focus:w-64 focus:pr-8 focus:opacity-100 cursor-pointer focus:cursor-text"
+                      ? "w-36 sm:w-64 pr-8 opacity-100" 
+                      : "w-10 pr-0 opacity-0 group-hover:w-36 sm:group-hover:w-56 group-hover:pr-8 group-hover:opacity-100 focus:w-36 sm:focus:w-64 focus:pr-8 focus:opacity-100 cursor-pointer focus:cursor-text"
                   )}
                 />
                 
@@ -225,7 +231,7 @@ export function Header() {
 
               {/* Floating Live Quick Search Results Dropdown */}
               {searchVal.trim().length > 0 && (
-                <div className="absolute right-0 top-full mt-3 w-80 sm:w-96 bg-white/95 backdrop-blur-2xl border border-white/90 rounded-3xl shadow-[0_20px_60px_rgba(0,0,0,0.14)] p-4 space-y-3 z-50 animate-fade-in text-xs text-gray-900 pointer-events-auto">
+                <div className="absolute -right-8 sm:right-0 top-full mt-3 w-[calc(100vw-2.5rem)] sm:w-96 max-w-sm bg-white/95 backdrop-blur-2xl border border-white/90 rounded-3xl shadow-[0_20px_60px_rgba(0,0,0,0.14)] p-4 space-y-3 z-50 animate-fade-in text-xs text-gray-900 pointer-events-auto">
                   
                   {/* Header info */}
                   <div className="flex items-center justify-between pb-2 border-b border-gray-100 text-[10px] uppercase font-bold text-gray-400 tracking-wider">
@@ -327,7 +333,7 @@ export function Header() {
                   y: rect.top + rect.height / 2
                 });
               }}
-              className="relative p-2.5 rounded-full bg-white/40 backdrop-blur-md border border-white/60 text-gray-900 hover:bg-white/60 transition-colors shadow-[0_4px_16px_rgba(0,0,0,0.05)]"
+              className="relative p-2.5 rounded-full bg-white/40 backdrop-blur-md border border-white/60 text-gray-900 hover:bg-white/60 transition-colors shadow-[0_4px_16px_rgba(0,0,0,0.05)] shrink-0"
             >
               <ShoppingBag className="w-5 h-5" />
               {totalItems > 0 && (
@@ -337,11 +343,64 @@ export function Header() {
               )}
             </button>
             
-            <button className="md:hidden p-2.5 rounded-full hover:bg-white/50 text-gray-700 ml-2">
-              <Menu className="w-5 h-5" />
+            {/* Mobile Navigation Toggle Button */}
+            <button 
+              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+              className="md:hidden p-2.5 rounded-full hover:bg-white/50 text-gray-700 ml-1 transition-colors cursor-pointer shrink-0"
+              aria-label={isMobileMenuOpen ? "Cerrar menú móvil" : "Abrir menú móvil"}
+            >
+              {isMobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
             </button>
           </div>
         </div>
+
+        {/* Mobile Navigation Floating Liquid Glass Drawer */}
+        <AnimatePresence>
+          {isMobileMenuOpen && (
+            <motion.div
+              initial={{ opacity: 0, y: -10, scale: 0.96 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: -10, scale: 0.96 }}
+              transition={{ duration: 0.22, ease: "easeOut" }}
+              className="pointer-events-auto absolute top-full mt-3 inset-x-4 max-w-sm mx-auto bg-white/95 backdrop-blur-2xl border border-white/80 rounded-3xl shadow-[0_20px_60px_rgba(0,0,0,0.12)] p-4 z-50 md:hidden space-y-2.5"
+            >
+              <div className="flex items-center justify-between pb-2 border-b border-gray-100 text-[10px] uppercase font-bold text-gray-400 tracking-wider">
+                <span>Navegación Lumina</span>
+                <button 
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className="text-gray-400 hover:text-gray-700 text-xs font-semibold"
+                >
+                  Cerrar
+                </button>
+              </div>
+              <div className="grid grid-cols-2 gap-2 pt-1">
+                {navTabs.map((tab) => {
+                  const Icon = tab.icon;
+                  const isActive = activeTab === tab.id;
+                  return (
+                    <Link
+                      key={tab.id}
+                      href={tab.href}
+                      onClick={() => {
+                        setActiveTab(tab.id);
+                        setIsMobileMenuOpen(false);
+                      }}
+                      className={cn(
+                        "flex items-center gap-2 px-3.5 py-2.5 rounded-2xl text-xs font-semibold transition-all cursor-pointer",
+                        isActive
+                          ? "bg-gray-900 text-white shadow-sm"
+                          : "bg-gray-50/90 hover:bg-gray-100 text-gray-700"
+                      )}
+                    >
+                      <Icon className="w-4 h-4 shrink-0" />
+                      <span className="truncate">{tab.label}</span>
+                    </Link>
+                  );
+                })}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </header>
     </>
   );

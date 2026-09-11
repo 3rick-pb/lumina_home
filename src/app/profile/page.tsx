@@ -542,10 +542,10 @@ const handleConfirmDeleteNiche = async () => {
  scrollbar-color: rgba(255, 255, 255, 0.22) transparent;
  }
  `}</style>
- <div className="theme-transition min-h-screen w-full max-w-full overflow-x-hidden bg-[#f3f4f6] dark:bg-[#202022] text-gray-900 dark:text-gray-100 flex p-3 md:p-6 lg:p-8 selection:bg-[#8c9276]/20">
- 
- {/* 1. Left Vertical Icon Sidebar (Redesigned Elevated Dock) */}
- <aside className="sidebar-dock-nav w-16 md:w-20 bg-white/95 dark:bg-[#1e1e20]/95 backdrop-blur-2xl rounded-3xl border border-gray-200/80 dark:border-white/10 shadow-[0_12px_40px_rgba(0,0,0,0.05)] dark:shadow-[0_12px_40px_rgba(0,0,0,0.4)] flex flex-col items-center py-6 gap-6 justify-between shrink-0 mr-4 md:mr-6 self-stretch relative z-30">
+  <div className="theme-transition min-h-screen w-full max-w-full overflow-x-hidden bg-[#f3f4f6] dark:bg-[#202022] text-gray-900 dark:text-gray-100 flex flex-col md:flex-row p-2.5 sm:p-4 md:p-6 lg:p-8 selection:bg-[#8c9276]/20">
+  
+  {/* 1. Left Vertical Icon Sidebar (Desktop Dock) */}
+  <aside className="hidden md:flex sidebar-dock-nav w-16 md:w-20 bg-white/95 dark:bg-[#1e1e20]/95 backdrop-blur-2xl rounded-3xl border border-gray-200/80 dark:border-white/10 shadow-[0_12px_40px_rgba(0,0,0,0.05)] dark:shadow-[0_12px_40px_rgba(0,0,0,0.4)] flex-col items-center py-6 gap-6 justify-between shrink-0 mr-4 md:mr-6 self-stretch relative z-30">
  
  {/* Brand Logo Symbol */}
  <div className="flex flex-col items-center gap-5 w-full">
@@ -735,7 +735,7 @@ const handleConfirmDeleteNiche = async () => {
  </aside>
 
   {/* 2. Main Bento Canvas */}
-  <main className={`flex-1 flex flex-col min-w-0 w-full space-y-6 ${activeTab === "cart_alerts" || activeTab === "analytics" ? "max-w-none" : "max-w-7xl mx-auto"}`}>
+  <main className={`flex-1 flex flex-col min-w-0 w-full space-y-6 pb-24 md:pb-6 ${activeTab === "cart_alerts" || activeTab === "analytics" ? "max-w-none" : "max-w-7xl mx-auto"}`}>
   
   {/* Top App Bar (Reference Style) */}
   <header className="relative z-40 bg-white/80 dark:bg-[#202022]/80 backdrop-blur-2xl p-4 md:px-6 rounded-3xl border border-white/80 shadow-[0_4px_20px_rgba(0,0,0,0.02)] flex items-center justify-between gap-4">
@@ -820,16 +820,16 @@ const handleConfirmDeleteNiche = async () => {
  placeholder="Buscar en panel..."
  className="bg-transparent border-none outline-none text-xs w-28 md:w-44 font-medium text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500"
  />
- {searchQuery && (
- <button onClick={() => setSearchQuery("")} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 ml-1 shrink-0">
- <X className="w-3 h-3" />
- </button>
- )}
- </div>
+  {searchQuery && (
+    <button onClick={() => setSearchQuery("")} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 ml-1 shrink-0">
+      <X className="w-3 h-3" />
+    </button>
+  )}
+  </div>
 
- {/* Floating Live Quick Search Results */}
- {searchQuery.trim().length > 0 && (
- <div className="absolute right-0 top-full mt-2 w-80 sm:w-96 bg-white/95 dark:bg-[#202022]/95 backdrop-blur-2xl border border-gray-200/80 dark:border-white/10/80 rounded-3xl shadow-[0_24px_70px_rgba(0,0,0,0.22)] p-4 z-[100] space-y-3 animate-fade-in text-xs pointer-events-auto">
+            {/* Floating Live Quick Search Results */}
+            {searchQuery.trim().length > 0 && (
+              <div className="absolute -right-2 sm:right-0 top-full mt-2 w-[calc(100vw-2.5rem)] sm:w-96 max-w-sm bg-white/95 dark:bg-[#202022]/95 backdrop-blur-2xl border border-gray-200/80 dark:border-white/10/80 rounded-3xl shadow-[0_24px_70px_rgba(0,0,0,0.22)] p-4 z-[100] space-y-3 animate-fade-in text-xs pointer-events-auto">
  <div className="flex items-center justify-between pb-1 border-b border-gray-100 dark:border-white/5 text-[10px] text-gray-400 uppercase font-bold">
  <span>Resultados de búsqueda</span>
  <button onClick={() => setSearchQuery("")} className="hover:text-gray-700 dark:hover:text-gray-300 font-medium text-xs normal-case">Cerrar</button>
@@ -2025,6 +2025,135 @@ const handleConfirmDeleteNiche = async () => {
           </div>
         </div>
       )}
+
+      {/* Mobile Floating Bottom Navigation Dock (Hidden on md and up) */}
+      <nav className="fixed bottom-3 inset-x-3 z-40 md:hidden flex items-center justify-between py-2 px-2.5 rounded-2xl bg-white/95 dark:bg-[#1e1e20]/95 backdrop-blur-2xl border border-gray-200/80 dark:border-white/10 shadow-[0_12px_40px_rgba(0,0,0,0.15)] overflow-x-auto hide-scrollbar gap-1">
+        <button
+          onClick={() => setActiveTab("overview")}
+          className={`relative p-2 rounded-xl flex items-center justify-center transition-all shrink-0 ${
+            activeTab === "overview"
+              ? "bg-gray-950 dark:bg-white text-white dark:text-gray-950 shadow-md"
+              : "text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
+          }`}
+          title="Resumen"
+        >
+          <LayoutDashboard className="w-4 h-4" />
+        </button>
+
+        <button
+          onClick={() => setActiveTab("orders")}
+          className={`relative p-2 rounded-xl flex items-center justify-center transition-all shrink-0 ${
+            activeTab === "orders"
+              ? "bg-gray-950 dark:bg-white text-white dark:text-gray-950 shadow-md"
+              : "text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
+          }`}
+          title="Pedidos"
+        >
+          <ShoppingBag className="w-4 h-4" />
+          {orders.length > 0 && activeTab !== "orders" && (
+            <span className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full bg-[#8c9276]" />
+          )}
+        </button>
+
+        <button
+          onClick={() => setActiveTab("cards")}
+          className={`relative p-2 rounded-xl flex items-center justify-center transition-all shrink-0 ${
+            activeTab === "cards"
+              ? "bg-gray-950 dark:bg-white text-white dark:text-gray-950 shadow-md"
+              : "text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
+          }`}
+          title="Tarjetas"
+        >
+          <CreditCard className="w-4 h-4" />
+        </button>
+
+        <button
+          onClick={() => setActiveTab("favorites")}
+          className={`relative p-2 rounded-xl flex items-center justify-center transition-all shrink-0 ${
+            activeTab === "favorites"
+              ? "bg-gray-950 dark:bg-white text-white dark:text-gray-950 shadow-md"
+              : "text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
+          }`}
+          title="Favoritos"
+        >
+          <Heart className="w-4 h-4" />
+          {favorites.length > 0 && activeTab !== "favorites" && (
+            <span className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full bg-rose-500" />
+          )}
+        </button>
+
+        {isAdmin && (
+          <>
+            <button
+              onClick={() => setActiveTab("catalog")}
+              className={`relative p-2 rounded-xl flex items-center justify-center transition-all shrink-0 ${
+                activeTab === "catalog"
+                  ? "bg-gray-950 dark:bg-white text-white dark:text-gray-950 shadow-md"
+                  : "text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
+              }`}
+              title="Catálogo"
+            >
+              <Package className="w-4 h-4" />
+            </button>
+
+            <button
+              onClick={() => setActiveTab("niches")}
+              className={`relative p-2 rounded-xl flex items-center justify-center transition-all shrink-0 ${
+                activeTab === "niches"
+                  ? "bg-gray-950 dark:bg-white text-white dark:text-gray-950 shadow-md"
+                  : "text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
+              }`}
+              title="Nichos"
+            >
+              <Layers className="w-4 h-4" />
+            </button>
+
+            <button
+              onClick={() => setActiveTab("analytics")}
+              className={`relative p-2 rounded-xl flex items-center justify-center transition-all shrink-0 ${
+                activeTab === "analytics"
+                  ? "bg-gray-950 dark:bg-white text-white dark:text-gray-950 shadow-md"
+                  : "text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
+              }`}
+              title="Radar"
+            >
+              <Globe className="w-4 h-4" />
+            </button>
+
+            <button
+              onClick={() => setActiveTab("cart_alerts")}
+              className={`relative p-2 rounded-xl flex items-center justify-center transition-all shrink-0 ${
+                activeTab === "cart_alerts"
+                  ? "bg-gray-950 dark:bg-white text-white dark:text-gray-950 shadow-md"
+                  : "text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
+              }`}
+              title="Alertas"
+            >
+              <BellRing className="w-4 h-4" />
+            </button>
+          </>
+        )}
+
+        <button
+          onClick={() => setActiveTab("settings")}
+          className={`relative p-2 rounded-xl flex items-center justify-center transition-all shrink-0 ${
+            activeTab === "settings"
+              ? "bg-gray-950 dark:bg-white text-white dark:text-gray-950 shadow-md"
+              : "text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
+          }`}
+          title="Ajustes"
+        >
+          <Settings className="w-4 h-4" />
+        </button>
+
+        <Link
+          href="/"
+          className="relative p-2 rounded-xl flex items-center justify-center text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-all shrink-0"
+          title="Volver a la Tienda"
+        >
+          <Store className="w-4 h-4" />
+        </Link>
+      </nav>
 
   </div>
   </div>

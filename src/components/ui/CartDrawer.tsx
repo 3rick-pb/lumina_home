@@ -597,11 +597,11 @@ export function CartDrawer() {
  animate="visible"
  exit="exit"
  style={{ transformStyle: "preserve-3d", willChange: "transform, opacity" }}
- className="relative w-full max-w-6xl h-full max-h-[92vh] bg-white dark:bg-[#2a2a2c]/95 backdrop-blur-3xl rounded-[2.5rem] border border-white/90 shadow-[0_35px_120px_rgba(0,0,0,0.35)] flex flex-col overflow-hidden z-10"
- >
+  className="relative w-full max-w-6xl h-full max-h-[96vh] sm:max-h-[92vh] bg-white dark:bg-[#2a2a2c]/95 backdrop-blur-3xl rounded-3xl sm:rounded-[2.5rem] border border-white/90 shadow-[0_35px_120px_rgba(0,0,0,0.35)] flex flex-col overflow-hidden z-10"
+  >
 
- {/* Top Bar Header */}
- <header className="px-6 sm:px-8 py-4 bg-white dark:bg-[#2a2a2c]/80 backdrop-blur-xl border-b border-gray-100 dark:border-white/5 flex items-center justify-between shrink-0 shadow-sm dark:shadow-none">
+  {/* Top Bar Header */}
+  <header className="px-4 sm:px-8 py-3.5 sm:py-4 bg-white dark:bg-[#2a2a2c]/80 backdrop-blur-xl border-b border-gray-100 dark:border-white/5 flex items-center justify-between shrink-0 shadow-sm dark:shadow-none">
  
   {/* Brand Logo & Studio Identity (3D Liquid Glass Emblem) */}
   <div className="flex items-center gap-3.5">
@@ -663,17 +663,17 @@ export function CartDrawer() {
  </header>
 
  {/* ========================================================================= */}
- {/* MAIN CANVAS SCROLLABLE AREA */}
- {/* ========================================================================= */}
- <div className="flex-1 overflow-y-auto p-6 sm:p-8 lg:p-10 hide-scrollbar space-y-10">
+  {/* MAIN CANVAS SCROLLABLE AREA */}
+  {/* ========================================================================= */}
+  <div className="flex-1 overflow-y-auto p-3.5 sm:p-6 lg:p-10 hide-scrollbar space-y-6 sm:space-y-10">
 
- {/* ======================================================================= */}
- {/* STEP 1: CART PAGE VIEW (Skyrise Decor / Crescendo Spacious Studio) */}
- {/* ======================================================================= */}
- {step === "bag" && (
- <>
-  {/* Page Title & 3D Ambient Hero Banner */}
-  <div className="relative overflow-hidden rounded-3xl p-6 sm:p-7 border border-white/80 dark:border-white/10 bg-gradient-to-br from-white/90 via-blue-50/30 to-indigo-50/20 dark:from-[#202023] dark:via-[#1c1c1f] dark:to-[#17171a] shadow-[0_12px_36px_rgba(0,0,0,0.04),inset_0_1.5px_2px_rgba(255,255,255,0.9)] backdrop-blur-2xl transition-all">
+  {/* ======================================================================= */}
+  {/* STEP 1: CART PAGE VIEW (Skyrise Decor / Crescendo Spacious Studio) */}
+  {/* ======================================================================= */}
+  {step === "bag" && (
+  <>
+   {/* Page Title & 3D Ambient Hero Banner */}
+   <div className="relative overflow-hidden rounded-2xl sm:rounded-3xl p-4 sm:p-7 border border-white/80 dark:border-white/10 bg-gradient-to-br from-white/90 via-blue-50/30 to-indigo-50/20 dark:from-[#202023] dark:via-[#1c1c1f] dark:to-[#17171a] shadow-[0_12px_36px_rgba(0,0,0,0.04),inset_0_1.5px_2px_rgba(255,255,255,0.9)] backdrop-blur-2xl transition-all">
     {/* Ambient Glows */}
     <div className="absolute -top-16 -right-16 w-56 h-56 bg-blue-500/10 dark:bg-blue-400/10 rounded-full blur-3xl pointer-events-none" />
     <div className="absolute -bottom-16 -left-16 w-56 h-56 bg-indigo-500/10 dark:bg-indigo-400/10 rounded-full blur-3xl pointer-events-none" />
@@ -685,7 +685,7 @@ export function CartDrawer() {
           <Sparkles className="w-3 h-3 animate-spin text-blue-500" style={{ animationDuration: '6s' }} />
           <span>Lumina 3D Studio • Luxury Living</span>
         </div>
-        <h1 className="font-display font-extrabold text-3xl sm:text-4xl text-gray-950 dark:text-white tracking-tight">
+        <h1 className="font-display font-extrabold text-2xl sm:text-4xl text-gray-950 dark:text-white tracking-tight">
           Bolsa de Compras
         </h1>
         <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mt-1 max-w-xl leading-relaxed">
@@ -788,7 +788,7 @@ export function CartDrawer() {
  {/* ---------------------------------------------------- */}
  {/* Left Column: Spacious Products Table (7 or 8 cols) */}
  {/* ---------------------------------------------------- */}
- <div className="lg:col-span-8 bg-white dark:bg-[#2a2a2c]/80 backdrop-blur-xl rounded-[2rem] border border-gray-200 dark:border-white/10/60 p-6 sm:p-8 shadow-sm dark:shadow-none space-y-6">
+ <div className="lg:col-span-8 bg-white dark:bg-[#2a2a2c]/80 backdrop-blur-xl rounded-2xl sm:rounded-[2rem] border border-gray-200 dark:border-white/10/60 p-4 sm:p-8 shadow-sm dark:shadow-none space-y-6">
  {/* Table Column Headers (Directly from Reference Image) */}
  <div className="hidden sm:grid grid-cols-12 text-xs font-bold text-gray-400 dark:text-gray-400 uppercase tracking-wider pb-3 border-b border-gray-100 dark:border-white/5 px-3.5 sm:px-4">
  <span className="col-span-5">Producto</span>
@@ -1100,7 +1100,7 @@ export function CartDrawer() {
  {/* ---------------------------------------------------- */}
  {/* Right Column: Order Summary Card (4 cols) */}
  {/* ---------------------------------------------------- */}
- <div className="lg:col-span-4 bg-white dark:bg-[#2a2a2c]/90 backdrop-blur-2xl rounded-[2rem] border border-gray-200 dark:border-white/10/70 p-6 sm:p-7 shadow-lg dark:shadow-none shadow-gray-200/50 space-y-6">
+ <div className="lg:col-span-4 bg-white dark:bg-[#2a2a2c]/90 backdrop-blur-2xl rounded-2xl sm:rounded-[2rem] border border-gray-200 dark:border-white/10/70 p-4 sm:p-7 shadow-lg dark:shadow-none shadow-gray-200/50 space-y-6">
  
  <h3 className="font-display font-bold text-xl text-gray-900 dark:text-gray-100 tracking-tight pb-3 border-b border-gray-100 dark:border-white/5">
  Resumen del Pedido
@@ -1311,7 +1311,7 @@ export function CartDrawer() {
  <div className="lg:col-span-7 space-y-6">
  
  {/* Shipping Address */}
- <div className="p-6 rounded-[2rem] bg-white dark:bg-[#2a2a2c] border border-gray-200 dark:border-white/10/70 shadow-sm dark:shadow-none space-y-4">
+ <div className="p-4 sm:p-6 rounded-2xl sm:rounded-[2rem] bg-white dark:bg-[#2a2a2c] border border-gray-200 dark:border-white/10/70 shadow-sm dark:shadow-none space-y-4">
  <div className="flex items-center justify-between">
  <div className="flex items-center gap-2">
  <MapPin className="w-4 h-4 text-blue-600" />
@@ -1714,7 +1714,7 @@ export function CartDrawer() {
  type="button"
  onClick={() => setSelectedMethod(m.id)}
  onMouseEnter={() => setHoveredPaymentMethod(m.id)}
- className={`relative z-10 flex items-center justify-center gap-2 py-2.5 px-2 sm:px-3 rounded-full text-xs font-semibold font-sans tracking-tight outline-none cursor-pointer transition-colors duration-200 ${
+ className={`relative z-10 flex items-center justify-center gap-1 sm:gap-2 py-2 sm:py-2.5 px-1 sm:px-3 rounded-full text-[10px] sm:text-xs font-semibold font-sans tracking-tight outline-none cursor-pointer transition-colors duration-200 ${
  isActive ? "text-gray-950 font-bold" : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 "
  }`}
  >

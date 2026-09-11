@@ -153,6 +153,7 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
   }, []);
   const [activeStage, setActiveStage] = useState<"all" | "cart" | "frequent">("all");
   const [activeTab, setActiveTab] = useState<"metrics" | "clients">("metrics");
+  const [isMobilePanelOpen, setIsMobilePanelOpen] = useState<boolean>(false);
   const scrollTrackRef = useRef<HTMLDivElement>(null);
   const [isMapLoaded, setIsMapLoaded] = useState<boolean>(false);
 
@@ -846,7 +847,11 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
                 onClick={(e) => {
                   e.stopPropagation();
                   if (!client.isAnonymous) {
-                    setSelectedClientId(prev => prev === client.id ? null : client.id);
+                    setSelectedClientId(prev => {
+                      const next = prev === client.id ? null : client.id;
+                      if (next) setIsMobilePanelOpen(true);
+                      return next;
+                    });
                   }
                 }}
               >
@@ -981,7 +986,7 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
       {/* ========================================================================= */}
       {/* 3. TOP FLOATING BAR (Minimal Header Capsule)                              */}
       {/* ========================================================================= */}
-      <div className="absolute top-5 left-6 right-6 lg:right-96 z-50 flex items-center justify-between gap-3 pointer-events-none">
+      <div className="absolute top-4 sm:top-5 left-3 sm:left-6 right-3 sm:right-6 lg:right-96 z-50 flex items-center justify-between gap-3 pointer-events-none">
         
         {/* Interactive Dynamic Search Capsule & Live Suggester */}
         <div 
@@ -1317,6 +1322,19 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
             <RotateCcw className="w-3.5 h-3.5" />
           </button>
 
+          {/* Mobile Dossier Panel Toggle Button */}
+          <button 
+            onClick={() => setIsMobilePanelOpen(prev => !prev)}
+            title={isMobilePanelOpen ? "Ocultar panel de métricas" : "Ver métricas y clientes"}
+            className={`lg:hidden w-8 h-8 rounded-xl flex items-center justify-center transition-all hover:scale-110 active:scale-95 cursor-pointer ${
+              isMobilePanelOpen
+                ? "bg-[#ccff00] text-gray-950 font-bold shadow-[0_0_12px_#ccff00]"
+                : "bg-white/10 hover:bg-white/25 text-white/80 hover:text-white"
+            }`}
+          >
+            <Activity className="w-3.5 h-3.5" />
+          </button>
+
         </div>
 
         {/* Current Zoom Level Pill */}
@@ -1328,12 +1346,17 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
       {/* ========================================================================= */}
       {/* 5. RIGHT FLOATING GLASS PANEL (Concise Metrics & Live Client Dossier)     */}
       {/* ========================================================================= */}
-      <div onClick={(e) => e.stopPropagation()} className="absolute right-6 top-5 bottom-24 w-80 lg:w-84 z-30 flex flex-col pointer-events-auto transition-all duration-500 ease-out overflow-hidden">
-        <div className="flex-1 rounded-[2rem] bg-[#121615]/85 backdrop-blur-2xl border border-white/15 p-5 shadow-2xl flex flex-col justify-between overflow-hidden transition-all duration-500 ease-out w-full">
+      <div 
+        onClick={(e) => e.stopPropagation()} 
+        className={`absolute right-3 sm:right-6 top-16 sm:top-5 bottom-20 sm:bottom-24 w-[calc(100%-1.5rem)] sm:w-80 lg:w-84 z-30 flex-col pointer-events-auto transition-all duration-500 ease-out overflow-hidden ${
+          isMobilePanelOpen ? "flex" : "hidden lg:flex"
+        }`}
+      >
+        <div className="flex-1 rounded-[2rem] bg-[#121615]/85 backdrop-blur-2xl border border-white/15 p-4 sm:p-5 shadow-2xl flex flex-col justify-between overflow-hidden transition-all duration-500 ease-out w-full">
           
           {/* Panel Top Navigation & Scrollable Content Body */}
           <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden touch-pan-y overscroll-x-none w-full pr-0.5 space-y-3.5 select-none" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
-            <div className="flex items-center justify-between pb-3 border-b border-white/10">
+            <div className="flex items-center justify-between pb-3 border-b border-white/10 gap-2">
               <div className="flex items-center gap-1 p-0.5 rounded-full bg-black/50 border border-white/10 text-[11px] font-semibold">
                 <button 
                   onClick={() => setActiveTab("metrics")}
@@ -1353,13 +1376,24 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
                 </button>
               </div>
 
-              <span className={`text-[9px] font-mono px-2 py-0.5 rounded-full border font-bold transition-all duration-500 ease-in-out ${
-                displayedDossierClient 
-                  ? "bg-[#ccff00]/20 text-[#ccff00] border-[#ccff00]/30 opacity-100 scale-100" 
-                  : "opacity-0 scale-75 pointer-events-none border-transparent"
-              }`}>
-                Selección
-              </span>
+              <div className="flex items-center gap-1.5 shrink-0">
+                <span className={`text-[9px] font-mono px-2 py-0.5 rounded-full border font-bold transition-all duration-500 ease-in-out ${
+                  displayedDossierClient 
+                    ? "bg-[#ccff00]/20 text-[#ccff00] border-[#ccff00]/30 opacity-100 scale-100" 
+                    : "opacity-0 scale-75 pointer-events-none border-transparent"
+                }`}>
+                  Selección
+                </span>
+
+                {/* Mobile Close Button */}
+                <button
+                  onClick={() => setIsMobilePanelOpen(false)}
+                  className="lg:hidden w-6 h-6 rounded-full bg-white/10 hover:bg-white/20 text-white/70 hover:text-white flex items-center justify-center cursor-pointer transition-colors"
+                  title="Cerrar panel"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              </div>
             </div>
 
             {/* TAB CONTENT A: ACTIVE CLIENT DOSSIER (Silky Smooth Collapsible Transition 500ms) */}

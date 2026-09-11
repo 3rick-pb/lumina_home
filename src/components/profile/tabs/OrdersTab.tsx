@@ -49,7 +49,7 @@ export function OrdersTab({
   }, [orders, orderStatusFilter, searchQuery]);
 
   return (
-    <div className="bg-white/90 dark:bg-[#202022]/90 backdrop-blur-xl p-6 md:p-8 rounded-[2.5rem] border border-white/80 dark:border-white/10 shadow-[0_4px_24px_rgba(0,0,0,0.02)] space-y-6 animate-fade-in">
+    <div className="bg-white/90 dark:bg-[#202022]/90 backdrop-blur-xl p-4 sm:p-6 md:p-8 rounded-3xl sm:rounded-[2.5rem] border border-white/80 dark:border-white/10 shadow-[0_4px_24px_rgba(0,0,0,0.02)] space-y-6 animate-fade-in">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <div className="mb-2">
@@ -61,19 +61,19 @@ export function OrdersTab({
               savedLabel="Guardado en nube"
             />
           </div>
-          <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
+          <h2 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
             <ShoppingBag className="w-5 h-5 text-[#8c9276]" /> Historial Completo de Pedidos
           </h2>
           <p className="text-xs text-gray-500 dark:text-gray-400">Trazabilidad en tiempo real, recibos y estados de envío.</p>
         </div>
 
         {/* Status Filter Tabs */}
-        <div className="flex items-center gap-2 bg-gray-100 dark:bg-[#3a3a3c] p-1 rounded-2xl overflow-x-auto">
+        <div className="flex items-center gap-1.5 sm:gap-2 bg-gray-100 dark:bg-[#3a3a3c] p-1 rounded-2xl overflow-x-auto max-w-full hide-scrollbar">
           {["all", "Procesando", "Enviado", "Entregado"].map((st) => (
             <button 
               key={st}
               onClick={() => setOrderStatusFilter(st)}
-              className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all ${
+              className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all whitespace-nowrap ${
                 orderStatusFilter === st ? "bg-white dark:bg-[#202022] text-gray-900 dark:text-gray-100 shadow-sm dark:shadow-none" : "text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100"
               }`}
             >
@@ -103,7 +103,7 @@ export function OrdersTab({
         </div>
       ) : (
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs">
+          <table className="w-full text-left text-xs min-w-[620px]">
             <thead>
               <tr className="border-b border-gray-200 dark:border-white/10 text-gray-400 uppercase tracking-wider font-semibold">
                 <th className="pb-3 px-3">ID Pedido</th>

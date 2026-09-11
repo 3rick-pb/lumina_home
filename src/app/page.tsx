@@ -186,21 +186,21 @@ export default function Home() {
             <span className="inline-block px-4 py-1.5 rounded-full bg-white/10 backdrop-blur-md border border-white/20 text-sm font-medium text-white mb-6">
               Artículos premium para tu hogar
             </span>
-            <h1 className="text-5xl md:text-7xl font-sans font-medium text-white leading-[1.1] tracking-tight">
+            <h1 className="text-3xl sm:text-5xl md:text-6xl lg:text-7xl font-sans font-medium text-white leading-[1.15] sm:leading-[1.1] tracking-tight">
               Espacios diseñados <br />
               <span className="font-display italic font-bold text-[#d2b48c]">para perdurar</span>
             </h1>
-            <p className="mt-6 text-xl text-gray-200 leading-relaxed max-w-lg font-light">
+            <p className="mt-4 sm:mt-6 text-base sm:text-xl text-gray-200 leading-relaxed max-w-lg font-light">
               Soluciones de estética, comodidad y tecnología pensadas para cada rincón que habitas.
             </p>
-            <div className="mt-10 flex flex-wrap gap-4">
-              <Link href="/shop">
-                <Button size="lg" className="rounded-full bg-[#8c9276] hover:bg-[#7a8a66] text-white border-none px-8 flex items-center gap-2">
+            <div className="mt-8 sm:mt-10 flex flex-col sm:flex-row gap-3 sm:gap-4">
+              <Link href="/shop" className="w-full sm:w-auto">
+                <Button size="lg" className="w-full sm:w-auto rounded-full bg-[#8c9276] hover:bg-[#7a8a66] text-white border-none px-8 flex items-center justify-center gap-2">
                   Ver catálogo <ArrowRight className="w-4 h-4" />
                 </Button>
               </Link>
-              <Link href="/shop">
-                <Button size="lg" variant="outline" className="rounded-full border-white/30 text-white hover:bg-white/10 px-8">
+              <Link href="/shop" className="w-full sm:w-auto">
+                <Button size="lg" variant="outline" className="w-full sm:w-auto rounded-full border-white/30 text-white hover:bg-white/10 px-8 flex items-center justify-center">
                   Filtrar por categoría
                 </Button>
               </Link>
@@ -272,11 +272,11 @@ export default function Home() {
                   }}
                   onMouseEnter={() => setCategoryTheme(cat.name)}
                   onMouseLeave={() => resetTheme()}
-                  className="group relative h-[320px] rounded-2xl overflow-hidden block shadow-sm border border-black/5 transition-transform duration-300 hover:-translate-y-1"
+                  className="group relative h-[260px] sm:h-[300px] md:h-[320px] rounded-2xl overflow-hidden block shadow-sm border border-black/5 transition-transform duration-300 hover:-translate-y-1"
                 >
                   <Image src={cat.img} fill className="object-cover transition-transform duration-700 group-hover:scale-105" alt={cat.name} />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/30 to-transparent" />
-                  <div className="absolute bottom-0 left-0 w-full p-5 flex items-end justify-between">
+                  <div className="absolute bottom-0 left-0 w-full p-3.5 sm:p-5 flex items-end justify-between">
                     <div>
                       <span className="text-white/60 text-[11px] font-light uppercase tracking-wider block mb-0.5">{cat.subtitle}</span>
                       <h3 className="text-white font-medium text-lg leading-tight">{cat.name}</h3>
@@ -340,7 +340,7 @@ export default function Home() {
                 <p className="text-gray-600 font-medium">No hay productos en esta categoría por el momento.</p>
               </div>
             ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
                 {filteredProducts.slice(0, 8).map((product) => (
                   <div 
                     key={product.id}
