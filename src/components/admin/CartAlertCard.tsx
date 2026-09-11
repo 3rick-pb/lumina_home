@@ -1,7 +1,7 @@
 'use client';
 /* eslint-disable @next/next/no-img-element */
 
-import React, { useState } from 'react';
+import React from 'react';
 import { motion } from 'framer-motion';
 import { 
   Package, 
@@ -10,8 +10,7 @@ import {
   ArrowDownRight, 
   Check, 
   X, 
-  ExternalLink,
-  ChevronDown
+  ExternalLink
 } from 'lucide-react';
 import { 
   CartAlertConfig, 
@@ -27,8 +26,6 @@ interface CartAlertCardProps {
   onClose?: () => void;
   onAction?: () => void;
   isPreview?: boolean;
-  isExpanded?: boolean;
-  onToggleExpand?: () => void;
 }
 
 export function CartAlertCard({
@@ -37,20 +34,7 @@ export function CartAlertCard({
   onClose,
   onAction,
   isPreview = false,
-  isExpanded: controlledExpanded,
-  onToggleExpand,
 }: CartAlertCardProps) {
-  const [internalExpanded, setInternalExpanded] = useState(true);
-  const isExpanded = controlledExpanded !== undefined ? controlledExpanded : internalExpanded;
-
-  const handleToggle = () => {
-    if (onToggleExpand) {
-      onToggleExpand();
-    } else {
-      setInternalExpanded(!internalExpanded);
-    }
-  };
-
   const [bgR, bgG, bgB] = hexToRgb(config.bgColor);
   const isLight = getLuminance(bgR, bgG, bgB) > 0.45;
   const borderColor = isLight ? 'rgba(0,0,0,0.08)' : 'rgba(255,255,255,0.12)';
@@ -64,79 +48,23 @@ export function CartAlertCard({
   const originCode = getCityAirportCode(payload.location);
   const orderRef = `ORD ${payload.product?.id ? payload.product.id.slice(0, 5).toUpperCase() : '8492'}`;
 
-  // Check if this layout participates in Dynamic Island opening/closing
-  // Requirement: "excepto la que se llama: 'Cápsula Dividida.'"
-  const isDynamicIsland = config.layout !== 'split_capsule';
-
   // -------------------------------------------------------------
-  // DYNAMIC ISLAND COMPACT PILL (Closed State)
-  // -------------------------------------------------------------
-  if (isDynamicIsland && !isExpanded) {
-    return (
-      <motion.div
-        layoutId="dynamic-island-card"
-        onClick={handleToggle}
-        initial={{ scale: 0.88, opacity: 0, y: 10 }}
-        animate={{ scale: 1, opacity: 1, y: 0 }}
-        exit={{ scale: 0.88, opacity: 0, y: 10 }}
-        transition={{ type: 'spring', stiffness: 420, damping: 28 }}
-        className="relative cursor-pointer overflow-hidden rounded-full shadow-[0_16px_36px_rgba(0,0,0,0.18)] border flex items-center justify-between px-4 py-2 gap-3 select-none hover:scale-[1.02] active:scale-[0.98] transition-transform"
-        style={{
-          backgroundColor: config.bgColor,
-          borderColor,
-          minWidth: 220,
-          maxWidth: 250,
-          height: 44,
-        }}
-        title="Clic para expandir notificación"
-      >
-        <div className="flex items-center gap-2 min-w-0">
-          <div className="w-5 h-5 rounded-full bg-emerald-500/20 text-emerald-500 flex items-center justify-center shrink-0">
-            <Package className="w-3 h-3 text-emerald-500 animate-pulse" />
-          </div>
-          <span 
-            className="font-display font-black text-xs tracking-wider uppercase truncate"
-            style={{ color: config.textColor }}
-          >
-            LUMINA
-          </span>
-        </div>
-
-        <div className="flex items-center gap-1.5 shrink-0">
-          <span 
-            className="text-xs font-bold font-mono"
-            style={{ color: config.textColor }}
-          >
-            {originCode} ↗
-          </span>
-          <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-400">
-            ${itemPrice}
-          </span>
-        </div>
-      </motion.div>
-    );
-  }
-
-  // -------------------------------------------------------------
-  // STRUCTURE 1: Ruta de Despacho (Flight Route / Reference Image)
+  // STRUCTURE 1: Ruta de Despacho (Reference Flight Trajectory Image)
+  // Perfectly contained with clean asymmetric bottom-right tab
   // -------------------------------------------------------------
   if (config.layout === 'flight_route') {
     return (
-      <motion.div 
-        layoutId={isDynamicIsland ? 'dynamic-island-card' : undefined}
-        transition={{ type: 'spring', stiffness: 380, damping: 28 }}
-        className="relative w-full max-w-[360px] select-none text-left"
-      >
+      <div className="relative w-full max-w-[340px] mx-auto select-none text-left">
         {/* Main Ticket Body */}
         <div 
-          className="relative overflow-hidden rounded-[26px] p-5 shadow-[0_16px_40px_rgba(0,0,0,0.14)] border transition-all"
+          className="relative overflow-hidden rounded-[24px] p-4 sm:p-5 shadow-[0_16px_36px_rgba(0,0,0,0.14)] border transition-all"
           style={{ 
             backgroundColor: config.bgColor,
             borderColor,
           }}
         >
           {/* Top Row: Brand & Reference Monospace Code */}
-          <div className="flex items-center justify-between gap-2 mb-3">
+          <div className="flex items-center justify-between gap-2 mb-2.5">
             <div className="flex items-center gap-2">
               <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
               <span 
@@ -155,23 +83,11 @@ export function CartAlertCard({
                 {orderRef}
               </span>
 
-              {isDynamicIsland && (
-                <button
-                  type="button"
-                  onClick={handleToggle}
-                  className="p-1 rounded-full hover:bg-black/10 dark:hover:bg-white/10 transition-colors"
-                  style={{ color: config.subtextColor }}
-                  title="Contraer a Isla Dinámica"
-                >
-                  <ChevronDown className="w-3.5 h-3.5" />
-                </button>
-              )}
-
               {!isPreview && onClose && (
                 <button
                   type="button"
                   onClick={onClose}
-                  className="p-1 rounded-full hover:bg-black/10 dark:hover:bg-white/10 transition-colors"
+                  className="p-1 rounded-full hover:bg-black/10 dark:hover:bg-white/10 transition-colors cursor-pointer"
                   style={{ color: config.subtextColor }}
                   aria-label="Cerrar notificación"
                 >
@@ -182,12 +98,12 @@ export function CartAlertCard({
           </div>
 
           {/* Middle Row: Flight Trajectory Arc with Gliding Package Box */}
-          <div className="py-2 px-1">
+          <div className="py-1.5 px-0.5">
             <div className="flex items-center justify-between relative">
               {/* Origin Code */}
               <div className="flex items-center gap-1.5 shrink-0 z-10">
                 <span 
-                  className="font-display font-black text-xl tracking-tight"
+                  className="font-display font-black text-lg sm:text-xl tracking-tight"
                   style={{ color: config.textColor }}
                 >
                   {originCode}
@@ -198,15 +114,15 @@ export function CartAlertCard({
               </div>
 
               {/* Curved Dashed Trajectory Arc (SVG) */}
-              <div className="relative flex-1 h-10 mx-2 overflow-visible">
+              <div className="relative flex-1 h-9 mx-2 overflow-hidden">
                 <svg 
                   className="w-full h-full overflow-visible" 
-                  viewBox="0 0 160 40" 
+                  viewBox="0 0 160 36" 
                   fill="none" 
                   preserveAspectRatio="none"
                 >
                   <path
-                    d="M 5 32 Q 80 2 155 32"
+                    d="M 5 28 Q 80 2 155 28"
                     fill="none"
                     stroke="#10b981"
                     strokeWidth="2"
@@ -220,19 +136,19 @@ export function CartAlertCard({
                 <motion.div
                   animate={{
                     left: ['5%', '50%', '92%'],
-                    top: ['20px', '0px', '20px'],
-                    rotate: [-10, 0, 10],
-                    scale: [0.95, 1.15, 0.95],
+                    top: ['16px', '0px', '16px'],
+                    rotate: [-8, 0, 8],
+                    scale: [0.95, 1.1, 0.95],
                   }}
                   transition={{
-                    duration: 2.3,
+                    duration: 2.2,
                     repeat: Infinity,
                     ease: 'easeInOut',
                   }}
                   className="absolute -translate-x-1/2 pointer-events-none z-20 flex items-center justify-center"
-                  style={{ width: 22, height: 22 }}
+                  style={{ width: 20, height: 20 }}
                 >
-                  <div className="w-5 h-5 rounded-md bg-amber-500/25 border border-amber-500/50 flex items-center justify-center shadow-xs backdrop-blur-xs">
+                  <div className="w-4.5 h-4.5 rounded bg-amber-500/25 border border-amber-500/50 flex items-center justify-center shadow-xs backdrop-blur-xs">
                     <Package className="w-3 h-3 text-amber-500 fill-amber-500/30" />
                   </div>
                 </motion.div>
@@ -244,7 +160,7 @@ export function CartAlertCard({
                   <ArrowDownRight className="w-3 h-3 stroke-[2.5]" />
                 </div>
                 <span 
-                  className="font-display font-black text-xl tracking-tight"
+                  className="font-display font-black text-lg sm:text-xl tracking-tight"
                   style={{ color: config.textColor }}
                 >
                   BOLSA
@@ -254,10 +170,10 @@ export function CartAlertCard({
           </div>
 
           {/* Stacked Information Section ('en pila', visually separated) */}
-          <div className="space-y-2 mt-3 pt-3 border-t" style={{ borderColor: subtleBorder }}>
+          <div className="space-y-2 mt-2.5 pt-2.5 border-t" style={{ borderColor: subtleBorder }}>
             {/* Row 1: Cliente & Ubicación */}
             <div 
-              className="flex items-center justify-between p-2.5 rounded-xl border"
+              className="flex items-center justify-between p-2 rounded-xl border"
               style={{ backgroundColor: subtleBg, borderColor: subtleBorder }}
             >
               <div className="flex items-center gap-2 min-w-0">
@@ -294,23 +210,23 @@ export function CartAlertCard({
 
             {/* Row 2: Producto Sumado & Precio */}
             <div 
-              className="flex items-center justify-between p-2.5 rounded-xl border"
+              className="flex items-center justify-between p-2 rounded-xl border"
               style={{ backgroundColor: subtleBg, borderColor: subtleBorder }}
             >
-              <div className="flex items-center gap-2.5 min-w-0">
+              <div className="flex items-center gap-2 min-w-0">
                 {payload.product?.imageUrl ? (
                   <img
                     src={payload.product.imageUrl}
                     alt={payload.product.title}
-                    className="w-8 h-8 rounded-lg object-cover shrink-0 border"
+                    className="w-7 h-7 rounded-lg object-cover shrink-0 border"
                     style={{ borderColor: subtleBorder }}
                   />
                 ) : (
                   <div 
-                    className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
+                    className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0"
                     style={{ backgroundColor: subtleBg }}
                   >
-                    <Package className="w-4 h-4" style={{ color: config.subtextColor }} />
+                    <Package className="w-3.5 h-3.5" style={{ color: config.subtextColor }} />
                   </div>
                 )}
                 <div className="min-w-0">
@@ -341,11 +257,11 @@ export function CartAlertCard({
           </div>
 
           {/* Action Pill Button */}
-          <div className="mt-3.5">
+          <div className="mt-3">
             <button
               type="button"
               onClick={onAction}
-              className="w-full py-2.5 px-4 rounded-xl font-bold text-xs transition-all flex items-center justify-center gap-2 shadow-xs active:scale-[0.98] cursor-pointer"
+              className="w-full py-2 px-3.5 rounded-xl font-bold text-xs transition-all flex items-center justify-center gap-2 shadow-xs active:scale-[0.98] cursor-pointer"
               style={{
                 backgroundColor: config.accentColor,
                 color: '#ffffff',
@@ -357,8 +273,8 @@ export function CartAlertCard({
           </div>
         </div>
 
-        {/* Asymmetric Bottom-Right Tab ('✓ En Carrito' matching reference image) */}
-        <div className="flex justify-end pr-5 -mt-2 relative z-30">
+        {/* Asymmetric Bottom-Right Tab ('✓ En Carrito' perfectly aligned and contained) */}
+        <div className="flex justify-end pr-4 -mt-1 relative z-20">
           <div
             className="inline-flex items-center gap-1.5 px-3 py-1 rounded-b-xl border border-t-0 shadow-sm transition-all"
             style={{
@@ -367,15 +283,15 @@ export function CartAlertCard({
               color: '#10b981',
             }}
           >
-            <div className="w-3.5 h-3.5 rounded-full bg-emerald-500/20 flex items-center justify-center shrink-0">
-              <Check className="w-2.5 h-2.5 text-emerald-500 stroke-[3]" />
+            <div className="w-3 h-3 rounded-full bg-emerald-500/20 flex items-center justify-center shrink-0">
+              <Check className="w-2 h-2 text-emerald-500 stroke-[3]" />
             </div>
-            <span className="text-[10px] font-extrabold tracking-wide uppercase">
+            <span className="text-[9px] font-extrabold tracking-wide uppercase">
               En Carrito
             </span>
           </div>
         </div>
-      </motion.div>
+      </div>
     );
   }
 
@@ -384,13 +300,9 @@ export function CartAlertCard({
   // -------------------------------------------------------------
   if (config.layout === 'stacked_ticket') {
     return (
-      <motion.div 
-        layoutId={isDynamicIsland ? 'dynamic-island-card' : undefined}
-        transition={{ type: 'spring', stiffness: 380, damping: 28 }}
-        className="relative w-full max-w-[360px] select-none text-left"
-      >
+      <div className="relative w-full max-w-[340px] mx-auto select-none text-left">
         <div 
-          className="relative overflow-hidden rounded-2xl shadow-[0_16px_40px_rgba(0,0,0,0.14)] border transition-all"
+          className="relative overflow-hidden rounded-2xl shadow-[0_16px_36px_rgba(0,0,0,0.14)] border transition-all"
           style={{ 
             backgroundColor: config.bgColor,
             borderColor,
@@ -402,29 +314,16 @@ export function CartAlertCard({
               <span className="text-[9px] font-mono font-bold uppercase tracking-wider px-2 py-0.5 rounded-md bg-blue-500/15 text-blue-600 dark:text-blue-400">
                 TICKET DE DESPACHO
               </span>
-              <div className="flex items-center gap-1.5">
-                {isDynamicIsland && (
-                  <button
-                    type="button"
-                    onClick={handleToggle}
-                    className="p-1 rounded-full hover:bg-black/10 dark:hover:bg-white/10 transition-colors"
-                    style={{ color: config.subtextColor }}
-                    title="Contraer a Isla Dinámica"
-                  >
-                    <ChevronDown className="w-3.5 h-3.5" />
-                  </button>
-                )}
-                {!isPreview && onClose && (
-                  <button
-                    type="button"
-                    onClick={onClose}
-                    className="p-1 rounded-full hover:bg-black/10 dark:hover:bg-white/10 transition-colors"
-                    style={{ color: config.subtextColor }}
-                  >
-                    <X className="w-3.5 h-3.5" />
-                  </button>
-                )}
-              </div>
+              {!isPreview && onClose && (
+                <button
+                  type="button"
+                  onClick={onClose}
+                  className="p-1 rounded-full hover:bg-black/10 dark:hover:bg-white/10 transition-colors cursor-pointer"
+                  style={{ color: config.subtextColor }}
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              )}
             </div>
 
             <div className="flex items-center gap-3">
@@ -432,15 +331,15 @@ export function CartAlertCard({
                 <img
                   src={payload.product.imageUrl}
                   alt={payload.product.title}
-                  className="w-12 h-12 rounded-xl object-cover shrink-0 border"
+                  className="w-11 h-11 rounded-xl object-cover shrink-0 border"
                   style={{ borderColor: subtleBorder }}
                 />
               ) : (
                 <div 
-                  className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0"
+                  className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0"
                   style={{ backgroundColor: subtleBg }}
                 >
-                  <Package className="w-6 h-6" style={{ color: config.subtextColor }} />
+                  <Package className="w-5 h-5" style={{ color: config.subtextColor }} />
                 </div>
               )}
               <div className="min-w-0 flex-1">
@@ -523,28 +422,27 @@ export function CartAlertCard({
             </button>
           </div>
         </div>
-      </motion.div>
+      </div>
     );
   }
 
   // -------------------------------------------------------------
   // STRUCTURE 3: Cápsula Dividida (Dual Compartment Split Capsule)
-  // EXPLICIT REQUIREMENT: Does NOT morph like Dynamic Island!
   // -------------------------------------------------------------
   if (config.layout === 'split_capsule') {
     return (
-      <div className="relative w-full max-w-[390px] select-none text-left">
+      <div className="relative w-full max-w-[340px] mx-auto select-none text-left">
         <div 
-          className="relative overflow-hidden rounded-full p-2.5 pr-3 shadow-[0_16px_40px_rgba(0,0,0,0.14)] border flex items-center justify-between gap-3 transition-all"
+          className="relative overflow-hidden rounded-full p-2 pr-2.5 shadow-[0_16px_36px_rgba(0,0,0,0.14)] border flex items-center justify-between gap-2.5 transition-all"
           style={{ 
             backgroundColor: config.bgColor,
             borderColor,
           }}
         >
           {/* Left: Customer Side */}
-          <div className="flex items-center gap-2 min-w-0 pl-1.5">
+          <div className="flex items-center gap-2 min-w-0 pl-1">
             <div 
-              className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold shrink-0"
+              className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold shrink-0"
               style={{ 
                 backgroundColor: isLight ? '#e5e7eb' : 'rgba(255,255,255,0.15)',
                 color: config.textColor 
@@ -556,21 +454,21 @@ export function CartAlertCard({
               <span className="text-xs font-bold block truncate" style={{ color: config.textColor }}>
                 {payload.userName}
               </span>
-              <span className="text-[10px] font-semibold text-emerald-600 dark:text-emerald-400 block truncate">
+              <span className="text-[9px] font-semibold text-emerald-600 dark:text-emerald-400 block truncate">
                 {originCode} • Carrito
               </span>
             </div>
           </div>
 
           {/* Center: Animated Package Transit */}
-          <div className="w-7 h-7 rounded-full bg-amber-500/15 border border-amber-500/30 flex items-center justify-center shrink-0">
-            <Package className="w-3.5 h-3.5 text-amber-500 animate-bounce" />
+          <div className="w-6 h-6 rounded-full bg-amber-500/15 border border-amber-500/30 flex items-center justify-center shrink-0">
+            <Package className="w-3 h-3 text-amber-500 animate-bounce" />
           </div>
 
           {/* Right: Product & Quick Radar Action */}
-          <div className="flex items-center gap-2 shrink-0">
-            <div className="text-right min-w-0 max-w-[110px]">
-              <span className="text-[11px] font-bold block truncate" style={{ color: config.textColor }}>
+          <div className="flex items-center gap-1.5 shrink-0">
+            <div className="text-right min-w-0 max-w-[95px]">
+              <span className="text-[10px] font-bold block truncate" style={{ color: config.textColor }}>
                 {payload.product?.title || 'Producto'}
               </span>
               <span className="text-[10px] font-mono font-bold block" style={{ color: config.subtextColor }}>
@@ -581,7 +479,7 @@ export function CartAlertCard({
             <button
               type="button"
               onClick={onAction}
-              className="py-1.5 px-3 rounded-full text-[11px] font-bold transition-all shrink-0 active:scale-95 cursor-pointer"
+              className="py-1.5 px-2.5 rounded-full text-[10px] font-bold transition-all shrink-0 active:scale-95 cursor-pointer"
               style={{
                 backgroundColor: config.accentColor,
                 color: '#ffffff',
@@ -594,7 +492,7 @@ export function CartAlertCard({
               <button
                 type="button"
                 onClick={onClose}
-                className="p-1 rounded-full hover:bg-black/10 dark:hover:bg-white/10 transition-colors shrink-0"
+                className="p-1 rounded-full hover:bg-black/10 dark:hover:bg-white/10 transition-colors shrink-0 cursor-pointer"
                 style={{ color: config.subtextColor }}
               >
                 <X className="w-3 h-3" />
@@ -610,67 +508,50 @@ export function CartAlertCard({
   // STRUCTURE 4: Bento Modular (2x2 Matrix Grid)
   // -------------------------------------------------------------
   return (
-    <motion.div 
-      layoutId={isDynamicIsland ? 'dynamic-island-card' : undefined}
-      transition={{ type: 'spring', stiffness: 380, damping: 28 }}
-      className="relative w-full max-w-[360px] select-none text-left"
-    >
+    <div className="relative w-full max-w-[340px] mx-auto select-none text-left">
       <div 
-        className="relative overflow-hidden rounded-3xl p-4 shadow-[0_16px_40px_rgba(0,0,0,0.14)] border transition-all space-y-2.5"
+        className="relative overflow-hidden rounded-2xl p-3.5 shadow-[0_16px_36px_rgba(0,0,0,0.14)] border transition-all space-y-2"
         style={{ 
           backgroundColor: config.bgColor,
           borderColor,
         }}
       >
         {/* Top Header */}
-        <div className="flex items-center justify-between pb-1">
+        <div className="flex items-center justify-between pb-0.5">
           <div className="flex items-center gap-1.5">
             <div className="w-2 h-2 rounded-full bg-emerald-500" />
-            <span className="text-[10px] font-bold uppercase tracking-wider" style={{ color: config.subtextColor }}>
+            <span className="text-[9px] font-bold uppercase tracking-wider" style={{ color: config.subtextColor }}>
               Módulo Carrito Lumina
             </span>
           </div>
 
-          <div className="flex items-center gap-1.5">
-            {isDynamicIsland && (
-              <button
-                type="button"
-                onClick={handleToggle}
-                className="p-1 rounded-full hover:bg-black/10 dark:hover:bg-white/10 transition-colors"
-                style={{ color: config.subtextColor }}
-                title="Contraer a Isla Dinámica"
-              >
-                <ChevronDown className="w-3.5 h-3.5" />
-              </button>
-            )}
-            {!isPreview && onClose && (
-              <button
-                type="button"
-                onClick={onClose}
-                className="p-1 rounded-full hover:bg-black/10 dark:hover:bg-white/10 transition-colors"
-                style={{ color: config.subtextColor }}
-              >
-                <X className="w-3.5 h-3.5" />
-              </button>
-            )}
-          </div>
+          {!isPreview && onClose && (
+            <button
+              type="button"
+              onClick={onClose}
+              className="p-1 rounded-full hover:bg-black/10 dark:hover:bg-white/10 transition-colors cursor-pointer"
+              style={{ color: config.subtextColor }}
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
+          )}
         </div>
 
         {/* 2x2 Bento Matrix */}
         <div className="grid grid-cols-2 gap-2">
           {/* Module 1: Customer */}
           <div 
-            className="p-2.5 rounded-2xl border flex flex-col justify-between"
+            className="p-2 rounded-xl border flex flex-col justify-between"
             style={{ backgroundColor: subtleBg, borderColor: subtleBorder }}
           >
-            <span className="text-[9px] font-semibold uppercase tracking-wider" style={{ color: config.subtextColor }}>
+            <span className="text-[8px] font-semibold uppercase tracking-wider" style={{ color: config.subtextColor }}>
               Comprador
             </span>
-            <div className="mt-1.5">
+            <div className="mt-1">
               <h5 className="text-xs font-bold truncate" style={{ color: config.textColor }}>
                 {payload.userName}
               </h5>
-              <span className="text-[10px] block truncate" style={{ color: config.subtextColor }}>
+              <span className="text-[9px] block truncate" style={{ color: config.subtextColor }}>
                 {originCode}
               </span>
             </div>
@@ -678,39 +559,39 @@ export function CartAlertCard({
 
           {/* Module 2: Price & State */}
           <div 
-            className="p-2.5 rounded-2xl border flex flex-col justify-between"
+            className="p-2 rounded-xl border flex flex-col justify-between"
             style={{ backgroundColor: subtleBg, borderColor: subtleBorder }}
           >
-            <span className="text-[9px] font-semibold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">
+            <span className="text-[8px] font-semibold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">
               ✓ Sumado
             </span>
-            <div className="mt-1.5">
-              <h5 className="text-sm font-mono font-black" style={{ color: config.textColor }}>
+            <div className="mt-1">
+              <h5 className="text-xs font-mono font-black" style={{ color: config.textColor }}>
                 ${itemPrice}
               </h5>
-              <span className="text-[10px] block" style={{ color: config.subtextColor }}>
-                {payload.product?.quantity || 1} unidad
+              <span className="text-[9px] block" style={{ color: config.subtextColor }}>
+                {payload.product?.quantity || 1} ud.
               </span>
             </div>
           </div>
 
           {/* Module 3: Product Showcase */}
           <div 
-            className="p-2.5 rounded-2xl border flex items-center gap-2"
+            className="p-2 rounded-xl border flex items-center gap-1.5"
             style={{ backgroundColor: subtleBg, borderColor: subtleBorder }}
           >
             {payload.product?.imageUrl ? (
               <img
                 src={payload.product.imageUrl}
                 alt={payload.product.title}
-                className="w-7 h-7 rounded-lg object-cover shrink-0"
+                className="w-6 h-6 rounded-md object-cover shrink-0"
               />
             ) : (
-              <div className="w-7 h-7 rounded-lg bg-black/10 dark:bg-white/10 flex items-center justify-center shrink-0">
-                <Package className="w-3.5 h-3.5" />
+              <div className="w-6 h-6 rounded-md bg-black/10 dark:bg-white/10 flex items-center justify-center shrink-0">
+                <Package className="w-3 h-3" />
               </div>
             )}
-            <span className="text-[11px] font-bold line-clamp-2 leading-tight" style={{ color: config.textColor }}>
+            <span className="text-[10px] font-bold line-clamp-2 leading-tight" style={{ color: config.textColor }}>
               {payload.product?.title || 'Artículo'}
             </span>
           </div>
@@ -719,22 +600,22 @@ export function CartAlertCard({
           <button
             type="button"
             onClick={onAction}
-            className="p-2.5 rounded-2xl flex flex-col justify-between items-start transition-all active:scale-[0.98] cursor-pointer shadow-xs"
+            className="p-2 rounded-xl flex flex-col justify-between items-start transition-all active:scale-[0.98] cursor-pointer shadow-xs"
             style={{
               backgroundColor: config.accentColor,
               color: '#ffffff',
             }}
           >
-            <span className="text-[9px] font-bold uppercase tracking-wider opacity-85">
+            <span className="text-[8px] font-bold uppercase tracking-wider opacity-85">
               Acceso Rápido
             </span>
-            <div className="flex items-center justify-between w-full mt-1.5">
+            <div className="flex items-center justify-between w-full mt-1">
               <span className="text-xs font-bold">Ver Radar</span>
-              <ArrowUpRight className="w-3.5 h-3.5" />
+              <ArrowUpRight className="w-3 h-3" />
             </div>
           </button>
         </div>
       </div>
-    </motion.div>
+    </div>
   );
 }

@@ -55,52 +55,20 @@ export function AdminCartNotifier() {
     };
   }, [isAdmin, fireToast]);
 
-  // Dynamic Island open / close state
-  const isDynamicIsland = config.layout !== "split_capsule";
-  const [isExpanded, setIsExpanded] = React.useState(!isDynamicIsland);
-
-  // Auto-dismiss and dynamic island open/close schedule based on configured duration
+  // Auto-dismiss timer based on configured duration
   useEffect(() => {
     if (!activeAlert || !activeAlertKey) return;
 
-    if (!isDynamicIsland) {
-      setIsExpanded(true);
-      const timer = setTimeout(() => {
-        dismissAlert();
-      }, config.duration);
-      return () => clearTimeout(timer);
-    }
-
-    // Dynamic Island sequence:
-    // 1. Starts compact
-    setIsExpanded(false);
-
-    // 2. Opens smoothly after 220ms
-    const openTimer = setTimeout(() => {
-      setIsExpanded(true);
-    }, 220);
-
-    // 3. Collapses smoothly before dismissal
-    const collapseDelay = Math.max(1200, config.duration - 650);
-    const closeTimer = setTimeout(() => {
-      setIsExpanded(false);
-    }, collapseDelay);
-
-    // 4. Final dismissal
-    const dismissTimer = setTimeout(() => {
+    const timer = setTimeout(() => {
       dismissAlert();
     }, config.duration);
 
-    return () => {
-      clearTimeout(openTimer);
-      clearTimeout(closeTimer);
-      clearTimeout(dismissTimer);
-    };
-  }, [activeAlert, activeAlertKey, config.duration, dismissAlert, isDynamicIsland]);
+    return () => clearTimeout(timer);
+  }, [activeAlert, activeAlertKey, config.duration, dismissAlert]);
 
   if (!isAdmin) return null;
 
-  // Determine fixed positioning CSS classes
+  // Determine fixed positioning CSS classes and macOS transform origin
   const getPositionClasses = () => {
     switch (config.position) {
       case "bottom-left":
@@ -116,6 +84,8 @@ export function AdminCartNotifier() {
   };
 
   const isBottom = config.position.startsWith("bottom");
+  const isRight = config.position.endsWith("right");
+  const transformOrigin = `${isBottom ? "bottom" : "top"} ${isRight ? "right" : "left"}`;
 
   const handleAction = () => {
     dismissAlert();
@@ -123,15 +93,6 @@ export function AdminCartNotifier() {
       onViewDetailsCallback();
     } else {
       router.push("/profile?tab=analytics");
-    }
-  };
-
-  const handleClose = () => {
-    if (isDynamicIsland) {
-      setIsExpanded(false);
-      setTimeout(() => dismissAlert(), 250);
-    } else {
-      dismissAlert();
     }
   };
 
@@ -144,28 +105,33 @@ export function AdminCartNotifier() {
         {activeAlert && (
           <motion.div
             key={activeAlertKey}
+            style={{ transformOrigin }}
             initial={{
               opacity: 0,
-              y: isBottom ? 30 : -30,
-              scale: 0.95,
+              scale: 0.15,
+              y: isBottom ? 25 : -25,
+              x: isRight ? 25 : -25,
             }}
             animate={{
               opacity: 1,
-              y: 0,
               scale: 1,
+              y: 0,
+              x: 0,
               transition: {
                 type: "spring",
-                stiffness: 380,
+                stiffness: 340,
                 damping: 26,
+                mass: 0.85,
               },
             }}
             exit={{
               opacity: 0,
+              scale: 0.08,
               y: isBottom ? 20 : -20,
-              scale: 0.92,
+              x: isRight ? 20 : -20,
               transition: {
-                duration: 0.22,
-                ease: "easeOut",
+                duration: 0.24,
+                ease: [0.32, 0, 0.67, 0],
               },
             }}
             className="pointer-events-auto filter drop-shadow-2xl"
@@ -173,9 +139,7 @@ export function AdminCartNotifier() {
             <CartAlertCard
               payload={activeAlert}
               config={config}
-              isExpanded={isExpanded}
-              onToggleExpand={() => setIsExpanded(!isExpanded)}
-              onClose={handleClose}
+              onClose={dismissAlert}
               onAction={handleAction}
               isPreview={false}
             />

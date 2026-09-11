@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Volume2, 
   VolumeX, 
@@ -17,7 +17,8 @@ import {
   Zap, 
   Eye,
   Monitor,
-  Sparkles
+  Minimize2,
+  Maximize2
 } from 'lucide-react';
 import { 
   useAdminAlertStore, 
@@ -42,7 +43,7 @@ export function CartAlertsTab() {
   } = useAdminAlertStore();
   
   const [testSent, setTestSent] = useState(false);
-  const [previewExpanded, setPreviewExpanded] = useState(true);
+  const [isTestMinimized, setIsTestMinimized] = useState(false);
 
   const sampleCustomers: CartItemAddedPayload[] = [
     {
@@ -99,36 +100,39 @@ export function CartAlertsTab() {
     { 
       id: 'bottom-right', 
       label: 'Inferior Derecho', 
-      desc: 'Esquina natural y ergonómica. Mantiene el foco en el centro de la pantalla.', 
+      desc: 'Esquina natural de alertas en macOS. Expande y minimiza hacia la esquina inferior derecha.', 
       cornerClass: 'bottom-3 right-3' 
     },
     { 
       id: 'bottom-left', 
       label: 'Inferior Izquierdo', 
-      desc: 'Alineado armónicamente con la base del dock y menú lateral de navegación.', 
+      desc: 'Alineado con el dock vertical izquierdo. Expande y minimiza hacia la esquina inferior izquierda.', 
       cornerClass: 'bottom-3 left-3' 
     },
     { 
       id: 'top-right', 
       label: 'Superior Derecho', 
-      desc: 'Área de máxima prioridad visual. Imposible de pasar por alto.', 
+      desc: 'Área de alta visibilidad. Expande y minimiza hacia la esquina superior derecha.', 
       cornerClass: 'top-3 right-3' 
     },
     { 
       id: 'top-left', 
       label: 'Superior Izquierdo', 
-      desc: 'Inmediatamente junto a la cabecera superior de la tienda.', 
+      desc: 'Esquina superior izquierda. Expande y minimiza hacia la cabecera lateral.', 
       cornerClass: 'top-3 left-3' 
     },
   ];
 
   const currentAudit = auditContrast(config.bgColor, config.textColor);
-  const isDynamicIsland = config.layout !== 'split_capsule';
+
+  const isBottom = config.position.startsWith('bottom');
+  const isRight = config.position.endsWith('right');
+  const previewOrigin = `${isBottom ? 'bottom' : 'top'} ${isRight ? 'right' : 'left'}`;
 
   return (
-    <div className="space-y-8 animate-fade-in pb-16 w-full">
+    <div className="space-y-6 animate-fade-in pb-0 w-full">
       {/* Top Hero Banner */}
-      <div className="relative overflow-hidden rounded-[2rem] p-7 sm:p-9 border border-gray-200/80 dark:border-white/10 bg-white/95 dark:bg-[#202023] shadow-sm backdrop-blur-2xl w-full">
+      <div className="relative overflow-hidden rounded-[2rem] p-6 sm:p-8 border border-gray-200/80 dark:border-white/10 bg-white/95 dark:bg-[#202023] shadow-sm backdrop-blur-2xl w-full">
         <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div>
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-50 dark:bg-blue-950/40 border border-blue-200/60 dark:border-blue-900/40 text-blue-700 dark:text-blue-400 text-[11px] font-semibold uppercase tracking-wider mb-2.5">
@@ -139,7 +143,7 @@ export function CartAlertsTab() {
               Notificaciones de Carrito en Vivo
             </h2>
             <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-1 max-w-2xl leading-relaxed">
-              Configura la presentación visual, la apertura y cierre fluidos estilo Isla Dinámica, la trayectoria de envío con paquete animado y el simulador de pantalla en tiempo real.
+              Personaliza la presentación visual con animación de minimizar/expandir en esquina estilo macOS, la trayectoria de envío con paquete animado y el simulador de pantalla en tiempo real.
             </p>
           </div>
 
@@ -164,12 +168,12 @@ export function CartAlertsTab() {
       </div>
 
       {/* Main Grid: Settings (7 cols) + Live Simulator (5 cols) */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start w-full">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start w-full">
         {/* Left Column: Settings (7 cols) */}
         <div className="lg:col-span-7 space-y-6">
 
-          {/* SECTION 1: 4 Genuine Layout Structures with Dynamic Island Support */}
-          <div className="bg-white dark:bg-[#202022] rounded-3xl border border-gray-200/80 dark:border-white/10 p-6 sm:p-7 shadow-sm space-y-5">
+          {/* SECTION 1: 4 Genuine Layout Structures (NO "Isla Dinámica") */}
+          <div className="bg-white dark:bg-[#202022] rounded-3xl border border-gray-200/80 dark:border-white/10 p-6 shadow-sm space-y-5">
             <div className="flex items-center justify-between">
               <div>
                 <h3 className="font-display font-bold text-base text-gray-900 dark:text-white flex items-center gap-2">
@@ -177,7 +181,7 @@ export function CartAlertsTab() {
                   Estructura de Notificación
                 </h3>
                 <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-                  Apertura y cierre estilo Isla Dinámica con resortes fluidos (excepto en Cápsula Dividida).
+                  Cuatro formatos con geometrías y distribuciones de información realmente distintas.
                 </p>
               </div>
               <span className="text-[10px] font-mono font-bold uppercase tracking-wider px-2.5 py-1 rounded-lg bg-gray-100 dark:bg-white/10 text-gray-700 dark:text-gray-300">
@@ -188,16 +192,12 @@ export function CartAlertsTab() {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
               {LAYOUT_OPTIONS.map((lo) => {
                 const isSelected = config.layout === lo.id;
-                const hasDynamicIsland = lo.id !== 'split_capsule';
 
                 return (
                   <button
                     key={lo.id}
-                    onClick={() => {
-                      updateConfig({ layout: lo.id });
-                      setPreviewExpanded(true);
-                    }}
-                    className={`relative p-4 rounded-2xl border text-left transition-all cursor-pointer flex flex-col justify-between min-h-[115px] ${
+                    onClick={() => updateConfig({ layout: lo.id })}
+                    className={`relative p-4 rounded-2xl border text-left transition-all cursor-pointer flex flex-col justify-between min-h-[110px] ${
                       isSelected
                         ? 'border-gray-900 dark:border-white bg-gray-50/80 dark:bg-white/5 ring-1 ring-gray-900/10 dark:ring-white/20 shadow-xs'
                         : 'border-gray-200/80 dark:border-white/10 bg-white dark:bg-transparent hover:bg-gray-50 dark:hover:bg-white/[0.03]'
@@ -205,20 +205,9 @@ export function CartAlertsTab() {
                   >
                     <div>
                       <div className="flex items-center justify-between mb-1.5">
-                        <div className="flex items-center gap-1.5 flex-wrap">
-                          <span className="text-[10px] font-semibold px-2 py-0.5 rounded-md bg-gray-100 dark:bg-white/10 text-gray-700 dark:text-gray-300">
-                            {lo.badge}
-                          </span>
-                          {hasDynamicIsland ? (
-                            <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-md bg-amber-500/15 text-amber-600 dark:text-amber-400">
-                              Isla Dinámica
-                            </span>
-                          ) : (
-                            <span className="text-[9px] font-medium px-1.5 py-0.5 rounded-md bg-gray-200/60 dark:bg-white/10 text-gray-500">
-                              Fija Compacta
-                            </span>
-                          )}
-                        </div>
+                        <span className="text-[10px] font-semibold px-2 py-0.5 rounded-md bg-gray-100 dark:bg-white/10 text-gray-700 dark:text-gray-300">
+                          {lo.badge}
+                        </span>
                         {isSelected && <CheckCircle2 className="w-4 h-4 text-gray-900 dark:text-white shrink-0" />}
                       </div>
                       <h4 className="text-xs font-bold text-gray-900 dark:text-white mt-1">
@@ -234,8 +223,8 @@ export function CartAlertsTab() {
             </div>
           </div>
 
-          {/* SECTION 2: Realistic Desktop Viewport Simulator for Location & Duration */}
-          <div className="bg-white dark:bg-[#202022] rounded-3xl border border-gray-200/80 dark:border-white/10 p-6 sm:p-7 shadow-sm space-y-6">
+          {/* SECTION 2: Realistic Desktop Viewport Simulator */}
+          <div className="bg-white dark:bg-[#202022] rounded-3xl border border-gray-200/80 dark:border-white/10 p-6 shadow-sm space-y-5">
             <div>
               <h3 className="font-display font-bold text-base text-gray-900 dark:text-white flex items-center gap-2">
                 <Monitor className="w-4 h-4 text-blue-600" />
@@ -255,8 +244,9 @@ export function CartAlertsTab() {
                   <span className="w-2.5 h-2.5 rounded-full bg-amber-500/80 inline-block" />
                   <span className="w-2.5 h-2.5 rounded-full bg-emerald-500/80 inline-block" />
                 </div>
-                <div className="px-3 py-0.5 rounded-md bg-white dark:bg-[#202023] border border-gray-200 dark:border-white/10 text-[10px] font-mono text-gray-500 dark:text-gray-400 truncate max-w-[200px]">
-                  https://luminahome.ec/tienda
+                {/* Specific URL requested: https://esta-tienda.com/notificaciones */}
+                <div className="px-3 py-0.5 rounded-md bg-white dark:bg-[#202023] border border-gray-200 dark:border-white/10 text-[10px] font-mono text-gray-600 dark:text-gray-300 truncate max-w-[240px]">
+                  https://esta-tienda.com/notificaciones
                 </div>
                 <div className="text-[10px] font-semibold text-gray-400">
                   Monitor 16:9
@@ -264,8 +254,8 @@ export function CartAlertsTab() {
               </div>
 
               {/* Simulated Browser Webpage Content */}
-              <div className="relative h-44 sm:h-52 rounded-xl bg-white dark:bg-[#1a1a1c] border border-gray-200/70 dark:border-white/10 overflow-hidden flex">
-                {/* Simulated Left Sidebar Dock (Lumina's exact menu dock) */}
+              <div className="relative h-44 sm:h-48 rounded-xl bg-white dark:bg-[#1a1a1c] border border-gray-200/70 dark:border-white/10 overflow-hidden flex">
+                {/* Simulated Left Sidebar Dock */}
                 <div className="w-8 sm:w-10 bg-gray-50 dark:bg-[#18181a] border-r border-gray-200/80 dark:border-white/10 p-1.5 flex flex-col items-center gap-2 shrink-0">
                   <div className="w-5 h-5 rounded-md bg-emerald-600/30 text-emerald-500 flex items-center justify-center text-[9px] font-bold">
                     L
@@ -293,16 +283,16 @@ export function CartAlertsTab() {
 
                   {/* Wireframe Catalog Grid Cards */}
                   <div className="grid grid-cols-3 gap-2 my-auto opacity-40">
-                    <div className="h-12 rounded-lg bg-gray-200 dark:bg-white/10 p-1 space-y-1">
-                      <div className="w-full h-6 rounded bg-gray-300 dark:bg-white/15" />
+                    <div className="h-11 rounded-lg bg-gray-200 dark:bg-white/10 p-1 space-y-1">
+                      <div className="w-full h-5 rounded bg-gray-300 dark:bg-white/15" />
                       <div className="w-8 h-1.5 rounded bg-gray-300 dark:bg-white/20" />
                     </div>
-                    <div className="h-12 rounded-lg bg-gray-200 dark:bg-white/10 p-1 space-y-1">
-                      <div className="w-full h-6 rounded bg-gray-300 dark:bg-white/15" />
+                    <div className="h-11 rounded-lg bg-gray-200 dark:bg-white/10 p-1 space-y-1">
+                      <div className="w-full h-5 rounded bg-gray-300 dark:bg-white/15" />
                       <div className="w-8 h-1.5 rounded bg-gray-300 dark:bg-white/20" />
                     </div>
-                    <div className="h-12 rounded-lg bg-gray-200 dark:bg-white/10 p-1 space-y-1">
-                      <div className="w-full h-6 rounded bg-gray-300 dark:bg-white/15" />
+                    <div className="h-11 rounded-lg bg-gray-200 dark:bg-white/10 p-1 space-y-1">
+                      <div className="w-full h-5 rounded bg-gray-300 dark:bg-white/15" />
                       <div className="w-8 h-1.5 rounded bg-gray-300 dark:bg-white/20" />
                     </div>
                   </div>
@@ -355,7 +345,7 @@ export function CartAlertsTab() {
                   <button
                     key={pos.id}
                     onClick={() => updateConfig({ position: pos.id })}
-                    className={`relative p-4 rounded-2xl border text-left transition-all cursor-pointer flex flex-col justify-between min-h-[105px] ${
+                    className={`relative p-4 rounded-2xl border text-left transition-all cursor-pointer flex flex-col justify-between min-h-[100px] ${
                       isSelected
                         ? 'border-gray-900 dark:border-white bg-gray-50/80 dark:bg-white/5 ring-1 ring-gray-900/10 dark:ring-white/20 shadow-xs'
                         : 'border-gray-200/80 dark:border-white/10 bg-white dark:bg-transparent hover:bg-gray-50 dark:hover:bg-white/[0.03]'
@@ -435,7 +425,7 @@ export function CartAlertsTab() {
           </div>
 
           {/* SECTION 3: Color Palette & Contrast Audit */}
-          <div className="bg-white dark:bg-[#202022] rounded-3xl border border-gray-200/80 dark:border-white/10 p-6 sm:p-7 shadow-sm space-y-5">
+          <div className="bg-white dark:bg-[#202022] rounded-3xl border border-gray-200/80 dark:border-white/10 p-6 shadow-sm space-y-5">
             <div>
               <h3 className="font-display font-bold text-base text-gray-900 dark:text-white flex items-center gap-2">
                 <Palette className="w-4 h-4 text-indigo-600" />
@@ -583,7 +573,7 @@ export function CartAlertsTab() {
             </div>
 
             {/* Contrast Audit Banner */}
-            <div className="pt-2">
+            <div className="pt-1">
               {!currentAudit.isAccessible ? (
                 <div className="p-4 rounded-2xl bg-amber-50 dark:bg-amber-950/30 border border-amber-300/80 dark:border-amber-700/60 flex flex-col sm:flex-row sm:items-center justify-between gap-3 animate-fade-in shadow-sm">
                   <div className="flex items-start gap-3">
@@ -631,7 +621,7 @@ export function CartAlertsTab() {
 
         {/* Right Column: Live Simulator (5 cols) */}
         <div className="lg:col-span-5 space-y-6">
-          <div className="bg-white dark:bg-[#202022] rounded-3xl border border-gray-200/80 dark:border-white/10 p-6 sm:p-7 shadow-sm space-y-5 sticky top-6">
+          <div className="bg-white dark:bg-[#202022] rounded-3xl border border-gray-200/80 dark:border-white/10 p-6 shadow-sm space-y-5 sticky top-6">
             <div className="flex items-center justify-between">
               <span className="text-xs font-bold text-gray-500 uppercase tracking-wider flex items-center gap-1.5">
                 <Eye className="w-3.5 h-3.5 text-gray-700 dark:text-gray-300" />
@@ -642,39 +632,72 @@ export function CartAlertsTab() {
               </span>
             </div>
 
-            {/* Dynamic Island Expansion / Collapse Test Button (for non-split layouts) */}
-            {isDynamicIsland && (
-              <div className="flex items-center justify-between p-3 rounded-2xl bg-gray-50 dark:bg-white/5 border border-gray-200/80 dark:border-white/10">
-                <div className="flex items-center gap-2">
-                  <Sparkles className="w-4 h-4 text-amber-500" />
-                  <span className="text-xs font-semibold text-gray-800 dark:text-gray-200">
-                    Isla Dinámica: {previewExpanded ? 'Abierta' : 'Cerrada'}
-                  </span>
-                </div>
-
-                <button
-                  type="button"
-                  onClick={() => setPreviewExpanded(!previewExpanded)}
-                  className="px-3 py-1.5 rounded-xl text-xs font-bold text-gray-900 dark:text-white bg-gray-200 dark:bg-white/15 hover:bg-gray-300 dark:hover:bg-white/25 active:scale-95 transition-all cursor-pointer flex items-center gap-1.5"
-                >
-                  <span>{previewExpanded ? 'Cerrar Isla' : 'Abrir Isla'}</span>
-                </button>
+            {/* Test Corner Minimize / Restore Animation Button */}
+            <div className="flex items-center justify-between p-3 rounded-2xl bg-gray-50 dark:bg-white/5 border border-gray-200/80 dark:border-white/10">
+              <div className="flex items-center gap-2 min-w-0">
+                {isTestMinimized ? (
+                  <Maximize2 className="w-4 h-4 text-blue-500 shrink-0" />
+                ) : (
+                  <Minimize2 className="w-4 h-4 text-amber-500 shrink-0" />
+                )}
+                <span className="text-xs font-semibold text-gray-800 dark:text-gray-200 truncate">
+                  Animación esquina macOS
+                </span>
               </div>
-            )}
 
-            {/* The Live Interactive Component */}
-            <div className="p-6 rounded-2xl bg-gray-50 dark:bg-black/25 border border-dashed border-gray-300 dark:border-white/10 flex flex-col items-center justify-center min-h-[300px]">
-              <CartAlertCard
-                payload={sampleCustomers[0]}
-                config={config}
-                isPreview={true}
-                isExpanded={previewExpanded}
-                onToggleExpand={() => setPreviewExpanded(!previewExpanded)}
-              />
+              <button
+                type="button"
+                onClick={() => setIsTestMinimized(!isTestMinimized)}
+                className="px-3 py-1.5 rounded-xl text-xs font-bold text-gray-900 dark:text-white bg-gray-200 dark:bg-white/15 hover:bg-gray-300 dark:hover:bg-white/25 active:scale-95 transition-all cursor-pointer shrink-0"
+              >
+                {isTestMinimized ? 'Expandir' : 'Minimizar en esquina'}
+              </button>
+            </div>
 
-              <div className="flex items-center justify-between w-full mt-4 text-[10px] text-gray-400 font-mono">
+            {/* The Live Interactive Component (Strictly Contained, Zero Overflow) */}
+            <div className="relative p-4 sm:p-5 rounded-2xl bg-gray-50 dark:bg-black/25 border border-dashed border-gray-300 dark:border-white/10 flex flex-col items-center justify-center min-h-[300px] overflow-hidden w-full">
+              <AnimatePresence mode="wait">
+                {!isTestMinimized ? (
+                  <motion.div
+                    key="card-active"
+                    style={{ transformOrigin: previewOrigin }}
+                    initial={{ scale: 0.15, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    exit={{ scale: 0.08, opacity: 0 }}
+                    transition={{ type: 'spring', stiffness: 350, damping: 26 }}
+                    className="w-full flex justify-center"
+                  >
+                    <CartAlertCard
+                      payload={sampleCustomers[0]}
+                      config={config}
+                      isPreview={true}
+                    />
+                  </motion.div>
+                ) : (
+                  <motion.div
+                    key="card-minimized"
+                    initial={{ opacity: 0, scale: 0.8 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.8 }}
+                    onClick={() => setIsTestMinimized(false)}
+                    className="p-4 rounded-xl border border-dashed border-gray-300 dark:border-white/20 text-center cursor-pointer hover:bg-gray-100 dark:hover:bg-white/5 transition-colors"
+                  >
+                    <div className="w-8 h-8 rounded-full bg-emerald-500/20 text-emerald-500 flex items-center justify-center mx-auto mb-2">
+                      📦
+                    </div>
+                    <span className="text-xs font-bold text-gray-800 dark:text-gray-200 block">
+                      Notificación minimizada en {config.position}
+                    </span>
+                    <span className="text-[11px] text-gray-400 mt-1 block">
+                      Clic para expandir en pantalla
+                    </span>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
+              <div className="flex items-center justify-between w-full mt-3 text-[10px] text-gray-400 font-mono">
                 <span>{config.position}</span>
-                <span>{config.duration / 1000}s permanencia</span>
+                <span>{config.duration / 1000}s de permanencia</span>
               </div>
             </div>
 
