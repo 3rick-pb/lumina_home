@@ -19,8 +19,9 @@ import {
   Navigation 
 } from "lucide-react";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
-import { useUserStore, clearAdminCache } from "@/lib/userStore";
+import { useUserStore, clearAdminCache, syncAddressesToCloud } from "@/lib/userStore";
 import { supabase } from "@/lib/supabase";
+import { CloudSyncStatus } from "../CloudSyncStatus";
 
 interface SettingsTabProps {
   isAdmin: boolean;
@@ -54,6 +55,21 @@ export function SettingsTab({
   const [inviteSuccess, setInviteSuccess] = useState<string | null>(null);
   const [settingsFeedback, setSettingsFeedback] = useState<{ msg: string; type: "success" | "error" } | null>(null);
   const [isUpdatingSettings, setIsUpdatingSettings] = useState(false);
+  const [isSyncingAddresses, setIsSyncingAddresses] = useState(false);
+  const [syncAddressError, setSyncAddressError] = useState<string | null>(null);
+
+  const handleSyncAddresses = async () => {
+    setIsSyncingAddresses(true);
+    setSyncAddressError(null);
+    try {
+      const active = addresses.find(a => a.isDefault) || addresses[0] || null;
+      await syncAddressesToCloud(user?.id, addresses, active);
+    } catch {
+      setSyncAddressError("Error al sincronizar direcciones");
+    } finally {
+      setIsSyncingAddresses(false);
+    }
+  };
 
   // Address form fields
   const [recipient, setRecipient] = useState("");
@@ -551,8 +567,18 @@ export function SettingsTab({
       </div>
 
       {/* Shipping Address Manager (5 cols) */}
-      <div className="lg:col-span-5 bg-white/90 dark:bg-[#202022]/90 backdrop-blur-xl p-6 md:p-8 rounded-[2.5rem] border border-white/80 shadow-[0_4px_24px_rgba(0,0,0,0.02)] flex flex-col justify-between space-y-4">
+      <div className="lg:col-span-5 bg-white/90 dark:bg-[#202022]/90 backdrop-blur-xl p-6 md:p-8 rounded-[2.5rem] border border-white/80 dark:border-white/10 shadow-[0_4px_24px_rgba(0,0,0,0.02)] flex flex-col justify-between space-y-4">
         <div>
+          <div className="mb-3">
+            <CloudSyncStatus
+              isSyncing={isSyncingAddresses}
+              syncError={syncAddressError}
+              onSave={handleSyncAddresses}
+              saveLabel="Guardar en nube"
+              savedLabel="Guardado en nube"
+              compact
+            />
+          </div>
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
               <MapPin className="w-4 h-4 text-[#8c9276]" />

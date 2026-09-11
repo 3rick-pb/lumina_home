@@ -6,6 +6,7 @@ import Link from "next/link";
 import { Package, Plus, Pencil, ExternalLink, Trash2 } from "lucide-react";
 import { useCatalogStore, CatalogProduct, isAgotadoBadge } from "@/lib/catalogStore";
 import { normalizeSearchText } from "@/lib/utils";
+import { CloudSyncStatus } from "../CloudSyncStatus";
 
 interface CatalogTabProps {
   searchQuery?: string;
@@ -20,8 +21,22 @@ export function CatalogTab({
   onOpenEditProduct,
   onDeleteProduct
 }: CatalogTabProps) {
-  const { products, categories } = useCatalogStore();
+  const { products, categories, fetchProducts, isLoading } = useCatalogStore();
   const [catalogCategoryFilter, setCatalogCategoryFilter] = useState<string>("all");
+  const [isSyncing, setIsSyncing] = useState(false);
+  const [syncError, setSyncError] = useState<string | null>(null);
+
+  const handleSyncInventory = async () => {
+    setIsSyncing(true);
+    setSyncError(null);
+    try {
+      await fetchProducts();
+    } catch {
+      setSyncError("Error al sincronizar inventario");
+    } finally {
+      setIsSyncing(false);
+    }
+  };
 
   const totalInventoryValue = useMemo(() => {
     return products.reduce((acc, p) => acc + (p.price || 0), 0);
@@ -40,9 +55,18 @@ export function CatalogTab({
   }, [products, catalogCategoryFilter, searchQuery]);
 
   return (
-    <div className="bg-white/90 dark:bg-[#202022]/90 backdrop-blur-xl p-6 md:p-8 rounded-[2.5rem] border border-white/80 shadow-[0_4px_24px_rgba(0,0,0,0.02)] space-y-6 animate-fade-in">
+    <div className="bg-white/90 dark:bg-[#202022]/90 backdrop-blur-xl p-6 md:p-8 rounded-[2.5rem] border border-white/80 dark:border-white/10 shadow-[0_4px_24px_rgba(0,0,0,0.02)] space-y-6 animate-fade-in">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
+          <div className="mb-2">
+            <CloudSyncStatus
+              isSyncing={isSyncing || isLoading}
+              syncError={syncError}
+              onSave={handleSyncInventory}
+              saveLabel="Guardar en nube"
+              savedLabel="Guardado en nube"
+            />
+          </div>
           <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
             <Package className="w-5 h-5 text-[#8c9276]" /> Control Total del Inventario
           </h2>

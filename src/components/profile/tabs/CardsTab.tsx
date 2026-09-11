@@ -1,21 +1,45 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import { CreditCard, Plus, Trash2 } from "lucide-react";
-import { useUserStore } from "@/lib/userStore";
+import { useUserStore, syncCardsToCloud } from "@/lib/userStore";
+import { CloudSyncStatus } from "../CloudSyncStatus";
 
 interface CardsTabProps {
   setShowCardModal: (show: boolean) => void;
 }
 
 export function CardsTab({ setShowCardModal }: CardsTabProps) {
-  const { cards, setDefaultCard, removeCard } = useUserStore();
+  const { cards, setDefaultCard, removeCard, user } = useUserStore();
+  const [isSyncing, setIsSyncing] = useState(false);
+  const [syncError, setSyncError] = useState<string | null>(null);
+
+  const handleSyncCards = async () => {
+    setIsSyncing(true);
+    setSyncError(null);
+    try {
+      await syncCardsToCloud(user?.id, cards);
+    } catch {
+      setSyncError("Error al sincronizar tarjetas");
+    } finally {
+      setIsSyncing(false);
+    }
+  };
 
   return (
     <div className="space-y-6 animate-fade-in">
-      <div className="bg-white/90 dark:bg-[#202022]/90 backdrop-blur-xl p-6 md:p-8 rounded-[2.5rem] border border-white/80 shadow-[0_4px_24px_rgba(0,0,0,0.02)]">
+      <div className="bg-white/90 dark:bg-[#202022]/90 backdrop-blur-xl p-6 md:p-8 rounded-[2.5rem] border border-white/80 dark:border-white/10 shadow-[0_4px_24px_rgba(0,0,0,0.02)]">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
           <div>
+            <div className="mb-2">
+              <CloudSyncStatus
+                isSyncing={isSyncing}
+                syncError={syncError}
+                onSave={handleSyncCards}
+                saveLabel="Guardar en nube"
+                savedLabel="Guardado en nube"
+              />
+            </div>
             <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
               <CreditCard className="w-5 h-5 text-[#8c9276]" /> Gestión de Billetera & Métodos de Pago
             </h2>
@@ -23,7 +47,7 @@ export function CardsTab({ setShowCardModal }: CardsTabProps) {
           </div>
           <button 
             onClick={() => setShowCardModal(true)} 
-            className="flex items-center gap-2 px-5 py-2.5 bg-gray-900 dark:bg-gray-100 hover:bg-gray-800 text-white dark:text-gray-900 text-xs font-semibold rounded-2xl transition-all shadow-md dark:shadow-none"
+            className="flex items-center gap-2 px-5 py-2.5 bg-gray-900 dark:bg-gray-100 hover:bg-gray-800 text-white dark:text-gray-900 text-xs font-semibold rounded-2xl transition-all shadow-md dark:shadow-none cursor-pointer shrink-0"
           >
             <Plus className="w-4 h-4" /> Añadir Tarjeta
           </button>

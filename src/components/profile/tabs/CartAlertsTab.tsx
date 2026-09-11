@@ -16,6 +16,7 @@ import {
   Zap, 
   Eye,
   Monitor,
+  Sparkles,
 } from 'lucide-react';
 import { 
   useAdminAlertStore, 
@@ -28,6 +29,7 @@ import {
   CartItemAddedPayload 
 } from '@/lib/adminAlertStore';
 import { CartAlertCard } from '@/components/admin/CartAlertCard';
+import { CloudSyncStatus } from '../CloudSyncStatus';
 
 const SAMPLE_CUSTOMERS: CartItemAddedPayload[] = [
   {
@@ -120,11 +122,22 @@ export function CartAlertsTab() {
   }, [loadConfigFromCloud]);
   
   const [testSent, setTestSent] = useState(false);
+  const [burstSent, setBurstSent] = useState(false);
 
   const handleFireLiveTest = React.useCallback((sampleIndex = 0) => {
     fireToast(SAMPLE_CUSTOMERS[sampleIndex]);
     setTestSent(true);
     setTimeout(() => setTestSent(false), 2200);
+  }, [fireToast]);
+
+  const handleFireBurstTest = React.useCallback(() => {
+    setBurstSent(true);
+    SAMPLE_CUSTOMERS.forEach((customer, idx) => {
+      setTimeout(() => {
+        fireToast(customer);
+      }, idx * 320);
+    });
+    setTimeout(() => setBurstSent(false), 3200);
   }, [fireToast]);
 
   const currentAudit = React.useMemo(() => {
@@ -133,34 +146,23 @@ export function CartAlertsTab() {
 
   return (
     <div className="space-y-6 animate-fade-in pb-0 w-full">
-      {/* Top Hero Banner */}
-      <div className="relative overflow-hidden rounded-[2rem] p-6 sm:p-8 border border-gray-200/80 dark:border-white/10 bg-white/95 dark:bg-[#202023] shadow-sm backdrop-blur-2xl w-full">
+      {/* Top Hero Banner - Harmonized with Lumina Store Atelier Design System */}
+      <div className="relative overflow-hidden rounded-[2.5rem] p-6 sm:p-8 border border-white/80 dark:border-white/10 bg-white/90 dark:bg-[#202022]/90 backdrop-blur-xl shadow-[0_4px_24px_rgba(0,0,0,0.02)] w-full">
         <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div>
-            <div className="flex items-center gap-2 flex-wrap mb-2.5">
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-50 dark:bg-blue-950/40 border border-blue-200/60 dark:border-blue-900/40 text-blue-700 dark:text-blue-400 text-[11px] font-semibold uppercase tracking-wider">
-                <ShieldCheck className="w-3.5 h-3.5 text-blue-600" />
+            <div className="flex items-center gap-2 flex-wrap mb-3">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#8c9276]/15 dark:bg-[#8c9276]/20 border border-[#8c9276]/30 text-[#494e37] dark:text-[#cbd1b2] text-[11px] font-semibold uppercase tracking-wider select-none">
+                <ShieldCheck className="w-3.5 h-3.5 text-[#8c9276]" />
                 <span>Personalización Global Unificada</span>
               </div>
-              {isSyncing ? (
-                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-50 dark:bg-amber-950/40 border border-amber-200/60 dark:border-amber-900/40 text-amber-700 dark:text-amber-400 text-[11px] font-semibold animate-pulse">
-                  <div className="w-2 h-2 rounded-full bg-amber-500 animate-ping" />
-                  <span>Sincronizando con base de datos...</span>
-                </div>
-              ) : syncError ? (
-                <button 
-                  onClick={() => saveConfigToCloud()}
-                  className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-red-50 dark:bg-red-950/40 border border-red-200/60 text-red-700 dark:text-red-400 text-[11px] font-semibold hover:bg-red-100 transition-colors cursor-pointer"
-                >
-                  <AlertTriangle className="w-3.5 h-3.5 text-red-500" />
-                  <span>Error al guardar (reintentar)</span>
-                </button>
-              ) : (
-                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200/60 dark:border-emerald-900/40 text-emerald-700 dark:text-emerald-400 text-[11px] font-semibold">
-                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                  <span>Base de datos Supabase conectada</span>
-                </div>
-              )}
+              <CloudSyncStatus
+                isSyncing={isSyncing}
+                syncError={syncError}
+                onSave={() => saveConfigToCloud()}
+                saveLabel="Guardar en nube"
+                savedLabel="Guardado en nube"
+                showSaveButton={false}
+              />
             </div>
             <h2 className="text-2xl sm:text-3xl font-display font-bold text-gray-900 dark:text-white tracking-tight">
               Notificaciones de Carrito en Vivo
@@ -172,24 +174,27 @@ export function CartAlertsTab() {
 
           <div className="flex flex-wrap items-center gap-3 shrink-0">
             <button
+              type="button"
               onClick={() => saveConfigToCloud()}
               disabled={isSyncing}
-              className="px-4 py-2.5 rounded-xl font-semibold text-white text-xs bg-emerald-600 hover:bg-emerald-500 shadow-sm active:scale-95 transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-60"
+              className="px-4 py-2.5 rounded-2xl font-semibold text-white text-xs bg-emerald-600 hover:bg-emerald-500 shadow-sm active:scale-95 transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-60"
               title="Guardar cambios permanentemente en base de datos"
             >
-              <Check className="w-3.5 h-3.5" />
+              <Check className="w-3.5 h-3.5 stroke-[2.5]" />
               <span>{isSyncing ? 'Guardando...' : 'Guardar en nube'}</span>
             </button>
             <button
+              type="button"
               onClick={() => handleFireLiveTest(0)}
-              className="px-5 py-2.5 rounded-xl font-semibold text-white text-xs bg-gray-900 dark:bg-white dark:text-gray-950 hover:bg-gray-800 dark:hover:bg-gray-100 shadow-sm active:scale-95 transition-all flex items-center gap-2 cursor-pointer"
+              className="px-5 py-2.5 rounded-2xl font-semibold text-white text-xs bg-gray-900 dark:bg-white dark:text-gray-950 hover:bg-gray-800 dark:hover:bg-gray-100 shadow-sm active:scale-95 transition-all flex items-center gap-2 cursor-pointer"
             >
               <Play className="w-3.5 h-3.5 fill-current" />
               <span>Probar en pantalla</span>
             </button>
             <button
+              type="button"
               onClick={resetConfig}
-              className="px-4 py-2.5 rounded-xl text-xs font-medium text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white bg-gray-100 dark:bg-white/5 hover:bg-gray-200 dark:hover:bg-white/10 active:scale-95 transition-all flex items-center gap-1.5 cursor-pointer"
+              className="px-4 py-2.5 rounded-2xl text-xs font-medium text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white bg-gray-100 dark:bg-white/5 hover:bg-gray-200 dark:hover:bg-white/10 active:scale-95 transition-all flex items-center gap-1.5 cursor-pointer"
               title="Restablecer configuración predeterminada"
             >
               <RotateCcw className="w-3.5 h-3.5" />
@@ -204,19 +209,19 @@ export function CartAlertsTab() {
         {/* Left Column: Settings (7 cols) */}
         <div className="lg:col-span-7 space-y-6">
 
-          {/* SECTION 1: 4 Genuine Layout Structures (NO "Isla Dinámica") */}
-          <div className="bg-white dark:bg-[#202022] rounded-3xl border border-gray-200/80 dark:border-white/10 p-6 shadow-sm space-y-5">
+          {/* SECTION 1: 4 Genuine Layout Structures */}
+          <div className="bg-white/90 dark:bg-[#202022]/90 backdrop-blur-xl rounded-[2.5rem] border border-white/80 dark:border-white/10 p-6 md:p-7 shadow-[0_4px_24px_rgba(0,0,0,0.02)] space-y-5">
             <div className="flex items-center justify-between">
               <div>
                 <h3 className="font-display font-bold text-base text-gray-900 dark:text-white flex items-center gap-2">
-                  <Layers className="w-4 h-4 text-blue-600" />
+                  <Layers className="w-4 h-4 text-[#8c9276]" />
                   Estructura de Notificación
                 </h3>
                 <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
                   Cuatro formatos con geometrías y distribuciones de información realmente distintas.
                 </p>
               </div>
-              <span className="text-[10px] font-mono font-bold uppercase tracking-wider px-2.5 py-1 rounded-lg bg-gray-100 dark:bg-white/10 text-gray-700 dark:text-gray-300">
+              <span className="text-[10px] font-mono font-bold uppercase tracking-wider px-2.5 py-1 rounded-lg bg-gray-100 dark:bg-[#3a3a3c] text-gray-700 dark:text-[#ccff00]">
                 {config.layout}
               </span>
             </div>
@@ -231,16 +236,16 @@ export function CartAlertsTab() {
                     onClick={() => updateConfig({ layout: lo.id })}
                     className={`relative p-4 rounded-2xl border text-left transition-[border-color,background-color] duration-150 cursor-pointer flex flex-col justify-between min-h-[110px] ${
                       isSelected
-                        ? 'border-gray-900 dark:border-white bg-gray-50/80 dark:bg-white/5 ring-1 ring-gray-900/10 dark:ring-white/20 shadow-xs'
+                        ? 'border-gray-900 dark:border-[#ccff00] bg-gray-50/80 dark:bg-[#ccff00]/[0.04] ring-1 ring-gray-900/10 dark:ring-[#ccff00]/30 shadow-xs'
                         : 'border-gray-200/80 dark:border-white/10 bg-white dark:bg-transparent hover:bg-gray-50 dark:hover:bg-white/[0.03]'
                     }`}
                   >
                     <div>
                       <div className="flex items-center justify-between mb-1.5">
-                        <span className="text-[10px] font-semibold px-2 py-0.5 rounded-md bg-gray-100 dark:bg-white/10 text-gray-700 dark:text-gray-300">
+                        <span className="text-[10px] font-semibold px-2 py-0.5 rounded-md bg-gray-100 dark:bg-[#3a3a3c] text-gray-700 dark:text-gray-300">
                           {lo.badge}
                         </span>
-                        {isSelected && <CheckCircle2 className="w-4 h-4 text-gray-900 dark:text-white shrink-0" />}
+                        {isSelected && <CheckCircle2 className="w-4 h-4 text-[#8c9276] dark:text-[#ccff00] shrink-0" />}
                       </div>
                       <h4 className="text-xs font-bold text-gray-900 dark:text-white mt-1">
                         {lo.title}
@@ -256,10 +261,10 @@ export function CartAlertsTab() {
           </div>
 
           {/* SECTION 2: Realistic Desktop Viewport Simulator */}
-          <div className="bg-white dark:bg-[#202022] rounded-3xl border border-gray-200/80 dark:border-white/10 p-6 shadow-sm space-y-5">
+          <div className="bg-white/90 dark:bg-[#202022]/90 backdrop-blur-xl rounded-[2.5rem] border border-white/80 dark:border-white/10 p-6 md:p-7 shadow-[0_4px_24px_rgba(0,0,0,0.02)] space-y-5">
             <div>
               <h3 className="font-display font-bold text-base text-gray-900 dark:text-white flex items-center gap-2">
-                <Monitor className="w-4 h-4 text-blue-600" />
+                <Monitor className="w-4 h-4 text-[#8c9276]" />
                 Ubicación y Tiempo de Muestra en Pantalla
               </h3>
               <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
@@ -289,13 +294,13 @@ export function CartAlertsTab() {
               <div className="relative h-44 sm:h-48 rounded-xl bg-white dark:bg-[#1a1a1c] border border-gray-200/70 dark:border-white/10 overflow-hidden flex">
                 {/* Simulated Left Sidebar Dock */}
                 <div className="w-8 sm:w-10 bg-gray-50 dark:bg-[#18181a] border-r border-gray-200/80 dark:border-white/10 p-1.5 flex flex-col items-center gap-2 shrink-0">
-                  <div className="w-5 h-5 rounded-md bg-emerald-600/30 text-emerald-500 flex items-center justify-center text-[9px] font-bold">
+                  <div className="w-5 h-5 rounded-md bg-[#8c9276]/30 text-[#8c9276] flex items-center justify-center text-[9px] font-bold">
                     L
                   </div>
                   <div className="w-3.5 h-[1px] bg-gray-300 dark:bg-white/10 my-0.5" />
                   <div className="w-4 h-4 rounded bg-gray-200 dark:bg-white/10" />
                   <div className="w-4 h-4 rounded bg-gray-200 dark:bg-white/10" />
-                  <div className="w-4 h-4 rounded bg-emerald-500 text-white flex items-center justify-center text-[8px]">
+                  <div className="w-4 h-4 rounded bg-[#8c9276] text-white flex items-center justify-center text-[8px]">
                     🔔
                   </div>
                   <div className="w-4 h-4 rounded bg-gray-200 dark:bg-white/10 mt-auto" />
@@ -329,7 +334,7 @@ export function CartAlertsTab() {
                     </div>
                   </div>
 
-                  {/* MINI NOTIFICATION AT EXACT CONFIG POSITION (Zero layout thrashing, 120fps CSS transition) */}
+                  {/* MINI NOTIFICATION AT EXACT CONFIG POSITION */}
                   <div
                     className={`absolute z-20 pointer-events-none transition-all duration-300 ease-out ${
                       config.position === 'bottom-right'
@@ -349,7 +354,7 @@ export function CartAlertsTab() {
                         color: config.textColor
                       }}
                     >
-                      <div className="w-5 h-5 rounded-md bg-emerald-500/20 text-emerald-500 flex items-center justify-center text-[10px]">
+                      <div className="w-5 h-5 rounded-md bg-[#8c9276]/20 text-[#8c9276] dark:text-[#ccff00] flex items-center justify-center text-[10px]">
                         📦
                       </div>
                       <div className="leading-none pr-1">
@@ -360,7 +365,7 @@ export function CartAlertsTab() {
                           {config.position}
                         </div>
                       </div>
-                      <div className="w-2 h-2 rounded-full bg-emerald-500 animate-ping shrink-0" />
+                      <div className="w-2 h-2 rounded-full bg-[#8c9276] dark:bg-[#ccff00] animate-ping shrink-0" />
                     </div>
                   </div>
                 </div>
@@ -377,7 +382,7 @@ export function CartAlertsTab() {
                     onClick={() => updateConfig({ position: pos.id })}
                     className={`relative p-4 rounded-2xl border text-left transition-[border-color,background-color] duration-150 cursor-pointer flex flex-col justify-between min-h-[100px] ${
                       isSelected
-                        ? 'border-gray-900 dark:border-white bg-gray-50/80 dark:bg-white/5 ring-1 ring-gray-900/10 dark:ring-white/20 shadow-xs'
+                        ? 'border-gray-900 dark:border-[#ccff00] bg-gray-50/80 dark:bg-[#ccff00]/[0.04] ring-1 ring-gray-900/10 dark:ring-[#ccff00]/30 shadow-xs'
                         : 'border-gray-200/80 dark:border-white/10 bg-white dark:bg-transparent hover:bg-gray-50 dark:hover:bg-white/[0.03]'
                     }`}
                   >
@@ -385,7 +390,7 @@ export function CartAlertsTab() {
                       <span className="text-xs font-bold text-gray-900 dark:text-white">
                         {pos.label}
                       </span>
-                      {isSelected && <Check className="w-4 h-4 text-emerald-600 dark:text-emerald-400 stroke-[3]" />}
+                      {isSelected && <Check className="w-4 h-4 text-[#8c9276] dark:text-[#ccff00] stroke-[3]" />}
                     </div>
 
                     <p className="text-[11px] text-gray-500 dark:text-gray-400 leading-relaxed">
@@ -409,7 +414,7 @@ export function CartAlertsTab() {
                       onClick={() => updateConfig({ duration: dur.ms })}
                       className={`py-2 px-2.5 rounded-xl text-xs font-semibold border text-center transition-[border-color,background-color] duration-150 cursor-pointer ${
                         config.duration === dur.ms
-                          ? 'border-gray-900 bg-gray-900 text-white dark:border-white dark:bg-white dark:text-gray-950 shadow-xs'
+                          ? 'border-gray-900 bg-gray-900 text-white dark:border-[#ccff00] dark:bg-[#ccff00] dark:text-gray-950 shadow-xs'
                           : 'border-gray-200 dark:border-white/10 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/5'
                       }`}
                     >
@@ -425,7 +430,7 @@ export function CartAlertsTab() {
                 </label>
                 <div className="p-2.5 rounded-2xl bg-gray-50 dark:bg-[#18181a] border border-gray-200/80 dark:border-white/10 flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <div className={`w-8 h-8 rounded-xl flex items-center justify-center ${config.soundEnabled ? 'bg-gray-200 text-gray-900 dark:bg-white/15 dark:text-white' : 'bg-gray-200 text-gray-400 dark:bg-white/10'}`}>
+                    <div className={`w-8 h-8 rounded-xl flex items-center justify-center ${config.soundEnabled ? 'bg-[#8c9276]/20 text-[#8c9276] dark:bg-[#ccff00]/20 dark:text-[#ccff00]' : 'bg-gray-200 text-gray-400 dark:bg-white/10'}`}>
                       {config.soundEnabled ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
                     </div>
                     <button
@@ -437,9 +442,10 @@ export function CartAlertsTab() {
                     </button>
                   </div>
                   <button
+                    type="button"
                     onClick={() => updateConfig({ soundEnabled: !config.soundEnabled })}
                     className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
-                      config.soundEnabled ? 'bg-gray-900 dark:bg-white' : 'bg-gray-300 dark:bg-gray-700'
+                      config.soundEnabled ? 'bg-[#8c9276] dark:bg-[#ccff00]' : 'bg-gray-300 dark:bg-gray-700'
                     }`}
                   >
                     <span
@@ -455,10 +461,10 @@ export function CartAlertsTab() {
           </div>
 
           {/* SECTION 3: Color Palette & Contrast Audit */}
-          <div className="bg-white dark:bg-[#202022] rounded-3xl border border-gray-200/80 dark:border-white/10 p-6 shadow-sm space-y-5">
+          <div className="bg-white/90 dark:bg-[#202022]/90 backdrop-blur-xl rounded-[2.5rem] border border-white/80 dark:border-white/10 p-6 md:p-7 shadow-[0_4px_24px_rgba(0,0,0,0.02)] space-y-5">
             <div>
               <h3 className="font-display font-bold text-base text-gray-900 dark:text-white flex items-center gap-2">
-                <Palette className="w-4 h-4 text-indigo-600" />
+                <Palette className="w-4 h-4 text-[#8c9276]" />
                 Colores y Legibilidad
               </h3>
               <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
@@ -481,7 +487,7 @@ export function CartAlertsTab() {
                       onClick={() => applyPreset(preset.id)}
                       className={`p-3 rounded-xl border text-left transition-[border-color,background-color] duration-150 cursor-pointer flex items-center gap-2.5 ${
                         isSelected
-                          ? 'border-gray-900 dark:border-white bg-gray-50/80 dark:bg-white/5 ring-1 ring-gray-900/10'
+                          ? 'border-gray-900 dark:border-[#ccff00] bg-gray-50/80 dark:bg-[#ccff00]/[0.04] ring-1 ring-gray-900/10 dark:ring-[#ccff00]/30'
                           : 'border-gray-200/80 dark:border-white/10 bg-white dark:bg-transparent hover:bg-gray-50 dark:hover:bg-white/[0.03]'
                       }`}
                     >
@@ -651,13 +657,13 @@ export function CartAlertsTab() {
 
         {/* Right Column: Live Simulator (5 cols) */}
         <div className="lg:col-span-5 space-y-6">
-          <div className="bg-white dark:bg-[#202022] rounded-3xl border border-gray-200/80 dark:border-white/10 p-6 shadow-sm space-y-5 sticky top-6">
+          <div className="bg-white/90 dark:bg-[#202022]/90 backdrop-blur-xl rounded-[2.5rem] border border-white/80 dark:border-white/10 p-6 md:p-7 shadow-[0_4px_24px_rgba(0,0,0,0.02)] space-y-5 sticky top-6">
             <div className="flex items-center justify-between">
               <span className="text-xs font-bold text-gray-500 uppercase tracking-wider flex items-center gap-1.5">
-                <Eye className="w-3.5 h-3.5 text-gray-700 dark:text-gray-300" />
+                <Eye className="w-3.5 h-3.5 text-[#8c9276]" />
                 Vista previa en vivo
               </span>
-              <span className="text-[10px] font-semibold text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 px-2.5 py-0.5 rounded-full border border-emerald-200 dark:border-emerald-800">
+              <span className="text-[10px] font-semibold text-[#8c9276] dark:text-[#ccff00] bg-[#8c9276]/10 dark:bg-[#ccff00]/10 px-2.5 py-0.5 rounded-full border border-[#8c9276]/20 dark:border-[#ccff00]/20">
                 Fiel a pantalla
               </span>
             </div>
@@ -678,10 +684,32 @@ export function CartAlertsTab() {
               </div>
             </div>
 
+            {/* Multi-notification Stacking Burst Trigger */}
+            <div className="p-3.5 rounded-2xl bg-gray-50 dark:bg-[#18181a] border border-gray-200/80 dark:border-white/10 space-y-2">
+              <div className="flex items-center gap-2">
+                <Sparkles className="w-3.5 h-3.5 text-[#8c9276] dark:text-[#ccff00]" />
+                <span className="text-xs font-bold text-gray-900 dark:text-white">
+                  Probar apilado en eje Y/Z (Baraja):
+                </span>
+              </div>
+              <p className="text-[11px] text-gray-500 dark:text-gray-400">
+                Envía 3 notificaciones consecutivas para ver el efecto de cartas apiladas en el fondo.
+              </p>
+              <button
+                type="button"
+                onClick={handleFireBurstTest}
+                disabled={burstSent}
+                className="w-full py-2.5 px-4 rounded-xl text-xs font-semibold text-gray-950 dark:text-gray-950 bg-[#ccff00] hover:bg-[#b8e600] active:scale-98 transition-all flex items-center justify-center gap-2 cursor-pointer shadow-xs font-display"
+              >
+                <Layers className="w-3.5 h-3.5 text-gray-950" />
+                <span>{burstSent ? 'Enviando ráfaga apilada...' : 'Disparar ráfaga de 3 alertas apiladas'}</span>
+              </button>
+            </div>
+
             {/* Test Triggers with sample registered customer profiles */}
             <div className="space-y-2">
               <label className="text-xs font-semibold text-gray-700 dark:text-gray-300 block">
-                Probar con perfiles de cliente:
+                Probar alertas individuales:
               </label>
               
               <div className="grid grid-cols-3 gap-2">
@@ -713,10 +741,10 @@ export function CartAlertsTab() {
               </div>
             </div>
 
-            {testSent && (
-              <div className="p-3 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300 text-xs font-semibold flex items-center justify-center gap-2 animate-fade-in">
-                <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                <span>Notificación enviada a tu pantalla</span>
+            {(testSent || burstSent) && (
+              <div className="p-3 rounded-xl bg-[#8c9276]/15 dark:bg-[#8c9276]/20 border border-[#8c9276]/30 text-[#444833] dark:text-[#d5dbbb] text-xs font-semibold flex items-center justify-center gap-2 animate-fade-in">
+                <CheckCircle2 className="w-4 h-4 text-[#8c9276] dark:text-[#ccff00]" />
+                <span>{burstSent ? 'Ráfaga de alertas apiladas en pantalla' : 'Notificación enviada a tu pantalla'}</span>
               </div>
             )}
           </div>

@@ -1,32 +1,56 @@
 "use client";
 
-import React, { useMemo } from "react";
+import React, { useState, useMemo } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { Heart } from "lucide-react";
-import { useUserStore } from "@/lib/userStore";
+import { useUserStore, syncFavoritesToCloud } from "@/lib/userStore";
 import { useCatalogStore } from "@/lib/catalogStore";
 import { useCartStore } from "@/lib/store";
+import { CloudSyncStatus } from "../CloudSyncStatus";
 
 export function FavoritesTab() {
-  const { favorites, toggleFavorite } = useUserStore();
+  const { favorites, toggleFavorite, user } = useUserStore();
   const { products } = useCatalogStore();
   const { addItem, setIsOpen: setCartOpen } = useCartStore();
+  const [isSyncing, setIsSyncing] = useState(false);
+  const [syncError, setSyncError] = useState<string | null>(null);
+
+  const handleSyncFavorites = async () => {
+    setIsSyncing(true);
+    setSyncError(null);
+    try {
+      await syncFavoritesToCloud(user?.id, favorites);
+    } catch {
+      setSyncError("Error al sincronizar favoritos");
+    } finally {
+      setIsSyncing(false);
+    }
+  };
 
   const favoritedProductsList = useMemo(() => {
     return products.filter(p => favorites.includes(p.id));
   }, [products, favorites]);
 
   return (
-    <div className="bg-white/90 dark:bg-[#202022]/90 backdrop-blur-xl p-6 md:p-8 rounded-[2.5rem] border border-white/80 shadow-[0_4px_24px_rgba(0,0,0,0.02)] space-y-6 animate-fade-in">
-      <div className="flex items-center justify-between">
+    <div className="bg-white/90 dark:bg-[#202022]/90 backdrop-blur-xl p-6 md:p-8 rounded-[2.5rem] border border-white/80 dark:border-white/10 shadow-[0_4px_24px_rgba(0,0,0,0.02)] space-y-6 animate-fade-in">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
+          <div className="mb-2">
+            <CloudSyncStatus
+              isSyncing={isSyncing}
+              syncError={syncError}
+              onSave={handleSyncFavorites}
+              saveLabel="Guardar en nube"
+              savedLabel="Guardado en nube"
+            />
+          </div>
           <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
             <Heart className="w-5 h-5 text-red-500" /> Piezas Guardadas en Favoritos
           </h2>
           <p className="text-xs text-gray-500 dark:text-gray-400">Colección personal de artículos que has marcado con el corazón.</p>
         </div>
-        <span className="text-xs font-semibold text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-[#3a3a3c] px-3 py-1 rounded-full">
+        <span className="text-xs font-semibold text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-[#3a3a3c] px-3 py-1 rounded-full self-start sm:self-auto">
           {favoritedProductsList.length} guardados
         </span>
       </div>

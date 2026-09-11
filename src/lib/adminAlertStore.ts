@@ -359,9 +359,16 @@ export const playAcousticChime = () => {
   } catch {}
 };
 
+export interface StackedAlertItem {
+  id: string;
+  payload: CartItemAddedPayload;
+  timestamp: number;
+}
+
 interface AdminAlertState {
   config: CartAlertConfig;
   activeAlert: CartItemAddedPayload | null;
+  activeAlerts: StackedAlertItem[];
   activeAlertKey: number;
   onViewDetailsCallback?: () => void;
   isSyncing: boolean;
@@ -374,7 +381,8 @@ interface AdminAlertState {
   applyRecommendedContrast: () => void;
   resetConfig: () => void;
   fireToast: (payload: CartItemAddedPayload, onViewDetails?: () => void) => void;
-  dismissAlert: () => void;
+  dismissAlert: (id?: string) => void;
+  bringToFront: (id: string) => void;
 }
 
 let saveDebounceTimer: NodeJS.Timeout | null = null;
@@ -401,6 +409,7 @@ export const hydrateAlertConfigFromClient = () => {
 export const useAdminAlertStore = create<AdminAlertState>((set, get) => ({
   config: DEFAULT_CONFIG,
   activeAlert: null,
+  activeAlerts: [],
   activeAlertKey: 0,
   onViewDetailsCallback: undefined,
   isSyncing: false,
@@ -546,20 +555,56 @@ export const useAdminAlertStore = create<AdminAlertState>((set, get) => ({
   },
 
   fireToast: (payload, onViewDetails) => {
-    const { config } = get();
+    const { config, activeAlerts } = get();
     if (config.soundEnabled) {
       playAcousticChime();
     }
 
+    const newItem: StackedAlertItem = {
+      id: `${payload.userId || 'usr'}_${payload.product?.id || 'prd'}_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+      payload,
+      timestamp: Date.now(),
+    };
+
+    // Keep up to 4 alerts visible at once in the stacked deck
+    const nextAlerts = [newItem, ...activeAlerts.slice(0, 3)];
+
     set({
+      activeAlerts: nextAlerts,
       activeAlert: payload,
       activeAlertKey: Date.now(),
       onViewDetailsCallback: onViewDetails,
     });
   },
 
-  dismissAlert: () => {
-    set({ activeAlert: null });
+  dismissAlert: (id?: string) => {
+    const { activeAlerts } = get();
+    if (!id) {
+      if (activeAlerts.length <= 1) {
+        set({ activeAlerts: [], activeAlert: null });
+      } else {
+        const next = activeAlerts.slice(1);
+        set({ activeAlerts: next, activeAlert: next[0]?.payload || null });
+      }
+      return;
+    }
+    const next = activeAlerts.filter((a) => a.id !== id);
+    set({
+      activeAlerts: next,
+      activeAlert: next[0]?.payload || null,
+    });
+  },
+
+  bringToFront: (id: string) => {
+    const { activeAlerts } = get();
+    const target = activeAlerts.find((a) => a.id === id);
+    if (!target) return;
+    const filtered = activeAlerts.filter((a) => a.id !== id);
+    const next = [target, ...filtered];
+    set({
+      activeAlerts: next,
+      activeAlert: target.payload,
+    });
   },
 }));
 

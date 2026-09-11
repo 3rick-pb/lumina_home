@@ -25,17 +25,20 @@ import {
   type NicheSlotConfig 
 } from "@/lib/nicheIcons";
 import { useCatalogStore, isAgotadoBadge } from "@/lib/catalogStore";
+import { CloudSyncStatus } from "../CloudSyncStatus";
 
 interface NichesTabProps {
   onRequestDeleteNiche: (catName: string) => void;
 }
 
 export function NichesTab({ onRequestDeleteNiche }: NichesTabProps) {
-  const { products, categories, badges, addCategory, addBadge, deleteBadge } = useCatalogStore();
+  const { products, categories, badges, addCategory, addBadge, deleteBadge, fetchProducts } = useCatalogStore();
 
   // Category & Badge manager state
   const [newCatInput, setNewCatInput] = useState("");
   const [newBadgeInput, setNewBadgeInput] = useState("");
+  const [isSyncing, setIsSyncing] = useState(false);
+  const [syncError, setSyncError] = useState<string | null>(null);
 
   // Dynamic Header Niche Customizer State
   const [nicheSlots, setNicheSlots] = useState<NicheSlotConfig[]>(DEFAULT_NICHE_SLOTS);
@@ -108,14 +111,40 @@ export function NichesTab({ onRequestDeleteNiche }: NichesTabProps) {
     }
   };
 
+  const handleSyncNichesAndCategories = async () => {
+    setIsSyncing(true);
+    setSyncError(null);
+    try {
+      handleSaveNicheSlots();
+      if (fetchProducts) {
+        await fetchProducts();
+      }
+    } catch {
+      setSyncError("Error al sincronizar nichos y colecciones");
+    } finally {
+      setIsSyncing(false);
+    }
+  };
+
   return (
-            <div className="bg-white/90 dark:bg-[#202022]/90 backdrop-blur-xl p-6 md:p-8 rounded-[2.5rem] border border-white/80 shadow-[0_4px_24px_rgba(0,0,0,0.02)] space-y-8 animate-fade-in">
-              <div>
-                <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
-                  <Layers className="w-5 h-5 text-[#8c9276]" /> Gestión de Nichos & Colecciones
-                </h2>
-                <p className="text-xs text-gray-500 dark:text-gray-400">Personaliza el menú flotante interactivo de la tienda, crea nuevos nichos de mercado o elimina aquellos sin existencias.</p>
-              </div>
+    <div className="bg-white/90 dark:bg-[#202022]/90 backdrop-blur-xl p-6 md:p-8 rounded-[2.5rem] border border-white/80 dark:border-white/10 shadow-[0_4px_24px_rgba(0,0,0,0.02)] space-y-8 animate-fade-in">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <div className="mb-2">
+            <CloudSyncStatus
+              isSyncing={isSyncing}
+              syncError={syncError}
+              onSave={handleSyncNichesAndCategories}
+              saveLabel="Guardar en nube"
+              savedLabel="Guardado en nube"
+            />
+          </div>
+          <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
+            <Layers className="w-5 h-5 text-[#8c9276]" /> Gestión de Nichos & Colecciones
+          </h2>
+          <p className="text-xs text-gray-500 dark:text-gray-400">Personaliza el menú flotante interactivo de la tienda, crea nuevos nichos de mercado o elimina aquellos sin existencias.</p>
+        </div>
+      </div>
 
               {/* ========================================================================= */}
               {/* SIMULADOR INTERACTIVO LIQUID GLASS PARA EL MENÚ DE INICIO */}

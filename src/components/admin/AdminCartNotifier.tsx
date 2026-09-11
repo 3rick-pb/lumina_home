@@ -14,9 +14,10 @@ export function AdminCartNotifier() {
   const { 
     config, 
     activeAlert, 
-    activeAlertKey, 
+    activeAlerts,
     fireToast, 
     dismissAlert,
+    bringToFront,
     onViewDetailsCallback 
   } = useAdminAlertStore();
   const router = useRouter();
@@ -66,20 +67,26 @@ export function AdminCartNotifier() {
     };
   }, [isAdmin]);
 
-  // Auto-dismiss timer based on configured duration
+  // Auto-dismiss timers per card based on configured duration
   useEffect(() => {
-    if (!activeAlert || !activeAlertKey) return;
+    if (activeAlerts.length === 0) return;
 
-    const timer = setTimeout(() => {
-      dismissAlert();
-    }, config.duration);
+    const timers = activeAlerts.map((item) => {
+      const elapsed = Date.now() - item.timestamp;
+      const remaining = Math.max(1000, config.duration - elapsed);
+      return setTimeout(() => {
+        dismissAlert(item.id);
+      }, remaining);
+    });
 
-    return () => clearTimeout(timer);
-  }, [activeAlert, activeAlertKey, config.duration, dismissAlert]);
+    return () => {
+      timers.forEach((t) => clearTimeout(t));
+    };
+  }, [activeAlerts, config.duration, dismissAlert]);
 
   if (!isAdmin) return null;
 
-  // Determine fixed positioning CSS classes and macOS transform origin
+  // Determine fixed positioning CSS classes and transform origin
   const position = config?.position || "bottom-right";
   const getPositionClasses = () => {
     switch (position) {
@@ -99,8 +106,8 @@ export function AdminCartNotifier() {
   const isRight = typeof position === 'string' && position.endsWith("right");
   const transformOrigin = `${isBottom ? "bottom" : "top"} ${isRight ? "right" : "left"}`;
 
-  const handleAction = () => {
-    dismissAlert();
+  const handleAction = (alertId?: string) => {
+    dismissAlert(alertId);
     if (onViewDetailsCallback) {
       onViewDetailsCallback();
     } else {
@@ -108,56 +115,91 @@ export function AdminCartNotifier() {
     }
   };
 
+  // Fallback to activeAlert if activeAlerts is empty
+  const displayAlerts = activeAlerts.length > 0 
+    ? activeAlerts 
+    : activeAlert 
+      ? [{ id: 'legacy-active', payload: activeAlert, timestamp: Date.now() }] 
+      : [];
+
   return (
     <aside 
       aria-label="Notificaciones de actividad en vivo"
       className={`fixed z-[99999] pointer-events-none flex flex-col ${getPositionClasses()}`}
     >
-      <AnimatePresence mode="sync">
-        {activeAlert && (
-          <motion.div
-            key={activeAlertKey}
-            style={{ transformOrigin }}
-            initial={{
-              opacity: 0,
-              scale: 0.15,
-              y: isBottom ? 25 : -25,
-              x: isRight ? 25 : -25,
-            }}
-            animate={{
-              opacity: 1,
-              scale: 1,
-              y: 0,
-              x: 0,
-              transition: {
-                type: "spring",
-                stiffness: 340,
-                damping: 26,
-                mass: 0.85,
-              },
-            }}
-            exit={{
-              opacity: 0,
-              scale: 0.08,
-              y: isBottom ? 20 : -20,
-              x: isRight ? 20 : -20,
-              transition: {
-                duration: 0.24,
-                ease: [0.32, 0, 0.67, 0],
-              },
-            }}
-            className="pointer-events-auto filter drop-shadow-2xl"
-          >
-            <CartAlertCard
-              payload={activeAlert}
-              config={config}
-              onClose={dismissAlert}
-              onAction={handleAction}
-              isPreview={false}
-            />
-          </motion.div>
-        )}
-      </AnimatePresence>
+      {/* CSS Grid stack: All cards share gridArea 1 / 1 / 2 / 2 for zero-thrash, butter-smooth 120fps card stacking */}
+      <div className="relative pointer-events-auto grid grid-cols-1 grid-rows-1 items-end justify-items-end select-none">
+        <AnimatePresence mode="popLayout">
+          {displayAlerts.map((item, index) => {
+            // Y-axis offset: cards in background peek out from top (if bottom-anchored) or bottom (if top-anchored)
+            const yOffset = isBottom ? -index * 13 : index * 13;
+            // Progressive scale down for cards in the background
+            const scale = Math.max(0.78, 1 - index * 0.055);
+            // Progressive opacity reduction for background depth
+            const opacity = Math.max(0.35, 1 - index * 0.22);
+            // Depth order: Front card is highest
+            const zIndex = 50 - index * 10;
+
+            return (
+              <motion.div
+                key={item.id}
+                layout
+                style={{ 
+                  gridArea: "1 / 1 / 2 / 2",
+                  zIndex,
+                  transformOrigin,
+                }}
+                initial={{
+                  opacity: 0,
+                  scale: 0.8,
+                  y: isBottom ? 35 : -35,
+                  x: isRight ? 20 : -20,
+                }}
+                animate={{
+                  opacity,
+                  scale,
+                  y: yOffset,
+                  x: 0,
+                  zIndex,
+                  filter: index > 0 ? `brightness(${Math.max(0.85, 1 - index * 0.07)})` : "none",
+                  transition: {
+                    type: "spring",
+                    stiffness: 350,
+                    damping: 26,
+                    mass: 0.8,
+                  },
+                }}
+                exit={{
+                  opacity: 0,
+                  scale: 0.7,
+                  y: isBottom ? 20 : -20,
+                  x: isRight ? 20 : -20,
+                  transition: {
+                    duration: 0.22,
+                    ease: [0.32, 0, 0.67, 0],
+                  },
+                }}
+                onClick={() => {
+                  if (index > 0) {
+                    bringToFront(item.id);
+                  }
+                }}
+                className={`filter drop-shadow-2xl transition-all duration-200 ${
+                  index > 0 ? "cursor-pointer hover:scale-[0.96] hover:brightness-100" : ""
+                }`}
+              >
+                <CartAlertCard
+                  payload={item.payload}
+                  config={config}
+                  onClose={() => dismissAlert(item.id)}
+                  onAction={() => handleAction(item.id)}
+                  isPreview={false}
+                />
+              </motion.div>
+            );
+          })}
+        </AnimatePresence>
+      </div>
     </aside>
   );
 }

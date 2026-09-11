@@ -5,6 +5,7 @@ import Link from "next/link";
 import { ShoppingBag, Eye } from "lucide-react";
 import { useUserStore, Order } from "@/lib/userStore";
 import { normalizeSearchText } from "@/lib/utils";
+import { CloudSyncStatus } from "../CloudSyncStatus";
 
 interface OrdersTabProps {
   isAdmin: boolean;
@@ -17,8 +18,22 @@ export function OrdersTab({
   searchQuery = "",
   setSelectedOrder
 }: OrdersTabProps) {
-  const { orders, updateOrderStatus } = useUserStore();
+  const { orders, updateOrderStatus, refreshOrders } = useUserStore();
   const [orderStatusFilter, setOrderStatusFilter] = useState<string>("all");
+  const [isSyncing, setIsSyncing] = useState(false);
+  const [syncError, setSyncError] = useState<string | null>(null);
+
+  const handleSyncOrders = async () => {
+    setIsSyncing(true);
+    setSyncError(null);
+    try {
+      await refreshOrders();
+    } catch {
+      setSyncError("Error al sincronizar pedidos");
+    } finally {
+      setIsSyncing(false);
+    }
+  };
 
   const filteredOrders = useMemo(() => {
     const q = normalizeSearchText(searchQuery);
@@ -34,10 +49,21 @@ export function OrdersTab({
   }, [orders, orderStatusFilter, searchQuery]);
 
   return (
-    <div className="bg-white/90 dark:bg-[#202022]/90 backdrop-blur-xl p-6 md:p-8 rounded-[2.5rem] border border-white/80 shadow-[0_4px_24px_rgba(0,0,0,0.02)] space-y-6 animate-fade-in">
+    <div className="bg-white/90 dark:bg-[#202022]/90 backdrop-blur-xl p-6 md:p-8 rounded-[2.5rem] border border-white/80 dark:border-white/10 shadow-[0_4px_24px_rgba(0,0,0,0.02)] space-y-6 animate-fade-in">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100">Historial Completo de Pedidos</h2>
+          <div className="mb-2">
+            <CloudSyncStatus
+              isSyncing={isSyncing}
+              syncError={syncError}
+              onSave={handleSyncOrders}
+              saveLabel="Guardar en nube"
+              savedLabel="Guardado en nube"
+            />
+          </div>
+          <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
+            <ShoppingBag className="w-5 h-5 text-[#8c9276]" /> Historial Completo de Pedidos
+          </h2>
           <p className="text-xs text-gray-500 dark:text-gray-400">Trazabilidad en tiempo real, recibos y estados de envío.</p>
         </div>
 
