@@ -58,53 +58,57 @@ export async function GET(request: Request) {
       );
     }
 
-    // 1. Try to read personal admin configuration
-    const userSessionId = `SYS_ALERT_CFG_${cleanEmail}`;
-    const { data: userRow } = await baseSupabase
-      .from('active_sessions')
-      .select('email')
-      .eq('user_id', userSessionId)
+    // Helper to map typed database columns to frontend config
+    const mapRowToConfig = (row: Record<string, unknown>) => ({
+      position: (row.position as string) || DEFAULT_ALERT_CONFIG.position,
+      layout: (row.layout as string) || DEFAULT_ALERT_CONFIG.layout,
+      presetId: (row.preset_id as string) || DEFAULT_ALERT_CONFIG.presetId,
+      bgColor: (row.bg_color as string) || DEFAULT_ALERT_CONFIG.bgColor,
+      textColor: (row.text_color as string) || DEFAULT_ALERT_CONFIG.textColor,
+      subtextColor: (row.subtext_color as string) || DEFAULT_ALERT_CONFIG.subtextColor,
+      accentColor: (row.accent_color as string) || DEFAULT_ALERT_CONFIG.accentColor,
+      title: (row.title as string) || DEFAULT_ALERT_CONFIG.title,
+      duration: typeof row.duration === 'number' ? row.duration : DEFAULT_ALERT_CONFIG.duration,
+      soundEnabled: typeof row.sound_enabled === 'boolean' ? row.sound_enabled : DEFAULT_ALERT_CONFIG.soundEnabled,
+      toastType: (row.toast_type as string) || DEFAULT_ALERT_CONFIG.toastType,
+    });
+
+    // 1. Try to read personal admin configuration from dedicated table
+    const { data: userRow, error: userErr } = await baseSupabase
+      .from('admin_notification_settings')
+      .select('*')
+      .eq('id', cleanEmail)
       .maybeSingle();
 
-    if (userRow?.email) {
-      try {
-        const parsed = JSON.parse(userRow.email);
-        if (parsed && typeof parsed === 'object') {
-          return NextResponse.json(
-            { success: true, config: { ...DEFAULT_ALERT_CONFIG, ...parsed } },
-            {
-              headers: {
-                'Cache-Control': 'no-store, no-cache, must-revalidate, max-age=0',
-                Pragma: 'no-cache',
-              },
-            }
-          );
+    if (!userErr && userRow) {
+      return NextResponse.json(
+        { success: true, config: mapRowToConfig(userRow) },
+        {
+          headers: {
+            'Cache-Control': 'no-store, no-cache, must-revalidate, max-age=0',
+            Pragma: 'no-cache',
+          },
         }
-      } catch {}
+      );
     }
 
-    // 2. Try to read global fallback configuration
-    const { data: globalRow } = await baseSupabase
-      .from('active_sessions')
-      .select('email')
-      .eq('user_id', 'SYS_ADMIN_CART_ALERT_CONFIG')
+    // 2. Try to read global fallback configuration from dedicated table
+    const { data: globalRow, error: globalErr } = await baseSupabase
+      .from('admin_notification_settings')
+      .select('*')
+      .eq('id', 'global')
       .maybeSingle();
 
-    if (globalRow?.email) {
-      try {
-        const parsed = JSON.parse(globalRow.email);
-        if (parsed && typeof parsed === 'object') {
-          return NextResponse.json(
-            { success: true, config: { ...DEFAULT_ALERT_CONFIG, ...parsed } },
-            {
-              headers: {
-                'Cache-Control': 'no-store, no-cache, must-revalidate, max-age=0',
-                Pragma: 'no-cache',
-              },
-            }
-          );
+    if (!globalErr && globalRow) {
+      return NextResponse.json(
+        { success: true, config: mapRowToConfig(globalRow) },
+        {
+          headers: {
+            'Cache-Control': 'no-store, no-cache, must-revalidate, max-age=0',
+            Pragma: 'no-cache',
+          },
         }
-      } catch {}
+      );
     }
 
     return NextResponse.json(
@@ -168,34 +172,48 @@ export async function POST(request: Request) {
       toastType,
     };
 
-    const serialized = JSON.stringify(validatedConfig);
+    const rowPayload = {
+      position,
+      layout,
+      preset_id: presetId,
+      bg_color: bgColor,
+      text_color: textColor,
+      subtext_color: subtextColor,
+      accent_color: accentColor,
+      title,
+      duration,
+      sound_enabled: soundEnabled,
+      toast_type: toastType,
+      updated_at: new Date().toISOString(),
+    };
 
-    // Save personalized config for this admin
-    const userSessionId = `SYS_ALERT_CFG_${cleanEmail}`;
-    await baseSupabase.from('active_sessions').upsert(
+    // 1. Save personalized config in dedicated table admin_notification_settings
+    await baseSupabase.from('admin_notification_settings').upsert(
       {
-        user_id: userSessionId,
-        name: 'SYS_ALERT_CFG',
-        email: serialized,
-        current_section: 'SYSTEM_CONFIG',
-        is_online: false,
-        last_seen: new Date().toISOString(),
+        id: cleanEmail,
+        admin_email: cleanEmail,
+        ...rowPayload,
       },
-      { onConflict: 'user_id' }
+      { onConflict: 'id' }
     );
 
-    // Also update global store fallback
-    await baseSupabase.from('active_sessions').upsert(
+    // 2. Also update global store fallback in dedicated table
+    await baseSupabase.from('admin_notification_settings').upsert(
       {
-        user_id: 'SYS_ADMIN_CART_ALERT_CONFIG',
-        name: 'SYS_ALERT_CFG_GLOBAL',
-        email: serialized,
-        current_section: 'SYSTEM_CONFIG',
-        is_online: false,
-        last_seen: new Date().toISOString(),
+        id: 'global',
+        admin_email: cleanEmail,
+        ...rowPayload,
       },
-      { onConflict: 'user_id' }
+      { onConflict: 'id' }
     );
+
+    // 3. Proactively clean any legacy garbage rows in active_sessions
+    try {
+      await baseSupabase
+        .from('active_sessions')
+        .delete()
+        .or(`user_id.like.SYS_ALERT_CFG_%,user_id.eq.SYS_ADMIN_CART_ALERT_CONFIG`);
+    } catch {}
 
     // Broadcast config update in realtime to any active client tabs
     try {
