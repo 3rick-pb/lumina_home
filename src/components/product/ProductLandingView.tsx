@@ -354,7 +354,7 @@ export function ProductLandingView({
                       : "border-transparent opacity-60 hover:opacity-100"
                   }`}
                 >
-                  <Image src={img} alt={`${product.title} vista ${idx + 1}`} fill className="object-cover" />
+                  <Image src={img} alt={`${product.title} vista ${idx + 1}`} fill draggable={false} className="object-cover pointer-events-none select-none" />
                 </button>
               ))}
             </div>
@@ -365,7 +365,8 @@ export function ProductLandingView({
                 alt={product.title}
                 fill
                 priority
-                className="object-cover transition-transform duration-700 ease-out group-hover:scale-105"
+                draggable={false}
+                className="object-cover transition-transform duration-700 ease-out group-hover:scale-105 pointer-events-none select-none"
               />
               
               {product.badge && (

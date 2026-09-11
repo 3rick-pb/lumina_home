@@ -594,28 +594,7 @@ export const useUserStore = create<UserState>((set, get) => ({
   },
   
   logout: async () => {
-    const currentUser = get().user;
-    if (currentUser?.id) {
-      try {
-        const activeChan = useRadarStore.getState().channel;
-        if (activeChan) {
-          try {
-            await activeChan.untrack();
-          } catch {}
-        }
-        useRadarStore.getState().cleanup();
-      } catch {}
-    }
-
-    setGuestModeStorage(false);
-
-    // Formal Supabase sign out
-    await supabase.auth.signOut();
-    
-    // Disconnect and reset cart
-    await useCartStore.getState().initCartForUser(null);
-    
-    // Reset all in-memory user data
+    // 1. Immediately reset in-memory user and authentication state (0ms instant UI feedback!)
     set({
       user: null,
       isAuthenticated: false,
@@ -628,6 +607,32 @@ export const useUserStore = create<UserState>((set, get) => ({
       isLoading: false,
       isAuthInitialized: true,
     });
+
+    setGuestModeStorage(false);
+
+    // 2. Perform all teardown and cleanup concurrently without blocking
+    try {
+      const activeChan = useRadarStore.getState().channel;
+      if (activeChan) {
+        try {
+          activeChan.untrack().catch(() => {});
+        } catch {}
+      }
+      useRadarStore.getState().cleanup();
+    } catch {}
+
+    // Reset cart for unauthenticated state immediately
+    try {
+      useCartStore.getState().initCartForUser(null).catch(() => {});
+    } catch {}
+
+    // Formal Supabase sign out with a 1200ms race guard to guarantee network latency never hangs logout
+    try {
+      await Promise.race([
+        supabase.auth.signOut(),
+        new Promise((resolve) => setTimeout(resolve, 1200)),
+      ]);
+    } catch {}
   },
   
   register: async (email, password, name) => {

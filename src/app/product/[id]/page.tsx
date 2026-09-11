@@ -139,7 +139,7 @@ export default function ProductDetail({ params }: { params: { id: string } }) {
                   onClick={() => setActiveImage(idx)}
                   className={`relative w-20 h-24 md:w-full md:h-28 rounded-lg overflow-hidden flex-shrink-0 transition-all duration-300 border-2 ${activeImage === idx ? 'border-gray-900 opacity-100' : 'border-transparent opacity-50 hover:opacity-100'}`}
                 >
-                  <Image src={img} alt={`Thumbnail ${idx}`} fill className="object-cover" />
+                  <Image src={img} alt={`Thumbnail ${idx}`} fill draggable={false} className="object-cover pointer-events-none select-none" />
                 </button>
               ))}
               <button className="relative w-20 h-10 md:w-full rounded-lg bg-gray-100 flex items-center justify-center flex-shrink-0 hover:bg-gray-200 transition-colors">
@@ -154,7 +154,8 @@ export default function ProductDetail({ params }: { params: { id: string } }) {
                 alt={product.title}
                 fill
                 priority
-                className="object-cover transition-opacity duration-500"
+                draggable={false}
+                className="object-cover transition-opacity duration-500 pointer-events-none select-none"
               />
             </div>
           </div>

@@ -221,6 +221,47 @@ export function AppInitializer() {
     initializeAuth();
   }, [fetchProducts, initializeAuth]);
 
+  // Global Media & Product Image Protection
+  // Completely prevents: "Copiar imagen", "Copiar dirección de imagen", "Guardar imagen como...",
+  // "Abrir en nueva pestaña", "Buscar en Google Lens", "Crear código QR", drag-to-desktop, etc.
+  useEffect(() => {
+    const isProtectedTarget = (target: HTMLElement | null): boolean => {
+      if (!target) return false;
+      const tag = target.tagName?.toUpperCase();
+      if (tag === "IMG" || tag === "PICTURE" || tag === "VIDEO" || tag === "CANVAS") {
+        return true;
+      }
+      if (target.closest("img, picture, video, [data-protected-media], .product-image, [role='img']")) {
+        return true;
+      }
+      return false;
+    };
+
+    const handleContextMenu = (e: MouseEvent) => {
+      if (isProtectedTarget(e.target as HTMLElement)) {
+        e.preventDefault();
+        e.stopPropagation();
+        return false;
+      }
+    };
+
+    const handleDragStart = (e: DragEvent) => {
+      if (isProtectedTarget(e.target as HTMLElement)) {
+        e.preventDefault();
+        e.stopPropagation();
+        return false;
+      }
+    };
+
+    document.addEventListener("contextmenu", handleContextMenu, { capture: true });
+    document.addEventListener("dragstart", handleDragStart, { capture: true });
+
+    return () => {
+      document.removeEventListener("contextmenu", handleContextMenu, { capture: true });
+      document.removeEventListener("dragstart", handleDragStart, { capture: true });
+    };
+  }, []);
+
   return (
     <Suspense fallback={null}>
       <ActivityTracker />

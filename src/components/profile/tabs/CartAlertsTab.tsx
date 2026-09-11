@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { 
   Volume2, 
   VolumeX, 
@@ -17,8 +17,6 @@ import {
   Zap, 
   Eye,
   Monitor,
-  Minimize2,
-  Maximize2
 } from 'lucide-react';
 import { 
   useAdminAlertStore, 
@@ -39,11 +37,18 @@ export function CartAlertsTab() {
     applyPreset, 
     applyRecommendedContrast, 
     resetConfig, 
-    fireToast 
+    fireToast,
+    isSyncing,
+    syncError,
+    loadConfigFromCloud,
+    saveConfigToCloud
   } = useAdminAlertStore();
+
+  React.useEffect(() => {
+    loadConfigFromCloud();
+  }, [loadConfigFromCloud]);
   
   const [testSent, setTestSent] = useState(false);
-  const [isTestMinimized, setIsTestMinimized] = useState(false);
 
   const sampleCustomers: CartItemAddedPayload[] = [
     {
@@ -125,19 +130,36 @@ export function CartAlertsTab() {
 
   const currentAudit = auditContrast(config.bgColor, config.textColor);
 
-  const isBottom = config.position.startsWith('bottom');
-  const isRight = config.position.endsWith('right');
-  const previewOrigin = `${isBottom ? 'bottom' : 'top'} ${isRight ? 'right' : 'left'}`;
-
   return (
     <div className="space-y-6 animate-fade-in pb-0 w-full">
       {/* Top Hero Banner */}
       <div className="relative overflow-hidden rounded-[2rem] p-6 sm:p-8 border border-gray-200/80 dark:border-white/10 bg-white/95 dark:bg-[#202023] shadow-sm backdrop-blur-2xl w-full">
         <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div>
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-50 dark:bg-blue-950/40 border border-blue-200/60 dark:border-blue-900/40 text-blue-700 dark:text-blue-400 text-[11px] font-semibold uppercase tracking-wider mb-2.5">
-              <ShieldCheck className="w-3.5 h-3.5 text-blue-600" />
-              <span>Panel exclusivo de administración</span>
+            <div className="flex items-center gap-2 flex-wrap mb-2.5">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-50 dark:bg-blue-950/40 border border-blue-200/60 dark:border-blue-900/40 text-blue-700 dark:text-blue-400 text-[11px] font-semibold uppercase tracking-wider">
+                <ShieldCheck className="w-3.5 h-3.5 text-blue-600" />
+                <span>Panel exclusivo de administración</span>
+              </div>
+              {isSyncing ? (
+                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-50 dark:bg-amber-950/40 border border-amber-200/60 dark:border-amber-900/40 text-amber-700 dark:text-amber-400 text-[11px] font-semibold animate-pulse">
+                  <div className="w-2 h-2 rounded-full bg-amber-500 animate-ping" />
+                  <span>Sincronizando con base de datos...</span>
+                </div>
+              ) : syncError ? (
+                <button 
+                  onClick={() => saveConfigToCloud()}
+                  className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-red-50 dark:bg-red-950/40 border border-red-200/60 text-red-700 dark:text-red-400 text-[11px] font-semibold hover:bg-red-100 transition-colors cursor-pointer"
+                >
+                  <AlertTriangle className="w-3.5 h-3.5 text-red-500" />
+                  <span>Error al guardar (reintentar)</span>
+                </button>
+              ) : (
+                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200/60 dark:border-emerald-900/40 text-emerald-700 dark:text-emerald-400 text-[11px] font-semibold">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                  <span>Base de datos Supabase conectada</span>
+                </div>
+              )}
             </div>
             <h2 className="text-2xl sm:text-3xl font-display font-bold text-gray-900 dark:text-white tracking-tight">
               Notificaciones de Carrito en Vivo
@@ -148,6 +170,15 @@ export function CartAlertsTab() {
           </div>
 
           <div className="flex flex-wrap items-center gap-3 shrink-0">
+            <button
+              onClick={() => saveConfigToCloud()}
+              disabled={isSyncing}
+              className="px-4 py-2.5 rounded-xl font-semibold text-white text-xs bg-emerald-600 hover:bg-emerald-500 shadow-sm active:scale-95 transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-60"
+              title="Guardar cambios permanentemente en base de datos"
+            >
+              <Check className="w-3.5 h-3.5" />
+              <span>{isSyncing ? 'Guardando...' : 'Guardar en nube'}</span>
+            </button>
             <button
               onClick={() => handleFireLiveTest(0)}
               className="px-5 py-2.5 rounded-xl font-semibold text-white text-xs bg-gray-900 dark:bg-white dark:text-gray-950 hover:bg-gray-800 dark:hover:bg-gray-100 shadow-sm active:scale-95 transition-all flex items-center gap-2 cursor-pointer"
@@ -324,7 +355,7 @@ export function CartAlertsTab() {
                       </div>
                       <div className="leading-none pr-1">
                         <div className="text-[9px] font-extrabold tracking-tight">
-                          LUMINA ALERT
+                          NOTIFICACIÓN
                         </div>
                         <div className="text-[8px] font-mono mt-0.5 opacity-70" style={{ color: config.subtextColor }}>
                           {config.position}
@@ -632,68 +663,15 @@ export function CartAlertsTab() {
               </span>
             </div>
 
-            {/* Test Corner Minimize / Restore Animation Button */}
-            <div className="flex items-center justify-between p-3 rounded-2xl bg-gray-50 dark:bg-white/5 border border-gray-200/80 dark:border-white/10">
-              <div className="flex items-center gap-2 min-w-0">
-                {isTestMinimized ? (
-                  <Maximize2 className="w-4 h-4 text-blue-500 shrink-0" />
-                ) : (
-                  <Minimize2 className="w-4 h-4 text-amber-500 shrink-0" />
-                )}
-                <span className="text-xs font-semibold text-gray-800 dark:text-gray-200 truncate">
-                  Animación esquina macOS
-                </span>
-              </div>
-
-              <button
-                type="button"
-                onClick={() => setIsTestMinimized(!isTestMinimized)}
-                className="px-3 py-1.5 rounded-xl text-xs font-bold text-gray-900 dark:text-white bg-gray-200 dark:bg-white/15 hover:bg-gray-300 dark:hover:bg-white/25 active:scale-95 transition-all cursor-pointer shrink-0"
-              >
-                {isTestMinimized ? 'Expandir' : 'Minimizar en esquina'}
-              </button>
-            </div>
-
             {/* The Live Interactive Component (Strictly Contained, Zero Overflow) */}
             <div className="relative p-4 sm:p-5 rounded-2xl bg-gray-50 dark:bg-black/25 border border-dashed border-gray-300 dark:border-white/10 flex flex-col items-center justify-center min-h-[300px] overflow-hidden w-full">
-              <AnimatePresence mode="wait">
-                {!isTestMinimized ? (
-                  <motion.div
-                    key="card-active"
-                    style={{ transformOrigin: previewOrigin }}
-                    initial={{ scale: 0.15, opacity: 0 }}
-                    animate={{ scale: 1, opacity: 1 }}
-                    exit={{ scale: 0.08, opacity: 0 }}
-                    transition={{ type: 'spring', stiffness: 350, damping: 26 }}
-                    className="w-full flex justify-center"
-                  >
-                    <CartAlertCard
-                      payload={sampleCustomers[0]}
-                      config={config}
-                      isPreview={true}
-                    />
-                  </motion.div>
-                ) : (
-                  <motion.div
-                    key="card-minimized"
-                    initial={{ opacity: 0, scale: 0.8 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    exit={{ opacity: 0, scale: 0.8 }}
-                    onClick={() => setIsTestMinimized(false)}
-                    className="p-4 rounded-xl border border-dashed border-gray-300 dark:border-white/20 text-center cursor-pointer hover:bg-gray-100 dark:hover:bg-white/5 transition-colors"
-                  >
-                    <div className="w-8 h-8 rounded-full bg-emerald-500/20 text-emerald-500 flex items-center justify-center mx-auto mb-2">
-                      📦
-                    </div>
-                    <span className="text-xs font-bold text-gray-800 dark:text-gray-200 block">
-                      Notificación minimizada en {config.position}
-                    </span>
-                    <span className="text-[11px] text-gray-400 mt-1 block">
-                      Clic para expandir en pantalla
-                    </span>
-                  </motion.div>
-                )}
-              </AnimatePresence>
+              <div className="w-full flex justify-center py-2">
+                <CartAlertCard
+                  payload={sampleCustomers[0]}
+                  config={config}
+                  isPreview={true}
+                />
+              </div>
 
               <div className="flex items-center justify-between w-full mt-3 text-[10px] text-gray-400 font-mono">
                 <span>{config.position}</span>

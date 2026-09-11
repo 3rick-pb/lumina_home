@@ -360,6 +360,11 @@ interface AdminAlertState {
   activeAlert: CartItemAddedPayload | null;
   activeAlertKey: number;
   onViewDetailsCallback?: () => void;
+  isSyncing: boolean;
+  lastSyncedAt: number | null;
+  syncError: string | null;
+  loadConfigFromCloud: () => Promise<void>;
+  saveConfigToCloud: (newConfig?: CartAlertConfig) => Promise<void>;
   updateConfig: (patch: Partial<CartAlertConfig>) => void;
   applyPreset: (presetId: string) => void;
   applyRecommendedContrast: () => void;
@@ -368,11 +373,115 @@ interface AdminAlertState {
   dismissAlert: () => void;
 }
 
+let saveDebounceTimer: NodeJS.Timeout | null = null;
+let isRealtimeAlertListenerAttached = false;
+
+const triggerDebouncedCloudSave = (
+  newConfig: CartAlertConfig,
+  saveFn: (cfg: CartAlertConfig) => Promise<void>
+) => {
+  if (saveDebounceTimer) clearTimeout(saveDebounceTimer);
+  saveDebounceTimer = setTimeout(() => {
+    saveFn(newConfig);
+  }, 400);
+};
+
 export const useAdminAlertStore = create<AdminAlertState>((set, get) => ({
   config: loadSavedConfig(),
   activeAlert: null,
   activeAlertKey: 0,
   onViewDetailsCallback: undefined,
+  isSyncing: false,
+  lastSyncedAt: null,
+  syncError: null,
+
+  loadConfigFromCloud: async () => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) return;
+
+      // Attach realtime listener once for multi-tab synchronization
+      if (!isRealtimeAlertListenerAttached) {
+        isRealtimeAlertListenerAttached = true;
+        const chan = supabase.channel('admin:cart_alerts');
+        chan.on('broadcast', { event: 'config_updated' }, ({ payload }) => {
+          if (payload?.config) {
+            const currentConfig = get().config;
+            if (JSON.stringify(currentConfig) !== JSON.stringify(payload.config)) {
+              try {
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(payload.config));
+              } catch {}
+              set({ config: payload.config, lastSyncedAt: Date.now(), isSyncing: false });
+            }
+          }
+        }).subscribe();
+      }
+
+      const res = await fetch('/api/admin/cart-alerts/config', {
+        cache: 'no-store',
+        headers: {
+          'Cache-Control': 'no-cache',
+          Pragma: 'no-cache',
+          Authorization: `Bearer ${session.access_token}`,
+        },
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        if (data.success && data.config) {
+          try {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(data.config));
+          } catch {}
+          set({
+            config: data.config,
+            lastSyncedAt: Date.now(),
+            isSyncing: false,
+            syncError: null,
+          });
+        }
+      }
+    } catch (err) {
+      console.warn('Could not load cart alerts config from cloud:', err);
+    }
+  },
+
+  saveConfigToCloud: async (newConfig?: CartAlertConfig) => {
+    const targetConfig = newConfig || get().config;
+    set({ isSyncing: true, syncError: null });
+
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) {
+        set({ isSyncing: false });
+        return;
+      }
+
+      const res = await fetch('/api/admin/cart-alerts/config', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify(targetConfig),
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        if (data.success && data.config) {
+          set({
+            config: data.config,
+            lastSyncedAt: Date.now(),
+            isSyncing: false,
+            syncError: null,
+          });
+          return;
+        }
+      }
+      set({ isSyncing: false, syncError: 'No se pudo sincronizar con la nube.' });
+    } catch {
+      set({ isSyncing: false, syncError: 'Error de conexión al guardar.' });
+    }
+  },
 
   updateConfig: (patch) => {
     const next = { ...get().config, ...patch };
@@ -380,6 +489,7 @@ export const useAdminAlertStore = create<AdminAlertState>((set, get) => ({
       localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
     } catch {}
     set({ config: next });
+    triggerDebouncedCloudSave(next, get().saveConfigToCloud);
   },
 
   applyPreset: (presetId: string) => {
@@ -397,6 +507,7 @@ export const useAdminAlertStore = create<AdminAlertState>((set, get) => ({
       localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
     } catch {}
     set({ config: next });
+    triggerDebouncedCloudSave(next, get().saveConfigToCloud);
   },
 
   applyRecommendedContrast: () => {
@@ -411,6 +522,7 @@ export const useAdminAlertStore = create<AdminAlertState>((set, get) => ({
       localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
     } catch {}
     set({ config: next });
+    triggerDebouncedCloudSave(next, get().saveConfigToCloud);
   },
 
   resetConfig: () => {
@@ -418,6 +530,7 @@ export const useAdminAlertStore = create<AdminAlertState>((set, get) => ({
       localStorage.setItem(STORAGE_KEY, JSON.stringify(DEFAULT_CONFIG));
     } catch {}
     set({ config: DEFAULT_CONFIG });
+    get().saveConfigToCloud(DEFAULT_CONFIG);
   },
 
   fireToast: (payload, onViewDetails) => {
@@ -438,14 +551,27 @@ export const useAdminAlertStore = create<AdminAlertState>((set, get) => ({
   },
 }));
 
-// Broadcast to radar:clients channel when a registered customer adds a product
+// Realtime broadcast for registered customers adding items to their cart
 export const broadcastCartAddition = async (payload: CartItemAddedPayload) => {
   try {
-    const channel = supabase.channel('radar:clients');
-    await channel.send({
-      type: 'broadcast',
-      event: 'cart_item_added',
-      payload,
+    const channel = supabase.channel('radar:clients', {
+      config: { broadcast: { self: false } },
+    });
+
+    await new Promise<void>((resolve) => {
+      channel.subscribe(async (status) => {
+        if (status === 'SUBSCRIBED') {
+          await channel.send({
+            type: 'broadcast',
+            event: 'cart_item_added',
+            payload,
+          });
+          resolve();
+        } else if (status === 'CHANNEL_ERROR' || status === 'CLOSED') {
+          resolve();
+        }
+      });
+      setTimeout(resolve, 600);
     });
   } catch (err) {
     console.warn('Could not broadcast cart addition:', err);
