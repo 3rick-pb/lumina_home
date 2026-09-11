@@ -128,11 +128,18 @@ export function AdminCartNotifier() {
       className={`fixed z-[99999] pointer-events-none flex flex-col ${getPositionClasses()}`}
     >
       {/* CSS Grid stack: All cards share gridArea 1 / 1 / 2 / 2 for zero-thrash, butter-smooth 120fps card stacking */}
-      <div className="relative pointer-events-auto grid grid-cols-1 grid-rows-1 items-end justify-items-end select-none">
+      <div className={`relative pointer-events-auto grid grid-cols-1 grid-rows-1 ${isBottom ? "items-end" : "items-start"} ${isRight ? "justify-items-end" : "justify-items-start"} select-none`}>
         <AnimatePresence mode="popLayout">
           {displayAlerts.map((item, index) => {
-            // Y-axis offset: cards in background peek out from top (if bottom-anchored) or bottom (if top-anchored)
-            const yOffset = isBottom ? -index * 13 : index * 13;
+            // Directional corner stacking offsets as specified:
+            // - bottom-right: stacks up (-Y) and left (-X) towards interior
+            // - top-right: stacks down (+Y) and left (-X) towards interior
+            // - top-left: stacks down (+Y) and right (+X) towards interior
+            // - bottom-left: stacks up (-Y) and right (+X) towards interior
+            const step = 14;
+            const yOffset = isBottom ? -index * step : index * step;
+            const xOffset = isRight ? -index * step : index * step;
+
             // Progressive scale down for cards in the background
             const scale = Math.max(0.78, 1 - index * 0.055);
             // Progressive opacity reduction for background depth
@@ -159,7 +166,7 @@ export function AdminCartNotifier() {
                   opacity,
                   scale,
                   y: yOffset,
-                  x: 0,
+                  x: xOffset,
                   zIndex,
                   filter: index > 0 ? `brightness(${Math.max(0.85, 1 - index * 0.07)})` : "none",
                   transition: {

@@ -44,6 +44,7 @@ import { AnalyticsTab } from "@/components/profile/tabs/AnalyticsTab";
 import { CartAlertsTab } from "@/components/profile/tabs/CartAlertsTab";
 import { SettingsTab } from "@/components/profile/tabs/SettingsTab";
 import { OrderDetailModal } from "@/components/profile/modals/OrderDetailModal";
+import { ExcelExportRadialMenu } from "@/components/profile/ExcelExportRadialMenu";
 
 
 
@@ -908,12 +909,15 @@ const handleConfirmDeleteNiche = async () => {
  </p>
  </div>
  {isAdmin && (
+ <div className="self-start sm:self-auto flex items-center gap-3">
+ <ExcelExportRadialMenu />
  <button 
  onClick={() => setShowProductModal(true)}
- className="self-start sm:self-auto flex items-center gap-2 px-5 py-2.5 bg-gray-900 dark:bg-gray-100 hover:bg-gray-800 text-white dark:text-gray-900 text-xs font-semibold rounded-2xl transition-all shadow-md dark:shadow-none shadow-gray-900/10 cursor-pointer"
+ className="flex items-center gap-2 px-5 py-2.5 bg-gray-900 dark:bg-gray-100 hover:bg-gray-800 text-white dark:text-gray-900 text-xs font-semibold rounded-2xl transition-all shadow-md dark:shadow-none shadow-gray-900/10 cursor-pointer shrink-0"
  >
  <Plus className="w-4 h-4" /> Nuevo Producto
  </button>
+ </div>
  )}
  </div>
 
