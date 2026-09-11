@@ -3,7 +3,7 @@
 import { useEffect, Suspense, useRef, useCallback } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
 import { useCatalogStore } from "@/lib/catalogStore";
-import { useUserStore } from "@/lib/userStore";
+import { useUserStore, hydrateStoreFromClient } from "@/lib/userStore";
 import { useRadarStore } from "@/lib/radarStore";
 import { useCartStore } from "@/lib/store";
 
@@ -217,6 +217,7 @@ export function AppInitializer() {
   const initializeAuth = useUserStore((state) => state.initializeAuth);
 
   useEffect(() => {
+    hydrateStoreFromClient();
     fetchProducts();
     initializeAuth();
   }, [fetchProducts, initializeAuth]);

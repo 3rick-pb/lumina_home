@@ -242,7 +242,7 @@ export default function ProfilePage() {
  }
 
   const isAdmin = user.role === "ADMIN";
-  const isRootAdmin = Boolean(user.isRootAdmin || user.email.toLowerCase().trim() === 'admin@lumina.com');
+  const isRootAdmin = Boolean(user.isRootAdmin || (user.email || '').toLowerCase().trim() === 'admin@lumina.com');
 
  // Auto calculate discount
  const handlePriceChange = (newP: string, newOldP: string, withDisc: boolean) => {

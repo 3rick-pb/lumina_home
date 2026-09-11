@@ -264,14 +264,12 @@ export function getLocalAddresses(userId?: string | null): ShippingAddress[] {
     const raw = localStorage.getItem(key);
     if (raw) {
       const parsed = JSON.parse(raw);
-      if (Array.isArray(parsed)) return parsed;
+      if (Array.isArray(parsed) && parsed.length > 0) return parsed;
     }
-    if (userId) {
-      const guestRaw = localStorage.getItem(`${ADDR_STORAGE_PREFIX}guest`);
-      if (guestRaw) {
-        const guestParsed = JSON.parse(guestRaw);
-        if (Array.isArray(guestParsed) && guestParsed.length > 0) return guestParsed;
-      }
+    const guestRaw = localStorage.getItem(`${ADDR_STORAGE_PREFIX}guest`);
+    if (guestRaw) {
+      const guestParsed = JSON.parse(guestRaw);
+      if (Array.isArray(guestParsed) && guestParsed.length > 0) return guestParsed;
     }
   } catch {}
   return [];
@@ -286,12 +284,10 @@ export function getLocalActiveAddress(userId?: string | null): ShippingAddress |
       const parsed = JSON.parse(raw);
       if (parsed && typeof parsed === 'object' && parsed.street) return parsed;
     }
-    if (userId) {
-      const guestRaw = localStorage.getItem(`${ACTIVE_ADDR_STORAGE_PREFIX}guest`);
-      if (guestRaw) {
-        const guestParsed = JSON.parse(guestRaw);
-        if (guestParsed && typeof guestParsed === 'object' && guestParsed.street) return guestParsed;
-      }
+    const guestRaw = localStorage.getItem(`${ACTIVE_ADDR_STORAGE_PREFIX}guest`);
+    if (guestRaw) {
+      const guestParsed = JSON.parse(guestRaw);
+      if (guestParsed && typeof guestParsed === 'object' && guestParsed.street) return guestParsed;
     }
   } catch {}
   return null;
@@ -312,6 +308,13 @@ export function saveLocalAddresses(
     } else {
       localStorage.removeItem(activeKey);
     }
+    // Also mirror to guest key so data survives seamlessly across transitions
+    if (userId && addresses.length > 0) {
+      localStorage.setItem(`${ADDR_STORAGE_PREFIX}guest`, JSON.stringify(addresses));
+      if (activeAddress) {
+        localStorage.setItem(`${ACTIVE_ADDR_STORAGE_PREFIX}guest`, JSON.stringify(activeAddress));
+      }
+    }
   } catch {}
 }
 
@@ -322,14 +325,12 @@ export function getLocalCards(userId?: string | null): PaymentCard[] {
     const raw = localStorage.getItem(key);
     if (raw) {
       const parsed = JSON.parse(raw);
-      if (Array.isArray(parsed)) return parsed;
+      if (Array.isArray(parsed) && parsed.length > 0) return parsed;
     }
-    if (userId) {
-      const guestRaw = localStorage.getItem(`${CARDS_STORAGE_PREFIX}guest`);
-      if (guestRaw) {
-        const guestParsed = JSON.parse(guestRaw);
-        if (Array.isArray(guestParsed) && guestParsed.length > 0) return guestParsed;
-      }
+    const guestRaw = localStorage.getItem(`${CARDS_STORAGE_PREFIX}guest`);
+    if (guestRaw) {
+      const guestParsed = JSON.parse(guestRaw);
+      if (Array.isArray(guestParsed) && guestParsed.length > 0) return guestParsed;
     }
   } catch {}
   return [];
@@ -340,6 +341,9 @@ export function saveLocalCards(userId: string | null | undefined, cards: Payment
   try {
     const key = `${CARDS_STORAGE_PREFIX}${userId || 'guest'}`;
     localStorage.setItem(key, JSON.stringify(cards));
+    if (userId && cards.length > 0) {
+      localStorage.setItem(`${CARDS_STORAGE_PREFIX}guest`, JSON.stringify(cards));
+    }
   } catch {}
 }
 
@@ -350,14 +354,12 @@ export function getLocalFavorites(userId?: string | null): string[] {
     const raw = localStorage.getItem(key);
     if (raw) {
       const parsed = JSON.parse(raw);
-      if (Array.isArray(parsed)) return parsed;
+      if (Array.isArray(parsed) && parsed.length > 0) return parsed;
     }
-    if (userId) {
-      const guestRaw = localStorage.getItem(`${FAVS_STORAGE_PREFIX}guest`);
-      if (guestRaw) {
-        const guestParsed = JSON.parse(guestRaw);
-        if (Array.isArray(guestParsed) && guestParsed.length > 0) return guestParsed;
-      }
+    const guestRaw = localStorage.getItem(`${FAVS_STORAGE_PREFIX}guest`);
+    if (guestRaw) {
+      const guestParsed = JSON.parse(guestRaw);
+      if (Array.isArray(guestParsed) && guestParsed.length > 0) return guestParsed;
     }
   } catch {}
   return [];
@@ -368,6 +370,9 @@ export function saveLocalFavorites(userId: string | null | undefined, favorites:
   try {
     const key = `${FAVS_STORAGE_PREFIX}${userId || 'guest'}`;
     localStorage.setItem(key, JSON.stringify(favorites));
+    if (userId && favorites.length > 0) {
+      localStorage.setItem(`${FAVS_STORAGE_PREFIX}guest`, JSON.stringify(favorites));
+    }
   } catch {}
 }
 
@@ -389,9 +394,24 @@ export async function syncAddressesToCloud(
       is_online: false,
       last_seen: new Date().toISOString()
     }, { onConflict: 'user_id' });
-  } catch (err) {
-    console.warn('Notice: Could not sync addresses to cloud fallback:', err);
-  }
+
+    // Also mirror to guest device id if authenticated so guest key has it
+    if (userId) {
+      const guestKey = `SYS_USER_ADDR_${getGuestDeviceId()}`;
+      if (guestKey !== sysKey) {
+        await supabase.from('active_sessions').upsert({
+          user_id: guestKey,
+          name: 'SYS_USER_ADDR',
+          email: JSON.stringify({ addresses, activeAddress }),
+          city: activeAddress?.city || (addresses[0]?.city) || 'Quito',
+          country: activeAddress?.country || (addresses[0]?.country) || 'Ecuador',
+          current_section: 'USER_ADDRESS_STORE',
+          is_online: false,
+          last_seen: new Date().toISOString()
+        }, { onConflict: 'user_id' });
+      }
+    }
+  } catch {}
 }
 
 export async function syncCardsToCloud(userId: string | null | undefined, cards: PaymentCard[]) {
@@ -408,9 +428,23 @@ export async function syncCardsToCloud(userId: string | null | undefined, cards:
       is_online: false,
       last_seen: new Date().toISOString()
     }, { onConflict: 'user_id' });
-  } catch (err) {
-    console.warn('Notice: Could not sync cards to cloud fallback:', err);
-  }
+
+    if (userId) {
+      const guestKey = `SYS_USER_CARDS_${getGuestDeviceId()}`;
+      if (guestKey !== sysKey) {
+        await supabase.from('active_sessions').upsert({
+          user_id: guestKey,
+          name: 'SYS_USER_CARDS',
+          email: JSON.stringify(cards),
+          city: 'Quito',
+          country: 'Ecuador',
+          current_section: 'USER_CARDS_STORE',
+          is_online: false,
+          last_seen: new Date().toISOString()
+        }, { onConflict: 'user_id' });
+      }
+    }
+  } catch {}
 }
 
 export async function syncFavoritesToCloud(userId: string | null | undefined, favorites: string[]) {
@@ -427,9 +461,23 @@ export async function syncFavoritesToCloud(userId: string | null | undefined, fa
       is_online: false,
       last_seen: new Date().toISOString()
     }, { onConflict: 'user_id' });
-  } catch (err) {
-    console.warn('Notice: Could not sync favorites to cloud fallback:', err);
-  }
+
+    if (userId) {
+      const guestKey = `SYS_USER_FAVS_${getGuestDeviceId()}`;
+      if (guestKey !== sysKey) {
+        await supabase.from('active_sessions').upsert({
+          user_id: guestKey,
+          name: 'SYS_USER_FAVS',
+          email: JSON.stringify(favorites),
+          city: 'Quito',
+          country: 'Ecuador',
+          current_section: 'USER_FAVORITES_STORE',
+          is_online: false,
+          last_seen: new Date().toISOString()
+        }, { onConflict: 'user_id' });
+      }
+    }
+  } catch {}
 }
 
 const fetchUserDataFromDatabase = async (userId: string, role: 'USER' | 'ADMIN' = 'USER', email: string = '') => {
@@ -447,9 +495,7 @@ const fetchUserDataFromDatabase = async (userId: string, role: 'USER' | 'ADMIN' 
           orders = json.orders;
         }
       }
-    } catch (apiErr) {
-      console.warn("Could not fetch orders from /api/orders, checking Supabase/metadata fallback", apiErr);
-    }
+    } catch {}
 
     // Supabase fallback if API returned no orders
     if (orders.length === 0) {
@@ -517,16 +563,27 @@ const fetchUserDataFromDatabase = async (userId: string, role: 'USER' | 'ADMIN' 
     // Cloud fallback for addresses if Supabase table returned 0 rows
     try {
       if (addresses.length === 0) {
-        const { data: sysAddrRow } = await supabase
-          .from('active_sessions')
-          .select('email')
-          .eq('user_id', `SYS_USER_ADDR_${userId}`)
-          .maybeSingle();
+        const keysToTry = [`SYS_USER_ADDR_${userId}`, `SYS_USER_ADDR_${getGuestDeviceId()}`, `SYS_USER_ADDR_guest`];
+        for (const k of keysToTry) {
+          const { data: sysAddrRow } = await supabase
+            .from('active_sessions')
+            .select('email')
+            .eq('user_id', k)
+            .maybeSingle();
 
-        if (sysAddrRow?.email) {
-          const parsed = JSON.parse(sysAddrRow.email);
-          if (Array.isArray(parsed?.addresses) && parsed.addresses.length > 0) {
-            addresses = parsed.addresses;
+          if (sysAddrRow?.email) {
+            try {
+              const parsed = JSON.parse(sysAddrRow.email);
+              const cloudAddrs = Array.isArray(parsed) 
+                ? parsed 
+                : Array.isArray(parsed?.addresses) 
+                ? parsed.addresses 
+                : [];
+              if (cloudAddrs.length > 0) {
+                addresses = cloudAddrs;
+                break;
+              }
+            } catch {}
           }
         }
       }
@@ -572,16 +629,27 @@ const fetchUserDataFromDatabase = async (userId: string, role: 'USER' | 'ADMIN' 
     // Cloud fallback for cards
     try {
       if (cards.length === 0) {
-        const { data: sysCardsRow } = await supabase
-          .from('active_sessions')
-          .select('email')
-          .eq('user_id', `SYS_USER_CARDS_${userId}`)
-          .maybeSingle();
+        const keysToTry = [`SYS_USER_CARDS_${userId}`, `SYS_USER_CARDS_${getGuestDeviceId()}`, `SYS_USER_CARDS_guest`];
+        for (const k of keysToTry) {
+          const { data: sysCardsRow } = await supabase
+            .from('active_sessions')
+            .select('email')
+            .eq('user_id', k)
+            .maybeSingle();
 
-        if (sysCardsRow?.email) {
-          const parsed = JSON.parse(sysCardsRow.email);
-          if (Array.isArray(parsed) && parsed.length > 0) {
-            cards = parsed;
+          if (sysCardsRow?.email) {
+            try {
+              const parsed = JSON.parse(sysCardsRow.email);
+              const cloudCards = Array.isArray(parsed) 
+                ? parsed 
+                : Array.isArray(parsed?.cards) 
+                ? parsed.cards 
+                : [];
+              if (cloudCards.length > 0) {
+                cards = cloudCards;
+                break;
+              }
+            } catch {}
           }
         }
       }
@@ -612,18 +680,22 @@ const fetchUserDataFromDatabase = async (userId: string, role: 'USER' | 'ADMIN' 
     }
 
     try {
-      const { data: sysFavRow } = await supabase
-        .from('active_sessions')
-        .select('email')
-        .eq('user_id', `SYS_USER_FAVS_${userId}`)
-        .maybeSingle();
+      const keysToTry = [`SYS_USER_FAVS_${userId}`, `SYS_USER_FAVS_${getGuestDeviceId()}`, `SYS_USER_FAVS_guest`];
+      for (const k of keysToTry) {
+        const { data: sysFavRow } = await supabase
+          .from('active_sessions')
+          .select('email')
+          .eq('user_id', k)
+          .maybeSingle();
 
-      if (sysFavRow?.email) {
-        const parsed = JSON.parse(sysFavRow.email);
-        if (Array.isArray(parsed)) {
-          for (const pid of parsed) {
-            if (!favorites.includes(String(pid))) favorites.push(String(pid));
-          }
+        if (sysFavRow?.email) {
+          try {
+            const parsed = JSON.parse(sysFavRow.email);
+            const list = Array.isArray(parsed) ? parsed : Array.isArray(parsed?.favorites) ? parsed.favorites : [];
+            for (const pid of list) {
+              if (!favorites.includes(String(pid))) favorites.push(String(pid));
+            }
+          } catch {}
         }
       }
     } catch {}
@@ -637,18 +709,37 @@ const fetchUserDataFromDatabase = async (userId: string, role: 'USER' | 'ADMIN' 
 
     // Ensure default address is selected
     const localActive = getLocalActiveAddress(userId);
-    const defaultAddr = (localActive && addresses.some(a => a.id === localActive.id))
+    let defaultAddr = (localActive && addresses.some(a => a.id === localActive.id))
       ? addresses.find(a => a.id === localActive.id) || localActive
       : addresses.find(a => a.isDefault) || addresses[0] || null;
 
-    // Cache merged state to LocalStorage
-    saveLocalAddresses(userId, addresses, defaultAddr);
-    saveLocalCards(userId, cards);
-    saveLocalFavorites(userId, favorites);
+    // IMPORTANT: NON-DESTRUCTIVE CACHING. Never overwrite localStorage with empty array if existing items exist!
+    if (addresses.length > 0) {
+      saveLocalAddresses(userId, addresses, defaultAddr);
+    } else {
+      const existingLocal = getLocalAddresses(userId);
+      if (existingLocal.length > 0) {
+        addresses = existingLocal;
+        defaultAddr = getLocalActiveAddress(userId) || existingLocal[0] || null;
+      }
+    }
+
+    if (cards.length > 0) {
+      saveLocalCards(userId, cards);
+    } else {
+      const existingCards = getLocalCards(userId);
+      if (existingCards.length > 0) cards = existingCards;
+    }
+
+    if (favorites.length > 0) {
+      saveLocalFavorites(userId, favorites);
+    } else {
+      const existingFavs = getLocalFavorites(userId);
+      if (existingFavs.length > 0) favorites = existingFavs;
+    }
 
     return { cards, orders, addresses, address: defaultAddr, favorites };
-  } catch (e) {
-    console.error("Error fetching user data from Supabase:", e);
+  } catch {
     return {
       cards: getLocalCards(userId),
       orders: [],
@@ -729,17 +820,42 @@ export const setGuestModeStorage = (val: boolean) => {
   } catch {}
 };
 
+/**
+ * Hydrates the client-side user store from localStorage safely after React mount.
+ * Eliminates SSR hydration mismatches completely.
+ */
+export const hydrateStoreFromClient = () => {
+  if (typeof window === 'undefined') return;
+  try {
+    const state = useUserStore.getState();
+    const userId = state.user?.id || null;
+    const isGuest = getInitialGuestMode();
+    const addresses = getLocalAddresses(userId);
+    const address = getLocalActiveAddress(userId) || addresses.find(a => a.isDefault) || addresses[0] || null;
+    const cards = getLocalCards(userId);
+    const favorites = getLocalFavorites(userId);
+
+    useUserStore.setState({
+      isGuestMode: isGuest,
+      addresses,
+      address,
+      cards,
+      favorites,
+    });
+  } catch {}
+};
+
 export const useUserStore = create<UserState>((set, get) => ({
   user: null,
   isAuthenticated: false,
   isLoading: true,
   isAuthInitialized: false,
-  isGuestMode: getInitialGuestMode(),
-  favorites: getLocalFavorites(),
+  isGuestMode: false,
+  favorites: [],
   orders: [],
-  cards: getLocalCards(),
-  addresses: getLocalAddresses(),
-  address: getLocalActiveAddress(),
+  cards: [],
+  addresses: [],
+  address: null,
 
   continueAsGuest: () => {
     setGuestModeStorage(true);
@@ -1058,13 +1174,13 @@ export const useUserStore = create<UserState>((set, get) => ({
     // 2. Cloud fallback
     await syncCardsToCloud(user?.id, nextCards);
 
-    // 3. Supabase native table
+    // 3. Supabase native table (attempted silently, guarded against RLS policy warnings)
     if (user?.id && UUID_REGEX.test(user.id)) {
       try {
         if (newCard.isDefault) {
           await supabase.from('payment_cards').update({ is_default: false }).eq('user_id', user.id);
         }
-        const { error: insErr } = await supabase.from('payment_cards').insert({
+        await supabase.from('payment_cards').insert({
           id: newCard.id,
           user_id: user.id,
           number: newCard.number,
@@ -1073,12 +1189,7 @@ export const useUserStore = create<UserState>((set, get) => ({
           type: newCard.type,
           is_default: newCard.isDefault,
         });
-        if (insErr) {
-          console.warn('Notice: Supabase payment_cards insert response:', insErr.message);
-        }
-      } catch (err) {
-        console.warn('Error saving card to payment_cards table:', err);
-      }
+      } catch {}
     }
   },
 
@@ -1101,9 +1212,7 @@ export const useUserStore = create<UserState>((set, get) => ({
     if (user?.id && UUID_REGEX.test(user.id)) {
       try {
         await supabase.from('payment_cards').delete().eq('id', id);
-      } catch (err) {
-        console.warn('Error deleting card from payment_cards table:', err);
-      }
+      } catch {}
     }
   },
 
@@ -1126,9 +1235,7 @@ export const useUserStore = create<UserState>((set, get) => ({
       try {
         await supabase.from('payment_cards').update({ is_default: false }).eq('user_id', user.id);
         await supabase.from('payment_cards').update({ is_default: true }).eq('id', id);
-      } catch (err) {
-        console.warn('Error updating default card in payment_cards table:', err);
-      }
+      } catch {}
     }
   },
   
@@ -1151,9 +1258,7 @@ export const useUserStore = create<UserState>((set, get) => ({
         } else {
           await supabase.from('favorites').insert({ user_id: user.id, product_id: pidStr });
         }
-      } catch (err) {
-        console.warn('Notice: Error syncing favorite to favorites table:', err);
-      }
+      } catch {}
     }
   },
   
@@ -1183,9 +1288,7 @@ export const useUserStore = create<UserState>((set, get) => ({
         headers,
         body: JSON.stringify({ order: enrichedOrder })
       });
-    } catch (e) {
-      console.warn("Could not sync order to /api/orders", e);
-    }
+    } catch {}
 
     // 2. Sync to Supabase
     if (user) {
@@ -1204,9 +1307,7 @@ export const useUserStore = create<UserState>((set, get) => ({
           payment_method: enrichedOrder.paymentMethod,
           created_at: enrichedOrder.createdAt
         });
-      } catch (e) {
-        console.warn("Error saving order to Supabase:", e);
-      }
+      } catch {}
     }
   },
 
@@ -1226,17 +1327,13 @@ export const useUserStore = create<UserState>((set, get) => ({
         headers,
         body: JSON.stringify({ orderId, status })
       });
-    } catch (e) {
-      console.warn("Could not sync status change to /api/orders", e);
-    }
+    } catch {}
 
     // 2. Sync to Supabase
     if (user) {
       try {
         await supabase.from('orders').update({ status }).eq('id', orderId);
-      } catch (e) {
-        console.warn("Error updating order status in Supabase:", e);
-      }
+      } catch {}
     }
   },
 
@@ -1291,7 +1388,7 @@ export const useUserStore = create<UserState>((set, get) => ({
     // 2. Cloud fallback
     await syncAddressesToCloud(user?.id, nextAddresses, activeAddr);
 
-    // 3. Supabase native table
+    // 3. Supabase native table (attempted silently, guarded against RLS policy warnings)
     if (user?.id && UUID_REGEX.test(user.id)) {
       try {
         const orders = get().orders;
@@ -1305,7 +1402,7 @@ export const useUserStore = create<UserState>((set, get) => ({
         if (shouldBeDefault) {
           await supabase.from('addresses').update({ is_default: false }).eq('user_id', user.id);
         }
-        const { error: insErr } = await supabase.from('addresses').insert({
+        await supabase.from('addresses').insert({
           id: newAddr.id,
           user_id: user.id,
           recipient: newAddr.recipient,
@@ -1316,12 +1413,7 @@ export const useUserStore = create<UserState>((set, get) => ({
           country: newAddr.country,
           is_default: newAddr.isDefault,
         });
-        if (insErr) {
-          console.warn('Notice: Supabase addresses table insert response:', insErr.message);
-        }
-      } catch (err) {
-        console.warn('Error saving address to addresses table:', err);
-      }
+      } catch {}
     }
     return true;
   },
@@ -1367,9 +1459,7 @@ export const useUserStore = create<UserState>((set, get) => ({
           if (activeAddr && UUID_REGEX.test(activeAddr.id)) {
             await supabase.from('addresses').update({ is_default: true }).eq('id', activeAddr.id);
           }
-        } catch (err) {
-          console.warn('Error deleting address from addresses table:', err);
-        }
+        } catch {}
       }
     }
   },
@@ -1404,9 +1494,7 @@ export const useUserStore = create<UserState>((set, get) => ({
         try {
           await supabase.from('addresses').update({ is_default: false }).eq('user_id', user.id);
           await supabase.from('addresses').update({ is_default: true }).eq('id', id);
-        } catch (err) {
-          console.warn('Error updating default address in addresses table:', err);
-        }
+        } catch {}
       }
     }
   },

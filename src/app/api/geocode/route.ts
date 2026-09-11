@@ -192,16 +192,103 @@ async function getLandmarkPlaceName(lat: number, lon: number) {
   return null;
 }
 
-async function resolveGeocode(latRaw: unknown, lonRaw: unknown) {
-  if (latRaw === undefined || latRaw === null || lonRaw === undefined || lonRaw === null || isNaN(Number(latRaw)) || isNaN(Number(lonRaw))) {
-    return NextResponse.json(
-      { success: false, error: 'Coordenadas inválidas.' },
-      { status: 400 }
-    );
-  }
+interface IpLocationResult {
+  city: string;
+  state: string;
+  country: string;
+  postalCode: string;
+  lat?: number;
+  lon?: number;
+}
 
-  const nLat = Number(latRaw);
-  const nLon = Number(lonRaw);
+async function resolveLocationFromIp(clientIp?: string | null): Promise<IpLocationResult | null> {
+  const ipParam = clientIp && clientIp !== '::1' && clientIp !== '127.0.0.1' ? clientIp.split(',')[0].trim() : '';
+
+  // Attempt FreeIPApi
+  try {
+    const url = ipParam ? `https://freeipapi.com/api/json/${encodeURIComponent(ipParam)}` : 'https://freeipapi.com/api/json/';
+    const res = await fetch(url, {
+      headers: { 'User-Agent': 'LuminaHome-App/1.0', Accept: 'application/json' },
+      signal: AbortSignal.timeout(3500)
+    });
+    if (res.ok) {
+      const data = await res.json();
+      if (data.cityName || data.countryName) {
+        return {
+          city: data.cityName || 'Quito',
+          state: data.regionName || 'Pichincha',
+          country: data.countryName || 'Ecuador',
+          postalCode: data.zipCode || '170150',
+          lat: typeof data.latitude === 'number' ? data.latitude : undefined,
+          lon: typeof data.longitude === 'number' ? data.longitude : undefined,
+        };
+      }
+    }
+  } catch {}
+
+  // Attempt IPWhois fallback
+  try {
+    const url = ipParam ? `https://ipwho.is/${encodeURIComponent(ipParam)}?lang=es` : 'https://ipwho.is/?lang=es';
+    const res = await fetch(url, {
+      headers: { 'User-Agent': 'LuminaHome-App/1.0', Accept: 'application/json' },
+      signal: AbortSignal.timeout(3500)
+    });
+    if (res.ok) {
+      const data = await res.json();
+      if (data.success && (data.city || data.country)) {
+        return {
+          city: data.city || 'Quito',
+          state: data.region || 'Pichincha',
+          country: data.country || 'Ecuador',
+          postalCode: data.postal || '170150',
+          lat: typeof data.latitude === 'number' ? data.latitude : undefined,
+          lon: typeof data.longitude === 'number' ? data.longitude : undefined,
+        };
+      }
+    }
+  } catch {}
+
+  return {
+    city: 'Quito',
+    state: 'Pichincha',
+    country: 'Ecuador',
+    postalCode: '170150',
+    lat: -0.1807,
+    lon: -78.4678
+  };
+}
+
+async function resolveGeocode(latRaw: unknown, lonRaw: unknown, clientIp?: string | null) {
+  const hasValidCoords = 
+    latRaw !== undefined && 
+    latRaw !== null && 
+    lonRaw !== undefined && 
+    lonRaw !== null && 
+    !isNaN(Number(latRaw)) && 
+    !isNaN(Number(lonRaw)) &&
+    Number(latRaw) !== 0 &&
+    Number(lonRaw) !== 0;
+
+  let nLat: number;
+  let nLon: number;
+  let isIpFallback = false;
+  let ipMeta: IpLocationResult | null = null;
+
+  if (!hasValidCoords) {
+    isIpFallback = true;
+    ipMeta = await resolveLocationFromIp(clientIp);
+    if (!ipMeta) {
+      return NextResponse.json(
+        { success: false, error: 'No se pudo determinar la ubicación del dispositivo ni por red.' },
+        { status: 400 }
+      );
+    }
+    nLat = ipMeta.lat || -0.1807;
+    nLon = ipMeta.lon || -78.4678;
+  } else {
+    nLat = Number(latRaw);
+    nLon = Number(lonRaw);
+  }
 
   // Run parallel queries: Origin + 2 tight offsets (~22m) + BigDataCloud fallback
   const tightOffset = 0.00020;
@@ -319,23 +406,29 @@ async function resolveGeocode(latRaw: unknown, lonRaw: unknown) {
     finalCity = subLocality;
   }
 
-  const finalCityResult = finalCity || 'Ciudad no determinada';
+  // Fallback defaults from IP metadata if available
+  const finalState = state || ipMeta?.state || '';
+  const finalPostal = postalCode || ipMeta?.postalCode || '';
+  const finalCountry = country || ipMeta?.country || 'Ecuador';
+  const finalCityResult = finalCity || ipMeta?.city || 'Quito';
+  const finalStreet = isIpFallback ? '' : street;
 
   return NextResponse.json({
     success: true,
+    source: isIpFallback ? 'ip' : 'gps',
     data: {
-      street,
+      street: finalStreet,
       city: finalCityResult,
-      state,
-      postalCode,
-      country
+      state: finalState,
+      postalCode: finalPostal,
+      country: finalCountry
     },
     // Direct top-level properties for seamless compatibility
-    street,
+    street: finalStreet,
     city: finalCityResult,
-    state,
-    postalCode,
-    country
+    state: finalState,
+    postalCode: finalPostal,
+    country: finalCountry
   });
 }
 
@@ -344,7 +437,8 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     const lat = searchParams.get('lat');
     const lon = searchParams.get('lon');
-    return await resolveGeocode(lat, lon);
+    const clientIp = request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip');
+    return await resolveGeocode(lat, lon, clientIp);
   } catch (error) {
     console.error('Error in GET /api/geocode:', error);
     return NextResponse.json(
@@ -358,7 +452,8 @@ export async function POST(request: Request) {
   try {
     const body = await request.json().catch(() => ({}));
     const { lat, lon } = body;
-    return await resolveGeocode(lat, lon);
+    const clientIp = request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip');
+    return await resolveGeocode(lat, lon, clientIp);
   } catch (error) {
     console.error('Error in POST /api/geocode:', error);
     return NextResponse.json(

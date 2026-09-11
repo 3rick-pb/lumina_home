@@ -228,54 +228,95 @@ export function SettingsTab({
     }
   };
 
-  const handleDetectLocation = () => {
-    if (typeof window === "undefined" || !navigator.geolocation) {
-      setLocationError("Tu navegador no soporta geolocalización.");
-      return;
-    }
+  const applyResolvedLocation = (data: {
+    data?: { street?: string; city?: string; state?: string; postalCode?: string; country?: string };
+    street?: string;
+    city?: string;
+    state?: string;
+    postalCode?: string;
+    country?: string;
+    source?: string;
+  }) => {
+    const resolvedStreet = data.data?.street || data.street || "";
+    const resolvedCity = data.data?.city || data.city || "";
+    const resolvedState = data.data?.state || data.state || "";
+    const resolvedPostal = data.data?.postalCode || data.postalCode || "";
+    const resolvedCountry = data.data?.country || data.country || "Ecuador";
 
+    if (resolvedStreet) setStreet(resolvedStreet);
+    if (resolvedCity) setCity(resolvedCity);
+    if (resolvedState) setStateProv(resolvedState);
+    if (resolvedPostal) setPostalCode(resolvedPostal);
+    if (resolvedCountry) setCountry(resolvedCountry);
+    setLocationSuccess(true);
+    setLocationError(null);
+  };
+
+  const fetchIpLocationFallback = async () => {
+    try {
+      const res = await fetch("/api/geocode?fallback=ip");
+      if (!res.ok) throw new Error("Fallback por red no disponible");
+      const data = await res.json();
+      if (data.success) {
+        applyResolvedLocation(data);
+        return true;
+      }
+    } catch {}
+    return false;
+  };
+
+  const handleDetectLocation = () => {
     setIsDetectingLocation(true);
     setLocationError(null);
     setLocationSuccess(false);
 
+    if (typeof window === "undefined" || !navigator.geolocation) {
+      // Direct IP fallback
+      fetchIpLocationFallback().finally(() => setIsDetectingLocation(false));
+      return;
+    }
+
+    let handled = false;
+    const timeoutId = setTimeout(async () => {
+      if (!handled) {
+        handled = true;
+        await fetchIpLocationFallback();
+        setIsDetectingLocation(false);
+      }
+    }, 4500);
+
     navigator.geolocation.getCurrentPosition(
       async (pos) => {
+        if (handled) return;
+        handled = true;
+        clearTimeout(timeoutId);
         try {
           const { latitude, longitude } = pos.coords;
           const res = await fetch(`/api/geocode?lat=${latitude}&lon=${longitude}`);
-          if (!res.ok) throw new Error("No se pudo resolver la dirección");
+          if (!res.ok) throw new Error("Error en resolución");
           const data = await res.json();
-          const resolvedStreet = data.data?.street || data.street;
-          const resolvedCity = data.data?.city || data.city;
-          const resolvedState = data.data?.state || data.state;
-          const resolvedPostal = data.data?.postalCode || data.postalCode;
-          const resolvedCountry = data.data?.country || data.country;
-
-          if (resolvedStreet) setStreet(resolvedStreet);
-          if (resolvedCity) setCity(resolvedCity);
-          if (resolvedState) setStateProv(resolvedState);
-          if (resolvedPostal) setPostalCode(resolvedPostal);
-          if (resolvedCountry) setCountry(resolvedCountry);
-          setLocationSuccess(true);
+          if (data.success) {
+            applyResolvedLocation(data);
+          } else {
+            await fetchIpLocationFallback();
+          }
         } catch {
-          setLocationError("Error al obtener la dirección por GPS. Por favor, ingrésala manualmente.");
+          await fetchIpLocationFallback();
         } finally {
           setIsDetectingLocation(false);
         }
       },
-      (err) => {
-        setIsDetectingLocation(false);
-        if (err.code === 1) {
-          setLocationError("Permiso de ubicación denegado. Habilita el acceso a la ubicación en tu navegador o ingresa los datos manualmente.");
-        } else if (err.code === 2) {
-          setLocationError("Ubicación no disponible en este dispositivo. Ingresa los datos manualmente.");
-        } else if (err.code === 3) {
-          setLocationError("Tiempo de espera agotado al obtener la ubicación. Ingresa los datos manualmente.");
-        } else {
-          setLocationError("No se pudo acceder a la ubicación. Ingresa los datos manualmente.");
+      async () => {
+        if (handled) return;
+        handled = true;
+        clearTimeout(timeoutId);
+        const ok = await fetchIpLocationFallback();
+        if (!ok) {
+          setLocationError("No se pudo detectar la ubicación. Por favor, ingresa los datos manualmente.");
         }
+        setIsDetectingLocation(false);
       },
-      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+      { enableHighAccuracy: false, timeout: 4000, maximumAge: 120000 }
     );
   };
 

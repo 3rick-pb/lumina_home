@@ -10,7 +10,7 @@ export default function GlobalFatalError({
   reset: () => void;
 }) {
   useEffect(() => {
-    console.error('Lumina Root Fatal Exception:', error);
+    console.error('Root Fatal Exception:', error);
   }, [error]);
 
   return (

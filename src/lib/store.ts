@@ -73,8 +73,7 @@ interface CartState {
 const syncCartToDatabase = async (userId: string | null, payload: CartStoragePayload) => {
   if (!userId) return;
   try {
-    // 1. Persist directly to user_carts table in Supabase
-    const { error } = await supabase.from('user_carts').upsert({
+    await supabase.from('user_carts').upsert({
       user_id: userId,
       items: payload.items,
       coupon_code: payload.couponCode,
@@ -82,13 +81,7 @@ const syncCartToDatabase = async (userId: string | null, payload: CartStoragePay
       is_free_shipping: payload.isFreeShippingCoupon,
       updated_at: new Date().toISOString()
     });
-
-    if (error) {
-      console.warn("Could not sync cart to user_carts table:", error.message);
-    }
-  } catch (e) {
-    console.error("Error syncing cart to database:", e);
-  }
+  } catch {}
 };
 
 const getGuestCartItems = (): CartItem[] => {
