@@ -8,6 +8,10 @@
     --foreground: #111827;
   }
 
+  html {
+    scroll-behavior: smooth;
+  }
+
   body {
     @apply bg-[#f8f9fa] text-gray-900;
   }
@@ -22,12 +26,14 @@
     text-wrap: balance;
   }
   .hide-scrollbar::-webkit-scrollbar {
-    display: none;
+    display: none !important;
   }
   .hide-scrollbar {
-    -ms-overflow-style: none;
-    scrollbar-width: none;
+    -ms-overflow-style: none !important;
+    scrollbar-width: none !important;
   }
+
+
 
   /* Product Media Anti-Theft & DRM Protection */
   img, picture, video, [data-protected-media], .product-image {
@@ -151,3 +157,90 @@
   opacity: 1 !important;
   pointer-events: auto !important;
 }
+
+/* ========================================================================= */
+/* Lumina Emerald Glass Custom Scrollbar (Global Web & Browser Navigation)   */
+/* ========================================================================= */
+
+/* Firefox & Standards-compliant modern browsers */
+html, body {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(16, 185, 129, 0.45) transparent;
+}
+html.dark, html.dark body {
+  scrollbar-color: rgba(52, 211, 153, 0.55) transparent;
+}
+
+/* Chrome, Edge, Safari, Opera (WebKit & Blink) */
+::-webkit-scrollbar {
+  width: 9px;
+  height: 9px;
+  background-color: transparent;
+}
+
+/* Eliminate native clunky top & bottom arrow buttons from Windows scrollbar */
+::-webkit-scrollbar-button {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+
+/* Translucent Liquid Glass Track */
+::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.02);
+  border-radius: 9999px;
+  margin: 3px 0;
+}
+
+.dark ::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.02);
+}
+
+/* Emerald Jewel Liquid Glass Thumb (Píldora flotante) */
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, rgba(16, 185, 129, 0.45) 0%, rgba(5, 150, 105, 0.6) 100%);
+  border-radius: 9999px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+  box-shadow: inset 0 1px 1.5px rgba(255, 255, 255, 0.4);
+  transition: background 0.2s ease, box-shadow 0.2s ease;
+}
+
+.dark ::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, rgba(16, 185, 129, 0.5) 0%, rgba(5, 150, 105, 0.7) 100%);
+  border: 2px solid transparent;
+  background-clip: padding-box;
+  box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.25), 0 0 8px rgba(16, 185, 129, 0.2);
+}
+
+/* Hover State: Radiant Emerald Glow */
+::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, #10B981 0%, #059669 100%);
+  border: 1.5px solid transparent;
+  background-clip: padding-box;
+  box-shadow: 0 0 12px rgba(16, 185, 129, 0.65), inset 0 1px 2px rgba(255, 255, 255, 0.7);
+}
+
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, #34D399 0%, #10B981 100%);
+  border: 1.5px solid transparent;
+  background-clip: padding-box;
+  box-shadow: 0 0 16px rgba(52, 211, 153, 0.75), inset 0 1px 2px rgba(255, 255, 255, 0.5);
+}
+
+/* Active / Dragging State: Intense Emerald Energy */
+::-webkit-scrollbar-thumb:active {
+  background: linear-gradient(180deg, #059669 0%, #047857 100%);
+  box-shadow: 0 0 16px rgba(16, 185, 129, 0.85), inset 0 1px 2px rgba(255, 255, 255, 0.85);
+}
+
+.dark ::-webkit-scrollbar-thumb:active {
+  background: linear-gradient(180deg, #10B981 0%, #059669 100%);
+  box-shadow: 0 0 20px rgba(52, 211, 153, 0.95), inset 0 1px 2px rgba(255, 255, 255, 0.7);
+}
+
+/* Seamless Corner */
+::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
