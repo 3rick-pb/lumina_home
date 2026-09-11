@@ -91,14 +91,14 @@ export function AdminCartNotifier() {
   const getPositionClasses = () => {
     switch (position) {
       case "bottom-left":
-        return "bottom-6 left-6 items-start";
+        return "bottom-7 left-7 items-start";
       case "top-right":
-        return "top-6 right-6 items-end";
+        return "top-7 right-7 items-end";
       case "top-left":
-        return "top-6 left-6 items-start";
+        return "top-7 left-7 items-start";
       case "bottom-right":
       default:
-        return "bottom-6 right-6 items-end";
+        return "bottom-7 right-7 items-end";
     }
   };
 
@@ -131,14 +131,14 @@ export function AdminCartNotifier() {
       <div className={`relative pointer-events-auto grid grid-cols-1 grid-rows-1 ${isBottom ? "items-end" : "items-start"} ${isRight ? "justify-items-end" : "justify-items-start"} select-none`}>
         <AnimatePresence mode="popLayout">
           {displayAlerts.map((item, index) => {
-            // Directional corner stacking offsets as specified:
-            // - bottom-right: stacks up (-Y) and left (-X) towards interior
-            // - top-right: stacks down (+Y) and left (-X) towards interior
-            // - top-left: stacks down (+Y) and right (+X) towards interior
-            // - bottom-left: stacks up (-Y) and right (+X) towards interior
+            // Directional corner stacking offsets (Inverted to stack towards the corner origin):
+            // - bottom-left: stacks down (+Y) and left (-X) towards bottom-left corner
+            // - bottom-right: stacks down (+Y) and right (+X) towards bottom-right corner
+            // - top-right: stacks up (-Y) and right (+X) towards top-right corner
+            // - top-left: stacks up (-Y) and left (-X) towards top-left corner
             const step = 14;
-            const yOffset = isBottom ? -index * step : index * step;
-            const xOffset = isRight ? -index * step : index * step;
+            const yOffset = isBottom ? index * step : -index * step;
+            const xOffset = isRight ? index * step : -index * step;
 
             // Progressive scale down for cards in the background
             const scale = Math.max(0.78, 1 - index * 0.055);

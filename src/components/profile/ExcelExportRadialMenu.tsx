@@ -9,7 +9,8 @@ import {
   Layers, 
   X, 
   Check, 
-  Loader2 
+  Loader2,
+  Sparkles
 } from "lucide-react";
 import * as XLSX from "xlsx";
 import { useUserStore, Order } from "@/lib/userStore";
@@ -56,8 +57,6 @@ export function ExcelExportRadialMenu() {
     setActiveExport("orders");
     try {
       let ordersList: Order[] = useUserStore.getState().orders;
-      
-      // If store is empty, attempt immediate refresh from API
       if (ordersList.length === 0) {
         await useUserStore.getState().refreshOrders();
         ordersList = useUserStore.getState().orders;
@@ -89,7 +88,6 @@ export function ExcelExportRadialMenu() {
         };
       });
 
-      // Fallback sample if no orders yet in DB
       if (rows.length === 0) {
         rows.push({
           "Nº": 1,
@@ -112,8 +110,6 @@ export function ExcelExportRadialMenu() {
 
       const wb = XLSX.utils.book_new();
       const ws = XLSX.utils.json_to_sheet(rows);
-
-      // Auto column widths
       const colWidths = Object.keys(rows[0] || {}).map(key => ({
         wch: Math.max(key.length + 3, 14)
       }));
@@ -136,7 +132,6 @@ export function ExcelExportRadialMenu() {
     setActiveExport("products");
     try {
       let prods: CatalogProduct[] = useCatalogStore.getState().products;
-
       if (prods.length === 0) {
         await useCatalogStore.getState().fetchProducts();
         prods = useCatalogStore.getState().products;
@@ -170,7 +165,6 @@ export function ExcelExportRadialMenu() {
 
       const wb = XLSX.utils.book_new();
       const ws = XLSX.utils.json_to_sheet(rows);
-
       const colWidths = Object.keys(rows[0] || {}).map(key => ({
         wch: Math.max(key.length + 3, 16)
       }));
@@ -193,13 +187,11 @@ export function ExcelExportRadialMenu() {
     setActiveExport("niches");
     try {
       let prods: CatalogProduct[] = useCatalogStore.getState().products;
-
       if (prods.length === 0) {
         await useCatalogStore.getState().fetchProducts();
         prods = useCatalogStore.getState().products;
       }
 
-      // Group products by niche / category
       const nicheMap = new Map<string, {
         count: number;
         totalStock: number;
@@ -262,7 +254,6 @@ export function ExcelExportRadialMenu() {
           });
         });
 
-      // Append Grand Total summary row
       rows.push({
         "Nº": "TOTAL",
         "Nicho / Colección": "TOTAL CATÁLOGO LUMINA HOME",
@@ -277,7 +268,6 @@ export function ExcelExportRadialMenu() {
 
       const wb = XLSX.utils.book_new();
       const ws = XLSX.utils.json_to_sheet(rows);
-
       const colWidths = Object.keys(rows[0] || {}).map(key => ({
         wch: Math.max(key.length + 3, 18)
       }));
@@ -295,139 +285,233 @@ export function ExcelExportRadialMenu() {
     }
   };
 
-  // 3 Bouncing sub-buttons around the circular trigger
+  // 3 Liquid Glass sub-buttons:
+  // Designed so each emerges sequentially out of the previous one:
+  // - Circle 1 starts from Center (0, 0) and blooms to P1 (-58, -26)
+  // - Circle 2 starts from P1 (-58, -26) (as if budding off Circle 1) and blooms to P2 (-76, 18)
+  // - Circle 3 starts from P2 (-76, 18) (as if budding off Circle 2) and blooms to P3 (-44, 60)
   const subButtons = [
     {
       id: "orders",
       label: "Exportar Pedidos",
       icon: ShoppingBag,
       onClick: handleExportOrders,
-      x: -54,
-      y: -28,
-      color: "hover:text-[#8c9276] dark:hover:text-[#ccff00]",
-      border: "hover:border-[#8c9276] dark:hover:border-[#ccff00]",
+      // Target position
+      targetX: -58,
+      targetY: -26,
+      // Origin point when emerging (center trigger)
+      originX: 0,
+      originY: 0,
+      accentColor: "text-[#8c9276] dark:text-[#ccff00]",
+      glowColor: "rgba(204, 255, 0, 0.25)",
+      badgeBg: "bg-[#8c9276]/20 text-[#494e37] dark:text-[#cbd1b2]",
     },
     {
       id: "products",
       label: "Exportar Catálogo",
       icon: Package,
       onClick: handleExportProducts,
-      x: -68,
-      y: 16,
-      color: "hover:text-emerald-600 dark:hover:text-emerald-400",
-      border: "hover:border-emerald-500",
+      // Target position
+      targetX: -76,
+      targetY: 18,
+      // Origin point when emerging (emerges directly from Circle 1)
+      originX: -58,
+      originY: -26,
+      accentColor: "text-emerald-600 dark:text-emerald-400",
+      glowColor: "rgba(16, 185, 129, 0.25)",
+      badgeBg: "bg-emerald-500/20 text-emerald-700 dark:text-emerald-300",
     },
     {
       id: "niches",
       label: "Inventario por Nicho",
       icon: Layers,
       onClick: handleExportNiches,
-      x: -40,
-      y: 56,
-      color: "hover:text-amber-600 dark:hover:text-amber-400",
-      border: "hover:border-amber-500",
+      // Target position
+      targetX: -44,
+      targetY: 60,
+      // Origin point when emerging (emerges directly from Circle 2)
+      originX: -76,
+      originY: 18,
+      accentColor: "text-amber-600 dark:text-amber-400",
+      glowColor: "rgba(245, 158, 11, 0.25)",
+      badgeBg: "bg-amber-500/20 text-amber-700 dark:text-amber-300",
     },
   ];
 
   return (
-    <div ref={menuRef} className="relative inline-flex items-center justify-center select-none">
-      {/* 3 Bouncing Orbiting Sub-Buttons */}
+    <>
+      {/* 1. CINEMATIC FULLSCREEN BACKDROP: Dims the page for high-focus spotlight */}
       <AnimatePresence>
         {isOpen && (
-          <>
-            {subButtons.map((btn, index) => {
-              const Icon = btn.icon;
-              const isExporting = activeExport === btn.id;
-              const isSuccess = successExport === btn.id;
-
-              return (
-                <motion.div
-                  key={btn.id}
-                  className="absolute z-30 pointer-events-auto"
-                  initial={{ x: 0, y: 0, scale: 0, opacity: 0 }}
-                  animate={{ 
-                    x: btn.x, 
-                    y: btn.y, 
-                    scale: 1, 
-                    opacity: 1 
-                  }}
-                  exit={{ 
-                    x: 0, 
-                    y: 0, 
-                    scale: 0, 
-                    opacity: 0,
-                    transition: { duration: 0.16, ease: "easeIn" }
-                  }}
-                  transition={{
-                    type: "spring",
-                    stiffness: 340,
-                    damping: 14,
-                    mass: 0.7,
-                    bounce: 0.55,
-                    delay: index * 0.05,
-                  }}
-                >
-                  <div className="relative group">
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        btn.onClick();
-                      }}
-                      disabled={isExporting}
-                      title={btn.label}
-                      className={`w-10 h-10 rounded-full flex items-center justify-center border border-white/80 dark:border-white/10 bg-white/95 dark:bg-[#202022]/95 backdrop-blur-xl shadow-lg hover:scale-110 active:scale-95 transition-transform duration-150 cursor-pointer text-gray-700 dark:text-gray-200 ${btn.color} ${btn.border}`}
-                    >
-                      {isExporting ? (
-                        <Loader2 className="w-4 h-4 animate-spin text-[#8c9276] dark:text-[#ccff00]" />
-                      ) : isSuccess ? (
-                        <Check className="w-4 h-4 text-emerald-500 stroke-[3]" />
-                      ) : (
-                        <Icon className="w-4 h-4 transition-transform group-hover:scale-110" />
-                      )}
-                    </button>
-
-                    {/* Tooltip pill on hover */}
-                    <div className="absolute right-full top-1/2 -translate-y-1/2 mr-2.5 px-2.5 py-1 rounded-xl bg-gray-900/95 dark:bg-white/95 text-white dark:text-gray-900 text-[10px] font-semibold tracking-tight whitespace-nowrap pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-150 shadow-md z-40">
-                      {btn.label}
-                      <span className="text-[9px] opacity-75 font-normal ml-1">(.xlsx)</span>
-                    </div>
-                  </div>
-                </motion.div>
-              );
-            })}
-          </>
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.28, ease: "easeOut" }}
+            onClick={() => setIsOpen(false)}
+            className="fixed inset-0 z-40 bg-black/45 dark:bg-black/65 backdrop-blur-[3.5px] pointer-events-auto"
+            aria-hidden="true"
+          />
         )}
       </AnimatePresence>
 
-      {/* Main Central Circular Trigger */}
-      <button
-        type="button"
-        onClick={() => setIsOpen(!isOpen)}
-        aria-label="Exportar datos a Excel"
-        title={isOpen ? "Cerrar menú de reportes" : "Exportar reportes a Excel (.xlsx)"}
-        className={`relative z-20 w-10 h-10 rounded-full flex items-center justify-center border transition-all duration-200 cursor-pointer backdrop-blur-xl shadow-sm hover:shadow-md active:scale-95 ${
-          isOpen
-            ? "border-[#8c9276] dark:border-[#ccff00] bg-[#8c9276]/15 dark:bg-[#ccff00]/15 text-[#4a5035] dark:text-[#ccff00]"
-            : "border-white/80 dark:border-white/10 bg-white/90 dark:bg-[#202022]/90 text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:border-gray-300 dark:hover:border-white/20"
-        }`}
+      {/* 2. RADIAL INTERACTIVE MENU CONTAINER */}
+      <div 
+        ref={menuRef} 
+        className={`relative inline-flex items-center justify-center select-none ${isOpen ? "z-50" : "z-20"}`}
       >
-        <motion.div
-          animate={{ rotate: isOpen ? 90 : 0, scale: isOpen ? 1.05 : 1 }}
-          transition={{ type: "spring", stiffness: 350, damping: 20 }}
-        >
-          {isOpen ? (
-            <X className="w-4 h-4" />
-          ) : (
-            <FileSpreadsheet className="w-4 h-4 text-[#8c9276] dark:text-[#ccff00]" />
-          )}
-        </motion.div>
+        {/* Liquid Glass Emergence Orbit */}
+        <AnimatePresence>
+          {isOpen && (
+            <>
+              {/* Subtle ambient light bloom behind the active glass bubbles */}
+              <motion.div
+                initial={{ scale: 0, opacity: 0 }}
+                animate={{ scale: 1.4, opacity: 0.6 }}
+                exit={{ scale: 0, opacity: 0 }}
+                transition={{ duration: 0.3 }}
+                className="absolute -inset-10 rounded-full bg-gradient-to-tr from-[#8c9276]/25 via-[#ccff00]/15 to-transparent blur-2xl pointer-events-none -z-10"
+              />
 
-        {/* Small subtle green indicator dot */}
-        {!isOpen && (
-          <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-[#8c9276] dark:bg-[#ccff00] border-2 border-white dark:border-[#202022]" />
-        )}
-      </button>
-    </div>
+              {subButtons.map((btn, index) => {
+                const Icon = btn.icon;
+                const isExporting = activeExport === btn.id;
+                const isSuccess = successExport === btn.id;
+
+                return (
+                  <motion.div
+                    key={btn.id}
+                    className="absolute z-50 pointer-events-auto"
+                    // Sequential budding: each orb starts at the position of the previous orb
+                    initial={{ 
+                      x: btn.originX, 
+                      y: btn.originY, 
+                      scale: 0.15, 
+                      opacity: 0,
+                      filter: "blur(4px)"
+                    }}
+                    animate={{ 
+                      x: btn.targetX, 
+                      y: btn.targetY, 
+                      scale: 1, 
+                      opacity: 1,
+                      filter: "blur(0px)"
+                    }}
+                    exit={{ 
+                      x: btn.originX, 
+                      y: btn.originY, 
+                      scale: 0.15, 
+                      opacity: 0,
+                      filter: "blur(4px)",
+                      transition: { 
+                        duration: 0.18, 
+                        ease: [0.32, 0, 0.67, 0],
+                        delay: (2 - index) * 0.04 
+                      }
+                    }}
+                    transition={{
+                      type: "spring",
+                      stiffness: 270,
+                      damping: 14.5,
+                      mass: 0.65,
+                      bounce: 0.52,
+                      delay: index * 0.085, // Fluid sequential extrusion
+                    }}
+                  >
+                    <div className="relative group">
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          btn.onClick();
+                        }}
+                        disabled={isExporting}
+                        title={btn.label}
+                        style={{
+                          boxShadow: `0 14px 32px rgba(0,0,0,0.18), inset 0 1.5px 1.5px rgba(255,255,255,0.75), inset 0 -1.5px 2px rgba(0,0,0,0.12), 0 0 20px ${btn.glowColor}`
+                        }}
+                        className={`relative w-11 h-11 rounded-full flex items-center justify-center border border-white/80 dark:border-white/25 bg-white/60 dark:bg-[#1f1f22]/75 backdrop-blur-2xl hover:scale-115 active:scale-95 transition-all duration-200 cursor-pointer text-gray-800 dark:text-gray-100 overflow-hidden`}
+                      >
+                        {/* Liquid glass glossy top specular highlight reflection */}
+                        <div className="pointer-events-none absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-white/60 via-white/15 to-transparent rounded-t-full opacity-85 dark:opacity-40" />
+
+                        {/* Liquid ripple gradient glow on hover */}
+                        <div className="pointer-events-none absolute inset-0 rounded-full bg-gradient-to-tr from-transparent via-white/10 to-white/40 opacity-0 group-hover:opacity-100 transition-opacity duration-200" />
+
+                        {isExporting ? (
+                          <Loader2 className="w-4 h-4 animate-spin text-[#8c9276] dark:text-[#ccff00] relative z-10" />
+                        ) : isSuccess ? (
+                          <Check className="w-4 h-4 text-emerald-500 stroke-[3] relative z-10" />
+                        ) : (
+                          <Icon className={`w-4 h-4 relative z-10 transition-transform duration-200 group-hover:scale-115 ${btn.accentColor}`} />
+                        )}
+                      </button>
+
+                      {/* Floating Glass Tooltip Pill */}
+                      <div className="absolute right-full top-1/2 -translate-y-1/2 mr-3 px-3 py-1.5 rounded-2xl bg-white/90 dark:bg-[#1f1f22]/90 backdrop-blur-xl border border-white/70 dark:border-white/15 shadow-[0_8px_24px_rgba(0,0,0,0.12)] text-gray-900 dark:text-white text-[11px] font-bold tracking-tight whitespace-nowrap pointer-events-none opacity-0 group-hover:opacity-100 transition-all duration-200 group-hover:-translate-x-0.5 z-50 flex items-center gap-1.5">
+                        <Sparkles className="w-3 h-3 text-[#8c9276] dark:text-[#ccff00]" />
+                        <span>{btn.label}</span>
+                        <span className="text-[9px] font-mono opacity-60 font-normal">.xlsx</span>
+                      </div>
+                    </div>
+                  </motion.div>
+                );
+              })}
+            </>
+          )}
+        </AnimatePresence>
+
+        {/* 3. MAIN CENTRAL LIQUID GLASS TRIGGER BUTTON */}
+        <button
+          type="button"
+          onClick={() => setIsOpen(!isOpen)}
+          aria-label="Exportar datos a Excel"
+          title={isOpen ? "Cerrar menú" : "Exportar reportes a Excel (.xlsx)"}
+          style={{
+            boxShadow: isOpen 
+              ? "0 0 28px rgba(204, 255, 0, 0.35), 0 14px 34px rgba(0,0,0,0.22), inset 0 2px 2px rgba(255,255,255,0.9), inset 0 -2px 2px rgba(0,0,0,0.15)"
+              : "0 8px 24px rgba(0,0,0,0.08), inset 0 1.5px 1.5px rgba(255,255,255,0.85), inset 0 -1.5px 1.5px rgba(0,0,0,0.08)"
+          }}
+          className={`relative z-50 w-11 h-11 rounded-full flex items-center justify-center border transition-all duration-300 cursor-pointer backdrop-blur-3xl overflow-hidden active:scale-95 ${
+            isOpen
+              ? "border-[#8c9276] dark:border-[#ccff00] bg-white/80 dark:bg-[#232327]/85 text-[#3b4028] dark:text-[#ccff00] scale-105"
+              : "border-white/85 dark:border-white/20 bg-white/60 dark:bg-[#1f1f22]/70 text-gray-700 dark:text-gray-200 hover:scale-108 hover:border-[#8c9276]/60 dark:hover:border-[#ccff00]/40"
+          }`}
+        >
+          {/* Liquid glass top reflection highlight */}
+          <div className="pointer-events-none absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-white/70 via-white/20 to-transparent rounded-t-full opacity-90 dark:opacity-40" />
+
+          {/* Liquid glow wave on open */}
+          {isOpen && (
+            <motion.div 
+              initial={{ scale: 0.8, opacity: 0.8 }}
+              animate={{ scale: 1.4, opacity: 0 }}
+              transition={{ repeat: Infinity, duration: 1.8, ease: "easeOut" }}
+              className="pointer-events-none absolute inset-0 rounded-full border-2 border-[#8c9276] dark:border-[#ccff00]"
+            />
+          )}
+
+          <motion.div
+            animate={{ 
+              rotate: isOpen ? 90 : 0, 
+              scale: isOpen ? 1.1 : 1 
+            }}
+            transition={{ type: "spring", stiffness: 380, damping: 20 }}
+            className="relative z-10"
+          >
+            {isOpen ? (
+              <X className="w-4 h-4" />
+            ) : (
+              <FileSpreadsheet className="w-4 h-4 text-[#8c9276] dark:text-[#ccff00]" />
+            )}
+          </motion.div>
+
+          {/* Green active status indicator pip */}
+          {!isOpen && (
+            <span className="absolute top-1 right-1 w-2.5 h-2.5 rounded-full bg-[#8c9276] dark:bg-[#ccff00] border-2 border-white dark:border-[#1f1f22] shadow-xs" />
+          )}
+        </button>
+      </div>
+    </>
   );
 }
