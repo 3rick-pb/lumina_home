@@ -225,6 +225,213 @@ export const checkIsAdmin = async (
   return finalRes;
 };
 
+export function generateUUID(): string {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    return crypto.randomUUID();
+  }
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+    const r = (Math.random() * 16) | 0;
+    const v = c === 'x' ? r : (r & 0x3) | 0x8;
+    return v.toString(16);
+  });
+}
+
+export const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+export function getGuestDeviceId(): string {
+  if (typeof window === 'undefined') return 'guest_default';
+  try {
+    let gId = localStorage.getItem('lumina_guest_device_id');
+    if (!gId) {
+      gId = 'guest_' + Date.now() + '_' + Math.random().toString(36).substring(2, 8);
+      localStorage.setItem('lumina_guest_device_id', gId);
+    }
+    return gId;
+  } catch {
+    return 'guest_default';
+  }
+}
+
+const ADDR_STORAGE_PREFIX = 'lumina_user_addresses_';
+const ACTIVE_ADDR_STORAGE_PREFIX = 'lumina_active_address_';
+const CARDS_STORAGE_PREFIX = 'lumina_user_cards_';
+const FAVS_STORAGE_PREFIX = 'lumina_user_favorites_';
+
+export function getLocalAddresses(userId?: string | null): ShippingAddress[] {
+  if (typeof window === 'undefined') return [];
+  try {
+    const key = `${ADDR_STORAGE_PREFIX}${userId || 'guest'}`;
+    const raw = localStorage.getItem(key);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) return parsed;
+    }
+    if (userId) {
+      const guestRaw = localStorage.getItem(`${ADDR_STORAGE_PREFIX}guest`);
+      if (guestRaw) {
+        const guestParsed = JSON.parse(guestRaw);
+        if (Array.isArray(guestParsed) && guestParsed.length > 0) return guestParsed;
+      }
+    }
+  } catch {}
+  return [];
+}
+
+export function getLocalActiveAddress(userId?: string | null): ShippingAddress | null {
+  if (typeof window === 'undefined') return null;
+  try {
+    const key = `${ACTIVE_ADDR_STORAGE_PREFIX}${userId || 'guest'}`;
+    const raw = localStorage.getItem(key);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (parsed && typeof parsed === 'object' && parsed.street) return parsed;
+    }
+    if (userId) {
+      const guestRaw = localStorage.getItem(`${ACTIVE_ADDR_STORAGE_PREFIX}guest`);
+      if (guestRaw) {
+        const guestParsed = JSON.parse(guestRaw);
+        if (guestParsed && typeof guestParsed === 'object' && guestParsed.street) return guestParsed;
+      }
+    }
+  } catch {}
+  return null;
+}
+
+export function saveLocalAddresses(
+  userId: string | null | undefined,
+  addresses: ShippingAddress[],
+  activeAddress: ShippingAddress | null
+) {
+  if (typeof window === 'undefined') return;
+  try {
+    const key = `${ADDR_STORAGE_PREFIX}${userId || 'guest'}`;
+    localStorage.setItem(key, JSON.stringify(addresses));
+    const activeKey = `${ACTIVE_ADDR_STORAGE_PREFIX}${userId || 'guest'}`;
+    if (activeAddress) {
+      localStorage.setItem(activeKey, JSON.stringify(activeAddress));
+    } else {
+      localStorage.removeItem(activeKey);
+    }
+  } catch {}
+}
+
+export function getLocalCards(userId?: string | null): PaymentCard[] {
+  if (typeof window === 'undefined') return [];
+  try {
+    const key = `${CARDS_STORAGE_PREFIX}${userId || 'guest'}`;
+    const raw = localStorage.getItem(key);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) return parsed;
+    }
+    if (userId) {
+      const guestRaw = localStorage.getItem(`${CARDS_STORAGE_PREFIX}guest`);
+      if (guestRaw) {
+        const guestParsed = JSON.parse(guestRaw);
+        if (Array.isArray(guestParsed) && guestParsed.length > 0) return guestParsed;
+      }
+    }
+  } catch {}
+  return [];
+}
+
+export function saveLocalCards(userId: string | null | undefined, cards: PaymentCard[]) {
+  if (typeof window === 'undefined') return;
+  try {
+    const key = `${CARDS_STORAGE_PREFIX}${userId || 'guest'}`;
+    localStorage.setItem(key, JSON.stringify(cards));
+  } catch {}
+}
+
+export function getLocalFavorites(userId?: string | null): string[] {
+  if (typeof window === 'undefined') return [];
+  try {
+    const key = `${FAVS_STORAGE_PREFIX}${userId || 'guest'}`;
+    const raw = localStorage.getItem(key);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) return parsed;
+    }
+    if (userId) {
+      const guestRaw = localStorage.getItem(`${FAVS_STORAGE_PREFIX}guest`);
+      if (guestRaw) {
+        const guestParsed = JSON.parse(guestRaw);
+        if (Array.isArray(guestParsed) && guestParsed.length > 0) return guestParsed;
+      }
+    }
+  } catch {}
+  return [];
+}
+
+export function saveLocalFavorites(userId: string | null | undefined, favorites: string[]) {
+  if (typeof window === 'undefined') return;
+  try {
+    const key = `${FAVS_STORAGE_PREFIX}${userId || 'guest'}`;
+    localStorage.setItem(key, JSON.stringify(favorites));
+  } catch {}
+}
+
+export async function syncAddressesToCloud(
+  userId: string | null | undefined,
+  addresses: ShippingAddress[],
+  activeAddress: ShippingAddress | null
+) {
+  const scopeId = userId || getGuestDeviceId();
+  const sysKey = `SYS_USER_ADDR_${scopeId}`;
+  try {
+    await supabase.from('active_sessions').upsert({
+      user_id: sysKey,
+      name: 'SYS_USER_ADDR',
+      email: JSON.stringify({ addresses, activeAddress }),
+      city: activeAddress?.city || (addresses[0]?.city) || 'Quito',
+      country: activeAddress?.country || (addresses[0]?.country) || 'Ecuador',
+      current_section: 'USER_ADDRESS_STORE',
+      is_online: false,
+      last_seen: new Date().toISOString()
+    }, { onConflict: 'user_id' });
+  } catch (err) {
+    console.warn('Notice: Could not sync addresses to cloud fallback:', err);
+  }
+}
+
+export async function syncCardsToCloud(userId: string | null | undefined, cards: PaymentCard[]) {
+  const scopeId = userId || getGuestDeviceId();
+  const sysKey = `SYS_USER_CARDS_${scopeId}`;
+  try {
+    await supabase.from('active_sessions').upsert({
+      user_id: sysKey,
+      name: 'SYS_USER_CARDS',
+      email: JSON.stringify(cards),
+      city: 'Quito',
+      country: 'Ecuador',
+      current_section: 'USER_CARDS_STORE',
+      is_online: false,
+      last_seen: new Date().toISOString()
+    }, { onConflict: 'user_id' });
+  } catch (err) {
+    console.warn('Notice: Could not sync cards to cloud fallback:', err);
+  }
+}
+
+export async function syncFavoritesToCloud(userId: string | null | undefined, favorites: string[]) {
+  const scopeId = userId || getGuestDeviceId();
+  const sysKey = `SYS_USER_FAVS_${scopeId}`;
+  try {
+    await supabase.from('active_sessions').upsert({
+      user_id: sysKey,
+      name: 'SYS_USER_FAVS',
+      email: JSON.stringify(favorites),
+      city: 'Quito',
+      country: 'Ecuador',
+      current_section: 'USER_FAVORITES_STORE',
+      is_online: false,
+      last_seen: new Date().toISOString()
+    }, { onConflict: 'user_id' });
+  } catch (err) {
+    console.warn('Notice: Could not sync favorites to cloud fallback:', err);
+  }
+}
+
 const fetchUserDataFromDatabase = async (userId: string, role: 'USER' | 'ADMIN' = 'USER', email: string = '') => {
   try {
     const cleanEmail = (email || '').toLowerCase().trim();
@@ -279,59 +486,176 @@ const fetchUserDataFromDatabase = async (userId: string, role: 'USER' | 'ADMIN' 
       } catch {}
     }
 
-    // 2. Fetch addresses from Supabase addresses table (single source of truth)
+    // 2. Fetch addresses from Supabase addresses table + Cloud active_sessions + LocalStorage
     let addresses: ShippingAddress[] = [];
-    try {
-      const { data: dbAddrs, error: aErr } = await supabase
-        .from('addresses')
-        .select('*')
-        .eq('user_id', userId)
-        .order('created_at', { ascending: false })
-        .limit(4);
+    const isUserUuid = UUID_REGEX.test(userId);
+    if (isUserUuid) {
+      try {
+        const { data: dbAddrs, error: aErr } = await supabase
+          .from('addresses')
+          .select('*')
+          .eq('user_id', userId)
+          .order('created_at', { ascending: false })
+          .limit(4);
 
-      if (dbAddrs && !aErr && dbAddrs.length > 0) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        addresses = dbAddrs.map((dbAddr: any, index: number) => ({
-          id: dbAddr.id || `addr-${index}`,
-          recipient: dbAddr.recipient || dbAddr.receiver_name || '',
-          street: dbAddr.street || '',
-          city: dbAddr.city || '',
-          state: dbAddr.state || '',
-          postalCode: dbAddr.postal_code || '',
-          country: dbAddr.country || 'Ecuador',
-          isDefault: dbAddr.is_default !== undefined ? !!dbAddr.is_default : index === 0,
-        }));
+        if (dbAddrs && !aErr && dbAddrs.length > 0) {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          addresses = dbAddrs.map((dbAddr: any, index: number) => ({
+            id: dbAddr.id || generateUUID(),
+            recipient: dbAddr.recipient || dbAddr.receiver_name || '',
+            street: dbAddr.street || '',
+            city: dbAddr.city || '',
+            state: dbAddr.state || '',
+            postalCode: dbAddr.postal_code || '',
+            country: dbAddr.country || 'Ecuador',
+            isDefault: dbAddr.is_default !== undefined ? !!dbAddr.is_default : index === 0,
+          }));
+        }
+      } catch {}
+    }
+
+    // Cloud fallback for addresses if Supabase table returned 0 rows
+    try {
+      if (addresses.length === 0) {
+        const { data: sysAddrRow } = await supabase
+          .from('active_sessions')
+          .select('email')
+          .eq('user_id', `SYS_USER_ADDR_${userId}`)
+          .maybeSingle();
+
+        if (sysAddrRow?.email) {
+          const parsed = JSON.parse(sysAddrRow.email);
+          if (Array.isArray(parsed?.addresses) && parsed.addresses.length > 0) {
+            addresses = parsed.addresses;
+          }
+        }
       }
     } catch {}
 
-    // 3. Fetch cards directly from Supabase payment_cards table (single source of truth)
+    // Merge with LocalStorage addresses
+    try {
+      const localAddrs = getLocalAddresses(userId);
+      const existingKeys = new Set(addresses.map(a => `${(a.street || '').toLowerCase()}_${(a.postalCode || '').toLowerCase()}`));
+      for (const la of localAddrs) {
+        const key = `${(la.street || '').toLowerCase()}_${(la.postalCode || '').toLowerCase()}`;
+        if (!existingKeys.has(key) && addresses.length < 4) {
+          addresses.push(la);
+          existingKeys.add(key);
+        }
+      }
+    } catch {}
+
+    // 3. Fetch cards directly from Supabase payment_cards + Cloud active_sessions + LocalStorage
     let cards: PaymentCard[] = [];
-    try {
-      const { data: dbCards, error: cErr } = await supabase
-        .from('payment_cards')
-        .select('*')
-        .eq('user_id', userId)
-        .order('created_at', { ascending: false });
+    if (isUserUuid) {
+      try {
+        const { data: dbCards, error: cErr } = await supabase
+          .from('payment_cards')
+          .select('*')
+          .eq('user_id', userId)
+          .order('created_at', { ascending: false });
 
-      if (dbCards && !cErr && dbCards.length > 0) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        cards = dbCards.map((c: any) => ({
-          id: c.id,
-          number: c.number,
-          holder: c.holder,
-          exp: c.exp,
-          type: c.type,
-          isDefault: !!c.is_default,
-        }));
+        if (dbCards && !cErr && dbCards.length > 0) {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          cards = dbCards.map((c: any) => ({
+            id: c.id,
+            number: c.number,
+            holder: c.holder,
+            exp: c.exp,
+            type: c.type,
+            isDefault: !!c.is_default,
+          }));
+        }
+      } catch {}
+    }
+
+    // Cloud fallback for cards
+    try {
+      if (cards.length === 0) {
+        const { data: sysCardsRow } = await supabase
+          .from('active_sessions')
+          .select('email')
+          .eq('user_id', `SYS_USER_CARDS_${userId}`)
+          .maybeSingle();
+
+        if (sysCardsRow?.email) {
+          const parsed = JSON.parse(sysCardsRow.email);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            cards = parsed;
+          }
+        }
       }
     } catch {}
 
-    const defaultAddr = addresses.find(a => a.isDefault) || addresses[0] || null;
+    // Merge with LocalStorage cards
+    try {
+      const localCards = getLocalCards(userId);
+      const existingCardDigits = new Set(cards.map(c => c.number.replace(/\s+/g, '').slice(-4)));
+      for (const lc of localCards) {
+        const digits = lc.number.replace(/\s+/g, '').slice(-4);
+        if (!existingCardDigits.has(digits)) {
+          cards.push(lc);
+          existingCardDigits.add(digits);
+        }
+      }
+    } catch {}
 
-    return { cards, orders, addresses, address: defaultAddr };
+    // 4. Fetch favorites from Supabase + Cloud active_sessions + LocalStorage
+    let favorites: string[] = [];
+    if (isUserUuid) {
+      try {
+        const { data: favs } = await supabase.from('favorites').select('product_id').eq('user_id', userId);
+        if (favs && favs.length > 0) {
+          favorites = favs.map(f => String(f.product_id));
+        }
+      } catch {}
+    }
+
+    try {
+      const { data: sysFavRow } = await supabase
+        .from('active_sessions')
+        .select('email')
+        .eq('user_id', `SYS_USER_FAVS_${userId}`)
+        .maybeSingle();
+
+      if (sysFavRow?.email) {
+        const parsed = JSON.parse(sysFavRow.email);
+        if (Array.isArray(parsed)) {
+          for (const pid of parsed) {
+            if (!favorites.includes(String(pid))) favorites.push(String(pid));
+          }
+        }
+      }
+    } catch {}
+
+    try {
+      const localFavs = getLocalFavorites(userId);
+      for (const lf of localFavs) {
+        if (!favorites.includes(String(lf))) favorites.push(String(lf));
+      }
+    } catch {}
+
+    // Ensure default address is selected
+    const localActive = getLocalActiveAddress(userId);
+    const defaultAddr = (localActive && addresses.some(a => a.id === localActive.id))
+      ? addresses.find(a => a.id === localActive.id) || localActive
+      : addresses.find(a => a.isDefault) || addresses[0] || null;
+
+    // Cache merged state to LocalStorage
+    saveLocalAddresses(userId, addresses, defaultAddr);
+    saveLocalCards(userId, cards);
+    saveLocalFavorites(userId, favorites);
+
+    return { cards, orders, addresses, address: defaultAddr, favorites };
   } catch (e) {
     console.error("Error fetching user data from Supabase:", e);
-    return { cards: [], orders: [], addresses: [], address: null };
+    return {
+      cards: getLocalCards(userId),
+      orders: [],
+      addresses: getLocalAddresses(userId),
+      address: getLocalActiveAddress(userId),
+      favorites: getLocalFavorites(userId)
+    };
   }
 };
 
@@ -411,11 +735,11 @@ export const useUserStore = create<UserState>((set, get) => ({
   isLoading: true,
   isAuthInitialized: false,
   isGuestMode: getInitialGuestMode(),
-  favorites: [],
+  favorites: getLocalFavorites(),
   orders: [],
-  cards: [],
-  addresses: [],
-  address: null,
+  cards: getLocalCards(),
+  addresses: getLocalAddresses(),
+  address: getLocalActiveAddress(),
 
   continueAsGuest: () => {
     setGuestModeStorage(true);
@@ -444,11 +768,11 @@ export const useUserStore = create<UserState>((set, get) => ({
             user: null,
             isAuthenticated: false,
             isGuestMode: false,
-            favorites: [],
-            cards: [],
+            favorites: getLocalFavorites('guest'),
+            cards: getLocalCards('guest'),
             orders: [],
-            address: null,
-            addresses: [],
+            address: getLocalActiveAddress('guest'),
+            addresses: getLocalAddresses('guest'),
             isLoading: false,
             isAuthInitialized: true,
           });
@@ -469,6 +793,10 @@ export const useUserStore = create<UserState>((set, get) => ({
               isAuthenticated: true, 
               isLoading: false,
               isAuthInitialized: true,
+              cards: getLocalCards(session.user.id),
+              addresses: getLocalAddresses(session.user.id),
+              address: getLocalActiveAddress(session.user.id),
+              favorites: getLocalFavorites(session.user.id),
             });
 
             const newUserId = session.user.id;
@@ -479,12 +807,11 @@ export const useUserStore = create<UserState>((set, get) => ({
                   cards: personalData.cards,
                   orders: personalData.orders,
                   addresses: personalData.addresses,
-                  address: personalData.address
+                  address: personalData.address,
+                  favorites: personalData.favorites,
                 });
 
                 useCartStore.getState().initCartForUser(newUserId);
-                const { data: favs } = await supabase.from('favorites').select('product_id').eq('user_id', newUserId);
-                if (favs) set({ favorites: favs.map(f => f.product_id) });
               } catch {}
             }, 0);
           } else {
@@ -514,8 +841,12 @@ export const useUserStore = create<UserState>((set, get) => ({
         set({ 
           user: userObj, 
           isAuthenticated: true, 
-          isLoading: false,
+          isLoading: false, 
           isAuthInitialized: true,
+          cards: getLocalCards(session.user.id),
+          addresses: getLocalAddresses(session.user.id),
+          address: getLocalActiveAddress(session.user.id),
+          favorites: getLocalFavorites(session.user.id),
         });
 
         const currentUserId = session.user.id;
@@ -527,11 +858,9 @@ export const useUserStore = create<UserState>((set, get) => ({
               cards: personalData.cards,
               orders: personalData.orders,
               addresses: personalData.addresses,
-              address: personalData.address
+              address: personalData.address,
+              favorites: personalData.favorites,
             });
-
-            const { data: favs } = await supabase.from('favorites').select('product_id').eq('user_id', currentUserId);
-            if (favs) set({ favorites: favs.map(f => f.product_id) });
           } catch {}
         }, 0);
       } else {
@@ -540,7 +869,11 @@ export const useUserStore = create<UserState>((set, get) => ({
           isAuthenticated: false, 
           isGuestMode: getInitialGuestMode(),
           isLoading: false, 
-          isAuthInitialized: true 
+          isAuthInitialized: true,
+          cards: getLocalCards('guest'),
+          addresses: getLocalAddresses('guest'),
+          address: getLocalActiveAddress('guest'),
+          favorites: getLocalFavorites('guest'),
         });
       }
     } catch {
@@ -568,27 +901,40 @@ export const useUserStore = create<UserState>((set, get) => ({
       const userEmail = data.user.email || cleanEmail;
       const { role, isRootAdmin } = await checkIsAdmin(userEmail);
       const name = formatCleanName(data.user.user_metadata?.name || userEmail.split('@')[0]);
+
+      // Transfer any guest data seamlessly
+      const guestAddrs = getLocalAddresses('guest');
+      const guestCards = getLocalCards('guest');
+      const guestFavs = getLocalFavorites('guest');
+      if (guestAddrs.length > 0) {
+        saveLocalAddresses(data.user.id, guestAddrs, getLocalActiveAddress('guest'));
+      }
+      if (guestCards.length > 0) {
+        saveLocalCards(data.user.id, guestCards);
+      }
+      if (guestFavs.length > 0) {
+        saveLocalFavorites(data.user.id, guestFavs);
+      }
+
       const personalData = await fetchUserDataFromDatabase(data.user.id, role, userEmail);
       const userObj: User = { id: data.user.id, email: userEmail, name, role, isRootAdmin };
 
       set({ 
         user: userObj, 
         isAuthenticated: true, 
-        isGuestMode: false,
+        isGuestMode: false, 
         isLoading: false, 
         isAuthInitialized: true,
         cards: personalData.cards,
         orders: personalData.orders,
         addresses: personalData.addresses,
-        address: personalData.address
+        address: personalData.address,
+        favorites: personalData.favorites,
       });
 
       // Synchronize and load user's private cart from Supabase
       await useCartStore.getState().initCartForUser(data.user.id);
       await useThemeStore.getState().loadFromDB(data.user.id);
-
-      const { data: favs } = await supabase.from('favorites').select('product_id').eq('user_id', data.user.id);
-      if (favs) set({ favorites: favs.map(f => f.product_id) });
     }
     return { error: error?.message || null };
   },
@@ -695,22 +1041,41 @@ export const useUserStore = create<UserState>((set, get) => ({
     const user = get().user;
     const newCard: PaymentCard = {
       ...card,
-      id: Math.random().toString(36).substring(7)
+      id: generateUUID(),
+      isDefault: get().cards.length === 0 || !!card.isDefault,
     };
-    const nextCards = [newCard, ...get().cards];
+    let nextCards: PaymentCard[];
+    if (newCard.isDefault) {
+      nextCards = [newCard, ...get().cards.map(c => ({ ...c, isDefault: false }))];
+    } else {
+      nextCards = [newCard, ...get().cards];
+    }
     set({ cards: nextCards });
 
-    if (user) {
+    // 1. LocalStorage
+    saveLocalCards(user?.id, nextCards);
+
+    // 2. Cloud fallback
+    await syncCardsToCloud(user?.id, nextCards);
+
+    // 3. Supabase native table
+    if (user?.id && UUID_REGEX.test(user.id)) {
       try {
-        await supabase.from('payment_cards').insert({
+        if (newCard.isDefault) {
+          await supabase.from('payment_cards').update({ is_default: false }).eq('user_id', user.id);
+        }
+        const { error: insErr } = await supabase.from('payment_cards').insert({
           id: newCard.id,
           user_id: user.id,
-          number: card.number,
-          holder: card.holder,
-          exp: card.exp,
-          type: card.type,
-          is_default: card.isDefault || false,
+          number: newCard.number,
+          holder: newCard.holder,
+          exp: newCard.exp,
+          type: newCard.type,
+          is_default: newCard.isDefault,
         });
+        if (insErr) {
+          console.warn('Notice: Supabase payment_cards insert response:', insErr.message);
+        }
       } catch (err) {
         console.warn('Error saving card to payment_cards table:', err);
       }
@@ -719,10 +1084,21 @@ export const useUserStore = create<UserState>((set, get) => ({
 
   removeCard: async (id) => {
     const user = get().user;
-    const nextCards = get().cards.filter(c => c.id !== id);
+    const removedWasDefault = get().cards.find(c => c.id === id)?.isDefault;
+    let nextCards = get().cards.filter(c => c.id !== id);
+    if (removedWasDefault && nextCards.length > 0) {
+      nextCards = nextCards.map((c, idx) => ({ ...c, isDefault: idx === 0 }));
+    }
     set({ cards: nextCards });
 
-    if (user) {
+    // 1. LocalStorage
+    saveLocalCards(user?.id, nextCards);
+
+    // 2. Cloud fallback
+    await syncCardsToCloud(user?.id, nextCards);
+
+    // 3. Supabase native table
+    if (user?.id && UUID_REGEX.test(user.id)) {
       try {
         await supabase.from('payment_cards').delete().eq('id', id);
       } catch (err) {
@@ -739,7 +1115,14 @@ export const useUserStore = create<UserState>((set, get) => ({
     }));
     set({ cards: nextCards });
 
-    if (user) {
+    // 1. LocalStorage
+    saveLocalCards(user?.id, nextCards);
+
+    // 2. Cloud fallback
+    await syncCardsToCloud(user?.id, nextCards);
+
+    // 3. Supabase native table
+    if (user?.id && UUID_REGEX.test(user.id)) {
       try {
         await supabase.from('payment_cards').update({ is_default: false }).eq('user_id', user.id);
         await supabase.from('payment_cards').update({ is_default: true }).eq('id', id);
@@ -751,15 +1134,26 @@ export const useUserStore = create<UserState>((set, get) => ({
   
   toggleFavorite: async (productId) => {
     const { user, favorites } = get();
-    if (!user) return;
-    
-    const isFav = favorites.includes(productId);
-    if (isFav) {
-      set({ favorites: favorites.filter(id => id !== productId) });
-      await supabase.from('favorites').delete().match({ user_id: user.id, product_id: productId });
-    } else {
-      set({ favorites: [...favorites, productId] });
-      await supabase.from('favorites').insert({ user_id: user.id, product_id: productId });
+    const pidStr = String(productId);
+    const isFav = favorites.includes(pidStr);
+    const nextFavs = isFav
+      ? favorites.filter(id => id !== pidStr)
+      : [...favorites, pidStr];
+
+    set({ favorites: nextFavs });
+    saveLocalFavorites(user?.id, nextFavs);
+    await syncFavoritesToCloud(user?.id, nextFavs);
+
+    if (user?.id && UUID_REGEX.test(user.id) && UUID_REGEX.test(pidStr)) {
+      try {
+        if (isFav) {
+          await supabase.from('favorites').delete().match({ user_id: user.id, product_id: pidStr });
+        } else {
+          await supabase.from('favorites').insert({ user_id: user.id, product_id: pidStr });
+        }
+      } catch (err) {
+        console.warn('Notice: Error syncing favorite to favorites table:', err);
+      }
     }
   },
   
@@ -871,7 +1265,7 @@ export const useUserStore = create<UserState>((set, get) => ({
     if (current.length >= 4) return false;
 
     const user = get().user;
-    const newId = `addr_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
+    const newId = generateUUID();
     const shouldBeDefault = current.length === 0 || !!addrData.isDefault;
 
     const newAddr: ShippingAddress = {
@@ -891,7 +1285,14 @@ export const useUserStore = create<UserState>((set, get) => ({
     const activeAddr = nextAddresses.find(a => a.isDefault) || nextAddresses[0] || null;
     set({ addresses: nextAddresses, address: activeAddr });
 
-    if (user) {
+    // 1. LocalStorage
+    saveLocalAddresses(user?.id, nextAddresses, activeAddr);
+
+    // 2. Cloud fallback
+    await syncAddressesToCloud(user?.id, nextAddresses, activeAddr);
+
+    // 3. Supabase native table
+    if (user?.id && UUID_REGEX.test(user.id)) {
       try {
         const orders = get().orders;
         const totalSpent = orders?.reduce((acc, order) => acc + (order.total || 0), 0) || 0;
@@ -899,8 +1300,12 @@ export const useUserStore = create<UserState>((set, get) => ({
         const section = user.role === 'ADMIN' ? 'Mi Perfil / Mapa' : 'Mi Perfil / Pedidos';
         useRadarStore.getState().trackActivity(user, activeAddr?.city || '', totalSpent, purchasesCount, section);
       } catch {}
+
       try {
-        await supabase.from('addresses').insert({
+        if (shouldBeDefault) {
+          await supabase.from('addresses').update({ is_default: false }).eq('user_id', user.id);
+        }
+        const { error: insErr } = await supabase.from('addresses').insert({
           id: newAddr.id,
           user_id: user.id,
           recipient: newAddr.recipient,
@@ -911,6 +1316,9 @@ export const useUserStore = create<UserState>((set, get) => ({
           country: newAddr.country,
           is_default: newAddr.isDefault,
         });
+        if (insErr) {
+          console.warn('Notice: Supabase addresses table insert response:', insErr.message);
+        }
       } catch (err) {
         console.warn('Error saving address to addresses table:', err);
       }
@@ -923,6 +1331,8 @@ export const useUserStore = create<UserState>((set, get) => ({
     const targetId = id || get().address?.id || current[0]?.id;
     if (!targetId) {
       set({ addresses: [], address: null });
+      saveLocalAddresses(get().user?.id, [], null);
+      await syncAddressesToCloud(get().user?.id, [], null);
       return;
     }
 
@@ -934,8 +1344,15 @@ export const useUserStore = create<UserState>((set, get) => ({
     const activeAddr = nextAddresses.find(a => a.isDefault) || nextAddresses[0] || null;
     set({ addresses: nextAddresses, address: activeAddr });
 
+    // 1. LocalStorage
+    saveLocalAddresses(get().user?.id, nextAddresses, activeAddr);
+
+    // 2. Cloud fallback
+    await syncAddressesToCloud(get().user?.id, nextAddresses, activeAddr);
+
+    // 3. Supabase native table
     const user = get().user;
-    if (user) {
+    if (user?.id && UUID_REGEX.test(user.id)) {
       try {
         const orders = get().orders;
         const totalSpent = orders?.reduce((acc, order) => acc + (order.total || 0), 0) || 0;
@@ -943,10 +1360,16 @@ export const useUserStore = create<UserState>((set, get) => ({
         const section = user.role === 'ADMIN' ? 'Mi Perfil / Mapa' : 'Mi Perfil / Pedidos';
         useRadarStore.getState().trackActivity(user, activeAddr?.city || '', totalSpent, purchasesCount, section);
       } catch {}
-      try {
-        await supabase.from('addresses').delete().eq('id', targetId);
-      } catch (err) {
-        console.warn('Error deleting address from addresses table:', err);
+
+      if (UUID_REGEX.test(targetId)) {
+        try {
+          await supabase.from('addresses').delete().eq('id', targetId);
+          if (activeAddr && UUID_REGEX.test(activeAddr.id)) {
+            await supabase.from('addresses').update({ is_default: true }).eq('id', activeAddr.id);
+          }
+        } catch (err) {
+          console.warn('Error deleting address from addresses table:', err);
+        }
       }
     }
   },
@@ -960,8 +1383,15 @@ export const useUserStore = create<UserState>((set, get) => ({
     const activeAddr = nextAddresses.find(a => a.id === id) || null;
     set({ addresses: nextAddresses, address: activeAddr });
 
+    // 1. LocalStorage
+    saveLocalAddresses(get().user?.id, nextAddresses, activeAddr);
+
+    // 2. Cloud fallback
+    await syncAddressesToCloud(get().user?.id, nextAddresses, activeAddr);
+
+    // 3. Supabase native table
     const user = get().user;
-    if (user) {
+    if (user?.id && UUID_REGEX.test(user.id)) {
       try {
         const orders = get().orders;
         const totalSpent = orders?.reduce((acc, order) => acc + (order.total || 0), 0) || 0;
@@ -969,11 +1399,14 @@ export const useUserStore = create<UserState>((set, get) => ({
         const section = user.role === 'ADMIN' ? 'Mi Perfil / Mapa' : 'Mi Perfil / Pedidos';
         useRadarStore.getState().trackActivity(user, activeAddr?.city || '', totalSpent, purchasesCount, section);
       } catch {}
-      try {
-        await supabase.from('addresses').update({ is_default: false }).eq('user_id', user.id);
-        await supabase.from('addresses').update({ is_default: true }).eq('id', id);
-      } catch (err) {
-        console.warn('Error updating default address in addresses table:', err);
+
+      if (UUID_REGEX.test(id)) {
+        try {
+          await supabase.from('addresses').update({ is_default: false }).eq('user_id', user.id);
+          await supabase.from('addresses').update({ is_default: true }).eq('id', id);
+        } catch (err) {
+          console.warn('Error updating default address in addresses table:', err);
+        }
       }
     }
   },
@@ -982,7 +1415,10 @@ export const useUserStore = create<UserState>((set, get) => ({
     const current = get().addresses;
     // If it has an id and already exists in addresses, set it as the active address
     if ('id' in addressInput && addressInput.id && current.some(a => a.id === addressInput.id)) {
-      set({ address: addressInput as ShippingAddress });
+      const selected = current.find(a => a.id === addressInput.id) || (addressInput as ShippingAddress);
+      set({ address: selected });
+      saveLocalAddresses(get().user?.id, current, selected);
+      await syncAddressesToCloud(get().user?.id, current, selected);
       return;
     }
     // If no addresses registered yet, add it
@@ -995,6 +1431,8 @@ export const useUserStore = create<UserState>((set, get) => ({
     const nextAddresses = current.map(a => a.id === targetId ? { ...a, ...addressInput } : a);
     const activeAddr = nextAddresses.find(a => a.id === targetId) || nextAddresses[0];
     set({ addresses: nextAddresses, address: activeAddr });
+    saveLocalAddresses(get().user?.id, nextAddresses, activeAddr);
+    await syncAddressesToCloud(get().user?.id, nextAddresses, activeAddr);
   },
 
   updateUserName: async (name) => {

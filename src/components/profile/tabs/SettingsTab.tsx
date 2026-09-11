@@ -245,11 +245,17 @@ export function SettingsTab({
           const res = await fetch(`/api/geocode?lat=${latitude}&lon=${longitude}`);
           if (!res.ok) throw new Error("No se pudo resolver la dirección");
           const data = await res.json();
-          if (data.street) setStreet(data.street);
-          if (data.city) setCity(data.city);
-          if (data.state) setStateProv(data.state);
-          if (data.postalCode) setPostalCode(data.postalCode);
-          if (data.country) setCountry(data.country);
+          const resolvedStreet = data.data?.street || data.street;
+          const resolvedCity = data.data?.city || data.city;
+          const resolvedState = data.data?.state || data.state;
+          const resolvedPostal = data.data?.postalCode || data.postalCode;
+          const resolvedCountry = data.data?.country || data.country;
+
+          if (resolvedStreet) setStreet(resolvedStreet);
+          if (resolvedCity) setCity(resolvedCity);
+          if (resolvedState) setStateProv(resolvedState);
+          if (resolvedPostal) setPostalCode(resolvedPostal);
+          if (resolvedCountry) setCountry(resolvedCountry);
           setLocationSuccess(true);
         } catch {
           setLocationError("Error al obtener la dirección por GPS. Por favor, ingrésala manualmente.");

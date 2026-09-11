@@ -192,149 +192,175 @@ async function getLandmarkPlaceName(lat: number, lon: number) {
   return null;
 }
 
+async function resolveGeocode(latRaw: unknown, lonRaw: unknown) {
+  if (latRaw === undefined || latRaw === null || lonRaw === undefined || lonRaw === null || isNaN(Number(latRaw)) || isNaN(Number(lonRaw))) {
+    return NextResponse.json(
+      { success: false, error: 'Coordenadas inválidas.' },
+      { status: 400 }
+    );
+  }
+
+  const nLat = Number(latRaw);
+  const nLon = Number(lonRaw);
+
+  // Run parallel queries: Origin + 2 tight offsets (~22m) + BigDataCloud fallback
+  const tightOffset = 0.00020;
+  const [originRes, off1Res, off2Res, bdcRes] = await Promise.allSettled([
+    fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${nLat}&lon=${nLon}&addressdetails=1&zoom=18`, { headers }).then(r => r.json()),
+    fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${nLat + tightOffset}&lon=${nLon}&addressdetails=1&zoom=18`, { headers }).then(r => r.json()),
+    fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${nLat}&lon=${nLon - tightOffset}&addressdetails=1&zoom=18`, { headers }).then(r => r.json()),
+    fetch(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${nLat}&longitude=${nLon}&localityLanguage=es`).then(r => r.json())
+  ]);
+
+  const origin = originRes.status === 'fulfilled' ? originRes.value : null;
+  const off1 = off1Res.status === 'fulfilled' ? off1Res.value : null;
+  const off2 = off2Res.status === 'fulfilled' ? off2Res.value : null;
+  const bdc = bdcRes.status === 'fulfilled' ? bdcRes.value : null;
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const addr = (origin && (origin as any).address) || {};
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const off1Addr = (off1 && (off1 as any).address) || {};
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const off2Addr = (off2 && (off2 as any).address) || {};
+
+  // State / Province & Country
+  const state = addr.state || addr.province || addr.region || (bdc && bdc.principalSubdivision) || '';
+  const postalCode = addr.postcode || (bdc && bdc.postcode) || '';
+  const country = addr.country || (bdc && bdc.countryName) || 'Ecuador';
+
+  // 1. Primary Road & House Number
+  const rawPrimary = addr.road || addr.pedestrian || addr.footway || addr.path || addr.street || (bdc && bdc.locality) || '';
+  const primaryRoad = polishRoadName(rawPrimary);
+  const houseNum = addr.house_number || '';
+
+  // 2. Discover Real Intersecting Street (Topological Junction Nodes) & Landmark Place (~6 blocks) in parallel
+  const [topologicalCross, landmarkPlace] = await Promise.all([
+    origin && origin.osm_type === 'way' && origin.osm_id
+      ? getTopologicalCrossStreet(origin.osm_id, nLat, nLon, primaryRoad)
+      : Promise.resolve(null),
+    getLandmarkPlaceName(nLat, nLon)
+  ]);
+
+  // If topological junction didn't find a cross street, test tight offset fallback
+  let crossRoad = polishRoadName(topologicalCross);
+  if (!crossRoad) {
+    const candidateStreets: string[] = [
+      off1Addr.road,
+      off2Addr.road,
+      off1Addr.pedestrian,
+      off2Addr.pedestrian,
+      off1Addr.street,
+      off2Addr.street
+    ].filter(Boolean);
+
+    for (const cand of candidateStreets) {
+      if (
+        primaryRoad &&
+        cand.toLowerCase() !== primaryRoad.toLowerCase() &&
+        !cand.toLowerCase().includes(primaryRoad.toLowerCase()) &&
+        !primaryRoad.toLowerCase().includes(cand.toLowerCase())
+      ) {
+        crossRoad = polishRoadName(cand);
+        break;
+      }
+    }
+  }
+
+  // Build enhanced street description (e.g. "San Isidro y San Cristóbal")
+  let street = primaryRoad;
+  if (!street) {
+    street = addr.suburb || addr.neighbourhood || addr.village || 'Dirección por coordenadas';
+  }
+
+  if (houseNum) {
+    street += ` #${houseNum}`;
+  }
+
+  if (crossRoad) {
+    street += ` y ${crossRoad}`;
+  }
+
+  // 3. Hierarchical City and Sub-locality / Parish (e.g. "Quito - Uyumbicho" or "Quito - Guayllabamba")
+  const bdcCity = cleanAdmin(bdc && (bdc.city || bdc.principalSubdivision));
+
+  // Determine principal city/canton looking "más desde arriba en el mapa"
+  const mainCity = resolveMajorCity(addr.city, addr.county, addr.municipality, bdcCity, state, country);
+
+  // Determine sub-locality, parish, sector or neighbourhood
+  let subLocality = (
+    landmarkPlace ||
+    addr.village ||
+    (addr.town && cleanAdmin(addr.town).toLowerCase() !== mainCity.toLowerCase() ? cleanAdmin(addr.town) : '') ||
+    addr.suburb ||
+    addr.neighbourhood ||
+    addr.quarter ||
+    addr.hamlet ||
+    (bdc && bdc.locality && bdc.locality.toLowerCase() !== mainCity.toLowerCase() ? bdc.locality : '') ||
+    ''
+  ).trim();
+
+  // If landmark place was detected with high confidence and is distinct from mainCity, prioritize it
+  if (landmarkPlace && landmarkPlace.toLowerCase() !== mainCity.toLowerCase()) {
+    subLocality = landmarkPlace;
+  }
+
+  // Format hierarchical city name: e.g. "Quito - Uyumbicho"
+  let finalCity = mainCity;
+  if (
+    mainCity &&
+    subLocality &&
+    mainCity.toLowerCase() !== subLocality.toLowerCase() &&
+    !mainCity.toLowerCase().includes(subLocality.toLowerCase()) &&
+    !subLocality.toLowerCase().includes(mainCity.toLowerCase())
+  ) {
+    finalCity = `${mainCity} - ${subLocality}`;
+  } else if (!mainCity && subLocality) {
+    finalCity = subLocality;
+  }
+
+  const finalCityResult = finalCity || 'Ciudad no determinada';
+
+  return NextResponse.json({
+    success: true,
+    data: {
+      street,
+      city: finalCityResult,
+      state,
+      postalCode,
+      country
+    },
+    // Direct top-level properties for seamless compatibility
+    street,
+    city: finalCityResult,
+    state,
+    postalCode,
+    country
+  });
+}
+
+export async function GET(request: Request) {
+  try {
+    const { searchParams } = new URL(request.url);
+    const lat = searchParams.get('lat');
+    const lon = searchParams.get('lon');
+    return await resolveGeocode(lat, lon);
+  } catch (error) {
+    console.error('Error in GET /api/geocode:', error);
+    return NextResponse.json(
+      { success: false, error: 'Error interno en el servicio de geocodificación.' },
+      { status: 500 }
+    );
+  }
+}
+
 export async function POST(request: Request) {
   try {
-    const body = await request.json();
+    const body = await request.json().catch(() => ({}));
     const { lat, lon } = body;
-
-    if (lat === undefined || lon === undefined || isNaN(Number(lat)) || isNaN(Number(lon))) {
-      return NextResponse.json(
-        { success: false, error: 'Coordenadas inválidas.' },
-        { status: 400 }
-      );
-    }
-
-    const nLat = Number(lat);
-    const nLon = Number(lon);
-
-    // Run parallel queries: Origin + 2 tight offsets (~22m) + BigDataCloud fallback
-    const tightOffset = 0.00020;
-    const [originRes, off1Res, off2Res, bdcRes] = await Promise.allSettled([
-      fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${nLat}&lon=${nLon}&addressdetails=1&zoom=18`, { headers }).then(r => r.json()),
-      fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${nLat + tightOffset}&lon=${nLon}&addressdetails=1&zoom=18`, { headers }).then(r => r.json()),
-      fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${nLat}&lon=${nLon - tightOffset}&addressdetails=1&zoom=18`, { headers }).then(r => r.json()),
-      fetch(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${nLat}&longitude=${nLon}&localityLanguage=es`).then(r => r.json())
-    ]);
-
-    const origin = originRes.status === 'fulfilled' ? originRes.value : null;
-    const off1 = off1Res.status === 'fulfilled' ? off1Res.value : null;
-    const off2 = off2Res.status === 'fulfilled' ? off2Res.value : null;
-    const bdc = bdcRes.status === 'fulfilled' ? bdcRes.value : null;
-
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const addr = (origin && (origin as any).address) || {};
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const off1Addr = (off1 && (off1 as any).address) || {};
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const off2Addr = (off2 && (off2 as any).address) || {};
-
-    // State / Province & Country
-    const state = addr.state || addr.province || addr.region || (bdc && bdc.principalSubdivision) || '';
-    const postalCode = addr.postcode || (bdc && bdc.postcode) || '';
-    const country = addr.country || (bdc && bdc.countryName) || 'Ecuador';
-
-    // 1. Primary Road & House Number
-    const rawPrimary = addr.road || addr.pedestrian || addr.footway || addr.path || addr.street || (bdc && bdc.locality) || '';
-    const primaryRoad = polishRoadName(rawPrimary);
-    const houseNum = addr.house_number || '';
-
-    // 2. Discover Real Intersecting Street (Topological Junction Nodes) & Landmark Place (~6 blocks) in parallel
-    const [topologicalCross, landmarkPlace] = await Promise.all([
-      origin && origin.osm_type === 'way' && origin.osm_id
-        ? getTopologicalCrossStreet(origin.osm_id, nLat, nLon, primaryRoad)
-        : Promise.resolve(null),
-      getLandmarkPlaceName(nLat, nLon)
-    ]);
-
-    // If topological junction didn't find a cross street, test tight offset fallback
-    let crossRoad = polishRoadName(topologicalCross);
-    if (!crossRoad) {
-      const candidateStreets: string[] = [
-        off1Addr.road,
-        off2Addr.road,
-        off1Addr.pedestrian,
-        off2Addr.pedestrian,
-        off1Addr.street,
-        off2Addr.street
-      ].filter(Boolean);
-
-      for (const cand of candidateStreets) {
-        if (
-          primaryRoad &&
-          cand.toLowerCase() !== primaryRoad.toLowerCase() &&
-          !cand.toLowerCase().includes(primaryRoad.toLowerCase()) &&
-          !primaryRoad.toLowerCase().includes(cand.toLowerCase())
-        ) {
-          crossRoad = polishRoadName(cand);
-          break;
-        }
-      }
-    }
-
-    // Build enhanced street description (e.g. "San Isidro y San Cristóbal")
-    let street = primaryRoad;
-    if (!street) {
-      street = addr.suburb || addr.neighbourhood || addr.village || 'Dirección por coordenadas';
-    }
-
-    if (houseNum) {
-      street += ` #${houseNum}`;
-    }
-
-    if (crossRoad) {
-      street += ` y ${crossRoad}`;
-    }
-
-    // 3. Hierarchical City and Sub-locality / Parish (e.g. "Quito - Uyumbicho" or "Quito - Guayllabamba")
-    const bdcCity = cleanAdmin(bdc && (bdc.city || bdc.principalSubdivision));
-
-    // Determine principal city/canton looking "más desde arriba en el mapa"
-    const mainCity = resolveMajorCity(addr.city, addr.county, addr.municipality, bdcCity, state, country);
-
-    // Determine sub-locality, parish, sector or neighbourhood
-    let subLocality = (
-      landmarkPlace ||
-      addr.village ||
-      (addr.town && cleanAdmin(addr.town).toLowerCase() !== mainCity.toLowerCase() ? cleanAdmin(addr.town) : '') ||
-      addr.suburb ||
-      addr.neighbourhood ||
-      addr.quarter ||
-      addr.hamlet ||
-      (bdc && bdc.locality && bdc.locality.toLowerCase() !== mainCity.toLowerCase() ? bdc.locality : '') ||
-      ''
-    ).trim();
-
-    // If landmark place was detected with high confidence and is distinct from mainCity, prioritize it
-    if (landmarkPlace && landmarkPlace.toLowerCase() !== mainCity.toLowerCase()) {
-      subLocality = landmarkPlace;
-    }
-
-    // Format hierarchical city name: e.g. "Quito - Uyumbicho"
-    let finalCity = mainCity;
-    if (
-      mainCity &&
-      subLocality &&
-      mainCity.toLowerCase() !== subLocality.toLowerCase() &&
-      !mainCity.toLowerCase().includes(subLocality.toLowerCase()) &&
-      !subLocality.toLowerCase().includes(mainCity.toLowerCase())
-    ) {
-      finalCity = `${mainCity} - ${subLocality}`;
-    } else if (!mainCity && subLocality) {
-      finalCity = subLocality;
-    }
-
-    return NextResponse.json({
-      success: true,
-      data: {
-        street,
-        city: finalCity || 'Ciudad no determinada',
-        state,
-        postalCode,
-        country
-      }
-    });
+    return await resolveGeocode(lat, lon);
   } catch (error) {
-    console.error('Error in /api/geocode:', error);
+    console.error('Error in POST /api/geocode:', error);
     return NextResponse.json(
       { success: false, error: 'Error interno en el servicio de geocodificación.' },
       { status: 500 }
