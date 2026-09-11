@@ -28,7 +28,12 @@ export default function GlobalFatalError({
           </div>
           <div className="flex gap-3 pt-2">
             <button
-              onClick={() => reset()}
+              onClick={() => {
+                try {
+                  reset();
+                } catch {}
+                window.location.reload();
+              }}
               className="flex-1 py-2.5 px-4 rounded-xl bg-white text-black font-bold text-xs hover:bg-zinc-200 transition-all cursor-pointer"
             >
               Reintentar

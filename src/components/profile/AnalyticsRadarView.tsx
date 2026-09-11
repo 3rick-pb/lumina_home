@@ -281,18 +281,18 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
     });
 
     if (!foundSelf && currentUser?.id && !currentUser.id.startsWith('vis_') && !currentUser.id.startsWith('guest_')) {
-      const selfCity = currentUserCity;
-      const coords = selfCity ? resolveCoordinates(selfCity) : { x: -100, y: -100 };
+      const selfCity = currentUserCity || "Quito";
+      const coords = resolveCoordinates(selfCity);
       const spent = userOrders?.reduce((acc, o) => acc + (o.total || 0), 0) || 0;
       const purchases = userOrders?.length || 0;
       mapped.unshift({
         id: currentUser.id,
-        name: cleanClientName(currentUser.name || currentUser.email.split('@')[0]),
+        name: cleanClientName(currentUser.name || (currentUser.email ? currentUser.email.split('@')[0] : 'Admin Lumina')),
         email: currentUser.email || '',
         city: selfCity,
         country: 'Ecuador',
-        x: coords.x,
-        y: coords.y,
+        x: coords.x >= 0 ? coords.x : 48.8,
+        y: coords.y >= 0 ? coords.y : 26.5,
         frequency: purchases >= 12 ? 'Semanal' : purchases >= 6 ? 'Quincenal' : purchases >= 3 ? 'Mensual' : purchases >= 1 ? 'Ocasional' : '1ª Vez',
         purchasesCount: purchases,
         totalSpent: spent,
@@ -308,9 +308,9 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
     return mapped;
   }, [rawConnectedClients, isUserSelf, currentUserCity, isAdmin, currentUser, userOrders]);
 
-  // Actual clients connected (Administrators and Anonymous visitors are NOT registered clients!)
+  // Actual clients and visitors connected (Excludes only administrators from customer lists)
   const actualClients = useMemo(() => {
-    return connectedClients.filter(c => !isClientAdmin(c) && !c.isAnonymous);
+    return connectedClients.filter(c => !isClientAdmin(c));
   }, [connectedClients, isClientAdmin]);
 
   // Guarantee the active logged-in user is immediately registered and visible on the radar ("Tú")
@@ -393,25 +393,24 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
     });
   }, [actualClients, activeStage, searchQuery]);
 
-  // Map Beacons: Both actual clients and the Admin (if address exists) are visible on the physical map terrain
+  // Map Beacons: Both actual clients and the Admin are visible on the physical map terrain
   const rawMapClients = useMemo(() => {
     return connectedClients.filter(c => {
       const isSelf = isUserSelf(c);
-      const city = isSelf ? currentUserCity : c.city;
+      const city = isSelf ? (currentUserCity || "Quito") : (c.city || "Quito");
       if (!city || !city.trim()) return false;
-      if (isSelf && isAdmin && !hasAdminLocation) return false;
 
       let x = typeof c.x === 'number' ? c.x : Number(c.x);
       let y = typeof c.y === 'number' ? c.y : Number(c.y);
       if (isNaN(x) || x < 0 || isNaN(y) || y < 0) {
         const coords = resolveCoordinates(city);
-        x = coords.x;
-        y = coords.y;
+        x = coords.x >= 0 ? coords.x : 48.8;
+        y = coords.y >= 0 ? coords.y : 26.5;
       }
       if (x < 0 || y < 0) return false;
       return true;
     });
-  }, [connectedClients, isUserSelf, currentUserCity, isAdmin, hasAdminLocation]);
+  }, [connectedClients, isUserSelf, currentUserCity]);
 
   // Spatial Organization: Organic Radial Dispersion (anti-overlap) + Smart City Clustering (anti-saturation)
   const { dispersedPins, clusterPins } = useMemo(() => {

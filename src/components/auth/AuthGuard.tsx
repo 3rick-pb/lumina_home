@@ -40,20 +40,23 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
     }
   }, [mounted, isAuthInitialized, isLoading, isAuthenticated, isGuestMode, isStrictProtected, isAuthPage, router]);
 
-  // To prevent Next.js build errors (PageNotFoundError), always render children during SSR
-  if (!mounted) {
-    return <div style={{ visibility: "hidden" }}>{children}</div>;
+  // For strict protected routes (/profile, /admin), render deterministic loader on both SSR and CSR until session is verified
+  if (isStrictProtected && (!mounted || !isAuthInitialized || isLoading || !isAuthenticated)) {
+    return (
+      <div className="min-h-[70vh] flex items-center justify-center bg-transparent">
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-8 h-8 border-2 border-[#8c9276] border-t-transparent rounded-full animate-spin" />
+          <span className="text-xs text-stone-500 font-medium">Verificando sesión...</span>
+        </div>
+      </div>
+    );
   }
 
-  // Visual Shield: Block rendering if user is not authorized to prevent flash of content
-  const shouldBlock = 
-    (isStrictProtected && (!isAuthInitialized || isLoading || !isAuthenticated)) ||
-    (!isAuthPage && !isAuthInitialized) ||
-    (!isAuthPage && isAuthInitialized && !isLoading && !isAuthenticated && !isGuestMode);
-
-  if (shouldBlock) {
+  // Visual Shield for non-guest unauthenticated visitors on client
+  const shouldBlockVisitor = mounted && !isAuthPage && isAuthInitialized && !isLoading && !isAuthenticated && !isGuestMode;
+  if (shouldBlockVisitor) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-stone-50 dark:bg-stone-950">
+      <div className="min-h-[70vh] flex items-center justify-center bg-transparent">
         <div className="w-8 h-8 border-2 border-[#8c9276] border-t-transparent rounded-full animate-spin" />
       </div>
     );

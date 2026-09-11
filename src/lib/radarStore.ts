@@ -378,8 +378,14 @@ export const useRadarStore = create<RadarStore>((set, get) => ({
 
   initRadar: (user, sessionId) => {
     let activeChannel = get().channel;
+    const isDead = activeChannel && (activeChannel.state === 'closed' || activeChannel.state === 'errored');
 
-    if (!activeChannel) {
+    if (!activeChannel || isDead) {
+      if (activeChannel) {
+        try {
+          supabase.removeChannel(activeChannel);
+        } catch {}
+      }
       const presenceKey = sessionId || (user?.id ? user.id : `anon_${Date.now()}`);
 
       activeChannel = supabase.channel('radar:clients', {

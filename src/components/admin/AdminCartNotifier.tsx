@@ -3,7 +3,7 @@
 import React, { useEffect } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { useUserStore } from "@/lib/userStore";
-import { useAdminAlertStore } from "@/lib/adminAlertStore";
+import { useAdminAlertStore, hydrateAlertConfigFromClient } from "@/lib/adminAlertStore";
 import { supabase } from "@/lib/supabase";
 import { useRouter } from "next/navigation";
 import { CartAlertCard } from "./CartAlertCard";
@@ -23,11 +23,15 @@ export function AdminCartNotifier() {
 
   const isAdmin = Boolean(isAuthenticated && user && user.role === "ADMIN");
 
+  useEffect(() => {
+    hydrateAlertConfigFromClient();
+  }, []);
+
   // Realtime Supabase listener
   useEffect(() => {
     if (!isAdmin) return;
 
-    const channel = supabase.channel("radar:clients", {
+    const channel = supabase.channel("lumina:cart_alerts", {
       config: { broadcast: { self: false } },
     });
 

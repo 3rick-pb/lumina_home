@@ -390,8 +390,16 @@ const triggerDebouncedCloudSave = (
   }, 400);
 };
 
+export const hydrateAlertConfigFromClient = () => {
+  if (typeof window === 'undefined') return;
+  try {
+    const saved = loadSavedConfig();
+    useAdminAlertStore.setState({ config: saved });
+  } catch {}
+};
+
 export const useAdminAlertStore = create<AdminAlertState>((set, get) => ({
-  config: loadSavedConfig(),
+  config: DEFAULT_CONFIG,
   activeAlert: null,
   activeAlertKey: 0,
   onViewDetailsCallback: undefined,
@@ -558,7 +566,7 @@ export const useAdminAlertStore = create<AdminAlertState>((set, get) => ({
 // Realtime broadcast for registered customers adding items to their cart
 export const broadcastCartAddition = async (payload: CartItemAddedPayload) => {
   try {
-    const channel = supabase.channel('radar:clients', {
+    const channel = supabase.channel('lumina:cart_alerts', {
       config: { broadcast: { self: false } },
     });
 

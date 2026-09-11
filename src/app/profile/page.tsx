@@ -1041,7 +1041,7 @@ const handleConfirmDeleteNiche = async () => {
  <AddCardAnimatedModal
     isOpen={showCardModal}
     onClose={() => setShowCardModal(false)}
-    defaultHolder={user.name}
+    defaultHolder={user?.name || ''}
     onSaveCard={async (cardData) => {
       await addCard({
         number: `•••• •••• ${cardData.number.replace(/\s+/g, "").slice(-4) || "8888"}`,

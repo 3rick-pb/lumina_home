@@ -46,13 +46,13 @@ export default function RootLayout({
         </Suspense>
         <AppInitializer />
         <AdminCartNotifier />
-        <AuthGuard>
-          <Header />
-          <main className="flex-1">
+        <Header />
+        <main className="flex-1">
+          <AuthGuard>
             {children}
-          </main>
-          <Footer />
-        </AuthGuard>
+          </AuthGuard>
+        </main>
+        <Footer />
       </body>
     </html>
   );
