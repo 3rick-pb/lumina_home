@@ -73,26 +73,7 @@ export async function GET(request: Request) {
       toastType: (row.toast_type as string) || DEFAULT_ALERT_CONFIG.toastType,
     });
 
-    // 1. Try to read personal admin configuration from dedicated table
-    const { data: userRow, error: userErr } = await baseSupabase
-      .from('admin_notification_settings')
-      .select('*')
-      .eq('id', cleanEmail)
-      .maybeSingle();
-
-    if (!userErr && userRow) {
-      return NextResponse.json(
-        { success: true, config: mapRowToConfig(userRow) },
-        {
-          headers: {
-            'Cache-Control': 'no-store, no-cache, must-revalidate, max-age=0',
-            Pragma: 'no-cache',
-          },
-        }
-      );
-    }
-
-    // 2. Try to read global fallback configuration from dedicated table
+    // Read the single shared global configuration for all administrators
     const { data: globalRow, error: globalErr } = await baseSupabase
       .from('admin_notification_settings')
       .select('*')
@@ -187,17 +168,7 @@ export async function POST(request: Request) {
       updated_at: new Date().toISOString(),
     };
 
-    // 1. Save personalized config in dedicated table admin_notification_settings
-    await baseSupabase.from('admin_notification_settings').upsert(
-      {
-        id: cleanEmail,
-        admin_email: cleanEmail,
-        ...rowPayload,
-      },
-      { onConflict: 'id' }
-    );
-
-    // 2. Also update global store fallback in dedicated table
+    // 1. Save single shared global configuration in dedicated table admin_notification_settings
     await baseSupabase.from('admin_notification_settings').upsert(
       {
         id: 'global',
@@ -206,6 +177,14 @@ export async function POST(request: Request) {
       },
       { onConflict: 'id' }
     );
+
+    // 2. Clean up any rogue non-global rows in admin_notification_settings
+    try {
+      await baseSupabase
+        .from('admin_notification_settings')
+        .delete()
+        .neq('id', 'global');
+    } catch {}
 
     // 3. Proactively clean any legacy garbage rows in active_sessions
     try {

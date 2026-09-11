@@ -28,7 +28,7 @@ interface CartAlertCardProps {
   isPreview?: boolean;
 }
 
-export function CartAlertCard({
+export const CartAlertCard = React.memo(function CartAlertCard({
   payload,
   config,
   onClose,
@@ -625,4 +625,4 @@ export function CartAlertCard({
       </div>
     </div>
   );
-}
+});

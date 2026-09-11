@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useState } from 'react';
-import { motion } from 'framer-motion';
 import { 
   Volume2, 
   VolumeX, 
@@ -30,6 +29,78 @@ import {
 } from '@/lib/adminAlertStore';
 import { CartAlertCard } from '@/components/admin/CartAlertCard';
 
+const SAMPLE_CUSTOMERS: CartItemAddedPayload[] = [
+  {
+    userId: 'user-sample-1',
+    userName: 'Valentina M.',
+    userEmail: 'valentina.m@example.com',
+    location: 'Guayaquil, Ecuador',
+    product: {
+      id: 'prod-sample-1',
+      title: 'Silla Nórdica Minimalista Nogal',
+      price: 145.0,
+      imageUrl: 'https://images.unsplash.com/photo-1592078615290-033ee584e267?q=80&w=300&auto=format&fit=crop',
+      quantity: 1,
+    },
+    timestamp: 1726000000000,
+  },
+  {
+    userId: 'user-sample-2',
+    userName: 'Carlos E.',
+    userEmail: 'carlos.e@example.com',
+    location: 'Quito, Pichincha',
+    product: {
+      id: 'prod-sample-2',
+      title: 'Difusor Ultrasónico Piedra Volcánica',
+      price: 68.5,
+      imageUrl: 'https://images.unsplash.com/photo-1608571423902-eed4a5ad8108?q=80&w=300&auto=format&fit=crop',
+      quantity: 2,
+    },
+    timestamp: 1726000000000,
+  },
+  {
+    userId: 'user-sample-3',
+    userName: 'Elena R.',
+    userEmail: 'elena.r@example.com',
+    location: 'Cuenca, Azuay',
+    product: {
+      id: 'prod-sample-3',
+      title: 'Lámpara de Mesa Eclipse Minimal',
+      price: 110.0,
+      imageUrl: 'https://images.unsplash.com/photo-1507473885765-e6ed057f782c?q=80&w=300&auto=format&fit=crop',
+      quantity: 1,
+    },
+    timestamp: 1726000000000,
+  },
+];
+
+const POSITIONS: { id: AlertPosition; label: string; desc: string; cornerClass: string }[] = [
+  { 
+    id: 'bottom-right', 
+    label: 'Inferior Derecho', 
+    desc: 'Esquina natural de alertas en macOS. Expande y minimiza hacia la esquina inferior derecha.', 
+    cornerClass: 'bottom-3 right-3' 
+  },
+  { 
+    id: 'bottom-left', 
+    label: 'Inferior Izquierdo', 
+    desc: 'Alineado con el dock vertical izquierdo. Expande y minimiza hacia la esquina inferior izquierda.', 
+    cornerClass: 'bottom-3 left-3' 
+  },
+  { 
+    id: 'top-right', 
+    label: 'Superior Derecho', 
+    desc: 'Área de alta visibilidad. Expande y minimiza hacia la esquina superior derecha.', 
+    cornerClass: 'top-3 right-3' 
+  },
+  { 
+    id: 'top-left', 
+    label: 'Superior Izquierdo', 
+    desc: 'Esquina superior izquierda. Expande y minimiza hacia la cabecera lateral.', 
+    cornerClass: 'top-3 left-3' 
+  },
+];
+
 export function CartAlertsTab() {
   const { 
     config, 
@@ -50,85 +121,15 @@ export function CartAlertsTab() {
   
   const [testSent, setTestSent] = useState(false);
 
-  const sampleCustomers: CartItemAddedPayload[] = [
-    {
-      userId: 'user-sample-1',
-      userName: 'Valentina M.',
-      userEmail: 'valentina.m@example.com',
-      location: 'Guayaquil, Ecuador',
-      product: {
-        id: 'prod-sample-1',
-        title: 'Silla Nórdica Minimalista Nogal',
-        price: 145.0,
-        imageUrl: 'https://images.unsplash.com/photo-1592078615290-033ee584e267?q=80&w=300&auto=format&fit=crop',
-        quantity: 1,
-      },
-      timestamp: Date.now(),
-    },
-    {
-      userId: 'user-sample-2',
-      userName: 'Carlos E.',
-      userEmail: 'carlos.e@example.com',
-      location: 'Quito, Pichincha',
-      product: {
-        id: 'prod-sample-2',
-        title: 'Difusor Ultrasónico Piedra Volcánica',
-        price: 68.5,
-        imageUrl: 'https://images.unsplash.com/photo-1608571423902-eed4a5ad8108?q=80&w=300&auto=format&fit=crop',
-        quantity: 2,
-      },
-      timestamp: Date.now(),
-    },
-    {
-      userId: 'user-sample-3',
-      userName: 'Elena R.',
-      userEmail: 'elena.r@example.com',
-      location: 'Cuenca, Azuay',
-      product: {
-        id: 'prod-sample-3',
-        title: 'Lámpara de Mesa Eclipse Minimal',
-        price: 110.0,
-        imageUrl: 'https://images.unsplash.com/photo-1507473885765-e6ed057f782c?q=80&w=300&auto=format&fit=crop',
-        quantity: 1,
-      },
-      timestamp: Date.now(),
-    },
-  ];
-
-  const handleFireLiveTest = (sampleIndex = 0) => {
-    fireToast(sampleCustomers[sampleIndex]);
+  const handleFireLiveTest = React.useCallback((sampleIndex = 0) => {
+    fireToast(SAMPLE_CUSTOMERS[sampleIndex]);
     setTestSent(true);
     setTimeout(() => setTestSent(false), 2200);
-  };
+  }, [fireToast]);
 
-  const positions: { id: AlertPosition; label: string; desc: string; cornerClass: string }[] = [
-    { 
-      id: 'bottom-right', 
-      label: 'Inferior Derecho', 
-      desc: 'Esquina natural de alertas en macOS. Expande y minimiza hacia la esquina inferior derecha.', 
-      cornerClass: 'bottom-3 right-3' 
-    },
-    { 
-      id: 'bottom-left', 
-      label: 'Inferior Izquierdo', 
-      desc: 'Alineado con el dock vertical izquierdo. Expande y minimiza hacia la esquina inferior izquierda.', 
-      cornerClass: 'bottom-3 left-3' 
-    },
-    { 
-      id: 'top-right', 
-      label: 'Superior Derecho', 
-      desc: 'Área de alta visibilidad. Expande y minimiza hacia la esquina superior derecha.', 
-      cornerClass: 'top-3 right-3' 
-    },
-    { 
-      id: 'top-left', 
-      label: 'Superior Izquierdo', 
-      desc: 'Esquina superior izquierda. Expande y minimiza hacia la cabecera lateral.', 
-      cornerClass: 'top-3 left-3' 
-    },
-  ];
-
-  const currentAudit = auditContrast(config.bgColor, config.textColor);
+  const currentAudit = React.useMemo(() => {
+    return auditContrast(config.bgColor, config.textColor);
+  }, [config.bgColor, config.textColor]);
 
   return (
     <div className="space-y-6 animate-fade-in pb-0 w-full">
@@ -139,7 +140,7 @@ export function CartAlertsTab() {
             <div className="flex items-center gap-2 flex-wrap mb-2.5">
               <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-50 dark:bg-blue-950/40 border border-blue-200/60 dark:border-blue-900/40 text-blue-700 dark:text-blue-400 text-[11px] font-semibold uppercase tracking-wider">
                 <ShieldCheck className="w-3.5 h-3.5 text-blue-600" />
-                <span>Panel exclusivo de administración</span>
+                <span>Personalización Global Unificada</span>
               </div>
               {isSyncing ? (
                 <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-50 dark:bg-amber-950/40 border border-amber-200/60 dark:border-amber-900/40 text-amber-700 dark:text-amber-400 text-[11px] font-semibold animate-pulse">
@@ -165,7 +166,7 @@ export function CartAlertsTab() {
               Notificaciones de Carrito en Vivo
             </h2>
             <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-1 max-w-2xl leading-relaxed">
-              Personaliza la presentación visual con animación de minimizar/expandir en esquina estilo macOS, la trayectoria de envío con paquete animado y el simulador de pantalla en tiempo real.
+              Configuración global única para todos los administradores. Cualquier cambio aplicado aquí se actualiza inmediatamente en todos los dispositivos y cuentas de administración.
             </p>
           </div>
 
@@ -228,7 +229,7 @@ export function CartAlertsTab() {
                   <button
                     key={lo.id}
                     onClick={() => updateConfig({ layout: lo.id })}
-                    className={`relative p-4 rounded-2xl border text-left transition-all cursor-pointer flex flex-col justify-between min-h-[110px] ${
+                    className={`relative p-4 rounded-2xl border text-left transition-[border-color,background-color] duration-150 cursor-pointer flex flex-col justify-between min-h-[110px] ${
                       isSelected
                         ? 'border-gray-900 dark:border-white bg-gray-50/80 dark:bg-white/5 ring-1 ring-gray-900/10 dark:ring-white/20 shadow-xs'
                         : 'border-gray-200/80 dark:border-white/10 bg-white dark:bg-transparent hover:bg-gray-50 dark:hover:bg-white/[0.03]'
@@ -328,11 +329,9 @@ export function CartAlertsTab() {
                     </div>
                   </div>
 
-                  {/* THE ANIMATED MINI NOTIFICATION AT EXACT CONFIG POSITION */}
-                  <motion.div
-                    layout
-                    transition={{ type: 'spring', stiffness: 450, damping: 30 }}
-                    className={`absolute z-20 pointer-events-none ${
+                  {/* MINI NOTIFICATION AT EXACT CONFIG POSITION (Zero layout thrashing, 120fps CSS transition) */}
+                  <div
+                    className={`absolute z-20 pointer-events-none transition-all duration-300 ease-out ${
                       config.position === 'bottom-right'
                         ? 'bottom-2.5 right-2.5'
                         : config.position === 'bottom-left'
@@ -343,7 +342,7 @@ export function CartAlertsTab() {
                     }`}
                   >
                     <div 
-                      className="rounded-xl p-2 border shadow-lg flex items-center gap-2 backdrop-blur-md transition-all"
+                      className="rounded-xl p-2 border shadow-lg flex items-center gap-2 backdrop-blur-md"
                       style={{ 
                         backgroundColor: config.bgColor,
                         borderColor: config.bgColor.toLowerCase() === '#ffffff' ? '#d1d5db' : 'rgba(255,255,255,0.2)',
@@ -363,20 +362,20 @@ export function CartAlertsTab() {
                       </div>
                       <div className="w-2 h-2 rounded-full bg-emerald-500 animate-ping shrink-0" />
                     </div>
-                  </motion.div>
+                  </div>
                 </div>
               </div>
             </div>
 
             {/* Position Selector Cards */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-              {positions.map((pos) => {
+              {POSITIONS.map((pos) => {
                 const isSelected = config.position === pos.id;
                 return (
                   <button
                     key={pos.id}
                     onClick={() => updateConfig({ position: pos.id })}
-                    className={`relative p-4 rounded-2xl border text-left transition-all cursor-pointer flex flex-col justify-between min-h-[100px] ${
+                    className={`relative p-4 rounded-2xl border text-left transition-[border-color,background-color] duration-150 cursor-pointer flex flex-col justify-between min-h-[100px] ${
                       isSelected
                         ? 'border-gray-900 dark:border-white bg-gray-50/80 dark:bg-white/5 ring-1 ring-gray-900/10 dark:ring-white/20 shadow-xs'
                         : 'border-gray-200/80 dark:border-white/10 bg-white dark:bg-transparent hover:bg-gray-50 dark:hover:bg-white/[0.03]'
@@ -408,7 +407,7 @@ export function CartAlertsTab() {
                     <button
                       key={dur.ms}
                       onClick={() => updateConfig({ duration: dur.ms })}
-                      className={`py-2 px-2.5 rounded-xl text-xs font-semibold border text-center transition-all cursor-pointer ${
+                      className={`py-2 px-2.5 rounded-xl text-xs font-semibold border text-center transition-[border-color,background-color] duration-150 cursor-pointer ${
                         config.duration === dur.ms
                           ? 'border-gray-900 bg-gray-900 text-white dark:border-white dark:bg-white dark:text-gray-950 shadow-xs'
                           : 'border-gray-200 dark:border-white/10 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/5'
@@ -480,7 +479,7 @@ export function CartAlertsTab() {
                     <button
                       key={preset.id}
                       onClick={() => applyPreset(preset.id)}
-                      className={`p-3 rounded-xl border text-left transition-all cursor-pointer flex items-center gap-2.5 ${
+                      className={`p-3 rounded-xl border text-left transition-[border-color,background-color] duration-150 cursor-pointer flex items-center gap-2.5 ${
                         isSelected
                           ? 'border-gray-900 dark:border-white bg-gray-50/80 dark:bg-white/5 ring-1 ring-gray-900/10'
                           : 'border-gray-200/80 dark:border-white/10 bg-white dark:bg-transparent hover:bg-gray-50 dark:hover:bg-white/[0.03]'
@@ -667,7 +666,7 @@ export function CartAlertsTab() {
             <div className="relative p-4 sm:p-5 rounded-2xl bg-gray-50 dark:bg-black/25 border border-dashed border-gray-300 dark:border-white/10 flex flex-col items-center justify-center min-h-[300px] overflow-hidden w-full">
               <div className="w-full flex justify-center py-2">
                 <CartAlertCard
-                  payload={sampleCustomers[0]}
+                  payload={SAMPLE_CUSTOMERS[0]}
                   config={config}
                   isPreview={true}
                 />
@@ -686,11 +685,11 @@ export function CartAlertsTab() {
               </label>
               
               <div className="grid grid-cols-3 gap-2">
-                {sampleCustomers.map((sc, idx) => (
+                {SAMPLE_CUSTOMERS.map((sc, idx) => (
                   <button
                     key={sc.userName}
                     onClick={() => handleFireLiveTest(idx)}
-                    className="p-2.5 rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-[#18181a] hover:bg-gray-50 dark:hover:bg-white/5 text-left transition-all active:scale-95 cursor-pointer shadow-2xs"
+                    className="p-2.5 rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-[#18181a] hover:bg-gray-50 dark:hover:bg-white/5 text-left transition-[border-color,background-color] duration-150 active:scale-95 cursor-pointer shadow-2xs"
                   >
                     <span className="text-xs font-bold text-gray-900 dark:text-white block truncate">
                       {sc.userName}

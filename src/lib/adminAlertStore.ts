@@ -387,7 +387,7 @@ const triggerDebouncedCloudSave = (
   if (saveDebounceTimer) clearTimeout(saveDebounceTimer);
   saveDebounceTimer = setTimeout(() => {
     saveFn(newConfig);
-  }, 400);
+  }, 800);
 };
 
 export const hydrateAlertConfigFromClient = () => {
