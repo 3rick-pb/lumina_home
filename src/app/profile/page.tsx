@@ -2162,20 +2162,6 @@ const handleConfirmDeleteNiche = async () => {
         >
           <Store className="w-4 h-4" />
         </Link>
-
-        <div className="w-px h-4 bg-gray-200 dark:bg-white/10 shrink-0" />
-
-        <button
-          onClick={() => {
-            logout();
-            router.push("/auth/login");
-          }}
-          className="relative p-2 rounded-xl flex items-center justify-center text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/40 transition-all shrink-0 cursor-pointer"
-          title="Cerrar Sesión"
-          aria-label="Cerrar Sesión"
-        >
-          <LogOut className="w-4 h-4" />
-        </button>
       </nav>
 
   </div>
