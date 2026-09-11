@@ -17,8 +17,7 @@ import {
   Check, 
   Star, 
   Navigation,
-  Sparkles,
-  Database 
+  Sparkles 
 } from "lucide-react";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
 import { useUserStore, clearAdminCache, syncAddressesToCloud } from "@/lib/userStore";
@@ -58,8 +57,6 @@ export function SettingsTab({
     customSeed,
     setCustomSeed,
     loadSettingsFromDatabase,
-    isSyncing: isAvatarSyncing,
-    tableReady: avatarTableReady,
   } = useAvatarSettingsStore();
 
   useEffect(() => {
@@ -389,7 +386,7 @@ export function SettingsTab({
   if (!user) return null;
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 animate-fade-in">
+    <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 animate-fade-in items-start">
       {/* Account & Credentials (7 cols) */}
       <div className="lg:col-span-7 bg-white/90 dark:bg-[#202022]/5 backdrop-blur-3xl p-8 md:p-10 rounded-[3rem] border border-white/80 dark:border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.04)] space-y-10 relative overflow-hidden">
         <div>
@@ -540,33 +537,6 @@ export function SettingsTab({
                 >
                   Restablecer
                 </button>
-              )}
-            </div>
-          </div>
-
-          {/* Estado de Persistencia en Base de Datos Dedicada Supabase */}
-          <div className="pt-4 border-t border-gray-200/60 dark:border-white/10 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-[11px] text-gray-500 dark:text-gray-400">
-            <div className="flex items-center gap-2">
-              <Database className="w-3.5 h-3.5 text-[#8c9276] dark:text-[#ccff00] shrink-0" />
-              <span>
-                Tabla Supabase Exclusiva: <code className="font-mono font-semibold text-gray-700 dark:text-gray-300">public.user_avatar_settings</code>
-              </span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              {isAvatarSyncing ? (
-                <>
-                  <Loader2 className="w-3 h-3 animate-spin text-amber-500 shrink-0" />
-                  <span className="text-amber-600 dark:text-amber-400 font-medium">Sincronizando con Supabase...</span>
-                </>
-              ) : avatarTableReady === false ? (
-                <span className="text-amber-500 dark:text-amber-400 font-medium" title="Ejecuta supabase_avatar_settings.sql en Supabase Dashboard > SQL Editor">
-                  Almacenamiento local activo (ejecuta script SQL en Supabase)
-                </span>
-              ) : (
-                <>
-                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
-                  <span className="text-emerald-600 dark:text-emerald-400 font-medium">Sincronizado en la nube</span>
-                </>
               )}
             </div>
           </div>
@@ -744,7 +714,7 @@ export function SettingsTab({
       </div>
 
       {/* Shipping Address Manager (5 cols) */}
-      <div className="lg:col-span-5 bg-white/90 dark:bg-[#202022]/90 backdrop-blur-xl p-6 md:p-8 rounded-[2.5rem] border border-white/80 dark:border-white/10 shadow-[0_4px_24px_rgba(0,0,0,0.02)] flex flex-col justify-between space-y-4">
+      <div className="lg:col-span-5 bg-white/90 dark:bg-[#202022]/90 backdrop-blur-xl p-6 md:p-8 rounded-[2.5rem] border border-white/80 dark:border-white/10 shadow-[0_4px_24px_rgba(0,0,0,0.02)] flex flex-col space-y-4 h-fit">
         <div>
           <div className="mb-3">
             <CloudSyncStatus
