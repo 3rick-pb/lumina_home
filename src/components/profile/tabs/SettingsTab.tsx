@@ -24,6 +24,7 @@ import { useUserStore, clearAdminCache, syncAddressesToCloud } from "@/lib/userS
 import { supabase } from "@/lib/supabase";
 import { CloudSyncStatus } from "../CloudSyncStatus";
 import { BlobatarAvatar } from "@/components/ui/BlobatarAvatar";
+import { useAvatarSettingsStore } from "@/lib/avatarSettingsStore";
 
 interface SettingsTabProps {
   isAdmin: boolean;
@@ -46,6 +47,9 @@ export function SettingsTab({
     updateUserName,
     updateUserPassword 
   } = useUserStore();
+
+  // Avatar Settings (Navbar vs Rest of App)
+  const { showAvatarInNavbar, setShowAvatarInNavbar } = useAvatarSettingsStore();
 
   // Settings State
   const [editName, setEditName] = useState("");
@@ -398,27 +402,57 @@ export function SettingsTab({
         </div>
 
         {/* Blobatar Avatar Showcase Card */}
-        <div className="p-6 rounded-[2rem] bg-gradient-to-br from-[#8c9276]/10 via-gray-50/50 to-white/40 dark:from-[#8c9276]/15 dark:via-black/20 dark:to-transparent border border-[#8c9276]/20 dark:border-white/10 relative z-10 flex flex-col sm:flex-row items-center gap-5">
-          <div className="relative group shrink-0">
-            <BlobatarAvatar
-              name={user.id || user.email || user.name}
-              size={80}
-              animate="always"
-              background="squircle"
-              role={user.role}
-              showGlow
-              title={`Avatar oficial de ${user.name}`}
-            />
-          </div>
-          <div className="space-y-1.5 text-center sm:text-left flex-1">
-            <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-[#8c9276]/20 text-[#8c9276] dark:text-[#ccff00] text-[10.5px] font-bold tracking-tight">
-              <Sparkles className="w-3 h-3" />
-              <span>Avatar Automático Blobatar</span>
+        <div className="p-6 rounded-[2rem] bg-gradient-to-br from-[#8c9276]/10 via-gray-50/50 to-white/40 dark:from-[#8c9276]/15 dark:via-black/20 dark:to-transparent border border-[#8c9276]/20 dark:border-white/10 relative z-10 space-y-5">
+          <div className="flex flex-col sm:flex-row items-center gap-5">
+            <div className="relative group shrink-0">
+              <BlobatarAvatar
+                name={user.id || user.email || user.name}
+                size={80}
+                animate="always"
+                background="squircle"
+                role={user.role}
+                showGlow
+                title={`Avatar oficial de ${user.name}`}
+              />
             </div>
-            <h4 className="text-sm font-bold text-gray-900 dark:text-gray-100">Identidad Geométrica Determinística</h4>
-            <p className="text-xs text-gray-500 dark:text-gray-400 leading-relaxed">
-              Tu avatar es generado de forma matemática a partir de tu identidad digital. Cada cuenta tiene una criatura viviente única con expresión, silueta geométrica y paleta cromática propia.
-            </p>
+            <div className="space-y-1.5 text-center sm:text-left flex-1">
+              <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-[#8c9276]/20 text-[#8c9276] dark:text-[#ccff00] text-[10.5px] font-bold tracking-tight">
+                <Sparkles className="w-3 h-3" />
+                <span>Avatar Automático Blobatar</span>
+              </div>
+              <h4 className="text-sm font-bold text-gray-900 dark:text-gray-100">Identidad Geométrica Determinística</h4>
+              <p className="text-xs text-gray-500 dark:text-gray-400 leading-relaxed">
+                Tu avatar es generado de forma matemática a partir de tu identidad digital. Cada cuenta tiene una criatura viviente única con expresión, silueta geométrica y paleta cromática propia.
+              </p>
+            </div>
+          </div>
+
+          {/* Toggle para la barra de navegación de Inicio (Pastilla Liquid Glass) */}
+          <div className="pt-4 border-t border-gray-200/60 dark:border-white/10 flex items-center justify-between gap-4">
+            <div className="space-y-0.5">
+              <p className="text-xs font-bold text-gray-900 dark:text-gray-100">
+                Mostrar avatar en la barra de Inicio
+              </p>
+              <p className="text-[11px] text-gray-500 dark:text-gray-400">
+                Muestra tu criatura en el menú pastilla Liquid Glass del inicio. Por defecto está apagado conservando el icono clásico, y tu avatar se muestra en perfil, pedidos y radar.
+              </p>
+            </div>
+            <button
+              type="button"
+              role="switch"
+              aria-checked={showAvatarInNavbar}
+              onClick={() => setShowAvatarInNavbar(!showAvatarInNavbar)}
+              className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-[#8c9276] ${
+                showAvatarInNavbar ? "bg-[#8c9276] dark:bg-[#ccff00]" : "bg-gray-200 dark:bg-gray-700"
+              }`}
+            >
+              <span
+                aria-hidden="true"
+                className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-md ring-0 transition duration-200 ease-in-out ${
+                  showAvatarInNavbar ? "translate-x-5" : "translate-x-0"
+                }`}
+              />
+            </button>
           </div>
         </div>
 

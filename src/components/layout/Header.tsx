@@ -11,6 +11,7 @@ import { useCartStore } from "@/lib/store";
 import { useUserStore } from "@/lib/userStore";
 import { useCatalogStore } from "@/lib/catalogStore";
 import { BlobatarAvatar } from "@/components/ui/BlobatarAvatar";
+import { useAvatarSettingsStore } from "@/lib/avatarSettingsStore";
 import dynamic from 'next/dynamic';
 const CartDrawer = dynamic(() => import('@/components/ui/CartDrawer').then(mod => ({ default: mod.CartDrawer })), {
   ssr: false
@@ -34,6 +35,7 @@ export function Header() {
   
   const { toggleCart, getTotalItems } = useCartStore();
   const { isAuthenticated, user } = useUserStore();
+  const { showAvatarInNavbar } = useAvatarSettingsStore();
   const { products, categories } = useCatalogStore();
   const [isMounted, setIsMounted] = useState(false);
 
@@ -191,7 +193,7 @@ export function Header() {
               className="w-10 h-10 rounded-full bg-white/40 backdrop-blur-md border border-white/60 text-gray-700 hover:bg-white/60 transition-colors shadow-[0_4px_16px_rgba(0,0,0,0.05)] flex items-center justify-center shrink-0 overflow-hidden"
               title={isAuthenticated ? `Mi Perfil (${user?.name || 'Cuenta'})` : "Iniciar Sesión"}
             >
-              {isAuthenticated && user ? (
+              {isAuthenticated && user && showAvatarInNavbar ? (
                 <BlobatarAvatar
                   name={user.id || user.email || user.name}
                   size={32}
