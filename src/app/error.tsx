@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import React, { useEffect } from 'react';
 import Link from 'next/link';
@@ -12,7 +12,7 @@ interface ErrorProps {
 export default function GlobalErrorBoundary({ error, reset }: ErrorProps) {
   useEffect(() => {
     // Log exception safely for diagnostics
-    console.error('Lumina App Client Exception caught by ErrorBoundary:', error);
+    console.error('Client Exception caught by ErrorBoundary:', error);
   }, [error]);
 
   return (

@@ -511,10 +511,11 @@ export function CartDrawer() {
  const effectiveSelectedCardId = selectedCardId || availableCards[0]?.id;
  const activeCard = availableCards.find(c => c.id === effectiveSelectedCardId) || availableCards[0] || null;
 
- const orderedCards = useMemo(() => {
- const others = availableCards.filter(c => c.id !== activeCard.id);
- return [...others, activeCard];
- }, [availableCards, activeCard]);
+  const orderedCards = useMemo(() => {
+    if (!activeCard) return [];
+    const others = availableCards.filter(c => c.id !== activeCard.id);
+    return [...others, activeCard];
+  }, [availableCards, activeCard]);
 
  // Recommended products for the bottom of the cart page
  const recommendedProducts = useMemo(() => {
@@ -1981,11 +1982,11 @@ export function CartDrawer() {
  <div className="flex items-center gap-2">
  <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
  <span className="font-mono text-[11px] font-semibold text-white dark:text-gray-900 tracking-wider">
- {activeCard.number.slice(-9)}
+ {activeCard?.number ? activeCard.number.slice(-9) : ""}
  </span>
  </div>
  <div className="flex items-center gap-1.5">
- {activeCard.type === "visa" ? (
+ {activeCard?.type === "visa" ? (
  <VisaLogo className="h-3" fill="#7dd3fc" />
  ) : (
  <MastercardLogo className="h-3.5" />
@@ -2002,7 +2003,7 @@ export function CartDrawer() {
  <div className="flex items-center gap-2">
  <div className="w-2 h-2 rounded-full bg-emerald-500" />
  <span className="font-sans font-bold text-xs text-gray-900 dark:text-gray-100 ">
- {activeCard.type === "visa" ? "Tarjeta Visa Seleccionada" : "Tarjeta Mastercard Seleccionada"}
+ {activeCard?.type === "visa" ? "Tarjeta Visa Seleccionada" : "Tarjeta Mastercard Seleccionada"}
  </span>
  </div>
  <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
@@ -2014,19 +2015,19 @@ export function CartDrawer() {
  <div className="space-y-0.5">
  <span className="text-[9px] font-mono text-gray-400 dark:text-gray-400 uppercase tracking-wider block">Número</span>
  <p className="font-mono font-bold text-gray-900 dark:text-gray-100 tracking-wider">
- {activeCard.number}
+ {activeCard?.number || ""}
  </p>
  </div>
  <div className="space-y-0.5 text-right">
  <span className="text-[9px] font-mono text-gray-400 dark:text-gray-400 uppercase tracking-wider block">Vencimiento</span>
  <p className="font-mono font-bold text-gray-900 dark:text-gray-100 ">
- {activeCard.exp}
+ {activeCard?.exp || ""}
  </p>
  </div>
  <div className="space-y-0.5">
  <span className="text-[9px] font-mono text-gray-400 dark:text-gray-400 uppercase tracking-wider block">Titular</span>
  <p className="font-sans font-semibold text-gray-800 dark:text-gray-200 uppercase truncate">
- {activeCard.holder}
+ {activeCard?.holder || ""}
  </p>
  </div>
  <div className="space-y-0.5 text-right">

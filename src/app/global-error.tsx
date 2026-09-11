@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import React, { useEffect } from 'react';
 
@@ -23,7 +23,7 @@ export default function GlobalFatalError({
             </svg>
           </div>
           <div className="space-y-1">
-            <h2 className="text-lg font-bold">Lumina Home</h2>
+            <h2 className="text-lg font-bold">Algo no cargó correctamente</h2>
             <p className="text-xs text-zinc-400">Ocurrió una interrupción temporal en la aplicación.</p>
           </div>
           <div className="flex gap-3 pt-2">

@@ -17,7 +17,7 @@ export function AmbientBackground() {
       setTheme(CATEGORY_THEMES.auth);
       return;
     }
-    const cat = searchParams.get("category");
+    const cat = searchParams?.get("category");
     if (cat) {
       setCategoryTheme(cat);
     }

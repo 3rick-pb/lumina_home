@@ -33,7 +33,7 @@ function ActivityTracker() {
   // Compute readable user location/activity
   let currentSection = "Explorando Tienda";
 
-  if (pathname.startsWith("/auth/")) {
+  if (!pathname || pathname.startsWith("/auth/")) {
     currentSection = "";
   } else if (isCartOpen) {
     const count = cartItems.reduce((sum, item) => sum + (item.quantity || 1), 0);
@@ -42,7 +42,7 @@ function ActivityTracker() {
     const category = searchParams?.get("category");
     const search = searchParams?.get("search");
     if (category) {
-      currentSection = `Catálogo: ${category.charAt(0).toUpperCase() + category.slice(1)}`;
+      currentSection = `Catálogo: ${(category.charAt(0) || '').toUpperCase() + category.slice(1)}`;
     } else if (search) {
       currentSection = `Buscando: "${search.slice(0, 18)}"`;
     } else {
@@ -51,7 +51,7 @@ function ActivityTracker() {
   } else if (pathname.startsWith("/product/")) {
     const prodId = pathname.replace("/product/", "").split("/")[0].trim();
     const product = products.find((p) => String(p.id) === prodId);
-    currentSection = product ? `Viendo: ${product.title.slice(0, 22)}` : "Viendo Producto";
+    currentSection = product?.title ? `Viendo: ${product.title.slice(0, 22)}` : "Viendo Producto";
   } else if (pathname === "/profile" || pathname === "/admin") {
     if (user?.role === "ADMIN") {
       currentSection = "Mi Perfil / Mapa";
@@ -75,7 +75,7 @@ function ActivityTracker() {
 
   // Sends active presence heartbeat via pure Supabase Realtime Presence
   const sendHeartbeat = useCallback((sectionOverride?: string) => {
-    if (pathname.startsWith("/auth/")) return;
+    if (!pathname || pathname.startsWith("/auth/")) return;
 
     const currentUser = useUserStore.getState().user;
     const sId = sessionIdRef.current || getOrCreateSessionId(currentUser?.id);
@@ -129,7 +129,7 @@ function ActivityTracker() {
 
   // Connect to real-time radar channel upon mount or user change (excluding /auth/*)
   useEffect(() => {
-    if (pathname.startsWith("/auth/")) {
+    if (!pathname || pathname.startsWith("/auth/")) {
       // Excluded: untrack presence if currently on login/register screens
       const chan = useRadarStore.getState().channel;
       if (chan) {
@@ -181,7 +181,7 @@ function ActivityTracker() {
       } catch {}
     }
 
-    if (pathname.startsWith("/auth/") || !currentSection) return;
+    if (!pathname || pathname.startsWith("/auth/") || !currentSection) return;
 
     const now = Date.now();
     // Immediate dispatch on navigation, throttled to 1.5s for fast consecutive clicks
