@@ -166,7 +166,7 @@ SMTP_FROM="${finalFrom}"`;
             <Server className="w-6 h-6 text-[#8c9276]" /> Servidor SMTP & Pasarelas
           </h2>
           <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 max-w-2xl">
-            Gestiona la infraestructura de notificaciones por correo de Lumina Home con las variables de entorno de Vercel. Máxima ciberseguridad sin exposición de claves.
+            Gestiona la infraestructura de notificaciones por correo de Lumina Home con las variables de entorno de Vercel.
           </p>
         </div>
 
@@ -252,11 +252,11 @@ SMTP_FROM="${finalFrom}"`;
               <div className="flex items-center justify-between">
                 <h3 className="text-base font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
                   <Sparkles className="w-4 h-4 text-amber-500" />
-                  Generador de Variables para Vercel (Opción B: Gmail)
+                  Generador de Variables para Vercel
                 </h3>
               </div>
               <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                Ingresa los datos de tu cuenta de Google para generar el bloque de variables listo para copiar y pegar en tu proyecto de Vercel.
+                Ingresa los datos de tu cuenta de Google para generar el bloque de variables de entorno para vercel.
               </p>
             </div>
 
@@ -425,45 +425,45 @@ SMTP_FROM="${finalFrom}"`;
             {/* Gateway Cards */}
             <div className="space-y-3">
               
-              {/* Stripe */}
+              {/* PlaceToPay */}
               <div className="p-4 rounded-2xl border border-gray-200/80 dark:border-white/10 bg-gradient-to-br from-white to-gray-50/50 dark:from-[#202022] dark:to-[#1a1a1c] space-y-2 opacity-90">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2.5">
-                    <div className="w-8 h-8 rounded-xl bg-[#635bff]/10 flex items-center justify-center text-[#635bff] font-bold text-xs">
-                      S
+                    <div className="w-8 h-8 rounded-xl bg-orange-500/10 flex items-center justify-center text-orange-600 font-bold text-xs">
+                      P2P
                     </div>
                     <div>
-                      <h4 className="text-xs font-bold text-gray-900 dark:text-gray-100">Stripe Payments</h4>
-                      <p className="text-[10px] text-gray-400">Tarjetas de Crédito / Débito Globales</p>
+                      <h4 className="text-xs font-bold text-gray-900 dark:text-gray-100">PlaceToPay (Ecuador)</h4>
+                      <p className="text-[10px] text-gray-400">Tarjetas de Crédito / Débito & Red Bancaria</p>
                     </div>
                   </div>
                   <span className="text-[10px] font-semibold text-gray-500 bg-gray-100 dark:bg-white/5 px-2 py-0.5 rounded-full">
-                    Próximamente
+                    Configuración Disponible
                   </span>
                 </div>
                 <div className="text-[11px] font-mono text-gray-400 bg-gray-100 dark:bg-white/5 p-2 rounded-lg truncate">
-                  STRIPE_SECRET_KEY, NEXT_PUBLIC_STRIPE_KEY
+                  PLACETOPAY_LOGIN, PLACETOPAY_TRAN_KEY
                 </div>
               </div>
 
-              {/* PayPal */}
+              {/* PayPhone */}
               <div className="p-4 rounded-2xl border border-gray-200/80 dark:border-white/10 bg-gradient-to-br from-white to-gray-50/50 dark:from-[#202022] dark:to-[#1a1a1c] space-y-2 opacity-90">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2.5">
-                    <div className="w-8 h-8 rounded-xl bg-[#0079c1]/10 flex items-center justify-center text-[#0079c1] font-bold text-xs">
+                    <div className="w-8 h-8 rounded-xl bg-red-500/10 flex items-center justify-center text-red-500 font-bold text-xs">
                       <Wallet className="w-4 h-4" />
                     </div>
                     <div>
-                      <h4 className="text-xs font-bold text-gray-900 dark:text-gray-100">PayPal Checkout</h4>
-                      <p className="text-[10px] text-gray-400">Billetera Digital & Tarjetas</p>
+                      <h4 className="text-xs font-bold text-gray-900 dark:text-gray-100">PayPhone (Ecuador)</h4>
+                      <p className="text-[10px] text-gray-400">App Móvil PayPhone & Tarjetas</p>
                     </div>
                   </div>
                   <span className="text-[10px] font-semibold text-gray-500 bg-gray-100 dark:bg-white/5 px-2 py-0.5 rounded-full">
-                    Próximamente
+                    Configuración Disponible
                   </span>
                 </div>
                 <div className="text-[11px] font-mono text-gray-400 bg-gray-100 dark:bg-white/5 p-2 rounded-lg truncate">
-                  PAYPAL_CLIENT_ID, PAYPAL_CLIENT_SECRET
+                  PAYPHONE_TOKEN, PAYPHONE_CLIENT_ID
                 </div>
               </div>
 
@@ -480,7 +480,7 @@ SMTP_FROM="${finalFrom}"`;
                     </div>
                   </div>
                   <span className="text-[10px] font-semibold text-gray-500 bg-gray-100 dark:bg-white/5 px-2 py-0.5 rounded-full">
-                    Próximamente
+                    Alternativa Manual
                   </span>
                 </div>
                 <div className="text-[11px] font-mono text-gray-400 bg-gray-100 dark:bg-white/5 p-2 rounded-lg truncate">
@@ -491,7 +491,7 @@ SMTP_FROM="${finalFrom}"`;
             </div>
 
             <div className="p-4 bg-amber-50/60 dark:bg-amber-950/20 border border-amber-200/60 dark:border-amber-900/30 rounded-2xl text-[11px] text-amber-800 dark:text-amber-300 leading-relaxed">
-              💡 <strong>Nota del Administrador:</strong> Primero dejaremos 100% operativo el envío de facturas y avisos por correo. Las pasarelas de pago se conectarán aquí mismo en la siguiente fase.
+              💡 <strong>Regla de Pasarelas:</strong> Ambas pasarelas (PlaceToPay y PayPhone) se podrán configurar en esta sección, pero solo 1 estará activa a la vez para los clientes durante el checkout.
             </div>
 
           </div>
