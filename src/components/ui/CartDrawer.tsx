@@ -34,124 +34,41 @@ import { clsx } from "clsx";
 import { useUserStore, Order, formatCleanName } from "@/lib/userStore";
 import { useCatalogStore, isAgotadoBadge } from "@/lib/catalogStore";
 
-// High-Ticket Payment Method SVGs & Micro-Components (1:1 Aspect Ratio, Zero Cutoffs)
-function AppleIcon({ className = "w-4 h-4" }: { className?: string }) {
- return (
- <svg className={`shrink-0 ${className}`} viewBox="0 0 384 512" fill="currentColor">
- <path d="M318.7 268.7c-.2-36.7 16.4-64.4 50-84.8-18.8-26.9-47.2-41.7-84.7-44.6-35.5-2.8-74.3 20.7-88.5 20.7-15 0-49.4-19.7-76.4-19.7C63.3 141.2 4 184.8 4 273.5q0 39.3 14.4 81.2c12.8 36.7 59 126.7 107.2 125.2 25.2-.6 43-17.9 75.8-17.9 31.8 0 48.3 17.9 76.4 17.9 48.6-.7 90.4-82.5 102.6-119.3-65.2-30.7-61.7-90-61.7-91.9zm-56.6-164.2c27.3-32.4 24.8-61.9 24-72.5-24.1 1.4-52 16.4-67.9 34.9-17.5 19.8-27.8 44.3-25.6 71.9 26.1 2 49.9-11.4 69.5-34.3z" />
- </svg>
- );
-}
-
-function GoogleIcon({ className = "w-4 h-4" }: { className?: string }) {
- return (
- <svg className={`shrink-0 ${className}`} viewBox="0 0 24 24">
- <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
- <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
- <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" />
- <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" />
- </svg>
- );
-}
-
-function PayPalIcon({ className = "w-4 h-4" }: { className?: string }) {
- return (
- <svg className={`shrink-0 ${className}`} viewBox="0 0 100 100" fill="none">
- <path d="M72.2 27.8c-1.4 10.3-9 16.4-19.3 16.4H39.2l-4.5 28.5h-13l9-57.1h25.8c10.4 0 17.5 5.1 15.7 12.2z" fill="#003087" />
- <path d="M79.4 39.8c-1.8 11.2-10 18.2-21.2 18.2H45.8l-3.3 20.8h-12l7.2-45.7h17.9c11.5 0 21.6 0 24 6.7z" fill="#0079C1" />
- </svg>
- );
-}
-
-function ApplePayLogo({ className = "h-4" }: { className?: string }) {
- return (
- <svg className={className} viewBox="0 0 170 80" fill="currentColor">
- <path d="M45.54 39.46c-.07-9.5 7.74-14.1 8.1-14.33-4.42-6.46-11.29-7.34-13.73-7.44-5.83-.59-11.41 3.44-14.37 3.44-2.99 0-7.56-3.36-12.44-3.26-6.38.1-12.28 3.73-15.58 9.47-6.68 11.59-1.7 28.75 4.8 38.13 3.18 4.6 6.96 9.77 11.93 9.58 4.79-.19 6.6-3.08 12.39-3.08 5.8 0 7.42 3.08 12.45 2.98 5.12-.1 8.37-4.66 11.52-9.28 3.65-5.33 5.15-10.5 5.25-10.77-.12-.05-10.19-3.91-10.32-15.44zM37.94 13.56c2.61-3.17 4.38-7.59 3.9-12.01-3.77.15-8.33 2.51-11.03 5.67-2.39 2.76-4.48 7.25-3.92 11.54 4.21.33 8.44-2.03 11.05-5.2z" />
- <path d="M83.4 5.37h15.48c10.75 0 17.52 6.55 17.52 16.54 0 9.99-6.86 16.59-17.65 16.59h-5.46v24.63H83.4V5.37zm15.15 25.1c5.96 0 9.29-3.32 9.29-8.56 0-5.23-3.33-8.52-9.29-8.52h-7.25v17.08h7.25zm22.42 22.04c0-8.24 6.32-13.52 17.57-14.19l7.08-.43v-3.72c0-4.14-2.88-6.61-7.85-6.61-4.75 0-7.79 2.22-8.39 5.56h-7.39c.65-7.1 6.86-11.83 15.99-11.83 9.4 0 15.63 5.06 15.63 12.87v34.05h-7.61v-7.88c-2.34 5.28-7.78 8.49-14.07 8.49-8.5 0-14.28-5.37-14.28-13.23zm24.65-4.41v-3.98l-6.33.43c-6.17.43-9.45 3.01-9.45 7.42 0 4.41 3.28 6.99 8.28 6.99 6.27 0 10.45-4.25 10.45-10.86zm18.3 27.69l7.85-23.75-13.57-36.21h8.5l9.21 27.18 9.17-27.18h8.37l-19.67 50.15h-8.08z" />
- </svg>
- );
-}
-
-function GooglePayLogo({ className = "h-4" }: { className?: string }) {
- return (
- <div className={`flex items-center gap-1 font-sans ${className}`}>
- <GoogleIcon className="w-4 h-4 shrink-0" />
- <span className="text-xs font-bold text-gray-800 dark:text-gray-200 tracking-tight">Pay</span>
- </div>
- );
-}
-
-function PayPalLogo({ className = "h-4" }: { className?: string }) {
- return (
- <div className={`flex items-center gap-1 ${className}`}>
- <PayPalIcon className="w-4 h-4 shrink-0" />
- <span className="text-xs font-extrabold italic text-[#003087] tracking-tight">PayPal</span>
- </div>
- );
-}
-
+// Official Card & Payment Gateway Logos
 function MastercardLogo({ className = "h-4" }: { className?: string }) {
- return (
- <svg className={`shrink-0 ${className}`} viewBox="0 0 38 24" fill="none" xmlns="http://www.w3.org/2000/svg">
- <circle cx="12" cy="12" r="11" fill="#EB001B" />
- <circle cx="26" cy="12" r="11" fill="#F79E1B" fillOpacity="0.96" />
- <path
- d="M19 4.38a10.96 10.96 0 0 1 4.38 7.62A10.96 10.96 0 0 1 19 19.62a10.96 10.96 0 0 1-4.38-7.62A10.96 10.96 0 0 1 19 4.38z"
- fill="#FF5F00"
- />
- </svg>
- );
+  return (
+    <svg className={`shrink-0 ${className}`} viewBox="0 0 38 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="12" cy="12" r="11" fill="#EB001B" />
+      <circle cx="26" cy="12" r="11" fill="#F79E1B" fillOpacity="0.96" />
+      <path
+        d="M19 4.38a10.96 10.96 0 0 1 4.38 7.62A10.96 10.96 0 0 1 19 19.62a10.96 10.96 0 0 1-4.38-7.62A10.96 10.96 0 0 1 19 4.38z"
+        fill="#FF5F00"
+      />
+    </svg>
+  );
 }
 
 function VisaLogo({ className = "h-4", fill = "#FFFFFF" }: { className?: string; fill?: string }) {
- return (
- <svg className={`shrink-0 ${className}`} viewBox="0 0 50 16" fill="none" xmlns="http://www.w3.org/2000/svg">
- <path
- d="M19.1 1.2L12.6 15.2H8.5L5.3 3.6C5.1 2.8 4.9 2.5 4.3 2.2C3.3 1.6 1.6 1.1 0.2 0.8L0.3 0.4H7C7.9 0.4 8.6 1 8.8 1.9L10.5 10.5L14.6 1.2H19.1ZM35.6 10.5C35.6 6.6 30.1 6.4 30.2 4.7C30.2 4.1 30.7 3.6 31.8 3.4C32.3 3.3 33.9 3.3 35.6 4.1L36.3 1C35.4 0.6 34.2 0.3 32.7 0.3C28.8 0.3 26 2.4 26 5.4C26 7.6 28 8.8 29.5 9.5C31 10.3 31.5 10.8 31.5 11.4C31.5 12.4 30.3 12.9 29.2 12.9C27.2 12.9 26 12.3 25.1 11.9L24.4 15.2C25.3 15.6 27.1 16 28.9 16C33.1 16 35.6 14 35.6 10.5ZM45.9 15.2H49.5L46.4 1.2H43.1C42.3 1.2 41.6 1.7 41.3 2.4L35.3 15.2H39.6L40.5 12.8H45.4L45.9 15.2ZM41.7 9.5L43.6 4.2L44.7 9.5H41.7ZM25.3 1.2L21.9 15.2H18L21.4 1.2H25.3Z"
- fill={fill}
- />
- </svg>
- );
+  return (
+    <svg className={`shrink-0 ${className}`} viewBox="0 0 50 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path
+        d="M19.1 1.2L12.6 15.2H8.5L5.3 3.6C5.1 2.8 4.9 2.5 4.3 2.2C3.3 1.6 1.6 1.1 0.2 0.8L0.3 0.4H7C7.9 0.4 8.6 1 8.8 1.9L10.5 10.5L14.6 1.2H19.1ZM35.6 10.5C35.6 6.6 30.1 6.4 30.2 4.7C30.2 4.1 30.7 3.6 31.8 3.4C32.3 3.3 33.9 3.3 35.6 4.1L36.3 1C35.4 0.6 34.2 0.3 32.7 0.3C28.8 0.3 26 2.4 26 5.4C26 7.6 28 8.8 29.5 9.5C31 10.3 31.5 10.8 31.5 11.4C31.5 12.4 30.3 12.9 29.2 12.9C27.2 12.9 26 12.3 25.1 11.9L24.4 15.2C25.3 15.6 27.1 16 28.9 16C33.1 16 35.6 14 35.6 10.5ZM45.9 15.2H49.5L46.4 1.2H43.1C42.3 1.2 41.6 1.7 41.3 2.4L35.3 15.2H39.6L40.5 12.8H45.4L45.9 15.2ZM41.7 9.5L43.6 4.2L44.7 9.5H41.7ZM25.3 1.2L21.9 15.2H18L21.4 1.2H25.3Z"
+        fill={fill}
+      />
+    </svg>
+  );
 }
 
 function PayPhoneIcon({ className = "w-4 h-4" }: { className?: string }) {
- return (
- <svg className={`shrink-0 ${className}`} viewBox="0 0 100 100" fill="none">
- <rect width="100" height="100" rx="24" fill="#FF5E00" />
- <path d="M32 25h36a7 7 0 017 7v36a7 7 0 01-7 7H32a7 7 0 01-7-7V32a7 7 0 017-7z" fill="#FFFFFF" />
- <path d="M42 38h16a3 3 0 013 3v18a3 3 0 01-3 3H42a3 3 0 01-3-3V41a3 3 0 013-3z" fill="#FF5E00" />
- <circle cx="50" cy="68" r="2.5" fill="#FF5E00" />
- <path d="M46 45h8M46 49h5" stroke="#FFFFFF" strokeWidth="2.5" strokeLinecap="round" />
- </svg>
- );
-}
-
-function ContactlessIcon({ className = "w-5 h-5" }: { className?: string }) {
- return (
- <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
- <path d="M8.5 16.5a5 5 0 0 1 0-9" />
- <path d="M12 19a8.5 8.5 0 0 1 0-14" />
- <path d="M15.5 21.5a12 12 0 0 1 0-19" />
- </svg>
- );
-}
-
-function EmvChip() {
- return (
- <div className="relative w-11 h-8 sm:w-12 sm:h-9 rounded-md bg-gradient-to-br from-[#f3db8a] via-[#dfba56] to-[#9c7923] p-[1.5px] shadow-[inset_0_1px_2px_rgba(255,255,255,0.7),0_2px_6px_rgba(0,0,0,0.5)] border border-[#7a5b14]/70 overflow-hidden shrink-0">
- <div className="w-full h-full rounded-[3px] border border-[#6d5111]/45 flex flex-col justify-between p-[2px] bg-gradient-to-b from-transparent via-[#f8e49d]/20 to-transparent">
- <div className="flex justify-between h-2.5 border-b border-[#6d5111]/40">
- <div className="w-2.5 border-r border-[#6d5111]/40" />
- <div className="w-2.5 border-l border-[#6d5111]/40" />
- </div>
- <div className="flex justify-between h-2.5">
- <div className="w-2.5 border-r border-[#6d5111]/40" />
- <div className="w-2.5 border-l border-[#6d5111]/40" />
- </div>
- </div>
- <div className="absolute top-0 left-0 w-4 h-full bg-gradient-to-r from-transparent via-white/35 to-transparent transform -skew-x-12 pointer-events-none" />
- </div>
- );
+  return (
+    <svg className={`shrink-0 ${className}`} viewBox="0 0 100 100" fill="none">
+      <rect width="100" height="100" rx="24" fill="#FF5E00" />
+      <path d="M32 25h36a7 7 0 017 7v36a7 7 0 01-7 7H32a7 7 0 01-7-7V32a7 7 0 017-7z" fill="#FFFFFF" />
+      <path d="M42 38h16a3 3 0 013 3v18a3 3 0 01-3 3H42a3 3 0 01-3-3V41a3 3 0 013-3z" fill="#FF5E00" />
+      <circle cx="50" cy="68" r="2.5" fill="#FF5E00" />
+      <path d="M46 45h8M46 49h5" stroke="#FFFFFF" strokeWidth="2.5" strokeLinecap="round" />
+    </svg>
+  );
 }
 
 export function CartDrawer() {
@@ -177,7 +94,6 @@ export function CartDrawer() {
  const { 
  user, 
  isAuthenticated, 
- cards, 
  address, 
  addresses,
  setAddress, 
@@ -196,12 +112,12 @@ export function CartDrawer() {
  const [couponInput, setCouponInput] = useState("");
  const [couponFeedback, setCouponFeedback] = useState<{ msg: string; success: boolean } | null>(null);
 
-  // Payment method selection
-  const [selectedMethod, setSelectedMethod] = useState<"payphone" | "card" | "apple" | "google" | "paypal">("payphone");
-  const [selectedCardId, setSelectedCardId] = useState<string>("");
-  const [hoveredPaymentMethod, setHoveredPaymentMethod] = useState<string | null>(null);
-  const [isWalletOpen, setIsWalletOpen] = useState(false);
-  const [hoveredCardId, setHoveredCardId] = useState<string | null>(null);
+  // PayPhone Ecuador Exclusive Gateway State (Admin Configured: "box" | "redirect")
+  const [payphoneMode, setPayphoneMode] = useState<"box" | "redirect">("box");
+  const [isPayphoneConfigured, setIsPayphoneConfigured] = useState(false);
+  const [isPayphoneSimulated, setIsPayphoneSimulated] = useState(true);
+  const [isBoxScriptLoaded, setIsBoxScriptLoaded] = useState(false);
+  const [isBoxRendered, setIsBoxRendered] = useState(false);
 
   // PayPhone Simulation Modal (Modo Preparación / RUC en trámite)
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -256,43 +172,81 @@ export function CartDrawer() {
  setIsMounted(true);
  }, []);
 
- // Initialize defaults from userStore cleanly scoped to the active account
- useEffect(() => {
- setSelectedCardId(cards && cards.length > 0 ? cards[0].id : "");
- const defaultAddr = addresses?.find(a => a.isDefault) || (addresses && addresses.length > 0 ? addresses[0] : null);
- const activeAddr = address || defaultAddr;
- if (activeAddr) {
- setAddrRecipient(activeAddr.recipient || user?.name || "");
- setAddrIdNumber(activeAddr.idNumber || "");
- setAddrPhone(activeAddr.phone || "");
- setAddrEmail(activeAddr.email || user?.email || "");
- setAddrStreet(activeAddr.street);
- setAddrCity(activeAddr.city);
- setAddrPostal(activeAddr.postalCode);
- setAddrState(activeAddr.state || "");
- setAddrCountry(activeAddr.country || "Ecuador");
- if (!address && defaultAddr) {
- setAddress(defaultAddr);
- }
- } else {
- setAddrRecipient(user?.name || "");
- setAddrIdNumber("");
- setAddrPhone("");
- setAddrEmail(user?.email || "");
- setAddrStreet("");
- setAddrCity("");
- setAddrPostal("");
- setAddrState("");
- setAddrCountry("Ecuador");
- }
- }, [user?.id, user?.name, user?.email, cards, address, addresses, setAddress]);
+  // Initialize defaults from userStore cleanly scoped to the active account
+  useEffect(() => {
+    const defaultAddr = addresses?.find(a => a.isDefault) || (addresses && addresses.length > 0 ? addresses[0] : null);
+    const activeAddr = address || defaultAddr;
+    if (activeAddr) {
+      setAddrRecipient(activeAddr.recipient || user?.name || "");
+      setAddrIdNumber(activeAddr.idNumber || "");
+      setAddrPhone(activeAddr.phone || "");
+      setAddrEmail(activeAddr.email || user?.email || "");
+      setAddrStreet(activeAddr.street);
+      setAddrCity(activeAddr.city);
+      setAddrPostal(activeAddr.postalCode);
+      setAddrState(activeAddr.state || "");
+      setAddrCountry(activeAddr.country || "Ecuador");
+      if (!address && defaultAddr) {
+        setAddress(defaultAddr);
+      }
+    } else {
+      setAddrRecipient(user?.name || "");
+      setAddrIdNumber("");
+      setAddrPhone("");
+      setAddrEmail(user?.email || "");
+      setAddrStreet("");
+      setAddrCity("");
+      setAddrPostal("");
+      setAddrState("");
+      setAddrCountry("Ecuador");
+    }
+  }, [user?.id, user?.name, user?.email, address, addresses, setAddress]);
 
- // Reset wallet hover if wallet closes
- useEffect(() => {
- if (!isWalletOpen) {
- setHoveredCardId(null);
- }
- }, [isWalletOpen]);
+  // Fetch PayPhone configuration and load script for Cajita mode
+  useEffect(() => {
+    let isMountedLocal = true;
+    async function fetchPayphoneConfig() {
+      try {
+        const res = await fetch("/api/payphone/config");
+        if (!res.ok) return;
+        const cfg = await res.json();
+        if (isMountedLocal) {
+          setPayphoneMode(cfg.mode || "box");
+          setIsPayphoneConfigured(!!cfg.isConfigured);
+          setIsPayphoneSimulated(!!cfg.isSimulated);
+
+          // If mode is box and not simulated, inject PayPhone box CSS & JS once
+          if (cfg.mode === "box" && !cfg.isSimulated && typeof window !== "undefined") {
+            if (!document.getElementById("payphone-box-css")) {
+              const link = document.createElement("link");
+              link.id = "payphone-box-css";
+              link.rel = "stylesheet";
+              link.href = "https://cdn.payphonetodoesposible.com/box/v2.0/payphone-payment-box.css";
+              document.head.appendChild(link);
+            }
+            if (!document.getElementById("payphone-box-js")) {
+              const script = document.createElement("script");
+              script.id = "payphone-box-js";
+              script.type = "module";
+              script.src = "https://cdn.payphonetodoesposible.com/box/v2.0/payphone-payment-box.js";
+              script.onload = () => {
+                if (isMountedLocal) setIsBoxScriptLoaded(true);
+              };
+              document.body.appendChild(script);
+            } else {
+              setIsBoxScriptLoaded(true);
+            }
+          }
+        }
+      } catch (err) {
+        console.error("Error fetching PayPhone config:", err);
+      }
+    }
+    fetchPayphoneConfig();
+    return () => {
+      isMountedLocal = false;
+    };
+  }, []);
 
  // Reset step when cart is closed
  useEffect(() => {
@@ -471,153 +425,106 @@ export function CartDrawer() {
     }
 
     const orderId = `INV_${Math.floor(100000 + Math.random() * 900000)}`;
-    const trackingCode = `LM-${Math.floor(1000000 + Math.random() * 9000000)}`;
     const customerName = user?.name || shippingAddr?.recipient || addrRecipient || "Cliente";
     const customerEmail = user?.email || shippingAddr?.email || addrEmail.trim() || "cliente@lumina.com";
     const recipientName = shippingAddr?.recipient || addrRecipient || customerName;
 
-    // PAYPHONE ECUADOR CHECKOUT FLOW (Dual Mode: Live vs Simulated)
-    if (selectedMethod === "payphone") {
-      setIsProcessing(true);
-      setPayphoneError(null);
-      try {
-        const res = await fetch("/api/payphone/prepare", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            orderId,
-            items: items.map(i => ({
-              productId: i.productId,
-              quantity: i.quantity,
-              price: i.product.price,
-              isBundle: i.isBundle,
-              bundleCustomPrice: i.bundleCustomPrice,
-              product: {
-                id: i.product.id,
-                title: i.product.title,
-                price: i.product.price,
-                imageUrl: i.product.imageUrl
-              }
-            })),
-            shippingAddress: {
-              recipient: recipientName,
-              idNumber: shippingAddr?.idNumber || addrIdNumber.trim() || undefined,
-              phone: shippingAddr?.phone || addrPhone.trim() || undefined,
-              email: customerEmail,
-              street: shippingAddr?.street || addrStreet || "Calle Principal",
-              city: shippingAddr?.city || addrCity || "Quito",
-              state: shippingAddr?.state || addrState || "Pichincha",
-              postalCode: shippingAddr?.postalCode || addrPostal || "170150",
-              country: "Ecuador"
-            },
-            couponCode: couponCode || undefined,
-            clientClaimedTotal: finalTotal
-          })
-        });
-
-        const data = await res.json();
-        setIsProcessing(false);
-
-        if (!res.ok || !data.success) {
-          setPayphoneError(data.error || "No se pudo preparar la pasarela de pagos de PayPhone.");
-          return;
-        }
-
-        if (data.isSimulated) {
-          // Open interactive test simulator modal (RUC pending)
-          setPayphoneSimData({
-            paymentId: data.paymentId,
-            clientTransactionId: data.clientTransactionId,
-            orderId,
-            total: data.verifiedTotal || finalTotal,
-            shippingAddr,
-            customerEmail,
-            customerName,
-            recipientName,
-            items: [...items]
-          });
-          setIsPayPhoneSimOpen(true);
-        } else if (data.payUrl) {
-          // Live PayPhone redirection
-          window.location.href = data.payUrl;
-        }
-      } catch {
-        setIsProcessing(false);
-        setPayphoneError("Error de conexión al comunicar con los servidores de PayPhone Ecuador.");
-      }
-      return;
-    }
-
+    // PAYPHONE ECUADOR EXCLUSIVE CHECKOUT FLOW (Zero-Trust Recalculation, Live vs Simulated)
     setIsProcessing(true);
+    setPayphoneError(null);
+    try {
+      const res = await fetch("/api/payphone/prepare", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          orderId,
+          items: items.map(i => ({
+            productId: i.productId,
+            quantity: i.quantity,
+            price: i.product.price,
+            isBundle: i.isBundle,
+            bundleCustomPrice: i.bundleCustomPrice,
+            product: {
+              id: i.product.id,
+              title: i.product.title,
+              price: i.product.price,
+              imageUrl: i.product.imageUrl
+            }
+          })),
+          shippingAddress: {
+            recipient: recipientName,
+            idNumber: shippingAddr?.idNumber || addrIdNumber.trim() || undefined,
+            phone: shippingAddr?.phone || addrPhone.trim() || undefined,
+            email: customerEmail,
+            street: shippingAddr?.street || addrStreet || "Calle Principal",
+            city: shippingAddr?.city || addrCity || "Quito",
+            state: shippingAddr?.state || addrState || "Pichincha",
+            postalCode: shippingAddr?.postalCode || addrPostal || "170150",
+            country: "Ecuador"
+          },
+          couponCode: couponCode || undefined,
+          clientClaimedTotal: finalTotal
+        })
+      });
 
-    setTimeout(() => {
-      const effectiveCards = cards || [];
-      const chosenCard = effectiveCards.find(c => c.id === selectedCardId) || effectiveCards[0];
-      
-      let paymentDesc = "Tarjeta Bancaria";
-      if (selectedMethod === "card") {
-        paymentDesc = chosenCard ? `${chosenCard.type.toUpperCase()} •••• ${chosenCard.number.slice(-4)}` : "Tarjeta Bancaria";
-      } else if (selectedMethod === "apple") {
-        paymentDesc = "Apple Pay";
-      } else if (selectedMethod === "google") {
-        paymentDesc = "Google Pay";
-      } else if (selectedMethod === "paypal") {
-        paymentDesc = "PayPal";
+      const data = await res.json();
+      setIsProcessing(false);
+
+      if (!res.ok || !data.success) {
+        setPayphoneError(data.error || "No se pudo preparar la pasarela de pagos de PayPhone.");
+        return;
       }
 
-      const now = new Date();
-      const formattedDate = now.toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: 'numeric' });
-      const formattedTime = now.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
-
-      const newOrder: Order = {
-        id: orderId,
-        date: formattedDate,
-        time: formattedTime,
-        createdAt: now.toISOString(),
-        status: 'Procesando',
-        trackingNumber: trackingCode,
-        total: finalTotal,
-        items: [...items],
-        customerName,
-        customerEmail: shippingAddr?.email || addrEmail.trim() || customerEmail,
-        customerIdNumber: shippingAddr?.idNumber || addrIdNumber.trim() || undefined,
-        customerPhone: shippingAddr?.phone || addrPhone.trim() || undefined,
-        recipient: recipientName,
-        shippingAddress: shippingAddr ? {
-          id: shippingAddr.id,
-          recipient: recipientName,
-          idNumber: shippingAddr.idNumber,
-          phone: shippingAddr.phone,
-          email: shippingAddr.email || customerEmail,
-          street: shippingAddr.street,
-          city: shippingAddr.city,
-          state: shippingAddr.state,
-          postalCode: shippingAddr.postalCode,
-          country: shippingAddr.country,
-          isDefault: shippingAddr.isDefault
-        } : (addrStreet ? {
-          id: "addr-order",
-          recipient: recipientName,
-          idNumber: addrIdNumber.trim() || undefined,
-          phone: addrPhone.trim() || undefined,
-          email: addrEmail.trim() || customerEmail,
-          street: addrStreet,
-          city: addrCity,
-          state: addrState,
-          postalCode: addrPostal,
-          country: addrCountry,
-          isDefault: true
-        } : undefined),
-        paymentMethod: paymentDesc,
-        userId: user?.id,
-      };
-
-      addOrder(newOrder);
-      setLastPlacedOrder(newOrder);
-      clearCart();
+      if (data.isSimulated) {
+        // Open interactive test simulator modal (RUC pending)
+        setPayphoneSimData({
+          paymentId: data.paymentId,
+          clientTransactionId: data.clientTransactionId,
+          orderId,
+          total: data.verifiedTotal || finalTotal,
+          shippingAddr,
+          customerEmail,
+          customerName,
+          recipientName,
+          items: [...items]
+        });
+        setIsPayPhoneSimOpen(true);
+      } else if (data.mode === "box" && data.token) {
+        // Live PayPhone Cajita Widget Initialization
+        const win = typeof window !== "undefined" ? (window as unknown as { PPaymentButtonBox: new (opts: Record<string, unknown>) => { render: (id: string) => void } }) : null;
+        if (win && win.PPaymentButtonBox) {
+          try {
+            const ppb = new win.PPaymentButtonBox({
+              token: data.token,
+              amount: data.amountInCents,
+              amountWithoutTax: data.amountWithoutTaxInCents,
+              amountWithTax: data.amountWithTaxInCents,
+              tax: data.taxInCents,
+              service: 0,
+              tip: 0,
+              reference: data.reference,
+              clientTransactionId: data.clientTransactionId,
+              email: data.email,
+              phoneNumber: data.phoneNumber,
+              documentId: data.documentId
+            });
+            ppb.render("pp-button");
+            setIsBoxRendered(true);
+          } catch (renderErr) {
+            console.error("Error rendering PayPhone Box:", renderErr);
+            setPayphoneError("Error al inicializar la Cajita de Pagos PayPhone.");
+          }
+        } else {
+          setPayphoneError("El componente seguro de PayPhone se está cargando. Por favor reintenta en un momento.");
+        }
+      } else if (data.payUrl) {
+        // Live PayPhone redirection
+        window.location.href = data.payUrl;
+      }
+    } catch {
       setIsProcessing(false);
-      setStep("success");
-    }, 1200);
+      setPayphoneError("Error de conexión al comunicar con los servidores de PayPhone Ecuador.");
+    }
   };
 
   const handleApprovePayPhoneSimulation = async () => {
@@ -683,16 +590,6 @@ export function CartDrawer() {
     }
   };
 
-  const availableCards = useMemo(() => cards || [], [cards]);
-
- const effectiveSelectedCardId = selectedCardId || availableCards[0]?.id;
- const activeCard = availableCards.find(c => c.id === effectiveSelectedCardId) || availableCards[0] || null;
-
-  const orderedCards = useMemo(() => {
-    if (!activeCard) return [];
-    const others = availableCards.filter(c => c.id !== activeCard.id);
-    return [...others, activeCard];
-  }, [availableCards, activeCard]);
 
  // Recommended products for the bottom of the cart page
  const recommendedProducts = useMemo(() => {
@@ -1515,7 +1412,7 @@ export function CartDrawer() {
  setAddrCity("");
  setAddrPostal("");
  setAddrState("");
- setAddrCountry("España");
+ setAddrCountry("Ecuador");
  }}
  className="text-xs font-semibold text-blue-600 hover:underline cursor-pointer flex items-center gap-1"
  >
@@ -1817,569 +1714,163 @@ export function CartDrawer() {
  )}
  </div>
 
- {/* Payment Method Selector (Liquid Glass Horizontal Pill with Apple Droplet) */}
- <div className="p-6 rounded-[2rem] bg-white dark:bg-[#2a2a2c] border border-gray-200 dark:border-white/10/70 shadow-sm dark:shadow-none space-y-5">
- <div className="flex items-center justify-between pb-1 border-b border-gray-100 dark:border-white/5">
- <div className="flex items-center gap-2">
- <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0" />
- <h4 className="font-sans font-bold text-xs uppercase tracking-wider text-gray-900 dark:text-gray-100 ">
- Método de Pago
- </h4>
- </div>
- <span className="font-mono text-[10px] font-medium text-gray-400 dark:text-gray-400 tracking-tight uppercase">
- Cifrado Seguro SSL 256-Bit
- </span>
- </div>
+ {/* Pasarela Oficial Exclusiva: PayPhone Ecuador */}
+          <div className="p-6 rounded-[2rem] bg-white dark:bg-[#2a2a2c] border border-gray-200 dark:border-white/10/70 shadow-sm dark:shadow-none space-y-5">
+            <div className="flex items-center justify-between pb-1 border-b border-gray-100 dark:border-white/5">
+              <div className="flex items-center gap-2">
+                <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0" />
+                <h4 className="font-sans font-bold text-xs uppercase tracking-wider text-gray-900 dark:text-gray-100">
+                  Pasarela Oficial PayPhone Ecuador
+                </h4>
+              </div>
+              <span className="font-mono text-[10px] font-medium text-emerald-600 dark:text-emerald-400 tracking-tight uppercase flex items-center gap-1">
+                <Lock className="w-3 h-3" /> Cifrado Seguro SSL 256-Bit
+              </span>
+            </div>
 
- {/* LIQUID GLASS PAYMENT SELECTOR (Horizontal-Only Slider - Zero Y Shift) */}
- {(() => {
- const PAYMENT_OPTIONS = [
- { 
- id: "payphone" as const, 
- label: "PayPhone 🇪🇨", 
- renderIcon: (active: boolean) => (
- <div className={`transition-all duration-200 ${active ? "opacity-100 scale-105" : "opacity-60"}`}>
- <PayPhoneIcon className="w-4 h-4" />
- </div>
- ) 
- },
- { 
- id: "card" as const, 
- label: "Tarjeta", 
- renderIcon: (active: boolean) => (
- <CreditCard className={`w-4 h-4 transition-colors duration-200 ${active ? "text-gray-900 dark:text-gray-100 " : "text-gray-500 dark:text-gray-400"}`} />
- ) 
- },
- { 
- id: "apple" as const, 
- label: "Apple Pay", 
- renderIcon: (active: boolean) => (
- <AppleIcon className={`w-4 h-4 transition-colors duration-200 ${active ? "text-gray-900 dark:text-gray-100 " : "text-gray-500 dark:text-gray-400"}`} />
- ) 
- },
- { 
- id: "google" as const, 
- label: "Google Pay", 
- renderIcon: (active: boolean) => (
- <div className={`transition-all duration-200 ${active ? "opacity-100" : "opacity-60"}`}>
- <GoogleIcon className="w-4 h-4" />
- </div>
- ) 
- },
- { 
- id: "paypal" as const, 
- label: "PayPal", 
- renderIcon: (active: boolean) => (
- <div className={`transition-all duration-200 ${active ? "opacity-100" : "opacity-60"}`}>
- <PayPalIcon className="w-4 h-4" />
- </div>
- ) 
- },
- ];
- const activeMethodIndex = Math.max(0, PAYMENT_OPTIONS.findIndex(m => m.id === selectedMethod));
- const hoveredMethodIndex = hoveredPaymentMethod ? PAYMENT_OPTIONS.findIndex(m => m.id === hoveredPaymentMethod) : null;
-
- return (
- <div 
- className="relative p-1.5 rounded-full bg-slate-100/80 backdrop-blur-xl border border-white/90 shadow-[0_8px_32px_rgba(0,0,0,0.06)] grid grid-cols-5 max-w-2xl mx-auto font-sans overflow-hidden select-none"
- onMouseLeave={() => setHoveredPaymentMethod(null)}
- >
- {/* The Single Sliding Active Liquid Glass Droplet (Strictly Horizontal, Zero Y Movement) */}
- <motion.div
- className="absolute top-1.5 bottom-1.5 rounded-full bg-white dark:bg-[#2a2a2c]/95 shadow-[0_4px_16px_rgba(0,0,0,0.08),inset_0_1.5px_2px_rgba(255,255,255,1)] border border-white pointer-events-none z-0"
- style={{
- width: "calc((100% - 12px) / 5)",
- left: "6px",
- }}
- animate={{
- x: `${activeMethodIndex * 100}%`,
- }}
- transition={{
- type: "spring",
- stiffness: 420,
- damping: 30,
- mass: 0.7
- }}
- >
- {/* Specular curved glass highlight rim */}
- <div className="absolute inset-x-3 top-0 h-[1.5px] bg-gradient-to-r from-transparent via-white to-transparent opacity-95" />
- {/* Caustic glass reflection glint in corner */}
- <div className="absolute top-1 left-3 w-3 h-1 bg-white dark:bg-[#2a2a2c]/90 rounded-full blur-[0.4px]" />
- </motion.div>
-
- {/* Hover Droplet Indicator */}
- {hoveredMethodIndex !== null && hoveredMethodIndex !== activeMethodIndex && (
- <motion.div
- className="absolute top-1.5 bottom-1.5 rounded-full bg-white dark:bg-[#2a2a2c]/40 pointer-events-none z-0"
- style={{
- width: "calc((100% - 12px) / 5)",
- left: "6px",
- }}
- initial={{ opacity: 0 }}
- animate={{
- x: `${hoveredMethodIndex * 100}%`,
- opacity: 1,
- }}
- exit={{ opacity: 0 }}
- transition={{
- type: "spring",
- stiffness: 480,
- damping: 35,
- }}
- />
- )}
-
- {PAYMENT_OPTIONS.map((m) => {
- const isActive = selectedMethod === m.id;
-
- return (
- <button
- key={m.id}
- type="button"
- onClick={() => setSelectedMethod(m.id)}
- onMouseEnter={() => setHoveredPaymentMethod(m.id)}
- className={`relative z-10 flex items-center justify-center gap-1 sm:gap-2 py-2 sm:py-2.5 px-1 sm:px-3 rounded-full text-[10px] sm:text-xs font-semibold font-sans tracking-tight outline-none cursor-pointer transition-colors duration-200 ${
- isActive ? "text-gray-950 font-bold" : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 "
- }`}
- >
- <span className="flex items-center justify-center shrink-0">
- {m.renderIcon(isActive)}
- </span>
- <span className="whitespace-nowrap">
- {m.label}
- </span>
- </button>
- );
- })}
- </div>
- );
- })()}
-
-  {/* VIEW 0: PAYPHONE ECUADOR PAYMENT EXPERIENCE */}
-  {selectedMethod === "payphone" && (
-    <div className="p-6 sm:p-7 rounded-3xl bg-gradient-to-br from-[#fff8f2] via-white to-[#fff1e6] dark:from-[#251b14] dark:via-[#202022] dark:to-[#1a1410] border border-orange-200/80 dark:border-orange-500/20 shadow-sm flex flex-col items-center text-center space-y-4 font-sans animate-fade-in">
-      <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-[#FF5E00] to-[#E04D00] flex items-center justify-center shadow-lg shadow-orange-500/20 shrink-0">
-        <PayPhoneIcon className="w-9 h-9 text-white" />
-      </div>
-      <div>
-        <div className="flex items-center justify-center gap-2">
-          <h4 className="font-bold text-base text-gray-900 dark:text-gray-100 tracking-tight">PayPhone Ecuador</h4>
-          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 flex items-center gap-1">
-            <ShieldCheck className="w-3 h-3" /> Pasarela Segura
-          </span>
-        </div>
-        <p className="text-xs text-gray-500 dark:text-gray-400 max-w-sm mt-1.5 leading-relaxed">
-          Paga al instante con tarjetas de crédito o débito de todos los bancos de Ecuador (Pichincha, Guayaquil, Pacífico, Produbanco, etc.) o con la app PayPhone.
-        </p>
-      </div>
-
-      {/* Supported Card Badges in Ecuador */}
-      <div className="flex flex-wrap items-center justify-center gap-1.5 pt-1">
-        <span className="px-2.5 py-1 rounded-lg bg-white dark:bg-[#1a1a1c] border border-gray-200 dark:border-white/10 text-[11px] font-bold text-gray-700 dark:text-gray-300 flex items-center gap-1.5 shadow-2xs">
-          <VisaLogo className="h-3" fill="#1A1F71" /> Visa
-        </span>
-        <span className="px-2.5 py-1 rounded-lg bg-white dark:bg-[#1a1a1c] border border-gray-200 dark:border-white/10 text-[11px] font-bold text-gray-700 dark:text-gray-300 flex items-center gap-1.5 shadow-2xs">
-          <MastercardLogo className="h-3.5" /> Mastercard
-        </span>
-        <span className="px-2.5 py-1 rounded-lg bg-white dark:bg-[#1a1a1c] border border-gray-200 dark:border-white/10 text-[11px] font-bold text-gray-700 dark:text-gray-300 shadow-2xs">
-          Diners Club
-        </span>
-        <span className="px-2.5 py-1 rounded-lg bg-white dark:bg-[#1a1a1c] border border-gray-200 dark:border-white/10 text-[11px] font-bold text-gray-700 dark:text-gray-300 shadow-2xs">
-          Discover
-        </span>
-        <span className="px-2.5 py-1 rounded-lg bg-white dark:bg-[#1a1a1c] border border-gray-200 dark:border-white/10 text-[11px] font-bold text-gray-700 dark:text-gray-300 shadow-2xs">
-          American Express
-        </span>
-        <span className="px-2.5 py-1 rounded-lg bg-white dark:bg-[#1a1a1c] border border-gray-200 dark:border-white/10 text-[11px] font-bold text-gray-700 dark:text-gray-300 shadow-2xs">
-          Alia
-        </span>
-      </div>
-
-      <div className="w-full pt-3 border-t border-orange-100 dark:border-white/5 flex items-center justify-between text-[11px] text-gray-500 dark:text-gray-400">
-        <span className="flex items-center gap-1">
-          <Lock className="w-3.5 h-3.5 text-emerald-600" /> Cifrado Bancario 256-bit
-        </span>
-        <span className="font-semibold text-[#FF5E00]">
-          Sin comisión al comprador
-        </span>
-      </div>
-    </div>
-  )}
-
- {/* VIEW 1: CREDIT / DEBIT CARD DETAILS WITH BLUE WALLET SLEEVE */}
- {selectedMethod === "card" && (
- <div className="pt-1 space-y-4 font-sans">
- {/* 1. Sleek Compact Header Bar (Not Bulky, Modern & Refined) */}
- <div className="flex items-center justify-between px-4 py-2.5 rounded-2xl bg-slate-100/80 border border-slate-200/70 shadow-2xs">
- <div className="flex items-center gap-2.5">
- <div className="w-6 h-6 rounded-lg bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 flex items-center justify-center shadow-xs shrink-0">
- <CreditCard className="w-3.5 h-3.5" />
- </div>
- <div className="flex items-center gap-2">
- <span className="font-sans font-bold text-xs text-gray-900 dark:text-gray-100 tracking-tight">
- Mis Tarjetas
- </span>
- <span className="text-[10px] font-mono font-semibold px-2 py-0.5 rounded-full bg-white dark:bg-[#2a2a2c] text-gray-600 dark:text-gray-400 border border-gray-200 dark:border-white/10 shadow-2xs">
- {availableCards.length} disponibles
- </span>
- </div>
- </div>
-
- <button
- type="button"
- onClick={() => {
- setIsOpen(false);
- router.push("/profile?tab=cards&addCard=true");
- }}
- className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white dark:bg-[#2a2a2c] hover:bg-gray-50 dark:hover:bg-[#151515] text-gray-800 dark:text-gray-200 text-[11px] font-semibold transition-all border border-gray-200 dark:border-white/10 shadow-2xs hover:shadow-xs hover:border-gray-300 cursor-pointer"
- >
- <Plus className="w-3 h-3 text-gray-700 dark:text-gray-300" />
- <span>Nueva tarjeta</span>
- </button>
- </div>
-
- {!activeCard || availableCards.length === 0 ? (
-                  <div className="p-8 rounded-3xl bg-gray-50/80 dark:bg-[#202022] border-2 border-dashed border-gray-200 dark:border-white/10 text-center flex flex-col items-center justify-center space-y-3 font-sans my-4">
-                    <div className="w-12 h-12 rounded-2xl bg-white dark:bg-[#2a2a2c] shadow-sm flex items-center justify-center text-gray-400">
-                      <CreditCard className="w-6 h-6 text-gray-500 dark:text-gray-400" />
-                    </div>
-                    <div>
-                      <h4 className="text-sm font-bold text-gray-900 dark:text-gray-100">Sin tarjetas guardadas</h4>
-                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 max-w-xs">
-                        Aún no tienes métodos de pago registrados en tu cuenta. Agrega una tarjeta desde tu perfil para pagar al instante.
-                      </p>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setIsOpen(false);
-                        router.push("/profile?tab=cards&addCard=true");
-                      }}
-                      className="px-5 py-2.5 rounded-full bg-gray-900 dark:bg-white text-white dark:text-gray-900 text-xs font-bold hover:scale-105 transition-all shadow-md cursor-pointer"
-                    >
-                      + Añadir Tarjeta a mi Cuenta
-                    </button>
+            {/* EXCLUSIVE PAYMENT MODE: CONDITIONAL RENDERING BASED ON ADMIN CONFIGURATION */}
+            {payphoneMode === "box" ? (
+              /* MODALIDAD 1: CAJITA DE PAGOS (EMBEDDED ON-PAGE WIDGET) */
+              <div className="p-6 sm:p-7 rounded-3xl bg-gradient-to-br from-[#fff8f2] via-white to-[#fff1e6] dark:from-[#251b14] dark:via-[#202022] dark:to-[#1a1410] border border-orange-200/80 dark:border-orange-500/20 shadow-sm space-y-5 font-sans animate-fade-in">
+                <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 text-center sm:text-left">
+                  <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-[#FF5E00] to-[#E04D00] flex items-center justify-center shadow-lg shadow-orange-500/20 shrink-0">
+                    <PayPhoneIcon className="w-8 h-8 text-white" />
                   </div>
-                ) : (
-                  <>
-                  {/* 2. THE BLUE WALLET SLEEVE ("EMPAQUE AZUL / BOLSITA") - 100% CLICK-ONLY */}
- <div 
- className="relative w-full max-w-[370px] mx-auto pt-16 pb-2 select-none"
- >
- {/* Background Base of Wallet Pocket with bottom-only rounded clipPath */}
- <div 
- onClick={() => {
- setIsWalletOpen(!isWalletOpen);
- setHoveredCardId(null);
- }}
- className="relative w-full h-[155px] rounded-3xl bg-gradient-to-b from-[#080e1c] via-[#0b1426] to-[#060a13] border border-slate-800/50 shadow-[0_12px_28px_-6px_rgba(15,23,42,0.18),0_4px_12px_-2px_rgba(15,23,42,0.08)] overflow-visible cursor-pointer"
- style={{ clipPath: "inset(-350px -12px 0px -12px round 0px 0px 1.5rem 1.5rem)" }}
- >
- 
- {/* Inner Shadow & Leather texture depth */}
- <div className="absolute inset-0 rounded-3xl bg-[radial-gradient(ellipse_at_top,rgba(30,58,138,0.25),transparent_70%)] pointer-events-none" />
-
- {/* The Layered Cards Rising Upwards with 1-finger separation (approx 24px) */}
- {orderedCards.map((card, idx) => {
- // Assign distinct luxury theme (matching video colors: Blue 4120, White 4916, Coral 0019)
- let theme = {
- bg: "bg-gradient-to-tr from-[#0a192f] via-[#10316b] to-[#0284c7]",
- text: "text-white dark:text-gray-900",
- border: "border-blue-400/40",
- shadow: "shadow-[0_12px_28px_rgba(2,132,199,0.3)]",
- logoColor: "#FFFFFF",
- name: "SAPPHIRE"
- };
-
- if (card.number.includes("4916")) {
- theme = {
- bg: "bg-gradient-to-tr from-[#ffffff] via-[#f1f5f9] to-[#e2e8f0]",
- text: "text-slate-900",
- border: "border-slate-200/90",
- shadow: "shadow-[0_12px_28px_rgba(0,0,0,0.12)]",
- logoColor: "#0f172a",
- name: "PLATINUM"
- };
- } else if (card.number.includes("0019")) {
- theme = {
- bg: "bg-gradient-to-tr from-[#ea580c] via-[#f97316] to-[#ec4899]",
- text: "text-white dark:text-gray-900",
- border: "border-orange-300/40",
- shadow: "shadow-[0_12px_28px_rgba(234,88,12,0.3)]",
- logoColor: "#FFFFFF",
- name: "CORAL"
- };
- } else if (idx % 2 === 0) {
- theme = {
- bg: "bg-gradient-to-tr from-[#0f172a] via-[#1e293b] to-[#334155]",
- text: "text-white dark:text-gray-900",
- border: "border-slate-600/50",
- shadow: "shadow-[0_12px_28px_rgba(0,0,0,0.4)]",
- logoColor: "#FFFFFF",
- name: "OBSIDIAN"
- };
- }
-
- const isSelected = activeCard ? card.id === activeCard.id : false;
- const isCardHovered = isWalletOpen && hoveredCardId === card.id;
-
- // Calculate vertical offsets for 1-finger upward accordion stacking (24px separation)
- const totalCards = orderedCards.length;
- const depthFromFront = totalCards - 1 - idx;
-
- // When closed: nested inside pocket
- const closedY = 6 - depthFromFront * 5;
- const closedScale = 1 - depthFromFront * 0.035;
- const closedOpacity = 1 - depthFromFront * 0.12;
-
- // When open: "un dedo de separación" (24px separation step)
- const openY = -depthFromFront * 24;
- const zIndex = 15 + idx * 5;
-
- return (
- <motion.div
- key={card.id}
- onClick={(e) => {
- e.stopPropagation();
- setSelectedCardId(card.id);
- setIsWalletOpen(false);
- setHoveredCardId(null);
- }}
- onMouseEnter={() => {
- if (isWalletOpen) setHoveredCardId(card.id);
- }}
- onMouseLeave={() => {
- if (hoveredCardId === card.id) setHoveredCardId(null);
- }}
- initial={false}
- animate={{
- y: isWalletOpen ? openY : closedY,
- scale: isWalletOpen ? 1 : closedScale,
- opacity: isWalletOpen ? 1 : closedOpacity,
- zIndex: zIndex,
- }}
- transition={{
- type: "spring",
- stiffness: 340,
- damping: 28,
- mass: 0.7
- }}
- style={{ transformStyle: "preserve-3d" }}
- className={`absolute left-[6%] w-[88%] h-[116px] rounded-2xl p-3 sm:p-3.5 ${theme.bg} ${theme.text} ${theme.shadow} flex flex-col justify-between cursor-pointer select-none border transition-all duration-200 overflow-hidden ${
- isCardHovered
- ? "border-sky-300 ring-2 ring-sky-400/80 shadow-[0_0_18px_rgba(56,189,248,0.5),0_8px_24px_rgba(0,0,0,0.3)] brightness-[1.05]"
- : `${theme.border} ${isWalletOpen ? "hover:border-sky-300 hover:ring-2 hover:ring-sky-400/70 hover:shadow-[0_0_16px_rgba(56,189,248,0.4)] hover:brightness-[1.04]" : ""}`
- }`}
- >
- {/* Specular curved reflection glint */}
- <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/10 to-transparent pointer-events-none" />
- <div className={`absolute inset-[1px] rounded-[15px] border pointer-events-none transition-colors duration-200 ${isCardHovered ? "border-sky-300/50" : "border-white/20"}`} />
-
- {/* Top rim specular highlight on hover */}
- <div className={`absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-transparent via-sky-300 to-transparent transition-opacity duration-200 pointer-events-none ${isCardHovered ? "opacity-100" : "opacity-0"}`} />
-
- {/* Top Row: Network & Status */}
- <div className="flex items-center justify-between relative z-10">
- <div className="flex items-center gap-1.5">
- <span className="font-sans text-[10px] font-bold tracking-wider uppercase opacity-90">
- {theme.name}
- </span>
- {isSelected && (
- <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
- )}
- </div>
-
- <div className="flex items-center gap-1.5">
- <ContactlessIcon className="w-3.5 h-3.5 opacity-70" />
- {card.type === "visa" ? (
- <VisaLogo className="h-3.5" fill={theme.logoColor} />
- ) : (
- <MastercardLogo className="h-4" />
- )}
- </div>
- </div>
-
- {/* Card Number */}
- <div className="relative z-10 mt-1">
- <p className="font-mono font-bold text-sm sm:text-base tracking-[0.2em] drop-shadow-sm dark:shadow-none opacity-95">
- {card.number}
- </p>
- </div>
-
- {/* Bottom Row: Chip & Holder */}
- <div className="flex items-end justify-between relative z-10 pt-1 border-t border-white/15 text-[9px] mt-auto">
- <div className="flex items-center gap-2">
- <div className="scale-75 origin-left">
- <EmvChip />
- </div>
- <span className="font-mono font-bold uppercase truncate max-w-[130px] opacity-90">
- {card.holder}
- </span>
- </div>
- <span className="font-mono font-bold opacity-85">
- {card.exp}
- </span>
- </div>
- </motion.div>
- );
- })}
-
- {/* Front Flap Overlay of the Blue Wallet Sleeve */}
- <div 
- onClick={(e) => {
- e.stopPropagation();
- setIsWalletOpen(!isWalletOpen);
- setHoveredCardId(null);
- }}
- className="absolute bottom-0 inset-x-0 h-[115px] rounded-b-3xl rounded-t-2xl bg-gradient-to-b from-[#0e172a]/95 via-[#0b1324]/98 to-[#060a12] border-t border-sky-400/30 border-x border-b border-slate-800/40 shadow-[0_-4px_12px_-2px_rgba(0,0,0,0.18),0_8px_20px_-4px_rgba(15,23,42,0.22)] backdrop-blur-xl p-3.5 flex flex-col justify-between cursor-pointer z-30 transition-all hover:border-sky-400/50 active:scale-[0.99]"
- >
- {/* Top Pocket Arc Lip & Specular Highlight */}
- <div className="absolute inset-x-6 top-0 h-[1.5px] bg-gradient-to-r from-transparent via-sky-300 to-transparent opacity-80" />
- <div className="absolute top-1.5 left-1/2 -translate-x-1/2 w-8 h-1 rounded-full bg-sky-400/30" />
-
- {/* Wallet Sleeve Brand Label */}
- <div className="flex items-center justify-between pt-1">
- <div className="flex items-center gap-2">
- <div className="w-5 h-5 rounded-md bg-sky-500/20 text-sky-300 flex items-center justify-center border border-sky-400/30">
- <Lock className="w-3 h-3" />
- </div>
- <span className="font-mono text-[10px] font-bold text-sky-100 tracking-[0.2em] uppercase">
- LUMINA VAULT
- </span>
- </div>
- <span className="font-sans text-[10px] font-semibold text-sky-300/90 bg-sky-950/70 px-2.5 py-0.5 rounded-full border border-sky-800/60 shadow-2xs">
- {isWalletOpen ? "Click para cerrar wallet" : "Click para abrir wallet"}
- </span>
- </div>
-
- {/* Active Card Indicator on Front Flap */}
- <div className="flex items-center justify-between text-xs text-slate-300 pt-2 border-t border-slate-800/80">
- <div className="flex items-center gap-2">
- <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
- <span className="font-mono text-[11px] font-semibold text-white dark:text-gray-900 tracking-wider">
- {activeCard?.number ? activeCard.number.slice(-9) : ""}
- </span>
- </div>
- <div className="flex items-center gap-1.5">
- {activeCard?.type === "visa" ? (
- <VisaLogo className="h-3" fill="#7dd3fc" />
- ) : (
- <MastercardLogo className="h-3.5" />
- )}
- </div>
- </div>
- </div>
- </div>
- </div>
-
- {/* 3. ACTIVE CARD INFORMATION PANEL ("Y ABAJO SALDRÁ PUES LA INFORMACIÓN DE LA TARJETA") */}
- <div className="p-4 rounded-2xl bg-white dark:bg-[#2a2a2c] border border-gray-200 dark:border-white/10/80 shadow-xs space-y-3 font-sans">
- <div className="flex items-center justify-between pb-2 border-b border-gray-100 dark:border-white/5">
- <div className="flex items-center gap-2">
- <div className="w-2 h-2 rounded-full bg-emerald-500" />
- <span className="font-sans font-bold text-xs text-gray-900 dark:text-gray-100 ">
- {activeCard?.type === "visa" ? "Tarjeta Visa Seleccionada" : "Tarjeta Mastercard Seleccionada"}
- </span>
- </div>
- <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
- ✓ Lista para pagar
- </span>
- </div>
-
- <div className="grid grid-cols-2 gap-3 text-xs">
- <div className="space-y-0.5">
- <span className="text-[9px] font-mono text-gray-400 dark:text-gray-400 uppercase tracking-wider block">Número</span>
- <p className="font-mono font-bold text-gray-900 dark:text-gray-100 tracking-wider">
- {activeCard?.number || ""}
- </p>
- </div>
- <div className="space-y-0.5 text-right">
- <span className="text-[9px] font-mono text-gray-400 dark:text-gray-400 uppercase tracking-wider block">Vencimiento</span>
- <p className="font-mono font-bold text-gray-900 dark:text-gray-100 ">
- {activeCard?.exp || ""}
- </p>
- </div>
- <div className="space-y-0.5">
- <span className="text-[9px] font-mono text-gray-400 dark:text-gray-400 uppercase tracking-wider block">Titular</span>
- <p className="font-sans font-semibold text-gray-800 dark:text-gray-200 uppercase truncate">
- {activeCard?.holder || ""}
- </p>
- </div>
- <div className="space-y-0.5 text-right">
- <span className="text-[9px] font-mono text-gray-400 dark:text-gray-400 uppercase tracking-wider block">Seguridad</span>
- <p className="font-sans font-semibold text-emerald-600 flex items-center justify-end gap-1">
- <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" /> SSL Cifrado
- </p>
- </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2">
+                      <h4 className="font-bold text-base text-gray-900 dark:text-gray-100 tracking-tight">Cajita de Pagos PayPhone</h4>
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-orange-500/10 text-[#FF5E00] border border-orange-500/20">
+                        Pago en la Tienda
+                      </span>
+                      {isPayphoneConfigured && (
+                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-600 border border-blue-500/20">
+                          API Conectada
+                        </span>
+                      )}
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 flex items-center gap-1">
+                        <ShieldCheck className="w-3 h-3" /> PCI-DSS Nivel 1
+                      </span>
+                    </div>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 leading-relaxed">
+                      Paga directamente sin salir de Lumina Home. El widget seguro de PayPhone procesa tu tarjeta de forma encriptada sin almacenar datos sensibles.
+                    </p>
                   </div>
                 </div>
-              </>
+
+                {/* Official PayPhone Box Container */}
+                <div className="w-full bg-white dark:bg-[#1a1a1c] p-4 rounded-2xl border border-orange-100 dark:border-white/10 shadow-xs">
+                  <div id="pp-button" className="w-full min-h-[120px] flex flex-col items-center justify-center text-center p-2">
+                    {isPayphoneSimulated ? (
+                      <div className="space-y-3 py-3">
+                        <div className="w-10 h-10 rounded-full bg-orange-50 dark:bg-orange-500/10 text-[#FF5E00] flex items-center justify-center mx-auto">
+                          <CreditCard className="w-5 h-5" />
+                        </div>
+                        <div className="space-y-1">
+                          <p className="text-xs font-bold text-gray-800 dark:text-gray-200">
+                            Cajita de Pagos Activa (Entorno de Desarrollo Seguro)
+                          </p>
+                          <p className="text-[11px] text-gray-500 dark:text-gray-400 max-w-sm mx-auto">
+                            El contenedor oficial <code className="text-[#FF5E00] bg-orange-50 dark:bg-orange-500/10 px-1 py-0.5 rounded font-mono">#pp-button</code> está vinculado. Al confirmar abajo podrás autorizar tu orden con tarjetas de prueba.
+                          </p>
+                        </div>
+                      </div>
+                    ) : !isBoxRendered ? (
+                      <div className="space-y-2 py-4">
+                        <Loader2 className="w-6 h-6 animate-spin text-[#FF5E00] mx-auto" />
+                        <p className="text-xs text-gray-500">
+                          {!isBoxScriptLoaded ? "Cargando librería segura de PayPhone..." : "Inicializando Cajita de Pagos..."}
+                        </p>
+                      </div>
+                    ) : null}
+                  </div>
+                </div>
+
+                {/* Supported Card Badges in Ecuador */}
+                <div className="flex flex-wrap items-center justify-center gap-1.5 pt-1">
+                  <span className="px-2.5 py-1 rounded-lg bg-white dark:bg-[#1a1a1c] border border-gray-200 dark:border-white/10 text-[11px] font-bold text-gray-700 dark:text-gray-300 flex items-center gap-1.5 shadow-2xs">
+                    <VisaLogo className="h-3" fill="#1A1F71" /> Visa
+                  </span>
+                  <span className="px-2.5 py-1 rounded-lg bg-white dark:bg-[#1a1a1c] border border-gray-200 dark:border-white/10 text-[11px] font-bold text-gray-700 dark:text-gray-300 flex items-center gap-1.5 shadow-2xs">
+                    <MastercardLogo className="h-3.5" /> Mastercard
+                  </span>
+                  <span className="px-2.5 py-1 rounded-lg bg-white dark:bg-[#1a1a1c] border border-gray-200 dark:border-white/10 text-[11px] font-bold text-gray-700 dark:text-gray-300 shadow-2xs">
+                    Diners Club
+                  </span>
+                  <span className="px-2.5 py-1 rounded-lg bg-white dark:bg-[#1a1a1c] border border-gray-200 dark:border-white/10 text-[11px] font-bold text-gray-700 dark:text-gray-300 shadow-2xs">
+                    Discover
+                  </span>
+                  <span className="px-2.5 py-1 rounded-lg bg-white dark:bg-[#1a1a1c] border border-gray-200 dark:border-white/10 text-[11px] font-bold text-gray-700 dark:text-gray-300 shadow-2xs">
+                    American Express
+                  </span>
+                  <span className="px-2.5 py-1 rounded-lg bg-white dark:bg-[#1a1a1c] border border-gray-200 dark:border-white/10 text-[11px] font-bold text-gray-700 dark:text-gray-300 shadow-2xs">
+                    Alia
+                  </span>
+                </div>
+
+                <div className="w-full pt-3 border-t border-orange-100 dark:border-white/5 flex items-center justify-between text-[11px] text-gray-500 dark:text-gray-400">
+                  <span className="flex items-center gap-1">
+                    <Lock className="w-3.5 h-3.5 text-emerald-600" /> Cifrado Bancario 256-bit
+                  </span>
+                  <span className="font-semibold text-[#FF5E00]">
+                    Sin comisión al comprador
+                  </span>
+                </div>
+              </div>
+            ) : (
+              /* MODALIDAD 2: BOTÓN DE PAGO POR REDIRECCIÓN (HOSTED PAYMENT PAGE) */
+              <div className="p-6 sm:p-7 rounded-3xl bg-gradient-to-br from-[#fff8f2] via-white to-[#fff1e6] dark:from-[#251b14] dark:via-[#202022] dark:to-[#1a1410] border border-orange-200/80 dark:border-orange-500/20 shadow-sm flex flex-col items-center text-center space-y-4 font-sans animate-fade-in">
+                <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-[#FF5E00] to-[#E04D00] flex items-center justify-center shadow-lg shadow-orange-500/20 shrink-0">
+                  <PayPhoneIcon className="w-9 h-9 text-white" />
+                </div>
+                <div>
+                  <div className="flex items-center justify-center gap-2">
+                    <h4 className="font-bold text-base text-gray-900 dark:text-gray-100 tracking-tight">PayPhone Redirección Segura</h4>
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 flex items-center gap-1">
+                      <ShieldCheck className="w-3 h-3" /> Pasarela Oficial
+                    </span>
+                  </div>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 max-w-sm mt-1.5 leading-relaxed">
+                    Al hacer clic en pagar, serás redirigido a la pasarela cifrada de PayPhone Ecuador para autorizar tu compra con cualquier tarjeta de crédito/débito nacional o internacional, o con tu App PayPhone.
+                  </p>
+                </div>
+
+                {/* Supported Card Badges */}
+                <div className="flex flex-wrap items-center justify-center gap-1.5 pt-1">
+                  <span className="px-2.5 py-1 rounded-lg bg-white dark:bg-[#1a1a1c] border border-gray-200 dark:border-white/10 text-[11px] font-bold text-gray-700 dark:text-gray-300 flex items-center gap-1.5 shadow-2xs">
+                    <VisaLogo className="h-3" fill="#1A1F71" /> Visa
+                  </span>
+                  <span className="px-2.5 py-1 rounded-lg bg-white dark:bg-[#1a1a1c] border border-gray-200 dark:border-white/10 text-[11px] font-bold text-gray-700 dark:text-gray-300 flex items-center gap-1.5 shadow-2xs">
+                    <MastercardLogo className="h-3.5" /> Mastercard
+                  </span>
+                  <span className="px-2.5 py-1 rounded-lg bg-white dark:bg-[#1a1a1c] border border-gray-200 dark:border-white/10 text-[11px] font-bold text-gray-700 dark:text-gray-300 shadow-2xs">
+                    Diners Club
+                  </span>
+                  <span className="px-2.5 py-1 rounded-lg bg-white dark:bg-[#1a1a1c] border border-gray-200 dark:border-white/10 text-[11px] font-bold text-gray-700 dark:text-gray-300 shadow-2xs">
+                    Discover
+                  </span>
+                  <span className="px-2.5 py-1 rounded-lg bg-white dark:bg-[#1a1a1c] border border-gray-200 dark:border-white/10 text-[11px] font-bold text-gray-700 dark:text-gray-300 shadow-2xs">
+                    American Express
+                  </span>
+                  <span className="px-2.5 py-1 rounded-lg bg-white dark:bg-[#1a1a1c] border border-gray-200 dark:border-white/10 text-[11px] font-bold text-gray-700 dark:text-gray-300 shadow-2xs">
+                    Alia
+                  </span>
+                </div>
+
+                <div className="w-full pt-3 border-t border-orange-100 dark:border-white/5 flex items-center justify-between text-[11px] text-gray-500 dark:text-gray-400">
+                  <span className="flex items-center gap-1">
+                    <Lock className="w-3.5 h-3.5 text-emerald-600" /> Cifrado Bancario 256-bit
+                  </span>
+                  <span className="font-semibold text-[#FF5E00]">
+                    Sin comisión al comprador
+                  </span>
+                </div>
+              </div>
             )}
           </div>
-        )}
 
-                {/* VIEW 2: APPLE PAY HIGH-TICKET EXPERIENCE */}
- {selectedMethod === "apple" && (
- <div className="p-6 sm:p-8 rounded-3xl bg-slate-950 text-white dark:text-gray-900 shadow-xl dark:shadow-none flex flex-col items-center justify-center text-center space-y-4 border border-zinc-800">
- <div className="w-16 h-16 rounded-2xl bg-black border border-zinc-700 flex items-center justify-center shadow-2xl dark:shadow-none shadow-black/60">
- <ApplePayLogo className="h-8 text-white dark:text-gray-900" />
- </div>
- <div>
- <h4 className="font-sans font-bold text-base text-white dark:text-gray-900 tracking-tight">Apple Pay</h4>
- <p className="text-xs text-zinc-400 max-w-sm mt-1 leading-relaxed">
- Paga al instante y con total privacidad utilizando Touch ID o Face ID directamente en tu dispositivo Apple.
- </p>
- </div>
- <div className="flex items-center gap-2 text-[11px] text-zinc-300 font-medium px-4 py-2 rounded-full bg-zinc-900 border border-zinc-700/80">
- <ShieldCheck className="w-4 h-4 text-emerald-400" />
- <span>Cifrado biométrico de alta seguridad mediante Apple Secure Enclave</span>
- </div>
- </div>
- )}
+        </div>
 
- {/* VIEW 3: GOOGLE PAY HIGH-TICKET EXPERIENCE */}
- {selectedMethod === "google" && (
- <div className="p-6 sm:p-8 rounded-3xl bg-white dark:bg-[#2a2a2c] border border-gray-200 dark:border-white/10 shadow-sm dark:shadow-none flex flex-col items-center justify-center text-center space-y-4">
- <div className="w-16 h-16 rounded-2xl bg-gray-50 dark:bg-[#151515] border border-gray-200 dark:border-white/10 flex items-center justify-center shadow-inner">
- <GooglePayLogo className="h-7" />
- </div>
- <div>
- <h4 className="font-sans font-bold text-base text-gray-900 dark:text-gray-100 tracking-tight">Google Pay</h4>
- <p className="text-xs text-gray-500 dark:text-gray-400 max-w-sm mt-1 leading-relaxed">
- Completa tu compra en un toque utilizando las tarjetas y métodos de pago guardados en tu cuenta de Google.
- </p>
- </div>
- <div className="flex items-center gap-2 text-[11px] text-gray-700 dark:text-gray-300 font-medium px-4 py-2 rounded-full bg-blue-50 border border-blue-100">
- <ShieldCheck className="w-4 h-4 text-blue-600" />
- <span>Protección integral contra fraude respaldada por Google Security</span>
- </div>
- </div>
- )}
-
- {/* VIEW 4: PAYPAL HIGH-TICKET EXPERIENCE */}
- {selectedMethod === "paypal" && (
- <div className="p-6 sm:p-8 rounded-3xl bg-[#f8faff] border border-blue-100 shadow-sm dark:shadow-none flex flex-col items-center justify-center text-center space-y-4">
- <div className="w-16 h-16 rounded-2xl bg-white dark:bg-[#2a2a2c] border border-blue-100 flex items-center justify-center shadow-sm dark:shadow-none">
- <PayPalLogo className="h-7" />
- </div>
- <div>
- <h4 className="font-sans font-bold text-base text-gray-900 dark:text-gray-100 tracking-tight">PayPal</h4>
- <p className="text-xs text-gray-500 dark:text-gray-400 max-w-sm mt-1 leading-relaxed">
- Paga con tu saldo de PayPal, cuenta bancaria vinculada o financiamiento sin intereses en cómodos plazos.
- </p>
- </div>
- <div className="flex items-center gap-2 text-[11px] text-[#003087] font-semibold px-4 py-2 rounded-full bg-blue-50 border border-blue-200">
- <ShieldCheck className="w-4 h-4 text-[#0079C1]" />
- <span>Garantía y Protección al Comprador PayPal al 100%</span>
- </div>
- </div>
- )}
-
- </div>
-
- </div>
-
- {/* Right 5 cols: Order Final Summary & Confirm */}
+{/* Right 5 cols: Order Final Summary & Confirm */}
  <div className="lg:col-span-5 bg-white dark:bg-[#2a2a2c] p-6 sm:p-7 rounded-[2rem] border border-gray-200 dark:border-white/10/70 shadow-lg dark:shadow-none space-y-5">
  <h4 className="font-sans font-bold text-base text-gray-900 dark:text-gray-100 border-b border-gray-100 dark:border-white/5 pb-3 tracking-tight uppercase">
  Resumen del Pedido
@@ -2428,41 +1919,33 @@ export function CartDrawer() {
  )}
 
  {/* LIQUID GLASS CONFIRM PAYMENT BUTTON */}
- <button 
- onClick={handleConfirmOrder}
- disabled={isProcessing}
- className={`group relative overflow-hidden w-full h-14 rounded-2xl font-bold text-white text-sm sm:text-base flex items-center justify-center gap-2.5 transition-all duration-300 backdrop-blur-xl border border-white/40 hover:border-white/60 cursor-pointer disabled:opacity-50 ${
- selectedMethod === "payphone"
- ? "bg-[#FF5E00] hover:bg-[#e05300] shadow-[0_12px_28px_-4px_rgba(255,94,0,0.4),0_4px_12px_rgba(0,0,0,0.06),inset_0_1.5px_2px_rgba(255,255,255,0.45)]"
- : "bg-emerald-600/80 hover:bg-emerald-600/90 shadow-[0_12px_28px_-4px_rgba(16,185,129,0.35),0_4px_12px_rgba(0,0,0,0.06),inset_0_1.5px_2px_rgba(255,255,255,0.45),inset_0_-1.5px_2px_rgba(0,0,0,0.15)]"
- }`}
- >
- {/* Specular curved liquid glass rim */}
- <div className="absolute inset-x-4 top-0 h-[1.5px] bg-gradient-to-r from-transparent via-white/90 to-transparent opacity-95 pointer-events-none" />
- 
- {/* Caustic glass reflection glint */}
- <div className="absolute top-1.5 left-5 w-8 h-1 bg-white dark:bg-[#2a2a2c]/80 rounded-full blur-[0.4px] pointer-events-none" />
- <div className="absolute inset-0 bg-gradient-to-b from-white/20 via-transparent to-black/10 pointer-events-none" />
+              <button 
+                onClick={handleConfirmOrder}
+                disabled={isProcessing}
+                className="group relative overflow-hidden w-full h-14 rounded-2xl font-bold text-white text-sm sm:text-base flex items-center justify-center gap-2.5 transition-all duration-300 backdrop-blur-xl border border-white/40 hover:border-white/60 cursor-pointer disabled:opacity-50 bg-[#FF5E00] hover:bg-[#e05300] shadow-[0_12px_28px_-4px_rgba(255,94,0,0.4),0_4px_12px_rgba(0,0,0,0.06),inset_0_1.5px_2px_rgba(255,255,255,0.45)]"
+              >
+                {/* Specular curved liquid glass rim */}
+                <div className="absolute inset-x-4 top-0 h-[1.5px] bg-gradient-to-r from-transparent via-white/90 to-transparent opacity-95 pointer-events-none" />
+                
+                {/* Caustic glass reflection glint */}
+                <div className="absolute top-1.5 left-5 w-8 h-1 bg-white dark:bg-[#2a2a2c]/80 rounded-full blur-[0.4px] pointer-events-none" />
+                <div className="absolute inset-0 bg-gradient-to-b from-white/20 via-transparent to-black/10 pointer-events-none" />
 
- {isProcessing ? (
- <span className="relative z-10 flex items-center gap-2">
- <span className="w-5 h-5 border-2 border-white/40 border-t-white rounded-full animate-spin" />
- <span>Conectando con PayPhone...</span>
- </span>
- ) : (
- <>
- {selectedMethod === "payphone" ? (
- <PayPhoneIcon className="relative z-10 w-5 h-5 text-white" />
- ) : (
- <Lock className="relative z-10 w-4 h-4 text-emerald-100" />
- )}
- <span className="relative z-10 tracking-wide font-sans font-bold">
- {selectedMethod === "payphone" ? "Pagar con PayPhone" : "Confirmar Pedido"} (${finalTotal.toFixed(2)})
- </span>
- <ArrowRight className="relative z-10 w-4 h-4 text-white group-hover:translate-x-1 transition-transform" />
- </>
- )}
- </button>
+                {isProcessing ? (
+                  <span className="relative z-10 flex items-center gap-2">
+                    <span className="w-5 h-5 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+                    <span>Conectando con PayPhone...</span>
+                  </span>
+                ) : (
+                  <>
+                    <PayPhoneIcon className="relative z-10 w-5 h-5 text-white" />
+                    <span className="relative z-10 tracking-wide font-sans font-bold">
+                      {payphoneMode === "box" ? "Pagar con Cajita PayPhone" : "Pagar con PayPhone"} (${finalTotal.toFixed(2)})
+                    </span>
+                    <ArrowRight className="relative z-10 w-4 h-4 text-white group-hover:translate-x-1 transition-transform" />
+                  </>
+                )}
+              </button>
  </div>
 
  </div>

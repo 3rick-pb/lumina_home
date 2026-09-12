@@ -55,7 +55,7 @@ interface PrepareRequestBody {
  * POST /api/payphone/prepare
  * Secure endpoint to initiate a PayPhone Ecuador payment session.
  * Enforces Zero-Trust server-side price recalculation, Ecuadorian ID validation,
- * and input sanitization against XSS/injection.
+ * input sanitization, and returns payload tailored for active mode (Cajita vs Redirección).
  */
 export async function POST(request: Request) {
   try {
@@ -86,7 +86,6 @@ export async function POST(request: Request) {
     }
 
     // 3. CYBERSECURITY: Zero-Trust Server Recalculation of Prices from Supabase
-    // Fetch authoritative product prices from DB to eliminate any client price manipulation
     const productIds = items.map(i => i.productId).filter(Boolean);
     const { data: dbProducts } = await supabase
       .from('products')
@@ -149,7 +148,7 @@ export async function POST(request: Request) {
 
     const verifiedTotal = Math.max(0, Number((calculatedSubtotal - discountAmount + shippingCost).toFixed(2)));
 
-    // Anti-Tampering: Check if client manipulated total by more than a few cents
+    // Anti-Tampering: Check if client manipulated total
     if (clientClaimedTotal !== undefined) {
       const diff = Math.abs(clientClaimedTotal - verifiedTotal);
       if (diff > 0.05) {
@@ -167,7 +166,7 @@ export async function POST(request: Request) {
     const cleanPhone = sanitizeString(shippingAddress.phone || '0999999999', 20);
     const cleanRecipient = sanitizeString(shippingAddress.recipient || authUser?.email?.split('@')[0] || 'Cliente Lumina', 60);
 
-    // 5. PayPhone Prepare Execution
+    // 5. PayPhone Prepare Execution (handles active mode: 'box' vs 'redirect')
     const prepareResult = await preparePayPhonePayment({
       orderId,
       amount: verifiedTotal,
@@ -189,6 +188,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json({
       success: true,
+      mode: prepareResult.mode,
       orderId,
       paymentId: prepareResult.paymentId,
       payUrl: prepareResult.payUrl,
@@ -196,7 +196,16 @@ export async function POST(request: Request) {
       isSimulated: prepareResult.isSimulated,
       verifiedTotal,
       amountInCents: prepareResult.amountInCents,
-      currency: prepareResult.currency
+      amountWithoutTaxInCents: prepareResult.amountWithoutTaxInCents,
+      amountWithTaxInCents: prepareResult.amountWithTaxInCents,
+      taxInCents: prepareResult.taxInCents,
+      currency: prepareResult.currency,
+      storeId: prepareResult.storeId,
+      token: prepareResult.token,
+      reference: prepareResult.reference,
+      email: cleanEmail,
+      phoneNumber: cleanPhone,
+      documentId: rawDoc || undefined
     });
   } catch (error) {
     console.error('[API /api/payphone/prepare] Unhandled exception:', error);

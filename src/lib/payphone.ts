@@ -1,17 +1,30 @@
 import crypto from 'crypto';
+import { createClient } from '@supabase/supabase-js';
+
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || supabaseAnonKey;
+export const supabaseServer = createClient(supabaseUrl, supabaseServiceKey);
 
 /**
  * PayPhone Ecuador API Configuration & Types
- * Reference: PayPhone Developer API (Button / Prepare & Confirm)
- * Currency: USD (Amounts formatted in Ecuadorian cents: e.g. $10.50 -> 1050)
+ * Supported Modes: 'box' (Cajita de Pagos) | 'redirect' (Botón de Pago por Redirección)
+ * Official Documentation: https://docs.payphone.app/
  */
+
+export type PayPhonePaymentMode = 'box' | 'redirect';
 
 export interface PayPhoneConfig {
   isConfigured: boolean;
   isSimulated: boolean;
-  environment: 'production' | 'sandbox' | 'development';
-  appId: string;
+  environment: 'production' | 'sandbox';
+  storeId: string;
+  token: string;
+  defaultMode: PayPhonePaymentMode;
   apiUrl: string;
+  boxConfirmUrl: string;
+  buttonPrepareUrl: string;
+  buttonConfirmUrl: string;
   appUrl: string;
 }
 
@@ -26,16 +39,27 @@ export interface PayPhonePrepareParams {
   documentId?: string; // Cédula o RUC Ecuador
   clientTransactionId?: string;
   customReference?: string;
+  modeOverride?: PayPhonePaymentMode;
 }
 
 export interface PayPhonePrepareResponse {
   success: boolean;
+  mode: PayPhonePaymentMode;
   paymentId?: number | string;
-  payUrl?: string;
+  payUrl?: string; // For redirect mode
   clientTransactionId: string;
   isSimulated: boolean;
   amountInCents: number;
+  amountWithoutTaxInCents: number;
+  amountWithTaxInCents: number;
+  taxInCents: number;
   currency: 'USD';
+  storeId: string;
+  token?: string; // Only needed for Cajita frontend initialization
+  reference: string;
+  email?: string;
+  phoneNumber?: string;
+  documentId?: string;
   error?: string;
 }
 
@@ -186,9 +210,14 @@ export function sanitizeString(val: unknown, maxLength = 100): string {
  */
 export function getPayPhoneConfig(): PayPhoneConfig {
   const token = process.env.PAYPHONE_TOKEN?.trim() || '';
-  const appId = process.env.PAYPHONE_APP_ID?.trim() || process.env.NEXT_PUBLIC_PAYPHONE_APP_ID?.trim() || '';
-  const env = (process.env.PAYPHONE_ENV || process.env.NEXT_PUBLIC_PAYPHONE_ENV || 'sandbox').toLowerCase() as 'production' | 'sandbox';
-  const apiUrl = process.env.PAYPHONE_API_URL || 'https://pay.payphonetodoesposible.com/api';
+  const storeId = process.env.PAYPHONE_STORE_ID?.trim() || process.env.PAYPHONE_APP_ID?.trim() || process.env.NEXT_PUBLIC_PAYPHONE_APP_ID?.trim() || '';
+  const env = ((process.env.PAYPHONE_ENV || 'sandbox').toLowerCase() === 'production') ? 'production' : 'sandbox';
+  const defaultMode = (process.env.PAYPHONE_PAYMENT_MODE?.toLowerCase() === 'redirect') ? 'redirect' : 'box';
+
+  const apiUrl = 'https://pay.payphonetodoesposible.com/api';
+  const boxConfirmUrl = 'https://paymentbox.payphonetodoesposible.com/api/confirm';
+  const buttonPrepareUrl = 'https://pay.payphonetodoesposible.com/api/button/Prepare';
+  const buttonConfirmUrl = 'https://pay.payphonetodoesposible.com/api/button/V2/Confirm';
   
   const appUrl = (
     process.env.NEXT_PUBLIC_APP_URL || 
@@ -196,22 +225,79 @@ export function getPayPhoneConfig(): PayPhoneConfig {
     'http://localhost:3000'
   ).replace(/\/$/, '');
 
-  const isConfigured = Boolean(token && appId);
+  const isConfigured = Boolean(token && storeId);
   // If token is missing, simulation mode is active so the store functions gracefully while RUC is pending
   const isSimulated = !isConfigured;
 
   return {
     isConfigured,
     isSimulated,
-    environment: isSimulated ? 'development' : env,
-    appId,
+    environment: env,
+    storeId,
+    token,
+    defaultMode,
     apiUrl,
+    boxConfirmUrl,
+    buttonPrepareUrl,
+    buttonConfirmUrl,
     appUrl
   };
 }
 
 /**
- * Prepares a payment session on PayPhone.
+ * Reads the active PayPhone payment mode from Supabase admin_payment_settings.
+ * Falls back to environment variable PAYPHONE_PAYMENT_MODE or 'box'.
+ */
+export async function getStorePaymentMode(): Promise<PayPhonePaymentMode> {
+  try {
+    const { data, error } = await supabaseServer
+      .from('admin_payment_settings')
+      .select('payment_mode')
+      .eq('id', 'global')
+      .maybeSingle();
+
+    if (!error && data?.payment_mode) {
+      const mode = String(data.payment_mode).toLowerCase().trim();
+      if (mode === 'redirect' || mode === 'box') {
+        return mode as PayPhonePaymentMode;
+      }
+    }
+  } catch (err) {
+    console.warn('[PayPhone] Warning reading payment_mode from DB:', err);
+  }
+
+  const envMode = process.env.PAYPHONE_PAYMENT_MODE?.toLowerCase().trim();
+  return envMode === 'redirect' ? 'redirect' : 'box';
+}
+
+/**
+ * Saves the active PayPhone payment mode to Supabase admin_payment_settings.
+ * Restricted to administrators in API endpoints.
+ */
+export async function setStorePaymentMode(mode: PayPhonePaymentMode, updatedBy: string): Promise<boolean> {
+  try {
+    const { error } = await supabaseServer
+      .from('admin_payment_settings')
+      .upsert({
+        id: 'global',
+        payment_mode: mode,
+        updated_by: updatedBy,
+        updated_at: new Date().toISOString()
+      });
+
+    if (error) {
+      console.error('[PayPhone] Error updating admin_payment_settings:', error);
+      return false;
+    }
+    return true;
+  } catch (err) {
+    console.error('[PayPhone] Exception updating admin_payment_settings:', err);
+    return false;
+  }
+}
+
+/**
+ * Prepares a payment session on PayPhone according to active mode ('box' | 'redirect').
  * Handles exact cents formatting and dual-mode (Live vs Simulated).
  */
 export async function preparePayPhonePayment(params: PayPhonePrepareParams): Promise<PayPhonePrepareResponse> {
@@ -224,13 +310,22 @@ export async function preparePayPhonePayment(params: PayPhonePrepareParams): Pro
   if (amountInCents <= 0) {
     return {
       success: false,
+      mode: params.modeOverride || config.defaultMode,
       clientTransactionId: '',
       isSimulated: config.isSimulated,
       amountInCents: 0,
+      amountWithoutTaxInCents: 0,
+      amountWithTaxInCents: 0,
+      taxInCents: 0,
       currency: 'USD',
+      storeId: config.storeId,
+      reference: '',
       error: 'El monto total a pagar debe ser mayor a cero.'
     };
   }
+
+  // Active mode from DB or parameter
+  const activeMode: PayPhonePaymentMode = params.modeOverride || await getStorePaymentMode();
 
   // Ecuadorian Tax Calculation (15% IVA default or breakdown provided)
   const taxInCents = params.tax !== undefined ? Math.round(params.tax * 100) : 0;
@@ -253,16 +348,47 @@ export async function preparePayPhonePayment(params: PayPhonePrepareParams): Pro
     const simulatedPaymentId = Math.floor(1000000 + Math.random() * 9000000);
     return {
       success: true,
+      mode: activeMode,
       paymentId: simulatedPaymentId,
       payUrl: `${config.appUrl}/checkout/payphone/callback?id=${simulatedPaymentId}&clientTransactionId=${clientTransactionId}&simulated=true`,
       clientTransactionId,
       isSimulated: true,
       amountInCents,
-      currency: 'USD'
+      amountWithoutTaxInCents: Math.max(0, amountWithoutTaxInCents),
+      amountWithTaxInCents: Math.max(0, amountWithTaxInCents),
+      taxInCents: Math.max(0, taxInCents),
+      currency: 'USD',
+      storeId: 'SIMULATED_STORE',
+      reference: cleanRef,
+      email: cleanEmail,
+      phoneNumber: cleanPhone,
+      documentId: cleanDoc
     };
   }
 
-  // Real PayPhone Live/Sandbox API Call
+  // Live / Sandbox Mode: Branch based on activeMode
+  if (activeMode === 'box') {
+    // Mode "box": Return official configuration for PPaymentButtonBox widget
+    return {
+      success: true,
+      mode: 'box',
+      clientTransactionId,
+      isSimulated: false,
+      amountInCents,
+      amountWithoutTaxInCents: Math.max(0, amountWithoutTaxInCents),
+      amountWithTaxInCents: Math.max(0, amountWithTaxInCents),
+      taxInCents: Math.max(0, taxInCents),
+      currency: 'USD',
+      storeId: config.storeId,
+      token: config.token, // Necessary for PPaymentButtonBox initialization
+      reference: cleanRef,
+      email: cleanEmail,
+      phoneNumber: cleanPhone ? `+593${cleanPhone.replace(/^0+/, '')}` : undefined,
+      documentId: cleanDoc
+    };
+  }
+
+  // Mode "redirect": Call PayPhone official Prepare API
   try {
     const payload = {
       responseUrl: `${config.appUrl}/checkout/payphone/callback`,
@@ -274,17 +400,18 @@ export async function preparePayPhonePayment(params: PayPhonePrepareParams): Pro
       service: 0,
       tip: 0,
       currency: 'USD',
+      storeId: config.storeId,
       clientTransactionId,
       reference: cleanRef,
-      email: cleanEmail,
-      phoneNumber: cleanPhone,
-      documentId: cleanDoc
+      email: cleanEmail || undefined,
+      phoneNumber: cleanPhone ? `+593${cleanPhone.replace(/^0+/, '')}` : undefined,
+      documentId: cleanDoc || undefined
     };
 
-    const response = await fetch(`${config.apiUrl}/button/Prepare`, {
+    const response = await fetch(config.buttonPrepareUrl, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${process.env.PAYPHONE_TOKEN}`,
+        'Authorization': `Bearer ${config.token}`,
         'Content-Type': 'application/json'
       },
       body: JSON.stringify(payload),
@@ -296,32 +423,53 @@ export async function preparePayPhonePayment(params: PayPhonePrepareParams): Pro
       console.error('[PayPhone] Prepare API Error HTTP', response.status, errText);
       return {
         success: false,
+        mode: 'redirect',
         clientTransactionId,
         isSimulated: false,
         amountInCents,
+        amountWithoutTaxInCents,
+        amountWithTaxInCents,
+        taxInCents,
         currency: 'USD',
+        storeId: config.storeId,
+        reference: cleanRef,
         error: `Error de pasarela PayPhone (${response.status}): ${errText || 'Respuesta inesperada'}`
       };
     }
 
     const data = await response.json();
+    // In Button Prepare API, PayPhone returns payWithCard and payWithPayPhone
+    const payUrl = data.payWithCard || data.payWithPayPhone || data.payUrl || data.url;
+
     return {
       success: true,
+      mode: 'redirect',
       paymentId: data.paymentId || data.id,
-      payUrl: data.payUrl || data.url,
+      payUrl,
       clientTransactionId,
       isSimulated: false,
       amountInCents,
-      currency: 'USD'
+      amountWithoutTaxInCents,
+      amountWithTaxInCents,
+      taxInCents,
+      currency: 'USD',
+      storeId: config.storeId,
+      reference: cleanRef
     };
   } catch (networkError) {
     console.error('[PayPhone] Connection failure:', networkError);
     return {
       success: false,
+      mode: 'redirect',
       clientTransactionId,
       isSimulated: false,
       amountInCents,
+      amountWithoutTaxInCents,
+      amountWithTaxInCents,
+      taxInCents,
       currency: 'USD',
+      storeId: config.storeId,
+      reference: cleanRef,
       error: 'No se pudo establecer conexión con el servidor seguro de PayPhone Ecuador.'
     };
   }
@@ -343,7 +491,7 @@ export async function confirmPayPhonePayment(params: PayPhoneConfirmParams): Pro
       clientTransactionId: params.clientTxId,
       amountCents: params.expectedAmountCents || 0,
       currency: 'USD',
-      cardType: 'Visa (Simulador SRI/RUC Pendiente)',
+      cardType: 'Visa (Simulador Oficial SRI)',
       lastDigits: '4242',
       authorizationCode: 'AUTH-SIM-888',
       message: 'Transacción simulada aprobada exitosamente en entorno de desarrollo.',
@@ -352,21 +500,37 @@ export async function confirmPayPhonePayment(params: PayPhoneConfirmParams): Pro
   }
 
   // Real PayPhone Server Confirmation
+  // We check the Button V2 Confirm endpoint (which also handles transactions generated via Box)
   try {
     const payload = {
       id: Number(params.id),
       clientTxId: params.clientTxId
     };
 
-    const response = await fetch(`${config.apiUrl}/button/Confirm`, {
+    let confirmUrl = config.buttonConfirmUrl;
+    let response = await fetch(confirmUrl, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${process.env.PAYPHONE_TOKEN}`,
+        'Authorization': `Bearer ${config.token}`,
         'Content-Type': 'application/json'
       },
       body: JSON.stringify(payload),
       cache: 'no-store'
     });
+
+    // If Button V2 returned 404/not found, try boxConfirmUrl fallback
+    if (!response.ok && response.status === 404) {
+      confirmUrl = config.boxConfirmUrl;
+      response = await fetch(confirmUrl, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${config.token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(payload),
+        cache: 'no-store'
+      });
+    }
 
     if (!response.ok) {
       const errText = await response.text().catch(() => '');
@@ -381,45 +545,50 @@ export async function confirmPayPhonePayment(params: PayPhoneConfirmParams): Pro
     }
 
     const data = await response.json();
-    const status = (data.transactionStatus || 'Rejected') as 'Approved' | 'Rejected' | 'Canceled';
-    const amountConfirmedCents = Number(data.amount) || 0;
+    const isApproved = data.transactionStatus === 'Approved' || data.statusCode === 3;
+    const amountConfirmed = Number(data.amount) || 0;
 
-    // CYBERSECURITY ANTI-TAMPERING: Zero-Trust Amount Matching
-    if (status === 'Approved' && params.expectedAmountCents !== undefined) {
-      if (amountConfirmedCents !== params.expectedAmountCents) {
-        console.error(`[PayPhone ALERT - FRAUD SUSPECTED] Amount mismatch! Expected: ${params.expectedAmountCents} cents, Confirmed by PayPhone: ${amountConfirmedCents} cents.`);
+    // Zero-Trust: Anti-Tampering Amount Check
+    if (isApproved && params.expectedAmountCents && amountConfirmed > 0) {
+      if (Math.abs(amountConfirmed - params.expectedAmountCents) > 1) { // 1 cent safety margin
+        console.error('[PayPhone Anti-Fraud] Mismatch in authorized amount!', {
+          expected: params.expectedAmountCents,
+          received: amountConfirmed,
+          clientTxId: params.clientTxId
+        });
         return {
           success: false,
           transactionStatus: 'Rejected',
           clientTransactionId: params.clientTxId,
+          amountCents: amountConfirmed,
           isSimulated: false,
-          error: 'Alerta de Seguridad: El monto cobrado en la pasarela no coincide con el monto verificado del pedido.'
+          error: 'Alerta de Seguridad: El monto confirmado por PayPhone no coincide con el total de la orden.'
         };
       }
     }
 
     return {
-      success: status === 'Approved',
-      transactionStatus: status,
-      transactionId: data.transactionId,
+      success: isApproved,
+      transactionStatus: isApproved ? 'Approved' : (data.transactionStatus || 'Rejected'),
+      transactionId: data.transactionId || params.id,
       clientTransactionId: data.clientTransactionId || params.clientTxId,
-      amountCents: amountConfirmedCents,
+      amountCents: amountConfirmed,
       currency: data.currency || 'USD',
-      cardType: data.cardType || 'Tarjeta de Crédito',
-      lastDigits: data.lastDigits || '••••',
-      bin: data.bin,
-      authorizationCode: data.authorizationCode || data.deferredCode,
-      message: data.transactionMessage || 'Transacción procesada',
+      cardType: data.cardBrand || data.cardType || 'Tarjeta Bancaria',
+      lastDigits: data.lastDigits?.replace(/\D/g, '') || '',
+      bin: data.bin || '',
+      authorizationCode: data.authorizationCode || '',
+      message: data.message || '',
       isSimulated: false
     };
   } catch (error) {
-    console.error('[PayPhone] Confirm network failure:', error);
+    console.error('[PayPhone] Confirmation exception:', error);
     return {
       success: false,
-      transactionStatus: 'Rejected',
+      transactionStatus: 'Pending',
       clientTransactionId: params.clientTxId,
       isSimulated: false,
-      error: 'Fallo al verificar el estado de la transacción con PayPhone Ecuador.'
+      error: 'Error de red al consultar el estado de la transacción en PayPhone.'
     };
   }
 }
