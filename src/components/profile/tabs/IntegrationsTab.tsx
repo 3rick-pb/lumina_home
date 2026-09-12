@@ -202,7 +202,7 @@ PAYPHONE_TOKEN="${finalPayphoneToken}"
 PAYPHONE_STORE_ID="${finalPayphoneStoreId}"
 PAYPHONE_PAYMENT_MODE="${payphoneMode}"
 
-# === SUPABASE ACCESO SUPERUSUARIO DEL SERVIDOR (BYPASS RLS) ===
+# === CLAVE MAESTRA SUPERUSUARIO SUPABASE (ACCESO TOTAL EN TODA LA WEB) ===
 SUPABASE_SERVICE_ROLE_KEY="${finalServiceKey}"`;
 
   const handleCopyPayphoneSnippet = () => {
@@ -708,18 +708,18 @@ SUPABASE_SERVICE_ROLE_KEY="${finalServiceKey}"`;
                 <div>
                   <div className="flex items-center gap-2">
                     <span className="font-mono text-[9px] font-bold px-2 py-0.5 rounded-md bg-orange-500/10 text-[#FF5E00] border border-orange-500/20 uppercase tracking-widest">
-                      Micro-SaaS Tool · Vercel Ready
+                      Clave SuperUser · Toda la Web
                     </span>
                     <span className="font-mono text-[9px] font-bold px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 uppercase tracking-widest flex items-center gap-1">
-                      <ShieldCheck className="w-2.5 h-2.5" /> 100% Client Utility
+                      <ShieldCheck className="w-2.5 h-2.5" /> Acceso Maestro Servidor
                     </span>
                   </div>
                   <h3 className="text-base font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2 mt-1.5 tracking-tight">
                     <Sparkles className="w-4 h-4 text-[#FF5E00]" />
-                    Variables de PayPhone para Vercel
+                    Variables de Entorno para Vercel (Clave SuperUser & PayPhone)
                   </h3>
                   <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 leading-relaxed">
-                    Compilador interactivo de variables de entorno para PayPhone y Supabase. Copia el bloque generado y pégalo directamente en tu proyecto de Vercel.
+                    Genera el bloque con la Clave SuperUser de Supabase (<code className="text-[#FF5E00] font-mono">SUPABASE_SERVICE_ROLE_KEY</code>) para blindar el 100% de la web con acceso maestro en el servidor, junto con las credenciales de PayPhone.
                   </p>
                 </div>
               </div>
