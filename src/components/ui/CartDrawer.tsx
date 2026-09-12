@@ -1715,15 +1715,15 @@ export function CartDrawer() {
  </div>
 
  {/* Pasarela Oficial Exclusiva: PayPhone Ecuador */}
-          <div className="p-6 rounded-[2rem] bg-white dark:bg-[#2a2a2c] border border-gray-200 dark:border-white/10/70 shadow-sm dark:shadow-none space-y-5">
-            <div className="flex items-center justify-between pb-1 border-b border-gray-100 dark:border-white/5">
+          <div className="p-6 rounded-[2rem] bg-white dark:bg-[#202022] border border-gray-200 dark:border-white/10 shadow-sm space-y-5 font-sans antialiased">
+            <div className="flex items-center justify-between pb-2 border-b border-gray-100 dark:border-white/10">
               <div className="flex items-center gap-2">
                 <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0" />
-                <h4 className="font-sans font-bold text-xs uppercase tracking-wider text-gray-900 dark:text-gray-100">
-                  Pasarela Oficial PayPhone Ecuador
+                <h4 className="font-bold text-xs uppercase tracking-wider text-gray-900 dark:text-gray-100">
+                  PayPhone Ecuador
                 </h4>
               </div>
-              <span className="font-mono text-[10px] font-medium text-emerald-600 dark:text-emerald-400 tracking-tight uppercase flex items-center gap-1">
+              <span className="font-mono text-[10px] font-bold text-emerald-600 dark:text-emerald-400 tracking-tight uppercase flex items-center gap-1">
                 <Lock className="w-3 h-3" /> Cifrado Seguro SSL 256-Bit
               </span>
             </div>
@@ -1731,7 +1731,7 @@ export function CartDrawer() {
             {/* EXCLUSIVE PAYMENT MODE: CONDITIONAL RENDERING BASED ON ADMIN CONFIGURATION */}
             {payphoneMode === "box" ? (
               /* MODALIDAD 1: CAJITA DE PAGOS (EMBEDDED ON-PAGE WIDGET) */
-              <div className="p-6 sm:p-7 rounded-3xl bg-gradient-to-br from-[#fff8f2] via-white to-[#fff1e6] dark:from-[#251b14] dark:via-[#202022] dark:to-[#1a1410] border border-orange-200/80 dark:border-orange-500/20 shadow-sm space-y-5 font-sans animate-fade-in">
+              <div className="p-6 sm:p-7 rounded-3xl bg-gradient-to-br from-[#fff8f2] via-white to-[#fff1e6] dark:from-[#251b14] dark:via-[#202022] dark:to-[#1a1410] border border-orange-200/80 dark:border-orange-500/20 shadow-sm space-y-5 animate-fade-in">
                 <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 text-center sm:text-left">
                   <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-[#FF5E00] to-[#E04D00] flex items-center justify-center shadow-lg shadow-orange-500/20 shrink-0">
                     <PayPhoneIcon className="w-8 h-8 text-white" />
@@ -1740,10 +1740,10 @@ export function CartDrawer() {
                     <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2">
                       <h4 className="font-bold text-base text-gray-900 dark:text-gray-100 tracking-tight">Cajita de Pagos PayPhone</h4>
                       <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-orange-500/10 text-[#FF5E00] border border-orange-500/20">
-                        Pago en la Tienda
+                        Pago en Tienda
                       </span>
                       {isPayphoneConfigured && (
-                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-600 border border-blue-500/20">
+                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20">
                           API Conectada
                         </span>
                       )}
@@ -1751,7 +1751,7 @@ export function CartDrawer() {
                         <ShieldCheck className="w-3 h-3" /> PCI-DSS Nivel 1
                       </span>
                     </div>
-                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 leading-relaxed">
+                    <p className="text-xs text-gray-600 dark:text-gray-300 font-normal mt-1 leading-relaxed">
                       Paga directamente sin salir de Lumina Home. El widget seguro de PayPhone procesa tu tarjeta de forma encriptada sin almacenar datos sensibles.
                     </p>
                   </div>
@@ -1766,18 +1766,18 @@ export function CartDrawer() {
                           <CreditCard className="w-5 h-5" />
                         </div>
                         <div className="space-y-1">
-                          <p className="text-xs font-bold text-gray-800 dark:text-gray-200">
+                          <p className="text-xs font-bold text-gray-900 dark:text-gray-100">
                             Cajita de Pagos Activa (Entorno de Desarrollo Seguro)
                           </p>
                           <p className="text-[11px] text-gray-500 dark:text-gray-400 max-w-sm mx-auto">
-                            El contenedor oficial <code className="text-[#FF5E00] bg-orange-50 dark:bg-orange-500/10 px-1 py-0.5 rounded font-mono">#pp-button</code> está vinculado. Al confirmar abajo podrás autorizar tu orden con tarjetas de prueba.
+                            El contenedor oficial <code className="text-[#FF5E00] bg-orange-50 dark:bg-orange-500/10 px-1 py-0.5 rounded font-mono font-semibold">#pp-button</code> está vinculado. Al confirmar abajo podrás autorizar tu orden con tarjetas de prueba.
                           </p>
                         </div>
                       </div>
                     ) : !isBoxRendered ? (
                       <div className="space-y-2 py-4">
                         <Loader2 className="w-6 h-6 animate-spin text-[#FF5E00] mx-auto" />
-                        <p className="text-xs text-gray-500">
+                        <p className="text-xs font-medium text-gray-500">
                           {!isBoxScriptLoaded ? "Cargando librería segura de PayPhone..." : "Inicializando Cajita de Pagos..."}
                         </p>
                       </div>
@@ -1808,17 +1808,17 @@ export function CartDrawer() {
                 </div>
 
                 <div className="w-full pt-3 border-t border-orange-100 dark:border-white/5 flex items-center justify-between text-[11px] text-gray-500 dark:text-gray-400">
-                  <span className="flex items-center gap-1">
+                  <span className="flex items-center gap-1 font-medium">
                     <Lock className="w-3.5 h-3.5 text-emerald-600" /> Cifrado Bancario 256-bit
                   </span>
-                  <span className="font-semibold text-[#FF5E00]">
+                  <span className="font-bold text-[#FF5E00]">
                     Sin comisión al comprador
                   </span>
                 </div>
               </div>
             ) : (
               /* MODALIDAD 2: BOTÓN DE PAGO POR REDIRECCIÓN (HOSTED PAYMENT PAGE) */
-              <div className="p-6 sm:p-7 rounded-3xl bg-gradient-to-br from-[#fff8f2] via-white to-[#fff1e6] dark:from-[#251b14] dark:via-[#202022] dark:to-[#1a1410] border border-orange-200/80 dark:border-orange-500/20 shadow-sm flex flex-col items-center text-center space-y-4 font-sans animate-fade-in">
+              <div className="p-6 sm:p-7 rounded-3xl bg-gradient-to-br from-[#fff8f2] via-white to-[#fff1e6] dark:from-[#251b14] dark:via-[#202022] dark:to-[#1a1410] border border-orange-200/80 dark:border-orange-500/20 shadow-sm flex flex-col items-center text-center space-y-4 animate-fade-in">
                 <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-[#FF5E00] to-[#E04D00] flex items-center justify-center shadow-lg shadow-orange-500/20 shrink-0">
                   <PayPhoneIcon className="w-9 h-9 text-white" />
                 </div>
@@ -1826,10 +1826,10 @@ export function CartDrawer() {
                   <div className="flex items-center justify-center gap-2">
                     <h4 className="font-bold text-base text-gray-900 dark:text-gray-100 tracking-tight">PayPhone Redirección Segura</h4>
                     <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 flex items-center gap-1">
-                      <ShieldCheck className="w-3 h-3" /> Pasarela Oficial
+                      <ShieldCheck className="w-3 h-3" /> Conexión Oficial
                     </span>
                   </div>
-                  <p className="text-xs text-gray-500 dark:text-gray-400 max-w-sm mt-1.5 leading-relaxed">
+                  <p className="text-xs text-gray-600 dark:text-gray-300 font-normal max-w-sm mt-1.5 leading-relaxed">
                     Al hacer clic en pagar, serás redirigido a la pasarela cifrada de PayPhone Ecuador para autorizar tu compra con cualquier tarjeta de crédito/débito nacional o internacional, o con tu App PayPhone.
                   </p>
                 </div>

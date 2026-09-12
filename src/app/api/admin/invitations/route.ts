@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
-import { getAuthenticatedUser, verifyIsAdmin } from '@/lib/serverAuth';
+import { getAuthenticatedUser, verifyIsAdmin, getScopedSupabaseClient } from '@/lib/serverAuth';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -9,17 +8,13 @@ const MASTER_ADMIN_EMAIL = 'admin@lumina.com';
 const MAX_INVITED_ADMINS = 3;
 const SYS_SESSION_ID = 'SYS_ADMIN_INVITES';
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || supabaseAnonKey;
-const baseSupabase = createClient(supabaseUrl, supabaseServiceKey);
-
 /**
  * Loads the current list of invited secondary admins from the dedicated admin_invitations table
  */
-async function loadInvitedAdmins(): Promise<string[]> {
+async function loadInvitedAdmins(request?: Request): Promise<string[]> {
   try {
-    const { data, error } = await baseSupabase
+    const supabase = getScopedSupabaseClient(request);
+    const { data, error } = await supabase
       .from('admin_invitations')
       .select('email')
       .eq('is_active', true);
@@ -42,7 +37,7 @@ async function loadInvitedAdmins(): Promise<string[]> {
 /**
  * Persists the list of secondary invited admins directly in public.admin_invitations.
  */
-async function persistInvitedAdmins(emails: string[]): Promise<string[]> {
+async function persistInvitedAdmins(emails: string[], request?: Request): Promise<string[]> {
   const cleanEmails = Array.from(
     new Set(
       emails
@@ -53,8 +48,9 @@ async function persistInvitedAdmins(emails: string[]): Promise<string[]> {
   ).slice(0, MAX_INVITED_ADMINS);
 
   try {
+    const supabase = getScopedSupabaseClient(request);
     // 1. Remove from admin_invitations any non-master admin that is no longer in the list
-    const { data: currentRows } = await baseSupabase
+    const { data: currentRows } = await supabase
       .from('admin_invitations')
       .select('email')
       .neq('email', MASTER_ADMIN_EMAIL);
@@ -62,7 +58,7 @@ async function persistInvitedAdmins(emails: string[]): Promise<string[]> {
     if (currentRows && Array.isArray(currentRows)) {
       for (const row of currentRows) {
         if (!cleanEmails.includes(row.email.toLowerCase())) {
-          await baseSupabase
+          await supabase
             .from('admin_invitations')
             .delete()
             .eq('email', row.email);
@@ -72,7 +68,7 @@ async function persistInvitedAdmins(emails: string[]): Promise<string[]> {
 
     // 2. Insert or ensure active all current cleanEmails
     for (const email of cleanEmails) {
-      await baseSupabase
+      await supabase
         .from('admin_invitations')
         .upsert({
           email,
@@ -82,7 +78,7 @@ async function persistInvitedAdmins(emails: string[]): Promise<string[]> {
     }
 
     // 3. Proactively purge the legacy SYS_ADMIN_INVITES row from active_sessions
-    await baseSupabase
+    await supabase
       .from('active_sessions')
       .delete()
       .eq('user_id', SYS_SESSION_ID);
@@ -96,9 +92,10 @@ async function persistInvitedAdmins(emails: string[]): Promise<string[]> {
 /**
  * Broadcasts role updates to all active client tabs on the unified 'lumina:roles' channel.
  */
-async function broadcastRoleChange(targetEmail: string, role: 'USER' | 'ADMIN') {
+async function broadcastRoleChange(targetEmail: string, role: 'USER' | 'ADMIN', request?: Request) {
   try {
-    const rolesChan = baseSupabase.channel('lumina:roles');
+    const supabase = getScopedSupabaseClient(request);
+    const rolesChan = supabase.channel('lumina:roles');
     await new Promise<void>((resolve) => {
       rolesChan.subscribe(async (status) => {
         if (status === 'SUBSCRIBED') {
@@ -128,7 +125,7 @@ export async function GET(request: Request) {
     );
   }
 
-  const invitedAdmins = await loadInvitedAdmins();
+  const invitedAdmins = await loadInvitedAdmins(request);
 
   return NextResponse.json(
     {
@@ -169,17 +166,17 @@ export async function POST(request: Request) {
     const body = await request.json();
     const { emails, action, email } = body;
 
-    const currentList = await loadInvitedAdmins();
+    const currentList = await loadInvitedAdmins(request);
 
     // 1. Handle individual removal
     if (action === 'remove' && email) {
       const targetEmail = String(email).toLowerCase().trim();
       const nextList = currentList.filter((e) => e !== targetEmail);
 
-      const saved = await persistInvitedAdmins(nextList);
+      const saved = await persistInvitedAdmins(nextList, request);
 
       // Broadcast role revocation in realtime
-      await broadcastRoleChange(targetEmail, 'USER');
+      await broadcastRoleChange(targetEmail, 'USER', request);
 
       return NextResponse.json({
         success: true,
@@ -192,10 +189,10 @@ export async function POST(request: Request) {
 
     // 2. Handle explicit clear
     if (action === 'clear') {
-      const saved = await persistInvitedAdmins([]);
+      const saved = await persistInvitedAdmins([], request);
 
       for (const prevEmail of currentList) {
-        await broadcastRoleChange(prevEmail, 'USER');
+        await broadcastRoleChange(prevEmail, 'USER', request);
       }
 
       return NextResponse.json({
@@ -270,11 +267,11 @@ export async function POST(request: Request) {
       );
     }
 
-    const saved = await persistInvitedAdmins(combined);
+    const saved = await persistInvitedAdmins(combined, request);
 
     // Broadcast realtime promotion to newly added admins
     for (const addedEmail of cleanedCandidates) {
-      await broadcastRoleChange(addedEmail, 'ADMIN');
+      await broadcastRoleChange(addedEmail, 'ADMIN', request);
     }
 
     return NextResponse.json({

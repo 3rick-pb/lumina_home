@@ -1,18 +1,12 @@
 import { NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
 import { confirmPayPhonePayment, sanitizeString } from '@/lib/payphone';
-import { getAuthenticatedUser } from '@/lib/serverAuth';
+import { getAuthenticatedUser, getScopedSupabaseClient } from '@/lib/serverAuth';
 import { sendOrderEmails, getAllAdminEmails } from '@/lib/emailService';
 import { ApiOrder } from '@/app/api/orders/route';
 import { checkRateLimit, createRateLimitResponse } from '@/lib/rateLimit';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
-
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
-const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || supabaseAnonKey;
-const supabase = createClient(supabaseUrl, supabaseKey);
 
 interface ConfirmRequestBody {
   id: number | string;
@@ -72,6 +66,7 @@ export async function POST(request: Request) {
 
   try {
     const authUser = await getAuthenticatedUser(request).catch(() => null);
+    const supabase = getScopedSupabaseClient(request);
     const body = (await request.json().catch(() => ({}))) as ConfirmRequestBody;
 
     const { id, clientTxId, simulatedDeferred, orderData } = body;

@@ -1,14 +1,8 @@
 import { NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
-import { getAuthenticatedUser, verifyIsAdmin } from '@/lib/serverAuth';
+import { getAuthenticatedUser, verifyIsAdmin, getScopedSupabaseClient } from '@/lib/serverAuth';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
-
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || supabaseAnonKey;
-const baseSupabase = createClient(supabaseUrl, supabaseServiceKey);
 
 const DEFAULT_ALERT_CONFIG = {
   position: 'bottom-right',
@@ -74,7 +68,8 @@ export async function GET(request: Request) {
     });
 
     // Read the single shared global configuration for all administrators
-    const { data: globalRow, error: globalErr } = await baseSupabase
+    const supabase = getScopedSupabaseClient(request);
+    const { data: globalRow, error: globalErr } = await supabase
       .from('admin_notification_settings')
       .select('*')
       .eq('id', 'global')
@@ -168,8 +163,10 @@ export async function POST(request: Request) {
       updated_at: new Date().toISOString(),
     };
 
+    const supabase = getScopedSupabaseClient(request);
+
     // 1. Save single shared global configuration in dedicated table admin_notification_settings
-    await baseSupabase.from('admin_notification_settings').upsert(
+    await supabase.from('admin_notification_settings').upsert(
       {
         id: 'global',
         admin_email: cleanEmail,
@@ -180,7 +177,7 @@ export async function POST(request: Request) {
 
     // 2. Clean up any rogue non-global rows in admin_notification_settings
     try {
-      await baseSupabase
+      await supabase
         .from('admin_notification_settings')
         .delete()
         .neq('id', 'global');
@@ -188,7 +185,7 @@ export async function POST(request: Request) {
 
     // 3. Proactively clean any legacy garbage rows in active_sessions
     try {
-      await baseSupabase
+      await supabase
         .from('active_sessions')
         .delete()
         .or(`user_id.like.SYS_ALERT_CFG_%,user_id.eq.SYS_ADMIN_CART_ALERT_CONFIG`);
@@ -196,7 +193,7 @@ export async function POST(request: Request) {
 
     // Broadcast config update in realtime to any active client tabs
     try {
-      const alertChannel = baseSupabase.channel('admin:cart_alerts');
+      const alertChannel = supabase.channel('admin:cart_alerts');
       await new Promise<void>((resolve) => {
         alertChannel.subscribe(async (status) => {
           if (status === 'SUBSCRIBED') {

@@ -68,7 +68,7 @@ export async function getAuthenticatedUser(request: Request) {
 /**
  * Checks whether an email belongs to an authorized administrator (master or invited)
  */
-export async function verifyIsAdmin(email?: string | null): Promise<boolean> {
+export async function verifyIsAdmin(email?: string | null, request?: Request | string | null): Promise<boolean> {
   if (!email) return false;
   const cleanEmail = email.toLowerCase().trim();
 
@@ -77,9 +77,10 @@ export async function verifyIsAdmin(email?: string | null): Promise<boolean> {
     return true;
   }
 
-  // 2. Query dedicated admin_invitations table
+  // 2. Query dedicated admin_invitations table with scoped client
   try {
-    const { data: invRow } = await supabaseServer
+    const client = getScopedSupabaseClient(request);
+    const { data: invRow } = await client
       .from('admin_invitations')
       .select('id')
       .ilike('email', cleanEmail)

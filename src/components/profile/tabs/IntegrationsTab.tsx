@@ -703,17 +703,25 @@ SUPABASE_SERVICE_ROLE_KEY="${finalServiceKey}"`;
           </div>
 
           {/* Module 4: PayPhone & Supabase Vercel Variable Generator */}
-            <div className="bg-white/90 dark:bg-[#202022]/80 backdrop-blur-2xl p-6 md:p-8 rounded-[2.5rem] border border-white/80 dark:border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.03)] space-y-6">
-              <div>
-                <div className="flex items-center justify-between">
-                  <h3 className="text-base font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
+            <div className="bg-white/95 dark:bg-[#202022]/90 backdrop-blur-2xl p-6 md:p-8 rounded-[2.5rem] border border-gray-200/80 dark:border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.04)] space-y-6">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-4 border-b border-gray-100 dark:border-white/5">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="font-mono text-[9px] font-bold px-2 py-0.5 rounded-md bg-orange-500/10 text-[#FF5E00] border border-orange-500/20 uppercase tracking-widest">
+                      Micro-SaaS Tool · Vercel Ready
+                    </span>
+                    <span className="font-mono text-[9px] font-bold px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 uppercase tracking-widest flex items-center gap-1">
+                      <ShieldCheck className="w-2.5 h-2.5" /> 100% Client Utility
+                    </span>
+                  </div>
+                  <h3 className="text-base font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2 mt-1.5 tracking-tight">
                     <Sparkles className="w-4 h-4 text-[#FF5E00]" />
                     Variables de PayPhone para Vercel
                   </h3>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 leading-relaxed">
+                    Compilador interactivo de variables de entorno para PayPhone y Supabase. Copia el bloque generado y pégalo directamente en tu proyecto de Vercel.
+                  </p>
                 </div>
-                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 leading-relaxed">
-                  Genera el bloque de variables de entorno para PayPhone y el superusuario de Supabase, listo para copiar y pegar directamente en Vercel.
-                </p>
               </div>
 
               {/* Inputs */}
@@ -737,7 +745,7 @@ SUPABASE_SERVICE_ROLE_KEY="${finalServiceKey}"`;
                     value={payphoneToken}
                     onChange={e => setPayphoneToken(e.target.value)}
                     placeholder="ej: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
-                    className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-xs bg-white dark:bg-[#1a1a1c] text-gray-900 dark:text-gray-100 outline-none focus:ring-2 focus:ring-[#FF5E00]/30 font-mono"
+                    className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-xs bg-white dark:bg-[#1a1a1c] text-gray-900 dark:text-gray-100 outline-none focus:ring-2 focus:ring-[#FF5E00]/30 font-mono transition-all"
                   />
                 </div>
 
@@ -750,7 +758,7 @@ SUPABASE_SERVICE_ROLE_KEY="${finalServiceKey}"`;
                     value={payphoneStoreIdInput}
                     onChange={e => setPayphoneStoreIdInput(e.target.value)}
                     placeholder={payphoneStoreId && !payphoneStoreId.includes("••••") ? payphoneStoreId : "ej: 5c0a1b2c-3d4e-5f6a-7b8c-9d0e1f2a3b4c"}
-                    className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-xs bg-white dark:bg-[#1a1a1c] text-gray-900 dark:text-gray-100 outline-none focus:ring-2 focus:ring-[#FF5E00]/30 font-mono"
+                    className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-xs bg-white dark:bg-[#1a1a1c] text-gray-900 dark:text-gray-100 outline-none focus:ring-2 focus:ring-[#FF5E00]/30 font-mono transition-all"
                   />
                 </div>
 
@@ -762,7 +770,7 @@ SUPABASE_SERVICE_ROLE_KEY="${finalServiceKey}"`;
                     <button
                       type="button"
                       onClick={() => setShowServiceKey(!showServiceKey)}
-                      className="text-[11px] text-[#8c9276] hover:underline font-semibold flex items-center gap-1 cursor-pointer"
+                      className="text-[11px] text-[#FF5E00] hover:underline font-semibold flex items-center gap-1 cursor-pointer"
                     >
                       {showServiceKey ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
                       {showServiceKey ? "Ocultar" : "Mostrar"}
@@ -773,7 +781,7 @@ SUPABASE_SERVICE_ROLE_KEY="${finalServiceKey}"`;
                     value={supabaseServiceKeyInput}
                     onChange={e => setSupabaseServiceKeyInput(e.target.value)}
                     placeholder="ej: eyJhbGciOiJIUzI1Ni... (service_role secret)"
-                    className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-xs bg-white dark:bg-[#1a1a1c] text-gray-900 dark:text-gray-100 outline-none focus:ring-2 focus:ring-[#8c9276]/30 font-mono"
+                    className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-xs bg-white dark:bg-[#1a1a1c] text-gray-900 dark:text-gray-100 outline-none focus:ring-2 focus:ring-[#FF5E00]/30 font-mono transition-all"
                   />
                   <p className="text-[10px] text-gray-400 mt-1">
                     Encuéntrala en Supabase &gt; Project Settings &gt; API &gt; Project API keys &gt; <code>service_role (secret)</code>.
@@ -790,7 +798,7 @@ SUPABASE_SERVICE_ROLE_KEY="${finalServiceKey}"`;
                   <button
                     type="button"
                     onClick={handleCopyPayphoneSnippet}
-                    className="text-xs text-[#FF5E00] hover:text-orange-700 font-bold flex items-center gap-1.5 transition-colors cursor-pointer"
+                    className="text-xs text-[#FF5E00] hover:text-orange-700 font-bold flex items-center gap-1.5 transition-colors cursor-pointer bg-orange-500/10 hover:bg-orange-500/15 px-3 py-1.5 rounded-lg border border-orange-500/20"
                   >
                     {copiedPayphone ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
                     {copiedPayphone ? "¡Copiado al Portapapeles!" : "Copiar para Vercel"}
@@ -805,7 +813,7 @@ SUPABASE_SERVICE_ROLE_KEY="${finalServiceKey}"`;
               </div>
 
               {/* Instructions */}
-              <div className="p-4 bg-orange-50/50 dark:bg-orange-950/20 rounded-2xl border border-orange-200/60 dark:border-orange-900/30 text-xs space-y-2">
+              <div className="p-4 bg-orange-50/60 dark:bg-orange-950/20 rounded-2xl border border-orange-200/70 dark:border-orange-900/40 text-xs space-y-2">
                 <div className="font-bold text-orange-900 dark:text-orange-300 flex items-center gap-1.5">
                   <ExternalLink className="w-3.5 h-3.5" />
                   ¿Cómo pegar estas variables en Vercel?

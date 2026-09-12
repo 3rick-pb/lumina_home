@@ -1,16 +1,10 @@
 import { NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
 import { preparePayPhonePayment, validateEcuadorianId, sanitizeString } from '@/lib/payphone';
-import { getAuthenticatedUser } from '@/lib/serverAuth';
+import { getAuthenticatedUser, getScopedSupabaseClient } from '@/lib/serverAuth';
 import { checkRateLimit, createRateLimitResponse } from '@/lib/rateLimit';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
-
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
-const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || supabaseAnonKey;
-const supabase = createClient(supabaseUrl, supabaseKey);
 
 // Valid coupons configuration (Zero-Trust server validation)
 const VALID_COUPONS: Record<string, { discountPercent: number; isFreeShipping: boolean }> = {
@@ -100,6 +94,7 @@ export async function POST(request: Request) {
     }
 
     // 3. CYBERSECURITY: Zero-Trust Server Recalculation of Prices from Supabase
+    const supabase = getScopedSupabaseClient(request);
     const productIds = items.map(i => i.productId).filter(Boolean);
     const { data: dbProducts } = await supabase
       .from('products')

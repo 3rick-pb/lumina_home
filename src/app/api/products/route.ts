@@ -1,15 +1,13 @@
 import { NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
-import { verifyIsAdmin, getAuthenticatedUser } from '@/lib/serverAuth';
+import { verifyIsAdmin, getAuthenticatedUser, getScopedSupabaseClient } from '@/lib/serverAuth';
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
-const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || supabaseAnonKey;
-const supabase = createClient(supabaseUrl, supabaseKey);
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 
 // GET: List all products from Supabase (Public)
-export async function GET() {
+export async function GET(request: Request) {
   try {
+    const supabase = getScopedSupabaseClient(request);
     const { data, error } = await supabase
       .from('products')
       .select('*')
@@ -91,6 +89,7 @@ export async function DELETE(request: Request) {
     }
 
     const cleanId = String(id).trim();
+    const supabase = getScopedSupabaseClient(request);
 
     const { data, error } = await supabase
       .from('products')
@@ -147,6 +146,8 @@ export async function POST(request: Request) {
     const productPayload = { ...body };
     delete productPayload.requesterEmail;
 
+    const supabase = getScopedSupabaseClient(request);
+
     let { data, error } = await supabase
       .from('products')
       .insert([productPayload])
@@ -200,6 +201,7 @@ export async function PUT(request: Request) {
     }
 
     const cleanId = String(id).trim();
+    const supabase = getScopedSupabaseClient(request);
 
     let { data, error } = await supabase
       .from('products')
