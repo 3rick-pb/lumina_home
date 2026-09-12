@@ -1,17 +1,23 @@
 -- ==============================================================================
--- LUMINA HOME — SCRIPT MAESTRO DE SANEAMIENTO Y ORDEN DE BASE DE DATOS
+-- LUMINA HOME — SCRIPT MAESTRO DE SANEAMIENTO Y ORDEN DE BASE DE DATOS (CORREGIDO)
 -- Ejecutar en: Supabase Dashboard > SQL Editor > New query > Run
 -- ==============================================================================
 
 -- ╔══════════════════════════════════════════════════════════════════════════════╗
--- ║  FASE 1: CORRECCIÓN DE TIPOS DE COLUMNAS (UUID vs TEXT/SLUGS)              ║
+-- ║  FASE 1: DESVINCULAR CONSTRAINTS PREVIAS Y CORREGIR TIPOS DE COLUMNAS       ║
 -- ╚══════════════════════════════════════════════════════════════════════════════╝
 
--- 1. TABLA FAVORITES: product_id debe ser TEXT para admitir slugs ('lumina-aura-glow')
+-- 1. Eliminar restricciones de clave foránea que impedían cambiar los tipos de datos
+ALTER TABLE public.favorites DROP CONSTRAINT IF EXISTS favorites_product_id_fkey;
+ALTER TABLE public.favorites DROP CONSTRAINT IF EXISTS favorites_user_id_fkey;
+ALTER TABLE public.addresses DROP CONSTRAINT IF EXISTS addresses_user_id_fkey;
+ALTER TABLE public.payment_cards DROP CONSTRAINT IF EXISTS payment_cards_user_id_fkey;
+
+-- 2. TABLA FAVORITES: permitir tanto slugs de texto como UUIDs
 ALTER TABLE public.favorites ALTER COLUMN product_id TYPE text;
 ALTER TABLE public.favorites ALTER COLUMN user_id TYPE text;
 
--- 2. TABLA ADDRESSES: id y user_id deben admitir TEXT para máxima compatibilidad
+-- 3. TABLA ADDRESSES: id y user_id deben admitir texto
 ALTER TABLE public.addresses ALTER COLUMN id TYPE text;
 ALTER TABLE public.addresses ALTER COLUMN user_id TYPE text;
 
@@ -27,7 +33,7 @@ ALTER TABLE public.addresses ADD COLUMN IF NOT EXISTS postal_code text;
 ALTER TABLE public.addresses ADD COLUMN IF NOT EXISTS country text DEFAULT 'Ecuador';
 ALTER TABLE public.addresses ADD COLUMN IF NOT EXISTS is_default boolean DEFAULT false;
 
--- 3. TABLA PAYMENT_CARDS: id y user_id deben admitir TEXT
+-- 4. TABLA PAYMENT_CARDS: id y user_id deben admitir texto
 ALTER TABLE public.payment_cards ALTER COLUMN id TYPE text;
 ALTER TABLE public.payment_cards ALTER COLUMN user_id TYPE text;
 
@@ -38,7 +44,7 @@ ALTER TABLE public.payment_cards ADD COLUMN IF NOT EXISTS exp text;
 ALTER TABLE public.payment_cards ADD COLUMN IF NOT EXISTS type text DEFAULT 'mastercard';
 ALTER TABLE public.payment_cards ADD COLUMN IF NOT EXISTS is_default boolean DEFAULT false;
 
--- 4. TABLA ORDERS: asegurar columnas completas
+-- 5. TABLA ORDERS: asegurar columnas completas
 ALTER TABLE public.orders ADD COLUMN IF NOT EXISTS customer_id_number text;
 ALTER TABLE public.orders ADD COLUMN IF NOT EXISTS customer_phone text;
 ALTER TABLE public.orders ADD COLUMN IF NOT EXISTS customer_name text;
@@ -52,7 +58,7 @@ ALTER TABLE public.orders ADD COLUMN IF NOT EXISTS total numeric DEFAULT 0;
 ALTER TABLE public.orders ADD COLUMN IF NOT EXISTS status text DEFAULT 'Procesando';
 
 -- ╔══════════════════════════════════════════════════════════════════════════════╗
--- ║  FASE 2: POLÍTICAS DE SEGURIDAD RLS FLEXIBLES Y RESILIENTES                ║
+-- ║  FASE 2: POLÍTICAS DE SEGURIDAD RLS RESILIENTES (Lectura y Escritura)       ║
 -- ╚══════════════════════════════════════════════════════════════════════════════╝
 
 -- 1. ADDRESSES
@@ -119,7 +125,7 @@ DROP POLICY IF EXISTS "Public admin invitations policy" ON public.admin_invitati
 CREATE POLICY "Public admin invitations policy" ON public.admin_invitations
     FOR ALL USING (true) WITH CHECK (true);
 
--- 6. ACTIVE_SESSIONS (Asegurar que DELETE sea público para permitir limpiezas del radar)
+-- 6. ACTIVE_SESSIONS (Permitir DELETE para que el sistema mantenga limpia la tabla)
 ALTER TABLE public.active_sessions ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "Public active_sessions policy" ON public.active_sessions;
 DROP POLICY IF EXISTS "Anyone can read sessions" ON public.active_sessions;
@@ -155,7 +161,7 @@ WHERE user_id LIKE 'SYS_%'
    OR user_id LIKE 'TEST_%';
 
 -- ╔══════════════════════════════════════════════════════════════════════════════╗
--- ║  FASE 5: RECARGA DE CACHÉ DE ESQUEMA                                       ║
+-- ║  FASE 5: RECARGA DE CACHÉ DE ESQUEMA EN SUPABASE POSTGREST                 ║
 -- ╚══════════════════════════════════════════════════════════════════════════════╝
 
 NOTIFY pgrst, 'reload schema';
