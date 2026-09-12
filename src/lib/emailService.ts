@@ -618,3 +618,100 @@ export async function sendOrderEmails({
     return { success: false, customerSent: false, adminsSent: false };
   }
 }
+
+/**
+ * Tests an SMTP connection and sends a test email
+ */
+export async function verifyAndSendTestEmail({
+  host,
+  port,
+  secure,
+  user,
+  pass,
+  from,
+  recipientEmail,
+}: {
+  host?: string;
+  port?: number;
+  secure?: boolean;
+  user?: string;
+  pass?: string;
+  from?: string;
+  recipientEmail: string;
+}): Promise<{ success: boolean; message: string }> {
+  try {
+    const finalHost = host || process.env.SMTP_HOST;
+    const finalUser = user || process.env.SMTP_USER;
+    const finalPass = pass || process.env.SMTP_PASS;
+    const finalPort = Number(port || process.env.SMTP_PORT) || 587;
+    const finalSecure = secure !== undefined ? secure : (process.env.SMTP_SECURE === 'true' || finalPort === 465);
+    const finalFrom = from || process.env.SMTP_FROM || `Lumina Home <${finalUser || 'ventas@lumina.com'}>`;
+
+    if (!finalHost || !finalUser || !finalPass) {
+      return {
+        success: false,
+        message: 'Faltan variables SMTP requeridas (SMTP_HOST, SMTP_USER o SMTP_PASS). Configúralas en Vercel para activar el envío real.',
+      };
+    }
+
+    const transporter = nodemailer.createTransport({
+      host: finalHost,
+      port: finalPort,
+      secure: finalSecure,
+      auth: {
+        user: finalUser,
+        pass: finalPass,
+      },
+    });
+
+    // 1. Verify handshake
+    await transporter.verify();
+
+    // 2. Send test email
+    const now = new Date().toLocaleString('es-ES', { dateStyle: 'full', timeStyle: 'medium' });
+    await transporter.sendMail({
+      from: finalFrom,
+      to: recipientEmail,
+      subject: '✅ Conexión SMTP Exitosa - Lumina Home',
+      html: `
+        <div style="font-family:-apple-system,BlinkMacSystemFont,sans-serif;max-width:580px;margin:0 auto;padding:32px;background:#ffffff;border:1px solid #e2e8f0;border-radius:20px;">
+          <div style="background:#0f172a;padding:24px;border-radius:14px;color:#ffffff;margin-bottom:24px;">
+            <div style="font-size:20px;font-weight:800;letter-spacing:1px;text-transform:uppercase;">LUMINA <span style="color:#8c9276;font-weight:300;">HOME</span></div>
+            <div style="font-size:12px;color:#94a3b8;margin-top:4px;">Prueba de Servidor SMTP & Entorno Vercel</div>
+          </div>
+          <div style="font-size:16px;font-weight:700;color:#0f172a;margin-bottom:12px;">¡Tu servidor de correos está funcionando correctamente!</div>
+          <p style="font-size:14px;color:#475569;line-height:1.6;margin-bottom:20px;">
+            Este es un correo de prueba enviado desde el panel de administración de <strong>Lumina Home</strong> para verificar la conexión con <strong>${finalHost}</strong> mediante el usuario <strong>${finalUser}</strong>.
+          </p>
+          <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:16px;font-size:13px;color:#334155;margin-bottom:24px;">
+            <div><strong>Servidor Host:</strong> ${finalHost}</div>
+            <div style="margin-top:6px;"><strong>Puerto:</strong> ${finalPort} (${finalSecure ? 'SSL Seguro' : 'TLS/STARTTLS'})</div>
+            <div style="margin-top:6px;"><strong>Remitente:</strong> ${finalFrom}</div>
+            <div style="margin-top:6px;"><strong>Fecha de Prueba:</strong> ${now}</div>
+          </div>
+          <div style="font-size:12px;color:#64748b;text-align:center;border-top:1px solid #f1f5f9;padding-top:16px;">
+            Lumina Home · Comercio Electrónico & Mobiliario de Alta Gama
+          </div>
+        </div>
+      `,
+    });
+
+    return {
+      success: true,
+      message: `¡Conexión verificada exitosamente! Correo de prueba enviado a ${recipientEmail}.`,
+    };
+  } catch (error: unknown) {
+    const rawMsg = error instanceof Error ? error.message : String(error);
+    let friendly = rawMsg;
+    if (rawMsg.includes('535') || rawMsg.includes('BadCredentials') || rawMsg.includes('Username and Password not accepted')) {
+      friendly = 'Error de autenticación (535): Google rechazó el usuario o la contraseña. Asegúrate de usar una Contraseña de Aplicación de 16 caracteres generada en Google (no tu contraseña personal de Gmail).';
+    } else if (rawMsg.includes('ETIMEDOUT') || rawMsg.includes('ECONNREFUSED')) {
+      friendly = `Tiempo de espera agotado al conectar con el servidor SMTP (${rawMsg}). Verifica el puerto (587 o 465) y el host.`;
+    }
+    return {
+      success: false,
+      message: friendly,
+    };
+  }
+}
+

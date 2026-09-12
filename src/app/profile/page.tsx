@@ -25,8 +25,10 @@ import {
   Pencil,
   Loader2,
   Globe,
-  BellRing
+  BellRing,
+  Server
 } from "lucide-react";
+import { IntegrationsTab } from "@/components/profile/tabs/IntegrationsTab";
 import { useUserStore, Order, formatCleanName } from "@/lib/userStore";
 import { useThemeStore, getResolvedTheme } from "@/lib/themeStore";
 import { useCatalogStore, normalizeCategory, CatalogProduct, ProductCombo } from "@/lib/catalogStore";
@@ -66,7 +68,7 @@ export default function ProfilePage() {
  const { products, categories, badges, addProduct, updateProduct, deleteProduct, deleteCategory } = useCatalogStore();
  const { backgroundShape, customSeed } = useAvatarSettingsStore();
 
-  type ProfileTab = "overview" | "orders" | "cards" | "favorites" | "catalog" | "niches" | "analytics" | "cart_alerts" | "settings";
+  type ProfileTab = "overview" | "orders" | "cards" | "favorites" | "catalog" | "niches" | "analytics" | "cart_alerts" | "integrations" | "settings";
   const [activeTab, setActiveTab] = useState<ProfileTab>("overview");
   const [searchQuery, setSearchQuery] = useState("");
   const [isMounted, setIsMounted] = useState(false);
@@ -82,7 +84,7 @@ export default function ProfilePage() {
 
     try {
       const urlTab = new URLSearchParams(window.location.search).get('tab');
-      const validTabs: ProfileTab[] = ["overview", "orders", "cards", "favorites", "catalog", "niches", "analytics", "cart_alerts", "settings"];
+      const validTabs: ProfileTab[] = ["overview", "orders", "cards", "favorites", "catalog", "niches", "analytics", "cart_alerts", "integrations", "settings"];
       if (urlTab && validTabs.includes(urlTab as ProfileTab)) {
         setActiveTab(urlTab as ProfileTab);
       }
@@ -695,6 +697,20 @@ const handleConfirmDeleteNiche = async () => {
        )}
        <BellRing className="w-5 h-5 transition-transform duration-[600ms] group-hover:scale-110" />
      </button>
+        <button 
+        onClick={() => setActiveTab("integrations")} 
+        className={`sidebar-dock-btn relative w-11 h-11 md:w-12 md:h-12 rounded-2xl flex items-center justify-center transition-all duration-[600ms] cursor-pointer group ${
+          activeTab === "integrations" 
+            ? "bg-gray-950 dark:bg-white text-white dark:text-gray-950 shadow-lg shadow-gray-950/20 dark:shadow-white/15 scale-105" 
+            : "text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100/80 dark:hover:bg-white/5 hover:scale-105 active:scale-95"
+        }`}
+        title="Servidor SMTP & Pasarelas (Vercel)"
+      >
+        {activeTab === "integrations" && (
+          <span className="absolute -left-2 w-1 h-5 bg-[#8c9276] dark:bg-[#ccff00] rounded-r-full transition-all duration-[600ms]" />
+        )}
+        <Server className="w-5 h-5 transition-transform duration-[600ms] group-hover:scale-110" />
+      </button>
    </>
  )}
 
@@ -799,6 +815,12 @@ const handleConfirmDeleteNiche = async () => {
  className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all ${activeTab === "cart_alerts" ? "bg-white dark:bg-[#202022] text-gray-900 dark:text-gray-100 shadow-sm dark:shadow-none" : "text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100"}`}
  >
  Alertas de Carrito
+ </button>
+ <button 
+ onClick={() => setActiveTab("integrations")} 
+ className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all ${activeTab === "integrations" ? "bg-white dark:bg-[#202022] text-gray-900 dark:text-gray-100 shadow-sm dark:shadow-none" : "text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100"}`}
+ >
+ SMTP & Pasarelas
  </button>
  </>
  )}
@@ -1023,6 +1045,13 @@ const handleConfirmDeleteNiche = async () => {
         {/* ========================================================================= */}
         {activeTab === "cart_alerts" && isAdmin && (
           <CartAlertsTab />
+        )}
+
+        {/* ========================================================================= */}
+        {/* VIEW 8B: ADMIN INTEGRATIONS & VERCEL SMTP TAB */}
+        {/* ========================================================================= */}
+        {activeTab === "integrations" && isAdmin && (
+          <IntegrationsTab />
         )}
 
         {/* ========================================================================= */}
@@ -2148,6 +2177,17 @@ const handleConfirmDeleteNiche = async () => {
               title="Alertas"
             >
               <BellRing className="w-4 h-4" />
+            </button>
+            <button
+              onClick={() => setActiveTab("integrations")}
+              className={`relative p-2 rounded-xl flex items-center justify-center transition-all shrink-0 ${
+                activeTab === "integrations"
+                  ? "bg-gray-950 dark:bg-white text-white dark:text-gray-950 shadow-md"
+                  : "text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
+              }`}
+              title="SMTP y Pasarelas"
+            >
+              <Server className="w-4 h-4" />
             </button>
           </>
         )}
