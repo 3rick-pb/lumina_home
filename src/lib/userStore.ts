@@ -186,23 +186,19 @@ export const checkIsAdmin = async (
     }
   }
 
-  // 2. Primary cloud source of truth: active_sessions SYS_ADMIN_INVITES
+  // 2. Dedicated admin_invitations table
   try {
-    const { data: sysRow } = await supabase
-      .from('active_sessions')
-      .select('email')
-      .eq('user_id', 'SYS_ADMIN_INVITES')
+    const { data: invRow } = await supabase
+      .from('admin_invitations')
+      .select('id')
+      .ilike('email', normalized)
+      .eq('is_active', true)
       .maybeSingle();
 
-    if (sysRow?.email) {
-      try {
-        const parsed = JSON.parse(sysRow.email);
-        if (Array.isArray(parsed) && parsed.map(e => String(e).toLowerCase().trim()).includes(normalized)) {
-          const res = { role: 'ADMIN' as const, isRootAdmin: false };
-          adminCache.set(normalized, { ...res, timestamp: Date.now() });
-          return res;
-        }
-      } catch {}
+    if (invRow) {
+      const res = { role: 'ADMIN' as const, isRootAdmin: false };
+      adminCache.set(normalized, { ...res, timestamp: Date.now() });
+      return res;
     }
   } catch {}
 
@@ -409,21 +405,6 @@ export async function syncAddressesToCloud(
       })
     });
   } catch {}
-
-  // 2. Direct active_sessions cloud persistence
-  try {
-    const sysKey = `SYS_USER_ADDR_${userId}`;
-    await supabase.from('active_sessions').upsert({
-      user_id: sysKey,
-      name: 'SYS_USER_ADDR',
-      email: JSON.stringify({ addresses, activeAddress }),
-      city: activeAddress?.city || (addresses[0]?.city) || 'Quito',
-      country: activeAddress?.country || (addresses[0]?.country) || 'Ecuador',
-      current_section: 'USER_ADDRESS_STORE',
-      is_online: false,
-      last_seen: new Date().toISOString()
-    }, { onConflict: 'user_id' });
-  } catch {}
 }
 
 export async function syncCardsToCloud(userId: string | null | undefined, cards: PaymentCard[]) {
@@ -447,20 +428,6 @@ export async function syncCardsToCloud(userId: string | null | undefined, cards:
       })
     });
   } catch {}
-
-  try {
-    const sysKey = `SYS_USER_CARDS_${userId}`;
-    await supabase.from('active_sessions').upsert({
-      user_id: sysKey,
-      name: 'SYS_USER_CARDS',
-      email: JSON.stringify(cards),
-      city: 'Quito',
-      country: 'Ecuador',
-      current_section: 'USER_CARDS_STORE',
-      is_online: false,
-      last_seen: new Date().toISOString()
-    }, { onConflict: 'user_id' });
-  } catch {}
 }
 
 export async function syncFavoritesToCloud(userId: string | null | undefined, favorites: string[]) {
@@ -483,20 +450,6 @@ export async function syncFavoritesToCloud(userId: string | null | undefined, fa
         favorites
       })
     });
-  } catch {}
-
-  try {
-    const sysKey = `SYS_USER_FAVS_${userId}`;
-    await supabase.from('active_sessions').upsert({
-      user_id: sysKey,
-      name: 'SYS_USER_FAVS',
-      email: JSON.stringify(favorites),
-      city: 'Quito',
-      country: 'Ecuador',
-      current_section: 'USER_FAVORITES_STORE',
-      is_online: false,
-      last_seen: new Date().toISOString()
-    }, { onConflict: 'user_id' });
   } catch {}
 }
 
@@ -548,48 +501,62 @@ const fetchUserDataFromDatabase = async (userId: string, role: 'USER' | 'ADMIN' 
     // Direct Database fallback if API was temporarily unreachable
     if (addresses.length === 0) {
       try {
-        const { data: addrRow } = await supabase
-          .from('active_sessions')
-          .select('email')
-          .eq('user_id', `SYS_USER_ADDR_${userId}`)
-          .maybeSingle();
+        const { data: dbAddrs } = await supabase
+          .from('addresses')
+          .select('*')
+          .eq('user_id', userId)
+          .order('created_at', { ascending: false });
 
-        if (addrRow?.email) {
-          const parsed = JSON.parse(addrRow.email);
-          if (Array.isArray(parsed)) addresses = parsed;
-          else if (Array.isArray(parsed?.addresses)) addresses = parsed.addresses;
+        if (dbAddrs && dbAddrs.length > 0) {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          addresses = dbAddrs.map((a: any) => ({
+            id: a.id,
+            recipient: a.recipient || 'Destinatario',
+            idNumber: a.id_number || '',
+            phone: a.phone || '',
+            email: a.email || '',
+            street: a.street || '',
+            city: a.city || '',
+            state: a.state || '',
+            postalCode: a.postal_code || '',
+            country: a.country || 'Ecuador',
+            isDefault: !!a.is_default,
+          }));
         }
       } catch {}
     }
 
     if (cards.length === 0) {
       try {
-        const { data: cardsRow } = await supabase
-          .from('active_sessions')
-          .select('email')
-          .eq('user_id', `SYS_USER_CARDS_${userId}`)
-          .maybeSingle();
+        const { data: dbCards } = await supabase
+          .from('payment_cards')
+          .select('*')
+          .eq('user_id', userId)
+          .order('created_at', { ascending: false });
 
-        if (cardsRow?.email) {
-          const parsed = JSON.parse(cardsRow.email);
-          if (Array.isArray(parsed)) cards = parsed;
-          else if (Array.isArray(parsed?.cards)) cards = parsed.cards;
+        if (dbCards && dbCards.length > 0) {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          cards = dbCards.map((c: any) => ({
+            id: c.id,
+            number: c.number,
+            holder: c.holder,
+            exp: c.exp,
+            type: c.type,
+            isDefault: !!c.is_default,
+          }));
         }
       } catch {}
     }
 
     if (favorites.length === 0) {
       try {
-        const { data: favsRow } = await supabase
-          .from('active_sessions')
-          .select('email')
-          .eq('user_id', `SYS_USER_FAVS_${userId}`)
-          .maybeSingle();
+        const { data: dbFavs } = await supabase
+          .from('favorites')
+          .select('product_id')
+          .eq('user_id', userId);
 
-        if (favsRow?.email) {
-          const parsed = JSON.parse(favsRow.email);
-          const list = Array.isArray(parsed) ? parsed : Array.isArray(parsed?.favorites) ? parsed.favorites : [];
-          favorites = list.map((f: unknown) => String(f));
+        if (dbFavs && dbFavs.length > 0) {
+          favorites = dbFavs.map(f => String(f.product_id));
         }
       } catch {}
     }

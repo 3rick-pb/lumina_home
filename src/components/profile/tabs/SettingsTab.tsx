@@ -149,23 +149,16 @@ export function SettingsTab({
     }
 
     try {
-      const { data: sysRow } = await supabase
-        .from('active_sessions')
+      const { data: invRows } = await supabase
+        .from('admin_invitations')
         .select('email')
-        .eq('user_id', 'SYS_ADMIN_INVITES')
-        .maybeSingle();
+        .eq('is_active', true);
 
-      if (sysRow?.email) {
-        try {
-          const parsed = JSON.parse(sysRow.email);
-          if (Array.isArray(parsed)) {
-            const filtered = parsed
-              .map((e: string) => String(e).toLowerCase().trim())
-              .filter((e: string) => Boolean(e) && e !== 'admin@lumina.com');
-            setInvitedAdmins(filtered);
-            return;
-          }
-        } catch {}
+      if (invRows && Array.isArray(invRows)) {
+        const filtered = invRows
+          .map((r: { email?: string }) => String(r.email || '').toLowerCase().trim())
+          .filter((e: string) => Boolean(e) && e !== 'admin@lumina.com');
+        setInvitedAdmins(filtered);
       }
     } catch {}
   };

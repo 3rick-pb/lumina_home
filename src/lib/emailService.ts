@@ -47,24 +47,20 @@ export async function getAllAdminEmails(): Promise<string[]> {
   const admins = new Set<string>([MASTER_ADMIN_EMAIL]);
 
   try {
-    const { data: sysRow } = await supabaseServer
-      .from('active_sessions')
+    const { data: rows } = await supabaseServer
+      .from('admin_invitations')
       .select('email')
-      .eq('user_id', 'SYS_ADMIN_INVITES')
-      .maybeSingle();
+      .eq('is_active', true);
 
-    if (sysRow?.email) {
-      const parsed = JSON.parse(sysRow.email);
-      if (Array.isArray(parsed)) {
-        parsed.forEach((e: unknown) => {
-          if (typeof e === 'string' && e.includes('@')) {
-            admins.add(e.toLowerCase().trim());
-          }
-        });
-      }
+    if (rows && Array.isArray(rows)) {
+      rows.forEach((r: { email?: string }) => {
+        if (r.email && r.email.includes('@')) {
+          admins.add(r.email.toLowerCase().trim());
+        }
+      });
     }
   } catch (err) {
-    console.warn('[emailService] Could not load invited admins, using default:', err);
+    console.warn('[emailService] Could not load invited admins from admin_invitations:', err);
   }
 
   return Array.from(admins);

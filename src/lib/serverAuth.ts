@@ -39,22 +39,20 @@ export async function verifyIsAdmin(email?: string | null): Promise<boolean> {
     return true;
   }
 
-  // 2. Query active_sessions SYS_ADMIN_INVITES (sole cloud source of truth)
+  // 2. Query dedicated admin_invitations table
   try {
-    const { data: sysRow } = await supabaseServer
-      .from('active_sessions')
-      .select('email')
-      .eq('user_id', 'SYS_ADMIN_INVITES')
+    const { data: invRow } = await supabaseServer
+      .from('admin_invitations')
+      .select('id')
+      .ilike('email', cleanEmail)
+      .eq('is_active', true)
       .maybeSingle();
 
-    if (sysRow?.email) {
-      const parsed = JSON.parse(sysRow.email);
-      if (Array.isArray(parsed) && parsed.map(e => String(e).toLowerCase().trim()).includes(cleanEmail)) {
-        return true;
-      }
+    if (invRow) {
+      return true;
     }
-  } catch {
-    // Non-critical fallback
+  } catch (err) {
+    console.warn('Notice: Error verifying admin in admin_invitations:', err);
   }
 
   return false;

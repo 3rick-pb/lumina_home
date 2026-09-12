@@ -15,40 +15,32 @@ const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || supabaseAnon
 const baseSupabase = createClient(supabaseUrl, supabaseServiceKey);
 
 /**
- * Loads the current list of invited secondary admins from the cloud source of truth:
- * active_sessions row with user_id = 'SYS_ADMIN_INVITES'
+ * Loads the current list of invited secondary admins from the dedicated admin_invitations table
  */
 async function loadInvitedAdmins(): Promise<string[]> {
   try {
-    const { data: sysRow, error: sysErr } = await baseSupabase
-      .from('active_sessions')
+    const { data, error } = await baseSupabase
+      .from('admin_invitations')
       .select('email')
-      .eq('user_id', SYS_SESSION_ID)
-      .maybeSingle();
+      .eq('is_active', true);
 
-    if (!sysErr && sysRow?.email) {
-      try {
-        const parsed = JSON.parse(sysRow.email);
-        if (Array.isArray(parsed)) {
-          const clean = parsed
-            .map((e) => String(e || '').toLowerCase().trim())
-            .filter(Boolean)
-            .filter((e) => e !== MASTER_ADMIN_EMAIL);
+    if (!error && Array.isArray(data)) {
+      const clean = data
+        .map((r) => String(r.email || '').toLowerCase().trim())
+        .filter(Boolean)
+        .filter((e) => e !== MASTER_ADMIN_EMAIL);
 
-          return Array.from(new Set(clean)).slice(0, MAX_INVITED_ADMINS);
-        }
-      } catch {}
+      return Array.from(new Set(clean)).slice(0, MAX_INVITED_ADMINS);
     }
   } catch (err) {
-    console.warn('Notice: Failed reading active_sessions for admin invites:', err);
+    console.warn('Notice: Failed reading admin_invitations table:', err);
   }
 
   return [];
 }
 
 /**
- * Persists the list of secondary invited admins in active_sessions (SYS_ADMIN_INVITES).
- * Guarantees permanent updates and deletes across refreshes.
+ * Persists the list of secondary invited admins directly in public.admin_invitations.
  */
 async function persistInvitedAdmins(emails: string[]): Promise<string[]> {
   const cleanEmails = Array.from(
@@ -61,16 +53,41 @@ async function persistInvitedAdmins(emails: string[]): Promise<string[]> {
   ).slice(0, MAX_INVITED_ADMINS);
 
   try {
-    await baseSupabase.from('active_sessions').upsert({
-      user_id: SYS_SESSION_ID,
-      name: 'SYS_CONFIG',
-      email: JSON.stringify(cleanEmails),
-      current_section: 'SYSTEM_CONFIG',
-      is_online: false,
-      last_seen: new Date().toISOString(),
-    }, { onConflict: 'user_id' });
+    // 1. Remove from admin_invitations any non-master admin that is no longer in the list
+    const { data: currentRows } = await baseSupabase
+      .from('admin_invitations')
+      .select('email')
+      .neq('email', MASTER_ADMIN_EMAIL);
+
+    if (currentRows && Array.isArray(currentRows)) {
+      for (const row of currentRows) {
+        if (!cleanEmails.includes(row.email.toLowerCase())) {
+          await baseSupabase
+            .from('admin_invitations')
+            .delete()
+            .eq('email', row.email);
+        }
+      }
+    }
+
+    // 2. Insert or ensure active all current cleanEmails
+    for (const email of cleanEmails) {
+      await baseSupabase
+        .from('admin_invitations')
+        .upsert({
+          email,
+          invited_by: null,
+          is_active: true
+        }, { onConflict: 'email' });
+    }
+
+    // 3. Proactively purge the legacy SYS_ADMIN_INVITES row from active_sessions
+    await baseSupabase
+      .from('active_sessions')
+      .delete()
+      .eq('user_id', SYS_SESSION_ID);
   } catch (sysErr) {
-    console.error('Error saving to active_sessions cloud store:', sysErr);
+    console.error('Error saving to admin_invitations table:', sysErr);
   }
 
   return cleanEmails;

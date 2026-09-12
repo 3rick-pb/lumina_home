@@ -36,15 +36,15 @@ function resolveTargetUserId(authUser: { id: string; email?: string } | null, qu
 
 /**
  * GET /api/user/data
- * Retrieves addresses, cards, and favorites directly from the Database (Supabase)
+ * Retrieves addresses, cards, and favorites directly from their dedicated tables in Supabase
  */
 export async function GET(request: Request) {
   try {
     const authUser = await getAuthenticatedUser(request);
     const { searchParams } = new URL(request.url);
     const queryUserId = searchParams.get('userId');
-
     const targetUserId = resolveTargetUserId(authUser, queryUserId);
+
     if (!targetUserId) {
       return NextResponse.json({
         success: false,
@@ -61,128 +61,73 @@ export async function GET(request: Request) {
     let favorites: string[] = [];
     let defaultAddress: ShippingAddress | null = null;
 
-    // 1. Fetch addresses from Database (active_sessions cloud store + addresses native table)
+    // 1. Fetch addresses from public.addresses
     try {
-      const { data: addrRow } = await supabaseServer
-        .from('active_sessions')
-        .select('email')
-        .eq('user_id', `SYS_USER_ADDR_${targetUserId}`)
-        .maybeSingle();
+      const { data: dbAddrs, error: addrErr } = await supabaseServer
+        .from('addresses')
+        .select('*')
+        .eq('user_id', targetUserId)
+        .order('created_at', { ascending: false });
 
-      if (addrRow?.email) {
-        try {
-          const parsed = JSON.parse(addrRow.email);
-          if (Array.isArray(parsed)) {
-            addresses = parsed;
-          } else if (parsed && typeof parsed === 'object') {
-            if (Array.isArray(parsed.addresses)) addresses = parsed.addresses;
-            if (parsed.activeAddress) defaultAddress = parsed.activeAddress;
-          }
-        } catch {}
+      if (!addrErr && dbAddrs && dbAddrs.length > 0) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        addresses = dbAddrs.map((a: any) => ({
+          id: a.id,
+          recipient: a.recipient || 'Destinatario',
+          idNumber: a.id_number || '',
+          phone: a.phone || '',
+          email: a.email || '',
+          street: a.street || '',
+          city: a.city || '',
+          state: a.state || '',
+          postalCode: a.postal_code || '',
+          country: a.country || 'Ecuador',
+          isDefault: !!a.is_default,
+        }));
       }
-    } catch {}
-
-    // Check native addresses table if active_sessions had no addresses
-    if (addresses.length === 0 && UUID_REGEX.test(targetUserId)) {
-      try {
-        const { data: dbAddrs } = await supabaseServer
-          .from('addresses')
-          .select('*')
-          .eq('user_id', targetUserId)
-          .order('created_at', { ascending: false });
-
-        if (dbAddrs && dbAddrs.length > 0) {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          addresses = dbAddrs.map((a: any) => ({
-            id: a.id,
-            recipient: a.recipient || 'Destinatario',
-            idNumber: a.id_number || '',
-            phone: a.phone || '',
-            email: a.email || '',
-            street: a.street || '',
-            city: a.city || '',
-            state: a.state || '',
-            postalCode: a.postal_code || '',
-            country: a.country || 'Ecuador',
-            isDefault: !!a.is_default,
-          }));
-        }
-      } catch {}
+    } catch (err) {
+      console.warn('Notice: Error reading addresses table:', err);
     }
 
-    // 2. Fetch cards from Database (active_sessions cloud store + payment_cards native table)
+    // 2. Fetch cards from public.payment_cards
     try {
-      const { data: cardsRow } = await supabaseServer
-        .from('active_sessions')
-        .select('email')
-        .eq('user_id', `SYS_USER_CARDS_${targetUserId}`)
-        .maybeSingle();
+      const { data: dbCards, error: cardErr } = await supabaseServer
+        .from('payment_cards')
+        .select('*')
+        .eq('user_id', targetUserId)
+        .order('created_at', { ascending: false });
 
-      if (cardsRow?.email) {
-        try {
-          const parsed = JSON.parse(cardsRow.email);
-          if (Array.isArray(parsed)) cards = parsed;
-          else if (Array.isArray(parsed?.cards)) cards = parsed.cards;
-        } catch {}
+      if (!cardErr && dbCards && dbCards.length > 0) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        cards = dbCards.map((c: any) => ({
+          id: c.id,
+          number: c.number,
+          holder: c.holder,
+          exp: c.exp,
+          type: c.type,
+          isDefault: !!c.is_default,
+        }));
       }
-    } catch {}
-
-    if (cards.length === 0 && UUID_REGEX.test(targetUserId)) {
-      try {
-        const { data: dbCards } = await supabaseServer
-          .from('payment_cards')
-          .select('*')
-          .eq('user_id', targetUserId)
-          .order('created_at', { ascending: false });
-
-        if (dbCards && dbCards.length > 0) {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          cards = dbCards.map((c: any) => ({
-            id: c.id,
-            number: c.number,
-            holder: c.holder,
-            exp: c.exp,
-            type: c.type,
-            isDefault: !!c.is_default,
-          }));
-        }
-      } catch {}
+    } catch (err) {
+      console.warn('Notice: Error reading payment_cards table:', err);
     }
 
-    // 3. Fetch favorites from Database
+    // 3. Fetch favorites from public.favorites
     try {
-      const { data: favsRow } = await supabaseServer
-        .from('active_sessions')
-        .select('email')
-        .eq('user_id', `SYS_USER_FAVS_${targetUserId}`)
-        .maybeSingle();
+      const { data: dbFavs, error: favErr } = await supabaseServer
+        .from('favorites')
+        .select('product_id')
+        .eq('user_id', targetUserId);
 
-      if (favsRow?.email) {
-        try {
-          const parsed = JSON.parse(favsRow.email);
-          const list = Array.isArray(parsed) ? parsed : Array.isArray(parsed?.favorites) ? parsed.favorites : [];
-          favorites = list.map((id: unknown) => String(id));
-        } catch {}
+      if (!favErr && dbFavs && dbFavs.length > 0) {
+        favorites = dbFavs.map(f => String(f.product_id));
       }
-    } catch {}
-
-    if (favorites.length === 0 && UUID_REGEX.test(targetUserId)) {
-      try {
-        const { data: dbFavs } = await supabaseServer
-          .from('favorites')
-          .select('product_id')
-          .eq('user_id', targetUserId);
-
-        if (dbFavs && dbFavs.length > 0) {
-          favorites = dbFavs.map(f => String(f.product_id));
-        }
-      } catch {}
+    } catch (err) {
+      console.warn('Notice: Error reading favorites table:', err);
     }
 
     // Determine default address
-    if (!defaultAddress) {
-      defaultAddress = addresses.find(a => a.isDefault) || addresses[0] || null;
-    }
+    defaultAddress = addresses.find(a => a.isDefault) || addresses[0] || null;
 
     return NextResponse.json({
       success: true,
@@ -207,7 +152,7 @@ export async function GET(request: Request) {
 
 /**
  * POST /api/user/data
- * Mutates and stores addresses, cards, or favorites directly into the Database
+ * Mutates and stores addresses, cards, or favorites directly into dedicated tables
  */
 export async function POST(request: Request) {
   try {
@@ -221,121 +166,91 @@ export async function POST(request: Request) {
 
     const action = body.action || 'sync_all';
 
-    // 1. Action: Save addresses
+    // 1. Action: Save addresses exclusively to public.addresses
     if (action === 'save_addresses' || action === 'sync_all') {
       if (Array.isArray(body.addresses)) {
         const addresses: ShippingAddress[] = body.addresses;
-        const activeAddress: ShippingAddress | null = body.activeAddress || addresses.find(a => a.isDefault) || addresses[0] || null;
-
-        // Persist to active_sessions cloud store
-        await supabaseServer.from('active_sessions').upsert({
-          user_id: `SYS_USER_ADDR_${targetUserId}`,
-          name: 'SYS_USER_ADDR',
-          email: JSON.stringify({ addresses, activeAddress }),
-          city: activeAddress?.city || addresses[0]?.city || 'Quito',
-          country: activeAddress?.country || addresses[0]?.country || 'Ecuador',
-          current_section: 'USER_ADDRESS_STORE',
-          is_online: false,
-          last_seen: new Date().toISOString()
-        }, { onConflict: 'user_id' });
-
-        // Native table sync if UUID
-        if (UUID_REGEX.test(targetUserId)) {
-          try {
-            await supabaseServer.from('addresses').delete().eq('user_id', targetUserId);
-            if (addresses.length > 0) {
-              const rows = addresses.map(a => ({
-                id: a.id,
-                user_id: targetUserId,
-                recipient: a.recipient || 'Destinatario',
-                id_number: a.idNumber || null,
-                phone: a.phone || null,
-                email: a.email || null,
-                street: a.street || '',
-                city: a.city || '',
-                state: a.state || '',
-                postal_code: a.postalCode || '',
-                country: a.country || 'Ecuador',
-                is_default: !!a.isDefault,
-              }));
-              await supabaseServer.from('addresses').insert(rows);
-            }
-          } catch {}
+        try {
+          await supabaseServer.from('addresses').delete().eq('user_id', targetUserId);
+          if (addresses.length > 0) {
+            const rows = addresses.map(a => ({
+              id: a.id,
+              user_id: targetUserId,
+              recipient: a.recipient || 'Destinatario',
+              id_number: a.idNumber || null,
+              phone: a.phone || null,
+              email: a.email || null,
+              street: a.street || '',
+              city: a.city || '',
+              state: a.state || '',
+              postal_code: a.postalCode || '',
+              country: a.country || 'Ecuador',
+              is_default: !!a.isDefault,
+            }));
+            const { error: insErr } = await supabaseServer.from('addresses').insert(rows);
+            if (insErr) console.warn('Warning inserting addresses:', insErr.message);
+          }
+        } catch (err) {
+          console.error('Error saving to addresses table:', err);
         }
       }
     }
 
-    // 2. Action: Save cards
+    // 2. Action: Save cards exclusively to public.payment_cards
     if (action === 'save_cards' || action === 'sync_all') {
       if (Array.isArray(body.cards)) {
         const cards: PaymentCard[] = body.cards;
-
-        await supabaseServer.from('active_sessions').upsert({
-          user_id: `SYS_USER_CARDS_${targetUserId}`,
-          name: 'SYS_USER_CARDS',
-          email: JSON.stringify(cards),
-          city: 'Quito',
-          country: 'Ecuador',
-          current_section: 'USER_CARDS_STORE',
-          is_online: false,
-          last_seen: new Date().toISOString()
-        }, { onConflict: 'user_id' });
-
-        if (UUID_REGEX.test(targetUserId)) {
-          try {
-            await supabaseServer.from('payment_cards').delete().eq('user_id', targetUserId);
-            if (cards.length > 0) {
-              const rows = cards.map(c => ({
-                id: c.id,
-                user_id: targetUserId,
-                number: c.number,
-                holder: c.holder,
-                exp: c.exp,
-                type: c.type,
-                is_default: !!c.isDefault,
-              }));
-              await supabaseServer.from('payment_cards').insert(rows);
-            }
-          } catch {}
+        try {
+          await supabaseServer.from('payment_cards').delete().eq('user_id', targetUserId);
+          if (cards.length > 0) {
+            const rows = cards.map(c => ({
+              id: c.id,
+              user_id: targetUserId,
+              number: c.number,
+              holder: c.holder,
+              exp: c.exp,
+              type: c.type || 'mastercard',
+              is_default: !!c.isDefault,
+            }));
+            const { error: insErr } = await supabaseServer.from('payment_cards').insert(rows);
+            if (insErr) console.warn('Warning inserting payment_cards:', insErr.message);
+          }
+        } catch (err) {
+          console.error('Error saving to payment_cards table:', err);
         }
       }
     }
 
-    // 3. Action: Save favorites
+    // 3. Action: Save favorites exclusively to public.favorites
     if (action === 'save_favorites' || action === 'sync_all') {
       if (Array.isArray(body.favorites)) {
-        const favorites: string[] = body.favorites.map((f: unknown) => String(f));
-
-        await supabaseServer.from('active_sessions').upsert({
-          user_id: `SYS_USER_FAVS_${targetUserId}`,
-          name: 'SYS_USER_FAVS',
-          email: JSON.stringify(favorites),
-          city: 'Quito',
-          country: 'Ecuador',
-          current_section: 'USER_FAVORITES_STORE',
-          is_online: false,
-          last_seen: new Date().toISOString()
-        }, { onConflict: 'user_id' });
-
-        if (UUID_REGEX.test(targetUserId)) {
-          try {
-            await supabaseServer.from('favorites').delete().eq('user_id', targetUserId);
-            const validUuids = favorites.filter(f => UUID_REGEX.test(f));
-            if (validUuids.length > 0) {
-              const rows = validUuids.map(pid => ({
-                user_id: targetUserId,
-                product_id: pid,
-              }));
-              await supabaseServer.from('favorites').insert(rows);
-            }
-          } catch {}
+        const favorites: string[] = body.favorites.map((f: unknown) => String(f).trim()).filter(Boolean);
+        try {
+          await supabaseServer.from('favorites').delete().eq('user_id', targetUserId);
+          if (favorites.length > 0) {
+            const rows = favorites.map(pid => ({
+              user_id: targetUserId,
+              product_id: pid,
+            }));
+            const { error: insErr } = await supabaseServer.from('favorites').insert(rows);
+            if (insErr) console.warn('Warning inserting favorites:', insErr.message);
+          }
+        } catch (err) {
+          console.error('Error saving to favorites table:', err);
         }
       }
     }
+
+    // Opportunistic cleanup: remove any old parasite SYS_ rows for this user in active_sessions
+    try {
+      await supabaseServer.from('active_sessions').delete().eq('user_id', `SYS_USER_ADDR_${targetUserId}`);
+      await supabaseServer.from('active_sessions').delete().eq('user_id', `SYS_USER_CARDS_${targetUserId}`);
+      await supabaseServer.from('active_sessions').delete().eq('user_id', `SYS_USER_FAVS_${targetUserId}`);
+    } catch {}
 
     return NextResponse.json({
       success: true,
-      message: 'User data successfully synchronized to database',
+      message: 'User data successfully synchronized to dedicated tables',
       action,
     });
   } catch (error) {
