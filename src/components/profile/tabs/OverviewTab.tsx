@@ -666,7 +666,7 @@ export function OverviewTab({
                       <button 
                         onClick={(e) => { e.stopPropagation(); setSelectedOrder(ord); }} 
                         className="p-1.5 rounded-lg text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-[#3a3a3c] transition-colors"
-                        title="Ver detalles"
+                        title="Detalle"
                       >
                         <Eye className="w-4 h-4" />
                       </button>

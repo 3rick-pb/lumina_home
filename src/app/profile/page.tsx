@@ -522,7 +522,8 @@ const handleConfirmDeleteNiche = async () => {
  }
  .lumina-order-modal-scroll::-webkit-scrollbar-track {
  background: transparent;
- margin: 16px 0;
+ margin: 38px 0;
+ border-radius: 9999px;
  }
  .lumina-order-modal-scroll::-webkit-scrollbar-thumb {
  background: rgba(140, 146, 118, 0.4);

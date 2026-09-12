@@ -104,8 +104,41 @@ export function OrderDetailModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-fade-in">
-      <div className="bg-white dark:bg-[#202022] rounded-[2.5rem] w-full max-w-xl shadow-2xl dark:shadow-[0_20px_60px_rgba(0,0,0,0.5)] p-6 md:p-8 relative max-h-[90vh] overflow-y-auto lumina-order-modal-scroll border border-gray-100 dark:border-white/10">
-        <div className="flex items-center justify-between pb-4 border-b border-gray-100 dark:border-white/5">
+      <div className="bg-white dark:bg-[#202022] rounded-[2.5rem] w-full max-w-xl shadow-2xl dark:shadow-[0_20px_60px_rgba(0,0,0,0.5)] border border-gray-100 dark:border-white/10 overflow-hidden relative max-h-[90vh] flex flex-col">
+        <style>{`
+          .lumina-order-modal-scroll::-webkit-scrollbar {
+            width: 6px;
+          }
+          .lumina-order-modal-scroll::-webkit-scrollbar-track {
+            background: transparent;
+            margin-top: 38px;
+            margin-bottom: 38px;
+            border-radius: 9999px;
+          }
+          .lumina-order-modal-scroll::-webkit-scrollbar-thumb {
+            background: rgba(140, 146, 118, 0.4);
+            border-radius: 9999px;
+            transition: background 0.3s ease;
+          }
+          .lumina-order-modal-scroll::-webkit-scrollbar-thumb:hover {
+            background: rgba(140, 146, 118, 0.85);
+          }
+          .dark .lumina-order-modal-scroll::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.22);
+          }
+          .dark .lumina-order-modal-scroll::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 255, 255, 0.45);
+          }
+          .lumina-order-modal-scroll {
+            scrollbar-width: thin;
+            scrollbar-color: rgba(140, 146, 118, 0.4) transparent;
+          }
+          .dark .lumina-order-modal-scroll {
+            scrollbar-color: rgba(255, 255, 255, 0.22) transparent;
+          }
+        `}</style>
+        <div className="w-full overflow-y-auto lumina-order-modal-scroll p-6 md:p-8 flex-1">
+          <div className="flex items-center justify-between pb-4 border-b border-gray-100 dark:border-white/5">
           <div>
             <span className="text-[10px] font-bold uppercase tracking-wider text-[#8c9276]">Detalle de Envío</span>
             <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100 font-mono">{order.id}</h3>
@@ -162,9 +195,17 @@ export function OrderDetailModal({
                 <p className="text-[11px] text-gray-500 dark:text-gray-400 truncate">{order.customerEmail || "cliente@lumina.com"}</p>
               </div>
             </div>
-            <div className="mt-2 pt-2 border-t border-gray-200/60 dark:border-white/10/60 text-[11px] text-gray-600 dark:text-gray-400 flex items-center justify-between">
-              <span className="text-[10px] text-gray-400">Fecha y Hora:</span>
-              <span className="font-semibold text-gray-800 dark:text-gray-200">{order.date} {order.time ? `• ${order.time}` : ""}</span>
+            <div className="mt-2 pt-2 border-t border-gray-200/60 dark:border-white/10/60 text-[11px] text-gray-600 dark:text-gray-400 space-y-1">
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] text-gray-400">Fecha:</span>
+                <span className="font-semibold text-gray-800 dark:text-gray-200">{order.date}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] text-gray-400">Hora:</span>
+                <span className="font-semibold text-gray-800 dark:text-gray-200">
+                  {order.time || (order.createdAt ? new Date(order.createdAt).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }) : "12:00")}
+                </span>
+              </div>
             </div>
           </div>
 
@@ -355,6 +396,7 @@ export function OrderDetailModal({
             </select>
           </div>
         )}
+        </div>
       </div>
     </div>
   );

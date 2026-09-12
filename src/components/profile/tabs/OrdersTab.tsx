@@ -177,7 +177,7 @@ export function OrdersTab({
                         onClick={() => setSelectedOrder(ord)} 
                         className="px-3 py-1.5 bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 rounded-xl text-xs font-medium hover:bg-gray-800 transition-colors flex items-center gap-1"
                       >
-                        <Eye className="w-3.5 h-3.5" /> Ver Detalle
+                        <Eye className="w-3.5 h-3.5" /> Detalle
                       </button>
                     </div>
                   </td>
