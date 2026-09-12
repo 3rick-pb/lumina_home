@@ -516,37 +516,16 @@ const handleConfirmDeleteNiche = async () => {
  transition-duration: 600ms !important;
  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1) !important;
  }
- /* Custom sleek scrollbar for order details modal */
- .lumina-order-modal-scroll::-webkit-scrollbar {
- width: 6px;
- }
- .lumina-order-modal-scroll::-webkit-scrollbar-track {
- background: transparent;
- margin: 38px 0;
- border-radius: 9999px;
- }
- .lumina-order-modal-scroll::-webkit-scrollbar-thumb {
- background: rgba(140, 146, 118, 0.4);
- border-radius: 9999px;
- border: 1px solid transparent;
- transition: background 0.3s ease;
- }
- .lumina-order-modal-scroll::-webkit-scrollbar-thumb:hover {
- background: rgba(140, 146, 118, 0.85);
- }
- .dark .lumina-order-modal-scroll::-webkit-scrollbar-thumb {
- background: rgba(255, 255, 255, 0.22);
- }
- .dark .lumina-order-modal-scroll::-webkit-scrollbar-thumb:hover {
- background: rgba(255, 255, 255, 0.45);
- }
- .lumina-order-modal-scroll {
- scrollbar-width: thin;
- scrollbar-color: rgba(140, 146, 118, 0.4) transparent;
- }
- .dark .lumina-order-modal-scroll {
- scrollbar-color: rgba(255, 255, 255, 0.22) transparent;
- }
+  /* Clean seamless scroll for order details modal (no native bar) */
+  .lumina-order-modal-scroll {
+    -ms-overflow-style: none !important;
+    scrollbar-width: none !important;
+  }
+  .lumina-order-modal-scroll::-webkit-scrollbar {
+    display: none !important;
+    width: 0 !important;
+    height: 0 !important;
+  }
  `}</style>
   <div className="theme-transition min-h-screen w-full max-w-full overflow-x-hidden bg-[#f3f4f6] dark:bg-[#202022] text-gray-900 dark:text-gray-100 flex flex-col md:flex-row p-2.5 sm:p-4 md:p-6 lg:p-8 selection:bg-[#8c9276]/20">
   

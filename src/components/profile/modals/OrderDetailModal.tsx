@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import Image from "next/image";
 import { X, CheckCircle2, Mail, Send, RefreshCw, AlertCircle } from "lucide-react";
 import { Order } from "@/lib/userStore";
@@ -37,6 +37,81 @@ export function OrderDetailModal({
   const [isLoadingLogs, setIsLoadingLogs] = useState(false);
   const [isResending, setIsResending] = useState<"invoice" | "dispatch" | null>(null);
   const [feedback, setFeedback] = useState<{ success: boolean; message: string } | null>(null);
+
+  // Custom symmetrical slider (scrollbar) state and refs
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const trackRef = useRef<HTMLDivElement>(null);
+  const [scrollProgress, setScrollProgress] = useState(0);
+  const [thumbHeightPct, setThumbHeightPct] = useState(25);
+  const [hasOverflow, setHasOverflow] = useState(false);
+  const isDraggingRef = useRef(false);
+  const dragStartYRef = useRef(0);
+  const dragStartScrollTopRef = useRef(0);
+
+  const updateScrollMetrics = useCallback(() => {
+    const el = scrollContainerRef.current;
+    if (!el) return;
+    const canScroll = el.scrollHeight > el.clientHeight + 4;
+    setHasOverflow(canScroll);
+    if (canScroll) {
+      const maxScroll = el.scrollHeight - el.clientHeight;
+      const progress = Math.min(1, Math.max(0, el.scrollTop / maxScroll));
+      setScrollProgress(progress);
+      const visibleRatio = el.clientHeight / el.scrollHeight;
+      setThumbHeightPct(Math.max(15, Math.min(60, visibleRatio * 100)));
+    }
+  }, []);
+
+  useEffect(() => {
+    updateScrollMetrics();
+    const handleResize = () => updateScrollMetrics();
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, [updateScrollMetrics, order, emailLogs]);
+
+  const handleThumbMouseDown = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    isDraggingRef.current = true;
+    dragStartYRef.current = e.clientY;
+    if (scrollContainerRef.current) {
+      dragStartScrollTopRef.current = scrollContainerRef.current.scrollTop;
+    }
+
+    const onMouseMove = (moveEvent: MouseEvent) => {
+      if (!isDraggingRef.current || !scrollContainerRef.current || !trackRef.current) return;
+      const trackRect = trackRef.current.getBoundingClientRect();
+      const trackAvailable = trackRect.height * (1 - thumbHeightPct / 100);
+      if (trackAvailable <= 0) return;
+
+      const deltaY = moveEvent.clientY - dragStartYRef.current;
+      const scrollRatio = deltaY / trackAvailable;
+      const maxScroll = scrollContainerRef.current.scrollHeight - scrollContainerRef.current.clientHeight;
+      scrollContainerRef.current.scrollTop = dragStartScrollTopRef.current + scrollRatio * maxScroll;
+    };
+
+    const onMouseUp = () => {
+      isDraggingRef.current = false;
+      window.removeEventListener("mousemove", onMouseMove);
+      window.removeEventListener("mouseup", onMouseUp);
+    };
+
+    window.addEventListener("mousemove", onMouseMove);
+    window.addEventListener("mouseup", onMouseUp);
+  };
+
+  const handleTrackClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!scrollContainerRef.current || !trackRef.current) return;
+    const trackRect = trackRef.current.getBoundingClientRect();
+    const clickY = e.clientY - trackRect.top;
+    const trackH = trackRect.height;
+    const ratio = Math.min(1, Math.max(0, clickY / trackH));
+    const maxScroll = scrollContainerRef.current.scrollHeight - scrollContainerRef.current.clientHeight;
+    scrollContainerRef.current.scrollTo({
+      top: ratio * maxScroll,
+      behavior: "smooth"
+    });
+  };
 
   const fetchEmailLogs = useCallback(async () => {
     if (!order?.id) return;
@@ -106,38 +181,21 @@ export function OrderDetailModal({
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-fade-in">
       <div className="bg-white dark:bg-[#202022] rounded-[2.5rem] w-full max-w-xl shadow-2xl dark:shadow-[0_20px_60px_rgba(0,0,0,0.5)] border border-gray-100 dark:border-white/10 overflow-hidden relative max-h-[90vh] flex flex-col">
         <style>{`
-          .lumina-order-modal-scroll::-webkit-scrollbar {
-            width: 6px;
-          }
-          .lumina-order-modal-scroll::-webkit-scrollbar-track {
-            background: transparent;
-            margin-top: 38px;
-            margin-bottom: 38px;
-            border-radius: 9999px;
-          }
-          .lumina-order-modal-scroll::-webkit-scrollbar-thumb {
-            background: rgba(140, 146, 118, 0.4);
-            border-radius: 9999px;
-            transition: background 0.3s ease;
-          }
-          .lumina-order-modal-scroll::-webkit-scrollbar-thumb:hover {
-            background: rgba(140, 146, 118, 0.85);
-          }
-          .dark .lumina-order-modal-scroll::-webkit-scrollbar-thumb {
-            background: rgba(255, 255, 255, 0.22);
-          }
-          .dark .lumina-order-modal-scroll::-webkit-scrollbar-thumb:hover {
-            background: rgba(255, 255, 255, 0.45);
-          }
           .lumina-order-modal-scroll {
-            scrollbar-width: thin;
-            scrollbar-color: rgba(140, 146, 118, 0.4) transparent;
+            -ms-overflow-style: none !important;
+            scrollbar-width: none !important;
           }
-          .dark .lumina-order-modal-scroll {
-            scrollbar-color: rgba(255, 255, 255, 0.22) transparent;
+          .lumina-order-modal-scroll::-webkit-scrollbar {
+            display: none !important;
+            width: 0 !important;
+            height: 0 !important;
           }
         `}</style>
-        <div className="w-full overflow-y-auto lumina-order-modal-scroll p-6 md:p-8 flex-1">
+        <div 
+          ref={scrollContainerRef}
+          onScroll={updateScrollMetrics}
+          className="w-full overflow-y-auto lumina-order-modal-scroll p-6 md:p-8 flex-1"
+        >
           <div className="flex items-center justify-between pb-4 border-b border-gray-100 dark:border-white/5">
           <div>
             <span className="text-[10px] font-bold uppercase tracking-wider text-[#8c9276]">Detalle de Envío</span>
@@ -397,6 +455,27 @@ export function OrderDetailModal({
           </div>
         )}
         </div>
+
+        {/* Custom Symmetrical Slider / Scrollbar following modal geometry */}
+        {hasOverflow && (
+          <div className="absolute right-2 sm:right-3 top-12 bottom-12 w-2 z-30 flex items-center justify-center pointer-events-none select-none">
+            <div 
+              ref={trackRef}
+              onClick={handleTrackClick}
+              className="w-1.5 h-full rounded-full bg-gray-200/70 dark:bg-white/10 relative pointer-events-auto cursor-pointer transition-colors hover:bg-gray-300/80 dark:hover:bg-white/15"
+              title="Desplazarse"
+            >
+              <div 
+                style={{
+                  height: `${thumbHeightPct}%`,
+                  top: `${scrollProgress * (100 - thumbHeightPct)}%`,
+                }}
+                onMouseDown={handleThumbMouseDown}
+                className="absolute left-0 right-0 rounded-full bg-[#8c9276] hover:bg-[#787e63] dark:bg-[#a3a98d] dark:hover:bg-[#b8be9f] cursor-grab active:cursor-grabbing transition-colors shadow-sm"
+              />
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

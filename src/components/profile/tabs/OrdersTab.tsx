@@ -114,7 +114,7 @@ export function OrdersTab({
                 <th className="pb-3 px-3">Total</th>
                 <th className="pb-3 px-3">Estado</th>
                 <th className="pb-3 px-3">Fecha / Hora</th>
-                <th className="pb-3 px-3 text-right">Acción</th>
+                <th className="pb-3 pr-6 pl-3 text-right whitespace-nowrap">Acción</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
@@ -160,13 +160,13 @@ export function OrdersTab({
                     <span className="block font-medium text-gray-800 dark:text-gray-200">{ord.date}</span>
                     {ord.time && <span className="block text-[10px] text-gray-400">{ord.time}</span>}
                   </td>
-                  <td className="py-4 px-3 text-right">
-                    <div className="flex items-center justify-end gap-2">
+                  <td className="py-4 pr-6 pl-3 text-right whitespace-nowrap">
+                    <div className="w-full flex items-center justify-end gap-2">
                       {isAdmin && (
                         <select 
                           value={ord.status} 
                           onChange={(e) => updateOrderStatus(ord.id, e.target.value as "Procesando" | "Enviado" | "Entregado")}
-                          className="text-[11px] font-semibold bg-gray-100 dark:bg-[#3a3a3c] rounded-lg px-2.5 py-1.5 outline-none border border-gray-200 dark:border-white/10 cursor-pointer"
+                          className="text-[11px] font-semibold bg-gray-100 dark:bg-[#3a3a3c] rounded-lg px-2.5 py-1.5 outline-none border border-gray-200 dark:border-white/10 cursor-pointer shadow-sm dark:shadow-none"
                         >
                           <option value="Procesando">Procesando</option>
                           <option value="Enviado">Enviado</option>
@@ -175,7 +175,7 @@ export function OrdersTab({
                       )}
                       <button 
                         onClick={() => setSelectedOrder(ord)} 
-                        className="px-3 py-1.5 bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 rounded-xl text-xs font-medium hover:bg-gray-800 transition-colors flex items-center gap-1"
+                        className="px-3 py-1.5 bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 rounded-xl text-xs font-medium hover:bg-gray-800 transition-colors flex items-center gap-1 shrink-0"
                       >
                         <Eye className="w-3.5 h-3.5" /> Detalle
                       </button>
