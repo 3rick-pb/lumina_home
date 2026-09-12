@@ -265,24 +265,29 @@ PAYPHONE_PAYMENT_MODE="${payphoneMode}"`;
       {/* Top Header Banner */}
       <div className="bg-white/90 dark:bg-[#202022]/80 backdrop-blur-2xl p-6 md:p-8 rounded-[2.5rem] border border-white/80 dark:border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.03)] flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <div className="flex items-center gap-2.5 mb-2">
-            <span className="px-3 py-1 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 text-[11px] font-bold uppercase tracking-wider rounded-full border border-emerald-200 dark:border-emerald-800/50 flex items-center gap-1.5">
-              <ShieldCheck className="w-3.5 h-3.5" /> Capa 1: Vercel Production
+          <div className="flex items-center gap-2 mb-2">
+            <span className="font-mono text-[9px] font-bold px-2 py-0.5 rounded-md bg-orange-500/10 text-[#FF5E00] border border-orange-500/20 uppercase tracking-widest flex items-center gap-1">
+              <ShieldCheck className="w-3 h-3" /> Capa 1: Vercel Production
             </span>
-            <span className="text-[11px] text-gray-400 font-medium">Exclusivo Administradores</span>
+            <span className="font-mono text-[9px] font-bold px-2 py-0.5 rounded-md bg-gray-100 dark:bg-white/10 text-gray-500 dark:text-gray-400 border border-gray-200 dark:border-white/10 uppercase tracking-widest">
+              Exclusivo Administradores
+            </span>
           </div>
           <h2 className="text-2xl font-display font-bold text-gray-900 dark:text-gray-100 flex items-center gap-3">
-            <Server className="w-6 h-6 text-[#8c9276]" /> Servidor SMTP & Pasarelas
+            <div className="w-8 h-8 rounded-xl bg-[#FF5E00]/10 flex items-center justify-center text-[#FF5E00] font-bold">
+              <Server className="w-4.5 h-4.5" />
+            </div>
+            Servidor SMTP & Pasarelas
           </h2>
-          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 max-w-2xl">
-            Gestiona la infraestructura de notificaciones por correo de Lumina Home con las variables de entorno de Vercel.
+          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 max-w-2xl leading-relaxed">
+            Gestiona la infraestructura de notificaciones por correo de Lumina Home y las variables de entorno para Vercel en alta disponibilidad.
           </p>
         </div>
 
         <button 
           onClick={fetchSmtpStatus}
           disabled={isLoadingStatus}
-          className="self-start md:self-auto px-4 py-2 bg-gray-100 dark:bg-[#3a3a3c] hover:bg-gray-200 dark:hover:bg-[#4a4a4c] text-gray-700 dark:text-gray-200 rounded-xl text-xs font-semibold flex items-center gap-2 transition-all cursor-pointer"
+          className="self-start md:self-auto px-4 py-2 bg-gray-100 dark:bg-[#3a3a3c] hover:bg-gray-200 dark:hover:bg-[#4a4a4c] text-gray-700 dark:text-gray-200 rounded-xl text-xs font-bold flex items-center gap-2 transition-all cursor-pointer border border-gray-200/50 dark:border-white/5"
         >
           <RefreshCw className={`w-3.5 h-3.5 ${isLoadingStatus ? 'animate-spin' : ''}`} />
           Refrescar Estado
@@ -296,20 +301,31 @@ PAYPHONE_PAYMENT_MODE="${payphoneMode}"`;
 
           {/* Module 1: Live Status in Vercel */}
           <div className="bg-white/90 dark:bg-[#202022]/80 backdrop-blur-2xl p-6 md:p-8 rounded-[2.5rem] border border-white/80 dark:border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.03)] space-y-5">
-            <div className="flex items-center justify-between">
-              <h3 className="text-base font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
-                <Mail className="w-4 h-4 text-[#8c9276]" />
-                Estado del Servidor en Vercel
-              </h3>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-gray-100 dark:border-white/5">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-xl bg-[#FF5E00]/10 flex items-center justify-center text-[#FF5E00] font-bold">
+                  <Mail className="w-4 h-4" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="font-mono text-[9px] font-bold px-2 py-0.5 rounded-md bg-orange-500/10 text-[#FF5E00] border border-orange-500/20 uppercase tracking-widest">
+                      Infraestructura SMTP
+                    </span>
+                  </div>
+                  <h3 className="text-base font-bold text-gray-900 dark:text-gray-100 mt-1">
+                    Estado del Servidor en Vercel
+                  </h3>
+                </div>
+              </div>
               {isLoadingStatus ? (
-                <div className="w-4 h-4 border-2 border-[#8c9276] border-t-transparent rounded-full animate-spin" />
+                <div className="w-4 h-4 border-2 border-[#FF5E00] border-t-transparent rounded-full animate-spin self-start sm:self-auto" />
               ) : smtpStatus?.isConfigured ? (
-                <span className="px-3 py-1 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 rounded-full text-xs font-bold flex items-center gap-1.5 shadow-sm">
+                <span className="px-3 py-1 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 rounded-lg text-xs font-bold flex items-center gap-1.5 shadow-sm font-mono self-start sm:self-auto">
                   <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
                   Conectado en Vercel
                 </span>
               ) : (
-                <span className="px-3 py-1 bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/30 rounded-full text-xs font-bold flex items-center gap-1.5">
+                <span className="px-3 py-1 bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/30 rounded-lg text-xs font-bold flex items-center gap-1.5 font-mono self-start sm:self-auto">
                   <span className="w-2 h-2 rounded-full bg-amber-500" />
                   Modo Simulación Activo
                 </span>
@@ -334,19 +350,19 @@ PAYPHONE_PAYMENT_MODE="${payphoneMode}"`;
 
               <div className="p-3.5 bg-gray-50 dark:bg-[#1a1a1c] rounded-2xl border border-gray-100 dark:border-white/5 space-y-1 sm:col-span-2">
                 <span className="text-[10px] uppercase font-bold text-gray-400 tracking-wider">Usuario Remitente Activo</span>
-                <p className="font-semibold text-gray-900 dark:text-gray-100">
+                <p className="font-semibold text-gray-900 dark:text-gray-100 font-mono text-[11px] break-all">
                   {smtpStatus?.user || 'No configurado en Vercel (Se usa simulación en consola)'}
                 </p>
               </div>
             </div>
 
             {smtpStatus?.isConfigured && (
-              <div className="pt-2 border-t border-gray-100 dark:border-white/5 flex items-center justify-between">
-                <span className="text-xs text-gray-500">¿Deseas probar las variables activas?</span>
+              <div className="pt-2 border-t border-gray-100 dark:border-white/5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
+                <span className="text-xs text-gray-500">¿Deseas verificar la conexión de producción?</span>
                 <button
                   onClick={() => handleTestConnection(false)}
                   disabled={isTesting}
-                  className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-semibold flex items-center gap-2 transition-all cursor-pointer shadow-sm disabled:opacity-50"
+                  className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold flex items-center gap-2 transition-all cursor-pointer shadow-sm disabled:opacity-50"
                 >
                   <Send className="w-3.5 h-3.5" />
                   {isTesting ? "Verificando..." : "Enviar Correo de Prueba"}
@@ -356,17 +372,25 @@ PAYPHONE_PAYMENT_MODE="${payphoneMode}"`;
           </div>
 
           {/* Module 2: Vercel Variable Generator (Gmail Option B) */}
-          <div className="bg-white/90 dark:bg-[#202022]/80 backdrop-blur-2xl p-6 md:p-8 rounded-[2.5rem] border border-white/80 dark:border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.03)] space-y-6">
-            <div>
-              <div className="flex items-center justify-between">
-                <h3 className="text-base font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
-                  <Sparkles className="w-4 h-4 text-amber-500" />
-                  Generador de Variables para Vercel
+          <div className="bg-white/95 dark:bg-[#202022]/90 backdrop-blur-2xl p-6 md:p-8 rounded-[2.5rem] border border-gray-200/80 dark:border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.04)] space-y-6">
+            <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-2 pb-4 border-b border-gray-100 dark:border-white/5">
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="font-mono text-[9px] font-bold px-2 py-0.5 rounded-md bg-orange-500/10 text-[#FF5E00] border border-orange-500/20 uppercase tracking-widest">
+                    Variables de Producción · Vercel
+                  </span>
+                  <span className="font-mono text-[9px] font-bold px-2 py-0.5 rounded-md bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20 uppercase tracking-widest flex items-center gap-1">
+                    <KeyRound className="w-2.5 h-2.5" /> Google Workspace / Gmail
+                  </span>
+                </div>
+                <h3 className="text-base font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2 mt-2 tracking-tight">
+                  <Sparkles className="w-4 h-4 text-[#FF5E00]" />
+                  Generador de Variables de Entorno (SMTP)
                 </h3>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 leading-relaxed">
+                  Ingresa tus credenciales de Google para generar el bloque de variables <code className="text-[#FF5E00] font-mono font-bold">SMTP_*</code> listo para copiar a Vercel.
+                </p>
               </div>
-              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                Ingresa los datos de tu cuenta de Google para generar el bloque de variables de entorno para vercel.
-              </p>
             </div>
 
             {/* Inputs */}
@@ -380,7 +404,7 @@ PAYPHONE_PAYMENT_MODE="${payphoneMode}"`;
                   value={gmailUser}
                   onChange={e => setGmailUser(e.target.value)}
                   placeholder="ej: tu_tienda@gmail.com"
-                  className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-xs bg-white dark:bg-[#1a1a1c] text-gray-900 dark:text-gray-100 outline-none focus:ring-2 focus:ring-[#8c9276]/30 font-medium"
+                  className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-xs bg-white dark:bg-[#1a1a1c] text-gray-900 dark:text-gray-100 outline-none focus:ring-2 focus:ring-[#FF5E00]/30 focus:border-[#FF5E00] font-medium transition-all"
                 />
               </div>
 
@@ -389,13 +413,23 @@ PAYPHONE_PAYMENT_MODE="${payphoneMode}"`;
                   <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300">
                     Contraseña de Aplicación de Google (SMTP_PASS)
                   </label>
-                  <button 
-                    type="button"
-                    onClick={() => setShowGoogleGuide(!showGoogleGuide)}
-                    className="text-[11px] text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1 font-semibold"
-                  >
-                    ¿Cómo obtenerla? <ExternalLink className="w-3 h-3" />
-                  </button>
+                  <div className="flex items-center gap-3">
+                    <button 
+                      type="button"
+                      onClick={() => setShowGoogleGuide(!showGoogleGuide)}
+                      className="text-[11px] text-[#FF5E00] hover:underline flex items-center gap-1 font-semibold cursor-pointer"
+                    >
+                      ¿Cómo obtenerla? <ExternalLink className="w-3 h-3" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setShowPass(!showPass)}
+                      className="text-[11px] text-[#FF5E00] hover:underline font-semibold flex items-center gap-1 cursor-pointer"
+                    >
+                      {showPass ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                      {showPass ? "Ocultar" : "Mostrar"}
+                    </button>
+                  </div>
                 </div>
 
                 <div className="relative">
@@ -404,15 +438,8 @@ PAYPHONE_PAYMENT_MODE="${payphoneMode}"`;
                     value={gmailPass}
                     onChange={e => setGmailPass(e.target.value)}
                     placeholder="16 caracteres (ej: abcd efgh ijkl mnop)"
-                    className="w-full pl-4 pr-10 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-xs bg-white dark:bg-[#1a1a1c] text-gray-900 dark:text-gray-100 outline-none focus:ring-2 focus:ring-[#8c9276]/30 font-mono"
+                    className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-xs bg-white dark:bg-[#1a1a1c] text-gray-900 dark:text-gray-100 outline-none focus:ring-2 focus:ring-[#FF5E00]/30 focus:border-[#FF5E00] font-mono transition-all"
                   />
-                  <button
-                    type="button"
-                    onClick={() => setShowPass(!showPass)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
-                  >
-                    {showPass ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                  </button>
                 </div>
               </div>
 
@@ -425,59 +452,60 @@ PAYPHONE_PAYMENT_MODE="${payphoneMode}"`;
                   value={senderName}
                   onChange={e => setSenderName(e.target.value)}
                   placeholder="Lumina Home"
-                  className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-xs bg-white dark:bg-[#1a1a1c] text-gray-900 dark:text-gray-100 outline-none focus:ring-2 focus:ring-[#8c9276]/30 font-medium"
+                  className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-xs bg-white dark:bg-[#1a1a1c] text-gray-900 dark:text-gray-100 outline-none focus:ring-2 focus:ring-[#FF5E00]/30 focus:border-[#FF5E00] font-medium transition-all"
                 />
               </div>
             </div>
 
             {/* Google Guide Accordion */}
             {showGoogleGuide && (
-              <div className="p-4 bg-blue-50/70 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-900/40 rounded-2xl text-xs space-y-2.5 animate-fade-in text-blue-900 dark:text-blue-200">
-                <div className="font-bold flex items-center gap-1.5">
-                  <KeyRound className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+              <div className="p-4 bg-orange-50/60 dark:bg-orange-950/20 border border-orange-200/70 dark:border-orange-900/40 rounded-2xl text-xs space-y-2.5 animate-fade-in text-gray-800 dark:text-gray-200">
+                <div className="font-bold flex items-center gap-1.5 text-gray-900 dark:text-white">
+                  <KeyRound className="w-4 h-4 text-[#FF5E00]" />
                   Pasos para generar tu Contraseña de Aplicación en Google:
                 </div>
-                <ol className="list-decimal list-inside space-y-1 text-xs text-blue-800 dark:text-blue-300 pl-1">
-                  <li>Ingresa a tu cuenta de Google en <a href="https://myaccount.google.com/security" target="_blank" rel="noreferrer" className="underline font-semibold">myaccount.google.com/security</a>.</li>
-                  <li>Asegúrate de tener activa la <strong>Verificación en 2 pasos</strong>.</li>
-                  <li>En el buscador superior escribe <em>&quot;Contraseñas de aplicaciones&quot;</em> o entra a dicha opción al fondo de Seguridad.</li>
-                  <li>En nombre de la app escribe <strong>Lumina Home</strong> y presiona <strong>Crear</strong>.</li>
-                  <li>Google te dará un código de 16 letras amarillas. Cópialo y pégalo aquí.</li>
+                <ol className="list-decimal list-inside space-y-1.5 text-xs text-gray-700 dark:text-gray-300 pl-1">
+                  <li>Ingresa a tu cuenta de Google en <a href="https://myaccount.google.com/security" target="_blank" rel="noreferrer" className="underline font-semibold text-[#FF5E00]">myaccount.google.com/security</a>.</li>
+                  <li>Asegúrate de tener activa la <strong>Verificación en dos pasos</strong>.</li>
+                  <li>En el buscador superior de Google Account escribe <em>&quot;Contraseñas de aplicaciones&quot;</em> o accede a dicha sección en Seguridad.</li>
+                  <li>En nombre de la aplicación escribe <strong className="font-mono text-[#FF5E00]">Lumina Home</strong> y presiona <strong>Crear</strong>.</li>
+                  <li>Google te entregará una clave de 16 caracteres amarillos. Cópiala y pégala aquí.</li>
                 </ol>
               </div>
             )}
 
             {/* Code Output Box */}
             <div className="space-y-2">
-              <div className="flex items-center justify-between text-xs">
-                <span className="font-bold text-gray-700 dark:text-gray-300">Bloque generado para Vercel:</span>
-                <span className="text-[11px] text-gray-400">Settings &gt; Environment Variables</span>
-              </div>
-              <div className="relative group">
-                <pre className="p-4 bg-gray-950 text-gray-100 rounded-2xl text-xs font-mono overflow-x-auto selection:bg-[#8c9276] selection:text-white border border-gray-800">
-                  {vercelEnvSnippet}
-                </pre>
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold text-gray-900 dark:text-gray-100">
+                  Bloque para Vercel Environment Variables:
+                </span>
                 <button
                   type="button"
                   onClick={handleCopySnippet}
-                  className="absolute top-3 right-3 px-3 py-1.5 bg-white/10 hover:bg-white/20 text-white rounded-lg text-xs font-semibold flex items-center gap-1.5 backdrop-blur-md transition-all cursor-pointer"
+                  className="text-xs text-[#FF5E00] hover:text-orange-700 font-bold flex items-center gap-1.5 transition-colors cursor-pointer bg-orange-500/10 hover:bg-orange-500/15 px-3 py-1.5 rounded-lg border border-orange-500/20"
                 >
-                  {copied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
-                  {copied ? "¡Copiado!" : "Copiar"}
+                  {copied ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
+                  {copied ? "¡Copiado al Portapapeles!" : "Copiar para Vercel"}
                 </button>
+              </div>
+              <div className="relative">
+                <pre className="p-4 bg-gray-900 text-gray-100 rounded-2xl text-[11px] font-mono overflow-x-auto border border-gray-800 leading-relaxed shadow-inner selection:bg-[#FF5E00] selection:text-white">
+                  {vercelEnvSnippet}
+                </pre>
               </div>
             </div>
 
             {/* Test Credentials Action */}
-            <div className="p-4 bg-gray-50 dark:bg-[#1a1a1c] border border-gray-200 dark:border-white/5 rounded-2xl space-y-3">
+            <div className="p-4 bg-gray-50 dark:bg-[#1a1a1c] border border-gray-200/80 dark:border-white/5 rounded-2xl space-y-3">
               <div className="flex items-center justify-between">
                 <div>
                   <div className="text-xs font-bold text-gray-900 dark:text-gray-100 flex items-center gap-1.5">
-                    <Send className="w-3.5 h-3.5 text-[#8c9276]" />
+                    <Send className="w-3.5 h-3.5 text-[#FF5E00]" />
                     Probar estas credenciales antes de ir a Vercel
                   </div>
-                  <p className="text-[11px] text-gray-500 mt-0.5">
-                    Envía un correo de prueba en tiempo real para verificar que Google las acepte.
+                  <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-0.5">
+                    Envía un correo de prueba en tiempo real para verificar el handshake TLS con Google.
                   </p>
                 </div>
               </div>
@@ -488,25 +516,38 @@ PAYPHONE_PAYMENT_MODE="${payphoneMode}"`;
                   value={testEmail}
                   onChange={e => setTestEmail(e.target.value)}
                   placeholder="Tu correo para recibir la prueba"
-                  className="flex-1 px-3.5 py-2 rounded-xl border border-gray-200 dark:border-white/10 text-xs bg-white dark:bg-[#202022] text-gray-900 dark:text-gray-100 outline-none font-medium"
+                  className="flex-1 px-4 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-xs bg-white dark:bg-[#202022] text-gray-900 dark:text-gray-100 outline-none focus:ring-2 focus:ring-[#FF5E00]/30 font-medium"
                 />
                 <button
                   type="button"
                   onClick={() => handleTestConnection(true)}
                   disabled={isTesting}
-                  className="px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 hover:bg-gray-800 dark:hover:bg-gray-100 rounded-xl text-xs font-semibold transition-all cursor-pointer shrink-0 disabled:opacity-50"
+                  className="px-5 py-2.5 bg-[#FF5E00] hover:bg-[#e05300] text-white rounded-xl text-xs font-bold transition-all cursor-pointer shrink-0 disabled:opacity-50 shadow-sm hover:shadow-orange-500/20 flex items-center justify-center gap-1.5"
                 >
-                  {isTesting ? "Enviando..." : "🧪 Probar Credenciales"}
+                  {isTesting ? (
+                    <>
+                      <RefreshCw className="w-3.5 h-3.5 animate-spin" /> Verificando...
+                    </>
+                  ) : (
+                    <>
+                      <Send className="w-3.5 h-3.5" /> Probar Credenciales
+                    </>
+                  )}
                 </button>
               </div>
 
               {testResult && (
                 <div className={`p-3 rounded-xl text-xs flex items-start gap-2 ${testResult.success ? 'bg-emerald-50 text-emerald-800 border border-emerald-200 dark:bg-emerald-950/30 dark:text-emerald-300 dark:border-emerald-800/40' : 'bg-red-50 text-red-800 border border-red-200 dark:bg-red-950/30 dark:text-red-300 dark:border-red-800/40'}`}>
                   {testResult.success ? <Check className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" /> : <AlertTriangle className="w-4 h-4 text-red-600 shrink-0 mt-0.5" />}
-                  <span className="leading-tight">{testResult.message}</span>
+                  <span className="leading-tight font-medium">{testResult.message}</span>
                 </div>
               )}
             </div>
+
+            {/* Privacy & Security microcopy badge */}
+            <p className="text-[10px] text-gray-400 dark:text-gray-500 leading-normal pt-2 border-t border-gray-100 dark:border-white/5 flex items-center gap-1.5">
+              🔒 <strong>100% Seguro:</strong> Las credenciales SMTP nunca se almacenan en el cliente ni en tablas públicas. Se procesan de forma aislada a través de tus variables de entorno en Vercel.
+            </p>
 
           </div>
 
