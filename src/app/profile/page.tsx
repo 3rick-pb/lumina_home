@@ -577,17 +577,19 @@ const handleConfirmDeleteNiche = async () => {
    {activeTab === "orders" && (
      <span className="absolute -left-2 w-1 h-5 bg-[#8c9276] dark:bg-[#ccff00] rounded-r-full transition-all duration-[600ms]" />
    )}
-    <div className="relative flex items-center justify-center">
-      <ShoppingBag className="w-5 h-5 transition-transform duration-[600ms] group-hover:scale-110" />
-      {pendingOrdersCount > 0 && (
-        <span 
-          className="absolute -top-1.5 -right-2.5 min-w-[17px] h-[17px] px-1 rounded-full bg-[#8c9276] text-white dark:text-gray-900 text-[10px] font-extrabold flex items-center justify-center ring-2 ring-white dark:ring-[#1e1e20] shadow-sm pointer-events-none transition-transform duration-300 scale-100"
-          title={`${pendingOrdersCount} pedido(s) en curso`}
-        >
-          {pendingOrdersCount > 99 ? "99+" : pendingOrdersCount}
-        </span>
-      )}
-    </div>
+   <ShoppingBag className="w-5 h-5 transition-transform duration-[600ms] group-hover:scale-110" />
+   {pendingOrdersCount > 0 && (
+     <span 
+       className={`absolute flex items-center justify-center select-none pointer-events-none transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] ${
+         activeTab === "orders"
+           ? "top-1 right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-[#8c9276] text-white dark:text-gray-950 text-[10px] font-extrabold ring-2 ring-gray-950 dark:ring-white shadow-sm scale-100"
+           : "top-[9px] right-[8px] md:top-[10px] md:right-[9px] min-w-0 h-auto p-0 rounded-none bg-transparent text-[#8c9276] dark:text-[#a3a98d] text-xs font-black ring-0 shadow-none scale-105"
+       }`}
+       title={`${pendingOrdersCount} pedido(s) en curso`}
+     >
+       {pendingOrdersCount > 99 ? "99+" : pendingOrdersCount}
+     </span>
+   )}
  </button>
 
  <button 
@@ -2078,24 +2080,26 @@ const handleConfirmDeleteNiche = async () => {
 
         <button
           onClick={() => setActiveTab("orders")}
-          className={`relative p-2 rounded-xl flex items-center justify-center transition-all shrink-0 ${
+          className={`relative w-10 h-10 rounded-xl flex items-center justify-center transition-all shrink-0 ${
             activeTab === "orders"
               ? "bg-gray-950 dark:bg-white text-white dark:text-gray-950 shadow-md"
               : "text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
           }`}
           title="Pedidos"
         >
-          <div className="relative flex items-center justify-center">
-            <ShoppingBag className="w-4 h-4" />
-            {pendingOrdersCount > 0 && (
-              <span 
-                className="absolute -top-1.5 -right-2 min-w-[15px] h-[15px] px-0.5 rounded-full bg-[#8c9276] text-white dark:text-gray-900 text-[9px] font-extrabold flex items-center justify-center ring-1.5 ring-white dark:ring-[#1e1e20] shadow-sm pointer-events-none"
-                title={`${pendingOrdersCount} pedido(s) en curso`}
-              >
-                {pendingOrdersCount > 99 ? "99+" : pendingOrdersCount}
-              </span>
-            )}
-          </div>
+          <ShoppingBag className="w-4 h-4" />
+          {pendingOrdersCount > 0 && (
+            <span 
+              className={`absolute flex items-center justify-center select-none pointer-events-none transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] ${
+                activeTab === "orders"
+                  ? "top-0.5 right-0.5 min-w-[16px] h-[16px] px-0.5 rounded-full bg-[#8c9276] text-white dark:text-gray-950 text-[9px] font-extrabold ring-1.5 ring-gray-950 dark:ring-white shadow-sm scale-100"
+                  : "top-1.5 right-1.5 min-w-0 h-auto p-0 rounded-none bg-transparent text-[#8c9276] dark:text-[#a3a98d] text-[10px] font-black ring-0 shadow-none scale-105"
+              }`}
+              title={`${pendingOrdersCount} pedido(s) en curso`}
+            >
+              {pendingOrdersCount > 99 ? "99+" : pendingOrdersCount}
+            </span>
+          )}
         </button>
 
         <button

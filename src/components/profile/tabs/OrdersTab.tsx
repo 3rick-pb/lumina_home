@@ -69,7 +69,7 @@ export function OrdersTab({
         </div>
 
         {/* Status Filter Tabs */}
-        <div className="flex items-center gap-2 sm:gap-2.5 bg-gray-100 dark:bg-[#3a3a3c] p-1.5 rounded-2xl overflow-x-auto max-w-full hide-scrollbar">
+        <div className="flex items-center gap-2 sm:gap-2.5 bg-gray-100/90 dark:bg-[#2c2c2e] px-3 pt-3.5 pb-2.5 rounded-2xl sm:rounded-[1.4rem] overflow-x-auto max-w-full hide-scrollbar border border-gray-200/50 dark:border-white/5 shadow-inner">
           {(["all", "Procesando", "Enviado", "Entregado"] as const).map((st) => {
             const count = st === "all" 
               ? orders.length 
@@ -80,19 +80,19 @@ export function OrdersTab({
               <button 
                 key={st}
                 onClick={() => setOrderStatusFilter(st)}
-                className={`relative px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all whitespace-nowrap flex items-center ${
+                className={`relative px-4 py-1.5 rounded-xl text-xs font-semibold transition-all whitespace-nowrap flex items-center ${
                   orderStatusFilter === st 
-                    ? "bg-white dark:bg-[#202022] text-gray-900 dark:text-gray-100 shadow-sm dark:shadow-none" 
-                    : "text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100"
+                    ? "bg-white dark:bg-[#1a1a1c] text-gray-900 dark:text-gray-100 shadow-sm" 
+                    : "text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-white/40 dark:hover:bg-white/5"
                 }`}
               >
                 <span>{label}</span>
                 {count >= 1 && (
                   <span 
-                    className={`absolute -top-1.5 -right-1 min-w-[17px] h-[17px] px-1 rounded-full text-[9px] font-extrabold flex items-center justify-center shadow-xs pointer-events-none ring-2 transition-all ${
+                    className={`absolute -top-1 right-0 min-w-[17px] h-[17px] px-1 rounded-full text-[9px] font-extrabold flex items-center justify-center shadow-xs pointer-events-none ring-2 transition-all ${
                       orderStatusFilter === st
-                        ? "bg-[#8c9276] text-white ring-white dark:ring-[#202022]"
-                        : "bg-[#8c9276] text-white ring-gray-100 dark:ring-[#3a3a3c]"
+                        ? "bg-[#8c9276] text-white ring-white dark:ring-[#1a1a1c]"
+                        : "bg-[#8c9276] text-white ring-gray-100 dark:ring-[#2c2c2e]"
                     }`}
                     title={`${count} pedido(s)`}
                   >
