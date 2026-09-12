@@ -173,15 +173,13 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: false, error: error.message }, { status: 500 });
     }
 
-    // Trigger customer invoice and store admin dispatch notice asynchronously
+    // Trigger customer invoice and store admin dispatch notice safely
     try {
       const adminEmails = await getAllAdminEmails();
-      // Non-blocking background call: catch any unexpected issues
-      sendOrderEmails({
+      // Await email dispatch so serverless lambda does not freeze before completion
+      await sendOrderEmails({
         order: newApiOrder,
         adminEmails
-      }).catch(emailErr => {
-        console.warn('[emailService] Background email sending warning:', emailErr);
       });
     } catch (emailInitErr) {
       console.warn('[emailService] Could not trigger email dispatch:', emailInitErr);

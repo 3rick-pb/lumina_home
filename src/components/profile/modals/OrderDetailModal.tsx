@@ -1,10 +1,24 @@
 "use client";
 
-import React from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import Image from "next/image";
-import { X, CheckCircle2 } from "lucide-react";
+import { X, CheckCircle2, Mail, Send, RefreshCw, AlertCircle } from "lucide-react";
 import { Order } from "@/lib/userStore";
 import { BlobatarAvatar } from "@/components/ui/BlobatarAvatar";
+import { supabase } from "@/lib/supabase";
+
+interface EmailNotificationLog {
+  id: string;
+  order_id: string;
+  recipient_email: string;
+  recipient_name?: string | null;
+  recipient_type: 'customer' | 'admin';
+  email_type: 'customer_invoice' | 'admin_dispatch_notice' | 'order_status_update';
+  subject: string;
+  status: 'sent' | 'failed' | 'simulated_dev';
+  error_message?: string | null;
+  sent_at: string;
+}
 
 interface OrderDetailModalProps {
   order: Order | null;
@@ -19,7 +33,74 @@ export function OrderDetailModal({
   onClose,
   onUpdateStatus
 }: OrderDetailModalProps) {
+  const [emailLogs, setEmailLogs] = useState<EmailNotificationLog[]>([]);
+  const [isLoadingLogs, setIsLoadingLogs] = useState(false);
+  const [isResending, setIsResending] = useState<"invoice" | "dispatch" | null>(null);
+  const [feedback, setFeedback] = useState<{ success: boolean; message: string } | null>(null);
+
+  const fetchEmailLogs = useCallback(async () => {
+    if (!order?.id) return;
+    setIsLoadingLogs(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const headers: Record<string, string> = {};
+      if (session?.access_token) headers['Authorization'] = `Bearer ${session.access_token}`;
+
+      const res = await fetch(`/api/orders/emails?orderId=${encodeURIComponent(order.id)}`, { headers });
+      const data = await res.json();
+      if (data.success && Array.isArray(data.logs)) {
+        setEmailLogs(data.logs as EmailNotificationLog[]);
+      }
+    } catch (err) {
+      console.warn("Could not load email logs:", err);
+    } finally {
+      setIsLoadingLogs(false);
+    }
+  }, [order?.id]);
+
+  useEffect(() => {
+    if (order?.id) {
+      fetchEmailLogs();
+      setFeedback(null);
+    }
+  }, [order?.id, fetchEmailLogs]);
+
+  const handleResend = async (emailType: "customer_invoice" | "admin_dispatch_notice") => {
+    if (!order?.id) return;
+    setIsResending(emailType === "customer_invoice" ? "invoice" : "dispatch");
+    setFeedback(null);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const headers: Record<string, string> = { "Content-Type": "application/json" };
+      if (session?.access_token) headers['Authorization'] = `Bearer ${session.access_token}`;
+
+      const res = await fetch('/api/orders/emails', {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
+          orderId: order.id,
+          emailType,
+        }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setFeedback({ success: true, message: data.message || "Correo reenviado con éxito" });
+        await fetchEmailLogs();
+      } else {
+        setFeedback({ success: false, message: data.message || data.error || "Error al reenviar" });
+      }
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Error de conexión";
+      setFeedback({ success: false, message: msg });
+    } finally {
+      setIsResending(null);
+    }
+  };
+
   if (!order) return null;
+
+  const invoiceLog = emailLogs.find(l => l.email_type === 'customer_invoice');
+  const dispatchLog = emailLogs.find(l => l.email_type === 'admin_dispatch_notice');
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-fade-in">
@@ -125,6 +206,98 @@ export function OrderDetailModal({
             <div className="mt-2 pt-2 border-t border-gray-200/60 dark:border-white/10/60 text-[11px] text-gray-600 dark:text-gray-400 flex items-center justify-between">
               <span className="text-[10px] text-gray-400">Método de Pago:</span>
               <span className="font-semibold text-gray-800 dark:text-gray-200">{order.paymentMethod || "Tarjeta de Crédito"}</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Email Automated Notifications Section */}
+        <div className="mb-5 p-4 bg-gray-50/90 dark:bg-[#2a2a2c]/90 rounded-2xl border border-gray-100 dark:border-white/5 space-y-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Mail className="w-4 h-4 text-[#8c9276]" />
+              <h4 className="text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-gray-300">
+                Notificaciones Automáticas por Correo
+              </h4>
+            </div>
+            {isLoadingLogs && (
+              <RefreshCw className="w-3.5 h-3.5 text-gray-400 animate-spin" />
+            )}
+          </div>
+
+          {feedback && (
+            <div className={`p-2.5 rounded-xl text-xs flex items-center gap-2 ${
+              feedback.success ? "bg-emerald-50 text-emerald-800 border border-emerald-200" : "bg-red-50 text-red-800 border border-red-200"
+            }`}>
+              {feedback.success ? <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-600" /> : <AlertCircle className="w-4 h-4 shrink-0 text-red-600" />}
+              <span>{feedback.message}</span>
+            </div>
+          )}
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {/* Factura al Cliente */}
+            <div className="p-3 bg-white dark:bg-[#202022] rounded-xl border border-gray-100 dark:border-white/5 space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-bold text-gray-800 dark:text-gray-200">Factura al Cliente</span>
+                <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                  invoiceLog?.status === 'sent' 
+                    ? "bg-emerald-100 text-emerald-800" 
+                    : invoiceLog?.status === 'simulated_dev'
+                    ? "bg-blue-100 text-blue-800"
+                    : invoiceLog?.status === 'failed'
+                    ? "bg-red-100 text-red-800"
+                    : "bg-gray-100 text-gray-600"
+                }`}>
+                  {invoiceLog?.status === 'sent' ? "Enviado Real" : invoiceLog?.status === 'simulated_dev' ? "Simulado (Dev)" : invoiceLog?.status === 'failed' ? "Error Envío" : "Sin Registro"}
+                </span>
+              </div>
+              <p className="text-[10px] text-gray-400 truncate">{order.customerEmail || "Sin correo"}</p>
+              {isAdmin && (
+                <button
+                  onClick={() => handleResend('customer_invoice')}
+                  disabled={isResending !== null}
+                  className="w-full mt-1 px-2.5 py-1.5 bg-gray-100 dark:bg-white/5 hover:bg-gray-200 dark:hover:bg-white/10 text-gray-700 dark:text-gray-300 rounded-lg text-[10px] font-bold flex items-center justify-center gap-1.5 transition cursor-pointer disabled:opacity-50"
+                >
+                  {isResending === 'invoice' ? (
+                    <RefreshCw className="w-3 h-3 animate-spin" />
+                  ) : (
+                    <Send className="w-3 h-3 text-[#8c9276]" />
+                  )}
+                  Reenviar Factura
+                </button>
+              )}
+            </div>
+
+            {/* Alerta de Despacho a Administradores */}
+            <div className="p-3 bg-white dark:bg-[#202022] rounded-xl border border-gray-100 dark:border-white/5 space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-bold text-gray-800 dark:text-gray-200">Alerta de Despacho</span>
+                <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                  dispatchLog?.status === 'sent' 
+                    ? "bg-emerald-100 text-emerald-800" 
+                    : dispatchLog?.status === 'simulated_dev'
+                    ? "bg-blue-100 text-blue-800"
+                    : dispatchLog?.status === 'failed'
+                    ? "bg-red-100 text-red-800"
+                    : "bg-gray-100 text-gray-600"
+                }`}>
+                  {dispatchLog?.status === 'sent' ? "Enviado Real" : dispatchLog?.status === 'simulated_dev' ? "Simulado (Dev)" : dispatchLog?.status === 'failed' ? "Error Envío" : "Sin Registro"}
+                </span>
+              </div>
+              <p className="text-[10px] text-gray-400 truncate">Bodega & Administradores</p>
+              {isAdmin && (
+                <button
+                  onClick={() => handleResend('admin_dispatch_notice')}
+                  disabled={isResending !== null}
+                  className="w-full mt-1 px-2.5 py-1.5 bg-gray-100 dark:bg-white/5 hover:bg-gray-200 dark:hover:bg-white/10 text-gray-700 dark:text-gray-300 rounded-lg text-[10px] font-bold flex items-center justify-center gap-1.5 transition cursor-pointer disabled:opacity-50"
+                >
+                  {isResending === 'dispatch' ? (
+                    <RefreshCw className="w-3 h-3 animate-spin" />
+                  ) : (
+                    <Send className="w-3 h-3 text-emerald-600" />
+                  )}
+                  Reenviar Alerta Despacho
+                </button>
+              )}
             </div>
           </div>
         </div>

@@ -93,7 +93,91 @@ function getTransporter() {
 
 function cleanPhoneForWhatsApp(phone?: string): string {
   if (!phone) return '';
-  return phone.replace(/[^0-9]/g, '');
+  let digits = phone.replace(/[^0-9]/g, '');
+  // Formato Ecuador: celulares empiezan con 09 (10 dígitos). Convertir a formato internacional 5939...
+  if (digits.startsWith('09') && digits.length === 10) {
+    digits = '593' + digits.slice(1);
+  } else if (digits.startsWith('59309') && digits.length === 13) {
+    digits = '593' + digits.slice(4);
+  } else if (digits.length === 9 && digits.startsWith('9')) {
+    digits = '593' + digits;
+  }
+  return digits;
+}
+
+export interface OrderEmailNotificationRecord {
+  id: string;
+  order_id: string;
+  recipient_email: string;
+  recipient_name?: string | null;
+  recipient_type: 'customer' | 'admin';
+  email_type: 'customer_invoice' | 'admin_dispatch_notice' | 'order_status_update';
+  subject: string;
+  status: 'sent' | 'failed' | 'simulated_dev';
+  error_message?: string | null;
+  metadata?: Record<string, unknown>;
+  sent_at: string;
+}
+
+/**
+ * Inserta un registro auditable en la tabla dedicada public.order_email_notifications
+ */
+export async function logEmailNotification({
+  orderId,
+  recipientEmail,
+  recipientName,
+  recipientType,
+  emailType,
+  subject,
+  status,
+  errorMessage,
+  metadata = {},
+}: {
+  orderId: string;
+  recipientEmail: string;
+  recipientName?: string;
+  recipientType: 'customer' | 'admin';
+  emailType: 'customer_invoice' | 'admin_dispatch_notice' | 'order_status_update';
+  subject: string;
+  status: 'sent' | 'failed' | 'simulated_dev';
+  errorMessage?: string;
+  metadata?: Record<string, unknown>;
+}) {
+  try {
+    await supabaseServer.from('order_email_notifications').insert({
+      order_id: orderId,
+      recipient_email: recipientEmail.toLowerCase().trim(),
+      recipient_name: recipientName || null,
+      recipient_type: recipientType,
+      email_type: emailType,
+      subject,
+      status,
+      error_message: errorMessage || null,
+      metadata,
+      sent_at: new Date().toISOString(),
+    });
+  } catch (err) {
+    // Si la tabla aún no fue creada en Supabase, registrar aviso sin interrumpir el flujo
+    console.warn('[emailService] Aviso: no se pudo insertar en order_email_notifications:', err);
+  }
+}
+
+/**
+ * Consulta el historial de notificaciones por correo para una orden específica
+ */
+export async function getOrderEmailLogs(orderId: string): Promise<OrderEmailNotificationRecord[]> {
+  try {
+    const { data, error } = await supabaseServer
+      .from('order_email_notifications')
+      .select('*')
+      .eq('order_id', orderId)
+      .order('sent_at', { ascending: false });
+
+    if (error) return [];
+    return (data as OrderEmailNotificationRecord[]) || [];
+  } catch {
+    return [];
+  }
 }
 
 /**
@@ -547,6 +631,7 @@ export function generateAdminDispatchNoticeHtml(order: OrderEmailData): string {
 /**
  * Dispatches both Customer Invoice and Store Admin Dispatch emails.
  * Never throws an unhandled error so checkout execution is completely safe.
+ * Stores auditable logs in public.order_email_notifications.
  */
 export async function sendOrderEmails({
   order,
@@ -560,51 +645,138 @@ export async function sendOrderEmails({
     const fromAddress = process.env.SMTP_FROM || 'Lumina Home <ventas@lumina.com>';
 
     const customerEmail = order.customerEmail || order.shippingAddress?.email;
+    const customerName = order.customerName || order.recipient || 'Cliente';
     const resolvedAdmins = adminEmails && adminEmails.length > 0 ? adminEmails : await getAllAdminEmails();
+
+    const customerSubject = `🧾 Factura Digital y Confirmación de Pedido #${order.id} - Lumina Home`;
+    const adminSubject = `📦 [DESPACHO INMEDIATO] Nueva Orden #${order.id} - ${customerName} · Total: $${Number(order.total || 0).toFixed(2)}`;
 
     const customerHtml = generateCustomerInvoiceHtml(order);
     const adminHtml = generateAdminDispatchNoticeHtml(order);
 
     if (!transporter) {
       console.log('----------------------------------------------------');
-      console.log('📦 [emailService - MOCK/DEV MODE] SMTP not configured. Simulating email delivery:');
-      console.log(`✉️ Factura enviada al Cliente: ${customerEmail || '(Sin correo de cliente)'}`);
-      console.log(`✉️ Alerta de Despacho enviada a Administradores: ${resolvedAdmins.join(', ')}`);
-      console.log(`📋 Orden ID: ${order.id} | Total: $${Number(order.total).toFixed(2)} | Cédula: ${order.customerIdNumber || 'N/A'} | WhatsApp: ${order.customerPhone || 'N/A'}`);
+      console.log('📦 [emailService - SIMULATED MODE] SMTP no configurado en entorno local.');
+      console.log(`✉️ Factura registrada para Cliente: ${customerEmail || '(Sin correo de cliente)'}`);
+      console.log(`✉️ Alerta de Despacho registrada para Admins: ${resolvedAdmins.join(', ')}`);
+      console.log(`📋 Orden: #${order.id} | Total: $${Number(order.total || 0).toFixed(2)} | Cédula: ${order.customerIdNumber || 'N/A'}`);
       console.log('----------------------------------------------------');
+
+      // 1. Registrar simulación de Factura para el Cliente
+      if (customerEmail && customerEmail.includes('@')) {
+        await logEmailNotification({
+          orderId: order.id,
+          recipientEmail: customerEmail,
+          recipientName: customerName,
+          recipientType: 'customer',
+          emailType: 'customer_invoice',
+          subject: customerSubject,
+          status: 'simulated_dev',
+          metadata: {
+            mode: 'simulated_dev',
+            total: order.total,
+            itemsCount: order.items?.length || 0,
+            note: 'SMTP no configurado en entorno local. Configura SMTP_HOST, SMTP_USER y SMTP_PASS en Vercel para envío real.'
+          }
+        });
+      }
+
+      // 2. Registrar simulación de Alerta de Despacho para cada Admin
+      for (const admEmail of resolvedAdmins) {
+        await logEmailNotification({
+          orderId: order.id,
+          recipientEmail: admEmail,
+          recipientName: 'Administrador Lumina',
+          recipientType: 'admin',
+          emailType: 'admin_dispatch_notice',
+          subject: adminSubject,
+          status: 'simulated_dev',
+          metadata: {
+            mode: 'simulated_dev',
+            total: order.total,
+            itemsCount: order.items?.length || 0,
+            note: 'SMTP no configurado en entorno local.'
+          }
+        });
+      }
+
       return { success: true, customerSent: true, adminsSent: true, mocked: true };
     }
 
     let customerSent = false;
     let adminsSent = false;
 
-    // 1. Send Customer Invoice
+    // 1. Envío de Factura al Cliente
     if (customerEmail && customerEmail.includes('@')) {
       try {
         await transporter.sendMail({
           from: fromAddress,
           to: customerEmail,
-          subject: `Factura y Confirmación de Pedido #${order.id} - Lumina Home`,
+          subject: customerSubject,
           html: customerHtml,
         });
         customerSent = true;
-      } catch (custErr) {
-        console.error('[emailService] Error sending customer invoice:', custErr);
+        await logEmailNotification({
+          orderId: order.id,
+          recipientEmail: customerEmail,
+          recipientName: customerName,
+          recipientType: 'customer',
+          emailType: 'customer_invoice',
+          subject: customerSubject,
+          status: 'sent',
+          metadata: { from: fromAddress, total: order.total }
+        });
+      } catch (custErr: unknown) {
+        const errorMsg = custErr instanceof Error ? custErr.message : String(custErr);
+        console.error('[emailService] Error enviando factura al cliente:', custErr);
+        await logEmailNotification({
+          orderId: order.id,
+          recipientEmail: customerEmail,
+          recipientName: customerName,
+          recipientType: 'customer',
+          emailType: 'customer_invoice',
+          subject: customerSubject,
+          status: 'failed',
+          errorMessage: errorMsg,
+        });
       }
     }
 
-    // 2. Send Admin Dispatch Alert
+    // 2. Envío de Alerta de Despacho a Administradores
     if (resolvedAdmins.length > 0) {
-      try {
-        await transporter.sendMail({
-          from: fromAddress,
-          to: resolvedAdmins.join(', '),
-          subject: `📦 [DESPACHO INMEDIATO] Nueva Orden #${order.id} - ${order.customerName || order.recipient || 'Cliente'}`,
-          html: adminHtml,
-        });
-        adminsSent = true;
-      } catch (adminErr) {
-        console.error('[emailService] Error sending admin dispatch alert:', adminErr);
+      for (const admEmail of resolvedAdmins) {
+        try {
+          await transporter.sendMail({
+            from: fromAddress,
+            to: admEmail,
+            subject: adminSubject,
+            html: adminHtml,
+          });
+          adminsSent = true;
+          await logEmailNotification({
+            orderId: order.id,
+            recipientEmail: admEmail,
+            recipientName: 'Administrador Lumina',
+            recipientType: 'admin',
+            emailType: 'admin_dispatch_notice',
+            subject: adminSubject,
+            status: 'sent',
+            metadata: { from: fromAddress, total: order.total }
+          });
+        } catch (adminErr: unknown) {
+          const errorMsg = adminErr instanceof Error ? adminErr.message : String(adminErr);
+          console.error(`[emailService] Error enviando alerta a admin (${admEmail}):`, adminErr);
+          await logEmailNotification({
+            orderId: order.id,
+            recipientEmail: admEmail,
+            recipientName: 'Administrador Lumina',
+            recipientType: 'admin',
+            emailType: 'admin_dispatch_notice',
+            subject: adminSubject,
+            status: 'failed',
+            errorMessage: errorMsg,
+          });
+        }
       }
     }
 
@@ -612,6 +784,145 @@ export async function sendOrderEmails({
   } catch (error) {
     console.error('[emailService] Fatal error in sendOrderEmails:', error);
     return { success: false, customerSent: false, adminsSent: false };
+  }
+}
+
+/**
+ * Reenvía manualmente la factura del cliente o la alerta de despacho administrativo
+ */
+export async function resendOrderEmail({
+  orderId,
+  emailType,
+  targetEmail,
+}: {
+  orderId: string;
+  emailType: 'customer_invoice' | 'admin_dispatch_notice';
+  targetEmail?: string;
+}): Promise<{ success: boolean; message: string }> {
+  try {
+    const { data: orderRow, error: orderErr } = await supabaseServer
+      .from('orders')
+      .select('*')
+      .eq('id', orderId)
+      .maybeSingle();
+
+    if (orderErr || !orderRow) {
+      return { success: false, message: `No se encontró la orden #${orderId}` };
+    }
+
+    const mappedOrder: OrderEmailData = {
+      id: orderRow.id,
+      trackingNumber: orderRow.tracking_number,
+      customerName: orderRow.customer_name,
+      customerEmail: orderRow.customer_email,
+      customerIdNumber: orderRow.customer_id_number,
+      customerPhone: orderRow.customer_phone,
+      recipient: orderRow.recipient,
+      paymentMethod: orderRow.payment_method,
+      total: Number(orderRow.total) || 0,
+      items: Array.isArray(orderRow.items) ? orderRow.items : [],
+      shippingAddress: orderRow.shipping_address,
+      date: orderRow.created_at ? new Date(orderRow.created_at).toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: 'numeric' }) : undefined,
+      time: orderRow.created_at ? new Date(orderRow.created_at).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }) : undefined,
+    };
+
+    const transporter = getTransporter();
+    const fromAddress = process.env.SMTP_FROM || 'Lumina Home <ventas@lumina.com>';
+
+    if (emailType === 'customer_invoice') {
+      const recipient = targetEmail || mappedOrder.customerEmail || mappedOrder.shippingAddress?.email;
+      if (!recipient || !recipient.includes('@')) {
+        return { success: false, message: 'La orden no tiene un correo de cliente válido configurado.' };
+      }
+      const subject = `🧾 Factura Digital y Confirmación de Pedido #${mappedOrder.id} - Lumina Home`;
+      const html = generateCustomerInvoiceHtml(mappedOrder);
+
+      if (!transporter) {
+        await logEmailNotification({
+          orderId: mappedOrder.id,
+          recipientEmail: recipient,
+          recipientName: mappedOrder.customerName,
+          recipientType: 'customer',
+          emailType: 'customer_invoice',
+          subject: `${subject} [Reenvío]`,
+          status: 'simulated_dev',
+          metadata: { isResend: true, mode: 'simulated_dev' }
+        });
+        return { success: true, message: `Factura simulada registrada para ${recipient} (Modo Local sin SMTP).` };
+      }
+
+      await transporter.sendMail({
+        from: fromAddress,
+        to: recipient,
+        subject,
+        html,
+      });
+
+      await logEmailNotification({
+        orderId: mappedOrder.id,
+        recipientEmail: recipient,
+        recipientName: mappedOrder.customerName,
+        recipientType: 'customer',
+        emailType: 'customer_invoice',
+        subject,
+        status: 'sent',
+        metadata: { isResend: true, from: fromAddress }
+      });
+
+      return { success: true, message: `Factura reenviada exitosamente a ${recipient}.` };
+    }
+
+    if (emailType === 'admin_dispatch_notice') {
+      const recipientList = targetEmail ? [targetEmail] : await getAllAdminEmails();
+      if (recipientList.length === 0) {
+        return { success: false, message: 'No hay correos de administradores configurados.' };
+      }
+      const subject = `📦 [DESPACHO INMEDIATO] Nueva Orden #${mappedOrder.id} - ${mappedOrder.customerName || 'Cliente'} · Total: $${Number(mappedOrder.total).toFixed(2)}`;
+      const html = generateAdminDispatchNoticeHtml(mappedOrder);
+
+      if (!transporter) {
+        for (const adm of recipientList) {
+          await logEmailNotification({
+            orderId: mappedOrder.id,
+            recipientEmail: adm,
+            recipientName: 'Administrador Lumina',
+            recipientType: 'admin',
+            emailType: 'admin_dispatch_notice',
+            subject: `${subject} [Reenvío]`,
+            status: 'simulated_dev',
+            metadata: { isResend: true, mode: 'simulated_dev' }
+          });
+        }
+        return { success: true, message: `Alerta de despacho simulada para ${recipientList.join(', ')} (Modo Local).` };
+      }
+
+      for (const adm of recipientList) {
+        await transporter.sendMail({
+          from: fromAddress,
+          to: adm,
+          subject,
+          html,
+        });
+
+        await logEmailNotification({
+          orderId: mappedOrder.id,
+          recipientEmail: adm,
+          recipientName: 'Administrador Lumina',
+          recipientType: 'admin',
+          emailType: 'admin_dispatch_notice',
+          subject,
+          status: 'sent',
+          metadata: { isResend: true, from: fromAddress }
+        });
+      }
+
+      return { success: true, message: `Alerta de despacho reenviada a ${recipientList.join(', ')}.` };
+    }
+
+    return { success: false, message: 'Tipo de correo no reconocido.' };
+  } catch (error: unknown) {
+    const msg = error instanceof Error ? error.message : 'Error al reenviar el correo.';
+    return { success: false, message: msg };
   }
 }
 
