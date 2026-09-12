@@ -1,12 +1,37 @@
 -- ==============================================================================
--- LUMINA HOME — SCRIPT MAESTRO DE HARDENING Y BLINDAJE DE SEGURIDAD RLS
+-- LUMINA HOME — SCRIPT MAESTRO DE HARDENING Y BLINDAJE DE SEGURIDAD RLS (v2.0)
 -- Pega y ejecuta este script en: Supabase Dashboard > SQL Editor > New query > Run
 -- ==============================================================================
--- Este script reemplaza todas las políticas permisivas previas 'USING (true)'
--- e implementa el principio de mínimo privilegio (Least Privilege) con RLS estricto.
+-- Este script es 100% IDEMPOTENTE: elimina automáticamente cualquier política previa
+-- (evitando el error 42710: policy already exists) y aplica el principio de
+-- mínimo privilegio (Least Privilege) con RLS estricto en todas las tablas.
 -- ==============================================================================
 
+-- ------------------------------------------------------------------------------
+-- FASE PRELIMINAR: LIMPIEZA AUTOMÁTICA DE POLÍTICAS EXISTENTES
+-- ------------------------------------------------------------------------------
+DO $$
+DECLARE
+    pol RECORD;
+BEGIN
+    FOR pol IN 
+        SELECT schemaname, tablename, policyname 
+        FROM pg_policies 
+        WHERE schemaname = 'public' 
+        AND tablename IN (
+            'products', 'categories', 'orders', 'addresses', 
+            'user_carts', 'favorites', 'payment_cards', 
+            'admin_payment_settings', 'admin_invitations', 
+            'user_avatar_settings', 'order_email_notifications'
+        )
+    LOOP
+        EXECUTE format('DROP POLICY IF EXISTS %I ON %I.%I', pol.policyname, pol.schemaname, pol.tablename);
+    END LOOP;
+END $$;
+
+-- ------------------------------------------------------------------------------
 -- 0. FUNCIÓN DE SEGURIDAD: VERIFICACIÓN DE ROL ADMINISTRATIVO
+-- ------------------------------------------------------------------------------
 CREATE OR REPLACE FUNCTION public.is_admin()
 RETURNS boolean AS $$
 BEGIN
@@ -49,6 +74,7 @@ DROP POLICY IF EXISTS "Public insert products" ON public.products;
 DROP POLICY IF EXISTS "Public update products" ON public.products;
 DROP POLICY IF EXISTS "Public delete products" ON public.products;
 DROP POLICY IF EXISTS "Admin write products" ON public.products;
+DROP POLICY IF EXISTS "Admin insert products" ON public.products;
 DROP POLICY IF EXISTS "Admin update products" ON public.products;
 DROP POLICY IF EXISTS "Admin delete products" ON public.products;
 
@@ -86,6 +112,7 @@ DROP POLICY IF EXISTS "Public update categories" ON public.categories;
 DROP POLICY IF EXISTS "Public delete categories" ON public.categories;
 DROP POLICY IF EXISTS "Public can view categories" ON public.categories;
 DROP POLICY IF EXISTS "Authenticated users can manage categories" ON public.categories;
+DROP POLICY IF EXISTS "Admin manage categories" ON public.categories;
 
 CREATE POLICY "Public read categories" 
   ON public.categories 
@@ -115,7 +142,16 @@ DROP POLICY IF EXISTS "Public delete orders" ON public.orders;
 DROP POLICY IF EXISTS "Users can view own orders" ON public.orders;
 DROP POLICY IF EXISTS "Users can view their own orders" ON public.orders;
 DROP POLICY IF EXISTS "Users can insert their own orders" ON public.orders;
+DROP POLICY IF EXISTS "Users can update own orders" ON public.orders;
 DROP POLICY IF EXISTS "Admins can view all orders" ON public.orders;
+DROP POLICY IF EXISTS "Enable read access for all users" ON public.orders;
+DROP POLICY IF EXISTS "Enable insert for authenticated users only" ON public.orders;
+DROP POLICY IF EXISTS "Enable update for users based on email" ON public.orders;
+DROP POLICY IF EXISTS "Anyone can insert orders" ON public.orders;
+DROP POLICY IF EXISTS "Users and admins select orders" ON public.orders;
+DROP POLICY IF EXISTS "Authorized insert orders" ON public.orders;
+DROP POLICY IF EXISTS "Admin update orders" ON public.orders;
+DROP POLICY IF EXISTS "Admin delete orders" ON public.orders;
 
 -- Lectura: El cliente solo puede ver sus propias órdenes. El Admin puede ver todas.
 CREATE POLICY "Users and admins select orders" 
@@ -156,6 +192,7 @@ ALTER TABLE IF EXISTS public.addresses ENABLE ROW LEVEL SECURITY;
 
 DROP POLICY IF EXISTS "Public addresses policy" ON public.addresses;
 DROP POLICY IF EXISTS "Users can manage their own addresses" ON public.addresses;
+DROP POLICY IF EXISTS "Users manage own addresses" ON public.addresses;
 
 CREATE POLICY "Users manage own addresses" 
   ON public.addresses 
@@ -176,6 +213,7 @@ ALTER TABLE IF EXISTS public.user_carts ENABLE ROW LEVEL SECURITY;
 
 DROP POLICY IF EXISTS "Public user_carts policy" ON public.user_carts;
 DROP POLICY IF EXISTS "Users can manage their own cart" ON public.user_carts;
+DROP POLICY IF EXISTS "Users manage own cart" ON public.user_carts;
 
 CREATE POLICY "Users manage own cart" 
   ON public.user_carts 
@@ -195,6 +233,8 @@ CREATE POLICY "Users manage own cart"
 ALTER TABLE IF EXISTS public.favorites ENABLE ROW LEVEL SECURITY;
 
 DROP POLICY IF EXISTS "Public favorites policy" ON public.favorites;
+DROP POLICY IF EXISTS "Users can manage their own favorites" ON public.favorites;
+DROP POLICY IF EXISTS "Users manage own favorites" ON public.favorites;
 
 CREATE POLICY "Users manage own favorites" 
   ON public.favorites 
@@ -215,6 +255,7 @@ ALTER TABLE IF EXISTS public.payment_cards ENABLE ROW LEVEL SECURITY;
 
 DROP POLICY IF EXISTS "Public payment_cards policy" ON public.payment_cards;
 DROP POLICY IF EXISTS "Users can manage their own payment cards" ON public.payment_cards;
+DROP POLICY IF EXISTS "Users manage own payment cards" ON public.payment_cards;
 
 CREATE POLICY "Users manage own payment cards" 
   ON public.payment_cards 
@@ -268,6 +309,7 @@ CREATE POLICY "Admin manage invitations"
 ALTER TABLE IF EXISTS public.user_avatar_settings ENABLE ROW LEVEL SECURITY;
 
 DROP POLICY IF EXISTS "Users manage own avatar settings" ON public.user_avatar_settings;
+DROP POLICY IF EXISTS "Users can manage their own avatar settings" ON public.user_avatar_settings;
 
 CREATE POLICY "Users manage own avatar settings" 
   ON public.user_avatar_settings 
@@ -298,6 +340,7 @@ ALTER TABLE IF EXISTS public.order_email_notifications ENABLE ROW LEVEL SECURITY
 
 DROP POLICY IF EXISTS "Admin read email notifications" ON public.order_email_notifications;
 DROP POLICY IF EXISTS "Service role write email notifications" ON public.order_email_notifications;
+DROP POLICY IF EXISTS "Admin write email notifications" ON public.order_email_notifications;
 
 CREATE POLICY "Admin read email notifications" 
   ON public.order_email_notifications 
