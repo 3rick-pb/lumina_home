@@ -31,6 +31,7 @@ import {
   Fan,
   type LucideIcon,
 } from "lucide-react";
+import { supabase } from "./supabase";
 
 export interface NicheIconItem {
   id: string;
@@ -118,3 +119,52 @@ export const getSavedNicheSlots = (): NicheSlotConfig[] => {
   } catch {}
   return DEFAULT_NICHE_SLOTS;
 };
+
+export const fetchNicheSlotsFromCloud = async (): Promise<NicheSlotConfig[]> => {
+  try {
+    const { data, error } = await supabase
+      .from('header_niche_slots')
+      .select('*')
+      .order('slot_id', { ascending: true });
+
+    if (!error && data && data.length >= 2) {
+      const s1 = data.find((d: { slot_id: string }) => d.slot_id === 'slot1') || data[0];
+      const s2 = data.find((d: { slot_id: string }) => d.slot_id === 'slot2') || data[1];
+      const slots: NicheSlotConfig[] = [
+        { id: 'slot1', label: s1.label, iconName: s1.icon_name, category: s1.category },
+        { id: 'slot2', label: s2.label, iconName: s2.icon_name, category: s2.category },
+      ];
+      if (typeof window !== 'undefined') {
+        try {
+          localStorage.setItem('lumina_header_niches', JSON.stringify(slots));
+        } catch {}
+      }
+      return slots;
+    }
+  } catch {}
+  return getSavedNicheSlots();
+};
+
+export const saveNicheSlotsToCloud = async (slots: NicheSlotConfig[]): Promise<boolean> => {
+  if (typeof window !== 'undefined') {
+    try {
+      localStorage.setItem('lumina_header_niches', JSON.stringify(slots));
+      window.dispatchEvent(new Event('lumina_header_niches_updated'));
+    } catch {}
+  }
+  try {
+    const rows = slots.map((s, idx) => ({
+      slot_id: s.id || (idx === 0 ? 'slot1' : 'slot2'),
+      label: s.label,
+      icon_name: s.iconName,
+      category: s.category,
+      updated_at: new Date().toISOString(),
+    }));
+    const { error } = await supabase.from('header_niche_slots').upsert(rows);
+    return !error;
+  } catch (err) {
+    console.warn('Could not sync header niche slots to database:', err);
+    return false;
+  }
+};
+

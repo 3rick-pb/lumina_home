@@ -133,17 +133,45 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: false, error: 'Monto subtotal calculado inválido.' }, { status: 400 });
     }
 
-    // Server-side coupon verification
+    // Server-side coupon verification (Query Supabase coupons table first, with fallback)
     let discountAmount = 0;
     let isFreeShipping = false;
     if (couponCode) {
       const cleanCoupon = couponCode.trim().toUpperCase();
-      const couponRule = VALID_COUPONS[cleanCoupon];
-      if (couponRule) {
-        if (couponRule.discountPercent > 0) {
-          discountAmount = (calculatedSubtotal * couponRule.discountPercent) / 100;
+      let couponDiscountPercent = 0;
+      let couponFreeShipping = false;
+      let foundCoupon = false;
+
+      try {
+        const { data: dbCoupon } = await supabase
+          .from('coupons')
+          .select('discount_percent, is_free_shipping, min_order_amount, is_active')
+          .eq('code', cleanCoupon)
+          .eq('is_active', true)
+          .maybeSingle();
+
+        if (dbCoupon) {
+          if (!dbCoupon.min_order_amount || calculatedSubtotal >= Number(dbCoupon.min_order_amount)) {
+            couponDiscountPercent = Number(dbCoupon.discount_percent) || 0;
+            couponFreeShipping = Boolean(dbCoupon.is_free_shipping);
+            foundCoupon = true;
+          }
         }
-        if (couponRule.isFreeShipping) {
+      } catch (e) {
+        console.warn("Could not query coupons in prepare payment route:", e);
+      }
+
+      if (!foundCoupon && VALID_COUPONS[cleanCoupon]) {
+        couponDiscountPercent = VALID_COUPONS[cleanCoupon].discountPercent;
+        couponFreeShipping = VALID_COUPONS[cleanCoupon].isFreeShipping;
+        foundCoupon = true;
+      }
+
+      if (foundCoupon) {
+        if (couponDiscountPercent > 0) {
+          discountAmount = (calculatedSubtotal * couponDiscountPercent) / 100;
+        }
+        if (couponFreeShipping) {
           isFreeShipping = true;
         }
       }

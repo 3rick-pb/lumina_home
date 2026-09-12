@@ -282,15 +282,15 @@ export function CartDrawer() {
  const amountToFreeShipping = Math.max(0, FREE_SHIPPING_TARGET - subtotal);
  const hasFreeShipping = subtotal >= FREE_SHIPPING_TARGET || isFreeShippingCoupon;
 
- const handleApplyCoupon = (e: React.FormEvent) => {
- e.preventDefault();
- if (!couponInput.trim()) return;
- const res = applyCoupon(couponInput);
- setCouponFeedback({ msg: res.message, success: res.success });
- if (res.success) {
- setCouponInput("");
- }
- };
+  const handleApplyCoupon = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!couponInput.trim()) return;
+    const res = await applyCoupon(couponInput);
+    setCouponFeedback({ msg: res.message, success: res.success });
+    if (res.success) {
+      setCouponInput("");
+    }
+  };
 
  const handleDetectLocation = () => {
  if (typeof window === "undefined" || !navigator.geolocation) {

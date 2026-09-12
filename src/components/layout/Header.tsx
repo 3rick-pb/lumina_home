@@ -18,7 +18,7 @@ const CartDrawer = dynamic(() => import('@/components/ui/CartDrawer').then(mod =
 });
 import { usePathname, useRouter } from "next/navigation";
 import { normalizeSearchText } from "@/lib/utils";
-import { getSavedNicheSlots, getNicheIconByName, type NicheSlotConfig, DEFAULT_NICHE_SLOTS } from "@/lib/nicheIcons";
+import { getSavedNicheSlots, fetchNicheSlotsFromCloud, getNicheIconByName, type NicheSlotConfig, DEFAULT_NICHE_SLOTS } from "@/lib/nicheIcons";
 
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -46,10 +46,25 @@ export function Header() {
 
   useEffect(() => {
     setIsMounted(true);
+    // Instant initial render from localStorage cache
     setNicheSlots(getSavedNicheSlots());
+
+    // Fetch freshest configuration from Supabase public.header_niche_slots
+    fetchNicheSlotsFromCloud()
+      .then((slots) => {
+        if (slots && slots.length > 0) {
+          setNicheSlots(slots);
+        }
+      })
+      .catch((err) => console.warn("Could not sync header niche slots from cloud:", err));
 
     const handleUpdate = () => {
       setNicheSlots(getSavedNicheSlots());
+      fetchNicheSlotsFromCloud()
+        .then((slots) => {
+          if (slots && slots.length > 0) setNicheSlots(slots);
+        })
+        .catch(console.warn);
     };
     window.addEventListener("lumina_header_niches_updated", handleUpdate);
     window.addEventListener("storage", handleUpdate);

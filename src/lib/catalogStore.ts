@@ -83,8 +83,8 @@ interface CatalogState {
   deleteProduct: (id: string) => Promise<{ success: boolean; error?: string }>;
   addCategory: (name: string) => Promise<void>;
   deleteCategory: (name: string) => Promise<void>;
-  addBadge: (name: string) => void;
-  deleteBadge: (name: string) => void;
+  addBadge: (name: string) => Promise<void> | void;
+  deleteBadge: (name: string) => Promise<void> | void;
 }
 
 const DEFAULT_CATEGORIES = [
@@ -403,9 +403,22 @@ export const useCatalogStore = create<CatalogState>((set) => ({
       activeCategories = productCategories.length > 0 ? productCategories : DEFAULT_CATEGORIES;
     }
 
-    // 4. Badges
+    // 4. Badges (Local cache + Supabase store_badges table + active product badges)
+    let dbCustomBadges: string[] = [];
+    try {
+      const { data: badgeData, error: badgeError } = await supabase
+        .from('store_badges')
+        .select('name')
+        .eq('is_active', true);
+      if (!badgeError && badgeData && badgeData.length > 0) {
+        dbCustomBadges = badgeData.map(b => b.name).filter(Boolean);
+      }
+    } catch (e) {
+      console.warn("Could not fetch store_badges table:", e);
+    }
+
     const dbBadges = Array.from(new Set(prods.map(p => p.badge).filter((b): b is string => Boolean(b))));
-    const mergedBadges = Array.from(new Set([...initialBadges, ...dbBadges]));
+    const mergedBadges = Array.from(new Set([...initialBadges, ...dbCustomBadges, ...dbBadges]));
 
     set({ products: prods, categories: activeCategories, badges: mergedBadges, isLoading: false });
   },
@@ -678,7 +691,8 @@ export const useCatalogStore = create<CatalogState>((set) => ({
     });
 
     try {
-      await supabase.from('categories').insert([{ name: clean }]);
+      const slug = normalizeCategory(clean).replace(/\s+/g, '-');
+      await supabase.from('categories').upsert([{ name: clean, slug }], { onConflict: 'name' });
     } catch (e) {
       console.error("Error saving category to database:", e);
     }
@@ -697,7 +711,7 @@ export const useCatalogStore = create<CatalogState>((set) => ({
     }
   },
 
-  addBadge: (name) => {
+  addBadge: async (name) => {
     const clean = name.trim();
     if (!clean) return;
     set((state) => {
@@ -708,9 +722,15 @@ export const useCatalogStore = create<CatalogState>((set) => ({
       }
       return { badges: next };
     });
+
+    try {
+      await supabase.from('store_badges').upsert([{ name: clean }], { onConflict: 'name' });
+    } catch (e) {
+      console.error("Error saving badge to store_badges table:", e);
+    }
   },
 
-  deleteBadge: (name) => {
+  deleteBadge: async (name) => {
     set((state) => {
       const next = state.badges.filter(b => b !== name);
       if (typeof window !== 'undefined') {
@@ -718,5 +738,11 @@ export const useCatalogStore = create<CatalogState>((set) => ({
       }
       return { badges: next };
     });
+
+    try {
+      await supabase.from('store_badges').delete().eq('name', name);
+    } catch (e) {
+      console.error("Error deleting badge from store_badges table:", e);
+    }
   },
 }));

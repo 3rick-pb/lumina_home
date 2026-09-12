@@ -20,7 +20,9 @@ import {
 import { 
   NICHE_ICONS_CATALOG, 
   getNicheIconByName, 
-  getSavedNicheSlots, 
+  getSavedNicheSlots,
+  fetchNicheSlotsFromCloud,
+  saveNicheSlotsToCloud,
   DEFAULT_NICHE_SLOTS, 
   type NicheSlotConfig 
 } from "@/lib/nicheIcons";
@@ -51,6 +53,9 @@ export function NichesTab({ onRequestDeleteNiche }: NichesTabProps) {
   useEffect(() => {
     if (typeof window !== "undefined") {
       setNicheSlots(getSavedNicheSlots());
+      fetchNicheSlotsFromCloud().then((slots) => {
+        if (slots && slots.length >= 2) setNicheSlots(slots);
+      });
     }
   }, []);
 
@@ -66,27 +71,17 @@ export function NichesTab({ onRequestDeleteNiche }: NichesTabProps) {
     handleUpdateNicheSlot(activeEditingSlot === 1 ? 0 : 1, { iconName });
   };
 
-  const handleSaveNicheSlots = () => {
-    if (typeof window !== "undefined") {
-      try {
-        localStorage.setItem("lumina_header_niches", JSON.stringify(nicheSlots));
-        window.dispatchEvent(new Event("lumina_header_niches_updated"));
-        setNicheSaveFeedback("?Men? de pastilla actualizado con ?xito para la p?gina de inicio!");
-        setTimeout(() => setNicheSaveFeedback(null), 3500);
-      } catch {}
-    }
+  const handleSaveNicheSlots = async () => {
+    await saveNicheSlotsToCloud(nicheSlots);
+    setNicheSaveFeedback("¡Menú de pastilla guardado en base de datos con éxito!");
+    setTimeout(() => setNicheSaveFeedback(null), 3500);
   };
 
-  const handleResetNicheSlots = () => {
+  const handleResetNicheSlots = async () => {
     setNicheSlots(DEFAULT_NICHE_SLOTS);
-    if (typeof window !== "undefined") {
-      try {
-        localStorage.setItem("lumina_header_niches", JSON.stringify(DEFAULT_NICHE_SLOTS));
-        window.dispatchEvent(new Event("lumina_header_niches_updated"));
-        setNicheSaveFeedback("Restablecido a los nichos predeterminados (Iluminaci?n & Textiles)");
-        setTimeout(() => setNicheSaveFeedback(null), 3500);
-      } catch {}
-    }
+    await saveNicheSlotsToCloud(DEFAULT_NICHE_SLOTS);
+    setNicheSaveFeedback("Restablecido a los nichos predeterminados (Iluminación & Textiles)");
+    setTimeout(() => setNicheSaveFeedback(null), 3500);
   };
 
   const scrollIconSlider = (direction: "left" | "right") => {

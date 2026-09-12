@@ -65,7 +65,7 @@ interface CartState {
   getDiscountAmount: () => number;
   getShipping: () => number;
   getTotal: () => number;
-  applyCoupon: (code: string) => { success: boolean; message: string };
+  applyCoupon: (code: string) => Promise<{ success: boolean; message: string }>;
   removeCoupon: () => void;
 }
 
@@ -444,32 +444,60 @@ export const useCartStore = create<CartState>((set, get) => ({
     return Math.max(0, subtotal - discount + shipping);
   },
 
-  applyCoupon: (code: string) => {
+  applyCoupon: async (code: string) => {
     const clean = code.trim().toUpperCase();
     const currentUserId = get().currentUserId;
+    const subtotal = get().getSubtotal();
     let codeName: string | null = null;
     let discount = 0;
     let freeShipping = false;
     let message = "";
 
-    if (clean === 'LUMINA10') {
-      codeName = 'LUMINA10';
-      discount = 10;
-      message = '¡Cupón LUMINA10 aplicado! 10% de descuento.';
-    } else if (clean === 'VIP20') {
-      codeName = 'VIP20';
-      discount = 20;
-      message = '¡Cupón VIP20 aplicado! 20% de descuento exclusivo.';
-    } else if (clean === 'BIENVENIDO') {
-      codeName = 'BIENVENIDO';
-      discount = 15;
-      message = '¡Cupón BIENVENIDO aplicado! 15% de descuento.';
-    } else if (clean === 'ENVIOGRATIS') {
-      codeName = 'ENVIOGRATIS';
-      freeShipping = true;
-      message = '¡Cupón de Envío Gratuito aplicado con éxito!';
-    } else {
-      return { success: false, message: 'Código no válido o expirado. Prueba con LUMINA10.' };
+    // 1. Query public.coupons table in Supabase
+    try {
+      const { data, error } = await supabase
+        .from('coupons')
+        .select('code, discount_percent, is_free_shipping, min_order_amount, is_active')
+        .eq('code', clean)
+        .eq('is_active', true)
+        .maybeSingle();
+
+      if (!error && data) {
+        if (data.min_order_amount && subtotal < Number(data.min_order_amount)) {
+          return {
+            success: false,
+            message: `Este cupón requiere un pedido mínimo de $${Number(data.min_order_amount).toFixed(2)}.`
+          };
+        }
+        codeName = data.code;
+        discount = Number(data.discount_percent) || 0;
+        freeShipping = Boolean(data.is_free_shipping);
+        message = discount > 0 
+          ? `¡Cupón ${data.code} aplicado! ${discount}% de descuento.`
+          : `¡Cupón ${data.code} aplicado con éxito!`;
+      }
+    } catch (e) {
+      console.warn("Could not query coupons from Supabase:", e);
+    }
+
+    // 2. Fallback to predefined coupons if offline or table not yet migrated
+    if (!codeName) {
+      const DEFAULT_COUPONS: Record<string, { discountPercent: number; isFreeShipping: boolean; message: string }> = {
+        'LUMINA10': { discountPercent: 10, isFreeShipping: false, message: '¡Cupón LUMINA10 aplicado! 10% de descuento.' },
+        'VIP20': { discountPercent: 20, isFreeShipping: false, message: '¡Cupón VIP20 aplicado! 20% de descuento exclusivo.' },
+        'BIENVENIDO': { discountPercent: 15, isFreeShipping: false, message: '¡Cupón BIENVENIDO aplicado! 15% de descuento.' },
+        'ENVIOGRATIS': { discountPercent: 0, isFreeShipping: true, message: '¡Cupón de Envío Gratuito aplicado con éxito!' }
+      };
+
+      const fallback = DEFAULT_COUPONS[clean];
+      if (fallback) {
+        codeName = clean;
+        discount = fallback.discountPercent;
+        freeShipping = fallback.isFreeShipping;
+        message = fallback.message;
+      } else {
+        return { success: false, message: 'Código no válido o expirado. Prueba con LUMINA10.' };
+      }
     }
 
     const payload: CartStoragePayload = {

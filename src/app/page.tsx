@@ -8,6 +8,7 @@ import { Percent, Truck, ShieldCheck, ArrowRight, RotateCcw, Lock } from "lucide
 import Link from "next/link";
 import { useCatalogStore } from "@/lib/catalogStore";
 import { useAmbientStore } from "@/lib/ambientStore";
+import { supabase } from "@/lib/supabase";
 
 const NICHE_METADATA_MAP: Record<string, { subtitle: string; img: string; defaultPrice: string }> = {
   "aromaterapia": { 
@@ -66,7 +67,21 @@ const normalizeText = (text: string) => {
   return text.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
 };
 
-const TRUST_BADGES = [
+const TRUST_ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
+  Truck,
+  ShieldCheck,
+  RotateCcw,
+  Percent,
+  Lock,
+};
+
+interface TrustBadgeItem {
+  icon: React.ComponentType<{ className?: string }>;
+  title: string;
+  subtitle: string;
+}
+
+const DEFAULT_TRUST_BADGES: TrustBadgeItem[] = [
   {
     icon: Truck,
     title: "Envíos nacionales",
@@ -99,6 +114,8 @@ export default function Home() {
   const { setCategoryTheme, resetTheme } = useAmbientStore();
   const [isMounted, setIsMounted] = useState(false);
   const [activeFilter, setActiveFilter] = useState("Todos");
+  const [trustBadges, setTrustBadges] = useState<TrustBadgeItem[]>(DEFAULT_TRUST_BADGES);
+  const [categoryMeta, setCategoryMeta] = useState<Record<string, { subtitle?: string; description?: string }>>({});
 
   const categoriesRef = useRef<HTMLDivElement>(null);
   const popularRef = useRef<HTMLDivElement>(null);
@@ -108,6 +125,7 @@ export default function Home() {
     return categories.map((catName) => {
       const norm = normalizeText(catName);
       const meta = NICHE_METADATA_MAP[norm];
+      const dbMeta = categoryMeta[norm];
 
       const catProducts = products.filter(p => normalizeText(p.category) === norm);
       let priceText = meta?.defaultPrice || "Colección activa";
@@ -120,7 +138,7 @@ export default function Home() {
       }
 
       const img = meta?.img || catProducts[0]?.imageUrl || "https://images.unsplash.com/photo-1600210492486-724fe5c67fb0?q=80&w=800&auto=format&fit=crop";
-      const subtitle = meta?.subtitle || "Colección exclusiva";
+      const subtitle = dbMeta?.subtitle || meta?.subtitle || "Colección exclusiva";
 
       return {
         name: catName,
@@ -129,10 +147,53 @@ export default function Home() {
         img
       };
     });
-  }, [categories, products]);
+  }, [categories, products, categoryMeta]);
 
   useEffect(() => {
     setIsMounted(true);
+
+    // 1. Fetch trust badges from Supabase store_trust_badges table
+    const fetchTrustBadges = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('store_trust_badges')
+          .select('title, subtitle, icon_name')
+          .eq('is_active', true)
+          .order('display_order', { ascending: true });
+
+        if (!error && data && data.length > 0) {
+          setTrustBadges(data.map(item => ({
+            title: item.title,
+            subtitle: item.subtitle,
+            icon: TRUST_ICON_MAP[item.icon_name] || ShieldCheck,
+          })));
+        }
+      } catch (err) {
+        console.warn("Could not load store_trust_badges from Supabase:", err);
+      }
+    };
+
+    // 2. Fetch category metadata from Supabase categories table
+    const fetchCategoriesMeta = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('categories')
+          .select('name, subtitle, description')
+          .eq('is_active', true);
+        if (!error && data && data.length > 0) {
+          const map: Record<string, { subtitle?: string; description?: string }> = {};
+          data.forEach(c => {
+            map[normalizeText(c.name)] = { subtitle: c.subtitle || undefined, description: c.description || undefined };
+          });
+          setCategoryMeta(map);
+        }
+      } catch (err) {
+        console.warn("Could not load categories meta from Supabase:", err);
+      }
+    };
+
+    fetchTrustBadges();
+    fetchCategoriesMeta();
   }, []);
 
   // IntersectionObserver to smoothly shift ambient matte glow as user scrolls down the catalog
@@ -213,7 +274,7 @@ export default function Home() {
       <div className="relative z-30 -mt-7 sm:-mt-9 mb-3 container mx-auto px-4 md:px-8">
         <div className="bg-white/95 dark:bg-[#1e1e20]/95 backdrop-blur-2xl rounded-2xl md:rounded-[2rem] border border-black/[0.06] dark:border-white/[0.08] shadow-[0_16px_40px_-8px_rgba(0,0,0,0.08),0_4px_16px_rgba(0,0,0,0.03)] p-3 sm:p-4 md:p-5">
           <div className="flex lg:grid lg:grid-cols-5 items-center justify-start lg:justify-items-center gap-6 sm:gap-8 lg:gap-0 overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden py-1 px-2">
-            {TRUST_BADGES.map((badge, idx) => (
+            {trustBadges.map((badge, idx) => (
               <div 
                 key={idx} 
                 className="flex items-center gap-3 shrink-0 lg:w-full lg:justify-center relative group px-2"
@@ -229,7 +290,7 @@ export default function Home() {
                     {badge.subtitle}
                   </p>
                 </div>
-                {idx < TRUST_BADGES.length - 1 && (
+                {idx < trustBadges.length - 1 && (
                   <div className="hidden lg:block absolute right-0 top-1/2 -translate-y-1/2 h-8 w-px bg-gray-200/80 dark:bg-white/10" />
                 )}
               </div>
