@@ -114,6 +114,18 @@ function VisaLogo({ className = "h-4", fill = "#FFFFFF" }: { className?: string;
  );
 }
 
+function PayPhoneIcon({ className = "w-4 h-4" }: { className?: string }) {
+ return (
+ <svg className={`shrink-0 ${className}`} viewBox="0 0 100 100" fill="none">
+ <rect width="100" height="100" rx="24" fill="#FF5E00" />
+ <path d="M32 25h36a7 7 0 017 7v36a7 7 0 01-7 7H32a7 7 0 01-7-7V32a7 7 0 017-7z" fill="#FFFFFF" />
+ <path d="M42 38h16a3 3 0 013 3v18a3 3 0 01-3 3H42a3 3 0 01-3-3V41a3 3 0 013-3z" fill="#FF5E00" />
+ <circle cx="50" cy="68" r="2.5" fill="#FF5E00" />
+ <path d="M46 45h8M46 49h5" stroke="#FFFFFF" strokeWidth="2.5" strokeLinecap="round" />
+ </svg>
+ );
+}
+
 function ContactlessIcon({ className = "w-5 h-5" }: { className?: string }) {
  return (
  <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
@@ -184,12 +196,19 @@ export function CartDrawer() {
  const [couponInput, setCouponInput] = useState("");
  const [couponFeedback, setCouponFeedback] = useState<{ msg: string; success: boolean } | null>(null);
 
- // Payment method selection
- const [selectedMethod, setSelectedMethod] = useState<"card" | "apple" | "google" | "paypal">("card");
- const [selectedCardId, setSelectedCardId] = useState<string>("");
- const [hoveredPaymentMethod, setHoveredPaymentMethod] = useState<string | null>(null);
- const [isWalletOpen, setIsWalletOpen] = useState(false);
- const [hoveredCardId, setHoveredCardId] = useState<string | null>(null);
+  // Payment method selection
+  const [selectedMethod, setSelectedMethod] = useState<"payphone" | "card" | "apple" | "google" | "paypal">("payphone");
+  const [selectedCardId, setSelectedCardId] = useState<string>("");
+  const [hoveredPaymentMethod, setHoveredPaymentMethod] = useState<string | null>(null);
+  const [isWalletOpen, setIsWalletOpen] = useState(false);
+  const [hoveredCardId, setHoveredCardId] = useState<string | null>(null);
+
+  // PayPhone Simulation Modal (Modo Preparación / RUC en trámite)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [payphoneSimData, setPayphoneSimData] = useState<any>(null);
+  const [isPayPhoneSimOpen, setIsPayPhoneSimOpen] = useState(false);
+  const [isSimulatingApproval, setIsSimulatingApproval] = useState(false);
+  const [payphoneError, setPayphoneError] = useState<string | null>(null);
 
   // Quick Address Inline Form
   const [isEditingAddress, setIsEditingAddress] = useState(false);
@@ -440,94 +459,229 @@ export function CartDrawer() {
  setStep("payment");
  };
 
- const handleConfirmOrder = () => {
- if (!address && (!addresses || addresses.length === 0) && !addrStreet) {
- setIsEditingAddress(true);
- return;
- }
- let shippingAddr = address;
- if (!shippingAddr && addresses && addresses.length > 0) {
- shippingAddr = addresses.find(a => a.isDefault) || addresses[0];
- setAddress(shippingAddr);
- }
- setIsProcessing(true);
+  const handleConfirmOrder = async () => {
+    if (!address && (!addresses || addresses.length === 0) && !addrStreet) {
+      setIsEditingAddress(true);
+      return;
+    }
+    let shippingAddr = address;
+    if (!shippingAddr && addresses && addresses.length > 0) {
+      shippingAddr = addresses.find(a => a.isDefault) || addresses[0];
+      setAddress(shippingAddr);
+    }
 
- setTimeout(() => {
- const orderId = `INV_${Math.floor(100000 + Math.random() * 900000)}`;
- const trackingCode = `LM-${Math.floor(1000000 + Math.random() * 9000000)}`;
+    const orderId = `INV_${Math.floor(100000 + Math.random() * 900000)}`;
+    const trackingCode = `LM-${Math.floor(1000000 + Math.random() * 9000000)}`;
+    const customerName = user?.name || shippingAddr?.recipient || addrRecipient || "Cliente";
+    const customerEmail = user?.email || shippingAddr?.email || addrEmail.trim() || "cliente@lumina.com";
+    const recipientName = shippingAddr?.recipient || addrRecipient || customerName;
 
- const customerName = user?.name || shippingAddr?.recipient || addrRecipient || "Cliente";
- const customerEmail = user?.email || "cliente@lumina.com";
- const recipientName = shippingAddr?.recipient || addrRecipient || customerName;
+    // PAYPHONE ECUADOR CHECKOUT FLOW (Dual Mode: Live vs Simulated)
+    if (selectedMethod === "payphone") {
+      setIsProcessing(true);
+      setPayphoneError(null);
+      try {
+        const res = await fetch("/api/payphone/prepare", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            orderId,
+            items: items.map(i => ({
+              productId: i.productId,
+              quantity: i.quantity,
+              price: i.product.price,
+              isBundle: i.isBundle,
+              bundleCustomPrice: i.bundleCustomPrice,
+              product: {
+                id: i.product.id,
+                title: i.product.title,
+                price: i.product.price,
+                imageUrl: i.product.imageUrl
+              }
+            })),
+            shippingAddress: {
+              recipient: recipientName,
+              idNumber: shippingAddr?.idNumber || addrIdNumber.trim() || undefined,
+              phone: shippingAddr?.phone || addrPhone.trim() || undefined,
+              email: customerEmail,
+              street: shippingAddr?.street || addrStreet || "Calle Principal",
+              city: shippingAddr?.city || addrCity || "Quito",
+              state: shippingAddr?.state || addrState || "Pichincha",
+              postalCode: shippingAddr?.postalCode || addrPostal || "170150",
+              country: "Ecuador"
+            },
+            couponCode: couponCode || undefined,
+            clientClaimedTotal: finalTotal
+          })
+        });
 
- const effectiveCards = cards || [];
- const chosenCard = effectiveCards.find(c => c.id === selectedCardId) || effectiveCards[0];
- 
- let paymentDesc = "Tarjeta Bancaria";
- if (selectedMethod === "card") {
- paymentDesc = chosenCard ? `${chosenCard.type.toUpperCase()} •••• ${chosenCard.number.slice(-4)}` : "Tarjeta Bancaria";
- } else if (selectedMethod === "apple") {
- paymentDesc = "Apple Pay";
- } else if (selectedMethod === "google") {
- paymentDesc = "Google Pay";
- } else if (selectedMethod === "paypal") {
- paymentDesc = "PayPal";
- }
+        const data = await res.json();
+        setIsProcessing(false);
 
- const now = new Date();
- const formattedDate = now.toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: 'numeric' });
- const formattedTime = now.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
+        if (!res.ok || !data.success) {
+          setPayphoneError(data.error || "No se pudo preparar la pasarela de pagos de PayPhone.");
+          return;
+        }
 
- const newOrder: Order = {
- id: orderId,
- date: formattedDate,
- time: formattedTime,
- createdAt: now.toISOString(),
- status: 'Procesando',
- trackingNumber: trackingCode,
- total: finalTotal,
- items: [...items],
- customerName,
- customerEmail: shippingAddr?.email || addrEmail.trim() || customerEmail,
- customerIdNumber: shippingAddr?.idNumber || addrIdNumber.trim() || undefined,
- customerPhone: shippingAddr?.phone || addrPhone.trim() || undefined,
- recipient: recipientName,
- shippingAddress: shippingAddr ? {
- id: shippingAddr.id,
- recipient: recipientName,
- idNumber: shippingAddr.idNumber,
- phone: shippingAddr.phone,
- email: shippingAddr.email || customerEmail,
- street: shippingAddr.street,
- city: shippingAddr.city,
- state: shippingAddr.state,
- postalCode: shippingAddr.postalCode,
- country: shippingAddr.country,
- isDefault: shippingAddr.isDefault
- } : (addrStreet ? {
- id: "addr-order",
- recipient: recipientName,
- idNumber: addrIdNumber.trim() || undefined,
- phone: addrPhone.trim() || undefined,
- email: addrEmail.trim() || customerEmail,
- street: addrStreet,
- city: addrCity,
- state: addrState,
- postalCode: addrPostal,
- country: addrCountry,
- isDefault: true
- } : undefined),
- paymentMethod: paymentDesc,
- userId: user?.id,
- };
+        if (data.isSimulated) {
+          // Open interactive test simulator modal (RUC pending)
+          setPayphoneSimData({
+            paymentId: data.paymentId,
+            clientTransactionId: data.clientTransactionId,
+            orderId,
+            total: data.verifiedTotal || finalTotal,
+            shippingAddr,
+            customerEmail,
+            customerName,
+            recipientName,
+            items: [...items]
+          });
+          setIsPayPhoneSimOpen(true);
+        } else if (data.payUrl) {
+          // Live PayPhone redirection
+          window.location.href = data.payUrl;
+        }
+      } catch {
+        setIsProcessing(false);
+        setPayphoneError("Error de conexión al comunicar con los servidores de PayPhone Ecuador.");
+      }
+      return;
+    }
 
- addOrder(newOrder);
- setLastPlacedOrder(newOrder);
- clearCart();
- setIsProcessing(false);
- setStep("success");
- }, 1200);
- };
+    setIsProcessing(true);
+
+    setTimeout(() => {
+      const effectiveCards = cards || [];
+      const chosenCard = effectiveCards.find(c => c.id === selectedCardId) || effectiveCards[0];
+      
+      let paymentDesc = "Tarjeta Bancaria";
+      if (selectedMethod === "card") {
+        paymentDesc = chosenCard ? `${chosenCard.type.toUpperCase()} •••• ${chosenCard.number.slice(-4)}` : "Tarjeta Bancaria";
+      } else if (selectedMethod === "apple") {
+        paymentDesc = "Apple Pay";
+      } else if (selectedMethod === "google") {
+        paymentDesc = "Google Pay";
+      } else if (selectedMethod === "paypal") {
+        paymentDesc = "PayPal";
+      }
+
+      const now = new Date();
+      const formattedDate = now.toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: 'numeric' });
+      const formattedTime = now.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
+
+      const newOrder: Order = {
+        id: orderId,
+        date: formattedDate,
+        time: formattedTime,
+        createdAt: now.toISOString(),
+        status: 'Procesando',
+        trackingNumber: trackingCode,
+        total: finalTotal,
+        items: [...items],
+        customerName,
+        customerEmail: shippingAddr?.email || addrEmail.trim() || customerEmail,
+        customerIdNumber: shippingAddr?.idNumber || addrIdNumber.trim() || undefined,
+        customerPhone: shippingAddr?.phone || addrPhone.trim() || undefined,
+        recipient: recipientName,
+        shippingAddress: shippingAddr ? {
+          id: shippingAddr.id,
+          recipient: recipientName,
+          idNumber: shippingAddr.idNumber,
+          phone: shippingAddr.phone,
+          email: shippingAddr.email || customerEmail,
+          street: shippingAddr.street,
+          city: shippingAddr.city,
+          state: shippingAddr.state,
+          postalCode: shippingAddr.postalCode,
+          country: shippingAddr.country,
+          isDefault: shippingAddr.isDefault
+        } : (addrStreet ? {
+          id: "addr-order",
+          recipient: recipientName,
+          idNumber: addrIdNumber.trim() || undefined,
+          phone: addrPhone.trim() || undefined,
+          email: addrEmail.trim() || customerEmail,
+          street: addrStreet,
+          city: addrCity,
+          state: addrState,
+          postalCode: addrPostal,
+          country: addrCountry,
+          isDefault: true
+        } : undefined),
+        paymentMethod: paymentDesc,
+        userId: user?.id,
+      };
+
+      addOrder(newOrder);
+      setLastPlacedOrder(newOrder);
+      clearCart();
+      setIsProcessing(false);
+      setStep("success");
+    }, 1200);
+  };
+
+  const handleApprovePayPhoneSimulation = async () => {
+    if (!payphoneSimData) return;
+    setIsSimulatingApproval(true);
+    setPayphoneError(null);
+    try {
+      const res = await fetch("/api/payphone/confirm", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id: payphoneSimData.paymentId,
+          clientTxId: payphoneSimData.clientTransactionId,
+          orderData: {
+            orderId: payphoneSimData.orderId,
+            total: payphoneSimData.total,
+            items: payphoneSimData.items,
+            customerName: payphoneSimData.customerName,
+            customerEmail: payphoneSimData.customerEmail,
+            recipient: payphoneSimData.recipientName,
+            customerIdNumber: payphoneSimData.shippingAddr?.idNumber || addrIdNumber.trim() || undefined,
+            customerPhone: payphoneSimData.shippingAddr?.phone || addrPhone.trim() || undefined,
+            shippingAddress: payphoneSimData.shippingAddr ? {
+              recipient: payphoneSimData.recipientName,
+              idNumber: payphoneSimData.shippingAddr.idNumber,
+              phone: payphoneSimData.shippingAddr.phone,
+              email: payphoneSimData.customerEmail,
+              street: payphoneSimData.shippingAddr.street,
+              city: payphoneSimData.shippingAddr.city,
+              state: payphoneSimData.shippingAddr.state,
+              postalCode: payphoneSimData.shippingAddr.postalCode,
+              country: payphoneSimData.shippingAddr.country
+            } : (addrStreet ? {
+              recipient: payphoneSimData.recipientName,
+              idNumber: addrIdNumber.trim() || undefined,
+              phone: addrPhone.trim() || undefined,
+              email: payphoneSimData.customerEmail,
+              street: addrStreet,
+              city: addrCity,
+              state: addrState,
+              postalCode: addrPostal,
+              country: addrCountry
+            } : undefined)
+          }
+        })
+      });
+
+      const data = await res.json();
+      setIsSimulatingApproval(false);
+      setIsPayPhoneSimOpen(false);
+
+      if (res.ok && data.success && data.order) {
+        addOrder(data.order);
+        setLastPlacedOrder(data.order);
+        clearCart();
+        setStep("success");
+      } else {
+        setPayphoneError(data.error || "No se pudo confirmar la transacción simulada de PayPhone.");
+      }
+    } catch {
+      setIsSimulatingApproval(false);
+      setPayphoneError("Error de conexión al confirmar la simulación con PayPhone.");
+    }
+  };
 
   const availableCards = useMemo(() => cards || [], [cards]);
 
@@ -1681,6 +1835,15 @@ export function CartDrawer() {
  {(() => {
  const PAYMENT_OPTIONS = [
  { 
+ id: "payphone" as const, 
+ label: "PayPhone 🇪🇨", 
+ renderIcon: (active: boolean) => (
+ <div className={`transition-all duration-200 ${active ? "opacity-100 scale-105" : "opacity-60"}`}>
+ <PayPhoneIcon className="w-4 h-4" />
+ </div>
+ ) 
+ },
+ { 
  id: "card" as const, 
  label: "Tarjeta", 
  renderIcon: (active: boolean) => (
@@ -1718,14 +1881,14 @@ export function CartDrawer() {
 
  return (
  <div 
- className="relative p-1.5 rounded-full bg-slate-100/80 backdrop-blur-xl border border-white/90 shadow-[0_8px_32px_rgba(0,0,0,0.06)] grid grid-cols-4 max-w-xl mx-auto font-sans overflow-hidden select-none"
+ className="relative p-1.5 rounded-full bg-slate-100/80 backdrop-blur-xl border border-white/90 shadow-[0_8px_32px_rgba(0,0,0,0.06)] grid grid-cols-5 max-w-2xl mx-auto font-sans overflow-hidden select-none"
  onMouseLeave={() => setHoveredPaymentMethod(null)}
  >
  {/* The Single Sliding Active Liquid Glass Droplet (Strictly Horizontal, Zero Y Movement) */}
  <motion.div
  className="absolute top-1.5 bottom-1.5 rounded-full bg-white dark:bg-[#2a2a2c]/95 shadow-[0_4px_16px_rgba(0,0,0,0.08),inset_0_1.5px_2px_rgba(255,255,255,1)] border border-white pointer-events-none z-0"
  style={{
- width: "calc((100% - 12px) / 4)",
+ width: "calc((100% - 12px) / 5)",
  left: "6px",
  }}
  animate={{
@@ -1749,7 +1912,7 @@ export function CartDrawer() {
  <motion.div
  className="absolute top-1.5 bottom-1.5 rounded-full bg-white dark:bg-[#2a2a2c]/40 pointer-events-none z-0"
  style={{
- width: "calc((100% - 12px) / 4)",
+ width: "calc((100% - 12px) / 5)",
  left: "6px",
  }}
  initial={{ opacity: 0 }}
@@ -1791,6 +1954,57 @@ export function CartDrawer() {
  </div>
  );
  })()}
+
+  {/* VIEW 0: PAYPHONE ECUADOR PAYMENT EXPERIENCE */}
+  {selectedMethod === "payphone" && (
+    <div className="p-6 sm:p-7 rounded-3xl bg-gradient-to-br from-[#fff8f2] via-white to-[#fff1e6] dark:from-[#251b14] dark:via-[#202022] dark:to-[#1a1410] border border-orange-200/80 dark:border-orange-500/20 shadow-sm flex flex-col items-center text-center space-y-4 font-sans animate-fade-in">
+      <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-[#FF5E00] to-[#E04D00] flex items-center justify-center shadow-lg shadow-orange-500/20 shrink-0">
+        <PayPhoneIcon className="w-9 h-9 text-white" />
+      </div>
+      <div>
+        <div className="flex items-center justify-center gap-2">
+          <h4 className="font-bold text-base text-gray-900 dark:text-gray-100 tracking-tight">PayPhone Ecuador</h4>
+          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 flex items-center gap-1">
+            <ShieldCheck className="w-3 h-3" /> Pasarela Segura
+          </span>
+        </div>
+        <p className="text-xs text-gray-500 dark:text-gray-400 max-w-sm mt-1.5 leading-relaxed">
+          Paga al instante con tarjetas de crédito o débito de todos los bancos de Ecuador (Pichincha, Guayaquil, Pacífico, Produbanco, etc.) o con la app PayPhone.
+        </p>
+      </div>
+
+      {/* Supported Card Badges in Ecuador */}
+      <div className="flex flex-wrap items-center justify-center gap-1.5 pt-1">
+        <span className="px-2.5 py-1 rounded-lg bg-white dark:bg-[#1a1a1c] border border-gray-200 dark:border-white/10 text-[11px] font-bold text-gray-700 dark:text-gray-300 flex items-center gap-1.5 shadow-2xs">
+          <VisaLogo className="h-3" fill="#1A1F71" /> Visa
+        </span>
+        <span className="px-2.5 py-1 rounded-lg bg-white dark:bg-[#1a1a1c] border border-gray-200 dark:border-white/10 text-[11px] font-bold text-gray-700 dark:text-gray-300 flex items-center gap-1.5 shadow-2xs">
+          <MastercardLogo className="h-3.5" /> Mastercard
+        </span>
+        <span className="px-2.5 py-1 rounded-lg bg-white dark:bg-[#1a1a1c] border border-gray-200 dark:border-white/10 text-[11px] font-bold text-gray-700 dark:text-gray-300 shadow-2xs">
+          Diners Club
+        </span>
+        <span className="px-2.5 py-1 rounded-lg bg-white dark:bg-[#1a1a1c] border border-gray-200 dark:border-white/10 text-[11px] font-bold text-gray-700 dark:text-gray-300 shadow-2xs">
+          Discover
+        </span>
+        <span className="px-2.5 py-1 rounded-lg bg-white dark:bg-[#1a1a1c] border border-gray-200 dark:border-white/10 text-[11px] font-bold text-gray-700 dark:text-gray-300 shadow-2xs">
+          American Express
+        </span>
+        <span className="px-2.5 py-1 rounded-lg bg-white dark:bg-[#1a1a1c] border border-gray-200 dark:border-white/10 text-[11px] font-bold text-gray-700 dark:text-gray-300 shadow-2xs">
+          Alia
+        </span>
+      </div>
+
+      <div className="w-full pt-3 border-t border-orange-100 dark:border-white/5 flex items-center justify-between text-[11px] text-gray-500 dark:text-gray-400">
+        <span className="flex items-center gap-1">
+          <Lock className="w-3.5 h-3.5 text-emerald-600" /> Cifrado Bancario 256-bit
+        </span>
+        <span className="font-semibold text-[#FF5E00]">
+          Sin comisión al comprador
+        </span>
+      </div>
+    </div>
+  )}
 
  {/* VIEW 1: CREDIT / DEBIT CARD DETAILS WITH BLUE WALLET SLEEVE */}
  {selectedMethod === "card" && (
@@ -2203,17 +2417,25 @@ export function CartDrawer() {
  </span>
  </div>
 
+ {payphoneError && (
+ <div className="p-3.5 rounded-2xl bg-rose-50 dark:bg-rose-500/10 border border-rose-200 dark:border-rose-500/20 text-rose-700 dark:text-rose-400 text-xs flex items-start gap-2.5 animate-shake">
+ <AlertTriangle className="w-4 h-4 shrink-0 text-rose-500 mt-0.5" />
+ <div className="space-y-0.5">
+ <p className="font-bold">Error al procesar el pago</p>
+ <p className="text-[11px] leading-relaxed">{payphoneError}</p>
+ </div>
+ </div>
+ )}
+
  {/* LIQUID GLASS CONFIRM PAYMENT BUTTON */}
  <button 
  onClick={handleConfirmOrder}
  disabled={isProcessing}
- className="group relative overflow-hidden w-full h-14 rounded-2xl font-bold text-white dark:text-gray-900 text-sm sm:text-base flex items-center justify-center gap-2.5 transition-all duration-300
- bg-emerald-600/80 hover:bg-emerald-600/90 active:scale-[0.99]
- backdrop-blur-xl
- shadow-[0_12px_28px_-4px_rgba(16,185,129,0.35),0_4px_12px_rgba(0,0,0,0.06),inset_0_1.5px_2px_rgba(255,255,255,0.45),inset_0_-1.5px_2px_rgba(0,0,0,0.15)]
- border border-white/40 hover:border-white/60
- hover:shadow-[0_16px_36px_-2px_rgba(16,185,129,0.45),inset_0_2px_3px_rgba(255,255,255,0.6)]
- cursor-pointer disabled:opacity-50"
+ className={`group relative overflow-hidden w-full h-14 rounded-2xl font-bold text-white text-sm sm:text-base flex items-center justify-center gap-2.5 transition-all duration-300 backdrop-blur-xl border border-white/40 hover:border-white/60 cursor-pointer disabled:opacity-50 ${
+ selectedMethod === "payphone"
+ ? "bg-[#FF5E00] hover:bg-[#e05300] shadow-[0_12px_28px_-4px_rgba(255,94,0,0.4),0_4px_12px_rgba(0,0,0,0.06),inset_0_1.5px_2px_rgba(255,255,255,0.45)]"
+ : "bg-emerald-600/80 hover:bg-emerald-600/90 shadow-[0_12px_28px_-4px_rgba(16,185,129,0.35),0_4px_12px_rgba(0,0,0,0.06),inset_0_1.5px_2px_rgba(255,255,255,0.45),inset_0_-1.5px_2px_rgba(0,0,0,0.15)]"
+ }`}
  >
  {/* Specular curved liquid glass rim */}
  <div className="absolute inset-x-4 top-0 h-[1.5px] bg-gradient-to-r from-transparent via-white/90 to-transparent opacity-95 pointer-events-none" />
@@ -2225,15 +2447,19 @@ export function CartDrawer() {
  {isProcessing ? (
  <span className="relative z-10 flex items-center gap-2">
  <span className="w-5 h-5 border-2 border-white/40 border-t-white rounded-full animate-spin" />
- <span>Procesando pago seguro...</span>
+ <span>Conectando con PayPhone...</span>
  </span>
  ) : (
  <>
+ {selectedMethod === "payphone" ? (
+ <PayPhoneIcon className="relative z-10 w-5 h-5 text-white" />
+ ) : (
  <Lock className="relative z-10 w-4 h-4 text-emerald-100" />
+ )}
  <span className="relative z-10 tracking-wide font-sans font-bold">
- Confirmar Pedido (${finalTotal.toFixed(2)})
+ {selectedMethod === "payphone" ? "Pagar con PayPhone" : "Confirmar Pedido"} (${finalTotal.toFixed(2)})
  </span>
- <ArrowRight className="relative z-10 w-4 h-4 text-emerald-100 group-hover:translate-x-1 transition-transform" />
+ <ArrowRight className="relative z-10 w-4 h-4 text-white group-hover:translate-x-1 transition-transform" />
  </>
  )}
  </button>
@@ -2318,8 +2544,117 @@ export function CartDrawer() {
 
  </motion.div>
 
- </div>
- )}
- </AnimatePresence>
- );
+        {/* ======================================================================= */}
+        {/* PAYPHONE ECUADOR SIMULATION MODAL (Modo Preparación / RUC en trámite) */}
+        {/* ======================================================================= */}
+        {isPayPhoneSimOpen && payphoneSimData && (
+          <div className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md animate-fade-in font-sans">
+            <div className="w-full max-w-lg bg-white dark:bg-[#202022] rounded-3xl p-6 sm:p-8 shadow-2xl border border-orange-200/50 dark:border-orange-500/20 space-y-5 animate-scale-up">
+              
+              {/* Modal Header */}
+              <div className="flex items-center justify-between pb-4 border-b border-gray-100 dark:border-white/5">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#FF5E00] to-[#E04D00] text-white flex items-center justify-center shadow-md shadow-orange-500/20">
+                    <PayPhoneIcon className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <h3 className="font-extrabold text-base text-gray-900 dark:text-gray-100 flex items-center gap-1.5">
+                      PayPhone Ecuador <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">Modo Pruebas</span>
+                    </h3>
+                    <p className="text-[11px] text-gray-400">Ambiente de Simulación SRI / RUC en trámite</p>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setIsPayPhoneSimOpen(false)}
+                  className="w-8 h-8 rounded-full bg-gray-100 dark:bg-white/5 hover:bg-gray-200 text-gray-400 flex items-center justify-center transition-colors"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              {/* Order Overview inside Modal */}
+              <div className="p-4 rounded-2xl bg-orange-50/50 dark:bg-orange-950/10 border border-orange-100 dark:border-orange-500/10 space-y-2 text-xs">
+                <div className="flex justify-between font-semibold">
+                  <span className="text-gray-500 dark:text-gray-400">Total a Autorizar:</span>
+                  <span className="text-lg font-black text-[#FF5E00]">${Number(payphoneSimData.total).toFixed(2)} USD</span>
+                </div>
+                <div className="flex justify-between text-gray-600 dark:text-gray-300">
+                  <span className="text-gray-400">Pedido ID:</span>
+                  <span className="font-mono font-bold">{payphoneSimData.orderId}</span>
+                </div>
+                <div className="flex justify-between text-gray-600 dark:text-gray-300">
+                  <span className="text-gray-400">Tx ID (PayPhone):</span>
+                  <span className="font-mono text-[10px]">{payphoneSimData.clientTransactionId}</span>
+                </div>
+                <div className="flex justify-between text-gray-600 dark:text-gray-300">
+                  <span className="text-gray-400">Cliente / Correo:</span>
+                  <span>{payphoneSimData.customerEmail}</span>
+                </div>
+                {payphoneSimData.shippingAddr?.idNumber && (
+                  <div className="flex justify-between text-gray-600 dark:text-gray-300">
+                    <span className="text-gray-400">Cédula / RUC Comprador:</span>
+                    <span className="font-mono font-bold">{payphoneSimData.shippingAddr.idNumber}</span>
+                  </div>
+                )}
+              </div>
+
+              {/* Status Notice */}
+              <div className="p-3.5 rounded-2xl bg-gray-50 dark:bg-[#151515] border border-gray-200/70 dark:border-white/5 text-[11px] text-gray-600 dark:text-gray-400 space-y-1.5 leading-relaxed">
+                <div className="flex items-center gap-1.5 font-bold text-gray-900 dark:text-gray-200">
+                  <ShieldCheck className="w-4 h-4 text-emerald-500" />
+                  <span>Arquitectura de Pagos Completada al 100%</span>
+                </div>
+                <p>
+                  Tu tienda ya tiene listos los endpoints de cobro, el recálculo zero-trust de montos y el despacho automático de facturas. Como el RUC ante el SRI está en trámite, puedes simular la autorización bancaria con 1 clic para validar todo el flujo de pedidos.
+                </p>
+              </div>
+
+              {/* Simulated Card Badges */}
+              <div className="flex items-center justify-between px-3 py-2 rounded-xl bg-gray-100/70 dark:bg-[#2c2c2e] text-[11px]">
+                <span className="text-gray-500 font-medium">Tarjeta de Prueba:</span>
+                <span className="font-mono font-bold text-gray-800 dark:text-gray-200 flex items-center gap-1.5">
+                  <VisaLogo className="h-2.5" fill="#1A1F71" /> VISA •••• 4242
+                </span>
+              </div>
+
+              {/* Actions */}
+              <div className="pt-2 space-y-2">
+                <button
+                  type="button"
+                  onClick={handleApprovePayPhoneSimulation}
+                  disabled={isSimulatingApproval}
+                  className="w-full py-3.5 px-4 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-bold text-sm shadow-md flex items-center justify-center gap-2 transition-all disabled:opacity-60 cursor-pointer"
+                >
+                  {isSimulatingApproval ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      <span>Autorizando transacción...</span>
+                    </>
+                  ) : (
+                    <>
+                      <CheckCircle2 className="w-4 h-4" />
+                      <span>Simular Pago Aprobado (${Number(payphoneSimData.total).toFixed(2)})</span>
+                    </>
+                  )}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setIsPayPhoneSimOpen(false)}
+                  disabled={isSimulatingApproval}
+                >
+                  Cancelar
+                </button>
+              </div>
+
+            </div>
+          </div>
+        )}
+
+      </div>
+    )}
+  </AnimatePresence>
+);
 }
