@@ -577,15 +577,17 @@ const handleConfirmDeleteNiche = async () => {
    {activeTab === "orders" && (
      <span className="absolute -left-2 w-1 h-5 bg-[#8c9276] dark:bg-[#ccff00] rounded-r-full transition-all duration-[600ms]" />
    )}
-   <ShoppingBag className="w-5 h-5 transition-transform duration-[600ms] group-hover:scale-110" />
-    {pendingOrdersCount > 0 && (
-      <span 
-        className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-[#8c9276] text-white dark:text-gray-900 text-[10px] font-extrabold flex items-center justify-center ring-2 ring-white dark:ring-[#1e1e20] shadow-sm pointer-events-none transition-transform duration-300 scale-100"
-        title={`${pendingOrdersCount} pedido(s) en curso`}
-      >
-        {pendingOrdersCount > 99 ? "99+" : pendingOrdersCount}
-      </span>
-    )}
+    <div className="relative flex items-center justify-center">
+      <ShoppingBag className="w-5 h-5 transition-transform duration-[600ms] group-hover:scale-110" />
+      {pendingOrdersCount > 0 && (
+        <span 
+          className="absolute -top-1.5 -right-2.5 min-w-[17px] h-[17px] px-1 rounded-full bg-[#8c9276] text-white dark:text-gray-900 text-[10px] font-extrabold flex items-center justify-center ring-2 ring-white dark:ring-[#1e1e20] shadow-sm pointer-events-none transition-transform duration-300 scale-100"
+          title={`${pendingOrdersCount} pedido(s) en curso`}
+        >
+          {pendingOrdersCount > 99 ? "99+" : pendingOrdersCount}
+        </span>
+      )}
+    </div>
  </button>
 
  <button 
@@ -2083,15 +2085,17 @@ const handleConfirmDeleteNiche = async () => {
           }`}
           title="Pedidos"
         >
-          <ShoppingBag className="w-4 h-4" />
-          {pendingOrdersCount > 0 && (
-            <span 
-              className="absolute -top-1 -right-1 min-w-[15px] h-[15px] px-0.5 rounded-full bg-[#8c9276] text-white dark:text-gray-900 text-[9px] font-extrabold flex items-center justify-center ring-1.5 ring-white dark:ring-[#1e1e20] shadow-sm pointer-events-none"
-              title={`${pendingOrdersCount} pedido(s) en curso`}
-            >
-              {pendingOrdersCount > 99 ? "99+" : pendingOrdersCount}
-            </span>
-          )}
+          <div className="relative flex items-center justify-center">
+            <ShoppingBag className="w-4 h-4" />
+            {pendingOrdersCount > 0 && (
+              <span 
+                className="absolute -top-1.5 -right-2 min-w-[15px] h-[15px] px-0.5 rounded-full bg-[#8c9276] text-white dark:text-gray-900 text-[9px] font-extrabold flex items-center justify-center ring-1.5 ring-white dark:ring-[#1e1e20] shadow-sm pointer-events-none"
+                title={`${pendingOrdersCount} pedido(s) en curso`}
+              >
+                {pendingOrdersCount > 99 ? "99+" : pendingOrdersCount}
+              </span>
+            )}
+          </div>
         </button>
 
         <button

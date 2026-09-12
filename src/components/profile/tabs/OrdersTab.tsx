@@ -69,18 +69,39 @@ export function OrdersTab({
         </div>
 
         {/* Status Filter Tabs */}
-        <div className="flex items-center gap-1.5 sm:gap-2 bg-gray-100 dark:bg-[#3a3a3c] p-1 rounded-2xl overflow-x-auto max-w-full hide-scrollbar">
-          {["all", "Procesando", "Enviado", "Entregado"].map((st) => (
-            <button 
-              key={st}
-              onClick={() => setOrderStatusFilter(st)}
-              className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all whitespace-nowrap ${
-                orderStatusFilter === st ? "bg-white dark:bg-[#202022] text-gray-900 dark:text-gray-100 shadow-sm dark:shadow-none" : "text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100"
-              }`}
-            >
-              {st === "all" ? "Todos" : st}
-            </button>
-          ))}
+        <div className="flex items-center gap-2 sm:gap-2.5 bg-gray-100 dark:bg-[#3a3a3c] p-1.5 rounded-2xl overflow-x-auto max-w-full hide-scrollbar">
+          {(["all", "Procesando", "Enviado", "Entregado"] as const).map((st) => {
+            const count = st === "all" 
+              ? orders.length 
+              : orders.filter((o) => o.status === st).length;
+            const label = st === "all" ? "Todos" : st;
+
+            return (
+              <button 
+                key={st}
+                onClick={() => setOrderStatusFilter(st)}
+                className={`relative px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all whitespace-nowrap flex items-center ${
+                  orderStatusFilter === st 
+                    ? "bg-white dark:bg-[#202022] text-gray-900 dark:text-gray-100 shadow-sm dark:shadow-none" 
+                    : "text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100"
+                }`}
+              >
+                <span>{label}</span>
+                {count >= 1 && (
+                  <span 
+                    className={`absolute -top-1.5 -right-1 min-w-[17px] h-[17px] px-1 rounded-full text-[9px] font-extrabold flex items-center justify-center shadow-xs pointer-events-none ring-2 transition-all ${
+                      orderStatusFilter === st
+                        ? "bg-[#8c9276] text-white ring-white dark:ring-[#202022]"
+                        : "bg-[#8c9276] text-white ring-gray-100 dark:ring-[#3a3a3c]"
+                    }`}
+                    title={`${count} pedido(s)`}
+                  >
+                    {count > 99 ? "99+" : count}
+                  </span>
+                )}
+              </button>
+            );
+          })}
         </div>
       </div>
 
