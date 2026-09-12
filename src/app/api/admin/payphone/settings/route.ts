@@ -33,7 +33,7 @@ export async function GET(request: Request) {
       );
     }
 
-    const mode = await getStorePaymentMode();
+    const mode = await getStorePaymentMode(request);
     const config = getPayPhoneConfig();
 
     const maskedStoreId = config.storeId 
@@ -93,7 +93,7 @@ export async function POST(request: Request) {
       );
     }
 
-    const success = await setStorePaymentMode(cleanMode as PayPhonePaymentMode, authUser.email);
+    const success = await setStorePaymentMode(cleanMode as PayPhonePaymentMode, authUser.email, request);
     if (!success) {
       return NextResponse.json(
         { success: false, error: 'No se pudo guardar la configuración en la base de datos.' },

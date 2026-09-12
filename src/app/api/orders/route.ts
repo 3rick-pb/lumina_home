@@ -1,12 +1,6 @@
 import { NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
-import { verifyIsAdmin, getAuthenticatedUser } from '@/lib/serverAuth';
+import { verifyIsAdmin, getAuthenticatedUser, getScopedSupabaseClient } from '@/lib/serverAuth';
 import { sendOrderEmails, getAllAdminEmails } from '@/lib/emailService';
-
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || supabaseAnonKey;
-const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
 export interface ApiOrder {
   id: string;
@@ -52,8 +46,9 @@ export async function GET(request: Request) {
     // Verify authenticated user via JWT Bearer
     const authUser = await getAuthenticatedUser(request);
     const isAdmin = authUser?.email ? await verifyIsAdmin(authUser.email) : false;
+    const client = getScopedSupabaseClient(request);
 
-    let query = supabase
+    let query = client
       .from('orders')
       .select('*')
       .not('id', 'like', 'SYS_%')
@@ -151,7 +146,8 @@ export async function POST(request: Request) {
       items: Array.isArray(order.items) ? order.items : []
     };
 
-    const { error } = await supabase.from('orders').upsert({
+    const client = getScopedSupabaseClient(request);
+    const { error } = await client.from('orders').upsert({
       id: newApiOrder.id,
       user_id: newApiOrder.userId || null,
       status: newApiOrder.status,
@@ -225,7 +221,8 @@ export async function PATCH(request: Request) {
     }
 
     const cleanOrderId = String(orderId).trim();
-    const { error } = await supabase.from('orders').update({ status }).eq('id', cleanOrderId);
+    const client = getScopedSupabaseClient(request);
+    const { error } = await client.from('orders').update({ status }).eq('id', cleanOrderId);
 
     if (error) {
       return NextResponse.json({ success: false, error: error.message }, { status: 500 });

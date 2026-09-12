@@ -405,6 +405,30 @@ export async function syncAddressesToCloud(
       })
     });
   } catch {}
+
+  // 2. Direct database persistence using authenticated Supabase client
+  try {
+    await supabase.from('addresses').delete().eq('user_id', userId);
+    if (addresses.length > 0) {
+      const rows = addresses.map(a => ({
+        id: a.id,
+        user_id: userId,
+        recipient: a.recipient || 'Destinatario',
+        id_number: a.idNumber || null,
+        phone: a.phone || null,
+        email: a.email || null,
+        street: a.street || '',
+        city: a.city || '',
+        state: a.state || '',
+        postal_code: a.postalCode || '',
+        country: a.country || 'Ecuador',
+        is_default: !!a.isDefault,
+      }));
+      await supabase.from('addresses').insert(rows);
+    }
+  } catch (err) {
+    console.warn('[userStore] Direct address DB sync notice:', err);
+  }
 }
 
 export async function syncCardsToCloud(userId: string | null | undefined, cards: PaymentCard[]) {
@@ -428,6 +452,24 @@ export async function syncCardsToCloud(userId: string | null | undefined, cards:
       })
     });
   } catch {}
+
+  try {
+    await supabase.from('payment_cards').delete().eq('user_id', userId);
+    if (cards.length > 0) {
+      const rows = cards.map(c => ({
+        id: c.id,
+        user_id: userId,
+        number: c.number,
+        holder: c.holder,
+        exp: c.exp,
+        type: c.type || 'mastercard',
+        is_default: !!c.isDefault,
+      }));
+      await supabase.from('payment_cards').insert(rows);
+    }
+  } catch (err) {
+    console.warn('[userStore] Direct cards DB sync notice:', err);
+  }
 }
 
 export async function syncFavoritesToCloud(userId: string | null | undefined, favorites: string[]) {
@@ -451,6 +493,19 @@ export async function syncFavoritesToCloud(userId: string | null | undefined, fa
       })
     });
   } catch {}
+
+  try {
+    await supabase.from('favorites').delete().eq('user_id', userId);
+    if (favorites.length > 0) {
+      const rows = favorites.map(pid => ({
+        user_id: userId,
+        product_id: pid,
+      }));
+      await supabase.from('favorites').insert(rows);
+    }
+  } catch (err) {
+    console.warn('[userStore] Direct favorites DB sync notice:', err);
+  }
 }
 
 const fetchUserDataFromDatabase = async (userId: string, role: 'USER' | 'ADMIN' = 'USER', email: string = '') => {

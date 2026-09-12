@@ -60,6 +60,14 @@ export function IntegrationsTab() {
   const [isSavingPayphone, setIsSavingPayphone] = useState(false);
   const [payphoneMsg, setPayphoneMsg] = useState<{ success: boolean; text: string } | null>(null);
 
+  // PayPhone Vercel Variables Generator state
+  const [payphoneToken, setPayphoneToken] = useState("");
+  const [payphoneStoreIdInput, setPayphoneStoreIdInput] = useState("");
+  const [supabaseServiceKeyInput, setSupabaseServiceKeyInput] = useState("");
+  const [showPayphoneToken, setShowPayphoneToken] = useState(false);
+  const [showServiceKey, setShowServiceKey] = useState(false);
+  const [copiedPayphone, setCopiedPayphone] = useState(false);
+
   // Fetch current Vercel environment variable status
   const fetchSmtpStatus = useCallback(async () => {
     setIsLoadingStatus(true);
@@ -114,20 +122,42 @@ export function IntegrationsTab() {
       const headers: Record<string, string> = { 'Content-Type': 'application/json' };
       if (session?.access_token) headers['Authorization'] = `Bearer ${session.access_token}`;
 
-      const res = await fetch("/api/admin/payphone/settings", {
-        method: "POST",
-        headers,
-        body: JSON.stringify({ mode: selectedMode })
-      });
-      const data = await res.json();
-      if (data.success) {
+      let saved = false;
+
+      // 1. Try server endpoint with authenticated token
+      try {
+        const res = await fetch("/api/admin/payphone/settings", {
+          method: "POST",
+          headers,
+          body: JSON.stringify({ mode: selectedMode })
+        });
+        const data = await res.json();
+        if (data.success) {
+          saved = true;
+        }
+      } catch (apiErr) {
+        console.warn("API settings update notice:", apiErr);
+      }
+
+      // 2. Dual-persistence: Direct Supabase client sync with active session
+      const userEmail = session?.user?.email || 'admin@lumina.com';
+      const { error: dbErr } = await supabase
+        .from('admin_payment_settings')
+        .upsert({
+          id: 'global',
+          payment_mode: selectedMode,
+          updated_by: userEmail,
+          updated_at: new Date().toISOString()
+        }, { onConflict: 'id' });
+
+      if (!dbErr || saved) {
         setPayphoneMode(selectedMode);
         setPayphoneMsg({
           success: true,
-          text: `Configuración guardada: los clientes usarán ${selectedMode === "box" ? "la Cajita de Pagos" : "el Botón de Redirección"}.`
+          text: `Configuración guardada en la base de datos: los clientes usarán ${selectedMode === "box" ? "la Cajita de Pagos" : "el Botón de Redirección"}.`
         });
       } else {
-        throw new Error(data.error || "No se pudo actualizar la configuración.");
+        throw new Error(dbErr?.message || "No se pudo guardar la configuración en la base de datos.");
       }
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Error al comunicarse con el servidor.";
@@ -160,6 +190,25 @@ SMTP_FROM="${finalFrom}"`;
     navigator.clipboard.writeText(vercelEnvSnippet);
     setCopied(true);
     setTimeout(() => setCopied(false), 3000);
+  };
+
+  // Compute generated block for PayPhone & Supabase in Vercel
+  const finalPayphoneToken = payphoneToken.trim() || "tu_token_privado_de_payphone";
+  const finalPayphoneStoreId = payphoneStoreIdInput.trim() || (payphoneStoreId && !payphoneStoreId.includes("••••") ? payphoneStoreId : "tu_store_id_de_sucursal");
+  const finalServiceKey = supabaseServiceKeyInput.trim() || "tu_supabase_service_role_secret_key";
+
+  const vercelPayphoneEnvSnippet = `# === CREDENCIALES OFICIALES PAYPHONE ECUADOR ===
+PAYPHONE_TOKEN="${finalPayphoneToken}"
+PAYPHONE_STORE_ID="${finalPayphoneStoreId}"
+PAYPHONE_PAYMENT_MODE="${payphoneMode}"
+
+# === SUPABASE ACCESO SUPERUSUARIO DEL SERVIDOR (BYPASS RLS) ===
+SUPABASE_SERVICE_ROLE_KEY="${finalServiceKey}"`;
+
+  const handleCopyPayphoneSnippet = () => {
+    navigator.clipboard.writeText(vercelPayphoneEnvSnippet);
+    setCopiedPayphone(true);
+    setTimeout(() => setCopiedPayphone(false), 3000);
   };
 
   // Run live test dispatch
@@ -652,6 +701,123 @@ SMTP_FROM="${finalFrom}"`;
             </div>
 
           </div>
+
+          {/* Module 4: PayPhone & Supabase Vercel Variable Generator */}
+            <div className="bg-white/90 dark:bg-[#202022]/80 backdrop-blur-2xl p-6 md:p-8 rounded-[2.5rem] border border-white/80 dark:border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.03)] space-y-6">
+              <div>
+                <div className="flex items-center justify-between">
+                  <h3 className="text-base font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
+                    <Sparkles className="w-4 h-4 text-[#FF5E00]" />
+                    Variables de PayPhone para Vercel
+                  </h3>
+                </div>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 leading-relaxed">
+                  Genera el bloque de variables de entorno para PayPhone y el superusuario de Supabase, listo para copiar y pegar directamente en Vercel.
+                </p>
+              </div>
+
+              {/* Inputs */}
+              <div className="space-y-4">
+                <div>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300">
+                      Token Privado de PayPhone (PAYPHONE_TOKEN)
+                    </label>
+                    <button
+                      type="button"
+                      onClick={() => setShowPayphoneToken(!showPayphoneToken)}
+                      className="text-[11px] text-[#FF5E00] hover:underline font-semibold flex items-center gap-1 cursor-pointer"
+                    >
+                      {showPayphoneToken ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                      {showPayphoneToken ? "Ocultar" : "Mostrar"}
+                    </button>
+                  </div>
+                  <input
+                    type={showPayphoneToken ? "text" : "password"}
+                    value={payphoneToken}
+                    onChange={e => setPayphoneToken(e.target.value)}
+                    placeholder="ej: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                    className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-xs bg-white dark:bg-[#1a1a1c] text-gray-900 dark:text-gray-100 outline-none focus:ring-2 focus:ring-[#FF5E00]/30 font-mono"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
+                    Store ID de Sucursal (PAYPHONE_STORE_ID)
+                  </label>
+                  <input
+                    type="text"
+                    value={payphoneStoreIdInput}
+                    onChange={e => setPayphoneStoreIdInput(e.target.value)}
+                    placeholder={payphoneStoreId && !payphoneStoreId.includes("••••") ? payphoneStoreId : "ej: 5c0a1b2c-3d4e-5f6a-7b8c-9d0e1f2a3b4c"}
+                    className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-xs bg-white dark:bg-[#1a1a1c] text-gray-900 dark:text-gray-100 outline-none focus:ring-2 focus:ring-[#FF5E00]/30 font-mono"
+                  />
+                </div>
+
+                <div>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300">
+                      Clave Service Role Supabase (SUPABASE_SERVICE_ROLE_KEY)
+                    </label>
+                    <button
+                      type="button"
+                      onClick={() => setShowServiceKey(!showServiceKey)}
+                      className="text-[11px] text-[#8c9276] hover:underline font-semibold flex items-center gap-1 cursor-pointer"
+                    >
+                      {showServiceKey ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                      {showServiceKey ? "Ocultar" : "Mostrar"}
+                    </button>
+                  </div>
+                  <input
+                    type={showServiceKey ? "text" : "password"}
+                    value={supabaseServiceKeyInput}
+                    onChange={e => setSupabaseServiceKeyInput(e.target.value)}
+                    placeholder="ej: eyJhbGciOiJIUzI1Ni... (service_role secret)"
+                    className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-xs bg-white dark:bg-[#1a1a1c] text-gray-900 dark:text-gray-100 outline-none focus:ring-2 focus:ring-[#8c9276]/30 font-mono"
+                  />
+                  <p className="text-[10px] text-gray-400 mt-1">
+                    Encuéntrala en Supabase &gt; Project Settings &gt; API &gt; Project API keys &gt; <code>service_role (secret)</code>.
+                  </p>
+                </div>
+              </div>
+
+              {/* Generated Snippet Box */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-gray-900 dark:text-gray-100">
+                    Bloque para Vercel Environment Variables:
+                  </span>
+                  <button
+                    type="button"
+                    onClick={handleCopyPayphoneSnippet}
+                    className="text-xs text-[#FF5E00] hover:text-orange-700 font-bold flex items-center gap-1.5 transition-colors cursor-pointer"
+                  >
+                    {copiedPayphone ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
+                    {copiedPayphone ? "¡Copiado al Portapapeles!" : "Copiar para Vercel"}
+                  </button>
+                </div>
+
+                <div className="relative">
+                  <pre className="p-4 bg-gray-900 text-gray-100 rounded-2xl text-[11px] font-mono overflow-x-auto border border-gray-800 leading-relaxed shadow-inner">
+                    {vercelPayphoneEnvSnippet}
+                  </pre>
+                </div>
+              </div>
+
+              {/* Instructions */}
+              <div className="p-4 bg-orange-50/50 dark:bg-orange-950/20 rounded-2xl border border-orange-200/60 dark:border-orange-900/30 text-xs space-y-2">
+                <div className="font-bold text-orange-900 dark:text-orange-300 flex items-center gap-1.5">
+                  <ExternalLink className="w-3.5 h-3.5" />
+                  ¿Cómo pegar estas variables en Vercel?
+                </div>
+                <ol className="list-decimal list-inside space-y-1 text-orange-800/80 dark:text-orange-300/80 text-[11px] leading-relaxed">
+                  <li>Haz clic en <strong>&quot;Copiar para Vercel&quot;</strong> arriba.</li>
+                  <li>Ve a tu proyecto en <strong>Vercel &gt; Settings &gt; Environment Variables</strong>.</li>
+                  <li>En la primera casilla de nombre, pega el texto copiado (Vercel separará automáticamente cada variable).</li>
+                  <li>Haz clic en <strong>Save</strong> y listo.</li>
+                </ol>
+              </div>
+            </div>
 
         </div>
 

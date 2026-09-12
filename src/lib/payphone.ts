@@ -1,5 +1,6 @@
 import crypto from 'crypto';
 import { createClient } from '@supabase/supabase-js';
+import { getScopedSupabaseClient } from '@/lib/serverAuth';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
@@ -254,9 +255,10 @@ export function getPayPhoneConfig(): PayPhoneConfig {
  * Reads the active PayPhone payment mode from Supabase admin_payment_settings.
  * Falls back to environment variable PAYPHONE_PAYMENT_MODE or 'box'.
  */
-export async function getStorePaymentMode(): Promise<PayPhonePaymentMode> {
+export async function getStorePaymentMode(request?: Request): Promise<PayPhonePaymentMode> {
   try {
-    const { data, error } = await supabaseServer
+    const client = getScopedSupabaseClient(request);
+    const { data, error } = await client
       .from('admin_payment_settings')
       .select('payment_mode')
       .eq('id', 'global')
@@ -280,16 +282,17 @@ export async function getStorePaymentMode(): Promise<PayPhonePaymentMode> {
  * Saves the active PayPhone payment mode to Supabase admin_payment_settings.
  * Restricted to administrators in API endpoints.
  */
-export async function setStorePaymentMode(mode: PayPhonePaymentMode, updatedBy: string): Promise<boolean> {
+export async function setStorePaymentMode(mode: PayPhonePaymentMode, updatedBy: string, request?: Request): Promise<boolean> {
   try {
-    const { error } = await supabaseServer
+    const client = getScopedSupabaseClient(request);
+    const { error } = await client
       .from('admin_payment_settings')
       .upsert({
         id: 'global',
         payment_mode: mode,
         updated_by: updatedBy,
         updated_at: new Date().toISOString()
-      });
+      }, { onConflict: 'id' });
 
     if (error) {
       console.error('[PayPhone] Error updating admin_payment_settings:', error);

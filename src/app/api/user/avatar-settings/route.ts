@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { supabaseServer, getAuthenticatedUser, verifyIsAdmin } from '@/lib/serverAuth';
+import { getAuthenticatedUser, verifyIsAdmin, getScopedSupabaseClient } from '@/lib/serverAuth';
 import { checkRateLimit, createRateLimitResponse } from '@/lib/rateLimit';
 
 export const dynamic = 'force-dynamic';
@@ -18,12 +18,12 @@ const DEFAULT_SETTINGS = {
   showInNavbar: false,
   backgroundShape: 'squircle' as const,
   animationMode: 'always' as const,
-  customSeed: null as string | null,
+  customSeed: null,
 };
 
 /**
- * GET /api/user/avatar-settings?userId=...
- * Obtiene la configuración exclusiva de avatar para una cuenta desde la tabla dedicada `user_avatar_settings`
+ * GET /api/user/avatar-settings
+ * Obtiene la configuración individual del usuario directamente desde la tabla dedicada `user_avatar_settings`
  */
 export async function GET(request: Request) {
   // Rate limiting check (30 requests / 60 seconds per IP)
@@ -40,7 +40,7 @@ export async function GET(request: Request) {
     const authUser = await getAuthenticatedUser(request);
     if (!authUser?.id) {
       return NextResponse.json(
-        { success: false, error: 'Acceso no autorizado: se requiere sesión activa', settings: DEFAULT_SETTINGS },
+        { success: false, error: 'Acceso no autorizado: se requiere sesión activa' },
         { status: 401 }
       );
     }
@@ -52,8 +52,10 @@ export async function GET(request: Request) {
     // Strict Anti-IDOR: Only administrators can view another user's avatar settings
     const targetUserId = isAdmin && queryUserId ? queryUserId : authUser.id;
 
+    const supabase = getScopedSupabaseClient(request);
+
     // Consultar tabla dedicada public.user_avatar_settings
-    const { data, error } = await supabaseServer
+    const { data, error } = await supabase
       .from('user_avatar_settings')
       .select('*')
       .eq('user_id', targetUserId)
@@ -150,7 +152,8 @@ export async function POST(request: Request) {
       updated_at: new Date().toISOString(),
     };
 
-    const { data, error } = await supabaseServer
+    const supabase = getScopedSupabaseClient(request);
+    const { data, error } = await supabase
       .from('user_avatar_settings')
       .upsert(payload, { onConflict: 'user_id' })
       .select('*')

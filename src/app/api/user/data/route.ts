@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { supabaseServer, getAuthenticatedUser, verifyIsAdmin } from '@/lib/serverAuth';
+import { getAuthenticatedUser, verifyIsAdmin, getScopedSupabaseClient } from '@/lib/serverAuth';
 import { checkRateLimit, createRateLimitResponse } from '@/lib/rateLimit';
 
 export interface ShippingAddress {
@@ -40,20 +40,13 @@ export async function GET(request: Request) {
     windowMs: 60 * 1000
   });
   if (!rateLimit.isAllowed) {
-    return createRateLimitResponse('Demasiadas consultas de datos de usuario.', rateLimit.resetTimeMs);
+    return createRateLimitResponse('Demasiadas solicitudes de consulta.', rateLimit.resetTimeMs);
   }
 
   try {
     const authUser = await getAuthenticatedUser(request);
     if (!authUser?.id) {
-      return NextResponse.json({
-        success: false,
-        error: 'No authenticated user session found',
-        addresses: [],
-        cards: [],
-        favorites: [],
-        address: null,
-      }, { status: 401 });
+      return NextResponse.json({ success: false, error: 'Acceso no autorizado: se requiere sesión de usuario activa' }, { status: 401 });
     }
 
     const { searchParams } = new URL(request.url);
@@ -65,6 +58,8 @@ export async function GET(request: Request) {
       ? queryUserId
       : authUser.id;
 
+    const supabase = getScopedSupabaseClient(request);
+
     let addresses: ShippingAddress[] = [];
     let cards: PaymentCard[] = [];
     let favorites: string[] = [];
@@ -72,7 +67,7 @@ export async function GET(request: Request) {
 
     // 1. Fetch addresses from public.addresses
     try {
-      const { data: dbAddrs, error: addrErr } = await supabaseServer
+      const { data: dbAddrs, error: addrErr } = await supabase
         .from('addresses')
         .select('*')
         .eq('user_id', targetUserId)
@@ -100,7 +95,7 @@ export async function GET(request: Request) {
 
     // 2. Fetch cards from public.payment_cards
     try {
-      const { data: dbCards, error: cardErr } = await supabaseServer
+      const { data: dbCards, error: cardErr } = await supabase
         .from('payment_cards')
         .select('*')
         .eq('user_id', targetUserId)
@@ -123,7 +118,7 @@ export async function GET(request: Request) {
 
     // 3. Fetch favorites from public.favorites
     try {
-      const { data: dbFavs, error: favErr } = await supabaseServer
+      const { data: dbFavs, error: favErr } = await supabase
         .from('favorites')
         .select('product_id')
         .eq('user_id', targetUserId);
@@ -188,6 +183,7 @@ export async function POST(request: Request) {
       ? body.userId
       : authUser.id;
 
+    const supabase = getScopedSupabaseClient(request);
     const action = body.action || 'sync_all';
 
     // 1. Action: Save addresses exclusively to public.addresses
@@ -195,7 +191,7 @@ export async function POST(request: Request) {
       if (Array.isArray(body.addresses)) {
         const addresses: ShippingAddress[] = body.addresses;
         try {
-          await supabaseServer.from('addresses').delete().eq('user_id', targetUserId);
+          await supabase.from('addresses').delete().eq('user_id', targetUserId);
           if (addresses.length > 0) {
             const rows = addresses.map(a => ({
               id: a.id,
@@ -211,7 +207,7 @@ export async function POST(request: Request) {
               country: a.country || 'Ecuador',
               is_default: !!a.isDefault,
             }));
-            const { error: insErr } = await supabaseServer.from('addresses').insert(rows);
+            const { error: insErr } = await supabase.from('addresses').insert(rows);
             if (insErr) console.warn('Warning inserting addresses:', insErr.message);
           }
         } catch (err) {
@@ -225,7 +221,7 @@ export async function POST(request: Request) {
       if (Array.isArray(body.cards)) {
         const cards: PaymentCard[] = body.cards;
         try {
-          await supabaseServer.from('payment_cards').delete().eq('user_id', targetUserId);
+          await supabase.from('payment_cards').delete().eq('user_id', targetUserId);
           if (cards.length > 0) {
             const rows = cards.map(c => ({
               id: c.id,
@@ -236,7 +232,7 @@ export async function POST(request: Request) {
               type: c.type || 'mastercard',
               is_default: !!c.isDefault,
             }));
-            const { error: insErr } = await supabaseServer.from('payment_cards').insert(rows);
+            const { error: insErr } = await supabase.from('payment_cards').insert(rows);
             if (insErr) console.warn('Warning inserting payment_cards:', insErr.message);
           }
         } catch (err) {
@@ -250,13 +246,13 @@ export async function POST(request: Request) {
       if (Array.isArray(body.favorites)) {
         const favorites: string[] = body.favorites.map((f: unknown) => String(f).trim()).filter(Boolean);
         try {
-          await supabaseServer.from('favorites').delete().eq('user_id', targetUserId);
+          await supabase.from('favorites').delete().eq('user_id', targetUserId);
           if (favorites.length > 0) {
             const rows = favorites.map(pid => ({
               user_id: targetUserId,
               product_id: pid,
             }));
-            const { error: insErr } = await supabaseServer.from('favorites').insert(rows);
+            const { error: insErr } = await supabase.from('favorites').insert(rows);
             if (insErr) console.warn('Warning inserting favorites:', insErr.message);
           }
         } catch (err) {
@@ -267,9 +263,9 @@ export async function POST(request: Request) {
 
     // Opportunistic cleanup: remove any old parasite SYS_ rows for this user in active_sessions
     try {
-      await supabaseServer.from('active_sessions').delete().eq('user_id', `SYS_USER_ADDR_${targetUserId}`);
-      await supabaseServer.from('active_sessions').delete().eq('user_id', `SYS_USER_CARDS_${targetUserId}`);
-      await supabaseServer.from('active_sessions').delete().eq('user_id', `SYS_USER_FAVS_${targetUserId}`);
+      await supabase.from('active_sessions').delete().eq('user_id', `SYS_USER_ADDR_${targetUserId}`);
+      await supabase.from('active_sessions').delete().eq('user_id', `SYS_USER_CARDS_${targetUserId}`);
+      await supabase.from('active_sessions').delete().eq('user_id', `SYS_USER_FAVS_${targetUserId}`);
     } catch {}
 
     return NextResponse.json({

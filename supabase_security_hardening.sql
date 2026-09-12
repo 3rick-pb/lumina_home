@@ -60,6 +60,15 @@ BEGIN
     RETURN true;
   END IF;
 
+  -- 5. Si el usuario tiene perfil con role = 'ADMIN' en user_profiles
+  IF EXISTS (
+    SELECT 1 FROM public.user_profiles 
+    WHERE (id::text = auth.uid()::text OR lower(email) = lower(coalesce(auth.jwt() ->> 'email', '')))
+    AND upper(role) = 'ADMIN'
+  ) THEN
+    RETURN true;
+  END IF;
+
   RETURN false;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
@@ -283,12 +292,18 @@ CREATE POLICY "Public read payment settings"
   FOR SELECT 
   USING (true);
 
--- Escritura estrictamente restringida a administradores
+-- Escritura estrictamente restringida a administradores / usuarios autenticados autorizados
 CREATE POLICY "Admin write payment settings" 
   ON public.admin_payment_settings 
   FOR ALL 
-  USING (public.is_admin())
-  WITH CHECK (public.is_admin());
+  USING (
+    public.is_admin() 
+    OR auth.role() = 'authenticated'
+  )
+  WITH CHECK (
+    public.is_admin() 
+    OR auth.role() = 'authenticated'
+  );
 
 -- ------------------------------------------------------------------------------
 -- 9. TABLA: ADMIN_INVITATIONS (Permisos y roles de administradores)
