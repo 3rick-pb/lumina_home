@@ -67,6 +67,7 @@ export interface PayPhoneConfirmParams {
   id: number | string;
   clientTxId: string;
   expectedAmountCents?: number; // Anti-tampering check
+  simulatedDeferred?: boolean;
 }
 
 export interface PayPhoneConfirmResponse {
@@ -83,6 +84,11 @@ export interface PayPhoneConfirmResponse {
   message?: string;
   isSimulated: boolean;
   error?: string;
+  // Official PayPhone Deferred Payment Fields (Fase 15)
+  deferred?: boolean;
+  deferredCode?: string | null;
+  deferredMessage?: string | null;
+  isDeferred?: boolean;
 }
 
 /**
@@ -484,6 +490,7 @@ export async function confirmPayPhonePayment(params: PayPhoneConfirmParams): Pro
 
   // If in simulation mode (RUC in progress):
   if (config.isSimulated || String(params.id).startsWith('SIM_')) {
+    const isSimDeferred = Boolean(params.simulatedDeferred);
     return {
       success: true,
       transactionStatus: 'Approved',
@@ -495,7 +502,11 @@ export async function confirmPayPhonePayment(params: PayPhoneConfirmParams): Pro
       lastDigits: '4242',
       authorizationCode: 'AUTH-SIM-888',
       message: 'Transacción simulada aprobada exitosamente en entorno de desarrollo.',
-      isSimulated: true
+      isSimulated: true,
+      deferred: isSimDeferred,
+      isDeferred: isSimDeferred,
+      deferredCode: isSimDeferred ? '03' : null,
+      deferredMessage: isSimDeferred ? '3 meses sin intereses' : 'Pago Corriente'
     };
   }
 
@@ -535,18 +546,50 @@ export async function confirmPayPhonePayment(params: PayPhoneConfirmParams): Pro
     if (!response.ok) {
       const errText = await response.text().catch(() => '');
       console.error('[PayPhone] Confirm API Error HTTP', response.status, errText);
+
+      // Check if error is related to deferred rejection
+      if (errText.includes('823') || errText.includes('824') || errText.includes('825') || /diferido\s+no\s+autorizado/i.test(errText)) {
+        return {
+          success: false,
+          transactionStatus: 'Rejected',
+          clientTransactionId: params.clientTxId,
+          isSimulated: false,
+          error: 'La opción de diferido seleccionada no está disponible o no fue autorizada para tu tarjeta. Te sugerimos realizar el pago corriente o intentar con otra tarjeta bancaria.'
+        };
+      }
+
       return {
         success: false,
         transactionStatus: 'Rejected',
         clientTransactionId: params.clientTxId,
         isSimulated: false,
-        error: `Error al confirmar transacción con PayPhone: ${errText || response.statusText}`
+        error: 'No se pudo completar la verificación del pago con PayPhone Ecuador. Por favor reintenta.'
       };
     }
 
     const data = await response.json();
     const isApproved = data.transactionStatus === 'Approved' || data.statusCode === 3;
     const amountConfirmed = Number(data.amount) || 0;
+    const rawMsg = String(data.message || data.transactionMessage || '').trim();
+    const errorCode = Number(data.errorCode || data.statusCode);
+
+    // Rule 9, 10, 11: Handle issuer deferred rejection with user-friendly message
+    const isDeferredUnauthorized = 
+      /diferido\s+no\s+autorizado/i.test(rawMsg) ||
+      errorCode === 823 || // Tipo de diferido es inválido
+      errorCode === 824 || // La tienda no tiene el diferido enviado
+      errorCode === 825;   // El diferido no está activo para la tienda
+
+    if (isDeferredUnauthorized) {
+      return {
+        success: false,
+        transactionStatus: 'Rejected',
+        clientTransactionId: params.clientTxId,
+        amountCents: amountConfirmed,
+        isSimulated: false,
+        error: 'La opción de diferido seleccionada no está disponible o no fue autorizada para tu tarjeta. Te sugerimos realizar el pago corriente o intentar con otra tarjeta bancaria.'
+      };
+    }
 
     // Zero-Trust: Anti-Tampering Amount Check
     if (isApproved && params.expectedAmountCents && amountConfirmed > 0) {
@@ -567,6 +610,19 @@ export async function confirmPayPhonePayment(params: PayPhoneConfirmParams): Pro
       }
     }
 
+    // Rule 3, 4, 7, 8: Process official deferred fields returned by PayPhone
+    const rawDeferred = data.deferred !== undefined ? data.deferred : data.isDeferred;
+    const isDeferred = Boolean(
+      rawDeferred === true || 
+      rawDeferred === 1 || 
+      rawDeferred === 'true' || 
+      (data.deferredCode && String(data.deferredCode).trim() !== '00' && String(data.deferredCode).trim() !== '')
+    );
+    const deferredCode = data.deferredCode ? String(data.deferredCode).trim() : null;
+    const deferredMessage = data.deferredMessage 
+      ? String(data.deferredMessage).trim() 
+      : (isDeferred ? 'Pago Diferido Autorizado' : 'Pago Corriente');
+
     return {
       success: isApproved,
       transactionStatus: isApproved ? 'Approved' : (data.transactionStatus || 'Rejected'),
@@ -578,8 +634,12 @@ export async function confirmPayPhonePayment(params: PayPhoneConfirmParams): Pro
       lastDigits: data.lastDigits?.replace(/\D/g, '') || '',
       bin: data.bin || '',
       authorizationCode: data.authorizationCode || '',
-      message: data.message || '',
-      isSimulated: false
+      message: rawMsg || '',
+      isSimulated: false,
+      deferred: isDeferred,
+      isDeferred,
+      deferredCode,
+      deferredMessage
     };
   } catch (error) {
     console.error('[PayPhone] Confirmation exception:', error);

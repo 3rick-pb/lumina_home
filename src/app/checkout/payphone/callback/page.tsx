@@ -112,6 +112,12 @@ function PayPhoneCallbackContent() {
                     <span className="text-[#8c9276] font-mono">{confirmedOrder.trackingNumber}</span>
                   </div>
                 )}
+                {confirmedOrder.paymentMethod && (
+                  <div className="flex justify-between font-semibold">
+                    <span className="text-gray-500 dark:text-gray-400">Modalidad:</span>
+                    <span className="text-gray-900 dark:text-gray-100">{confirmedOrder.paymentMethod}</span>
+                  </div>
+                )}
                 <div className="flex justify-between font-semibold">
                   <span className="text-gray-500 dark:text-gray-400">Total Pagado:</span>
                   <span className="text-gray-900 dark:text-gray-100 font-bold">${Number(confirmedOrder.total).toFixed(2)} USD</span>
@@ -145,16 +151,27 @@ function PayPhoneCallbackContent() {
               <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
                 No pudimos procesar el cobro
               </h2>
-              <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">
+              <p className="text-sm text-gray-500 dark:text-gray-400 mt-2 max-w-sm mx-auto leading-relaxed">
                 {errorMessage}
               </p>
             </div>
             <div className="pt-4 flex flex-col sm:flex-row gap-3">
               <button
-                onClick={() => router.push("/shop")}
+                onClick={() => {
+                  if (typeof window !== "undefined") {
+                    sessionStorage.setItem("lumina_cart_reopen", "true");
+                  }
+                  router.push("/");
+                }}
                 className="flex-1 py-3 px-4 rounded-xl bg-gray-900 dark:bg-white text-white dark:text-gray-900 font-medium text-sm transition-opacity hover:opacity-90"
               >
-                Volver a la Tienda
+                Reintentar Pago
+              </button>
+              <button
+                onClick={() => router.push("/shop")}
+                className="flex-1 py-3 px-4 rounded-xl bg-gray-100 dark:bg-white/10 text-gray-800 dark:text-gray-200 font-medium text-sm hover:bg-gray-200 dark:hover:bg-white/15"
+              >
+                Ir a la Tienda
               </button>
             </div>
           </div>

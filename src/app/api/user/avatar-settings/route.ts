@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
-import { supabaseServer, getAuthenticatedUser } from '@/lib/serverAuth';
+import { supabaseServer, getAuthenticatedUser, verifyIsAdmin } from '@/lib/serverAuth';
+import { checkRateLimit, createRateLimitResponse } from '@/lib/rateLimit';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -25,19 +26,31 @@ const DEFAULT_SETTINGS = {
  * Obtiene la configuración exclusiva de avatar para una cuenta desde la tabla dedicada `user_avatar_settings`
  */
 export async function GET(request: Request) {
+  // Rate limiting check (30 requests / 60 seconds per IP)
+  const rateLimit = checkRateLimit(request, {
+    keyPrefix: 'avatar_settings_get',
+    maxRequests: 30,
+    windowMs: 60 * 1000
+  });
+  if (!rateLimit.isAllowed) {
+    return createRateLimitResponse('Demasiadas consultas de avatar.', rateLimit.resetTimeMs);
+  }
+
   try {
     const authUser = await getAuthenticatedUser(request);
-    const { searchParams } = new URL(request.url);
-    const queryUserId = searchParams.get('userId');
-
-    const targetUserId = authUser?.id || queryUserId;
-
-    if (!targetUserId) {
+    if (!authUser?.id) {
       return NextResponse.json(
-        { success: false, error: 'No se especificó un usuario válido', settings: DEFAULT_SETTINGS },
-        { status: 400 }
+        { success: false, error: 'Acceso no autorizado: se requiere sesión activa', settings: DEFAULT_SETTINGS },
+        { status: 401 }
       );
     }
+
+    const { searchParams } = new URL(request.url);
+    const queryUserId = searchParams.get('userId');
+    const isAdmin = authUser.email ? await verifyIsAdmin(authUser.email) : false;
+
+    // Strict Anti-IDOR: Only administrators can view another user's avatar settings
+    const targetUserId = isAdmin && queryUserId ? queryUserId : authUser.id;
 
     // Consultar tabla dedicada public.user_avatar_settings
     const { data, error } = await supabaseServer
@@ -102,17 +115,30 @@ export async function GET(request: Request) {
  * Guarda o actualiza (upsert) la configuración individual en la tabla dedicada `user_avatar_settings`
  */
 export async function POST(request: Request) {
+  // Rate limiting check (20 mutations / 60 seconds per IP)
+  const rateLimit = checkRateLimit(request, {
+    keyPrefix: 'avatar_settings_post',
+    maxRequests: 20,
+    windowMs: 60 * 1000
+  });
+  if (!rateLimit.isAllowed) {
+    return createRateLimitResponse('Demasiadas solicitudes de guardado de avatar.', rateLimit.resetTimeMs);
+  }
+
   try {
     const authUser = await getAuthenticatedUser(request);
-    const body: Partial<UserAvatarSettingsPayload> = await request.json();
-
-    const targetUserId = authUser?.id || body.userId;
-    if (!targetUserId) {
+    if (!authUser?.id) {
       return NextResponse.json(
-        { success: false, error: 'Identificador de usuario no proporcionado' },
-        { status: 400 }
+        { success: false, error: 'Acceso no autorizado: se requiere sesión activa' },
+        { status: 401 }
       );
     }
+
+    const body: Partial<UserAvatarSettingsPayload> = await request.json();
+    const isAdmin = authUser.email ? await verifyIsAdmin(authUser.email) : false;
+
+    // Strict Anti-IDOR: Only administrators can mutate another user's avatar
+    const targetUserId = isAdmin && body.userId ? body.userId : authUser.id;
 
     const payload = {
       user_id: targetUserId,

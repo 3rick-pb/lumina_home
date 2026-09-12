@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { preparePayPhonePayment, validateEcuadorianId, sanitizeString } from '@/lib/payphone';
 import { getAuthenticatedUser } from '@/lib/serverAuth';
+import { checkRateLimit, createRateLimitResponse } from '@/lib/rateLimit';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -58,6 +59,19 @@ interface PrepareRequestBody {
  * input sanitization, and returns payload tailored for active mode (Cajita vs Redirección).
  */
 export async function POST(request: Request) {
+  // 0. Rate limiting check (12 requests / 60 seconds per IP)
+  const rateLimit = checkRateLimit(request, {
+    keyPrefix: 'payphone_prepare',
+    maxRequests: 12,
+    windowMs: 60 * 1000
+  });
+  if (!rateLimit.isAllowed) {
+    return createRateLimitResponse(
+      'Has excedido el límite de solicitudes para iniciar pagos. Por favor espera un minuto antes de reintentar.',
+      rateLimit.resetTimeMs
+    );
+  }
+
   try {
     const authUser = await getAuthenticatedUser(request).catch(() => null);
     const body = (await request.json().catch(() => ({}))) as PrepareRequestBody;

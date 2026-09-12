@@ -4,6 +4,7 @@ import { confirmPayPhonePayment, sanitizeString } from '@/lib/payphone';
 import { getAuthenticatedUser } from '@/lib/serverAuth';
 import { sendOrderEmails, getAllAdminEmails } from '@/lib/emailService';
 import { ApiOrder } from '@/app/api/orders/route';
+import { checkRateLimit, createRateLimitResponse } from '@/lib/rateLimit';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -16,6 +17,7 @@ const supabase = createClient(supabaseUrl, supabaseKey);
 interface ConfirmRequestBody {
   id: number | string;
   clientTxId: string;
+  simulatedDeferred?: boolean;
   orderData?: {
     orderId?: string;
     items?: Array<{
@@ -55,11 +57,24 @@ interface ConfirmRequestBody {
  * Implements Anti-Replay protection, Amount Matching, and order synchronization.
  */
 export async function POST(request: Request) {
+  // 0. Rate limiting (15 requests / 60 seconds per IP)
+  const rateLimit = checkRateLimit(request, {
+    keyPrefix: 'payphone_confirm',
+    maxRequests: 15,
+    windowMs: 60 * 1000
+  });
+  if (!rateLimit.isAllowed) {
+    return createRateLimitResponse(
+      'Demasiados intentos de verificación de pago. Por favor espera unos momentos antes de reintentar.',
+      rateLimit.resetTimeMs
+    );
+  }
+
   try {
     const authUser = await getAuthenticatedUser(request).catch(() => null);
     const body = (await request.json().catch(() => ({}))) as ConfirmRequestBody;
 
-    const { id, clientTxId, orderData } = body;
+    const { id, clientTxId, simulatedDeferred, orderData } = body;
 
     if (!id || !clientTxId) {
       return NextResponse.json({
@@ -94,7 +109,9 @@ export async function POST(request: Request) {
           shippingAddress: existingOrder.shipping_address,
           paymentMethod: existingOrder.payment_method,
           date: existingOrder.created_at,
-          trackingNumber: existingOrder.tracking_number
+          trackingNumber: existingOrder.tracking_number,
+          deferred: Boolean(existingOrder.deferred),
+          deferredMessage: existingOrder.deferred_message || null
         }
       });
     }
@@ -107,7 +124,8 @@ export async function POST(request: Request) {
     const confirmation = await confirmPayPhonePayment({
       id: cleanId,
       clientTxId: cleanClientTxId,
-      expectedAmountCents: expectedAmountCents > 0 ? expectedAmountCents : undefined
+      expectedAmountCents: expectedAmountCents > 0 ? expectedAmountCents : undefined,
+      simulatedDeferred: Boolean(simulatedDeferred)
     });
 
     if (!confirmation.success || confirmation.transactionStatus !== 'Approved') {
@@ -118,14 +136,18 @@ export async function POST(request: Request) {
       }, { status: 400 });
     }
 
-    // 4. Build Authoritative Order Record for Database
+    // 4. Build Authoritative Order Record for Database with Deferred Detail
     const now = new Date();
     const finalOrderId = sanitizeString(orderData?.orderId || `INV_${Math.floor(100000 + Math.random() * 900000)}`, 50);
     const trackingCode = `LM-${Math.floor(1000000 + Math.random() * 9000000)}`;
 
+    const deferredText = confirmation.isDeferred && confirmation.deferredMessage
+      ? ` (${confirmation.deferredMessage})`
+      : (confirmation.isDeferred ? ' (Diferido)' : ' (Corriente)');
+
     const cardDetail = confirmation.cardType 
-      ? `PayPhone (Ecuador) - ${confirmation.cardType} •••• ${confirmation.lastDigits || '4242'}`
-      : 'PayPhone (Ecuador)';
+      ? `PayPhone (Ecuador) - ${confirmation.cardType} •••• ${confirmation.lastDigits || '4242'}${deferredText}`
+      : `PayPhone (Ecuador)${deferredText}`;
 
     const cleanCustomerName = sanitizeString(orderData?.customerName || orderData?.recipient || authUser?.email?.split('@')[0] || 'Cliente Lumina', 80);
     const cleanCustomerEmail = sanitizeString(orderData?.customerEmail || authUser?.email || 'cliente@lumina.com', 100).toLowerCase();
@@ -133,7 +155,7 @@ export async function POST(request: Request) {
     const cleanIdNumber = sanitizeString(orderData?.customerIdNumber || orderData?.shippingAddress?.idNumber || '', 30);
     const cleanPhone = sanitizeString(orderData?.customerPhone || orderData?.shippingAddress?.phone || '', 30);
 
-    const apiOrder: ApiOrder = {
+    const apiOrder: ApiOrder & { deferred?: boolean; deferredMessage?: string | null } = {
       id: finalOrderId,
       userId: authUser?.id || undefined,
       customerName: cleanCustomerName,
@@ -159,10 +181,12 @@ export async function POST(request: Request) {
       status: 'Procesando',
       trackingNumber: trackingCode,
       total: expectedTotal > 0 ? expectedTotal : (Number(confirmation.amountCents || 0) / 100),
-      items: Array.isArray(orderData?.items) ? orderData.items : []
+      items: Array.isArray(orderData?.items) ? orderData.items : [],
+      deferred: confirmation.isDeferred || false,
+      deferredMessage: confirmation.deferredMessage || null
     };
 
-    // 5. Persist in Supabase Orders Table
+    // 5. Persist in Supabase Orders Table with Deferred Fields
     const { error: dbError } = await supabase.from('orders').upsert({
       id: apiOrder.id,
       user_id: apiOrder.userId || null,
@@ -177,6 +201,9 @@ export async function POST(request: Request) {
       recipient: apiOrder.recipient,
       shipping_address: apiOrder.shippingAddress,
       payment_method: apiOrder.paymentMethod,
+      deferred: confirmation.isDeferred || false,
+      deferred_code: confirmation.deferredCode || null,
+      deferred_message: confirmation.deferredMessage || null,
       created_at: apiOrder.createdAt
     });
 

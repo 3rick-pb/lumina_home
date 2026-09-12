@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
-import { supabaseServer, getAuthenticatedUser } from '@/lib/serverAuth';
+import { supabaseServer, getAuthenticatedUser, verifyIsAdmin } from '@/lib/serverAuth';
+import { checkRateLimit, createRateLimitResponse } from '@/lib/rateLimit';
 
 export interface ShippingAddress {
   id: string;
@@ -26,26 +27,25 @@ export interface PaymentCard {
 
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
-function resolveTargetUserId(authUser: { id: string; email?: string } | null, queryUserId?: string | null): string | null {
-  if (authUser?.id) return authUser.id;
-  if (queryUserId && (UUID_REGEX.test(queryUserId) || queryUserId.startsWith('user_') || queryUserId.length >= 8)) {
-    return queryUserId;
-  }
-  return null;
-}
-
 /**
  * GET /api/user/data
- * Retrieves addresses, cards, and favorites directly from their dedicated tables in Supabase
+ * Retrieves addresses, cards, and favorites directly from their dedicated tables in Supabase.
+ * Strictly protected against IDOR: Users can only query their own data.
  */
 export async function GET(request: Request) {
+  // Rate limiting check (30 requests / 60 seconds per IP)
+  const rateLimit = checkRateLimit(request, {
+    keyPrefix: 'user_data_get',
+    maxRequests: 30,
+    windowMs: 60 * 1000
+  });
+  if (!rateLimit.isAllowed) {
+    return createRateLimitResponse('Demasiadas consultas de datos de usuario.', rateLimit.resetTimeMs);
+  }
+
   try {
     const authUser = await getAuthenticatedUser(request);
-    const { searchParams } = new URL(request.url);
-    const queryUserId = searchParams.get('userId');
-    const targetUserId = resolveTargetUserId(authUser, queryUserId);
-
-    if (!targetUserId) {
+    if (!authUser?.id) {
       return NextResponse.json({
         success: false,
         error: 'No authenticated user session found',
@@ -55,6 +55,15 @@ export async function GET(request: Request) {
         address: null,
       }, { status: 401 });
     }
+
+    const { searchParams } = new URL(request.url);
+    const queryUserId = searchParams.get('userId');
+    const isAdmin = authUser.email ? await verifyIsAdmin(authUser.email) : false;
+
+    // Strict Anti-IDOR: Only verified administrators can view another user's data
+    const targetUserId = isAdmin && queryUserId && UUID_REGEX.test(queryUserId)
+      ? queryUserId
+      : authUser.id;
 
     let addresses: ShippingAddress[] = [];
     let cards: PaymentCard[] = [];
@@ -155,14 +164,29 @@ export async function GET(request: Request) {
  * Mutates and stores addresses, cards, or favorites directly into dedicated tables
  */
 export async function POST(request: Request) {
+  // Rate limiting check (20 mutations / 60 seconds per IP)
+  const rateLimit = checkRateLimit(request, {
+    keyPrefix: 'user_data_post',
+    maxRequests: 20,
+    windowMs: 60 * 1000
+  });
+  if (!rateLimit.isAllowed) {
+    return createRateLimitResponse('Demasiadas solicitudes de modificación.', rateLimit.resetTimeMs);
+  }
+
   try {
     const authUser = await getAuthenticatedUser(request);
-    const body = await request.json().catch(() => ({}));
-    const targetUserId = resolveTargetUserId(authUser, body.userId);
-
-    if (!targetUserId) {
-      return NextResponse.json({ success: false, error: 'Unauthorized: valid user session required' }, { status: 401 });
+    if (!authUser?.id) {
+      return NextResponse.json({ success: false, error: 'Acceso no autorizado: se requiere sesión de usuario activa' }, { status: 401 });
     }
+
+    const body = await request.json().catch(() => ({}));
+    const isAdmin = authUser.email ? await verifyIsAdmin(authUser.email) : false;
+
+    // Strict Anti-IDOR: Only verified administrators can mutate another user's data
+    const targetUserId = isAdmin && body.userId && UUID_REGEX.test(body.userId)
+      ? body.userId
+      : authUser.id;
 
     const action = body.action || 'sync_all';
 
