@@ -63,9 +63,7 @@ export function IntegrationsTab() {
   // PayPhone Vercel Variables Generator state
   const [payphoneToken, setPayphoneToken] = useState("");
   const [payphoneStoreIdInput, setPayphoneStoreIdInput] = useState("");
-  const [supabaseServiceKeyInput, setSupabaseServiceKeyInput] = useState("");
   const [showPayphoneToken, setShowPayphoneToken] = useState(false);
-  const [showServiceKey, setShowServiceKey] = useState(false);
   const [copiedPayphone, setCopiedPayphone] = useState(false);
 
   // Fetch current Vercel environment variable status
@@ -192,18 +190,14 @@ SMTP_FROM="${finalFrom}"`;
     setTimeout(() => setCopied(false), 3000);
   };
 
-  // Compute generated block for PayPhone & Supabase in Vercel
+  // Compute generated block for PayPhone in Vercel
   const finalPayphoneToken = payphoneToken.trim() || "tu_token_privado_de_payphone";
   const finalPayphoneStoreId = payphoneStoreIdInput.trim() || (payphoneStoreId && !payphoneStoreId.includes("••••") ? payphoneStoreId : "tu_store_id_de_sucursal");
-  const finalServiceKey = supabaseServiceKeyInput.trim() || "tu_supabase_service_role_secret_key";
 
   const vercelPayphoneEnvSnippet = `# === CREDENCIALES OFICIALES PAYPHONE ECUADOR ===
 PAYPHONE_TOKEN="${finalPayphoneToken}"
 PAYPHONE_STORE_ID="${finalPayphoneStoreId}"
-PAYPHONE_PAYMENT_MODE="${payphoneMode}"
-
-# === CLAVE MAESTRA SUPERUSUARIO SUPABASE (ACCESO TOTAL EN TODA LA WEB) ===
-SUPABASE_SERVICE_ROLE_KEY="${finalServiceKey}"`;
+PAYPHONE_PAYMENT_MODE="${payphoneMode}"`;
 
   const handleCopyPayphoneSnippet = () => {
     navigator.clipboard.writeText(vercelPayphoneEnvSnippet);
@@ -702,24 +696,24 @@ SUPABASE_SERVICE_ROLE_KEY="${finalServiceKey}"`;
 
           </div>
 
-          {/* Module 4: PayPhone & Supabase Vercel Variable Generator */}
+          {/* Module 4: PayPhone Vercel Variable Generator */}
             <div className="bg-white/95 dark:bg-[#202022]/90 backdrop-blur-2xl p-6 md:p-8 rounded-[2.5rem] border border-gray-200/80 dark:border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.04)] space-y-6">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-4 border-b border-gray-100 dark:border-white/5">
                 <div>
                   <div className="flex items-center gap-2">
                     <span className="font-mono text-[9px] font-bold px-2 py-0.5 rounded-md bg-orange-500/10 text-[#FF5E00] border border-orange-500/20 uppercase tracking-widest">
-                      Clave SuperUser · Toda la Web
+                      Variables de Producción · Vercel
                     </span>
                     <span className="font-mono text-[9px] font-bold px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 uppercase tracking-widest flex items-center gap-1">
-                      <ShieldCheck className="w-2.5 h-2.5" /> Acceso Maestro Servidor
+                      <ShieldCheck className="w-2.5 h-2.5" /> Pasarela Oficial
                     </span>
                   </div>
                   <h3 className="text-base font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2 mt-1.5 tracking-tight">
                     <Sparkles className="w-4 h-4 text-[#FF5E00]" />
-                    Variables de Entorno para Vercel (Clave SuperUser & PayPhone)
+                    Variables de Entorno para Vercel (PayPhone Ecuador)
                   </h3>
                   <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 leading-relaxed">
-                    Genera el bloque con la Clave SuperUser de Supabase (<code className="text-[#FF5E00] font-mono">SUPABASE_SERVICE_ROLE_KEY</code>) para blindar el 100% de la web con acceso maestro en el servidor, junto con las credenciales de PayPhone.
+                    Genera el bloque de credenciales oficiales de PayPhone (<code className="text-[#FF5E00] font-mono">PAYPHONE_TOKEN</code>, <code className="text-[#FF5E00] font-mono">PAYPHONE_STORE_ID</code>, <code className="text-[#FF5E00] font-mono">PAYPHONE_PAYMENT_MODE</code>) para pegarlas directamente en Vercel.
                   </p>
                 </div>
               </div>
@@ -760,32 +754,6 @@ SUPABASE_SERVICE_ROLE_KEY="${finalServiceKey}"`;
                     placeholder={payphoneStoreId && !payphoneStoreId.includes("••••") ? payphoneStoreId : "ej: 5c0a1b2c-3d4e-5f6a-7b8c-9d0e1f2a3b4c"}
                     className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-xs bg-white dark:bg-[#1a1a1c] text-gray-900 dark:text-gray-100 outline-none focus:ring-2 focus:ring-[#FF5E00]/30 font-mono transition-all"
                   />
-                </div>
-
-                <div>
-                  <div className="flex items-center justify-between mb-1">
-                    <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300">
-                      Clave Service Role Supabase (SUPABASE_SERVICE_ROLE_KEY)
-                    </label>
-                    <button
-                      type="button"
-                      onClick={() => setShowServiceKey(!showServiceKey)}
-                      className="text-[11px] text-[#FF5E00] hover:underline font-semibold flex items-center gap-1 cursor-pointer"
-                    >
-                      {showServiceKey ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
-                      {showServiceKey ? "Ocultar" : "Mostrar"}
-                    </button>
-                  </div>
-                  <input
-                    type={showServiceKey ? "text" : "password"}
-                    value={supabaseServiceKeyInput}
-                    onChange={e => setSupabaseServiceKeyInput(e.target.value)}
-                    placeholder="ej: eyJhbGciOiJIUzI1Ni... (service_role secret)"
-                    className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-xs bg-white dark:bg-[#1a1a1c] text-gray-900 dark:text-gray-100 outline-none focus:ring-2 focus:ring-[#FF5E00]/30 font-mono transition-all"
-                  />
-                  <p className="text-[10px] text-gray-400 mt-1">
-                    Encuéntrala en Supabase &gt; Project Settings &gt; API &gt; Project API keys &gt; <code>service_role (secret)</code>.
-                  </p>
                 </div>
               </div>
 

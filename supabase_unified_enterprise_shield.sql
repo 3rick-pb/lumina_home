@@ -3,6 +3,7 @@
 -- ==============================================================================
 -- Este script es 100% IDEMPOTENTE: Puede ejecutarse múltiples veces en Supabase
 -- SQL Editor sin producir errores de políticas duplicadas (42710) ni alterar datos.
+-- Incluye typecasts explícitos (::text) para evitar errores 42883 (text = uuid).
 -- ==============================================================================
 
 -- 1. FUNCIÓN MAESTRA DE AUTORIZACIÓN ADMINISTRATIVA
@@ -11,10 +12,10 @@ RETURNS boolean AS $$
 BEGIN
   -- Permite acceso si es el Master Admin o si figura activo en admin_invitations
   RETURN (
-    (auth.jwt() ->> 'email' = 'admin@lumina.com')
+    (LOWER((auth.jwt() ->> 'email')::text) = 'admin@lumina.com')
     OR EXISTS (
       SELECT 1 FROM public.admin_invitations
-      WHERE LOWER(email) = LOWER(auth.jwt() ->> 'email')
+      WHERE LOWER(email::text) = LOWER((auth.jwt() ->> 'email')::text)
         AND is_active = true
     )
   );
@@ -83,7 +84,7 @@ ALTER TABLE public.orders ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "Users can view own orders" ON public.orders;
 CREATE POLICY "Users can view own orders" ON public.orders
   FOR SELECT USING (
-    (auth.uid() IS NOT NULL AND auth.uid()::text = user_id)
+    (auth.uid() IS NOT NULL AND auth.uid()::text = user_id::text)
     OR public.is_admin()
     OR auth.role() = 'service_role'
   );
@@ -91,7 +92,7 @@ CREATE POLICY "Users can view own orders" ON public.orders
 DROP POLICY IF EXISTS "Users can insert own orders" ON public.orders;
 CREATE POLICY "Users can insert own orders" ON public.orders
   FOR INSERT WITH CHECK (
-    (auth.uid() IS NOT NULL AND auth.uid()::text = user_id)
+    (auth.uid() IS NOT NULL AND auth.uid()::text = user_id::text)
     OR auth.role() = 'anon'
     OR public.is_admin()
     OR auth.role() = 'service_role'
@@ -125,12 +126,12 @@ ALTER TABLE public.addresses ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "Users manage own addresses" ON public.addresses;
 CREATE POLICY "Users manage own addresses" ON public.addresses
   FOR ALL USING (
-    (auth.uid() IS NOT NULL AND auth.uid()::text = user_id)
+    (auth.uid() IS NOT NULL AND auth.uid()::text = user_id::text)
     OR public.is_admin()
     OR auth.role() = 'service_role'
   )
   WITH CHECK (
-    (auth.uid() IS NOT NULL AND auth.uid()::text = user_id)
+    (auth.uid() IS NOT NULL AND auth.uid()::text = user_id::text)
     OR public.is_admin()
     OR auth.role() = 'service_role'
   );
@@ -152,12 +153,12 @@ ALTER TABLE public.payment_cards ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "Users manage own cards" ON public.payment_cards;
 CREATE POLICY "Users manage own cards" ON public.payment_cards
   FOR ALL USING (
-    (auth.uid() IS NOT NULL AND auth.uid()::text = user_id)
+    (auth.uid() IS NOT NULL AND auth.uid()::text = user_id::text)
     OR public.is_admin()
     OR auth.role() = 'service_role'
   )
   WITH CHECK (
-    (auth.uid() IS NOT NULL AND auth.uid()::text = user_id)
+    (auth.uid() IS NOT NULL AND auth.uid()::text = user_id::text)
     OR public.is_admin()
     OR auth.role() = 'service_role'
   );
@@ -175,12 +176,12 @@ ALTER TABLE public.favorites ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "Users manage own favorites" ON public.favorites;
 CREATE POLICY "Users manage own favorites" ON public.favorites
   FOR ALL USING (
-    (auth.uid() IS NOT NULL AND auth.uid()::text = user_id)
+    (auth.uid() IS NOT NULL AND auth.uid()::text = user_id::text)
     OR public.is_admin()
     OR auth.role() = 'service_role'
   )
   WITH CHECK (
-    (auth.uid() IS NOT NULL AND auth.uid()::text = user_id)
+    (auth.uid() IS NOT NULL AND auth.uid()::text = user_id::text)
     OR public.is_admin()
     OR auth.role() = 'service_role'
   );
@@ -203,12 +204,12 @@ DROP POLICY IF EXISTS "Public user_carts policy" ON public.user_carts;
 
 CREATE POLICY "Users manage own cart" ON public.user_carts
   FOR ALL USING (
-    (auth.uid() IS NOT NULL AND auth.uid()::text = user_id)
+    (auth.uid() IS NOT NULL AND auth.uid()::text = user_id::text)
     OR public.is_admin()
     OR auth.role() = 'service_role'
   )
   WITH CHECK (
-    (auth.uid() IS NOT NULL AND auth.uid()::text = user_id)
+    (auth.uid() IS NOT NULL AND auth.uid()::text = user_id::text)
     OR public.is_admin()
     OR auth.role() = 'service_role'
   );
@@ -228,12 +229,12 @@ ALTER TABLE public.user_avatar_settings ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "Users manage own avatar settings" ON public.user_avatar_settings;
 CREATE POLICY "Users manage own avatar settings" ON public.user_avatar_settings
   FOR ALL USING (
-    (auth.uid() IS NOT NULL AND auth.uid()::text = user_id)
+    (auth.uid() IS NOT NULL AND auth.uid()::text = user_id::text)
     OR public.is_admin()
     OR auth.role() = 'service_role'
   )
   WITH CHECK (
-    (auth.uid() IS NOT NULL AND auth.uid()::text = user_id)
+    (auth.uid() IS NOT NULL AND auth.uid()::text = user_id::text)
     OR public.is_admin()
     OR auth.role() = 'service_role'
   );
@@ -322,7 +323,7 @@ CREATE POLICY "Admins or recipient view email logs" ON public.order_email_logs
   FOR SELECT USING (
     public.is_admin()
     OR auth.role() = 'service_role'
-    OR (auth.jwt() ->> 'email' = recipient_email)
+    OR (LOWER((auth.jwt() ->> 'email')::text) = LOWER(recipient_email::text))
   );
 
 DROP POLICY IF EXISTS "Server insert email logs" ON public.order_email_logs;
