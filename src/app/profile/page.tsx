@@ -68,6 +68,8 @@ export default function ProfilePage() {
  const { products, categories, badges, addProduct, updateProduct, deleteProduct, deleteCategory } = useCatalogStore();
  const { backgroundShape, customSeed } = useAvatarSettingsStore();
 
+  const pendingOrdersCount = orders.filter((o) => o.status !== "Entregado").length;
+
   type ProfileTab = "overview" | "orders" | "cards" | "favorites" | "catalog" | "niches" | "analytics" | "cart_alerts" | "integrations" | "settings";
   const [activeTab, setActiveTab] = useState<ProfileTab>("overview");
   const [searchQuery, setSearchQuery] = useState("");
@@ -576,9 +578,14 @@ const handleConfirmDeleteNiche = async () => {
      <span className="absolute -left-2 w-1 h-5 bg-[#8c9276] dark:bg-[#ccff00] rounded-r-full transition-all duration-[600ms]" />
    )}
    <ShoppingBag className="w-5 h-5 transition-transform duration-[600ms] group-hover:scale-110" />
-   {orders.length > 0 && activeTab !== "orders" && (
-     <span className="absolute top-2 right-2 w-2 h-2 rounded-full bg-[#8c9276] ring-2 ring-white dark:ring-[#1e1e20]" />
-   )}
+    {pendingOrdersCount > 0 && (
+      <span 
+        className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-[#8c9276] text-white dark:text-gray-900 text-[10px] font-extrabold flex items-center justify-center ring-2 ring-white dark:ring-[#1e1e20] shadow-sm pointer-events-none transition-transform duration-300 scale-100"
+        title={`${pendingOrdersCount} pedido(s) en curso`}
+      >
+        {pendingOrdersCount > 99 ? "99+" : pendingOrdersCount}
+      </span>
+    )}
  </button>
 
  <button 
@@ -2077,8 +2084,13 @@ const handleConfirmDeleteNiche = async () => {
           title="Pedidos"
         >
           <ShoppingBag className="w-4 h-4" />
-          {orders.length > 0 && activeTab !== "orders" && (
-            <span className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full bg-[#8c9276]" />
+          {pendingOrdersCount > 0 && (
+            <span 
+              className="absolute -top-1 -right-1 min-w-[15px] h-[15px] px-0.5 rounded-full bg-[#8c9276] text-white dark:text-gray-900 text-[9px] font-extrabold flex items-center justify-center ring-1.5 ring-white dark:ring-[#1e1e20] shadow-sm pointer-events-none"
+              title={`${pendingOrdersCount} pedido(s) en curso`}
+            >
+              {pendingOrdersCount > 99 ? "99+" : pendingOrdersCount}
+            </span>
           )}
         </button>
 

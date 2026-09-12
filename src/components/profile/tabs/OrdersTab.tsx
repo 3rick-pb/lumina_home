@@ -114,7 +114,7 @@ export function OrdersTab({
                 <th className="pb-3 px-3">Total</th>
                 <th className="pb-3 px-3">Estado</th>
                 <th className="pb-3 px-3">Fecha / Hora</th>
-                <th className="pb-3 pr-6 pl-3 text-right whitespace-nowrap">Acción</th>
+                <th className="pb-3 pr-2 pl-3 text-right whitespace-nowrap">Acción</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
@@ -160,8 +160,8 @@ export function OrdersTab({
                     <span className="block font-medium text-gray-800 dark:text-gray-200">{ord.date}</span>
                     {ord.time && <span className="block text-[10px] text-gray-400">{ord.time}</span>}
                   </td>
-                  <td className="py-4 pr-6 pl-3 text-right whitespace-nowrap">
-                    <div className="w-full flex items-center justify-end gap-2">
+                  <td className="py-4 pr-2 pl-3 text-right whitespace-nowrap">
+                    <div className="inline-flex items-center justify-end gap-2 ml-auto">
                       {isAdmin && (
                         <select 
                           value={ord.status} 
