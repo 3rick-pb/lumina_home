@@ -773,7 +773,7 @@ ON CONFLICT (id) DO NOTHING;
 -- 7.6 Semilla de Administradores Autorizados
 INSERT INTO public.admin_invitations (email, invited_by, is_active)
 VALUES
-  ('arteagae796@gmail.com', 'admin@lumina.com', true)
+  ('arteagae796@gmail.com', NULL, true)
 ON CONFLICT (email) DO NOTHING;
 
 -- 7.7 Semilla de Configuración de Pagos PayPhone
