@@ -341,6 +341,8 @@ CREATE TABLE IF NOT EXISTS public.favorites (
   PRIMARY KEY (user_id, product_id)
 );
 
+ALTER TABLE public.favorites ADD COLUMN IF NOT EXISTS created_at timestamp with time zone DEFAULT now();
+
 -- 12. TABLA DEDICADA: PERFILES DE USUARIO (public.user_profiles)
 CREATE TABLE IF NOT EXISTS public.user_profiles (
   user_id text PRIMARY KEY,
@@ -388,13 +390,23 @@ CREATE TABLE IF NOT EXISTS public.admin_invitations (
   created_at timestamp with time zone DEFAULT now()
 );
 
+ALTER TABLE public.admin_invitations ADD COLUMN IF NOT EXISTS email text;
+ALTER TABLE public.admin_invitations ADD COLUMN IF NOT EXISTS is_active boolean DEFAULT true;
+ALTER TABLE public.admin_invitations ADD COLUMN IF NOT EXISTS created_at timestamp with time zone DEFAULT now();
+
 -- 15. TABLA DEDICADA: AJUSTES DE PASARELA PAYPHONE (public.admin_payment_settings)
 CREATE TABLE IF NOT EXISTS public.admin_payment_settings (
   id text PRIMARY KEY DEFAULT 'global',
-  mode text NOT NULL DEFAULT 'box',
+  payment_mode text NOT NULL DEFAULT 'box',
+  mode text DEFAULT 'box',
   updated_by text,
   updated_at timestamp with time zone DEFAULT now()
 );
+
+ALTER TABLE public.admin_payment_settings ADD COLUMN IF NOT EXISTS payment_mode text DEFAULT 'box';
+ALTER TABLE public.admin_payment_settings ADD COLUMN IF NOT EXISTS mode text DEFAULT 'box';
+ALTER TABLE public.admin_payment_settings ADD COLUMN IF NOT EXISTS updated_by text;
+ALTER TABLE public.admin_payment_settings ADD COLUMN IF NOT EXISTS updated_at timestamp with time zone DEFAULT now();
 
 -- 16. TABLA DEDICADA: AJUSTES DE ALERTAS DE NOTIFICACIÓN (public.admin_notification_settings)
 CREATE TABLE IF NOT EXISTS public.admin_notification_settings (
@@ -414,7 +426,48 @@ CREATE TABLE IF NOT EXISTS public.admin_notification_settings (
   updated_at timestamp with time zone DEFAULT now()
 );
 
--- 17. TABLA DEDICADA: LOGS DE CORREOS TRANSACCIONALES (public.order_email_logs)
+ALTER TABLE public.admin_notification_settings ADD COLUMN IF NOT EXISTS admin_email text;
+ALTER TABLE public.admin_notification_settings ADD COLUMN IF NOT EXISTS position text DEFAULT 'bottom-right';
+ALTER TABLE public.admin_notification_settings ADD COLUMN IF NOT EXISTS layout text DEFAULT 'flight_route';
+ALTER TABLE public.admin_notification_settings ADD COLUMN IF NOT EXISTS preset_id text DEFAULT 'monochrome_dark';
+ALTER TABLE public.admin_notification_settings ADD COLUMN IF NOT EXISTS bg_color text DEFAULT '#111827';
+ALTER TABLE public.admin_notification_settings ADD COLUMN IF NOT EXISTS text_color text DEFAULT '#ffffff';
+ALTER TABLE public.admin_notification_settings ADD COLUMN IF NOT EXISTS subtext_color text DEFAULT '#9ca3af';
+ALTER TABLE public.admin_notification_settings ADD COLUMN IF NOT EXISTS accent_color text DEFAULT '#10b981';
+ALTER TABLE public.admin_notification_settings ADD COLUMN IF NOT EXISTS title text DEFAULT 'NOTIFICACIÓN';
+ALTER TABLE public.admin_notification_settings ADD COLUMN IF NOT EXISTS duration integer DEFAULT 6000;
+ALTER TABLE public.admin_notification_settings ADD COLUMN IF NOT EXISTS sound_enabled boolean DEFAULT true;
+ALTER TABLE public.admin_notification_settings ADD COLUMN IF NOT EXISTS toast_type text DEFAULT 'custom_preset';
+ALTER TABLE public.admin_notification_settings ADD COLUMN IF NOT EXISTS updated_at timestamp with time zone DEFAULT now();
+
+-- 17. TABLA DEDICADA: LOGS DE CORREOS TRANSACCIONALES (public.order_email_notifications & public.order_email_logs)
+CREATE TABLE IF NOT EXISTS public.order_email_notifications (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  order_id text NOT NULL,
+  recipient_email text NOT NULL,
+  recipient_name text,
+  recipient_type text,
+  email_type text NOT NULL,
+  subject text,
+  status text NOT NULL,
+  error_message text,
+  metadata jsonb DEFAULT '{}'::jsonb,
+  sent_at timestamp with time zone DEFAULT now(),
+  created_at timestamp with time zone DEFAULT now()
+);
+
+ALTER TABLE public.order_email_notifications ADD COLUMN IF NOT EXISTS order_id text;
+ALTER TABLE public.order_email_notifications ADD COLUMN IF NOT EXISTS recipient_email text;
+ALTER TABLE public.order_email_notifications ADD COLUMN IF NOT EXISTS recipient_name text;
+ALTER TABLE public.order_email_notifications ADD COLUMN IF NOT EXISTS recipient_type text;
+ALTER TABLE public.order_email_notifications ADD COLUMN IF NOT EXISTS email_type text;
+ALTER TABLE public.order_email_notifications ADD COLUMN IF NOT EXISTS subject text;
+ALTER TABLE public.order_email_notifications ADD COLUMN IF NOT EXISTS status text;
+ALTER TABLE public.order_email_notifications ADD COLUMN IF NOT EXISTS error_message text;
+ALTER TABLE public.order_email_notifications ADD COLUMN IF NOT EXISTS metadata jsonb DEFAULT '{}'::jsonb;
+ALTER TABLE public.order_email_notifications ADD COLUMN IF NOT EXISTS sent_at timestamp with time zone DEFAULT now();
+ALTER TABLE public.order_email_notifications ADD COLUMN IF NOT EXISTS created_at timestamp with time zone DEFAULT now();
+
 CREATE TABLE IF NOT EXISTS public.order_email_logs (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   order_id text NOT NULL,
@@ -424,6 +477,13 @@ CREATE TABLE IF NOT EXISTS public.order_email_logs (
   details jsonb DEFAULT '{}'::jsonb,
   created_at timestamp with time zone DEFAULT now()
 );
+
+ALTER TABLE public.order_email_logs ADD COLUMN IF NOT EXISTS order_id text;
+ALTER TABLE public.order_email_logs ADD COLUMN IF NOT EXISTS email_type text;
+ALTER TABLE public.order_email_logs ADD COLUMN IF NOT EXISTS recipient_email text;
+ALTER TABLE public.order_email_logs ADD COLUMN IF NOT EXISTS status text;
+ALTER TABLE public.order_email_logs ADD COLUMN IF NOT EXISTS details jsonb DEFAULT '{}'::jsonb;
+ALTER TABLE public.order_email_logs ADD COLUMN IF NOT EXISTS created_at timestamp with time zone DEFAULT now();
 
 -- ==============================================================================
 -- FASE 4: SEGURIDAD ROW LEVEL SECURITY (RLS) EN EL 100% DE LAS TABLAS
@@ -637,6 +697,19 @@ CREATE POLICY "Admins manage notification settings" ON public.admin_notification
   WITH CHECK (public.is_admin() OR auth.role() = 'service_role');
 
 -- 4.17 Logs de Correos Transaccionales
+ALTER TABLE public.order_email_notifications ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Admins or recipient view email notifications" ON public.order_email_notifications;
+CREATE POLICY "Admins or recipient view email notifications" ON public.order_email_notifications
+  FOR SELECT USING (
+    public.is_admin()
+    OR auth.role() = 'service_role'
+    OR (LOWER((auth.jwt() ->> 'email')::text) = LOWER(recipient_email::text))
+  );
+
+DROP POLICY IF EXISTS "Server insert email notifications" ON public.order_email_notifications;
+CREATE POLICY "Server insert email notifications" ON public.order_email_notifications
+  FOR INSERT WITH CHECK (true);
+
 ALTER TABLE public.order_email_logs ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "Admins or recipient view email logs" ON public.order_email_logs;
 CREATE POLICY "Admins or recipient view email logs" ON public.order_email_logs
@@ -777,9 +850,11 @@ VALUES
 ON CONFLICT (email) DO NOTHING;
 
 -- 7.7 Semilla de Configuración de Pagos PayPhone
-INSERT INTO public.admin_payment_settings (id, mode)
-VALUES ('global', 'box')
-ON CONFLICT (id) DO NOTHING;
+INSERT INTO public.admin_payment_settings (id, payment_mode, mode)
+VALUES ('global', 'box', 'box')
+ON CONFLICT (id) DO UPDATE SET
+  payment_mode = COALESCE(public.admin_payment_settings.payment_mode, 'box'),
+  mode = COALESCE(public.admin_payment_settings.mode, 'box');
 
 -- ==============================================================================
 -- FASE 8: RECARGA DE CACHÉ DE ESQUEMA EN SUPABASE POSTGREST
