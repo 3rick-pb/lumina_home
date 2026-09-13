@@ -724,6 +724,7 @@ VALUES
   ('Cerámica', 'ceramica', 'Vajilla de autor', 'https://images.unsplash.com/photo-1610701596007-11502861dcfa?q=80&w=800&auto=format&fit=crop', 'desde $25', 7),
   ('Decoración', 'decoracion', 'Esculturas & jarrones', 'https://images.unsplash.com/photo-1513519245088-0e12902e5a38?q=80&w=800&auto=format&fit=crop', 'desde $45', 8),
   ('Cocina', 'cocina', 'Ritual barista', 'https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?q=80&w=800&auto=format&fit=crop', 'desde $29', 9),
+  ('Bienestar', 'bienestar', 'Calma & descanso', 'https://images.unsplash.com/photo-1540555700478-4be289fbecef?q=80&w=800&auto=format&fit=crop', 'desde $35', 10)
 ON CONFLICT (name) DO UPDATE SET 
   slug = EXCLUDED.slug,
   subtitle = EXCLUDED.subtitle,
