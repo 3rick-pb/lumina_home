@@ -414,7 +414,7 @@ export function OrderDetailModal({
               <div key={idx} className="p-3 bg-gray-50 dark:bg-[#2a2a2c] rounded-xl flex items-center justify-between text-xs">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-lg overflow-hidden bg-white dark:bg-[#202022] shrink-0 relative border border-gray-100 dark:border-white/5">
-                    <Image src={item.product.imageUrl} alt={item.product.title} fill className="object-cover" />
+                    <Image src={item.product.imageUrl} alt={item.product.title} fill sizes="40px" className="object-cover" />
                   </div>
                   <div>
                     <p className="font-semibold text-gray-900 dark:text-gray-100">{item.product.title}</p>

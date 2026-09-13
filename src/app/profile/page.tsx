@@ -1901,6 +1901,7 @@ const handleConfirmDeleteNiche = async () => {
                     src={productToDelete.images[0]} 
                     alt={productToDelete.title} 
                     fill 
+                    sizes="56px"
                     className="object-cover"
                   />
                 ) : (

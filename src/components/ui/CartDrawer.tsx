@@ -932,7 +932,7 @@ export function CartDrawer() {
             >
               <div className="flex items-center gap-3 min-w-0">
                 <div className="relative w-12 h-12 rounded-xl overflow-hidden bg-gray-100 dark:bg-white/5 shrink-0 border border-black/5">
-                  <Image src={bp.imageUrl} alt={bp.title} fill className="object-cover" />
+                  <Image src={bp.imageUrl} alt={bp.title} fill sizes="48px" className="object-cover" />
                 </div>
                 <div className="min-w-0">
                   <span className="text-[9px] font-bold text-emerald-600 uppercase tracking-wider block">
@@ -1040,6 +1040,7 @@ export function CartDrawer() {
  src={item.product.imageUrl} 
  alt={item.product.title} 
  fill 
+ sizes="(max-width: 640px) 80px, 96px"
  className="object-cover group-hover:scale-105 transition-transform duration-500" 
  />
  {itemIsAgotado && (

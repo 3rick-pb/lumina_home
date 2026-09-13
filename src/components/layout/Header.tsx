@@ -148,7 +148,7 @@ export function Header() {
     <>
       <CartDrawer />
       <header className="fixed top-6 left-0 right-0 z-50 flex justify-center px-4 pointer-events-none">
-        <div className="pointer-events-auto flex items-center justify-between p-2 rounded-full bg-white/40 backdrop-blur-xl border border-white/60 shadow-[0_8px_32px_rgba(0,0,0,0.08)] relative">
+        <div className="pointer-events-auto flex items-center justify-between p-2 rounded-full bg-white/40 backdrop-blur-xl border border-white/60 shadow-[0_8px_32px_rgba(0,0,0,0.08)] relative transform-gpu">
           
           {/* Logo Section */}
           <Link href="/" className="pl-4 pr-6 flex items-center gap-2 group">
@@ -314,7 +314,7 @@ export function Header() {
                           >
                             <div className="flex items-center gap-3">
                               <div className="relative w-11 h-11 rounded-xl overflow-hidden bg-gray-100 shrink-0">
-                                <Image src={prod.imageUrl} alt={prod.title} fill className="object-cover group-hover:scale-105 transition-transform" />
+                                <Image src={prod.imageUrl} alt={prod.title} fill sizes="44px" className="object-cover group-hover:scale-105 transition-transform" />
                               </div>
                               <div>
                                 <span className="text-[10px] font-bold text-[#8c9276] uppercase tracking-wider block">

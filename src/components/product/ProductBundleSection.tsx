@@ -348,6 +348,7 @@ export function ProductBundleSection({
                   src={product.imageUrl || "https://images.unsplash.com/photo-1507473885765-e6ed057f782c?q=80&w=800&auto=format&fit=crop"}
                   alt={product.title}
                   fill
+                  sizes="56px"
                   className="object-cover"
                 />
               </div>
@@ -385,6 +386,7 @@ export function ProductBundleSection({
                         src={companion.imageUrl || "https://images.unsplash.com/photo-1507473885765-e6ed057f782c?q=80&w=800&auto=format&fit=crop"}
                         alt={companion.title}
                         fill
+                        sizes="56px"
                         className="object-cover"
                       />
                       <div className={`absolute top-1 left-1 w-4 h-4 rounded-md flex items-center justify-center ${

@@ -354,7 +354,7 @@ export function ProductLandingView({
                       : "border-transparent opacity-60 hover:opacity-100"
                   }`}
                 >
-                  <Image src={img} alt={`${product.title} vista ${idx + 1}`} fill draggable={false} className="object-cover pointer-events-none select-none" />
+                  <Image src={img} alt={`${product.title} vista ${idx + 1}`} fill sizes="80px" draggable={false} className="object-cover pointer-events-none select-none" />
                 </button>
               ))}
             </div>
@@ -364,6 +364,7 @@ export function ProductLandingView({
                 src={currentImage}
                 alt={product.title}
                 fill
+                sizes="(max-width: 1024px) 100vw, 60vw"
                 priority
                 draggable={false}
                 className="object-cover transition-transform duration-700 ease-out group-hover:scale-105 pointer-events-none select-none"
@@ -840,7 +841,7 @@ export function ProductLandingView({
                 {/* Main Product */}
                 <div className="flex-1 min-w-[140px] p-3.5 rounded-2xl bg-gray-50 dark:bg-white/5 border border-gray-200/60 dark:border-white/10">
                   <div className="relative aspect-square rounded-xl overflow-hidden mb-2 bg-gray-100 dark:bg-white/5">
-                    <Image src={currentImage} alt={product.title} fill className="object-cover" />
+                    <Image src={currentImage} alt={product.title} fill sizes="140px" className="object-cover" />
                   </div>
                   <p className="text-xs font-bold text-gray-900 dark:text-white line-clamp-1">{product.title}</p>
                   <p className="text-xs font-semibold text-gray-500 dark:text-gray-400">${Number(product.price || 0).toFixed(2)}</p>
@@ -863,7 +864,7 @@ export function ProductLandingView({
                       }`}
                     >
                       <div className="relative aspect-square rounded-xl overflow-hidden mb-2 bg-gray-100 dark:bg-white/5">
-                        <Image src={comp.imageUrl} alt={comp.title} fill className="object-cover" />
+                        <Image src={comp.imageUrl} alt={comp.title} fill sizes="140px" className="object-cover" />
                         <div className="absolute top-2 right-2">
                           <input
                             type="checkbox"
@@ -987,6 +988,7 @@ export function ProductLandingView({
                   src={images[1] || currentImage}
                   alt="Anatomía del Producto"
                   fill
+                  sizes="(max-width: 768px) 100vw, 360px"
                   className="object-cover transition-transform duration-700 group-hover:scale-105"
                 />
               </div>

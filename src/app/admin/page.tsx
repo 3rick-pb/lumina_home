@@ -407,6 +407,7 @@ export default function AdminPage() {
                           src={prod.imageUrl || "https://images.unsplash.com/photo-1507473885765-e6ed057f782c?q=80&w=800&auto=format&fit=crop"} 
                           alt={prod.title} 
                           fill 
+                          sizes="48px"
                           className="object-cover" 
                         />
                       </div>
@@ -983,7 +984,7 @@ export default function AdminPage() {
                 <div className="flex gap-4 items-start">
                   {editImageUrl && (
                     <div className="relative w-16 h-16 rounded-xl overflow-hidden bg-gray-100 border border-gray-200 shrink-0">
-                      <Image src={editImageUrl} alt="Preview" fill className="object-cover" />
+                      <Image src={editImageUrl} alt="Preview" fill sizes="64px" className="object-cover" />
                     </div>
                   )}
                   <div className="flex-1">

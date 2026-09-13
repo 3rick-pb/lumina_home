@@ -44,84 +44,96 @@
   }
 }
 
-/* True Screensaver Animations: Sweeping multi-axis floating paths */
+/* True Screensaver Animations: Sweeping multi-axis floating paths (3D Hardware-Accelerated) */
 @keyframes screensaver-1 {
   0% {
-    transform: translate(0vw, 0vh) scale(1);
+    transform: translate3d(0vw, 0vh, 0) scale(1);
   }
   25% {
-    transform: translate(25vw, 20vh) scale(1.15);
+    transform: translate3d(25vw, 20vh, 0) scale(1.15);
   }
   50% {
-    transform: translate(10vw, 40vh) scale(0.92);
+    transform: translate3d(10vw, 40vh, 0) scale(0.92);
   }
   75% {
-    transform: translate(-20vw, 18vh) scale(1.1);
+    transform: translate3d(-20vw, 18vh, 0) scale(1.1);
   }
   100% {
-    transform: translate(0vw, 0vh) scale(1);
+    transform: translate3d(0vw, 0vh, 0) scale(1);
   }
 }
 
 @keyframes screensaver-2 {
   0% {
-    transform: translate(0vw, 0vh) scale(1.1);
+    transform: translate3d(0vw, 0vh, 0) scale(1.1);
   }
   30% {
-    transform: translate(-25vw, -20vh) scale(0.92);
+    transform: translate3d(-25vw, -20vh, 0) scale(0.92);
   }
   60% {
-    transform: translate(-10vw, 25vh) scale(1.18);
+    transform: translate3d(-10vw, 25vh, 0) scale(1.18);
   }
   85% {
-    transform: translate(20vw, -12vh) scale(1.02);
+    transform: translate3d(20vw, -12vh, 0) scale(1.02);
   }
   100% {
-    transform: translate(0vw, 0vh) scale(1.1);
+    transform: translate3d(0vw, 0vh, 0) scale(1.1);
   }
 }
 
 @keyframes screensaver-3 {
   0% {
-    transform: translate(0vw, 0vh) scale(0.95);
+    transform: translate3d(0vw, 0vh, 0) scale(0.95);
   }
   33% {
-    transform: translate(20vw, -25vh) scale(1.22);
+    transform: translate3d(20vw, -25vh, 0) scale(1.22);
   }
   66% {
-    transform: translate(-22vw, -15vh) scale(1.04);
+    transform: translate3d(-22vw, -15vh, 0) scale(1.04);
   }
   100% {
-    transform: translate(0vw, 0vh) scale(0.95);
+    transform: translate3d(0vw, 0vh, 0) scale(0.95);
   }
 }
 
 @keyframes screensaver-4 {
   0% {
-    transform: translate(0vw, 0vh) scale(1.05);
+    transform: translate3d(0vw, 0vh, 0) scale(1.05);
   }
   50% {
-    transform: translate(-28vw, 18vh) scale(1.2);
+    transform: translate3d(-28vw, 18vh, 0) scale(1.2);
   }
   100% {
-    transform: translate(0vw, 0vh) scale(1.05);
+    transform: translate3d(0vw, 0vh, 0) scale(1.05);
   }
 }
 
 .animate-screensaver-1 {
   animation: screensaver-1 22s ease-in-out infinite;
+  will-change: transform;
+  transform: translate3d(0, 0, 0);
+  backface-visibility: hidden;
 }
 
 .animate-screensaver-2 {
   animation: screensaver-2 28s ease-in-out infinite;
+  will-change: transform;
+  transform: translate3d(0, 0, 0);
+  backface-visibility: hidden;
 }
 
 .animate-screensaver-3 {
   animation: screensaver-3 24s ease-in-out infinite;
+  will-change: transform;
+  transform: translate3d(0, 0, 0);
+  backface-visibility: hidden;
 }
 
 .animate-screensaver-4 {
   animation: screensaver-4 30s ease-in-out infinite;
+  will-change: transform;
+  transform: translate3d(0, 0, 0);
+  backface-visibility: hidden;
 }
 
 /* ========================================================================= */

@@ -77,6 +77,7 @@ export function FavoritesTab() {
                   src={prod.imageUrl} 
                   alt={prod.title} 
                   fill 
+                  sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
                   className="object-cover"
                 />
                 <button 

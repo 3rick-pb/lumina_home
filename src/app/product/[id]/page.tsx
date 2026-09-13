@@ -97,15 +97,16 @@ export default function ProductDetail({ params }: { params: { id: string } }) {
   return (
     <div className="relative min-h-screen pt-28 pb-24 bg-transparent">
       {/* Soft Mate Ambient Aura */}
-      <div className="fixed inset-0 -z-10 overflow-hidden pointer-events-none">
+      <div className="fixed inset-0 -z-10 overflow-hidden pointer-events-none transform-gpu will-change-transform [contain:strict]">
         <Image
           src={currentImage}
           alt="Ambient Aura"
           fill
-          className="object-cover blur-[180px] saturate-[1.1] opacity-25 transition-all duration-1000 z-10"
+          sizes="100vw"
+          className="object-cover blur-[180px] saturate-[1.1] opacity-25 transition-all duration-1000 z-10 transform-gpu"
         />
         {/* Soft matte film */}
-        <div className="absolute inset-0 bg-[#fafafa]/60 backdrop-blur-[50px] z-20" />
+        <div className="absolute inset-0 bg-[#fafafa]/60 backdrop-blur-[50px] z-20 transform-gpu" />
       </div>
 
       <div className="container mx-auto px-4 md:px-6 relative z-10">
@@ -139,7 +140,7 @@ export default function ProductDetail({ params }: { params: { id: string } }) {
                   onClick={() => setActiveImage(idx)}
                   className={`relative w-20 h-24 md:w-full md:h-28 rounded-lg overflow-hidden flex-shrink-0 transition-all duration-300 border-2 ${activeImage === idx ? 'border-gray-900 opacity-100' : 'border-transparent opacity-50 hover:opacity-100'}`}
                 >
-                  <Image src={img} alt={`Thumbnail ${idx}`} fill draggable={false} className="object-cover pointer-events-none select-none" />
+                  <Image src={img} alt={`Thumbnail ${idx}`} fill sizes="80px" draggable={false} className="object-cover pointer-events-none select-none" />
                 </button>
               ))}
               <button className="relative w-20 h-10 md:w-full rounded-lg bg-gray-100 flex items-center justify-center flex-shrink-0 hover:bg-gray-200 transition-colors">
@@ -153,6 +154,7 @@ export default function ProductDetail({ params }: { params: { id: string } }) {
                 src={currentImage}
                 alt={product.title}
                 fill
+                sizes="(max-width: 1024px) 100vw, 60vw"
                 priority
                 draggable={false}
                 className="object-cover transition-opacity duration-500 pointer-events-none select-none"
@@ -630,7 +632,7 @@ export default function ProductDetail({ params }: { params: { id: string } }) {
           </div>
 
           <div className="lg:col-span-5 relative w-full aspect-[4/3] rounded-3xl overflow-hidden bg-gray-100 shadow-sm border border-gray-200/60">
-             <Image src={images[1] || images[0]} fill alt={product.title} className="object-cover" />
+             <Image src={images[1] || images[0]} fill sizes="(max-width: 1024px) 100vw, 40vw" alt={product.title} className="object-cover" />
           </div>
         </div>
         </>

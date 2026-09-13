@@ -236,6 +236,7 @@ export default function Home() {
             src="https://images.unsplash.com/photo-1600210492486-724fe5c67fb0?q=80&w=2000&auto=format&fit=crop" 
             alt="Interior elegante" 
             fill 
+            sizes="100vw"
             className="object-cover" 
             priority
           />
@@ -335,7 +336,7 @@ export default function Home() {
                   onMouseLeave={() => resetTheme()}
                   className="group relative h-[260px] sm:h-[300px] md:h-[320px] rounded-2xl overflow-hidden block shadow-sm border border-black/5 transition-transform duration-300 hover:-translate-y-1"
                 >
-                  <Image src={cat.img} fill className="object-cover transition-transform duration-700 group-hover:scale-105" alt={cat.name} />
+                  <Image src={cat.img} fill sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 20vw" className="object-cover transition-transform duration-700 group-hover:scale-105" alt={cat.name} />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/30 to-transparent" />
                   <div className="absolute bottom-0 left-0 w-full p-3.5 sm:p-5 flex items-end justify-between">
                     <div>

@@ -165,7 +165,7 @@ export default function LoginPage() {
                 >
                   <div className="flex items-center gap-3">
                     <div className="relative w-11 h-11 rounded-xl overflow-hidden bg-gray-100 shrink-0">
-                      <Image src={prod.imageUrl} alt={prod.title} fill className="object-cover group-hover:scale-105 transition-transform" />
+                      <Image src={prod.imageUrl} alt={prod.title} fill sizes="44px" className="object-cover group-hover:scale-105 transition-transform" />
                     </div>
                     <div>
                       <span className="text-[10px] font-semibold text-[#8c9276] uppercase tracking-wider block">
@@ -303,7 +303,7 @@ export default function LoginPage() {
             </button>
 
             <div className="relative aspect-square rounded-2xl overflow-hidden mb-4 bg-gray-100">
-              <Image src={previewProduct.imageUrl} alt={previewProduct.title} fill className="object-cover" />
+              <Image src={previewProduct.imageUrl} alt={previewProduct.title} fill sizes="(max-width: 640px) 100vw, 384px" className="object-cover" />
             </div>
 
             <span className="text-[10px] font-bold text-[#8c9276] uppercase tracking-wider">

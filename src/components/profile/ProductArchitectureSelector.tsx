@@ -648,6 +648,7 @@ export function ProductArchitectureSelector({
                       src={fallbackCanvasImage}
                       alt="Vista de Colocación de Pines"
                       fill
+                      sizes="(max-width: 640px) 100vw, 340px"
                       className="object-cover pointer-events-none"
                     />
 

@@ -112,7 +112,7 @@ export function CatalogTab({
               <tr key={p.id} className="hover:bg-gray-50/70 dark:hover:bg-[#2c2c2e]/70 transition-colors">
                 <td className="py-3 px-2 flex items-center gap-3">
                   <div className="relative w-10 h-10 rounded-xl overflow-hidden bg-gray-100 dark:bg-[#3a3a3c] shrink-0">
-                    <Image src={p.imageUrl} alt={p.title} fill className="object-cover" />
+                    <Image src={p.imageUrl} alt={p.title} fill sizes="40px" className="object-cover" />
                   </div>
                   <div>
                     <p className="font-bold text-gray-900 dark:text-gray-100 line-clamp-1">{p.title}</p>

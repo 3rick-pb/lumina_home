@@ -58,9 +58,10 @@ export function ProductCard({ id, title, price, oldPrice, discount, badge, image
           src={imgSrc}
           alt={title}
           fill
+          sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
           draggable={false}
           onError={() => setImgSrc("https://images.unsplash.com/photo-1507473885765-e6ed057f782c?q=80&w=800&auto=format&fit=crop")}
-          className="object-cover transition-transform duration-700 group-hover:scale-105 pointer-events-none select-none"
+          className="object-cover transition-transform duration-700 group-hover:scale-105 pointer-events-none select-none transform-gpu"
         />
       </div>
       
