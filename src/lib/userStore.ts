@@ -4,6 +4,7 @@ import type { RealtimeChannel } from '@supabase/supabase-js';
 import { CartItem, useCartStore } from './store';
 import { useThemeStore } from './themeStore';
 import { useRadarStore } from './radarStore';
+import { useAvatarSettingsStore, setupAvatarRealtimeListener, cleanupAvatarRealtimeListener } from './avatarSettingsStore';
 
 export interface User {
   id: string;
@@ -620,15 +621,30 @@ const fetchUserDataFromDatabase = async (userId: string, role: 'USER' | 'ADMIN' 
       address = addresses.find(a => a.isDefault) || addresses[0] || null;
     }
 
+    // 4. Fetch user profile display_name directly from public.user_profiles
+    let profileName: string | null = null;
+    try {
+      const { data: dbProfile } = await supabase
+        .from('user_profiles')
+        .select('display_name')
+        .eq('user_id', userId)
+        .maybeSingle();
+
+      if (dbProfile?.display_name) {
+        profileName = formatCleanName(dbProfile.display_name);
+      }
+    } catch {}
+
     // Zero LocalStorage writes for authenticated users! Everything is strictly stored in the Database.
-    return { cards, orders, addresses, address, favorites };
+    return { cards, orders, addresses, address, favorites, profileName };
   } catch {
     return {
       cards: [],
       orders: [],
       addresses: [],
       address: null,
-      favorites: []
+      favorites: [],
+      profileName: null,
     };
   }
 };
@@ -764,6 +780,13 @@ export const useUserStore = create<UserState>((set, get) => ({
       supabase.auth.onAuthStateChange(async (event, session) => {
         // Explicit Sign out event
         if (event === 'SIGNED_OUT' || (!session && event !== 'INITIAL_SESSION')) {
+          cleanupAvatarRealtimeListener();
+          useAvatarSettingsStore.setState({
+            showAvatarInNavbar: false,
+            backgroundShape: 'squircle',
+            animationMode: 'always',
+            customSeed: null,
+          });
           setGuestModeStorage(false);
           clearGuestStorage();
           await useCartStore.getState().initCartForUser(null);
@@ -789,6 +812,10 @@ export const useUserStore = create<UserState>((set, get) => ({
           const name = formatCleanName(session.user.user_metadata?.name || email.split('@')[0]);
           const userObj: User = { id: session.user.id, email, name, role, isRootAdmin };
 
+          // Instant Avatar & Realtime Sync across all browsers/tabs
+          useAvatarSettingsStore.getState().loadSettingsFromDatabase(session.user.id);
+          setupAvatarRealtimeListener(session.user.id);
+
           const currentUserId = get().user?.id;
           if (currentUserId !== session.user.id) {
             set({ 
@@ -802,14 +829,15 @@ export const useUserStore = create<UserState>((set, get) => ({
             setTimeout(async () => {
               try {
                 const personalData = await fetchUserDataFromDatabase(newUserId, role, email);
-                set({
+                set((state) => ({
+                  user: state.user ? { ...state.user, name: personalData.profileName || state.user.name } : null,
                   cards: personalData.cards,
                   orders: personalData.orders,
                   addresses: personalData.addresses,
                   address: personalData.address,
                   favorites: personalData.favorites,
                   isLoading: false,
-                });
+                }));
 
                 useCartStore.getState().initCartForUser(newUserId);
               } catch {}
@@ -838,6 +866,10 @@ export const useUserStore = create<UserState>((set, get) => ({
         const name = formatCleanName(session.user.user_metadata?.name || email.split('@')[0]);
         const userObj: User = { id: session.user.id, email, name, role, isRootAdmin };
 
+        // Instant Avatar & Realtime Sync across all browsers/tabs
+        useAvatarSettingsStore.getState().loadSettingsFromDatabase(session.user.id);
+        setupAvatarRealtimeListener(session.user.id);
+
         set({ 
           user: userObj, 
           isAuthenticated: true, 
@@ -850,14 +882,15 @@ export const useUserStore = create<UserState>((set, get) => ({
           try {
             useCartStore.getState().initCartForUser(currentUserId);
             const personalData = await fetchUserDataFromDatabase(currentUserId, role, email);
-            set({
+            set((state) => ({
+              user: state.user ? { ...state.user, name: personalData.profileName || state.user.name } : null,
               cards: personalData.cards,
               orders: personalData.orders,
               addresses: personalData.addresses,
               address: personalData.address,
               favorites: personalData.favorites,
               isLoading: false,
-            });
+            }));
           } catch {}
         }, 0);
       } else {
@@ -943,12 +976,22 @@ export const useUserStore = create<UserState>((set, get) => ({
       // Synchronize and load user's private cart from Supabase
       await useCartStore.getState().initCartForUser(data.user.id);
       await useThemeStore.getState().loadFromDB(data.user.id);
+      await useAvatarSettingsStore.getState().loadSettingsFromDatabase(data.user.id);
+      setupAvatarRealtimeListener(data.user.id);
     }
     return { error: error?.message || null };
   },
   
   logout: async () => {
     // 1. Immediately reset in-memory user and authentication state (0ms instant UI feedback!)
+    cleanupAvatarRealtimeListener();
+    useAvatarSettingsStore.setState({
+      showAvatarInNavbar: false,
+      backgroundShape: 'squircle',
+      animationMode: 'always',
+      customSeed: null,
+    });
+
     set({
       user: null,
       isAuthenticated: false,
@@ -1067,6 +1110,8 @@ export const useUserStore = create<UserState>((set, get) => ({
       // Initialize empty private cart for new user in Supabase
       await useCartStore.getState().initCartForUser(data.user.id);
       await useThemeStore.getState().loadFromDB(data.user.id);
+      await useAvatarSettingsStore.getState().loadSettingsFromDatabase(data.user.id);
+      setupAvatarRealtimeListener(data.user.id);
     }
     return { error: error?.message || null };
   },

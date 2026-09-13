@@ -44,6 +44,13 @@ export function Header() {
     setIsMobileMenuOpen(false);
   }, [pathname]);
 
+  // Ensure freshest cloud avatar settings are loaded for the active user
+  useEffect(() => {
+    if (isAuthenticated && user?.id) {
+      useAvatarSettingsStore.getState().loadSettingsFromDatabase(user.id);
+    }
+  }, [isAuthenticated, user?.id]);
+
   useEffect(() => {
     setIsMounted(true);
     // Instant initial render from localStorage cache

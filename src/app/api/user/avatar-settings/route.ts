@@ -80,6 +80,7 @@ export async function GET(request: Request) {
         source: 'default_empty',
         settings: {
           ...DEFAULT_SETTINGS,
+          customSeed: targetUserId,
           userEmail: authUser?.email || null,
         },
       });
@@ -95,7 +96,7 @@ export async function GET(request: Request) {
         showInNavbar: typeof data.show_in_navbar === 'boolean' ? data.show_in_navbar : DEFAULT_SETTINGS.showInNavbar,
         backgroundShape: data.background_shape === 'circle' ? 'circle' : 'squircle',
         animationMode: data.animation_mode || 'always',
-        customSeed: data.custom_seed || null,
+        customSeed: data.custom_seed || targetUserId,
         updatedAt: data.updated_at,
       },
     }, {
@@ -148,7 +149,7 @@ export async function POST(request: Request) {
       show_in_navbar: typeof body.showInNavbar === 'boolean' ? body.showInNavbar : false,
       background_shape: body.backgroundShape === 'circle' ? 'circle' : 'squircle',
       animation_mode: body.animationMode || 'always',
-      custom_seed: body.customSeed?.trim() ? body.customSeed.trim() : null,
+      custom_seed: body.customSeed?.trim() ? body.customSeed.trim() : targetUserId,
       updated_at: new Date().toISOString(),
     };
 

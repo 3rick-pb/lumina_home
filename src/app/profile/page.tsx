@@ -66,7 +66,13 @@ export default function ProfilePage() {
   } = useUserStore();
 
  const { products, categories, badges, addProduct, updateProduct, deleteProduct, deleteCategory } = useCatalogStore();
- const { backgroundShape, customSeed } = useAvatarSettingsStore();
+ const { backgroundShape, customSeed, loadSettingsFromDatabase } = useAvatarSettingsStore();
+
+  useEffect(() => {
+    if (user?.id) {
+      loadSettingsFromDatabase(user.id);
+    }
+  }, [user?.id, loadSettingsFromDatabase]);
 
   const pendingOrdersCount = orders.filter((o) => o.status !== "Entregado").length;
 

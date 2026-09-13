@@ -403,13 +403,12 @@ export const useCatalogStore = create<CatalogState>((set) => ({
       activeCategories = productCategories.length > 0 ? productCategories : DEFAULT_CATEGORIES;
     }
 
-    // 4. Badges (Local cache + Supabase store_badges table + active product badges)
+    // 4. Badges (Supabase store_badges table + active product badges)
     let dbCustomBadges: string[] = [];
     try {
       const { data: badgeData, error: badgeError } = await supabase
         .from('store_badges')
-        .select('name')
-        .eq('is_active', true);
+        .select('name');
       if (!badgeError && badgeData && badgeData.length > 0) {
         dbCustomBadges = badgeData.map(b => b.name).filter(Boolean);
       }

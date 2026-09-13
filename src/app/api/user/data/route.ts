@@ -130,6 +130,23 @@ export async function GET(request: Request) {
       console.warn('Notice: Error reading favorites table:', err);
     }
 
+    // 4. Fetch profile from public.user_profiles
+    let profile: { displayName?: string; phone?: string; avatarUrl?: string } | null = null;
+    try {
+      const { data: dbProf } = await supabase
+        .from('user_profiles')
+        .select('*')
+        .eq('user_id', targetUserId)
+        .maybeSingle();
+      if (dbProf) {
+        profile = {
+          displayName: dbProf.display_name || undefined,
+          phone: dbProf.phone || undefined,
+          avatarUrl: dbProf.avatar_url || undefined,
+        };
+      }
+    } catch {}
+
     // Determine default address
     defaultAddress = addresses.find(a => a.isDefault) || addresses[0] || null;
 
@@ -140,6 +157,7 @@ export async function GET(request: Request) {
       address: defaultAddress,
       cards,
       favorites,
+      profile,
     });
   } catch (error) {
     const msg = error instanceof Error ? error.message : 'Database error';
@@ -258,6 +276,21 @@ export async function POST(request: Request) {
         } catch (err) {
           console.error('Error saving to favorites table:', err);
         }
+      }
+    }
+
+    // 4. Action: Save profile directly to public.user_profiles
+    if (action === 'save_profile' && body.profile) {
+      try {
+        await supabase.from('user_profiles').upsert({
+          user_id: targetUserId,
+          display_name: body.profile.displayName || null,
+          phone: body.profile.phone || null,
+          avatar_url: body.profile.avatarUrl || null,
+          updated_at: new Date().toISOString(),
+        }, { onConflict: 'user_id' });
+      } catch (err) {
+        console.error('Error saving to user_profiles table:', err);
       }
     }
 
