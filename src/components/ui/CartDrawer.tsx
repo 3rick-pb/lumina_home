@@ -71,6 +71,31 @@ function PayPhoneIcon({ className = "w-4 h-4" }: { className?: string }) {
   );
 }
 
+function EmvChip({ className = "w-8 h-6" }: { className?: string }) {
+  return (
+    <div className={`relative rounded-md bg-gradient-to-br from-[#E8D19F] via-[#D8B676] to-[#B8924B] p-0.5 border border-[#c49a3f]/40 shadow-xs flex items-center justify-center overflow-hidden shrink-0 ${className}`}>
+      <div className="w-full h-full rounded-[3px] border border-black/15 flex flex-col justify-between p-[2px] opacity-80">
+        <div className="h-px bg-black/30 w-full" />
+        <div className="flex justify-between w-full h-[6px]">
+          <div className="w-2 border-r border-black/30" />
+          <div className="w-2 border-l border-black/30" />
+        </div>
+        <div className="h-px bg-black/30 w-full" />
+      </div>
+    </div>
+  );
+}
+
+function ContactlessIcon({ className = "w-5 h-5" }: { className?: string }) {
+  return (
+    <svg className={`shrink-0 ${className}`} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M8.5 16.5a5 5 0 0 1 0-9" />
+      <path d="M12 19a8.5 8.5 0 0 1 0-14" />
+      <path d="M15.5 21.5a12 12 0 0 1 0-19" />
+    </svg>
+  );
+}
+
 export function CartDrawer() {
  const { 
  isOpen, 
@@ -701,40 +726,44 @@ export function CartDrawer() {
     </div>
   </div>
 
- {/* Center Step Indicator */}
- <div className="flex items-center gap-2 bg-gray-100 dark:bg-[#202022]/5/80 p-1 rounded-2xl">
- <button 
- onClick={() => setStep("bag")}
- className={`px-3.5 py-1 rounded-xl text-xs font-bold transition-all ${
- step === "bag" ? "bg-white dark:bg-[#2a2a2c] text-gray-900 dark:text-gray-100 shadow-sm dark:shadow-none" : "text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 "
- }`}
- >
- 1. Carrito ({items.length})
- </button>
- <button 
- onClick={() => {
- if (items.length > 0) handleProceedToPayment();
- }}
- disabled={items.length === 0}
- className={`px-3.5 py-1 rounded-xl text-xs font-bold transition-all disabled:opacity-40 ${
- step === "payment" ? "bg-white dark:bg-[#2a2a2c] text-gray-900 dark:text-gray-100 shadow-sm dark:shadow-none" : "text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 "
- }`}
- >
- 2. Pasarela de Pago
- </button>
- </div>
+  {/* Center Step Indicator (2IXO Pill Dock) */}
+  <div className="flex items-center gap-1 bg-black/[0.04] dark:bg-white/[0.06] p-1 rounded-full border border-black/[0.04] dark:border-white/10 backdrop-blur-xl">
+    <button 
+      onClick={() => setStep("bag")}
+      className={`px-4 py-1.5 rounded-full text-xs font-semibold transition-all cursor-pointer ${
+        step === "bag" 
+          ? "bg-white dark:bg-[#27272a] text-gray-950 dark:text-white shadow-[0_2px_8px_rgba(0,0,0,0.06)]" 
+          : "text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100"
+      }`}
+    >
+      1. Bolsa ({items.length})
+    </button>
+    <button 
+      onClick={() => {
+        if (items.length > 0) handleProceedToPayment();
+      }}
+      disabled={items.length === 0}
+      className={`px-4 py-1.5 rounded-full text-xs font-semibold transition-all disabled:opacity-40 cursor-pointer ${
+        step === "payment" 
+          ? "bg-white dark:bg-[#27272a] text-gray-950 dark:text-white shadow-[0_2px_8px_rgba(0,0,0,0.06)]" 
+          : "text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100"
+      }`}
+    >
+      2. Pasarela de Pago
+    </button>
+  </div>
 
- {/* Right Action: Close Button */}
- <div className="flex items-center gap-3">
- <button 
- onClick={() => setIsOpen(false)}
- className="px-4 py-1.5 rounded-xl bg-gray-100 dark:bg-[#202022]/5 hover:bg-gray-200 dark:hover:bg-[#1c1c1e]/10 text-xs font-semibold text-gray-700 dark:text-gray-300 transition-colors flex items-center gap-1.5"
- >
- <span>Cerrar</span>
- <X className="w-3.5 h-3.5" />
- </button>
- </div>
- </header>
+  {/* Right Action: 2IXO Circular Glass Close Button */}
+  <div className="flex items-center gap-3">
+    <button 
+      onClick={() => setIsOpen(false)}
+      className="w-10 h-10 rounded-full bg-white/80 dark:bg-white/10 backdrop-blur-xl border border-black/[0.06] dark:border-white/15 shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:bg-white dark:hover:bg-white/20 text-gray-700 dark:text-gray-200 flex items-center justify-center hover:scale-105 active:scale-95 transition-all cursor-pointer"
+      title="Cerrar bolsa"
+    >
+      <X className="w-4 h-4" />
+    </button>
+  </div>
+</header>
 
  {/* ========================================================================= */}
   {/* MAIN CANVAS SCROLLABLE AREA */}
@@ -746,20 +775,20 @@ export function CartDrawer() {
   {/* ======================================================================= */}
   {step === "bag" && (
   <>
-   {/* Page Title & 3D Ambient Hero Banner */}
-   <div className="relative overflow-hidden rounded-2xl sm:rounded-3xl p-4 sm:p-7 border border-white/80 dark:border-white/10 bg-gradient-to-br from-white/90 via-blue-50/30 to-indigo-50/20 dark:from-[#202023] dark:via-[#1c1c1f] dark:to-[#17171a] shadow-[0_12px_36px_rgba(0,0,0,0.04),inset_0_1.5px_2px_rgba(255,255,255,0.9)] backdrop-blur-2xl transition-all">
-    {/* Ambient Glows */}
-    <div className="absolute -top-16 -right-16 w-56 h-56 bg-blue-500/10 dark:bg-blue-400/10 rounded-full blur-3xl pointer-events-none" />
-    <div className="absolute -bottom-16 -left-16 w-56 h-56 bg-indigo-500/10 dark:bg-indigo-400/10 rounded-full blur-3xl pointer-events-none" />
-    <div className="absolute inset-x-8 top-0 h-[1.5px] bg-gradient-to-r from-transparent via-white dark:via-white/30 to-transparent pointer-events-none" />
+   {/* Page Title & 3D Ambient Hero Banner (2IXO Pearl Frosted Aura) */}
+   <div className="relative overflow-hidden rounded-2xl sm:rounded-3xl p-4 sm:p-7 border border-black/[0.05] dark:border-white/10 bg-gradient-to-br from-white/95 via-[#faf8f5]/85 to-[#efebe3]/60 dark:from-[#202023] dark:via-[#1c1c1f] dark:to-[#17171a] shadow-[0_8px_30px_rgba(0,0,0,0.03)] backdrop-blur-2xl transition-all">
+    {/* Ambient Champagne Glows */}
+    <div className="absolute -top-16 -right-16 w-56 h-56 bg-amber-500/[0.08] dark:bg-amber-400/10 rounded-full blur-3xl pointer-events-none" />
+    <div className="absolute -bottom-16 -left-16 w-56 h-56 bg-[#8c9276]/[0.08] dark:bg-[#8c9276]/10 rounded-full blur-3xl pointer-events-none" />
+    <div className="absolute inset-x-8 top-0 h-[1.5px] bg-gradient-to-r from-transparent via-white dark:via-white/20 to-transparent pointer-events-none" />
 
     <div className="relative z-10 flex flex-col sm:flex-row sm:items-end justify-between gap-4">
       <div>
-        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-600/10 dark:bg-blue-500/15 border border-blue-500/20 text-blue-600 dark:text-blue-400 text-[11px] font-bold tracking-wider uppercase mb-2 shadow-2xs">
-          <Sparkles className="w-3 h-3 animate-spin text-blue-500" style={{ animationDuration: '6s' }} />
+        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-black/[0.04] dark:bg-white/[0.08] border border-black/[0.06] dark:border-white/10 text-gray-700 dark:text-gray-300 text-[11px] font-bold tracking-wider uppercase mb-2 shadow-2xs">
+          <Sparkles className="w-3 h-3 text-[#8c9276]" />
           <span>Lumina 3D Studio • Luxury Living</span>
         </div>
-        <h1 className="font-display font-extrabold text-2xl sm:text-4xl text-gray-950 dark:text-white tracking-tight">
+        <h1 className="font-display font-bold text-2xl sm:text-4xl text-gray-950 dark:text-white tracking-tight">
           Bolsa de Compras
         </h1>
         <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mt-1 max-w-xl leading-relaxed">
@@ -770,7 +799,7 @@ export function CartDrawer() {
       {items.length > 0 && (
         <button 
           onClick={clearCart}
-          className="px-3.5 py-1.5 rounded-xl text-xs font-semibold text-gray-500 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400 bg-white/70 dark:bg-white/5 hover:bg-red-50 dark:hover:bg-red-950/20 border border-gray-200/80 dark:border-white/10 shadow-xs transition-all flex items-center gap-1.5 self-start sm:self-auto cursor-pointer active:scale-95"
+          className="px-4 py-2 rounded-full text-xs font-semibold text-gray-600 dark:text-gray-400 hover:text-rose-600 dark:hover:text-rose-400 bg-white/80 dark:bg-white/5 hover:bg-white border border-black/[0.06] dark:border-white/10 shadow-xs transition-all flex items-center gap-2 self-start sm:self-auto cursor-pointer active:scale-95"
         >
           <RotateCcw className="w-3.5 h-3.5" />
           <span>Vaciar Bolsa</span>
@@ -781,15 +810,15 @@ export function CartDrawer() {
 
   {/* ALERTA DE PRODUCTOS AGOTADOS */}
   {hasAgotadoItems && (
-  <div className="p-4 sm:p-5 rounded-2xl bg-red-50/90 border border-red-200 flex items-start gap-3.5 text-red-900 shadow-sm dark:shadow-none animate-fade-in transition-all">
-  <div className="w-9 h-9 rounded-xl bg-red-100 text-red-600 flex items-center justify-center shrink-0 mt-0.5 shadow-xs">
-  <AlertTriangle className="w-5 h-5" />
+  <div className="p-4 sm:p-5 rounded-2xl bg-rose-50/90 border border-rose-200/80 flex items-start gap-3.5 text-rose-900 shadow-sm dark:shadow-none animate-fade-in transition-all">
+  <div className="w-9 h-9 rounded-full bg-rose-100 text-rose-600 flex items-center justify-center shrink-0 mt-0.5 shadow-xs">
+  <AlertTriangle className="w-4 h-4" />
   </div>
   <div className="flex-1 text-xs">
-  <p className="font-bold text-sm text-red-900">
+  <p className="font-bold text-sm text-rose-900">
   {agotadoItems.length === 1 ? "Producto no disponible en tu bolsa" : "Productos no disponibles en tu bolsa"}
   </p>
-  <p className="mt-1 text-red-700 leading-relaxed font-medium">
+  <p className="mt-1 text-rose-700 leading-relaxed font-medium">
   {agotadoItems.length === 1
   ? `El producto "${agotadoItems[0].product.title}" está marcado como AGOTADO. Debes eliminarlo de tu bolsa de compras para poder continuar hacia la pasarela de pago.`
   : `Tienes ${agotadoItems.length} productos marcados como AGOTADOS en tu bolsa. Debes eliminarlos para poder continuar con tu pedido.`}
@@ -799,61 +828,58 @@ export function CartDrawer() {
   )}
 
   {items.length === 0 ? (
-  <div className="relative overflow-hidden my-6 rounded-[2.5rem] p-10 sm:p-16 border border-white/80 dark:border-white/10 bg-gradient-to-b from-white/95 via-gray-50/70 to-blue-50/30 dark:from-[#222226] dark:via-[#1c1c1f] dark:to-[#161619] shadow-[0_25px_60px_rgba(0,0,0,0.06),inset_0_2px_3px_rgba(255,255,255,0.9)] backdrop-blur-2xl text-center flex flex-col items-center justify-center">
-    {/* 3D Radial Aura & Background Effects */}
-    <div className="absolute w-80 h-80 rounded-full bg-gradient-to-tr from-blue-500/15 via-indigo-500/10 to-amber-400/10 blur-3xl pointer-events-none" />
-    <div className="absolute inset-x-12 top-0 h-[1.5px] bg-gradient-to-r from-transparent via-blue-400/40 to-transparent pointer-events-none" />
+  <div className="relative overflow-hidden my-6 rounded-[2.5rem] p-10 sm:p-14 border border-black/[0.04] dark:border-white/10 bg-gradient-to-b from-white/95 via-[#faf8f4] to-[#f2eee7] dark:from-[#222226] dark:via-[#1c1c1f] dark:to-[#161619] shadow-[0_20px_50px_rgba(0,0,0,0.04)] backdrop-blur-2xl text-center flex flex-col items-center justify-center">
+    {/* 3D Radial Champagne Aura */}
+    <div className="absolute w-80 h-80 rounded-full bg-gradient-to-tr from-amber-500/[0.08] via-[#8c9276]/[0.08] to-amber-400/[0.06] blur-3xl pointer-events-none" />
+    <div className="absolute inset-x-12 top-0 h-[1.5px] bg-gradient-to-r from-transparent via-black/[0.04] dark:via-white/15 to-transparent pointer-events-none" />
 
-    {/* 3D Floating Bag Pedestal Showcase */}
+    {/* 3D Floating Bag Pedestal */}
     <div className="relative mb-8 group cursor-default">
-      {/* 3D Pedestal Shadow Disc */}
-      <div className="absolute -bottom-4 left-1/2 -translate-x-1/2 w-36 h-8 bg-gradient-to-r from-blue-600/20 via-indigo-600/30 to-blue-600/20 rounded-full blur-md" />
+      <div className="absolute -bottom-4 left-1/2 -translate-x-1/2 w-36 h-8 bg-black/[0.06] dark:bg-white/[0.06] rounded-full blur-md" />
       
-      {/* Specular Floating Pedestal */}
-      <div className="relative w-28 h-28 sm:w-32 sm:h-32 rounded-3xl bg-gradient-to-br from-white via-blue-50 to-indigo-100 dark:from-[#2a2a2e] dark:via-[#222226] dark:to-[#1a1a1e] border-2 border-white dark:border-white/20 shadow-[0_20px_40px_rgba(37,99,235,0.22),inset_0_3px_6px_rgba(255,255,255,1)] flex items-center justify-center transition-transform duration-500 hover:scale-105 hover:-rotate-1">
-        {/* Specular Inner Glare */}
-        <div className="absolute inset-x-3 top-1.5 h-[1.5px] bg-white dark:bg-white/40 rounded-full" />
-        <div className="absolute top-2 left-3 w-4 h-1.5 bg-white/90 rounded-full blur-[0.5px]" />
-        
-        {/* Glowing Bag Icon */}
-        <ShoppingBag className="w-12 h-12 sm:w-14 sm:h-14 text-blue-600 dark:text-blue-400 stroke-[1.5] drop-shadow-[0_8px_16px_rgba(37,99,235,0.35)]" />
-
-        {/* Floating 3D Sparkle Pin */}
-        <div className="absolute -top-2.5 -right-2.5 w-8 h-8 rounded-full bg-gradient-to-tr from-amber-400 to-amber-300 text-amber-950 flex items-center justify-center shadow-lg border-2 border-white dark:border-[#222226] animate-bounce" style={{ animationDuration: '3s' }}>
-          <Sparkles className="w-4 h-4 text-amber-900" />
-        </div>
+      <div className="relative w-24 h-24 sm:w-28 sm:h-28 rounded-3xl bg-gradient-to-br from-white via-[#faf7f2] to-[#eee8dd] dark:from-[#2a2a2e] dark:via-[#222226] dark:to-[#1a1a1e] border-2 border-white dark:border-white/20 shadow-[0_16px_36px_rgba(0,0,0,0.06)] flex items-center justify-center transition-transform duration-500 hover:scale-105">
+        <ShoppingBag className="w-10 h-10 sm:w-12 sm:h-12 text-gray-800 dark:text-gray-100 stroke-[1.5]" />
       </div>
     </div>
 
-    {/* Floating Feature Pills */}
-    <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-3 mb-6">
-      <span className="px-3 py-1 rounded-full text-[11px] font-bold bg-white/80 dark:bg-white/5 border border-gray-200/80 dark:border-white/10 text-gray-700 dark:text-gray-300 shadow-xs flex items-center gap-1.5">
-        <Package className="w-3.5 h-3.5 text-blue-500" /> Curaduría Exclusiva
-      </span>
-      <span className="px-3 py-1 rounded-full text-[11px] font-bold bg-white/80 dark:bg-white/5 border border-gray-200/80 dark:border-white/10 text-gray-700 dark:text-gray-300 shadow-xs flex items-center gap-1.5">
-        <Truck className="w-3.5 h-3.5 text-emerald-500" /> Despacho Protegido
-      </span>
-      <span className="px-3 py-1 rounded-full text-[11px] font-bold bg-white/80 dark:bg-white/5 border border-gray-200/80 dark:border-white/10 text-gray-700 dark:text-gray-300 shadow-xs flex items-center gap-1.5">
-        <ShieldCheck className="w-3.5 h-3.5 text-indigo-500" /> Garantía de Autor
-      </span>
+    {/* 2IXO Circular Action Feature Discs (Show PIN / Card Details / Freeze Card) */}
+    <div className="grid grid-cols-3 gap-6 sm:gap-10 max-w-xs sm:max-w-sm mx-auto mb-8">
+      <div className="flex flex-col items-center group">
+        <div className="w-13 h-13 sm:w-14 sm:h-14 rounded-full bg-white/80 dark:bg-white/10 backdrop-blur-xl border border-white dark:border-white/20 shadow-[0_4px_16px_rgba(0,0,0,0.04)] flex items-center justify-center text-gray-800 dark:text-gray-100 group-hover:scale-105 transition-all">
+          <Package className="w-5 h-5 text-gray-700 dark:text-gray-200" />
+        </div>
+        <span className="text-[11px] font-medium text-gray-600 dark:text-gray-300 mt-2 text-center">Curaduría</span>
+      </div>
+      <div className="flex flex-col items-center group">
+        <div className="w-13 h-13 sm:w-14 sm:h-14 rounded-full bg-white/80 dark:bg-white/10 backdrop-blur-xl border border-white dark:border-white/20 shadow-[0_4px_16px_rgba(0,0,0,0.04)] flex items-center justify-center text-gray-800 dark:text-gray-100 group-hover:scale-105 transition-all">
+          <Truck className="w-5 h-5 text-gray-700 dark:text-gray-200" />
+        </div>
+        <span className="text-[11px] font-medium text-gray-600 dark:text-gray-300 mt-2 text-center">Despacho</span>
+      </div>
+      <div className="flex flex-col items-center group">
+        <div className="w-13 h-13 sm:w-14 sm:h-14 rounded-full bg-white/80 dark:bg-white/10 backdrop-blur-xl border border-white dark:border-white/20 shadow-[0_4px_16px_rgba(0,0,0,0.04)] flex items-center justify-center text-gray-800 dark:text-gray-100 group-hover:scale-105 transition-all">
+          <ShieldCheck className="w-5 h-5 text-gray-700 dark:text-gray-200" />
+        </div>
+        <span className="text-[11px] font-medium text-gray-600 dark:text-gray-300 mt-2 text-center">Garantía</span>
+      </div>
     </div>
 
-    <h3 className="font-display font-extrabold text-2xl sm:text-3xl text-gray-950 dark:text-white mb-2.5 tracking-tight">
+    <h3 className="font-display font-bold text-2xl sm:text-3xl text-gray-950 dark:text-white mb-2 tracking-tight">
       Tu bolsa de autor está vacía
     </h3>
     <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 max-w-md leading-relaxed mb-8">
       Descubre piezas de diseño lumínico, aromaterapia orgánica y mobiliario minimalista confeccionadas para transformar la energía de tus espacios.
     </p>
 
-    {/* 3D Action Button with High-Impact Gradient & Bevel */}
+    {/* 2IXO Dock Capsule CTA Button */}
     <button 
       onClick={() => { setIsOpen(false); router.push("/shop"); }}
-      className="relative overflow-hidden group/btn px-8 py-4 rounded-2xl font-extrabold text-white text-sm bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 shadow-[0_16px_36px_rgba(37,99,235,0.4),inset_0_1.5px_2px_rgba(255,255,255,0.4)] border border-white/30 hover:shadow-[0_20px_45px_rgba(37,99,235,0.55)] hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center gap-2.5 cursor-pointer"
+      className="group relative overflow-hidden rounded-full bg-[#18181b] dark:bg-white text-white dark:text-gray-950 pl-3 pr-6 py-3.5 text-xs sm:text-sm font-semibold flex items-center gap-3 shadow-[0_12px_32px_rgba(0,0,0,0.15)] hover:bg-black dark:hover:bg-gray-100 active:scale-95 transition-all cursor-pointer"
     >
-      <span className="relative z-10">Explorar Catálogo Lumina</span>
-      <ArrowRight className="w-4 h-4 relative z-10 transition-transform group-hover/btn:translate-x-1" />
-      <div className="absolute inset-0 bg-gradient-to-b from-white/25 via-transparent to-black/10 pointer-events-none" />
-      <div className="absolute inset-0 -translate-x-full group-hover/btn:translate-x-full transition-transform duration-700 bg-gradient-to-r from-transparent via-white/30 to-transparent pointer-events-none" />
+      <div className="w-8 h-8 rounded-full bg-white/15 dark:bg-black/10 flex items-center justify-center text-white dark:text-gray-950 group-hover:translate-x-0.5 transition-transform shrink-0">
+        <ArrowRight className="w-4 h-4" />
+      </div>
+      <span>Explorar Catálogo Lumina</span>
     </button>
   </div>
   ) : (
@@ -965,10 +991,10 @@ export function CartDrawer() {
           {/* Quantity Stepper for the Bundle */}
           <div className="flex items-center gap-3">
             <span className="text-xs text-gray-500 dark:text-gray-400 font-medium">Cantidad de packs:</span>
-            <div className="flex items-center bg-white dark:bg-[#202022] rounded-full px-2 py-1 border border-gray-200 dark:border-white/10 shadow-inner">
+            <div className="flex items-center bg-white/80 dark:bg-white/10 rounded-full p-1 border border-black/[0.06] dark:border-white/15 shadow-xs backdrop-blur-md">
               <button 
                 onClick={() => updateQuantity(item.id, item.quantity - 1)}
-                className="w-6 h-6 rounded-full bg-gray-100 dark:bg-white/10 hover:bg-gray-200 text-gray-800 dark:text-gray-200 flex items-center justify-center transition-all"
+                className="w-7 h-7 rounded-full bg-white dark:bg-[#2c2c30] hover:bg-gray-50 text-gray-800 dark:text-gray-200 flex items-center justify-center border border-black/[0.04] dark:border-white/10 shadow-xs active:scale-90 transition-all cursor-pointer"
                 title="Disminuir packs"
               >
                 <Minus className="w-3 h-3" />
@@ -978,7 +1004,7 @@ export function CartDrawer() {
               </span>
               <button 
                 onClick={() => updateQuantity(item.id, item.quantity + 1)}
-                className="w-6 h-6 rounded-full bg-gray-100 dark:bg-white/10 hover:bg-gray-200 text-gray-800 dark:text-gray-200 flex items-center justify-center transition-all"
+                className="w-7 h-7 rounded-full bg-white dark:bg-[#2c2c30] hover:bg-gray-50 text-gray-800 dark:text-gray-200 flex items-center justify-center border border-black/[0.04] dark:border-white/10 shadow-xs active:scale-90 transition-all cursor-pointer"
                 title="Aumentar packs"
               >
                 <Plus className="w-3 h-3" />
@@ -987,7 +1013,7 @@ export function CartDrawer() {
           </div>
 
           {/* Subtotal with discount display */}
-          <div className="flex items-center justify-between sm:justify-end gap-5">
+          <div className="flex items-center justify-between sm:justify-end gap-4">
             <div className="text-right">
               {totalSavings > 0 && (
                 <span className="text-xs text-gray-400 line-through mr-2">
@@ -1007,11 +1033,10 @@ export function CartDrawer() {
             {/* Delete Bundle button */}
             <button 
               onClick={() => removeItem(item.id)}
-              className="relative overflow-hidden group/del px-3.5 py-1.5 rounded-full text-xs font-semibold text-rose-600 bg-white dark:bg-[#2a2a2c]/60 hover:bg-rose-50 border border-rose-200 shadow-xs transition-all flex items-center gap-1.5 cursor-pointer"
+              className="w-8 h-8 rounded-full bg-white/80 dark:bg-white/10 hover:bg-rose-50 text-gray-400 hover:text-rose-600 border border-rose-200/60 shadow-xs transition-all flex items-center justify-center cursor-pointer active:scale-90"
               title="Eliminar este pack"
             >
-              <Trash2 size={12} className="text-rose-600" />
-              <span className="font-bold text-[11px]">Eliminar pack</span>
+              <Trash2 className="w-3.5 h-3.5" />
             </button>
           </div>
         </div>
@@ -1083,233 +1108,229 @@ export function CartDrawer() {
  </div>
  </div>
 
- {/* Quantity Capsule with Liquid Glass (3 cols) */}
- <div className="sm:col-span-3 flex sm:justify-center items-center">
- <div className="flex items-center bg-gray-100 dark:bg-[#202022]/5/90 rounded-full px-2.5 py-1.5 border border-gray-200 dark:border-white/10/70 shadow-inner">
- <button 
- onClick={() => updateQuantity(item.id, item.quantity - 1)}
- className="w-7 h-7 rounded-full bg-white dark:bg-[#2a2a2c]/90 hover:bg-white dark:hover:bg-[#2c2c2e] text-gray-800 dark:text-gray-200 flex items-center justify-center border border-white shadow-[0_2px_6px_rgba(0,0,0,0.06),inset_0_1px_1px_rgba(255,255,255,0.9)] backdrop-blur-md active:scale-90 transition-all"
- title="Disminuir"
- >
- <Minus className="w-3.5 h-3.5" />
- </button>
- <span className="w-10 text-center font-mono font-bold text-xs sm:text-sm text-gray-900 dark:text-gray-100 ">
- {item.quantity < 10 ? `0${item.quantity}` : item.quantity}
- </span>
- <button 
- disabled={itemIsAgotado}
- onClick={() => updateQuantity(item.id, item.quantity + 1)}
- className={`w-7 h-7 rounded-full flex items-center justify-center border border-white shadow-[0_2px_6px_rgba(0,0,0,0.06),inset_0_1px_1px_rgba(255,255,255,0.9)] backdrop-blur-md transition-all ${
- itemIsAgotado 
- ? "bg-gray-200 dark:bg-[#202022]/10 text-gray-400 dark:text-gray-400 cursor-not-allowed opacity-40" 
- : "bg-white dark:bg-[#2a2a2c]/90 hover:bg-white dark:hover:bg-[#2c2c2e] text-gray-800 dark:text-gray-200 active:scale-90"
- }`}
- title={itemIsAgotado ? "Producto sin existencias" : "Aumentar"}
- >
- <Plus className="w-3.5 h-3.5" />
- </button>
- </div>
- </div>
+  {/* Quantity Capsule with 2IXO Liquid Glass (3 cols) */}
+  <div className="sm:col-span-3 flex sm:justify-center items-center">
+  <div className="flex items-center bg-white/80 dark:bg-white/10 rounded-full p-1 border border-black/[0.06] dark:border-white/15 shadow-xs backdrop-blur-md">
+  <button 
+  onClick={() => updateQuantity(item.id, item.quantity - 1)}
+  className="w-7 h-7 rounded-full bg-white dark:bg-[#2c2c30] hover:bg-gray-50 text-gray-800 dark:text-gray-200 flex items-center justify-center border border-black/[0.04] dark:border-white/10 shadow-xs active:scale-90 transition-all cursor-pointer"
+  title="Disminuir"
+  >
+  <Minus className="w-3.5 h-3.5" />
+  </button>
+  <span className="w-10 text-center font-mono font-bold text-xs sm:text-sm text-gray-900 dark:text-gray-100">
+  {item.quantity < 10 ? `0${item.quantity}` : item.quantity}
+  </span>
+  <button 
+  disabled={itemIsAgotado}
+  onClick={() => updateQuantity(item.id, item.quantity + 1)}
+  className={`w-7 h-7 rounded-full flex items-center justify-center border border-black/[0.04] dark:border-white/10 shadow-xs active:scale-90 transition-all cursor-pointer ${
+  itemIsAgotado 
+  ? "bg-gray-100 dark:bg-[#202022]/10 text-gray-400 dark:text-gray-400 cursor-not-allowed opacity-40" 
+  : "bg-white dark:bg-[#2c2c30] hover:bg-gray-50 text-gray-800 dark:text-gray-200"
+  }`}
+  title={itemIsAgotado ? "Producto sin existencias" : "Aumentar"}
+  >
+  <Plus className="w-3.5 h-3.5" />
+  </button>
+  </div>
+  </div>
 
- {/* Subtotal Price (2 cols) */}
- <div className="sm:col-span-2 sm:text-right flex items-center justify-between sm:block pr-6">
- <span className="text-xs text-gray-400 dark:text-gray-400 sm:hidden">Subtotal:</span>
- <span className="font-extrabold text-base sm:text-lg text-gray-900 dark:text-gray-100 ">
- ${(Number(item.product?.price || 0) * (item.quantity || 1)).toFixed(2)}
- </span>
- </div>
+  {/* Subtotal Price (2 cols) */}
+  <div className="sm:col-span-2 sm:text-right flex items-center justify-between sm:block pr-6">
+  <span className="text-xs text-gray-400 dark:text-gray-400 sm:hidden">Subtotal:</span>
+  <span className="font-extrabold text-base sm:text-lg text-gray-900 dark:text-gray-100">
+  ${(Number(item.product?.price || 0) * (item.quantity || 1)).toFixed(2)}
+  </span>
+  </div>
 
- {/* PURE LIQUID GLASS DELETE BUTTON (Matching Diagram Reference) */}
- <div className="sm:col-span-2 flex justify-end items-center sm:text-right">
- <button 
- onClick={() => removeItem(item.id)}
- className="relative overflow-hidden group/del px-4 py-1.5 rounded-full text-xs font-semibold text-rose-600 
- bg-white dark:bg-[#2a2a2c]/40 hover:bg-white dark:hover:bg-[#2c2c2e]/65 backdrop-blur-2xl
- border border-white/90 
- shadow-[0_4px_16px_rgba(0,0,0,0.06),inset_0_1.5px_2px_rgba(255,255,255,0.95),inset_0_-1px_2px_rgba(0,0,0,0.04)]
- hover:shadow-[0_8px_24px_rgba(225,29,72,0.18),inset_0_2px_3px_rgba(255,255,255,1)]
- transition-all duration-300 active:scale-95 flex items-center gap-1.5 cursor-pointer ml-auto"
- title="Eliminar producto"
- >
- {/* Specular Highlight Sheen (Top glass edge curve) */}
- <div className="absolute inset-x-2 top-0 h-[1px] bg-gradient-to-r from-transparent via-white to-transparent pointer-events-none opacity-90" />
+  {/* 2IXO CIRCULAR GLASS DELETE BUTTON */}
+  <div className="sm:col-span-2 flex justify-end items-center sm:text-right">
+  <button 
+  onClick={() => removeItem(item.id)}
+  className="w-8 h-8 rounded-full bg-white/80 dark:bg-white/10 hover:bg-rose-50/90 dark:hover:bg-rose-950/30 text-gray-400 hover:text-rose-600 dark:hover:text-rose-400 border border-black/[0.06] dark:border-white/15 shadow-xs flex items-center justify-center transition-all active:scale-90 cursor-pointer ml-auto"
+  title="Eliminar producto"
+  >
+  <Trash2 className="w-3.5 h-3.5" />
+  </button>
+  </div>
 
- {/* Diagonal Glossy Reflection Layer */}
- <div className="absolute inset-0 bg-gradient-to-b from-white/40 via-white/10 to-transparent pointer-events-none rounded-full" />
+  </div>
+  );
+  })}
+  </div>
 
- {/* Caustic Glow Corner Spot */}
- <div className="absolute top-1 left-2.5 w-2.5 h-1 bg-white dark:bg-[#2a2a2c]/80 rounded-full blur-[0.5px] pointer-events-none" />
-
- <Trash2 
- size={12}
- strokeWidth={2.3}
- style={{ width: "12px", height: "12px", minWidth: "12px", minHeight: "12px" }}
- className="relative z-10 text-rose-600 group-hover/del:rotate-12 group-hover/del:text-rose-700 transition-all duration-300 shrink-0 translate-y-[-1px]" 
- />
- <span className="relative z-10 tracking-tight text-rose-600 font-bold text-[11px] leading-none">Eliminar</span>
- </button>
- </div>
-
- </div>
- );
- })}
- </div>
-
- {/* Bottom Actions Row */}
- <div className="pt-4 border-t border-gray-100 dark:border-white/5 flex items-center justify-between">
- <button 
- onClick={() => { setIsOpen(false); router.push("/shop"); }}
- className="text-xs font-semibold text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 transition-colors flex items-center gap-1"
- >
- <ArrowLeft className="w-3.5 h-3.5" /> Continuar Comprando
- </button>
- <span className="text-xs text-gray-400 dark:text-gray-400 font-medium">
- {items.length === 1 
- ? "1 producto listo para despacho" 
- : `${items.length} productos listos para despacho`}
- </span>
- </div>
+  {/* Bottom Actions Row */}
+  <div className="pt-4 border-t border-gray-100 dark:border-white/5 flex items-center justify-between">
+  <button 
+  onClick={() => { setIsOpen(false); router.push("/shop"); }}
+  className="px-4 py-2 rounded-full text-xs font-semibold text-gray-700 dark:text-gray-300 hover:text-gray-950 bg-white/80 dark:bg-white/5 hover:bg-white border border-black/[0.06] dark:border-white/10 shadow-xs transition-all flex items-center gap-2 cursor-pointer active:scale-95"
+  >
+  <ArrowLeft className="w-3.5 h-3.5" /> Continuar Comprando
+  </button>
+  <span className="text-xs text-gray-400 dark:text-gray-400 font-medium">
+  {items.length === 1 
+  ? "1 producto listo para despacho" 
+  : `${items.length} productos listos para despacho`}
+  </span>
+  </div>
 
  </div>
 
  {/* ---------------------------------------------------- */}
- {/* Right Column: Order Summary Card (4 cols) */}
+ {/* Right Column: Order Summary Card (4 cols - 2IXO Pearl Card) */}
  {/* ---------------------------------------------------- */}
- <div className="lg:col-span-4 bg-white dark:bg-[#2a2a2c]/90 backdrop-blur-2xl rounded-2xl sm:rounded-[2rem] border border-gray-200 dark:border-white/10/70 p-4 sm:p-7 shadow-lg dark:shadow-none shadow-gray-200/50 space-y-6">
- 
- <h3 className="font-display font-bold text-xl text-gray-900 dark:text-gray-100 tracking-tight pb-3 border-b border-gray-100 dark:border-white/5">
- Resumen del Pedido
- </h3>
+ <div className="lg:col-span-4 bg-white/75 dark:bg-[#202023]/75 backdrop-blur-2xl rounded-2xl sm:rounded-3xl border border-black/[0.05] dark:border-white/10 p-5 sm:p-7 shadow-[0_12px_36px_rgba(0,0,0,0.03)] space-y-6">
+  
+  <h3 className="font-display font-bold text-xl text-gray-950 dark:text-white tracking-tight pb-3 border-b border-black/[0.05] dark:border-white/10">
+  Resumen del Pedido
+  </h3>
 
- {/* Free Shipping Progress Capsule */}
- <div className="p-4 rounded-2xl bg-gray-50 dark:bg-[#151515] border border-gray-100 dark:border-white/5 space-y-2">
- <div className="flex items-center justify-between text-xs font-semibold">
- <span className="text-gray-700 dark:text-gray-300 flex items-center gap-1.5">
- <Truck className="w-4 h-4 text-blue-600" />
- {hasFreeShipping ? "¡Envío Gratuito Asegurado!" : `Faltan $${amountToFreeShipping.toFixed(2)}`}
- </span>
- <span className="text-blue-600 font-bold">{freeShippingProgress}%</span>
- </div>
- <div className="w-full h-1.5 bg-gray-200 dark:bg-[#202022]/10 rounded-full overflow-hidden">
- <div 
- className="h-full bg-blue-600 rounded-full transition-all duration-500"
- style={{ width: `${freeShippingProgress}%` }}
- />
- </div>
- </div>
+  {/* Free Shipping Progress Capsule */}
+  <div className="p-4 rounded-2xl bg-black/[0.02] dark:bg-white/[0.03] border border-black/[0.04] dark:border-white/5 space-y-2">
+  <div className="flex items-center justify-between text-xs font-semibold">
+  <span className="text-gray-700 dark:text-gray-300 flex items-center gap-1.5">
+  <Truck className="w-4 h-4 text-[#8c9276]" />
+  {hasFreeShipping ? "¡Envío Gratuito Asegurado!" : `Faltan $${amountToFreeShipping.toFixed(2)}`}
+  </span>
+  <span className="text-[#8c9276] font-bold">{freeShippingProgress}%</span>
+  </div>
+  <div className="w-full h-1.5 bg-black/[0.06] dark:bg-white/10 rounded-full overflow-hidden">
+  <div 
+  className="h-full bg-[#8c9276] rounded-full transition-all duration-500"
+  style={{ width: `${freeShippingProgress}%` }}
+  />
+  </div>
+  </div>
 
- {/* Coupon Code Form with Liquid Glass Apply */}
- <form onSubmit={handleApplyCoupon} className="flex gap-2">
- <div className="relative flex-1">
- <Tag className="w-3.5 h-3.5 absolute left-3 top-3 text-gray-400 dark:text-gray-400" />
- <input 
- type="text" 
- value={couponInput}
- onChange={e => setCouponInput(e.target.value)}
- placeholder="Código (ej: LUMINA10)"
- className="w-full pl-9 pr-3 py-2 rounded-xl border border-gray-200 dark:border-white/10 dark:] text-xs font-medium outline-none focus:ring-1 focus:ring-blue-500 bg-white dark:bg-[#1a1a1c] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500"
- />
- </div>
- <button 
- type="submit"
- className="relative overflow-hidden px-4 py-2 rounded-xl font-bold text-xs text-white dark:text-gray-900 bg-gray-900 dark:bg-gray-100 hover:bg-gray-800 border border-white/20 shadow-sm dark:shadow-none transition-all shrink-0 active:scale-95"
- >
- <span className="relative z-10">Aplicar</span>
- <div className="absolute inset-0 bg-gradient-to-b from-white/20 to-transparent pointer-events-none" />
- </button>
- </form>
+  {/* Coupon Code Form with 2IXO Pill Input */}
+  <form onSubmit={handleApplyCoupon} className="flex items-center gap-2 p-1 pl-4 rounded-full bg-white/90 dark:bg-white/5 border border-black/[0.06] dark:border-white/15 shadow-xs">
+  <Tag className="w-3.5 h-3.5 text-gray-400 shrink-0" />
+  <input 
+  type="text" 
+  value={couponInput}
+  onChange={e => setCouponInput(e.target.value)}
+  placeholder="Código de descuento"
+  className="w-full bg-transparent text-xs font-medium outline-none text-gray-900 dark:text-gray-100 placeholder-gray-400"
+  />
+  <button 
+  type="submit"
+  className="px-5 py-2 rounded-full font-sans font-semibold text-xs text-white dark:text-gray-950 bg-[#18181b] dark:bg-white hover:bg-black dark:hover:bg-gray-100 shadow-xs transition-all shrink-0 active:scale-95 cursor-pointer"
+  >
+  Aplicar
+  </button>
+  </form>
 
- {couponFeedback && (
- <p className={`text-xs font-semibold ${couponFeedback.success ? "text-emerald-700" : "text-red-600"}`}>
- {couponFeedback.msg}
- </p>
- )}
+  {couponFeedback && (
+  <p className={`text-xs font-semibold ${couponFeedback.success ? "text-emerald-700" : "text-rose-600"}`}>
+  {couponFeedback.msg}
+  </p>
+  )}
 
- {couponCode && (
- <div className="flex items-center justify-between px-3 py-1.5 rounded-xl bg-emerald-50 text-emerald-800 text-xs font-semibold border border-emerald-200">
- <span className="flex items-center gap-1.5">
- <Sparkles className="w-3.5 h-3.5 text-emerald-600" />
- Cupón: <strong>{couponCode}</strong> ({discountPercent}% dto)
- </span>
- <button onClick={removeCoupon} className="text-emerald-600 hover:text-emerald-900">
- <X className="w-3.5 h-3.5" />
- </button>
- </div>
- )}
+  {couponCode && (
+  <div className="flex items-center justify-between px-3.5 py-2 rounded-full bg-[#8c9276]/10 text-gray-800 dark:text-gray-200 text-xs font-semibold border border-[#8c9276]/20">
+  <span className="flex items-center gap-1.5">
+  <Sparkles className="w-3.5 h-3.5 text-[#8c9276]" />
+  Cupón: <strong>{couponCode}</strong> ({discountPercent}% dto)
+  </span>
+  <button onClick={removeCoupon} className="w-5 h-5 rounded-full bg-black/5 hover:bg-black/10 flex items-center justify-center text-gray-600 hover:text-gray-900 transition-colors">
+  <X className="w-3.5 h-3.5" />
+  </button>
+  </div>
+  )}
 
- {/* Breakdown Lines */}
- <div className="space-y-2.5 text-xs sm:text-sm text-gray-600 dark:text-gray-400 pt-1">
- <div className="flex justify-between">
- <span>Subtotal</span>
- <span className="font-semibold text-gray-900 dark:text-gray-100 ">${subtotal.toFixed(2)} USD</span>
- </div>
+  {/* Breakdown Lines */}
+  <div className="space-y-2.5 text-xs sm:text-sm text-gray-600 dark:text-gray-400 pt-1">
+  <div className="flex justify-between">
+  <span>Subtotal</span>
+  <span className="font-semibold text-gray-900 dark:text-gray-100">${subtotal.toFixed(2)} USD</span>
+  </div>
 
- {discountAmount > 0 && (
- <div className="flex justify-between text-emerald-700 font-semibold">
- <span>Descuento ({discountPercent}%)</span>
- <span>-${discountAmount.toFixed(2)} USD</span>
- </div>
- )}
+  {discountAmount > 0 && (
+  <div className="flex justify-between text-emerald-700 font-semibold">
+  <span>Descuento ({discountPercent}%)</span>
+  <span>-${discountAmount.toFixed(2)} USD</span>
+  </div>
+  )}
 
- <div className="flex justify-between">
- <span>Gastos de Envío</span>
- <span className="font-semibold">
- {shipping === 0 ? (
- <span className="text-emerald-700 font-bold uppercase text-xs">GRATIS</span>
- ) : (
- `$${shipping.toFixed(2)} USD`
- )}
- </span>
- </div>
+  <div className="flex justify-between">
+  <span>Gastos de Envío</span>
+  <span className="font-semibold">
+  {shipping === 0 ? (
+  <span className="text-emerald-700 font-bold uppercase text-xs">GRATIS</span>
+  ) : (
+  `$${shipping.toFixed(2)} USD`
+  )}
+  </span>
+  </div>
 
- <div className="pt-3 border-t border-gray-200 dark:border-white/10 flex justify-between items-baseline">
- <div>
- <span className="text-sm font-bold text-gray-900 dark:text-gray-100 ">Total</span>
- <span className="text-[10px] text-gray-400 dark:text-gray-400 block">Impuestos incluidos</span>
- </div>
- <span className="font-display font-bold text-2xl sm:text-3xl text-blue-700">
- ${finalTotal.toFixed(2)} USD
- </span>
- </div>
- </div>
+  <div className="pt-3 border-t border-black/[0.05] dark:border-white/10 flex justify-between items-baseline">
+  <div>
+  <span className="text-sm font-bold text-gray-950 dark:text-white">Total</span>
+  <span className="text-[10px] text-gray-400 block">Impuestos incluidos</span>
+  </div>
+  <span className="font-sans font-bold text-2xl sm:text-3xl text-gray-950 dark:text-white tracking-tight">
+  ${finalTotal.toFixed(2)} USD
+  </span>
+  </div>
+  </div>
 
- {/* Warranty Note from Reference Image */}
- <div className="p-3.5 rounded-2xl bg-blue-50/60 border border-blue-100 flex items-start gap-2.5 text-xs text-gray-600 dark:text-gray-400">
- <ShieldCheck className="w-4 h-4 text-blue-600 shrink-0 mt-0.5" />
- <p className="text-[11px] leading-relaxed">
- <strong>Garantía Oficial Lumina de 2 años.</strong> Devolución íntegra sin compromiso en los primeros 30 días.
- </p>
- </div>
+  {/* Warranty Note from 2IXO Reference */}
+  <div className="p-3.5 rounded-2xl bg-black/[0.02] dark:bg-white/[0.03] border border-black/[0.04] dark:border-white/5 flex items-start gap-2.5 text-xs text-gray-600 dark:text-gray-400">
+  <ShieldCheck className="w-4 h-4 text-[#8c9276] shrink-0 mt-0.5" />
+  <p className="text-[11px] leading-relaxed">
+  <strong>Garantía Oficial Lumina de 2 años.</strong> Devolución íntegra sin compromiso en los primeros 30 días.
+  </p>
+  </div>
 
- {/* LIQUID GLASS PROCEDER AL PAGO BUTTON */}
- <button 
- onClick={handleProceedToPayment}
- className={`relative overflow-hidden w-full h-14 rounded-2xl font-bold text-white dark:text-gray-900 text-sm sm:text-base flex items-center justify-center gap-2.5 transition-all duration-300
- shadow-[0_12px_36px_rgba(0,0,0,0.12)] border border-white/30
- before:absolute before:inset-0 before:bg-gradient-to-b before:from-white/35 before:via-white/10 before:to-transparent before:pointer-events-none before:rounded-2xl
- after:absolute after:inset-x-0 after:top-0 after:h-[1px] after:bg-white dark:bg-[#2a2a2c]/60 cursor-pointer group ${
- hasAgotadoItems
- ? "bg-gradient-to-r from-red-600 via-red-700 to-rose-700 shadow-red-500/30 hover:scale-[1.01] active:scale-[0.99]"
- : "bg-gradient-to-r from-[#1e40af] via-[#2563eb] to-[#1d4ed8] shadow-[0_12px_36px_rgba(37,99,235,0.35),0_2px_8px_rgba(0,0,0,0.1)] hover:shadow-[0_16px_44px_rgba(37,99,235,0.45)] hover:scale-[1.01] active:scale-[0.99]"
- }`}
- >
- <span className="relative z-10 tracking-wide flex items-center gap-2">
- {hasAgotadoItems 
- ? "Elimina productos agotados para pagar" 
- : !isAuthenticated 
- ? "Iniciar Sesión para Pagar" 
- : "Proceder al Pago"}
- </span>
- <ArrowRight className="relative z-10 w-4 h-4 group-hover:translate-x-1 transition-transform" />
- </button>
+  {/* 2IXO FLOATING DOCK ACTION CAPSULE */}
+  <div className="p-1.5 rounded-full bg-black/[0.03] dark:bg-white/[0.06] border border-black/[0.05] dark:border-white/10 backdrop-blur-xl flex items-center gap-2">
+    <button 
+      onClick={() => { setIsOpen(false); router.push("/shop"); }}
+      className="w-11 h-11 sm:w-12 sm:h-12 rounded-full bg-white dark:bg-[#27272a] hover:bg-gray-50 dark:hover:bg-[#323236] border border-black/[0.06] dark:border-white/15 shadow-xs flex items-center justify-center text-gray-700 dark:text-gray-200 shrink-0 hover:scale-105 active:scale-95 transition-all cursor-pointer"
+      title="Continuar comprando"
+    >
+      <ShoppingBag className="w-4 h-4" />
+    </button>
+    
+    <button 
+      onClick={handleProceedToPayment}
+      disabled={hasAgotadoItems}
+      className={`group relative flex-1 h-11 sm:h-12 rounded-full font-sans text-xs sm:text-sm font-semibold pl-2 pr-4 flex items-center justify-between transition-all duration-300 shadow-md cursor-pointer active:scale-[0.99] ${
+        hasAgotadoItems
+          ? "bg-rose-600 text-white shadow-rose-500/20 opacity-90 cursor-not-allowed"
+          : "bg-[#18181b] dark:bg-white text-white dark:text-gray-950 hover:bg-black dark:hover:bg-gray-100 shadow-black/15"
+      }`}
+    >
+      <div className="flex items-center gap-2.5 min-w-0">
+        <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 transition-transform group-hover:scale-105 ${
+          hasAgotadoItems ? "bg-white/20 text-white" : "bg-white/15 dark:bg-black/10 text-white dark:text-gray-950"
+        }`}>
+          {hasAgotadoItems ? <AlertTriangle className="w-3.5 h-3.5" /> : <ArrowRight className="w-3.5 h-3.5" />}
+        </div>
+        <span className="truncate">
+          {hasAgotadoItems 
+            ? "Elimina agotados" 
+            : !isAuthenticated 
+            ? "Iniciar Sesión" 
+            : "Proceder al Pago"}
+        </span>
+      </div>
+      <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold font-mono shrink-0 ml-1.5 ${
+        hasAgotadoItems ? "bg-white/20 text-white" : "bg-white/15 dark:bg-black/5 text-white dark:text-gray-900"
+      }`}>
+        ${finalTotal.toFixed(2)}
+      </span>
+    </button>
+  </div>
 
- {!isAuthenticated && !hasAgotadoItems && (
- <p className="text-[11px] text-center text-gray-500 dark:text-gray-400 mt-2 font-medium">
- Tus productos se guardarán intactos en tu carrito al iniciar sesión o registrarte.
- </p>
- )}
+  {!isAuthenticated && !hasAgotadoItems && (
+  <p className="text-[11px] text-center text-gray-500 dark:text-gray-400 mt-2 font-medium">
+  Tus productos se guardarán intactos en tu carrito al iniciar sesión o registrarte.
+  </p>
+  )}
 
- </div>
+  </div>
 
  </div>
  )}
@@ -1361,781 +1382,786 @@ export function CartDrawer() {
 
  {/* ======================================================================= */}
  {/* STEP 2: PAYMENT METHOD & SHIPPING VIEW (Spacious & Interactive) */}
- {/* ======================================================================= */}
- {step === "payment" && (
- <div className="max-w-4xl mx-auto space-y-8 animate-fade-in">
- 
- <div className="border-b border-gray-100 dark:border-white/5 pb-4">
- <button 
- onClick={() => setStep("bag")}
- className="text-xs font-bold text-blue-600 hover:underline flex items-center gap-1 mb-2"
- >
- <ArrowLeft className="w-3.5 h-3.5" /> Volver a la Bolsa
- </button>
- <h2 className="font-sans font-extrabold text-2xl sm:text-3xl text-gray-950 tracking-tight">
- Método de Pago y Entrega
- </h2>
- <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
- Configura tu dirección y selecciona tu método de pago preferido.
- </p>
- </div>
+  {/* ======================================================================= */}
+  {step === "payment" && (
+  <div className="max-w-4xl mx-auto space-y-8 animate-fade-in">
+  
+  <div className="border-b border-black/[0.06] dark:border-white/5 pb-4">
+    <button 
+      onClick={() => setStep("bag")}
+      className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/80 dark:bg-white/5 border border-black/[0.06] dark:border-white/10 text-xs font-semibold text-gray-700 dark:text-gray-300 hover:bg-white dark:hover:bg-white/10 shadow-2xs hover:shadow-xs transition-all mb-3 cursor-pointer group"
+    >
+      <div className="w-5 h-5 rounded-full bg-black/5 dark:bg-white/10 flex items-center justify-center group-hover:-translate-x-0.5 transition-transform">
+        <ArrowLeft className="w-3 h-3 text-gray-700 dark:text-gray-300" />
+      </div>
+      <span>Volver a la Bolsa</span>
+    </button>
+    <h2 className="font-sans font-extrabold text-2xl sm:text-3xl text-gray-950 dark:text-white tracking-tight">
+      Método de Pago y Entrega
+    </h2>
+    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+      Configura tu dirección y autoriza tu pedido con la pasarela bancaria oficial.
+    </p>
+  </div>
 
- <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
- 
- {/* Left 7 cols: Address & Card Selector */}
- <div className="lg:col-span-7 space-y-6">
- 
- {/* Shipping Address */}
- <div className="p-4 sm:p-6 rounded-2xl sm:rounded-[2rem] bg-white dark:bg-[#2a2a2c] border border-gray-200 dark:border-white/10/70 shadow-sm dark:shadow-none space-y-4">
- <div className="flex items-center justify-between">
- <div className="flex items-center gap-2">
- <MapPin className="w-4 h-4 text-blue-600" />
- <h4 className="font-bold text-sm text-gray-900 dark:text-gray-100 ">Dirección de Entrega</h4>
- {addresses.length > 0 && (
- <span className="text-[10px] font-mono font-semibold px-2 py-0.5 rounded-full bg-gray-100 dark:bg-[#202022]/5 text-gray-600 dark:text-gray-400 border border-gray-200 dark:border-white/10">
- {addresses.length}/4
- </span>
- )}
- </div>
- {isEditingAddress ? (
- <button 
- onClick={() => setIsEditingAddress(false)}
- className="text-xs font-semibold text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 hover:underline cursor-pointer"
- >
- Cancelar
- </button>
- ) : addresses.length < 4 ? (
- <button 
- onClick={() => {
- setIsEditingAddress(true);
- setAddrRecipient(user?.name || "");
- setAddrStreet("");
- setAddrCity("");
- setAddrPostal("");
- setAddrState("");
- setAddrCountry("Ecuador");
- }}
- className="text-xs font-semibold text-blue-600 hover:underline cursor-pointer flex items-center gap-1"
- >
- + Añadir
- </button>
- ) : (
- <span className="text-[10px] font-semibold text-gray-400 dark:text-gray-400">
- Límite (4 máx.)
- </span>
- )}
- </div>
+  <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+  
+  {/* Left 7 cols: Address & Card Selector */}
+  <div className="lg:col-span-7 space-y-6">
+  
+  {/* Shipping Address */}
+  <div className="p-5 sm:p-7 rounded-[2rem] bg-white/90 dark:bg-[#18181b]/90 backdrop-blur-xl border border-black/[0.06] dark:border-white/10 shadow-[0_8px_30px_rgba(0,0,0,0.04)] space-y-5">
+    <div className="flex items-center justify-between">
+      <div className="flex items-center gap-2.5">
+        <div className="w-8 h-8 rounded-full bg-black/5 dark:bg-white/10 flex items-center justify-center text-gray-900 dark:text-white">
+          <MapPin className="w-4 h-4" />
+        </div>
+        <h4 className="font-bold text-sm text-gray-900 dark:text-gray-100">Dirección de Entrega</h4>
+        {addresses.length > 0 && (
+          <span className="text-[10px] font-mono font-bold px-2.5 py-0.5 rounded-full bg-black/5 dark:bg-white/5 text-gray-700 dark:text-gray-300 border border-black/[0.06] dark:border-white/10">
+            {addresses.length}/4
+          </span>
+        )}
+      </div>
+      {isEditingAddress ? (
+        <button 
+          onClick={() => setIsEditingAddress(false)}
+          className="px-3.5 py-1 rounded-full bg-black/5 dark:bg-white/10 text-xs font-semibold text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-black/10 transition-all cursor-pointer"
+        >
+          Cancelar
+        </button>
+      ) : addresses.length < 4 ? (
+        <button 
+          onClick={() => {
+            setIsEditingAddress(true);
+            setAddrRecipient(user?.name || "");
+            setAddrStreet("");
+            setAddrCity("");
+            setAddrPostal("");
+            setAddrState("");
+            setAddrCountry("Ecuador");
+          }}
+          className="px-3.5 py-1.5 rounded-full bg-[#18181b] dark:bg-white text-white dark:text-[#18181b] text-xs font-bold hover:opacity-90 shadow-2xs transition-all cursor-pointer flex items-center gap-1.5 active:scale-95"
+        >
+          <Plus className="w-3.5 h-3.5" />
+          <span>Añadir</span>
+        </button>
+      ) : (
+        <span className="text-[10px] font-semibold text-gray-400 dark:text-gray-500">
+          Límite (4 máx.)
+        </span>
+      )}
+    </div>
 
- {isEditingAddress ? (
- <form onSubmit={handleSaveAddress} className="space-y-3 pt-1">
- <div className="flex items-center justify-between pb-1 border-b border-gray-100 dark:border-white/5">
- <span className="text-xs font-bold text-gray-800 dark:text-gray-200">
- Nueva Dirección de Entrega
- </span>
- <button 
- type="button" 
- onClick={() => {
- setLocationError(null);
- setLocationSuccess(false);
- setIsEditingAddress(false);
- }}
- className="text-xs text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 cursor-pointer"
- >
- Cancelar
- </button>
- </div>
+    {isEditingAddress ? (
+      <form onSubmit={handleSaveAddress} className="space-y-3.5 pt-1">
+        <div className="flex items-center justify-between pb-2 border-b border-black/[0.06] dark:border-white/5">
+          <span className="text-xs font-bold text-gray-900 dark:text-gray-100">
+            Nueva Dirección de Entrega
+          </span>
+          <button 
+            type="button" 
+            onClick={() => {
+              setLocationError(null);
+              setLocationSuccess(false);
+              setIsEditingAddress(false);
+            }}
+            className="text-xs text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 cursor-pointer"
+          >
+            Cancelar
+          </button>
+        </div>
 
- {/* Geolocation Auto-fill Button */}
- <div className="pt-1">
- <button
- type="button"
- onClick={handleDetectLocation}
- disabled={isDetectingLocation}
- className="w-full py-2 px-3 rounded-xl text-xs font-semibold flex items-center justify-center gap-2 border transition-all cursor-pointer shadow-xs disabled:opacity-60 disabled:cursor-not-allowed
- bg-gradient-to-r from-blue-50 via-indigo-50/60 to-blue-50 text-blue-700 border-blue-200/90 hover:bg-blue-100 hover:border-blue-300 active:scale-[0.99]"
- >
- {isDetectingLocation ? (
- <>
- <Loader2 className="w-3.5 h-3.5 animate-spin text-blue-600" />
- <span>Detectando ubicación real del dispositivo...</span>
- </>
- ) : (
- <>
- <Navigation className="w-3.5 h-3.5 text-blue-600" />
- <span>Autocompletar con mi ubicación actual</span>
- </>
- )}
- </button>
+        {/* Geolocation Auto-fill Button */}
+        <div className="pt-1">
+          <button
+            type="button"
+            onClick={handleDetectLocation}
+            disabled={isDetectingLocation}
+            className="w-full py-2.5 px-4 rounded-full text-xs font-semibold flex items-center justify-center gap-2.5 border transition-all cursor-pointer shadow-2xs disabled:opacity-60 disabled:cursor-not-allowed bg-black/[0.02] dark:bg-white/[0.04] text-gray-800 dark:text-gray-200 border-black/[0.08] dark:border-white/10 hover:bg-black/[0.05] dark:hover:bg-white/[0.08] active:scale-[0.99]"
+          >
+            {isDetectingLocation ? (
+              <>
+                <Loader2 className="w-3.5 h-3.5 animate-spin text-gray-700 dark:text-gray-300" />
+                <span>Detectando ubicación real del dispositivo...</span>
+              </>
+            ) : (
+              <>
+                <div className="w-5 h-5 rounded-full bg-black/5 dark:bg-white/10 flex items-center justify-center">
+                  <Navigation className="w-3 h-3 text-gray-700 dark:text-gray-300" />
+                </div>
+                <span>Autocompletar con mi ubicación actual</span>
+              </>
+            )}
+          </button>
 
- {locationError && (
- <p className="text-[11px] text-amber-800 bg-amber-50 border border-amber-200 rounded-xl p-2 mt-1.5 leading-tight">
- {locationError}
- </p>
- )}
+          {locationError && (
+            <p className="text-[11px] text-amber-800 bg-amber-50 border border-amber-200 rounded-2xl p-2.5 mt-2 leading-tight">
+              {locationError}
+            </p>
+          )}
 
- {locationSuccess && (
- <p className="text-[11px] text-emerald-800 bg-emerald-50 border border-emerald-200 rounded-xl p-2 mt-1.5 leading-tight flex items-center gap-1.5">
- <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
- <span>¡Ubicación detectada! Revisa los campos y escribe quién recibe.</span>
- </p>
- )}
- </div>
+          {locationSuccess && (
+            <p className="text-[11px] text-emerald-800 bg-emerald-50 border border-emerald-200 rounded-2xl p-2.5 mt-2 leading-tight flex items-center gap-1.5">
+              <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+              <span>¡Ubicación detectada! Revisa los campos y escribe quién recibe.</span>
+            </p>
+          )}
+        </div>
 
- <div className="relative flex py-0.5 items-center">
- <div className="flex-grow border-t border-gray-200 dark:border-white/10"></div>
- <span className="flex-shrink mx-2 text-[10px] text-gray-400 dark:text-gray-400 font-semibold uppercase tracking-wider">o ingresa los datos manualmente</span>
- <div className="flex-grow border-t border-gray-200 dark:border-white/10"></div>
- </div>
+        <div className="relative flex py-1 items-center">
+          <div className="flex-grow border-t border-black/[0.06] dark:border-white/10"></div>
+          <span className="flex-shrink mx-3 text-[10px] text-gray-400 dark:text-gray-500 font-semibold uppercase tracking-wider">o ingresa los datos manualmente</span>
+          <div className="flex-grow border-t border-black/[0.06] dark:border-white/10"></div>
+        </div>
 
- <div>
- <label className="block text-[11px] font-semibold text-gray-700 dark:text-gray-300 mb-1">
- ¿Quién recibe? (Nombre y apellidos)
- </label>
- <input 
- type="text" 
- value={addrRecipient} 
- onChange={e => setAddrRecipient(e.target.value)} 
- placeholder={user?.name || "Ej: Juan Pérez / Nombre del destinatario"}
- className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-xs outline-none focus:ring-1 focus:ring-blue-500 bg-white dark:bg-[#1a1a1c] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500"
- required
- />
- </div>
- <div className="grid grid-cols-2 gap-3">
- <div>
- <label className="block text-[11px] font-semibold text-gray-700 dark:text-gray-300 mb-1">
- Cédula / Identificación
- </label>
- <input 
- type="text" 
- value={addrIdNumber} 
- onChange={e => setAddrIdNumber(e.target.value)} 
- placeholder="Ej: 1712345678"
- className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-xs outline-none focus:ring-1 focus:ring-blue-500 bg-white dark:bg-[#1a1a1c] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500"
- />
- </div>
- <div>
- <label className="block text-[11px] font-semibold text-gray-700 dark:text-gray-300 mb-1">
- Número con WhatsApp
- </label>
- <input 
- type="tel" 
- value={addrPhone} 
- onChange={e => setAddrPhone(e.target.value)} 
- placeholder="Ej: +593 99 123 4567"
- className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-xs outline-none focus:ring-1 focus:ring-blue-500 bg-white dark:bg-[#1a1a1c] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500"
- />
- </div>
- </div>
- <div>
- <label className="block text-[11px] font-semibold text-gray-700 dark:text-gray-300 mb-1">
- Correo Electrónico (Facturación & Aviso)
- </label>
- <input 
- type="email" 
- value={addrEmail} 
- onChange={e => setAddrEmail(e.target.value)} 
- placeholder={user?.email || "correo@ejemplo.com"}
- className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-xs outline-none focus:ring-1 focus:ring-blue-500 bg-white dark:bg-[#1a1a1c] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500"
- />
- </div>
- <div>
- <label className="block text-[11px] font-semibold text-gray-700 dark:text-gray-300 mb-1">Calle y número</label>
- <input 
- type="text" 
- value={addrStreet} 
- onChange={e => setAddrStreet(e.target.value)} 
- placeholder="Calle Gran Vía 14, 3ºB"
- className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-xs outline-none focus:ring-1 focus:ring-blue-500 bg-white dark:bg-[#1a1a1c] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500"
- required
- />
- </div>
- <div className="grid grid-cols-2 gap-3">
- <div>
- <label className="block text-[11px] font-semibold text-gray-700 dark:text-gray-300 mb-1">Ciudad</label>
- <input 
- type="text" 
- value={addrCity} 
- onChange={e => setAddrCity(e.target.value)} 
- placeholder="Madrid"
- className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-xs outline-none focus:ring-1 focus:ring-blue-500 bg-white dark:bg-[#1a1a1c] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500"
- required
- />
- </div>
- <div>
- <label className="block text-[11px] font-semibold text-gray-700 dark:text-gray-300 mb-1">Código Postal</label>
- <input 
- type="text" 
- value={addrPostal} 
- onChange={e => setAddrPostal(e.target.value)} 
- placeholder="28001"
- className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-xs outline-none focus:ring-1 focus:ring-blue-500 bg-white dark:bg-[#1a1a1c] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500"
- required
- />
- </div>
- </div>
- <div className="grid grid-cols-2 gap-3">
- <div>
- <label className="block text-[11px] font-semibold text-gray-700 dark:text-gray-300 mb-1">Provincia/Estado</label>
- <input 
- type="text" 
- value={addrState} 
- onChange={e => setAddrState(e.target.value)} 
- placeholder="Madrid"
- className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-xs outline-none focus:ring-1 focus:ring-blue-500 bg-white dark:bg-[#1a1a1c] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500"
- required
- />
- </div>
- <div>
- <label className="block text-[11px] font-semibold text-gray-700 dark:text-gray-300 mb-1">País</label>
- <input 
- type="text" 
- value={addrCountry} 
- onChange={e => setAddrCountry(e.target.value)} 
- placeholder="España"
- className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-xs outline-none focus:ring-1 focus:ring-blue-500 bg-white dark:bg-[#1a1a1c] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500"
- required
- />
- </div>
- </div>
- <div className="flex gap-2 pt-1">
- <button 
- type="button"
- onClick={() => setIsEditingAddress(false)}
- className="w-1/3 py-2.5 bg-gray-100 dark:bg-[#202022]/5 text-gray-700 dark:text-gray-300 rounded-xl text-xs font-semibold hover:bg-gray-200 dark:hover:bg-[#1c1c1e]/10 transition-colors cursor-pointer"
- >
- Cancelar
- </button>
- <button 
- type="submit"
- className="w-2/3 py-2.5 bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 rounded-xl text-xs font-semibold hover:bg-gray-800 transition-colors shadow-sm dark:shadow-none cursor-pointer"
- >
- Guardar Dirección
- </button>
- </div>
- </form>
- ) : addresses.length > 0 ? (
- <div className="space-y-2.5">
- <p className="text-[11px] text-gray-500 dark:text-gray-400">
- Selecciona la dirección para este envío:
- </p>
- <div className="space-y-2">
- {addresses.map((addr) => {
- const isSelected = address?.id 
- ? address.id === addr.id 
- : (address?.street === addr.street && address?.postalCode === addr.postalCode) || (addresses.length === 1);
+        <div>
+          <label className="block text-[11px] font-semibold text-gray-700 dark:text-gray-300 mb-1">
+            ¿Quién recibe? (Nombre y apellidos)
+          </label>
+          <input 
+            type="text" 
+            value={addrRecipient} 
+            onChange={e => setAddrRecipient(e.target.value)} 
+            placeholder={user?.name || "Ej: Juan Pérez / Nombre del destinatario"}
+            className="w-full px-4 py-2.5 rounded-2xl border border-black/[0.08] dark:border-white/10 text-xs outline-none focus:ring-2 focus:ring-black/10 dark:focus:ring-white/20 bg-black/[0.02] dark:bg-white/[0.03] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 transition-all"
+            required
+          />
+        </div>
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label className="block text-[11px] font-semibold text-gray-700 dark:text-gray-300 mb-1">
+              Cédula / Identificación
+            </label>
+            <input 
+              type="text" 
+              value={addrIdNumber} 
+              onChange={e => setAddrIdNumber(e.target.value)} 
+              placeholder="Ej: 1712345678"
+              className="w-full px-4 py-2.5 rounded-2xl border border-black/[0.08] dark:border-white/10 text-xs outline-none focus:ring-2 focus:ring-black/10 dark:focus:ring-white/20 bg-black/[0.02] dark:bg-white/[0.03] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 transition-all"
+            />
+          </div>
+          <div>
+            <label className="block text-[11px] font-semibold text-gray-700 dark:text-gray-300 mb-1">
+              Número con WhatsApp
+            </label>
+            <input 
+              type="tel" 
+              value={addrPhone} 
+              onChange={e => setAddrPhone(e.target.value)} 
+              placeholder="Ej: +593 99 123 4567"
+              className="w-full px-4 py-2.5 rounded-2xl border border-black/[0.08] dark:border-white/10 text-xs outline-none focus:ring-2 focus:ring-black/10 dark:focus:ring-white/20 bg-black/[0.02] dark:bg-white/[0.03] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 transition-all"
+            />
+          </div>
+        </div>
+        <div>
+          <label className="block text-[11px] font-semibold text-gray-700 dark:text-gray-300 mb-1">
+            Correo Electrónico (Facturación & Aviso)
+          </label>
+          <input 
+            type="email" 
+            value={addrEmail} 
+            onChange={e => setAddrEmail(e.target.value)} 
+            placeholder={user?.email || "correo@ejemplo.com"}
+            className="w-full px-4 py-2.5 rounded-2xl border border-black/[0.08] dark:border-white/10 text-xs outline-none focus:ring-2 focus:ring-black/10 dark:focus:ring-white/20 bg-black/[0.02] dark:bg-white/[0.03] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 transition-all"
+          />
+        </div>
+        <div>
+          <label className="block text-[11px] font-semibold text-gray-700 dark:text-gray-300 mb-1">Calle y número</label>
+          <input 
+            type="text" 
+            value={addrStreet} 
+            onChange={e => setAddrStreet(e.target.value)} 
+            placeholder="Av. 12 de Octubre y Lincoln"
+            className="w-full px-4 py-2.5 rounded-2xl border border-black/[0.08] dark:border-white/10 text-xs outline-none focus:ring-2 focus:ring-black/10 dark:focus:ring-white/20 bg-black/[0.02] dark:bg-white/[0.03] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 transition-all"
+            required
+          />
+        </div>
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label className="block text-[11px] font-semibold text-gray-700 dark:text-gray-300 mb-1">Ciudad</label>
+            <input 
+              type="text" 
+              value={addrCity} 
+              onChange={e => setAddrCity(e.target.value)} 
+              placeholder="Quito / Guayaquil"
+              className="w-full px-4 py-2.5 rounded-2xl border border-black/[0.08] dark:border-white/10 text-xs outline-none focus:ring-2 focus:ring-black/10 dark:focus:ring-white/20 bg-black/[0.02] dark:bg-white/[0.03] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 transition-all"
+              required
+            />
+          </div>
+          <div>
+            <label className="block text-[11px] font-semibold text-gray-700 dark:text-gray-300 mb-1">Código Postal</label>
+            <input 
+              type="text" 
+              value={addrPostal} 
+              onChange={e => setAddrPostal(e.target.value)} 
+              placeholder="170150"
+              className="w-full px-4 py-2.5 rounded-2xl border border-black/[0.08] dark:border-white/10 text-xs outline-none focus:ring-2 focus:ring-black/10 dark:focus:ring-white/20 bg-black/[0.02] dark:bg-white/[0.03] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 transition-all"
+              required
+            />
+          </div>
+        </div>
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label className="block text-[11px] font-semibold text-gray-700 dark:text-gray-300 mb-1">Provincia/Estado</label>
+            <input 
+              type="text" 
+              value={addrState} 
+              onChange={e => setAddrState(e.target.value)} 
+              placeholder="Pichincha / Guayas"
+              className="w-full px-4 py-2.5 rounded-2xl border border-black/[0.08] dark:border-white/10 text-xs outline-none focus:ring-2 focus:ring-black/10 dark:focus:ring-white/20 bg-black/[0.02] dark:bg-white/[0.03] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 transition-all"
+              required
+            />
+          </div>
+          <div>
+            <label className="block text-[11px] font-semibold text-gray-700 dark:text-gray-300 mb-1">País</label>
+            <input 
+              type="text" 
+              value={addrCountry} 
+              onChange={e => setAddrCountry(e.target.value)} 
+              placeholder="Ecuador"
+              className="w-full px-4 py-2.5 rounded-2xl border border-black/[0.08] dark:border-white/10 text-xs outline-none focus:ring-2 focus:ring-black/10 dark:focus:ring-white/20 bg-black/[0.02] dark:bg-white/[0.03] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 transition-all"
+              required
+            />
+          </div>
+        </div>
+        <div className="flex gap-2.5 pt-2">
+          <button 
+            type="button"
+            onClick={() => setIsEditingAddress(false)}
+            className="w-1/3 py-2.5 px-4 bg-black/[0.04] dark:bg-white/5 text-gray-700 dark:text-gray-300 rounded-full text-xs font-bold hover:bg-black/[0.08] dark:hover:bg-white/10 transition-colors cursor-pointer"
+          >
+            Cancelar
+          </button>
+          <button 
+            type="submit"
+            className="w-2/3 py-2.5 px-4 bg-[#18181b] dark:bg-white text-white dark:text-[#18181b] rounded-full text-xs font-bold hover:opacity-90 transition-all shadow-2xs active:scale-[0.99] cursor-pointer"
+          >
+            Guardar Dirección
+          </button>
+        </div>
+      </form>
+    ) : addresses.length > 0 ? (
+      <div className="space-y-3">
+        <p className="text-[11px] text-gray-500 dark:text-gray-400">
+          Selecciona la dirección para este envío:
+        </p>
+        <div className="space-y-2.5">
+          {addresses.map((addr) => {
+            const isSelected = address?.id 
+              ? address.id === addr.id 
+              : (address?.street === addr.street && address?.postalCode === addr.postalCode) || (addresses.length === 1);
 
- return (
- <div
- key={addr.id}
- onClick={() => setAddress(addr)}
- className={`p-3.5 rounded-2xl border transition-all cursor-pointer flex items-center justify-between gap-3 select-none ${
- isSelected
- ? "bg-blue-50/50 border-blue-500 shadow-xs ring-1 ring-blue-500/20"
- : "bg-gray-50 dark:bg-[#151515]/70 hover:bg-gray-50 dark:hover:bg-[#151515] border-gray-200 dark:border-white/10/80 hover:border-gray-300"
- }`}
- >
- <div className="flex items-start gap-3 min-w-0">
- <div className={`mt-0.5 w-4 h-4 rounded-full border flex items-center justify-center shrink-0 transition-colors ${
- isSelected 
- ? "border-blue-600 bg-blue-600 text-white dark:text-gray-900" 
- : "border-gray-300 bg-white dark:bg-[#2a2a2c]"
- }`}>
- {isSelected && <div className="w-1.5 h-1.5 rounded-full bg-white dark:bg-[#2a2a2c]" />}
- </div>
- <div className="min-w-0">
- <div className="flex items-center gap-2">
- <span className="font-bold text-xs text-gray-900 dark:text-gray-100 truncate">
- {formatCleanName(addr.recipient || user?.name || "Destinatario")}
- </span>
- {addr.isDefault && (
- <span className="text-[9px] font-bold uppercase tracking-wider text-emerald-700 bg-emerald-100 px-1.5 py-0.5 rounded border border-emerald-200 shrink-0">
- Predeterminada
- </span>
- )}
- </div>
- <p className="text-xs text-gray-700 dark:text-gray-300 font-medium truncate mt-0.5">
- {addr.street}
- </p>
- <p className="text-[11px] text-gray-500 dark:text-gray-400 truncate mt-0.5">
- {addr.city}{addr.state ? `, ${addr.state}` : ""}, {addr.postalCode} • {addr.country}
- </p>
- </div>
- </div>
-
- {isSelected && (
- <div className="w-5 h-5 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center shrink-0 border border-emerald-200 shadow-2xs">
- <Check className="w-3 h-3" />
- </div>
- )}
- </div>
- );
- })}
- </div>
- </div>
- ) : address ? (
- <div className="p-4 rounded-2xl bg-gray-50 dark:bg-[#151515] border border-gray-100 dark:border-white/5 flex items-center justify-between">
- <div>
- <div className="flex items-center gap-2">
- <p className="font-bold text-xs text-gray-900 dark:text-gray-100 ">
- {formatCleanName(address.recipient || user?.name || "Destinatario")}
- </p>
- {address.isDefault && (
- <span className="text-[9px] font-bold uppercase tracking-wider text-emerald-700 bg-emerald-100 px-1.5 py-0.5 rounded border border-emerald-200 shrink-0">
- Predeterminada
- </span>
- )}
- </div>
- <p className="text-xs text-gray-700 dark:text-gray-300 font-medium mt-0.5">{address.street}</p>
- <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-0.5">
- {address.city}{address.state ? `, ${address.state}` : ""}, {address.postalCode} • {address.country}
- </p>
- </div>
- <div className="w-6 h-6 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center border border-emerald-200">
- <Check className="w-3.5 h-3.5" />
- </div>
- </div>
- ) : (
- <div className="p-4 rounded-2xl bg-amber-50/70 border border-amber-200 text-center space-y-2">
- <p className="text-xs text-amber-800 font-medium">Aún no has configurado tu dirección.</p>
- <button 
- onClick={() => {
- setIsEditingAddress(true);
- setAddrRecipient(user?.name || "");
- setAddrStreet("");
- setAddrCity("");
- setAddrPostal("");
- setAddrState("");
- setAddrCountry("España");
- }}
- className="px-4 py-1.5 bg-a dark:bg-[#202022]mber-900 text-white dark:text-gray-900 rounded-xl text-xs font-semibold cursor-pointer"
- >
- + Añadir Dirección Ahora
- </button>
- </div>
- )}
- </div>
-
- {/* Pasarela Oficial Exclusiva: PayPhone Ecuador */}
-          <div className="p-6 rounded-[2rem] bg-white dark:bg-[#202022] border border-gray-200 dark:border-white/10 shadow-sm space-y-5 font-sans antialiased">
-            <div className="flex items-center justify-between pb-2 border-b border-gray-100 dark:border-white/10">
-              <div className="flex items-center gap-2">
-                <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0" />
-                <h4 className="font-bold text-xs uppercase tracking-wider text-gray-900 dark:text-gray-100">
-                  PayPhone Ecuador
-                </h4>
-              </div>
-              <span className="font-mono text-[10px] font-bold text-emerald-600 dark:text-emerald-400 tracking-tight uppercase flex items-center gap-1">
-                <Lock className="w-3 h-3" /> Cifrado Seguro SSL 256-Bit
-              </span>
-            </div>
-
-            {/* EXCLUSIVE PAYMENT MODE: CONDITIONAL RENDERING BASED ON ADMIN CONFIGURATION */}
-            {payphoneMode === "box" ? (
-              /* MODALIDAD 1: CAJITA DE PAGOS (EMBEDDED ON-PAGE WIDGET) */
-              <div className="p-6 sm:p-7 rounded-3xl bg-gradient-to-br from-[#fff8f2] via-white to-[#fff1e6] dark:from-[#251b14] dark:via-[#202022] dark:to-[#1a1410] border border-orange-200/80 dark:border-orange-500/20 shadow-sm space-y-5 animate-fade-in">
-                <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 text-center sm:text-left">
-                  <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-[#FF5E00] to-[#E04D00] flex items-center justify-center shadow-lg shadow-orange-500/20 shrink-0">
-                    <PayPhoneIcon className="w-8 h-8 text-white" />
+            return (
+              <div
+                key={addr.id}
+                onClick={() => setAddress(addr)}
+                className={`p-4 rounded-2xl border transition-all cursor-pointer flex items-center justify-between gap-3.5 select-none ${
+                  isSelected
+                    ? "bg-[#FAF8F5] dark:bg-[#202022] border-black/30 dark:border-white/30 shadow-xs ring-1 ring-black/10 dark:ring-white/10"
+                    : "bg-black/[0.02] dark:bg-white/[0.02] hover:bg-black/[0.04] dark:hover:bg-white/[0.04] border-black/[0.06] dark:border-white/[0.06]"
+                }`}
+              >
+                <div className="flex items-start gap-3.5 min-w-0">
+                  <div className={`mt-0.5 w-5 h-5 rounded-full border flex items-center justify-center shrink-0 transition-colors ${
+                    isSelected 
+                      ? "border-[#18181b] dark:border-white bg-[#18181b] dark:bg-white text-white dark:text-[#18181b]" 
+                      : "border-gray-300 dark:border-gray-600 bg-white dark:bg-[#2a2a2c]"
+                  }`}>
+                    {isSelected && <div className="w-1.5 h-1.5 rounded-full bg-white dark:bg-[#18181b]" />}
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2">
-                      <h4 className="font-bold text-base text-gray-900 dark:text-gray-100 tracking-tight">Cajita de Pagos PayPhone</h4>
-                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-orange-500/10 text-[#FF5E00] border border-orange-500/20">
-                        Pago en Tienda
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2">
+                      <span className="font-bold text-xs text-gray-900 dark:text-gray-100 truncate">
+                        {formatCleanName(addr.recipient || user?.name || "Destinatario")}
                       </span>
-                      {isPayphoneConfigured && (
-                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20">
-                          API Conectada
+                      {addr.isDefault && (
+                        <span className="text-[9px] font-bold uppercase tracking-wider text-gray-700 dark:text-gray-300 bg-black/5 dark:bg-white/10 px-2 py-0.5 rounded-full border border-black/[0.06] dark:border-white/10 shrink-0">
+                          Predeterminada
                         </span>
                       )}
-                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 flex items-center gap-1">
-                        <ShieldCheck className="w-3 h-3" /> PCI-DSS Nivel 1
-                      </span>
                     </div>
-                    <p className="text-xs text-gray-600 dark:text-gray-300 font-normal mt-1 leading-relaxed">
-                      Paga directamente sin salir de Lumina Home. El widget seguro de PayPhone procesa tu tarjeta de forma encriptada sin almacenar datos sensibles.
+                    <p className="text-xs text-gray-700 dark:text-gray-300 font-medium truncate mt-0.5">
+                      {addr.street}
+                    </p>
+                    <p className="text-[11px] text-gray-500 dark:text-gray-400 truncate mt-0.5">
+                      {addr.city}{addr.state ? `, ${addr.state}` : ""}, {addr.postalCode} • {addr.country}
                     </p>
                   </div>
                 </div>
 
-                {/* Official PayPhone Box Container */}
-                <div className="w-full bg-white dark:bg-[#1a1a1c] p-4 rounded-2xl border border-orange-100 dark:border-white/10 shadow-xs">
-                  <div id="pp-button" className="w-full min-h-[120px] flex flex-col items-center justify-center text-center p-2">
-                    {isPayphoneSimulated ? (
-                      <div className="space-y-3 py-3">
-                        <div className="w-10 h-10 rounded-full bg-orange-50 dark:bg-orange-500/10 text-[#FF5E00] flex items-center justify-center mx-auto">
-                          <CreditCard className="w-5 h-5" />
-                        </div>
-                        <div className="space-y-1">
-                          <p className="text-xs font-bold text-gray-900 dark:text-gray-100">
-                            Cajita de Pagos Activa (Entorno de Desarrollo Seguro)
-                          </p>
-                          <p className="text-[11px] text-gray-500 dark:text-gray-400 max-w-sm mx-auto">
-                            El contenedor oficial <code className="text-[#FF5E00] bg-orange-50 dark:bg-orange-500/10 px-1 py-0.5 rounded font-mono font-semibold">#pp-button</code> está vinculado. Al confirmar abajo podrás autorizar tu orden con tarjetas de prueba.
-                          </p>
-                        </div>
-                      </div>
-                    ) : !isBoxRendered ? (
-                      <div className="space-y-2 py-4">
-                        <Loader2 className="w-6 h-6 animate-spin text-[#FF5E00] mx-auto" />
-                        <p className="text-xs font-medium text-gray-500">
-                          {!isBoxScriptLoaded ? "Cargando librería segura de PayPhone..." : "Inicializando Cajita de Pagos..."}
-                        </p>
-                      </div>
-                    ) : null}
+                {isSelected && (
+                  <div className="w-6 h-6 rounded-full bg-[#18181b] dark:bg-white text-white dark:text-[#18181b] flex items-center justify-center shrink-0 shadow-2xs">
+                    <Check className="w-3 h-3 stroke-[2.5]" />
                   </div>
-                </div>
-
-                {/* Supported Card Badges in Ecuador */}
-                <div className="flex flex-wrap items-center justify-center gap-1.5 pt-1">
-                  <span className="px-2.5 py-1 rounded-lg bg-white dark:bg-[#1a1a1c] border border-gray-200 dark:border-white/10 text-[11px] font-bold text-gray-700 dark:text-gray-300 flex items-center gap-1.5 shadow-2xs">
-                    <VisaLogo className="h-3" fill="#1A1F71" /> Visa
-                  </span>
-                  <span className="px-2.5 py-1 rounded-lg bg-white dark:bg-[#1a1a1c] border border-gray-200 dark:border-white/10 text-[11px] font-bold text-gray-700 dark:text-gray-300 flex items-center gap-1.5 shadow-2xs">
-                    <MastercardLogo className="h-3.5" /> Mastercard
-                  </span>
-                  <span className="px-2.5 py-1 rounded-lg bg-white dark:bg-[#1a1a1c] border border-gray-200 dark:border-white/10 text-[11px] font-bold text-gray-700 dark:text-gray-300 shadow-2xs">
-                    Diners Club
-                  </span>
-                  <span className="px-2.5 py-1 rounded-lg bg-white dark:bg-[#1a1a1c] border border-gray-200 dark:border-white/10 text-[11px] font-bold text-gray-700 dark:text-gray-300 shadow-2xs">
-                    Discover
-                  </span>
-                  <span className="px-2.5 py-1 rounded-lg bg-white dark:bg-[#1a1a1c] border border-gray-200 dark:border-white/10 text-[11px] font-bold text-gray-700 dark:text-gray-300 shadow-2xs">
-                    American Express
-                  </span>
-                  <span className="px-2.5 py-1 rounded-lg bg-white dark:bg-[#1a1a1c] border border-gray-200 dark:border-white/10 text-[11px] font-bold text-gray-700 dark:text-gray-300 shadow-2xs">
-                    Alia
-                  </span>
-                </div>
-
-                <div className="w-full pt-3 border-t border-orange-100 dark:border-white/5 flex items-center justify-between text-[11px] text-gray-500 dark:text-gray-400">
-                  <span className="flex items-center gap-1 font-medium">
-                    <Lock className="w-3.5 h-3.5 text-emerald-600" /> Cifrado Bancario 256-bit
-                  </span>
-                  <span className="font-bold text-[#FF5E00]">
-                    Sin comisión al comprador
-                  </span>
-                </div>
+                )}
               </div>
-            ) : (
-              /* MODALIDAD 2: BOTÓN DE PAGO POR REDIRECCIÓN (HOSTED PAYMENT PAGE) */
-              <div className="p-6 sm:p-7 rounded-3xl bg-gradient-to-br from-[#fff8f2] via-white to-[#fff1e6] dark:from-[#251b14] dark:via-[#202022] dark:to-[#1a1410] border border-orange-200/80 dark:border-orange-500/20 shadow-sm flex flex-col items-center text-center space-y-4 animate-fade-in">
-                <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-[#FF5E00] to-[#E04D00] flex items-center justify-center shadow-lg shadow-orange-500/20 shrink-0">
-                  <PayPhoneIcon className="w-9 h-9 text-white" />
-                </div>
-                <div>
-                  <div className="flex items-center justify-center gap-2">
-                    <h4 className="font-bold text-base text-gray-900 dark:text-gray-100 tracking-tight">PayPhone Redirección Segura</h4>
-                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 flex items-center gap-1">
-                      <ShieldCheck className="w-3 h-3" /> Conexión Oficial
-                    </span>
-                  </div>
-                  <p className="text-xs text-gray-600 dark:text-gray-300 font-normal max-w-sm mt-1.5 leading-relaxed">
-                    Al hacer clic en pagar, serás redirigido a la pasarela cifrada de PayPhone Ecuador para autorizar tu compra con cualquier tarjeta de crédito/débito nacional o internacional, o con tu App PayPhone.
-                  </p>
-                </div>
-
-                {/* Supported Card Badges */}
-                <div className="flex flex-wrap items-center justify-center gap-1.5 pt-1">
-                  <span className="px-2.5 py-1 rounded-lg bg-white dark:bg-[#1a1a1c] border border-gray-200 dark:border-white/10 text-[11px] font-bold text-gray-700 dark:text-gray-300 flex items-center gap-1.5 shadow-2xs">
-                    <VisaLogo className="h-3" fill="#1A1F71" /> Visa
-                  </span>
-                  <span className="px-2.5 py-1 rounded-lg bg-white dark:bg-[#1a1a1c] border border-gray-200 dark:border-white/10 text-[11px] font-bold text-gray-700 dark:text-gray-300 flex items-center gap-1.5 shadow-2xs">
-                    <MastercardLogo className="h-3.5" /> Mastercard
-                  </span>
-                  <span className="px-2.5 py-1 rounded-lg bg-white dark:bg-[#1a1a1c] border border-gray-200 dark:border-white/10 text-[11px] font-bold text-gray-700 dark:text-gray-300 shadow-2xs">
-                    Diners Club
-                  </span>
-                  <span className="px-2.5 py-1 rounded-lg bg-white dark:bg-[#1a1a1c] border border-gray-200 dark:border-white/10 text-[11px] font-bold text-gray-700 dark:text-gray-300 shadow-2xs">
-                    Discover
-                  </span>
-                  <span className="px-2.5 py-1 rounded-lg bg-white dark:bg-[#1a1a1c] border border-gray-200 dark:border-white/10 text-[11px] font-bold text-gray-700 dark:text-gray-300 shadow-2xs">
-                    American Express
-                  </span>
-                  <span className="px-2.5 py-1 rounded-lg bg-white dark:bg-[#1a1a1c] border border-gray-200 dark:border-white/10 text-[11px] font-bold text-gray-700 dark:text-gray-300 shadow-2xs">
-                    Alia
-                  </span>
-                </div>
-
-                <div className="w-full pt-3 border-t border-orange-100 dark:border-white/5 flex items-center justify-between text-[11px] text-gray-500 dark:text-gray-400">
-                  <span className="flex items-center gap-1">
-                    <Lock className="w-3.5 h-3.5 text-emerald-600" /> Cifrado Bancario 256-bit
-                  </span>
-                  <span className="font-semibold text-[#FF5E00]">
-                    Sin comisión al comprador
-                  </span>
-                </div>
-              </div>
+            );
+          })}
+        </div>
+      </div>
+    ) : address ? (
+      <div className="p-4 rounded-2xl bg-black/[0.02] dark:bg-white/[0.03] border border-black/[0.06] dark:border-white/10 flex items-center justify-between">
+        <div>
+          <div className="flex items-center gap-2">
+            <p className="font-bold text-xs text-gray-900 dark:text-gray-100">
+              {formatCleanName(address.recipient || user?.name || "Destinatario")}
+            </p>
+            {address.isDefault && (
+              <span className="text-[9px] font-bold uppercase tracking-wider text-gray-700 dark:text-gray-300 bg-black/5 dark:bg-white/10 px-2 py-0.5 rounded-full border border-black/[0.06] dark:border-white/10 shrink-0">
+                Predeterminada
+              </span>
             )}
           </div>
-
+          <p className="text-xs text-gray-700 dark:text-gray-300 font-medium mt-0.5">{address.street}</p>
+          <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-0.5">
+            {address.city}{address.state ? `, ${address.state}` : ""}, {address.postalCode} • {address.country}
+          </p>
         </div>
+        <div className="w-6 h-6 rounded-full bg-[#18181b] dark:bg-white text-white dark:text-[#18181b] flex items-center justify-center shadow-2xs">
+          <Check className="w-3.5 h-3.5 stroke-[2.5]" />
+        </div>
+      </div>
+    ) : (
+      <div className="p-5 rounded-2xl bg-black/[0.02] dark:bg-white/[0.03] border border-black/[0.06] dark:border-white/10 text-center space-y-3">
+        <p className="text-xs text-gray-600 dark:text-gray-300 font-medium">Aún no has configurado tu dirección de entrega.</p>
+        <button 
+          onClick={() => {
+            setIsEditingAddress(true);
+            setAddrRecipient(user?.name || "");
+            setAddrStreet("");
+            setAddrCity("");
+            setAddrPostal("");
+            setAddrState("");
+            setAddrCountry("Ecuador");
+          }}
+          className="px-4 py-2 bg-[#18181b] dark:bg-white text-white dark:text-[#18181b] rounded-full text-xs font-bold cursor-pointer hover:opacity-90 transition-all shadow-2xs"
+        >
+          + Añadir Dirección Ahora
+        </button>
+      </div>
+    )}
+  </div>
 
-{/* Right 5 cols: Order Final Summary & Confirm */}
- <div className="lg:col-span-5 bg-white dark:bg-[#2a2a2c] p-6 sm:p-7 rounded-[2rem] border border-gray-200 dark:border-white/10/70 shadow-lg dark:shadow-none space-y-5">
- <h4 className="font-sans font-bold text-base text-gray-900 dark:text-gray-100 border-b border-gray-100 dark:border-white/5 pb-3 tracking-tight uppercase">
- Resumen del Pedido
- </h4>
+  {/* Pasarela Oficial Exclusiva: PayPhone Ecuador en 2IXO Luxury Card Presentation */}
+  <div className="p-6 sm:p-7 rounded-[2rem] bg-white/90 dark:bg-[#18181b]/90 backdrop-blur-xl border border-black/[0.06] dark:border-white/10 shadow-[0_8px_30px_rgba(0,0,0,0.04)] space-y-5 font-sans antialiased">
+    
+    <div className="flex items-center justify-between pb-3 border-b border-black/[0.06] dark:border-white/5">
+      <div className="flex items-center gap-2.5">
+        <div className="w-8 h-8 rounded-full bg-black/5 dark:bg-white/10 flex items-center justify-center text-gray-900 dark:text-white">
+          <ShieldCheck className="w-4 h-4" />
+        </div>
+        <div>
+          <h4 className="font-bold text-xs uppercase tracking-wider text-gray-900 dark:text-gray-100">
+            Pasarela Oficial de Pago
+          </h4>
+          <p className="text-[11px] text-gray-500 dark:text-gray-400">PayPhone Ecuador • Cobro Cifrado</p>
+        </div>
+      </div>
+      <span className="font-mono text-[10px] font-bold px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20 tracking-tight uppercase flex items-center gap-1.5 shadow-2xs">
+        <Lock className="w-3 h-3" /> SSL 256-Bit
+      </span>
+    </div>
 
- <div className="space-y-3 text-xs sm:text-sm text-gray-600 dark:text-gray-400 font-sans">
- <div className="flex justify-between">
- <span>Subtotal ({items.length} artículos)</span>
- <span className="font-semibold text-gray-900 dark:text-gray-100 ">${subtotal.toFixed(2)} USD</span>
- </div>
- {discountAmount > 0 && (
- <div className="flex justify-between text-emerald-700 font-semibold">
- <span>Descuento aplicado</span>
- <span>-${discountAmount.toFixed(2)} USD</span>
- </div>
- )}
- <div className="flex justify-between">
- <span>Envío Nacional</span>
- <span className="font-semibold">
- {shipping === 0 ? <span className="text-emerald-700 font-bold">GRATIS</span> : `$${shipping.toFixed(2)} USD`}
- </span>
- </div>
- <div className="pt-3 border-t border-gray-200 dark:border-white/10 flex justify-between items-baseline">
- <span className="font-bold text-gray-900 dark:text-gray-100 ">Total Final</span>
- <span className="font-sans font-extrabold text-2xl text-gray-950 tracking-tight">
- ${finalTotal.toFixed(2)} USD
- </span>
- </div>
- </div>
+    {/* 2IXO FINTECH LUXURY CARD CONTAINER */}
+    <div className="relative rounded-[2rem] p-6 sm:p-7 bg-gradient-to-br from-[#FAF8F5] via-[#F4EFEB] to-[#EAE3D8] dark:from-[#252422] dark:via-[#1e1d1b] dark:to-[#161514] border border-[#DDD4C7]/80 dark:border-white/10 shadow-[0_12px_32px_-6px_rgba(0,0,0,0.08)] overflow-hidden space-y-5">
+      
+      {/* Specular Liquid Light highlight on top edge */}
+      <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-white/80 dark:via-white/20 to-transparent pointer-events-none" />
+      <div className="absolute -top-16 -right-16 w-48 h-48 rounded-full bg-gradient-to-br from-[#FAF8F5]/80 via-white/40 to-transparent dark:from-white/5 dark:to-transparent blur-2xl pointer-events-none" />
 
- <div className="p-3.5 rounded-2xl bg-gray-50 dark:bg-[#151515] border border-gray-100 dark:border-white/5 flex items-center gap-3 text-xs text-gray-600 dark:text-gray-400">
- <ShieldCheck className="w-5 h-5 text-blue-600 shrink-0" />
- <span className="text-[11px] leading-relaxed">
- Pago seguro SSL 256-bit y garantía oficial de devolución 30 días.
- </span>
- </div>
+      {/* Card Top Row: Chip, Contactless, & PayPhone Brand Capsule */}
+      <div className="relative z-10 flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <EmvChip />
+          <ContactlessIcon className="w-5 h-5 text-gray-500 dark:text-gray-400" />
+        </div>
+        
+        <div className="flex items-center gap-2">
+          <span className="px-3 py-1 rounded-full bg-white/80 dark:bg-black/30 text-[11px] font-mono font-bold text-gray-800 dark:text-gray-200 border border-black/[0.06] dark:border-white/10 flex items-center gap-1.5 shadow-2xs">
+            <PayPhoneIcon className="w-3.5 h-3.5 text-[#FF5E00]" />
+            <span>PayPhone</span>
+          </span>
+          <span className="px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 text-[10px] font-bold border border-emerald-500/20">
+            PCI-DSS L1
+          </span>
+        </div>
+      </div>
 
- {payphoneError && (
- <div className="p-3.5 rounded-2xl bg-rose-50 dark:bg-rose-500/10 border border-rose-200 dark:border-rose-500/20 text-rose-700 dark:text-rose-400 text-xs flex items-start gap-2.5 animate-shake">
- <AlertTriangle className="w-4 h-4 shrink-0 text-rose-500 mt-0.5" />
- <div className="space-y-0.5">
- <p className="font-bold">Error al procesar el pago</p>
- <p className="text-[11px] leading-relaxed">{payphoneError}</p>
- </div>
- </div>
- )}
+      {/* Card Middle: Title / Card Mode Description */}
+      <div className="relative z-10 space-y-1 pt-1">
+        <div className="flex items-center gap-2">
+          <h5 className="font-sans font-extrabold text-base sm:text-lg text-gray-900 dark:text-white tracking-tight">
+            {payphoneMode === "box" ? "Cajita de Pagos Integrada" : "Pasarela Hosted PayPhone"}
+          </h5>
+          {isPayphoneConfigured && (
+            <span className="px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-600 dark:text-blue-400 text-[10px] font-bold border border-blue-500/20">
+              Enlace Directo
+            </span>
+          )}
+        </div>
+        <p className="text-xs text-gray-600 dark:text-gray-300 leading-relaxed max-w-md">
+          {payphoneMode === "box"
+            ? "Procesa tarjetas de crédito/débito directamente en la tienda con tokenización bancaria sin almacenar datos sensibles."
+            : "Autoriza tu orden en la pasarela cifrada de PayPhone Ecuador con cualquier tarjeta o desde tu app móvil."}
+        </p>
+      </div>
 
- {/* LIQUID GLASS CONFIRM PAYMENT BUTTON */}
-              <button 
-                onClick={handleConfirmOrder}
-                disabled={isProcessing}
-                className="group relative overflow-hidden w-full h-14 rounded-2xl font-bold text-white text-sm sm:text-base flex items-center justify-center gap-2.5 transition-all duration-300 backdrop-blur-xl border border-white/40 hover:border-white/60 cursor-pointer disabled:opacity-50 bg-[#FF5E00] hover:bg-[#e05300] shadow-[0_12px_28px_-4px_rgba(255,94,0,0.4),0_4px_12px_rgba(0,0,0,0.06),inset_0_1.5px_2px_rgba(255,255,255,0.45)]"
-              >
-                {/* Specular curved liquid glass rim */}
-                <div className="absolute inset-x-4 top-0 h-[1.5px] bg-gradient-to-r from-transparent via-white/90 to-transparent opacity-95 pointer-events-none" />
-                
-                {/* Caustic glass reflection glint */}
-                <div className="absolute top-1.5 left-5 w-8 h-1 bg-white dark:bg-[#2a2a2c]/80 rounded-full blur-[0.4px] pointer-events-none" />
-                <div className="absolute inset-0 bg-gradient-to-b from-white/20 via-transparent to-black/10 pointer-events-none" />
-
-                {isProcessing ? (
-                  <span className="relative z-10 flex items-center gap-2">
-                    <span className="w-5 h-5 border-2 border-white/40 border-t-white rounded-full animate-spin" />
-                    <span>Conectando con PayPhone...</span>
-                  </span>
-                ) : (
-                  <>
-                    <PayPhoneIcon className="relative z-10 w-5 h-5 text-white" />
-                    <span className="relative z-10 tracking-wide font-sans font-bold">
-                      {payphoneMode === "box" ? "Pagar con Cajita PayPhone" : "Pagar con PayPhone"} (${finalTotal.toFixed(2)})
-                    </span>
-                    <ArrowRight className="relative z-10 w-4 h-4 text-white group-hover:translate-x-1 transition-transform" />
-                  </>
-                )}
-              </button>
- </div>
-
- </div>
-
- </div>
- )}
-
- {/* ======================================================================= */}
- {/* STEP 3: ORDER CONFIRMED CELEBRATION (Receipt View) */}
- {/* ======================================================================= */}
- {step === "success" && lastPlacedOrder && (
- <div className="max-w-xl mx-auto py-12 flex flex-col items-center justify-center text-center space-y-6 animate-fade-in">
- 
- <div className="relative w-24 h-24 rounded-full bg-blue-50 border-2 border-blue-200 text-blue-600 flex items-center justify-center shadow-xl dark:shadow-none shadow-blue-500/15">
- <CheckCircle2 className="w-12 h-12" />
- <div className="absolute -top-1 -right-1 w-7 h-7 rounded-full bg-gradient-to-tr from-blue-600 to-indigo-600 text-white dark:text-gray-900 flex items-center justify-center shadow-md dark:shadow-none">
- <Sparkles className="w-4 h-4" />
- </div>
- </div>
-
- <div>
- <h3 className="font-display font-bold text-3xl sm:text-4xl text-gray-900 dark:text-gray-100 ">¡Pedido Confirmado!</h3>
- <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-2 max-w-sm leading-relaxed">
- Tu compra ha sido procesada con éxito. Ya estamos preparando cada pieza con el máximo cuidado artesanal.
- </p>
- </div>
-
- {/* Receipt Card */}
- <div className="w-full p-6 sm:p-8 rounded-3xl bg-white dark:bg-[#2a2a2c] border border-gray-100 dark:border-white/5 shadow-md dark:shadow-none text-left space-y-4">
- <div className="flex items-center justify-between pb-3 border-b border-gray-100 dark:border-white/5 text-xs sm:text-sm">
- <span className="text-gray-400 dark:text-gray-400 font-medium">Identificador</span>
- <span className="font-mono font-bold text-gray-900 dark:text-gray-100 ">{lastPlacedOrder.id}</span>
- </div>
- <div className="flex items-center justify-between pb-3 border-b border-gray-100 dark:border-white/5 text-xs sm:text-sm">
- <span className="text-gray-400 dark:text-gray-400 font-medium">Nº de Seguimiento</span>
- <span className="font-mono font-bold text-blue-600">{lastPlacedOrder.trackingNumber}</span>
- </div>
- <div className="flex items-center justify-between pb-3 border-b border-gray-100 dark:border-white/5 text-xs sm:text-sm">
- <span className="text-gray-400 dark:text-gray-400 font-medium">Entrega Estimada</span>
- <span className="font-semibold text-gray-800 dark:text-gray-200">3-5 días laborables</span>
- </div>
- <div className="flex items-center justify-between pt-2 text-xs sm:text-sm">
- <span className="font-bold text-gray-700 dark:text-gray-300">Total Pagado</span>
- <span className="font-display font-bold text-2xl text-blue-700">
- ${Number(lastPlacedOrder?.total || 0).toFixed(2)} USD
- </span>
- </div>
- </div>
-
- {/* Action Buttons with Liquid Glass */}
- <div className="w-full space-y-3 pt-2">
- <button 
- onClick={() => {
- setIsOpen(false);
- router.push("/profile");
- }}
- className="relative overflow-hidden w-full h-14 rounded-2xl font-bold text-white dark:text-gray-900 text-sm flex items-center justify-center gap-2
- bg-gradient-to-r from-gray-900 to-gray-800 border border-white/20 shadow-md dark:shadow-none hover:bg-gray-800 transition-all cursor-pointer"
- >
- <span>Ver Pedido en mi Perfil</span>
- <ChevronRight className="w-4 h-4" />
- </button>
-
- <button 
- onClick={() => {
- setIsOpen(false);
- setStep("bag");
- }}
- className="w-full py-3.5 bg-gray-100 dark:bg-[#202022]/5 hover:bg-gray-200 dark:hover:bg-[#1c1c1e]/10 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-white/10/80 rounded-2xl text-xs sm:text-sm font-semibold transition-all shadow-sm dark:shadow-none"
- >
- Seguir Explorando Colecciones
- </button>
- </div>
-
- </div>
- )}
-
- </div>
-
- </motion.div>
-
-        {/* ======================================================================= */}
-        {/* PAYPHONE ECUADOR SIMULATION MODAL (Modo Preparación / RUC en trámite) */}
-        {/* ======================================================================= */}
-        {isPayPhoneSimOpen && payphoneSimData && (
-          <div className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md animate-fade-in font-sans">
-            <div className="w-full max-w-lg bg-white dark:bg-[#202022] rounded-3xl p-6 sm:p-8 shadow-2xl border border-orange-200/50 dark:border-orange-500/20 space-y-5 animate-scale-up">
-              
-              {/* Modal Header */}
-              <div className="flex items-center justify-between pb-4 border-b border-gray-100 dark:border-white/5">
-                <div className="flex items-center gap-2.5">
-                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#FF5E00] to-[#E04D00] text-white flex items-center justify-center shadow-md shadow-orange-500/20">
-                    <PayPhoneIcon className="w-6 h-6" />
-                  </div>
-                  <div>
-                    <h3 className="font-extrabold text-base text-gray-900 dark:text-gray-100 flex items-center gap-1.5">
-                      PayPhone Ecuador <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">Modo Pruebas</span>
-                    </h3>
-                    <p className="text-[11px] text-gray-400">Ambiente de Simulación SRI / RUC en trámite</p>
-                  </div>
+      {/* Official PayPhone Box Container (when in box mode) */}
+      {payphoneMode === "box" && (
+        <div className="relative z-10 w-full bg-white/95 dark:bg-[#18181b]/95 backdrop-blur-md p-4 rounded-2xl border border-black/[0.06] dark:border-white/10 shadow-sm">
+          <div id="pp-button" className="w-full min-h-[110px] flex flex-col items-center justify-center text-center p-1">
+            {isPayphoneSimulated ? (
+              <div className="space-y-2.5 py-2">
+                <div className="w-10 h-10 rounded-full bg-black/5 dark:bg-white/10 text-gray-800 dark:text-gray-200 flex items-center justify-center mx-auto border border-black/[0.06] dark:border-white/10">
+                  <CreditCard className="w-5 h-5" />
                 </div>
-
-                <button
-                  type="button"
-                  onClick={() => setIsPayPhoneSimOpen(false)}
-                  className="w-8 h-8 rounded-full bg-gray-100 dark:bg-white/5 hover:bg-gray-200 text-gray-400 flex items-center justify-center transition-colors"
-                >
-                  <X className="w-4 h-4" />
-                </button>
+                <div className="space-y-1">
+                  <p className="text-xs font-bold text-gray-900 dark:text-gray-100">
+                    Cajita de Pagos Activa (Modo Seguro de Pruebas)
+                  </p>
+                  <p className="text-[11px] text-gray-500 dark:text-gray-400 max-w-sm mx-auto">
+                    El contenedor <code className="text-gray-800 dark:text-gray-200 bg-black/5 dark:bg-white/10 px-1.5 py-0.5 rounded-full font-mono text-[10px]">#pp-button</code> está vinculado. Pulsa el botón inferior para autorizar la transacción.
+                  </p>
+                </div>
               </div>
-
-              {/* Order Overview inside Modal */}
-              <div className="p-4 rounded-2xl bg-orange-50/50 dark:bg-orange-950/10 border border-orange-100 dark:border-orange-500/10 space-y-2 text-xs">
-                <div className="flex justify-between font-semibold">
-                  <span className="text-gray-500 dark:text-gray-400">Total a Autorizar:</span>
-                  <span className="text-lg font-black text-[#FF5E00]">${Number(payphoneSimData.total).toFixed(2)} USD</span>
-                </div>
-                <div className="flex justify-between text-gray-600 dark:text-gray-300">
-                  <span className="text-gray-400">Pedido ID:</span>
-                  <span className="font-mono font-bold">{payphoneSimData.orderId}</span>
-                </div>
-                <div className="flex justify-between text-gray-600 dark:text-gray-300">
-                  <span className="text-gray-400">Tx ID (PayPhone):</span>
-                  <span className="font-mono text-[10px]">{payphoneSimData.clientTransactionId}</span>
-                </div>
-                <div className="flex justify-between text-gray-600 dark:text-gray-300">
-                  <span className="text-gray-400">Cliente / Correo:</span>
-                  <span>{payphoneSimData.customerEmail}</span>
-                </div>
-                {payphoneSimData.shippingAddr?.idNumber && (
-                  <div className="flex justify-between text-gray-600 dark:text-gray-300">
-                    <span className="text-gray-400">Cédula / RUC Comprador:</span>
-                    <span className="font-mono font-bold">{payphoneSimData.shippingAddr.idNumber}</span>
-                  </div>
-                )}
-              </div>
-
-              {/* Status Notice */}
-              <div className="p-3.5 rounded-2xl bg-gray-50 dark:bg-[#151515] border border-gray-200/70 dark:border-white/5 text-[11px] text-gray-600 dark:text-gray-400 space-y-1.5 leading-relaxed">
-                <div className="flex items-center gap-1.5 font-bold text-gray-900 dark:text-gray-200">
-                  <ShieldCheck className="w-4 h-4 text-emerald-500" />
-                  <span>Arquitectura de Pagos Completada al 100%</span>
-                </div>
-                <p>
-                  Tu tienda ya tiene listos los endpoints de cobro, el recálculo zero-trust de montos y el despacho automático de facturas. Como el RUC ante el SRI está en trámite, puedes simular la autorización bancaria con 1 clic para validar todo el flujo de pedidos.
+            ) : !isBoxRendered ? (
+              <div className="space-y-2 py-4">
+                <Loader2 className="w-6 h-6 animate-spin text-gray-700 dark:text-gray-300 mx-auto" />
+                <p className="text-xs font-medium text-gray-500 dark:text-gray-400">
+                  {!isBoxScriptLoaded ? "Cargando pasarela cifrada..." : "Inicializando Cajita de Pagos..."}
                 </p>
               </div>
+            ) : null}
+          </div>
+        </div>
+      )}
 
-              {/* Simulated Card Badges */}
-              <div className="flex items-center justify-between px-3 py-2 rounded-xl bg-gray-100/70 dark:bg-[#2c2c2e] text-[11px]">
-                <span className="text-gray-500 font-medium">Tarjeta de Prueba:</span>
-                <span className="font-mono font-bold text-gray-800 dark:text-gray-200 flex items-center gap-1.5">
-                  <VisaLogo className="h-2.5" fill="#1A1F71" /> VISA •••• 4242
-                </span>
-              </div>
+      {/* Card Bottom Row: Supported Cards Badges in 2IXO pills */}
+      <div className="relative z-10 pt-1 space-y-3">
+        <div className="flex flex-wrap items-center gap-1.5">
+          <span className="px-3 py-1 rounded-full bg-white/80 dark:bg-black/30 border border-black/[0.06] dark:border-white/10 text-[11px] font-bold text-gray-700 dark:text-gray-300 flex items-center gap-1.5 shadow-2xs">
+            <VisaLogo className="h-3" fill="#1A1F71" /> Visa
+          </span>
+          <span className="px-3 py-1 rounded-full bg-white/80 dark:bg-black/30 border border-black/[0.06] dark:border-white/10 text-[11px] font-bold text-gray-700 dark:text-gray-300 flex items-center gap-1.5 shadow-2xs">
+            <MastercardLogo className="h-3.5" /> Mastercard
+          </span>
+          <span className="px-3 py-1 rounded-full bg-white/80 dark:bg-black/30 border border-black/[0.06] dark:border-white/10 text-[11px] font-bold text-gray-700 dark:text-gray-300 shadow-2xs">
+            Diners Club
+          </span>
+          <span className="px-3 py-1 rounded-full bg-white/80 dark:bg-black/30 border border-black/[0.06] dark:border-white/10 text-[11px] font-bold text-gray-700 dark:text-gray-300 shadow-2xs">
+            Discover
+          </span>
+          <span className="px-3 py-1 rounded-full bg-white/80 dark:bg-black/30 border border-black/[0.06] dark:border-white/10 text-[11px] font-bold text-gray-700 dark:text-gray-300 shadow-2xs">
+            American Express
+          </span>
+          <span className="px-3 py-1 rounded-full bg-white/80 dark:bg-black/30 border border-black/[0.06] dark:border-white/10 text-[11px] font-bold text-gray-700 dark:text-gray-300 shadow-2xs">
+            Alia
+          </span>
+        </div>
 
-              {/* Actions */}
-              <div className="pt-2 space-y-2">
-                <button
-                  type="button"
-                  onClick={handleApprovePayPhoneSimulation}
-                  disabled={isSimulatingApproval}
-                  className="w-full py-3.5 px-4 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-bold text-sm shadow-md flex items-center justify-center gap-2 transition-all disabled:opacity-60 cursor-pointer"
-                >
-                  {isSimulatingApproval ? (
-                    <>
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                      <span>Autorizando transacción...</span>
-                    </>
-                  ) : (
-                    <>
-                      <CheckCircle2 className="w-4 h-4" />
-                      <span>Simular Pago Aprobado (${Number(payphoneSimData.total).toFixed(2)})</span>
-                    </>
-                  )}
-                </button>
+        <div className="pt-3 border-t border-black/[0.06] dark:border-white/10 flex items-center justify-between text-[11px] text-gray-500 dark:text-gray-400">
+          <span className="flex items-center gap-1.5 font-medium">
+            <Lock className="w-3.5 h-3.5 text-gray-700 dark:text-gray-300" /> Cifrado Bancario End-to-End
+          </span>
+          <span className="font-bold text-emerald-700 dark:text-emerald-400">
+            0% comisión al comprador
+          </span>
+        </div>
+      </div>
 
-                <button
-                  type="button"
-                  onClick={() => setIsPayPhoneSimOpen(false)}
-                  disabled={isSimulatingApproval}
-                >
-                  Cancelar
-                </button>
-              </div>
+    </div>
 
+  </div>
+
+  </div>
+
+  {/* Right 5 cols: Order Final Summary & Confirm */}
+  <div className="lg:col-span-5 bg-white/90 dark:bg-[#18181b]/90 backdrop-blur-xl p-6 sm:p-7 rounded-[2rem] border border-black/[0.06] dark:border-white/10 shadow-[0_12px_32px_rgba(0,0,0,0.05)] space-y-5">
+    <h4 className="font-sans font-bold text-base text-gray-900 dark:text-gray-100 border-b border-black/[0.06] dark:border-white/5 pb-3 tracking-tight uppercase">
+      Resumen del Pedido
+    </h4>
+
+    <div className="space-y-3 text-xs sm:text-sm text-gray-600 dark:text-gray-400 font-sans">
+      <div className="flex justify-between">
+        <span>Subtotal ({items.length} artículos)</span>
+        <span className="font-semibold text-gray-900 dark:text-gray-100">${subtotal.toFixed(2)} USD</span>
+      </div>
+      {discountAmount > 0 && (
+        <div className="flex justify-between text-emerald-700 font-semibold">
+          <span>Descuento aplicado</span>
+          <span>-${discountAmount.toFixed(2)} USD</span>
+        </div>
+      )}
+      <div className="flex justify-between">
+        <span>Envío Nacional</span>
+        <span className="font-semibold">
+          {shipping === 0 ? <span className="text-emerald-700 font-bold">GRATIS</span> : `$${shipping.toFixed(2)} USD`}
+        </span>
+      </div>
+      <div className="pt-3 border-t border-black/[0.06] dark:border-white/10 flex justify-between items-baseline">
+        <span className="font-bold text-gray-900 dark:text-gray-100">Total Final</span>
+        <span className="font-sans font-extrabold text-2xl text-gray-950 dark:text-white tracking-tight">
+          ${finalTotal.toFixed(2)} USD
+        </span>
+      </div>
+    </div>
+
+    <div className="p-3.5 rounded-2xl bg-black/[0.02] dark:bg-white/[0.03] border border-black/[0.05] dark:border-white/[0.05] flex items-center gap-3 text-xs text-gray-600 dark:text-gray-400">
+      <ShieldCheck className="w-5 h-5 text-gray-700 dark:text-gray-300 shrink-0" />
+      <span className="text-[11px] leading-relaxed">
+        Pago seguro SSL 256-bit y garantía oficial de satisfacción de 30 días.
+      </span>
+    </div>
+
+    {payphoneError && (
+      <div className="p-3.5 rounded-2xl bg-rose-50 dark:bg-rose-500/10 border border-rose-200 dark:border-rose-500/20 text-rose-700 dark:text-rose-400 text-xs flex items-start gap-2.5 animate-shake">
+        <AlertTriangle className="w-4 h-4 shrink-0 text-rose-500 mt-0.5" />
+        <div className="space-y-0.5">
+          <p className="font-bold">Error al procesar el pago</p>
+          <p className="text-[11px] leading-relaxed">{payphoneError}</p>
+        </div>
+      </div>
+    )}
+
+    {/* 2IXO LUXURY FINTECH CAPSULE DOCK: CONFIRM PAYMENT BUTTON */}
+    <button 
+      onClick={handleConfirmOrder}
+      disabled={isProcessing}
+      className="group relative overflow-hidden w-full h-15 sm:h-16 rounded-full font-sans font-bold text-white dark:text-[#18181b] bg-[#18181b] dark:bg-white shadow-[0_14px_34px_rgba(0,0,0,0.22)] active:scale-[0.98] transition-all duration-300 border border-black/10 dark:border-white/20 flex items-center justify-between px-3 sm:px-4 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+    >
+      {/* Specular curved liquid rim */}
+      <div className="absolute inset-x-6 top-0 h-[1.5px] bg-gradient-to-r from-transparent via-white/30 dark:via-white/60 to-transparent pointer-events-none" />
+
+      {/* Left: Circular icon badge */}
+      <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-full bg-white/15 dark:bg-black/10 flex items-center justify-center shrink-0 border border-white/20 dark:border-black/10 shadow-2xs">
+        {isProcessing ? (
+          <Loader2 className="w-5 h-5 animate-spin text-white dark:text-[#18181b]" />
+        ) : (
+          <PayPhoneIcon className="w-5 h-5 text-white dark:text-[#18181b]" />
+        )}
+      </div>
+
+      {/* Center: Action Title */}
+      <div className="flex-1 px-3 text-left">
+        <span className="text-xs sm:text-sm font-bold tracking-tight block leading-tight">
+          {isProcessing 
+            ? "Conectando con PayPhone..." 
+            : payphoneMode === "box" 
+              ? "Pagar con Cajita PayPhone" 
+              : "Pagar con PayPhone"}
+        </span>
+        {!isProcessing && (
+          <span className="text-[10px] font-normal opacity-70 block">
+            Transacción Bancaria Segura
+          </span>
+        )}
+      </div>
+
+      {/* Right: Amount pill + Circular Arrow badge */}
+      <div className="flex items-center gap-2 shrink-0">
+        <span className="text-xs font-mono font-extrabold px-3 py-1 rounded-full bg-white/15 dark:bg-black/10 text-white dark:text-[#18181b] border border-white/20 dark:border-black/10">
+          ${finalTotal.toFixed(2)}
+        </span>
+        <div className="w-8 h-8 rounded-full bg-white dark:bg-[#18181b] text-[#18181b] dark:text-white flex items-center justify-center shadow-xs group-hover:translate-x-0.5 transition-transform">
+          <ArrowRight className="w-3.5 h-3.5 stroke-[2.5]" />
+        </div>
+      </div>
+    </button>
+  </div>
+
+  </div>
+
+  </div>
+  )}
+
+  {/* ======================================================================= */}
+  {/* STEP 3: ORDER CONFIRMED CELEBRATION (Receipt View) */}
+  {/* ======================================================================= */}
+  {step === "success" && lastPlacedOrder && (
+  <div className="max-w-xl mx-auto py-12 flex flex-col items-center justify-center text-center space-y-6 animate-fade-in">
+  
+  <div className="relative w-20 h-20 rounded-full bg-[#FAF8F5] dark:bg-white/5 border border-black/[0.08] dark:border-white/10 text-gray-900 dark:text-white flex items-center justify-center shadow-md">
+    <CheckCircle2 className="w-10 h-10" />
+    <div className="absolute -top-1 -right-1 w-6 h-6 rounded-full bg-[#18181b] dark:bg-white text-white dark:text-[#18181b] flex items-center justify-center shadow-md">
+      <Sparkles className="w-3.5 h-3.5" />
+    </div>
+  </div>
+
+  <div>
+    <h3 className="font-display font-bold text-3xl sm:text-4xl text-gray-900 dark:text-white tracking-tight">¡Pedido Confirmado!</h3>
+    <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-2 max-w-sm leading-relaxed">
+      Tu compra ha sido procesada con éxito. Ya estamos preparando cada pieza con el máximo cuidado artesanal.
+    </p>
+  </div>
+
+  {/* Receipt Card */}
+  <div className="w-full p-6 sm:p-8 rounded-[2rem] bg-white/90 dark:bg-[#18181b]/90 backdrop-blur-xl border border-black/[0.06] dark:border-white/10 shadow-sm text-left space-y-4">
+    <div className="flex items-center justify-between pb-3 border-b border-black/[0.06] dark:border-white/5 text-xs sm:text-sm">
+      <span className="text-gray-400 font-medium">Identificador</span>
+      <span className="font-mono font-bold text-gray-900 dark:text-gray-100">{lastPlacedOrder.id}</span>
+    </div>
+    <div className="flex items-center justify-between pb-3 border-b border-black/[0.06] dark:border-white/5 text-xs sm:text-sm">
+      <span className="text-gray-400 font-medium">Nº de Seguimiento</span>
+      <span className="font-mono font-bold text-gray-900 dark:text-gray-100">{lastPlacedOrder.trackingNumber}</span>
+    </div>
+    <div className="flex items-center justify-between pb-3 border-b border-black/[0.06] dark:border-white/5 text-xs sm:text-sm">
+      <span className="text-gray-400 font-medium">Entrega Estimada</span>
+      <span className="font-semibold text-gray-800 dark:text-gray-200">3-5 días laborables</span>
+    </div>
+    <div className="flex items-center justify-between pt-2 text-xs sm:text-sm">
+      <span className="font-bold text-gray-700 dark:text-gray-300">Total Pagado</span>
+      <span className="font-sans font-extrabold text-2xl text-gray-950 dark:text-white">
+        ${Number(lastPlacedOrder?.total || 0).toFixed(2)} USD
+      </span>
+    </div>
+  </div>
+
+  {/* Action Buttons with 2IXO Capsule Design */}
+  <div className="w-full space-y-3 pt-2">
+    <button 
+      onClick={() => {
+        setIsOpen(false);
+        router.push("/profile");
+      }}
+      className="group w-full h-14 rounded-full bg-[#18181b] dark:bg-white text-white dark:text-[#18181b] font-bold text-sm flex items-center justify-between px-5 shadow-[0_10px_28px_rgba(0,0,0,0.18)] hover:opacity-95 transition-all cursor-pointer"
+    >
+      <div className="w-8 h-8 rounded-full bg-white/15 dark:bg-black/10 flex items-center justify-center">
+        <Sparkles className="w-4 h-4 text-white dark:text-[#18181b]" />
+      </div>
+      <span>Ver Pedido en mi Perfil</span>
+      <div className="w-8 h-8 rounded-full bg-white dark:bg-[#18181b] text-[#18181b] dark:text-white flex items-center justify-center group-hover:translate-x-0.5 transition-transform">
+        <ChevronRight className="w-4 h-4 stroke-[2.5]" />
+      </div>
+    </button>
+
+    <button 
+      onClick={() => {
+        setIsOpen(false);
+        setStep("bag");
+      }}
+      className="w-full py-3.5 px-6 rounded-full bg-black/[0.04] dark:bg-white/5 hover:bg-black/[0.07] dark:hover:bg-white/10 text-gray-800 dark:text-gray-200 border border-black/[0.06] dark:border-white/10 text-xs sm:text-sm font-bold transition-all cursor-pointer"
+    >
+      Seguir Explorando Colecciones
+    </button>
+  </div>
+
+  </div>
+  )}
+
+  </div>
+
+  </motion.div>
+
+  {/* ======================================================================= */}
+  {/* PAYPHONE ECUADOR SIMULATION MODAL (Modo Preparación / RUC en trámite) */}
+  {/* ======================================================================= */}
+  {isPayPhoneSimOpen && payphoneSimData && (
+    <div className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md animate-fade-in font-sans">
+      <div className="w-full max-w-lg bg-white/95 dark:bg-[#18181b]/95 backdrop-blur-2xl rounded-[2.5rem] p-6 sm:p-8 shadow-[0_24px_60px_rgba(0,0,0,0.25)] border border-black/[0.08] dark:border-white/10 space-y-5 animate-scale-up">
+        
+        {/* Modal Header */}
+        <div className="flex items-center justify-between pb-4 border-b border-black/[0.06] dark:border-white/5">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-full bg-black/5 dark:bg-white/10 flex items-center justify-center border border-black/[0.06] dark:border-white/10">
+              <PayPhoneIcon className="w-6 h-6 text-[#FF5E00]" />
+            </div>
+            <div>
+              <h3 className="font-extrabold text-base text-gray-900 dark:text-gray-100 flex items-center gap-2">
+                PayPhone Ecuador <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-500/20">Modo Pruebas</span>
+              </h3>
+              <p className="text-[11px] text-gray-400">Ambiente de Simulación SRI / RUC en trámite</p>
             </div>
           </div>
-        )}
+
+          <button
+            type="button"
+            onClick={() => setIsPayPhoneSimOpen(false)}
+            className="w-9 h-9 rounded-full bg-black/5 dark:bg-white/10 hover:bg-black/10 dark:hover:bg-white/15 text-gray-500 dark:text-gray-300 flex items-center justify-center transition-colors cursor-pointer"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+
+        {/* Order Overview inside Modal */}
+        <div className="p-4 rounded-2xl bg-black/[0.02] dark:bg-white/[0.03] border border-black/[0.06] dark:border-white/10 space-y-2 text-xs">
+          <div className="flex justify-between font-semibold items-baseline">
+            <span className="text-gray-500 dark:text-gray-400">Total a Autorizar:</span>
+            <span className="text-xl font-black text-gray-900 dark:text-white">${Number(payphoneSimData.total).toFixed(2)} USD</span>
+          </div>
+          <div className="flex justify-between text-gray-600 dark:text-gray-300">
+            <span className="text-gray-400">Pedido ID:</span>
+            <span className="font-mono font-bold">{payphoneSimData.orderId}</span>
+          </div>
+          <div className="flex justify-between text-gray-600 dark:text-gray-300">
+            <span className="text-gray-400">Tx ID (PayPhone):</span>
+            <span className="font-mono text-[10px]">{payphoneSimData.clientTransactionId}</span>
+          </div>
+          <div className="flex justify-between text-gray-600 dark:text-gray-300">
+            <span className="text-gray-400">Cliente / Correo:</span>
+            <span>{payphoneSimData.customerEmail}</span>
+          </div>
+          {payphoneSimData.shippingAddr?.idNumber && (
+            <div className="flex justify-between text-gray-600 dark:text-gray-300">
+              <span className="text-gray-400">Cédula / RUC Comprador:</span>
+              <span className="font-mono font-bold">{payphoneSimData.shippingAddr.idNumber}</span>
+            </div>
+          )}
+        </div>
+
+        {/* Status Notice */}
+        <div className="p-3.5 rounded-2xl bg-black/[0.02] dark:bg-white/[0.02] border border-black/[0.05] dark:border-white/5 text-[11px] text-gray-600 dark:text-gray-400 space-y-1.5 leading-relaxed">
+          <div className="flex items-center gap-1.5 font-bold text-gray-900 dark:text-gray-200">
+            <ShieldCheck className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+            <span>Arquitectura de Pagos Completada al 100%</span>
+          </div>
+          <p>
+            Tu tienda ya tiene listos los endpoints de cobro, el recálculo zero-trust de montos y el despacho automático de facturas. Como el RUC ante el SRI está en trámite, puedes simular la autorización bancaria con 1 clic para validar todo el flujo de pedidos.
+          </p>
+        </div>
+
+        {/* Simulated Card Badges */}
+        <div className="flex items-center justify-between px-3.5 py-2.5 rounded-2xl bg-black/[0.03] dark:bg-[#2c2c2e] text-[11px]">
+          <span className="text-gray-500 font-medium">Tarjeta de Prueba:</span>
+          <span className="font-mono font-bold text-gray-800 dark:text-gray-200 flex items-center gap-1.5">
+            <VisaLogo className="h-2.5" fill="#1A1F71" /> VISA •••• 4242
+          </span>
+        </div>
+
+        {/* Actions */}
+        <div className="pt-2 space-y-2.5">
+          <button
+            type="button"
+            onClick={handleApprovePayPhoneSimulation}
+            disabled={isSimulatingApproval}
+            className="w-full h-13 rounded-full bg-[#18181b] dark:bg-white text-white dark:text-[#18181b] font-bold text-sm shadow-md flex items-center justify-center gap-2.5 transition-all disabled:opacity-60 cursor-pointer active:scale-[0.99] hover:opacity-95"
+          >
+            {isSimulatingApproval ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                <span>Autorizando transacción...</span>
+              </>
+            ) : (
+              <>
+                <CheckCircle2 className="w-4 h-4" />
+                <span>Simular Pago Aprobado (${Number(payphoneSimData.total).toFixed(2)})</span>
+              </>
+            )}
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setIsPayPhoneSimOpen(false)}
+            disabled={isSimulatingApproval}
+            className="w-full py-2.5 rounded-full text-xs font-semibold text-gray-500 hover:text-gray-800 dark:hover:text-gray-200 transition-colors cursor-pointer"
+          >
+            Cancelar
+          </button>
+        </div>
+
+      </div>
+    </div>
+  )}
 
       </div>
     )}
