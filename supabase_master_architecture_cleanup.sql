@@ -72,11 +72,23 @@ CREATE TABLE IF NOT EXISTS public.categories (
   created_at timestamp with time zone DEFAULT now()
 );
 
+-- Asegurar todas las columnas de categories si la tabla ya existía
+ALTER TABLE public.categories ADD COLUMN IF NOT EXISTS name text;
+ALTER TABLE public.categories ADD COLUMN IF NOT EXISTS slug text;
 ALTER TABLE public.categories ADD COLUMN IF NOT EXISTS subtitle text;
 ALTER TABLE public.categories ADD COLUMN IF NOT EXISTS image_url text;
 ALTER TABLE public.categories ADD COLUMN IF NOT EXISTS default_price_label text DEFAULT 'desde $29';
 ALTER TABLE public.categories ADD COLUMN IF NOT EXISTS display_order integer DEFAULT 0;
 ALTER TABLE public.categories ADD COLUMN IF NOT EXISTS is_active boolean DEFAULT true;
+ALTER TABLE public.categories ADD COLUMN IF NOT EXISTS created_at timestamp with time zone DEFAULT now();
+
+-- Si existen categorías sin slug, poblarlas automáticamente con base en el nombre
+UPDATE public.categories 
+SET slug = LOWER(REGEXP_REPLACE(name, '[^a-zA-Z0-9]+', '-', 'g'))
+WHERE slug IS NULL OR slug = '';
+
+-- Crear índice único sobre slug si no existe
+CREATE UNIQUE INDEX IF NOT EXISTS idx_categories_slug_uniq ON public.categories (slug);
 
 -- 2. TABLA DEDICADA: NICHOS DE ACCESO RÁPIDO DEL HEADER (public.header_niche_slots)
 CREATE TABLE IF NOT EXISTS public.header_niche_slots (
@@ -87,6 +99,11 @@ CREATE TABLE IF NOT EXISTS public.header_niche_slots (
   updated_at timestamp with time zone DEFAULT now()
 );
 
+ALTER TABLE public.header_niche_slots ADD COLUMN IF NOT EXISTS label text;
+ALTER TABLE public.header_niche_slots ADD COLUMN IF NOT EXISTS icon_name text;
+ALTER TABLE public.header_niche_slots ADD COLUMN IF NOT EXISTS category text;
+ALTER TABLE public.header_niche_slots ADD COLUMN IF NOT EXISTS updated_at timestamp with time zone DEFAULT now();
+
 -- 3. TABLA DEDICADA: BADGES DE MARKETING (public.store_badges)
 CREATE TABLE IF NOT EXISTS public.store_badges (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -95,6 +112,11 @@ CREATE TABLE IF NOT EXISTS public.store_badges (
   is_preset boolean DEFAULT false,
   created_at timestamp with time zone DEFAULT now()
 );
+
+ALTER TABLE public.store_badges ADD COLUMN IF NOT EXISTS name text;
+ALTER TABLE public.store_badges ADD COLUMN IF NOT EXISTS color_hex text;
+ALTER TABLE public.store_badges ADD COLUMN IF NOT EXISTS is_preset boolean DEFAULT false;
+ALTER TABLE public.store_badges ADD COLUMN IF NOT EXISTS created_at timestamp with time zone DEFAULT now();
 
 -- 4. TABLA DEDICADA: CUPONES & PROMOCIONES (public.coupons)
 CREATE TABLE IF NOT EXISTS public.coupons (
@@ -111,6 +133,17 @@ CREATE TABLE IF NOT EXISTS public.coupons (
   created_at timestamp with time zone DEFAULT now()
 );
 
+ALTER TABLE public.coupons ADD COLUMN IF NOT EXISTS code text;
+ALTER TABLE public.coupons ADD COLUMN IF NOT EXISTS discount_percent numeric DEFAULT 0;
+ALTER TABLE public.coupons ADD COLUMN IF NOT EXISTS discount_amount numeric DEFAULT 0;
+ALTER TABLE public.coupons ADD COLUMN IF NOT EXISTS is_free_shipping boolean DEFAULT false;
+ALTER TABLE public.coupons ADD COLUMN IF NOT EXISTS min_subtotal numeric DEFAULT 0;
+ALTER TABLE public.coupons ADD COLUMN IF NOT EXISTS max_uses integer;
+ALTER TABLE public.coupons ADD COLUMN IF NOT EXISTS times_used integer DEFAULT 0;
+ALTER TABLE public.coupons ADD COLUMN IF NOT EXISTS is_active boolean DEFAULT true;
+ALTER TABLE public.coupons ADD COLUMN IF NOT EXISTS valid_until timestamp with time zone;
+ALTER TABLE public.coupons ADD COLUMN IF NOT EXISTS created_at timestamp with time zone DEFAULT now();
+
 -- 5. TABLA DEDICADA: PROPUESTAS DE VALOR / TRUST BADGES (public.store_trust_badges)
 CREATE TABLE IF NOT EXISTS public.store_trust_badges (
   id text PRIMARY KEY, -- 'shipping', 'warranty', 'returns', 'financing', 'security'
@@ -121,6 +154,13 @@ CREATE TABLE IF NOT EXISTS public.store_trust_badges (
   is_active boolean DEFAULT true,
   created_at timestamp with time zone DEFAULT now()
 );
+
+ALTER TABLE public.store_trust_badges ADD COLUMN IF NOT EXISTS icon_name text;
+ALTER TABLE public.store_trust_badges ADD COLUMN IF NOT EXISTS title text;
+ALTER TABLE public.store_trust_badges ADD COLUMN IF NOT EXISTS subtitle text;
+ALTER TABLE public.store_trust_badges ADD COLUMN IF NOT EXISTS display_order integer DEFAULT 0;
+ALTER TABLE public.store_trust_badges ADD COLUMN IF NOT EXISTS is_active boolean DEFAULT true;
+ALTER TABLE public.store_trust_badges ADD COLUMN IF NOT EXISTS created_at timestamp with time zone DEFAULT now();
 
 -- 6. TABLA DEDICADA: CATÁLOGO DE PRODUCTOS (public.products)
 CREATE TABLE IF NOT EXISTS public.products (
@@ -209,7 +249,22 @@ CREATE TABLE IF NOT EXISTS public.orders (
   updated_at timestamp with time zone DEFAULT now()
 );
 
+ALTER TABLE public.orders ADD COLUMN IF NOT EXISTS user_id text;
+ALTER TABLE public.orders ADD COLUMN IF NOT EXISTS status text NOT NULL DEFAULT 'Procesando';
+ALTER TABLE public.orders ADD COLUMN IF NOT EXISTS total numeric NOT NULL DEFAULT 0;
+ALTER TABLE public.orders ADD COLUMN IF NOT EXISTS items jsonb NOT NULL DEFAULT '[]'::jsonb;
+ALTER TABLE public.orders ADD COLUMN IF NOT EXISTS tracking_number text;
+ALTER TABLE public.orders ADD COLUMN IF NOT EXISTS customer_name text;
+ALTER TABLE public.orders ADD COLUMN IF NOT EXISTS customer_email text;
+ALTER TABLE public.orders ADD COLUMN IF NOT EXISTS customer_id_number text;
+ALTER TABLE public.orders ADD COLUMN IF NOT EXISTS customer_phone text;
+ALTER TABLE public.orders ADD COLUMN IF NOT EXISTS recipient text;
+ALTER TABLE public.orders ADD COLUMN IF NOT EXISTS shipping_address jsonb;
+ALTER TABLE public.orders ADD COLUMN IF NOT EXISTS payment_method text;
 ALTER TABLE public.orders ADD COLUMN IF NOT EXISTS payment_gateway_ref text;
+ALTER TABLE public.orders ADD COLUMN IF NOT EXISTS deferred boolean DEFAULT false;
+ALTER TABLE public.orders ADD COLUMN IF NOT EXISTS deferred_code text;
+ALTER TABLE public.orders ADD COLUMN IF NOT EXISTS deferred_message text;
 ALTER TABLE public.orders ADD COLUMN IF NOT EXISTS updated_at timestamp with time zone DEFAULT now();
 
 -- 8. TABLA DEDICADA: CARRITO PERSISTENTE DE USUARIO (public.user_carts)
@@ -221,6 +276,12 @@ CREATE TABLE IF NOT EXISTS public.user_carts (
   is_free_shipping boolean DEFAULT false,
   updated_at timestamp with time zone DEFAULT now()
 );
+
+ALTER TABLE public.user_carts ADD COLUMN IF NOT EXISTS items jsonb NOT NULL DEFAULT '[]'::jsonb;
+ALTER TABLE public.user_carts ADD COLUMN IF NOT EXISTS coupon_code text;
+ALTER TABLE public.user_carts ADD COLUMN IF NOT EXISTS discount_percent numeric DEFAULT 0;
+ALTER TABLE public.user_carts ADD COLUMN IF NOT EXISTS is_free_shipping boolean DEFAULT false;
+ALTER TABLE public.user_carts ADD COLUMN IF NOT EXISTS updated_at timestamp with time zone DEFAULT now();
 
 -- 9. TABLA DEDICADA: LIBRETA DE DIRECCIONES (public.addresses)
 CREATE TABLE IF NOT EXISTS public.addresses (
@@ -240,6 +301,16 @@ CREATE TABLE IF NOT EXISTS public.addresses (
   updated_at timestamp with time zone DEFAULT now()
 );
 
+ALTER TABLE public.addresses ADD COLUMN IF NOT EXISTS recipient text;
+ALTER TABLE public.addresses ADD COLUMN IF NOT EXISTS id_number text;
+ALTER TABLE public.addresses ADD COLUMN IF NOT EXISTS phone text;
+ALTER TABLE public.addresses ADD COLUMN IF NOT EXISTS email text;
+ALTER TABLE public.addresses ADD COLUMN IF NOT EXISTS street text;
+ALTER TABLE public.addresses ADD COLUMN IF NOT EXISTS city text;
+ALTER TABLE public.addresses ADD COLUMN IF NOT EXISTS state text;
+ALTER TABLE public.addresses ADD COLUMN IF NOT EXISTS postal_code text;
+ALTER TABLE public.addresses ADD COLUMN IF NOT EXISTS country text DEFAULT 'Ecuador';
+ALTER TABLE public.addresses ADD COLUMN IF NOT EXISTS is_default boolean DEFAULT false;
 ALTER TABLE public.addresses ADD COLUMN IF NOT EXISTS updated_at timestamp with time zone DEFAULT now();
 
 -- 10. TABLA DEDICADA: TARJETAS DE PAGO TOKENIZADAS (public.payment_cards)
@@ -253,6 +324,14 @@ CREATE TABLE IF NOT EXISTS public.payment_cards (
   is_default boolean DEFAULT false,
   created_at timestamp with time zone DEFAULT now()
 );
+
+ALTER TABLE public.payment_cards ADD COLUMN IF NOT EXISTS user_id text;
+ALTER TABLE public.payment_cards ADD COLUMN IF NOT EXISTS number text;
+ALTER TABLE public.payment_cards ADD COLUMN IF NOT EXISTS holder text;
+ALTER TABLE public.payment_cards ADD COLUMN IF NOT EXISTS exp text;
+ALTER TABLE public.payment_cards ADD COLUMN IF NOT EXISTS type text DEFAULT 'visa';
+ALTER TABLE public.payment_cards ADD COLUMN IF NOT EXISTS is_default boolean DEFAULT false;
+ALTER TABLE public.payment_cards ADD COLUMN IF NOT EXISTS created_at timestamp with time zone DEFAULT now();
 
 -- 11. TABLA DEDICADA: FAVORITOS / WISHLIST (public.favorites)
 CREATE TABLE IF NOT EXISTS public.favorites (
@@ -273,8 +352,12 @@ CREATE TABLE IF NOT EXISTS public.user_profiles (
   updated_at timestamp with time zone DEFAULT now()
 );
 
-ALTER TABLE public.user_profiles ADD COLUMN IF NOT EXISTS created_at timestamp with time zone DEFAULT now();
+ALTER TABLE public.user_profiles ADD COLUMN IF NOT EXISTS display_name text;
 ALTER TABLE public.user_profiles ADD COLUMN IF NOT EXISTS email text;
+ALTER TABLE public.user_profiles ADD COLUMN IF NOT EXISTS phone text;
+ALTER TABLE public.user_profiles ADD COLUMN IF NOT EXISTS avatar_url text;
+ALTER TABLE public.user_profiles ADD COLUMN IF NOT EXISTS created_at timestamp with time zone DEFAULT now();
+ALTER TABLE public.user_profiles ADD COLUMN IF NOT EXISTS updated_at timestamp with time zone DEFAULT now();
 
 -- 13. TABLA DEDICADA: AJUSTES DE AVATAR BLOBATAR (public.user_avatar_settings)
 CREATE TABLE IF NOT EXISTS public.user_avatar_settings (
@@ -287,6 +370,14 @@ CREATE TABLE IF NOT EXISTS public.user_avatar_settings (
   created_at timestamp with time zone DEFAULT now(),
   updated_at timestamp with time zone DEFAULT now()
 );
+
+ALTER TABLE public.user_avatar_settings ADD COLUMN IF NOT EXISTS user_email text;
+ALTER TABLE public.user_avatar_settings ADD COLUMN IF NOT EXISTS show_in_navbar boolean NOT NULL DEFAULT false;
+ALTER TABLE public.user_avatar_settings ADD COLUMN IF NOT EXISTS background_shape text NOT NULL DEFAULT 'squircle';
+ALTER TABLE public.user_avatar_settings ADD COLUMN IF NOT EXISTS animation_mode text NOT NULL DEFAULT 'always';
+ALTER TABLE public.user_avatar_settings ADD COLUMN IF NOT EXISTS custom_seed text;
+ALTER TABLE public.user_avatar_settings ADD COLUMN IF NOT EXISTS created_at timestamp with time zone DEFAULT now();
+ALTER TABLE public.user_avatar_settings ADD COLUMN IF NOT EXISTS updated_at timestamp with time zone DEFAULT now();
 
 -- 14. TABLA DEDICADA: ADMINISTRADORES INVITADOS (public.admin_invitations)
 CREATE TABLE IF NOT EXISTS public.admin_invitations (
@@ -633,8 +724,12 @@ VALUES
   ('Cerámica', 'ceramica', 'Vajilla de autor', 'https://images.unsplash.com/photo-1610701596007-11502861dcfa?q=80&w=800&auto=format&fit=crop', 'desde $25', 7),
   ('Decoración', 'decoracion', 'Esculturas & jarrones', 'https://images.unsplash.com/photo-1513519245088-0e12902e5a38?q=80&w=800&auto=format&fit=crop', 'desde $45', 8),
   ('Cocina', 'cocina', 'Ritual barista', 'https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?q=80&w=800&auto=format&fit=crop', 'desde $29', 9),
-  ('Bienestar', 'bienestar', 'Calma & descanso', 'https://images.unsplash.com/photo-1540555700478-4be289fbecef?q=80&w=800&auto=format&fit=crop', 'desde $35', 10)
-ON CONFLICT (slug) DO NOTHING;
+ON CONFLICT (name) DO UPDATE SET 
+  slug = EXCLUDED.slug,
+  subtitle = EXCLUDED.subtitle,
+  image_url = EXCLUDED.image_url,
+  default_price_label = EXCLUDED.default_price_label,
+  display_order = EXCLUDED.display_order;
 
 -- 7.2 Semillas de Slots de Navegación del Header
 INSERT INTO public.header_niche_slots (slot_id, label, icon_name, category)
