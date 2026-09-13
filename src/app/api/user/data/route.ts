@@ -67,11 +67,28 @@ export async function GET(request: Request) {
 
     // 1. Fetch addresses from public.addresses
     try {
-      const { data: dbAddrs, error: addrErr } = await supabase
+      let { data: dbAddrs, error: addrErr } = await supabase
         .from('addresses')
         .select('*')
         .eq('user_id', targetUserId)
-        .order('created_at', { ascending: false });
+        .order('updated_at', { ascending: false });
+
+      if (addrErr && addrErr.message?.includes('addresses.updated_at does not exist')) {
+        const alt = await supabase
+          .from('addresses')
+          .select('*')
+          .eq('user_id', targetUserId)
+          .order('created_at', { ascending: false });
+        dbAddrs = alt.data;
+        addrErr = alt.error;
+      } else if (addrErr) {
+        const fallback = await supabase
+          .from('addresses')
+          .select('*')
+          .eq('user_id', targetUserId);
+        dbAddrs = fallback.data;
+        addrErr = fallback.error;
+      }
 
       if (!addrErr && dbAddrs && dbAddrs.length > 0) {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -95,11 +112,20 @@ export async function GET(request: Request) {
 
     // 2. Fetch cards from public.payment_cards
     try {
-      const { data: dbCards, error: cardErr } = await supabase
+      let { data: dbCards, error: cardErr } = await supabase
         .from('payment_cards')
         .select('*')
         .eq('user_id', targetUserId)
         .order('created_at', { ascending: false });
+
+      if (cardErr) {
+        const fallback = await supabase
+          .from('payment_cards')
+          .select('*')
+          .eq('user_id', targetUserId);
+        dbCards = fallback.data;
+        cardErr = fallback.error;
+      }
 
       if (!cardErr && dbCards && dbCards.length > 0) {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -208,28 +234,41 @@ export async function POST(request: Request) {
     if (action === 'save_addresses' || action === 'sync_all') {
       if (Array.isArray(body.addresses)) {
         const addresses: ShippingAddress[] = body.addresses;
-        try {
-          await supabase.from('addresses').delete().eq('user_id', targetUserId);
-          if (addresses.length > 0) {
-            const rows = addresses.map(a => ({
-              id: a.id,
-              user_id: targetUserId,
-              recipient: a.recipient || 'Destinatario',
-              id_number: a.idNumber || null,
-              phone: a.phone || null,
-              email: a.email || null,
-              street: a.street || '',
-              city: a.city || '',
-              state: a.state || '',
-              postal_code: a.postalCode || '',
-              country: a.country || 'Ecuador',
-              is_default: !!a.isDefault,
-            }));
-            const { error: insErr } = await supabase.from('addresses').insert(rows);
-            if (insErr) console.warn('Warning inserting addresses:', insErr.message);
+        // CRITICAL PROTECTION: On sync_all, never wipe out cloud addresses if guest array is empty!
+        if (action === 'sync_all' && addresses.length === 0) {
+          // Keep existing cloud addresses untouched
+        } else {
+          try {
+            await supabase.from('addresses').delete().eq('user_id', targetUserId);
+            if (addresses.length > 0) {
+              const rows = addresses.map(a => ({
+                id: a.id && UUID_REGEX.test(a.id) ? a.id : crypto.randomUUID(),
+                user_id: targetUserId,
+                recipient: a.recipient || 'Destinatario',
+                id_number: a.idNumber || null,
+                phone: a.phone || null,
+                email: a.email || null,
+                street: a.street || '',
+                city: a.city || '',
+                state: a.state || '',
+                postal_code: a.postalCode || '',
+                country: a.country || 'Ecuador',
+                is_default: !!a.isDefault,
+                updated_at: new Date().toISOString(),
+              }));
+              const { error: insErr } = await supabase.from('addresses').insert(rows);
+              if (insErr) {
+                console.warn('Warning inserting addresses:', insErr.message);
+                // Fallback if unique constraint addresses_user_id_key is still active in DB
+                if (insErr.message?.includes('addresses_user_id_key') && rows.length > 0) {
+                  const defaultRow = rows.find(r => r.is_default) || rows[0];
+                  await supabase.from('addresses').insert([defaultRow]);
+                }
+              }
+            }
+          } catch (err) {
+            console.error('Error saving to addresses table:', err);
           }
-        } catch (err) {
-          console.error('Error saving to addresses table:', err);
         }
       }
     }
@@ -238,23 +277,28 @@ export async function POST(request: Request) {
     if (action === 'save_cards' || action === 'sync_all') {
       if (Array.isArray(body.cards)) {
         const cards: PaymentCard[] = body.cards;
-        try {
-          await supabase.from('payment_cards').delete().eq('user_id', targetUserId);
-          if (cards.length > 0) {
-            const rows = cards.map(c => ({
-              id: c.id,
-              user_id: targetUserId,
-              number: c.number,
-              holder: c.holder,
-              exp: c.exp,
-              type: c.type || 'mastercard',
-              is_default: !!c.isDefault,
-            }));
-            const { error: insErr } = await supabase.from('payment_cards').insert(rows);
-            if (insErr) console.warn('Warning inserting payment_cards:', insErr.message);
+        // CRITICAL PROTECTION: On sync_all, never wipe out cloud cards if guest array is empty!
+        if (action === 'sync_all' && cards.length === 0) {
+          // Keep existing cloud cards untouched
+        } else {
+          try {
+            await supabase.from('payment_cards').delete().eq('user_id', targetUserId);
+            if (cards.length > 0) {
+              const rows = cards.map(c => ({
+                id: c.id && UUID_REGEX.test(c.id) ? c.id : crypto.randomUUID(),
+                user_id: targetUserId,
+                number: c.number,
+                holder: c.holder,
+                exp: c.exp,
+                type: c.type || 'mastercard',
+                is_default: !!c.isDefault,
+              }));
+              const { error: insErr } = await supabase.from('payment_cards').insert(rows);
+              if (insErr) console.warn('Warning inserting payment_cards:', insErr.message);
+            }
+          } catch (err) {
+            console.error('Error saving to payment_cards table:', err);
           }
-        } catch (err) {
-          console.error('Error saving to payment_cards table:', err);
         }
       }
     }
@@ -263,18 +307,23 @@ export async function POST(request: Request) {
     if (action === 'save_favorites' || action === 'sync_all') {
       if (Array.isArray(body.favorites)) {
         const favorites: string[] = body.favorites.map((f: unknown) => String(f).trim()).filter(Boolean);
-        try {
-          await supabase.from('favorites').delete().eq('user_id', targetUserId);
-          if (favorites.length > 0) {
-            const rows = favorites.map(pid => ({
-              user_id: targetUserId,
-              product_id: pid,
-            }));
-            const { error: insErr } = await supabase.from('favorites').insert(rows);
-            if (insErr) console.warn('Warning inserting favorites:', insErr.message);
+        // CRITICAL PROTECTION: On sync_all, never wipe out cloud favorites if guest array is empty!
+        if (action === 'sync_all' && favorites.length === 0) {
+          // Keep existing cloud favorites untouched
+        } else {
+          try {
+            await supabase.from('favorites').delete().eq('user_id', targetUserId);
+            if (favorites.length > 0) {
+              const rows = favorites.map(pid => ({
+                user_id: targetUserId,
+                product_id: pid,
+              }));
+              const { error: insErr } = await supabase.from('favorites').insert(rows);
+              if (insErr) console.warn('Warning inserting favorites:', insErr.message);
+            }
+          } catch (err) {
+            console.error('Error saving to favorites table:', err);
           }
-        } catch (err) {
-          console.error('Error saving to favorites table:', err);
         }
       }
     }

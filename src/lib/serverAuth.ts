@@ -9,41 +9,27 @@ export const supabaseServer = createClient(supabaseUrl, supabaseServiceKey);
 export const MASTER_ADMIN_EMAIL = 'admin@lumina.com';
 
 /**
- * Creates a Supabase client scoped to the incoming request.
- * - If SUPABASE_SERVICE_ROLE_KEY is set in environment, uses it to bypass RLS with superuser permissions.
- * - If not, forwards the user's Bearer token so Supabase PostgREST evaluates RLS with the authentic user session.
- * - Otherwise falls back to supabaseServer.
+ * Obtains an exclusive Supabase Client operating strictly with the master SUPABASE_SERVICE_ROLE_KEY.
+ * Bypasses RLS on the server, ensuring 100% reliable persistence.
+ * Throws a descriptive configuration error if SUPABASE_SERVICE_ROLE_KEY is not defined in environment (Vercel / .env.local).
  */
-export function getScopedSupabaseClient(request?: Request | string | null) {
+export function getServiceSupabaseClient() {
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY?.trim();
-  if (serviceKey && serviceKey !== '') {
-    return createClient(supabaseUrl, serviceKey, {
-      auth: { persistSession: false, autoRefreshToken: false }
-    });
+  if (!serviceKey) {
+    throw new Error('CONFIG_ERROR: SUPABASE_SERVICE_ROLE_KEY no está configurada en las variables de entorno (Vercel / .env.local). El backend opera exclusivamente con clave root.');
   }
+  return createClient(supabaseUrl, serviceKey, {
+    auth: { persistSession: false, autoRefreshToken: false }
+  });
+}
 
-  let token: string | null = null;
-  if (typeof request === 'string') {
-    token = request.replace(/^Bearer\s+/i, '').trim();
-  } else if (request && typeof request === 'object' && 'headers' in request) {
-    const authHeader = request.headers.get('Authorization') || request.headers.get('authorization');
-    if (authHeader) {
-      token = authHeader.replace(/^Bearer\s+/i, '').trim();
-    }
-  }
-
-  if (token) {
-    return createClient(supabaseUrl, supabaseAnonKey, {
-      global: {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      },
-      auth: { persistSession: false, autoRefreshToken: false }
-    });
-  }
-
-  return supabaseServer;
+/**
+ * Creates a Supabase client for server backend operations.
+ * Operates exclusively with SUPABASE_SERVICE_ROLE_KEY.
+ */
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+export function getScopedSupabaseClient(_request?: Request | string | null) {
+  return getServiceSupabaseClient();
 }
 
 /**

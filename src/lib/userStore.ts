@@ -389,13 +389,13 @@ export async function syncAddressesToCloud(
     return;
   }
 
-  // 1. Post to unified database API route with JWT token
+  // Exclusive Root persistence: Dispatch to server API route with authentic session Bearer token
   try {
     const { data: { session } } = await supabase.auth.getSession();
     const headers: Record<string, string> = { 'Content-Type': 'application/json' };
     if (session?.access_token) headers['Authorization'] = `Bearer ${session.access_token}`;
 
-    await fetch('/api/user/data', {
+    const res = await fetch('/api/user/data', {
       method: 'POST',
       headers,
       body: JSON.stringify({
@@ -405,30 +405,11 @@ export async function syncAddressesToCloud(
         activeAddress
       })
     });
-  } catch {}
-
-  // 2. Direct database persistence using authenticated Supabase client
-  try {
-    await supabase.from('addresses').delete().eq('user_id', userId);
-    if (addresses.length > 0) {
-      const rows = addresses.map(a => ({
-        id: a.id,
-        user_id: userId,
-        recipient: a.recipient || 'Destinatario',
-        id_number: a.idNumber || null,
-        phone: a.phone || null,
-        email: a.email || null,
-        street: a.street || '',
-        city: a.city || '',
-        state: a.state || '',
-        postal_code: a.postalCode || '',
-        country: a.country || 'Ecuador',
-        is_default: !!a.isDefault,
-      }));
-      await supabase.from('addresses').insert(rows);
+    if (!res.ok) {
+      console.warn('[userStore] Server root sync status:', res.status);
     }
   } catch (err) {
-    console.warn('[userStore] Direct address DB sync notice:', err);
+    console.warn('[userStore] Error syncing addresses to root backend:', err);
   }
 }
 
@@ -438,12 +419,13 @@ export async function syncCardsToCloud(userId: string | null | undefined, cards:
     return;
   }
 
+  // Exclusive Root persistence: Dispatch to server API route with authentic session Bearer token
   try {
     const { data: { session } } = await supabase.auth.getSession();
     const headers: Record<string, string> = { 'Content-Type': 'application/json' };
     if (session?.access_token) headers['Authorization'] = `Bearer ${session.access_token}`;
 
-    await fetch('/api/user/data', {
+    const res = await fetch('/api/user/data', {
       method: 'POST',
       headers,
       body: JSON.stringify({
@@ -452,24 +434,11 @@ export async function syncCardsToCloud(userId: string | null | undefined, cards:
         cards
       })
     });
-  } catch {}
-
-  try {
-    await supabase.from('payment_cards').delete().eq('user_id', userId);
-    if (cards.length > 0) {
-      const rows = cards.map(c => ({
-        id: c.id,
-        user_id: userId,
-        number: c.number,
-        holder: c.holder,
-        exp: c.exp,
-        type: c.type || 'mastercard',
-        is_default: !!c.isDefault,
-      }));
-      await supabase.from('payment_cards').insert(rows);
+    if (!res.ok) {
+      console.warn('[userStore] Server root sync status for cards:', res.status);
     }
   } catch (err) {
-    console.warn('[userStore] Direct cards DB sync notice:', err);
+    console.warn('[userStore] Error syncing cards to root backend:', err);
   }
 }
 
@@ -479,12 +448,13 @@ export async function syncFavoritesToCloud(userId: string | null | undefined, fa
     return;
   }
 
+  // Exclusive Root persistence: Dispatch to server API route with authentic session Bearer token
   try {
     const { data: { session } } = await supabase.auth.getSession();
     const headers: Record<string, string> = { 'Content-Type': 'application/json' };
     if (session?.access_token) headers['Authorization'] = `Bearer ${session.access_token}`;
 
-    await fetch('/api/user/data', {
+    const res = await fetch('/api/user/data', {
       method: 'POST',
       headers,
       body: JSON.stringify({
@@ -493,19 +463,11 @@ export async function syncFavoritesToCloud(userId: string | null | undefined, fa
         favorites
       })
     });
-  } catch {}
-
-  try {
-    await supabase.from('favorites').delete().eq('user_id', userId);
-    if (favorites.length > 0) {
-      const rows = favorites.map(pid => ({
-        user_id: userId,
-        product_id: pid,
-      }));
-      await supabase.from('favorites').insert(rows);
+    if (!res.ok) {
+      console.warn('[userStore] Server root sync status for favorites:', res.status);
     }
   } catch (err) {
-    console.warn('[userStore] Direct favorites DB sync notice:', err);
+    console.warn('[userStore] Error syncing favorites to root backend:', err);
   }
 }
 
@@ -557,11 +519,23 @@ const fetchUserDataFromDatabase = async (userId: string, role: 'USER' | 'ADMIN' 
     // Direct Database fallback if API was temporarily unreachable
     if (addresses.length === 0) {
       try {
-        const { data: dbAddrs } = await supabase
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        let dbAddrs: any[] | null = null;
+        const queryRes = await supabase
           .from('addresses')
           .select('*')
           .eq('user_id', userId)
-          .order('created_at', { ascending: false });
+          .order('updated_at', { ascending: false });
+
+        if (!queryRes.error && queryRes.data) {
+          dbAddrs = queryRes.data;
+        } else {
+          const fallback = await supabase
+            .from('addresses')
+            .select('*')
+            .eq('user_id', userId);
+          dbAddrs = fallback.data;
+        }
 
         if (dbAddrs && dbAddrs.length > 0) {
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -942,16 +916,19 @@ export const useUserStore = create<UserState>((set, get) => ({
           const headers: Record<string, string> = { 'Content-Type': 'application/json' };
           if (data.session?.access_token) headers['Authorization'] = `Bearer ${data.session.access_token}`;
 
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const syncPayload: Record<string, any> = {
+            action: 'sync_all',
+            userId: data.user.id,
+          };
+          if (guestAddrs.length > 0) syncPayload.addresses = guestAddrs;
+          if (guestCards.length > 0) syncPayload.cards = guestCards;
+          if (guestFavs.length > 0) syncPayload.favorites = guestFavs;
+
           await fetch('/api/user/data', {
             method: 'POST',
             headers,
-            body: JSON.stringify({
-              action: 'sync_all',
-              userId: data.user.id,
-              addresses: guestAddrs,
-              cards: guestCards,
-              favorites: guestFavs,
-            })
+            body: JSON.stringify(syncPayload)
           });
         } catch {}
         clearGuestStorage();
