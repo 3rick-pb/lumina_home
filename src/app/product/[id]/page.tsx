@@ -13,9 +13,10 @@ import { useAmbientStore } from "@/lib/ambientStore";
 import { ProductLandingView } from "@/components/product/ProductLandingView";
 import { ProductBundleSection } from "@/components/product/ProductBundleSection";
 
-export default function ProductDetail({ params }: { params: { id: string } }) {
+export default function ProductDetail({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = React.use(params);
   const { products } = useCatalogStore();
-  const product = products.find(p => p.id === params.id);
+  const product = products.find(p => p.id === id);
   const { setCategoryTheme, resetTheme } = useAmbientStore();
   
   if (!product) {

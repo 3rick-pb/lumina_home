@@ -2,12 +2,13 @@ import type { Metadata } from "next";
 import { PRODUCTS } from "@/lib/data";
 
 type Props = {
-  params: { id: string };
+  params: Promise<{ id: string }>;
   children: React.ReactNode;
 };
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const product = PRODUCTS.find((p) => p.id === params.id);
+  const resolvedParams = await params;
+  const product = PRODUCTS.find((p) => p.id === resolvedParams.id);
 
   if (!product) {
     return {

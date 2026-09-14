@@ -8,9 +8,10 @@ import { EmptyState } from "@/components/ui/EmptyState";
 import { useCatalogStore } from "@/lib/catalogStore";
 import { normalizeSearchText as normalizeText } from "@/lib/utils";
 
-export default function ShopPage({ searchParams }: { searchParams: { category?: string, search?: string } }) {
-  const categoryFilter = searchParams.category;
-  const searchQuery = searchParams.search;
+export default function ShopPage({ searchParams }: { searchParams: Promise<{ category?: string, search?: string }> }) {
+  const resolvedSearchParams = React.use(searchParams);
+  const categoryFilter = resolvedSearchParams.category;
+  const searchQuery = resolvedSearchParams.search;
   const { products, categories } = useCatalogStore();
 
   useEffect(() => {

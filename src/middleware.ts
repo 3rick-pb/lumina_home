@@ -12,6 +12,21 @@ export function middleware() {
   response.headers.set('Strict-Transport-Security', 'max-age=63072000; includeSubDomains; preload');
   response.headers.set('Cross-Origin-Opener-Policy', 'same-origin');
 
+  // Content Security Policy (CSP)
+  const cspDirectives = [
+    "default-src 'self'",
+    "script-src 'self' 'unsafe-eval' 'unsafe-inline' https://cdn.jsdelivr.net https://pay.payphone.com.ec",
+    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+    "img-src 'self' data: blob: https:",
+    "font-src 'self' https://fonts.gstatic.com data:",
+    "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://freeipapi.com https://ipwho.is https://nominatim.openstreetmap.org https://pay.payphone.com.ec",
+    "frame-src 'self' https://pay.payphone.com.ec",
+    "frame-ancestors 'none'",
+    "base-uri 'self'",
+    "form-action 'self'",
+  ];
+  response.headers.set('Content-Security-Policy', cspDirectives.join('; '));
+
   return response;
 }
 
