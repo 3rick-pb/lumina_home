@@ -2,7 +2,9 @@
 
 import React, { useEffect } from "react";
 import Link from "next/link";
+import { PackageSearch } from "lucide-react";
 import { ProductCard } from "@/components/ui/ProductCard";
+import { EmptyState } from "@/components/ui/EmptyState";
 import { useCatalogStore } from "@/lib/catalogStore";
 import { normalizeSearchText as normalizeText } from "@/lib/utils";
 
@@ -63,10 +65,21 @@ export default function ShopPage({ searchParams }: { searchParams: { category?: 
         </div>
 
         {filteredProducts.length === 0 ? (
-          <div className="text-center py-20">
-            <h2 className="text-2xl font-semibold text-gray-900">No se encontraron productos</h2>
-            <p className="text-gray-500 mt-2">Prueba seleccionando otra categoría.</p>
-          </div>
+          <EmptyState
+            icon={PackageSearch}
+            badge="Catálogo Lumina"
+            title={searchQuery ? `Sin resultados para "${searchQuery}"` : "No encontramos productos en esta colección"}
+            description={
+              searchQuery
+                ? "No existen artículos que coincidan exactamente con tu búsqueda. Prueba con otro término o restablece los filtros para ver todas las piezas."
+                : "Actualmente no hay artículos disponibles en la categoría seleccionada. Explora nuestras otras colecciones o revisa nuestro catálogo completo."
+            }
+            actionLabel="Ver Todo el Catálogo"
+            actionHref="/shop"
+            secondaryActionLabel={categoryFilter || searchQuery ? "Limpiar Filtros" : undefined}
+            secondaryActionHref={categoryFilter || searchQuery ? "/shop" : undefined}
+            className="my-10"
+          />
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
             {filteredProducts.map((product) => (
