@@ -1,4 +1,4 @@
-﻿-- ==============================================================================
+-- ==============================================================================
 -- LUMINA HOME — REPARACIÓN DEFINITIVA DE TABLA ADDRESSES (UBICACIONES)
 -- Ejecutar en: Supabase Dashboard > SQL Editor > New query > Run
 -- ==============================================================================
@@ -29,17 +29,20 @@ CREATE INDEX IF NOT EXISTS idx_addresses_user_id ON public.addresses (user_id);
 -- 5. Asegurar políticas RLS para lectura y escritura administrativa y de usuario
 ALTER TABLE public.addresses ENABLE ROW LEVEL SECURITY;
 
-DROP POLICY IF EXISTS Users manage own addresses ON public.addresses;
-CREATE POLICY Users manage own addresses ON public.addresses
+DROP POLICY IF EXISTS "Public addresses policy" ON public.addresses;
+DROP POLICY IF EXISTS "Users can manage their own addresses" ON public.addresses;
+DROP POLICY IF EXISTS "Users manage own addresses" ON public.addresses;
+
+CREATE POLICY "Users manage own addresses" ON public.addresses
   FOR ALL USING (
     (auth.uid() IS NOT NULL AND auth.uid()::text = user_id::text)
-    OR public.is_admin()
     OR auth.role() = 'service_role'
+    OR (auth.jwt() ->> 'email' = 'admin@lumina.com')
   )
   WITH CHECK (
     (auth.uid() IS NOT NULL AND auth.uid()::text = user_id::text)
-    OR public.is_admin()
     OR auth.role() = 'service_role'
+    OR (auth.jwt() ->> 'email' = 'admin@lumina.com')
   );
 
 -- 6. Recargar la caché del esquema en el motor PostgREST de Supabase
