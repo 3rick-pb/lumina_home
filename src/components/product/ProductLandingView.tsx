@@ -60,8 +60,9 @@ export function ProductLandingView({
   setActiveSize,
   handleAddToCart,
   isAdding,
-  isAgotado,
+  isAgotado: isAgotadoProp,
 }: ProductLandingViewProps) {
+  const isAgotado = isAgotadoProp || (product.stock !== undefined && product.stock <= 0);
   const { addItem, addBundle } = useCartStore();
   const { toggleFavorite, isFavorite } = useUserStore();
   const isFav = isFavorite(product.id);
@@ -450,6 +451,39 @@ export function ProductLandingView({
               ) : null}
             </div>
 
+            {/* Disponibilidad en Stock */}
+            <div className="flex flex-col gap-2 pt-1 pb-1">
+              <div className="flex flex-wrap items-center gap-2">
+                {product.stock !== undefined && product.stock <= 5 && product.stock > 0 ? (
+                  <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold bg-amber-50 dark:bg-amber-950/40 text-amber-900 dark:text-amber-300 border border-amber-300/80 dark:border-amber-700/50 shadow-xs">
+                    <span className="relative flex h-2 w-2">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75" />
+                      <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-500" />
+                    </span>
+                    ¡Solo quedan {product.stock} unidades en inventario!
+                  </span>
+                ) : isAgotado ? (
+                  <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold bg-red-50 dark:bg-red-950/40 text-red-700 dark:text-red-400 border border-red-200 dark:border-red-900/50 shadow-xs">
+                    <span className="w-2 h-2 rounded-full bg-red-500" />
+                    Agotado temporalmente
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-900/50 shadow-xs">
+                    <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                    En stock ({product.stock ?? 18} unidades disponibles) · Envío inmediato
+                  </span>
+                )}
+              </div>
+              {product.stock !== undefined && product.stock > 0 && product.stock <= 5 && (
+                <div className="w-full max-w-xs bg-amber-100 dark:bg-amber-950/50 rounded-full h-1.5 overflow-hidden">
+                  <div
+                    className="bg-amber-500 h-1.5 rounded-full transition-all duration-500"
+                    style={{ width: `${Math.min(100, Math.max(15, (product.stock / 10) * 100))}%` }}
+                  />
+                </div>
+              )}
+            </div>
+
             {/* Description */}
             <p className="text-sm sm:text-base text-gray-600 dark:text-gray-300 leading-relaxed">
               {product.description ||
@@ -541,21 +575,21 @@ export function ProductLandingView({
             {product.colors && product.colors.length > 0 && (
               <div className="space-y-2.5">
                 <label className="text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-gray-300">
-                  Acabado / Color: <span className="font-normal text-gray-500">{product.colors[activeColor]?.name}</span>
+                  Acabado / Color: <span className="font-normal text-gray-500">{product.colors[activeColor]?.name || ''}</span>
                 </label>
                 <div className="flex flex-wrap gap-2.5">
                   {product.colors.map((col, idx) => (
                     <button
                       key={idx}
                       onClick={() => setActiveColor(idx)}
-                      className={`relative flex items-center gap-2 px-3 py-1.5 rounded-full border text-xs font-semibold transition-all ${
+                      className={`relative flex items-center gap-2.5 px-3.5 py-2 rounded-xl border text-xs font-semibold transition-all ${
                         activeColor === idx
-                          ? "border-gray-950 dark:border-white bg-gray-950/5 dark:bg-white/10 text-gray-950 dark:text-white shadow-sm"
+                          ? "border-gray-950 dark:border-white bg-gray-950/5 dark:bg-white/10 text-gray-950 dark:text-white shadow-sm ring-1 ring-gray-950 dark:ring-white"
                           : "border-gray-200 dark:border-white/10 text-gray-600 dark:text-gray-400 hover:border-gray-400"
                       }`}
                     >
                       <span
-                        className="w-3.5 h-3.5 rounded-full border border-black/10 shrink-0"
+                        className="w-4 h-4 rounded-full border border-black/20 shadow-xs shrink-0"
                         style={{ backgroundColor: col.hex }}
                       />
                       <span>{col.name}</span>
@@ -603,8 +637,13 @@ export function ProductLandingView({
                     {quantity}
                   </span>
                   <button
-                    onClick={() => setQuantity((q) => q + 1)}
-                    className="w-9 h-9 flex items-center justify-center rounded-xl text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/10 transition-colors font-bold"
+                    onClick={() => setQuantity((q) => product.stock !== undefined ? Math.min(product.stock, q + 1) : q + 1)}
+                    disabled={product.stock !== undefined && quantity >= product.stock}
+                    className={`w-9 h-9 flex items-center justify-center rounded-xl text-gray-600 dark:text-gray-300 transition-colors font-bold ${
+                      product.stock !== undefined && quantity >= product.stock
+                        ? "opacity-30 cursor-not-allowed"
+                        : "hover:bg-gray-100 dark:hover:bg-white/10"
+                    }`}
                   >
                     +
                   </button>

@@ -15,6 +15,7 @@ import {
   Pencil
 } from "lucide-react";
 import { useCatalogStore, normalizeCategory, CatalogProduct, isAgotadoBadge } from "@/lib/catalogStore";
+import { ColorVariantsManager, ColorVariant } from "@/components/admin/ColorVariantsManager";
 
 export default function AdminPage() {
   const { products, categories, addProduct, updateProduct, deleteProduct, addCategory, deleteCategory } = useCatalogStore();
@@ -44,7 +45,8 @@ export default function AdminPage() {
   const [hasSizes, setHasSizes] = useState(false);
   const [sizes, setSizes] = useState("");
   const [hasColors, setHasColors] = useState(false);
-  const [colors, setColors] = useState("");
+  const [colorVariants, setColorVariants] = useState<ColorVariant[]>([]);
+  const [stock, setStock] = useState("20");
 
   // Recalculate discount whenever prices change
   const handlePriceChange = (newPrice: string, newOldPrice: string, withDiscount: boolean) => {
@@ -81,8 +83,8 @@ export default function AdminPage() {
       ? sizes.split(",").map(s => s.trim()).filter(Boolean)
       : undefined;
 
-    const colorsList = hasColors && colors.trim()
-      ? colors.split(",").map(c => ({ name: c.trim(), hex: "#94a3b8" }))
+    const colorsList = hasColors && colorVariants.length > 0
+      ? colorVariants.filter(c => c.name.trim()).map(c => ({ name: c.name.trim(), hex: c.hex.trim() || "#18181B" }))
       : undefined;
 
     const res = await addProduct({
@@ -99,6 +101,7 @@ export default function AdminPage() {
       features: featuresList,
       sizes: sizesList,
       colors: colorsList,
+      stock: parseInt(stock, 10) || 20,
     });
 
     setIsSubmitting(false);
@@ -121,7 +124,8 @@ export default function AdminPage() {
       setHasSizes(false);
       setSizes("");
       setHasColors(false);
-      setColors("");
+      setColorVariants([]);
+      setStock("20");
     } else {
       setSubmitError(res.error || "Error al registrar el producto");
     }
@@ -145,7 +149,8 @@ export default function AdminPage() {
   const [editHasSizes, setEditHasSizes] = useState(false);
   const [editSizes, setEditSizes] = useState("");
   const [editHasColors, setEditHasColors] = useState(false);
-  const [editColors, setEditColors] = useState("");
+  const [editColorVariants, setEditColorVariants] = useState<ColorVariant[]>([]);
+  const [editStock, setEditStock] = useState("20");
   const [isSubmittingEdit, setIsSubmittingEdit] = useState(false);
   const [editError, setEditError] = useState("");
 
@@ -182,7 +187,8 @@ export default function AdminPage() {
     setEditHasSizes(Boolean(prod.sizes && prod.sizes.length > 0));
     setEditSizes(prod.sizes ? prod.sizes.join(", ") : "");
     setEditHasColors(Boolean(prod.colors && prod.colors.length > 0));
-    setEditColors(prod.colors ? prod.colors.map(c => c.name).join(", ") : "");
+    setEditColorVariants(Array.isArray(prod.colors) ? prod.colors.map(c => ({ name: c.name, hex: c.hex || "#18181B" })) : []);
+    setEditStock(typeof prod.stock === "number" ? prod.stock.toString() : "20");
     setEditError("");
     setShowEditModal(true);
   };
@@ -198,6 +204,10 @@ export default function AdminPage() {
       imagesList.push(...editExtraImages.split(",").map(u => u.trim()).filter(Boolean));
     }
 
+    const colorsList = editHasColors && editColorVariants.length > 0
+      ? editColorVariants.filter(c => c.name.trim()).map(c => ({ name: c.name.trim(), hex: c.hex.trim() || "#18181B" }))
+      : undefined;
+
     const res = await updateProduct(editingProductId, {
       id: editingProductId,
       title: editTitle.trim(),
@@ -212,7 +222,8 @@ export default function AdminPage() {
       description: editDescription.trim(),
       features: editFeatures.trim() ? editFeatures.split("\n").map(f => f.trim()).filter(Boolean) : undefined,
       sizes: editHasSizes && editSizes.trim() ? editSizes.split(",").map(s => s.trim()).filter(Boolean) : undefined,
-      colors: editHasColors && editColors.trim() ? editColors.split(",").map(c => ({ name: c.trim(), hex: "#94a3b8" })) : undefined,
+      colors: colorsList,
+      stock: parseInt(editStock, 10) || 0,
     });
 
     setIsSubmittingEdit(false);
@@ -774,18 +785,25 @@ export default function AdminPage() {
                   <input type="text" value={sizes} onChange={e => setSizes(e.target.value)} className="w-full px-4 py-2 rounded-xl border border-gray-200 text-sm outline-none" placeholder="Ej: Individual (120x150), Queen (160x200) (separadas por coma)" />
                 )}
 
-                <div className="flex items-center justify-between pt-3 border-t border-gray-200">
-                  <div>
-                    <p className="text-sm font-medium text-gray-900">¿Tiene opciones de color?</p>
-                    <p className="text-xs text-gray-500">Permite al comprador elegir tono o acabado</p>
-                  </div>
-                  <button type="button" onClick={() => setHasColors(!hasColors)} className={`w-11 h-6 rounded-full transition-colors relative ${hasColors ? 'bg-gray-900' : 'bg-gray-300'}`}>
-                    <span className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-all ${hasColors ? 'left-6' : 'left-1'}`} />
-                  </button>
+                <div className="pt-3 border-t border-gray-200">
+                  <label className="block text-xs font-semibold text-gray-700 mb-1.5">Stock / Inventario Real *</label>
+                  <input 
+                    type="number" 
+                    min="0"
+                    value={stock} 
+                    onChange={e => setStock(e.target.value)} 
+                    className="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm focus:border-gray-900 outline-none bg-white font-medium" 
+                    placeholder="20" 
+                  />
+                  <p className="text-[11px] text-gray-400 mt-1">Unidades disponibles en almacén. Con cada venta real el contador descontará automáticamente.</p>
                 </div>
-                {hasColors && (
-                  <input type="text" value={colors} onChange={e => setColors(e.target.value)} className="w-full px-4 py-2 rounded-xl border border-gray-200 text-sm outline-none" placeholder="Ej: Blanco Cerámica, Negro Mate, Roble Natural (separados por coma)" />
-                )}
+
+                <ColorVariantsManager
+                  hasColors={hasColors}
+                  onHasColorsChange={setHasColors}
+                  colors={colorVariants}
+                  onChange={setColorVariants}
+                />
               </div>
 
               {/* Modal Actions */}
@@ -1039,16 +1057,24 @@ export default function AdminPage() {
                     />
                   </div>
                   <div>
-                    <label className="block text-xs font-semibold text-gray-700 mb-1.5">Colores (nombres separados por coma)</label>
+                    <label className="block text-xs font-semibold text-gray-700 mb-1.5">Stock / Inventario Real *</label>
                     <input 
-                      type="text" 
-                      value={editColors} 
-                      onChange={e => { setEditColors(e.target.value); setEditHasColors(!!e.target.value.trim()); }} 
+                      type="number" 
+                      min="0"
+                      value={editStock} 
+                      onChange={e => setEditStock(e.target.value)} 
                       className="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm focus:border-gray-900 outline-none" 
-                      placeholder="Ej: Nogal, Roble, Blanco" 
+                      placeholder="20" 
                     />
                   </div>
                 </div>
+
+                <ColorVariantsManager
+                  hasColors={editHasColors}
+                  onHasColorsChange={setEditHasColors}
+                  colors={editColorVariants}
+                  onChange={setEditColorVariants}
+                />
               </div>
 
               {/* Modal Actions */}

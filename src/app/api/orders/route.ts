@@ -169,7 +169,39 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: false, error: error.message }, { status: 500 });
     }
 
-    // Trigger customer invoice and store admin dispatch notice safely
+    // 2. Real inventory deduction in Supabase products table
+    try {
+      if (Array.isArray(newApiOrder.items) && newApiOrder.items.length > 0) {
+        for (const item of newApiOrder.items) {
+          const prodId = item.product?.id;
+          const qty = Math.max(1, Number(item.quantity) || 1);
+          if (prodId) {
+            const { data: currentProd } = await client
+              .from('products')
+              .select('stock, badge')
+              .eq('id', prodId)
+              .maybeSingle();
+
+            if (currentProd) {
+              const currentStock = typeof currentProd.stock === 'number' ? currentProd.stock : 20;
+              const nextStock = Math.max(0, currentStock - qty);
+              const updates: Record<string, unknown> = {
+                stock: nextStock,
+                updated_at: new Date().toISOString(),
+              };
+              if (nextStock === 0) {
+                updates.badge = 'AGOTADO';
+              }
+              await client.from('products').update(updates).eq('id', prodId);
+            }
+          }
+        }
+      }
+    } catch (stockErr) {
+      console.warn('[orders/route] Could not deduct inventory stock:', stockErr);
+    }
+
+    // 3. Trigger customer invoice and store admin dispatch notice safely
     try {
       const adminEmails = await getAllAdminEmails();
       // Await email dispatch so serverless lambda does not freeze before completion

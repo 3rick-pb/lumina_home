@@ -85,6 +85,7 @@ interface CatalogState {
   deleteCategory: (name: string) => Promise<void>;
   addBadge: (name: string) => Promise<void> | void;
   deleteBadge: (name: string) => Promise<void> | void;
+  decrementStockOptimistic: (items: Array<{ productId: string; quantity: number }>) => void;
 }
 
 const DEFAULT_CATEGORIES = [
@@ -354,11 +355,29 @@ const toFrontendProduct = (p: any): CatalogProduct => {
   };
 };
 
+let isProductsRealtimeSubscribed = false;
+
 export const useCatalogStore = create<CatalogState>((set) => ({
   products: [],
   categories: DEFAULT_CATEGORIES,
   badges: DEFAULT_BADGES,
   isLoading: true,
+  
+  decrementStockOptimistic: (items) => {
+    set((state) => ({
+      products: state.products.map((p) => {
+        const itemMatch = items.find((i) => i.productId === p.id);
+        if (!itemMatch) return p;
+        const currentStock = typeof p.stock === 'number' ? p.stock : 20;
+        const newStock = Math.max(0, currentStock - (itemMatch.quantity || 1));
+        return {
+          ...p,
+          stock: newStock,
+          badge: newStock === 0 ? 'AGOTADO' : p.badge,
+        };
+      }),
+    }));
+  },
   
   fetchProducts: async () => {
     set({ isLoading: true });
@@ -418,6 +437,41 @@ export const useCatalogStore = create<CatalogState>((set) => ({
 
     const dbBadges = Array.from(new Set(prods.map(p => p.badge).filter((b): b is string => Boolean(b))));
     const mergedBadges = Array.from(new Set([...initialBadges, ...dbCustomBadges, ...dbBadges]));
+
+    // 5. Initialize Realtime subscription for live inventory sync across all visitors
+    if (typeof window !== 'undefined' && !isProductsRealtimeSubscribed) {
+      isProductsRealtimeSubscribed = true;
+      try {
+        supabase
+          .channel('public_products_live_inventory')
+          .on(
+            'postgres_changes',
+            { event: '*', schema: 'public', table: 'products' },
+            (payload) => {
+              if (payload.eventType === 'UPDATE' && payload.new) {
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                const updated = toFrontendProduct(payload.new as any);
+                set((state) => ({
+                  products: state.products.map((p) => (p.id === updated.id ? updated : p)),
+                }));
+              } else if (payload.eventType === 'INSERT' && payload.new) {
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                const created = toFrontendProduct(payload.new as any);
+                set((state) => ({
+                  products: [created, ...state.products.filter((p) => p.id !== created.id)],
+                }));
+              } else if (payload.eventType === 'DELETE' && payload.old) {
+                set((state) => ({
+                  products: state.products.filter((p) => p.id !== (payload.old as { id: string }).id),
+                }));
+              }
+            }
+          )
+          .subscribe();
+      } catch (rtErr) {
+        console.warn('Could not initialize products realtime channel:', rtErr);
+      }
+    }
 
     set({ products: prods, categories: activeCategories, badges: mergedBadges, isLoading: false });
   },

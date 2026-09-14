@@ -16,9 +16,11 @@ interface ProductCardProps {
   discount?: string;
   badge?: string;
   imageUrl: string;
+  colors?: { name: string; hex: string }[];
+  stock?: number;
 }
 
-export function ProductCard({ id, title, price, oldPrice, discount, badge, imageUrl }: ProductCardProps) {
+export function ProductCard({ id, title, price, oldPrice, discount, badge, imageUrl, colors, stock }: ProductCardProps) {
   const { addItem } = useCartStore();
   const { toggleFavorite, isFavorite, isAuthenticated } = useUserStore();
   const [isMounted, setIsMounted] = React.useState(false);
@@ -29,18 +31,18 @@ export function ProductCard({ id, title, price, oldPrice, discount, badge, image
   
   const [imgSrc, setImgSrc] = React.useState(imageUrl || "https://images.unsplash.com/photo-1507473885765-e6ed057f782c?q=80&w=800&auto=format&fit=crop");
   const isFav = isMounted ? isFavorite(id) : false;
-  const isAgotado = isAgotadoBadge(badge);
+  const isAgotado = isAgotadoBadge(badge) || (stock !== undefined && stock <= 0);
 
   return (
     <Link href={`/product/${id}`} className="group flex flex-col bg-transparent">
       <div className="relative aspect-[4/3] overflow-hidden rounded-2xl bg-gray-100 mb-4">
-        {badge && (
+        {(badge || isAgotado) && (
           <div className={`absolute top-3 left-3 backdrop-blur-md text-xs font-bold px-3 py-1 rounded-full z-10 shadow-sm transition-colors ${
             isAgotado 
-              ? "bg-red-50/60 border border-red-300/80 text-red-600" 
-              : "bg-white/40 border border-white/60 text-gray-900"
+              ? "bg-red-500 text-white shadow-red-500/20" 
+              : "bg-white/70 border border-white/80 text-gray-900"
           }`}>
-            {badge}
+            {isAgotado ? "AGOTADO" : badge}
           </div>
         )}
         <button 
@@ -67,14 +69,39 @@ export function ProductCard({ id, title, price, oldPrice, discount, badge, image
       
       <div className="flex flex-col flex-1 px-1">
         <h3 className="text-base font-medium text-gray-900 line-clamp-1 mb-1">{title}</h3>
-        <div className="flex items-center gap-2 mb-3">
-          <span className="text-lg font-bold text-gray-900">${Number(price || 0).toFixed(2)}</span>
-          {oldPrice && (
-            <span className="text-sm text-gray-400 line-through">${Number(oldPrice || 0).toFixed(2)}</span>
-          )}
-          {discount && (
-            <span className="text-[10px] font-bold text-gray-900 bg-white/40 backdrop-blur-md border border-white/60 px-1.5 py-0.5 rounded-full shadow-sm">
-              {discount}
+
+        {/* Real interactive color preview dots */}
+        {colors && colors.length > 0 && (
+          <div className="flex items-center gap-1.5 mb-2">
+            {colors.slice(0, 5).map((col, idx) => (
+              <span
+                key={idx}
+                title={col.name}
+                className="w-3.5 h-3.5 rounded-full border border-black/20 shadow-[0_1px_2px_rgba(0,0,0,0.08)] shrink-0 transition-transform hover:scale-125"
+                style={{ backgroundColor: col.hex }}
+              />
+            ))}
+            {colors.length > 5 && (
+              <span className="text-[10px] text-gray-400 font-medium">+{colors.length - 5}</span>
+            )}
+          </div>
+        )}
+
+        <div className="flex items-center justify-between gap-2 mb-3">
+          <div className="flex items-center gap-2">
+            <span className="text-lg font-bold text-gray-900">${Number(price || 0).toFixed(2)}</span>
+            {oldPrice && (
+              <span className="text-sm text-gray-400 line-through">${Number(oldPrice || 0).toFixed(2)}</span>
+            )}
+            {discount && (
+              <span className="text-[10px] font-bold text-gray-900 bg-white/40 backdrop-blur-md border border-white/60 px-1.5 py-0.5 rounded-full shadow-sm">
+                {discount}
+              </span>
+            )}
+          </div>
+          {stock !== undefined && stock > 0 && stock <= 5 && !isAgotado && (
+            <span className="text-[10px] font-semibold text-amber-800 bg-amber-50 border border-amber-200/80 px-2 py-0.5 rounded-full animate-pulse shrink-0">
+              ¡Últimas {stock}!
             </span>
           )}
         </div>

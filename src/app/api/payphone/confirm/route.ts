@@ -207,6 +207,40 @@ export async function POST(request: Request) {
       // Still proceed with response since payment was collected
     }
 
+    // 5b. Real inventory deduction in Supabase products table
+    try {
+      if (Array.isArray(apiOrder.items) && apiOrder.items.length > 0) {
+        for (const item of apiOrder.items) {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const it = item as any;
+          const prodId = it.product?.id || it.productId;
+          const qty = Math.max(1, Number(it.quantity) || 1);
+          if (prodId) {
+            const { data: currentProd } = await supabase
+              .from('products')
+              .select('stock, badge')
+              .eq('id', prodId)
+              .maybeSingle();
+
+            if (currentProd) {
+              const currentStock = typeof currentProd.stock === 'number' ? currentProd.stock : 20;
+              const nextStock = Math.max(0, currentStock - qty);
+              const updates: Record<string, unknown> = {
+                stock: nextStock,
+                updated_at: new Date().toISOString(),
+              };
+              if (nextStock === 0) {
+                updates.badge = 'AGOTADO';
+              }
+              await supabase.from('products').update(updates).eq('id', prodId);
+            }
+          }
+        }
+      }
+    } catch (stockErr) {
+      console.warn('[PayPhone] Could not deduct inventory stock:', stockErr);
+    }
+
     // 6. Trigger Automatic Invoice & Warehouse Dispatch Notification Emails
     try {
       const adminEmails = await getAllAdminEmails();

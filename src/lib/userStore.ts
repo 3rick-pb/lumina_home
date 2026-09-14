@@ -5,6 +5,7 @@ import { CartItem, useCartStore } from './store';
 import { useThemeStore } from './themeStore';
 import { useRadarStore } from './radarStore';
 import { useAvatarSettingsStore, setupAvatarRealtimeListener, cleanupAvatarRealtimeListener } from './avatarSettingsStore';
+import { useCatalogStore } from './catalogStore';
 
 export interface User {
   id: string;
@@ -1182,6 +1183,17 @@ export const useUserStore = create<UserState>((set, get) => ({
     };
     const nextOrders = [enrichedOrder, ...get().orders];
     set({ orders: nextOrders });
+
+    // Deduct stock optimistically in memory so the catalog reflects the purchase instantly
+    if (enrichedOrder.items && enrichedOrder.items.length > 0) {
+      try {
+        useCatalogStore.getState().decrementStockOptimistic(
+          enrichedOrder.items.map(it => ({ productId: it.product.id, quantity: it.quantity }))
+        );
+      } catch (err) {
+        console.error("Error updating local stock:", err);
+      }
+    }
 
     // 1. Sync via API route for store-wide live persistence
     try {

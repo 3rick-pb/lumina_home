@@ -23,7 +23,7 @@ export default function ProductDetail({ params }: { params: Promise<{ id: string
     notFound();
   }
 
-  const isAgotado = isAgotadoBadge(product.badge);
+  const isAgotado = isAgotadoBadge(product.badge) || (product.stock !== undefined && product.stock <= 0);
   const relatedProducts = products.filter(p => p.id !== product.id).slice(0, 4);
 
   const [activeImage, setActiveImage] = useState(0);
@@ -158,24 +158,35 @@ export default function ProductDetail({ params }: { params: Promise<{ id: string
                 sizes="(max-width: 1024px) 100vw, 60vw"
                 priority
                 draggable={false}
-                className="object-cover transition-opacity duration-500 pointer-events-none select-none"
+                className="object-cover transform-gpu pointer-events-none select-none"
               />
+              {product.badge && (
+                <span className={`absolute top-4 left-4 backdrop-blur-md px-3 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider shadow-sm ${
+                  isAgotado 
+                    ? "bg-red-500 text-white shadow-red-500/20" 
+                    : "bg-white/40 border border-white/60 text-gray-900"
+                }`}>
+                  {isAgotado ? "AGOTADO" : product.badge}
+                </span>
+              )}
             </div>
           </div>
 
-          {/* Product Details Section (Velora Style) */}
-          <div className="lg:col-span-5 flex flex-col justify-start pt-2">
-            
-            <div className="mb-4">
-              {product.badge && (
-                <span className={`px-3 py-1 rounded-full text-xs font-bold transition-colors inline-block ${
-                  isAgotado
-                    ? "bg-red-50 text-red-600 border border-red-200"
-                    : "bg-gray-100 text-gray-800 border border-gray-200 font-semibold"
-                }`}>
-                  {product.badge}
-                </span>
-              )}
+          {/* Product Info Section */}
+          <div className="lg:col-span-5 flex flex-col justify-center">
+            {/* Category & Rating */}
+            <div className="flex items-center justify-between mb-4">
+              <span className="text-xs font-bold uppercase tracking-widest text-[#8c9276]">
+                {product.category}
+              </span>
+              <div className="flex items-center gap-1">
+                <div className="flex text-amber-400">
+                  {[...Array(5)].map((_, i) => (
+                    <Star key={i} className="w-4 h-4 fill-current" />
+                  ))}
+                </div>
+                <span className="text-sm text-gray-500 font-medium">4.8 (128 reviews)</span>
+              </div>
             </div>
 
             {/* Mixing Fonts as requested */}
@@ -187,18 +198,6 @@ export default function ProductDetail({ params }: { params: Promise<{ id: string
                 </span>
               )}
             </h1>
-
-            {/* Reviews */}
-            <div className="flex items-center gap-2 mb-6">
-              <div className="flex text-gray-900">
-                <Star className="w-4 h-4 fill-current" />
-                <Star className="w-4 h-4 fill-current" />
-                <Star className="w-4 h-4 fill-current" />
-                <Star className="w-4 h-4 fill-current" />
-                <Star className="w-4 h-4 fill-current opacity-50" />
-              </div>
-              <span className="text-sm text-gray-500 font-medium">4.8 (128 reviews)</span>
-            </div>
 
             {/* Price */}
             <div className="flex items-center gap-3 mb-6">
@@ -228,27 +227,40 @@ export default function ProductDetail({ params }: { params: Promise<{ id: string
             </div>
 
             {/* Disponibilidad en Stock y Garantía */}
-            <div className="flex flex-wrap items-center gap-2 mb-6">
-              {product.stock !== undefined && product.stock <= 5 && product.stock > 0 ? (
-                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-amber-50 text-amber-800 border border-amber-200">
-                  <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
-                  ¡Solo quedan {product.stock} unidades en almacén!
-                </span>
-              ) : product.stock === 0 ? (
-                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-red-50 text-red-700 border border-red-200">
-                  <span className="w-2 h-2 rounded-full bg-red-500" />
-                  Agotado temporalmente
-                </span>
-              ) : (
-                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200">
-                  <span className="w-2 h-2 rounded-full bg-emerald-500" />
-                  En stock ({product.stock ?? 18} disponibles) · Envío 24/48h
-                </span>
-              )}
-              {product.warranty && (
-                <span className="text-xs text-gray-500 flex items-center gap-1 font-medium bg-gray-50 px-2.5 py-1 rounded-full border border-gray-200">
-                  <ShieldCheck className="w-3.5 h-3.5 text-[#8c9276]" /> {product.warranty}
-                </span>
+            <div className="flex flex-col gap-2 mb-6">
+              <div className="flex flex-wrap items-center gap-2">
+                {product.stock !== undefined && product.stock <= 5 && product.stock > 0 ? (
+                  <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold bg-amber-50 text-amber-900 border border-amber-300/80 shadow-xs">
+                    <span className="relative flex h-2 w-2">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75" />
+                      <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-500" />
+                    </span>
+                    ¡Solo quedan {product.stock} unidades en inventario!
+                  </span>
+                ) : isAgotado ? (
+                  <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold bg-red-50 text-red-700 border border-red-200 shadow-xs">
+                    <span className="w-2 h-2 rounded-full bg-red-500" />
+                    Agotado temporalmente
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200 shadow-xs">
+                    <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                    En stock ({product.stock ?? 18} unidades disponibles) · Envío 24/48h
+                  </span>
+                )}
+                {product.warranty && (
+                  <span className="text-xs text-gray-500 flex items-center gap-1 font-medium bg-gray-50 px-2.5 py-1 rounded-full border border-gray-200">
+                    <ShieldCheck className="w-3.5 h-3.5 text-[#8c9276]" /> {product.warranty}
+                  </span>
+                )}
+              </div>
+              {product.stock !== undefined && product.stock > 0 && product.stock <= 5 && (
+                <div className="w-full max-w-xs bg-amber-100 rounded-full h-1.5 overflow-hidden">
+                  <div
+                    className="bg-amber-500 h-1.5 rounded-full transition-all duration-500"
+                    style={{ width: `${Math.min(100, Math.max(15, (product.stock / 10) * 100))}%` }}
+                  />
+                </div>
               )}
             </div>
 
@@ -260,17 +272,26 @@ export default function ProductDetail({ params }: { params: Promise<{ id: string
             {product.colors && product.colors.length > 0 && (
               <div className="mb-8">
                 <p className="text-sm font-semibold text-gray-900 mb-3">
-                  Color: <span className="font-normal text-gray-600">{product.colors[activeColor].name}</span>
+                  Color: <span className="font-normal text-gray-600">{product.colors[activeColor]?.name || ''}</span>
                 </p>
-                <div className="flex gap-3 p-2 bg-white/30 backdrop-blur-md border border-white/60 rounded-full w-fit shadow-sm">
+                <div className="flex flex-wrap gap-2.5 p-2 bg-white/40 backdrop-blur-md border border-white/60 rounded-2xl w-fit shadow-sm">
                   {product.colors.map((color, idx) => (
                     <button
                       key={idx}
                       onClick={() => setActiveColor(idx)}
-                      className={`w-9 h-9 rounded-full flex items-center justify-center transition-all ${activeColor === idx ? 'ring-2 ring-gray-900 ring-offset-2 ring-offset-transparent' : 'hover:scale-110 border border-white/50'}`}
-                      style={{ backgroundColor: color.hex }}
+                      className={`relative flex items-center gap-2.5 px-3.5 py-2 rounded-xl transition-all duration-200 ${
+                        activeColor === idx
+                          ? 'bg-white shadow-sm ring-2 ring-gray-900 ring-offset-1 text-gray-900 font-semibold'
+                          : 'hover:bg-white/60 text-gray-700 font-medium'
+                      }`}
                       aria-label={color.name}
-                    />
+                    >
+                      <span
+                        className="w-5 h-5 rounded-full border border-black/20 shadow-inner shrink-0"
+                        style={{ backgroundColor: color.hex }}
+                      />
+                      <span className="text-xs">{color.name}</span>
+                    </button>
                   ))}
                 </div>
               </div>

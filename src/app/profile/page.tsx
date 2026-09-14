@@ -33,6 +33,7 @@ import { useUserStore, Order, formatCleanName } from "@/lib/userStore";
 import { useThemeStore, getResolvedTheme } from "@/lib/themeStore";
 import { useCatalogStore, normalizeCategory, CatalogProduct, ProductCombo } from "@/lib/catalogStore";
 import { normalizeSearchText } from "@/lib/utils";
+import { ColorVariantsManager, ColorVariant } from "@/components/admin/ColorVariantsManager";
 import { ProductArchitectureSelector } from "@/components/profile/ProductArchitectureSelector";
 import { ProductCombosManager } from "@/components/profile/ProductCombosManager";
 import { AddCardAnimatedModal } from "@/components/profile/AddCardAnimatedModal";
@@ -139,7 +140,7 @@ export default function ProfilePage() {
  const [hasSizes, setHasSizes] = useState(false);
  const [prodSizes, setProdSizes] = useState("");
  const [hasColors, setHasColors] = useState(false);
- const [prodColors, setProdColors] = useState("");
+ const [prodColorVariants, setProdColorVariants] = useState<ColorVariant[]>([]);
  const [prodMaterials, setProdMaterials] = useState("");
  const [prodShipping, setProdShipping] = useState("");
  const [prodDimensions, setProdDimensions] = useState("");
@@ -186,7 +187,7 @@ export default function ProfilePage() {
  const [editHasSizes, setEditHasSizes] = useState(false);
  const [editSizes, setEditSizes] = useState("");
  const [editHasColors, setEditHasColors] = useState(false);
- const [editColors, setEditColors] = useState("");
+ const [editColorVariants, setEditColorVariants] = useState<ColorVariant[]>([]);
  const [editMaterials, setEditMaterials] = useState("");
  const [editShipping, setEditShipping] = useState("");
  const [editDimensions, setEditDimensions] = useState("");
@@ -301,7 +302,7 @@ discount: hasDiscount && calculatedDiscount ? calculatedDiscount : undefined,
  howToUse: prodHowToUse.trim() || undefined,
  combos: prodCombos.length > 0 ? prodCombos : undefined,
  sizes: hasSizes && prodSizes.trim() ? prodSizes.split(",").map(s => s.trim()).filter(Boolean) : undefined,
- colors: hasColors && prodColors.trim() ? prodColors.split(",").map(c => ({ name: c.trim(), hex: "#94a3b8" })) : undefined,
+ colors: hasColors && prodColorVariants.length > 0 ? prodColorVariants.filter(c => c.name.trim()).map(c => ({ name: c.name.trim(), hex: c.hex.trim() || "#18181B" })) : undefined,
  materials: prodMaterials.trim() || undefined,
  shipping: prodShipping.trim() || undefined,
  dimensions: prodDimensions.trim() || undefined,
@@ -341,7 +342,7 @@ discount: hasDiscount && calculatedDiscount ? calculatedDiscount : undefined,
  setHasSizes(false);
  setProdSizes("");
  setHasColors(false);
- setProdColors("");
+ setProdColorVariants([]);
  setProdMaterials("");
  setProdShipping("");
  setProdDimensions("");
@@ -394,7 +395,7 @@ discount: hasDiscount && calculatedDiscount ? calculatedDiscount : undefined,
  setEditHasSizes(Boolean(p.sizes && p.sizes.length > 0));
  setEditSizes(p.sizes ? p.sizes.join(", ") : "");
  setEditHasColors(Boolean(p.colors && p.colors.length > 0));
- setEditColors(p.colors ? p.colors.map(c => c.name).join(", ") : "");
+ setEditColorVariants(Array.isArray(p.colors) ? p.colors.map(c => ({ name: c.name, hex: c.hex || "#18181B" })) : []);
  setEditMaterials(p.materials || "");
  setEditShipping(p.shipping || "");
  setEditDimensions(p.dimensions || "");
@@ -442,7 +443,7 @@ discount: hasDiscount && calculatedDiscount ? calculatedDiscount : undefined,
  howToUse: editHowToUse.trim() || undefined,
  combos: editCombos.length > 0 ? editCombos : undefined,
  sizes: editHasSizes && editSizes.trim() ? editSizes.split(",").map(s => s.trim()).filter(Boolean) : undefined,
- colors: editHasColors && editColors.trim() ? editColors.split(",").map(c => ({ name: c.trim(), hex: "#94a3b8" })) : undefined,
+ colors: editHasColors && editColorVariants.length > 0 ? editColorVariants.filter(c => c.name.trim()).map(c => ({ name: c.name.trim(), hex: c.hex.trim() || "#18181B" })) : undefined,
  materials: editMaterials.trim() || undefined,
  shipping: editShipping.trim() || undefined,
  dimensions: editDimensions.trim() || undefined,
@@ -1386,6 +1387,13 @@ const handleConfirmDeleteNiche = async () => {
  />
  </div>
  </div>
+
+ <ColorVariantsManager
+   hasColors={hasColors}
+   onHasColorsChange={setHasColors}
+   colors={prodColorVariants}
+   onChange={setProdColorVariants}
+ />
  </div>
 
  {/* Sección: Logística, Garantía y Postventa */}
@@ -1744,17 +1752,14 @@ const handleConfirmDeleteNiche = async () => {
  placeholder="Ej: Individual, Queen, King" 
  />
  </div>
- <div>
- <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2 pl-1">Colores (nombres separados por coma)</label>
- <input 
- type="text" 
- value={editColors} 
- onChange={e => { setEditColors(e.target.value); setEditHasColors(!!e.target.value.trim()); }} 
- className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-sm outline-none bg-white dark:bg-[#1a1a1c] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500" 
- placeholder="Ej: Nogal, Roble, Blanco" 
+ </div>
+
+ <ColorVariantsManager
+   hasColors={editHasColors}
+   onHasColorsChange={setEditHasColors}
+   colors={editColorVariants}
+   onChange={setEditColorVariants}
  />
- </div>
- </div>
 
  {/* Sección: Ficha Técnica y Fabricación */}
  <div className="p-4 bg-stone-50/60 rounded-2xl border border-stone-200/70 space-y-4">

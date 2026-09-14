@@ -13,6 +13,7 @@ export interface Product {
   sizes?: string[];
   features?: string[];
   category: string;
+  stock?: number;
 }
 
 export const PRODUCTS: Product[] = [

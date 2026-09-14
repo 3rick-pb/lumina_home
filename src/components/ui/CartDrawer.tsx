@@ -1044,10 +1044,11 @@ export function CartDrawer() {
     );
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const itemBadge = (item.product as any)?.badge;
+  const itemBadge = item.product?.badge;
   const liveProduct = products.find(p => p.id === item.productId);
-  const itemIsAgotado = isAgotadoBadge(itemBadge) || isAgotadoBadge(liveProduct?.badge);
+  const liveStock = liveProduct?.stock ?? item.product?.stock;
+  const itemIsAgotado = isAgotadoBadge(itemBadge) || isAgotadoBadge(liveProduct?.badge) || (liveStock !== undefined && liveStock <= 0);
+  const isMaxStockReached = liveStock !== undefined && item.quantity >= liveStock;
 
   return (
  <div 
@@ -1122,14 +1123,14 @@ export function CartDrawer() {
   {item.quantity < 10 ? `0${item.quantity}` : item.quantity}
   </span>
   <button 
-  disabled={itemIsAgotado}
+  disabled={itemIsAgotado || isMaxStockReached}
   onClick={() => updateQuantity(item.id, item.quantity + 1)}
   className={`w-7 h-7 rounded-full flex items-center justify-center border border-black/[0.04] dark:border-white/10 shadow-xs active:scale-90 transition-all cursor-pointer ${
-  itemIsAgotado 
+  itemIsAgotado || isMaxStockReached 
   ? "bg-gray-100 dark:bg-[#202022]/10 text-gray-400 dark:text-gray-400 cursor-not-allowed opacity-40" 
   : "bg-white dark:bg-[#2c2c30] hover:bg-gray-50 text-gray-800 dark:text-gray-200"
   }`}
-  title={itemIsAgotado ? "Producto sin existencias" : "Aumentar"}
+  title={itemIsAgotado ? "Producto sin existencias" : isMaxStockReached ? `Máximo stock disponible (${liveStock} uds.)` : "Aumentar"}
   >
   <Plus className="w-3.5 h-3.5" />
   </button>
