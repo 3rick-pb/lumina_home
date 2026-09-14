@@ -34,6 +34,7 @@ import { useThemeStore, getResolvedTheme } from "@/lib/themeStore";
 import { useCatalogStore, normalizeCategory, CatalogProduct, ProductCombo } from "@/lib/catalogStore";
 import { normalizeSearchText } from "@/lib/utils";
 import { ColorVariantsManager, ColorVariant } from "@/components/admin/ColorVariantsManager";
+import { normalizeImageUrl, normalizeImagesList, isGoogleDriveUrl } from "@/lib/imageUtils";
 import { ProductArchitectureSelector } from "@/components/profile/ProductArchitectureSelector";
 import { ProductCombosManager } from "@/components/profile/ProductCombosManager";
 import { AddCardAnimatedModal } from "@/components/profile/AddCardAnimatedModal";
@@ -139,8 +140,9 @@ export default function ProfilePage() {
  const [prodFeatures, setProdFeatures] = useState("");
  const [hasSizes, setHasSizes] = useState(false);
  const [prodSizes, setProdSizes] = useState("");
- const [hasColors, setHasColors] = useState(false);
- const [prodColorVariants, setProdColorVariants] = useState<ColorVariant[]>([]);
+ const [prodColorVariants, setProdColorVariants] = useState<ColorVariant[]>([
+   { name: "Negro Grafito", hex: "#18181B" }
+ ]);
  const [prodMaterials, setProdMaterials] = useState("");
  const [prodShipping, setProdShipping] = useState("");
  const [prodDimensions, setProdDimensions] = useState("");
@@ -186,9 +188,10 @@ export default function ProfilePage() {
  const [editFeatures, setEditFeatures] = useState("");
  const [editHasSizes, setEditHasSizes] = useState(false);
  const [editSizes, setEditSizes] = useState("");
- const [editHasColors, setEditHasColors] = useState(false);
- const [editColorVariants, setEditColorVariants] = useState<ColorVariant[]>([]);
- const [editMaterials, setEditMaterials] = useState("");
+  const [editColorVariants, setEditColorVariants] = useState<ColorVariant[]>([
+    { name: "Negro Grafito", hex: "#18181B" }
+  ]);
+  const [editMaterials, setEditMaterials] = useState("");
  const [editShipping, setEditShipping] = useState("");
  const [editDimensions, setEditDimensions] = useState("");
  const [editWarranty, setEditWarranty] = useState("");
@@ -275,74 +278,78 @@ export default function ProfilePage() {
  setCalculatedDiscount("");
  };
 
- // Add Product Submit
- const handleAddProductSubmit = async (e: React.FormEvent) => {
- e.preventDefault();
- setIsSubmittingProd(true);
- setProdSubmitError(null);
- setProdSubmitSuccess(null);
+  // Add Product Submit
+  const handleAddProductSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSubmittingProd(true);
+    setProdSubmitError(null);
+    setProdSubmitSuccess(null);
 
- const imagesList = [prodImageUrl.trim()];
- if (prodExtraImages.trim()) {
- imagesList.push(...prodExtraImages.split(",").map(u => u.trim()).filter(Boolean));
- }
+    const finalImageUrl = normalizeImageUrl(prodImageUrl.trim()) || "https://images.unsplash.com/photo-1507473885765-e6ed057f782c?q=80&w=800&auto=format&fit=crop";
+    const extraList = prodExtraImages.trim()
+      ? prodExtraImages.split(/[\n,]+/).map(u => u.trim()).filter(Boolean)
+      : [];
+    const imagesList = normalizeImagesList([finalImageUrl, ...extraList]);
 
- const res = await addProduct({
- title: prodTitle.trim(),
- titleHighlight: prodHighlight.trim() || undefined,
- category: prodCategory.trim(),
- price: parseFloat(prodPrice) || 0,
- oldPrice: hasDiscount && oldPrice ? parseFloat(oldPrice) : null,
-discount: hasDiscount && calculatedDiscount ? calculatedDiscount : undefined,
- badge: prodBadge.trim() || undefined,
- imageUrl: prodImageUrl.trim() || "https://images.unsplash.com/photo-1507473885765-e6ed057f782c?q=80&w=800&auto=format&fit=crop",
- images: imagesList,
- description: prodDescription.trim(),
- features: prodFeatures.trim() ? prodFeatures.split("\n").map(f => f.trim()).filter(Boolean) : undefined,
- howToUse: prodHowToUse.trim() || undefined,
- combos: prodCombos.length > 0 ? prodCombos : undefined,
- sizes: hasSizes && prodSizes.trim() ? prodSizes.split(",").map(s => s.trim()).filter(Boolean) : undefined,
- colors: hasColors && prodColorVariants.length > 0 ? prodColorVariants.filter(c => c.name.trim()).map(c => ({ name: c.name.trim(), hex: c.hex.trim() || "#18181B" })) : undefined,
- materials: prodMaterials.trim() || undefined,
- shipping: prodShipping.trim() || undefined,
- dimensions: prodDimensions.trim() || undefined,
- warranty: prodWarranty.trim() || undefined,
- careInstructions: prodCareInstructions.trim() || undefined,
- packageContents: prodPackageContents.trim() || undefined,
- stock: prodStock ? parseInt(prodStock, 10) : 20,
- layoutType: prodLayoutType,
- landingSpecs: prodLayoutType === 'landing' ? prodLandingSpecs : undefined,
- landingReviews: prodLayoutType === 'landing' ? prodLandingReviews : undefined,
- landingBundle: prodLandingBundleEnabled ? {
-    enabled: true,
-    mode: prodBundleMode,
-    companionProductIds: prodBundleCompanionIds.length > 0 ? prodBundleCompanionIds : undefined,
-    discountPercentage: parseInt(prodLandingBundleDiscount, 10) || 15
-  } : undefined,
- });
+    const colorsList = prodColorVariants.length > 0
+      ? prodColorVariants.filter(c => c.name.trim()).map(c => ({ name: c.name.trim(), hex: c.hex.trim() || "#18181B" }))
+      : [{ name: "Negro Grafito", hex: "#18181B" }];
 
- setIsSubmittingProd(false);
- if (res.success) {
- setProdSubmitSuccess("¡Producto publicado exitosamente en la tienda y respaldado en la base de datos!");
- setTimeout(() => {
- setShowProductModal(false);
- setProdSubmitSuccess(null);
- setProdTitle("");
- setProdHighlight("");
- setProdCategory("");
- setProdPrice("");
- setHasDiscount(false);
- setOldPrice("");
- setCalculatedDiscount("");
- setProdBadge("");
- setProdImageUrl("");
- setProdExtraImages("");
- setProdDescription("");
- setProdFeatures("");
- setHasSizes(false);
- setProdSizes("");
- setHasColors(false);
- setProdColorVariants([]);
+    const res = await addProduct({
+      title: prodTitle.trim(),
+      titleHighlight: prodHighlight.trim() || undefined,
+      category: prodCategory.trim(),
+      price: parseFloat(prodPrice) || 0,
+      oldPrice: hasDiscount && oldPrice ? parseFloat(oldPrice) : null,
+      discount: hasDiscount && calculatedDiscount ? calculatedDiscount : undefined,
+      badge: prodBadge.trim() || undefined,
+      imageUrl: finalImageUrl,
+      images: imagesList,
+      description: prodDescription.trim(),
+      features: prodFeatures.trim() ? prodFeatures.split("\n").map(f => f.trim()).filter(Boolean) : undefined,
+      howToUse: prodHowToUse.trim() || undefined,
+      combos: prodCombos.length > 0 ? prodCombos : undefined,
+      sizes: hasSizes && prodSizes.trim() ? prodSizes.split(",").map(s => s.trim()).filter(Boolean) : undefined,
+      colors: colorsList,
+      materials: prodMaterials.trim() || undefined,
+      shipping: prodShipping.trim() || undefined,
+      dimensions: prodDimensions.trim() || undefined,
+      warranty: prodWarranty.trim() || undefined,
+      careInstructions: prodCareInstructions.trim() || undefined,
+      packageContents: prodPackageContents.trim() || undefined,
+      stock: prodStock ? parseInt(prodStock, 10) : 20,
+      layoutType: prodLayoutType,
+      landingSpecs: prodLayoutType === 'landing' ? prodLandingSpecs : undefined,
+      landingReviews: prodLayoutType === 'landing' ? prodLandingReviews : undefined,
+      landingBundle: prodLandingBundleEnabled ? {
+        enabled: true,
+        mode: prodBundleMode,
+        companionProductIds: prodBundleCompanionIds.length > 0 ? prodBundleCompanionIds : undefined,
+        discountPercentage: parseInt(prodLandingBundleDiscount, 10) || 15
+      } : undefined,
+    });
+
+    setIsSubmittingProd(false);
+    if (res.success) {
+      setProdSubmitSuccess("¡Producto publicado exitosamente en la tienda y respaldado en la base de datos!");
+      setTimeout(() => {
+        setShowProductModal(false);
+        setProdSubmitSuccess(null);
+        setProdTitle("");
+        setProdHighlight("");
+        setProdCategory("");
+        setProdPrice("");
+        setHasDiscount(false);
+        setOldPrice("");
+        setCalculatedDiscount("");
+        setProdBadge("");
+        setProdImageUrl("");
+        setProdExtraImages("");
+        setProdDescription("");
+        setProdFeatures("");
+        setHasSizes(false);
+        setProdSizes("");
+        setProdColorVariants([{ name: "Negro Grafito", hex: "#18181B" }]);
  setProdMaterials("");
  setProdShipping("");
  setProdDimensions("");
@@ -392,58 +399,66 @@ discount: hasDiscount && calculatedDiscount ? calculatedDiscount : undefined,
  setEditExtraImages(p.images && p.images.length > 1 ? p.images.slice(1).join(", ") : "");
  setEditDescription(p.description || "");
  setEditFeatures(p.features ? p.features.join("\n") : "");
- setEditHasSizes(Boolean(p.sizes && p.sizes.length > 0));
- setEditSizes(p.sizes ? p.sizes.join(", ") : "");
- setEditHasColors(Boolean(p.colors && p.colors.length > 0));
- setEditColorVariants(Array.isArray(p.colors) ? p.colors.map(c => ({ name: c.name, hex: c.hex || "#18181B" })) : []);
- setEditMaterials(p.materials || "");
- setEditShipping(p.shipping || "");
- setEditDimensions(p.dimensions || "");
- setEditWarranty(p.warranty || "");
- setEditCareInstructions(p.careInstructions || "");
- setEditPackageContents(p.packageContents || "");
- setEditStock(p.stock !== undefined ? p.stock.toString() : "20");
- setEditLayoutType(p.layoutType || 'standard');
- setEditCombos(p.combos || []);
- setEditHowToUse(p.howToUse || "");
- setEditBundleMode(p.landingBundle?.mode || 'companion');
- setEditBundleCompanionIds(p.landingBundle?.companionProductIds || []);
- setEditLandingSpecs(p.landingSpecs || []);
- setEditLandingReviews(p.landingReviews || []);
- setEditLandingBundleEnabled(Boolean(p.landingBundle?.enabled));
- setEditLandingBundleDiscount(p.landingBundle?.discountPercentage ? p.landingBundle.discountPercentage.toString() : "15");
- setEditFeedback(null);
- setShowEditProductModal(true);
- };
+    setEditHasSizes(Boolean(p.sizes && p.sizes.length > 0));
+    setEditSizes(p.sizes ? p.sizes.join(", ") : "");
+    setEditColorVariants(
+      Array.isArray(p.colors) && p.colors.length > 0
+        ? p.colors.map(c => ({ name: c.name, hex: c.hex || "#18181B" }))
+        : [{ name: "Negro Grafito", hex: "#18181B" }]
+    );
+    setEditMaterials(p.materials || "");
+    setEditShipping(p.shipping || "");
+    setEditDimensions(p.dimensions || "");
+    setEditWarranty(p.warranty || "");
+    setEditCareInstructions(p.careInstructions || "");
+    setEditPackageContents(p.packageContents || "");
+    setEditStock(p.stock !== undefined ? p.stock.toString() : "20");
+    setEditLayoutType(p.layoutType || 'standard');
+    setEditCombos(p.combos || []);
+    setEditHowToUse(p.howToUse || "");
+    setEditBundleMode(p.landingBundle?.mode || 'companion');
+    setEditBundleCompanionIds(p.landingBundle?.companionProductIds || []);
+    setEditLandingSpecs(p.landingSpecs || []);
+    setEditLandingReviews(p.landingReviews || []);
+    setEditLandingBundleEnabled(Boolean(p.landingBundle?.enabled));
+    setEditLandingBundleDiscount(p.landingBundle?.discountPercentage ? p.landingBundle.discountPercentage.toString() : "15");
+    setEditFeedback(null);
+    setShowEditProductModal(true);
+  };
 
- const handleUpdateProductSubmit = async (e: React.FormEvent) => {
- e.preventDefault();
- if (!editingProductId) return;
- setIsSubmittingEdit(true);
- setEditFeedback(null);
+  const handleUpdateProductSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingProductId) return;
+    setIsSubmittingEdit(true);
+    setEditFeedback(null);
 
- const imagesList = [editImageUrl.trim()];
- if (editExtraImages.trim()) {
- imagesList.push(...editExtraImages.split(",").map(u => u.trim()).filter(Boolean));
- }
+    const finalImageUrl = normalizeImageUrl(editImageUrl.trim()) || "https://images.unsplash.com/photo-1507473885765-e6ed057f782c?q=80&w=800&auto=format&fit=crop";
+    const extraList = editExtraImages.trim()
+      ? editExtraImages.split(/[\n,]+/).map(u => u.trim()).filter(Boolean)
+      : [];
+    const imagesList = normalizeImagesList([finalImageUrl, ...extraList]);
 
- const res = await updateProduct(editingProductId, {
- id: editingProductId,
- title: editTitle.trim(),
- titleHighlight: editHighlight.trim() || undefined,
- category: editCategory.trim(),
- price: parseFloat(editPrice) || 0,
- oldPrice: editHasDiscount && editOldPrice ? parseFloat(editOldPrice) : null,
- discount: editHasDiscount && editCalculatedDiscount ? editCalculatedDiscount : undefined,
- badge: editBadge.trim() || undefined,
- imageUrl: editImageUrl.trim() || "https://images.unsplash.com/photo-1507473885765-e6ed057f782c?q=80&w=800&auto=format&fit=crop",
- images: imagesList,
- description: editDescription.trim(),
- features: editFeatures.trim() ? editFeatures.split("\n").map(f => f.trim()).filter(Boolean) : undefined,
- howToUse: editHowToUse.trim() || undefined,
- combos: editCombos.length > 0 ? editCombos : undefined,
- sizes: editHasSizes && editSizes.trim() ? editSizes.split(",").map(s => s.trim()).filter(Boolean) : undefined,
- colors: editHasColors && editColorVariants.length > 0 ? editColorVariants.filter(c => c.name.trim()).map(c => ({ name: c.name.trim(), hex: c.hex.trim() || "#18181B" })) : undefined,
+    const colorsList = editColorVariants.length > 0
+      ? editColorVariants.filter(c => c.name.trim()).map(c => ({ name: c.name.trim(), hex: c.hex.trim() || "#18181B" }))
+      : [{ name: "Negro Grafito", hex: "#18181B" }];
+
+    const res = await updateProduct(editingProductId, {
+      id: editingProductId,
+      title: editTitle.trim(),
+      titleHighlight: editHighlight.trim() || undefined,
+      category: editCategory.trim(),
+      price: parseFloat(editPrice) || 0,
+      oldPrice: editHasDiscount && editOldPrice ? parseFloat(editOldPrice) : null,
+      discount: editHasDiscount && editCalculatedDiscount ? editCalculatedDiscount : undefined,
+      badge: editBadge.trim() || undefined,
+      imageUrl: finalImageUrl,
+      images: imagesList,
+      description: editDescription.trim(),
+      features: editFeatures.trim() ? editFeatures.split("\n").map(f => f.trim()).filter(Boolean) : undefined,
+      howToUse: editHowToUse.trim() || undefined,
+      combos: editCombos.length > 0 ? editCombos : undefined,
+      sizes: editHasSizes && editSizes.trim() ? editSizes.split(",").map(s => s.trim()).filter(Boolean) : undefined,
+      colors: colorsList,
  materials: editMaterials.trim() || undefined,
  shipping: editShipping.trim() || undefined,
  dimensions: editDimensions.trim() || undefined,
@@ -1275,126 +1290,128 @@ const handleConfirmDeleteNiche = async () => {
  className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-sm outline-none dark:] bg-white dark:bg-[#1a1a1c] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500" 
  placeholder="https://images.unsplash.com/photo-... o enlace directo .jpg / .webp" 
  />
- {/* Alerta si parece una página web */}
- {prodImageUrl.trim() && (prodImageUrl.includes('.html') || (!prodImageUrl.match(/\.(jpg|jpeg|png|webp|avif|gif|svg)(\?.*)?$/i) && !prodImageUrl.includes('unsplash') && !prodImageUrl.includes('mlstatic') && !prodImageUrl.includes('cloudinary') && !prodImageUrl.includes('imgur'))) && (
- <p className="text-[11px] text-amber-700 mt-1.5 flex items-center gap-1 font-medium bg-amber-50 p-2 rounded-lg border border-amber-200">
- ⚠️ Atención: Parece que pegaste el enlace de una página web y no de la imagen directa. Asegúrate de hacer clic derecho sobre la foto &gt; &ldquo;Copiar dirección de imagen&rdquo;.
- </p>
- )}
- </div>
+                  {/* Alerta si parece una página web o confirmación de Google Drive */}
+                  {isGoogleDriveUrl(prodImageUrl) ? (
+                    <p className="text-[11px] text-emerald-800 mt-1.5 font-medium bg-emerald-50 dark:bg-emerald-950/30 p-2 rounded-lg border border-emerald-200 dark:border-emerald-800/50 flex items-center gap-1.5">
+                      <span className="font-bold">✓</span> Enlace de Google Drive detectado y transformado a visualización directa.
+                    </p>
+                  ) : prodImageUrl.trim() && (prodImageUrl.includes('.html') || (!prodImageUrl.match(/\.(jpg|jpeg|png|webp|avif|gif|svg)(\?.*)?$/i) && !prodImageUrl.includes('unsplash') && !prodImageUrl.includes('mlstatic') && !prodImageUrl.includes('cloudinary') && !prodImageUrl.includes('imgur'))) && (
+                    <p className="text-[11px] text-amber-700 mt-1.5 flex items-center gap-1 font-medium bg-amber-50 dark:bg-amber-950/30 p-2 rounded-lg border border-amber-200 dark:border-amber-800/50">
+                      ⚠️ Atención: Parece que pegaste el enlace de una página web y no de la imagen directa. Asegúrate de hacer clic derecho sobre la foto &gt; &ldquo;Copiar dirección de imagen&rdquo;.
+                    </p>
+                  )}
+                </div>
 
- {/* Vista previa de Imagen Principal */}
- {prodImageUrl.trim() && (
- <div className="flex items-center gap-3 p-3 bg-white dark:bg-[#202022] rounded-xl border border-gray-200/80 dark:border-white/10/80">
- <div className="relative w-16 h-16 rounded-lg overflow-hidden bg-gray-100 dark:bg-[#3a3a3c] shrink-0 border border-gray-200 dark:border-white/10">
- {/* eslint-disable-next-line @next/next/no-img-element */}
- <img 
- src={prodImageUrl.trim().split(/[\n,]+/)[0]} 
- alt="Vista previa" 
- className="w-full h-full object-cover" 
- onError={(e) => { (e.currentTarget as HTMLImageElement).src = "https://images.unsplash.com/photo-1507473885765-e6ed057f782c?q=80&w=800&auto=format&fit=crop"; }}
- />
- </div>
- <div className="min-w-0 flex-1 text-xs">
- <p className="font-semibold text-gray-800 dark:text-gray-200">Vista previa de imagen principal</p>
- <p className="text-[11px] text-gray-400 truncate">{prodImageUrl.trim().split(/[\n,]+/)[0]}</p>
- </div>
- </div>
- )}
+                {/* Vista previa de Imagen Principal */}
+                {prodImageUrl.trim() && (
+                  <div className="flex items-center gap-3 p-3 bg-white dark:bg-[#202022] rounded-xl border border-gray-200/80 dark:border-white/10/80">
+                    <div className="relative w-16 h-16 rounded-lg overflow-hidden bg-gray-100 dark:bg-[#3a3a3c] shrink-0 border border-gray-200 dark:border-white/10">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img 
+                        src={normalizeImageUrl(prodImageUrl.trim().split(/[\n,]+/)[0])} 
+                        alt="Vista previa" 
+                        className="w-full h-full object-cover" 
+                        onError={(e) => { (e.currentTarget as HTMLImageElement).src = "https://images.unsplash.com/photo-1507473885765-e6ed057f782c?q=80&w=800&auto=format&fit=crop"; }}
+                      />
+                    </div>
+                    <div className="min-w-0 flex-1 text-xs">
+                      <p className="font-semibold text-gray-800 dark:text-gray-200">Vista previa de imagen principal</p>
+                      <p className="text-[11px] text-gray-400 truncate">{normalizeImageUrl(prodImageUrl.trim().split(/[\n,]+/)[0])}</p>
+                    </div>
+                  </div>
+                )}
 
- <div>
- <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2 pl-1">Galería de Imágenes Adicionales (Opcional)</label>
- <input 
- type="text" 
- value={prodExtraImages} 
- onChange={e => setProdExtraImages(e.target.value)} 
- className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-sm outline-none dark:] bg-white dark:bg-[#1a1a1c] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500" 
- placeholder="Separa varios enlaces con comas: https://foto2.jpg, https://foto3.webp" 
- />
- <p className="text-[11px] text-gray-400 mt-1">Permite a los clientes ver el producto desde varios ángulos.</p>
- </div>
+                <div>
+                  <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2 pl-1">Galería de Imágenes Adicionales (Opcional)</label>
+                  <input 
+                    type="text" 
+                    value={prodExtraImages} 
+                    onChange={e => setProdExtraImages(e.target.value)} 
+                    className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-sm outline-none dark:] bg-white dark:bg-[#1a1a1c] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500" 
+                    placeholder="Separa varios enlaces con comas: https://foto2.jpg, https://foto3.webp" 
+                  />
+                  <p className="text-[11px] text-gray-400 mt-1">Permite a los clientes ver el producto desde varios ángulos.</p>
+                </div>
 
- {/* Miniaturas de galería adicional */}
- {prodExtraImages.trim() && (
- <div className="space-y-1.5 pt-1">
- <p className="text-[11px] font-semibold text-gray-500 dark:text-gray-400">Galería adicional detectada:</p>
- <div className="flex gap-2 flex-wrap">
- {prodExtraImages.split(/[\n,]+/).map(u => u.trim()).filter(u => u.startsWith('http')).map((url, idx) => (
- <div key={idx} className="relative w-12 h-12 rounded-lg overflow-hidden bg-gray-100 dark:bg-[#3a3a3c] border border-gray-200 dark:border-white/10 shrink-0">
- {/* eslint-disable-next-line @next/next/no-img-element */}
- <img 
- src={url} 
- alt={`Galería ${idx}`} 
- className="w-full h-full object-cover" 
- onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }}
- />
- </div>
- ))}
- </div>
- </div>
- )}
- </div>
+                {/* Miniaturas de galería adicional */}
+                {prodExtraImages.trim() && (
+                  <div className="space-y-1.5 pt-1">
+                    <p className="text-[11px] font-semibold text-gray-500 dark:text-gray-400">Galería adicional detectada:</p>
+                    <div className="flex gap-2 flex-wrap">
+                      {prodExtraImages.split(/[\n,]+/).map(u => u.trim()).filter(u => u.startsWith('http')).map((url, idx) => (
+                        <div key={idx} className="relative w-12 h-12 rounded-lg overflow-hidden bg-gray-100 dark:bg-[#3a3a3c] border border-gray-200 dark:border-white/10 shrink-0">
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img 
+                            src={normalizeImageUrl(url)} 
+                            alt={`Galería ${idx}`} 
+                            className="w-full h-full object-cover" 
+                            onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }}
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
 
- <div>
- <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2 pl-1">Descripción Completa *</label>
- <textarea required rows={3} value={prodDescription} onChange={e => setProdDescription(e.target.value)} className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-sm outline-none resize-none bg-white dark:bg-[#1a1a1c] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500" placeholder="Describe los detalles de este producto..." />
- </div>
+              <div>
+                <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2 pl-1">Descripción Completa *</label>
+                <textarea required rows={3} value={prodDescription} onChange={e => setProdDescription(e.target.value)} className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-sm outline-none resize-none bg-white dark:bg-[#1a1a1c] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500" placeholder="Describe los detalles de este producto..." />
+              </div>
 
- <div>
- <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2 pl-1">Características / Viñetas (una por línea)</label>
- <textarea rows={3} value={prodFeatures} onChange={e => setProdFeatures(e.target.value)} className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-sm outline-none resize-none bg-white dark:bg-[#1a1a1c] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500" placeholder="Material: Cerámica artesanal&#10;Acabado mate texturizado&#10;Garantía de 2 años" />
- </div>
+              <div>
+                <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2 pl-1">Características / Viñetas (una por línea)</label>
+                <textarea rows={3} value={prodFeatures} onChange={e => setProdFeatures(e.target.value)} className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-sm outline-none resize-none bg-white dark:bg-[#1a1a1c] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500" placeholder="Material: Cerámica artesanal&#10;Acabado mate texturizado&#10;Garantía de 2 años" />
+              </div>
 
- {/* Sección: Ficha Técnica y Fabricación */}
- <div className="p-4 bg-stone-50/60 rounded-2xl border border-stone-200/70 space-y-4">
- <div className="flex items-center gap-2">
- <span className="text-xs font-bold text-stone-800 uppercase tracking-wider">Ficha Técnica y Fabricación</span>
- <span className="text-[10px] text-stone-500 font-medium">(Se muestra en pestañas &ldquo;Materiales&rdquo; y &ldquo;Dimensiones&rdquo;)</span>
- </div>
- 
- <div>
- <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2 pl-1">Materiales y Acabados Nobles</label>
- <input 
- type="text" 
- value={prodMaterials} 
- onChange={e => setProdMaterials(e.target.value)} 
- className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-sm outline-none dark:] bg-white dark:bg-[#1a1a1c] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500" 
- placeholder="Ej: Cerámica gres cocida a 1250°C, herrajes de latón macizo y esmalte satinado libre de tóxicos." 
- />
- <p className="text-[11px] text-gray-400 mt-1">El cliente sabrá exactamente de qué está hecha la pieza.</p>
- </div>
+              {/* Sección: Ficha Técnica y Fabricación */}
+              <div className="p-4 bg-stone-50/60 rounded-2xl border border-stone-200/70 space-y-4">
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-bold text-stone-800 uppercase tracking-wider">Ficha Técnica y Fabricación</span>
+                  <span className="text-[10px] text-stone-500 font-medium">(Se muestra en pestañas &ldquo;Materiales&rdquo; y &ldquo;Dimensiones&rdquo;)</span>
+                </div>
+                
+                <div>
+                  <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2 pl-1">Materiales y Acabados Nobles</label>
+                  <input 
+                    type="text" 
+                    value={prodMaterials} 
+                    onChange={e => setProdMaterials(e.target.value)} 
+                    className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-sm outline-none dark:] bg-white dark:bg-[#1a1a1c] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500" 
+                    placeholder="Ej: Cerámica gres cocida a 1250°C, herrajes de latón macizo y esmalte satinado libre de tóxicos." 
+                  />
+                  <p className="text-[11px] text-gray-400 mt-1">El cliente sabrá exactamente de qué está hecha la pieza.</p>
+                </div>
 
- <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
- <div>
- <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2 pl-1">Dimensiones y Peso</label>
- <input 
- type="text" 
- value={prodDimensions} 
- onChange={e => setProdDimensions(e.target.value)} 
- className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-sm outline-none dark:] bg-white dark:bg-[#1a1a1c] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500" 
- placeholder="Ej: 45 x 28 x 20 cm · Peso neto: 1.8 kg" 
- />
- </div>
- <div>
- <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2 pl-1">Stock / Unidades en Inventario</label>
- <input 
- type="number" 
- min="0"
- value={prodStock} 
- onChange={e => setProdStock(e.target.value)} 
- className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-sm outline-none dark:] bg-white dark:bg-[#1a1a1c] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500" 
- placeholder="20" 
- />
- </div>
- </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2 pl-1">Dimensiones y Peso</label>
+                    <input 
+                      type="text" 
+                      value={prodDimensions} 
+                      onChange={e => setProdDimensions(e.target.value)} 
+                      className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-sm outline-none dark:] bg-white dark:bg-[#1a1a1c] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500" 
+                      placeholder="Ej: 45 x 28 x 20 cm · Peso neto: 1.8 kg" 
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2 pl-1">Stock / Unidades en Inventario</label>
+                    <input 
+                      type="number" 
+                      min="0"
+                      value={prodStock} 
+                      onChange={e => setProdStock(e.target.value)} 
+                      className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-sm outline-none dark:] bg-white dark:bg-[#1a1a1c] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500" 
+                      placeholder="20" 
+                    />
+                  </div>
+                </div>
 
- <ColorVariantsManager
-   hasColors={hasColors}
-   onHasColorsChange={setHasColors}
-   colors={prodColorVariants}
-   onChange={setProdColorVariants}
- />
- </div>
+                <ColorVariantsManager
+                  colors={prodColorVariants}
+                  onChange={setProdColorVariants}
+                />
+              </div>
 
  {/* Sección: Logística, Garantía y Postventa */}
  <div className="p-4 bg-blue-50/40 rounded-2xl border border-blue-100 space-y-4">
@@ -1661,7 +1678,7 @@ const handleConfirmDeleteNiche = async () => {
  <div className="relative w-16 h-16 rounded-xl overflow-hidden bg-gray-100 dark:bg-[#3a3a3c] border border-gray-200 dark:border-white/10 shrink-0">
  {/* eslint-disable-next-line @next/next/no-img-element */}
  <img 
- src={editImageUrl.trim().split(/[\n,]+/)[0]} 
+ src={normalizeImageUrl(editImageUrl.trim().split(/[\n,]+/)[0])} 
  alt="Preview" 
  className="w-full h-full object-cover" 
  onError={(e) => { (e.currentTarget as HTMLImageElement).src = "https://images.unsplash.com/photo-1507473885765-e6ed057f782c?q=80&w=800&auto=format&fit=crop"; }}
@@ -1678,8 +1695,12 @@ const handleConfirmDeleteNiche = async () => {
  className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-sm outline-none dark:] bg-white dark:bg-[#1a1a1c] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500" 
  placeholder="https://images.unsplash.com/photo-... o .jpg / .webp" 
  />
- {editImageUrl.trim() && (editImageUrl.includes('.html') || (!editImageUrl.match(/\.(jpg|jpeg|png|webp|avif|gif|svg)(\?.*)?$/i) && !editImageUrl.includes('unsplash') && !editImageUrl.includes('mlstatic') && !editImageUrl.includes('cloudinary') && !editImageUrl.includes('imgur'))) && (
- <p className="text-[11px] text-amber-700 mt-1.5 font-medium bg-amber-50 p-2 rounded-lg border border-amber-200">
+ {isGoogleDriveUrl(editImageUrl) ? (
+ <p className="text-[11px] text-emerald-800 mt-1.5 font-medium bg-emerald-50 dark:bg-emerald-950/30 p-2 rounded-lg border border-emerald-200 dark:border-emerald-800/50 flex items-center gap-1.5">
+ <span className="font-bold">✓</span> Enlace de Google Drive detectado y transformado a visualización directa.
+ </p>
+ ) : editImageUrl.trim() && (editImageUrl.includes('.html') || (!editImageUrl.match(/\.(jpg|jpeg|png|webp|avif|gif|svg)(\?.*)?$/i) && !editImageUrl.includes('unsplash') && !editImageUrl.includes('mlstatic') && !editImageUrl.includes('cloudinary') && !editImageUrl.includes('imgur'))) && (
+ <p className="text-[11px] text-amber-700 mt-1.5 font-medium bg-amber-50 dark:bg-amber-950/30 p-2 rounded-lg border border-amber-200 dark:border-amber-800/50">
  ⚠️ Atención: Asegúrate de que este enlace apunte al archivo directo de la foto (clic derecho &gt; &ldquo;Copiar dirección de imagen&rdquo;).
  </p>
  )}
@@ -1706,7 +1727,7 @@ const handleConfirmDeleteNiche = async () => {
  <div key={idx} className="relative w-12 h-12 rounded-lg overflow-hidden bg-gray-100 dark:bg-[#3a3a3c] border border-gray-200 dark:border-white/10 shrink-0">
  {/* eslint-disable-next-line @next/next/no-img-element */}
  <img 
- src={url} 
+ src={normalizeImageUrl(url)} 
  alt={`Galería ${idx}`} 
  className="w-full h-full object-cover" 
  onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }}
@@ -1755,8 +1776,6 @@ const handleConfirmDeleteNiche = async () => {
  </div>
 
  <ColorVariantsManager
-   hasColors={editHasColors}
-   onHasColorsChange={setEditHasColors}
    colors={editColorVariants}
    onChange={setEditColorVariants}
  />

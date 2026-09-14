@@ -116,6 +116,10 @@ export const PRODUCTS: Product[] = [
       "https://images.unsplash.com/photo-1595428774223-ef52624120d2?q=80&w=1200&auto=format&fit=crop"
     ],
     sizes: ["Pack 3 mediano", "Pack 2 grande"],
+    colors: [
+      { name: "Cristal Traslúcido", hex: "#e2e8f0" },
+      { name: "Ahumado Suave", hex: "#64748b" }
+    ],
     features: ["Acrílico cristalino 4mm", "Diseño apilable modular", "Bordes pulidos a diamante"]
   },
   {

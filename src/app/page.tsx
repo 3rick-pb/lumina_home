@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState, useRef, useMemo } from "react";
 import Image from "next/image";
+import { motion } from "framer-motion";
 import { Button } from "@/components/ui/Button";
 import { ProductCard } from "@/components/ui/ProductCard";
 import { Percent, Truck, ShieldCheck, ArrowRight, RotateCcw, Lock } from "lucide-react";
@@ -244,10 +245,20 @@ export default function Home() {
         </div>
 
         <div className="container mx-auto px-4 md:px-8 relative z-10 pt-40">
-          <div className="max-w-3xl">
-            <span className="inline-block px-4 py-1.5 rounded-full bg-white/10 backdrop-blur-md border border-white/20 text-sm font-medium text-white mb-6">
+          <motion.div 
+            initial={{ opacity: 0, y: 32 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
+            className="max-w-3xl"
+          >
+            <motion.span 
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
+              className="inline-block px-4 py-1.5 rounded-full bg-white/10 backdrop-blur-md border border-white/20 text-sm font-medium text-white mb-6"
+            >
               Artículos premium para tu hogar
-            </span>
+            </motion.span>
             <h1 className="text-3xl sm:text-5xl md:text-6xl lg:text-7xl font-sans font-medium text-white leading-[1.15] sm:leading-[1.1] tracking-tight">
               Espacios diseñados <br />
               <span className="font-display italic font-bold text-[#d2b48c]">para perdurar</span>
@@ -257,22 +268,28 @@ export default function Home() {
             </p>
             <div className="mt-8 sm:mt-10 flex flex-col sm:flex-row gap-3 sm:gap-4">
               <Link href="/shop" className="w-full sm:w-auto">
-                <Button size="lg" className="w-full sm:w-auto rounded-full bg-[#8c9276] hover:bg-[#7a8a66] text-white border-none px-8 flex items-center justify-center gap-2">
+                <Button size="lg" className="w-full sm:w-auto rounded-full bg-[#8c9276] hover:bg-[#7a8a66] text-white border-none px-8 flex items-center justify-center gap-2 transition-transform duration-300 hover:scale-[1.02] active:scale-[0.98]">
                   Ver catálogo <ArrowRight className="w-4 h-4" />
                 </Button>
               </Link>
               <Link href="/shop" className="w-full sm:w-auto">
-                <Button size="lg" variant="outline" className="w-full sm:w-auto rounded-full border-white/30 text-white hover:bg-white/10 px-8 flex items-center justify-center">
+                <Button size="lg" variant="outline" className="w-full sm:w-auto rounded-full border-white/30 text-white hover:bg-white/10 px-8 flex items-center justify-center transition-transform duration-300 hover:scale-[1.02] active:scale-[0.98]">
                   Filtrar por categoría
                 </Button>
               </Link>
             </div>
-          </div>
+          </motion.div>
         </div>
       </section>
 
       {/* Trust Badges Bar - Floating Glassmorphic Pill Banner */}
-      <div className="relative z-30 -mt-7 sm:-mt-9 mb-3 container mx-auto px-4 md:px-8">
+      <motion.div 
+        initial={{ opacity: 0, y: 24 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true, margin: "-20px" }}
+        transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
+        className="relative z-30 -mt-7 sm:-mt-9 mb-3 container mx-auto px-4 md:px-8"
+      >
         <div className="bg-white/95 dark:bg-[#1e1e20]/95 backdrop-blur-2xl rounded-2xl md:rounded-[2rem] border border-black/[0.06] dark:border-white/[0.08] shadow-[0_16px_40px_-8px_rgba(0,0,0,0.08),0_4px_16px_rgba(0,0,0,0.03)] p-3 sm:p-4 md:p-5">
           <div className="flex lg:grid lg:grid-cols-5 items-center justify-start lg:justify-items-center gap-6 sm:gap-8 lg:gap-0 overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden py-1 px-2">
             {trustBadges.map((badge, idx) => (
@@ -298,7 +315,7 @@ export default function Home() {
             ))}
           </div>
         </div>
-      </div>
+      </motion.div>
 
       {/* Immersive Background Wrapper for Catalog Sections */}
       <div className="relative overflow-hidden bg-transparent">
@@ -310,14 +327,20 @@ export default function Home() {
           className="py-24 relative z-10"
         >
           <div className="container mx-auto px-4 md:px-8">
-            <div className="flex items-end justify-between mb-12">
+            <motion.div 
+              initial={{ opacity: 0, y: 24 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, margin: "-40px" }}
+              transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+              className="flex items-end justify-between mb-12"
+            >
               <div>
                 <h2 className="text-3xl font-sans font-medium text-gray-900 mb-2">
                   Explora el <span className="font-display italic text-accent-700">Catálogo</span>
                 </h2>
                 <p className="text-gray-500">Encuentra la pieza perfecta para tu rincón favorito.</p>
               </div>
-            </div>
+            </motion.div>
             
             <div className={`grid grid-cols-2 gap-4 ${
               dynamicCategories.length <= 4 
@@ -325,30 +348,37 @@ export default function Home() {
                 : "md:grid-cols-3 lg:grid-cols-5"
             }`}>
               {dynamicCategories.map((cat, idx) => (
-                <Link 
-                  href={`/shop?category=${cat.name.toLowerCase()}`} 
-                  key={idx} 
-                  scroll={true}
-                  onClick={() => {
-                    window.scrollTo({ top: 0, left: 0, behavior: "instant" });
-                  }}
-                  onMouseEnter={() => setCategoryTheme(cat.name)}
-                  onMouseLeave={() => resetTheme()}
-                  className="group relative h-[260px] sm:h-[300px] md:h-[320px] rounded-2xl overflow-hidden block shadow-sm border border-black/5 transition-transform duration-300 hover:-translate-y-1"
+                <motion.div
+                  key={idx}
+                  initial={{ opacity: 0, y: 28 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true, margin: "-30px" }}
+                  transition={{ duration: 0.5, delay: idx * 0.05, ease: [0.22, 1, 0.36, 1] }}
                 >
-                  <Image src={cat.img} fill sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 20vw" className="object-cover transition-transform duration-700 group-hover:scale-105" alt={cat.name} />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/30 to-transparent" />
-                  <div className="absolute bottom-0 left-0 w-full p-3.5 sm:p-5 flex items-end justify-between">
-                    <div>
-                      <span className="text-white/60 text-[11px] font-light uppercase tracking-wider block mb-0.5">{cat.subtitle}</span>
-                      <h3 className="text-white font-medium text-lg leading-tight">{cat.name}</h3>
-                      <p className="text-white/80 text-xs font-light mt-1">{cat.price}</p>
+                  <Link 
+                    href={`/shop?category=${cat.name.toLowerCase()}`} 
+                    scroll={true}
+                    onClick={() => {
+                      window.scrollTo({ top: 0, left: 0, behavior: "instant" });
+                    }}
+                    onMouseEnter={() => setCategoryTheme(cat.name)}
+                    onMouseLeave={() => resetTheme()}
+                    className="group relative h-[260px] sm:h-[300px] md:h-[320px] rounded-2xl overflow-hidden block shadow-sm border border-black/5 transition-all duration-300 hover:-translate-y-1.5 hover:shadow-lg"
+                  >
+                    <Image src={cat.img} fill sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 20vw" className="object-cover transition-transform duration-700 group-hover:scale-105" alt={cat.name} />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/30 to-transparent" />
+                    <div className="absolute bottom-0 left-0 w-full p-3.5 sm:p-5 flex items-end justify-between">
+                      <div>
+                        <span className="text-white/60 text-[11px] font-light uppercase tracking-wider block mb-0.5">{cat.subtitle}</span>
+                        <h3 className="text-white font-medium text-lg leading-tight">{cat.name}</h3>
+                        <p className="text-white/80 text-xs font-light mt-1">{cat.price}</p>
+                      </div>
+                      <div className="w-8 h-8 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center text-white group-hover:bg-white group-hover:text-black transition-colors shrink-0 ml-2">
+                        <ArrowRight className="w-4 h-4" />
+                      </div>
                     </div>
-                    <div className="w-8 h-8 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center text-white group-hover:bg-white group-hover:text-black transition-colors shrink-0 ml-2">
-                      <ArrowRight className="w-4 h-4" />
-                    </div>
-                  </div>
-                </Link>
+                  </Link>
+                </motion.div>
               ))}
             </div>
           </div>
@@ -361,7 +391,13 @@ export default function Home() {
           className="py-20 relative z-10"
         >
           <div className="container mx-auto px-4 md:px-8">
-            <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between mb-12 gap-6">
+            <motion.div 
+              initial={{ opacity: 0, y: 24 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, margin: "-40px" }}
+              transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+              className="flex flex-col lg:flex-row items-start lg:items-center justify-between mb-12 gap-6"
+            >
               <div>
                 <h2 className="text-3xl font-sans font-medium text-gray-900 mb-1">
                   Productos <span className="font-display italic text-accent-700">Populares</span>
@@ -395,7 +431,7 @@ export default function Home() {
                   );
                 })}
               </div>
-            </div>
+            </motion.div>
             
             {filteredProducts.length === 0 ? (
               <div className="text-center py-16 bg-white/30 backdrop-blur-md rounded-3xl border border-white/50">
@@ -403,16 +439,20 @@ export default function Home() {
               </div>
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
-                {filteredProducts.slice(0, 8).map((product) => (
-                  <div 
+                {filteredProducts.slice(0, 8).map((product, idx) => (
+                  <motion.div 
                     key={product.id}
+                    initial={{ opacity: 0, y: 28 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true, margin: "-30px" }}
+                    transition={{ duration: 0.5, delay: (idx % 4) * 0.08, ease: [0.22, 1, 0.36, 1] }}
                     onMouseEnter={() => setCategoryTheme(product.category)}
                     onMouseLeave={() => {
                       if (activeFilter !== "Todos") setCategoryTheme(activeFilter);
                     }}
                   >
                     <ProductCard {...product} />
-                  </div>
+                  </motion.div>
                 ))}
               </div>
             )}

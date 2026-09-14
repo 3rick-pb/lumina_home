@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { useCatalogStore, normalizeCategory, CatalogProduct, isAgotadoBadge } from "@/lib/catalogStore";
 import { ColorVariantsManager, ColorVariant } from "@/components/admin/ColorVariantsManager";
+import { normalizeImageUrl, normalizeImagesList, isGoogleDriveUrl } from "@/lib/imageUtils";
 
 export default function AdminPage() {
   const { products, categories, addProduct, updateProduct, deleteProduct, addCategory, deleteCategory } = useCatalogStore();
@@ -44,8 +45,9 @@ export default function AdminPage() {
   const [features, setFeatures] = useState("");
   const [hasSizes, setHasSizes] = useState(false);
   const [sizes, setSizes] = useState("");
-  const [hasColors, setHasColors] = useState(false);
-  const [colorVariants, setColorVariants] = useState<ColorVariant[]>([]);
+  const [colorVariants, setColorVariants] = useState<ColorVariant[]>([
+    { name: "Negro Grafito", hex: "#18181B" }
+  ]);
   const [stock, setStock] = useState("20");
 
   // Recalculate discount whenever prices change
@@ -69,10 +71,10 @@ export default function AdminPage() {
     setSubmitError("");
     setIsSubmitting(true);
 
-    const imagesList = [imageUrl.trim()];
+    const normalizedMain = normalizeImageUrl(imageUrl) || "https://images.unsplash.com/photo-1507473885765-e6ed057f782c?q=80&w=800&auto=format&fit=crop";
+    const imagesList = [normalizedMain];
     if (extraImages.trim()) {
-      const extras = extraImages.split(",").map(u => u.trim()).filter(Boolean);
-      imagesList.push(...extras);
+      imagesList.push(...normalizeImagesList(extraImages));
     }
 
     const featuresList = features.trim()
@@ -83,9 +85,9 @@ export default function AdminPage() {
       ? sizes.split(",").map(s => s.trim()).filter(Boolean)
       : undefined;
 
-    const colorsList = hasColors && colorVariants.length > 0
+    const colorsList = colorVariants.length > 0
       ? colorVariants.filter(c => c.name.trim()).map(c => ({ name: c.name.trim(), hex: c.hex.trim() || "#18181B" }))
-      : undefined;
+      : [{ name: "Negro Grafito", hex: "#18181B" }];
 
     const res = await addProduct({
       title: title.trim(),
@@ -95,7 +97,7 @@ export default function AdminPage() {
       oldPrice: hasDiscount && oldPrice ? parseFloat(oldPrice) : null,
       discount: hasDiscount && calculatedDiscount ? calculatedDiscount : undefined,
       badge: badge.trim() || undefined,
-      imageUrl: imageUrl.trim() || "https://images.unsplash.com/photo-1507473885765-e6ed057f782c?q=80&w=800&auto=format&fit=crop",
+      imageUrl: normalizedMain,
       images: imagesList,
       description: description.trim(),
       features: featuresList,
@@ -123,8 +125,7 @@ export default function AdminPage() {
       setFeatures("");
       setHasSizes(false);
       setSizes("");
-      setHasColors(false);
-      setColorVariants([]);
+      setColorVariants([{ name: "Negro Grafito", hex: "#18181B" }]);
       setStock("20");
     } else {
       setSubmitError(res.error || "Error al registrar el producto");
@@ -148,8 +149,9 @@ export default function AdminPage() {
   const [editFeatures, setEditFeatures] = useState("");
   const [editHasSizes, setEditHasSizes] = useState(false);
   const [editSizes, setEditSizes] = useState("");
-  const [editHasColors, setEditHasColors] = useState(false);
-  const [editColorVariants, setEditColorVariants] = useState<ColorVariant[]>([]);
+  const [editColorVariants, setEditColorVariants] = useState<ColorVariant[]>([
+    { name: "Negro Grafito", hex: "#18181B" }
+  ]);
   const [editStock, setEditStock] = useState("20");
   const [isSubmittingEdit, setIsSubmittingEdit] = useState(false);
   const [editError, setEditError] = useState("");
@@ -186,8 +188,11 @@ export default function AdminPage() {
     setEditFeatures(prod.features ? prod.features.join("\n") : "");
     setEditHasSizes(Boolean(prod.sizes && prod.sizes.length > 0));
     setEditSizes(prod.sizes ? prod.sizes.join(", ") : "");
-    setEditHasColors(Boolean(prod.colors && prod.colors.length > 0));
-    setEditColorVariants(Array.isArray(prod.colors) ? prod.colors.map(c => ({ name: c.name, hex: c.hex || "#18181B" })) : []);
+    setEditColorVariants(
+      Array.isArray(prod.colors) && prod.colors.length > 0
+        ? prod.colors.map(c => ({ name: c.name, hex: c.hex || "#18181B" }))
+        : [{ name: "Negro Grafito", hex: "#18181B" }]
+    );
     setEditStock(typeof prod.stock === "number" ? prod.stock.toString() : "20");
     setEditError("");
     setShowEditModal(true);
@@ -199,14 +204,15 @@ export default function AdminPage() {
     setEditError("");
     setIsSubmittingEdit(true);
 
-    const imagesList = [editImageUrl.trim()];
+    const normalizedEditMain = normalizeImageUrl(editImageUrl) || "https://images.unsplash.com/photo-1507473885765-e6ed057f782c?q=80&w=800&auto=format&fit=crop";
+    const imagesList = [normalizedEditMain];
     if (editExtraImages.trim()) {
-      imagesList.push(...editExtraImages.split(",").map(u => u.trim()).filter(Boolean));
+      imagesList.push(...normalizeImagesList(editExtraImages));
     }
 
-    const colorsList = editHasColors && editColorVariants.length > 0
+    const colorsList = editColorVariants.length > 0
       ? editColorVariants.filter(c => c.name.trim()).map(c => ({ name: c.name.trim(), hex: c.hex.trim() || "#18181B" }))
-      : undefined;
+      : [{ name: "Negro Grafito", hex: "#18181B" }];
 
     const res = await updateProduct(editingProductId, {
       id: editingProductId,
@@ -217,7 +223,7 @@ export default function AdminPage() {
       oldPrice: editHasDiscount && editOldPrice ? parseFloat(editOldPrice) : null,
       discount: editHasDiscount && editCalculatedDiscount ? editCalculatedDiscount : undefined,
       badge: editBadge.trim() || undefined,
-      imageUrl: editImageUrl.trim() || "https://images.unsplash.com/photo-1507473885765-e6ed057f782c?q=80&w=800&auto=format&fit=crop",
+      imageUrl: normalizedEditMain,
       images: imagesList,
       description: editDescription.trim(),
       features: editFeatures.trim() ? editFeatures.split("\n").map(f => f.trim()).filter(Boolean) : undefined,
@@ -680,7 +686,11 @@ export default function AdminPage() {
                     className="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm focus:border-gray-900 outline-none bg-white" 
                     placeholder="https://images.unsplash.com/photo-... o enlace directo .jpg / .webp" 
                   />
-                  {imageUrl.trim() && (imageUrl.includes('.html') || (!imageUrl.match(/\.(jpg|jpeg|png|webp|avif|gif|svg)(\?.*)?$/i) && !imageUrl.includes('unsplash') && !imageUrl.includes('mlstatic') && !imageUrl.includes('cloudinary') && !imageUrl.includes('imgur'))) && (
+                  {isGoogleDriveUrl(imageUrl) ? (
+                    <p className="text-[11px] text-emerald-800 mt-1.5 font-medium bg-emerald-50 p-2 rounded-lg border border-emerald-200 flex items-center gap-1.5">
+                      <span className="font-bold">✓</span> Enlace de Google Drive detectado y transformado a visualización directa.
+                    </p>
+                  ) : imageUrl.trim() && (imageUrl.includes('.html') || (!imageUrl.match(/\.(jpg|jpeg|png|webp|avif|gif|svg)(\?.*)?$/i) && !imageUrl.includes('unsplash') && !imageUrl.includes('mlstatic') && !imageUrl.includes('cloudinary') && !imageUrl.includes('imgur'))) && (
                     <p className="text-[11px] text-amber-700 mt-1.5 font-medium bg-amber-50 p-2 rounded-lg border border-amber-200">
                       ⚠️ Atención: Parece que has pegado el enlace de una página web y no de una foto directa. Asegúrate de hacer clic derecho &gt; &ldquo;Copiar dirección de imagen&rdquo;.
                     </p>
@@ -693,7 +703,7 @@ export default function AdminPage() {
                     <div className="relative w-16 h-16 rounded-lg overflow-hidden bg-gray-100 shrink-0 border border-gray-200">
                       {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img 
-                        src={imageUrl.trim().split(/[\n,]+/)[0]} 
+                        src={normalizeImageUrl(imageUrl.trim().split(/[\n,]+/)[0])} 
                         alt="Vista previa" 
                         className="w-full h-full object-cover" 
                         onError={(e) => { (e.currentTarget as HTMLImageElement).src = "https://images.unsplash.com/photo-1507473885765-e6ed057f782c?q=80&w=800&auto=format&fit=crop"; }}
@@ -701,7 +711,7 @@ export default function AdminPage() {
                     </div>
                     <div className="min-w-0 flex-1 text-xs">
                       <p className="font-semibold text-gray-800">Vista previa de imagen principal</p>
-                      <p className="text-[11px] text-gray-400 truncate">{imageUrl.trim().split(/[\n,]+/)[0]}</p>
+                      <p className="text-[11px] text-gray-400 truncate">{normalizeImageUrl(imageUrl.trim().split(/[\n,]+/)[0])}</p>
                     </div>
                   </div>
                 )}
@@ -723,14 +733,14 @@ export default function AdminPage() {
                   <div className="space-y-1.5 pt-1">
                     <p className="text-[11px] font-semibold text-gray-500">Galería adicional detectada:</p>
                     <div className="flex gap-2 flex-wrap">
-                      {extraImages.split(/[\n,]+/).map(u => u.trim()).filter(u => u.startsWith('http')).map((url, idx) => (
-                        <div key={idx} className="relative w-12 h-12 rounded-lg overflow-hidden bg-gray-100 border border-gray-200 shrink-0">
+                      {normalizeImagesList(extraImages).map((u, i) => (
+                        <div key={i} className="relative w-12 h-12 rounded-lg overflow-hidden border border-gray-200 bg-gray-50">
                           {/* eslint-disable-next-line @next/next/no-img-element */}
                           <img 
-                            src={url} 
-                            alt={`Galería ${idx}`} 
+                            src={u} 
+                            alt={`Extra ${i+1}`} 
                             className="w-full h-full object-cover" 
-                            onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }}
+                            onError={(e) => { (e.currentTarget as HTMLImageElement).src = "https://images.unsplash.com/photo-1507473885765-e6ed057f782c?q=80&w=800&auto=format&fit=crop"; }}
                           />
                         </div>
                       ))}
@@ -770,7 +780,7 @@ export default function AdminPage() {
 
               {/* Section 5: Dynamic Variants */}
               <div className="p-4 bg-gray-50/70 rounded-2xl space-y-4 border border-gray-100">
-                <h3 className="text-xs font-bold uppercase tracking-wider text-gray-700">Variantes Adaptativas</h3>
+                <h3 className="text-xs font-bold uppercase tracking-wider text-gray-700">Variantes Adaptativas & Inventario</h3>
                 
                 <div className="flex items-center justify-between">
                   <div>
@@ -799,8 +809,6 @@ export default function AdminPage() {
                 </div>
 
                 <ColorVariantsManager
-                  hasColors={hasColors}
-                  onHasColorsChange={setHasColors}
                   colors={colorVariants}
                   onChange={setColorVariants}
                 />
@@ -1002,19 +1010,30 @@ export default function AdminPage() {
                 <div className="flex gap-4 items-start">
                   {editImageUrl && (
                     <div className="relative w-16 h-16 rounded-xl overflow-hidden bg-gray-100 border border-gray-200 shrink-0">
-                      <Image src={editImageUrl} alt="Preview" fill sizes="64px" className="object-cover" />
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img 
+                        src={normalizeImageUrl(editImageUrl)} 
+                        alt="Preview" 
+                        className="w-full h-full object-cover" 
+                        onError={(e) => { (e.currentTarget as HTMLImageElement).src = "https://images.unsplash.com/photo-1507473885765-e6ed057f782c?q=80&w=800&auto=format&fit=crop"; }}
+                      />
                     </div>
                   )}
                   <div className="flex-1">
                     <label className="block text-xs font-semibold text-gray-700 mb-1.5">URL de Imagen Principal *</label>
                     <input 
                       required 
-                      type="url" 
+                      type="text" 
                       value={editImageUrl} 
                       onChange={e => setEditImageUrl(e.target.value)} 
                       className="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm focus:border-gray-900 outline-none" 
-                      placeholder="https://images.unsplash.com/photo-..." 
+                      placeholder="https://images.unsplash.com/photo-... o enlace de Google Drive" 
                     />
+                    {isGoogleDriveUrl(editImageUrl) && (
+                      <p className="text-[11px] text-emerald-800 mt-1.5 font-medium bg-emerald-50 p-2 rounded-lg border border-emerald-200 flex items-center gap-1.5">
+                        <span className="font-bold">✓</span> Enlace de Google Drive detectado y transformado a visualización directa.
+                      </p>
+                    )}
                   </div>
                 </div>
 
@@ -1070,8 +1089,6 @@ export default function AdminPage() {
                 </div>
 
                 <ColorVariantsManager
-                  hasColors={editHasColors}
-                  onHasColorsChange={setEditHasColors}
                   colors={editColorVariants}
                   onChange={setEditColorVariants}
                 />

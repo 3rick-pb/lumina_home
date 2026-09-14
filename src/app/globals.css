@@ -8,6 +8,10 @@
     --foreground: #111827;
   }
 
+  html {
+    scroll-behavior: smooth;
+  }
+
   body {
     @apply bg-[#f8f9fa] text-gray-900;
   }

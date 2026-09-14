@@ -74,27 +74,34 @@ const detectHexFromName = (name: string): string | null => {
 };
 
 interface ColorVariantsManagerProps {
-  hasColors: boolean;
-  onHasColorsChange: (hasColors: boolean) => void;
+  hasColors?: boolean;
+  onHasColorsChange?: (hasColors: boolean) => void;
   colors: ColorVariant[];
   onChange: (colors: ColorVariant[]) => void;
 }
 
 export function ColorVariantsManager({
-  hasColors,
-  onHasColorsChange,
   colors,
   onChange,
 }: ColorVariantsManagerProps) {
+  React.useEffect(() => {
+    if (!colors || colors.length === 0) {
+      onChange([
+        { name: "Negro Grafito", hex: "#18181B" }
+      ]);
+    }
+  }, [colors, onChange]);
+
   const addVariant = (variant?: ColorVariant) => {
     const nextVariant: ColorVariant = variant || {
-      name: `Color ${colors.length + 1}`,
+      name: `Color ${(colors?.length || 0) + 1}`,
       hex: "#18181B",
     };
-    onChange([...colors, nextVariant]);
+    onChange([...(colors || []), nextVariant]);
   };
 
   const removeVariant = (index: number) => {
+    if (colors.length <= 1) return; // Must keep at least 1 color
     const next = colors.filter((_, i) => i !== index);
     onChange(next);
   };
@@ -118,53 +125,27 @@ export function ColorVariantsManager({
     onChange(next);
   };
 
-  const handleToggle = () => {
-    const nextState = !hasColors;
-    onHasColorsChange(nextState);
-    if (nextState && colors.length === 0) {
-      // Default to 2 starter variants if empty
-      onChange([
-        { name: "Blanco Puro", hex: "#FFFFFF" },
-        { name: "Negro Azabache", hex: "#18181B" },
-      ]);
-    }
-  };
-
   return (
     <div className="pt-3 border-t border-gray-200 dark:border-white/10 space-y-3">
-      {/* Header Toggle */}
+      {/* Header (Mandatory & Always Active) */}
       <div className="flex items-center justify-between">
         <div>
           <div className="flex items-center gap-2">
             <Palette className="w-4 h-4 text-[#8c9276]" />
             <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">
-              ¿Tiene opciones de color / acabados?
+              Colores & Acabados del Producto <span className="text-red-500">*</span>
             </p>
           </div>
           <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-            Muestra círculos interactivos en la tienda con los tonos reales que selecciones.
+            Cada producto cuenta con al menos un tono para garantizar simetría visual y catálogo interactivo.
           </p>
         </div>
-        <button
-          type="button"
-          onClick={handleToggle}
-          className={`w-11 h-6 rounded-full transition-colors relative focus:outline-none shrink-0 ${
-            hasColors ? "bg-gray-900 dark:bg-white" : "bg-gray-300 dark:bg-gray-700"
-          }`}
-          aria-label="Alternar opciones de color"
-        >
-          <span
-            className={`absolute top-1 w-4 h-4 rounded-full transition-all ${
-              hasColors
-                ? "left-6 bg-white dark:bg-gray-900"
-                : "left-1 bg-white dark:bg-gray-400"
-            }`}
-          />
-        </button>
+        <span className="text-[11px] font-semibold text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/40 px-2.5 py-0.5 rounded-full shadow-2xs">
+          Siempre Activo
+        </span>
       </div>
 
-      {hasColors && (
-        <div className="p-4 rounded-2xl bg-gray-50/80 dark:bg-[#1a1a1c] border border-gray-200/80 dark:border-white/10 space-y-4 animate-fade-in">
+      <div className="p-4 rounded-2xl bg-gray-50/80 dark:bg-[#1a1a1c] border border-gray-200/80 dark:border-white/10 space-y-4">
           {/* Quick Presets Palette */}
           <div>
             <div className="flex items-center justify-between mb-2">
@@ -273,9 +254,14 @@ export function ColorVariantsManager({
                     {/* Remove Button */}
                     <button
                       type="button"
+                      disabled={colors.length <= 1}
                       onClick={() => removeVariant(idx)}
-                      className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-lg transition-colors shrink-0 cursor-pointer"
-                      title="Eliminar este color"
+                      className={`p-2 rounded-lg transition-colors shrink-0 ${
+                        colors.length <= 1 
+                          ? "text-gray-300 dark:text-gray-600 cursor-not-allowed" 
+                          : "text-gray-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-500/10 cursor-pointer"
+                      }`}
+                      title={colors.length <= 1 ? "Todo producto debe conservar al menos 1 color" : "Eliminar este color"}
                     >
                       <Trash2 className="w-4 h-4" />
                     </button>
@@ -304,7 +290,6 @@ export function ColorVariantsManager({
             </div>
           )}
         </div>
-      )}
     </div>
   );
 }

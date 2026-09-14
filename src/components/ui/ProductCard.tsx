@@ -8,6 +8,8 @@ import { useCartStore } from "@/lib/store";
 import { useCatalogStore, isAgotadoBadge } from "@/lib/catalogStore";
 import { useUserStore } from "@/lib/userStore";
 
+import { normalizeImageUrl } from "@/lib/imageUtils";
+
 interface ProductCardProps {
   id: string;
   title: string;
@@ -29,7 +31,13 @@ export function ProductCard({ id, title, price, oldPrice, discount, badge, image
     setIsMounted(true);
   }, []);
   
-  const [imgSrc, setImgSrc] = React.useState(imageUrl || "https://images.unsplash.com/photo-1507473885765-e6ed057f782c?q=80&w=800&auto=format&fit=crop");
+  const initialUrl = normalizeImageUrl(imageUrl) || "https://images.unsplash.com/photo-1507473885765-e6ed057f782c?q=80&w=800&auto=format&fit=crop";
+  const [imgSrc, setImgSrc] = React.useState(initialUrl);
+
+  React.useEffect(() => {
+    setImgSrc(normalizeImageUrl(imageUrl) || "https://images.unsplash.com/photo-1507473885765-e6ed057f782c?q=80&w=800&auto=format&fit=crop");
+  }, [imageUrl]);
+
   const isFav = isMounted ? isFavorite(id) : false;
   const isAgotado = isAgotadoBadge(badge) || (stock !== undefined && stock <= 0);
 
@@ -39,8 +47,8 @@ export function ProductCard({ id, title, price, oldPrice, discount, badge, image
         {(badge || isAgotado) && (
           <div className={`absolute top-3 left-3 backdrop-blur-md text-xs font-bold px-3 py-1 rounded-full z-10 shadow-sm transition-colors ${
             isAgotado 
-              ? "bg-red-500 text-white shadow-red-500/20" 
-              : "bg-white/70 border border-white/80 text-gray-900"
+              ? "bg-red-50/60 border border-red-300/80 text-red-600" 
+              : "bg-white/40 border border-white/60 text-gray-900"
           }`}>
             {isAgotado ? "AGOTADO" : badge}
           </div>
@@ -70,22 +78,29 @@ export function ProductCard({ id, title, price, oldPrice, discount, badge, image
       <div className="flex flex-col flex-1 px-1">
         <h3 className="text-base font-medium text-gray-900 line-clamp-1 mb-1">{title}</h3>
 
-        {/* Real interactive color preview dots */}
-        {colors && colors.length > 0 && (
-          <div className="flex items-center gap-1.5 mb-2">
-            {colors.slice(0, 5).map((col, idx) => (
-              <span
-                key={idx}
-                title={col.name}
-                className="w-3.5 h-3.5 rounded-full border border-black/20 shadow-[0_1px_2px_rgba(0,0,0,0.08)] shrink-0 transition-transform hover:scale-125"
-                style={{ backgroundColor: col.hex }}
-              />
-            ))}
-            {colors.length > 5 && (
-              <span className="text-[10px] text-gray-400 font-medium">+{colors.length - 5}</span>
-            )}
-          </div>
-        )}
+        {/* Real interactive color preview dots with fixed height to guarantee vertical alignment symmetry across cards */}
+        <div className="h-5 flex items-center gap-1.5 mb-2">
+          {colors && colors.length > 0 ? (
+            <>
+              {colors.slice(0, 5).map((col, idx) => (
+                <span
+                  key={idx}
+                  title={col.name}
+                  className="w-3.5 h-3.5 rounded-full border border-black/20 shadow-[0_1px_2px_rgba(0,0,0,0.08)] shrink-0 transition-transform hover:scale-125"
+                  style={{ backgroundColor: col.hex }}
+                />
+              ))}
+              {colors.length > 5 && (
+                <span className="text-[10px] text-gray-400 font-medium">+{colors.length - 5}</span>
+              )}
+            </>
+          ) : (
+            <span
+              title="Acabado estándar"
+              className="w-3.5 h-3.5 rounded-full border border-black/15 bg-stone-300/60 shadow-2xs shrink-0"
+            />
+          )}
+        </div>
 
         <div className="flex items-center justify-between gap-2 mb-3">
           <div className="flex items-center gap-2">

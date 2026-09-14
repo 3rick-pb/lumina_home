@@ -371,16 +371,16 @@ export function ProductLandingView({
                 className="object-cover transition-transform duration-700 ease-out group-hover:scale-105 pointer-events-none select-none"
               />
               
-              {product.badge && (
+              {(product.badge || isAgotado) && (
                 <div className="absolute top-5 left-5 z-10">
                   <span
-                    className={`px-3.5 py-1.5 rounded-full text-xs font-bold tracking-wide uppercase shadow-sm backdrop-blur-md ${
+                    className={`px-3.5 py-1.5 rounded-full text-xs font-bold tracking-wide uppercase shadow-sm backdrop-blur-md transition-colors ${
                       isAgotado
-                        ? "bg-red-500/90 text-white"
-                        : "bg-gray-950/80 dark:bg-white/90 text-white dark:text-gray-950"
+                        ? "bg-red-50/60 dark:bg-red-950/40 border border-red-300/80 dark:border-red-800/60 text-red-600 dark:text-red-400"
+                        : "bg-white/40 dark:bg-black/40 border border-white/60 dark:border-white/20 text-gray-900 dark:text-white"
                     }`}
                   >
-                    {product.badge}
+                    {isAgotado ? "AGOTADO" : product.badge}
                   </span>
                 </div>
               )}

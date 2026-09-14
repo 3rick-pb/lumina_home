@@ -12,6 +12,7 @@ import { useUserStore } from "@/lib/userStore";
 import { useAmbientStore } from "@/lib/ambientStore";
 import { ProductLandingView } from "@/components/product/ProductLandingView";
 import { ProductBundleSection } from "@/components/product/ProductBundleSection";
+import { normalizeImageUrl } from "@/lib/imageUtils";
 
 export default function ProductDetail({ params }: { params: Promise<{ id: string }> }) {
   const { id } = React.use(params);
@@ -91,7 +92,7 @@ export default function ProductDetail({ params }: { params: Promise<{ id: string
 
   const defaultFallback = "https://images.unsplash.com/photo-1507473885765-e6ed057f782c?q=80&w=800&auto=format&fit=crop";
   const rawImages = (product.images && product.images.length > 0) ? product.images : [product.imageUrl || defaultFallback];
-  const images = rawImages.filter(Boolean);
+  const images = rawImages.map(img => normalizeImageUrl(img)).filter(Boolean);
   const currentImage = images[activeImage] || images[0] || defaultFallback;
   const isFav = isMounted ? isFavorite(product.id) : false;
 
@@ -160,10 +161,10 @@ export default function ProductDetail({ params }: { params: Promise<{ id: string
                 draggable={false}
                 className="object-cover transform-gpu pointer-events-none select-none"
               />
-              {product.badge && (
-                <span className={`absolute top-4 left-4 backdrop-blur-md px-3 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider shadow-sm ${
+              {(product.badge || isAgotado) && (
+                <span className={`absolute top-4 left-4 backdrop-blur-md px-3 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider shadow-sm transition-colors ${
                   isAgotado 
-                    ? "bg-red-500 text-white shadow-red-500/20" 
+                    ? "bg-red-50/60 border border-red-300/80 text-red-600" 
                     : "bg-white/40 border border-white/60 text-gray-900"
                 }`}>
                   {isAgotado ? "AGOTADO" : product.badge}
