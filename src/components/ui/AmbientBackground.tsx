@@ -57,27 +57,21 @@ export function AmbientBackground() {
     <div className="fixed inset-0 pointer-events-none -z-10 overflow-hidden bg-[#faf9f6] [contain:strict] [transform:translateZ(0)]">
       {/* Primary Atmospheric Glow (Top Left) */}
       <div 
-        className="absolute -top-[15%] -left-[10%] w-[60vw] h-[60vw] rounded-full opacity-55 transition-all duration-1000 ease-out pointer-events-none" 
-        style={{ 
-          background: `radial-gradient(circle at center, ${theme.c1} 0%, rgba(0,0,0,0) 70%)` 
-        }} 
+        className="absolute -top-[15%] -left-[10%] w-[60vw] h-[60vw] rounded-full filter blur-[120px] opacity-45 transition-colors duration-1000 ease-out transform-gpu will-change-[background-color] pointer-events-none" 
+        style={{ backgroundColor: theme.c1 }} 
       />
       {/* Secondary Atmospheric Glow (Bottom Right) */}
       <div 
-        className="absolute -bottom-[15%] -right-[10%] w-[70vw] h-[70vw] rounded-full opacity-50 transition-all duration-1000 ease-out pointer-events-none" 
-        style={{ 
-          background: `radial-gradient(circle at center, ${theme.c2} 0%, rgba(0,0,0,0) 70%)` 
-        }} 
+        className="absolute -bottom-[15%] -right-[10%] w-[70vw] h-[70vw] rounded-full filter blur-[130px] opacity-40 transition-colors duration-1000 ease-out transform-gpu will-change-[background-color] pointer-events-none" 
+        style={{ backgroundColor: theme.c2 }} 
       />
       {/* Center Ambient Hue (Adapts to Active Product/Niche) */}
       <div 
-        className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[75vw] h-[50vw] rounded-full opacity-40 transition-all duration-1000 ease-out pointer-events-none" 
-        style={{ 
-          background: `radial-gradient(ellipse at center, ${theme.c3} 0%, rgba(0,0,0,0) 70%)` 
-        }} 
+        className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[75vw] h-[50vw] rounded-full filter blur-[135px] opacity-35 transition-colors duration-1000 ease-out transform-gpu will-change-[background-color] pointer-events-none" 
+        style={{ backgroundColor: theme.c3 }} 
       />
-      {/* Fine Matte Texture Layer */}
-      <div className="absolute inset-0 bg-white/20 pointer-events-none" />
+      {/* Fine Matte Texture Layer - Zero-cost matte veil without heavy backdrop-blur */}
+      <div className="absolute inset-0 bg-[#fafafa]/40 pointer-events-none" />
     </div>
   );
 }

@@ -291,7 +291,7 @@ export default function Home() {
         style={{ willChange: "transform, opacity" }}
         className="relative z-30 -mt-7 sm:-mt-9 mb-3 container mx-auto px-4 md:px-8 transform-gpu"
       >
-        <div className="bg-white/95 dark:bg-[#1e1e20]/95 backdrop-blur-2xl rounded-2xl md:rounded-[2rem] border border-black/[0.06] dark:border-white/[0.08] shadow-[0_16px_40px_-8px_rgba(0,0,0,0.08),0_4px_16px_rgba(0,0,0,0.03)] p-3 sm:p-4 md:p-5">
+        <div className="bg-white dark:bg-[#1e1e20] rounded-2xl md:rounded-[2rem] border border-black/[0.06] dark:border-white/[0.08] shadow-[0_16px_40px_-8px_rgba(0,0,0,0.08),0_4px_16px_rgba(0,0,0,0.03)] p-3 sm:p-4 md:p-5">
           <div className="flex lg:grid lg:grid-cols-5 items-center justify-start lg:justify-items-center gap-6 sm:gap-8 lg:gap-0 overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden py-1 px-2">
             {trustBadges.map((badge, idx) => (
               <div 
