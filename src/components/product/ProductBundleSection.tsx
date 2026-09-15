@@ -147,7 +147,7 @@ export function ProductBundleSection({
   };
 
   return (
-    <section className="my-16 p-6 sm:p-8 rounded-3xl bg-white/60 dark:bg-[#1a1a1c]/60 backdrop-blur-xl border border-gray-200/80 dark:border-white/10 shadow-lg transition-all">
+    <section className="my-16 p-6 sm:p-8 rounded-3xl bg-white/60 dark:bg-[#1a1a1c]/60 backdrop-blur-xl border border-gray-200/80 dark:border-white/10 shadow-lg transition-all transform-gpu">
       {isVolumeTiersMode ? (
         /* ================= MODO PACKS POR VOLUMEN ================= */
         <div className="space-y-6">

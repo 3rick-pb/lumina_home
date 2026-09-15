@@ -711,9 +711,10 @@ export function ProductLandingView({
         <motion.section 
           initial={{ opacity: 0, y: 32 }}
           whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: false, amount: 0.15 }}
+          viewport={{ once: false, amount: 0.05, margin: "0px 0px -20px 0px" }}
           transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-          className="relative p-6 sm:p-10 rounded-[2.5rem] bg-white/70 dark:bg-[#1a1a1c]/70 backdrop-blur-xl border border-gray-200/80 dark:border-white/10 shadow-xl overflow-hidden"
+          style={{ willChange: "transform, opacity" }}
+          className="relative p-6 sm:p-10 rounded-[2.5rem] bg-white/70 dark:bg-[#1a1a1c]/70 backdrop-blur-xl border border-gray-200/80 dark:border-white/10 shadow-xl overflow-hidden transform-gpu"
         >
           <div className="max-w-5xl mx-auto space-y-8">
             <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
@@ -862,9 +863,10 @@ export function ProductLandingView({
         <motion.section 
           initial={{ opacity: 0, y: 32 }}
           whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: false, amount: 0.15 }}
+          viewport={{ once: false, amount: 0.05, margin: "0px 0px -20px 0px" }}
           transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-          className="relative p-6 sm:p-10 rounded-[2.5rem] bg-white/70 dark:bg-[#1a1a1c]/70 backdrop-blur-xl border border-gray-200/80 dark:border-white/10 shadow-xl overflow-hidden"
+          style={{ willChange: "transform, opacity" }}
+          className="relative p-6 sm:p-10 rounded-[2.5rem] bg-white/70 dark:bg-[#1a1a1c]/70 backdrop-blur-xl border border-gray-200/80 dark:border-white/10 shadow-xl overflow-hidden transform-gpu"
         >
           <div className="max-w-5xl mx-auto space-y-8">
             <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
@@ -983,9 +985,10 @@ export function ProductLandingView({
       <motion.section 
         initial={{ opacity: 0, y: 32 }}
         whileInView={{ opacity: 1, y: 0 }}
-        viewport={{ once: false, amount: 0.15 }}
+        viewport={{ once: false, amount: 0.05, margin: "0px 0px -20px 0px" }}
         transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-        className="relative"
+        style={{ willChange: "transform, opacity" }}
+        className="relative transform-gpu"
       >
         <div className="text-center max-w-2xl mx-auto mb-16 space-y-3">
           <span className="text-xs font-bold uppercase tracking-widest text-[#8c9276] dark:text-[#ccff00]">
@@ -1127,9 +1130,10 @@ export function ProductLandingView({
       <motion.section 
         initial={{ opacity: 0, y: 32 }}
         whileInView={{ opacity: 1, y: 0 }}
-        viewport={{ once: false, amount: 0.15 }}
+        viewport={{ once: false, amount: 0.05, margin: "0px 0px -20px 0px" }}
         transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-        className="relative p-8 sm:p-12 rounded-[3rem] bg-white/60 dark:bg-[#1a1a1c]/60 backdrop-blur-xl border border-gray-200/80 dark:border-white/10 shadow-xl space-y-12"
+        style={{ willChange: "transform, opacity" }}
+        className="relative p-8 sm:p-12 rounded-[3rem] bg-white/60 dark:bg-[#1a1a1c]/60 backdrop-blur-xl border border-gray-200/80 dark:border-white/10 shadow-xl space-y-12 transform-gpu"
       >
         <div className="text-center max-w-2xl mx-auto space-y-3">
           <span className="text-xs font-bold uppercase tracking-widest text-[#8c9276] dark:text-[#ccff00]">
@@ -1251,9 +1255,10 @@ export function ProductLandingView({
       <motion.section 
         initial={{ opacity: 0, y: 32 }}
         whileInView={{ opacity: 1, y: 0 }}
-        viewport={{ once: false, amount: 0.15 }}
+        viewport={{ once: false, amount: 0.05, margin: "0px 0px -20px 0px" }}
         transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-        className="relative"
+        style={{ willChange: "transform, opacity" }}
+        className="relative transform-gpu"
       >
         <div className="text-center max-w-2xl mx-auto mb-14 space-y-3">
           <span className="text-xs font-bold uppercase tracking-widest text-[#8c9276] dark:text-[#ccff00]">
@@ -1313,9 +1318,10 @@ export function ProductLandingView({
       <motion.section 
         initial={{ opacity: 0, y: 32 }}
         whileInView={{ opacity: 1, y: 0 }}
-        viewport={{ once: false, amount: 0.15 }}
+        viewport={{ once: false, amount: 0.05, margin: "0px 0px -20px 0px" }}
         transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-        className="relative p-8 sm:p-14 rounded-[3rem] bg-gradient-to-br from-gray-50 to-white dark:from-[#1a1a1c] dark:to-[#202022] border border-gray-200/80 dark:border-white/10 shadow-2xl"
+        style={{ willChange: "transform, opacity" }}
+        className="relative p-8 sm:p-14 rounded-[3rem] bg-gradient-to-br from-gray-50 to-white dark:from-[#1a1a1c] dark:to-[#202022] border border-gray-200/80 dark:border-white/10 shadow-2xl transform-gpu"
       >
         <div className="max-w-5xl mx-auto space-y-12">
           

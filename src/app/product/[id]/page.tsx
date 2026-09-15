@@ -99,17 +99,16 @@ export default function ProductDetail({ params }: { params: Promise<{ id: string
 
   return (
     <div className="relative min-h-screen pt-28 pb-24 bg-transparent">
-      {/* Soft Mate Ambient Aura */}
-      <div className="fixed inset-0 -z-10 overflow-hidden pointer-events-none transform-gpu will-change-transform [contain:strict]">
-        <Image
-          src={currentImage}
-          alt="Ambient Aura"
-          fill
-          sizes="100vw"
-          className="object-cover blur-[180px] saturate-[1.1] opacity-25 transition-all duration-1000 z-10 transform-gpu"
+      {/* Soft Mate Ambient Aura - Lightweight GPU composition without heavy Gaussian blur */}
+      <div className="fixed inset-0 -z-10 overflow-hidden pointer-events-none transform-gpu [contain:strict]">
+        <div 
+          className="absolute inset-0 opacity-25 transform-gpu"
+          style={{
+            backgroundImage: `radial-gradient(circle at 50% 30%, rgba(140, 146, 118, 0.25) 0%, rgba(210, 180, 140, 0.12) 45%, transparent 75%)`,
+          }}
         />
         {/* Soft matte film */}
-        <div className="absolute inset-0 bg-[#fafafa]/60 backdrop-blur-[50px] z-20 transform-gpu" />
+        <div className="absolute inset-0 bg-[#fafafa]/80 transform-gpu" />
       </div>
 
       <div className="container mx-auto px-4 md:px-6 relative z-10">
@@ -484,9 +483,10 @@ export default function ProductDetail({ params }: { params: Promise<{ id: string
         <motion.div 
           initial={{ opacity: 0, y: 28 }}
           whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: false, amount: 0.15 }}
+          viewport={{ once: false, amount: 0.05, margin: "0px 0px -20px 0px" }}
           transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-          className="mt-24 pt-12 border-t border-gray-200 grid grid-cols-1 lg:grid-cols-12 gap-12 items-start"
+          style={{ willChange: "transform, opacity" }}
+          className="mt-24 pt-12 border-t border-gray-200 grid grid-cols-1 lg:grid-cols-12 gap-12 items-start transform-gpu"
         >
           <div className="lg:col-span-7">
             {/* Tab Navigation */}
@@ -672,9 +672,10 @@ export default function ProductDetail({ params }: { params: Promise<{ id: string
         <motion.div 
           initial={{ opacity: 0, y: 28 }}
           whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: false, amount: 0.15 }}
+          viewport={{ once: false, amount: 0.05, margin: "0px 0px -20px 0px" }}
           transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-          className="mt-24 pt-12 border-t border-gray-200"
+          style={{ willChange: "transform, opacity" }}
+          className="mt-24 pt-12 border-t border-gray-200 transform-gpu"
         >
           <div className="flex items-center justify-between mb-8">
             <h3 className="text-2xl font-bold text-gray-900">Te podría gustar</h3>
@@ -688,8 +689,10 @@ export default function ProductDetail({ params }: { params: Promise<{ id: string
                 key={prod.id}
                 initial={{ opacity: 0, y: 24 }}
                 whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: false, amount: 0.15 }}
+                viewport={{ once: false, amount: 0.05, margin: "0px 0px -20px 0px" }}
                 transition={{ duration: 0.5, delay: idx * 0.08, ease: [0.22, 1, 0.36, 1] }}
+                style={{ willChange: "transform, opacity" }}
+                className="transform-gpu"
               >
                 <ProductCard {...prod} />
               </motion.div>

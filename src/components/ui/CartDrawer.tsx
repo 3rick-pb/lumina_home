@@ -33,6 +33,7 @@ import { useThemeStore, getResolvedTheme } from "@/lib/themeStore";
 import { clsx } from "clsx";
 import { useUserStore, Order, formatCleanName } from "@/lib/userStore";
 import { useCatalogStore, isAgotadoBadge } from "@/lib/catalogStore";
+import { getRefinedCoordinates } from "@/lib/locationUtils";
 
 // Official Card & Payment Gateway Logos
 function MastercardLogo({ className = "h-4" }: { className?: string }) {
@@ -317,71 +318,53 @@ export function CartDrawer() {
     }
   };
 
- const handleDetectLocation = () => {
- if (typeof window === "undefined" || !navigator.geolocation) {
- setLocationError("Tu navegador no soporta geolocalización.");
- return;
- }
+  const handleDetectLocation = async () => {
+    if (typeof window === "undefined" || !navigator.geolocation) {
+      setLocationError("Tu navegador no soporta geolocalización.");
+      return;
+    }
 
- setIsDetectingLocation(true);
- setLocationError(null);
- setLocationSuccess(false);
+    setIsDetectingLocation(true);
+    setLocationError(null);
+    setLocationSuccess(false);
 
- navigator.geolocation.getCurrentPosition(
- async (pos) => {
- try {
- const { latitude, longitude } = pos.coords;
+    try {
+      // Runs 3 internal sequential samples and returns the 3rd sample ("a la 3ra la vencida")
+      const coords = await getRefinedCoordinates();
 
- const res = await fetch("/api/geocode", {
- method: "POST",
- headers: { "Content-Type": "application/json" },
- body: JSON.stringify({ lat: latitude, lon: longitude })
- });
+      const res = await fetch("/api/geocode", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ lat: coords.latitude, lon: coords.longitude })
+      });
 
- const result = await res.json();
+      const result = await res.json();
 
- if (result.success && result.data) {
- const { street: detStreet, city: detCity, state: detState, postalCode: detPostal, country: detCountry } = result.data;
+      if (result.success && result.data) {
+        const { street: detStreet, city: detCity, state: detState, postalCode: detPostal, country: detCountry } = result.data;
 
- if (detStreet) setAddrStreet(detStreet);
- if (detCity) setAddrCity(detCity);
- if (detState) setAddrState(detState);
- if (detPostal) setAddrPostal(detPostal);
- if (detCountry) setAddrCountry(detCountry);
+        // Fills the form strictly once at the end with the 3rd refined reading
+        if (detStreet) setAddrStreet(detStreet);
+        if (detCity) setAddrCity(detCity);
+        if (detState) setAddrState(detState);
+        if (detPostal) setAddrPostal(detPostal);
+        if (detCountry) setAddrCountry(detCountry);
 
- if (!addrRecipient.trim() && user?.name) {
- setAddrRecipient(user.name);
- }
+        if (!addrRecipient.trim() && user?.name) {
+          setAddrRecipient(user.name);
+        }
 
- setLocationSuccess(true);
- } else {
- setLocationError(result.error || "No se pudo obtener la información de dirección. Por favor, ingrésala manualmente.");
- }
- } catch {
- setLocationError("Error al procesar la dirección de tu ubicación.");
- } finally {
- setIsDetectingLocation(false);
- }
- },
- (err) => {
- setIsDetectingLocation(false);
- if (err.code === 1) {
- setLocationError("Permiso de ubicación denegado. Habilita el acceso a la ubicación en tu navegador o ingresa los datos manualmente.");
- } else if (err.code === 2) {
- setLocationError("Ubicación no disponible en este dispositivo. Ingresa los datos manualmente.");
- } else if (err.code === 3) {
- setLocationError("Tiempo de espera agotado al obtener la ubicación. Ingresa los datos manualmente.");
- } else {
- setLocationError("No se pudo acceder a la ubicación. Ingresa los datos manualmente.");
- }
- },
- {
- enableHighAccuracy: true,
- timeout: 10000,
- maximumAge: 0
- }
- );
- };
+        setLocationSuccess(true);
+      } else {
+        setLocationError(result.error || "No se pudo obtener la información de dirección. Por favor, ingrésala manualmente.");
+      }
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Error al procesar la dirección de tu ubicación.";
+      setLocationError(msg);
+    } finally {
+      setIsDetectingLocation(false);
+    }
+  };
 
  const handleSaveAddress = async (e: React.FormEvent) => {
  e.preventDefault();

@@ -25,6 +25,7 @@ import { supabase } from "@/lib/supabase";
 import { CloudSyncStatus } from "../CloudSyncStatus";
 import { BlobatarAvatar } from "@/components/ui/BlobatarAvatar";
 import { useAvatarSettingsStore } from "@/lib/avatarSettingsStore";
+import { getRefinedCoordinates } from "@/lib/locationUtils";
 
 interface SettingsTabProps {
   isAdmin: boolean;
@@ -304,59 +305,38 @@ export function SettingsTab({
     return false;
   };
 
-  const handleDetectLocation = () => {
+  const handleDetectLocation = async () => {
     setIsDetectingLocation(true);
     setLocationError(null);
     setLocationSuccess(false);
 
     if (typeof window === "undefined" || !navigator.geolocation) {
-      // Direct IP fallback
-      fetchIpLocationFallback().finally(() => setIsDetectingLocation(false));
+      await fetchIpLocationFallback();
+      setIsDetectingLocation(false);
       return;
     }
 
-    let handled = false;
-    const timeoutId = setTimeout(async () => {
-      if (!handled) {
-        handled = true;
+    try {
+      // 3 internal sequential samples, 3rd sample used ("la tercera es la vencida")
+      const coords = await getRefinedCoordinates();
+      const res = await fetch(`/api/geocode?lat=${coords.latitude}&lon=${coords.longitude}`);
+      if (!res.ok) throw new Error("Error en resolución");
+      const data = await res.json();
+      if (data.success) {
+        // Fills the form strictly once at the end with the 3rd sample
+        applyResolvedLocation(data);
+      } else {
         await fetchIpLocationFallback();
-        setIsDetectingLocation(false);
       }
-    }, 4500);
-
-    navigator.geolocation.getCurrentPosition(
-      async (pos) => {
-        if (handled) return;
-        handled = true;
-        clearTimeout(timeoutId);
-        try {
-          const { latitude, longitude } = pos.coords;
-          const res = await fetch(`/api/geocode?lat=${latitude}&lon=${longitude}`);
-          if (!res.ok) throw new Error("Error en resolución");
-          const data = await res.json();
-          if (data.success) {
-            applyResolvedLocation(data);
-          } else {
-            await fetchIpLocationFallback();
-          }
-        } catch {
-          await fetchIpLocationFallback();
-        } finally {
-          setIsDetectingLocation(false);
-        }
-      },
-      async () => {
-        if (handled) return;
-        handled = true;
-        clearTimeout(timeoutId);
-        const ok = await fetchIpLocationFallback();
-        if (!ok) {
-          setLocationError("No se pudo detectar la ubicación. Por favor, ingresa los datos manualmente.");
-        }
-        setIsDetectingLocation(false);
-      },
-      { enableHighAccuracy: false, timeout: 4000, maximumAge: 120000 }
-    );
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : null;
+      const ok = await fetchIpLocationFallback();
+      if (!ok) {
+        setLocationError(msg || "No se pudo detectar la ubicación. Por favor, ingresa los datos manualmente.");
+      }
+    } finally {
+      setIsDetectingLocation(false);
+    }
   };
 
   const handleAddressSubmit = async (e: React.FormEvent) => {

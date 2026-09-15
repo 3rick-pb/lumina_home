@@ -284,11 +284,12 @@ export default function Home() {
 
       {/* Trust Badges Bar - Floating Glassmorphic Pill Banner */}
       <motion.div 
-        initial={{ opacity: 0, y: 24 }}
+        initial={{ opacity: 0, y: 20 }}
         whileInView={{ opacity: 1, y: 0 }}
-        viewport={{ once: false, amount: 0.15 }}
-        transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
-        className="relative z-30 -mt-7 sm:-mt-9 mb-3 container mx-auto px-4 md:px-8"
+        viewport={{ once: false, amount: 0.05, margin: "0px 0px -20px 0px" }}
+        transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+        style={{ willChange: "transform, opacity" }}
+        className="relative z-30 -mt-7 sm:-mt-9 mb-3 container mx-auto px-4 md:px-8 transform-gpu"
       >
         <div className="bg-white/95 dark:bg-[#1e1e20]/95 backdrop-blur-2xl rounded-2xl md:rounded-[2rem] border border-black/[0.06] dark:border-white/[0.08] shadow-[0_16px_40px_-8px_rgba(0,0,0,0.08),0_4px_16px_rgba(0,0,0,0.03)] p-3 sm:p-4 md:p-5">
           <div className="flex lg:grid lg:grid-cols-5 items-center justify-start lg:justify-items-center gap-6 sm:gap-8 lg:gap-0 overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden py-1 px-2">
@@ -328,11 +329,12 @@ export default function Home() {
         >
           <div className="container mx-auto px-4 md:px-8">
             <motion.div 
-              initial={{ opacity: 0, y: 24 }}
+              initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: false, amount: 0.15 }}
-              transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-              className="flex items-end justify-between mb-12"
+              viewport={{ once: false, amount: 0.05, margin: "0px 0px -20px 0px" }}
+              transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+              style={{ willChange: "transform, opacity" }}
+              className="flex items-end justify-between mb-12 transform-gpu"
             >
               <div>
                 <h2 className="text-3xl font-sans font-medium text-gray-900 mb-2">
@@ -350,10 +352,12 @@ export default function Home() {
               {dynamicCategories.map((cat, idx) => (
                 <motion.div
                   key={idx}
-                  initial={{ opacity: 0, y: 28 }}
+                  initial={{ opacity: 0, y: 24 }}
                   whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: false, amount: 0.15 }}
-                  transition={{ duration: 0.5, delay: idx * 0.05, ease: [0.22, 1, 0.36, 1] }}
+                  viewport={{ once: false, amount: 0.05, margin: "0px 0px -20px 0px" }}
+                  transition={{ duration: 0.45, delay: idx * 0.04, ease: [0.22, 1, 0.36, 1] }}
+                  style={{ willChange: "transform, opacity" }}
+                  className="transform-gpu"
                 >
                   <Link 
                     href={`/shop?category=${cat.name.toLowerCase()}`} 
@@ -394,9 +398,10 @@ export default function Home() {
             <motion.div 
               initial={{ opacity: 0, y: 24 }}
               whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: false, amount: 0.15 }}
+              viewport={{ once: false, amount: 0.05, margin: "0px 0px -20px 0px" }}
               transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-              className="flex flex-col lg:flex-row items-start lg:items-center justify-between mb-12 gap-6"
+              style={{ willChange: "transform, opacity" }}
+              className="flex flex-col lg:flex-row items-start lg:items-center justify-between mb-12 gap-6 transform-gpu"
             >
               <div>
                 <h2 className="text-3xl font-sans font-medium text-gray-900 mb-1">
@@ -444,8 +449,10 @@ export default function Home() {
                     key={product.id}
                     initial={{ opacity: 0, y: 28 }}
                     whileInView={{ opacity: 1, y: 0 }}
-                    viewport={{ once: false, amount: 0.15 }}
+                    viewport={{ once: false, amount: 0.05, margin: "0px 0px -20px 0px" }}
                     transition={{ duration: 0.5, delay: (idx % 4) * 0.08, ease: [0.22, 1, 0.36, 1] }}
+                    style={{ willChange: "transform, opacity" }}
+                    className="transform-gpu"
                     onMouseEnter={() => setCategoryTheme(product.category)}
                     onMouseLeave={() => {
                       if (activeFilter !== "Todos") setCategoryTheme(activeFilter);

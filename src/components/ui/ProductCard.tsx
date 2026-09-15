@@ -42,19 +42,19 @@ export function ProductCard({ id, title, price, oldPrice, discount, badge, image
   const isAgotado = isAgotadoBadge(badge) || (stock !== undefined && stock <= 0);
 
   return (
-    <Link href={`/product/${id}`} className="group flex flex-col bg-transparent">
+    <Link href={`/product/${id}`} className="group flex flex-col bg-transparent transform-gpu [contain:content]">
       <div className="relative aspect-[4/3] overflow-hidden rounded-2xl bg-gray-100 mb-4">
         {(badge || isAgotado) && (
-          <div className={`absolute top-3 left-3 backdrop-blur-md text-xs font-bold px-3 py-1 rounded-full z-10 shadow-sm transition-colors ${
+          <div className={`absolute top-3 left-3 backdrop-blur-sm transform-gpu text-xs font-bold px-3 py-1 rounded-full z-10 shadow-sm transition-colors ${
             isAgotado 
-              ? "bg-red-50/60 border border-red-300/80 text-red-600" 
-              : "bg-white/40 border border-white/60 text-gray-900"
+              ? "bg-red-50/70 border border-red-300/80 text-red-600" 
+              : "bg-white/60 dark:bg-black/60 border border-white/70 dark:border-white/20 text-gray-900 dark:text-gray-100"
           }`}>
             {isAgotado ? "AGOTADO" : badge}
           </div>
         )}
         <button 
-          className={`absolute top-3 right-3 w-8 h-8 backdrop-blur-md border rounded-full flex items-center justify-center transition-all z-10 shadow-sm opacity-0 group-hover:opacity-100 translate-y-2 group-hover:translate-y-0 ${isFav ? 'bg-red-500/10 border-red-500 text-red-500' : 'bg-white/40 border-white/60 text-gray-600 hover:text-red-500 hover:bg-white/60'}`}
+          className={`absolute top-3 right-3 w-8 h-8 backdrop-blur-sm transform-gpu border rounded-full flex items-center justify-center transition-all z-10 shadow-sm opacity-0 group-hover:opacity-100 translate-y-2 group-hover:translate-y-0 ${isFav ? 'bg-red-500/10 border-red-500 text-red-500' : 'bg-white/60 dark:bg-black/60 border-white/70 dark:border-white/20 text-gray-600 hover:text-red-500 hover:bg-white/80'}`}
           onClick={(e) => { 
             e.preventDefault(); 
             if (!isAuthenticated) return;

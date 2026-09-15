@@ -45,7 +45,8 @@ export default function ShopPage({ searchParams }: { searchParams: Promise<{ cat
           initial={{ opacity: 0, y: 24 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-          className="mb-8 sm:mb-12"
+          style={{ willChange: "transform, opacity" }}
+          className="mb-8 sm:mb-12 transform-gpu"
         >
           <h1 className="text-2xl sm:text-4xl font-display italic font-bold text-gray-900 mb-3 sm:mb-4">
             {categoryFilter ? `Colección: ${categoryFilter.charAt(0).toUpperCase() + categoryFilter.slice(1)}` : "Todos los Productos"}
@@ -60,7 +61,8 @@ export default function ShopPage({ searchParams }: { searchParams: Promise<{ cat
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.1, ease: [0.22, 1, 0.36, 1] }}
-          className="flex items-center gap-2 sm:gap-3 mb-8 sm:mb-10 overflow-x-auto pb-2 hide-scrollbar"
+          style={{ willChange: "transform, opacity" }}
+          className="flex items-center gap-2 sm:gap-3 mb-8 sm:mb-10 overflow-x-auto pb-2 hide-scrollbar transform-gpu"
         >
           <Link href="/shop" className={`px-4 sm:px-5 py-2 rounded-full text-xs sm:text-sm font-medium transition-all whitespace-nowrap shrink-0 ${!categoryFilter ? 'bg-white/40 backdrop-blur-xl border border-white/60 text-gray-900 shadow-sm' : 'bg-transparent text-gray-600 border border-gray-200 hover:bg-white/40 hover:backdrop-blur-md'}`}>
             Todos
@@ -99,8 +101,10 @@ export default function ShopPage({ searchParams }: { searchParams: Promise<{ cat
                 key={product.id}
                 initial={{ opacity: 0, y: 28 }}
                 whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: false, amount: 0.15 }}
+                viewport={{ once: false, amount: 0.05, margin: "0px 0px -20px 0px" }}
                 transition={{ duration: 0.5, delay: (idx % 4) * 0.07, ease: [0.22, 1, 0.36, 1] }}
+                style={{ willChange: "transform, opacity" }}
+                className="transform-gpu"
               >
                 <ProductCard {...product} />
               </motion.div>
