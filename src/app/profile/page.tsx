@@ -157,7 +157,7 @@ export default function ProfilePage() {
  const [prodBundleCompanionIds, setProdBundleCompanionIds] = useState<string[]>([]);
  const [prodLandingSpecs, setProdLandingSpecs] = useState<Array<{ title: string; description: string; side?: 'left' | 'right'; pinX?: number; pinY?: number }>>([
     { title: "Chasis de Aluminio y Acabado Mate", description: "Estructura aeroespacial ultraligera anodizada resistente a corrosión.", side: "left", pinX: 28, pinY: 32 },
-    { title: "Óptica Lumina Difusa 360°", description: "Difusor de vidrio opalino tratado térmicamente para dispersión uniforme.", side: "left", pinX: 30, pinY: 70 },
+    { title: "Óptica Difusa 360°", description: "Difusor de vidrio opalino tratado térmicamente para dispersión uniforme.", side: "left", pinX: 30, pinY: 70 },
     { title: "Gestión Térmica Inteligente", description: "Disipación pasiva silenciosa que alarga la vida útil de los componentes.", side: "right", pinX: 72, pinY: 28 },
     { title: "Carga Ultra Rápida USB-C", description: "Protocolo universal con selector touch de 4 temperaturas de luz.", side: "right", pinX: 70, pinY: 68 },
   ]);
@@ -767,7 +767,7 @@ const handleConfirmDeleteNiche = async () => {
  </aside>
 
   {/* 2. Main Bento Canvas */}
-  <main className={`flex-1 flex flex-col min-w-0 w-full space-y-6 pb-24 md:pb-6 ${activeTab === "cart_alerts" || activeTab === "analytics" ? "max-w-none" : "max-w-7xl mx-auto"}`}>
+  <main className={`flex-1 flex flex-col min-w-0 w-full space-y-6 pb-24 md:pb-0 ${activeTab === "cart_alerts" || activeTab === "analytics" ? "max-w-none" : "max-w-7xl mx-auto"}`}>
   
   {/* Top App Bar (Reference Style) */}
   <header className="relative z-40 bg-white/80 dark:bg-[#202022]/80 backdrop-blur-2xl p-4 md:px-6 rounded-3xl border border-white/80 shadow-[0_4px_20px_rgba(0,0,0,0.02)] flex items-center justify-between gap-4">
@@ -1126,7 +1126,7 @@ const handleConfirmDeleteNiche = async () => {
  <div className="p-6 border-b border-gray-100 dark:border-white/5 flex items-center justify-between bg-gray-50/50 dark:bg-[#2a2a2c]/50">
  <div>
  <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100">Publicar Nuevo Producto</h2>
- <p className="text-xs text-gray-500 dark:text-gray-400">Se adaptará automáticamente a la estética Lumina y se sincronizará en Supabase.</p>
+ <p className="text-xs text-gray-500 dark:text-gray-400">Se adaptará automáticamente al diseño de la tienda y se sincronizará en la base de datos.</p>
  </div>
  <button onClick={() => setShowProductModal(false)} className="p-2 text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 bg-white dark:bg-[#202022] rounded-full shadow-sm dark:shadow-none">
  <X className="w-5 h-5" />

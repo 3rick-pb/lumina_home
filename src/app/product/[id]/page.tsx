@@ -13,6 +13,7 @@ import { useAmbientStore } from "@/lib/ambientStore";
 import { ProductLandingView } from "@/components/product/ProductLandingView";
 import { ProductBundleSection } from "@/components/product/ProductBundleSection";
 import { normalizeImageUrl } from "@/lib/imageUtils";
+import { motion } from "framer-motion";
 
 export default function ProductDetail({ params }: { params: Promise<{ id: string }> }) {
   const { id } = React.use(params);
@@ -480,7 +481,13 @@ export default function ProductDetail({ params }: { params: Promise<{ id: string
         />
 
         {/* Tabs Section */}
-        <div className="mt-24 pt-12 border-t border-gray-200 grid grid-cols-1 lg:grid-cols-12 gap-12 items-start">
+        <motion.div 
+          initial={{ opacity: 0, y: 28 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: false, amount: 0.15 }}
+          transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+          className="mt-24 pt-12 border-t border-gray-200 grid grid-cols-1 lg:grid-cols-12 gap-12 items-start"
+        >
           <div className="lg:col-span-7">
             {/* Tab Navigation */}
             <div className="flex gap-4 md:gap-8 border-b border-gray-200 mb-8 overflow-x-auto hide-scrollbar">
@@ -500,7 +507,7 @@ export default function ProductDetail({ params }: { params: Promise<{ id: string
                 onClick={() => setActiveTab('dimensiones')}
                 className={`pb-4 text-sm font-semibold transition-all shrink-0 relative ${activeTab === 'dimensiones' ? 'text-gray-900 border-b-2 border-gray-900' : 'text-gray-500 hover:text-gray-800'}`}
               >
-                Dimensiones y Peso
+                Dimensiones
               </button>
               <button 
                 onClick={() => setActiveTab('envios')}
@@ -519,7 +526,7 @@ export default function ProductDetail({ params }: { params: Promise<{ id: string
             {/* Tab Content */}
             {activeTab === 'detalles' && (
               <div className="space-y-6 animate-fade-in">
-                <p className="text-gray-600 leading-relaxed text-sm md:text-base">
+                <p className="text-gray-600 leading-relaxed text-sm">
                   {product.description}
                 </p>
                 {product.features && product.features.length > 0 && (
@@ -657,24 +664,38 @@ export default function ProductDetail({ params }: { params: Promise<{ id: string
           <div className="lg:col-span-5 relative w-full aspect-[4/3] rounded-3xl overflow-hidden bg-gray-100 shadow-sm border border-gray-200/60">
              <Image src={images[1] || images[0]} fill sizes="(max-width: 1024px) 100vw, 40vw" alt={product.title} className="object-cover" />
           </div>
-        </div>
+        </motion.div>
         </>
         )}
 
         {/* You May Also Like */}
-        <div className="mt-24 pt-12 border-t border-gray-200">
+        <motion.div 
+          initial={{ opacity: 0, y: 28 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: false, amount: 0.15 }}
+          transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+          className="mt-24 pt-12 border-t border-gray-200"
+        >
           <div className="flex items-center justify-between mb-8">
             <h3 className="text-2xl font-bold text-gray-900">Te podría gustar</h3>
-            <Link href="#" className="text-sm font-semibold text-gray-900 flex items-center gap-1 hover:underline underline-offset-4">
+            <Link href="/shop" className="text-sm font-semibold text-gray-900 flex items-center gap-1 hover:underline underline-offset-4">
               Ver todo &rarr;
             </Link>
           </div>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
-            {relatedProducts.map((prod) => (
-              <ProductCard key={prod.id} {...prod} />
+            {relatedProducts.map((prod, idx) => (
+              <motion.div
+                key={prod.id}
+                initial={{ opacity: 0, y: 24 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: false, amount: 0.15 }}
+                transition={{ duration: 0.5, delay: idx * 0.08, ease: [0.22, 1, 0.36, 1] }}
+              >
+                <ProductCard {...prod} />
+              </motion.div>
             ))}
           </div>
-        </div>
+        </motion.div>
 
       </div>
     </div>

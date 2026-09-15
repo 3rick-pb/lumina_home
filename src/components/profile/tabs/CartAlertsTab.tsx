@@ -135,9 +135,9 @@ export function CartAlertsTab() {
     SAMPLE_CUSTOMERS.forEach((customer, idx) => {
       setTimeout(() => {
         fireToast(customer);
-      }, idx * 320);
+      }, idx * 750);
     });
-    setTimeout(() => setBurstSent(false), 3200);
+    setTimeout(() => setBurstSent(false), 3800);
   }, [fireToast]);
 
   const currentAudit = React.useMemo(() => {
@@ -672,6 +672,7 @@ export function CartAlertsTab() {
             <div className="relative p-4 sm:p-5 rounded-2xl bg-gray-50 dark:bg-black/25 border border-dashed border-gray-300 dark:border-white/10 flex flex-col items-center justify-center min-h-[300px] overflow-hidden w-full">
               <div className="w-full flex justify-center py-2">
                 <CartAlertCard
+                  key={`${config.layout}_${config.presetId}_${config.bgColor}_${config.textColor}`}
                   payload={SAMPLE_CUSTOMERS[0]}
                   config={config}
                   isPreview={true}

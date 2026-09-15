@@ -3,6 +3,7 @@
 import React, { useEffect } from "react";
 import Link from "next/link";
 import { PackageSearch } from "lucide-react";
+import { motion } from "framer-motion";
 import { ProductCard } from "@/components/ui/ProductCard";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { useCatalogStore } from "@/lib/catalogStore";
@@ -40,7 +41,12 @@ export default function ShopPage({ searchParams }: { searchParams: Promise<{ cat
   return (
     <div className="min-h-screen pt-32 pb-24 bg-transparent relative">
       <div className="container mx-auto px-4 md:px-8 relative z-10">
-        <div className="mb-8 sm:mb-12">
+        <motion.div 
+          initial={{ opacity: 0, y: 24 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+          className="mb-8 sm:mb-12"
+        >
           <h1 className="text-2xl sm:text-4xl font-display italic font-bold text-gray-900 mb-3 sm:mb-4">
             {categoryFilter ? `Colección: ${categoryFilter.charAt(0).toUpperCase() + categoryFilter.slice(1)}` : "Todos los Productos"}
           </h1>
@@ -48,9 +54,14 @@ export default function ShopPage({ searchParams }: { searchParams: Promise<{ cat
             Descubre nuestra selección de artículos diseñados para convertir tu hogar en tu refugio ideal. 
             Mezcla de estética, comodidad y tecnología.
           </p>
-        </div>
+        </motion.div>
 
-        <div className="flex items-center gap-2 sm:gap-3 mb-8 sm:mb-10 overflow-x-auto pb-2 hide-scrollbar">
+        <motion.div 
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.1, ease: [0.22, 1, 0.36, 1] }}
+          className="flex items-center gap-2 sm:gap-3 mb-8 sm:mb-10 overflow-x-auto pb-2 hide-scrollbar"
+        >
           <Link href="/shop" className={`px-4 sm:px-5 py-2 rounded-full text-xs sm:text-sm font-medium transition-all whitespace-nowrap shrink-0 ${!categoryFilter ? 'bg-white/40 backdrop-blur-xl border border-white/60 text-gray-900 shadow-sm' : 'bg-transparent text-gray-600 border border-gray-200 hover:bg-white/40 hover:backdrop-blur-md'}`}>
             Todos
           </Link>
@@ -63,7 +74,7 @@ export default function ShopPage({ searchParams }: { searchParams: Promise<{ cat
               {cat}
             </Link>
           ))}
-        </div>
+        </motion.div>
 
         {filteredProducts.length === 0 ? (
           <EmptyState
@@ -83,8 +94,16 @@ export default function ShopPage({ searchParams }: { searchParams: Promise<{ cat
           />
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
-            {filteredProducts.map((product) => (
-              <ProductCard key={product.id} {...product} />
+            {filteredProducts.map((product, idx) => (
+              <motion.div
+                key={product.id}
+                initial={{ opacity: 0, y: 28 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: false, amount: 0.15 }}
+                transition={{ duration: 0.5, delay: (idx % 4) * 0.07, ease: [0.22, 1, 0.36, 1] }}
+              >
+                <ProductCard {...product} />
+              </motion.div>
             ))}
           </div>
         )}

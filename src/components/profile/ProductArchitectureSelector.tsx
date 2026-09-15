@@ -87,7 +87,7 @@ export function ProductArchitectureSelector({
   const handleAddDefaultSpecs = () => {
     onLandingSpecsChange([
       { title: "Chasis de Aluminio y Acabado Mate", description: "Estructura aeroespacial ultraligera con recubrimiento texturizado.", side: "left", pinX: 28, pinY: 32 },
-      { title: "Óptica Lumina Difusa 360°", description: "Vidrio opalino templado con microprismas para luz homogénea.", side: "left", pinX: 30, pinY: 70 },
+      { title: "Óptica Difusa 360°", description: "Vidrio opalino templado con microprismas para luz homogénea.", side: "left", pinX: 30, pinY: 70 },
       { title: "Gestión Térmica Inteligente", description: "Disipador pasivo silencioso que garantiza más de 50.000h de vida útil.", side: "right", pinX: 72, pinY: 28 },
       { title: "Carga Ultra Rápida USB-C", description: "Control touch capacitivo de 4 temperaturas de calidez.", side: "right", pinX: 70, pinY: 68 },
     ]);
@@ -97,7 +97,7 @@ export function ProductArchitectureSelector({
     onLandingReviewsChange([
       { author: "Valentina M.", role: "Arquitecta de Interiores", rating: 5, comment: "La calidad de los acabados es insuperable. Transforma cualquier rincón." },
       { author: "Carlos E.", role: "Comprador Verificado", rating: 5, comment: "El empaque llegó blindado en 24 horas. Impresiona todavía más en persona." },
-      { author: "Sofía R.", role: "Diseñadora de Iluminación", rating: 5, comment: "Lumina cuida cada detalle de textura y temperatura de luz. Maravilloso." },
+      { author: "Sofía R.", role: "Diseñadora de Iluminación", rating: 5, comment: "Se cuida cada detalle de textura y temperatura de luz. Maravilloso." },
     ]);
   };
 
@@ -201,7 +201,7 @@ export function ProductArchitectureSelector({
             </p>
           </div>
           <span className="self-start sm:self-auto text-[11px] font-black px-3 py-1 rounded-full bg-[#8c9276]/15 dark:bg-[#ccff00]/15 text-[#8c9276] dark:text-[#ccff00] border border-[#8c9276]/20 dark:border-[#ccff00]/20">
-            {layoutType === 'landing' ? 'Mayor Descripción' : 'Product Page Estándar'}
+            {layoutType === 'landing' ? 'Landing Page (Características)' : 'Product Page Estándar'}
           </span>
         </div>
 
@@ -339,7 +339,7 @@ export function ProductArchitectureSelector({
                 <div className="flex items-center gap-2">
                   <ShoppingBag className="w-4 h-4 text-[#8c9276] dark:text-[#ccff00]" />
                   <h4 className="text-sm font-bold text-gray-950 dark:text-white">
-                    Mayor Descripción
+                    Landing Page (Características)
                   </h4>
                 </div>
                 <span className="text-[10px] font-black px-2 py-0.5 rounded-md bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-500/20">
@@ -381,9 +381,6 @@ export function ProductArchitectureSelector({
                 <h3 className="text-sm font-bold text-gray-950 dark:text-white">
                   Bloque 2: Oferta Complementaria o Ahorro por Volumen
                 </h3>
-                <span className="text-[10px] font-black px-2 py-0.5 rounded-md bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/20">
-                  Estándar & Detallado
-                </span>
               </div>
               <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-0.5">
                 Configura paquetes de ahorro o productos accesorios sugeridos para aumentar el valor medio del pedido.
@@ -421,7 +418,7 @@ export function ProductArchitectureSelector({
                   >
                     <div className="flex items-center gap-2 mb-1">
                       <Package className="w-4 h-4 text-emerald-600" />
-                      <span className="text-xs">Comprados Juntos (Accesorios Reales)</span>
+                      <span className="text-xs">Comprados Juntos</span>
                     </div>
                     <p className="text-[10px] text-gray-500 font-normal">
                       Elige productos específicos del catálogo para acompañar esta pieza.
@@ -543,7 +540,7 @@ export function ProductArchitectureSelector({
               </div>
               <div>
                 <h3 className="text-sm font-bold text-gray-950 dark:text-white">
-                  Configuración de Mayor Descripción
+                  Configuración de Landing Page
                 </h3>
                 <p className="text-[11px] text-gray-500 dark:text-gray-400">
                   Personaliza los bloques inmersivos. Si dejas campos vacíos, se aplicarán contenidos de diseño editorial por defecto.
@@ -556,7 +553,7 @@ export function ProductArchitectureSelector({
           {onHowToUseChange && (
             <div className="p-4 rounded-2xl bg-white dark:bg-[#1a1a1c] border border-gray-200/80 dark:border-white/10 space-y-2 shadow-sm">
               <label className="block text-xs font-bold uppercase tracking-wider text-gray-900 dark:text-white">
-                ¿Cómo se usa / Aplicaciones Recomendadas? (Se usa)
+                ¿Cómo se usa / Aplicaciones Recomendadas?
               </label>
               <p className="text-[11px] text-gray-500 dark:text-gray-400">
                 Describe para qué escenarios, espacios o rutinas está concebida esta pieza.
@@ -597,6 +594,24 @@ export function ProductArchitectureSelector({
                 >
                   + Agregar Punto
                 </button>
+              </div>
+            </div>
+
+            {/* Exploded View Architecture Suggestion Box */}
+            <div className="p-3.5 rounded-2xl bg-blue-50/70 dark:bg-blue-950/30 border border-blue-200/80 dark:border-blue-800/50 flex items-start gap-3">
+              <div className="w-8 h-8 rounded-xl bg-blue-600/10 dark:bg-blue-500/20 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0 mt-0.5">
+                <Sparkles className="w-4 h-4" />
+              </div>
+              <div className="text-xs text-blue-950 dark:text-blue-100 leading-relaxed space-y-1">
+                <p className="font-bold">
+                  Estructura sugerida: Arquitectura <span className="font-mono bg-blue-100 dark:bg-blue-900/60 px-1.5 py-0.5 rounded text-blue-800 dark:text-blue-300 font-bold">/explodedview</span>
+                </p>
+                <p className="text-[11px] text-blue-900/80 dark:text-blue-300/80">
+                  Te sugerimos que la imagen a emplear en esta sección esté en arquitectura <strong>/explodedview</strong> (vista en despiece o componentes separados), para así mostrar el producto por partes y poder describirlo con máxima claridad técnica.
+                </p>
+                <p className="text-[11px] text-blue-900/80 dark:text-blue-300/80">
+                  💡 <strong>Tip pro:</strong> Si la foto de tu producto no cuenta con esa estructura, puedes crearla fácilmente en ChatGPT subiendo la foto de tu pieza y escribiendo simplemente <span className="font-mono font-bold bg-blue-100 dark:bg-blue-900/60 px-1.5 py-0.5 rounded text-blue-900 dark:text-blue-200">/explodedview</span> en el chat.
+                </p>
               </div>
             </div>
 

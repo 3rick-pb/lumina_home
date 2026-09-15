@@ -406,6 +406,64 @@ export const hydrateAlertConfigFromClient = () => {
   } catch {}
 };
 
+interface QueuedToast {
+  payload: CartItemAddedPayload;
+  onViewDetails?: () => void;
+}
+
+const toastQueue: QueuedToast[] = [];
+let isProcessingToastQueue = false;
+let lastFiredTime = 0;
+const MIN_TOAST_INTERVAL_MS = 750; // 0.75s strict separation between alerts to eliminate visual glitches
+
+function processToastQueue() {
+  if (toastQueue.length === 0) {
+    isProcessingToastQueue = false;
+    return;
+  }
+  isProcessingToastQueue = true;
+
+  const now = Date.now();
+  const elapsed = now - lastFiredTime;
+  const delay = elapsed < MIN_TOAST_INTERVAL_MS ? MIN_TOAST_INTERVAL_MS - elapsed : 0;
+
+  setTimeout(() => {
+    const item = toastQueue.shift();
+    if (!item) {
+      isProcessingToastQueue = false;
+      return;
+    }
+
+    lastFiredTime = Date.now();
+    const { config, activeAlerts } = useAdminAlertStore.getState();
+    if (config.soundEnabled) {
+      playAcousticChime();
+    }
+
+    const newItem: StackedAlertItem = {
+      id: `${item.payload.userId || 'usr'}_${item.payload.product?.id || 'prd'}_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+      payload: item.payload,
+      timestamp: Date.now(),
+    };
+
+    // Keep up to 4 alerts visible at once in the stacked deck
+    const nextAlerts = [newItem, ...activeAlerts.slice(0, 3)];
+
+    useAdminAlertStore.setState({
+      activeAlerts: nextAlerts,
+      activeAlert: item.payload,
+      activeAlertKey: Date.now(),
+      onViewDetailsCallback: item.onViewDetails,
+    });
+
+    if (toastQueue.length > 0) {
+      processToastQueue();
+    } else {
+      isProcessingToastQueue = false;
+    }
+  }, delay);
+}
+
 export const useAdminAlertStore = create<AdminAlertState>((set, get) => ({
   config: DEFAULT_CONFIG,
   activeAlert: null,
@@ -555,26 +613,10 @@ export const useAdminAlertStore = create<AdminAlertState>((set, get) => ({
   },
 
   fireToast: (payload, onViewDetails) => {
-    const { config, activeAlerts } = get();
-    if (config.soundEnabled) {
-      playAcousticChime();
+    toastQueue.push({ payload, onViewDetails });
+    if (!isProcessingToastQueue) {
+      processToastQueue();
     }
-
-    const newItem: StackedAlertItem = {
-      id: `${payload.userId || 'usr'}_${payload.product?.id || 'prd'}_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
-      payload,
-      timestamp: Date.now(),
-    };
-
-    // Keep up to 4 alerts visible at once in the stacked deck
-    const nextAlerts = [newItem, ...activeAlerts.slice(0, 3)];
-
-    set({
-      activeAlerts: nextAlerts,
-      activeAlert: payload,
-      activeAlertKey: Date.now(),
-      onViewDetailsCallback: onViewDetails,
-    });
   },
 
   dismissAlert: (id?: string) => {

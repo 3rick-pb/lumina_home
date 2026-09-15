@@ -286,7 +286,7 @@ export default function Home() {
       <motion.div 
         initial={{ opacity: 0, y: 24 }}
         whileInView={{ opacity: 1, y: 0 }}
-        viewport={{ once: true, margin: "-20px" }}
+        viewport={{ once: false, amount: 0.15 }}
         transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
         className="relative z-30 -mt-7 sm:-mt-9 mb-3 container mx-auto px-4 md:px-8"
       >
@@ -330,7 +330,7 @@ export default function Home() {
             <motion.div 
               initial={{ opacity: 0, y: 24 }}
               whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, margin: "-40px" }}
+              viewport={{ once: false, amount: 0.15 }}
               transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
               className="flex items-end justify-between mb-12"
             >
@@ -352,7 +352,7 @@ export default function Home() {
                   key={idx}
                   initial={{ opacity: 0, y: 28 }}
                   whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true, margin: "-30px" }}
+                  viewport={{ once: false, amount: 0.15 }}
                   transition={{ duration: 0.5, delay: idx * 0.05, ease: [0.22, 1, 0.36, 1] }}
                 >
                   <Link 
@@ -394,7 +394,7 @@ export default function Home() {
             <motion.div 
               initial={{ opacity: 0, y: 24 }}
               whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, margin: "-40px" }}
+              viewport={{ once: false, amount: 0.15 }}
               transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
               className="flex flex-col lg:flex-row items-start lg:items-center justify-between mb-12 gap-6"
             >
@@ -444,7 +444,7 @@ export default function Home() {
                     key={product.id}
                     initial={{ opacity: 0, y: 28 }}
                     whileInView={{ opacity: 1, y: 0 }}
-                    viewport={{ once: true, margin: "-30px" }}
+                    viewport={{ once: false, amount: 0.15 }}
                     transition={{ duration: 0.5, delay: (idx % 4) * 0.08, ease: [0.22, 1, 0.36, 1] }}
                     onMouseEnter={() => setCategoryTheme(product.category)}
                     onMouseLeave={() => {

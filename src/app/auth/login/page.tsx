@@ -25,9 +25,27 @@ export default function LoginPage() {
   };
 
   // Search Bar State
-  const { products } = useCatalogStore();
+  const { products, categories } = useCatalogStore();
   const [searchQuery, setSearchQuery] = useState("");
   const [previewProduct, setPreviewProduct] = useState<CatalogProduct | null>(null);
+
+  // Dynamic suggestions: active categories with existing products in store
+  const dynamicSuggestions = useMemo(() => {
+    const productCategories = Array.from(
+      new Set(
+        products
+          .map((p) => p.category?.trim())
+          .filter((cat): cat is string => Boolean(cat && cat.length > 0))
+      )
+    );
+
+    const activeList = categories.length > 0
+      ? categories.filter((c) => productCategories.some(pc => pc.toLowerCase() === c.toLowerCase()))
+      : productCategories;
+
+    const list = activeList.length > 0 ? activeList : productCategories;
+    return list.slice(0, 6);
+  }, [products, categories]);
 
   // Filtered live search results (accent/diacritic insensitive)
   const searchResults = useMemo(() => {
@@ -122,10 +140,10 @@ export default function LoginPage() {
         </div>
 
         {/* Quick Suggestion Pills */}
-        {!searchQuery && (
+        {!searchQuery && dynamicSuggestions.length > 0 && (
           <div className="flex items-center gap-1.5 mt-2.5 px-1 overflow-x-auto hide-scrollbar text-[10px]">
             <span className="text-gray-400 font-medium shrink-0">Sugerencias:</span>
-            {["Iluminación", "Aromaterapia", "Home Office", "Textiles", "Cerámica"].map((chip) => (
+            {dynamicSuggestions.map((chip) => (
               <button
                 key={chip}
                 onClick={() => setSearchQuery(chip)}

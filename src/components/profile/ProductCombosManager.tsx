@@ -35,32 +35,6 @@ export function ProductCombosManager({
   const [customItemsText, setCustomItemsText] = useState("");
   const [searchFilter, setSearchFilter] = useState("");
 
-  const handleAddSuggestedCombo = (type: 'duo' | 'complete') => {
-    if (type === 'duo') {
-      const companion = allProducts.slice(0, 1)[0];
-      const newCombo: ProductCombo = {
-        id: `combo-${Date.now()}`,
-        name: "Combo Esencial Duo",
-        badge: "Ahorro 15%",
-        description: "El producto principal junto a su accesorio indispensable con descuento preferente.",
-        companionProductIds: companion ? [companion.id] : [],
-        discountPercentage: 15,
-      };
-      onChange([...combos, newCombo]);
-    } else {
-      const companions = allProducts.slice(0, 2);
-      const newCombo: ProductCombo = {
-        id: `combo-${Date.now()}`,
-        name: "Pack Coleccionista Deluxe",
-        badge: "Mejor Valor",
-        description: "Set maestro de experiencia completa con kit de complementos de alta gama.",
-        companionProductIds: companions.map(c => c.id),
-        discountPercentage: 25,
-      };
-      onChange([...combos, newCombo]);
-    }
-  };
-
   const handleSaveCombo = (e: React.FormEvent) => {
     e.preventDefault();
     if (!comboName.trim()) return;
@@ -123,25 +97,6 @@ export function ProductCombosManager({
         </div>
 
         <div className="flex items-center gap-2 shrink-0">
-          {combos.length === 0 && !isAdding && (
-            <div className="flex gap-2">
-              <button
-                type="button"
-                onClick={() => handleAddSuggestedCombo('duo')}
-                className="text-[11px] font-bold text-[#8c9276] dark:text-[#ccff00] hover:underline"
-              >
-                + Combo Duo (-15%)
-              </button>
-              <span className="text-gray-300 dark:text-gray-700">|</span>
-              <button
-                type="button"
-                onClick={() => handleAddSuggestedCombo('complete')}
-                className="text-[11px] font-bold text-[#8c9276] dark:text-[#ccff00] hover:underline"
-              >
-                + Pack Deluxe (-25%)
-              </button>
-            </div>
-          )}
           {!isAdding && (
             <button
               type="button"

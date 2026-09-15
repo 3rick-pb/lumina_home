@@ -23,6 +23,7 @@ import {
 import { CatalogProduct, ProductCombo } from "@/lib/catalogStore";
 import { useCartStore } from "@/lib/store";
 import { useUserStore } from "@/lib/userStore";
+import { motion } from "framer-motion";
 
 interface ProductLandingViewProps {
   product: CatalogProduct;
@@ -707,7 +708,13 @@ export function ProductLandingView({
       {/* ========================================================================= */}
       {isVolumeTiersMode ? (
         /* MODO ALTERNATIVO: PACKS DE AHORRO POR VOLUMEN (Tiered Pricing) */
-        <section className="relative p-6 sm:p-10 rounded-[2.5rem] bg-white/70 dark:bg-[#1a1a1c]/70 backdrop-blur-xl border border-gray-200/80 dark:border-white/10 shadow-xl overflow-hidden">
+        <motion.section 
+          initial={{ opacity: 0, y: 32 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: false, amount: 0.15 }}
+          transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+          className="relative p-6 sm:p-10 rounded-[2.5rem] bg-white/70 dark:bg-[#1a1a1c]/70 backdrop-blur-xl border border-gray-200/80 dark:border-white/10 shadow-xl overflow-hidden"
+        >
           <div className="max-w-5xl mx-auto space-y-8">
             <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
               <div>
@@ -849,10 +856,16 @@ export function ProductLandingView({
               </button>
             </div>
           </div>
-        </section>
+        </motion.section>
       ) : companionCandidates.length > 0 && (
         /* MODO ESTÁNDAR: COMPRADOS JUNTOS CON COMPLEMENTOS REALES */
-        <section className="relative p-6 sm:p-10 rounded-[2.5rem] bg-white/70 dark:bg-[#1a1a1c]/70 backdrop-blur-xl border border-gray-200/80 dark:border-white/10 shadow-xl overflow-hidden">
+        <motion.section 
+          initial={{ opacity: 0, y: 32 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: false, amount: 0.15 }}
+          transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+          className="relative p-6 sm:p-10 rounded-[2.5rem] bg-white/70 dark:bg-[#1a1a1c]/70 backdrop-blur-xl border border-gray-200/80 dark:border-white/10 shadow-xl overflow-hidden"
+        >
           <div className="max-w-5xl mx-auto space-y-8">
             <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
               <div>
@@ -961,13 +974,19 @@ export function ProductLandingView({
               </div>
             </div>
           </div>
-        </section>
+        </motion.section>
       )}
 
       {/* ========================================================================= */}
       {/* BLOCK 3: TECHNICAL ANATOMY / KEY COMPONENTS WITH DYNAMIC PINS             */}
       {/* ========================================================================= */}
-      <section className="relative">
+      <motion.section 
+        initial={{ opacity: 0, y: 32 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: false, amount: 0.15 }}
+        transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+        className="relative"
+      >
         <div className="text-center max-w-2xl mx-auto mb-16 space-y-3">
           <span className="text-xs font-bold uppercase tracking-widest text-[#8c9276] dark:text-[#ccff00]">
             Ingeniería de Precisión
@@ -1100,12 +1119,18 @@ export function ProductLandingView({
           </div>
 
         </div>
-      </section>
+      </motion.section>
 
       {/* ========================================================================= */}
       {/* NEW BLOCK: MASTER SPECIFICATIONS, UNBOXING, MODO DE USO & CUIDADOS        */}
       {/* ========================================================================= */}
-      <section className="relative p-8 sm:p-12 rounded-[3rem] bg-white/60 dark:bg-[#1a1a1c]/60 backdrop-blur-xl border border-gray-200/80 dark:border-white/10 shadow-xl space-y-12">
+      <motion.section 
+        initial={{ opacity: 0, y: 32 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: false, amount: 0.15 }}
+        transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+        className="relative p-8 sm:p-12 rounded-[3rem] bg-white/60 dark:bg-[#1a1a1c]/60 backdrop-blur-xl border border-gray-200/80 dark:border-white/10 shadow-xl space-y-12"
+      >
         <div className="text-center max-w-2xl mx-auto space-y-3">
           <span className="text-xs font-bold uppercase tracking-widest text-[#8c9276] dark:text-[#ccff00]">
             Ficha Técnica Integral
@@ -1218,12 +1243,18 @@ export function ProductLandingView({
           </div>
 
         </div>
-      </section>
+      </motion.section>
 
       {/* ========================================================================= */}
       {/* BLOCK 4: SOCIAL PROOF / WHAT OUR CUSTOMERS SAY                            */}
       {/* ========================================================================= */}
-      <section className="relative">
+      <motion.section 
+        initial={{ opacity: 0, y: 32 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: false, amount: 0.15 }}
+        transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+        className="relative"
+      >
         <div className="text-center max-w-2xl mx-auto mb-14 space-y-3">
           <span className="text-xs font-bold uppercase tracking-widest text-[#8c9276] dark:text-[#ccff00]">
             Experiencias Reales
@@ -1274,12 +1305,18 @@ export function ProductLandingView({
             </div>
           ))}
         </div>
-      </section>
+      </motion.section>
 
       {/* ========================================================================= */}
       {/* BLOCK 5: WHY CHOOSE US / BRAND VALUE PROPOSITIONS                         */}
       {/* ========================================================================= */}
-      <section className="relative p-8 sm:p-14 rounded-[3rem] bg-gradient-to-br from-gray-50 to-white dark:from-[#1a1a1c] dark:to-[#202022] border border-gray-200/80 dark:border-white/10 shadow-2xl">
+      <motion.section 
+        initial={{ opacity: 0, y: 32 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: false, amount: 0.15 }}
+        transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+        className="relative p-8 sm:p-14 rounded-[3rem] bg-gradient-to-br from-gray-50 to-white dark:from-[#1a1a1c] dark:to-[#202022] border border-gray-200/80 dark:border-white/10 shadow-2xl"
+      >
         <div className="max-w-5xl mx-auto space-y-12">
           
           <div className="text-center max-w-2xl mx-auto space-y-2">
@@ -1317,7 +1354,7 @@ export function ProductLandingView({
           </div>
 
         </div>
-      </section>
+      </motion.section>
 
     </div>
   );
