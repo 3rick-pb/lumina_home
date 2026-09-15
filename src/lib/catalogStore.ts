@@ -70,6 +70,7 @@ export interface CatalogProduct {
   landingReviews?: LandingReview[];
   landingBenefits?: LandingBenefit[];
   landingBundle?: LandingBundle;
+  landingAnatomyImage?: string;
 }
 
 interface CatalogState {
@@ -273,6 +274,7 @@ const toSupabaseProduct = (p: Partial<CatalogProduct>) => {
     landing_bundle: p.landingBundle || null,
     combos: p.combos || null,
     how_to_use: p.howToUse || null,
+    landing_anatomy_image: p.landingAnatomyImage || null,
   };
 
   // Only pass id if it looks like a valid UUID (has dashes)
@@ -352,6 +354,7 @@ const toFrontendProduct = (p: any): CatalogProduct => {
     landingReviews: p.landing_reviews || extraMeta.landingReviews || undefined,
     landingBenefits: p.landing_benefits || extraMeta.landingBenefits || undefined,
     landingBundle: p.landing_bundle || extraMeta.landingBundle || undefined,
+    landingAnatomyImage: p.landing_anatomy_image || extraMeta.landingAnatomyImage || undefined,
   };
 };
 
@@ -497,6 +500,7 @@ export const useCatalogStore = create<CatalogState>((set) => ({
       delete basicProduct.landing_bundle;
       delete basicProduct.combos;
       delete basicProduct.how_to_use;
+      delete basicProduct.landing_anatomy_image;
       const retry = await supabase.from('products').insert([basicProduct]).select().single();
       data = retry.data;
       error = retry.error;
@@ -543,6 +547,7 @@ export const useCatalogStore = create<CatalogState>((set) => ({
             landingReviews: product.landingReviews,
             landingBenefits: product.landingBenefits,
             landingBundle: product.landingBundle,
+            landingAnatomyImage: product.landingAnatomyImage,
             combos: product.combos,
             howToUse: product.howToUse,
           };
@@ -591,6 +596,7 @@ export const useCatalogStore = create<CatalogState>((set) => ({
         delete basicProduct.landing_bundle;
         delete basicProduct.combos;
         delete basicProduct.how_to_use;
+        delete basicProduct.landing_anatomy_image;
         const retry = await supabase.from('products').update(basicProduct).eq('id', id).select().single();
         data = retry.data;
         error = retry.error;
@@ -637,6 +643,7 @@ export const useCatalogStore = create<CatalogState>((set) => ({
               landingReviews: updatedProduct.landingReviews,
               landingBenefits: updatedProduct.landingBenefits,
               landingBundle: updatedProduct.landingBundle,
+              landingAnatomyImage: updatedProduct.landingAnatomyImage,
               combos: updatedProduct.combos,
               howToUse: updatedProduct.howToUse,
             };

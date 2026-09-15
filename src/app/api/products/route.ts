@@ -48,6 +48,7 @@ const stripExtendedFields = (obj: Record<string, unknown>) => {
   delete clean.landing_bundle;
   delete clean.combos;
   delete clean.how_to_use;
+  delete clean.landing_anatomy_image;
   return clean;
 };
 

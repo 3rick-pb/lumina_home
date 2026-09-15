@@ -115,6 +115,7 @@ ALTER TABLE public.products ADD COLUMN IF NOT EXISTS landing_benefits jsonb;
 ALTER TABLE public.products ADD COLUMN IF NOT EXISTS landing_bundle jsonb;
 ALTER TABLE public.products ADD COLUMN IF NOT EXISTS combos jsonb;
 ALTER TABLE public.products ADD COLUMN IF NOT EXISTS how_to_use text[];
+ALTER TABLE public.products ADD COLUMN IF NOT EXISTS landing_anatomy_image text;
 
 -- 3. TABLA ADDRESSES
 CREATE TABLE IF NOT EXISTS public.addresses (

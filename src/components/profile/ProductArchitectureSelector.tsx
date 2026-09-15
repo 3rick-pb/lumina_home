@@ -13,9 +13,11 @@ import {
   MessageSquare,
   Search,
   Move,
-  TrendingUp
+  TrendingUp,
+  Image as ImageIcon
 } from "lucide-react";
 import { CatalogProduct } from "@/lib/catalogStore";
+import { normalizeImageUrl, isGoogleDriveUrl } from "@/lib/imageUtils";
 
 export interface LandingSpecItem {
   title: string;
@@ -49,6 +51,8 @@ interface ProductArchitectureSelectorProps {
   onLandingSpecsChange: (specs: LandingSpecItem[]) => void;
   landingReviews: LandingReviewItem[];
   onLandingReviewsChange: (reviews: LandingReviewItem[]) => void;
+  landingAnatomyImage?: string;
+  onLandingAnatomyImageChange?: (url: string) => void;
   howToUse?: string;
   onHowToUseChange?: (val: string) => void;
 }
@@ -77,6 +81,8 @@ export function ProductArchitectureSelector({
   onLandingSpecsChange,
   landingReviews,
   onLandingReviewsChange,
+  landingAnatomyImage = "",
+  onLandingAnatomyImageChange,
   howToUse = "",
   onHowToUseChange,
 }: ProductArchitectureSelectorProps) {
@@ -183,6 +189,9 @@ export function ProductArchitectureSelector({
   );
 
   const fallbackCanvasImage = productImage || "https://images.unsplash.com/photo-1507473885765-e6ed057f782c?q=80&w=800&auto=format&fit=crop";
+  const activeCanvasImage = (landingAnatomyImage && landingAnatomyImage.trim())
+    ? normalizeImageUrl(landingAnatomyImage.trim())
+    : fallbackCanvasImage;
 
   return (
     <div className="space-y-6">
@@ -615,6 +624,55 @@ export function ProductArchitectureSelector({
               </div>
             </div>
 
+            {/* DEDICATED ANATOMY IMAGE INPUT */}
+            <div className="p-4 rounded-2xl bg-gray-50 dark:bg-black/30 border border-gray-200/70 dark:border-white/10 space-y-3">
+              <div className="flex items-center justify-between">
+                <label className="text-xs font-bold text-gray-800 dark:text-gray-200 flex items-center gap-2">
+                  <ImageIcon className="w-4 h-4 text-[#8c9276] dark:text-[#ccff00]" />
+                  <span>Imagen Dedicada para Anatomía Técnica (/explodedview)</span>
+                </label>
+                {landingAnatomyImage && (
+                  <button
+                    type="button"
+                    onClick={() => onLandingAnatomyImageChange && onLandingAnatomyImageChange("")}
+                    className="text-[11px] text-red-500 hover:text-red-600 dark:hover:text-red-400 font-medium transition-colors"
+                  >
+                    Restablecer (usar principal)
+                  </button>
+                )}
+              </div>
+              <p className="text-[11px] text-gray-500 dark:text-gray-400">
+                Pega la URL directa de la imagen (Web, Unsplash o Google Drive público) que mostrará el despiece o anatomía de tu producto en este bloque. Si lo dejas vacío, se usará la imagen principal por defecto.
+              </p>
+              <div className="flex items-center gap-3">
+                <input
+                  type="url"
+                  value={landingAnatomyImage}
+                  onChange={(e) => onLandingAnatomyImageChange && onLandingAnatomyImageChange(e.target.value)}
+                  placeholder="https://ejemplo.com/explodedview.jpg o enlace público de Google Drive"
+                  className="flex-1 px-3 py-2 text-xs rounded-xl bg-white dark:bg-white/5 border border-gray-200 dark:border-white/10 focus:border-black dark:focus:border-white outline-none text-gray-900 dark:text-white transition-all shadow-sm"
+                />
+                {landingAnatomyImage && landingAnatomyImage.trim() && (
+                  <div className="relative w-10 h-10 rounded-xl overflow-hidden border border-gray-200 dark:border-white/20 shrink-0 bg-black/10">
+                    <Image
+                      src={activeCanvasImage}
+                      alt="Vista previa de anatomía"
+                      fill
+                      sizes="40px"
+                      className="object-cover"
+                      unoptimized={activeCanvasImage.startsWith("http")}
+                    />
+                  </div>
+                )}
+              </div>
+              {landingAnatomyImage && isGoogleDriveUrl(landingAnatomyImage) && (
+                <div className="text-[10px] text-blue-600 dark:text-blue-400 flex items-center gap-1.5 font-medium">
+                  <Sparkles className="w-3 h-3" />
+                  <span>Enlace de Google Drive detectado y optimizado automáticamente para visualización directa.</span>
+                </div>
+              )}
+            </div>
+
             {/* INTERACTIVE PIN PLACEMENT CANVAS */}
             {landingSpecs.length > 0 && (
               <div className="p-4 rounded-2xl bg-gray-50 dark:bg-black/30 border border-gray-200/70 dark:border-white/10 space-y-3">
@@ -660,11 +718,12 @@ export function ProductArchitectureSelector({
                     title="Haz clic para ubicar el pin seleccionado aquí"
                   >
                     <Image
-                      src={fallbackCanvasImage}
+                      src={activeCanvasImage}
                       alt="Vista de Colocación de Pines"
                       fill
                       sizes="(max-width: 640px) 100vw, 340px"
                       className="object-cover pointer-events-none"
+                      unoptimized={activeCanvasImage.startsWith("http")}
                     />
 
                     {/* Overlay Grid hint */}

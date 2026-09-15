@@ -167,6 +167,7 @@ export default function ProfilePage() {
   ]);
   const [prodLandingBundleEnabled, setProdLandingBundleEnabled] = useState(true);
   const [prodLandingBundleDiscount, setProdLandingBundleDiscount] = useState("15");
+  const [prodLandingAnatomyImage, setProdLandingAnatomyImage] = useState("");
  const [prodSubmitError, setProdSubmitError] = useState<string | null>(null);
  const [prodSubmitSuccess, setProdSubmitSuccess] = useState<string | null>(null);
 
@@ -207,6 +208,7 @@ export default function ProfilePage() {
  const [editLandingReviews, setEditLandingReviews] = useState<Array<{ author: string; role?: string; rating: number; comment: string }>>([]);
  const [editLandingBundleEnabled, setEditLandingBundleEnabled] = useState(true);
  const [editLandingBundleDiscount, setEditLandingBundleDiscount] = useState("15");
+ const [editLandingAnatomyImage, setEditLandingAnatomyImage] = useState("");
  const [editFeedback, setEditFeedback] = useState<{ msg: string; success: boolean } | null>(null);
 
   // Delete Product Confirmation Modal State
@@ -319,6 +321,7 @@ export default function ProfilePage() {
       packageContents: prodPackageContents.trim() || undefined,
       stock: prodStock ? parseInt(prodStock, 10) : 20,
       layoutType: prodLayoutType,
+      landingAnatomyImage: prodLayoutType === 'landing' && prodLandingAnatomyImage.trim() ? prodLandingAnatomyImage.trim() : undefined,
       landingSpecs: prodLayoutType === 'landing' ? prodLandingSpecs : undefined,
       landingReviews: prodLayoutType === 'landing' ? prodLandingReviews : undefined,
       landingBundle: prodLandingBundleEnabled ? {
@@ -358,6 +361,7 @@ export default function ProfilePage() {
  setProdPackageContents("");
  setProdStock("20");
  setProdLayoutType("standard");
+ setProdLandingAnatomyImage("");
  setProdCombos([]);
  setProdHowToUse("");
  setProdBundleMode('companion');
@@ -422,6 +426,7 @@ export default function ProfilePage() {
     setEditLandingReviews(p.landingReviews || []);
     setEditLandingBundleEnabled(Boolean(p.landingBundle?.enabled));
     setEditLandingBundleDiscount(p.landingBundle?.discountPercentage ? p.landingBundle.discountPercentage.toString() : "15");
+    setEditLandingAnatomyImage(p.landingAnatomyImage || "");
     setEditFeedback(null);
     setShowEditProductModal(true);
   };
@@ -467,6 +472,7 @@ export default function ProfilePage() {
  packageContents: editPackageContents.trim() || undefined,
  stock: editStock ? parseInt(editStock, 10) : 20,
  layoutType: editLayoutType,
+ landingAnatomyImage: editLayoutType === 'landing' && editLandingAnatomyImage.trim() ? editLandingAnatomyImage.trim() : undefined,
  landingSpecs: editLayoutType === 'landing' && editLandingSpecs.length > 0 ? editLandingSpecs : undefined,
  landingReviews: editLayoutType === 'landing' && editLandingReviews.length > 0 ? editLandingReviews : undefined,
  landingBundle: editLandingBundleEnabled ? {
@@ -1147,332 +1153,340 @@ const handleConfirmDeleteNiche = async () => {
  </div>
  )}
 
- <form onSubmit={handleAddProductSubmit} className="p-6 overflow-y-auto flex-1 space-y-5">
- <ProductArchitectureSelector
-    layoutType={prodLayoutType}
-    onLayoutTypeChange={setProdLayoutType}
-    productImage={prodImageUrl || "https://images.unsplash.com/photo-1507473885765-e6ed057f782c?q=80&w=800&auto=format&fit=crop"}
-    allProducts={products}
-    bundleEnabled={prodLandingBundleEnabled}
-    onBundleEnabledChange={setProdLandingBundleEnabled}
-    bundleMode={prodBundleMode}
-    onBundleModeChange={setProdBundleMode}
-    bundleDiscount={prodLandingBundleDiscount}
-    onBundleDiscountChange={setProdLandingBundleDiscount}
-    bundleCompanionIds={prodBundleCompanionIds}
-    onBundleCompanionIdsChange={setProdBundleCompanionIds}
-    landingSpecs={prodLandingSpecs}
-    onLandingSpecsChange={setProdLandingSpecs}
-    landingReviews={prodLandingReviews}
-    onLandingReviewsChange={setProdLandingReviews}
-    howToUse={prodHowToUse}
-    onHowToUseChange={setProdHowToUse}
-  />
+        <form onSubmit={handleAddProductSubmit} className="p-6 overflow-y-auto flex-1 space-y-5">
+          {/* 1. IDENTIFICACIÓN BÁSICA */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2 pl-1">Nombre Principal *</label>
+              <input required type="text" value={prodTitle} onChange={e => setProdTitle(e.target.value)} className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-sm outline-none bg-white dark:bg-[#1a1a1c] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500" placeholder="Ej: Lámpara de Mesa" />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2 pl-1">Subtítulo Itálica</label>
+              <input type="text" value={prodHighlight} onChange={e => setProdHighlight(e.target.value)} className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-sm outline-none bg-white dark:bg-[#1a1a1c] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500" placeholder="Ej: Nova LED, Artesanal" />
+            </div>
+          </div>
 
- <ProductCombosManager
-    combos={prodCombos}
-    onChange={setProdCombos}
-    allProducts={products}
-    currentProductPrice={parseFloat(prodPrice) || 0}
-  />
+          {/* 2. CATEGORÍA & BADGE */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <div className="flex items-center justify-between mb-1">
+                <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300">Nicho / Categoría *</label>
+                <button 
+                  type="button" 
+                  onClick={() => { setShowProductModal(false); setActiveTab("niches"); }}
+                  className="text-[10px] font-semibold text-[#8c9276] hover:underline cursor-pointer"
+                  title="Ir a gestionar nichos y categorías"
+                >
+                  + Gestionar nichos y categorías
+                </button>
+              </div>
+              <select required value={prodCategory} onChange={e => setProdCategory(e.target.value)} className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-sm outline-none bg-white dark:bg-[#202022]">
+                <option value="">Selecciona un nicho</option>
+                {categories.map(c => <option key={c} value={c}>{c}</option>)}
+              </select>
+            </div>
+            <div>
+              <div className="flex items-center justify-between mb-1">
+                <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300">Badge de Marketing</label>
+                <button 
+                  type="button" 
+                  onClick={() => { setShowProductModal(false); setActiveTab("niches"); }}
+                  className="text-[10px] font-semibold text-[#8c9276] hover:underline cursor-pointer"
+                >
+                  + Gestionar badges
+                </button>
+              </div>
+              <select value={prodBadge} onChange={e => setProdBadge(e.target.value)} className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-sm outline-none bg-white dark:bg-[#202022]">
+                <option value="">Sin badge</option>
+                {badges.map(b => (
+                  <option key={b} value={b}>{b}</option>
+                ))}
+              </select>
+            </div>
+          </div>
 
-  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
- <div>
- <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2 pl-1">Nombre Principal *</label>
- <input required type="text" value={prodTitle} onChange={e => setProdTitle(e.target.value)} className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-sm outline-none bg-white dark:bg-[#1a1a1c] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500" placeholder="Ej: Lámpara de Mesa" />
- </div>
- <div>
- <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2 pl-1">Subtítulo Itálica</label>
- <input type="text" value={prodHighlight} onChange={e => setProdHighlight(e.target.value)} className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-sm outline-none bg-white dark:bg-[#1a1a1c] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500" placeholder="Ej: Nova LED, Artesanal" />
- </div>
- </div>
+          {/* 3. FOTOGRAFÍAS DEL PRODUCTO */}
+          <div className="p-4 bg-gray-50/80 dark:bg-[#2a2a2c]/80 rounded-2xl border border-gray-100 dark:border-white/5 space-y-3">
+            <div className="flex items-center justify-between">
+              <label className="block text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-gray-300">Fotografías del Producto</label>
+              <span className="text-[11px] text-[#8c9276] font-semibold">Vista previa en vivo</span>
+            </div>
 
- <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
- <div>
- <div className="flex items-center justify-between mb-1">
- <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300">Nicho / Categoría *</label>
- <button 
- type="button" 
- onClick={() => { setShowProductModal(false); setActiveTab("niches"); }}
- className="text-[10px] font-semibold text-[#8c9276] hover:underline cursor-pointer"
- title="Ir a gestionar nichos y categorías"
- >
- + Gestionar nichos y categorías
- </button>
- </div>
- <select required value={prodCategory} onChange={e => setProdCategory(e.target.value)} className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-sm outline-none bg-white dark:bg-[#202022]">
- <option value="">Selecciona un nicho</option>
- {categories.map(c => <option key={c} value={c}>{c}</option>)}
- </select>
- </div>
- <div>
- <div className="flex items-center justify-between mb-1">
- <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300">Badge de Marketing</label>
- <button 
- type="button" 
- onClick={() => { setShowProductModal(false); setActiveTab("niches"); }}
- className="text-[10px] font-semibold text-[#8c9276] hover:underline cursor-pointer"
- >
- + Gestionar badges
- </button>
- </div>
- <select value={prodBadge} onChange={e => setProdBadge(e.target.value)} className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-sm outline-none bg-white dark:bg-[#202022]">
- <option value="">Sin badge</option>
- {badges.map(b => (
- <option key={b} value={b}>{b}</option>
- ))}
- </select>
- </div>
- </div>
+            {/* Explicación amigable */}
+            <div className="p-3 bg-blue-50/70 border border-blue-100 rounded-xl text-xs text-blue-900 leading-relaxed">
+              <p className="font-bold mb-1">💡 ¿Cómo obtener el enlace correcto de la imagen?</p>
+              <p className="text-[11px] text-blue-800">
+                No pegues el enlace de la página web de la tienda o artículo. Abre la foto en tu navegador, haz <strong>clic derecho sobre la imagen</strong> y selecciona <strong>&ldquo;Copiar dirección de imagen&rdquo;</strong> (el enlace debe ser directo al archivo .jpg, .png, .webp o de Unsplash/Imgur/CDN).
+              </p>
+            </div>
 
- {/* Precios y Descuento */}
- <div className="p-4 bg-gray-50/70 dark:bg-[#2a2a2c]/70 rounded-2xl border border-gray-100 dark:border-white/5 space-y-3">
- <div className="flex items-center justify-between">
- <span className="text-xs font-bold text-gray-700 dark:text-gray-300 uppercase">Precios y Rebajas</span>
- <div className="flex items-center gap-2">
- <span className="text-xs text-gray-500 dark:text-gray-400">¿Tiene descuento?</span>
- <button 
- type="button" 
- onClick={() => {
- const next = !hasDiscount;
- setHasDiscount(next);
- handlePriceChange(prodPrice, oldPrice, next);
- }}
- className={`w-10 h-5 rounded-full relative transition-colors ${hasDiscount ? "bg-gray-900 dark:bg-gray-100" : "bg-gray-300"}`}
- >
- <span className={`absolute top-0.5 w-4 h-4 rounded-full bg-white dark:bg-[#202022] transition-all ${hasDiscount ? "left-5" : "left-1"}`} />
- </button>
- </div>
- </div>
+            <div>
+              <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2 pl-1">URL de Imagen Principal *</label>
+              <input 
+                required 
+                type="text" 
+                value={prodImageUrl} 
+                onChange={e => setProdImageUrl(e.target.value)} 
+                className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-sm outline-none dark:] bg-white dark:bg-[#1a1a1c] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500" 
+                placeholder="https://images.unsplash.com/photo-... o enlace directo .jpg / .webp" 
+              />
+              {/* Alerta si parece una página web o confirmación de Google Drive */}
+              {isGoogleDriveUrl(prodImageUrl) ? (
+                <p className="text-[11px] text-emerald-800 mt-1.5 font-medium bg-emerald-50 dark:bg-emerald-950/30 p-2 rounded-lg border border-emerald-200 dark:border-emerald-800/50 flex items-center gap-1.5">
+                  <span className="font-bold">✓</span> Enlace de Google Drive detectado y transformado a visualización directa.
+                </p>
+              ) : prodImageUrl.trim() && (prodImageUrl.includes('.html') || (!prodImageUrl.match(/\.(jpg|jpeg|png|webp|avif|gif|svg)(\?.*)?$/i) && !prodImageUrl.includes('unsplash') && !prodImageUrl.includes('mlstatic') && !prodImageUrl.includes('cloudinary') && !prodImageUrl.includes('imgur'))) && (
+                <p className="text-[11px] text-amber-700 mt-1.5 flex items-center gap-1 font-medium bg-amber-50 dark:bg-amber-950/30 p-2 rounded-lg border border-amber-200 dark:border-amber-800/50">
+                  ⚠️ Atención: Parece que pegaste el enlace de una página web y no de la imagen directa. Asegúrate de hacer clic derecho sobre la foto &gt; &ldquo;Copiar dirección de imagen&rdquo;.
+                </p>
+              )}
+            </div>
 
- <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
- <div>
- <label className="block text-xs text-gray-600 dark:text-gray-400 mb-1">{hasDiscount ? "Precio con Descuento ($) *" : "Precio Regular ($) *"}</label>
- <input required type="number" step="0.01" value={prodPrice} onChange={e => handlePriceChange(e.target.value, oldPrice, hasDiscount)} className="w-full px-3 py-2 rounded-xl border border-gray-200 dark:border-white/10 text-sm outline-none bg-white dark:bg-[#1a1a1c] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500" placeholder="89.90" />
- </div>
- {hasDiscount && (
- <>
- <div>
- <label className="block text-xs text-gray-600 dark:text-gray-400 mb-1">Precio Original Antes ($)</label>
- <input type="number" step="0.01" value={oldPrice} onChange={e => handlePriceChange(prodPrice, e.target.value, hasDiscount)} className="w-full px-3 py-2 rounded-xl border border-gray-200 dark:border-white/10 text-sm outline-none bg-white dark:bg-[#1a1a1c] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500" placeholder="119.90" />
- </div>
- <div>
- <label className="block text-xs text-gray-600 dark:text-gray-400 mb-1">% Descuento Calculado</label>
- <input type="text" readOnly value={calculatedDiscount} className="w-full px-3 py-2 rounded-xl border border-gray-200 dark:border-white/10 text-sm dark:] font-bold outline-none dark:] dark: bg-gray-100 dark:bg-[#3a3a3c] text-gray-600 dark:text-gray-400" placeholder="-25%" />
- </div>
- </>
- )}
- </div>
- </div>
-
- {/* Sección de Imágenes con Vista Previa y Guía */}
- <div className="p-4 bg-gray-50/80 dark:bg-[#2a2a2c]/80 rounded-2xl border border-gray-100 dark:border-white/5 space-y-3">
- <div className="flex items-center justify-between">
- <label className="block text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-gray-300">Fotografías del Producto</label>
- <span className="text-[11px] text-[#8c9276] font-semibold">Vista previa en vivo</span>
- </div>
-
- {/* Explicación amigable */}
- <div className="p-3 bg-blue-50/70 border border-blue-100 rounded-xl text-xs text-blue-900 leading-relaxed">
- <p className="font-bold mb-1">💡 ¿Cómo obtener el enlace correcto de la imagen?</p>
- <p className="text-[11px] text-blue-800">
- No pegues el enlace de la página web de la tienda o artículo. Abre la foto en tu navegador, haz <strong>clic derecho sobre la imagen</strong> y selecciona <strong>&ldquo;Copiar dirección de imagen&rdquo;</strong> (el enlace debe ser directo al archivo .jpg, .png, .webp o de Unsplash/Imgur/CDN).
- </p>
- </div>
-
- <div>
- <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2 pl-1">URL de Imagen Principal *</label>
- <input 
- required 
- type="text" 
- value={prodImageUrl} 
- onChange={e => setProdImageUrl(e.target.value)} 
- className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-sm outline-none dark:] bg-white dark:bg-[#1a1a1c] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500" 
- placeholder="https://images.unsplash.com/photo-... o enlace directo .jpg / .webp" 
- />
-                  {/* Alerta si parece una página web o confirmación de Google Drive */}
-                  {isGoogleDriveUrl(prodImageUrl) ? (
-                    <p className="text-[11px] text-emerald-800 mt-1.5 font-medium bg-emerald-50 dark:bg-emerald-950/30 p-2 rounded-lg border border-emerald-200 dark:border-emerald-800/50 flex items-center gap-1.5">
-                      <span className="font-bold">✓</span> Enlace de Google Drive detectado y transformado a visualización directa.
-                    </p>
-                  ) : prodImageUrl.trim() && (prodImageUrl.includes('.html') || (!prodImageUrl.match(/\.(jpg|jpeg|png|webp|avif|gif|svg)(\?.*)?$/i) && !prodImageUrl.includes('unsplash') && !prodImageUrl.includes('mlstatic') && !prodImageUrl.includes('cloudinary') && !prodImageUrl.includes('imgur'))) && (
-                    <p className="text-[11px] text-amber-700 mt-1.5 flex items-center gap-1 font-medium bg-amber-50 dark:bg-amber-950/30 p-2 rounded-lg border border-amber-200 dark:border-amber-800/50">
-                      ⚠️ Atención: Parece que pegaste el enlace de una página web y no de la imagen directa. Asegúrate de hacer clic derecho sobre la foto &gt; &ldquo;Copiar dirección de imagen&rdquo;.
-                    </p>
-                  )}
+            {/* Vista previa de Imagen Principal */}
+            {prodImageUrl.trim() && (
+              <div className="flex items-center gap-3 p-3 bg-white dark:bg-[#202022] rounded-xl border border-gray-200/80 dark:border-white/10/80">
+                <div className="relative w-16 h-16 rounded-lg overflow-hidden bg-gray-100 dark:bg-[#3a3a3c] shrink-0 border border-gray-200 dark:border-white/10">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img 
+                    src={normalizeImageUrl(prodImageUrl.trim().split(/[\n,]+/)[0])} 
+                    alt="Vista previa" 
+                    className="w-full h-full object-cover" 
+                    onError={(e) => { (e.currentTarget as HTMLImageElement).src = "https://images.unsplash.com/photo-1507473885765-e6ed057f782c?q=80&w=800&auto=format&fit=crop"; }}
+                  />
                 </div>
+                <div className="min-w-0 flex-1 text-xs">
+                  <p className="font-semibold text-gray-800 dark:text-gray-200">Vista previa de imagen principal</p>
+                  <p className="text-[11px] text-gray-400 truncate">{normalizeImageUrl(prodImageUrl.trim().split(/[\n,]+/)[0])}</p>
+                </div>
+              </div>
+            )}
 
-                {/* Vista previa de Imagen Principal */}
-                {prodImageUrl.trim() && (
-                  <div className="flex items-center gap-3 p-3 bg-white dark:bg-[#202022] rounded-xl border border-gray-200/80 dark:border-white/10/80">
-                    <div className="relative w-16 h-16 rounded-lg overflow-hidden bg-gray-100 dark:bg-[#3a3a3c] shrink-0 border border-gray-200 dark:border-white/10">
+            <div>
+              <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2 pl-1">Galería de Imágenes Adicionales (Opcional)</label>
+              <input 
+                type="text" 
+                value={prodExtraImages} 
+                onChange={e => setProdExtraImages(e.target.value)} 
+                className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-sm outline-none dark:] bg-white dark:bg-[#1a1a1c] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500" 
+                placeholder="Separa varios enlaces con comas: https://foto2.jpg, https://foto3.webp" 
+              />
+              <p className="text-[11px] text-gray-400 mt-1">Permite a los clientes ver el producto desde varios ángulos.</p>
+            </div>
+
+            {/* Miniaturas de galería adicional */}
+            {prodExtraImages.trim() && (
+              <div className="space-y-1.5 pt-1">
+                <p className="text-[11px] font-semibold text-gray-500 dark:text-gray-400">Galería adicional detectada:</p>
+                <div className="flex gap-2 flex-wrap">
+                  {prodExtraImages.split(/[\n,]+/).map(u => u.trim()).filter(u => u.startsWith('http')).map((url, idx) => (
+                    <div key={idx} className="relative w-12 h-12 rounded-lg overflow-hidden bg-gray-100 dark:bg-[#3a3a3c] border border-gray-200 dark:border-white/10 shrink-0">
                       {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img 
-                        src={normalizeImageUrl(prodImageUrl.trim().split(/[\n,]+/)[0])} 
-                        alt="Vista previa" 
+                        src={normalizeImageUrl(url)} 
+                        alt={`Galería ${idx}`} 
                         className="w-full h-full object-cover" 
-                        onError={(e) => { (e.currentTarget as HTMLImageElement).src = "https://images.unsplash.com/photo-1507473885765-e6ed057f782c?q=80&w=800&auto=format&fit=crop"; }}
+                        onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }}
                       />
                     </div>
-                    <div className="min-w-0 flex-1 text-xs">
-                      <p className="font-semibold text-gray-800 dark:text-gray-200">Vista previa de imagen principal</p>
-                      <p className="text-[11px] text-gray-400 truncate">{normalizeImageUrl(prodImageUrl.trim().split(/[\n,]+/)[0])}</p>
-                    </div>
-                  </div>
-                )}
-
-                <div>
-                  <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2 pl-1">Galería de Imágenes Adicionales (Opcional)</label>
-                  <input 
-                    type="text" 
-                    value={prodExtraImages} 
-                    onChange={e => setProdExtraImages(e.target.value)} 
-                    className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-sm outline-none dark:] bg-white dark:bg-[#1a1a1c] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500" 
-                    placeholder="Separa varios enlaces con comas: https://foto2.jpg, https://foto3.webp" 
-                  />
-                  <p className="text-[11px] text-gray-400 mt-1">Permite a los clientes ver el producto desde varios ángulos.</p>
+                  ))}
                 </div>
-
-                {/* Miniaturas de galería adicional */}
-                {prodExtraImages.trim() && (
-                  <div className="space-y-1.5 pt-1">
-                    <p className="text-[11px] font-semibold text-gray-500 dark:text-gray-400">Galería adicional detectada:</p>
-                    <div className="flex gap-2 flex-wrap">
-                      {prodExtraImages.split(/[\n,]+/).map(u => u.trim()).filter(u => u.startsWith('http')).map((url, idx) => (
-                        <div key={idx} className="relative w-12 h-12 rounded-lg overflow-hidden bg-gray-100 dark:bg-[#3a3a3c] border border-gray-200 dark:border-white/10 shrink-0">
-                          {/* eslint-disable-next-line @next/next/no-img-element */}
-                          <img 
-                            src={normalizeImageUrl(url)} 
-                            alt={`Galería ${idx}`} 
-                            className="w-full h-full object-cover" 
-                            onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }}
-                          />
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
               </div>
+            )}
+          </div>
 
+          {/* 4. COLORES & ACABADOS DEL PRODUCTO */}
+          <ColorVariantsManager
+            colors={prodColorVariants}
+            onChange={setProdColorVariants}
+          />
+
+          {/* 5. PRECIOS Y REBAJAS */}
+          <div className="p-4 bg-gray-50/70 dark:bg-[#2a2a2c]/70 rounded-2xl border border-gray-100 dark:border-white/5 space-y-3">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold text-gray-700 dark:text-gray-300 uppercase">Precios y Rebajas</span>
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-gray-500 dark:text-gray-400">¿Tiene descuento?</span>
+                <button 
+                  type="button" 
+                  onClick={() => {
+                    const next = !hasDiscount;
+                    setHasDiscount(next);
+                    handlePriceChange(prodPrice, oldPrice, next);
+                  }}
+                  className={`w-10 h-5 rounded-full relative transition-colors ${hasDiscount ? "bg-gray-900 dark:bg-gray-100" : "bg-gray-300"}`}
+                >
+                  <span className={`absolute top-0.5 w-4 h-4 rounded-full bg-white dark:bg-[#202022] transition-all ${hasDiscount ? "left-5" : "left-1"}`} />
+                </button>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <div>
-                <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2 pl-1">Descripción Completa *</label>
-                <textarea required rows={3} value={prodDescription} onChange={e => setProdDescription(e.target.value)} className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-sm outline-none resize-none bg-white dark:bg-[#1a1a1c] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500" placeholder="Describe los detalles de este producto..." />
+                <label className="block text-xs text-gray-600 dark:text-gray-400 mb-1">{hasDiscount ? "Precio con Descuento ($) *" : "Precio Regular ($) *"}</label>
+                <input required type="number" step="0.01" value={prodPrice} onChange={e => handlePriceChange(e.target.value, oldPrice, hasDiscount)} className="w-full px-3 py-2 rounded-xl border border-gray-200 dark:border-white/10 text-sm outline-none bg-white dark:bg-[#1a1a1c] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500" placeholder="89.90" />
               </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2 pl-1">Características / Viñetas (una por línea)</label>
-                <textarea rows={3} value={prodFeatures} onChange={e => setProdFeatures(e.target.value)} className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-sm outline-none resize-none bg-white dark:bg-[#1a1a1c] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500" placeholder="Material: Cerámica artesanal&#10;Acabado mate texturizado&#10;Garantía de 2 años" />
-              </div>
-
-              {/* Sección: Ficha Técnica y Fabricación */}
-              <div className="p-4 bg-stone-50/60 rounded-2xl border border-stone-200/70 space-y-4">
-                <div className="flex items-center gap-2">
-                  <span className="text-xs font-bold text-stone-800 uppercase tracking-wider">Ficha Técnica y Fabricación</span>
-                  <span className="text-[10px] text-stone-500 font-medium">(Se muestra en pestañas &ldquo;Materiales&rdquo; y &ldquo;Dimensiones&rdquo;)</span>
-                </div>
-                
-                <div>
-                  <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2 pl-1">Materiales y Acabados Nobles</label>
-                  <input 
-                    type="text" 
-                    value={prodMaterials} 
-                    onChange={e => setProdMaterials(e.target.value)} 
-                    className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-sm outline-none dark:] bg-white dark:bg-[#1a1a1c] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500" 
-                    placeholder="Ej: Cerámica gres cocida a 1250°C, herrajes de latón macizo y esmalte satinado libre de tóxicos." 
-                  />
-                  <p className="text-[11px] text-gray-400 mt-1">El cliente sabrá exactamente de qué está hecha la pieza.</p>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {hasDiscount && (
+                <>
                   <div>
-                    <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2 pl-1">Dimensiones y Peso</label>
-                    <input 
-                      type="text" 
-                      value={prodDimensions} 
-                      onChange={e => setProdDimensions(e.target.value)} 
-                      className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-sm outline-none dark:] bg-white dark:bg-[#1a1a1c] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500" 
-                      placeholder="Ej: 45 x 28 x 20 cm · Peso neto: 1.8 kg" 
-                    />
+                    <label className="block text-xs text-gray-600 dark:text-gray-400 mb-1">Precio Original Antes ($)</label>
+                    <input type="number" step="0.01" value={oldPrice} onChange={e => handlePriceChange(prodPrice, e.target.value, hasDiscount)} className="w-full px-3 py-2 rounded-xl border border-gray-200 dark:border-white/10 text-sm outline-none bg-white dark:bg-[#1a1a1c] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500" placeholder="119.90" />
                   </div>
                   <div>
-                    <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2 pl-1">Stock / Unidades en Inventario</label>
-                    <input 
-                      type="number" 
-                      min="0"
-                      value={prodStock} 
-                      onChange={e => setProdStock(e.target.value)} 
-                      className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-sm outline-none dark:] bg-white dark:bg-[#1a1a1c] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500" 
-                      placeholder="20" 
-                    />
+                    <label className="block text-xs text-gray-600 dark:text-gray-400 mb-1">% Descuento Calculado</label>
+                    <input type="text" readOnly value={calculatedDiscount} className="w-full px-3 py-2 rounded-xl border border-gray-200 dark:border-white/10 text-sm dark:] font-bold outline-none dark:] dark: bg-gray-100 dark:bg-[#3a3a3c] text-gray-600 dark:text-gray-400" placeholder="-25%" />
                   </div>
-                </div>
+                </>
+              )}
+            </div>
+          </div>
 
-                <ColorVariantsManager
-                  colors={prodColorVariants}
-                  onChange={setProdColorVariants}
+          {/* 6. DESCRIPCIÓN COMPLETA & CARACTERÍSTICAS */}
+          <div>
+            <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2 pl-1">Descripción Completa *</label>
+            <textarea required rows={3} value={prodDescription} onChange={e => setProdDescription(e.target.value)} className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-sm outline-none resize-none bg-white dark:bg-[#1a1a1c] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500" placeholder="Describe los detalles de este producto..." />
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2 pl-1">Características / Viñetas (una por línea)</label>
+            <textarea rows={3} value={prodFeatures} onChange={e => setProdFeatures(e.target.value)} className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-sm outline-none resize-none bg-white dark:bg-[#1a1a1c] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500" placeholder="Material: Cerámica artesanal&#10;Acabado mate texturizado&#10;Garantía de 2 años" />
+          </div>
+
+          {/* 7. FICHA TÉCNICA Y FABRICACIÓN */}
+          <div className="p-4 bg-stone-50/60 rounded-2xl border border-stone-200/70 space-y-4">
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-bold text-stone-800 uppercase tracking-wider">Ficha Técnica y Fabricación</span>
+              <span className="text-[10px] text-stone-500 font-medium">(Se muestra en pestañas &ldquo;Materiales&rdquo; y &ldquo;Dimensiones&rdquo;)</span>
+            </div>
+            
+            <div>
+              <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2 pl-1">Materiales y Acabados Nobles</label>
+              <input 
+                type="text" 
+                value={prodMaterials} 
+                onChange={e => setProdMaterials(e.target.value)} 
+                className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-sm outline-none dark:] bg-white dark:bg-[#1a1a1c] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500" 
+                placeholder="Ej: Cerámica gres cocida a 1250°C, herrajes de latón macizo y esmalte satinado libre de tóxicos." 
+              />
+              <p className="text-[11px] text-gray-400 mt-1">El cliente sabrá exactamente de qué está hecha la pieza.</p>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2 pl-1">Dimensiones y Peso</label>
+                <input 
+                  type="text" 
+                  value={prodDimensions} 
+                  onChange={e => setProdDimensions(e.target.value)} 
+                  className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-sm outline-none dark:] bg-white dark:bg-[#1a1a1c] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500" 
+                  placeholder="Ej: 45 x 28 x 20 cm · Peso neto: 1.8 kg" 
                 />
               </div>
+              <div>
+                <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2 pl-1">Stock / Unidades en Inventario</label>
+                <input 
+                  type="number" 
+                  min="0"
+                  value={prodStock} 
+                  onChange={e => setProdStock(e.target.value)} 
+                  className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-sm outline-none dark:] bg-white dark:bg-[#1a1a1c] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500" 
+                  placeholder="20" 
+                />
+              </div>
+            </div>
+          </div>
 
- {/* Sección: Logística, Garantía y Postventa */}
- <div className="p-4 bg-blue-50/40 rounded-2xl border border-blue-100 space-y-4">
- <div className="flex items-center gap-2">
- <span className="text-xs font-bold text-blue-950 uppercase tracking-wider">Logística, Garantía y Confianza</span>
- <span className="text-[10px] text-blue-700 font-medium">(Se muestra en pestañas &ldquo;Envíos&rdquo; y &ldquo;Cuidados&rdquo;)</span>
- </div>
+          {/* 8. LOGÍSTICA, GARANTÍA Y POSTVENTA */}
+          <div className="p-4 bg-blue-50/40 rounded-2xl border border-blue-100 space-y-4">
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-bold text-blue-950 uppercase tracking-wider">Logística, Garantía y Confianza</span>
+              <span className="text-[10px] text-blue-700 font-medium">(Se muestra en pestañas &ldquo;Envíos&rdquo; y &ldquo;Cuidados&rdquo;)</span>
+            </div>
 
- <div>
- <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2 pl-1">Tiempos y Condiciones de Envío</label>
- <input 
- type="text" 
- value={prodShipping} 
- onChange={e => setProdShipping(e.target.value)} 
- className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-sm outline-none dark:] bg-white dark:bg-[#1a1a1c] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500" 
- placeholder="Ej: Entrega estándar en 24-48h. Embalaje reforzado anti-golpes. Devolución gratuita en 30 días." 
- />
- </div>
+            <div>
+              <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2 pl-1">Tiempos y Condiciones de Envío</label>
+              <input 
+                type="text" 
+                value={prodShipping} 
+                onChange={e => setProdShipping(e.target.value)} 
+                className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-sm outline-none dark:] bg-white dark:bg-[#1a1a1c] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500" 
+                placeholder="Ej: Entrega estándar en 24-48h. Embalaje reforzado anti-golpes. Devolución gratuita en 30 días." 
+              />
+            </div>
 
- <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
- <div>
- <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2 pl-1">Garantía Oficial</label>
- <input 
- type="text" 
- value={prodWarranty} 
- onChange={e => setProdWarranty(e.target.value)} 
- className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-sm outline-none dark:] bg-white dark:bg-[#1a1a1c] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500" 
- placeholder="Ej: 2 años de garantía de fábrica" 
- />
- </div>
- <div>
- <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2 pl-1">¿Qué incluye la caja?</label>
- <input 
- type="text" 
- value={prodPackageContents} 
- onChange={e => setProdPackageContents(e.target.value)} 
- className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-sm outline-none dark:] bg-white dark:bg-[#1a1a1c] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500" 
- placeholder="Ej: 1x Producto, 1x Cable USB-C, 1x Manual ilustrado" 
- />
- </div>
- </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2 pl-1">Garantía Oficial</label>
+                <input 
+                  type="text" 
+                  value={prodWarranty} 
+                  onChange={e => setProdWarranty(e.target.value)} 
+                  className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-sm outline-none dark:] bg-white dark:bg-[#1a1a1c] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500" 
+                  placeholder="Ej: 2 años de garantía de fábrica" 
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2 pl-1">¿Qué incluye la caja?</label>
+                <input 
+                  type="text" 
+                  value={prodPackageContents} 
+                  onChange={e => setProdPackageContents(e.target.value)} 
+                  className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-sm outline-none dark:] bg-white dark:bg-[#1a1a1c] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500" 
+                  placeholder="Ej: 1x Producto, 1x Cable USB-C, 1x Manual ilustrado" 
+                />
+              </div>
+            </div>
 
- <div>
- <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2 pl-1">Instrucciones de Cuidado y Limpieza</label>
- <input 
- type="text" 
- value={prodCareInstructions} 
- onChange={e => setProdCareInstructions(e.target.value)} 
- className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-sm outline-none dark:] bg-white dark:bg-[#1a1a1c] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500" 
- placeholder="Ej: Limpiar con paño de microfibra seco. No usar productos abrasivos ni alcohol." 
- />
- </div>
- </div>
+            <div>
+              <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2 pl-1">Instrucciones de Cuidado y Limpieza</label>
+              <input 
+                type="text" 
+                value={prodCareInstructions} 
+                onChange={e => setProdCareInstructions(e.target.value)} 
+                className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-sm outline-none dark:] bg-white dark:bg-[#1a1a1c] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500" 
+                placeholder="Ej: Limpiar con paño de microfibra seco. No usar productos abrasivos ni alcohol." 
+              />
+            </div>
+          </div>
 
- <div className="pt-4 flex justify-end gap-3">
- <button type="button" onClick={() => setShowProductModal(false)} className="px-5 py-2.5 text-xs font-semibold text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-[#3a3a3c] rounded-xl">Cancelar</button>
- <button type="submit" disabled={isSubmittingProd} className="px-6 py-2.5 text-xs font-semibold bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 rounded-xl shadow-md dark:shadow-none hover:bg-gray-800 disabled:opacity-50">
- {isSubmittingProd ? "Guardando..." : "Publicar en Tienda"}
- </button>
- </div>
- </form>
+          {/* 9. ARQUITECTURA VISUAL (LANDING PAGE O ESTÁNDAR) */}
+          <ProductArchitectureSelector
+            layoutType={prodLayoutType}
+            onLayoutTypeChange={setProdLayoutType}
+            productImage={prodImageUrl || "https://images.unsplash.com/photo-1507473885765-e6ed057f782c?q=80&w=800&auto=format&fit=crop"}
+            allProducts={products}
+            bundleEnabled={prodLandingBundleEnabled}
+            onBundleEnabledChange={setProdLandingBundleEnabled}
+            bundleMode={prodBundleMode}
+            onBundleModeChange={setProdBundleMode}
+            bundleDiscount={prodLandingBundleDiscount}
+            onBundleDiscountChange={setProdLandingBundleDiscount}
+            bundleCompanionIds={prodBundleCompanionIds}
+            onBundleCompanionIdsChange={setProdBundleCompanionIds}
+            landingSpecs={prodLandingSpecs}
+            onLandingSpecsChange={setProdLandingSpecs}
+            landingReviews={prodLandingReviews}
+            onLandingReviewsChange={setProdLandingReviews}
+            landingAnatomyImage={prodLandingAnatomyImage}
+            onLandingAnatomyImageChange={setProdLandingAnatomyImage}
+            howToUse={prodHowToUse}
+            onHowToUseChange={setProdHowToUse}
+          />
+
+          {/* 10. COMBOS & PAQUETES */}
+          <ProductCombosManager
+            combos={prodCombos}
+            onChange={setProdCombos}
+            allProducts={products}
+            currentProductPrice={parseFloat(prodPrice) || 0}
+          />
+
+          <div className="pt-4 flex justify-end gap-3">
+            <button type="button" onClick={() => setShowProductModal(false)} className="px-5 py-2.5 text-xs font-semibold text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-[#3a3a3c] rounded-xl">Cancelar</button>
+            <button type="submit" disabled={isSubmittingProd} className="px-6 py-2.5 text-xs font-semibold bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 rounded-xl shadow-md dark:shadow-none hover:bg-gray-800 disabled:opacity-50">
+              {isSubmittingProd ? "Guardando..." : "Publicar en Tienda"}
+            </button>
+          </div>
+        </form>
  </div>
  </div>
  )}
@@ -1508,373 +1522,382 @@ const handleConfirmDeleteNiche = async () => {
  </div>
  )}
 
- <ProductArchitectureSelector
-    layoutType={editLayoutType}
-    onLayoutTypeChange={setEditLayoutType}
-    productImage={editImageUrl || "https://images.unsplash.com/photo-1507473885765-e6ed057f782c?q=80&w=800&auto=format&fit=crop"}
-    allProducts={products}
-    bundleEnabled={editLandingBundleEnabled}
-    onBundleEnabledChange={setEditLandingBundleEnabled}
-    bundleMode={editBundleMode}
-    onBundleModeChange={setEditBundleMode}
-    bundleDiscount={editLandingBundleDiscount}
-    onBundleDiscountChange={setEditLandingBundleDiscount}
-    bundleCompanionIds={editBundleCompanionIds}
-    onBundleCompanionIdsChange={setEditBundleCompanionIds}
-    landingSpecs={editLandingSpecs}
-    onLandingSpecsChange={setEditLandingSpecs}
-    landingReviews={editLandingReviews}
-    onLandingReviewsChange={setEditLandingReviews}
-    howToUse={editHowToUse}
-    onHowToUseChange={setEditHowToUse}
-  />
+          {/* 1. IDENTIFICACIÓN BÁSICA */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2 pl-1">Nombre Principal *</label>
+              <input 
+                required 
+                type="text" 
+                value={editTitle} 
+                onChange={e => setEditTitle(e.target.value)} 
+                className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-sm outline-none focus:ring-1 focus:ring-gray-900 bg-white dark:bg-[#1a1a1c] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500" 
+                placeholder="Ej: Lámpara de Mesa" 
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2 pl-1">Subtítulo Itálica</label>
+              <input 
+                type="text" 
+                value={editHighlight} 
+                onChange={e => setEditHighlight(e.target.value)} 
+                className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-sm outline-none focus:ring-1 focus:ring-gray-900 bg-white dark:bg-[#1a1a1c] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500" 
+                placeholder="Ej: Nova LED, Artesanal" 
+              />
+            </div>
+          </div>
 
- <ProductCombosManager
-    combos={editCombos}
-    onChange={setEditCombos}
-    allProducts={products}
-    currentProductPrice={parseFloat(editPrice) || 0}
-  />
+          {/* 2. CATEGORÍA & BADGE */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <div className="flex items-center justify-between mb-1">
+                <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300">Nicho / Categoría *</label>
+                <button 
+                  type="button" 
+                  onClick={() => { setShowEditProductModal(false); setActiveTab("niches"); }}
+                  className="text-[10px] font-semibold text-[#8c9276] hover:underline cursor-pointer"
+                  title="Ir a gestionar nichos y categorías"
+                >
+                  + Gestionar nichos y categorías
+                </button>
+              </div>
+              <select 
+                required 
+                value={editCategory} 
+                onChange={e => setEditCategory(e.target.value)} 
+                className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-sm outline-none bg-white dark:bg-[#202022]"
+              >
+                <option value="">Selecciona un nicho</option>
+                {categories.map(c => <option key={c} value={c}>{c}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2 pl-1">Badge de Marketing</label>
+              <select 
+                value={editBadge} 
+                onChange={e => setEditBadge(e.target.value)} 
+                className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-sm outline-none bg-white dark:bg-[#202022]"
+              >
+                <option value="">Sin badge</option>
+                {badges.map(b => (
+                  <option key={b} value={b}>{b}</option>
+                ))}
+              </select>
+            </div>
+          </div>
 
- <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
- <div>
- <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2 pl-1">Nombre Principal *</label>
- <input 
- required 
- type="text" 
- value={editTitle} 
- onChange={e => setEditTitle(e.target.value)} 
- className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-sm outline-none focus:ring-1 focus:ring-gray-900 bg-white dark:bg-[#1a1a1c] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500" 
- placeholder="Ej: Lámpara de Mesa" 
- />
- </div>
- <div>
- <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2 pl-1">Subtítulo Itálica</label>
- <input 
- type="text" 
- value={editHighlight} 
- onChange={e => setEditHighlight(e.target.value)} 
- className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-sm outline-none focus:ring-1 focus:ring-gray-900 bg-white dark:bg-[#1a1a1c] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500" 
- placeholder="Ej: Nova LED, Artesanal" 
- />
- </div>
- </div>
+          {/* 3. FOTOGRAFÍAS DEL PRODUCTO */}
+          <div className="p-4 bg-gray-50/80 dark:bg-[#2a2a2c]/80 rounded-2xl border border-gray-100 dark:border-white/5 space-y-3">
+            <div className="flex items-center justify-between">
+              <label className="block text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-gray-300">Fotografías del Producto</label>
+              <span className="text-[11px] text-[#8c9276] font-semibold">Vista previa en vivo</span>
+            </div>
 
- <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
- <div>
- <div className="flex items-center justify-between mb-1">
- <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300">Nicho / Categoría *</label>
- <button 
- type="button" 
- onClick={() => { setShowEditProductModal(false); setActiveTab("niches"); }}
- className="text-[10px] font-semibold text-[#8c9276] hover:underline cursor-pointer"
- title="Ir a gestionar nichos y categorías"
- >
- + Gestionar nichos y categorías
- </button>
- </div>
- <select 
- required 
- value={editCategory} 
- onChange={e => setEditCategory(e.target.value)} 
- className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-sm outline-none bg-white dark:bg-[#202022]"
- >
- <option value="">Selecciona un nicho</option>
- {categories.map(c => <option key={c} value={c}>{c}</option>)}
- </select>
- </div>
- <div>
- <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2 pl-1">Badge de Marketing</label>
- <select 
- value={editBadge} 
- onChange={e => setEditBadge(e.target.value)} 
- className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-sm outline-none bg-white dark:bg-[#202022]"
- >
- <option value="">Sin badge</option>
- {badges.map(b => (
- <option key={b} value={b}>{b}</option>
- ))}
- </select>
- </div>
- </div>
+            <div className="p-3 bg-blue-50/70 border border-blue-100 rounded-xl text-xs text-blue-900 leading-relaxed">
+              <p className="font-bold mb-1">💡 Enlace directo a la foto</p>
+              <p className="text-[11px] text-blue-800">
+                Asegúrate de copiar el enlace directo del archivo de la foto (clic derecho sobre la imagen &gt; &ldquo;Copiar dirección de imagen&rdquo;), no el link de la página web.
+              </p>
+            </div>
 
- {/* Precios y Descuento */}
- <div className="p-4 bg-gray-50/70 dark:bg-[#2a2a2c]/70 rounded-2xl border border-gray-100 dark:border-white/5 space-y-3">
- <div className="flex items-center justify-between">
- <span className="text-xs font-bold text-gray-700 dark:text-gray-300 uppercase">Precios y Rebajas</span>
- <div className="flex items-center gap-2">
- <span className="text-xs text-gray-500 dark:text-gray-400">¿Tiene descuento?</span>
- <button 
- type="button" 
- onClick={() => {
- const next = !editHasDiscount;
- setEditHasDiscount(next);
- handleEditPriceChange(editPrice, editOldPrice, next);
- }}
- className={`w-10 h-5 rounded-full relative transition-colors ${editHasDiscount ? "bg-gray-900 dark:bg-gray-100" : "bg-gray-300"}`}
- >
- <span className={`absolute top-0.5 w-4 h-4 rounded-full bg-white dark:bg-[#202022] transition-all ${editHasDiscount ? "left-5" : "left-1"}`} />
- </button>
- </div>
- </div>
+            <div className="flex gap-4 items-start">
+              {editImageUrl && (
+                <div className="relative w-16 h-16 rounded-xl overflow-hidden bg-gray-100 dark:bg-[#3a3a3c] border border-gray-200 dark:border-white/10 shrink-0">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img 
+                    src={normalizeImageUrl(editImageUrl.trim().split(/[\n,]+/)[0])} 
+                    alt="Preview" 
+                    className="w-full h-full object-cover" 
+                    onError={(e) => { (e.currentTarget as HTMLImageElement).src = "https://images.unsplash.com/photo-1507473885765-e6ed057f782c?q=80&w=800&auto=format&fit=crop"; }}
+                  />
+                </div>
+              )}
+              <div className="flex-1">
+                <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2 pl-1">URL de Imagen Principal *</label>
+                <input 
+                  required 
+                  type="text" 
+                  value={editImageUrl} 
+                  onChange={e => setEditImageUrl(e.target.value)} 
+                  className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-sm outline-none dark:] bg-white dark:bg-[#1a1a1c] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500" 
+                  placeholder="https://images.unsplash.com/photo-... o .jpg / .webp" 
+                />
+                {isGoogleDriveUrl(editImageUrl) ? (
+                  <p className="text-[11px] text-emerald-800 mt-1.5 font-medium bg-emerald-50 dark:bg-emerald-950/30 p-2 rounded-lg border border-emerald-200 dark:border-emerald-800/50 flex items-center gap-1.5">
+                    <span className="font-bold">✓</span> Enlace de Google Drive detectado y transformado a visualización directa.
+                  </p>
+                ) : editImageUrl.trim() && (editImageUrl.includes('.html') || (!editImageUrl.match(/\.(jpg|jpeg|png|webp|avif|gif|svg)(\?.*)?$/i) && !editImageUrl.includes('unsplash') && !editImageUrl.includes('mlstatic') && !editImageUrl.includes('cloudinary') && !editImageUrl.includes('imgur'))) && (
+                  <p className="text-[11px] text-amber-700 mt-1.5 font-medium bg-amber-50 dark:bg-amber-950/30 p-2 rounded-lg border border-amber-200 dark:border-amber-800/50">
+                    ⚠️ Atención: Asegúrate de que este enlace apunte al archivo directo de la foto (clic derecho &gt; &ldquo;Copiar dirección de imagen&rdquo;).
+                  </p>
+                )}
+              </div>
+            </div>
 
- <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
- <div>
- <label className="block text-xs text-gray-600 dark:text-gray-400 mb-1">{editHasDiscount ? "Precio con Descuento ($) *" : "Precio Regular ($) *"}</label>
- <input 
- required 
- type="number" 
- step="0.01" 
- value={editPrice} 
- onChange={e => handleEditPriceChange(e.target.value, editOldPrice, editHasDiscount)} 
- className="w-full px-3 py-2 rounded-xl border border-gray-200 dark:border-white/10 text-sm outline-none bg-white dark:bg-[#1a1a1c] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500" 
- placeholder="89.90" 
- />
- </div>
- {editHasDiscount && (
- <>
- <div>
- <label className="block text-xs text-gray-600 dark:text-gray-400 mb-1">Precio Original Antes ($)</label>
- <input 
- type="number" 
- step="0.01" 
- value={editOldPrice} 
- onChange={e => handleEditPriceChange(editPrice, e.target.value, editHasDiscount)} 
- className="w-full px-3 py-2 rounded-xl border border-gray-200 dark:border-white/10 text-sm outline-none bg-white dark:bg-[#1a1a1c] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500" 
- placeholder="119.90" 
- />
- </div>
- <div>
- <label className="block text-xs text-gray-600 dark:text-gray-400 mb-1">% Descuento Calculado</label>
- <input 
- type="text" 
- readOnly 
- value={editCalculatedDiscount} 
- className="w-full px-3 py-2 rounded-xl border border-gray-200 dark:border-white/10 text-sm dark:] font-bold outline-none dark:] dark: bg-white dark:bg-[#1a1a1c] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500" 
- placeholder="-25%" 
- />
- </div>
- </>
- )}
- </div>
- </div>
+            <div>
+              <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2 pl-1">Galería de Imágenes Adicionales (separadas por coma)</label>
+              <input 
+                type="text" 
+                value={editExtraImages} 
+                onChange={e => setEditExtraImages(e.target.value)} 
+                className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-sm outline-none dark:] bg-white dark:bg-[#1a1a1c] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500" 
+                placeholder="https://foto2.jpg , https://foto3.webp" 
+              />
+            </div>
 
- {/* Imagen y Vista Previa */}
- <div className="p-4 bg-gray-50/80 dark:bg-[#2a2a2c]/80 rounded-2xl border border-gray-100 dark:border-white/5 space-y-3">
- <div className="flex items-center justify-between">
- <label className="block text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-gray-300">Fotografías del Producto</label>
- <span className="text-[11px] text-[#8c9276] font-semibold">Vista previa en vivo</span>
- </div>
+            {/* Miniaturas de galería adicional */}
+            {editExtraImages.trim() && (
+              <div className="space-y-1.5 pt-1">
+                <p className="text-[11px] font-semibold text-gray-500 dark:text-gray-400">Galería adicional:</p>
+                <div className="flex gap-2 flex-wrap">
+                  {editExtraImages.split(/[\n,]+/).map(u => u.trim()).filter(u => u.startsWith('http')).map((url, idx) => (
+                    <div key={idx} className="relative w-12 h-12 rounded-lg overflow-hidden bg-gray-100 dark:bg-[#3a3a3c] border border-gray-200 dark:border-white/10 shrink-0">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img 
+                        src={normalizeImageUrl(url)} 
+                        alt={`Galería ${idx}`} 
+                        className="w-full h-full object-cover" 
+                        onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }}
+                      />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
 
- <div className="p-3 bg-blue-50/70 border border-blue-100 rounded-xl text-xs text-blue-900 leading-relaxed">
- <p className="font-bold mb-1">💡 Enlace directo a la foto</p>
- <p className="text-[11px] text-blue-800">
- Asegúrate de copiar el enlace directo del archivo de la foto (clic derecho sobre la imagen &gt; &ldquo;Copiar dirección de imagen&rdquo;), no el link de la página web.
- </p>
- </div>
+          {/* 4. COLORES & ACABADOS DEL PRODUCTO */}
+          <ColorVariantsManager
+            colors={editColorVariants}
+            onChange={setEditColorVariants}
+          />
 
- <div className="flex gap-4 items-start">
- {editImageUrl && (
- <div className="relative w-16 h-16 rounded-xl overflow-hidden bg-gray-100 dark:bg-[#3a3a3c] border border-gray-200 dark:border-white/10 shrink-0">
- {/* eslint-disable-next-line @next/next/no-img-element */}
- <img 
- src={normalizeImageUrl(editImageUrl.trim().split(/[\n,]+/)[0])} 
- alt="Preview" 
- className="w-full h-full object-cover" 
- onError={(e) => { (e.currentTarget as HTMLImageElement).src = "https://images.unsplash.com/photo-1507473885765-e6ed057f782c?q=80&w=800&auto=format&fit=crop"; }}
- />
- </div>
- )}
- <div className="flex-1">
- <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2 pl-1">URL de Imagen Principal *</label>
- <input 
- required 
- type="text" 
- value={editImageUrl} 
- onChange={e => setEditImageUrl(e.target.value)} 
- className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-sm outline-none dark:] bg-white dark:bg-[#1a1a1c] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500" 
- placeholder="https://images.unsplash.com/photo-... o .jpg / .webp" 
- />
- {isGoogleDriveUrl(editImageUrl) ? (
- <p className="text-[11px] text-emerald-800 mt-1.5 font-medium bg-emerald-50 dark:bg-emerald-950/30 p-2 rounded-lg border border-emerald-200 dark:border-emerald-800/50 flex items-center gap-1.5">
- <span className="font-bold">✓</span> Enlace de Google Drive detectado y transformado a visualización directa.
- </p>
- ) : editImageUrl.trim() && (editImageUrl.includes('.html') || (!editImageUrl.match(/\.(jpg|jpeg|png|webp|avif|gif|svg)(\?.*)?$/i) && !editImageUrl.includes('unsplash') && !editImageUrl.includes('mlstatic') && !editImageUrl.includes('cloudinary') && !editImageUrl.includes('imgur'))) && (
- <p className="text-[11px] text-amber-700 mt-1.5 font-medium bg-amber-50 dark:bg-amber-950/30 p-2 rounded-lg border border-amber-200 dark:border-amber-800/50">
- ⚠️ Atención: Asegúrate de que este enlace apunte al archivo directo de la foto (clic derecho &gt; &ldquo;Copiar dirección de imagen&rdquo;).
- </p>
- )}
- </div>
- </div>
+          {/* 5. PRECIOS Y REBAJAS */}
+          <div className="p-4 bg-gray-50/70 dark:bg-[#2a2a2c]/70 rounded-2xl border border-gray-100 dark:border-white/5 space-y-3">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold text-gray-700 dark:text-gray-300 uppercase">Precios y Rebajas</span>
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-gray-500 dark:text-gray-400">¿Tiene descuento?</span>
+                <button 
+                  type="button" 
+                  onClick={() => {
+                    const next = !editHasDiscount;
+                    setEditHasDiscount(next);
+                    handleEditPriceChange(editPrice, editOldPrice, next);
+                  }}
+                  className={`w-10 h-5 rounded-full relative transition-colors ${editHasDiscount ? "bg-gray-900 dark:bg-gray-100" : "bg-gray-300"}`}
+                >
+                  <span className={`absolute top-0.5 w-4 h-4 rounded-full bg-white dark:bg-[#202022] transition-all ${editHasDiscount ? "left-5" : "left-1"}`} />
+                </button>
+              </div>
+            </div>
 
- <div>
- <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2 pl-1">Galería de Imágenes Adicionales (separadas por coma)</label>
- <input 
- type="text" 
- value={editExtraImages} 
- onChange={e => setEditExtraImages(e.target.value)} 
- className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-sm outline-none dark:] bg-white dark:bg-[#1a1a1c] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500" 
- placeholder="https://foto2.jpg , https://foto3.webp" 
- />
- </div>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div>
+                <label className="block text-xs text-gray-600 dark:text-gray-400 mb-1">{editHasDiscount ? "Precio con Descuento ($) *" : "Precio Regular ($) *"}</label>
+                <input 
+                  required 
+                  type="number" 
+                  step="0.01" 
+                  value={editPrice} 
+                  onChange={e => handleEditPriceChange(e.target.value, editOldPrice, editHasDiscount)} 
+                  className="w-full px-3 py-2 rounded-xl border border-gray-200 dark:border-white/10 text-sm outline-none bg-white dark:bg-[#1a1a1c] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500" 
+                  placeholder="89.90" 
+                />
+              </div>
+              {editHasDiscount && (
+                <>
+                  <div>
+                    <label className="block text-xs text-gray-600 dark:text-gray-400 mb-1">Precio Original Antes ($)</label>
+                    <input 
+                      type="number" 
+                      step="0.01" 
+                      value={editOldPrice} 
+                      onChange={e => handleEditPriceChange(editPrice, e.target.value, editHasDiscount)} 
+                      className="w-full px-3 py-2 rounded-xl border border-gray-200 dark:border-white/10 text-sm outline-none bg-white dark:bg-[#1a1a1c] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500" 
+                      placeholder="119.90" 
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs text-gray-600 dark:text-gray-400 mb-1">% Descuento Calculado</label>
+                    <input 
+                      type="text" 
+                      readOnly 
+                      value={editCalculatedDiscount} 
+                      className="w-full px-3 py-2 rounded-xl border border-gray-200 dark:border-white/10 text-sm dark:] font-bold outline-none dark:] dark: bg-white dark:bg-[#1a1a1c] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500" 
+                      placeholder="-25%" 
+                    />
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
 
- {/* Miniaturas de galería adicional */}
- {editExtraImages.trim() && (
- <div className="space-y-1.5 pt-1">
- <p className="text-[11px] font-semibold text-gray-500 dark:text-gray-400">Galería adicional:</p>
- <div className="flex gap-2 flex-wrap">
- {editExtraImages.split(/[\n,]+/).map(u => u.trim()).filter(u => u.startsWith('http')).map((url, idx) => (
- <div key={idx} className="relative w-12 h-12 rounded-lg overflow-hidden bg-gray-100 dark:bg-[#3a3a3c] border border-gray-200 dark:border-white/10 shrink-0">
- {/* eslint-disable-next-line @next/next/no-img-element */}
- <img 
- src={normalizeImageUrl(url)} 
- alt={`Galería ${idx}`} 
- className="w-full h-full object-cover" 
- onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }}
- />
- </div>
- ))}
- </div>
- </div>
- )}
- </div>
+          {/* 6. DESCRIPCIÓN COMPLETA & CARACTERÍSTICAS */}
+          <div>
+            <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2 pl-1">Descripción Completa *</label>
+            <textarea 
+              required 
+              rows={3} 
+              value={editDescription} 
+              onChange={e => setEditDescription(e.target.value)} 
+              className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-sm outline-none resize-none" 
+              placeholder="Describe los detalles de este producto..." 
+            />
+          </div>
 
- <div>
- <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2 pl-1">Descripción Completa *</label>
- <textarea 
- required 
- rows={3} 
- value={editDescription} 
- onChange={e => setEditDescription(e.target.value)} 
- className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-sm outline-none resize-none" 
- placeholder="Describe los detalles de este producto..." 
- />
- </div>
+          <div>
+            <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2 pl-1">Características / Viñetas (una por línea)</label>
+            <textarea 
+              rows={3} 
+              value={editFeatures} 
+              onChange={e => setEditFeatures(e.target.value)} 
+              className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-sm outline-none resize-none" 
+              placeholder="Material: Cerámica artesanal&#10;Acabado mate texturizado" 
+            />
+          </div>
 
- <div>
- <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2 pl-1">Características / Viñetas (una por línea)</label>
- <textarea 
- rows={3} 
- value={editFeatures} 
- onChange={e => setEditFeatures(e.target.value)} 
- className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-sm outline-none resize-none" 
- placeholder="Material: Cerámica artesanal&#10;Acabado mate texturizado" 
- />
- </div>
+          {/* 7. TALLAS / TAMAÑOS */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2 pl-1">Tallas / Tamaños (separados por coma)</label>
+              <input 
+                type="text" 
+                value={editSizes} 
+                onChange={e => { setEditSizes(e.target.value); setEditHasSizes(!!e.target.value.trim()); }} 
+                className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-sm outline-none bg-white dark:bg-[#1a1a1c] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500" 
+                placeholder="Ej: Individual, Queen, King" 
+              />
+            </div>
+          </div>
 
- <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
- <div>
- <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2 pl-1">Tallas / Tamaños (separados por coma)</label>
- <input 
- type="text" 
- value={editSizes} 
- onChange={e => { setEditSizes(e.target.value); setEditHasSizes(!!e.target.value.trim()); }} 
- className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-sm outline-none bg-white dark:bg-[#1a1a1c] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500" 
- placeholder="Ej: Individual, Queen, King" 
- />
- </div>
- </div>
+          {/* 8. FICHA TÉCNICA Y FABRICACIÓN */}
+          <div className="p-4 bg-stone-50/60 rounded-2xl border border-stone-200/70 space-y-4">
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-bold text-stone-800 uppercase tracking-wider">Ficha Técnica y Fabricación</span>
+              <span className="text-[10px] text-stone-500 font-medium">(Pestañas &ldquo;Materiales&rdquo; y &ldquo;Dimensiones&rdquo;)</span>
+            </div>
+            
+            <div>
+              <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2 pl-1">Materiales y Acabados Nobles</label>
+              <input 
+                type="text" 
+                value={editMaterials} 
+                onChange={e => setEditMaterials(e.target.value)} 
+                className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-sm outline-none dark:] bg-white dark:bg-[#1a1a1c] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500" 
+                placeholder="Ej: Cerámica gres cocida a 1250°C, herrajes de latón macizo y esmalte satinado." 
+              />
+            </div>
 
- <ColorVariantsManager
-   colors={editColorVariants}
-   onChange={setEditColorVariants}
- />
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2 pl-1">Dimensiones y Peso</label>
+                <input 
+                  type="text" 
+                  value={editDimensions} 
+                  onChange={e => setEditDimensions(e.target.value)} 
+                  className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-sm outline-none dark:] bg-white dark:bg-[#1a1a1c] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500" 
+                  placeholder="Ej: 45 x 28 x 20 cm · Peso neto: 1.8 kg" 
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2 pl-1">Stock / Unidades en Inventario</label>
+                <input 
+                  type="number" 
+                  min="0"
+                  value={editStock} 
+                  onChange={e => setEditStock(e.target.value)} 
+                  className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-sm outline-none dark:] bg-white dark:bg-[#1a1a1c] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500" 
+                  placeholder="20" 
+                />
+              </div>
+            </div>
+          </div>
 
- {/* Sección: Ficha Técnica y Fabricación */}
- <div className="p-4 bg-stone-50/60 rounded-2xl border border-stone-200/70 space-y-4">
- <div className="flex items-center gap-2">
- <span className="text-xs font-bold text-stone-800 uppercase tracking-wider">Ficha Técnica y Fabricación</span>
- <span className="text-[10px] text-stone-500 font-medium">(Pestañas &ldquo;Materiales&rdquo; y &ldquo;Dimensiones&rdquo;)</span>
- </div>
- 
- <div>
- <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2 pl-1">Materiales y Acabados Nobles</label>
- <input 
- type="text" 
- value={editMaterials} 
- onChange={e => setEditMaterials(e.target.value)} 
- className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-sm outline-none dark:] bg-white dark:bg-[#1a1a1c] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500" 
- placeholder="Ej: Cerámica gres cocida a 1250°C, herrajes de latón macizo y esmalte satinado." 
- />
- </div>
+          {/* 9. LOGÍSTICA, GARANTÍA Y POSTVENTA */}
+          <div className="p-4 bg-blue-50/40 rounded-2xl border border-blue-100 space-y-4">
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-bold text-blue-950 uppercase tracking-wider">Logística, Garantía y Confianza</span>
+              <span className="text-[10px] text-blue-700 font-medium">(Pestañas &ldquo;Envíos&rdquo; y &ldquo;Cuidados&rdquo;)</span>
+            </div>
 
- <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
- <div>
- <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2 pl-1">Dimensiones y Peso</label>
- <input 
- type="text" 
- value={editDimensions} 
- onChange={e => setEditDimensions(e.target.value)} 
- className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-sm outline-none dark:] bg-white dark:bg-[#1a1a1c] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500" 
- placeholder="Ej: 45 x 28 x 20 cm · Peso neto: 1.8 kg" 
- />
- </div>
- <div>
- <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2 pl-1">Stock / Unidades en Inventario</label>
- <input 
- type="number" 
- min="0"
- value={editStock} 
- onChange={e => setEditStock(e.target.value)} 
- className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-sm outline-none dark:] bg-white dark:bg-[#1a1a1c] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500" 
- placeholder="20" 
- />
- </div>
- </div>
- </div>
+            <div>
+              <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2 pl-1">Tiempos y Condiciones de Envío</label>
+              <input 
+                type="text" 
+                value={editShipping} 
+                onChange={e => setEditShipping(e.target.value)} 
+                className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-sm outline-none dark:] bg-white dark:bg-[#1a1a1c] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500" 
+                placeholder="Ej: Entrega estándar en 24-48h. Embalaje reforzado anti-golpes. Devolución gratuita en 30 días." 
+              />
+            </div>
 
- {/* Sección: Logística, Garantía y Postventa */}
- <div className="p-4 bg-blue-50/40 rounded-2xl border border-blue-100 space-y-4">
- <div className="flex items-center gap-2">
- <span className="text-xs font-bold text-blue-950 uppercase tracking-wider">Logística, Garantía y Confianza</span>
- <span className="text-[10px] text-blue-700 font-medium">(Pestañas &ldquo;Envíos&rdquo; y &ldquo;Cuidados&rdquo;)</span>
- </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2 pl-1">Garantía Oficial</label>
+                <input 
+                  type="text" 
+                  value={editWarranty} 
+                  onChange={e => setEditWarranty(e.target.value)} 
+                  className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-sm outline-none dark:] bg-white dark:bg-[#1a1a1c] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500" 
+                  placeholder="Ej: 2 años de garantía de fábrica" 
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2 pl-1">¿Qué incluye la caja?</label>
+                <input 
+                  type="text" 
+                  value={editPackageContents} 
+                  onChange={e => setEditPackageContents(e.target.value)} 
+                  className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-sm outline-none dark:] bg-white dark:bg-[#1a1a1c] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500" 
+                  placeholder="Ej: 1x Producto, 1x Cable USB-C, 1x Manual ilustrado" 
+                />
+              </div>
+            </div>
 
- <div>
- <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2 pl-1">Tiempos y Condiciones de Envío</label>
- <input 
- type="text" 
- value={editShipping} 
- onChange={e => setEditShipping(e.target.value)} 
- className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-sm outline-none dark:] bg-white dark:bg-[#1a1a1c] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500" 
- placeholder="Ej: Entrega estándar en 24-48h. Embalaje reforzado anti-golpes. Devolución gratuita en 30 días." 
- />
- </div>
+            <div>
+              <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2 pl-1">Instrucciones de Cuidado y Limpieza</label>
+              <input 
+                type="text" 
+                value={editCareInstructions} 
+                onChange={e => setEditCareInstructions(e.target.value)} 
+                className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-sm outline-none dark:] bg-white dark:bg-[#1a1a1c] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500" 
+                placeholder="Ej: Limpiar con paño de microfibra seco. No usar productos abrasivos ni alcohol." 
+              />
+            </div>
+          </div>
 
- <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
- <div>
- <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2 pl-1">Garantía Oficial</label>
- <input 
- type="text" 
- value={editWarranty} 
- onChange={e => setEditWarranty(e.target.value)} 
- className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-sm outline-none dark:] bg-white dark:bg-[#1a1a1c] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500" 
- placeholder="Ej: 2 años de garantía de fábrica" 
- />
- </div>
- <div>
- <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2 pl-1">¿Qué incluye la caja?</label>
- <input 
- type="text" 
- value={editPackageContents} 
- onChange={e => setEditPackageContents(e.target.value)} 
- className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-sm outline-none dark:] bg-white dark:bg-[#1a1a1c] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500" 
- placeholder="Ej: 1x Producto, 1x Cable USB-C, 1x Manual ilustrado" 
- />
- </div>
- </div>
+          {/* 10. ARQUITECTURA VISUAL (LANDING PAGE O ESTÁNDAR) */}
+          <ProductArchitectureSelector
+            layoutType={editLayoutType}
+            onLayoutTypeChange={setEditLayoutType}
+            productImage={editImageUrl || "https://images.unsplash.com/photo-1507473885765-e6ed057f782c?q=80&w=800&auto=format&fit=crop"}
+            allProducts={products}
+            bundleEnabled={editLandingBundleEnabled}
+            onBundleEnabledChange={setEditLandingBundleEnabled}
+            bundleMode={editBundleMode}
+            onBundleModeChange={setEditBundleMode}
+            bundleDiscount={editLandingBundleDiscount}
+            onBundleDiscountChange={setEditLandingBundleDiscount}
+            bundleCompanionIds={editBundleCompanionIds}
+            onBundleCompanionIdsChange={setEditBundleCompanionIds}
+            landingSpecs={editLandingSpecs}
+            onLandingSpecsChange={setEditLandingSpecs}
+            landingReviews={editLandingReviews}
+            onLandingReviewsChange={setEditLandingReviews}
+            landingAnatomyImage={editLandingAnatomyImage}
+            onLandingAnatomyImageChange={setEditLandingAnatomyImage}
+            howToUse={editHowToUse}
+            onHowToUseChange={setEditHowToUse}
+          />
 
- <div>
- <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2 pl-1">Instrucciones de Cuidado y Limpieza</label>
- <input 
- type="text" 
- value={editCareInstructions} 
- onChange={e => setEditCareInstructions(e.target.value)} 
- className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-sm outline-none dark:] bg-white dark:bg-[#1a1a1c] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500" 
- placeholder="Ej: Limpiar con paño de microfibra seco. No usar productos abrasivos ni alcohol." 
- />
- </div>
- </div>
+          {/* 11. COMBOS & PAQUETES */}
+          <ProductCombosManager
+            combos={editCombos}
+            onChange={setEditCombos}
+            allProducts={products}
+            currentProductPrice={parseFloat(editPrice) || 0}
+          />
 
             <div className="pt-4 flex justify-end gap-3 border-t border-gray-100 dark:border-white/5">
               <button 

@@ -192,6 +192,7 @@ CREATE TABLE IF NOT EXISTS public.products (
   landing_benefits jsonb DEFAULT '[]'::jsonb,
   landing_bundle jsonb,
   combos jsonb DEFAULT '[]'::jsonb,
+  landing_anatomy_image text,
   rating numeric DEFAULT 5.0,
   reviews_count integer DEFAULT 0,
   in_stock boolean DEFAULT true,
@@ -224,6 +225,7 @@ ALTER TABLE public.products ADD COLUMN IF NOT EXISTS landing_reviews jsonb DEFAU
 ALTER TABLE public.products ADD COLUMN IF NOT EXISTS landing_benefits jsonb DEFAULT '[]'::jsonb;
 ALTER TABLE public.products ADD COLUMN IF NOT EXISTS landing_bundle jsonb;
 ALTER TABLE public.products ADD COLUMN IF NOT EXISTS combos jsonb DEFAULT '[]'::jsonb;
+ALTER TABLE public.products ADD COLUMN IF NOT EXISTS landing_anatomy_image text;
 ALTER TABLE public.products ADD COLUMN IF NOT EXISTS updated_at timestamp with time zone DEFAULT now();
 
 -- 7. TABLA DEDICADA: PEDIDOS (public.orders)

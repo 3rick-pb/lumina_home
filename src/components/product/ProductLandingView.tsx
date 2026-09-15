@@ -24,6 +24,7 @@ import { CatalogProduct, ProductCombo } from "@/lib/catalogStore";
 import { useCartStore } from "@/lib/store";
 import { useUserStore } from "@/lib/userStore";
 import { motion } from "framer-motion";
+import { normalizeImageUrl } from "@/lib/imageUtils";
 
 interface ProductLandingViewProps {
   product: CatalogProduct;
@@ -102,6 +103,11 @@ export function ProductLandingView({
   // Active callout spotlight pin
   const [hoveredSpecIndex, setHoveredSpecIndex] = useState<number | null>(null);
 
+  // Dedicated anatomy image for Block 3 (defaults to second gallery image or current main image)
+  const anatomyImage = (product.landingAnatomyImage && product.landingAnatomyImage.trim())
+    ? normalizeImageUrl(product.landingAnatomyImage.trim())
+    : (images[1] || currentImage);
+
   // Fallback defaults for landing specs if not set in product
   const defaultSpecs = [
     {
@@ -112,7 +118,7 @@ export function ProductLandingView({
       pinY: 32,
     },
     {
-      title: "Óptica Lumina Difusa 360°",
+      title: "Óptica Difusa 360°",
       description: "Difusor de vidrio opalino tratado térmicamente para dispersión uniforme sin deslumbramiento.",
       side: "left" as const,
       pinX: 30,
@@ -1046,11 +1052,12 @@ export function ProductLandingView({
 
               <div className="relative w-full h-full rounded-[2.5rem] overflow-hidden">
                 <Image
-                  src={images[1] || currentImage}
+                  src={anatomyImage}
                   alt="Anatomía del Producto"
                   fill
                   sizes="(max-width: 768px) 100vw, 360px"
                   className="object-cover transition-transform duration-700 group-hover:scale-105"
+                  unoptimized={typeof anatomyImage === 'string' && anatomyImage.startsWith('http')}
                 />
               </div>
 
