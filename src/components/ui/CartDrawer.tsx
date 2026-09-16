@@ -101,6 +101,7 @@ export function CartDrawer() {
  const { 
  isOpen, 
  setIsOpen, 
+ originCoords,
  items, 
  removeItem, 
  updateQuantity, 
@@ -605,28 +606,38 @@ export function CartDrawer() {
 
  if (!isMounted) return null;
 
-  // Lightweight hardware-accelerated modal entrance (eliminates heavy 3D GPU thrashing)
+  // Smooth corner-origin expansion originating directly from the cart button
+  const startX = originCoords && typeof window !== "undefined" 
+    ? originCoords.x - window.innerWidth / 2 
+    : (typeof window !== "undefined" ? window.innerWidth * 0.35 : 250);
+  const startY = originCoords && typeof window !== "undefined" 
+    ? originCoords.y - window.innerHeight / 2 
+    : (typeof window !== "undefined" ? -window.innerHeight * 0.35 : -250);
+
   const cartModalVariants: Variants = {
     hidden: {
       opacity: 0,
-      scale: 0.96,
-      y: 16,
+      scale: 0.1,
+      x: startX * 0.72,
+      y: startY * 0.72,
     },
     visible: {
       opacity: 1,
       scale: 1,
+      x: 0,
       y: 0,
       transition: {
-        duration: 0.28,
+        duration: 0.34,
         ease: [0.16, 1, 0.3, 1],
       }
     },
     exit: {
       opacity: 0,
-      scale: 0.97,
-      y: 12,
+      scale: 0.1,
+      x: startX * 0.72,
+      y: startY * 0.72,
       transition: {
-        duration: 0.2,
+        duration: 0.24,
         ease: [0.32, 0, 0.67, 0],
       }
     }

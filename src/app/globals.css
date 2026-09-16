@@ -4,7 +4,8 @@
 
 @font-face {
   font-family: 'Moonwalk';
-  src: url('/fonts/moonwalk.ttf') format('truetype');
+  src: url('/fonts/moonwalk.otf') format('opentype'),
+       url('/fonts/moonwalk.ttf') format('truetype');
   font-weight: 100 900;
   font-style: normal;
   font-display: swap;

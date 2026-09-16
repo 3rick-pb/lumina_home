@@ -274,28 +274,28 @@ export default function Home() {
             <div className="mt-8 sm:mt-10 flex flex-col sm:flex-row gap-3 sm:gap-4">
               <Link 
                 href="/shop" 
-                className="relative overflow-hidden w-full sm:w-auto rounded-full bg-[#8c9276]/30 hover:bg-[#8c9276]/45 active:bg-[#8c9276]/50 border border-white/40 hover:border-white/60 text-white px-8 py-3.5 sm:py-4 flex items-center justify-center gap-2.5 backdrop-blur-2xl shadow-[0_12px_36px_rgba(0,0,0,0.3),inset_0_1.5px_1.5px_rgba(255,255,255,0.65),inset_0_-1.5px_1px_rgba(0,0,0,0.2)] transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] [isolation:isolate] transform-gpu group cursor-pointer select-none"
+                className="relative overflow-hidden w-full sm:w-auto rounded-full bg-white/40 hover:bg-white/50 active:bg-white/60 border border-white/60 hover:border-white/80 text-white px-8 py-3.5 sm:py-4 flex items-center justify-center gap-2.5 backdrop-blur-xl shadow-[0_8px_30px_rgba(0,0,0,0.2),inset_0_1.5px_1.5px_rgba(255,255,255,0.75),inset_0_-1px_1px_rgba(0,0,0,0.15)] transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] [isolation:isolate] transform-gpu group cursor-pointer select-none"
               >
                 {/* Upper specular reflection meniscus */}
                 <div 
-                  className="absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-white/35 via-white/10 to-transparent pointer-events-none rounded-t-full" 
+                  className="absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-white/45 via-white/15 to-transparent pointer-events-none rounded-t-full" 
                   aria-hidden="true"
                 />
-                <span className="relative z-10 flex items-center justify-center gap-2 font-moonwalk tracking-wider text-sm sm:text-base font-semibold text-white drop-shadow-sm">
+                <span className="relative z-10 flex items-center justify-center gap-2 font-moonwalk tracking-wide text-sm sm:text-base font-semibold text-white drop-shadow-sm">
                   Ver catálogo <ArrowRight className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-1" />
                 </span>
               </Link>
 
               <a 
                 href="#catalog-popular" 
-                className="relative overflow-hidden w-full sm:w-auto rounded-full bg-white/[0.08] hover:bg-white/[0.18] active:bg-white/[0.22] border border-white/30 hover:border-white/55 text-white px-8 py-3.5 sm:py-4 flex items-center justify-center backdrop-blur-2xl shadow-[0_12px_36px_rgba(0,0,0,0.25),inset_0_1.5px_1.5px_rgba(255,255,255,0.7),inset_0_-1px_1px_rgba(0,0,0,0.15)] transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] [isolation:isolate] transform-gpu group cursor-pointer select-none"
+                className="relative overflow-hidden w-full sm:w-auto rounded-full bg-white/10 hover:bg-white/20 active:bg-white/25 border border-white/35 hover:border-white/60 text-white px-8 py-3.5 sm:py-4 flex items-center justify-center backdrop-blur-md shadow-[0_8px_25px_rgba(0,0,0,0.12),inset_0_1px_1px_rgba(255,255,255,0.4),inset_0_-1px_1px_rgba(0,0,0,0.1)] transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] [isolation:isolate] transform-gpu group cursor-pointer select-none"
               >
                 {/* Upper specular reflection meniscus */}
                 <div 
-                  className="absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-white/30 via-white/5 to-transparent pointer-events-none rounded-t-full" 
+                  className="absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-white/25 via-white/5 to-transparent pointer-events-none rounded-t-full" 
                   aria-hidden="true"
                 />
-                <span className="relative z-10 font-moonwalk tracking-wider text-sm sm:text-base font-semibold text-white drop-shadow-sm">
+                <span className="relative z-10 font-moonwalk tracking-wide text-sm sm:text-base font-semibold text-white drop-shadow-sm">
                   Filtrar por categoría
                 </span>
               </a>
