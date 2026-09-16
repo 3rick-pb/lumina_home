@@ -781,7 +781,7 @@ const handleConfirmDeleteNiche = async () => {
   
   {/* Brand & Top Navigation Pill Bar */}
   <div className="flex items-center gap-3 md:gap-4 min-w-0 flex-1 overflow-hidden">
-  <Link href="/" className="font-display font-bold text-xl sm:text-2xl text-gray-900 dark:text-gray-100 tracking-tight shrink-0 flex items-center hover:opacity-85 transition-opacity" title="Ir a la tienda">
+  <Link href="/" className="font-display font-bold text-xl sm:text-2xl text-gray-900 dark:text-gray-100 tracking-tight shrink-0 flex items-center hover:opacity-85 transition-opacity pl-4 sm:pl-0" title="Ir a la tienda">
   Lumina<span className="text-[#8c9276]">.</span>
   </Link>
 
@@ -928,7 +928,7 @@ const handleConfirmDeleteNiche = async () => {
  Ver Tienda &rarr;
  </Link>
 
- <div className="flex items-center gap-2.5 sm:gap-3 sm:pl-3 sm:border-l sm:border-gray-200 dark:sm:border-white/10">
+ <div className="flex items-center gap-2.5 sm:gap-3 pl-3 border-l border-gray-200 dark:border-white/10">
  <BlobatarAvatar
    name={customSeed || user.id || user.email || user.name}
    size={38}
