@@ -332,7 +332,7 @@ export default function Home() {
       <motion.div 
         initial={{ opacity: 0, y: 20 }}
         whileInView={{ opacity: 1, y: 0 }}
-        viewport={{ once: true, amount: 0.05 }}
+        viewport={{ once: false, amount: 0.1 }}
         transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
         style={{ willChange: "transform, opacity" }}
         className="relative z-30 -mt-7 sm:-mt-9 mb-3 container mx-auto px-4 sm:px-6 md:px-8 transform-gpu"
@@ -377,7 +377,7 @@ export default function Home() {
             <motion.div 
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, amount: 0.05 }}
+              viewport={{ once: false, amount: 0.1 }}
               transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
               style={{ willChange: "transform, opacity" }}
               className="flex items-end justify-between mb-8 sm:mb-12 transform-gpu"
@@ -400,7 +400,7 @@ export default function Home() {
                   key={idx}
                   initial={{ opacity: 0, y: 24 }}
                   whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true, amount: 0.05 }}
+                  viewport={{ once: false, amount: 0.1 }}
                   transition={{ duration: 0.45, delay: idx * 0.04, ease: [0.22, 1, 0.36, 1] }}
                   style={{ willChange: "transform, opacity" }}
                   className="transform-gpu"
@@ -444,7 +444,7 @@ export default function Home() {
             <motion.div 
               initial={{ opacity: 0, y: 24 }}
               whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, amount: 0.05 }}
+              viewport={{ once: false, amount: 0.1 }}
               transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
               style={{ willChange: "transform, opacity" }}
               className="flex flex-col lg:flex-row items-start lg:items-center justify-between mb-8 sm:mb-12 gap-4 sm:gap-6 transform-gpu"
@@ -495,7 +495,7 @@ export default function Home() {
                     key={product.id}
                     initial={{ opacity: 0, y: 28 }}
                     whileInView={{ opacity: 1, y: 0 }}
-                    viewport={{ once: true, amount: 0.05 }}
+                    viewport={{ once: false, amount: 0.1 }}
                     transition={{ duration: 0.5, delay: (idx % 4) * 0.08, ease: [0.22, 1, 0.36, 1] }}
                     style={{ willChange: "transform, opacity" }}
                     className="transform-gpu"

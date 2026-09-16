@@ -779,11 +779,79 @@ const handleConfirmDeleteNiche = async () => {
   {/* Top App Bar (Reference Style) */}
   <header className="relative z-40 bg-white/80 dark:bg-[#202022]/80 backdrop-blur-2xl p-4 md:px-6 rounded-3xl border border-white/80 shadow-[0_4px_20px_rgba(0,0,0,0.02)] flex items-center justify-between gap-4">
   
-  {/* Brand with Freedom */}
-  <div className="flex items-center gap-3">
-  <Link href="/" className="font-display font-bold text-2xl md:text-3xl text-gray-900 dark:text-gray-100 tracking-tight shrink-0 flex items-center hover:opacity-85 transition-opacity" title="Ir a la tienda">
+  {/* Brand & Top Navigation Pill Bar */}
+  <div className="flex items-center gap-3 md:gap-5 min-w-0 flex-1 overflow-hidden">
+  <Link href="/" className="font-display font-bold text-xl sm:text-2xl text-gray-900 dark:text-gray-100 tracking-tight shrink-0 flex items-center hover:opacity-85 transition-opacity" title="Ir a la tienda">
   Lumina<span className="text-[#8c9276]">.</span>
   </Link>
+
+  {/* Top Bar Tabs (Visible on Laptop and Desktop, Hidden on Mobile) */}
+  <div className="hidden md:flex items-center bg-gray-100/80 dark:bg-[#3a3a3c]/80 p-1 rounded-2xl overflow-x-auto hide-scrollbar min-w-0 shrink">
+  <button 
+  onClick={() => setActiveTab("overview")} 
+  className={`px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all cursor-pointer ${activeTab === "overview" ? "bg-white dark:bg-[#202022] text-gray-900 dark:text-gray-100 shadow-sm dark:shadow-none" : "text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100"}`}
+  >
+  Resumen
+  </button>
+  <button 
+  onClick={() => setActiveTab("orders")} 
+  className={`px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all cursor-pointer ${activeTab === "orders" ? "bg-white dark:bg-[#202022] text-gray-900 dark:text-gray-100 shadow-sm dark:shadow-none" : "text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100"}`}
+  >
+  Actividad ({orders.length})
+  </button>
+  <button 
+  onClick={() => setActiveTab("cards")} 
+  className={`px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all cursor-pointer ${activeTab === "cards" ? "bg-white dark:bg-[#202022] text-gray-900 dark:text-gray-100 shadow-sm dark:shadow-none" : "text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100"}`}
+  >
+  Tarjetas ({cards.length})
+  </button>
+  <button 
+  onClick={() => setActiveTab("favorites")} 
+  className={`px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all cursor-pointer ${activeTab === "favorites" ? "bg-white dark:bg-[#202022] text-gray-900 dark:text-gray-100 shadow-sm dark:shadow-none" : "text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100"}`}
+  >
+  Favoritos ({favorites.length})
+  </button>
+  {isAdmin && (
+  <>
+  <button 
+  onClick={() => setActiveTab("catalog")} 
+  className={`px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all cursor-pointer ${activeTab === "catalog" ? "bg-white dark:bg-[#202022] text-gray-900 dark:text-gray-100 shadow-sm dark:shadow-none" : "text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100"}`}
+  >
+  Inventario ({products.length})
+  </button>
+  <button 
+  onClick={() => setActiveTab("niches")} 
+  className={`px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all cursor-pointer ${activeTab === "niches" ? "bg-white dark:bg-[#202022] text-gray-900 dark:text-gray-100 shadow-sm dark:shadow-none" : "text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100"}`}
+  >
+  Nichos & Badges ({categories.length})
+  </button>
+  <button 
+  onClick={() => setActiveTab("analytics")} 
+  className={`px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all cursor-pointer ${activeTab === "analytics" ? "bg-white dark:bg-[#202022] text-gray-900 dark:text-gray-100 shadow-sm dark:shadow-none" : "text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100"}`}
+  >
+  Radar en Vivo
+  </button>
+  <button 
+  onClick={() => setActiveTab("cart_alerts")} 
+  className={`px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all cursor-pointer ${activeTab === "cart_alerts" ? "bg-white dark:bg-[#202022] text-gray-900 dark:text-gray-100 shadow-sm dark:shadow-none" : "text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100"}`}
+  >
+  Alertas de Carrito
+  </button>
+  <button 
+  onClick={() => setActiveTab("integrations")} 
+  className={`px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all cursor-pointer ${activeTab === "integrations" ? "bg-white dark:bg-[#202022] text-gray-900 dark:text-gray-100 shadow-sm dark:shadow-none" : "text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100"}`}
+  >
+  SMTP & Pasarelas
+  </button>
+  </>
+  )}
+  <button 
+  onClick={() => setActiveTab("settings")} 
+  className={`px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all cursor-pointer ${activeTab === "settings" ? "bg-white dark:bg-[#202022] text-gray-900 dark:text-gray-100 shadow-sm dark:shadow-none" : "text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100"}`}
+  >
+  Ajustes
+  </button>
+  </div>
   </div>
 
  {/* Right Search Input & Profile Badge */}
