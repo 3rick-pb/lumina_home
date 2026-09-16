@@ -250,7 +250,7 @@ export function OverviewTab({
         <div className="bg-white/90 dark:bg-[#202022]/90 backdrop-blur-xl p-4 sm:p-5 rounded-2xl sm:rounded-[2rem] border border-white/80 shadow-[0_4px_24px_rgba(0,0,0,0.02)] flex flex-col justify-between">
           <div className="flex items-center justify-between">
             <span className="text-xs font-medium text-gray-500 dark:text-gray-400">
-              {isAdmin ? "Rebajas" : "Lumina Puntos"}
+              {isAdmin ? "Rebajas" : "Puntos de esta tienda"}
             </span>
             <div className="w-8 h-8 rounded-xl bg-gray-100 dark:bg-[#3a3a3c] flex items-center justify-center text-gray-700 dark:text-gray-300">
               <Sparkles className="w-4 h-4 text-[#8c9276]" />
@@ -608,7 +608,7 @@ export function OverviewTab({
                     <td className="py-3.5 px-2 font-mono font-semibold text-gray-900 dark:text-gray-100">{ord.id}</td>
                     {isAdmin && (
                       <td className="py-3.5 px-2">
-                        <p className="font-semibold text-gray-900 dark:text-gray-100 truncate max-w-[130px]">{ord.customerName || "Cliente Lumina"}</p>
+                        <p className="font-semibold text-gray-900 dark:text-gray-100 truncate max-w-[130px]">{ord.customerName || "Cliente de esta tienda"}</p>
                         <p className="text-[10px] text-gray-400 truncate max-w-[130px]">{ord.customerEmail || "cliente@lumina.com"}</p>
                       </td>
                     )}
@@ -616,7 +616,7 @@ export function OverviewTab({
                       <div className="w-7 h-7 rounded-lg bg-gray-100 dark:bg-[#3a3a3c] flex items-center justify-center text-gray-600 dark:text-gray-400">
                         <Package className="w-3.5 h-3.5" />
                       </div>
-                      <span>{ord.items.length > 0 ? `${ord.items.length} pieza(s) Lumina` : "Compra Lumina"}</span>
+                      <span>{ord.items.length > 0 ? `${ord.items.length} pieza(s) de esta tienda` : "Compra en esta tienda"}</span>
                     </td>
                     <td className="py-3.5 px-2 font-bold text-gray-900 dark:text-gray-100">${ord.total.toFixed(2)}</td>
                     <td className="py-3.5 px-2" onClick={(e) => e.stopPropagation()}>

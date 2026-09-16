@@ -1173,7 +1173,7 @@ export const useUserStore = create<UserState>((set, get) => ({
     const enrichedOrder: Order = {
       ...order,
       userId: user?.id,
-      customerName: order.customerName || user?.name || 'Cliente Lumina',
+      customerName: order.customerName || user?.name || 'Cliente de esta tienda',
       customerEmail: order.customerEmail || order.shippingAddress?.email || user?.email || 'cliente@lumina.com',
       customerIdNumber: order.customerIdNumber || order.shippingAddress?.idNumber,
       customerPhone: order.customerPhone || order.shippingAddress?.phone,

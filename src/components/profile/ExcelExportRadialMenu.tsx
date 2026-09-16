@@ -183,8 +183,8 @@ export function ExcelExportRadialMenu() {
       }));
       ws["!cols"] = colWidths;
 
-      XLSX.utils.book_append_sheet(wb, ws, "Pedidos Lumina Home");
-      XLSX.writeFile(wb, `pedidos_lumina_home_${getDateSlug()}.xlsx`);
+      XLSX.utils.book_append_sheet(wb, ws, "Pedidos de esta tienda");
+      XLSX.writeFile(wb, `pedidos_esta_tienda_${getDateSlug()}.xlsx`);
 
       setSuccessExport("orders");
       setTimeout(() => setSuccessExport(null), 2500);
@@ -239,7 +239,7 @@ export function ExcelExportRadialMenu() {
       ws["!cols"] = colWidths;
 
       XLSX.utils.book_append_sheet(wb, ws, "Catálogo de Productos");
-      XLSX.writeFile(wb, `catalogo_productos_lumina_${getDateSlug()}.xlsx`);
+      XLSX.writeFile(wb, `catalogo_productos_${getDateSlug()}.xlsx`);
 
       setSuccessExport("products");
       setTimeout(() => setSuccessExport(null), 2500);
@@ -324,7 +324,7 @@ export function ExcelExportRadialMenu() {
 
       rows.push({
         "Nº": "TOTAL",
-        "Nicho / Colección": "TOTAL CATÁLOGO LUMINA HOME",
+        "Nicho / Colección": "TOTAL CATÁLOGO",
         "Variedad Productos": prods.length,
         "% del Catálogo": "100%",
         "Stock Total (Unidades)": grandTotalStock,
@@ -342,7 +342,7 @@ export function ExcelExportRadialMenu() {
       ws["!cols"] = colWidths;
 
       XLSX.utils.book_append_sheet(wb, ws, "Inventario por Nicho");
-      XLSX.writeFile(wb, `inventario_por_nicho_lumina_${getDateSlug()}.xlsx`);
+      XLSX.writeFile(wb, `inventario_por_nicho_${getDateSlug()}.xlsx`);
 
       setSuccessExport("niches");
       setTimeout(() => setSuccessExport(null), 2500);

@@ -697,7 +697,7 @@ export function CartDrawer() {
     <div>
       <div className="flex items-center gap-2">
         <span className="font-display italic font-bold text-xl text-gray-900 dark:text-gray-100 tracking-tight">
-          Lumina<span className="text-[#8c9276] dark:text-[#ccff00]">.</span>
+          esta tienda<span className="text-[#8c9276] dark:text-[#ccff00]">.</span>
         </span>
         <span className="px-2 py-0.5 rounded-full bg-[#8c9276]/15 dark:bg-[#ccff00]/15 text-[#676c54] dark:text-[#ccff00] text-[10px] font-extrabold uppercase tracking-widest border border-[#8c9276]/20">
           Studio 3D
@@ -769,7 +769,7 @@ export function CartDrawer() {
       <div>
         <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-black/[0.04] dark:bg-white/[0.08] border border-black/[0.06] dark:border-white/10 text-gray-700 dark:text-gray-300 text-[11px] font-bold tracking-wider uppercase mb-2 shadow-2xs">
           <Sparkles className="w-3 h-3 text-[#8c9276]" />
-          <span>Lumina 3D Studio • Luxury Living</span>
+          <span>3D Studio de esta tienda • Luxury Living</span>
         </div>
         <h1 className="font-display font-bold text-2xl sm:text-4xl text-gray-950 dark:text-white tracking-tight">
           Bolsa de Compras
@@ -862,7 +862,7 @@ export function CartDrawer() {
       <div className="w-8 h-8 rounded-full bg-white/15 dark:bg-black/10 flex items-center justify-center text-white dark:text-gray-950 group-hover:translate-x-0.5 transition-transform shrink-0">
         <ArrowRight className="w-4 h-4" />
       </div>
-      <span>Explorar Catálogo Lumina</span>
+      <span>Explorar Catálogo de esta tienda</span>
     </button>
   </div>
   ) : (
@@ -1263,7 +1263,7 @@ export function CartDrawer() {
   <div className="p-3.5 rounded-2xl bg-black/[0.02] dark:bg-white/[0.03] border border-black/[0.04] dark:border-white/5 flex items-start gap-2.5 text-xs text-gray-600 dark:text-gray-400">
   <ShieldCheck className="w-4 h-4 text-[#8c9276] shrink-0 mt-0.5" />
   <p className="text-[11px] leading-relaxed">
-  <strong>Garantía Oficial Lumina de 2 años.</strong> Devolución íntegra sin compromiso en los primeros 30 días.
+  <strong>Garantía Oficial de esta tienda de 2 años.</strong> Devolución íntegra sin compromiso en los primeros 30 días.
   </p>
   </div>
 

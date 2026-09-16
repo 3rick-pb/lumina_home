@@ -84,7 +84,7 @@ export async function GET(request: Request) {
       .map((o: Record<string, unknown>) => ({
         id: String(o.id || ''),
         userId: o.user_id ? String(o.user_id) : undefined,
-        customerName: String(o.customer_name || 'Cliente Lumina'),
+        customerName: String(o.customer_name || 'Cliente de esta tienda'),
         customerEmail: String(o.customer_email || 'cliente@lumina.com'),
         recipient: String(o.recipient || o.customer_name || 'Cliente'),
         customerIdNumber: o.customer_id_number ? String(o.customer_id_number) : undefined,
@@ -120,7 +120,7 @@ export async function POST(request: Request) {
     const userId = authUser?.id || order.userId || undefined;
 
     // Sanitize string inputs against XSS and injection
-    const cleanCustomerName = String(order.customerName || 'Cliente Lumina').replace(/<[^>]*>?/gm, '').trim().slice(0, 80);
+    const cleanCustomerName = String(order.customerName || 'Cliente de esta tienda').replace(/<[^>]*>?/gm, '').trim().slice(0, 80);
     const cleanRecipient = String(order.recipient || cleanCustomerName).replace(/<[^>]*>?/gm, '').trim().slice(0, 80);
     const cleanEmail = String(order.customerEmail || authUser?.email || 'cliente@lumina.com').toLowerCase().trim().slice(0, 100);
     const cleanPayment = String(order.paymentMethod || 'Tarjeta de Crédito').replace(/<[^>]*>?/gm, '').trim().slice(0, 50);

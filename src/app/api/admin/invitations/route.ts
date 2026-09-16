@@ -157,7 +157,7 @@ export async function POST(request: Request) {
       return NextResponse.json(
         {
           success: false,
-          error: `Acceso denegado. Solo la cuenta de Lumina (${MASTER_ADMIN_EMAIL}) tiene autorización para asignar o revocar administradores.`,
+          error: `Acceso denegado. Solo la cuenta maestra de esta tienda (${MASTER_ADMIN_EMAIL}) tiene autorización para asignar o revocar administradores.`,
         },
         { status: 403 }
       );

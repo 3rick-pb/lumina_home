@@ -46,7 +46,7 @@ export const CartAlertCard = React.memo(function CartAlertCard({
   const safeInitial = (safeUser.trim().charAt(0) || 'C').toUpperCase();
   const safeLocation = safePayload.location || 'Ecuador';
   const safeProduct = safePayload.product || {};
-  const safeProductTitle = safeProduct.title || 'Artículo Lumina';
+  const safeProductTitle = safeProduct.title || 'Pieza de esta tienda';
   const safeProductImg = safeProduct.imageUrl;
   const safeQuantity = safeProduct.quantity || 1;
   const rawPrice = typeof safeProduct.price === 'number' ? safeProduct.price : parseFloat(String(safeProduct.price || 0));
@@ -528,7 +528,7 @@ export const CartAlertCard = React.memo(function CartAlertCard({
           <div className="flex items-center gap-1.5">
             <div className="w-2 h-2 rounded-full bg-emerald-500" />
             <span className="text-[9px] font-bold uppercase tracking-wider" style={{ color: config.subtextColor }}>
-              Módulo Carrito Lumina
+              Módulo Carrito de esta tienda
             </span>
           </div>
 

@@ -81,7 +81,7 @@ export default function ShopPage({ searchParams }: { searchParams: Promise<{ cat
         {filteredProducts.length === 0 ? (
           <EmptyState
             icon={PackageSearch}
-            badge="Catálogo Lumina"
+            badge="Catálogo de esta tienda"
             title={searchQuery ? `Sin resultados para "${searchQuery}"` : "No encontramos productos en esta colección"}
             description={
               searchQuery
@@ -101,7 +101,7 @@ export default function ShopPage({ searchParams }: { searchParams: Promise<{ cat
                 key={product.id}
                 initial={{ opacity: 0, y: 28 }}
                 whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: false, amount: 0.05, margin: "0px 0px -20px 0px" }}
+                viewport={{ once: true, amount: 0.05, margin: "0px 0px -20px 0px" }}
                 transition={{ duration: 0.5, delay: (idx % 4) * 0.07, ease: [0.22, 1, 0.36, 1] }}
                 style={{ willChange: "transform, opacity" }}
                 className="transform-gpu"

@@ -319,7 +319,7 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
       const purchases = userOrders?.length || 0;
       mapped.unshift({
         id: currentUser.id,
-        name: cleanClientName(currentUser.name || (currentUser.email ? currentUser.email.split('@')[0] : 'Admin Lumina')),
+        name: cleanClientName(currentUser.name || (currentUser.email ? currentUser.email.split('@')[0] : 'Admin de esta tienda')),
         email: currentUser.email || '',
         city: selfCity,
         country: 'Ecuador',
@@ -1879,7 +1879,7 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
           return (
             <div className="pt-3 border-t border-white/10 flex items-center justify-between text-[10px] text-white/50">
               <span className="flex items-center gap-1.5">
-                <Activity className="w-3 h-3 text-[#ccff00]" /> Radar Lumina Activo
+                <Activity className="w-3 h-3 text-[#ccff00]" /> Radar de esta tienda Activo
               </span>
               <span className="font-mono text-emerald-400 font-semibold">
                 {activeProvincesCount > 0 ? `${activeProvincesCount}/24 Provincias Activas` : '24 Provincias en Espera'}

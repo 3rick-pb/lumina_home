@@ -91,11 +91,20 @@ interface AmbientState {
 
 export const useAmbientStore = create<AmbientState>((set) => ({
   theme: CATEGORY_THEMES.default,
-  setTheme: (theme) => set({ theme }),
+  setTheme: (theme) => set((state) => {
+    if (state.theme.mood === theme.mood && state.theme.c1 === theme.c1) return state;
+    return { theme };
+  }),
   setCategoryTheme: (category) => {
     const key = category?.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "") || "default";
     const found = CATEGORY_THEMES[key] || CATEGORY_THEMES.default;
-    set({ theme: found });
+    set((state) => {
+      if (state.theme.mood === found.mood) return state;
+      return { theme: found };
+    });
   },
-  resetTheme: () => set({ theme: CATEGORY_THEMES.default }),
+  resetTheme: () => set((state) => {
+    if (state.theme.mood === CATEGORY_THEMES.default.mood) return state;
+    return { theme: CATEGORY_THEMES.default };
+  }),
 }));

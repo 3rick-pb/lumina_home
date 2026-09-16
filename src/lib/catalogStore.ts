@@ -173,7 +173,7 @@ const INITIAL_NICHE_PRODUCTS: CatalogProduct[] = [
     materials: "Cristal belga de 5mm con película de seguridad anti-astillas posterior y marco exterior de latón macizo cepillado con sellado anticorrosión.",
     shipping: "Envío asegurado en embalaje de madera reforzada anti-rotura. Entrega concertada en 48-72h laborales.",
     dimensions: "Diámetro total: 60 cm | Profundidad del marco: 3.2 cm | Peso neto: 4.6 kg",
-    warranty: "3 años de garantía oficial Lumina en acabado metálico y nitidez del cristal.",
+    warranty: "3 años de garantía oficial de esta tienda en acabado metálico y nitidez del cristal.",
     careInstructions: "Limpiar el espejo con paño de microfibra humedecido con limpiacristales sin amoníaco. El marco debe limpiarse exclusivamente en seco.",
     packageContents: "1x Espejo Solar de latón 60cm, 1x Set de fijación invisible (tacos Fischer y tornillos reforzados), 1x Nivel de precisión para colgar.",
     stock: 8

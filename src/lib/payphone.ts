@@ -350,7 +350,7 @@ export async function preparePayPhonePayment(params: PayPhonePrepareParams): Pro
   const cleanEmail = sanitizeString(params.customerEmail, 80);
   const cleanPhone = sanitizeString(params.customerPhone || '0999999999', 20).replace(/\D/g, '');
   const cleanDoc = sanitizeString(params.documentId || '9999999999', 20).replace(/\D/g, '');
-  const cleanRef = sanitizeString(params.customReference || `Compra Lumina Home - Orden ${params.orderId}`, 120);
+  const cleanRef = sanitizeString(params.customReference || `Compra en esta tienda - Orden ${params.orderId}`, 120);
 
   // If credentials are NOT configured yet (RUC pending), return a structured simulation payload
   if (config.isSimulated) {

@@ -258,7 +258,7 @@ export default function AdminPage() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
         <div>
           <h1 className="text-3xl font-display italic font-bold text-gray-900 mb-1">Panel de Control</h1>
-          <p className="text-sm text-gray-600">Gestión ejecutiva de catálogo, nichos e inventario de Lumina Home.</p>
+          <p className="text-sm text-gray-600">Gestión ejecutiva de catálogo, nichos e inventario de esta tienda.</p>
         </div>
         <div className="flex items-center gap-3">
           <button 

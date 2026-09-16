@@ -42,7 +42,7 @@ export function ProductCard({ id, title, price, oldPrice, discount, badge, image
   const isAgotado = isAgotadoBadge(badge) || (stock !== undefined && stock <= 0);
 
   return (
-    <Link href={`/product/${id}`} className="group flex flex-col bg-transparent transform-gpu [contain:content]">
+    <Link href={`/product/${id}`} className="group flex flex-col bg-transparent transform-gpu">
       <div className="relative aspect-[4/3] overflow-hidden rounded-2xl bg-gray-100 mb-4">
         {(badge || isAgotado) && (
           <div className={`absolute top-3 left-3 backdrop-blur-sm transform-gpu text-xs font-bold px-3 py-1 rounded-full z-10 shadow-sm transition-colors ${

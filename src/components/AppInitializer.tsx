@@ -66,7 +66,7 @@ function ActivityTracker() {
   } else if (pathname === "/checkout") {
     currentSection = "En Proceso de Pago";
   } else if (pathname === "/") {
-    currentSection = "Inicio • Lumina Home";
+    currentSection = "Inicio • esta tienda";
   } else {
     currentSection = "Explorando Tienda";
   }

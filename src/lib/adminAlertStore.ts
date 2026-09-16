@@ -39,7 +39,7 @@ export const COLOR_PRESETS: ColorPreset[] = [
   },
   {
     id: 'lumina_studio',
-    name: 'Lumina Studio',
+    name: 'Atelier Studio',
     description: 'Oliva atelier nocturno con acentos esmeralda de autor',
     bgColor: '#1b1e17',
     textColor: '#f4f5f0',
@@ -256,7 +256,7 @@ export const formatAlertContent = (
     ? payload.product.price.toFixed(2)
     : String(payload.product?.price || '0.00');
   const city = payload.location ? payload.location : 'Ubicación reservada';
-  const prodTitle = payload.product?.title || 'Artículo Lumina';
+  const prodTitle = payload.product?.title || 'Pieza de esta tienda';
   const customer = payload.userName || 'Cliente';
 
   switch (layout) {

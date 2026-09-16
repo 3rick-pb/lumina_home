@@ -244,21 +244,27 @@ export default function Home() {
           <div className="absolute inset-0 bg-gradient-to-t from-brand-900/90 via-brand-900/40 to-transparent" />
         </div>
 
-        <div className="container mx-auto px-4 md:px-8 relative z-10 pt-40">
+        <div className="container mx-auto px-4 sm:px-6 md:px-8 relative z-10 pt-36 sm:pt-40">
           <motion.div 
-            initial={{ opacity: 0, y: 32 }}
+            initial={{ opacity: 0, y: 24 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
-            className="max-w-3xl"
+            transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
+            className="max-w-3xl transform-gpu"
           >
-            <motion.span 
-              initial={{ opacity: 0, y: 16 }}
+            {/* Tag Pill with Instant Hardware-Accelerated Glass Blur */}
+            <motion.div 
+              initial={{ opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
-              className="inline-block px-4 py-1.5 rounded-full bg-white/10 backdrop-blur-md border border-white/20 text-sm font-medium text-white mb-6"
+              transition={{ duration: 0.5, delay: 0.05, ease: [0.16, 1, 0.3, 1] }}
+              className="relative inline-flex items-center px-4 py-1.5 rounded-full overflow-hidden border border-white/25 text-xs sm:text-sm font-medium text-white mb-6 shadow-sm [isolation:isolate] transform-gpu select-none"
             >
-              Artículos premium para tu hogar
-            </motion.span>
+              <div 
+                className="absolute inset-0 bg-white/15 backdrop-blur-xl pointer-events-none transform-gpu"
+                style={{ willChange: "transform, backdrop-filter", WebkitBackdropFilter: "blur(16px)" }}
+              />
+              <span className="relative z-10">Artículos premium para tu hogar</span>
+            </motion.div>
+
             <h1 className="text-3xl sm:text-5xl md:text-6xl lg:text-7xl font-sans font-medium text-white leading-[1.15] sm:leading-[1.1] tracking-tight">
               Espacios diseñados <br />
               <span className="font-display italic font-bold text-[#d2b48c]">para perdurar</span>
@@ -268,13 +274,30 @@ export default function Home() {
             </p>
             <div className="mt-8 sm:mt-10 flex flex-col sm:flex-row gap-3 sm:gap-4">
               <Link href="/shop" className="w-full sm:w-auto">
-                <Button size="lg" className="w-full sm:w-auto rounded-full bg-[#8c9276] hover:bg-[#7a8a66] text-white border-none px-8 flex items-center justify-center gap-2 transition-transform duration-300 hover:scale-[1.02] active:scale-[0.98]">
-                  Ver catálogo <ArrowRight className="w-4 h-4" />
+                <Button 
+                  size="lg" 
+                  className="relative overflow-hidden w-full sm:w-auto rounded-full bg-[#8c9276]/90 hover:bg-[#7a8a66] border border-white/25 text-white px-8 py-3.5 flex items-center justify-center gap-2 shadow-lg shadow-black/10 transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] [isolation:isolate] transform-gpu group cursor-pointer"
+                >
+                  <div 
+                    className="absolute inset-0 bg-white/10 backdrop-blur-xl pointer-events-none transform-gpu"
+                    style={{ willChange: "transform, backdrop-filter", WebkitBackdropFilter: "blur(16px)" }}
+                  />
+                  <span className="relative z-10 flex items-center justify-center gap-2 font-medium">
+                    Ver catálogo <ArrowRight className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-1" />
+                  </span>
                 </Button>
               </Link>
               <Link href="/shop" className="w-full sm:w-auto">
-                <Button size="lg" variant="outline" className="w-full sm:w-auto rounded-full border-white/30 text-white hover:bg-white/10 px-8 flex items-center justify-center transition-transform duration-300 hover:scale-[1.02] active:scale-[0.98]">
-                  Filtrar por categoría
+                <Button 
+                  size="lg" 
+                  variant="outline" 
+                  className="relative overflow-hidden w-full sm:w-auto rounded-full bg-white/15 hover:bg-white/25 border border-white/30 text-white px-8 py-3.5 flex items-center justify-center transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] shadow-lg shadow-black/10 [isolation:isolate] transform-gpu cursor-pointer"
+                >
+                  <div 
+                    className="absolute inset-0 bg-white/10 backdrop-blur-xl pointer-events-none transform-gpu"
+                    style={{ willChange: "transform, backdrop-filter", WebkitBackdropFilter: "blur(16px)" }}
+                  />
+                  <span className="relative z-10 font-medium">Filtrar por categoría</span>
                 </Button>
               </Link>
             </div>
@@ -286,10 +309,10 @@ export default function Home() {
       <motion.div 
         initial={{ opacity: 0, y: 20 }}
         whileInView={{ opacity: 1, y: 0 }}
-        viewport={{ once: false, amount: 0.05, margin: "0px 0px -20px 0px" }}
+        viewport={{ once: true, amount: 0.05 }}
         transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
         style={{ willChange: "transform, opacity" }}
-        className="relative z-30 -mt-7 sm:-mt-9 mb-3 container mx-auto px-4 md:px-8 transform-gpu"
+        className="relative z-30 -mt-7 sm:-mt-9 mb-3 container mx-auto px-4 sm:px-6 md:px-8 transform-gpu"
       >
         <div className="bg-white dark:bg-[#1e1e20] rounded-2xl md:rounded-[2rem] border border-black/[0.06] dark:border-white/[0.08] shadow-[0_16px_40px_-8px_rgba(0,0,0,0.08),0_4px_16px_rgba(0,0,0,0.03)] p-3 sm:p-4 md:p-5">
           <div className="flex lg:grid lg:grid-cols-5 items-center justify-start lg:justify-items-center gap-6 sm:gap-8 lg:gap-0 overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden py-1 px-2">
@@ -327,24 +350,24 @@ export default function Home() {
           ref={categoriesRef} 
           className="py-24 relative z-10"
         >
-          <div className="container mx-auto px-4 md:px-8">
+          <div className="container mx-auto px-4 sm:px-6 md:px-8">
             <motion.div 
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: false, amount: 0.05, margin: "0px 0px -20px 0px" }}
+              viewport={{ once: true, amount: 0.05 }}
               transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
               style={{ willChange: "transform, opacity" }}
-              className="flex items-end justify-between mb-12 transform-gpu"
+              className="flex items-end justify-between mb-8 sm:mb-12 transform-gpu"
             >
               <div>
-                <h2 className="text-3xl font-sans font-medium text-gray-900 mb-2">
+                <h2 className="text-2xl sm:text-3xl font-sans font-medium text-gray-900 mb-2">
                   Explora el <span className="font-display italic text-accent-700">Catálogo</span>
                 </h2>
-                <p className="text-gray-500">Encuentra la pieza perfecta para tu rincón favorito.</p>
+                <p className="text-sm sm:text-base text-gray-500">Encuentra la pieza perfecta para tu rincón favorito.</p>
               </div>
             </motion.div>
             
-            <div className={`grid grid-cols-2 gap-4 ${
+            <div className={`grid grid-cols-2 gap-3 sm:gap-4 ${
               dynamicCategories.length <= 4 
                 ? "md:grid-cols-2 lg:grid-cols-4" 
                 : "md:grid-cols-3 lg:grid-cols-5"
@@ -354,7 +377,7 @@ export default function Home() {
                   key={idx}
                   initial={{ opacity: 0, y: 24 }}
                   whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: false, amount: 0.05, margin: "0px 0px -20px 0px" }}
+                  viewport={{ once: true, amount: 0.05 }}
                   transition={{ duration: 0.45, delay: idx * 0.04, ease: [0.22, 1, 0.36, 1] }}
                   style={{ willChange: "transform, opacity" }}
                   className="transform-gpu"
@@ -367,18 +390,18 @@ export default function Home() {
                     }}
                     onMouseEnter={() => setCategoryTheme(cat.name)}
                     onMouseLeave={() => resetTheme()}
-                    className="group relative h-[260px] sm:h-[300px] md:h-[320px] rounded-2xl overflow-hidden block shadow-sm border border-black/5 transition-all duration-300 hover:-translate-y-1.5 hover:shadow-lg"
+                    className="group relative h-[240px] sm:h-[300px] md:h-[320px] rounded-2xl overflow-hidden block shadow-sm border border-black/5 transition-all duration-300 hover:-translate-y-1.5 hover:shadow-lg"
                   >
                     <Image src={cat.img} fill sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 20vw" className="object-cover transition-transform duration-700 group-hover:scale-105" alt={cat.name} />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/30 to-transparent" />
-                    <div className="absolute bottom-0 left-0 w-full p-3.5 sm:p-5 flex items-end justify-between">
+                    <div className="absolute bottom-0 left-0 w-full p-3 sm:p-5 flex items-end justify-between">
                       <div>
-                        <span className="text-white/60 text-[11px] font-light uppercase tracking-wider block mb-0.5">{cat.subtitle}</span>
-                        <h3 className="text-white font-medium text-lg leading-tight">{cat.name}</h3>
-                        <p className="text-white/80 text-xs font-light mt-1">{cat.price}</p>
+                        <span className="text-white/60 text-[10px] sm:text-[11px] font-light uppercase tracking-wider block mb-0.5">{cat.subtitle}</span>
+                        <h3 className="text-white font-medium text-base sm:text-lg leading-tight">{cat.name}</h3>
+                        <p className="text-white/80 text-xs font-light mt-0.5 sm:mt-1">{cat.price}</p>
                       </div>
-                      <div className="w-8 h-8 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center text-white group-hover:bg-white group-hover:text-black transition-colors shrink-0 ml-2">
-                        <ArrowRight className="w-4 h-4" />
+                      <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center text-white group-hover:bg-white group-hover:text-black transition-colors shrink-0 ml-2">
+                        <ArrowRight className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                       </div>
                     </div>
                   </Link>
@@ -392,22 +415,22 @@ export default function Home() {
         <section 
           id="catalog-popular" 
           ref={popularRef} 
-          className="py-20 relative z-10"
+          className="py-16 sm:py-20 relative z-10"
         >
-          <div className="container mx-auto px-4 md:px-8">
+          <div className="container mx-auto px-4 sm:px-6 md:px-8">
             <motion.div 
               initial={{ opacity: 0, y: 24 }}
               whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: false, amount: 0.05, margin: "0px 0px -20px 0px" }}
+              viewport={{ once: true, amount: 0.05 }}
               transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
               style={{ willChange: "transform, opacity" }}
-              className="flex flex-col lg:flex-row items-start lg:items-center justify-between mb-12 gap-6 transform-gpu"
+              className="flex flex-col lg:flex-row items-start lg:items-center justify-between mb-8 sm:mb-12 gap-4 sm:gap-6 transform-gpu"
             >
               <div>
-                <h2 className="text-3xl font-sans font-medium text-gray-900 mb-1">
+                <h2 className="text-2xl sm:text-3xl font-sans font-medium text-gray-900 mb-1">
                   Productos <span className="font-display italic text-accent-700">Populares</span>
                 </h2>
-                <p className="text-gray-500 text-sm">Selección destacada para transformar cada espacio.</p>
+                <p className="text-gray-500 text-xs sm:text-sm">Selección destacada para transformar cada espacio.</p>
               </div>
 
               {/* Dynamic Interactive Filter Pills */}
@@ -425,7 +448,7 @@ export default function Home() {
                       onMouseEnter={() => {
                         if (filter !== "Todos") setCategoryTheme(filter);
                       }}
-                      className={`px-5 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all ${
+                      className={`px-4 sm:px-5 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-medium whitespace-nowrap transition-all cursor-pointer ${
                         isActive 
                           ? 'bg-white/60 backdrop-blur-xl border border-white/80 text-gray-900 shadow-md shadow-black/5' 
                           : 'bg-white/20 backdrop-blur-md border border-white/40 text-gray-600 hover:bg-white/40 hover:text-gray-900'
@@ -440,7 +463,7 @@ export default function Home() {
             
             {filteredProducts.length === 0 ? (
               <div className="text-center py-16 bg-white/30 backdrop-blur-md rounded-3xl border border-white/50">
-                <p className="text-gray-600 font-medium">No hay productos en esta categoría por el momento.</p>
+                <p className="text-gray-600 font-medium text-sm">No hay productos en esta categoría por el momento.</p>
               </div>
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
@@ -449,7 +472,7 @@ export default function Home() {
                     key={product.id}
                     initial={{ opacity: 0, y: 28 }}
                     whileInView={{ opacity: 1, y: 0 }}
-                    viewport={{ once: false, amount: 0.05, margin: "0px 0px -20px 0px" }}
+                    viewport={{ once: true, amount: 0.05 }}
                     transition={{ duration: 0.5, delay: (idx % 4) * 0.08, ease: [0.22, 1, 0.36, 1] }}
                     style={{ willChange: "transform, opacity" }}
                     className="transform-gpu"

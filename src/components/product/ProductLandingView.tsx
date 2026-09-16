@@ -17,7 +17,7 @@ import {
   Award, 
   Leaf, 
   Box, 
-  Ruler, 
+  Layers,
   HelpCircle
 } from "lucide-react";
 import { CatalogProduct, ProductCombo } from "@/lib/catalogStore";
@@ -165,7 +165,7 @@ export function ProductLandingView({
       author: "Sofía R.",
       role: "Diseñadora de Iluminación",
       rating: 5,
-      comment: "Lumina cuida los detalles mínimos: el peso, el tacto mate, la temperatura de color. Ya es la pieza central de mi estudio.",
+      comment: "Esta tienda cuida los detalles mínimos: el peso, el tacto mate, la temperatura de color. Ya es la pieza central de mi estudio.",
     },
   ];
 
@@ -181,7 +181,7 @@ export function ProductLandingView({
       icon: Leaf,
     },
     {
-      title: "2 Años de Garantía Lumina Care",
+      title: "2 Años de Garantía Oficial de esta tienda",
       description: "Cobertura completa ante cualquier anomalía de funcionamiento con sustitución directa y sin trámites.",
       icon: Award,
     },
@@ -695,7 +695,7 @@ export function ProductLandingView({
                 <div className="flex flex-col items-center gap-1 p-2 rounded-xl bg-gray-50/50 dark:bg-white/[0.02]">
                   <ShieldCheck className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
                   <span className="text-[11px] font-semibold text-gray-700 dark:text-gray-300">Garantía Oficial</span>
-                  <span className="text-[10px] text-gray-400">2 Años Lumina</span>
+                  <span className="text-[10px] text-gray-400">2 Años de Garantía</span>
                 </div>
                 <div className="flex flex-col items-center gap-1 p-2 rounded-xl bg-gray-50/50 dark:bg-white/[0.02]">
                   <RotateCcw className="w-4 h-4 text-blue-600 dark:text-blue-400" />
@@ -1168,7 +1168,7 @@ export function ProductLandingView({
               </div>
             </div>
             <p className="text-xs text-gray-600 dark:text-gray-300 leading-relaxed">
-              {product.packageContents || "1x Unidad Principal Lumina, 1x Cable trenzado de alimentación, 1x Certificado artesanal numerado, 1x Guía rápida de inicio."}
+              {product.packageContents || "1x Pieza Principal, 1x Cable trenzado de alimentación, 1x Certificado artesanal numerado, 1x Guía rápida de inicio."}
             </p>
           </div>
 
@@ -1180,40 +1180,39 @@ export function ProductLandingView({
               </div>
               <div>
                 <h3 className="text-sm font-bold text-gray-950 dark:text-white">¿Cómo se usa?</h3>
-                <p className="text-[11px] text-gray-400">Aplicaciones recomendadas</p>
+                <p className="text-[11px] text-gray-400">Instrucciones de funcionamiento</p>
               </div>
             </div>
             <p className="text-xs text-gray-600 dark:text-gray-300 leading-relaxed">
-              {product.howToUse || (product.features && product.features.length > 0 ? product.features.join(" · ") : "Conexión plug-and-play intuitiva. Diseñado para optimizar espacios de trabajo, salones o dormitorios con control táctil sin esfuerzo.")}
+              {product.features?.join(". ") || "Conexión directa intuitiva con control táctil multifunción de intensidad y temperatura de luz."}
             </p>
           </div>
 
-          {/* Card 3: Materiales & Dimensiones */}
-          <div className="p-6 rounded-2xl bg-white/90 dark:bg-[#202022]/90 border border-gray-200/70 dark:border-white/10 space-y-3.5 shadow-sm">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-950/30 text-blue-600 flex items-center justify-center">
-                <Ruler className="w-5 h-5" />
-              </div>
-              <div>
-                <h3 className="text-sm font-bold text-gray-950 dark:text-white">Materiales & Dimensiones</h3>
-                <p className="text-[11px] text-gray-400">Medidas ergonómicas y tacto</p>
-              </div>
-            </div>
-            <div className="space-y-1 text-xs text-gray-600 dark:text-gray-300">
-              <p><strong className="text-gray-900 dark:text-white">Material: </strong>{product.materials || "Aluminio fundido anodizado, gres mineral y componentes de alta durabilidad."}</p>
-              <p><strong className="text-gray-900 dark:text-white">Dimensiones: </strong>{product.dimensions || "Proporciones optimizadas para equilibrio perfecto en mesa o suelo."}</p>
-            </div>
-          </div>
-
-          {/* Card 4: Envíos & Despacho */}
+          {/* Card 3: Materiales Nobles */}
           <div className="p-6 rounded-2xl bg-white/90 dark:bg-[#202022]/90 border border-gray-200/70 dark:border-white/10 space-y-3.5 shadow-sm">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-xl bg-emerald-50 dark:bg-emerald-950/30 text-emerald-600 flex items-center justify-center">
+                <Layers className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="text-sm font-bold text-gray-950 dark:text-white">Materiales Nobles</h3>
+                <p className="text-[11px] text-gray-400">Origen y manufactura</p>
+              </div>
+            </div>
+            <p className="text-xs text-gray-600 dark:text-gray-300 leading-relaxed">
+              {product.materials || "Aluminio aeroespacial anodizado de grado militar, cristal opalino soplado artesanalmente y base de corcho natural."}
+            </p>
+          </div>
+
+          {/* Card 4: Envíos y Logística */}
+          <div className="p-6 rounded-2xl bg-white/90 dark:bg-[#202022]/90 border border-gray-200/70 dark:border-white/10 space-y-3.5 shadow-sm">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-950/30 text-blue-600 flex items-center justify-center">
                 <Truck className="w-5 h-5" />
               </div>
               <div>
-                <h3 className="text-sm font-bold text-gray-950 dark:text-white">Logística & Envíos</h3>
-                <p className="text-[11px] text-gray-400">Plazos y embalaje</p>
+                <h3 className="text-sm font-bold text-gray-950 dark:text-white">Envío Blindado</h3>
+                <p className="text-[11px] text-gray-400">Logística de alta prioridad</p>
               </div>
             </div>
             <p className="text-xs text-gray-600 dark:text-gray-300 leading-relaxed">
@@ -1228,7 +1227,7 @@ export function ProductLandingView({
                 <ShieldCheck className="w-5 h-5" />
               </div>
               <div>
-                <h3 className="text-sm font-bold text-gray-950 dark:text-white">Garantía Lumina Care</h3>
+                <h3 className="text-sm font-bold text-gray-950 dark:text-white">Garantía Oficial de esta tienda</h3>
                 <p className="text-[11px] text-gray-400">Tranquilidad absoluta</p>
               </div>
             </div>
@@ -1334,10 +1333,10 @@ export function ProductLandingView({
           
           <div className="text-center max-w-2xl mx-auto space-y-2">
             <span className="text-xs font-bold uppercase tracking-widest text-[#8c9276] dark:text-[#ccff00]">
-              Compromiso Lumina
+              Compromiso de esta tienda
             </span>
             <h2 className="text-3xl sm:text-4xl font-extrabold text-gray-950 dark:text-white tracking-tight">
-              ¿Por qué elegir Lumina?
+              ¿Por qué elegir esta tienda?
             </h2>
             <p className="text-sm sm:text-base text-gray-500 dark:text-gray-400">
               Diseño sin obsolescencia, servicio sin fricción y una devoción obsesiva por los acabados nobles.

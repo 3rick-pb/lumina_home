@@ -632,7 +632,7 @@ export default function ProductDetail({ params }: { params: Promise<{ id: string
                 <div className="p-5 bg-emerald-50/60 rounded-2xl border border-emerald-100">
                   <div className="flex items-center gap-2 mb-2 text-xs font-bold text-emerald-950 uppercase tracking-wider">
                     <ShieldCheck className="w-4 h-4 text-emerald-700" />
-                    <span>Garantía Oficial Lumina</span>
+                    <span>Garantía Oficial de esta tienda</span>
                   </div>
                   <p className="text-sm text-emerald-900 leading-relaxed">
                     {product.warranty || "2 años de garantía oficial ante cualquier defecto de fabricación o fallo prematuro de materiales."}

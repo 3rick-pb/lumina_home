@@ -201,7 +201,7 @@ export async function POST(request: Request) {
     const orderId = sanitizeString(body.orderId || `INV_${Math.floor(100000 + Math.random() * 900000)}`, 40);
     const cleanEmail = sanitizeString(shippingAddress.email || authUser?.email || 'cliente@lumina.com', 80);
     const cleanPhone = sanitizeString(shippingAddress.phone || '0999999999', 20);
-    const cleanRecipient = sanitizeString(shippingAddress.recipient || authUser?.email?.split('@')[0] || 'Cliente Lumina', 60);
+    const cleanRecipient = sanitizeString(shippingAddress.recipient || authUser?.email?.split('@')[0] || 'Cliente de esta tienda', 60);
 
     // 5. PayPhone Prepare Execution (handles active mode: 'box' vs 'redirect')
     const prepareResult = await preparePayPhonePayment({
@@ -213,7 +213,7 @@ export async function POST(request: Request) {
       customerEmail: cleanEmail,
       customerPhone: cleanPhone,
       documentId: rawDoc || '9999999999',
-      customReference: `Lumina Home Pedido #${orderId} - ${cleanRecipient}`
+      customReference: `Pedido #${orderId} de esta tienda - ${cleanRecipient}`
     });
 
     if (!prepareResult.success) {

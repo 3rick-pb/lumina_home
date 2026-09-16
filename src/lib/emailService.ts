@@ -201,7 +201,7 @@ export function generateCustomerInvoiceHtml(order: OrderEmailData): string {
   const timeStr = order.time || new Date().toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
 
   const itemsRows = (order.items || []).map((item) => {
-    const title = item.product?.title || 'Producto Lumina';
+    const title = item.product?.title || 'Pieza de esta tienda';
     const price = Number(item.product?.price || 0).toFixed(2);
     const qty = item.quantity || 1;
     const subtotal = (Number(item.product?.price || 0) * qty).toFixed(2);
@@ -210,10 +210,10 @@ export function generateCustomerInvoiceHtml(order: OrderEmailData): string {
 
     return `
       <tr>
-        <td style="padding:16px 12px;border-bottom:1px solid #f1f5f9;vertical-align:middle;">
+        <td style="padding:16px 10px;border-bottom:1px solid #e2e8f0;vertical-align:middle;">
           <table cellpadding="0" cellspacing="0" border="0">
             <tr>
-              ${image ? `<td style="width:56px;padding-right:12px;vertical-align:middle;"><img src="${image}" alt="${title}" width="56" height="56" style="width:56px;height:56px;object-fit:cover;border-radius:10px;border:1px solid #e2e8f0;display:block;" /></td>` : ''}
+              ${image ? `<td style="width:54px;vertical-align:middle;padding-right:12px;"><img src="${image}" alt="${title}" width="50" height="50" style="border-radius:10px;object-fit:cover;display:block;border:1px solid #e2e8f0;" /></td>` : ''}
               <td style="vertical-align:middle;">
                 <div style="font-size:14px;font-weight:600;color:#0f172a;line-height:1.3;">${title}</div>
                 ${colorBadge}
@@ -221,13 +221,13 @@ export function generateCustomerInvoiceHtml(order: OrderEmailData): string {
             </tr>
           </table>
         </td>
-        <td style="padding:16px 12px;border-bottom:1px solid #f1f5f9;text-align:center;font-size:14px;color:#475569;vertical-align:middle;">
-          ${qty}
+        <td style="padding:16px 10px;border-bottom:1px solid #e2e8f0;text-align:center;font-size:13px;color:#475569;vertical-align:middle;">
+          x${qty}
         </td>
-        <td style="padding:16px 12px;border-bottom:1px solid #f1f5f9;text-align:right;font-size:14px;color:#475569;vertical-align:middle;">
+        <td style="padding:16px 10px;border-bottom:1px solid #e2e8f0;text-align:right;font-size:13px;color:#475569;vertical-align:middle;">
           $${price}
         </td>
-        <td style="padding:16px 12px;border-bottom:1px solid #f1f5f9;text-align:right;font-size:14px;font-weight:700;color:#0f172a;vertical-align:middle;">
+        <td style="padding:16px 10px;border-bottom:1px solid #e2e8f0;text-align:right;font-size:14px;font-weight:700;color:#0f172a;vertical-align:middle;">
           $${subtotal}
         </td>
       </tr>
@@ -255,7 +255,7 @@ export function generateCustomerInvoiceHtml(order: OrderEmailData): string {
                 <tr>
                   <td>
                     <div style="font-size:24px;font-weight:800;letter-spacing:1.5px;color:#ffffff;text-transform:uppercase;">
-                      LUMINA <span style="color:#8c9276;font-weight:300;">HOME</span>
+                      ESTA <span style="color:#8c9276;font-weight:300;">TIENDA</span>
                     </div>
                     <div style="font-size:12px;color:#94a3b8;letter-spacing:1px;text-transform:uppercase;margin-top:4px;">
                       Confirmación de Compra &amp; Factura Digital
@@ -394,7 +394,7 @@ export function generateCustomerInvoiceHtml(order: OrderEmailData): string {
           <tr>
             <td style="background-color:#f1f5f9;padding:24px 36px;text-align:center;border-top:1px solid #e2e8f0;">
               <div style="font-size:12px;font-weight:600;color:#475569;">
-                Lumina Home · Innovación &amp; Mobiliario de Alta Gama
+                esta tienda · Innovación &amp; Mobiliario de Alta Gama
               </div>
               <div style="font-size:11px;color:#94a3b8;margin-top:4px;">
                 Este es un comprobante de compra digital generado automáticamente. Todos los derechos reservados.
@@ -429,11 +429,11 @@ export function generateAdminDispatchNoticeHtml(order: OrderEmailData): string {
   const total = Number(order.total || 0).toFixed(2);
   const paymentMethod = order.paymentMethod || 'Tarjeta de Crédito / Débito';
   const cleanPhone = cleanPhoneForWhatsApp(phone);
-  const waText = encodeURIComponent(`Hola ${recipient}, te contactamos de Lumina Home respecto a tu orden #${orderId}.`);
+  const waText = encodeURIComponent(`Hola ${recipient}, te contactamos de esta tienda respecto a tu orden #${orderId}.`);
   const waUrl = cleanPhone ? `https://wa.me/${cleanPhone}?text=${waText}` : '';
 
   const itemsRows = (order.items || []).map((item) => {
-    const title = item.product?.title || 'Producto Lumina';
+    const title = item.product?.title || 'Pieza de esta tienda';
     const price = Number(item.product?.price || 0).toFixed(2);
     const qty = item.quantity || 1;
     const subtotal = (Number(item.product?.price || 0) * qty).toFixed(2);
@@ -614,7 +614,7 @@ export function generateAdminDispatchNoticeHtml(order: OrderEmailData): string {
           <tr>
             <td style="background-color:#f8fafc;padding:20px 36px;text-align:center;border-top:1px solid #e2e8f0;">
               <div style="font-size:11px;color:#94a3b8;">
-                Panel de Administración Lumina Home · Notificación Automática de Despacho
+                Panel de Administración de esta tienda · Notificación Automática de Despacho
               </div>
             </td>
           </tr>
@@ -642,13 +642,13 @@ export async function sendOrderEmails({
 }): Promise<{ success: boolean; customerSent: boolean; adminsSent: boolean; mocked?: boolean }> {
   try {
     const transporter = getTransporter();
-    const fromAddress = process.env.SMTP_FROM || 'Lumina Home <ventas@lumina.com>';
+    const fromAddress = process.env.SMTP_FROM || 'esta tienda <ventas@lumina.com>';
 
     const customerEmail = order.customerEmail || order.shippingAddress?.email;
     const customerName = order.customerName || order.recipient || 'Cliente';
     const resolvedAdmins = adminEmails && adminEmails.length > 0 ? adminEmails : await getAllAdminEmails();
 
-    const customerSubject = `🧾 Factura Digital y Confirmación de Pedido #${order.id} - Lumina Home`;
+    const customerSubject = `🧾 Factura Digital y Confirmación de Pedido #${order.id} - esta tienda`;
     const adminSubject = `📦 [DESPACHO INMEDIATO] Nueva Orden #${order.id} - ${customerName} · Total: $${Number(order.total || 0).toFixed(2)}`;
 
     const customerHtml = generateCustomerInvoiceHtml(order);
@@ -686,7 +686,7 @@ export async function sendOrderEmails({
         await logEmailNotification({
           orderId: order.id,
           recipientEmail: admEmail,
-          recipientName: 'Administrador Lumina',
+          recipientName: 'Administrador de esta tienda',
           recipientType: 'admin',
           emailType: 'admin_dispatch_notice',
           subject: adminSubject,
@@ -756,7 +756,7 @@ export async function sendOrderEmails({
           await logEmailNotification({
             orderId: order.id,
             recipientEmail: admEmail,
-            recipientName: 'Administrador Lumina',
+            recipientName: 'Administrador de esta tienda',
             recipientType: 'admin',
             emailType: 'admin_dispatch_notice',
             subject: adminSubject,
@@ -769,7 +769,7 @@ export async function sendOrderEmails({
           await logEmailNotification({
             orderId: order.id,
             recipientEmail: admEmail,
-            recipientName: 'Administrador Lumina',
+            recipientName: 'Administrador de esta tienda',
             recipientType: 'admin',
             emailType: 'admin_dispatch_notice',
             subject: adminSubject,
@@ -827,14 +827,14 @@ export async function resendOrderEmail({
     };
 
     const transporter = getTransporter();
-    const fromAddress = process.env.SMTP_FROM || 'Lumina Home <ventas@lumina.com>';
+    const fromAddress = process.env.SMTP_FROM || 'esta tienda <ventas@lumina.com>';
 
     if (emailType === 'customer_invoice') {
       const recipient = targetEmail || mappedOrder.customerEmail || mappedOrder.shippingAddress?.email;
       if (!recipient || !recipient.includes('@')) {
         return { success: false, message: 'La orden no tiene un correo de cliente válido configurado.' };
       }
-      const subject = `🧾 Factura Digital y Confirmación de Pedido #${mappedOrder.id} - Lumina Home`;
+      const subject = `🧾 Factura Digital y Confirmación de Pedido #${mappedOrder.id} - esta tienda`;
       const html = generateCustomerInvoiceHtml(mappedOrder);
 
       if (!transporter) {
@@ -885,7 +885,7 @@ export async function resendOrderEmail({
           await logEmailNotification({
             orderId: mappedOrder.id,
             recipientEmail: adm,
-            recipientName: 'Administrador Lumina',
+            recipientName: 'Administrador de esta tienda',
             recipientType: 'admin',
             emailType: 'admin_dispatch_notice',
             subject: `${subject} [Reenvío]`,
@@ -907,7 +907,7 @@ export async function resendOrderEmail({
         await logEmailNotification({
           orderId: mappedOrder.id,
           recipientEmail: adm,
-          recipientName: 'Administrador Lumina',
+          recipientName: 'Administrador de esta tienda',
           recipientType: 'admin',
           emailType: 'admin_dispatch_notice',
           subject,
@@ -952,7 +952,7 @@ export async function verifyAndSendTestEmail({
     const finalPass = pass || process.env.SMTP_PASS;
     const finalPort = Number(port || process.env.SMTP_PORT) || 587;
     const finalSecure = secure !== undefined ? secure : (process.env.SMTP_SECURE === 'true' || finalPort === 465);
-    const finalFrom = from || process.env.SMTP_FROM || `Lumina Home <${finalUser || 'ventas@lumina.com'}>`;
+    const finalFrom = from || process.env.SMTP_FROM || `esta tienda <${finalUser || 'ventas@lumina.com'}>`;
 
     if (!finalHost || !finalUser || !finalPass) {
       return {
@@ -979,16 +979,16 @@ export async function verifyAndSendTestEmail({
     await transporter.sendMail({
       from: finalFrom,
       to: recipientEmail,
-      subject: '✅ Conexión SMTP Exitosa - Lumina Home',
+      subject: '✅ Conexión SMTP Exitosa - esta tienda',
       html: `
         <div style="font-family:-apple-system,BlinkMacSystemFont,sans-serif;max-width:580px;margin:0 auto;padding:32px;background:#ffffff;border:1px solid #e2e8f0;border-radius:20px;">
           <div style="background:#0f172a;padding:24px;border-radius:14px;color:#ffffff;margin-bottom:24px;">
-            <div style="font-size:20px;font-weight:800;letter-spacing:1px;text-transform:uppercase;">LUMINA <span style="color:#8c9276;font-weight:300;">HOME</span></div>
+            <div style="font-size:20px;font-weight:800;letter-spacing:1px;text-transform:uppercase;">ESTA <span style="color:#8c9276;font-weight:300;">TIENDA</span></div>
             <div style="font-size:12px;color:#94a3b8;margin-top:4px;">Prueba de Servidor SMTP & Entorno Vercel</div>
           </div>
           <div style="font-size:16px;font-weight:700;color:#0f172a;margin-bottom:12px;">¡Tu servidor de correos está funcionando correctamente!</div>
           <p style="font-size:14px;color:#475569;line-height:1.6;margin-bottom:20px;">
-            Este es un correo de prueba enviado desde el panel de administración de <strong>Lumina Home</strong> para verificar la conexión con <strong>${finalHost}</strong> mediante el usuario <strong>${finalUser}</strong>.
+            Este es un correo de prueba enviado desde el panel de administración de <strong>esta tienda</strong> para verificar la conexión con <strong>${finalHost}</strong> mediante el usuario <strong>${finalUser}</strong>.
           </p>
           <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:16px;font-size:13px;color:#334155;margin-bottom:24px;">
             <div><strong>Servidor Host:</strong> ${finalHost}</div>
@@ -997,7 +997,7 @@ export async function verifyAndSendTestEmail({
             <div style="margin-top:6px;"><strong>Fecha de Prueba:</strong> ${now}</div>
           </div>
           <div style="font-size:12px;color:#64748b;text-align:center;border-top:1px solid #f1f5f9;padding-top:16px;">
-            Lumina Home · Comercio Electrónico & Mobiliario de Alta Gama
+            esta tienda · Comercio Electrónico & Mobiliario de Alta Gama
           </div>
         </div>
       `,

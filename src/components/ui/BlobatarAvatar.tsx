@@ -40,7 +40,7 @@ export function BlobatarAvatar({
   return (
     <div
       onClick={onClick}
-      title={title || (isAdmin ? "Administrador Lumina" : "Cliente Lumina")}
+      title={title || (isAdmin ? "Administrador de esta tienda" : "Cliente de esta tienda")}
       style={{ 
         width: size, 
         height: size,

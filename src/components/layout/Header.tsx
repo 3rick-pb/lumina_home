@@ -147,13 +147,13 @@ export function Header() {
   return (
     <>
       <CartDrawer />
-      <header className="fixed top-6 left-0 right-0 z-50 flex justify-center px-4 pointer-events-none">
-        <div className="pointer-events-auto flex items-center justify-between p-2 rounded-full bg-white/40 backdrop-blur-xl border border-white/60 shadow-[0_8px_32px_rgba(0,0,0,0.08)] relative transform-gpu">
+      <header className="fixed top-4 sm:top-6 left-0 right-0 z-50 flex justify-center px-2 sm:px-4 pointer-events-none">
+        <div className="pointer-events-auto flex items-center justify-between p-1.5 sm:p-2 rounded-full bg-white/50 backdrop-blur-xl border border-white/70 shadow-[0_8px_32px_rgba(0,0,0,0.08)] relative transform-gpu max-w-full">
           
           {/* Logo Section */}
-          <Link href="/" className="pl-4 pr-6 flex items-center gap-2 group">
-            <span className="font-display italic text-2xl font-bold tracking-tight text-gray-900 group-hover:text-[#8c9276] transition-colors">
-              Lumina.
+          <Link href="/" className="pl-3 sm:pl-4 pr-3 sm:pr-6 flex items-center gap-1.5 group shrink-0">
+            <span className="font-display italic text-lg sm:text-2xl font-bold tracking-tight text-gray-900 group-hover:text-[#8c9276] transition-colors">
+              esta tienda<span className="text-[#8c9276]">.</span>
             </span>
           </Link>
 
@@ -206,19 +206,19 @@ export function Header() {
           </nav>
 
           {/* Actions */}
-          <div className="flex items-center gap-2 pl-4 pr-2">
+          <div className="flex items-center gap-1 sm:gap-2 pl-1.5 sm:pl-4 pr-1 sm:pr-2">
             
             {/* Profile Link */}
             <Link 
               href={isAuthenticated ? '/profile' : '/auth/login'}
               aria-label="Perfil" 
-              className="w-10 h-10 rounded-full bg-white/40 backdrop-blur-md border border-white/60 text-gray-700 hover:bg-white/60 transition-colors shadow-[0_4px_16px_rgba(0,0,0,0.05)] flex items-center justify-center shrink-0 overflow-hidden"
+              className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-white/40 backdrop-blur-md border border-white/60 text-gray-700 hover:bg-white/60 transition-colors shadow-[0_4px_16px_rgba(0,0,0,0.05)] flex items-center justify-center shrink-0 overflow-hidden"
               title={isAuthenticated ? `Mi Perfil (${user?.name || 'Cuenta'})` : "Iniciar Sesión"}
             >
               {isAuthenticated && user && showAvatarInNavbar ? (
                 <BlobatarAvatar
                   name={customSeed || user.id || user.email || user.name}
-                  size={32}
+                  size={28}
                   animate="hover"
                   background="circle"
                   role={user.role}
@@ -237,36 +237,36 @@ export function Header() {
                   onChange={(e) => setSearchVal(e.target.value)}
                   placeholder="Buscar en catálogo..."
                   className={cn(
-                    "h-10 transition-all duration-300 rounded-full pl-10 text-xs text-gray-900 placeholder:text-gray-500 outline-none bg-white/50 backdrop-blur-md border border-white/60 focus:bg-white/90 focus:border-white/80 shadow-[0_4px_16px_rgba(0,0,0,0.05)]",
+                    "h-9 sm:h-10 transition-all duration-300 rounded-full pl-9 sm:pl-10 text-xs text-gray-900 placeholder:text-gray-500 outline-none bg-white/50 backdrop-blur-md border border-white/60 focus:bg-white/90 focus:border-white/80 shadow-[0_4px_16px_rgba(0,0,0,0.05)]",
                     searchVal 
-                      ? "w-36 sm:w-64 pr-8 opacity-100" 
-                      : "w-10 pr-0 opacity-0 group-hover:w-36 sm:group-hover:w-56 group-hover:pr-8 group-hover:opacity-100 focus:w-36 sm:focus:w-64 focus:pr-8 focus:opacity-100 cursor-pointer focus:cursor-text"
+                      ? "w-32 sm:w-64 pr-8 opacity-100" 
+                      : "w-9 sm:w-10 pr-0 opacity-0 group-hover:w-32 sm:group-hover:w-56 group-hover:pr-8 group-hover:opacity-100 focus:w-32 sm:focus:w-64 focus:pr-8 focus:opacity-100 cursor-pointer focus:cursor-text"
                   )}
                 />
                 
                 <button 
                   type="submit" 
                   aria-label="Buscar" 
-                  className="absolute left-0 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full flex items-center justify-center text-gray-700 hover:text-gray-950 transition-colors z-10 pointer-events-auto"
+                  className="absolute left-0 top-1/2 -translate-y-1/2 w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center text-gray-700 hover:text-gray-950 transition-colors z-10 pointer-events-auto"
                 >
-                  <Search className="w-4 h-4" />
+                  <Search className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                 </button>
 
                 {searchVal && (
                   <button 
                     type="button"
                     onClick={() => setSearchVal("")}
-                    className="absolute right-2.5 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full flex items-center justify-center text-gray-400 hover:text-gray-700 hover:bg-gray-200/50 transition-colors z-10"
+                    className="absolute right-2 top-1/2 -translate-y-1/2 w-5 h-5 rounded-full flex items-center justify-center text-gray-400 hover:text-gray-700 hover:bg-gray-200/50 transition-colors z-10"
                     title="Limpiar búsqueda"
                   >
-                    <X className="w-3.5 h-3.5" />
+                    <X className="w-3 h-3" />
                   </button>
                 )}
               </form>
 
               {/* Floating Live Quick Search Results Dropdown */}
               {searchVal.trim().length > 0 && (
-                <div className="absolute -right-8 sm:right-0 top-full mt-3 w-[calc(100vw-2.5rem)] sm:w-96 max-w-sm bg-white/95 backdrop-blur-2xl border border-white/90 rounded-3xl shadow-[0_20px_60px_rgba(0,0,0,0.14)] p-4 space-y-3 z-50 animate-fade-in text-xs text-gray-900 pointer-events-auto">
+                <div className="fixed inset-x-2 top-20 sm:absolute sm:inset-auto sm:-right-8 sm:top-full mt-2 w-[calc(100vw-1rem)] sm:w-96 max-w-sm bg-white/95 backdrop-blur-2xl border border-white/90 rounded-3xl shadow-[0_20px_60px_rgba(0,0,0,0.14)] p-4 space-y-3 z-50 animate-fade-in text-xs text-gray-900 pointer-events-auto">
                   
                   {/* Header info */}
                   <div className="flex items-center justify-between pb-2 border-b border-gray-100 text-[10px] uppercase font-bold text-gray-400 tracking-wider">
@@ -368,11 +368,11 @@ export function Header() {
                   y: rect.top + rect.height / 2
                 });
               }}
-              className="relative p-2.5 rounded-full bg-white/40 backdrop-blur-md border border-white/60 text-gray-900 hover:bg-white/60 transition-colors shadow-[0_4px_16px_rgba(0,0,0,0.05)] shrink-0"
+              className="relative p-2 sm:p-2.5 rounded-full bg-white/40 backdrop-blur-md border border-white/60 text-gray-900 hover:bg-white/60 transition-colors shadow-[0_4px_16px_rgba(0,0,0,0.05)] shrink-0 cursor-pointer"
             >
-              <ShoppingBag className="w-5 h-5" />
+              <ShoppingBag className="w-4 h-4 sm:w-5 sm:h-5" />
               {totalItems > 0 && (
-                <span className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-[#8c9276] text-[10px] font-bold text-white shadow-sm">
+                <span className="absolute -top-1 -right-1 flex h-4.5 w-4.5 sm:h-5 sm:w-5 items-center justify-center rounded-full bg-[#8c9276] text-[9px] sm:text-[10px] font-bold text-white shadow-sm">
                   {totalItems}
                 </span>
               )}
@@ -381,10 +381,10 @@ export function Header() {
             {/* Mobile Navigation Toggle Button */}
             <button 
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-              className="md:hidden p-2.5 rounded-full hover:bg-white/50 text-gray-700 ml-1 transition-colors cursor-pointer shrink-0"
+              className="md:hidden p-2 sm:p-2.5 rounded-full hover:bg-white/50 text-gray-700 ml-0.5 transition-colors cursor-pointer shrink-0"
               aria-label={isMobileMenuOpen ? "Cerrar menú móvil" : "Abrir menú móvil"}
             >
-              {isMobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+              {isMobileMenuOpen ? <X className="w-4 h-4 sm:w-5 sm:h-5" /> : <Menu className="w-4 h-4 sm:w-5 sm:h-5" />}
             </button>
           </div>
         </div>
@@ -397,10 +397,10 @@ export function Header() {
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: -10, scale: 0.96 }}
               transition={{ duration: 0.22, ease: "easeOut" }}
-              className="pointer-events-auto absolute top-full mt-3 inset-x-4 max-w-sm mx-auto bg-white/95 backdrop-blur-2xl border border-white/80 rounded-3xl shadow-[0_20px_60px_rgba(0,0,0,0.12)] p-4 z-50 md:hidden space-y-2.5"
+              className="pointer-events-auto absolute top-full mt-3 inset-x-3 sm:inset-x-4 max-w-sm mx-auto bg-white/95 backdrop-blur-2xl border border-white/80 rounded-3xl shadow-[0_20px_60px_rgba(0,0,0,0.12)] p-4 z-50 md:hidden space-y-2.5"
             >
               <div className="flex items-center justify-between pb-2 border-b border-gray-100 text-[10px] uppercase font-bold text-gray-400 tracking-wider">
-                <span>Navegación Lumina</span>
+                <span>Navegación de esta tienda</span>
                 <button 
                   onClick={() => setIsMobileMenuOpen(false)}
                   className="text-gray-400 hover:text-gray-700 text-xs font-semibold"
