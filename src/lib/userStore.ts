@@ -6,6 +6,7 @@ import { useThemeStore } from './themeStore';
 import { useRadarStore } from './radarStore';
 import { useAvatarSettingsStore, setupAvatarRealtimeListener, cleanupAvatarRealtimeListener } from './avatarSettingsStore';
 import { useCatalogStore } from './catalogStore';
+import { playFavoriteSound } from './soundUtils';
 
 export interface User {
   id: string;
@@ -1156,6 +1157,11 @@ export const useUserStore = create<UserState>((set, get) => ({
     const nextFavs = isFav
       ? favorites.filter(id => id !== pidStr)
       : [...favorites, pidStr];
+
+    // Elegant crystalline chime when adding to favorites
+    if (!isFav) {
+      playFavoriteSound();
+    }
 
     set({ favorites: nextFavs });
 

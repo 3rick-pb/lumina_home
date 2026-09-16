@@ -780,12 +780,12 @@ const handleConfirmDeleteNiche = async () => {
   <header className="relative z-40 bg-white/80 dark:bg-[#202022]/80 backdrop-blur-2xl p-4 md:px-6 rounded-3xl border border-white/80 shadow-[0_4px_20px_rgba(0,0,0,0.02)] flex items-center justify-between gap-4">
   
   {/* Brand & Tabs */}
-  <div className="flex items-center gap-3 md:gap-6 overflow-x-auto hide-scrollbar">
-  <span className="font-display font-bold text-xl text-gray-900 dark:text-gray-100 tracking-tight shrink-0">
+  <div className="flex items-center gap-3 md:gap-6 shrink-0">
+  <Link href="/" className="font-display font-bold text-xl sm:text-2xl text-gray-900 dark:text-gray-100 tracking-tight shrink-0 flex items-center hover:opacity-85 transition-opacity" title="Ir a la tienda">
   Lumina<span className="text-[#8c9276]">.</span>
-  </span>
+  </Link>
 
- <div className="flex items-center bg-gray-100/80 dark:bg-[#3a3a3c]/80 p-1 rounded-2xl shrink-0">
+ <div className="hidden md:flex items-center bg-gray-100/80 dark:bg-[#3a3a3c]/80 p-1 rounded-2xl shrink-0">
  <button 
  onClick={() => setActiveTab("overview")} 
  className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all ${activeTab === "overview" ? "bg-white dark:bg-[#202022] text-gray-900 dark:text-gray-100 shadow-sm dark:shadow-none" : "text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100"}`}
@@ -945,12 +945,12 @@ const handleConfirmDeleteNiche = async () => {
  </div>
  <button 
    onClick={() => { logout(); router.push("/auth/login"); }}
-   className="md:hidden flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/40 border border-red-200/60 dark:border-red-900/40 transition-colors shrink-0 cursor-pointer"
+   className="md:hidden flex items-center gap-1.5 px-3 py-2 rounded-2xl text-red-600 dark:text-red-400 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/40 border border-red-200/80 dark:border-red-900/40 transition-all shrink-0 cursor-pointer shadow-xs active:scale-95"
    title="Cerrar Sesión"
    aria-label="Cerrar Sesión"
  >
-   <LogOut className="w-3.5 h-3.5" />
-   <span className="text-[11px] font-semibold">Salir</span>
+   <LogOut className="w-4 h-4" />
+   <span className="text-xs font-bold">Salir</span>
  </button>
  </div>
  </div>
@@ -979,6 +979,114 @@ const handleConfirmDeleteNiche = async () => {
  </button>
  </div>
  )}
+ </div>
+
+ {/* Mobile Dedicated Tabs Navigation Dock (Clean horizontal scroll for mobile screens) */}
+ <div className="md:hidden flex items-center gap-1.5 overflow-x-auto pb-1.5 -mx-1 px-1 hide-scrollbar">
+    <button 
+      onClick={() => setActiveTab("overview")} 
+      className={`px-3.5 py-2 rounded-2xl text-xs font-semibold whitespace-nowrap transition-all shrink-0 cursor-pointer ${
+        activeTab === "overview" 
+          ? "bg-gray-950 dark:bg-white text-white dark:text-gray-950 shadow-sm" 
+          : "bg-white/80 dark:bg-[#2a2a2c]/80 text-gray-600 dark:text-gray-400 border border-black/5 dark:border-white/10 active:scale-95"
+      }`}
+    >
+      Resumen
+    </button>
+    <button 
+      onClick={() => setActiveTab("orders")} 
+      className={`px-3.5 py-2 rounded-2xl text-xs font-semibold whitespace-nowrap transition-all shrink-0 cursor-pointer ${
+        activeTab === "orders" 
+          ? "bg-gray-950 dark:bg-white text-white dark:text-gray-950 shadow-sm" 
+          : "bg-white/80 dark:bg-[#2a2a2c]/80 text-gray-600 dark:text-gray-400 border border-black/5 dark:border-white/10 active:scale-95"
+      }`}
+    >
+      Actividad ({orders.length})
+    </button>
+    <button 
+      onClick={() => setActiveTab("cards")} 
+      className={`px-3.5 py-2 rounded-2xl text-xs font-semibold whitespace-nowrap transition-all shrink-0 cursor-pointer ${
+        activeTab === "cards" 
+          ? "bg-gray-950 dark:bg-white text-white dark:text-gray-950 shadow-sm" 
+          : "bg-white/80 dark:bg-[#2a2a2c]/80 text-gray-600 dark:text-gray-400 border border-black/5 dark:border-white/10 active:scale-95"
+      }`}
+    >
+      Tarjetas ({cards.length})
+    </button>
+    <button 
+      onClick={() => setActiveTab("favorites")} 
+      className={`px-3.5 py-2 rounded-2xl text-xs font-semibold whitespace-nowrap transition-all shrink-0 cursor-pointer ${
+        activeTab === "favorites" 
+          ? "bg-gray-950 dark:bg-white text-white dark:text-gray-950 shadow-sm" 
+          : "bg-white/80 dark:bg-[#2a2a2c]/80 text-gray-600 dark:text-gray-400 border border-black/5 dark:border-white/10 active:scale-95"
+      }`}
+    >
+      Favoritos ({favorites.length})
+    </button>
+    {isAdmin && (
+      <>
+        <button 
+          onClick={() => setActiveTab("catalog")} 
+          className={`px-3.5 py-2 rounded-2xl text-xs font-semibold whitespace-nowrap transition-all shrink-0 cursor-pointer ${
+            activeTab === "catalog" 
+              ? "bg-gray-950 dark:bg-white text-white dark:text-gray-950 shadow-sm" 
+              : "bg-white/80 dark:bg-[#2a2a2c]/80 text-gray-600 dark:text-gray-400 border border-black/5 dark:border-white/10 active:scale-95"
+          }`}
+        >
+          Inventario ({products.length})
+        </button>
+        <button 
+          onClick={() => setActiveTab("niches")} 
+          className={`px-3.5 py-2 rounded-2xl text-xs font-semibold whitespace-nowrap transition-all shrink-0 cursor-pointer ${
+            activeTab === "niches" 
+              ? "bg-gray-950 dark:bg-white text-white dark:text-gray-950 shadow-sm" 
+              : "bg-white/80 dark:bg-[#2a2a2c]/80 text-gray-600 dark:text-gray-400 border border-black/5 dark:border-white/10 active:scale-95"
+          }`}
+        >
+          Nichos & Badges ({categories.length})
+        </button>
+        <button 
+          onClick={() => setActiveTab("analytics")} 
+          className={`px-3.5 py-2 rounded-2xl text-xs font-semibold whitespace-nowrap transition-all shrink-0 cursor-pointer ${
+            activeTab === "analytics" 
+              ? "bg-gray-950 dark:bg-white text-white dark:text-gray-950 shadow-sm" 
+              : "bg-white/80 dark:bg-[#2a2a2c]/80 text-gray-600 dark:text-gray-400 border border-black/5 dark:border-white/10 active:scale-95"
+          }`}
+        >
+          Radar en Vivo
+        </button>
+        <button 
+          onClick={() => setActiveTab("cart_alerts")} 
+          className={`px-3.5 py-2 rounded-2xl text-xs font-semibold whitespace-nowrap transition-all shrink-0 cursor-pointer ${
+            activeTab === "cart_alerts" 
+              ? "bg-gray-950 dark:bg-white text-white dark:text-gray-950 shadow-sm" 
+              : "bg-white/80 dark:bg-[#2a2a2c]/80 text-gray-600 dark:text-gray-400 border border-black/5 dark:border-white/10 active:scale-95"
+          }`}
+        >
+          Alertas de Carrito
+        </button>
+        <button 
+          onClick={() => setActiveTab("integrations")} 
+          className={`px-3.5 py-2 rounded-2xl text-xs font-semibold whitespace-nowrap transition-all shrink-0 cursor-pointer ${
+            activeTab === "integrations" 
+              ? "bg-gray-950 dark:bg-white text-white dark:text-gray-950 shadow-sm" 
+              : "bg-white/80 dark:bg-[#2a2a2c]/80 text-gray-600 dark:text-gray-400 border border-black/5 dark:border-white/10 active:scale-95"
+          }`}
+        >
+          SMTP & Pasarelas
+        </button>
+      </>
+    )}
+    <button 
+      onClick={() => setActiveTab("settings")} 
+      className={`px-3.5 py-2 rounded-2xl text-xs font-semibold whitespace-nowrap transition-all shrink-0 cursor-pointer ${
+        activeTab === "settings" 
+          ? "bg-gray-950 dark:bg-white text-white dark:text-gray-950 shadow-sm" 
+          : "bg-white/80 dark:bg-[#2a2a2c]/80 text-gray-600 dark:text-gray-400 border border-black/5 dark:border-white/10 active:scale-95"
+      }`}
+    >
+      Ajustes
+    </button>
  </div>
 
  {/* ========================================================================= */}

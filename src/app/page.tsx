@@ -197,41 +197,63 @@ export default function Home() {
     fetchCategoriesMeta();
   }, []);
 
-  // Continuous bidirectional IntersectionObserver + scroll sync to smoothly shift ambient matte glow
+  // Continuous bidirectional scroll position tracking to smoothly shift ambient matte glow both down and up
   useEffect(() => {
     if (!isMounted) return;
 
-    const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            if (entry.target.id === "hero-section") {
-              resetTheme();
-            } else if (entry.target.id === "catalog-categories") {
-              setCategoryTheme("aromaterapia");
-            } else if (entry.target.id === "catalog-popular") {
-              setCategoryTheme(activeFilter === "Todos" ? "iluminacion" : activeFilter);
-            }
-          }
-        });
-      },
-      { threshold: 0.25 }
-    );
+    let rafId: number | null = null;
+    let lastThemeApplied: string | null = null;
 
-    if (heroRef.current) observer.observe(heroRef.current);
-    if (categoriesRef.current) observer.observe(categoriesRef.current);
-    if (popularRef.current) observer.observe(popularRef.current);
+    const updateThemeOnScroll = () => {
+      rafId = null;
+      const scrollY = window.scrollY;
 
-    const handleScroll = () => {
-      if (window.scrollY < 180) {
-        resetTheme();
+      // 1. Top of page / Hero section (scrolled back up)
+      if (scrollY < 180) {
+        if (lastThemeApplied !== "default") {
+          lastThemeApplied = "default";
+          resetTheme();
+        }
+        return;
+      }
+
+      // 2. Check section positions relative to viewport focal trigger
+      const popRect = popularRef.current?.getBoundingClientRect();
+      const catRect = categoriesRef.current?.getBoundingClientRect();
+      const triggerY = window.innerHeight * 0.45;
+
+      if (popRect && popRect.top <= triggerY && popRect.bottom >= triggerY * 0.25) {
+        const targetTheme = activeFilter === "Todos" ? "iluminacion" : activeFilter;
+        if (lastThemeApplied !== `pop-${targetTheme}`) {
+          lastThemeApplied = `pop-${targetTheme}`;
+          setCategoryTheme(targetTheme);
+        }
+      } else if (catRect && catRect.top <= triggerY && catRect.bottom >= triggerY * 0.25) {
+        if (lastThemeApplied !== "cat-aromaterapia") {
+          lastThemeApplied = "cat-aromaterapia";
+          setCategoryTheme("aromaterapia");
+        }
+      } else if (catRect && catRect.top > triggerY) {
+        // Scrolled back up above categories into hero
+        if (lastThemeApplied !== "default") {
+          lastThemeApplied = "default";
+          resetTheme();
+        }
       }
     };
+
+    const handleScroll = () => {
+      if (rafId === null) {
+        rafId = requestAnimationFrame(updateThemeOnScroll);
+      }
+    };
+
     window.addEventListener("scroll", handleScroll, { passive: true });
+    updateThemeOnScroll();
 
     return () => {
-      observer.disconnect();
       window.removeEventListener("scroll", handleScroll);
+      if (rafId !== null) cancelAnimationFrame(rafId);
     };
   }, [isMounted, activeFilter, setCategoryTheme, resetTheme]);
 
@@ -302,11 +324,11 @@ export default function Home() {
 
               <a 
                 href="#catalog-popular" 
-                className="relative overflow-hidden w-full sm:w-auto rounded-full bg-white/10 hover:bg-white/20 active:bg-white/25 border border-white/35 hover:border-white/60 text-white px-8 py-3.5 sm:py-4 flex items-center justify-center backdrop-blur-md shadow-[0_8px_25px_rgba(0,0,0,0.12),inset_0_1px_1px_rgba(255,255,255,0.4),inset_0_-1px_1px_rgba(0,0,0,0.1)] transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] [isolation:isolate] transform-gpu group cursor-pointer select-none"
+                className="relative overflow-hidden w-full sm:w-auto rounded-full bg-white/[0.06] hover:bg-white/[0.14] active:bg-white/[0.18] border border-white/25 hover:border-white/50 text-white px-8 py-3.5 sm:py-4 flex items-center justify-center backdrop-blur-md shadow-[0_8px_25px_rgba(0,0,0,0.12),inset_0_1px_1px_rgba(255,255,255,0.35),inset_0_-1px_1px_rgba(0,0,0,0.1)] transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] [isolation:isolate] transform-gpu group cursor-pointer select-none"
               >
                 {/* Upper specular reflection meniscus */}
                 <div 
-                  className="absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-white/25 via-white/5 to-transparent pointer-events-none rounded-t-full" 
+                  className="absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-white/18 via-white/[0.03] to-transparent pointer-events-none rounded-t-full" 
                   aria-hidden="true"
                 />
                 <span className="relative z-10 font-medium text-sm sm:text-base text-white drop-shadow-sm">
