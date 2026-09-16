@@ -155,9 +155,9 @@ export function OverviewTab({
   };
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 animate-fade-in">
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-4 sm:gap-5 lg:gap-6 animate-fade-in">
       {/* BENTO CARD 1: Financial Balance / Spendings (4 cols) */}
-      <div className="lg:col-span-4 bg-white/90 dark:bg-[#202022]/90 backdrop-blur-xl p-6 rounded-[2rem] border border-white/80 shadow-[0_4px_24px_rgba(0,0,0,0.02)] flex flex-col justify-between">
+      <div className="md:col-span-1 lg:col-span-4 bg-white/90 dark:bg-[#202022]/90 backdrop-blur-xl p-5 sm:p-6 rounded-3xl sm:rounded-[2rem] border border-white/80 dark:border-white/10 shadow-[0_4px_24px_rgba(0,0,0,0.02)] flex flex-col justify-between">
         <div>
           <div className="flex items-center justify-between mb-4">
             <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">
@@ -199,7 +199,7 @@ export function OverviewTab({
       </div>
 
       {/* BENTO CARD 2: Quick Metrics 2x2 Grid (4 cols) */}
-      <div className="lg:col-span-4 grid grid-cols-2 gap-3 sm:gap-4">
+      <div className="md:col-span-1 lg:col-span-4 grid grid-cols-2 gap-3 sm:gap-4">
         {/* Box 1 (Orange/Coral Accent) */}
         <button 
           onClick={() => setActiveTab(isAdmin ? "catalog" : "orders")} 
@@ -288,7 +288,7 @@ export function OverviewTab({
       </div>
 
       {/* BENTO CARD 3: REAL DYNAMIC CHART (4 cols) */}
-      <div className="lg:col-span-4 min-w-0 max-w-full bg-white/90 dark:bg-[#202022]/90 backdrop-blur-xl p-6 rounded-[2rem] border border-white/80 shadow-[0_4px_24px_rgba(0,0,0,0.02)] flex flex-col justify-between overflow-hidden">
+      <div className="md:col-span-2 lg:col-span-4 min-w-0 max-w-full bg-white/90 dark:bg-[#202022]/90 backdrop-blur-xl p-5 sm:p-6 rounded-3xl sm:rounded-[2rem] border border-white/80 dark:border-white/10 shadow-[0_4px_24px_rgba(0,0,0,0.02)] flex flex-col justify-between overflow-hidden">
         <div className="flex items-center justify-between mb-4">
           <div className="min-w-0 pr-2">
             <h3 className="text-sm font-bold text-gray-900 dark:text-gray-100 truncate">
@@ -458,7 +458,7 @@ export function OverviewTab({
       </div>
 
       {/* BENTO CARD 4: MY CARDS (Tarjetas Guardadas - 4 cols) */}
-      <div className="lg:col-span-4 bg-white/90 dark:bg-[#202022]/90 backdrop-blur-xl p-6 rounded-[2rem] border border-white/80 shadow-[0_4px_24px_rgba(0,0,0,0.02)] flex flex-col justify-between">
+      <div className="md:col-span-2 lg:col-span-4 bg-white/90 dark:bg-[#202022]/90 backdrop-blur-xl p-5 sm:p-6 rounded-3xl sm:rounded-[2rem] border border-white/80 dark:border-white/10 shadow-[0_4px_24px_rgba(0,0,0,0.02)] flex flex-col justify-between">
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-sm font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
             <CreditCard className="w-4 h-4 text-[#8c9276]" /> Mis Tarjetas ({cards.length})
@@ -491,7 +491,7 @@ export function OverviewTab({
             </button>
           </div>
         ) : (
-          <div className="space-y-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-3">
             {cards.map((c, index) => {
               const isDark = index % 2 === 0;
               return (
@@ -547,7 +547,7 @@ export function OverviewTab({
       </div>
 
       {/* BENTO CARD 5: RECENT ACTIVITIES / ORDERS (8 cols) */}
-      <div className="lg:col-span-8 bg-white/90 dark:bg-[#202022]/90 backdrop-blur-xl p-6 rounded-[2rem] border border-white/80 shadow-[0_4px_24px_rgba(0,0,0,0.02)] flex flex-col justify-between">
+      <div className="md:col-span-2 lg:col-span-8 bg-white/90 dark:bg-[#202022]/90 backdrop-blur-xl p-5 sm:p-6 rounded-3xl sm:rounded-[2rem] border border-white/80 dark:border-white/10 shadow-[0_4px_24px_rgba(0,0,0,0.02)] flex flex-col justify-between">
         <div className="flex items-center justify-between mb-4">
           <div>
             <h3 className="text-sm font-bold text-gray-900 dark:text-gray-100">
@@ -686,7 +686,7 @@ export function OverviewTab({
 
       {/* ADMIN ONLY: Empty Categories Warning */}
       {isAdmin && emptyCategories.length > 0 && (
-        <div className="lg:col-span-12 bg-amber-50/90 backdrop-blur-md p-5 rounded-3xl border border-amber-200/80 shadow-sm dark:shadow-none flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+        <div className="md:col-span-2 lg:col-span-12 bg-amber-50/90 backdrop-blur-md p-5 rounded-3xl border border-amber-200/80 shadow-sm dark:shadow-none flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
           <div className="flex items-start gap-3.5">
             <div className="w-10 h-10 rounded-2xl bg-amber-100 dark:bg-[#202022] flex items-center justify-center text-amber-800 shrink-0">
               <AlertTriangle className="w-5 h-5" />

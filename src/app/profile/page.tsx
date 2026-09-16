@@ -777,10 +777,10 @@ const handleConfirmDeleteNiche = async () => {
   <main className={`flex-1 flex flex-col min-w-0 w-full space-y-6 pb-24 md:pb-0 ${activeTab === "cart_alerts" || activeTab === "analytics" ? "max-w-none" : "max-w-7xl mx-auto"}`}>
   
   {/* Top App Bar (Reference Style) */}
-  <header className="relative z-40 bg-white/80 dark:bg-[#202022]/80 backdrop-blur-2xl p-4 md:px-6 rounded-3xl border border-white/80 shadow-[0_4px_20px_rgba(0,0,0,0.02)] flex items-center justify-between gap-4">
+  <header className="relative z-40 bg-white/80 dark:bg-[#202022]/80 backdrop-blur-2xl px-4 py-3 sm:px-6 sm:py-3.5 rounded-2xl sm:rounded-3xl border border-white/80 dark:border-white/10 shadow-[0_4px_20px_rgba(0,0,0,0.02)] flex items-center justify-between gap-3 sm:gap-4">
   
   {/* Brand & Top Navigation Pill Bar */}
-  <div className="flex items-center gap-3 md:gap-5 min-w-0 flex-1 overflow-hidden">
+  <div className="flex items-center gap-3 md:gap-4 min-w-0 flex-1 overflow-hidden">
   <Link href="/" className="font-display font-bold text-xl sm:text-2xl text-gray-900 dark:text-gray-100 tracking-tight shrink-0 flex items-center hover:opacity-85 transition-opacity" title="Ir a la tienda">
   Lumina<span className="text-[#8c9276]">.</span>
   </Link>
@@ -854,24 +854,24 @@ const handleConfirmDeleteNiche = async () => {
   </div>
   </div>
 
- {/* Right Search Input & Profile Badge */}
- <div className="flex items-center gap-3 shrink-0">
- <div className="relative z-50">
- <div className="hidden sm:flex items-center bg-gray-100 dark:bg-[#2a2a2c] px-3 py-1.5 rounded-2xl border border-gray-200/80 dark:border-white/10 text-xs text-gray-600 dark:text-gray-300 focus-within:ring-2 focus-within:ring-gray-400/30 dark:focus-within:ring-white/20 transition-all">
- <Search className="w-3.5 h-3.5 mr-2 text-gray-400 shrink-0" />
- <input 
- type="text" 
- value={searchQuery}
- onChange={e => setSearchQuery(e.target.value)}
- placeholder="Buscar en panel..."
- className="bg-transparent border-none outline-none text-xs w-28 md:w-44 font-medium text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500"
- />
-  {searchQuery && (
-    <button onClick={() => setSearchQuery("")} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 ml-1 shrink-0">
-      <X className="w-3 h-3" />
-    </button>
-  )}
-  </div>
+  {/* Right Search Input & Profile Badge */}
+  <div className="flex items-center gap-2.5 sm:gap-3 shrink-0">
+  <div className="relative z-50 hidden sm:block">
+  <div className="flex items-center bg-gray-100 dark:bg-[#2a2a2c] px-3 py-1.5 rounded-2xl border border-gray-200/80 dark:border-white/10 text-xs text-gray-600 dark:text-gray-300 focus-within:ring-2 focus-within:ring-gray-400/30 dark:focus-within:ring-white/20 transition-all">
+  <Search className="w-3.5 h-3.5 mr-2 text-gray-400 shrink-0" />
+  <input 
+  type="text" 
+  value={searchQuery}
+  onChange={e => setSearchQuery(e.target.value)}
+  placeholder="Buscar en panel..."
+  className="bg-transparent border-none outline-none text-xs w-24 sm:w-28 lg:w-36 xl:w-44 font-medium text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500"
+  />
+   {searchQuery && (
+     <button onClick={() => setSearchQuery("")} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 ml-1 shrink-0">
+       <X className="w-3 h-3" />
+     </button>
+   )}
+   </div>
 
             {/* Floating Live Quick Search Results */}
             {searchQuery.trim().length > 0 && (
@@ -924,21 +924,21 @@ const handleConfirmDeleteNiche = async () => {
  )}
  </div>
 
- <Link href="/" className="hidden sm:flex text-xs font-medium text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 px-3 py-1.5 rounded-xl hover:bg-gray-100 dark:hover:bg-[#3a3a3c] transition-colors">
+ <Link href="/" className="hidden lg:flex text-xs font-medium text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 px-3 py-1.5 rounded-xl hover:bg-gray-100 dark:hover:bg-[#3a3a3c] transition-colors">
  Ver Tienda &rarr;
  </Link>
 
- <div className="flex items-center gap-3 pl-3 border-l border-gray-200 dark:border-white/10">
+ <div className="flex items-center gap-2.5 sm:gap-3 sm:pl-3 sm:border-l sm:border-gray-200 dark:sm:border-white/10">
  <BlobatarAvatar
    name={customSeed || user.id || user.email || user.name}
-   size={42}
+   size={38}
    animate="always"
    background={backgroundShape || "squircle"}
    role={user.role}
    showGlow
    title={`Avatar de ${formatCleanName(user.name)}`}
  />
- <div className="hidden md:block text-left">
+ <div className="hidden lg:block text-left">
  <p className="text-xs font-bold text-gray-900 dark:text-gray-100 leading-tight tracking-normal">{formatCleanName(user.name)}</p>
  <span className={`inline-block text-[10px] font-bold px-2 py-0.5 rounded-full mt-0.5 ${isAdmin ? "bg-amber-100 dark:bg-amber-950/40 text-amber-900 dark:text-amber-300 border border-amber-200 dark:border-amber-800/40" : "bg-emerald-100 text-emerald-800 border border-emerald-200"}`}>
  {isAdmin ? "ADMINISTRADOR" : "CLIENTE"}
@@ -946,11 +946,11 @@ const handleConfirmDeleteNiche = async () => {
  </div>
  <button 
    onClick={() => { logout(); router.push("/auth/login"); }}
-   className="flex items-center gap-1.5 px-3.5 py-2 rounded-2xl text-red-600 dark:text-red-400 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/40 border border-red-200/80 dark:border-red-900/40 transition-all shrink-0 cursor-pointer shadow-xs active:scale-95"
+   className="flex md:hidden items-center gap-1.5 px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-2xl text-red-600 dark:text-red-400 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/40 border border-red-200/80 dark:border-red-900/40 transition-all shrink-0 cursor-pointer shadow-xs active:scale-95"
    title="Cerrar Sesión"
    aria-label="Cerrar Sesión"
  >
-   <LogOut className="w-4 h-4" />
+   <LogOut className="w-3.5 h-3.5" />
    <span className="text-xs font-bold">Salir</span>
  </button>
  </div>
@@ -958,7 +958,7 @@ const handleConfirmDeleteNiche = async () => {
  </header>
 
  {/* Greeting Banner */}
- <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+ <div className="px-1 sm:px-0 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
  <div>
  <h1 className="text-2xl md:text-3xl font-display font-bold text-gray-900 dark:text-gray-100 tracking-normal">
  {getGreeting()}, <span className="italic font-normal tracking-wide ml-1.5 inline-block">{formatCleanName(user.name)}</span>
@@ -970,124 +970,16 @@ const handleConfirmDeleteNiche = async () => {
  </p>
  </div>
  {isAdmin && (
- <div className="self-end sm:self-auto flex items-center gap-3">
+ <div className="flex items-center gap-2.5 w-full sm:w-auto mt-1 sm:mt-0 justify-between sm:justify-start">
  <ExcelExportRadialMenu />
  <button 
  onClick={() => setShowProductModal(true)}
- className="h-11 flex items-center gap-2 px-5 bg-gray-900 dark:bg-gray-100 hover:bg-gray-800 text-white dark:text-gray-900 text-xs font-semibold rounded-2xl transition-all shadow-md dark:shadow-none shadow-gray-900/10 cursor-pointer shrink-0"
+ className="h-10 sm:h-11 flex-1 sm:flex-initial flex items-center justify-center gap-2 px-4 sm:px-5 bg-gray-900 dark:bg-gray-100 hover:bg-gray-800 text-white dark:text-gray-900 text-xs font-semibold rounded-2xl transition-all shadow-md dark:shadow-none shadow-gray-900/10 cursor-pointer shrink-0 active:scale-95"
  >
  <Plus className="w-4 h-4" /> Nuevo Producto
  </button>
  </div>
  )}
- </div>
-
- {/* Mobile Dedicated Tabs Navigation Dock (Clean horizontal scroll for mobile screens) */}
- <div className="md:hidden flex items-center gap-1.5 overflow-x-auto pb-1.5 -mx-1 px-1 hide-scrollbar">
-    <button 
-      onClick={() => setActiveTab("overview")} 
-      className={`px-3.5 py-2 rounded-2xl text-xs font-semibold whitespace-nowrap transition-all shrink-0 cursor-pointer ${
-        activeTab === "overview" 
-          ? "bg-gray-950 dark:bg-white text-white dark:text-gray-950 shadow-sm" 
-          : "bg-white/80 dark:bg-[#2a2a2c]/80 text-gray-600 dark:text-gray-400 border border-black/5 dark:border-white/10 active:scale-95"
-      }`}
-    >
-      Resumen
-    </button>
-    <button 
-      onClick={() => setActiveTab("orders")} 
-      className={`px-3.5 py-2 rounded-2xl text-xs font-semibold whitespace-nowrap transition-all shrink-0 cursor-pointer ${
-        activeTab === "orders" 
-          ? "bg-gray-950 dark:bg-white text-white dark:text-gray-950 shadow-sm" 
-          : "bg-white/80 dark:bg-[#2a2a2c]/80 text-gray-600 dark:text-gray-400 border border-black/5 dark:border-white/10 active:scale-95"
-      }`}
-    >
-      Actividad ({orders.length})
-    </button>
-    <button 
-      onClick={() => setActiveTab("cards")} 
-      className={`px-3.5 py-2 rounded-2xl text-xs font-semibold whitespace-nowrap transition-all shrink-0 cursor-pointer ${
-        activeTab === "cards" 
-          ? "bg-gray-950 dark:bg-white text-white dark:text-gray-950 shadow-sm" 
-          : "bg-white/80 dark:bg-[#2a2a2c]/80 text-gray-600 dark:text-gray-400 border border-black/5 dark:border-white/10 active:scale-95"
-      }`}
-    >
-      Tarjetas ({cards.length})
-    </button>
-    <button 
-      onClick={() => setActiveTab("favorites")} 
-      className={`px-3.5 py-2 rounded-2xl text-xs font-semibold whitespace-nowrap transition-all shrink-0 cursor-pointer ${
-        activeTab === "favorites" 
-          ? "bg-gray-950 dark:bg-white text-white dark:text-gray-950 shadow-sm" 
-          : "bg-white/80 dark:bg-[#2a2a2c]/80 text-gray-600 dark:text-gray-400 border border-black/5 dark:border-white/10 active:scale-95"
-      }`}
-    >
-      Favoritos ({favorites.length})
-    </button>
-    {isAdmin && (
-      <>
-        <button 
-          onClick={() => setActiveTab("catalog")} 
-          className={`px-3.5 py-2 rounded-2xl text-xs font-semibold whitespace-nowrap transition-all shrink-0 cursor-pointer ${
-            activeTab === "catalog" 
-              ? "bg-gray-950 dark:bg-white text-white dark:text-gray-950 shadow-sm" 
-              : "bg-white/80 dark:bg-[#2a2a2c]/80 text-gray-600 dark:text-gray-400 border border-black/5 dark:border-white/10 active:scale-95"
-          }`}
-        >
-          Inventario ({products.length})
-        </button>
-        <button 
-          onClick={() => setActiveTab("niches")} 
-          className={`px-3.5 py-2 rounded-2xl text-xs font-semibold whitespace-nowrap transition-all shrink-0 cursor-pointer ${
-            activeTab === "niches" 
-              ? "bg-gray-950 dark:bg-white text-white dark:text-gray-950 shadow-sm" 
-              : "bg-white/80 dark:bg-[#2a2a2c]/80 text-gray-600 dark:text-gray-400 border border-black/5 dark:border-white/10 active:scale-95"
-          }`}
-        >
-          Nichos & Badges ({categories.length})
-        </button>
-        <button 
-          onClick={() => setActiveTab("analytics")} 
-          className={`px-3.5 py-2 rounded-2xl text-xs font-semibold whitespace-nowrap transition-all shrink-0 cursor-pointer ${
-            activeTab === "analytics" 
-              ? "bg-gray-950 dark:bg-white text-white dark:text-gray-950 shadow-sm" 
-              : "bg-white/80 dark:bg-[#2a2a2c]/80 text-gray-600 dark:text-gray-400 border border-black/5 dark:border-white/10 active:scale-95"
-          }`}
-        >
-          Radar en Vivo
-        </button>
-        <button 
-          onClick={() => setActiveTab("cart_alerts")} 
-          className={`px-3.5 py-2 rounded-2xl text-xs font-semibold whitespace-nowrap transition-all shrink-0 cursor-pointer ${
-            activeTab === "cart_alerts" 
-              ? "bg-gray-950 dark:bg-white text-white dark:text-gray-950 shadow-sm" 
-              : "bg-white/80 dark:bg-[#2a2a2c]/80 text-gray-600 dark:text-gray-400 border border-black/5 dark:border-white/10 active:scale-95"
-          }`}
-        >
-          Alertas de Carrito
-        </button>
-        <button 
-          onClick={() => setActiveTab("integrations")} 
-          className={`px-3.5 py-2 rounded-2xl text-xs font-semibold whitespace-nowrap transition-all shrink-0 cursor-pointer ${
-            activeTab === "integrations" 
-              ? "bg-gray-950 dark:bg-white text-white dark:text-gray-950 shadow-sm" 
-              : "bg-white/80 dark:bg-[#2a2a2c]/80 text-gray-600 dark:text-gray-400 border border-black/5 dark:border-white/10 active:scale-95"
-          }`}
-        >
-          SMTP & Pasarelas
-        </button>
-      </>
-    )}
-    <button 
-      onClick={() => setActiveTab("settings")} 
-      className={`px-3.5 py-2 rounded-2xl text-xs font-semibold whitespace-nowrap transition-all shrink-0 cursor-pointer ${
-        activeTab === "settings" 
-          ? "bg-gray-950 dark:bg-white text-white dark:text-gray-950 shadow-sm" 
-          : "bg-white/80 dark:bg-[#2a2a2c]/80 text-gray-600 dark:text-gray-400 border border-black/5 dark:border-white/10 active:scale-95"
-      }`}
-    >
-      Ajustes
-    </button>
  </div>
 
  {/* ========================================================================= */}
