@@ -780,8 +780,8 @@ const handleConfirmDeleteNiche = async () => {
   <header className="relative z-40 bg-white/80 dark:bg-[#202022]/80 backdrop-blur-2xl px-4 py-3 sm:px-6 sm:py-3.5 rounded-2xl sm:rounded-3xl border border-white/80 dark:border-white/10 shadow-[0_4px_20px_rgba(0,0,0,0.02)] flex items-center justify-between gap-3 sm:gap-4">
   
   {/* Brand & Top Navigation Pill Bar */}
-  <div className="flex items-center gap-3 md:gap-4 min-w-0 flex-1 overflow-hidden">
-  <Link href="/" className="font-display font-bold text-xl sm:text-2xl text-gray-900 dark:text-gray-100 tracking-tight shrink-0 flex items-center hover:opacity-85 transition-opacity pl-4 sm:pl-0" title="Ir a la tienda">
+  <div className="flex items-center justify-center sm:justify-start gap-3 md:gap-4 min-w-0 flex-1 overflow-hidden">
+  <Link href="/" className="font-display font-bold text-xl sm:text-2xl text-gray-900 dark:text-gray-100 tracking-tight shrink-0 flex items-center hover:opacity-85 transition-opacity mx-auto sm:mx-0" title="Ir a la tienda">
   Lumina<span className="text-[#8c9276]">.</span>
   </Link>
 

@@ -266,7 +266,7 @@ export function Header() {
 
               {/* Floating Live Quick Search Results Dropdown */}
               {searchVal.trim().length > 0 && (
-                <div className="fixed inset-x-2 top-20 sm:absolute sm:inset-auto sm:-right-8 sm:top-full mt-2 w-[calc(100vw-1rem)] sm:w-96 max-w-sm bg-white/95 backdrop-blur-2xl border border-white/90 rounded-3xl shadow-[0_20px_60px_rgba(0,0,0,0.14)] p-4 space-y-3 z-50 animate-fade-in text-xs text-gray-900 pointer-events-auto">
+                <div className="fixed left-3 right-3 top-20 sm:absolute sm:left-auto sm:-right-4 sm:top-full mt-2 w-auto sm:w-96 max-w-[calc(100vw-1.5rem)] sm:max-w-sm bg-white/95 backdrop-blur-2xl border border-white/90 rounded-3xl shadow-[0_20px_60px_rgba(0,0,0,0.14)] p-3.5 sm:p-4 space-y-3 z-50 animate-fade-in text-xs text-gray-900 pointer-events-auto overflow-hidden">
                   
                   {/* Header info */}
                   <div className="flex items-center justify-between pb-2 border-b border-gray-100 text-[10px] uppercase font-bold text-gray-400 tracking-wider">
@@ -310,23 +310,23 @@ export function Header() {
                             key={prod.id} 
                             href={`/product/${prod.id}`}
                             onClick={() => setSearchVal("")}
-                            className="flex items-center justify-between p-2 rounded-2xl hover:bg-gray-50/90 transition-colors group"
+                            className="flex items-center justify-between p-2 rounded-2xl hover:bg-gray-50/90 transition-colors group gap-2 min-w-0"
                           >
-                            <div className="flex items-center gap-3">
-                              <div className="relative w-11 h-11 rounded-xl overflow-hidden bg-gray-100 shrink-0">
+                            <div className="flex items-center gap-2.5 sm:gap-3 min-w-0 flex-1">
+                              <div className="relative w-10 h-10 sm:w-11 sm:h-11 rounded-xl overflow-hidden bg-gray-100 shrink-0">
                                 <Image src={prod.imageUrl} alt={prod.title} fill sizes="44px" className="object-cover group-hover:scale-105 transition-transform" />
                               </div>
-                              <div>
-                                <span className="text-[10px] font-bold text-[#8c9276] uppercase tracking-wider block">
+                              <div className="min-w-0 flex-1">
+                                <span className="text-[10px] font-bold text-[#8c9276] uppercase tracking-wider block truncate">
                                   {prod.category}
                                 </span>
-                                <h4 className="text-xs font-bold text-gray-900 line-clamp-1 group-hover:text-[#8c9276] transition-colors">
+                                <h4 className="text-xs font-bold text-gray-900 truncate group-hover:text-[#8c9276] transition-colors">
                                   {prod.title}
                                 </h4>
                                 <p className="text-xs font-extrabold text-gray-900 mt-0.5">${Number(prod.price || 0).toFixed(2)}</p>
                               </div>
                             </div>
-                            <div className="p-1.5 text-gray-300 group-hover:text-gray-800 rounded-xl transition-colors">
+                            <div className="p-1.5 text-gray-300 group-hover:text-gray-800 rounded-xl transition-colors shrink-0">
                               <ArrowRight className="w-4 h-4" />
                             </div>
                           </Link>
