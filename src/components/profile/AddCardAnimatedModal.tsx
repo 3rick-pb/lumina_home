@@ -30,7 +30,7 @@ export function AddCardAnimatedModal({
   isOpen,
   onClose,
   onSaveCard,
-  defaultHolder = "CLIENTE DE ESTA TIENDA",
+  defaultHolder = "CLIENTE LUMINA",
 }: AddCardAnimatedModalProps) {
   // Form State
   const [cardHolder, setCardHolder] = useState(defaultHolder || "");
@@ -298,7 +298,7 @@ export function AddCardAnimatedModal({
                           <div className="flex items-center gap-2">
                             <div className="flex-1 h-7 bg-white/90 rounded-xs flex items-center px-3 pattern-lines">
                               <span className="text-[10px] font-mono text-gray-500 italic select-none">
-                                Cliente Autorizado de esta tienda
+                                Cliente Autorizado Lumina
                               </span>
                             </div>
 

@@ -153,7 +153,7 @@ export function Header() {
           {/* Logo Section */}
           <Link href="/" className="pl-3 sm:pl-4 pr-3 sm:pr-6 flex items-center gap-1.5 group shrink-0">
             <span className="font-display italic text-lg sm:text-2xl font-bold tracking-tight text-gray-900 group-hover:text-[#8c9276] transition-colors">
-              esta tienda<span className="text-[#8c9276]">.</span>
+              Lumina<span className="text-[#8c9276]">.</span>
             </span>
           </Link>
 
@@ -400,7 +400,7 @@ export function Header() {
               className="pointer-events-auto absolute top-full mt-3 inset-x-3 sm:inset-x-4 max-w-sm mx-auto bg-white/95 backdrop-blur-2xl border border-white/80 rounded-3xl shadow-[0_20px_60px_rgba(0,0,0,0.12)] p-4 z-50 md:hidden space-y-2.5"
             >
               <div className="flex items-center justify-between pb-2 border-b border-gray-100 text-[10px] uppercase font-bold text-gray-400 tracking-wider">
-                <span>Navegación de esta tienda</span>
+                <span>Navegación Lumina</span>
                 <button 
                   onClick={() => setIsMobileMenuOpen(false)}
                   className="text-gray-400 hover:text-gray-700 text-xs font-semibold"

@@ -568,7 +568,7 @@ const handleConfirmDeleteNiche = async () => {
  <Link 
    href="/" 
    className="sidebar-dock-btn group relative w-11 h-11 md:w-12 md:h-12 rounded-2xl bg-gradient-to-tr from-[#8c9276] via-[#9ca383] to-[#ccff00]/70 flex items-center justify-center text-white dark:text-gray-950 shadow-md shadow-[#8c9276]/30 hover:scale-105 active:scale-95 transition-all duration-[600ms]" 
-   title="Volver a esta tienda"
+   title="Volver a Lumina"
  >
    <span className="font-display font-bold text-xl italic group-hover:scale-110 transition-transform duration-[600ms]">L</span>
    <span className="absolute -bottom-1 w-1.5 h-1.5 rounded-full bg-[#ccff00] opacity-0 group-hover:opacity-100 transition-opacity duration-[600ms]" />
@@ -782,7 +782,7 @@ const handleConfirmDeleteNiche = async () => {
   {/* Brand & Tabs */}
   <div className="flex items-center gap-3 md:gap-6 overflow-x-auto hide-scrollbar">
   <span className="font-display font-bold text-xl text-gray-900 dark:text-gray-100 tracking-tight shrink-0">
-  esta tienda<span className="text-[#8c9276]">.</span>
+  Lumina<span className="text-[#8c9276]">.</span>
   </span>
 
  <div className="flex items-center bg-gray-100/80 dark:bg-[#3a3a3c]/80 p-1 rounded-2xl shrink-0">
@@ -964,7 +964,7 @@ const handleConfirmDeleteNiche = async () => {
  </h1>
  <p className="text-xs md:text-sm text-gray-500 dark:text-gray-400 mt-0.5">
  {isAdmin 
- ? "Panel de control maestro de catálogo, inventario, radar de clientes y analítica de esta tienda." 
+ ? "Panel de control maestro de catálogo, inventario, radar de clientes y analítica Lumina." 
  : "Supervisa tus pedidos, métodos de pago vinculados y artículos guardados."}
  </p>
  </div>

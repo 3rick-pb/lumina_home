@@ -74,13 +74,13 @@ export default function RegisterPage() {
         <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/60 backdrop-blur-xl border border-white/80 shadow-[0_2px_12px_rgba(0,0,0,0.03)] mb-4">
           <Sparkles className="w-3.5 h-3.5 text-[#8c9276]" />
           <span className="text-[11px] font-bold tracking-widest uppercase text-gray-800">
-            Registro Exclusivo • esta tienda
+            Lumina Home • Registro Exclusivo
           </span>
         </div>
 
         <div className="block select-none cursor-default">
           <h1 className="font-display text-5xl sm:text-6xl font-bold tracking-tight text-gray-900">
-            esta tienda<span className="text-[#8c9276]">.</span>
+            Lumina<span className="text-[#8c9276]">.</span>
           </h1>
         </div>
         <p className="mt-3 text-xs sm:text-sm text-gray-600 font-light leading-relaxed">
@@ -93,7 +93,7 @@ export default function RegisterPage() {
         <div className="bg-white/50 backdrop-blur-2xl border border-white/80 p-8 sm:p-10 rounded-[2.5rem] shadow-[0_12px_40px_rgba(0,0,0,0.06)]">
           <div className="mb-8">
             <h2 className="text-2xl font-display italic font-bold text-gray-900 mb-1.5">Crear Cuenta</h2>
-            <p className="text-xs text-gray-500">Completa tus datos para formar parte del universo de esta tienda.</p>
+            <p className="text-xs text-gray-500">Completa tus datos para formar parte del universo Lumina.</p>
           </div>
 
           <form onSubmit={handleRegister} className="space-y-5">
@@ -174,7 +174,7 @@ export default function RegisterPage() {
                 <span>Registrando...</span>
               ) : (
                 <>
-                  <span>Crear Cuenta en esta tienda</span>
+                  <span>Crear Cuenta en Lumina</span>
                   <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
                 </>
               )}
@@ -207,7 +207,7 @@ export default function RegisterPage() {
         {/* Reassurance Seal */}
         <div className="mt-6 text-center flex items-center justify-center gap-2 text-xs text-gray-500">
           <ShieldCheck className="w-4 h-4 text-[#8c9276]" />
-          <span>Privacidad Protegida en esta tienda</span>
+          <span>Privacidad Protegida • Lumina Living Studio</span>
         </div>
       </div>
     </div>

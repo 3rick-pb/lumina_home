@@ -39,7 +39,7 @@ export function IntegrationsTab() {
   // Vercel Generator state (Option B: Gmail)
   const [gmailUser, setGmailUser] = useState("");
   const [gmailPass, setGmailPass] = useState("");
-  const [senderName, setSenderName] = useState("esta tienda");
+  const [senderName, setSenderName] = useState("Lumina Home");
   const [showPass, setShowPass] = useState(false);
   const [copied, setCopied] = useState(false);
 
@@ -176,7 +176,7 @@ export function IntegrationsTab() {
   // Compute generated block for Vercel
   const finalEmail = gmailUser.trim() || "tu_correo@gmail.com";
   const finalPass = gmailPass.trim() || "xxxx xxxx xxxx xxxx";
-  const finalFrom = `${senderName.trim() || 'esta tienda'} <${finalEmail}>`;
+  const finalFrom = `${senderName.trim() || 'Lumina Home'} <${finalEmail}>`;
 
   const vercelEnvSnippet = `SMTP_HOST="smtp.gmail.com"
 SMTP_PORT="587"
@@ -280,7 +280,7 @@ PAYPHONE_PAYMENT_MODE="${payphoneMode}"`;
             Servidor SMTP & Pasarelas
           </h2>
           <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 max-w-2xl leading-relaxed">
-            Gestiona la infraestructura de notificaciones por correo de esta tienda y las variables de entorno para Vercel en alta disponibilidad.
+            Gestiona la infraestructura de notificaciones por correo de Lumina Home y las variables de entorno para Vercel en alta disponibilidad.
           </p>
         </div>
 
@@ -451,7 +451,7 @@ PAYPHONE_PAYMENT_MODE="${payphoneMode}"`;
                   type="text" 
                   value={senderName}
                   onChange={e => setSenderName(e.target.value)}
-                  placeholder="esta tienda"
+                  placeholder="Lumina Home"
                   className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-xs bg-white dark:bg-[#1a1a1c] text-gray-900 dark:text-gray-100 outline-none focus:ring-2 focus:ring-[#FF5E00]/30 focus:border-[#FF5E00] font-medium transition-all"
                 />
               </div>
@@ -468,7 +468,7 @@ PAYPHONE_PAYMENT_MODE="${payphoneMode}"`;
                   <li>Ingresa a tu cuenta de Google en <a href="https://myaccount.google.com/security" target="_blank" rel="noreferrer" className="underline font-semibold text-[#FF5E00]">myaccount.google.com/security</a>.</li>
                   <li>Asegúrate de tener activa la <strong>Verificación en dos pasos</strong>.</li>
                   <li>En el buscador superior de Google Account escribe <em>&quot;Contraseñas de aplicaciones&quot;</em> o accede a dicha sección en Seguridad.</li>
-                  <li>En nombre de la aplicación escribe <strong className="font-mono text-[#FF5E00]">esta tienda</strong> y presiona <strong>Crear</strong>.</li>
+                  <li>En nombre de la aplicación escribe <strong className="font-mono text-[#FF5E00]">Lumina Home</strong> y presiona <strong>Crear</strong>.</li>
                   <li>Google te entregará una clave de 16 caracteres amarillos. Cópiala y pégala aquí.</li>
                 </ol>
               </div>

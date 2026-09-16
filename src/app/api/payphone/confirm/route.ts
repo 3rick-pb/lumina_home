@@ -144,7 +144,7 @@ export async function POST(request: Request) {
       ? `PayPhone (Ecuador) - ${confirmation.cardType} •••• ${confirmation.lastDigits || '4242'}${deferredText}`
       : `PayPhone (Ecuador)${deferredText}`;
 
-    const cleanCustomerName = sanitizeString(orderData?.customerName || orderData?.recipient || authUser?.email?.split('@')[0] || 'Cliente de esta tienda', 80);
+    const cleanCustomerName = sanitizeString(orderData?.customerName || orderData?.recipient || authUser?.email?.split('@')[0] || 'Cliente Lumina', 80);
     const cleanCustomerEmail = sanitizeString(orderData?.customerEmail || authUser?.email || 'cliente@lumina.com', 100).toLowerCase();
     const cleanRecipient = sanitizeString(orderData?.recipient || cleanCustomerName, 80);
     const cleanIdNumber = sanitizeString(orderData?.customerIdNumber || orderData?.shippingAddress?.idNumber || '', 30);

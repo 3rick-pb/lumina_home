@@ -249,7 +249,7 @@ export function OrderDetailModal({
                 background="squircle"
               />
               <div className="min-w-0">
-                <p className="text-xs font-bold text-gray-900 dark:text-gray-100 truncate">{order.customerName || "Cliente de esta tienda"}</p>
+                <p className="text-xs font-bold text-gray-900 dark:text-gray-100 truncate">{order.customerName || "Cliente Lumina"}</p>
                 <p className="text-[11px] text-gray-500 dark:text-gray-400 truncate">{order.customerEmail || "cliente@lumina.com"}</p>
               </div>
             </div>
@@ -406,7 +406,7 @@ export function OrderDetailModal({
           <h4 className="text-xs font-bold uppercase tracking-wider text-gray-400">Piezas Adquiridas ({order.items.length})</h4>
           {order.items.length === 0 ? (
             <div className="p-3 bg-gray-50 dark:bg-[#2a2a2c] rounded-xl flex items-center justify-between text-xs">
-              <span>Pieza Colección Exclusiva de esta tienda</span>
+              <span>Pieza Colección Exclusiva Lumina</span>
               <span className="font-bold text-gray-900 dark:text-gray-100">${order.total.toFixed(2)}</span>
             </div>
           ) : (

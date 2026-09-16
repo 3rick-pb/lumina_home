@@ -40,7 +40,7 @@ const COMMON_FIRST_NAMES = [
  * Normalizes names cleanly
  */
 export const cleanClientName = (rawName?: string) => {
-  if (!rawName) return "Cliente de esta tienda";
+  if (!rawName) return "Cliente Lumina";
   let formatted = String(rawName).trim();
   formatted = formatted.replace(/[\._\-]+/g, ' ');
   formatted = formatted.replace(/([a-zñáéíóú])([A-ZÑÁÉÍÓÚ])/g, '$1 $2');
@@ -336,7 +336,7 @@ export const useRadarStore = create<RadarStore>((set, get) => ({
     const payload: ConnectedClient = {
       id: clientId,
       sessionId,
-      name: isAnon ? 'Visitante Anónimo' : cleanClientName(user?.name || user?.email?.split('@')[0] || 'Cliente de esta tienda'),
+      name: isAnon ? 'Visitante Anónimo' : cleanClientName(user?.name || user?.email?.split('@')[0] || 'Cliente Lumina'),
       email: isAnon ? '' : (user?.email || ''),
       city: cleanCity || 'Ecuador',
       country: 'Ecuador',

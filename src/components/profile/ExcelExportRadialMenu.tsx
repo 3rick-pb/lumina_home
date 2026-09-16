@@ -183,8 +183,8 @@ export function ExcelExportRadialMenu() {
       }));
       ws["!cols"] = colWidths;
 
-      XLSX.utils.book_append_sheet(wb, ws, "Pedidos de esta tienda");
-      XLSX.writeFile(wb, `pedidos_esta_tienda_${getDateSlug()}.xlsx`);
+      XLSX.utils.book_append_sheet(wb, ws, "Pedidos Lumina");
+      XLSX.writeFile(wb, `pedidos_lumina_${getDateSlug()}.xlsx`);
 
       setSuccessExport("orders");
       setTimeout(() => setSuccessExport(null), 2500);

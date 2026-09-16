@@ -104,13 +104,13 @@ export default function LoginPage() {
         <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/60 backdrop-blur-xl border border-white/80 shadow-[0_2px_12px_rgba(0,0,0,0.03)] mb-4">
           <Sparkles className="w-3.5 h-3.5 text-[#8c9276]" />
           <span className="text-[11px] font-bold tracking-widest uppercase text-gray-800">
-            Acceso Exclusivo • esta tienda
+            Lumina Home • Acceso Exclusivo
           </span>
         </div>
 
         <div className="block select-none cursor-default">
           <h1 className="font-display text-5xl sm:text-6xl font-bold tracking-tight text-gray-900">
-            esta tienda<span className="text-[#8c9276]">.</span>
+            Lumina<span className="text-[#8c9276]">.</span>
           </h1>
         </div>
         <p className="mt-2 text-xs sm:text-sm text-gray-600 font-light leading-relaxed">
@@ -126,7 +126,7 @@ export default function LoginPage() {
             type="text"
             value={searchQuery}
             onChange={e => setSearchQuery(e.target.value)}
-            placeholder="Explorar piezas y colecciones de esta tienda..."
+            placeholder="Explorar piezas y colecciones Lumina..."
             className="w-full bg-transparent border-none outline-none text-xs text-gray-800 placeholder:text-gray-400 font-medium"
           />
           {searchQuery && (
@@ -272,7 +272,7 @@ export default function LoginPage() {
                 <span>Ingresando...</span>
               ) : (
                 <>
-                  <span>Acceder a esta tienda</span>
+                  <span>Acceder a Lumina</span>
                   <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
                 </>
               )}
@@ -305,7 +305,7 @@ export default function LoginPage() {
         {/* Reassurance Seal */}
         <div className="mt-5 text-center flex items-center justify-center gap-2 text-xs text-gray-500">
           <ShieldCheck className="w-4 h-4 text-[#8c9276]" />
-          <span>Acceso Seguro a esta tienda</span>
+          <span>Acceso Seguro • Lumina Living Studio</span>
         </div>
       </div>
 

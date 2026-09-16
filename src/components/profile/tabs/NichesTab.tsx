@@ -201,7 +201,7 @@ export function NichesTab({ onRequestDeleteNiche }: NichesTabProps) {
                   
                   {/* Subtle watermark background for context */}
                   <div className="absolute inset-0 pointer-events-none flex items-center justify-center opacity-[0.03] dark:opacity-[0.05] select-none text-9xl font-display font-black tracking-widest text-gray-900 dark:text-white">
-                    ESTA TIENDA
+                    LUMINA
                   </div>
 
                   {/* Label indicator */}
@@ -217,7 +217,7 @@ export function NichesTab({ onRequestDeleteNiche }: NichesTabProps) {
                       {/* Logo Section */}
                       <div className="pl-4 pr-5 flex items-center gap-2 cursor-default">
                         <span className="font-display italic text-2xl font-bold tracking-tight text-gray-900 dark:text-gray-100">
-                          esta tienda<span className="text-[#8c9276]">.</span>
+                          Lumina.
                         </span>
                       </div>
 

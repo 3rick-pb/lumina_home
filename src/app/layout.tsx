@@ -38,14 +38,15 @@ export const viewport: Viewport = {
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: {
-    default: "esta tienda | Espacios con Alma y Diseño de Autor",
-    template: "%s | esta tienda",
+    default: "Lumina Home | Espacios con Alma y Diseño de Autor",
+    template: "%s | Lumina Home",
   },
   description:
     "Descubre piezas exclusivas de diseño contemporáneo, iluminación escultural, aromaterapia, cerámica artesanal y mobiliario minimalista creados para transformar tu hogar.",
-  applicationName: "esta tienda",
+  applicationName: "Lumina Home",
   keywords: [
-    "esta tienda",
+    "Lumina Home",
+    "Lumina",
     "muebles de diseño",
     "iluminación escultórica",
     "decoración minimalista",
@@ -56,9 +57,9 @@ export const metadata: Metadata = {
     "arquitectura de interiores",
     "tienda de diseño"
   ],
-  authors: [{ name: "Studio de esta tienda" }],
-  creator: "esta tienda",
-  publisher: "esta tienda",
+  authors: [{ name: "Lumina Living Studio" }],
+  creator: "Lumina Home",
+  publisher: "Lumina Home",
   formatDetection: {
     telephone: false,
     email: false,
@@ -71,8 +72,8 @@ export const metadata: Metadata = {
     type: "website",
     locale: "es_EC",
     url: SITE_URL,
-    siteName: "esta tienda",
-    title: "esta tienda | Espacios con Alma y Diseño de Autor",
+    siteName: "Lumina Home",
+    title: "Lumina Home | Espacios con Alma y Diseño de Autor",
     description:
       "Descubre piezas exclusivas de diseño contemporáneo, iluminación escultural, aromaterapia, cerámica artesanal y mobiliario minimalista creados para transformar tu hogar.",
     images: [
@@ -80,13 +81,13 @@ export const metadata: Metadata = {
         url: "https://images.unsplash.com/photo-1507473885765-e6ed057f782c?q=80&w=1200&auto=format&fit=crop",
         width: 1200,
         height: 630,
-        alt: "esta tienda — Colección de Autor",
+        alt: "Lumina Home — Colección de Autor",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "esta tienda | Espacios con Alma y Diseño de Autor",
+    title: "Lumina Home | Espacios con Alma y Diseño de Autor",
     description:
       "Descubre piezas exclusivas de diseño contemporáneo, iluminación escultural y mobiliario minimalista para tu hogar.",
     images: [

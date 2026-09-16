@@ -61,7 +61,7 @@ export function CardsTab({ setShowCardModal }: CardsTabProps) {
             </div>
             <h3 className="text-sm font-bold text-gray-800 dark:text-gray-200">No hay tarjetas de crédito o débito guardadas</h3>
             <p className="text-xs text-gray-500 dark:text-gray-400 max-w-sm">
-              Agrega tu primera tarjeta para agilizar tus compras en esta tienda. No almacenamos tu código CVV.
+              Agrega tu primera tarjeta para agilizar tus compras. No almacenamos tu código CVV.
             </p>
             <button 
               onClick={() => setShowCardModal(true)}

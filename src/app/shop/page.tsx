@@ -81,7 +81,7 @@ export default function ShopPage({ searchParams }: { searchParams: Promise<{ cat
         {filteredProducts.length === 0 ? (
           <EmptyState
             icon={PackageSearch}
-            badge="Catálogo de esta tienda"
+            badge="Catálogo Lumina"
             title={searchQuery ? `Sin resultados para "${searchQuery}"` : "No encontramos productos en esta colección"}
             description={
               searchQuery

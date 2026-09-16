@@ -256,7 +256,7 @@ export const formatAlertContent = (
     ? payload.product.price.toFixed(2)
     : String(payload.product?.price || '0.00');
   const city = payload.location ? payload.location : 'Ubicación reservada';
-  const prodTitle = payload.product?.title || 'Pieza de esta tienda';
+  const prodTitle = payload.product?.title || 'Pieza Lumina';
   const customer = payload.userName || 'Cliente';
 
   switch (layout) {

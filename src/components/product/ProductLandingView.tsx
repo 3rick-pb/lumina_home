@@ -165,7 +165,7 @@ export function ProductLandingView({
       author: "Sofía R.",
       role: "Diseñadora de Iluminación",
       rating: 5,
-      comment: "Esta tienda cuida los detalles mínimos: el peso, el tacto mate, la temperatura de color. Ya es la pieza central de mi estudio.",
+      comment: "Lumina cuida los detalles mínimos: el peso, el tacto mate, la temperatura de color. Ya es la pieza central de mi estudio.",
     },
   ];
 
@@ -181,7 +181,7 @@ export function ProductLandingView({
       icon: Leaf,
     },
     {
-      title: "2 Años de Garantía Oficial de esta tienda",
+      title: "2 Años de Garantía Lumina Care",
       description: "Cobertura completa ante cualquier anomalía de funcionamiento con sustitución directa y sin trámites.",
       icon: Award,
     },
@@ -1227,7 +1227,7 @@ export function ProductLandingView({
                 <ShieldCheck className="w-5 h-5" />
               </div>
               <div>
-                <h3 className="text-sm font-bold text-gray-950 dark:text-white">Garantía Oficial de esta tienda</h3>
+                <h3 className="text-sm font-bold text-gray-950 dark:text-white">Garantía Oficial Lumina</h3>
                 <p className="text-[11px] text-gray-400">Tranquilidad absoluta</p>
               </div>
             </div>
@@ -1333,10 +1333,10 @@ export function ProductLandingView({
           
           <div className="text-center max-w-2xl mx-auto space-y-2">
             <span className="text-xs font-bold uppercase tracking-widest text-[#8c9276] dark:text-[#ccff00]">
-              Compromiso de esta tienda
+              Compromiso Lumina
             </span>
             <h2 className="text-3xl sm:text-4xl font-extrabold text-gray-950 dark:text-white tracking-tight">
-              ¿Por qué elegir esta tienda?
+              ¿Por qué elegir Lumina?
             </h2>
             <p className="text-sm sm:text-base text-gray-500 dark:text-gray-400">
               Diseño sin obsolescencia, servicio sin fricción y una devoción obsesiva por los acabados nobles.

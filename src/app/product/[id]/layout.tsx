@@ -14,26 +14,26 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     return {
       title: "Pieza de Autor",
       description:
-        "Descubre piezas de autor seleccionadas con precisión artesanal y diseño minimalista en esta tienda.",
+        "Descubre piezas de autor seleccionadas con precisión artesanal y diseño minimalista en Lumina Home.",
     };
   }
 
   const title = `${product.title} ${product.titleHighlight || ""}`.trim();
   const description =
     product.description ||
-    `Explora ${title} en esta tienda. Calidad excepcional, confort y acabados de autor para tus espacios.`;
+    `Explora ${title} en Lumina Home. Calidad excepcional, confort y acabados de autor para tus espacios.`;
 
   return {
     title,
     description,
     openGraph: {
-      title: `${title} | esta tienda`,
+      title: `${title} | Lumina Home`,
       description,
       images: product.imageUrl ? [{ url: product.imageUrl, alt: title }] : [],
     },
     twitter: {
       card: "summary_large_image",
-      title: `${title} | esta tienda`,
+      title: `${title} | Lumina Home`,
       description,
       images: product.imageUrl ? [product.imageUrl] : [],
     },

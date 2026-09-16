@@ -31,7 +31,7 @@ export function Footer() {
             <div className="pt-5 sm:pt-6 px-4 sm:px-10 flex items-center justify-between border-b border-black/[0.04] dark:border-white/[0.04] pb-4">
               <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#8c9276]/10 dark:bg-[#ccff00]/10 text-[#8c9276] dark:text-[#ccff00] text-[10px] sm:text-[11px] font-bold tracking-wider uppercase">
                 <Sparkles className="w-3.5 h-3.5" />
-                <span>Compromiso de Excelencia de esta tienda</span>
+                <span>Compromiso de Excelencia Lumina</span>
               </div>
               <span className="text-[11px] font-medium text-gray-400 dark:text-gray-500 hidden sm:inline-block">
                 Servicio certificado a nivel nacional
@@ -121,7 +121,7 @@ export function Footer() {
 
                 <div className="pt-3 border-t border-black/[0.04] dark:border-white/[0.04] flex items-center gap-2 text-[11px] font-semibold text-gray-600 dark:text-gray-300">
                   <CheckCircle2 className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400 shrink-0" />
-                  <span>2 Años de Garantía Oficial de esta tienda</span>
+                  <span>2 Años de Garantía Oficial Lumina</span>
                 </div>
               </div>
 
@@ -132,7 +132,7 @@ export function Footer() {
         <div className="grid grid-cols-2 gap-6 sm:gap-8 md:grid-cols-4 lg:grid-cols-5">
           <div className="col-span-2 lg:col-span-2">
             <span className="font-display text-2xl font-bold tracking-tight text-brand-900 dark:text-white">
-              esta tienda<span className="text-[#8c9276]">.</span>
+              Lumina<span className="text-[#8c9276]">.</span>
             </span>
             <p className="mt-3 sm:mt-4 text-xs sm:text-sm text-gray-500 dark:text-gray-400 max-w-xs leading-relaxed">
               Curamos los mejores artículos para transformar tu casa en el hogar que siempre soñaste. Calidad, diseño y confort.
@@ -167,7 +167,7 @@ export function Footer() {
         </div>
         <div className="mt-10 sm:mt-12 border-t border-gray-200/80 dark:border-white/10 pt-6 sm:pt-8 flex flex-col md:flex-row items-center justify-between gap-4">
           <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 text-center md:text-left">
-            &copy; {new Date().getFullYear()} esta tienda. Todos los derechos reservados.
+            &copy; {new Date().getFullYear()} Lumina Home. Todos los derechos reservados.
           </p>
         </div>
       </div>

@@ -152,7 +152,7 @@ export function OrdersTab({
                           background="circle"
                         />
                         <div>
-                          <p className="font-semibold text-gray-900 dark:text-gray-100">{ord.customerName || "Cliente de esta tienda"}</p>
+                          <p className="font-semibold text-gray-900 dark:text-gray-100">{ord.customerName || "Cliente Lumina"}</p>
                           <p className="text-[10px] text-gray-400">{ord.customerEmail || "cliente@lumina.com"}</p>
                         </div>
                       </div>
@@ -160,7 +160,7 @@ export function OrdersTab({
                   )}
                   <td className="py-4 px-3 font-mono text-gray-500 dark:text-gray-400">{ord.trackingNumber || "TRK-PENDIENTE"}</td>
                   <td className="py-4 px-3 text-gray-700 dark:text-gray-300">
-                    {ord.items.length > 0 ? `${ord.items.length} producto(s)` : "1 artículo de esta tienda"}
+                    {ord.items.length > 0 ? `${ord.items.length} producto(s)` : "1 producto"}
                   </td>
                   <td className="py-4 px-3 font-bold text-gray-900 dark:text-gray-100">${ord.total.toFixed(2)}</td>
                   <td className="py-4 px-3">
