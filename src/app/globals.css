@@ -2,10 +2,19 @@
 @tailwind components;
 @tailwind utilities;
 
+@font-face {
+  font-family: 'Moonwalk';
+  src: url('/fonts/moonwalk.ttf') format('truetype');
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
 @layer base {
   :root {
     --background: #f8f9fa;
     --foreground: #111827;
+    --font-moonwalk: 'Moonwalk', 'MuseoModerno', sans-serif;
   }
 
   @media (prefers-reduced-motion: no-preference) {

@@ -11,6 +11,7 @@ const config: Config = {
       fontFamily: {
         sans: ["var(--font-inter)", "sans-serif"],
         display: ["var(--font-lora)", "serif"],
+        moonwalk: ["var(--font-moonwalk)", "'Moonwalk'", "sans-serif"],
       },
       colors: {
         background: "var(--background)",

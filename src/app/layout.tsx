@@ -11,6 +11,8 @@ import { AppInitializer } from "@/components/AppInitializer";
 import { ScrollToTop } from "@/components/layout/ScrollToTop";
 import { AdminCartNotifier } from "@/components/admin/AdminCartNotifier";
 
+import localFont from "next/font/local";
+
 const inter = Inter({
   subsets: ["latin"],
   variable: "--font-inter",
@@ -22,6 +24,12 @@ const lora = Lora({
   variable: "--font-lora",
   display: "swap",
   style: ["normal", "italic"],
+});
+
+const moonwalk = localFont({
+  src: "../../public/fonts/moonwalk.ttf",
+  variable: "--font-moonwalk",
+  display: "swap",
 });
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://lumina-home.vercel.app";
@@ -118,7 +126,7 @@ export default function RootLayout({
   return (
     <html lang="es">
       <body
-        className={`${inter.variable} ${lora.variable} font-sans antialiased text-gray-900 bg-transparent flex flex-col min-h-screen relative`}
+        className={`${inter.variable} ${lora.variable} ${moonwalk.variable} font-sans antialiased text-gray-900 bg-transparent flex flex-col min-h-screen relative`}
       >
         <Suspense fallback={null}>
           <ScrollToTop />

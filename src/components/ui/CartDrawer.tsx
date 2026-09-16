@@ -111,7 +111,6 @@ export function CartDrawer() {
  couponCode,
  discountPercent,
  isFreeShippingCoupon,
- originCoords,
  applyCoupon,
  removeCoupon,
  clearCart 
@@ -606,81 +605,57 @@ export function CartDrawer() {
 
  if (!isMounted) return null;
 
- // Dynamic 3D Book Page Flip / Genie expansion originating exactly from the cart icon
- const startX = originCoords && typeof window !== "undefined" ? originCoords.x - window.innerWidth / 2 : 250;
- const startY = originCoords && typeof window !== "undefined" ? originCoords.y - window.innerHeight / 2 : -250;
+  // Lightweight hardware-accelerated modal entrance (eliminates heavy 3D GPU thrashing)
+  const cartModalVariants: Variants = {
+    hidden: {
+      opacity: 0,
+      scale: 0.96,
+      y: 16,
+    },
+    visible: {
+      opacity: 1,
+      scale: 1,
+      y: 0,
+      transition: {
+        duration: 0.28,
+        ease: [0.16, 1, 0.3, 1],
+      }
+    },
+    exit: {
+      opacity: 0,
+      scale: 0.97,
+      y: 12,
+      transition: {
+        duration: 0.2,
+        ease: [0.32, 0, 0.67, 0],
+      }
+    }
+  };
 
- const bookPageVariants: Variants = {
- hidden: {
- opacity: 0,
- scale: 0.04,
- rotateY: -35,
- rotateX: 10,
- x: startX,
- y: startY,
- transition: {
- duration: 0.38,
- ease: [0.32, 0, 0.67, 0] as [number, number, number, number],
- }
- },
- visible: {
- opacity: 1,
- scale: 1,
- rotateY: 0,
- rotateX: 0,
- x: 0,
- y: 0,
- transition: {
- duration: 0.55,
- ease: [0.16, 1, 0.3, 1] as [number, number, number, number],
- }
- },
- exit: {
- opacity: 0,
- scale: 0.04,
- rotateY: -35,
- rotateX: 10,
- x: startX,
- y: startY,
- transition: {
- duration: 0.42,
- ease: [0.32, 0, 0.67, 0] as [number, number, number, number],
- }
- }
- };
+  return (
+    <AnimatePresence>
+      {isOpen && (
+        <div className={clsx("fixed inset-0 z-[90] flex items-center justify-center p-2 sm:p-4 md:p-6 lg:p-8 overflow-hidden", resolvedTheme === 'dark' ? 'dark' : '')}>
+          {/* Backdrop with Deep Soft Blur (Lightweight GPU Fill) */}
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.22, ease: "easeOut" }}
+            style={{ willChange: "opacity" }}
+            className="fixed inset-0 bg-slate-950/60 backdrop-blur-md transform-gpu"
+            onClick={() => setIsOpen(false)}
+          />
 
- return (
- <AnimatePresence>
- {isOpen && (
- <div className={clsx("fixed inset-0 z-[90] flex items-center justify-center p-2 sm:p-4 md:p-6 lg:p-8 perspective-[2000px] overflow-hidden theme-transition", resolvedTheme === 'dark' ? 'dark' : '')}>
- <style>{`
- :where(.theme-transition), :where(.theme-transition *) {
- transition-property: background-color, border-color, color, fill, stroke;
- transition-duration: 1500ms;
- transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
- }
- `}</style>
- 
- {/* Backdrop with Deep Soft Blur */}
- <motion.div 
- initial={{ opacity: 0 }}
- animate={{ opacity: 1 }}
- exit={{ opacity: 0 }}
- transition={{ duration: 0.35 }}
- style={{ willChange: "opacity" }}
- className="fixed inset-0 bg-slate-950/60 backdrop-blur-xl"
- onClick={() => setIsOpen(false)}
- />
-
- {/* 3D BOOK PAGE / MACBOOK GENIE CANVAS */}
- <motion.div
- variants={bookPageVariants}
- initial="hidden"
- animate="visible"
- exit="exit"
- style={{ transformStyle: "preserve-3d", willChange: "transform, opacity" }}
-  className="relative w-full max-w-6xl h-full max-h-[96vh] sm:max-h-[92vh] bg-white dark:bg-[#2a2a2c]/95 backdrop-blur-3xl rounded-3xl sm:rounded-[2.5rem] border border-white/90 shadow-[0_35px_120px_rgba(0,0,0,0.35)] flex flex-col overflow-hidden z-10"
-  >
+          {/* LUXURY CART CANVAS - INSTANT & FLUID */}
+          <motion.div
+            variants={cartModalVariants}
+            initial="hidden"
+            animate="visible"
+            exit="exit"
+            style={{ willChange: "transform, opacity" }}
+            className="relative w-full max-w-6xl h-full max-h-[96vh] sm:max-h-[92vh] bg-white/95 dark:bg-[#202022]/95 backdrop-blur-2xl rounded-3xl sm:rounded-[2.5rem] border border-white/90 dark:border-white/10 shadow-[0_25px_80px_rgba(0,0,0,0.25)] flex flex-col overflow-hidden z-10 transform-gpu"
+          >
 
   {/* Top Bar Header */}
   <header className="px-4 sm:px-8 py-3.5 sm:py-4 bg-white dark:bg-[#2a2a2c]/80 backdrop-blur-xl border-b border-gray-100 dark:border-white/5 flex items-center justify-between shrink-0 shadow-sm dark:shadow-none">
