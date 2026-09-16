@@ -117,6 +117,7 @@ export default function Home() {
   const [trustBadges, setTrustBadges] = useState<TrustBadgeItem[]>(DEFAULT_TRUST_BADGES);
   const [categoryMeta, setCategoryMeta] = useState<Record<string, { subtitle?: string; description?: string }>>({});
 
+  const heroRef = useRef<HTMLDivElement>(null);
   const categoriesRef = useRef<HTMLDivElement>(null);
   const popularRef = useRef<HTMLDivElement>(null);
 
@@ -196,7 +197,7 @@ export default function Home() {
     fetchCategoriesMeta();
   }, []);
 
-  // IntersectionObserver to smoothly shift ambient matte glow as user scrolls down the catalog
+  // Continuous bidirectional IntersectionObserver + scroll sync to smoothly shift ambient matte glow
   useEffect(() => {
     if (!isMounted) return;
 
@@ -204,7 +205,9 @@ export default function Home() {
       (entries) => {
         entries.forEach((entry) => {
           if (entry.isIntersecting) {
-            if (entry.target.id === "catalog-categories") {
+            if (entry.target.id === "hero-section") {
+              resetTheme();
+            } else if (entry.target.id === "catalog-categories") {
               setCategoryTheme("aromaterapia");
             } else if (entry.target.id === "catalog-popular") {
               setCategoryTheme(activeFilter === "Todos" ? "iluminacion" : activeFilter);
@@ -212,14 +215,25 @@ export default function Home() {
           }
         });
       },
-      { threshold: 0.3 }
+      { threshold: 0.25 }
     );
 
+    if (heroRef.current) observer.observe(heroRef.current);
     if (categoriesRef.current) observer.observe(categoriesRef.current);
     if (popularRef.current) observer.observe(popularRef.current);
 
-    return () => observer.disconnect();
-  }, [isMounted, activeFilter, setCategoryTheme]);
+    const handleScroll = () => {
+      if (window.scrollY < 180) {
+        resetTheme();
+      }
+    };
+    window.addEventListener("scroll", handleScroll, { passive: true });
+
+    return () => {
+      observer.disconnect();
+      window.removeEventListener("scroll", handleScroll);
+    };
+  }, [isMounted, activeFilter, setCategoryTheme, resetTheme]);
 
   const displayProducts = isMounted ? products : [];
   
@@ -230,7 +244,7 @@ export default function Home() {
   return (
     <>
       {/* Hero Section */}
-      <section className="relative min-h-[90vh] flex flex-col justify-end pb-12 overflow-hidden bg-brand-900">
+      <section id="hero-section" ref={heroRef} className="relative min-h-[90vh] flex flex-col justify-end pb-12 overflow-hidden bg-brand-900">
         <div className="absolute inset-0 z-0">
           <Image 
             src="https://images.unsplash.com/photo-1600210492486-724fe5c67fb0?q=80&w=2000&auto=format&fit=crop" 
@@ -281,7 +295,7 @@ export default function Home() {
                   className="absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-white/45 via-white/15 to-transparent pointer-events-none rounded-t-full" 
                   aria-hidden="true"
                 />
-                <span className="relative z-10 flex items-center justify-center gap-2 font-moonwalk tracking-wide text-sm sm:text-base font-semibold text-white drop-shadow-sm">
+                <span className="relative z-10 flex items-center justify-center gap-2 font-medium text-sm sm:text-base text-white drop-shadow-sm">
                   Ver catálogo <ArrowRight className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-1" />
                 </span>
               </Link>
@@ -295,7 +309,7 @@ export default function Home() {
                   className="absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-white/25 via-white/5 to-transparent pointer-events-none rounded-t-full" 
                   aria-hidden="true"
                 />
-                <span className="relative z-10 font-moonwalk tracking-wide text-sm sm:text-base font-semibold text-white drop-shadow-sm">
+                <span className="relative z-10 font-medium text-sm sm:text-base text-white drop-shadow-sm">
                   Filtrar por categoría
                 </span>
               </a>

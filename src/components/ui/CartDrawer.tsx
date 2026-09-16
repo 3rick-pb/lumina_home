@@ -671,28 +671,14 @@ export function CartDrawer() {
   {/* Top Bar Header */}
   <header className="px-4 sm:px-8 py-3.5 sm:py-4 bg-white dark:bg-[#2a2a2c]/80 backdrop-blur-xl border-b border-gray-100 dark:border-white/5 flex items-center justify-between shrink-0 shadow-sm dark:shadow-none">
  
-  {/* Brand Logo & Studio Identity (3D Liquid Glass Emblem) */}
-  <div className="flex items-center gap-3.5">
-    <div className="relative group">
-      <div className="absolute -inset-1 rounded-2xl bg-gradient-to-r from-[#8c9276] via-[#d4af37] to-[#8c9276] opacity-40 blur-sm group-hover:opacity-75 transition-opacity" />
-      <div className="relative w-10 h-10 rounded-2xl bg-gradient-to-b from-stone-900 via-stone-800 to-black dark:from-white dark:via-stone-100 dark:to-stone-200 text-white dark:text-stone-900 flex items-center justify-center shadow-[0_8px_20px_rgba(0,0,0,0.25)] border border-white/20 dark:border-black/10 transition-transform group-hover:scale-105 duration-300">
-        <ShoppingBag className="w-4 h-4 text-white dark:text-stone-900 drop-shadow-sm" />
-        <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-[#ccff00] ring-2 ring-white dark:ring-stone-900 animate-pulse" />
-      </div>
+  {/* Left: Simple Clean "Bolsa de Compras" */}
+  <div className="flex items-center gap-3">
+    <div className="w-10 h-10 rounded-2xl bg-stone-900 dark:bg-white text-white dark:text-stone-900 flex items-center justify-center shadow-xs shrink-0">
+      <ShoppingBag className="w-4 h-4 text-white dark:text-stone-900 drop-shadow-xs" />
     </div>
-    <div>
-      <div className="flex items-center gap-2">
-        <span className="font-display italic font-bold text-xl text-gray-900 dark:text-gray-100 tracking-tight">
-          Lumina<span className="text-[#8c9276] dark:text-[#ccff00]">.</span>
-        </span>
-        <span className="px-2 py-0.5 rounded-full bg-[#8c9276]/15 dark:bg-[#ccff00]/15 text-[#676c54] dark:text-[#ccff00] text-[10px] font-extrabold uppercase tracking-widest border border-[#8c9276]/20">
-          Studio 3D
-        </span>
-      </div>
-      <p className="text-[11px] text-gray-400 dark:text-gray-400 font-medium hidden sm:block">
-        Bolsa de Autor • Pasarela Segura
-      </p>
-    </div>
+    <span className="font-sans font-bold text-lg sm:text-xl text-gray-950 dark:text-white tracking-tight">
+      Bolsa de Compras
+    </span>
   </div>
 
   {/* Center Step Indicator (2IXO Pill Dock) */}
@@ -744,38 +730,6 @@ export function CartDrawer() {
   {/* ======================================================================= */}
   {step === "bag" && (
   <>
-   {/* Page Title & 3D Ambient Hero Banner (2IXO Pearl Frosted Aura) */}
-   <div className="relative overflow-hidden rounded-2xl sm:rounded-3xl p-4 sm:p-7 border border-black/[0.05] dark:border-white/10 bg-gradient-to-br from-white/95 via-[#faf8f5]/85 to-[#efebe3]/60 dark:from-[#202023] dark:via-[#1c1c1f] dark:to-[#17171a] shadow-[0_8px_30px_rgba(0,0,0,0.03)] backdrop-blur-2xl transition-all">
-    {/* Ambient Champagne Glows */}
-    <div className="absolute -top-16 -right-16 w-56 h-56 bg-amber-500/[0.08] dark:bg-amber-400/10 rounded-full blur-3xl pointer-events-none" />
-    <div className="absolute -bottom-16 -left-16 w-56 h-56 bg-[#8c9276]/[0.08] dark:bg-[#8c9276]/10 rounded-full blur-3xl pointer-events-none" />
-    <div className="absolute inset-x-8 top-0 h-[1.5px] bg-gradient-to-r from-transparent via-white dark:via-white/20 to-transparent pointer-events-none" />
-
-    <div className="relative z-10 flex flex-col sm:flex-row sm:items-end justify-between gap-4">
-      <div>
-        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-black/[0.04] dark:bg-white/[0.08] border border-black/[0.06] dark:border-white/10 text-gray-700 dark:text-gray-300 text-[11px] font-bold tracking-wider uppercase mb-2 shadow-2xs">
-          <Sparkles className="w-3 h-3 text-[#8c9276]" />
-          <span>Lumina 3D Studio • Luxury Living</span>
-        </div>
-        <h1 className="font-display font-bold text-2xl sm:text-4xl text-gray-950 dark:text-white tracking-tight">
-          Bolsa de Compras
-        </h1>
-        <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mt-1 max-w-xl leading-relaxed">
-          Piezas de autor seleccionadas con precisión artesanal, diseño dimensional y confort absoluto para tu espacio.
-        </p>
-      </div>
-
-      {items.length > 0 && (
-        <button 
-          onClick={clearCart}
-          className="px-4 py-2 rounded-full text-xs font-semibold text-gray-600 dark:text-gray-400 hover:text-rose-600 dark:hover:text-rose-400 bg-white/80 dark:bg-white/5 hover:bg-white border border-black/[0.06] dark:border-white/10 shadow-xs transition-all flex items-center gap-2 self-start sm:self-auto cursor-pointer active:scale-95"
-        >
-          <RotateCcw className="w-3.5 h-3.5" />
-          <span>Vaciar Bolsa</span>
-        </button>
-      )}
-    </div>
-  </div>
 
   {/* ALERTA DE PRODUCTOS AGOTADOS */}
   {hasAgotadoItems && (
@@ -858,6 +812,23 @@ export function CartDrawer() {
  {/* Left Column: Spacious Products Table (7 or 8 cols) */}
  {/* ---------------------------------------------------- */}
  <div className="lg:col-span-8 bg-white dark:bg-[#2a2a2c]/80 backdrop-blur-xl rounded-2xl sm:rounded-[2rem] border border-gray-200 dark:border-white/10/60 p-4 sm:p-8 shadow-sm dark:shadow-none space-y-6">
+  {/* Clean Toolbar: Count & Vaciar Bolsa */}
+  <div className="flex items-center justify-between pb-2 border-b border-gray-100 dark:border-white/5">
+    <span className="text-xs font-semibold text-gray-600 dark:text-gray-300">
+      {items.length} {items.length === 1 ? "artículo agregado" : "artículos agregados"}
+    </span>
+    {items.length > 0 && (
+      <button 
+        onClick={clearCart}
+        className="px-3 py-1.5 rounded-full text-xs font-medium text-gray-500 dark:text-gray-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/20 border border-black/[0.04] dark:border-white/10 transition-all flex items-center gap-1.5 cursor-pointer active:scale-95"
+        title="Vaciar todos los artículos"
+      >
+        <RotateCcw className="w-3.5 h-3.5" />
+        <span>Vaciar Bolsa</span>
+      </button>
+    )}
+  </div>
+
  {/* Table Column Headers (Directly from Reference Image) */}
  <div className="hidden sm:grid grid-cols-12 text-xs font-bold text-gray-400 dark:text-gray-400 uppercase tracking-wider pb-3 border-b border-gray-100 dark:border-white/5 px-3.5 sm:px-4">
  <span className="col-span-5">Producto</span>
