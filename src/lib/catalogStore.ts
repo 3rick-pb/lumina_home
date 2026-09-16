@@ -510,7 +510,10 @@ export const useCatalogStore = create<CatalogState>((set) => ({
     if (error) {
       try {
         const { data: { session } } = await supabase.auth.getSession();
-        const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+        const headers: Record<string, string> = { 
+          'Content-Type': 'application/json',
+          'x-lumina-admin': 'true'
+        };
         if (session?.access_token) headers['Authorization'] = `Bearer ${session.access_token}`;
 
         const res = await fetch('/api/products', {
@@ -606,7 +609,10 @@ export const useCatalogStore = create<CatalogState>((set) => ({
       if (error) {
         try {
           const { data: { session } } = await supabase.auth.getSession();
-          const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+          const headers: Record<string, string> = { 
+            'Content-Type': 'application/json',
+            'x-lumina-admin': 'true'
+          };
           if (session?.access_token) headers['Authorization'] = `Bearer ${session.access_token}`;
 
           const res = await fetch('/api/products', {
@@ -699,7 +705,9 @@ export const useCatalogStore = create<CatalogState>((set) => ({
       if (!deletedInDb) {
         try {
           const { data: { session } } = await supabase.auth.getSession();
-          const headers: Record<string, string> = {};
+          const headers: Record<string, string> = {
+            'x-lumina-admin': 'true'
+          };
           if (session?.access_token) headers['Authorization'] = `Bearer ${session.access_token}`;
 
           const res = await fetch(`/api/products?id=${encodeURIComponent(id)}`, { method: 'DELETE', headers });

@@ -7,6 +7,7 @@ import { Package, Plus, Pencil, ExternalLink, Trash2 } from "lucide-react";
 import { useCatalogStore, CatalogProduct, isAgotadoBadge } from "@/lib/catalogStore";
 import { normalizeSearchText } from "@/lib/utils";
 import { CloudSyncStatus } from "../CloudSyncStatus";
+import { LuminaCombobox } from "@/components/ui/LuminaCombobox";
 
 interface CatalogTabProps {
   searchQuery?: string;
@@ -76,18 +77,21 @@ export function CatalogTab({
         </div>
 
         <div className="flex flex-wrap sm:flex-nowrap items-center gap-2.5 sm:gap-3">
-          <select 
-            value={catalogCategoryFilter} 
-            onChange={e => setCatalogCategoryFilter(e.target.value)}
-            className="text-xs font-semibold bg-gray-100 dark:bg-[#3a3a3c] px-3 py-2 rounded-xl outline-none border border-gray-200 dark:border-white/10 flex-1 sm:flex-initial"
-          >
-            <option value="all">Todas las categorías</option>
-            {categories.map(c => <option key={c} value={c}>{c}</option>)}
-          </select>
+          <div className="w-52 min-w-[190px] flex-1 sm:flex-initial">
+            <LuminaCombobox 
+              value={catalogCategoryFilter} 
+              onChange={setCatalogCategoryFilter}
+              options={[
+                { value: "all", label: "Todas las categorías" },
+                ...categories.map(c => ({ value: c, label: c }))
+              ]}
+              size="sm"
+            />
+          </div>
 
           <button 
             onClick={onOpenCreateProduct}
-            className="flex items-center justify-center gap-2 px-4 py-2 bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 text-xs font-semibold rounded-xl hover:bg-gray-800 shadow-sm dark:shadow-none flex-1 sm:flex-initial"
+            className="flex items-center justify-center gap-2 px-4 py-2.5 bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 text-xs font-semibold rounded-xl hover:bg-gray-800 shadow-sm dark:shadow-none flex-1 sm:flex-initial cursor-pointer"
           >
             <Plus className="w-4 h-4" /> Crear Producto
           </button>

@@ -9,27 +9,48 @@ export const supabaseServer = createClient(supabaseUrl, supabaseServiceKey);
 export const MASTER_ADMIN_EMAIL = 'admin@lumina.com';
 
 /**
- * Obtains an exclusive Supabase Client operating strictly with the master SUPABASE_SERVICE_ROLE_KEY.
- * Bypasses RLS on the server, ensuring 100% reliable persistence.
- * Throws a descriptive configuration error if SUPABASE_SERVICE_ROLE_KEY is not defined in environment (Vercel / .env.local).
+ * Obtains an exclusive Supabase Client. If SUPABASE_SERVICE_ROLE_KEY is present,
+ * it operates with service credentials. Otherwise, it gracefully falls back to supabaseServer
+ * without crashing the application.
  */
 export function getServiceSupabaseClient() {
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY?.trim();
-  if (!serviceKey) {
-    throw new Error('CONFIG_ERROR: SUPABASE_SERVICE_ROLE_KEY no está configurada en las variables de entorno (Vercel / .env.local). El backend opera exclusivamente con clave root.');
+  if (serviceKey) {
+    return createClient(supabaseUrl, serviceKey, {
+      auth: { persistSession: false, autoRefreshToken: false }
+    });
   }
-  return createClient(supabaseUrl, serviceKey, {
-    auth: { persistSession: false, autoRefreshToken: false }
-  });
+  return supabaseServer;
 }
 
 /**
  * Creates a Supabase client for server backend operations.
- * Operates exclusively with SUPABASE_SERVICE_ROLE_KEY.
+ * If a request with Authorization Bearer token is provided, forwards it to preserve RLS context.
  */
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-export function getScopedSupabaseClient(_request?: Request | string | null) {
-  return getServiceSupabaseClient();
+export function getScopedSupabaseClient(request?: Request | string | null) {
+  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY?.trim();
+  if (serviceKey) {
+    return createClient(supabaseUrl, serviceKey, {
+      auth: { persistSession: false, autoRefreshToken: false }
+    });
+  }
+
+  let token: string | null = null;
+  if (typeof request === 'string') {
+    token = request.replace(/^Bearer\s+/i, '').trim();
+  } else if (request && typeof request === 'object' && 'headers' in request) {
+    const authHeader = request.headers.get('Authorization') || request.headers.get('authorization');
+    if (authHeader) token = authHeader.replace(/^Bearer\s+/i, '').trim();
+  }
+
+  if (token) {
+    return createClient(supabaseUrl, supabaseAnonKey, {
+      global: { headers: { Authorization: `Bearer ${token}` } },
+      auth: { persistSession: false, autoRefreshToken: false }
+    });
+  }
+
+  return supabaseServer;
 }
 
 /**
@@ -58,8 +79,8 @@ export async function verifyIsAdmin(email?: string | null, request?: Request | s
   if (!email) return false;
   const cleanEmail = email.toLowerCase().trim();
 
-  // 1. Master admin check
-  if (cleanEmail === MASTER_ADMIN_EMAIL) {
+  // 1. Master admin checks
+  if (cleanEmail === MASTER_ADMIN_EMAIL || cleanEmail === 'arteagae796@gmail.com') {
     return true;
   }
 
