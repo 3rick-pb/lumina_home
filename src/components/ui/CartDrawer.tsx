@@ -22,11 +22,12 @@ import {
  ChevronRight,
  Trash2,
  RotateCcw,
- CreditCard,
- Navigation,
- Loader2,
- AlertTriangle,
- Package
+  CreditCard,
+  Navigation,
+  Loader2,
+  AlertTriangle,
+  Package,
+  Eye
 } from "lucide-react";
 import { useCartStore } from "@/lib/store";
 import { useThemeStore, getResolvedTheme } from "@/lib/themeStore";
@@ -68,6 +69,47 @@ function PayPhoneIcon({ className = "w-4 h-4" }: { className?: string }) {
       <path d="M42 38h16a3 3 0 013 3v18a3 3 0 01-3 3H42a3 3 0 01-3-3V41a3 3 0 013-3z" fill="#FF5E00" />
       <circle cx="50" cy="68" r="2.5" fill="#FF5E00" />
       <path d="M46 45h8M46 49h5" stroke="#FFFFFF" strokeWidth="2.5" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function DinersClubLogo({ className = "h-4" }: { className?: string }) {
+  return (
+    <svg className={`shrink-0 ${className}`} viewBox="0 0 34 22" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <rect width="34" height="22" rx="4" fill="#0079BE" />
+      <circle cx="17" cy="11" r="7.5" fill="#004A97" />
+      <path d="M14.5 6.5C12.3 6.5 10.5 8.5 10.5 11C10.5 13.5 12.3 15.5 14.5 15.5V6.5ZM19.5 6.5V15.5C21.7 15.5 23.5 13.5 23.5 11C23.5 8.5 21.7 6.5 19.5 6.5Z" fill="#FFFFFF" />
+    </svg>
+  );
+}
+
+function DiscoverLogo({ className = "h-4" }: { className?: string }) {
+  return (
+    <svg className={`shrink-0 ${className}`} viewBox="0 0 34 22" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <rect width="34" height="22" rx="4" fill="#FF6000" />
+      <circle cx="23.5" cy="11" r="5" fill="#FFA500" />
+      <circle cx="23.5" cy="11" r="2.5" fill="#FF6000" />
+      <path d="M6 7H10.5C12.5 7 14 8.6 14 11C14 13.4 12.5 15 10.5 15H6V7ZM8.5 13H10.2C11.3 13 11.8 12.2 11.8 11C11.8 9.8 11.3 9 10.2 9H8.5V13Z" fill="#FFFFFF" />
+    </svg>
+  );
+}
+
+function AmexLogo({ className = "h-4" }: { className?: string }) {
+  return (
+    <svg className={`shrink-0 ${className}`} viewBox="0 0 34 22" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <rect width="34" height="22" rx="4" fill="#006FCF" />
+      <path d="M5.5 15L7.2 10.4L9 15H10.8L8.2 8.4L10.5 3H8.8L7.2 6.9L5.6 3H3.9L6.2 8.4L3.6 15H5.5ZM11.8 15H13.4V5.2H15.4L17 11.8L18.6 5.2H20.6V15H19.1V8.2L17.6 14.2H16.4L14.9 8.2V15H11.8ZM21.6 15H27.5V13.3H23.5V10.2H26.8V8.6H23.5V5H27.5V3.3H21.6V15Z" fill="#FFFFFF" />
+    </svg>
+  );
+}
+
+function AliaLogo({ className = "h-4" }: { className?: string }) {
+  return (
+    <svg className={`shrink-0 ${className}`} viewBox="0 0 34 22" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <rect width="34" height="22" rx="4" fill="#E21D24" />
+      <path d="M7 11C7 8.8 8.8 7 11 7C13.2 7 15 8.8 15 11C15 13.2 13.2 15 11 15C8.8 15 7 13.2 7 11Z" fill="#FFA500" />
+      <path d="M11 8.5C9.6 8.5 8.5 9.6 8.5 11C8.5 12.4 9.6 13.5 11 13.5C12.4 13.5 13.5 12.4 13.5 11C13.5 9.6 12.4 8.5 11 8.5Z" fill="#E21D24" />
+      <path d="M17 7.5H18.8V14.5H17V7.5ZM20.8 9H22.6V14.5H20.8V9ZM20.8 6.5H22.6V8H20.8V6.5ZM24.6 10.5C24.6 9.4 25.4 8.7 26.5 8.7C27.6 8.7 28.3 9.4 28.3 10.5V14.5H26.5V11C26.5 10.6 26.2 10.3 25.8 10.3C25.4 10.3 25.1 10.6 25.1 11V14.5H23.3V10.5H24.6Z" fill="#FFFFFF" />
     </svg>
   );
 }
@@ -708,11 +750,11 @@ export function CartDrawer() {
     </button>
   </div>
 
-  {/* Right Action: 2IXO Circular Glass Close Button */}
+  {/* Right Action: 2IXO Circular Glass Close Button (Matches Delete Product styling) */}
   <div className="flex items-center gap-3">
     <button 
       onClick={() => setIsOpen(false)}
-      className="w-10 h-10 rounded-full bg-white/80 dark:bg-white/10 backdrop-blur-xl border border-black/[0.06] dark:border-white/15 shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:bg-white dark:hover:bg-white/20 text-gray-700 dark:text-gray-200 flex items-center justify-center hover:scale-105 active:scale-95 transition-all cursor-pointer"
+      className="w-10 h-10 rounded-full bg-white/80 dark:bg-white/10 backdrop-blur-xl border border-black/[0.06] dark:border-white/15 shadow-[0_2px_8px_rgba(0,0,0,0.04)] text-gray-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50/90 dark:hover:bg-rose-950/40 hover:border-rose-200 dark:hover:border-rose-900/40 flex items-center justify-center hover:scale-105 active:scale-95 transition-all cursor-pointer"
       title="Cerrar bolsa"
     >
       <X className="w-4 h-4" />
@@ -894,22 +936,40 @@ export function CartDrawer() {
           {bundleProducts.map((bp, bpIdx) => (
             <div 
               key={`${bp.id}-${bpIdx}`}
-              className="flex items-center justify-between p-2.5 sm:p-3 rounded-xl bg-white/90 dark:bg-[#252528] border border-gray-100 dark:border-white/5 shadow-2xs"
+              className="flex items-center justify-between p-2.5 sm:p-3 rounded-xl bg-white/90 dark:bg-[#252528] border border-gray-100 dark:border-white/5 shadow-2xs group/bitem"
             >
               <div className="flex items-center gap-3 min-w-0">
-                <div className="relative w-12 h-12 rounded-xl overflow-hidden bg-gray-100 dark:bg-white/5 shrink-0 border border-black/5">
-                  <Image src={bp.imageUrl} alt={bp.title} fill sizes="48px" className="object-cover" />
+                <div 
+                  onClick={() => { setIsOpen(false); router.push(`/product/${bp.id}`); }}
+                  className="relative w-12 h-12 rounded-xl overflow-hidden bg-gray-100 dark:bg-white/5 shrink-0 border border-black/5 cursor-pointer hover:opacity-90 transition-opacity"
+                  title="Abrir este producto"
+                >
+                  <Image src={bp.imageUrl} alt={bp.title} fill sizes="48px" className="object-cover group-hover/bitem:scale-105 transition-transform" />
                 </div>
                 <div className="min-w-0">
                   <span className="text-[9px] font-bold text-emerald-600 uppercase tracking-wider block">
                     {bp.category || "Pieza Complementaria"}
                   </span>
-                  <p className="text-xs font-bold text-gray-900 dark:text-white truncate">
-                    {bp.title}
-                  </p>
-                  <div className="flex items-center gap-2 text-[10px] text-gray-400 mt-0.5">
+                  <div className="flex items-center gap-1.5">
+                    <p 
+                      onClick={() => { setIsOpen(false); router.push(`/product/${bp.id}`); }}
+                      className="text-xs font-bold text-gray-900 dark:text-white truncate hover:text-emerald-600 dark:hover:text-emerald-400 cursor-pointer transition-colors"
+                      title={bp.title}
+                    >
+                      {bp.title}
+                    </p>
+                    <button
+                      onClick={() => { setIsOpen(false); router.push(`/product/${bp.id}`); }}
+                      className="p-1 rounded text-gray-400 hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-black/5 dark:hover:bg-white/10 transition-colors shrink-0"
+                      title="Ver detalles del producto"
+                    >
+                      <Eye className="w-3 h-3" />
+                    </button>
+                  </div>
+                  <div className="flex items-center gap-2 text-[10px] text-gray-500 dark:text-gray-400 mt-0.5 font-medium">
                     {bp.color && <span>Color: {bp.color}</span>}
-                    {bp.size && <span>• Talla: {bp.size}</span>}
+                    {bp.color && bp.size && <span>•</span>}
+                    {bp.size && <span>Talla: {bp.size}</span>}
                   </div>
                 </div>
               </div>
@@ -999,55 +1059,88 @@ export function CartDrawer() {
  : "border border-transparent hover:bg-gray-50 dark:hover:bg-[#151515]/50 hover:border-gray-100 dark:hover:border-white/5/80"
  }`}
  >
- {/* Product Info (5 cols) */}
- <div className="sm:col-span-5 flex items-center gap-4">
- <div className="relative w-20 h-20 sm:w-24 sm:h-24 rounded-2xl overflow-hidden bg-gray-100 dark:bg-[#202022]/5 shrink-0 border border-white shadow-sm dark:shadow-none">
- <Image 
- src={item.product.imageUrl} 
- alt={item.product.title} 
- fill 
- sizes="(max-width: 640px) 80px, 96px"
- className="object-cover group-hover:scale-105 transition-transform duration-500" 
- />
- {itemIsAgotado && (
- <div className="absolute inset-0 bg-black/25 backdrop-blur-[1px] flex items-center justify-center p-1">
- <span className="bg-red-50/90 text-red-600 font-bold border border-red-200 text-[9px] uppercase tracking-wider px-2 py-0.5 rounded-full shadow-sm dark:shadow-none text-center backdrop-blur-md">
- Agotado
- </span>
- </div>
- )}
- </div>
- <div className="min-w-0">
- <div className="flex items-center gap-1.5 flex-wrap">
- <span className="text-[10px] font-bold text-blue-600 uppercase tracking-wider block">
- {item.product.category}
- </span>
- {itemIsAgotado && (
- <span className="px-2 py-0.5 rounded-full bg-red-50 text-red-600 border border-red-200 text-[9px] font-bold tracking-wider uppercase">
- Agotado
- </span>
- )}
- </div>
- <h4 className="font-bold text-sm sm:text-base text-gray-900 dark:text-gray-100 line-clamp-1 mt-0.5">
- {item.product.title}
- </h4>
- <div className="flex items-center gap-2 mt-1 text-xs text-gray-500 dark:text-gray-400 font-medium">
- {item.color && (
- <span className="px-2 py-0.5 rounded-lg bg-gray-100 dark:bg-[#202022]/5 text-[11px]">
- {item.color}
- </span>
- )}
- {item.size && (
- <span className="px-2 py-0.5 rounded-lg bg-gray-100 dark:bg-[#202022]/5 text-[11px]">
- Talla: {item.size}
- </span>
- )}
- </div>
- <p className="text-xs text-gray-400 dark:text-gray-400 mt-1 sm:hidden">
- Unitario: ${Number(item.product?.price || 0).toFixed(2)}
- </p>
- </div>
- </div>
+  {/* Product Info (5 cols) */}
+  <div className="sm:col-span-5 flex items-start sm:items-center gap-3.5 sm:gap-4">
+    <div 
+      onClick={() => { setIsOpen(false); router.push(`/product/${item.productId || item.product.id}`); }}
+      className="relative w-20 h-20 sm:w-22 sm:h-22 rounded-2xl overflow-hidden bg-gray-100 dark:bg-[#202022]/5 shrink-0 border border-black/5 dark:border-white/10 shadow-xs cursor-pointer group/thumb"
+      title="Abrir detalles del producto"
+    >
+      <Image 
+        src={item.product.imageUrl} 
+        alt={item.product.title} 
+        fill 
+        sizes="(max-width: 640px) 80px, 88px"
+        className="object-cover group-hover/thumb:scale-105 transition-transform duration-500" 
+      />
+      {itemIsAgotado && (
+        <div className="absolute inset-0 bg-black/35 backdrop-blur-[1px] flex items-center justify-center p-1">
+          <span className="bg-red-600 text-white font-bold text-[9px] uppercase tracking-wider px-2 py-0.5 rounded-full shadow-sm text-center">
+            Agotado
+          </span>
+        </div>
+      )}
+    </div>
+
+    <div className="min-w-0 flex-1">
+      <div className="flex items-center gap-1.5 flex-wrap">
+        <span className="text-[10px] font-bold text-blue-600 dark:text-blue-400 uppercase tracking-wider block">
+          {item.product.category}
+        </span>
+        {itemIsAgotado && (
+          <span className="px-2 py-0.5 rounded-full bg-red-50 dark:bg-red-950/40 text-red-600 dark:text-red-400 border border-red-200 dark:border-red-900/50 text-[9px] font-bold tracking-wider uppercase">
+            Agotado
+          </span>
+        )}
+      </div>
+
+      <h4 
+        onClick={() => { setIsOpen(false); router.push(`/product/${item.productId || item.product.id}`); }}
+        className="font-bold text-sm sm:text-base text-gray-900 dark:text-gray-100 line-clamp-1 mt-0.5 hover:text-blue-600 dark:hover:text-blue-400 cursor-pointer transition-colors"
+        title={item.product.title}
+      >
+        {item.product.title}
+      </h4>
+
+      {/* Detalles estilizados y compactos (no bultosos) */}
+      {(item.color || item.size) && (
+        <div className="flex items-center flex-wrap gap-x-2 gap-y-1 mt-1 text-[11px] text-gray-500 dark:text-gray-400">
+          {item.color && (
+            <span className="inline-flex items-center gap-1.5">
+              <span 
+                className="w-2.5 h-2.5 rounded-full border border-black/10 dark:border-white/20 shrink-0" 
+                style={{ backgroundColor: item.product.colors?.find(c => c.name.toLowerCase() === item.color?.toLowerCase())?.hex || '#9ca3af' }} 
+              />
+              <span className="font-medium text-gray-700 dark:text-gray-300">{item.color}</span>
+            </span>
+          )}
+          {item.color && item.size && <span className="text-gray-300 dark:text-gray-600 font-light">•</span>}
+          {item.size && (
+            <span className="inline-flex items-center gap-1 font-medium text-gray-700 dark:text-gray-300">
+              <span className="text-gray-400 dark:text-gray-500 font-normal">Talla:</span>
+              <span className="font-semibold">{item.size}</span>
+            </span>
+          )}
+        </div>
+      )}
+
+      {/* Botón para abrir el producto y precio unitario móvil */}
+      <div className="flex items-center gap-2.5 mt-2">
+        <button
+          onClick={() => { setIsOpen(false); router.push(`/product/${item.productId || item.product.id}`); }}
+          className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-gray-100/80 hover:bg-gray-200/80 dark:bg-white/5 dark:hover:bg-white/10 text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100 border border-black/[0.04] dark:border-white/10 text-[11px] font-semibold transition-all cursor-pointer group/open active:scale-95"
+          title="Abrir y ver ficha del producto"
+        >
+          <Eye className="w-3 h-3 text-gray-400 group-hover/open:text-blue-600 dark:group-hover/open:text-blue-400 transition-colors" />
+          <span>Ver producto</span>
+        </button>
+
+        <span className="text-xs text-gray-400 dark:text-gray-500 sm:hidden">
+          • ${Number(item.product?.price || 0).toFixed(2)} c/u
+        </span>
+      </div>
+    </div>
+  </div>
 
   {/* Quantity Capsule with 2IXO Liquid Glass (3 cols) */}
   <div className="sm:col-span-3 flex sm:justify-center items-center">
@@ -1119,157 +1212,178 @@ export function CartDrawer() {
  </div>
 
  {/* ---------------------------------------------------- */}
- {/* Right Column: Order Summary Card (4 cols - 2IXO Pearl Card) */}
+ {/* Right Column: Order Summary Card (4 cols - Luxury Pearl Card) */}
  {/* ---------------------------------------------------- */}
- <div className="lg:col-span-4 bg-white/75 dark:bg-[#202023]/75 backdrop-blur-2xl rounded-2xl sm:rounded-3xl border border-black/[0.05] dark:border-white/10 p-5 sm:p-7 shadow-[0_12px_36px_rgba(0,0,0,0.03)] space-y-6">
+ <div className="lg:col-span-4 bg-white/80 dark:bg-[#1e1e22]/90 backdrop-blur-2xl rounded-3xl border border-black/[0.06] dark:border-white/10 p-5 sm:p-7 shadow-[0_12px_36px_rgba(0,0,0,0.03)] space-y-6">
   
-  <h3 className="font-display font-bold text-xl text-gray-950 dark:text-white tracking-tight pb-3 border-b border-black/[0.05] dark:border-white/10">
-  Resumen del Pedido
-  </h3>
+    {/* Header with Item Counter */}
+    <div className="flex items-center justify-between pb-3.5 border-b border-black/[0.06] dark:border-white/10">
+      <h3 className="font-display font-bold text-lg sm:text-xl text-gray-950 dark:text-white tracking-tight">
+        Resumen del Pedido
+      </h3>
+      <span className="text-xs font-semibold px-3 py-1 rounded-full bg-black/[0.04] dark:bg-white/10 text-gray-700 dark:text-gray-300">
+        {items.length} {items.length === 1 ? "artículo" : "artículos"}
+      </span>
+    </div>
 
-  {/* Free Shipping Progress Capsule */}
-  <div className="p-4 rounded-2xl bg-black/[0.02] dark:bg-white/[0.03] border border-black/[0.04] dark:border-white/5 space-y-2">
-  <div className="flex items-center justify-between text-xs font-semibold">
-  <span className="text-gray-700 dark:text-gray-300 flex items-center gap-1.5">
-  <Truck className="w-4 h-4 text-[#8c9276]" />
-  {hasFreeShipping ? "¡Envío Gratuito Asegurado!" : `Faltan $${amountToFreeShipping.toFixed(2)}`}
-  </span>
-  <span className="text-[#8c9276] font-bold">{freeShippingProgress}%</span>
-  </div>
-  <div className="w-full h-1.5 bg-black/[0.06] dark:bg-white/10 rounded-full overflow-hidden">
-  <div 
-  className="h-full bg-[#8c9276] rounded-full transition-all duration-500"
-  style={{ width: `${freeShippingProgress}%` }}
-  />
-  </div>
-  </div>
+    {/* Free Shipping Progress Capsule */}
+    <div className="p-4 rounded-2xl bg-black/[0.02] dark:bg-white/[0.03] border border-black/[0.05] dark:border-white/5 space-y-2.5">
+      <div className="flex items-center justify-between text-xs font-medium">
+        <span className="text-gray-700 dark:text-gray-300 flex items-center gap-2">
+          <Truck className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+          <span className="font-semibold">
+            {hasFreeShipping ? "¡Envío gratuito asegurado!" : `Faltan $${amountToFreeShipping.toFixed(2)} para envío gratis`}
+          </span>
+        </span>
+        <span className="text-emerald-600 dark:text-emerald-400 font-bold font-mono text-xs">{freeShippingProgress}%</span>
+      </div>
+      <div className="w-full h-2 bg-black/[0.06] dark:bg-white/10 rounded-full overflow-hidden">
+        <div 
+          className="h-full bg-gradient-to-r from-emerald-500 to-emerald-600 rounded-full transition-all duration-500"
+          style={{ width: `${freeShippingProgress}%` }}
+        />
+      </div>
+    </div>
 
-  {/* Coupon Code Form with 2IXO Pill Input */}
-  <form onSubmit={handleApplyCoupon} className="flex items-center gap-2 p-1 pl-4 rounded-full bg-white/90 dark:bg-white/5 border border-black/[0.06] dark:border-white/15 shadow-xs">
-  <Tag className="w-3.5 h-3.5 text-gray-400 shrink-0" />
-  <input 
-  type="text" 
-  value={couponInput}
-  onChange={e => setCouponInput(e.target.value)}
-  placeholder="Código de descuento"
-  className="w-full bg-transparent text-xs font-medium outline-none text-gray-900 dark:text-gray-100 placeholder-gray-400"
-  />
-  <button 
-  type="submit"
-  className="px-5 py-2 rounded-full font-sans font-semibold text-xs text-white dark:text-gray-950 bg-[#18181b] dark:bg-white hover:bg-black dark:hover:bg-gray-100 shadow-xs transition-all shrink-0 active:scale-95 cursor-pointer"
-  >
-  Aplicar
-  </button>
-  </form>
+    {/* Coupon Code Form with Symmetrical Pill Input */}
+    <div className="space-y-2">
+      <form onSubmit={handleApplyCoupon} className="flex items-center gap-2 p-1.5 pl-4 rounded-2xl bg-white/90 dark:bg-white/5 border border-black/[0.06] dark:border-white/15 shadow-xs focus-within:border-black/25 dark:focus-within:border-white/30 transition-all">
+        <Tag className="w-3.5 h-3.5 text-gray-400 shrink-0" />
+        <input 
+          type="text" 
+          value={couponInput}
+          onChange={e => setCouponInput(e.target.value)}
+          placeholder="Código de descuento"
+          className="w-full bg-transparent text-xs font-medium outline-none text-gray-900 dark:text-gray-100 placeholder-gray-400"
+        />
+        <button 
+          type="submit"
+          className="px-4 py-2 rounded-xl font-sans font-bold text-xs text-white dark:text-gray-950 bg-gray-950 dark:bg-white hover:bg-black dark:hover:bg-gray-100 shadow-xs transition-all shrink-0 active:scale-95 cursor-pointer"
+        >
+          Aplicar
+        </button>
+      </form>
 
-  {couponFeedback && (
-  <p className={`text-xs font-semibold ${couponFeedback.success ? "text-emerald-700" : "text-rose-600"}`}>
-  {couponFeedback.msg}
-  </p>
-  )}
+      {couponFeedback && (
+        <p className={`text-xs font-semibold px-2 ${couponFeedback.success ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400"}`}>
+          {couponFeedback.msg}
+        </p>
+      )}
 
-  {couponCode && (
-  <div className="flex items-center justify-between px-3.5 py-2 rounded-full bg-[#8c9276]/10 text-gray-800 dark:text-gray-200 text-xs font-semibold border border-[#8c9276]/20">
-  <span className="flex items-center gap-1.5">
-  <Sparkles className="w-3.5 h-3.5 text-[#8c9276]" />
-  Cupón: <strong>{couponCode}</strong> ({discountPercent}% dto)
-  </span>
-  <button onClick={removeCoupon} className="w-5 h-5 rounded-full bg-black/5 hover:bg-black/10 flex items-center justify-center text-gray-600 hover:text-gray-900 transition-colors">
-  <X className="w-3.5 h-3.5" />
-  </button>
-  </div>
-  )}
-
-  {/* Breakdown Lines */}
-  <div className="space-y-2.5 text-xs sm:text-sm text-gray-600 dark:text-gray-400 pt-1">
-  <div className="flex justify-between">
-  <span>Subtotal</span>
-  <span className="font-semibold text-gray-900 dark:text-gray-100">${subtotal.toFixed(2)} USD</span>
-  </div>
-
-  {discountAmount > 0 && (
-  <div className="flex justify-between text-emerald-700 font-semibold">
-  <span>Descuento ({discountPercent}%)</span>
-  <span>-${discountAmount.toFixed(2)} USD</span>
-  </div>
-  )}
-
-  <div className="flex justify-between">
-  <span>Gastos de Envío</span>
-  <span className="font-semibold">
-  {shipping === 0 ? (
-  <span className="text-emerald-700 font-bold uppercase text-xs">GRATIS</span>
-  ) : (
-  `$${shipping.toFixed(2)} USD`
-  )}
-  </span>
-  </div>
-
-  <div className="pt-3 border-t border-black/[0.05] dark:border-white/10 flex justify-between items-baseline">
-  <div>
-  <span className="text-sm font-bold text-gray-950 dark:text-white">Total</span>
-  <span className="text-[10px] text-gray-400 block">Impuestos incluidos</span>
-  </div>
-  <span className="font-sans font-bold text-2xl sm:text-3xl text-gray-950 dark:text-white tracking-tight">
-  ${finalTotal.toFixed(2)} USD
-  </span>
-  </div>
-  </div>
-
-  {/* Warranty Note from 2IXO Reference */}
-  <div className="p-3.5 rounded-2xl bg-black/[0.02] dark:bg-white/[0.03] border border-black/[0.04] dark:border-white/5 flex items-start gap-2.5 text-xs text-gray-600 dark:text-gray-400">
-  <ShieldCheck className="w-4 h-4 text-[#8c9276] shrink-0 mt-0.5" />
-  <p className="text-[11px] leading-relaxed">
-  <strong>Garantía Oficial Lumina de 2 años.</strong> Devolución íntegra sin compromiso en los primeros 30 días.
-  </p>
-  </div>
-
-  {/* 2IXO FLOATING DOCK ACTION CAPSULE */}
-  <div className="p-1.5 rounded-full bg-black/[0.03] dark:bg-white/[0.06] border border-black/[0.05] dark:border-white/10 backdrop-blur-xl flex items-center gap-2">
-    <button 
-      onClick={() => { setIsOpen(false); router.push("/shop"); }}
-      className="w-11 h-11 sm:w-12 sm:h-12 rounded-full bg-white dark:bg-[#27272a] hover:bg-gray-50 dark:hover:bg-[#323236] border border-black/[0.06] dark:border-white/15 shadow-xs flex items-center justify-center text-gray-700 dark:text-gray-200 shrink-0 hover:scale-105 active:scale-95 transition-all cursor-pointer"
-      title="Continuar comprando"
-    >
-      <ShoppingBag className="w-4 h-4" />
-    </button>
-    
-    <button 
-      onClick={handleProceedToPayment}
-      disabled={hasAgotadoItems}
-      className={`group relative flex-1 h-11 sm:h-12 rounded-full font-sans text-xs sm:text-sm font-semibold pl-2 pr-4 flex items-center justify-between transition-all duration-300 shadow-md cursor-pointer active:scale-[0.99] ${
-        hasAgotadoItems
-          ? "bg-rose-600 text-white shadow-rose-500/20 opacity-90 cursor-not-allowed"
-          : "bg-[#18181b] dark:bg-white text-white dark:text-gray-950 hover:bg-black dark:hover:bg-gray-100 shadow-black/15"
-      }`}
-    >
-      <div className="flex items-center gap-2.5 min-w-0">
-        <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 transition-transform group-hover:scale-105 ${
-          hasAgotadoItems ? "bg-white/20 text-white" : "bg-white/15 dark:bg-black/10 text-white dark:text-gray-950"
-        }`}>
-          {hasAgotadoItems ? <AlertTriangle className="w-3.5 h-3.5" /> : <ArrowRight className="w-3.5 h-3.5" />}
+      {couponCode && (
+        <div className="flex items-center justify-between px-3.5 py-2 rounded-xl bg-emerald-500/10 text-gray-800 dark:text-gray-200 text-xs font-medium border border-emerald-500/20">
+          <span className="flex items-center gap-2">
+            <Sparkles className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
+            <span>Cupón: <strong className="font-mono font-bold text-emerald-700 dark:text-emerald-300">{couponCode}</strong> ({discountPercent}% dto)</span>
+          </span>
+          <button 
+            onClick={removeCoupon} 
+            className="w-5 h-5 rounded-full hover:bg-black/10 dark:hover:bg-white/10 flex items-center justify-center text-gray-500 hover:text-rose-600 transition-colors cursor-pointer"
+            title="Eliminar cupón"
+          >
+            <X className="w-3.5 h-3.5" />
+          </button>
         </div>
-        <span className="truncate">
-          {hasAgotadoItems 
-            ? "Elimina agotados" 
-            : !isAuthenticated 
-            ? "Iniciar Sesión" 
-            : "Proceder al Pago"}
+      )}
+    </div>
+
+    {/* Breakdown Lines Symmetrical Table */}
+    <div className="space-y-3 pt-2 border-t border-black/[0.05] dark:border-white/10">
+      <div className="flex items-center justify-between text-xs sm:text-sm text-gray-600 dark:text-gray-400">
+        <span>Subtotal</span>
+        <span className="font-mono font-bold text-gray-900 dark:text-gray-100">${subtotal.toFixed(2)} USD</span>
+      </div>
+
+      {discountAmount > 0 && (
+        <div className="flex items-center justify-between text-xs sm:text-sm text-emerald-600 dark:text-emerald-400 font-medium">
+          <span>Descuento ({discountPercent}%)</span>
+          <span className="font-mono font-bold">-${discountAmount.toFixed(2)} USD</span>
+        </div>
+      )}
+
+      <div className="flex items-center justify-between text-xs sm:text-sm text-gray-600 dark:text-gray-400">
+        <span>Gastos de Envío</span>
+        <span className="font-mono font-bold text-gray-900 dark:text-gray-100">
+          {shipping === 0 ? (
+            <span className="text-emerald-600 dark:text-emerald-400 font-sans font-bold uppercase text-xs tracking-wider">GRATIS</span>
+          ) : (
+            `$${shipping.toFixed(2)} USD`
+          )}
         </span>
       </div>
-      <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold font-mono shrink-0 ml-1.5 ${
-        hasAgotadoItems ? "bg-white/20 text-white" : "bg-white/15 dark:bg-black/5 text-white dark:text-gray-900"
-      }`}>
-        ${finalTotal.toFixed(2)}
-      </span>
-    </button>
-  </div>
 
-  {!isAuthenticated && !hasAgotadoItems && (
-  <p className="text-[11px] text-center text-gray-500 dark:text-gray-400 mt-2 font-medium">
-  Tus productos se guardarán intactos en tu carrito al iniciar sesión o registrarte.
-  </p>
-  )}
+      <div className="pt-3.5 border-t border-black/[0.06] dark:border-white/10 flex items-baseline justify-between">
+        <div>
+          <span className="text-sm sm:text-base font-bold text-gray-950 dark:text-white block">Total a Pagar</span>
+          <span className="text-[11px] text-gray-400">IVA e impuestos incluidos</span>
+        </div>
+        <div className="text-right">
+          <span className="font-sans font-extrabold text-2xl sm:text-3xl text-gray-950 dark:text-white tracking-tight">
+            ${finalTotal.toFixed(2)}
+          </span>
+          <span className="text-xs font-semibold text-gray-400 ml-1">USD</span>
+        </div>
+      </div>
+    </div>
+
+    {/* Warranty Note */}
+    <div className="p-3.5 rounded-2xl bg-black/[0.02] dark:bg-white/[0.03] border border-black/[0.05] dark:border-white/5 flex items-start gap-3 text-xs text-gray-600 dark:text-gray-400">
+      <ShieldCheck className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
+      <p className="text-[11px] leading-relaxed">
+        <strong className="text-gray-900 dark:text-gray-200">Garantía Oficial Lumina de 2 años.</strong> Devolución íntegra sin compromiso durante los primeros 30 días.
+      </p>
+    </div>
+
+    {/* LUXURY REDESIGNED CHECKOUT BUTTON */}
+    <div className="space-y-3 pt-1">
+      <button 
+        onClick={handleProceedToPayment}
+        disabled={hasAgotadoItems}
+        className={`group w-full h-13 sm:h-14 rounded-2xl font-sans font-bold text-sm sm:text-base flex items-center justify-between px-5 sm:px-6 transition-all duration-300 shadow-md hover:shadow-lg cursor-pointer active:scale-[0.99] ${
+          hasAgotadoItems
+            ? "bg-rose-600 text-white shadow-rose-500/20 opacity-90 cursor-not-allowed"
+            : "bg-gray-950 dark:bg-white text-white dark:text-gray-950 hover:bg-black dark:hover:bg-gray-100 shadow-black/15 hover:shadow-black/25"
+        }`}
+      >
+        <div className="flex items-center gap-3">
+          <div className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 transition-transform group-hover:scale-105 ${
+            hasAgotadoItems 
+              ? "bg-white/20 text-white" 
+              : "bg-white/15 dark:bg-black/10 text-white dark:text-gray-950"
+          }`}>
+            {hasAgotadoItems ? <AlertTriangle className="w-4 h-4" /> : <Lock className="w-4 h-4" />}
+          </div>
+          <span className="tracking-tight">
+            {hasAgotadoItems 
+              ? "Elimina piezas agotadas" 
+              : !isAuthenticated 
+              ? "Iniciar Sesión para Pagar" 
+              : "Proceder al Pago"}
+          </span>
+        </div>
+        
+        <div className="flex items-center gap-2.5">
+          <span className="font-mono font-extrabold text-sm sm:text-base">
+            ${finalTotal.toFixed(2)}
+          </span>
+          <ArrowRight className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-1" />
+        </div>
+      </button>
+
+      <button 
+        onClick={() => { setIsOpen(false); router.push("/shop"); }}
+        className="w-full py-2.5 rounded-xl text-xs font-semibold text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-200 hover:bg-black/[0.03] dark:hover:bg-white/5 transition-all flex items-center justify-center gap-2 cursor-pointer"
+      >
+        <ShoppingBag className="w-3.5 h-3.5" />
+        <span>Continuar explorando el catálogo</span>
+      </button>
+
+      {!isAuthenticated && !hasAgotadoItems && (
+        <p className="text-[11px] text-center text-gray-500 dark:text-gray-400 font-medium pt-1">
+          Tus productos se guardarán intactos en tu cuenta al iniciar sesión o registrarte.
+        </p>
+      )}
+    </div>
 
   </div>
 
@@ -1778,26 +1892,29 @@ export function CartDrawer() {
         </div>
       )}
 
-      {/* Card Bottom Row: Supported Cards Badges in 2IXO pills */}
+      {/* Card Bottom Row: Supported Cards Badges in Symmetrical Luxury Pills */}
       <div className="relative z-10 pt-1 space-y-3">
-        <div className="flex flex-wrap items-center gap-1.5">
-          <span className="px-3 py-1 rounded-full bg-white/80 dark:bg-black/30 border border-black/[0.06] dark:border-white/10 text-[11px] font-bold text-gray-700 dark:text-gray-300 flex items-center gap-1.5 shadow-2xs">
-            <VisaLogo className="h-3" fill="#1A1F71" /> Visa
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="px-3 py-1.5 rounded-full bg-white/90 dark:bg-black/40 border border-black/[0.06] dark:border-white/10 text-[11px] font-bold text-gray-800 dark:text-gray-200 flex items-center gap-1.5 shadow-2xs">
+            <PayPhoneIcon className="w-3.5 h-3.5" /> <span>PayPhone</span>
           </span>
-          <span className="px-3 py-1 rounded-full bg-white/80 dark:bg-black/30 border border-black/[0.06] dark:border-white/10 text-[11px] font-bold text-gray-700 dark:text-gray-300 flex items-center gap-1.5 shadow-2xs">
-            <MastercardLogo className="h-3.5" /> Mastercard
+          <span className="px-3 py-1.5 rounded-full bg-white/90 dark:bg-black/40 border border-black/[0.06] dark:border-white/10 text-[11px] font-bold text-gray-800 dark:text-gray-200 flex items-center gap-1.5 shadow-2xs">
+            <VisaLogo className="h-3" fill="#1A1F71" /> <span>Visa</span>
           </span>
-          <span className="px-3 py-1 rounded-full bg-white/80 dark:bg-black/30 border border-black/[0.06] dark:border-white/10 text-[11px] font-bold text-gray-700 dark:text-gray-300 shadow-2xs">
-            Diners Club
+          <span className="px-3 py-1.5 rounded-full bg-white/90 dark:bg-black/40 border border-black/[0.06] dark:border-white/10 text-[11px] font-bold text-gray-800 dark:text-gray-200 flex items-center gap-1.5 shadow-2xs">
+            <MastercardLogo className="h-3.5" /> <span>Mastercard</span>
           </span>
-          <span className="px-3 py-1 rounded-full bg-white/80 dark:bg-black/30 border border-black/[0.06] dark:border-white/10 text-[11px] font-bold text-gray-700 dark:text-gray-300 shadow-2xs">
-            Discover
+          <span className="px-3 py-1.5 rounded-full bg-white/90 dark:bg-black/40 border border-black/[0.06] dark:border-white/10 text-[11px] font-bold text-gray-800 dark:text-gray-200 flex items-center gap-1.5 shadow-2xs">
+            <AmexLogo className="h-3.5" /> <span>American Express</span>
           </span>
-          <span className="px-3 py-1 rounded-full bg-white/80 dark:bg-black/30 border border-black/[0.06] dark:border-white/10 text-[11px] font-bold text-gray-700 dark:text-gray-300 shadow-2xs">
-            American Express
+          <span className="px-3 py-1.5 rounded-full bg-white/90 dark:bg-black/40 border border-black/[0.06] dark:border-white/10 text-[11px] font-bold text-gray-800 dark:text-gray-200 flex items-center gap-1.5 shadow-2xs">
+            <DinersClubLogo className="h-3.5" /> <span>Diners Club</span>
           </span>
-          <span className="px-3 py-1 rounded-full bg-white/80 dark:bg-black/30 border border-black/[0.06] dark:border-white/10 text-[11px] font-bold text-gray-700 dark:text-gray-300 shadow-2xs">
-            Alia
+          <span className="px-3 py-1.5 rounded-full bg-white/90 dark:bg-black/40 border border-black/[0.06] dark:border-white/10 text-[11px] font-bold text-gray-800 dark:text-gray-200 flex items-center gap-1.5 shadow-2xs">
+            <DiscoverLogo className="h-3.5" /> <span>Discover</span>
+          </span>
+          <span className="px-3 py-1.5 rounded-full bg-white/90 dark:bg-black/40 border border-black/[0.06] dark:border-white/10 text-[11px] font-bold text-gray-800 dark:text-gray-200 flex items-center gap-1.5 shadow-2xs">
+            <AliaLogo className="h-3.5" /> <span>Alia</span>
           </span>
         </div>
 
