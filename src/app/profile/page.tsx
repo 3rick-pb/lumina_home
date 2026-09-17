@@ -31,12 +31,13 @@ import {
 import { IntegrationsTab } from "@/components/profile/tabs/IntegrationsTab";
 import { useUserStore, Order, formatCleanName } from "@/lib/userStore";
 import { useThemeStore, getResolvedTheme } from "@/lib/themeStore";
-import { useCatalogStore, normalizeCategory, CatalogProduct, ProductCombo } from "@/lib/catalogStore";
+import { useCatalogStore, normalizeCategory, CatalogProduct, ProductCombo, EmbeddedCarouselConfig } from "@/lib/catalogStore";
 import { normalizeSearchText } from "@/lib/utils";
 import { ColorVariantsManager, ColorVariant } from "@/components/admin/ColorVariantsManager";
 import { normalizeImageUrl, normalizeImagesList, isGoogleDriveUrl } from "@/lib/imageUtils";
 import { ProductArchitectureSelector } from "@/components/profile/ProductArchitectureSelector";
 import { ProductGalleryStyleSelector } from "@/components/profile/ProductGalleryStyleSelector";
+import { EmbeddedCarouselConfigurator } from "@/components/profile/EmbeddedCarouselConfigurator";
 import { ProductCombosManager } from "@/components/profile/ProductCombosManager";
 import { AddCardAnimatedModal } from "@/components/profile/AddCardAnimatedModal";
 import { OverviewTab } from "@/components/profile/tabs/OverviewTab";
@@ -156,6 +157,12 @@ export default function ProfilePage() {
  const [prodGalleryStyle, setProdGalleryStyle] = useState<'traditional' | 'isometric_3d'>('traditional');
  const [prodGalleryAutoplay, setProdGalleryAutoplay] = useState(true);
  const [prodGalleryAutoplaySpeed, setProdGalleryAutoplaySpeed] = useState(4);
+ const [prodEmbeddedCarousel, setProdEmbeddedCarousel] = useState<EmbeddedCarouselConfig>({
+   enabled: true,
+   title: "Atmósfera & Edición Visual",
+   subtitle: "Perspectiva sensorial y atmósfera espacial de esta pieza",
+   autoplaySpeed: 3.5,
+ });
  const [prodCombos, setProdCombos] = useState<ProductCombo[]>([]);
  const [prodHowToUse, setProdHowToUse] = useState("");
  const [prodBundleMode, setProdBundleMode] = useState<'companion' | 'volume_tiers' | 'care_pass'>('companion');
@@ -208,7 +215,13 @@ export default function ProfilePage() {
  const [editGalleryStyle, setEditGalleryStyle] = useState<'traditional' | 'isometric_3d'>('traditional');
  const [editGalleryAutoplay, setEditGalleryAutoplay] = useState(true);
  const [editGalleryAutoplaySpeed, setEditGalleryAutoplaySpeed] = useState(4);
- const [editCombos, setEditCombos] = useState<ProductCombo[]>([]);
+  const [editEmbeddedCarousel, setEditEmbeddedCarousel] = useState<EmbeddedCarouselConfig>({
+    enabled: true,
+    title: "Atmósfera & Edición Visual",
+    subtitle: "Perspectiva sensorial y atmósfera espacial de esta pieza",
+    autoplaySpeed: 3.5,
+  });
+  const [editCombos, setEditCombos] = useState<ProductCombo[]>([]);
  const [editHowToUse, setEditHowToUse] = useState("");
  const [editBundleMode, setEditBundleMode] = useState<'companion' | 'volume_tiers' | 'care_pass'>('companion');
  const [editBundleCompanionIds, setEditBundleCompanionIds] = useState<string[]>([]);
@@ -332,6 +345,7 @@ export default function ProfilePage() {
       galleryStyle: prodGalleryStyle,
       galleryAutoplay: prodGalleryAutoplay,
       galleryAutoplaySpeed: prodGalleryAutoplaySpeed,
+      embeddedCarousel: prodEmbeddedCarousel,
       landingAnatomyImage: prodLayoutType === 'landing' && prodLandingAnatomyImage.trim() ? prodLandingAnatomyImage.trim() : undefined,
       landingSpecs: prodLayoutType === 'landing' ? prodLandingSpecs : undefined,
       landingReviews: prodLayoutType === 'landing' ? prodLandingReviews : undefined,
@@ -375,6 +389,12 @@ export default function ProfilePage() {
  setProdGalleryStyle("traditional");
  setProdGalleryAutoplay(true);
  setProdGalleryAutoplaySpeed(4);
+ setProdEmbeddedCarousel({
+   enabled: true,
+   title: "Atmósfera & Edición Visual",
+   subtitle: "Perspectiva sensorial y atmósfera espacial de esta pieza",
+   autoplaySpeed: 3.5,
+ });
  setProdLandingAnatomyImage("");
  setProdCombos([]);
  setProdHowToUse("");
@@ -435,6 +455,12 @@ export default function ProfilePage() {
     setEditGalleryStyle(p.galleryStyle || 'traditional');
     setEditGalleryAutoplay(p.galleryAutoplay !== undefined ? p.galleryAutoplay : true);
     setEditGalleryAutoplaySpeed(p.galleryAutoplaySpeed || 4);
+    setEditEmbeddedCarousel(p.embeddedCarousel || {
+      enabled: true,
+      title: "Atmósfera & Edición Visual",
+      subtitle: "Perspectiva sensorial y atmósfera espacial de esta pieza",
+      autoplaySpeed: 3.5,
+    });
     setEditCombos(p.combos || []);
     setEditHowToUse(p.howToUse || "");
     setEditBundleMode(p.landingBundle?.mode || 'companion');
@@ -492,6 +518,7 @@ export default function ProfilePage() {
  galleryStyle: editGalleryStyle,
  galleryAutoplay: editGalleryAutoplay,
  galleryAutoplaySpeed: editGalleryAutoplaySpeed,
+ embeddedCarousel: editEmbeddedCarousel,
  landingAnatomyImage: editLayoutType === 'landing' && editLandingAnatomyImage.trim() ? editLandingAnatomyImage.trim() : undefined,
  landingSpecs: editLayoutType === 'landing' && editLandingSpecs.length > 0 ? editLandingSpecs : undefined,
  landingReviews: editLayoutType === 'landing' && editLandingReviews.length > 0 ? editLandingReviews : undefined,
@@ -1397,6 +1424,18 @@ const handleConfirmDeleteNiche = async () => {
                 }
               />
             </div>
+
+            {/* Carrusel Embebido Cilíndrico 3D (Efecto Video) */}
+            <div className="pt-3 border-t border-gray-200/80 dark:border-white/10">
+              <EmbeddedCarouselConfigurator
+                config={prodEmbeddedCarousel}
+                onChange={setProdEmbeddedCarousel}
+                productImagesCount={
+                  (prodImageUrl.trim() ? 1 : 0) +
+                  (prodExtraImages.trim() ? prodExtraImages.split(/[\n,]+/).map(u => u.trim()).filter(Boolean).length : 0)
+                }
+              />
+            </div>
           </div>
 
           {/* BLOQUE 5: COLORES & ACABADOS DEL PRODUCTO */}
@@ -1864,6 +1903,18 @@ const handleConfirmDeleteNiche = async () => {
                 autoplaySpeed={editGalleryAutoplaySpeed}
                 onAutoplaySpeedChange={setEditGalleryAutoplaySpeed}
                 photosCount={
+                  (editImageUrl.trim() ? 1 : 0) +
+                  (editExtraImages.trim() ? editExtraImages.split(/[\n,]+/).map(u => u.trim()).filter(Boolean).length : 0)
+                }
+              />
+            </div>
+
+            {/* Carrusel Embebido Cilíndrico 3D (Efecto Video) */}
+            <div className="pt-3 border-t border-gray-200/80 dark:border-white/10">
+              <EmbeddedCarouselConfigurator
+                config={editEmbeddedCarousel}
+                onChange={setEditEmbeddedCarousel}
+                productImagesCount={
                   (editImageUrl.trim() ? 1 : 0) +
                   (editExtraImages.trim() ? editExtraImages.split(/[\n,]+/).map(u => u.trim()).filter(Boolean).length : 0)
                 }

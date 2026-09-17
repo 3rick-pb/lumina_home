@@ -26,6 +26,7 @@ import { useUserStore } from "@/lib/userStore";
 import { motion } from "framer-motion";
 import { normalizeImageUrl } from "@/lib/imageUtils";
 import { Isometric3DGallery } from "./Isometric3DGallery";
+import { EmbeddedCylinderCarousel } from "./EmbeddedCylinderCarousel";
 
 interface ProductLandingViewProps {
   product: CatalogProduct;
@@ -1267,6 +1268,17 @@ export function ProductLandingView({
 
         </div>
       </motion.section>
+
+      {/* Carrusel Embebido Cilíndrico 3D (Efecto Video Enveding.mp4) */}
+      {product.embeddedCarousel?.enabled !== false && (
+        <EmbeddedCylinderCarousel
+          config={product.embeddedCarousel}
+          productTitle={product.title}
+          category={product.category}
+          productImages={images}
+          className="my-10"
+        />
+      )}
 
       {/* ========================================================================= */}
       {/* BLOCK 4: SOCIAL PROOF / WHAT OUR CUSTOMERS SAY                            */}

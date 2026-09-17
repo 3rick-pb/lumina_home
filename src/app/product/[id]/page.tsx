@@ -13,6 +13,7 @@ import { useAmbientStore } from "@/lib/ambientStore";
 import { ProductLandingView } from "@/components/product/ProductLandingView";
 import { ProductBundleSection } from "@/components/product/ProductBundleSection";
 import { Isometric3DGallery } from "@/components/product/Isometric3DGallery";
+import { EmbeddedCylinderCarousel } from "@/components/product/EmbeddedCylinderCarousel";
 import { normalizeImageUrl } from "@/lib/imageUtils";
 import { motion } from "framer-motion";
 
@@ -679,6 +680,17 @@ export default function ProductDetail({ params }: { params: Promise<{ id: string
           </div>
         </motion.div>
         </>
+        )}
+
+        {/* Carrusel Embebido Cilíndrico 3D (Efecto Video Enveding.mp4) */}
+        {product.embeddedCarousel?.enabled !== false && (
+          <EmbeddedCylinderCarousel
+            config={product.embeddedCarousel}
+            productTitle={product.title}
+            category={product.category}
+            productImages={images}
+            className="my-16 sm:my-20"
+          />
         )}
 
         {/* You May Also Like */}

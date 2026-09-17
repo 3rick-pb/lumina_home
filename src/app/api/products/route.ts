@@ -45,6 +45,7 @@ const stripExtendedFields = (obj: Record<string, unknown>) => {
   delete clean.gallery_style;
   delete clean.gallery_autoplay;
   delete clean.gallery_autoplay_speed;
+  delete clean.embedded_carousel;
   delete clean.landing_specs;
   delete clean.landing_reviews;
   delete clean.landing_benefits;

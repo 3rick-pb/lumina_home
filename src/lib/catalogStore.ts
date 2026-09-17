@@ -41,6 +41,23 @@ export interface ProductCombo {
   discountPercentage?: number;
 }
 
+export interface EmbeddedCarouselSlide {
+  image: string;
+  tag?: string;
+  title?: string;
+  subtitle?: string;
+  code?: string;
+  theme?: 'dark_typography' | 'photo_overlay' | 'split_numbers' | 'framed' | 'minimal_date';
+}
+
+export interface EmbeddedCarouselConfig {
+  enabled: boolean;
+  title?: string;
+  subtitle?: string;
+  autoplaySpeed?: number;
+  slides?: EmbeddedCarouselSlide[];
+}
+
 export interface CatalogProduct {
   id: string;
   title: string;
@@ -74,6 +91,7 @@ export interface CatalogProduct {
   landingBenefits?: LandingBenefit[];
   landingBundle?: LandingBundle;
   landingAnatomyImage?: string;
+  embeddedCarousel?: EmbeddedCarouselConfig;
 }
 
 interface CatalogState {
@@ -277,16 +295,19 @@ const toSupabaseProduct = (p: Partial<CatalogProduct>) => {
     landing_specs: p.landingSpecs || null,
     landing_reviews: p.landingReviews || null,
     landing_benefits: p.landingBenefits || null,
+    embedded_carousel: p.embeddedCarousel || null,
     landing_bundle: p.landingBundle ? {
       ...p.landingBundle,
       galleryStyle: p.galleryStyle || 'traditional',
       galleryAutoplay: p.galleryAutoplay !== undefined ? p.galleryAutoplay : true,
       galleryAutoplaySpeed: p.galleryAutoplaySpeed || 4,
+      embeddedCarousel: p.embeddedCarousel || null,
     } : {
       enabled: false,
       galleryStyle: p.galleryStyle || 'traditional',
       galleryAutoplay: p.galleryAutoplay !== undefined ? p.galleryAutoplay : true,
       galleryAutoplaySpeed: p.galleryAutoplaySpeed || 4,
+      embeddedCarousel: p.embeddedCarousel || null,
     },
     combos: p.combos || null,
     how_to_use: p.howToUse || null,
@@ -364,6 +385,7 @@ const toFrontendProduct = (p: any): CatalogProduct => {
     landingBenefits: p.landing_benefits || undefined,
     landingBundle: p.landing_bundle || undefined,
     landingAnatomyImage: p.landing_anatomy_image || undefined,
+    embeddedCarousel: p.embedded_carousel || p.landing_bundle?.embeddedCarousel || undefined,
   };
 };
 
@@ -495,6 +517,7 @@ export const useCatalogStore = create<CatalogState>((set) => ({
       delete basicProduct.gallery_style;
       delete basicProduct.gallery_autoplay;
       delete basicProduct.gallery_autoplay_speed;
+      delete basicProduct.embedded_carousel;
       delete basicProduct.landing_specs;
       delete basicProduct.landing_reviews;
       delete basicProduct.landing_benefits;
@@ -573,6 +596,7 @@ export const useCatalogStore = create<CatalogState>((set) => ({
         delete basicProduct.gallery_style;
         delete basicProduct.gallery_autoplay;
         delete basicProduct.gallery_autoplay_speed;
+        delete basicProduct.embedded_carousel;
         delete basicProduct.landing_specs;
         delete basicProduct.landing_reviews;
         delete basicProduct.landing_benefits;
