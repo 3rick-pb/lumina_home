@@ -47,6 +47,7 @@ export function EmbeddedCylinderCarousel({
   const autoplaySpeed = config?.autoplaySpeed || 3.5;
 
   // Build the 6 curated slides cloning Video Enveding.mp4
+  // Build the 6 curated slides with clean product info (no arbitrary dates or codes)
   const slides: EmbeddedCarouselSlide[] = useMemo(() => {
     if (config?.slides && config.slides.length >= 3) {
       return config.slides;
@@ -58,55 +59,55 @@ export function EmbeddedCylinderCarousel({
     return [
       {
         image: getImg(0),
-        tag: "THU",
-        title: "STUDIO VIEW",
-        subtitle: "0316 AVE",
+        tag: category || "EDICIÓN",
+        title: productTitle,
+        subtitle: "VISTA PRINCIPAL",
         theme: "photo_overlay",
       },
       {
         image: getImg(1),
-        tag: "MADRID",
-        title: "BARCELONA",
-        subtitle: "SEVILLA",
-        code: "LOC • ESP",
+        tag: "DISEÑO",
+        title: productTitle,
+        subtitle: "ACABADO DE AUTOR",
+        code: category || "PIEZA DESTACADA",
         theme: "dark_typography",
       },
       {
         image: getImg(2),
-        tag: "BOTANICAL",
-        title: "SERIE DE AUTOR",
-        subtitle: "0034 — 0095",
-        code: "0034\n—\n0095",
+        tag: category || "DETALLE",
+        title: productTitle,
+        subtitle: "PERSPECTIVA Y TEXTURA",
+        code: "ORIGINAL",
         theme: "split_numbers",
       },
       {
         image: getImg(3),
-        tag: "GEOMETRY",
+        tag: "GEOMETRÍA",
         title: productTitle,
-        subtitle: "ISOTIPO CONCÉNTRICO",
+        subtitle: "PROPORCIÓN Y EQUILIBRIO",
         theme: "framed",
       },
       {
         image: getImg(4),
-        tag: "EDITORIAL",
-        title: "NORTH AVE",
-        subtitle: "COLECCIÓN PRIVADA",
+        tag: "ATMÓSFERA",
+        title: productTitle,
+        subtitle: "ESPACIO Y ARMONÍA",
         theme: "photo_overlay",
       },
       {
         image: getImg(5),
-        tag: "2026",
-        title: "LUMINA EDITION",
-        subtitle: "NOV ARCHIVE",
-        code: "2026\nNOV",
+        tag: "COLECCIÓN",
+        title: productTitle,
+        subtitle: "PIEZA DE CATÁLOGO",
+        code: "ESENCIAL",
         theme: "minimal_date",
       },
     ];
-  }, [config?.slides, productImages, productTitle]);
+  }, [config?.slides, productImages, productTitle, category]);
 
   const N = slides.length;
   const [activeIndex, setActiveIndex] = useState(0);
-  const [isHovered, setIsHovered] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
   const [isPlaying, setIsPlaying] = useState(true);
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
   const [dragStartX, setDragStartX] = useState(0);
@@ -119,16 +120,16 @@ export function EmbeddedCylinderCarousel({
     setActiveIndex((prev) => (prev - 1 + N) % N);
   }, [N]);
 
-  // Autoplay Continuous Loop
+  // Autoplay Continuous Loop: Reliable, uninterrupted rotation
   useEffect(() => {
-    if (!isPlaying || isHovered || lightboxIndex !== null) return;
+    if (!isPlaying || isDragging || lightboxIndex !== null) return;
 
     const interval = setInterval(() => {
-      handleNext();
-    }, Math.max(2000, autoplaySpeed * 1000));
+      setActiveIndex((prev) => (prev + 1) % N);
+    }, Math.max(1800, autoplaySpeed * 1000));
 
     return () => clearInterval(interval);
-  }, [isPlaying, isHovered, lightboxIndex, autoplaySpeed, handleNext]);
+  }, [isPlaying, isDragging, lightboxIndex, autoplaySpeed, N]);
 
   // Cylinder radius and angle step for 3D curved horizontal arc
   const RADIUS = 620; // Radius in px of the 3D cylinder
@@ -139,8 +140,6 @@ export function EmbeddedCylinderCarousel({
 
   return (
     <section 
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
       className={cn("relative w-full py-16 sm:py-24 overflow-hidden select-none", className)}
     >
       {/* Background Ambience / Subtle Lighting Glow */}
@@ -212,14 +211,22 @@ export function EmbeddedCylinderCarousel({
       <div 
         className="relative w-full h-[360px] sm:h-[420px] md:h-[460px] flex items-center justify-center overflow-visible"
         style={{ perspective: 1200 }}
-        onTouchStart={(e) => setDragStartX(e.touches[0].clientX)}
+        onTouchStart={(e) => {
+          setIsDragging(true);
+          setDragStartX(e.touches[0].clientX);
+        }}
         onTouchEnd={(e) => {
+          setIsDragging(false);
           const diff = e.changedTouches[0].clientX - dragStartX;
           if (diff > 40) handlePrev();
           else if (diff < -40) handleNext();
         }}
-        onMouseDown={(e) => setDragStartX(e.clientX)}
+        onMouseDown={(e) => {
+          setIsDragging(true);
+          setDragStartX(e.clientX);
+        }}
         onMouseUp={(e) => {
+          setIsDragging(false);
           const diff = e.clientX - dragStartX;
           if (diff > 50) handlePrev();
           else if (diff < -50) handleNext();
@@ -287,88 +294,88 @@ export function EmbeddedCylinderCarousel({
                     : "border-black/10 dark:border-white/10 hover:brightness-105"
                 )}
               >
-                {/* ARCHETYPE 1: DARK TYPOGRAPHY (MADRID / BARCELONA / SEVILLA) */}
+                {/* ARCHETYPE 1: DARK TYPOGRAPHY (TITULO DE PRODUCTO / DISEÑO DE AUTOR) */}
                 {slide.theme === "dark_typography" && (
                   <div className="relative w-full h-full bg-[#121310] text-white p-5 sm:p-6 flex flex-col justify-between">
                     <div className="flex items-center justify-between">
                       <span className="text-[10px] font-mono tracking-widest text-[#8c9276] uppercase font-bold">
-                        {slide.tag || "MADRID"}
+                        {slide.tag || category || "DISEÑO"}
                       </span>
-                      <span className="text-[9px] font-mono text-white/40">
-                        {slide.code || "02 • ARCHIVE"}
+                      <span className="text-[9px] font-mono text-white/40 uppercase">
+                        {slide.code || "PIEZA DESTACADA"}
                       </span>
                     </div>
 
-                    <div className="text-center space-y-1">
-                      <p className="text-sm sm:text-base font-mono font-bold tracking-widest text-white/90">
-                        {slide.title || "BARCELONA"}
+                    <div className="text-center space-y-1 my-auto">
+                      <p className="text-sm sm:text-base font-mono font-black tracking-widest text-white/95 uppercase line-clamp-2">
+                        {productTitle}
                       </p>
                     </div>
 
                     <div className="flex items-center justify-between pt-2 border-t border-white/10">
-                      <span className="text-[10px] font-mono text-white/40 uppercase">
-                        {slide.subtitle || "SEVILLA"}
+                      <span className="text-[10px] font-mono text-white/50 uppercase">
+                        {slide.subtitle || "ACABADO DE AUTOR"}
                       </span>
                       <div className="w-2 h-2 rounded-full bg-[#8c9276]" />
                     </div>
                   </div>
                 )}
 
-                {/* ARCHETYPE 2: SPLIT NUMBERS (0034 - 0095) */}
+                {/* ARCHETYPE 2: SPLIT PRESENTATION (FOTO + NOMBRE DE PRODUCTO) */}
                 {slide.theme === "split_numbers" && (
                   <div className="relative w-full h-full flex bg-[#e8eae0] dark:bg-[#20221c] text-gray-900 dark:text-white">
-                    {/* Left half: botanical image */}
+                    {/* Left half: image */}
                     <div className="relative w-[46%] h-full overflow-hidden">
                       <Image
                         src={slide.image}
-                        alt="Detalle"
+                        alt={productTitle}
                         fill
                         sizes="140px"
                         className="object-cover"
                       />
                     </div>
-                    {/* Right half: typography & range */}
+                    {/* Right half: typography & product title */}
                     <div className="w-[54%] h-full p-4 sm:p-5 flex flex-col justify-between font-mono">
                       <div className="text-right">
                         <span className="text-[9px] text-gray-500 dark:text-gray-400 font-bold uppercase tracking-wider">
-                          {slide.tag || "SERIE"}
+                          {slide.tag || category || "DETALLE"}
                         </span>
                       </div>
-                      <div className="space-y-0.5 text-right font-black tracking-tighter text-base sm:text-xl text-gray-900 dark:text-white">
-                        <p>0034</p>
-                        <p className="text-xs font-normal text-gray-400">—</p>
-                        <p>0095</p>
+                      <div className="space-y-1 text-right my-auto">
+                        <p className="text-xs sm:text-sm font-black tracking-tight text-gray-950 dark:text-white uppercase line-clamp-3">
+                          {productTitle}
+                        </p>
                       </div>
-                      <div className="text-right text-[9px] text-gray-400">
-                        LUMINA • AUTH
+                      <div className="text-right text-[9px] font-bold tracking-widest text-[#8c9276] uppercase">
+                        DISEÑO ORIGINAL
                       </div>
                     </div>
                   </div>
                 )}
 
-                {/* ARCHETYPE 3: MINIMALIST DATE (2026 / NOV) */}
+                {/* ARCHETYPE 3: MINIMALIST EDITION (FOTO + NOMBRE DE PRODUCTO, SIN FECHAS) */}
                 {slide.theme === "minimal_date" && (
                   <div className="relative w-full h-full overflow-hidden bg-[#242620]">
                     <Image
                       src={slide.image}
-                      alt="Atmósfera"
+                      alt={productTitle}
                       fill
                       sizes="300px"
                       className="object-cover opacity-60"
                     />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent p-5 sm:p-6 flex flex-col justify-between text-white font-mono">
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/40 to-transparent p-5 sm:p-6 flex flex-col justify-between text-white font-mono">
                       <div className="flex items-center justify-between">
                         <span className="text-[9px] font-bold tracking-widest text-[#8c9276] uppercase">
-                          EDICIÓN
+                          {slide.tag || category || "COLECCIÓN"}
                         </span>
-                        <span className="text-[9px] text-white/50">ARCHIVE</span>
+                        <span className="text-[9px] text-white/50 uppercase">DESTACADO</span>
                       </div>
-                      <div className="space-y-0.5">
-                        <h4 className="text-2xl sm:text-3xl font-black tracking-tight text-white">
-                          2026
+                      <div className="space-y-1">
+                        <h4 className="text-base sm:text-lg font-black tracking-tight text-white uppercase line-clamp-2">
+                          {productTitle}
                         </h4>
-                        <p className="text-xs sm:text-sm font-bold tracking-widest text-white/80">
-                          NOV
+                        <p className="text-[10px] sm:text-xs font-bold tracking-widest text-white/70 uppercase">
+                          {slide.subtitle || "PIEZA DE CATÁLOGO"}
                         </p>
                       </div>
                     </div>
@@ -381,7 +388,7 @@ export function EmbeddedCylinderCarousel({
                     <div className="relative w-full flex-1 rounded-[1.3rem] overflow-hidden bg-black/30">
                       <Image
                         src={slide.image}
-                        alt={slide.title || "Pieza"}
+                        alt={productTitle}
                         fill
                         sizes="300px"
                         className="object-cover"
@@ -394,18 +401,18 @@ export function EmbeddedCylinderCarousel({
                       </div>
                     </div>
                     <div className="pt-2 px-1 flex items-center justify-between text-[10px] font-mono">
-                      <span className="font-bold text-white/90 line-clamp-1">{slide.title}</span>
-                      <span className="text-white/60">AUTOR</span>
+                      <span className="font-bold text-white/95 line-clamp-1 uppercase">{productTitle}</span>
+                      <span className="text-white/60 uppercase">{category || "AUTOR"}</span>
                     </div>
                   </div>
                 )}
 
-                {/* ARCHETYPE 5: DEFAULT PHOTO OVERLAY (THU / 0316 AVE / NORTH AVE) */}
+                {/* ARCHETYPE 5: DEFAULT PHOTO OVERLAY (FOTO EDITORIAL + NOMBRE DE PRODUCTO) */}
                 {(!slide.theme || slide.theme === "photo_overlay") && (
                   <div className="relative w-full h-full overflow-hidden bg-black/40">
                     <Image
                       src={slide.image}
-                      alt={slide.title || "Vista"}
+                      alt={productTitle}
                       fill
                       sizes="300px"
                       className="object-cover transition-transform duration-700 hover:scale-105"
@@ -413,7 +420,7 @@ export function EmbeddedCylinderCarousel({
                     <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/20 to-black/40 p-5 sm:p-6 flex flex-col justify-between text-white">
                       <div className="flex items-center justify-between">
                         <span className="px-2.5 py-0.5 rounded-full text-[9px] font-mono font-bold uppercase tracking-wider bg-white/20 backdrop-blur-md border border-white/25">
-                          {slide.tag || "THU"}
+                          {slide.tag || category || "EDICIÓN"}
                         </span>
                         <div className="w-7 h-7 rounded-full bg-black/30 backdrop-blur-md flex items-center justify-center">
                           <Maximize2 className="w-3.5 h-3.5 text-white/80" />
@@ -421,11 +428,11 @@ export function EmbeddedCylinderCarousel({
                       </div>
 
                       <div>
-                        <h4 className="text-sm sm:text-base font-bold font-mono tracking-tight text-white line-clamp-1">
-                          {slide.title || "0316 AVE"}
+                        <h4 className="text-sm sm:text-base font-bold font-mono tracking-tight text-white line-clamp-1 uppercase">
+                          {productTitle}
                         </h4>
-                        <p className="text-[10px] sm:text-xs text-white/70 font-mono mt-0.5 line-clamp-1">
-                          {slide.subtitle || "ESTUDIO LUMINA"}
+                        <p className="text-[10px] sm:text-xs text-white/70 font-mono mt-0.5 line-clamp-1 uppercase">
+                          {slide.subtitle || "PERSPECTIVA VISUAL"}
                         </p>
                       </div>
                     </div>

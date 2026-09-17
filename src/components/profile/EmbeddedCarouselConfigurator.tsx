@@ -72,7 +72,7 @@ export function EmbeddedCarouselConfigurator({
       image: "",
       tag: "EDICIÓN",
       title: "VISTA EDITORIAL",
-      subtitle: "LUMINA HOME",
+      subtitle: "EDICIÓN EXCLUSIVA",
       theme: "photo_overlay",
     };
     onChange({
@@ -281,7 +281,7 @@ export function EmbeddedCarouselConfigurator({
                   Curaduría Automática Inteligente Activa
                 </p>
                 <p className="text-[11px] leading-relaxed opacity-90">
-                  El sistema genera automáticamente las 6 tarjetas editoriales en curva 3D utilizando las fotos del producto ({productImagesCount} fotos disponibles) y los sellos de autor de Lumina Home (Madrid/Sevilla, split 0034-0095, marco passepartout y fecha 2026/NOV) idénticas al video de referencia.
+                  El sistema genera automáticamente las 6 tarjetas editoriales en curva 3D utilizando las fotos del producto ({productImagesCount} fotos disponibles) y la composición estética del video de referencia, destacando el nombre de este producto, su categoría y perspectiva visual en cada tarjeta sin fechas fijas ni códigos genéricos.
                 </p>
               </div>
             ) : (
