@@ -9,6 +9,15 @@ import Link from "next/link";
 import { useCatalogStore } from "@/lib/catalogStore";
 import { useAmbientStore } from "@/lib/ambientStore";
 import { supabase } from "@/lib/supabase";
+import { ScrollProgress } from "@/components/ui/scroll-progress";
+import { ProximitySidebar } from "@/components/ui/proximity-sidebar";
+
+const HOME_SECTIONS = [
+  { id: "hero-section", label: "Inicio", level: 1 as const },
+  { id: "trust-badges", label: "Garantías", level: 2 as const },
+  { id: "catalog-categories", label: "Colecciones", level: 2 as const },
+  { id: "catalog-popular", label: "Catálogo Popular", level: 3 as const },
+];
 
 const NICHE_METADATA_MAP: Record<string, { subtitle: string; img: string; defaultPrice: string }> = {
   "aromaterapia": { 
@@ -330,12 +339,13 @@ export default function Home() {
 
       {/* Trust Badges Bar - Floating Glassmorphic Pill Banner */}
       <motion.div 
+        id="trust-badges"
         initial={{ opacity: 0, y: 20 }}
         whileInView={{ opacity: 1, y: 0 }}
         viewport={{ once: false, amount: 0.1 }}
         transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
         style={{ willChange: "transform, opacity" }}
-        className="relative z-30 -mt-7 sm:-mt-9 mb-3 container mx-auto px-4 sm:px-6 md:px-8 transform-gpu"
+        className="relative z-30 -mt-7 sm:-mt-9 mb-3 container mx-auto px-4 sm:px-6 md:px-8 transform-gpu scroll-mt-36"
       >
         <div className="bg-white dark:bg-[#1e1e20] rounded-2xl md:rounded-[2rem] border border-black/[0.06] dark:border-white/[0.08] shadow-[0_16px_40px_-8px_rgba(0,0,0,0.08),0_4px_16px_rgba(0,0,0,0.03)] p-3 sm:p-4 md:p-5">
           <div className="flex lg:grid lg:grid-cols-5 items-center justify-start lg:justify-items-center gap-6 sm:gap-8 lg:gap-0 overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden py-1 px-2">
@@ -371,7 +381,7 @@ export default function Home() {
         <section 
           id="catalog-categories" 
           ref={categoriesRef} 
-          className="py-24 relative z-10"
+          className="py-24 relative z-10 scroll-mt-36"
         >
           <div className="container mx-auto px-4 sm:px-6 md:px-8">
             <motion.div 
@@ -438,7 +448,7 @@ export default function Home() {
         <section 
           id="catalog-popular" 
           ref={popularRef} 
-          className="py-16 sm:py-20 relative z-10"
+          className="py-16 sm:py-20 relative z-10 scroll-mt-36"
         >
           <div className="container mx-auto px-4 sm:px-6 md:px-8">
             <motion.div 
@@ -509,6 +519,14 @@ export default function Home() {
             )}
           </div>
         </section>
+      </div>
+
+      {/* Rare UI Scroll Progress (Centrado al fondo) */}
+      <ScrollProgress sections={HOME_SECTIONS} />
+
+      {/* Rare UI Proximity Sidebar (Lateral derecho para desktop) */}
+      <div className="hidden lg:block fixed right-3 xl:right-6 top-1/2 -translate-y-1/2 z-40 pointer-events-auto">
+        <ProximitySidebar sections={HOME_SECTIONS} side="right" />
       </div>
     </>
   );
