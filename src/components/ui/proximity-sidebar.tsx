@@ -218,6 +218,8 @@ const ProximitySidebar = ({
   const dashRefs = useRef(new Map<string, HTMLButtonElement>())
   const pointerInside = useRef(false)
   const resetTimer = useRef<number | null>(null)
+  const isProgrammaticScroll = useRef(false)
+  const scrollLockTimeout = useRef<number | null>(null)
   const [isSidebarHovered, setIsSidebarHovered] = useState(false)
   const [activeId, setActiveId] = useState(sections[0]?.id)
   const [detectedKinds, setDetectedKinds] = useState<Record<string, SectionKind>>(
@@ -281,14 +283,22 @@ const ProximitySidebar = ({
 
   const selectSection = useCallback(
     (id: string) => {
-      // 1. "Inicio" -> Scroll cleanly to top of page
+      // Clear any pending scroll lock
+      if (scrollLockTimeout.current) {
+        window.clearTimeout(scrollLockTimeout.current)
+      }
+      isProgrammaticScroll.current = true
+      setActiveId(id)
+
+      // 1. "Inicio" -> Scroll cleanly to top of page (equivalent to clicking "Lumina" logo)
       if (id === "hero-section" || id === "inicio" || id === "top" || id === "shop-header") {
         window.scrollTo({
           top: 0,
           behavior: shouldReduceMotion ? "auto" : "smooth",
         })
-        window.history.replaceState(null, "", `#${id}`)
-        setActiveId(id)
+        scrollLockTimeout.current = window.setTimeout(() => {
+          isProgrammaticScroll.current = false
+        }, 850)
         return
       }
 
@@ -296,9 +306,10 @@ const ProximitySidebar = ({
       if (id === "envios-garantias" || id === "trust-badges" || id === "footer") {
         const footerEl = document.getElementById("envios-garantias") || document.querySelector("footer")
         if (footerEl) {
-          footerEl.scrollIntoView({
+          const top = footerEl.getBoundingClientRect().top + window.pageYOffset - 90
+          window.scrollTo({
+            top: Math.max(0, top),
             behavior: shouldReduceMotion ? "auto" : "smooth",
-            block: "start",
           })
         } else {
           window.scrollTo({
@@ -306,26 +317,36 @@ const ProximitySidebar = ({
             behavior: shouldReduceMotion ? "auto" : "smooth",
           })
         }
-        window.history.replaceState(null, "", `#${id}`)
-        setActiveId(id)
+        scrollLockTimeout.current = window.setTimeout(() => {
+          isProgrammaticScroll.current = false
+        }, 850)
         return
       }
 
+      // 3. "Explora el Catálogo", "Productos Populares" and other sections (with header offset)
       const element = getSectionElement(id)
-      if (!element) return
+      if (!element) {
+        isProgrammaticScroll.current = false
+        return
+      }
 
-      element.scrollIntoView({
+      const top = element.getBoundingClientRect().top + window.pageYOffset - 90
+      window.scrollTo({
+        top: Math.max(0, top),
         behavior: shouldReduceMotion ? "auto" : "smooth",
-        block: "start",
       })
 
-      window.history.replaceState(null, "", `#${id}`)
-      setActiveId(id)
+      scrollLockTimeout.current = window.setTimeout(() => {
+        isProgrammaticScroll.current = false
+      }, 850)
     },
     [shouldReduceMotion]
   )
 
-  useEffect(() => () => clearPendingReset(), [clearPendingReset])
+  useEffect(() => () => {
+    clearPendingReset()
+    if (scrollLockTimeout.current) window.clearTimeout(scrollLockTimeout.current)
+  }, [clearPendingReset])
 
   useEffect(() => {
     const kinds = sections.reduce<Record<string, SectionKind>>(
@@ -350,6 +371,9 @@ const ProximitySidebar = ({
 
     const updateActiveSection = () => {
       frame = 0
+
+      // If smooth programmatic scroll is running from clicking a dash, do not override activeId
+      if (isProgrammaticScroll.current) return
 
       // Special case 1: If scrolled to top, always select the first section (Inicio)
       if (window.scrollY < 180 && sections.length > 0) {

@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Image Utilities for Lumina Home
  * Transforms external image URLs (like Google Drive share links) into direct media stream URLs.
  */
@@ -13,6 +13,9 @@ export function formatGoogleDriveUrl(rawUrl: string): string {
 
   // If it's already a direct Google CDN link
   if (trimmed.includes("googleusercontent.com/d/")) {
+    if (!trimmed.includes("=") && !trimmed.includes("&")) {
+      return `${trimmed}=s0`;
+    }
     return trimmed;
   }
 
@@ -28,8 +31,13 @@ export function formatGoogleDriveUrl(rawUrl: string): string {
 
   if (match && match[1]) {
     const fileId = match[1];
-    // Google's direct media CDN URL - displays directly in <img> and Next.js Image without redirect hurdles
-    return `https://lh3.googleusercontent.com/d/${fileId}`;
+    // Google's direct media CDN URL with =s0 for original full uncompressed resolution
+    return `https://lh3.googleusercontent.com/d/${fileId}=s0`;
+  }
+
+  // If it's Unsplash, upgrade resolution parameter to high-res
+  if (trimmed.includes("images.unsplash.com") && trimmed.includes("q=80")) {
+    return trimmed.replace(/q=80/g, "q=95&auto=format&fit=crop&w=1600");
   }
 
   return trimmed;

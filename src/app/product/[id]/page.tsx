@@ -160,24 +160,25 @@ export default function ProductDetail({ params }: { params: Promise<{ id: string
                   <button 
                     key={idx}
                     onClick={() => setActiveImage(idx)}
-                    className={`relative w-20 h-24 md:w-full md:h-28 rounded-lg overflow-hidden flex-shrink-0 transition-all duration-300 border-2 ${activeImage === idx ? 'border-gray-900 opacity-100' : 'border-transparent opacity-50 hover:opacity-100'}`}
+                    className={`relative w-20 h-20 md:w-full md:aspect-square rounded-2xl overflow-hidden flex-shrink-0 transition-all duration-300 border-2 ${activeImage === idx ? 'border-gray-950 dark:border-white shadow-md scale-105' : 'border-transparent opacity-60 hover:opacity-100'}`}
                   >
-                    <Image src={img} alt={`Thumbnail ${idx}`} fill sizes="80px" draggable={false} className="object-cover pointer-events-none select-none" />
+                    <Image src={img} alt={`Thumbnail ${idx}`} fill sizes="80px" quality={90} draggable={false} className="object-cover pointer-events-none select-none" />
                   </button>
                 ))}
-                <button className="relative w-20 h-10 md:w-full rounded-lg bg-gray-100 flex items-center justify-center flex-shrink-0 hover:bg-gray-200 transition-colors">
+                <button className="relative w-20 h-10 md:w-full rounded-2xl bg-gray-100 dark:bg-white/5 flex items-center justify-center flex-shrink-0 hover:bg-gray-200 dark:hover:bg-white/10 transition-colors">
                   <ChevronDown className="w-5 h-5 text-gray-500" />
                 </button>
               </div>
 
-              {/* Main Image */}
-              <div className="relative w-full aspect-[4/5] md:aspect-[3/4] md:h-auto rounded-2xl overflow-hidden bg-gray-100/50">
+              {/* Main Image - Perfectly Squared 1:1 */}
+              <div className="relative w-full aspect-square rounded-3xl overflow-hidden bg-gray-100/50 dark:bg-white/5 border border-black/5 dark:border-white/10 shadow-md flex items-center justify-center">
                 <Image 
                   src={currentImage}
                   alt={product.title}
                   fill
-                  sizes="(max-width: 1024px) 100vw, 60vw"
+                  sizes="(max-width: 1024px) 100vw, 50vw"
                   priority
+                  quality={95}
                   draggable={false}
                   className="object-cover transform-gpu pointer-events-none select-none"
                 />
@@ -185,7 +186,7 @@ export default function ProductDetail({ params }: { params: Promise<{ id: string
                   <span className={`absolute top-4 left-4 backdrop-blur-md px-3 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider shadow-sm transition-colors ${
                     isAgotado 
                       ? "bg-red-50/60 border border-red-300/80 text-red-600" 
-                      : "bg-white/40 border border-white/60 text-gray-900"
+                      : "bg-white/40 dark:bg-black/50 border border-white/60 dark:border-white/20 text-gray-900 dark:text-gray-100"
                   }`}>
                     {isAgotado ? "AGOTADO" : product.badge}
                   </span>
@@ -682,14 +683,12 @@ export default function ProductDetail({ params }: { params: Promise<{ id: string
             )}
           </div>
 
-          <div className="lg:col-span-5 relative w-full aspect-[4/3] rounded-3xl overflow-hidden bg-gray-100 shadow-sm border border-gray-200/60">
-             <Image src={images[1] || images[0]} fill sizes="(max-width: 1024px) 100vw, 40vw" alt={product.title} className="object-cover" />
+          <div className="lg:col-span-5 relative w-full aspect-square rounded-3xl overflow-hidden bg-gray-100/50 dark:bg-white/5 shadow-sm border border-gray-200/60 dark:border-white/10 flex items-center justify-center">
+             <Image src={images[1] || images[0]} fill sizes="(max-width: 1024px) 100vw, 40vw" quality={95} alt={product.title} className="object-cover" />
           </div>
         </motion.div>
-        </>
-        )}
 
-        {/* Carrusel Embebido Cilíndrico 3D (Efecto Video Enveding.mp4) */}
+        {/* Carrusel Embebido Cilíndrico 3D (Efecto Video Enveding.mp4) - Renderizado exclusivamente para vista estándar */}
         {product.embeddedCarousel?.enabled !== false && (
           <EmbeddedCylinderCarousel
             config={product.embeddedCarousel}
@@ -698,6 +697,8 @@ export default function ProductDetail({ params }: { params: Promise<{ id: string
             productImages={images}
             className="my-16 sm:my-20"
           />
+        )}
+        </>
         )}
 
         {/* You May Also Like */}

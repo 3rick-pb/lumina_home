@@ -369,24 +369,26 @@ export function ProductLandingView({
                   <button
                     key={idx}
                     onClick={() => setActiveImage(idx)}
-                    className={`relative w-20 h-24 md:w-full md:h-28 rounded-2xl overflow-hidden flex-shrink-0 transition-all duration-300 border-2 ${
+                    className={`relative w-20 h-20 md:w-full md:aspect-square rounded-2xl overflow-hidden flex-shrink-0 transition-all duration-300 border-2 ${
                       activeImage === idx
                         ? "border-gray-950 dark:border-white shadow-md scale-105"
                         : "border-transparent opacity-60 hover:opacity-100"
                     }`}
                   >
-                    <Image src={img} alt={`${product.title} vista ${idx + 1}`} fill sizes="80px" draggable={false} className="object-cover pointer-events-none select-none" />
+                    <Image src={img} alt={`${product.title} vista ${idx + 1}`} fill sizes="80px" quality={90} draggable={false} className="object-cover pointer-events-none select-none" />
                   </button>
                 ))}
               </div>
 
-              <div className="relative w-full aspect-[4/5] md:aspect-[3/4] rounded-3xl overflow-hidden bg-gradient-to-b from-black/[0.02] to-black/[0.06] dark:from-white/[0.03] dark:to-white/[0.08] border border-black/5 dark:border-white/10 shadow-2xl group">
+              {/* Main Image - Perfectly Squared 1:1 */}
+              <div className="relative w-full aspect-square rounded-3xl overflow-hidden bg-gradient-to-b from-black/[0.02] to-black/[0.06] dark:from-white/[0.03] dark:to-white/[0.08] border border-black/5 dark:border-white/10 shadow-2xl group flex items-center justify-center">
                 <Image
                   src={currentImage}
                   alt={product.title}
                   fill
-                  sizes="(max-width: 1024px) 100vw, 60vw"
+                  sizes="(max-width: 1024px) 100vw, 50vw"
                   priority
+                  quality={95}
                   draggable={false}
                   className="object-cover transition-transform duration-700 ease-out group-hover:scale-105 pointer-events-none select-none"
                 />
