@@ -1512,7 +1512,7 @@ export function CartDrawer() {
       Método de Pago y Entrega
     </h2>
     <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-      Configura tu dirección y autoriza tu pedido con la pasarela bancaria oficial.
+      Configura tu dirección y autoriza tu pedido.
     </p>
   </div>
 
@@ -2043,7 +2043,7 @@ export function CartDrawer() {
     <button 
       onClick={handleTriggerPaymentWithAnimation}
       disabled={isProcessing || isTruckAnimating}
-      className={`group relative overflow-hidden w-full h-15 sm:h-16 rounded-full font-sans font-bold text-white transition-all duration-300 border border-white/10 shadow-[0_14px_34px_rgba(0,0,0,0.25)] select-none active:scale-[0.98] ${
+      className={`group relative overflow-hidden w-full h-14 sm:h-15 rounded-full font-sans font-bold text-white transition-all duration-300 border border-white/10 shadow-[0_14px_34px_rgba(0,0,0,0.25)] select-none active:scale-[0.98] ${
         isTruckComplete
           ? "bg-emerald-600 shadow-emerald-500/25 border-emerald-400/30 cursor-default"
           : isTruckAnimating
@@ -2065,7 +2065,7 @@ export function CartDrawer() {
             transition={{ type: "spring", stiffness: 450, damping: 22 }}
             className="flex items-center justify-center gap-2.5 text-white"
           >
-            <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center shrink-0 shadow-xs">
+            <div className="w-7 h-7 rounded-full bg-white/20 flex items-center justify-center shrink-0 shadow-xs">
               <Check className="w-4 h-4 stroke-[3]" />
             </div>
             <span className="text-sm sm:text-base font-extrabold tracking-tight">
@@ -2110,45 +2110,38 @@ export function CartDrawer() {
             </motion.div>
           </motion.div>
         ) : (
-          /* STATE 1: IDLE SLEEK LUXURY BUTTON */
+          /* STATE 1: IDLE SLEEK LUXURY BUTTON (Single line, spacious, zero overflow) */
           <motion.div
             key="idle"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="w-full h-full flex items-center justify-between px-3 sm:px-4"
+            className="w-full h-full flex items-center justify-between px-3.5 sm:px-5"
           >
-            {/* Left: PayPhone icon */}
-            <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-full bg-white/15 dark:bg-black/10 flex items-center justify-center shrink-0 border border-white/20 dark:border-black/10 shadow-2xs">
-              {isProcessing ? (
-                <Loader2 className="w-5 h-5 animate-spin text-white dark:text-[#18181b]" />
-              ) : (
-                <PayPhoneIcon className="w-5 h-5 text-white dark:text-[#18181b]" />
-              )}
-            </div>
-
-            {/* Center: Action Title */}
-            <div className="flex-1 px-3 text-left">
-              <span className="text-xs sm:text-sm font-bold tracking-tight block leading-tight">
+            {/* Left: PayPhone icon + Action Title in a clean single line */}
+            <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
+              <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-white/15 dark:bg-black/10 flex items-center justify-center shrink-0 border border-white/20 dark:border-black/10 shadow-2xs">
+                {isProcessing ? (
+                  <Loader2 className="w-4 h-4 animate-spin text-white dark:text-[#18181b]" />
+                ) : (
+                  <PayPhoneIcon className="w-4.5 h-4.5 text-white dark:text-[#18181b]" />
+                )}
+              </div>
+              <span className="text-xs sm:text-sm font-bold tracking-tight text-white dark:text-[#18181b] whitespace-nowrap truncate">
                 {isProcessing 
                   ? "Conectando con PayPhone..." 
                   : payphoneMode === "box" 
                     ? "Pagar con Cajita PayPhone" 
                     : "Pagar con PayPhone"}
               </span>
-              {!isProcessing && (
-                <span className="text-[10px] font-normal opacity-70 block">
-                  Transacción Bancaria Segura
-                </span>
-              )}
             </div>
 
             {/* Right: Amount pill + Circular Arrow badge */}
-            <div className="flex items-center gap-2 shrink-0">
-              <span className="text-xs font-mono font-extrabold px-3 py-1 rounded-full bg-white/15 dark:bg-black/10 text-white dark:text-[#18181b] border border-white/20 dark:border-black/10">
+            <div className="flex items-center gap-2 shrink-0 ml-2">
+              <span className="text-xs font-mono font-extrabold px-2.5 sm:px-3 py-1 rounded-full bg-white/15 dark:bg-black/10 text-white dark:text-[#18181b] border border-white/20 dark:border-black/10 whitespace-nowrap">
                 ${finalTotal.toFixed(2)}
               </span>
-              <div className="w-8 h-8 rounded-full bg-white dark:bg-[#18181b] text-[#18181b] dark:text-white flex items-center justify-center shadow-xs group-hover:translate-x-0.5 transition-transform">
+              <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-white dark:bg-[#18181b] text-[#18181b] dark:text-white flex items-center justify-center shadow-xs group-hover:translate-x-0.5 transition-transform shrink-0">
                 <ArrowRight className="w-3.5 h-3.5 stroke-[2.5]" />
               </div>
             </div>

@@ -315,16 +315,6 @@ const toFrontendProduct = (p: any): CatalogProduct => {
   const frontMain = parsedImages[0] || p.image_url || fallback;
   const frontImages = parsedImages.length > 0 ? parsedImages : [frontMain];
 
-  // Retrieve cached local metadata if extended columns are not yet in Supabase schema
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  let extraMeta: any = {};
-  if (typeof window !== 'undefined' && p.id) {
-    try {
-      const saved = localStorage.getItem(`lumina_prod_meta_${p.id}`);
-      if (saved) extraMeta = JSON.parse(saved);
-    } catch {}
-  }
-
   return {
     id: p.id,
     title: p.title,
@@ -340,21 +330,21 @@ const toFrontendProduct = (p: any): CatalogProduct => {
     sizes: Array.isArray(p.sizes) ? p.sizes : [],
     features: Array.isArray(p.features) ? p.features : [],
     category: canonicalCategory(p.category, DEFAULT_CATEGORIES),
-    materials: p.materials || extraMeta.materials || undefined,
-    shipping: p.shipping || extraMeta.shipping || undefined,
-    dimensions: p.dimensions || extraMeta.dimensions || undefined,
-    warranty: p.warranty || extraMeta.warranty || undefined,
-    careInstructions: p.care_instructions || extraMeta.careInstructions || undefined,
-    packageContents: p.package_contents || extraMeta.packageContents || undefined,
-    stock: typeof p.stock === 'number' ? p.stock : (typeof extraMeta.stock === 'number' ? extraMeta.stock : 18),
-    howToUse: p.how_to_use || extraMeta.howToUse || undefined,
-    combos: p.combos || extraMeta.combos || undefined,
-    layoutType: p.layout_type || extraMeta.layoutType || 'standard',
-    landingSpecs: p.landing_specs || extraMeta.landingSpecs || undefined,
-    landingReviews: p.landing_reviews || extraMeta.landingReviews || undefined,
-    landingBenefits: p.landing_benefits || extraMeta.landingBenefits || undefined,
-    landingBundle: p.landing_bundle || extraMeta.landingBundle || undefined,
-    landingAnatomyImage: p.landing_anatomy_image || extraMeta.landingAnatomyImage || undefined,
+    materials: p.materials || undefined,
+    shipping: p.shipping || undefined,
+    dimensions: p.dimensions || undefined,
+    warranty: p.warranty || undefined,
+    careInstructions: p.care_instructions || undefined,
+    packageContents: p.package_contents || undefined,
+    stock: typeof p.stock === 'number' ? p.stock : 18,
+    howToUse: p.how_to_use || undefined,
+    combos: p.combos || undefined,
+    layoutType: p.layout_type || 'standard',
+    landingSpecs: p.landing_specs || undefined,
+    landingReviews: p.landing_reviews || undefined,
+    landingBenefits: p.landing_benefits || undefined,
+    landingBundle: p.landing_bundle || undefined,
+    landingAnatomyImage: p.landing_anatomy_image || undefined,
   };
 };
 
@@ -385,18 +375,7 @@ export const useCatalogStore = create<CatalogState>((set) => ({
   fetchProducts: async () => {
     set({ isLoading: true });
     
-    // Load custom badges from localStorage if present
-    let initialBadges = DEFAULT_BADGES;
-    if (typeof window !== 'undefined') {
-      try {
-        const savedBadges = localStorage.getItem('lumina_marketing_badges');
-        if (savedBadges) {
-          initialBadges = Array.from(new Set([...DEFAULT_BADGES, ...JSON.parse(savedBadges)]));
-        }
-      } catch {
-        // Ignore JSON error
-      }
-    }
+    const initialBadges = DEFAULT_BADGES;
 
     // 1. Dynamic Categories from Supabase database
     let activeCategories: string[] = [];
@@ -534,30 +513,6 @@ export const useCatalogStore = create<CatalogState>((set) => ({
     }
 
     if (!error && data) {
-      // Save extended metadata locally so user gets full fidelity immediately
-      if (typeof window !== 'undefined' && data.id) {
-        try {
-          const meta = {
-            materials: product.materials,
-            shipping: product.shipping,
-            dimensions: product.dimensions,
-            warranty: product.warranty,
-            careInstructions: product.careInstructions,
-            packageContents: product.packageContents,
-            stock: product.stock,
-            layoutType: product.layoutType || 'standard',
-            landingSpecs: product.landingSpecs,
-            landingReviews: product.landingReviews,
-            landingBenefits: product.landingBenefits,
-            landingBundle: product.landingBundle,
-            landingAnatomyImage: product.landingAnatomyImage,
-            combos: product.combos,
-            howToUse: product.howToUse,
-          };
-          localStorage.setItem(`lumina_prod_meta_${data.id}`, JSON.stringify(meta));
-        } catch {}
-      }
-
       const created: CatalogProduct = { ...toFrontendProduct(data), ...product, id: data.id };
       set((state) => {
         const newCats = state.categories.includes(created.category)
@@ -633,30 +588,6 @@ export const useCatalogStore = create<CatalogState>((set) => ({
       }
 
       if (!error && data) {
-        // Cache metadata locally
-        if (typeof window !== 'undefined') {
-          try {
-            const meta = {
-              materials: updatedProduct.materials,
-              shipping: updatedProduct.shipping,
-              dimensions: updatedProduct.dimensions,
-              warranty: updatedProduct.warranty,
-              careInstructions: updatedProduct.careInstructions,
-              packageContents: updatedProduct.packageContents,
-              stock: updatedProduct.stock,
-              layoutType: updatedProduct.layoutType || 'standard',
-              landingSpecs: updatedProduct.landingSpecs,
-              landingReviews: updatedProduct.landingReviews,
-              landingBenefits: updatedProduct.landingBenefits,
-              landingBundle: updatedProduct.landingBundle,
-              landingAnatomyImage: updatedProduct.landingAnatomyImage,
-              combos: updatedProduct.combos,
-              howToUse: updatedProduct.howToUse,
-            };
-            localStorage.setItem(`lumina_prod_meta_${id}`, JSON.stringify(meta));
-          } catch {}
-        }
-
         const updated: CatalogProduct = { ...toFrontendProduct(data), ...updatedProduct, id };
         set((state) => ({
           products: state.products.map(p => p.id === id ? updated : p),
@@ -728,13 +659,6 @@ export const useCatalogStore = create<CatalogState>((set) => ({
       deletedInDb = true;
     }
 
-    // Clean up cached metadata
-    if (typeof window !== 'undefined') {
-      try {
-        localStorage.removeItem(`lumina_prod_meta_${id}`);
-      } catch {}
-    }
-
     // Update local state reactively
     set((state) => ({
       products: state.products.filter(p => p.id !== id)
@@ -784,11 +708,7 @@ export const useCatalogStore = create<CatalogState>((set) => ({
     if (!clean) return;
     set((state) => {
       if (state.badges.includes(clean)) return state;
-      const next = [...state.badges, clean];
-      if (typeof window !== 'undefined') {
-        localStorage.setItem('lumina_marketing_badges', JSON.stringify(next));
-      }
-      return { badges: next };
+      return { badges: [...state.badges, clean] };
     });
 
     try {
@@ -799,13 +719,9 @@ export const useCatalogStore = create<CatalogState>((set) => ({
   },
 
   deleteBadge: async (name) => {
-    set((state) => {
-      const next = state.badges.filter(b => b !== name);
-      if (typeof window !== 'undefined') {
-        localStorage.setItem('lumina_marketing_badges', JSON.stringify(next));
-      }
-      return { badges: next };
-    });
+    set((state) => ({
+      badges: state.badges.filter(b => b !== name)
+    }));
 
     try {
       await supabase.from('store_badges').delete().eq('name', name);

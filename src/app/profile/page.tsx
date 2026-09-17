@@ -964,9 +964,9 @@ const handleConfirmDeleteNiche = async () => {
  {getGreeting()}, <span className="italic font-normal tracking-wide ml-1.5 inline-block">{formatCleanName(user.name)}</span>
  </h1>
  <p className="text-xs md:text-sm text-gray-500 dark:text-gray-400 mt-0.5">
- {isAdmin 
- ? "Panel de control maestro de catálogo, inventario, radar de clientes y analítica Lumina." 
- : "Supervisa tus pedidos, métodos de pago vinculados y artículos guardados."}
+  {isAdmin 
+  ? "Panel de control maestro de catálogo, inventario, radar de clientes y analítica de esta Tienda" 
+  : "Supervisa tus pedidos, métodos de pago vinculados y artículos guardados."}
  </p>
  </div>
  {isAdmin && (

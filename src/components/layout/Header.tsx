@@ -152,7 +152,7 @@ export function Header() {
           
           {/* Logo Section */}
           <Link href="/" className="pl-3 sm:pl-4 pr-3 sm:pr-6 flex items-center gap-1.5 group shrink-0">
-            <span className="font-display italic text-lg sm:text-2xl font-bold tracking-tight text-gray-900 group-hover:text-[#8c9276] transition-colors">
+            <span className="font-display italic text-lg sm:text-2xl font-bold tracking-tight text-gray-900 active:text-[#8c9276] [@media(hover:hover)]:group-hover:text-[#8c9276] transition-colors">
               Lumina<span className="text-[#8c9276]">.</span>
             </span>
           </Link>
