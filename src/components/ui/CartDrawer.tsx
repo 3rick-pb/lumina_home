@@ -114,6 +114,37 @@ function AliaLogo({ className = "h-4" }: { className?: string }) {
   );
 }
 
+function DeliveryTruckIcon({ className = "w-12 h-8" }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 64 36" fill="none" xmlns="http://www.w3.org/2000/svg">
+      {/* Headlight beam */}
+      <polygon points="56,21 64,17 64,27 56,23" fill="#FEF08A" opacity="0.65" />
+      {/* Truck Box / Cargo */}
+      <rect x="2" y="6" width="34" height="20" rx="3" fill="#FFFFFF" />
+      {/* Cargo Door line */}
+      <line x1="10" y1="6" x2="10" y2="26" stroke="#E5E7EB" strokeWidth="1.5" />
+      {/* Brand accent circle */}
+      <circle cx="21" cy="16" r="4.5" fill="#8c9276" opacity="0.9" />
+      <circle cx="21" cy="16" r="2" fill="#FFFFFF" />
+      {/* Cabin */}
+      <path d="M36 12H48L55 20V26H36V12Z" fill="#2563EB" />
+      {/* Windshield */}
+      <path d="M47 13.5H38V19H51L47 13.5Z" fill="#BAE6FD" />
+      {/* Headlight */}
+      <rect x="53.5" y="21.5" width="2" height="3" rx="0.5" fill="#FDE047" />
+      {/* Bumper */}
+      <rect x="54" y="25" width="3" height="2" rx="0.5" fill="#4B5563" />
+      {/* Chassis */}
+      <rect x="2" y="26" width="54" height="2" fill="#374151" />
+      {/* Wheels */}
+      <circle cx="14" cy="28" r="4.5" fill="#1F2937" />
+      <circle cx="14" cy="28" r="2" fill="#9CA3AF" />
+      <circle cx="45" cy="28" r="4.5" fill="#1F2937" />
+      <circle cx="45" cy="28" r="2" fill="#9CA3AF" />
+    </svg>
+  );
+}
+
 function EmvChip({ className = "w-8 h-6" }: { className?: string }) {
   return (
     <div className={`relative rounded-md bg-gradient-to-br from-[#E8D19F] via-[#D8B676] to-[#B8924B] p-0.5 border border-[#c49a3f]/40 shadow-xs flex items-center justify-center overflow-hidden shrink-0 ${className}`}>
@@ -209,8 +240,11 @@ export function CartDrawer() {
   const [locationError, setLocationError] = useState<string | null>(null);
   const [locationSuccess, setLocationSuccess] = useState(false);
 
- // Checkout Processing
- const [isProcessing, setIsProcessing] = useState(false);
+  // Checkout Processing
+  const [isProcessing, setIsProcessing] = useState(false);
+  // Aaron Iker Delivery Truck Micro-Interaction
+  const [isTruckAnimating, setIsTruckAnimating] = useState(false);
+  const [isTruckComplete, setIsTruckComplete] = useState(false);
 
  const { mode } = useThemeStore();
  const [resolvedTheme, setResolvedTheme] = useState<'light' | 'dark'>('light');
@@ -575,6 +609,24 @@ export function CartDrawer() {
       setIsProcessing(false);
       setPayphoneError("Error de conexión al comunicar con los servidores de PayPhone Ecuador.");
     }
+  };
+
+  const handleTriggerPaymentWithAnimation = () => {
+    if (isProcessing || isTruckAnimating) return;
+    setIsTruckAnimating(true);
+    setPayphoneError(null);
+
+    // Aaron Iker Order Button animation sequence (~1.5s drive across button, then complete)
+    setTimeout(() => {
+      setIsTruckComplete(true);
+      setTimeout(() => {
+        handleConfirmOrder();
+        setTimeout(() => {
+          setIsTruckAnimating(false);
+          setIsTruckComplete(false);
+        }, 1200);
+      }, 400);
+    }, 1500);
   };
 
   const handleApprovePayPhoneSimulation = async () => {
@@ -1334,49 +1386,54 @@ export function CartDrawer() {
       </p>
     </div>
 
-    {/* LUXURY REDESIGNED CHECKOUT BUTTON */}
-    <div className="space-y-3 pt-1">
-      <button 
-        onClick={handleProceedToPayment}
-        disabled={hasAgotadoItems}
-        className={`group w-full h-13 sm:h-14 rounded-2xl font-sans font-bold text-sm sm:text-base flex items-center justify-between px-5 sm:px-6 transition-all duration-300 shadow-md hover:shadow-lg cursor-pointer active:scale-[0.99] ${
-          hasAgotadoItems
-            ? "bg-rose-600 text-white shadow-rose-500/20 opacity-90 cursor-not-allowed"
-            : "bg-gray-950 dark:bg-white text-white dark:text-gray-950 hover:bg-black dark:hover:bg-gray-100 shadow-black/15 hover:shadow-black/25"
-        }`}
-      >
-        <div className="flex items-center gap-3">
-          <div className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 transition-transform group-hover:scale-105 ${
+    {/* 2IXO CAPSULE DOCK (Perfect Symmetrical Alignment from Reference) */}
+    <div className="pt-2 space-y-2">
+      <div className="w-full h-14 sm:h-15 p-1 sm:p-1.5 rounded-full bg-black/[0.04] dark:bg-white/[0.06] border border-black/[0.05] dark:border-white/10 backdrop-blur-xl flex items-center justify-between gap-1.5 sm:gap-2">
+        {/* Left: Circular Shopping Bag Button */}
+        <button 
+          onClick={() => { setIsOpen(false); router.push("/shop"); }}
+          className="h-full aspect-square rounded-full bg-white dark:bg-[#27272a] hover:bg-gray-50 dark:hover:bg-[#323236] border border-black/[0.06] dark:border-white/15 shadow-sm flex items-center justify-center text-gray-700 dark:text-gray-200 shrink-0 hover:scale-105 active:scale-95 transition-all cursor-pointer"
+          title="Continuar explorando el catálogo"
+        >
+          <ShoppingBag className="w-4 h-4 sm:w-4.5 sm:h-4.5" />
+        </button>
+        
+        {/* Right: Black Pill Button with Arrow Circle and Price */}
+        <button 
+          onClick={handleProceedToPayment}
+          disabled={hasAgotadoItems}
+          className={`group relative flex-1 h-full rounded-full font-sans text-xs sm:text-sm font-semibold pl-1.5 sm:pl-2 pr-3 sm:pr-4 flex items-center justify-between transition-all duration-300 shadow-md cursor-pointer active:scale-[0.99] min-w-0 ${
+            hasAgotadoItems
+              ? "bg-rose-600 text-white shadow-rose-500/20 opacity-90 cursor-not-allowed"
+              : "bg-[#18181b] dark:bg-white text-white dark:text-gray-950 hover:bg-black dark:hover:bg-gray-100 shadow-black/15"
+          }`}
+        >
+          <div className="flex items-center gap-2 sm:gap-2.5 min-w-0">
+            <div className={`w-8 h-8 sm:w-9 sm:h-9 rounded-full flex items-center justify-center shrink-0 transition-transform group-hover:scale-105 ${
+              hasAgotadoItems 
+                ? "bg-white/20 text-white" 
+                : "bg-white/15 dark:bg-black/10 text-white dark:text-gray-950"
+            }`}>
+              {hasAgotadoItems ? <AlertTriangle className="w-3.5 h-3.5" /> : <ArrowRight className="w-3.5 h-3.5 sm:w-4 sm:h-4" />}
+            </div>
+            <span className="truncate font-medium">
+              {hasAgotadoItems 
+                ? "Elimina piezas agotadas" 
+                : !isAuthenticated 
+                ? "Iniciar Sesión" 
+                : "Proceder al Pago"}
+            </span>
+          </div>
+
+          <span className={`px-2.5 sm:px-3 py-1 rounded-full text-xs font-bold font-mono shrink-0 ml-1.5 ${
             hasAgotadoItems 
               ? "bg-white/20 text-white" 
-              : "bg-white/15 dark:bg-black/10 text-white dark:text-gray-950"
+              : "bg-white/15 dark:bg-black/10 text-white dark:text-gray-900 border border-white/10 dark:border-black/5"
           }`}>
-            {hasAgotadoItems ? <AlertTriangle className="w-4 h-4" /> : <Lock className="w-4 h-4" />}
-          </div>
-          <span className="tracking-tight">
-            {hasAgotadoItems 
-              ? "Elimina piezas agotadas" 
-              : !isAuthenticated 
-              ? "Iniciar Sesión para Pagar" 
-              : "Proceder al Pago"}
-          </span>
-        </div>
-        
-        <div className="flex items-center gap-2.5">
-          <span className="font-mono font-extrabold text-sm sm:text-base">
             ${finalTotal.toFixed(2)}
           </span>
-          <ArrowRight className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-1" />
-        </div>
-      </button>
-
-      <button 
-        onClick={() => { setIsOpen(false); router.push("/shop"); }}
-        className="w-full py-2.5 rounded-xl text-xs font-semibold text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-200 hover:bg-black/[0.03] dark:hover:bg-white/5 transition-all flex items-center justify-center gap-2 cursor-pointer"
-      >
-        <ShoppingBag className="w-3.5 h-3.5" />
-        <span>Continuar explorando el catálogo</span>
-      </button>
+        </button>
+      </div>
 
       {!isAuthenticated && !hasAgotadoItems && (
         <p className="text-[11px] text-center text-gray-500 dark:text-gray-400 font-medium pt-1">
@@ -1982,49 +2039,122 @@ export function CartDrawer() {
       </div>
     )}
 
-    {/* 2IXO LUXURY FINTECH CAPSULE DOCK: CONFIRM PAYMENT BUTTON */}
+    {/* ANIMATED DELIVERY TRUCK ORDER BUTTON (Aaron Iker Order Animation inspired by Orden.mp4) */}
     <button 
-      onClick={handleConfirmOrder}
-      disabled={isProcessing}
-      className="group relative overflow-hidden w-full h-15 sm:h-16 rounded-full font-sans font-bold text-white dark:text-[#18181b] bg-[#18181b] dark:bg-white shadow-[0_14px_34px_rgba(0,0,0,0.22)] active:scale-[0.98] transition-all duration-300 border border-black/10 dark:border-white/20 flex items-center justify-between px-3 sm:px-4 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+      onClick={handleTriggerPaymentWithAnimation}
+      disabled={isProcessing || isTruckAnimating}
+      className={`group relative overflow-hidden w-full h-15 sm:h-16 rounded-full font-sans font-bold text-white transition-all duration-300 border border-white/10 shadow-[0_14px_34px_rgba(0,0,0,0.25)] select-none active:scale-[0.98] ${
+        isTruckComplete
+          ? "bg-emerald-600 shadow-emerald-500/25 border-emerald-400/30 cursor-default"
+          : isTruckAnimating
+          ? "bg-[#111113] shadow-black/40 cursor-wait"
+          : "bg-[#18181b] dark:bg-white text-white dark:text-[#18181b] hover:bg-black dark:hover:bg-gray-100 cursor-pointer"
+      }`}
     >
       {/* Specular curved liquid rim */}
       <div className="absolute inset-x-6 top-0 h-[1.5px] bg-gradient-to-r from-transparent via-white/30 dark:via-white/60 to-transparent pointer-events-none" />
 
-      {/* Left: Circular icon badge */}
-      <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-full bg-white/15 dark:bg-black/10 flex items-center justify-center shrink-0 border border-white/20 dark:border-black/10 shadow-2xs">
-        {isProcessing ? (
-          <Loader2 className="w-5 h-5 animate-spin text-white dark:text-[#18181b]" />
+      <AnimatePresence mode="wait">
+        {isTruckComplete ? (
+          /* STATE 3: ORDER COMPLETED CELEBRATION */
+          <motion.div
+            key="complete"
+            initial={{ scale: 0.7, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ type: "spring", stiffness: 450, damping: 22 }}
+            className="flex items-center justify-center gap-2.5 text-white"
+          >
+            <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center shrink-0 shadow-xs">
+              <Check className="w-4 h-4 stroke-[3]" />
+            </div>
+            <span className="text-sm sm:text-base font-extrabold tracking-tight">
+              ¡Orden Confirmada! Conectando...
+            </span>
+          </motion.div>
+        ) : isTruckAnimating ? (
+          /* STATE 2: ANIMATED DELIVERY TRUCK DRIVING ACROSS BUTTON (Inspired by Orden.mp4) */
+          <motion.div
+            key="animating"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="relative w-full h-full flex items-center justify-center overflow-hidden"
+          >
+            {/* Moving road stripes */}
+            <div className="absolute inset-x-0 bottom-2.5 h-[2px] overflow-hidden opacity-30 flex items-center pointer-events-none">
+              <motion.div
+                animate={{ x: [-40, 0] }}
+                transition={{ repeat: Infinity, duration: 0.2, ease: "linear" }}
+                className="w-[200%] flex justify-between shrink-0"
+              >
+                {[...Array(16)].map((_, i) => (
+                  <span key={i} className="w-3 h-[2px] bg-white rounded-full inline-block" />
+                ))}
+              </motion.div>
+            </div>
+
+            {/* Status Text in center */}
+            <span className="text-xs font-mono font-bold tracking-wider text-gray-300 uppercase animate-pulse">
+              Despachando Orden...
+            </span>
+
+            {/* Delivery Truck driving across */}
+            <motion.div
+              initial={{ x: "-180%" }}
+              animate={{ x: "280%" }}
+              transition={{ duration: 1.5, ease: [0.25, 1, 0.5, 1] }}
+              className="absolute z-10 flex items-center pointer-events-none"
+            >
+              <DeliveryTruckIcon className="w-14 h-8 drop-shadow-[0_4px_12px_rgba(255,255,255,0.25)]" />
+            </motion.div>
+          </motion.div>
         ) : (
-          <PayPhoneIcon className="w-5 h-5 text-white dark:text-[#18181b]" />
-        )}
-      </div>
+          /* STATE 1: IDLE SLEEK LUXURY BUTTON */
+          <motion.div
+            key="idle"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="w-full h-full flex items-center justify-between px-3 sm:px-4"
+          >
+            {/* Left: PayPhone icon */}
+            <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-full bg-white/15 dark:bg-black/10 flex items-center justify-center shrink-0 border border-white/20 dark:border-black/10 shadow-2xs">
+              {isProcessing ? (
+                <Loader2 className="w-5 h-5 animate-spin text-white dark:text-[#18181b]" />
+              ) : (
+                <PayPhoneIcon className="w-5 h-5 text-white dark:text-[#18181b]" />
+              )}
+            </div>
 
-      {/* Center: Action Title */}
-      <div className="flex-1 px-3 text-left">
-        <span className="text-xs sm:text-sm font-bold tracking-tight block leading-tight">
-          {isProcessing 
-            ? "Conectando con PayPhone..." 
-            : payphoneMode === "box" 
-              ? "Pagar con Cajita PayPhone" 
-              : "Pagar con PayPhone"}
-        </span>
-        {!isProcessing && (
-          <span className="text-[10px] font-normal opacity-70 block">
-            Transacción Bancaria Segura
-          </span>
-        )}
-      </div>
+            {/* Center: Action Title */}
+            <div className="flex-1 px-3 text-left">
+              <span className="text-xs sm:text-sm font-bold tracking-tight block leading-tight">
+                {isProcessing 
+                  ? "Conectando con PayPhone..." 
+                  : payphoneMode === "box" 
+                    ? "Pagar con Cajita PayPhone" 
+                    : "Pagar con PayPhone"}
+              </span>
+              {!isProcessing && (
+                <span className="text-[10px] font-normal opacity-70 block">
+                  Transacción Bancaria Segura
+                </span>
+              )}
+            </div>
 
-      {/* Right: Amount pill + Circular Arrow badge */}
-      <div className="flex items-center gap-2 shrink-0">
-        <span className="text-xs font-mono font-extrabold px-3 py-1 rounded-full bg-white/15 dark:bg-black/10 text-white dark:text-[#18181b] border border-white/20 dark:border-black/10">
-          ${finalTotal.toFixed(2)}
-        </span>
-        <div className="w-8 h-8 rounded-full bg-white dark:bg-[#18181b] text-[#18181b] dark:text-white flex items-center justify-center shadow-xs group-hover:translate-x-0.5 transition-transform">
-          <ArrowRight className="w-3.5 h-3.5 stroke-[2.5]" />
-        </div>
-      </div>
+            {/* Right: Amount pill + Circular Arrow badge */}
+            <div className="flex items-center gap-2 shrink-0">
+              <span className="text-xs font-mono font-extrabold px-3 py-1 rounded-full bg-white/15 dark:bg-black/10 text-white dark:text-[#18181b] border border-white/20 dark:border-black/10">
+                ${finalTotal.toFixed(2)}
+              </span>
+              <div className="w-8 h-8 rounded-full bg-white dark:bg-[#18181b] text-[#18181b] dark:text-white flex items-center justify-center shadow-xs group-hover:translate-x-0.5 transition-transform">
+                <ArrowRight className="w-3.5 h-3.5 stroke-[2.5]" />
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </button>
   </div>
 

@@ -152,11 +152,11 @@ export const useCartStore = create<CartState>((set, get) => ({
   
   initCartForUser: async (newUserId: string | null) => {
     if (!newUserId) {
-      // Guest or unauthenticated: restore items from active guest session
-      const guestItems = getGuestCartItems();
+      // Guest or unauthenticated (e.g. on logout): completely clear memory and guest session
+      setGuestCartItems([]);
       set({
         currentUserId: null,
-        items: guestItems,
+        items: [],
         couponCode: null,
         discountPercent: 0,
         isFreeShippingCoupon: false,
@@ -165,11 +165,10 @@ export const useCartStore = create<CartState>((set, get) => ({
       return;
     }
 
-    // Authenticated / registered customer!
-    // Retrieve any guest items that were added prior to login/registration
-    const currentMemoryItems = get().items;
-    const guestStoredItems = getGuestCartItems();
-    const preLoginGuestItems = currentMemoryItems.length > 0 ? currentMemoryItems : guestStoredItems;
+    // If already loaded for this exact user and items are present, prevent race-condition re-execution
+    if (get().currentUserId === newUserId && get().items.length > 0) {
+      return;
+    }
 
     let items: CartItem[] = [];
     let couponCode: string | null = null;
@@ -177,7 +176,7 @@ export const useCartStore = create<CartState>((set, get) => ({
     let isFreeShippingCoupon = false;
 
     try {
-      // 1. Fetch from Supabase user_carts table (single source of truth)
+      // 1. Fetch from Supabase user_carts table (single source of truth for the account)
       const { data: dbCart, error } = await supabase
         .from('user_carts')
         .select('*')
@@ -194,20 +193,19 @@ export const useCartStore = create<CartState>((set, get) => ({
       console.error("Error loading cart from database:", e);
     }
 
-    // Merge pre-login guest items with user's permanent account cart
+    // 2. Only merge genuine guest items stored in sessionStorage before login (NEVER use in-memory state!)
+    const preLoginGuestItems = getGuestCartItems();
     if (preLoginGuestItems.length > 0) {
+      // Immediately clear guest storage so subsequent calls cannot re-merge
+      setGuestCartItems([]);
+
       const mergedMap = new Map<string, CartItem>();
       for (const it of items) {
         mergedMap.set(it.id, { ...it });
       }
       for (const git of preLoginGuestItems) {
-        if (mergedMap.has(git.id)) {
-          const existing = mergedMap.get(git.id)!;
-          mergedMap.set(git.id, {
-            ...existing,
-            quantity: existing.quantity + git.quantity,
-          });
-        } else {
+        // If the user already has this item in their account, keep the existing item without adding extra quantities
+        if (!mergedMap.has(git.id)) {
           mergedMap.set(git.id, { ...git });
         }
       }
@@ -221,9 +219,6 @@ export const useCartStore = create<CartState>((set, get) => ({
         isFreeShippingCoupon,
       };
       await syncCartToDatabase(newUserId, payload);
-
-      // Clean up temporary guest storage
-      setGuestCartItems([]);
     }
 
     set({
