@@ -54,12 +54,12 @@ const CARD_ARCHETYPES: CardArchetype[] = [
   },
   {
     theme: "split_numbers",
-    name: "03 • Split Bicolor",
-    tabLabel: "03 Split",
+    name: "03 • Foto Completa",
+    tabLabel: "03 Completa",
     defaultTag: "DETALLE",
     defaultSubtitle: "PERSPECTIVA Y TEXTURA",
     code: "ORIGINAL",
-    desc: "Mitad foto de textura y mitad distintivo editorial",
+    desc: "Fotografía completa con sello original y perspectiva de textura",
   },
   {
     theme: "framed",
@@ -67,7 +67,7 @@ const CARD_ARCHETYPES: CardArchetype[] = [
     tabLabel: "04 Geometría",
     defaultTag: "GEOMETRÍA",
     defaultSubtitle: "PROPORCIÓN Y EQUILIBRIO",
-    desc: "Encuadre de autor con isotipo concéntrico dinámico",
+    desc: "Encuadre limpio de autor con marco y proporción estética",
   },
   {
     theme: "photo_overlay",
@@ -582,32 +582,41 @@ export function EmbeddedCarouselConfigurator({
                       </div>
                     </div>
                   ) : currentArchetype.theme === "split_numbers" ? (
-                    <div className="relative w-full h-full flex bg-[#e8eae0] dark:bg-[#20221c] text-gray-900 dark:text-white">
-                      <div className="relative w-[45%] h-full bg-stone-300 overflow-hidden">
-                        {currentCard.image ? (
-                          <Image
-                            src={currentCard.image}
-                            alt="Miniatura"
-                            fill
-                            sizes="100px"
-                            className="object-cover"
-                          />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center text-gray-400">
-                            <ImageIcon className="w-4 h-4" />
-                          </div>
-                        )}
-                      </div>
-                      <div className="w-[55%] h-full p-2.5 flex flex-col justify-between font-mono text-right">
-                        <span className="text-[7px] text-gray-500 uppercase font-bold tracking-wider">
-                          {currentCard.tag || currentArchetype.defaultTag}
-                        </span>
-                        <p className="text-[10px] font-black uppercase text-gray-900 dark:text-white line-clamp-2 my-auto">
-                          {currentCard.title || productTitle || "PRODUCTO"}
-                        </p>
-                        <span className="text-[7px] font-bold text-[#8c9276] uppercase tracking-wider">
-                          DISEÑO ORIGINAL
-                        </span>
+                    <div className="relative w-full h-full overflow-hidden bg-[#1e201b] text-white">
+                      {currentCard.image ? (
+                        <Image
+                          src={currentCard.image}
+                          alt="Miniatura"
+                          fill
+                          sizes="180px"
+                          className="object-cover"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center text-gray-400">
+                          <ImageIcon className="w-4 h-4" />
+                        </div>
+                      )}
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/25 to-black/30 p-2.5 flex flex-col justify-between font-mono text-white">
+                        <div className="flex items-center justify-between">
+                          <span className="text-[7px] px-1.5 py-0.5 rounded-full bg-white/20 backdrop-blur-md border border-white/25 font-bold uppercase tracking-wider text-white">
+                            {currentCard.tag || currentArchetype.defaultTag}
+                          </span>
+                          <span className="text-[7px] font-bold text-[#8c9276] uppercase">
+                            ORIGINAL
+                          </span>
+                        </div>
+                        <div className="my-auto">
+                          <p className="text-[10px] font-black uppercase text-white line-clamp-2">
+                            {currentCard.title || productTitle || "PRODUCTO"}
+                          </p>
+                          <p className="text-[7px] text-white/70 uppercase truncate">
+                            {currentCard.subtitle || currentArchetype.defaultSubtitle}
+                          </p>
+                        </div>
+                        <div className="flex items-center justify-between pt-1 border-t border-white/15 text-[7px] font-bold tracking-widest text-[#8c9276] uppercase">
+                          <span>DISEÑO ORIGINAL</span>
+                          <div className="w-1 h-1 rounded-full bg-[#8c9276]" />
+                        </div>
                       </div>
                     </div>
                   ) : currentArchetype.theme === "framed" ? (
@@ -626,11 +635,6 @@ export function EmbeddedCarouselConfigurator({
                             <ImageIcon className="w-4 h-4" />
                           </div>
                         )}
-                        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                          <div className="w-7 h-7 rounded-full bg-white/20 backdrop-blur-md border border-white/40 flex items-center justify-center">
-                            <Sparkles className="w-3.5 h-3.5 text-white" />
-                          </div>
-                        </div>
                       </div>
                       <div className="pt-1 flex items-center justify-between text-[8px] font-mono">
                         <span className="font-bold truncate uppercase">{currentCard.title || productTitle || "PRODUCTO"}</span>

@@ -637,7 +637,7 @@ const handleConfirmDeleteNiche = async () => {
    {activeTab === "overview" && (
      <span className="absolute -left-2 w-1 h-5 bg-[#8c9276] dark:bg-[#ccff00] rounded-r-full transition-all duration-[600ms]" />
    )}
-   <LayoutDashboard className="w-5 h-5 transition-transform duration-[600ms] group-hover:scale-110" />
+   <LayoutDashboard className="w-5 h-5 transition-all duration-300 group-hover:scale-115 group-hover:rotate-6 group-hover:-translate-y-0.5" />
  </button>
 
  <button 
@@ -652,7 +652,7 @@ const handleConfirmDeleteNiche = async () => {
    {activeTab === "orders" && (
      <span className="absolute -left-2 w-1 h-5 bg-[#8c9276] dark:bg-[#ccff00] rounded-r-full transition-all duration-[600ms]" />
    )}
-   <ShoppingBag className="w-5 h-5 transition-transform duration-[600ms] group-hover:scale-110" />
+   <ShoppingBag className="w-5 h-5 transition-all duration-300 group-hover:scale-115 group-hover:-rotate-12 group-hover:-translate-y-0.5" />
    {pendingOrdersCount > 0 && (
      <span 
        className={`absolute flex items-center justify-center select-none pointer-events-none transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] ${
@@ -679,7 +679,7 @@ const handleConfirmDeleteNiche = async () => {
    {activeTab === "cards" && (
      <span className="absolute -left-2 w-1 h-5 bg-[#8c9276] dark:bg-[#ccff00] rounded-r-full transition-all duration-[600ms]" />
    )}
-   <CreditCard className="w-5 h-5 transition-transform duration-[600ms] group-hover:scale-110" />
+   <CreditCard className="w-5 h-5 transition-all duration-300 group-hover:scale-115 group-hover:-rotate-6 group-hover:-translate-y-0.5" />
  </button>
 
  <button 
@@ -694,7 +694,7 @@ const handleConfirmDeleteNiche = async () => {
    {activeTab === "favorites" && (
      <span className="absolute -left-2 w-1 h-5 bg-[#8c9276] dark:bg-[#ccff00] rounded-r-full transition-all duration-[600ms]" />
    )}
-   <Heart className="w-5 h-5 transition-transform duration-[600ms] group-hover:scale-110" />
+   <Heart className="w-5 h-5 transition-all duration-300 group-hover:scale-125 group-hover:text-rose-500 group-hover:-translate-y-0.5" />
    {favorites.length > 0 && activeTab !== "favorites" && (
      <span className="absolute top-2 right-2 w-2 h-2 rounded-full bg-rose-500 ring-2 ring-white dark:ring-[#1e1e20]" />
    )}
@@ -716,7 +716,7 @@ const handleConfirmDeleteNiche = async () => {
        {activeTab === "catalog" && (
          <span className="absolute -left-2 w-1 h-5 bg-[#8c9276] dark:bg-[#ccff00] rounded-r-full transition-all duration-[600ms]" />
        )}
-       <Package className="w-5 h-5 transition-transform duration-[600ms] group-hover:scale-110" />
+       <Package className="w-5 h-5 transition-all duration-300 group-hover:scale-115 group-hover:-translate-y-1" />
      </button>
 
      <button 
@@ -731,7 +731,7 @@ const handleConfirmDeleteNiche = async () => {
        {activeTab === "niches" && (
          <span className="absolute -left-2 w-1 h-5 bg-[#8c9276] dark:bg-[#ccff00] rounded-r-full transition-all duration-[600ms]" />
        )}
-       <Layers className="w-5 h-5 transition-transform duration-[600ms] group-hover:scale-110" />
+       <Layers className="w-5 h-5 transition-all duration-300 group-hover:scale-115 group-hover:-translate-y-1 group-hover:rotate-3" />
      </button>
 
      <button 
@@ -746,7 +746,7 @@ const handleConfirmDeleteNiche = async () => {
        {activeTab === "analytics" && (
          <span className="absolute -left-2 w-1 h-5 bg-[#8c9276] dark:bg-[#ccff00] rounded-r-full transition-all duration-[600ms]" />
        )}
-       <Globe className="w-5 h-5 transition-transform duration-[600ms] group-hover:scale-110" />
+       <Globe className="w-5 h-5 transition-all duration-500 group-hover:scale-115 group-hover:rotate-90 group-hover:text-[#8c9276]" />
      </button>
 
      <button 
@@ -761,7 +761,7 @@ const handleConfirmDeleteNiche = async () => {
        {activeTab === "cart_alerts" && (
          <span className="absolute -left-2 w-1 h-5 bg-[#8c9276] dark:bg-[#ccff00] rounded-r-full transition-all duration-[600ms]" />
        )}
-       <BellRing className="w-5 h-5 transition-transform duration-[600ms] group-hover:scale-110" />
+       <BellRing className="w-5 h-5 transition-all duration-300 group-hover:scale-115 group-hover:rotate-12 group-hover:-translate-y-0.5" />
      </button>
         <button 
         onClick={() => setActiveTab("integrations")} 
@@ -775,7 +775,7 @@ const handleConfirmDeleteNiche = async () => {
         {activeTab === "integrations" && (
           <span className="absolute -left-2 w-1 h-5 bg-[#8c9276] dark:bg-[#ccff00] rounded-r-full transition-all duration-[600ms]" />
         )}
-        <Server className="w-5 h-5 transition-transform duration-[600ms] group-hover:scale-110" />
+        <Server className="w-5 h-5 transition-all duration-300 group-hover:scale-115 group-hover:rotate-3 group-hover:-translate-y-0.5" />
       </button>
    </>
  )}
@@ -794,7 +794,7 @@ const handleConfirmDeleteNiche = async () => {
    {activeTab === "settings" && (
      <span className="absolute -left-2 w-1 h-5 bg-[#8c9276] dark:bg-[#ccff00] rounded-r-full transition-all duration-[600ms]" />
    )}
-   <Settings className="w-5 h-5 transition-transform duration-[600ms] group-hover:scale-110" />
+   <Settings className="w-5 h-5 transition-all duration-500 group-hover:scale-115 group-hover:rotate-90 group-hover:-translate-y-0.5" />
  </button>
  </nav>
  </div>
@@ -807,14 +807,14 @@ const handleConfirmDeleteNiche = async () => {
    className="sidebar-dock-btn relative w-10 h-10 md:w-11 md:h-11 rounded-2xl flex items-center justify-center text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100/80 dark:hover:bg-white/5 transition-all duration-[600ms] group" 
    title="Volver a la Tienda"
  >
-   <Store className="w-5 h-5 transition-transform duration-[600ms] group-hover:scale-110" />
+   <Store className="w-5 h-5 transition-all duration-300 group-hover:scale-115 group-hover:-translate-y-1" />
  </Link>
  <button 
    onClick={() => { logout(); router.push("/auth/login"); }} 
    className="sidebar-dock-btn relative w-10 h-10 md:w-11 md:h-11 rounded-2xl flex items-center justify-center text-red-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/40 transition-all duration-[600ms] group cursor-pointer"
    title="Cerrar Sesión"
  >
-   <LogOut className="w-5 h-5 transition-transform duration-[600ms] group-hover:scale-110" />
+   <LogOut className="w-5 h-5 transition-all duration-300 group-hover:scale-115 group-hover:translate-x-1" />
  </button>
  </div>
  </aside>
@@ -1207,13 +1207,13 @@ const handleConfirmDeleteNiche = async () => {
             <div className="flex items-center justify-between pb-3 border-b border-stone-200 dark:border-white/10">
               <div className="flex items-center gap-2.5">
                 <span className="px-2.5 py-1 text-[10px] font-black uppercase tracking-wider rounded-lg bg-[#FF5E00]/10 text-[#FF5E00] border border-[#FF5E00]/25">
-                  BLOQUE 1 • DISEÑO & ESTRUCTURA
+                  01 • Formato Visual
                 </span>
                 <h3 className="text-xs sm:text-sm font-bold text-gray-900 dark:text-gray-100">
-                  Arquitectura Visual del Producto *
+                  Formato de Presentación *
                 </h3>
               </div>
-              <span className="text-[11px] text-[#FF5E00] font-bold">Configuración Principal</span>
+              
             </div>
             <ProductArchitectureSelector
               layoutType={prodLayoutType}
@@ -1244,10 +1244,10 @@ const handleConfirmDeleteNiche = async () => {
             <div className="flex items-center justify-between pb-2 border-b border-gray-200 dark:border-white/10">
               <div className="flex items-center gap-2">
                 <span className="px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider rounded-lg bg-blue-100 text-blue-800 dark:bg-blue-950/50 dark:text-blue-300 border border-blue-200 dark:border-blue-800/40">
-                  BLOQUE 2 • IDENTIFICACIÓN
+                  02 • General
                 </span>
                 <h3 className="text-xs sm:text-sm font-bold text-gray-900 dark:text-gray-100">
-                  Nombre Principal y Subtítulo
+                  Identificación
                 </h3>
               </div>
             </div>
@@ -1268,7 +1268,7 @@ const handleConfirmDeleteNiche = async () => {
             <div className="flex items-center justify-between pb-2 border-b border-gray-200 dark:border-white/10">
               <div className="flex items-center gap-2">
                 <span className="px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider rounded-lg bg-amber-100 text-amber-800 dark:bg-amber-950/50 dark:text-amber-300 border border-amber-200 dark:border-amber-800/40">
-                  BLOQUE 3 • CLASIFICACIÓN
+                  03 • Categoría
                 </span>
                 <h3 className="text-xs sm:text-sm font-bold text-gray-900 dark:text-gray-100">
                   Nicho de Mercado y Badge
@@ -1325,7 +1325,7 @@ const handleConfirmDeleteNiche = async () => {
             <div className="flex items-center justify-between pb-2 border-b border-gray-200 dark:border-white/10">
               <div className="flex items-center gap-2">
                 <span className="px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider rounded-lg bg-cyan-100 text-cyan-800 dark:bg-cyan-950/50 dark:text-cyan-300 border border-cyan-200 dark:border-cyan-800/40">
-                  BLOQUE 4 • FOTOGRAFÍAS
+                  04 • Fotos & Experiencia
                 </span>
                 <label className="block text-xs sm:text-sm font-bold text-gray-900 dark:text-gray-100">Galería y Portada</label>
               </div>
@@ -1449,7 +1449,7 @@ const handleConfirmDeleteNiche = async () => {
             <div className="flex items-center justify-between pb-2 border-b border-gray-200 dark:border-white/10">
               <div className="flex items-center gap-2">
                 <span className="px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider rounded-lg bg-rose-100 text-rose-800 dark:bg-rose-950/50 dark:text-rose-300 border border-rose-200 dark:border-rose-800/40">
-                  BLOQUE 5 • ACABADOS
+                  05 • Colores
                 </span>
                 <h3 className="text-xs sm:text-sm font-bold text-gray-900 dark:text-gray-100">
                   Colores & Acabados del Producto *
@@ -1467,7 +1467,7 @@ const handleConfirmDeleteNiche = async () => {
             <div className="flex items-center justify-between pb-2 border-b border-gray-200 dark:border-white/10">
               <div className="flex items-center gap-2">
                 <span className="px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider rounded-lg bg-emerald-100 text-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/40">
-                  BLOQUE 6 • VALOR COMERCIAL
+                  06 • Precios
                 </span>
                 <span className="text-xs sm:text-sm font-bold text-gray-900 dark:text-gray-100">Precios y Rebajas</span>
               </div>
@@ -1512,10 +1512,10 @@ const handleConfirmDeleteNiche = async () => {
             <div className="flex items-center justify-between pb-2 border-b border-gray-200 dark:border-white/10">
               <div className="flex items-center gap-2">
                 <span className="px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider rounded-lg bg-purple-100 text-purple-800 dark:bg-purple-950/50 dark:text-purple-300 border border-purple-200 dark:border-purple-800/40">
-                  BLOQUE 7 • DETALLES
+                  07 • Descripción
                 </span>
                 <h3 className="text-xs sm:text-sm font-bold text-gray-900 dark:text-gray-100">
-                  Descripción y Viñetas
+                  Descripción
                 </h3>
               </div>
             </div>
@@ -1535,11 +1535,11 @@ const handleConfirmDeleteNiche = async () => {
             <div className="flex items-center justify-between pb-2 border-b border-gray-200 dark:border-white/10">
               <div className="flex items-center gap-2">
                 <span className="px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider rounded-lg bg-stone-200 text-stone-800 dark:bg-stone-800 dark:text-stone-200 border border-stone-300 dark:border-stone-700">
-                  BLOQUE 8 • FICHA TÉCNICA
+                  08 • Ficha Técnica (Opcional)
                 </span>
-                <span className="text-xs sm:text-sm font-bold text-gray-900 dark:text-gray-100">Ficha Técnica y Fabricación</span>
+                <span className="text-xs sm:text-sm font-bold text-gray-900 dark:text-gray-100">Materiales y Dimensiones</span>
               </div>
-              <span className="text-[10px] text-gray-500 dark:text-gray-400 font-medium">Pestañas &ldquo;Materiales&rdquo; y &ldquo;Dimensiones&rdquo;</span>
+              
             </div>
             
             <div>
@@ -1584,7 +1584,7 @@ const handleConfirmDeleteNiche = async () => {
             <div className="flex items-center justify-between pb-2 border-b border-gray-200 dark:border-white/10">
               <div className="flex items-center gap-2">
                 <span className="px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider rounded-lg bg-teal-100 text-teal-800 dark:bg-teal-950/50 dark:text-teal-300 border border-teal-200 dark:border-teal-800/40">
-                  BLOQUE 9 • LOGÍSTICA & CONFIANZA
+                  09 • Envíos y Garantía (Opcional)
                 </span>
                 <span className="text-xs sm:text-sm font-bold text-gray-900 dark:text-gray-100">Logística, Garantía y Postventa</span>
               </div>
@@ -1642,10 +1642,10 @@ const handleConfirmDeleteNiche = async () => {
             <div className="flex items-center justify-between pb-2 border-b border-gray-200 dark:border-white/10">
               <div className="flex items-center gap-2">
                 <span className="px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider rounded-lg bg-indigo-100 text-indigo-800 dark:bg-indigo-950/50 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800/40">
-                  BLOQUE 10 • OFERTAS
+                  10 • Combos (Opcional)
                 </span>
                 <h3 className="text-xs sm:text-sm font-bold text-gray-900 dark:text-gray-100">
-                  Combos y Paquetes con Descuento
+                  Venta Cruzada con Descuento
                 </h3>
               </div>
             </div>
@@ -1718,13 +1718,13 @@ const handleConfirmDeleteNiche = async () => {
             <div className="flex items-center justify-between pb-3 border-b border-stone-200 dark:border-white/10">
               <div className="flex items-center gap-2.5">
                 <span className="px-2.5 py-1 text-[10px] font-black uppercase tracking-wider rounded-lg bg-[#FF5E00]/10 text-[#FF5E00] border border-[#FF5E00]/25">
-                  BLOQUE 1 • DISEÑO & ESTRUCTURA
+                  01 • Formato Visual
                 </span>
                 <h3 className="text-xs sm:text-sm font-bold text-gray-900 dark:text-gray-100">
-                  Arquitectura Visual del Producto *
+                  Formato de Presentación *
                 </h3>
               </div>
-              <span className="text-[11px] text-[#FF5E00] font-bold">Configuración Principal</span>
+              
             </div>
             <ProductArchitectureSelector
               layoutType={editLayoutType}
@@ -1755,10 +1755,10 @@ const handleConfirmDeleteNiche = async () => {
             <div className="flex items-center justify-between pb-2 border-b border-gray-200 dark:border-white/10">
               <div className="flex items-center gap-2">
                 <span className="px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider rounded-lg bg-blue-100 text-blue-800 dark:bg-blue-950/50 dark:text-blue-300 border border-blue-200 dark:border-blue-800/40">
-                  BLOQUE 2 • IDENTIFICACIÓN
+                  02 • General
                 </span>
                 <h3 className="text-xs sm:text-sm font-bold text-gray-900 dark:text-gray-100">
-                  Nombre Principal y Subtítulo
+                  Identificación
                 </h3>
               </div>
             </div>
@@ -1792,7 +1792,7 @@ const handleConfirmDeleteNiche = async () => {
             <div className="flex items-center justify-between pb-2 border-b border-gray-200 dark:border-white/10">
               <div className="flex items-center gap-2">
                 <span className="px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider rounded-lg bg-amber-100 text-amber-800 dark:bg-amber-950/50 dark:text-amber-300 border border-amber-200 dark:border-amber-800/40">
-                  BLOQUE 3 • CLASIFICACIÓN
+                  03 • Categoría
                 </span>
                 <h3 className="text-xs sm:text-sm font-bold text-gray-900 dark:text-gray-100">
                   Nicho de Mercado y Badge
@@ -1849,7 +1849,7 @@ const handleConfirmDeleteNiche = async () => {
             <div className="flex items-center justify-between pb-2 border-b border-gray-200 dark:border-white/10">
               <div className="flex items-center gap-2">
                 <span className="px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider rounded-lg bg-cyan-100 text-cyan-800 dark:bg-cyan-950/50 dark:text-cyan-300 border border-cyan-200 dark:border-cyan-800/40">
-                  BLOQUE 4 • FOTOGRAFÍAS
+                  04 • Fotos & Experiencia
                 </span>
                 <label className="block text-xs sm:text-sm font-bold text-gray-900 dark:text-gray-100">Galería y Portada</label>
               </div>
@@ -1939,7 +1939,7 @@ const handleConfirmDeleteNiche = async () => {
             <div className="flex items-center justify-between pb-2 border-b border-gray-200 dark:border-white/10">
               <div className="flex items-center gap-2">
                 <span className="px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider rounded-lg bg-rose-100 text-rose-800 dark:bg-rose-950/50 dark:text-rose-300 border border-rose-200 dark:border-rose-800/40">
-                  BLOQUE 5 • ACABADOS
+                  05 • Colores
                 </span>
                 <h3 className="text-xs sm:text-sm font-bold text-gray-900 dark:text-gray-100">
                   Colores & Acabados del Producto *
@@ -1957,7 +1957,7 @@ const handleConfirmDeleteNiche = async () => {
             <div className="flex items-center justify-between pb-2 border-b border-gray-200 dark:border-white/10">
               <div className="flex items-center gap-2">
                 <span className="px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider rounded-lg bg-emerald-100 text-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/40">
-                  BLOQUE 6 • VALOR COMERCIAL
+                  06 • Precios
                 </span>
                 <span className="text-xs sm:text-sm font-bold text-gray-900 dark:text-gray-100">Precios y Rebajas</span>
               </div>
@@ -2002,10 +2002,10 @@ const handleConfirmDeleteNiche = async () => {
             <div className="flex items-center justify-between pb-2 border-b border-gray-200 dark:border-white/10">
               <div className="flex items-center gap-2">
                 <span className="px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider rounded-lg bg-purple-100 text-purple-800 dark:bg-purple-950/50 dark:text-purple-300 border border-purple-200 dark:border-purple-800/40">
-                  BLOQUE 7 • DETALLES
+                  07 • Descripción
                 </span>
                 <h3 className="text-xs sm:text-sm font-bold text-gray-900 dark:text-gray-100">
-                  Descripción y Viñetas
+                  Descripción
                 </h3>
               </div>
             </div>
@@ -2038,11 +2038,11 @@ const handleConfirmDeleteNiche = async () => {
             <div className="flex items-center justify-between pb-2 border-b border-gray-200 dark:border-white/10">
               <div className="flex items-center gap-2">
                 <span className="px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider rounded-lg bg-stone-200 text-stone-800 dark:bg-stone-800 dark:text-stone-200 border border-stone-300 dark:border-stone-700">
-                  BLOQUE 8 • FICHA TÉCNICA
+                  08 • Ficha Técnica (Opcional)
                 </span>
-                <span className="text-xs sm:text-sm font-bold text-gray-900 dark:text-gray-100">Ficha Técnica y Fabricación</span>
+                <span className="text-xs sm:text-sm font-bold text-gray-900 dark:text-gray-100">Materiales y Dimensiones</span>
               </div>
-              <span className="text-[10px] text-gray-500 dark:text-gray-400 font-medium">Pestañas &ldquo;Materiales&rdquo; y &ldquo;Dimensiones&rdquo;</span>
+              
             </div>
 
             <div>
@@ -2086,7 +2086,7 @@ const handleConfirmDeleteNiche = async () => {
             <div className="flex items-center justify-between pb-2 border-b border-gray-200 dark:border-white/10">
               <div className="flex items-center gap-2">
                 <span className="px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider rounded-lg bg-teal-100 text-teal-800 dark:bg-teal-950/50 dark:text-teal-300 border border-teal-200 dark:border-teal-800/40">
-                  BLOQUE 9 • LOGÍSTICA & CONFIANZA
+                  09 • Envíos y Garantía (Opcional)
                 </span>
                 <span className="text-xs sm:text-sm font-bold text-gray-900 dark:text-gray-100">Logística, Garantía y Postventa</span>
               </div>
@@ -2144,10 +2144,10 @@ const handleConfirmDeleteNiche = async () => {
             <div className="flex items-center justify-between pb-2 border-b border-gray-200 dark:border-white/10">
               <div className="flex items-center gap-2">
                 <span className="px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider rounded-lg bg-indigo-100 text-indigo-800 dark:bg-indigo-950/50 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800/40">
-                  BLOQUE 10 • OFERTAS
+                  10 • Combos (Opcional)
                 </span>
                 <h3 className="text-xs sm:text-sm font-bold text-gray-900 dark:text-gray-100">
-                  Combos y Paquetes con Descuento
+                  Venta Cruzada con Descuento
                 </h3>
               </div>
             </div>

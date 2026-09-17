@@ -311,13 +311,22 @@ export default function LoginPage() {
 
       {/* Product Quick Preview Modal */}
       {previewProduct && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-fade-in">
-          <div className="bg-white rounded-3xl w-full max-w-sm shadow-2xl p-6 relative">
+        <div 
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-md animate-fade-in"
+          onClick={() => setPreviewProduct(null)}
+        >
+          <div 
+            className="bg-white dark:bg-[#1c1c1f] text-gray-900 dark:text-gray-100 rounded-3xl w-full max-w-sm shadow-[0_25px_70px_rgba(0,0,0,0.25)] border border-white/80 dark:border-white/10 p-6 relative"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Close Button: Exact Luxury Circular Glass Design Matching Cart */}
             <button 
+              type="button"
               onClick={() => setPreviewProduct(null)} 
-              className="absolute top-4 right-4 p-1.5 rounded-full hover:bg-gray-100 text-gray-400 hover:text-gray-900 transition-colors"
+              className="absolute top-3.5 right-3.5 z-30 w-10 h-10 rounded-full bg-white/95 dark:bg-[#2a2a2d]/95 backdrop-blur-xl border border-black/[0.08] dark:border-white/15 shadow-[0_4px_16px_rgba(0,0,0,0.12)] text-gray-500 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50/90 dark:hover:bg-rose-950/40 hover:border-rose-200 dark:hover:border-rose-900/40 flex items-center justify-center hover:scale-105 active:scale-95 transition-all cursor-pointer"
+              title="Cerrar vista rápida"
             >
-              <X className="w-4 h-4" />
+              <X className="w-4 h-4 stroke-[2.5]" />
             </button>
 
             <div className="relative aspect-square rounded-2xl overflow-hidden mb-4 bg-gray-100">

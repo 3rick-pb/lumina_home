@@ -8,7 +8,6 @@ import {
   ChevronRight, 
   Maximize2, 
   X, 
-  Sparkles, 
   Play, 
   Pause,
   Compass
@@ -327,39 +326,44 @@ export function EmbeddedCylinderCarousel({
                   </div>
                 )}
 
-                {/* ARCHETYPE 2: SPLIT PRESENTATION (FOTO + NOMBRE DE PRODUCTO) */}
+                {/* ARCHETYPE 2: PRESENTACIÓN COMPLETA (FOTO COMPLETA + DISEÑO ORIGINAL) */}
                 {slide.theme === "split_numbers" && (
-                  <div className="relative w-full h-full flex bg-[#e8eae0] dark:bg-[#20221c] text-gray-900 dark:text-white">
-                    {/* Left half: image */}
-                    <div className="relative w-[46%] h-full overflow-hidden">
-                      <Image
-                        src={slide.image}
-                        alt={slide.title || productTitle}
-                        fill
-                        sizes="140px"
-                        className="object-cover"
-                      />
-                    </div>
-                    {/* Right half: typography & product title */}
-                    <div className="w-[54%] h-full p-4 sm:p-5 flex flex-col justify-between font-mono">
-                      <div className="text-right">
-                        <span className="text-[9px] text-gray-500 dark:text-gray-400 font-bold uppercase tracking-wider">
+                  <div className="relative w-full h-full overflow-hidden bg-[#1e201b]">
+                    {/* Foto Completa */}
+                    <Image
+                      src={slide.image}
+                      alt={slide.title || productTitle}
+                      fill
+                      sizes="300px"
+                      className="object-cover"
+                    />
+                    {/* Luxury Overlay */}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/30 to-black/35 p-4 sm:p-5 flex flex-col justify-between font-mono text-white">
+                      <div className="flex items-center justify-between">
+                        <span className="text-[9px] px-2 py-0.5 rounded-full bg-white/20 backdrop-blur-md border border-white/25 font-bold uppercase tracking-wider text-white">
                           {slide.tag || category || "DETALLE"}
                         </span>
+                        <span className="text-[9px] font-bold tracking-widest text-[#8c9276] uppercase">
+                          ORIGINAL
+                        </span>
                       </div>
-                      <div className="space-y-1 text-right my-auto">
-                        <p className="text-xs sm:text-sm font-black tracking-tight text-gray-950 dark:text-white uppercase line-clamp-3">
+                      <div className="space-y-1 my-auto">
+                        <p className="text-xs sm:text-sm font-black tracking-tight text-white uppercase line-clamp-2 drop-shadow-sm">
                           {slide.title || productTitle}
                         </p>
+                        <p className="text-[9px] text-white/70 uppercase">
+                          {slide.subtitle || "PERSPECTIVA Y TEXTURA"}
+                        </p>
                       </div>
-                      <div className="text-right text-[9px] font-bold tracking-widest text-[#8c9276] uppercase">
-                        DISEÑO ORIGINAL
+                      <div className="flex items-center justify-between pt-2 border-t border-white/15 text-[9px] font-bold tracking-widest text-[#8c9276] uppercase">
+                        <span>DISEÑO ORIGINAL</span>
+                        <div className="w-1.5 h-1.5 rounded-full bg-[#8c9276]" />
                       </div>
                     </div>
                   </div>
                 )}
 
-                {/* ARCHETYPE 3: MINIMALIST EDITION (FOTO + NOMBRE DE PRODUCTO, SIN FECHAS) */}
+                {/* ARCHETYPE 3: MINIMAL DATE OR CATALOG BADGE (PHOTO BACKGROUND) */}
                 {slide.theme === "minimal_date" && (
                   <div className="relative w-full h-full overflow-hidden bg-[#242620]">
                     <Image
@@ -369,12 +373,14 @@ export function EmbeddedCylinderCarousel({
                       sizes="300px"
                       className="object-cover opacity-60"
                     />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/40 to-transparent p-5 sm:p-6 flex flex-col justify-between text-white font-mono">
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent p-4 sm:p-5 flex flex-col justify-between text-white font-mono">
                       <div className="flex items-center justify-between">
-                        <span className="text-[9px] font-bold tracking-widest text-[#8c9276] uppercase">
+                        <span className="text-[10px] font-bold tracking-widest text-[#8c9276] uppercase">
                           {slide.tag || category || "COLECCIÓN"}
                         </span>
-                        <span className="text-[9px] text-white/50 uppercase">DESTACADO</span>
+                        <span className="text-[9px] font-bold tracking-widest text-white/60 uppercase">
+                          {slide.code || "ESENCIAL"}
+                        </span>
                       </div>
                       <div className="space-y-1">
                         <h4 className="text-base sm:text-lg font-black tracking-tight text-white uppercase line-clamp-2">
@@ -399,12 +405,6 @@ export function EmbeddedCylinderCarousel({
                         sizes="300px"
                         className="object-cover"
                       />
-                      {/* Geometric Isotype Motif Center (as in video frame 00:03) */}
-                      <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                        <div className="w-14 h-14 rounded-full bg-white/20 backdrop-blur-md border border-white/40 flex items-center justify-center p-2 shadow-lg">
-                          <Sparkles className="w-6 h-6 text-white animate-spin-slow" />
-                        </div>
-                      </div>
                     </div>
                     <div className="pt-2 px-1 flex items-center justify-between text-[10px] font-mono">
                       <span className="font-bold text-white/95 line-clamp-1 uppercase">{slide.title || productTitle}</span>

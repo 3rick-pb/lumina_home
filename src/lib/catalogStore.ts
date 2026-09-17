@@ -385,7 +385,15 @@ const toFrontendProduct = (p: any): CatalogProduct => {
     landingBenefits: p.landing_benefits || undefined,
     landingBundle: p.landing_bundle || undefined,
     landingAnatomyImage: p.landing_anatomy_image || undefined,
-    embeddedCarousel: p.embedded_carousel || p.landing_bundle?.embeddedCarousel || undefined,
+    embeddedCarousel: (() => {
+      const raw = p.embedded_carousel || p.landing_bundle?.embeddedCarousel;
+      if (!raw) return undefined;
+      if (typeof raw === 'object') return raw as EmbeddedCarouselConfig;
+      if (typeof raw === 'string') {
+        try { return JSON.parse(raw) as EmbeddedCarouselConfig; } catch { return undefined; }
+      }
+      return undefined;
+    })(),
   };
 };
 
