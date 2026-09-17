@@ -154,6 +154,8 @@ export default function ProfilePage() {
  const [prodStock, setProdStock] = useState("20");
  const [prodLayoutType, setProdLayoutType] = useState<'standard' | 'landing'>('standard');
  const [prodGalleryStyle, setProdGalleryStyle] = useState<'traditional' | 'isometric_3d'>('traditional');
+ const [prodGalleryAutoplay, setProdGalleryAutoplay] = useState(true);
+ const [prodGalleryAutoplaySpeed, setProdGalleryAutoplaySpeed] = useState(4);
  const [prodCombos, setProdCombos] = useState<ProductCombo[]>([]);
  const [prodHowToUse, setProdHowToUse] = useState("");
  const [prodBundleMode, setProdBundleMode] = useState<'companion' | 'volume_tiers' | 'care_pass'>('companion');
@@ -204,6 +206,8 @@ export default function ProfilePage() {
  const [editStock, setEditStock] = useState("20");
  const [editLayoutType, setEditLayoutType] = useState<'standard' | 'landing'>('standard');
  const [editGalleryStyle, setEditGalleryStyle] = useState<'traditional' | 'isometric_3d'>('traditional');
+ const [editGalleryAutoplay, setEditGalleryAutoplay] = useState(true);
+ const [editGalleryAutoplaySpeed, setEditGalleryAutoplaySpeed] = useState(4);
  const [editCombos, setEditCombos] = useState<ProductCombo[]>([]);
  const [editHowToUse, setEditHowToUse] = useState("");
  const [editBundleMode, setEditBundleMode] = useState<'companion' | 'volume_tiers' | 'care_pass'>('companion');
@@ -326,6 +330,8 @@ export default function ProfilePage() {
       stock: prodStock ? parseInt(prodStock, 10) : 20,
       layoutType: prodLayoutType,
       galleryStyle: prodGalleryStyle,
+      galleryAutoplay: prodGalleryAutoplay,
+      galleryAutoplaySpeed: prodGalleryAutoplaySpeed,
       landingAnatomyImage: prodLayoutType === 'landing' && prodLandingAnatomyImage.trim() ? prodLandingAnatomyImage.trim() : undefined,
       landingSpecs: prodLayoutType === 'landing' ? prodLandingSpecs : undefined,
       landingReviews: prodLayoutType === 'landing' ? prodLandingReviews : undefined,
@@ -367,6 +373,8 @@ export default function ProfilePage() {
  setProdStock("20");
  setProdLayoutType("standard");
  setProdGalleryStyle("traditional");
+ setProdGalleryAutoplay(true);
+ setProdGalleryAutoplaySpeed(4);
  setProdLandingAnatomyImage("");
  setProdCombos([]);
  setProdHowToUse("");
@@ -425,6 +433,8 @@ export default function ProfilePage() {
     setEditStock(p.stock !== undefined ? p.stock.toString() : "20");
     setEditLayoutType(p.layoutType || 'standard');
     setEditGalleryStyle(p.galleryStyle || 'traditional');
+    setEditGalleryAutoplay(p.galleryAutoplay !== undefined ? p.galleryAutoplay : true);
+    setEditGalleryAutoplaySpeed(p.galleryAutoplaySpeed || 4);
     setEditCombos(p.combos || []);
     setEditHowToUse(p.howToUse || "");
     setEditBundleMode(p.landingBundle?.mode || 'companion');
@@ -480,6 +490,8 @@ export default function ProfilePage() {
  stock: editStock ? parseInt(editStock, 10) : 20,
  layoutType: editLayoutType,
  galleryStyle: editGalleryStyle,
+ galleryAutoplay: editGalleryAutoplay,
+ galleryAutoplaySpeed: editGalleryAutoplaySpeed,
  landingAnatomyImage: editLayoutType === 'landing' && editLandingAnatomyImage.trim() ? editLandingAnatomyImage.trim() : undefined,
  landingSpecs: editLayoutType === 'landing' && editLandingSpecs.length > 0 ? editLandingSpecs : undefined,
  landingReviews: editLayoutType === 'landing' && editLandingReviews.length > 0 ? editLandingReviews : undefined,
@@ -1375,6 +1387,10 @@ const handleConfirmDeleteNiche = async () => {
               <ProductGalleryStyleSelector
                 galleryStyle={prodGalleryStyle}
                 onGalleryStyleChange={setProdGalleryStyle}
+                autoplay={prodGalleryAutoplay}
+                onAutoplayChange={setProdGalleryAutoplay}
+                autoplaySpeed={prodGalleryAutoplaySpeed}
+                onAutoplaySpeedChange={setProdGalleryAutoplaySpeed}
                 photosCount={
                   (prodImageUrl.trim() ? 1 : 0) +
                   (prodExtraImages.trim() ? prodExtraImages.split(/[\n,]+/).map(u => u.trim()).filter(Boolean).length : 0)
@@ -1843,6 +1859,10 @@ const handleConfirmDeleteNiche = async () => {
               <ProductGalleryStyleSelector
                 galleryStyle={editGalleryStyle}
                 onGalleryStyleChange={setEditGalleryStyle}
+                autoplay={editGalleryAutoplay}
+                onAutoplayChange={setEditGalleryAutoplay}
+                autoplaySpeed={editGalleryAutoplaySpeed}
+                onAutoplaySpeedChange={setEditGalleryAutoplaySpeed}
                 photosCount={
                   (editImageUrl.trim() ? 1 : 0) +
                   (editExtraImages.trim() ? editExtraImages.split(/[\n,]+/).map(u => u.trim()).filter(Boolean).length : 0)

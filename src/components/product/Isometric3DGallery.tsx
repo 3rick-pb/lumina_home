@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect, useMemo, useCallback } from "react";
 import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
@@ -8,7 +8,9 @@ import {
   ChevronRight, 
   Maximize2, 
   X, 
-  Layers
+  Layers,
+  Play,
+  Pause
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -17,6 +19,8 @@ interface Isometric3DGalleryProps {
   title?: string;
   category?: string;
   className?: string;
+  autoplay?: boolean;
+  autoplaySpeed?: number;
 }
 
 // Visual color themes for the 6 cards matching the video's luxury palette
@@ -79,14 +83,103 @@ const CARD_THEMES = [
 
 const FALLBACK_IMAGE = "https://images.unsplash.com/photo-1507473885765-e6ed057f782c?q=80&w=800&auto=format&fit=crop";
 
+// Calculates 3D coordinates based on relative cyclical offset
+interface CardPosition {
+  x: number;
+  y: number;
+  z: number;
+  scale: number;
+  opacity: number;
+  zIndex: number;
+}
+
+const getPositionForOffset = (offset: number): CardPosition => {
+  switch (offset) {
+    case 0:
+      // Active card in front
+      return {
+        x: 0,
+        y: 0,
+        z: 60,
+        scale: 1,
+        opacity: 1,
+        zIndex: 40,
+      };
+    case 1:
+      // First upcoming card on the diagonal
+      return {
+        x: 135,
+        y: -100,
+        z: -30,
+        scale: 0.92,
+        opacity: 0.88,
+        zIndex: 30,
+      };
+    case 2:
+      // Second upcoming card on the diagonal
+      return {
+        x: 265,
+        y: -195,
+        z: -70,
+        scale: 0.84,
+        opacity: 0.6,
+        zIndex: 20,
+      };
+    case 3:
+      // Waiting at the far top-right diagonal entrance (invisible ready to cycle in)
+      return {
+        x: 380,
+        y: -280,
+        z: -110,
+        scale: 0.76,
+        opacity: 0,
+        zIndex: 10,
+      };
+    case -1:
+      // Top of bottom-left stack
+      return {
+        x: -130,
+        y: 110,
+        z: -15,
+        scale: 0.88,
+        opacity: 0.85,
+        zIndex: 25,
+      };
+    case -2:
+      // Base of bottom-left stack (subtle background card)
+      return {
+        x: -155,
+        y: 130,
+        z: -38,
+        scale: 0.82,
+        opacity: 0.45,
+        zIndex: 15,
+      };
+    default:
+      return {
+        x: 0,
+        y: 0,
+        z: 0,
+        scale: 1,
+        opacity: 0,
+        zIndex: 1,
+      };
+  }
+};
+
 export function Isometric3DGallery({
   images = [],
   title = "Pieza Lumina",
   category = "Colección de Autor",
   className = "",
+  autoplay = true,
+  autoplaySpeed = 4,
 }: Isometric3DGalleryProps) {
   const [activeIndex, setActiveIndex] = useState(0);
   const [isLightboxOpen, setIsLightboxOpen] = useState(false);
+  const [isPlaying, setIsPlaying] = useState(autoplay);
+  const [isHovered, setIsHovered] = useState(false);
+  const [progress, setProgress] = useState(0);
   const [dragStartX, setDragStartX] = useState(0);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -95,19 +188,65 @@ export function Isometric3DGallery({
     return images[i] || images[i % Math.max(1, images.length)] || FALLBACK_IMAGE;
   });
 
-  const handleNext = () => {
-    setActiveIndex((prev) => (prev + 1) % 6);
+  const N = 6;
+
+  // Cyclical offset mapping: maps index difference into [-2, 3] so cards continuously flow
+  const computeOffset = (idx: number, currentActive: number) => {
+    let diff = ((idx - currentActive) % N + N) % N;
+    if (diff > 3) {
+      diff = diff - N; // maps 4 -> -2, 5 -> -1
+    }
+    return diff;
   };
 
-  const handlePrev = () => {
-    setActiveIndex((prev) => (prev - 1 + 6) % 6);
-  };
+  const currentOffsets = useMemo(() => {
+    return Array.from({ length: N }).map((_, i) => computeOffset(i, activeIndex));
+  }, [activeIndex]);
+
+  const prevOffsetsRef = useRef<number[]>(currentOffsets);
+
+  useEffect(() => {
+    prevOffsetsRef.current = currentOffsets;
+  }, [currentOffsets]);
+
+  const handleNext = useCallback(() => {
+    setActiveIndex((prev) => (prev + 1) % N);
+    setProgress(0);
+  }, [N]);
+
+  const handlePrev = useCallback(() => {
+    setActiveIndex((prev) => (prev - 1 + N) % N);
+    setProgress(0);
+  }, [N]);
+
+  // Autoplay Continuous Loop Timer
+  useEffect(() => {
+    if (!isPlaying || isHovered || isLightboxOpen) return;
+
+    const intervalMs = Math.max(2000, autoplaySpeed * 1000);
+    const tickMs = 100;
+    let elapsed = 0;
+
+    const timer = setInterval(() => {
+      elapsed += tickMs;
+      setProgress(Math.min(100, (elapsed / intervalMs) * 100));
+      if (elapsed >= intervalMs) {
+        elapsed = 0;
+        setProgress(0);
+        setActiveIndex((prev) => (prev + 1) % N);
+      }
+    }, tickMs);
+
+    return () => clearInterval(timer);
+  }, [isPlaying, isHovered, isLightboxOpen, autoplaySpeed, N, activeIndex]);
 
   return (
     <div className={cn("relative w-full select-none", className)}>
       {/* Outer Card Container */}
       <div 
         ref={containerRef}
+        onMouseEnter={() => setIsHovered(true)}
+        onMouseLeave={() => setIsHovered(false)}
         className="relative w-full h-[460px] sm:h-[540px] md:h-[580px] rounded-3xl sm:rounded-[2.5rem] bg-[#0d0e0c] dark:bg-[#090a08] border border-white/10 shadow-2xl overflow-hidden flex flex-col justify-between p-4 sm:p-6"
       >
         {/* Subtle Ambient Radial Lighting */}
@@ -125,12 +264,36 @@ export function Isometric3DGallery({
               <Layers className="w-3.5 h-3.5 text-[#8c9276]" />
               Galería 3D Isométrica
             </span>
-            <span className="hidden sm:inline-block text-[11px] text-white/50 font-mono">
-              6 Vistas Exclusivas
-            </span>
+            {isPlaying && !isHovered && (
+              <span className="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-mono text-emerald-400 bg-emerald-950/40 border border-emerald-800/50">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                Autoplay {autoplaySpeed}s
+              </span>
+            )}
+            {isHovered && isPlaying && (
+              <span className="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-mono text-amber-300 bg-amber-950/40 border border-amber-800/50">
+                Pausa (inspección)
+              </span>
+            )}
           </div>
 
           <div className="flex items-center gap-2">
+            {/* Play/Pause Autoplay Button */}
+            <button
+              onClick={() => setIsPlaying(prev => !prev)}
+              className={cn(
+                "w-9 h-9 rounded-full backdrop-blur-md border flex items-center justify-center transition-all cursor-pointer",
+                isPlaying 
+                  ? "bg-white/10 hover:bg-white/20 border-white/15 text-white" 
+                  : "bg-amber-500/20 hover:bg-amber-500/30 border-amber-500/40 text-amber-300"
+              )}
+              title={isPlaying ? "Pausar desplazamiento automático" : "Reanudar desplazamiento automático"}
+              aria-label={isPlaying ? "Pausar autoplay" : "Iniciar autoplay"}
+            >
+              {isPlaying ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5 fill-current ml-0.5" />}
+            </button>
+
+            {/* Lightbox Trigger */}
             <button
               onClick={() => setIsLightboxOpen(true)}
               className="w-9 h-9 rounded-full bg-white/10 hover:bg-white/20 active:bg-white/30 backdrop-blur-md border border-white/15 text-white flex items-center justify-center transition-all cursor-pointer"
@@ -167,64 +330,42 @@ export function Isometric3DGallery({
             }}
           >
             {cardImages.map((imgUrl, i) => {
-              const diff = i - activeIndex;
+              const offset = currentOffsets[i];
+              const prevOffset = prevOffsetsRef.current[i] ?? offset;
+              // Detect if card is wrapping across the boundaries (from stack -2 to diagonal +3 or vice-versa)
+              const isWrapping = Math.abs(offset - prevOffset) > 2;
+              const pos = getPositionForOffset(offset);
               const theme = CARD_THEMES[i % CARD_THEMES.length];
-              const isActive = diff === 0;
-
-              // Calculate 3D position along the diagonal trajectory or in the bottom-left stack
-              let x = 0;
-              let y = 0;
-              let z = 0;
-              let scale = 1;
-              let opacity = 1;
-              let zIndex = 10;
-
-              if (diff < 0) {
-                // In the bottom-left stack of layered cards
-                x = -130 + diff * 12;
-                y = 110 - diff * 10;
-                z = diff * 18;
-                scale = Math.max(0.75, 0.88 + diff * 0.03);
-                opacity = 0.9;
-                zIndex = 10 + diff;
-              } else if (diff === 0) {
-                // Active foreground card
-                x = 0;
-                y = 0;
-                z = 50;
-                scale = 1;
-                opacity = 1;
-                zIndex = 30;
-              } else {
-                // Upcoming cards floating along the top-right diagonal
-                x = diff * 135;
-                y = -diff * 100;
-                z = -diff * 35;
-                scale = Math.max(0.72, 1 - diff * 0.07);
-                opacity = Math.max(0.35, 1 - diff * 0.16);
-                zIndex = 20 - diff;
-              }
+              const isActive = offset === 0;
 
               return (
                 <motion.div
                   key={i}
                   animate={{
-                    x,
-                    y,
-                    z,
-                    scale,
-                    opacity,
+                    x: pos.x,
+                    y: pos.y,
+                    z: pos.z,
+                    scale: pos.scale,
+                    opacity: pos.opacity,
                   }}
-                  transition={{
-                    type: "spring",
-                    stiffness: 260,
-                    damping: 26,
-                    mass: 0.8,
+                  transition={
+                    isWrapping
+                      ? { duration: 0 }
+                      : {
+                          type: "spring",
+                          stiffness: 220,
+                          damping: 24,
+                          mass: 0.8,
+                        }
+                  }
+                  onClick={() => {
+                    setActiveIndex(i);
+                    setProgress(0);
                   }}
-                  onClick={() => setActiveIndex(i)}
                   style={{
-                    zIndex,
+                    zIndex: pos.zIndex,
                     transformStyle: "preserve-3d",
+                    pointerEvents: pos.opacity === 0 ? "none" : "auto",
                   }}
                   className={cn(
                     "absolute inset-0 rounded-[2rem] sm:rounded-[2.4rem] p-3 sm:p-4 border-2 shadow-2xl cursor-pointer select-none transition-shadow duration-300",
@@ -281,13 +422,26 @@ export function Isometric3DGallery({
         </div>
 
         {/* Bottom Interactive Navigation Dock */}
-        <div className="relative z-20 flex items-center justify-between pt-2 border-t border-white/10">
+        <div className="relative z-20 flex items-center justify-between pt-3 border-t border-white/10">
+          {/* Autoplay Progress Line Indicator on Dock */}
+          {isPlaying && (
+            <div className="absolute top-0 left-0 right-0 h-[2px] bg-white/10 overflow-hidden">
+              <div 
+                className="h-full bg-[#8c9276] transition-all duration-100 ease-linear"
+                style={{ width: `${progress}%` }}
+              />
+            </div>
+          )}
+
           {/* Active Card Indicator */}
           <div className="flex items-center gap-1.5">
             {Array.from({ length: 6 }).map((_, idx) => (
               <button
                 key={idx}
-                onClick={() => setActiveIndex(idx)}
+                onClick={() => {
+                  setActiveIndex(idx);
+                  setProgress(0);
+                }}
                 className={cn(
                   "h-1.5 rounded-full transition-all duration-300 cursor-pointer",
                   idx === activeIndex
@@ -359,7 +513,10 @@ export function Isometric3DGallery({
               {cardImages.map((img, idx) => (
                 <button
                   key={idx}
-                  onClick={() => setActiveIndex(idx)}
+                  onClick={() => {
+                    setActiveIndex(idx);
+                    setProgress(0);
+                  }}
                   className={cn(
                     "relative w-14 h-14 rounded-xl overflow-hidden border-2 transition-all shrink-0 cursor-pointer",
                     idx === activeIndex ? "border-[#8c9276] scale-105" : "border-transparent opacity-50 hover:opacity-100"

@@ -357,6 +357,8 @@ export function ProductLandingView({
                 images={images}
                 title={product.title}
                 category={product.category}
+                autoplay={product.galleryAutoplay ?? true}
+                autoplaySpeed={product.galleryAutoplaySpeed ?? 4}
               />
             </div>
           ) : (

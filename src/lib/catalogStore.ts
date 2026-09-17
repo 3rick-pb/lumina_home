@@ -67,6 +67,8 @@ export interface CatalogProduct {
   combos?: ProductCombo[];
   layoutType?: 'standard' | 'landing';
   galleryStyle?: 'traditional' | 'isometric_3d';
+  galleryAutoplay?: boolean;
+  galleryAutoplaySpeed?: number;
   landingSpecs?: LandingSpec[];
   landingReviews?: LandingReview[];
   landingBenefits?: LandingBenefit[];
@@ -270,15 +272,21 @@ const toSupabaseProduct = (p: Partial<CatalogProduct>) => {
     stock: typeof p.stock === 'number' ? p.stock : 20,
     layout_type: p.layoutType || 'standard',
     gallery_style: p.galleryStyle || 'traditional',
+    gallery_autoplay: p.galleryAutoplay !== undefined ? p.galleryAutoplay : true,
+    gallery_autoplay_speed: p.galleryAutoplaySpeed || 4,
     landing_specs: p.landingSpecs || null,
     landing_reviews: p.landingReviews || null,
     landing_benefits: p.landingBenefits || null,
     landing_bundle: p.landingBundle ? {
       ...p.landingBundle,
-      galleryStyle: p.galleryStyle || 'traditional'
+      galleryStyle: p.galleryStyle || 'traditional',
+      galleryAutoplay: p.galleryAutoplay !== undefined ? p.galleryAutoplay : true,
+      galleryAutoplaySpeed: p.galleryAutoplaySpeed || 4,
     } : {
       enabled: false,
-      galleryStyle: p.galleryStyle || 'traditional'
+      galleryStyle: p.galleryStyle || 'traditional',
+      galleryAutoplay: p.galleryAutoplay !== undefined ? p.galleryAutoplay : true,
+      galleryAutoplaySpeed: p.galleryAutoplaySpeed || 4,
     },
     combos: p.combos || null,
     how_to_use: p.howToUse || null,
@@ -349,6 +357,8 @@ const toFrontendProduct = (p: any): CatalogProduct => {
     combos: p.combos || undefined,
     layoutType: p.layout_type || 'standard',
     galleryStyle: (p.gallery_style || p.landing_bundle?.galleryStyle || 'traditional') as 'traditional' | 'isometric_3d',
+    galleryAutoplay: p.gallery_autoplay !== undefined ? Boolean(p.gallery_autoplay) : (p.landing_bundle?.galleryAutoplay !== undefined ? Boolean(p.landing_bundle?.galleryAutoplay) : true),
+    galleryAutoplaySpeed: typeof p.gallery_autoplay_speed === 'number' ? p.gallery_autoplay_speed : (typeof p.landing_bundle?.galleryAutoplaySpeed === 'number' ? p.landing_bundle?.galleryAutoplaySpeed : 4),
     landingSpecs: p.landing_specs || undefined,
     landingReviews: p.landing_reviews || undefined,
     landingBenefits: p.landing_benefits || undefined,
@@ -483,6 +493,8 @@ export const useCatalogStore = create<CatalogState>((set) => ({
       delete basicProduct.stock;
       delete basicProduct.layout_type;
       delete basicProduct.gallery_style;
+      delete basicProduct.gallery_autoplay;
+      delete basicProduct.gallery_autoplay_speed;
       delete basicProduct.landing_specs;
       delete basicProduct.landing_reviews;
       delete basicProduct.landing_benefits;
@@ -559,6 +571,8 @@ export const useCatalogStore = create<CatalogState>((set) => ({
         delete basicProduct.stock;
         delete basicProduct.layout_type;
         delete basicProduct.gallery_style;
+        delete basicProduct.gallery_autoplay;
+        delete basicProduct.gallery_autoplay_speed;
         delete basicProduct.landing_specs;
         delete basicProduct.landing_reviews;
         delete basicProduct.landing_benefits;
