@@ -71,11 +71,10 @@ export function EmbeddedCylinderCarousel({
       },
       {
         image: getImg(1),
-        tag: "DISEÑO",
+        tag: "GEOMETRÍA",
         title: productTitle,
-        subtitle: "ACABADO DE AUTOR",
-        code: category || "PIEZA DESTACADA",
-        theme: "dark_typography",
+        subtitle: "PROPORCIÓN Y EQUILIBRIO",
+        theme: "framed",
       },
       {
         image: getImg(2),

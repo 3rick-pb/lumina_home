@@ -38,6 +38,7 @@ type DashPreset = {
 type DashProps = {
   active: boolean
   mouseY: MotionValue<number>
+  waveY: MotionValue<number>
   onSelect: (id: string) => void
   registerDash: (id: string, node: HTMLButtonElement | null) => void
   section: ProximitySection
@@ -53,9 +54,8 @@ export type ProximitySidebarProps = {
   side?: Side
 }
 
-const RADIUS = 40
+const RADIUS = 50
 const MAX_DASH_WIDTH = 110
-const SCROLL_IDLE_RESET_DELAY = 80
 
 const DASH_PRESETS: Record<SectionKind, DashPreset> = {
   title: {
@@ -124,6 +124,7 @@ const getScrollParent = (element: HTMLElement) => {
 const Dash = ({
   active,
   mouseY,
+  waveY,
   onSelect,
   registerDash,
   section,
@@ -140,38 +141,77 @@ const Dash = ({
     return () => registerDash(section.id, null)
   }, [registerDash, section.id])
 
-  const distance = useTransform(mouseY, (y) => {
+  // Distance computation blending mouse proximity and scroll wave
+  const distance = useTransform([mouseY, waveY], ([mY, wY]: number[]) => {
     const rect = ref.current?.getBoundingClientRect()
     if (!rect) return RADIUS
-    return y - (rect.top + rect.height / 2)
+
+    const dashCenter = rect.top + rect.height / 2
+
+    // Priority 1: When user hovers sidebar, mouse proximity rules
+    if (isSidebarHovered && Number.isFinite(mY)) {
+      return mY - dashCenter
+    }
+
+    // Priority 2: When scrolling or moving on page, wave ripple rules
+    if (Number.isFinite(wY) && wY > 0) {
+      return wY - dashCenter
+    }
+
+    return RADIUS
   })
 
-  const targetScaleX = useTransform(
-    distance,
-    [-RADIUS, 0, RADIUS],
-    [
-      preset.base / MAX_DASH_WIDTH,
-      activeWidth / MAX_DASH_WIDTH,
-      preset.base / MAX_DASH_WIDTH,
-    ],
-    { clamp: true }
-  )
+  // Cosine bell curve for fluid liquid wave expansion ("efecto Ola")
+  const targetScaleX = useTransform(distance, (d) => {
+    const absD = Math.abs(d)
+    const baseScale = preset.base / MAX_DASH_WIDTH
+    const fullActiveScale = activeWidth / MAX_DASH_WIDTH
+
+    if (absD >= RADIUS) {
+      // At rest: active dash retains slight prominence
+      return active
+        ? Math.min(fullActiveScale, (preset.base + preset.bump * 0.35) / MAX_DASH_WIDTH)
+        : baseScale
+    }
+
+    // Smooth wave crest factor: 1.0 at center, 0.0 at RADIUS
+    const waveFactor = Math.cos((absD / RADIUS) * (Math.PI / 2))
+    const extraWidth = preset.bump * waveFactor
+    const currentBase = active ? preset.base + preset.bump * 0.35 : preset.base
+
+    return Math.min(fullActiveScale, (currentBase + extraWidth) / MAX_DASH_WIDTH)
+  })
 
   const scaleX = useSpring(targetScaleX, {
-    stiffness: 320,
-    damping: 34,
-    mass: 0.7,
+    stiffness: 280,
+    damping: 26,
+    mass: 0.6,
+  })
+
+  // Subtle lateral crest displacement (wave bulge towards viewer)
+  const targetTranslateX = useTransform(distance, (d) => {
+    const absD = Math.abs(d)
+    if (absD >= RADIUS) return 0
+    const waveFactor = Math.cos((absD / RADIUS) * (Math.PI / 2))
+    return side === "right" ? -4 * waveFactor : 4 * waveFactor
+  })
+
+  const translateX = useSpring(targetTranslateX, {
+    stiffness: 280,
+    damping: 26,
+    mass: 0.6,
   })
 
   return (
-    <button
+    <motion.button
       ref={ref}
       type="button"
       aria-current={active ? "location" : undefined}
       aria-label={`Ir a ${section.label}`}
       title={section.label}
+      style={{ x: translateX }}
       className={cn(
-        "group relative flex h-5 w-[110px] items-center border-0 bg-transparent p-0 outline-none cursor-pointer",
+        "group relative flex h-5 w-[110px] items-center border-0 bg-transparent p-0 outline-none cursor-pointer select-none",
         side === "right" ? "justify-end" : "justify-start"
       )}
       onClick={() => onSelect(section.id)}
@@ -194,7 +234,9 @@ const Dash = ({
       <motion.span
         className={cn(
           "block rounded-full transition-colors duration-200 ease-out group-focus-visible:ring-2 group-focus-visible:ring-[#8c9276]",
-          active ? "bg-[#8c9276] shadow-sm shadow-[#8c9276]/30" : preset.className
+          active 
+            ? "bg-[#8c9276] dark:bg-[#a3aa8c] shadow-sm shadow-[#8c9276]/40" 
+            : preset.className
         )}
         style={{
           height: active ? Math.max(preset.thickness, 2.5) : preset.thickness,
@@ -203,7 +245,7 @@ const Dash = ({
           width: MAX_DASH_WIDTH,
         }}
       />
-    </button>
+    </motion.button>
   )
 }
 
@@ -213,11 +255,20 @@ const ProximitySidebar = ({
   side = "right",
   sections,
 }: ProximitySidebarProps) => {
+  const containerRef = useRef<HTMLDivElement>(null)
   const mouseY = useMotionValue(Infinity)
+  const rawWaveY = useMotionValue(Infinity)
+
+  // Spring-cushioned wave that flows naturally as you scroll up and down ("el sidebar debe seguirme")
+  const springWaveY = useSpring(rawWaveY, {
+    stiffness: 220,
+    damping: 26,
+    mass: 0.55,
+  })
+
   const shouldReduceMotion = useReducedMotion()
   const dashRefs = useRef(new Map<string, HTMLButtonElement>())
   const pointerInside = useRef(false)
-  const resetTimer = useRef<number | null>(null)
   const isProgrammaticScroll = useRef(false)
   const scrollLockTimeout = useRef<number | null>(null)
   const [isSidebarHovered, setIsSidebarHovered] = useState(false)
@@ -241,44 +292,6 @@ const ProximitySidebar = ({
       dashRefs.current.delete(id)
     },
     []
-  )
-
-  const clearPendingReset = useCallback(() => {
-    if (!resetTimer.current) return
-
-    window.clearTimeout(resetTimer.current)
-    resetTimer.current = null
-  }, [])
-
-  const setMouseToDash = useCallback(
-    (id?: string) => {
-      if (!id) {
-        mouseY.set(Infinity)
-        return
-      }
-
-      const node = dashRefs.current.get(id)
-      if (!node) return
-
-      const rect = node.getBoundingClientRect()
-      mouseY.set(rect.top + rect.height / 2)
-    },
-    [mouseY]
-  )
-
-  const pulseDash = useCallback(
-    (id?: string) => {
-      setMouseToDash(id)
-      clearPendingReset()
-
-      if (!id || pointerInside.current) return
-
-      resetTimer.current = window.setTimeout(() => {
-        mouseY.set(Infinity)
-        resetTimer.current = null
-      }, SCROLL_IDLE_RESET_DELAY)
-    },
-    [clearPendingReset, mouseY, setMouseToDash]
   )
 
   const selectSection = useCallback(
@@ -344,9 +357,8 @@ const ProximitySidebar = ({
   )
 
   useEffect(() => () => {
-    clearPendingReset()
     if (scrollLockTimeout.current) window.clearTimeout(scrollLockTimeout.current)
-  }, [clearPendingReset])
+  }, [])
 
   useEffect(() => {
     const kinds = sections.reduce<Record<string, SectionKind>>(
@@ -369,9 +381,82 @@ const ProximitySidebar = ({
 
     let frame = 0
 
-    const updateActiveSection = () => {
-      frame = 0
+    const updateScrollWave = () => {
+      if (typeof window === "undefined") return
 
+      const scrollY = window.scrollY
+      const docHeight = document.documentElement.scrollHeight - window.innerHeight
+
+      // 1. Top of page: wave settles on first dash
+      if (scrollY < 120 && sections.length > 0) {
+        const firstNode = dashRefs.current.get(sections[0].id)
+        if (firstNode) {
+          const rect = firstNode.getBoundingClientRect()
+          rawWaveY.set(rect.top + rect.height / 2)
+          return
+        }
+      }
+
+      // 2. Bottom of page: wave settles on last dash
+      if (docHeight > 0 && scrollY >= docHeight - 160 && sections.length > 0) {
+        const lastNode = dashRefs.current.get(sections[sections.length - 1].id)
+        if (lastNode) {
+          const rect = lastNode.getBoundingClientRect()
+          rawWaveY.set(rect.top + rect.height / 2)
+          return
+        }
+      }
+
+      // 3. Section-based continuous wave interpolation:
+      const points: { docTop: number; dashY: number }[] = []
+      for (const s of sections) {
+        const el = getSectionElement(s.id)
+        const node = dashRefs.current.get(s.id)
+        if (el && node) {
+          const elRect = el.getBoundingClientRect()
+          const nodeRect = node.getBoundingClientRect()
+          points.push({
+            docTop: elRect.top + scrollY,
+            dashY: nodeRect.top + nodeRect.height / 2,
+          })
+        }
+      }
+
+      if (points.length >= 2) {
+        const currentFocalScroll = scrollY + window.innerHeight * (activeOffset || 0.4)
+
+        if (currentFocalScroll <= points[0].docTop) {
+          rawWaveY.set(points[0].dashY)
+          return
+        }
+        if (currentFocalScroll >= points[points.length - 1].docTop) {
+          rawWaveY.set(points[points.length - 1].dashY)
+          return
+        }
+
+        for (let i = 0; i < points.length - 1; i++) {
+          const pA = points[i]
+          const pB = points[i + 1]
+          if (currentFocalScroll >= pA.docTop && currentFocalScroll <= pB.docTop) {
+            const span = pB.docTop - pA.docTop
+            const ratio = span > 0 ? (currentFocalScroll - pA.docTop) / span : 0
+            rawWaveY.set(pA.dashY + ratio * (pB.dashY - pA.dashY))
+            return
+          }
+        }
+      }
+
+      // 4. Fallback based on sidebar container geometry and global progress
+      if (containerRef.current) {
+        const cRect = containerRef.current.getBoundingClientRect()
+        const progress = docHeight > 0 ? Math.min(1, Math.max(0, scrollY / docHeight)) : 0
+        const startY = cRect.top + 12
+        const endY = cRect.bottom - 12
+        rawWaveY.set(startY + progress * (endY - startY))
+      }
+    }
+
+    const updateActiveSection = () => {
       // If smooth programmatic scroll is running from clicking a dash, do not override activeId
       if (isProgrammaticScroll.current) return
 
@@ -383,7 +468,11 @@ const ProximitySidebar = ({
       }
 
       // Special case 2: If scrolled near bottom, select the last section (Envíos & Garantías)
-      if (typeof document !== "undefined" && window.innerHeight + window.scrollY >= (document.documentElement.scrollHeight - 240) && sections.length > 0) {
+      if (
+        typeof document !== "undefined" &&
+        window.innerHeight + window.scrollY >= (document.documentElement.scrollHeight - 240) &&
+        sections.length > 0
+      ) {
         const bottomId = sections[sections.length - 1].id
         setActiveId(bottomId)
         return
@@ -414,7 +503,11 @@ const ProximitySidebar = ({
 
     const scheduleUpdate = () => {
       if (frame) return
-      frame = window.requestAnimationFrame(updateActiveSection)
+      frame = window.requestAnimationFrame(() => {
+        frame = 0
+        updateActiveSection()
+        updateScrollWave()
+      })
     }
 
     const scrollParents = new Set<EventTarget>([window])
@@ -424,7 +517,9 @@ const ProximitySidebar = ({
       if (element) scrollParents.add(getScrollParent(element))
     }
 
-    updateActiveSection()
+    // Initial positioning
+    scheduleUpdate()
+    const timer = setTimeout(scheduleUpdate, 100)
 
     for (const parent of scrollParents) {
       parent.addEventListener("scroll", scheduleUpdate, { passive: true })
@@ -433,6 +528,7 @@ const ProximitySidebar = ({
     window.addEventListener("resize", scheduleUpdate)
 
     return () => {
+      clearTimeout(timer)
       if (frame) window.cancelAnimationFrame(frame)
 
       for (const parent of scrollParents) {
@@ -441,7 +537,7 @@ const ProximitySidebar = ({
 
       window.removeEventListener("resize", scheduleUpdate)
     }
-  }, [activeOffset, pulseDash, sectionIds, sections])
+  }, [activeOffset, rawWaveY, sectionIds, sections])
 
   return (
     <nav
@@ -456,13 +552,13 @@ const ProximitySidebar = ({
       onTouchStart={() => setIsSidebarHovered(true)}
     >
       <div
+        ref={containerRef}
         className={cn(
           "mx-4 flex flex-col",
           side === "right" ? "items-end" : "items-start"
         )}
         style={{ gap: 10 }}
         onPointerMove={(event) => {
-          clearPendingReset()
           pointerInside.current = true
           setIsSidebarHovered(true)
           mouseY.set(event.clientY)
@@ -478,6 +574,7 @@ const ProximitySidebar = ({
             key={section.id}
             active={section.id === activeId}
             mouseY={mouseY}
+            waveY={springWaveY}
             onSelect={selectSection}
             registerDash={registerDash}
             section={section}

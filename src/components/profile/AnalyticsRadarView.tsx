@@ -19,7 +19,8 @@ import {
   Sparkles,
   ChevronRight,
   X,
-  Layers
+  Layers,
+  Map as MapIcon
 } from "lucide-react";
 import { useUserStore, type User, type ShippingAddress, type Order } from "@/lib/userStore";
 import type { CatalogProduct } from "@/lib/catalogStore";
@@ -1001,10 +1002,10 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
               : "border-white/15 hover:border-white/30"
           }`}>
             <div className="flex items-center gap-2 pr-3 border-r border-white/10 shrink-0">
-              <div className="relative w-6 h-6 rounded-full bg-gradient-to-tr from-[#ccff00] to-white text-gray-950 font-black text-xs flex items-center justify-center shadow-[0_0_10px_#ccff00]/40">
-                L
+              <div className="relative w-6 h-6 rounded-full bg-gradient-to-tr from-[#ccff00] to-white text-gray-950 flex items-center justify-center shadow-[0_0_10px_#ccff00]/40">
+                <MapIcon className="w-3.5 h-3.5 text-gray-950 stroke-[2.5]" />
               </div>
-              <span className="font-extrabold tracking-wider text-xs hidden sm:inline font-mono text-[#ccff00]">RADAR</span>
+              <span className="font-extrabold tracking-wider text-xs hidden sm:inline font-mono text-[#ccff00]">MAPA</span>
             </div>
 
             <Search className={`w-3.5 h-3.5 mx-2 shrink-0 transition-colors duration-200 ${isSearchFocused ? "text-[#ccff00]" : "text-white/50"}`} />

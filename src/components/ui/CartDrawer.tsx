@@ -763,47 +763,60 @@ export function CartDrawer() {
           >
 
   {/* Top Bar Header */}
-  <header className="px-4 sm:px-8 py-3.5 sm:py-4 bg-white dark:bg-[#2a2a2c]/80 backdrop-blur-xl border-b border-gray-100 dark:border-white/5 flex items-center justify-between shrink-0 shadow-sm dark:shadow-none">
+  <header className="px-4 sm:px-8 py-3.5 sm:py-4 bg-white dark:bg-[#2a2a2c]/80 backdrop-blur-xl border-b border-gray-100 dark:border-white/5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-0 shrink-0 shadow-sm dark:shadow-none">
  
-  {/* Left: Simple Clean "Bolsa de Compras" */}
-  <div className="flex items-center gap-3">
-    <div className="w-10 h-10 rounded-2xl bg-stone-900 dark:bg-white text-white dark:text-stone-900 flex items-center justify-center shadow-xs shrink-0">
-      <ShoppingBag className="w-4 h-4 text-white dark:text-stone-900 drop-shadow-xs" />
+  {/* Top line on mobile: Left Title + Right Close Button */}
+  <div className="flex items-center justify-between w-full sm:w-auto">
+    <div className="flex items-center gap-2.5 sm:gap-3">
+      <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-2xl bg-stone-900 dark:bg-white text-white dark:text-stone-900 flex items-center justify-center shadow-xs shrink-0">
+        <ShoppingBag className="w-4 h-4 text-white dark:text-stone-900 drop-shadow-xs" />
+      </div>
+      <span className="font-sans font-bold text-lg sm:text-xl text-gray-950 dark:text-white tracking-tight">
+        Bolsa de Compras
+      </span>
     </div>
-    <span className="font-sans font-bold text-lg sm:text-xl text-gray-950 dark:text-white tracking-tight">
-      Bolsa de Compras
-    </span>
-  </div>
 
-  {/* Center Step Indicator (2IXO Pill Dock) */}
-  <div className="flex items-center gap-1 bg-black/[0.04] dark:bg-white/[0.06] p-1 rounded-full border border-black/[0.04] dark:border-white/10 backdrop-blur-xl">
+    {/* Close Button on Mobile (visible only < sm) */}
     <button 
-      onClick={() => setStep("bag")}
-      className={`px-4 py-1.5 rounded-full text-xs font-semibold transition-all cursor-pointer ${
-        step === "bag" 
-          ? "bg-white dark:bg-[#27272a] text-gray-950 dark:text-white shadow-[0_2px_8px_rgba(0,0,0,0.06)]" 
-          : "text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100"
-      }`}
+      onClick={() => setIsOpen(false)}
+      className="sm:hidden w-9 h-9 rounded-full bg-white/80 dark:bg-white/10 backdrop-blur-xl border border-black/[0.06] dark:border-white/15 shadow-[0_2px_8px_rgba(0,0,0,0.04)] text-gray-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50/90 dark:hover:bg-rose-950/40 hover:border-rose-200 dark:hover:border-rose-900/40 flex items-center justify-center hover:scale-105 active:scale-95 transition-all cursor-pointer shrink-0"
+      title="Cerrar bolsa"
     >
-      1. Bolsa ({items.length})
-    </button>
-    <button 
-      onClick={() => {
-        if (items.length > 0) handleProceedToPayment();
-      }}
-      disabled={items.length === 0}
-      className={`px-4 py-1.5 rounded-full text-xs font-semibold transition-all disabled:opacity-40 cursor-pointer ${
-        step === "payment" 
-          ? "bg-white dark:bg-[#27272a] text-gray-950 dark:text-white shadow-[0_2px_8px_rgba(0,0,0,0.06)]" 
-          : "text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100"
-      }`}
-    >
-      2. Pasarela de Pago
+      <X className="w-4 h-4" />
     </button>
   </div>
 
-  {/* Right Action: 2IXO Circular Glass Close Button (Matches Delete Product styling) */}
-  <div className="flex items-center gap-3">
+  {/* Center Step Indicator (2IXO Pill Dock) - Sits below title on mobile */}
+  <div className="flex items-center justify-center w-full sm:w-auto">
+    <div className="flex items-center gap-1 bg-black/[0.04] dark:bg-white/[0.06] p-1 rounded-full border border-black/[0.04] dark:border-white/10 backdrop-blur-xl w-full sm:w-auto justify-center">
+      <button 
+        onClick={() => setStep("bag")}
+        className={`flex-1 sm:flex-initial text-center px-3 sm:px-4 py-1.5 rounded-full text-xs font-semibold transition-all cursor-pointer whitespace-nowrap ${
+          step === "bag" 
+            ? "bg-white dark:bg-[#27272a] text-gray-950 dark:text-white shadow-[0_2px_8px_rgba(0,0,0,0.06)]" 
+            : "text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100"
+        }`}
+      >
+        1. Bolsa ({items.length})
+      </button>
+      <button 
+        onClick={() => {
+          if (items.length > 0) handleProceedToPayment();
+        }}
+        disabled={items.length === 0}
+        className={`flex-1 sm:flex-initial text-center px-3 sm:px-4 py-1.5 rounded-full text-xs font-semibold transition-all disabled:opacity-40 cursor-pointer whitespace-nowrap ${
+          step === "payment" 
+            ? "bg-white dark:bg-[#27272a] text-gray-950 dark:text-white shadow-[0_2px_8px_rgba(0,0,0,0.06)]" 
+            : "text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100"
+        }`}
+      >
+        2. Pasarela de Pago
+      </button>
+    </div>
+  </div>
+
+  {/* Right Action: 2IXO Circular Glass Close Button (Desktop sm:flex) */}
+  <div className="hidden sm:flex items-center gap-3">
     <button 
       onClick={() => setIsOpen(false)}
       className="w-10 h-10 rounded-full bg-white/80 dark:bg-white/10 backdrop-blur-xl border border-black/[0.06] dark:border-white/15 shadow-[0_2px_8px_rgba(0,0,0,0.04)] text-gray-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50/90 dark:hover:bg-rose-950/40 hover:border-rose-200 dark:hover:border-rose-900/40 flex items-center justify-center hover:scale-105 active:scale-95 transition-all cursor-pointer"
@@ -859,25 +872,25 @@ export function CartDrawer() {
       </div>
     </div>
 
-    {/* 2IXO Circular Action Feature Discs (Show PIN / Card Details / Freeze Card) */}
-    <div className="grid grid-cols-3 gap-6 sm:gap-10 max-w-xs sm:max-w-sm mx-auto mb-8">
+    {/* 2IXO Circular Action Feature Discs */}
+    <div className="grid grid-cols-3 gap-3 sm:gap-10 max-w-xs sm:max-w-sm mx-auto mb-8">
       <div className="flex flex-col items-center group">
-        <div className="w-13 h-13 sm:w-14 sm:h-14 rounded-full bg-white/80 dark:bg-white/10 backdrop-blur-xl border border-white dark:border-white/20 shadow-[0_4px_16px_rgba(0,0,0,0.04)] flex items-center justify-center text-gray-800 dark:text-gray-100 group-hover:scale-105 transition-all">
-          <Package className="w-5 h-5 text-gray-700 dark:text-gray-200" />
+        <div className="w-12 h-12 sm:w-14 sm:h-14 shrink-0 aspect-square min-w-[48px] min-h-[48px] rounded-full bg-white/80 dark:bg-white/10 backdrop-blur-xl border border-white dark:border-white/20 shadow-[0_4px_16px_rgba(0,0,0,0.04)] flex items-center justify-center text-gray-800 dark:text-gray-100 group-hover:scale-105 transition-all">
+          <Package className="w-5 h-5 text-gray-700 dark:text-gray-200 shrink-0" />
         </div>
-        <span className="text-[11px] font-medium text-gray-600 dark:text-gray-300 mt-2 text-center">Curaduría</span>
+        <span className="text-[11px] font-semibold text-gray-700 dark:text-gray-300 mt-2 text-center whitespace-nowrap">Logística</span>
       </div>
       <div className="flex flex-col items-center group">
-        <div className="w-13 h-13 sm:w-14 sm:h-14 rounded-full bg-white/80 dark:bg-white/10 backdrop-blur-xl border border-white dark:border-white/20 shadow-[0_4px_16px_rgba(0,0,0,0.04)] flex items-center justify-center text-gray-800 dark:text-gray-100 group-hover:scale-105 transition-all">
-          <Truck className="w-5 h-5 text-gray-700 dark:text-gray-200" />
+        <div className="w-12 h-12 sm:w-14 sm:h-14 shrink-0 aspect-square min-w-[48px] min-h-[48px] rounded-full bg-white/80 dark:bg-white/10 backdrop-blur-xl border border-white dark:border-white/20 shadow-[0_4px_16px_rgba(0,0,0,0.04)] flex items-center justify-center text-gray-800 dark:text-gray-100 group-hover:scale-105 transition-all">
+          <Truck className="w-5 h-5 text-gray-700 dark:text-gray-200 shrink-0" />
         </div>
-        <span className="text-[11px] font-medium text-gray-600 dark:text-gray-300 mt-2 text-center">Despacho</span>
+        <span className="text-[11px] font-semibold text-gray-700 dark:text-gray-300 mt-2 text-center whitespace-nowrap">Despacho</span>
       </div>
       <div className="flex flex-col items-center group">
-        <div className="w-13 h-13 sm:w-14 sm:h-14 rounded-full bg-white/80 dark:bg-white/10 backdrop-blur-xl border border-white dark:border-white/20 shadow-[0_4px_16px_rgba(0,0,0,0.04)] flex items-center justify-center text-gray-800 dark:text-gray-100 group-hover:scale-105 transition-all">
-          <ShieldCheck className="w-5 h-5 text-gray-700 dark:text-gray-200" />
+        <div className="w-12 h-12 sm:w-14 sm:h-14 shrink-0 aspect-square min-w-[48px] min-h-[48px] rounded-full bg-white/80 dark:bg-white/10 backdrop-blur-xl border border-white dark:border-white/20 shadow-[0_4px_16px_rgba(0,0,0,0.04)] flex items-center justify-center text-gray-800 dark:text-gray-100 group-hover:scale-105 transition-all">
+          <Navigation className="w-5 h-5 text-gray-700 dark:text-gray-200 shrink-0" />
         </div>
-        <span className="text-[11px] font-medium text-gray-600 dark:text-gray-300 mt-2 text-center">Garantía</span>
+        <span className="text-[11px] font-semibold text-gray-700 dark:text-gray-300 mt-2 text-center whitespace-nowrap">Envío</span>
       </div>
     </div>
 

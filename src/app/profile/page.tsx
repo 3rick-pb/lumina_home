@@ -609,16 +609,23 @@ const handleConfirmDeleteNiche = async () => {
   {/* 1. Left Vertical Icon Sidebar (Desktop Dock) */}
   <aside className="hidden md:flex sidebar-dock-nav w-16 md:w-20 bg-white/95 dark:bg-[#1e1e20]/95 backdrop-blur-2xl rounded-3xl border border-gray-200/80 dark:border-white/10 shadow-[0_12px_40px_rgba(0,0,0,0.05)] dark:shadow-[0_12px_40px_rgba(0,0,0,0.4)] flex-col items-center py-6 gap-6 justify-between shrink-0 mr-4 md:mr-6 self-stretch relative z-30">
  
- {/* Brand Logo Symbol */}
- <div className="flex flex-col items-center gap-5 w-full">
- <Link 
-   href="/" 
-   className="sidebar-dock-btn group relative w-11 h-11 md:w-12 md:h-12 rounded-2xl bg-gradient-to-tr from-[#8c9276] via-[#9ca383] to-[#ccff00]/70 flex items-center justify-center text-white dark:text-gray-950 shadow-md shadow-[#8c9276]/30 hover:scale-105 active:scale-95 transition-all duration-[600ms]" 
-   title="Volver a Lumina"
- >
-   <span className="font-display font-bold text-xl italic group-hover:scale-110 transition-transform duration-[600ms]">L</span>
-   <span className="absolute -bottom-1 w-1.5 h-1.5 rounded-full bg-[#ccff00] opacity-0 group-hover:opacity-100 transition-opacity duration-[600ms]" />
- </Link>
+  {/* Brand Logo Symbol */}
+  <div className="flex flex-col items-center gap-5 w-full">
+  <Link 
+    href="/" 
+    className="sidebar-dock-btn group relative w-11 h-11 md:w-12 md:h-12 rounded-2xl bg-black border border-[#c49a3f]/40 dark:border-[#c49a3f]/50 overflow-hidden flex items-center justify-center shadow-md shadow-[#c49a3f]/20 hover:border-[#c49a3f] hover:shadow-[0_0_15px_rgba(196,154,63,0.35)] hover:scale-105 active:scale-95 transition-all duration-300" 
+    title="Volver a Lumina"
+  >
+    <Image 
+      src="/images/lumina-luxury-logo.jpg" 
+      alt="Lumina Home" 
+      fill 
+      sizes="48px"
+      className="object-cover group-hover:scale-110 transition-transform duration-500" 
+      priority
+    />
+    <span className="absolute -bottom-1 w-1.5 h-1.5 rounded-full bg-[#c49a3f] opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+  </Link>
 
  {/* Visible section divider */}
  <div className="w-9 md:w-10 h-[2px] bg-gray-300/80 dark:bg-white/20 rounded-full my-0.5 transition-colors shrink-0" />
