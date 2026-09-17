@@ -8,13 +8,11 @@ import { ProductCard } from "@/components/ui/ProductCard";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { useCatalogStore } from "@/lib/catalogStore";
 import { normalizeSearchText as normalizeText } from "@/lib/utils";
-import { ScrollProgress } from "@/components/ui/scroll-progress";
 import { ProximitySidebar } from "@/components/ui/proximity-sidebar";
 
 const SHOP_SECTIONS = [
   { id: "shop-header", label: "Catálogo", level: 1 as const },
-  { id: "shop-categories", label: "Colecciones", level: 2 as const },
-  { id: "shop-products", label: "Galería de Artículos", level: 3 as const },
+  { id: "shop-products", label: "Galería de Artículos", level: 2 as const },
 ];
 
 export default function ShopPage({ searchParams }: { searchParams: Promise<{ category?: string, search?: string }> }) {
@@ -124,9 +122,6 @@ export default function ShopPage({ searchParams }: { searchParams: Promise<{ cat
           )}
         </div>
       </div>
-
-      {/* Rare UI Scroll Progress (Centrado al fondo) */}
-      <ScrollProgress sections={SHOP_SECTIONS} />
 
       {/* Rare UI Proximity Sidebar (Lateral derecho para desktop) */}
       <div className="hidden lg:block fixed right-3 xl:right-6 top-1/2 -translate-y-1/2 z-40 pointer-events-auto">

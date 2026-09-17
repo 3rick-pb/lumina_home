@@ -36,6 +36,7 @@ import { normalizeSearchText } from "@/lib/utils";
 import { ColorVariantsManager, ColorVariant } from "@/components/admin/ColorVariantsManager";
 import { normalizeImageUrl, normalizeImagesList, isGoogleDriveUrl } from "@/lib/imageUtils";
 import { ProductArchitectureSelector } from "@/components/profile/ProductArchitectureSelector";
+import { ProductGalleryStyleSelector } from "@/components/profile/ProductGalleryStyleSelector";
 import { ProductCombosManager } from "@/components/profile/ProductCombosManager";
 import { AddCardAnimatedModal } from "@/components/profile/AddCardAnimatedModal";
 import { OverviewTab } from "@/components/profile/tabs/OverviewTab";
@@ -152,6 +153,7 @@ export default function ProfilePage() {
  const [prodPackageContents, setProdPackageContents] = useState("");
  const [prodStock, setProdStock] = useState("20");
  const [prodLayoutType, setProdLayoutType] = useState<'standard' | 'landing'>('standard');
+ const [prodGalleryStyle, setProdGalleryStyle] = useState<'traditional' | 'isometric_3d'>('traditional');
  const [prodCombos, setProdCombos] = useState<ProductCombo[]>([]);
  const [prodHowToUse, setProdHowToUse] = useState("");
  const [prodBundleMode, setProdBundleMode] = useState<'companion' | 'volume_tiers' | 'care_pass'>('companion');
@@ -201,6 +203,7 @@ export default function ProfilePage() {
  const [editPackageContents, setEditPackageContents] = useState("");
  const [editStock, setEditStock] = useState("20");
  const [editLayoutType, setEditLayoutType] = useState<'standard' | 'landing'>('standard');
+ const [editGalleryStyle, setEditGalleryStyle] = useState<'traditional' | 'isometric_3d'>('traditional');
  const [editCombos, setEditCombos] = useState<ProductCombo[]>([]);
  const [editHowToUse, setEditHowToUse] = useState("");
  const [editBundleMode, setEditBundleMode] = useState<'companion' | 'volume_tiers' | 'care_pass'>('companion');
@@ -322,6 +325,7 @@ export default function ProfilePage() {
       packageContents: prodPackageContents.trim() || undefined,
       stock: prodStock ? parseInt(prodStock, 10) : 20,
       layoutType: prodLayoutType,
+      galleryStyle: prodGalleryStyle,
       landingAnatomyImage: prodLayoutType === 'landing' && prodLandingAnatomyImage.trim() ? prodLandingAnatomyImage.trim() : undefined,
       landingSpecs: prodLayoutType === 'landing' ? prodLandingSpecs : undefined,
       landingReviews: prodLayoutType === 'landing' ? prodLandingReviews : undefined,
@@ -362,6 +366,7 @@ export default function ProfilePage() {
  setProdPackageContents("");
  setProdStock("20");
  setProdLayoutType("standard");
+ setProdGalleryStyle("traditional");
  setProdLandingAnatomyImage("");
  setProdCombos([]);
  setProdHowToUse("");
@@ -419,6 +424,7 @@ export default function ProfilePage() {
     setEditPackageContents(p.packageContents || "");
     setEditStock(p.stock !== undefined ? p.stock.toString() : "20");
     setEditLayoutType(p.layoutType || 'standard');
+    setEditGalleryStyle(p.galleryStyle || 'traditional');
     setEditCombos(p.combos || []);
     setEditHowToUse(p.howToUse || "");
     setEditBundleMode(p.landingBundle?.mode || 'companion');
@@ -473,6 +479,7 @@ export default function ProfilePage() {
  packageContents: editPackageContents.trim() || undefined,
  stock: editStock ? parseInt(editStock, 10) : 20,
  layoutType: editLayoutType,
+ galleryStyle: editGalleryStyle,
  landingAnatomyImage: editLayoutType === 'landing' && editLandingAnatomyImage.trim() ? editLandingAnatomyImage.trim() : undefined,
  landingSpecs: editLayoutType === 'landing' && editLandingSpecs.length > 0 ? editLandingSpecs : undefined,
  landingReviews: editLayoutType === 'landing' && editLandingReviews.length > 0 ? editLandingReviews : undefined,
@@ -1362,6 +1369,18 @@ const handleConfirmDeleteNiche = async () => {
                 </div>
               </div>
             )}
+
+            {/* Selector de Estilo de Galería (Tradicional vs 3D Isométrica) */}
+            <div className="pt-3 border-t border-gray-200/80 dark:border-white/10">
+              <ProductGalleryStyleSelector
+                galleryStyle={prodGalleryStyle}
+                onGalleryStyleChange={setProdGalleryStyle}
+                photosCount={
+                  (prodImageUrl.trim() ? 1 : 0) +
+                  (prodExtraImages.trim() ? prodExtraImages.split(/[\n,]+/).map(u => u.trim()).filter(Boolean).length : 0)
+                }
+              />
+            </div>
           </div>
 
           {/* BLOQUE 5: COLORES & ACABADOS DEL PRODUCTO */}
@@ -1816,6 +1835,18 @@ const handleConfirmDeleteNiche = async () => {
                 onChange={e => setEditExtraImages(e.target.value)} 
                 className="w-full px-4 py-2 rounded-xl border border-gray-300 dark:border-white/15 text-sm outline-none focus:border-[#FF5E00] focus:ring-1 focus:ring-[#FF5E00] resize-none bg-white dark:bg-[#202023] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 shadow-sm" 
                 placeholder="https://imagen2.jpg, https://imagen3.jpg..." 
+              />
+            </div>
+
+            {/* Selector de Estilo de Galería (Tradicional vs 3D Isométrica) */}
+            <div className="pt-3 border-t border-gray-200/80 dark:border-white/10">
+              <ProductGalleryStyleSelector
+                galleryStyle={editGalleryStyle}
+                onGalleryStyleChange={setEditGalleryStyle}
+                photosCount={
+                  (editImageUrl.trim() ? 1 : 0) +
+                  (editExtraImages.trim() ? editExtraImages.split(/[\n,]+/).map(u => u.trim()).filter(Boolean).length : 0)
+                }
               />
             </div>
           </div>

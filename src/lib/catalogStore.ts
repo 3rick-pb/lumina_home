@@ -66,6 +66,7 @@ export interface CatalogProduct {
   howToUse?: string;
   combos?: ProductCombo[];
   layoutType?: 'standard' | 'landing';
+  galleryStyle?: 'traditional' | 'isometric_3d';
   landingSpecs?: LandingSpec[];
   landingReviews?: LandingReview[];
   landingBenefits?: LandingBenefit[];
@@ -268,10 +269,17 @@ const toSupabaseProduct = (p: Partial<CatalogProduct>) => {
     package_contents: p.packageContents || null,
     stock: typeof p.stock === 'number' ? p.stock : 20,
     layout_type: p.layoutType || 'standard',
+    gallery_style: p.galleryStyle || 'traditional',
     landing_specs: p.landingSpecs || null,
     landing_reviews: p.landingReviews || null,
     landing_benefits: p.landingBenefits || null,
-    landing_bundle: p.landingBundle || null,
+    landing_bundle: p.landingBundle ? {
+      ...p.landingBundle,
+      galleryStyle: p.galleryStyle || 'traditional'
+    } : {
+      enabled: false,
+      galleryStyle: p.galleryStyle || 'traditional'
+    },
     combos: p.combos || null,
     how_to_use: p.howToUse || null,
     landing_anatomy_image: p.landingAnatomyImage || null,
@@ -340,6 +348,7 @@ const toFrontendProduct = (p: any): CatalogProduct => {
     howToUse: p.how_to_use || undefined,
     combos: p.combos || undefined,
     layoutType: p.layout_type || 'standard',
+    galleryStyle: (p.gallery_style || p.landing_bundle?.galleryStyle || 'traditional') as 'traditional' | 'isometric_3d',
     landingSpecs: p.landing_specs || undefined,
     landingReviews: p.landing_reviews || undefined,
     landingBenefits: p.landing_benefits || undefined,
@@ -473,6 +482,7 @@ export const useCatalogStore = create<CatalogState>((set) => ({
       delete basicProduct.package_contents;
       delete basicProduct.stock;
       delete basicProduct.layout_type;
+      delete basicProduct.gallery_style;
       delete basicProduct.landing_specs;
       delete basicProduct.landing_reviews;
       delete basicProduct.landing_benefits;
@@ -548,6 +558,7 @@ export const useCatalogStore = create<CatalogState>((set) => ({
         delete basicProduct.package_contents;
         delete basicProduct.stock;
         delete basicProduct.layout_type;
+        delete basicProduct.gallery_style;
         delete basicProduct.landing_specs;
         delete basicProduct.landing_reviews;
         delete basicProduct.landing_benefits;

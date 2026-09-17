@@ -9,14 +9,13 @@ import Link from "next/link";
 import { useCatalogStore } from "@/lib/catalogStore";
 import { useAmbientStore } from "@/lib/ambientStore";
 import { supabase } from "@/lib/supabase";
-import { ScrollProgress } from "@/components/ui/scroll-progress";
 import { ProximitySidebar } from "@/components/ui/proximity-sidebar";
 
 const HOME_SECTIONS = [
   { id: "hero-section", label: "Inicio", level: 1 as const },
-  { id: "trust-badges", label: "Garantías", level: 2 as const },
-  { id: "catalog-categories", label: "Colecciones", level: 2 as const },
-  { id: "catalog-popular", label: "Catálogo Popular", level: 3 as const },
+  { id: "catalog-categories", label: "Explora el Catálogo", level: 2 as const },
+  { id: "catalog-popular", label: "Productos Populares", level: 2 as const },
+  { id: "trust-badges", label: "Envíos & Grantías", level: 3 as const },
 ];
 
 const NICHE_METADATA_MAP: Record<string, { subtitle: string; img: string; defaultPrice: string }> = {
@@ -520,9 +519,6 @@ export default function Home() {
           </div>
         </section>
       </div>
-
-      {/* Rare UI Scroll Progress (Centrado al fondo) */}
-      <ScrollProgress sections={HOME_SECTIONS} />
 
       {/* Rare UI Proximity Sidebar (Lateral derecho para desktop) */}
       <div className="hidden lg:block fixed right-3 xl:right-6 top-1/2 -translate-y-1/2 z-40 pointer-events-auto">

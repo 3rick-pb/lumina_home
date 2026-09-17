@@ -25,6 +25,7 @@ import { useCartStore } from "@/lib/store";
 import { useUserStore } from "@/lib/userStore";
 import { motion } from "framer-motion";
 import { normalizeImageUrl } from "@/lib/imageUtils";
+import { Isometric3DGallery } from "./Isometric3DGallery";
 
 interface ProductLandingViewProps {
   product: CatalogProduct;
@@ -350,61 +351,71 @@ export function ProductLandingView({
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-14 items-start">
           
           {/* Gallery Column */}
-          <div className="lg:col-span-7 flex flex-col-reverse md:flex-row gap-4 h-full">
-            <div className="flex md:flex-col gap-3 overflow-x-auto md:overflow-visible pb-2 md:pb-0 hide-scrollbar w-full md:w-20 shrink-0">
-              {images.map((img, idx) => (
-                <button
-                  key={idx}
-                  onClick={() => setActiveImage(idx)}
-                  className={`relative w-20 h-24 md:w-full md:h-28 rounded-2xl overflow-hidden flex-shrink-0 transition-all duration-300 border-2 ${
-                    activeImage === idx
-                      ? "border-gray-950 dark:border-white shadow-md scale-105"
-                      : "border-transparent opacity-60 hover:opacity-100"
-                  }`}
-                >
-                  <Image src={img} alt={`${product.title} vista ${idx + 1}`} fill sizes="80px" draggable={false} className="object-cover pointer-events-none select-none" />
-                </button>
-              ))}
-            </div>
-
-            <div className="relative w-full aspect-[4/5] md:aspect-[3/4] rounded-3xl overflow-hidden bg-gradient-to-b from-black/[0.02] to-black/[0.06] dark:from-white/[0.03] dark:to-white/[0.08] border border-black/5 dark:border-white/10 shadow-2xl group">
-              <Image
-                src={currentImage}
-                alt={product.title}
-                fill
-                sizes="(max-width: 1024px) 100vw, 60vw"
-                priority
-                draggable={false}
-                className="object-cover transition-transform duration-700 ease-out group-hover:scale-105 pointer-events-none select-none"
+          {product.galleryStyle === "isometric_3d" ? (
+            <div className="lg:col-span-7">
+              <Isometric3DGallery 
+                images={images}
+                title={product.title}
+                category={product.category}
               />
-              
-              {(product.badge || isAgotado) && (
-                <div className="absolute top-5 left-5 z-10">
-                  <span
-                    className={`px-3.5 py-1.5 rounded-full text-xs font-bold tracking-wide uppercase shadow-sm backdrop-blur-md transition-colors ${
-                      isAgotado
-                        ? "bg-red-50/60 dark:bg-red-950/40 border border-red-300/80 dark:border-red-800/60 text-red-600 dark:text-red-400"
-                        : "bg-white/40 dark:bg-black/40 border border-white/60 dark:border-white/20 text-gray-900 dark:text-white"
+            </div>
+          ) : (
+            <div className="lg:col-span-7 flex flex-col-reverse md:flex-row gap-4 h-full">
+              <div className="flex md:flex-col gap-3 overflow-x-auto md:overflow-visible pb-2 md:pb-0 hide-scrollbar w-full md:w-20 shrink-0">
+                {images.map((img, idx) => (
+                  <button
+                    key={idx}
+                    onClick={() => setActiveImage(idx)}
+                    className={`relative w-20 h-24 md:w-full md:h-28 rounded-2xl overflow-hidden flex-shrink-0 transition-all duration-300 border-2 ${
+                      activeImage === idx
+                        ? "border-gray-950 dark:border-white shadow-md scale-105"
+                        : "border-transparent opacity-60 hover:opacity-100"
                     }`}
                   >
-                    {isAgotado ? "AGOTADO" : product.badge}
-                  </span>
-                </div>
-              )}
+                    <Image src={img} alt={`${product.title} vista ${idx + 1}`} fill sizes="80px" draggable={false} className="object-cover pointer-events-none select-none" />
+                  </button>
+                ))}
+              </div>
 
-              <button
-                onClick={() => toggleFavorite(product.id)}
-                className={`absolute top-5 right-5 z-10 w-11 h-11 rounded-full flex items-center justify-center backdrop-blur-md transition-all duration-300 ${
-                  isFav
-                    ? "bg-red-50 text-red-500 border border-red-200"
-                    : "bg-white/80 dark:bg-[#1a1a1c]/80 text-gray-700 dark:text-gray-200 hover:scale-110"
-                }`}
-                title={isFav ? "Quitar de favoritos" : "Guardar en favoritos"}
-              >
-                <Heart className={`w-5 h-5 ${isFav ? "fill-current" : ""}`} />
-              </button>
+              <div className="relative w-full aspect-[4/5] md:aspect-[3/4] rounded-3xl overflow-hidden bg-gradient-to-b from-black/[0.02] to-black/[0.06] dark:from-white/[0.03] dark:to-white/[0.08] border border-black/5 dark:border-white/10 shadow-2xl group">
+                <Image
+                  src={currentImage}
+                  alt={product.title}
+                  fill
+                  sizes="(max-width: 1024px) 100vw, 60vw"
+                  priority
+                  draggable={false}
+                  className="object-cover transition-transform duration-700 ease-out group-hover:scale-105 pointer-events-none select-none"
+                />
+                
+                {(product.badge || isAgotado) && (
+                  <div className="absolute top-5 left-5 z-10">
+                    <span
+                      className={`px-3.5 py-1.5 rounded-full text-xs font-bold tracking-wide uppercase shadow-sm backdrop-blur-md transition-colors ${
+                        isAgotado
+                          ? "bg-red-50/60 dark:bg-red-950/40 border border-red-300/80 dark:border-red-800/60 text-red-600 dark:text-red-400"
+                          : "bg-white/40 dark:bg-black/40 border border-white/60 dark:border-white/20 text-gray-900 dark:text-white"
+                      }`}
+                    >
+                      {isAgotado ? "AGOTADO" : product.badge}
+                    </span>
+                  </div>
+                )}
+
+                <button
+                  onClick={() => toggleFavorite(product.id)}
+                  className={`absolute top-5 right-5 z-10 w-11 h-11 rounded-full flex items-center justify-center backdrop-blur-md transition-all duration-300 ${
+                    isFav
+                      ? "bg-red-50 text-red-500 border border-red-200"
+                      : "bg-white/80 dark:bg-[#1a1a1c]/80 text-gray-700 dark:text-gray-200 hover:scale-110"
+                  }`}
+                  title={isFav ? "Quitar de favoritos" : "Guardar en favoritos"}
+                >
+                  <Heart className={`w-5 h-5 ${isFav ? "fill-current" : ""}`} />
+                </button>
+              </div>
             </div>
-          </div>
+          )}
 
           {/* Buy Box Column */}
           <div className="lg:col-span-5 flex flex-col justify-start pt-1 space-y-6">

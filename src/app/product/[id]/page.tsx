@@ -12,6 +12,7 @@ import { useUserStore } from "@/lib/userStore";
 import { useAmbientStore } from "@/lib/ambientStore";
 import { ProductLandingView } from "@/components/product/ProductLandingView";
 import { ProductBundleSection } from "@/components/product/ProductBundleSection";
+import { Isometric3DGallery } from "@/components/product/Isometric3DGallery";
 import { normalizeImageUrl } from "@/lib/imageUtils";
 import { motion } from "framer-motion";
 
@@ -133,45 +134,55 @@ export default function ProductDetail({ params }: { params: Promise<{ id: string
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12">
           
           {/* Gallery Section */}
-          <div className="lg:col-span-7 flex flex-col-reverse md:flex-row gap-4 h-full">
-            {/* Thumbnails (Vertical on desktop) */}
-            <div className="flex md:flex-col gap-3 overflow-x-auto md:overflow-visible pb-2 md:pb-0 hide-scrollbar w-full md:w-20 shrink-0">
-              {images.map((img, idx) => (
-                <button 
-                  key={idx}
-                  onClick={() => setActiveImage(idx)}
-                  className={`relative w-20 h-24 md:w-full md:h-28 rounded-lg overflow-hidden flex-shrink-0 transition-all duration-300 border-2 ${activeImage === idx ? 'border-gray-900 opacity-100' : 'border-transparent opacity-50 hover:opacity-100'}`}
-                >
-                  <Image src={img} alt={`Thumbnail ${idx}`} fill sizes="80px" draggable={false} className="object-cover pointer-events-none select-none" />
-                </button>
-              ))}
-              <button className="relative w-20 h-10 md:w-full rounded-lg bg-gray-100 flex items-center justify-center flex-shrink-0 hover:bg-gray-200 transition-colors">
-                <ChevronDown className="w-5 h-5 text-gray-500" />
-              </button>
-            </div>
-
-            {/* Main Image */}
-            <div className="relative w-full aspect-[4/5] md:aspect-[3/4] md:h-auto rounded-2xl overflow-hidden bg-gray-100/50">
-              <Image 
-                src={currentImage}
-                alt={product.title}
-                fill
-                sizes="(max-width: 1024px) 100vw, 60vw"
-                priority
-                draggable={false}
-                className="object-cover transform-gpu pointer-events-none select-none"
+          {product.galleryStyle === "isometric_3d" ? (
+            <div className="lg:col-span-7">
+              <Isometric3DGallery 
+                images={images}
+                title={product.title}
+                category={product.category}
               />
-              {(product.badge || isAgotado) && (
-                <span className={`absolute top-4 left-4 backdrop-blur-md px-3 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider shadow-sm transition-colors ${
-                  isAgotado 
-                    ? "bg-red-50/60 border border-red-300/80 text-red-600" 
-                    : "bg-white/40 border border-white/60 text-gray-900"
-                }`}>
-                  {isAgotado ? "AGOTADO" : product.badge}
-                </span>
-              )}
             </div>
-          </div>
+          ) : (
+            <div className="lg:col-span-7 flex flex-col-reverse md:flex-row gap-4 h-full">
+              {/* Thumbnails (Vertical on desktop) */}
+              <div className="flex md:flex-col gap-3 overflow-x-auto md:overflow-visible pb-2 md:pb-0 hide-scrollbar w-full md:w-20 shrink-0">
+                {images.map((img, idx) => (
+                  <button 
+                    key={idx}
+                    onClick={() => setActiveImage(idx)}
+                    className={`relative w-20 h-24 md:w-full md:h-28 rounded-lg overflow-hidden flex-shrink-0 transition-all duration-300 border-2 ${activeImage === idx ? 'border-gray-900 opacity-100' : 'border-transparent opacity-50 hover:opacity-100'}`}
+                  >
+                    <Image src={img} alt={`Thumbnail ${idx}`} fill sizes="80px" draggable={false} className="object-cover pointer-events-none select-none" />
+                  </button>
+                ))}
+                <button className="relative w-20 h-10 md:w-full rounded-lg bg-gray-100 flex items-center justify-center flex-shrink-0 hover:bg-gray-200 transition-colors">
+                  <ChevronDown className="w-5 h-5 text-gray-500" />
+                </button>
+              </div>
+
+              {/* Main Image */}
+              <div className="relative w-full aspect-[4/5] md:aspect-[3/4] md:h-auto rounded-2xl overflow-hidden bg-gray-100/50">
+                <Image 
+                  src={currentImage}
+                  alt={product.title}
+                  fill
+                  sizes="(max-width: 1024px) 100vw, 60vw"
+                  priority
+                  draggable={false}
+                  className="object-cover transform-gpu pointer-events-none select-none"
+                />
+                {(product.badge || isAgotado) && (
+                  <span className={`absolute top-4 left-4 backdrop-blur-md px-3 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider shadow-sm transition-colors ${
+                    isAgotado 
+                      ? "bg-red-50/60 border border-red-300/80 text-red-600" 
+                      : "bg-white/40 border border-white/60 text-gray-900"
+                  }`}>
+                    {isAgotado ? "AGOTADO" : product.badge}
+                  </span>
+                )}
+              </div>
+            </div>
+          )}
 
           {/* Product Info Section */}
           <div className="lg:col-span-5 flex flex-col justify-center">
