@@ -301,8 +301,18 @@ export function EmbeddedCylinderCarousel({
               >
                 {/* ARCHETYPE 1: DARK TYPOGRAPHY (TITULO DE PRODUCTO / DISEÑO DE AUTOR) */}
                 {slide.theme === "dark_typography" && (
-                  <div className="relative w-full h-full bg-[#121310] text-white p-5 sm:p-6 flex flex-col justify-between">
-                    <div className="flex items-center justify-between">
+                  <div className="relative w-full h-full bg-[#121310] text-white p-5 sm:p-6 flex flex-col justify-between overflow-hidden">
+                    {slide.image && (
+                      <Image
+                        src={slide.image}
+                        alt={slide.title || productTitle}
+                        fill
+                        sizes="300px"
+                        className="object-cover opacity-35"
+                      />
+                    )}
+                    <div className="absolute inset-0 bg-gradient-to-t from-[#121310] via-[#121310]/80 to-[#121310]/70 pointer-events-none" />
+                    <div className="relative z-10 flex items-center justify-between">
                       <span className="text-[10px] font-mono tracking-widest text-[#8c9276] uppercase font-bold">
                         {slide.tag || category || "DISEÑO"}
                       </span>
@@ -311,14 +321,14 @@ export function EmbeddedCylinderCarousel({
                       </span>
                     </div>
 
-                    <div className="text-center space-y-1 my-auto">
-                      <p className="text-sm sm:text-base font-mono font-black tracking-widest text-white/95 uppercase line-clamp-2">
+                    <div className="relative z-10 text-center space-y-1 my-auto">
+                      <p className="text-sm sm:text-base font-mono font-black tracking-widest text-white/95 uppercase line-clamp-2 drop-shadow-sm">
                         {slide.title || productTitle}
                       </p>
                     </div>
 
-                    <div className="flex items-center justify-between pt-2 border-t border-white/10">
-                      <span className="text-[10px] font-mono text-white/50 uppercase">
+                    <div className="relative z-10 flex items-center justify-between pt-2 border-t border-white/15">
+                      <span className="text-[10px] font-mono text-white/60 uppercase">
                         {slide.subtitle || "ACABADO DE AUTOR"}
                       </span>
                       <div className="w-2 h-2 rounded-full bg-[#8c9276]" />

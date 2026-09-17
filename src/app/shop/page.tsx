@@ -55,10 +55,10 @@ export default function ShopPage({ searchParams }: { searchParams: Promise<{ cat
           style={{ willChange: "transform, opacity" }}
           className="mb-8 sm:mb-12 transform-gpu scroll-mt-36"
         >
-          <h1 className="text-2xl sm:text-4xl font-display italic font-bold text-gray-900 mb-3 sm:mb-4">
+          <h1 className="text-2xl sm:text-4xl font-display italic font-bold text-gray-900 dark:text-gray-100 mb-3 sm:mb-4">
             {categoryFilter ? `Colección: ${categoryFilter.charAt(0).toUpperCase() + categoryFilter.slice(1)}` : "Todos los Productos"}
           </h1>
-          <p className="text-sm sm:text-base text-gray-600 max-w-2xl">
+          <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400 max-w-2xl">
             Descubre nuestra selección de artículos diseñados para convertir tu hogar en tu refugio ideal. 
             Mezcla de estética, comodidad y tecnología.
           </p>
@@ -72,14 +72,14 @@ export default function ShopPage({ searchParams }: { searchParams: Promise<{ cat
           style={{ willChange: "transform, opacity" }}
           className="flex items-center gap-2 sm:gap-3 mb-8 sm:mb-10 overflow-x-auto pb-2 hide-scrollbar transform-gpu scroll-mt-36"
         >
-          <Link href="/shop" className={`px-4 sm:px-5 py-2 rounded-full text-xs sm:text-sm font-medium transition-all whitespace-nowrap shrink-0 ${!categoryFilter ? 'bg-white/40 backdrop-blur-xl border border-white/60 text-gray-900 shadow-sm' : 'bg-transparent text-gray-600 border border-gray-200 hover:bg-white/40 hover:backdrop-blur-md'}`}>
+          <Link href="/shop" className={`px-4 sm:px-5 py-2 rounded-full text-xs sm:text-sm font-medium transition-all whitespace-nowrap shrink-0 ${!categoryFilter ? 'bg-white/40 dark:bg-white/10 backdrop-blur-xl border border-white/60 dark:border-white/15 text-gray-900 dark:text-gray-100 shadow-sm' : 'bg-transparent text-gray-600 dark:text-gray-400 border border-gray-200 dark:border-white/10 hover:bg-white/40 dark:hover:bg-white/10 hover:backdrop-blur-md'}`}>
             Todos
           </Link>
           {categories.map((cat) => (
             <Link 
               key={cat} 
               href={`/shop?category=${cat.toLowerCase()}`}
-              className={`px-4 sm:px-5 py-2 rounded-full text-xs sm:text-sm font-medium transition-all whitespace-nowrap shrink-0 ${categoryFilter?.toLowerCase() === cat.toLowerCase() ? 'bg-white/40 backdrop-blur-xl border border-white/60 text-gray-900 shadow-sm' : 'bg-transparent text-gray-600 border border-gray-200 hover:bg-white/40 hover:backdrop-blur-md'}`}
+              className={`px-4 sm:px-5 py-2 rounded-full text-xs sm:text-sm font-medium transition-all whitespace-nowrap shrink-0 ${categoryFilter?.toLowerCase() === cat.toLowerCase() ? 'bg-white/40 dark:bg-white/10 backdrop-blur-xl border border-white/60 dark:border-white/15 text-gray-900 dark:text-gray-100 shadow-sm' : 'bg-transparent text-gray-600 dark:text-gray-400 border border-gray-200 dark:border-white/10 hover:bg-white/40 dark:hover:bg-white/10 hover:backdrop-blur-md'}`}
             >
               {cat}
             </Link>

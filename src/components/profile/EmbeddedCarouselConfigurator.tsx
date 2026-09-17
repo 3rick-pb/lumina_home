@@ -121,10 +121,10 @@ export function EmbeddedCarouselConfigurator({
       const existing = config.slides?.[idx];
       const fallbackImg = productImages[idx % (productImages.length || 1)] || "";
       return {
-        image: existing?.image !== undefined && existing.image !== "" ? existing.image : fallbackImg,
-        tag: existing?.tag !== undefined && existing.tag !== "" ? existing.tag : (idx === 0 && category ? category : archetype.defaultTag),
+        image: existing?.image !== undefined ? existing.image : fallbackImg,
+        tag: existing?.tag !== undefined ? existing.tag : (idx === 0 && category ? category : archetype.defaultTag),
         title: existing?.title ?? "", // empty means defaults to productTitle
-        subtitle: existing?.subtitle !== undefined && existing.subtitle !== "" ? existing.subtitle : archetype.defaultSubtitle,
+        subtitle: existing?.subtitle !== undefined ? existing.subtitle : archetype.defaultSubtitle,
         code: existing?.code ?? archetype.code,
         theme: archetype.theme,
       };
@@ -564,8 +564,18 @@ export function EmbeddedCarouselConfigurator({
                 <div className="relative w-full max-w-[200px] h-[200px] rounded-2xl overflow-hidden border border-black/10 dark:border-white/15 shadow-lg select-none">
                   {/* Archetype Preview Rendering */}
                   {currentArchetype.theme === "dark_typography" ? (
-                    <div className="relative w-full h-full bg-[#121310] text-white p-3.5 flex flex-col justify-between">
-                      <div className="flex items-center justify-between">
+                    <div className="relative w-full h-full bg-[#121310] text-white p-3.5 flex flex-col justify-between overflow-hidden">
+                      {currentCard.image && (
+                        <Image
+                          src={currentCard.image}
+                          alt="Miniatura"
+                          fill
+                          sizes="180px"
+                          className="object-cover opacity-35"
+                        />
+                      )}
+                      <div className="absolute inset-0 bg-gradient-to-t from-[#121310] via-[#121310]/80 to-[#121310]/70 pointer-events-none" />
+                      <div className="relative z-10 flex items-center justify-between">
                         <span className="text-[8px] font-mono tracking-widest text-[#8c9276] uppercase font-bold">
                           {currentCard.tag || currentArchetype.defaultTag}
                         </span>
@@ -573,10 +583,10 @@ export function EmbeddedCarouselConfigurator({
                           0{selectedCardIdx + 1}
                         </span>
                       </div>
-                      <p className="text-xs font-mono font-black tracking-wider text-white uppercase text-center line-clamp-2 my-auto">
+                      <p className="relative z-10 text-xs font-mono font-black tracking-wider text-white uppercase text-center line-clamp-2 my-auto drop-shadow-sm">
                         {currentCard.title || productTitle || "NOMBRE DEL PRODUCTO"}
                       </p>
-                      <div className="pt-1.5 border-t border-white/10 flex items-center justify-between text-[8px] font-mono text-white/50 uppercase">
+                      <div className="relative z-10 pt-1.5 border-t border-white/15 flex items-center justify-between text-[8px] font-mono text-white/60 uppercase">
                         <span>{currentCard.subtitle || currentArchetype.defaultSubtitle}</span>
                         <div className="w-1.5 h-1.5 rounded-full bg-[#8c9276]" />
                       </div>

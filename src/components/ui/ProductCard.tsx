@@ -43,7 +43,7 @@ export function ProductCard({ id, title, price, oldPrice, discount, badge, image
 
   return (
     <Link href={`/product/${id}`} className="group flex flex-col bg-transparent transform-gpu">
-      <div className="relative aspect-[4/3] overflow-hidden rounded-2xl bg-gray-100 mb-4">
+      <div className="relative aspect-[4/3] overflow-hidden rounded-2xl bg-gray-100 dark:bg-white/5 mb-4">
         {(badge || isAgotado) && (
           <div className={`absolute top-3 left-3 backdrop-blur-sm transform-gpu text-xs font-bold px-3 py-1 rounded-full z-10 shadow-sm transition-colors ${
             isAgotado 
@@ -54,7 +54,7 @@ export function ProductCard({ id, title, price, oldPrice, discount, badge, image
           </div>
         )}
         <button 
-          className={`absolute top-3 right-3 w-8 h-8 backdrop-blur-sm transform-gpu border rounded-full flex items-center justify-center transition-all z-10 shadow-sm opacity-0 group-hover:opacity-100 translate-y-2 group-hover:translate-y-0 ${isFav ? 'bg-red-500/10 border-red-500 text-red-500' : 'bg-white/60 dark:bg-black/60 border-white/70 dark:border-white/20 text-gray-600 hover:text-red-500 hover:bg-white/80'}`}
+          className={`absolute top-3 right-3 w-8 h-8 backdrop-blur-sm transform-gpu border rounded-full flex items-center justify-center transition-all z-10 shadow-sm opacity-0 group-hover:opacity-100 translate-y-2 group-hover:translate-y-0 ${isFav ? 'bg-red-500/10 border-red-500 text-red-500' : 'bg-white/60 dark:bg-black/60 border-white/70 dark:border-white/20 text-gray-600 dark:text-gray-300 hover:text-red-500 hover:bg-white/80 dark:hover:bg-white/20'}`}
           onClick={(e) => { 
             e.preventDefault(); 
             if (!isAuthenticated) return;
@@ -76,7 +76,7 @@ export function ProductCard({ id, title, price, oldPrice, discount, badge, image
       </div>
       
       <div className="flex flex-col flex-1 px-1">
-        <h3 className="text-base font-medium text-gray-900 line-clamp-1 mb-1">{title}</h3>
+        <h3 className="text-base font-medium text-gray-900 dark:text-gray-100 line-clamp-1 mb-1">{title}</h3>
 
         {/* Real interactive color preview dots with fixed height to guarantee vertical alignment symmetry across cards */}
         <div className="h-5 flex items-center gap-1.5 mb-2">
@@ -86,7 +86,7 @@ export function ProductCard({ id, title, price, oldPrice, discount, badge, image
                 <span
                   key={idx}
                   title={col.name}
-                  className="w-3.5 h-3.5 rounded-full border border-black/20 shadow-[0_1px_2px_rgba(0,0,0,0.08)] shrink-0 transition-transform hover:scale-125"
+                  className="w-3.5 h-3.5 rounded-full border border-black/20 dark:border-white/20 shadow-[0_1px_2px_rgba(0,0,0,0.08)] shrink-0 transition-transform hover:scale-125"
                   style={{ backgroundColor: col.hex }}
                 />
               ))}
@@ -97,19 +97,19 @@ export function ProductCard({ id, title, price, oldPrice, discount, badge, image
           ) : (
             <span
               title="Acabado estándar"
-              className="w-3.5 h-3.5 rounded-full border border-black/15 bg-stone-300/60 shadow-2xs shrink-0"
+              className="w-3.5 h-3.5 rounded-full border border-black/15 dark:border-white/15 bg-stone-300/60 dark:bg-stone-600/60 shadow-2xs shrink-0"
             />
           )}
         </div>
 
         <div className="flex items-center justify-between gap-2 mb-3">
           <div className="flex items-center gap-2">
-            <span className="text-lg font-bold text-gray-900">${Number(price || 0).toFixed(2)}</span>
+            <span className="text-lg font-bold text-gray-900 dark:text-gray-100">${Number(price || 0).toFixed(2)}</span>
             {oldPrice && (
-              <span className="text-sm text-gray-400 line-through">${Number(oldPrice || 0).toFixed(2)}</span>
+              <span className="text-sm text-gray-400 dark:text-gray-500 line-through">${Number(oldPrice || 0).toFixed(2)}</span>
             )}
             {discount && (
-              <span className="text-[10px] font-bold text-gray-900 bg-white/40 backdrop-blur-md border border-white/60 px-1.5 py-0.5 rounded-full shadow-sm">
+              <span className="text-[10px] font-bold text-gray-900 dark:text-gray-100 bg-white/40 dark:bg-white/10 backdrop-blur-md border border-white/60 dark:border-white/15 px-1.5 py-0.5 rounded-full shadow-sm">
                 {discount}
               </span>
             )}
@@ -125,8 +125,8 @@ export function ProductCard({ id, title, price, oldPrice, discount, badge, image
           disabled={isAgotado}
           className={`mt-auto w-full py-2.5 rounded-xl backdrop-blur-md border text-sm font-medium flex items-center justify-center gap-2 transition-all shadow-sm ${
             isAgotado 
-              ? "bg-gray-100/90 border-gray-200 text-gray-400 cursor-not-allowed" 
-              : "bg-white/40 border-white/60 text-gray-900 hover:bg-white/60"
+              ? "bg-gray-100/90 dark:bg-white/5 border-gray-200 dark:border-white/10 text-gray-400 cursor-not-allowed" 
+              : "bg-white/40 dark:bg-white/10 border-white/60 dark:border-white/15 text-gray-900 dark:text-gray-100 hover:bg-white/60 dark:hover:bg-white/20"
           }`}
           onClick={(e) => { 
             e.preventDefault(); 

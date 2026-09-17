@@ -24,12 +24,20 @@ export async function GET(request: Request) {
 }
 
 // Helper to detect missing column / schema cache errors in Supabase PostgREST
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const isMissingColumn = (err: any): boolean => {
-  if (!err) return false;
-  const code = String(err.code || '');
-  const msg = String(err.message || '').toLowerCase();
+const isMissingColumn = (err: unknown): boolean => {
+  if (!err || typeof err !== 'object') return false;
+  const e = err as { code?: string | number; message?: string };
+  const code = String(e.code || '');
+  const msg = String(e.message || '').toLowerCase();
   return code === 'PGRST204' || code === '42703' || msg.includes('column') || msg.includes('schema cache');
+};
+
+const isArrayMismatch = (err: unknown): boolean => {
+  if (!err || typeof err !== 'object') return false;
+  const e = err as { code?: string | number; message?: string };
+  const code = String(e.code || '');
+  const msg = String(e.message || '').toLowerCase();
+  return code === '22P02' || msg.includes('malformed array literal') || msg.includes('array');
 };
 
 const stripExtendedFields = (obj: Record<string, unknown>) => {
@@ -163,6 +171,25 @@ export async function POST(request: Request) {
       error = retry.error;
     }
 
+    if (isArrayMismatch(error)) {
+      const alt = { ...productPayload };
+      if (Array.isArray(alt.how_to_use)) {
+        alt.how_to_use = alt.how_to_use[0] || null;
+      } else if (typeof alt.how_to_use === 'string') {
+        alt.how_to_use = [alt.how_to_use];
+      }
+      const retryAlt = await supabase.from('products').insert([alt]).select().single();
+      if (!retryAlt.error) {
+        data = retryAlt.data;
+        error = null;
+      } else {
+        delete alt.how_to_use;
+        const retryFallback = await supabase.from('products').insert([alt]).select().single();
+        data = retryFallback.data;
+        error = retryFallback.error;
+      }
+    }
+
     if (error) {
       return NextResponse.json({ success: false, error: error.message }, { status: 500 });
     }
@@ -207,6 +234,25 @@ export async function PUT(request: Request) {
       const retry = await supabase.from('products').update(basic).eq('id', cleanId).select().single();
       data = retry.data;
       error = retry.error;
+    }
+
+    if (isArrayMismatch(error)) {
+      const alt = { ...updates };
+      if (Array.isArray(alt.how_to_use)) {
+        alt.how_to_use = alt.how_to_use[0] || null;
+      } else if (typeof alt.how_to_use === 'string') {
+        alt.how_to_use = [alt.how_to_use];
+      }
+      const retryAlt = await supabase.from('products').update(alt).eq('id', cleanId).select().single();
+      if (!retryAlt.error) {
+        data = retryAlt.data;
+        error = null;
+      } else {
+        delete alt.how_to_use;
+        const retryFallback = await supabase.from('products').update(alt).eq('id', cleanId).select().single();
+        data = retryFallback.data;
+        error = retryFallback.error;
+      }
     }
 
     if (error) {

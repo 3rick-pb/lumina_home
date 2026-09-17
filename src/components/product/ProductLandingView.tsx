@@ -1225,7 +1225,7 @@ export function ProductLandingView({
                 <Truck className="w-5 h-5" />
               </div>
               <div>
-                <h3 className="text-sm font-bold text-gray-950 dark:text-white">Envío Blindado</h3>
+                <h3 className="text-sm font-bold text-gray-950 dark:text-white">Envío</h3>
                 <p className="text-[11px] text-gray-400">Logística de alta prioridad</p>
               </div>
             </div>
@@ -1241,7 +1241,7 @@ export function ProductLandingView({
                 <ShieldCheck className="w-5 h-5" />
               </div>
               <div>
-                <h3 className="text-sm font-bold text-gray-950 dark:text-white">Garantía Oficial Lumina</h3>
+                <h3 className="text-sm font-bold text-gray-950 dark:text-white">Garantía Oficial</h3>
                 <p className="text-[11px] text-gray-400">Tranquilidad absoluta</p>
               </div>
             </div>

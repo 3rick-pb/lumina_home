@@ -1462,6 +1462,56 @@ const handleConfirmDeleteNiche = async () => {
             />
           </div>
 
+          {/* BLOQUE DE TALLAS / MEDIDAS (CONTROLADO POR EL USUARIO) */}
+          <div className="p-5 bg-stone-50/90 dark:bg-[#18181b]/90 rounded-2xl border border-gray-300 dark:border-white/20 shadow-sm space-y-4">
+            <div className="flex items-center justify-between pb-2 border-b border-gray-200 dark:border-white/10">
+              <div className="flex items-center gap-2">
+                <span className="px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider rounded-lg bg-indigo-100 text-indigo-800 dark:bg-indigo-950/50 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800/40">
+                  Tallas & Medidas (Opcional)
+                </span>
+                <h3 className="text-xs sm:text-sm font-bold text-gray-900 dark:text-gray-100">
+                  Variantes de Talla o Tamaño
+                </h3>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-gray-500 dark:text-gray-400">¿Aplica tallas/medidas?</span>
+                <button 
+                  type="button" 
+                  onClick={() => {
+                    const next = !hasSizes;
+                    setHasSizes(next);
+                    if (!next) setProdSizes("");
+                  }}
+                  className={`w-10 h-5 rounded-full relative transition-colors ${hasSizes ? "bg-[#FF5E00]" : "bg-gray-300 dark:bg-gray-600"}`}
+                >
+                  <span className={`absolute top-0.5 w-4 h-4 rounded-full bg-white transition-all ${hasSizes ? "left-5" : "left-1"}`} />
+                </button>
+              </div>
+            </div>
+
+            {hasSizes ? (
+              <div className="space-y-2">
+                <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
+                  Tallas disponibles (separadas por comas)
+                </label>
+                <input 
+                  type="text" 
+                  value={prodSizes} 
+                  onChange={e => setProdSizes(e.target.value)} 
+                  className="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-white/15 text-sm outline-none focus:border-[#FF5E00] focus:ring-1 focus:ring-[#FF5E00] bg-white dark:bg-[#202023] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 shadow-sm" 
+                  placeholder="Ej: S, M, L, XL  o  Chico (15cm), Mediano (25cm), Grande (35cm)" 
+                />
+                <p className="text-[11px] text-gray-400">
+                  Solo se mostrará el selector de tallas en la tienda si ingresas variantes aquí. Si no aplica a este producto (ej. electrónica, dron, lámpara única), mantenlo desactivado.
+                </p>
+              </div>
+            ) : (
+              <p className="text-xs text-gray-500 dark:text-gray-400 italic">
+                Desactivado: Este producto no requiere selección de tallas (no se creará ninguna talla por defecto).
+              </p>
+            )}
+          </div>
+
           {/* BLOQUE 6: PRECIOS Y REBAJAS */}
           <div className="p-5 bg-stone-50/90 dark:bg-[#18181b]/90 rounded-2xl border border-gray-300 dark:border-white/20 shadow-sm space-y-4">
             <div className="flex items-center justify-between pb-2 border-b border-gray-200 dark:border-white/10">
@@ -1950,6 +2000,56 @@ const handleConfirmDeleteNiche = async () => {
               colors={editColorVariants}
               onChange={setEditColorVariants}
             />
+          </div>
+
+          {/* BLOQUE DE TALLAS / MEDIDAS (CONTROLADO POR EL USUARIO EN EDICIÓN) */}
+          <div className="p-5 bg-stone-50/90 dark:bg-[#18181b]/90 rounded-2xl border border-gray-300 dark:border-white/20 shadow-sm space-y-4">
+            <div className="flex items-center justify-between pb-2 border-b border-gray-200 dark:border-white/10">
+              <div className="flex items-center gap-2">
+                <span className="px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider rounded-lg bg-indigo-100 text-indigo-800 dark:bg-indigo-950/50 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800/40">
+                  Tallas & Medidas (Opcional)
+                </span>
+                <h3 className="text-xs sm:text-sm font-bold text-gray-900 dark:text-gray-100">
+                  Variantes de Talla o Tamaño
+                </h3>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-gray-500 dark:text-gray-400">¿Aplica tallas/medidas?</span>
+                <button 
+                  type="button" 
+                  onClick={() => {
+                    const next = !editHasSizes;
+                    setEditHasSizes(next);
+                    if (!next) setEditSizes("");
+                  }}
+                  className={`w-10 h-5 rounded-full relative transition-colors ${editHasSizes ? "bg-[#FF5E00]" : "bg-gray-300 dark:bg-gray-600"}`}
+                >
+                  <span className={`absolute top-0.5 w-4 h-4 rounded-full bg-white transition-all ${editHasSizes ? "left-5" : "left-1"}`} />
+                </button>
+              </div>
+            </div>
+
+            {editHasSizes ? (
+              <div className="space-y-2">
+                <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
+                  Tallas disponibles (separadas por comas)
+                </label>
+                <input 
+                  type="text" 
+                  value={editSizes} 
+                  onChange={e => setEditSizes(e.target.value)} 
+                  className="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-white/15 text-sm outline-none focus:border-[#FF5E00] focus:ring-1 focus:ring-[#FF5E00] bg-white dark:bg-[#202023] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 shadow-sm" 
+                  placeholder="Ej: S, M, L, XL  o  Chico (15cm), Mediano (25cm), Grande (35cm)" 
+                />
+                <p className="text-[11px] text-gray-400">
+                  Solo se mostrará el selector de tallas en la tienda si ingresas variantes aquí. Si no aplica a este producto, desactívalo.
+                </p>
+              </div>
+            ) : (
+              <p className="text-xs text-gray-500 dark:text-gray-400 italic">
+                Desactivado: Este producto no requiere selección de tallas (no se creará ninguna talla por defecto).
+              </p>
+            )}
           </div>
 
           {/* BLOQUE 6: PRECIOS Y REBAJAS */}

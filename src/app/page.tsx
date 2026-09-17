@@ -392,10 +392,10 @@ export default function Home() {
               className="flex items-end justify-between mb-8 sm:mb-12 transform-gpu"
             >
               <div>
-                <h2 className="text-2xl sm:text-3xl font-sans font-medium text-gray-900 mb-2">
-                  Explora el <span className="font-display italic text-accent-700">Catálogo</span>
+                <h2 className="text-2xl sm:text-3xl font-sans font-medium text-gray-900 dark:text-gray-100 mb-2">
+                  Explora el <span className="font-display italic text-accent-700 dark:text-[#8c9276]">Catálogo</span>
                 </h2>
-                <p className="text-sm sm:text-base text-gray-500">Encuentra la pieza perfecta para tu rincón favorito.</p>
+                <p className="text-sm sm:text-base text-gray-500 dark:text-gray-400">Encuentra la pieza perfecta para tu rincón favorito.</p>
               </div>
             </motion.div>
             
@@ -459,10 +459,10 @@ export default function Home() {
               className="flex flex-col lg:flex-row items-start lg:items-center justify-between mb-8 sm:mb-12 gap-4 sm:gap-6 transform-gpu"
             >
               <div>
-                <h2 className="text-2xl sm:text-3xl font-sans font-medium text-gray-900 mb-1">
-                  Productos <span className="font-display italic text-accent-700">Populares</span>
+                <h2 className="text-2xl sm:text-3xl font-sans font-medium text-gray-900 dark:text-gray-100 mb-1">
+                  Productos <span className="font-display italic text-accent-700 dark:text-[#8c9276]">Populares</span>
                 </h2>
-                <p className="text-gray-500 text-xs sm:text-sm">Selección destacada para transformar cada espacio.</p>
+                <p className="text-gray-500 dark:text-gray-400 text-xs sm:text-sm">Selección destacada para transformar cada espacio.</p>
               </div>
 
               {/* Dynamic Interactive Filter Pills */}
@@ -482,8 +482,8 @@ export default function Home() {
                       }}
                       className={`px-4 sm:px-5 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-medium whitespace-nowrap transition-all cursor-pointer ${
                         isActive 
-                          ? 'bg-white/60 backdrop-blur-xl border border-white/80 text-gray-900 shadow-md shadow-black/5' 
-                          : 'bg-white/20 backdrop-blur-md border border-white/40 text-gray-600 hover:bg-white/40 hover:text-gray-900'
+                          ? 'bg-white/60 dark:bg-white/15 backdrop-blur-xl border border-white/80 dark:border-white/20 text-gray-900 dark:text-gray-100 shadow-md shadow-black/5' 
+                          : 'bg-white/20 dark:bg-white/5 backdrop-blur-md border border-white/40 dark:border-white/10 text-gray-600 dark:text-gray-400 hover:bg-white/40 dark:hover:bg-white/10 hover:text-gray-900 dark:hover:text-white'
                       }`}
                     >
                       {filter}
@@ -494,8 +494,8 @@ export default function Home() {
             </motion.div>
             
             {filteredProducts.length === 0 ? (
-              <div className="text-center py-16 bg-white/30 backdrop-blur-md rounded-3xl border border-white/50">
-                <p className="text-gray-600 font-medium text-sm">No hay productos en esta categoría por el momento.</p>
+              <div className="text-center py-16 bg-white/30 dark:bg-white/5 backdrop-blur-md rounded-3xl border border-white/50 dark:border-white/10">
+                <p className="text-gray-600 dark:text-gray-400 font-medium text-sm">No hay productos en esta categoría por el momento.</p>
               </div>
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">

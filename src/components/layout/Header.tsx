@@ -148,11 +148,11 @@ export function Header() {
     <>
       <CartDrawer />
       <header className="fixed top-4 sm:top-6 left-0 right-0 z-50 flex justify-center px-2 sm:px-4 pointer-events-none">
-        <div className="pointer-events-auto flex items-center justify-between p-1.5 sm:p-2 rounded-full bg-white/50 backdrop-blur-xl border border-white/70 shadow-[0_8px_32px_rgba(0,0,0,0.08)] relative transform-gpu max-w-full">
+        <div className="pointer-events-auto flex items-center justify-between p-1.5 sm:p-2 rounded-full bg-white/50 dark:bg-[#1a1a1c]/80 backdrop-blur-xl border border-white/70 dark:border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.08)] dark:shadow-[0_8px_32px_rgba(0,0,0,0.4)] relative transform-gpu max-w-full">
           
           {/* Logo Section */}
           <Link href="/" className="pl-3 sm:pl-4 pr-3 sm:pr-6 flex items-center gap-1.5 group shrink-0">
-            <span className="font-display italic text-lg sm:text-2xl font-bold tracking-tight text-gray-900 active:text-[#8c9276] [@media(hover:hover)]:group-hover:text-[#8c9276] transition-colors">
+            <span className="font-display italic text-lg sm:text-2xl font-bold tracking-tight text-gray-900 dark:text-gray-100 active:text-[#8c9276] [@media(hover:hover)]:group-hover:text-[#8c9276] transition-colors">
               Lumina<span className="text-[#8c9276]">.</span>
             </span>
           </Link>
@@ -172,14 +172,14 @@ export function Header() {
                   onMouseEnter={() => setHoveredTab(tab.id)}
                   className={cn(
                     "relative flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-medium transition-colors duration-300",
-                    isActive ? "text-gray-900" : "text-gray-600 hover:text-gray-900"
+                    isActive ? "text-gray-900 dark:text-white" : "text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white"
                   )}
                 >
                   {/* Active Indicator (Liquid Pill) */}
                   {isActive && (
                     <motion.div
                       layoutId="active-pill"
-                      className="absolute inset-0 rounded-full bg-white/70 shadow-[0_2px_8px_rgba(0,0,0,0.04)] border border-white/50"
+                      className="absolute inset-0 rounded-full bg-white/70 dark:bg-white/15 shadow-[0_2px_8px_rgba(0,0,0,0.04)] border border-white/50 dark:border-white/10"
                       initial={{ opacity: 0 }}
                       animate={{ opacity: 1 }}
                       exit={{ opacity: 0 }}
@@ -191,7 +191,7 @@ export function Header() {
                   {!isActive && isHovered && (
                     <motion.div
                       layoutId="hover-pill"
-                      className="absolute inset-0 rounded-full bg-white/30"
+                      className="absolute inset-0 rounded-full bg-white/30 dark:bg-white/10"
                       initial={{ opacity: 0 }}
                       animate={{ opacity: 1 }}
                       exit={{ opacity: 0 }}
@@ -212,7 +212,7 @@ export function Header() {
             <Link 
               href={isAuthenticated ? '/profile' : '/auth/login'}
               aria-label="Perfil" 
-              className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-white/40 backdrop-blur-md border border-white/60 text-gray-700 hover:bg-white/60 transition-colors shadow-[0_4px_16px_rgba(0,0,0,0.05)] flex items-center justify-center shrink-0 overflow-hidden"
+              className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-white/40 dark:bg-white/10 backdrop-blur-md border border-white/60 dark:border-white/15 text-gray-700 dark:text-gray-200 hover:bg-white/60 dark:hover:bg-white/20 transition-colors shadow-[0_4px_16px_rgba(0,0,0,0.05)] flex items-center justify-center shrink-0 overflow-hidden"
               title={isAuthenticated ? `Mi Perfil (${user?.name || 'Cuenta'})` : "Iniciar Sesión"}
             >
               {isAuthenticated && user && showAvatarInNavbar ? (
@@ -237,7 +237,7 @@ export function Header() {
                   onChange={(e) => setSearchVal(e.target.value)}
                   placeholder="Buscar en catálogo..."
                   className={cn(
-                    "h-9 sm:h-10 transition-all duration-300 rounded-full pl-9 sm:pl-10 text-xs text-gray-900 placeholder:text-gray-500 outline-none bg-white/50 backdrop-blur-md border border-white/60 focus:bg-white/90 focus:border-white/80 shadow-[0_4px_16px_rgba(0,0,0,0.05)]",
+                    "h-9 sm:h-10 transition-all duration-300 rounded-full pl-9 sm:pl-10 text-xs text-gray-900 dark:text-gray-100 placeholder:text-gray-500 dark:placeholder:text-gray-400 outline-none bg-white/50 dark:bg-white/10 backdrop-blur-md border border-white/60 dark:border-white/15 focus:bg-white/90 dark:focus:bg-white/20 focus:border-white/80 dark:focus:border-white/30 shadow-[0_4px_16px_rgba(0,0,0,0.05)]",
                     searchVal 
                       ? "w-32 sm:w-64 pr-8 opacity-100" 
                       : "w-9 sm:w-10 pr-0 opacity-0 group-hover:w-32 sm:group-hover:w-56 group-hover:pr-8 group-hover:opacity-100 focus:w-32 sm:focus:w-64 focus:pr-8 focus:opacity-100 cursor-pointer focus:cursor-text"
@@ -247,7 +247,7 @@ export function Header() {
                 <button 
                   type="submit" 
                   aria-label="Buscar" 
-                  className="absolute left-0 top-1/2 -translate-y-1/2 w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center text-gray-700 hover:text-gray-950 transition-colors z-10 pointer-events-auto"
+                  className="absolute left-0 top-1/2 -translate-y-1/2 w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center text-gray-700 dark:text-gray-300 hover:text-gray-950 dark:hover:text-white transition-colors z-10 pointer-events-auto"
                 >
                   <Search className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                 </button>
@@ -256,7 +256,7 @@ export function Header() {
                   <button 
                     type="button"
                     onClick={() => setSearchVal("")}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 w-5 h-5 rounded-full flex items-center justify-center text-gray-400 hover:text-gray-700 hover:bg-gray-200/50 transition-colors z-10"
+                    className="absolute right-2 top-1/2 -translate-y-1/2 w-5 h-5 rounded-full flex items-center justify-center text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-200/50 dark:hover:bg-white/10 transition-colors z-10"
                     title="Limpiar búsqueda"
                   >
                     <X className="w-3 h-3" />
@@ -266,14 +266,14 @@ export function Header() {
 
               {/* Floating Live Quick Search Results Dropdown */}
               {searchVal.trim().length > 0 && (
-                <div className="fixed left-3 right-3 top-20 sm:absolute sm:left-auto sm:-right-4 sm:top-full mt-2 w-auto sm:w-96 max-w-[calc(100vw-1.5rem)] sm:max-w-sm bg-white/95 backdrop-blur-2xl border border-white/90 rounded-3xl shadow-[0_20px_60px_rgba(0,0,0,0.14)] p-3.5 sm:p-4 space-y-3 z-50 animate-fade-in text-xs text-gray-900 pointer-events-auto overflow-hidden">
+                <div className="fixed left-3 right-3 top-20 sm:absolute sm:left-auto sm:-right-4 sm:top-full mt-2 w-auto sm:w-96 max-w-[calc(100vw-1.5rem)] sm:max-w-sm bg-white/95 dark:bg-[#1e1e20]/95 backdrop-blur-2xl border border-white/90 dark:border-white/10 rounded-3xl shadow-[0_20px_60px_rgba(0,0,0,0.14)] dark:shadow-[0_20px_60px_rgba(0,0,0,0.6)] p-3.5 sm:p-4 space-y-3 z-50 animate-fade-in text-xs text-gray-900 dark:text-gray-100 pointer-events-auto overflow-hidden">
                   
                   {/* Header info */}
-                  <div className="flex items-center justify-between pb-2 border-b border-gray-100 text-[10px] uppercase font-bold text-gray-400 tracking-wider">
+                  <div className="flex items-center justify-between pb-2 border-b border-gray-100 dark:border-white/10 text-[10px] uppercase font-bold text-gray-400 tracking-wider">
                     <span>Resultados en tiempo real</span>
                     <button 
                       onClick={() => setSearchVal("")} 
-                      className="text-gray-400 hover:text-gray-700 normal-case font-medium text-xs"
+                      className="text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 normal-case font-medium text-xs"
                     >
                       Cerrar
                     </button>
@@ -286,10 +286,10 @@ export function Header() {
                       <div className="flex flex-wrap gap-1.5">
                         {matchedCategories.map(cat => (
                           <Link 
-                            key={cat}
+                            key={cat} 
                             href={`/shop?category=${cat.toLowerCase()}`}
                             onClick={() => setSearchVal("")}
-                            className="px-3 py-1 rounded-full bg-gray-100 hover:bg-[#8c9276]/15 hover:text-[#8c9276] text-gray-700 font-semibold text-[11px] transition-colors flex items-center gap-1.5"
+                            className="px-3 py-1 rounded-full bg-gray-100 dark:bg-white/10 hover:bg-[#8c9276]/15 dark:hover:bg-[#8c9276]/25 hover:text-[#8c9276] text-gray-700 dark:text-gray-300 font-semibold text-[11px] transition-colors flex items-center gap-1.5"
                           >
                             <Layers className="w-3 h-3 text-[#8c9276]" /> {cat}
                           </Link>
@@ -310,23 +310,23 @@ export function Header() {
                             key={prod.id} 
                             href={`/product/${prod.id}`}
                             onClick={() => setSearchVal("")}
-                            className="flex items-center justify-between p-2 rounded-2xl hover:bg-gray-50/90 transition-colors group gap-2 min-w-0"
+                            className="flex items-center justify-between p-2 rounded-2xl hover:bg-gray-50/90 dark:hover:bg-white/5 transition-colors group gap-2 min-w-0"
                           >
                             <div className="flex items-center gap-2.5 sm:gap-3 min-w-0 flex-1">
-                              <div className="relative w-10 h-10 sm:w-11 sm:h-11 rounded-xl overflow-hidden bg-gray-100 shrink-0">
+                              <div className="relative w-10 h-10 sm:w-11 sm:h-11 rounded-xl overflow-hidden bg-gray-100 dark:bg-white/10 shrink-0">
                                 <Image src={prod.imageUrl} alt={prod.title} fill sizes="44px" className="object-cover group-hover:scale-105 transition-transform" />
                               </div>
                               <div className="min-w-0 flex-1">
                                 <span className="text-[10px] font-bold text-[#8c9276] uppercase tracking-wider block truncate">
                                   {prod.category}
                                 </span>
-                                <h4 className="text-xs font-bold text-gray-900 truncate group-hover:text-[#8c9276] transition-colors">
+                                <h4 className="text-xs font-bold text-gray-900 dark:text-gray-100 truncate group-hover:text-[#8c9276] transition-colors">
                                   {prod.title}
                                 </h4>
-                                <p className="text-xs font-extrabold text-gray-900 mt-0.5">${Number(prod.price || 0).toFixed(2)}</p>
+                                <p className="text-xs font-extrabold text-gray-900 dark:text-white mt-0.5">${Number(prod.price || 0).toFixed(2)}</p>
                               </div>
                             </div>
-                            <div className="p-1.5 text-gray-300 group-hover:text-gray-800 rounded-xl transition-colors shrink-0">
+                            <div className="p-1.5 text-gray-300 dark:text-gray-500 group-hover:text-gray-800 dark:group-hover:text-white rounded-xl transition-colors shrink-0">
                               <ArrowRight className="w-4 h-4" />
                             </div>
                           </Link>
@@ -337,13 +337,13 @@ export function Header() {
 
                   {/* Empty state */}
                   {matchedProducts.length === 0 && matchedCategories.length === 0 && (
-                    <div className="py-6 text-center text-xs text-gray-500">
-                      No encontramos piezas para <span className="font-semibold text-gray-800">&quot;{searchVal}&quot;</span>.
+                    <div className="py-6 text-center text-xs text-gray-500 dark:text-gray-400">
+                      No encontramos piezas para <span className="font-semibold text-gray-800 dark:text-gray-200">&quot;{searchVal}&quot;</span>.
                     </div>
                   )}
 
                   {/* Bottom View All Link */}
-                  <div className="pt-2 border-t border-gray-100 flex items-center justify-between text-xs">
+                  <div className="pt-2 border-t border-gray-100 dark:border-white/10 flex items-center justify-between text-xs">
                     <Link 
                       href={`/shop?search=${encodeURIComponent(searchVal)}`}
                       onClick={() => setSearchVal("")}
@@ -368,7 +368,7 @@ export function Header() {
                   y: rect.top + rect.height / 2
                 });
               }}
-              className="relative p-2 sm:p-2.5 rounded-full bg-white/40 backdrop-blur-md border border-white/60 text-gray-900 hover:bg-white/60 transition-colors shadow-[0_4px_16px_rgba(0,0,0,0.05)] shrink-0 cursor-pointer"
+              className="relative p-2 sm:p-2.5 rounded-full bg-white/40 dark:bg-white/10 backdrop-blur-md border border-white/60 dark:border-white/15 text-gray-900 dark:text-gray-100 hover:bg-white/60 dark:hover:bg-white/20 transition-colors shadow-[0_4px_16px_rgba(0,0,0,0.05)] shrink-0 cursor-pointer"
             >
               <ShoppingBag className="w-4 h-4 sm:w-5 sm:h-5" />
               {totalItems > 0 && (
@@ -381,7 +381,7 @@ export function Header() {
             {/* Mobile Navigation Toggle Button */}
             <button 
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-              className="md:hidden p-2 sm:p-2.5 rounded-full hover:bg-white/50 text-gray-700 ml-0.5 transition-colors cursor-pointer shrink-0"
+              className="md:hidden p-2 sm:p-2.5 rounded-full hover:bg-white/50 dark:hover:bg-white/10 text-gray-700 dark:text-gray-200 ml-0.5 transition-colors cursor-pointer shrink-0"
               aria-label={isMobileMenuOpen ? "Cerrar menú móvil" : "Abrir menú móvil"}
             >
               {isMobileMenuOpen ? <X className="w-4 h-4 sm:w-5 sm:h-5" /> : <Menu className="w-4 h-4 sm:w-5 sm:h-5" />}
@@ -397,13 +397,13 @@ export function Header() {
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: -10, scale: 0.96 }}
               transition={{ duration: 0.22, ease: "easeOut" }}
-              className="pointer-events-auto absolute top-full mt-3 inset-x-3 sm:inset-x-4 max-w-sm mx-auto bg-white/95 backdrop-blur-2xl border border-white/80 rounded-3xl shadow-[0_20px_60px_rgba(0,0,0,0.12)] p-4 z-50 md:hidden space-y-2.5"
+              className="pointer-events-auto absolute top-full mt-3 inset-x-3 sm:inset-x-4 max-w-sm mx-auto bg-white/95 dark:bg-[#1e1e20]/95 backdrop-blur-2xl border border-white/80 dark:border-white/10 rounded-3xl shadow-[0_20px_60px_rgba(0,0,0,0.12)] dark:shadow-[0_20px_60px_rgba(0,0,0,0.6)] p-4 z-50 md:hidden space-y-2.5"
             >
-              <div className="flex items-center justify-between pb-2 border-b border-gray-100 text-[10px] uppercase font-bold text-gray-400 tracking-wider">
+              <div className="flex items-center justify-between pb-2 border-b border-gray-100 dark:border-white/10 text-[10px] uppercase font-bold text-gray-400 tracking-wider">
                 <span>Navegación Lumina</span>
                 <button 
                   onClick={() => setIsMobileMenuOpen(false)}
-                  className="text-gray-400 hover:text-gray-700 text-xs font-semibold"
+                  className="text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 text-xs font-semibold"
                 >
                   Cerrar
                 </button>
@@ -423,8 +423,8 @@ export function Header() {
                       className={cn(
                         "flex items-center gap-2 px-3.5 py-2.5 rounded-2xl text-xs font-semibold transition-all cursor-pointer",
                         isActive
-                          ? "bg-gray-900 text-white shadow-sm"
-                          : "bg-gray-50/90 hover:bg-gray-100 text-gray-700"
+                          ? "bg-gray-900 dark:bg-white text-white dark:text-gray-900 shadow-sm"
+                          : "bg-gray-50/90 dark:bg-white/10 hover:bg-gray-100 dark:hover:bg-white/15 text-gray-700 dark:text-gray-200"
                       )}
                     >
                       <Icon className="w-4 h-4 shrink-0" />

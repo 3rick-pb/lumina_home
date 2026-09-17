@@ -310,7 +310,7 @@ const toSupabaseProduct = (p: Partial<CatalogProduct>) => {
       embeddedCarousel: p.embeddedCarousel || null,
     },
     combos: p.combos || null,
-    how_to_use: p.howToUse || null,
+    how_to_use: p.howToUse ? (Array.isArray(p.howToUse) ? p.howToUse : [p.howToUse]) : null,
     landing_anatomy_image: p.landingAnatomyImage || null,
   };
 
@@ -322,12 +322,21 @@ const toSupabaseProduct = (p: Partial<CatalogProduct>) => {
 };
 
 // Helper to detect missing column / schema cache errors in Supabase PostgREST
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const isMissingColumnError = (err: any): boolean => {
-  if (!err) return false;
-  const code = String(err.code || '');
-  const msg = String(err.message || '').toLowerCase();
+const isMissingColumnError = (err: unknown): boolean => {
+  if (!err || typeof err !== 'object') return false;
+  const e = err as { code?: string | number; message?: string };
+  const code = String(e.code || '');
+  const msg = String(e.message || '').toLowerCase();
   return code === 'PGRST204' || code === '42703' || msg.includes('column') || msg.includes('schema cache');
+};
+
+// Helper to detect PostgreSQL array literal mismatch errors (e.g. 22P02 malformed array literal)
+const isArrayMismatchError = (err: unknown): boolean => {
+  if (!err || typeof err !== 'object') return false;
+  const e = err as { code?: string | number; message?: string };
+  const code = String(e.code || '');
+  const msg = String(e.message || '').toLowerCase();
+  return code === '22P02' || msg.includes('malformed array literal') || msg.includes('array');
 };
 
 // Convert snake_case back to camelCase for frontend with canonical category formatting
@@ -374,7 +383,9 @@ const toFrontendProduct = (p: any): CatalogProduct => {
     careInstructions: p.care_instructions || undefined,
     packageContents: p.package_contents || undefined,
     stock: typeof p.stock === 'number' ? p.stock : 18,
-    howToUse: p.how_to_use || undefined,
+    howToUse: Array.isArray(p.how_to_use) 
+      ? p.how_to_use.join("\n\n") 
+      : (typeof p.how_to_use === 'string' ? p.how_to_use : undefined),
     combos: p.combos || undefined,
     layoutType: p.layout_type || 'standard',
     galleryStyle: (p.gallery_style || p.landing_bundle?.galleryStyle || 'traditional') as 'traditional' | 'isometric_3d',
@@ -538,6 +549,29 @@ export const useCatalogStore = create<CatalogState>((set) => ({
       error = retry.error;
     }
 
+    // Auto-retry if how_to_use has an array-type mismatch (text[] vs text)
+    if (isArrayMismatchError(error)) {
+      const altProduct = { ...dbProduct };
+      if (Array.isArray(altProduct.how_to_use)) {
+        altProduct.how_to_use = altProduct.how_to_use[0] || null;
+      } else if (typeof altProduct.how_to_use === 'string') {
+        altProduct.how_to_use = [altProduct.how_to_use];
+      }
+      const retryAlt = await supabase.from('products').insert([altProduct]).select().single();
+      if (!retryAlt.error) {
+        data = retryAlt.data;
+        error = null;
+      } else {
+        const fallbackProd = { ...altProduct };
+        delete fallbackProd.how_to_use;
+        const retryFallback = await supabase.from('products').insert([fallbackProd]).select().single();
+        if (!retryFallback.error) {
+          data = retryFallback.data;
+          error = null;
+        }
+      }
+    }
+
     // Fallback to server API if needed
     if (error) {
       try {
@@ -615,6 +649,29 @@ export const useCatalogStore = create<CatalogState>((set) => ({
         const retry = await supabase.from('products').update(basicProduct).eq('id', id).select().single();
         data = retry.data;
         error = retry.error;
+      }
+
+      // Auto-retry if how_to_use has an array-type mismatch (text[] vs text)
+      if (isArrayMismatchError(error)) {
+        const altProduct = { ...dbProduct };
+        if (Array.isArray(altProduct.how_to_use)) {
+          altProduct.how_to_use = altProduct.how_to_use[0] || null;
+        } else if (typeof altProduct.how_to_use === 'string') {
+          altProduct.how_to_use = [altProduct.how_to_use];
+        }
+        const retryAlt = await supabase.from('products').update(altProduct).eq('id', id).select().single();
+        if (!retryAlt.error) {
+          data = retryAlt.data;
+          error = null;
+        } else {
+          const fallbackProd = { ...altProduct };
+          delete fallbackProd.how_to_use;
+          const retryFallback = await supabase.from('products').update(fallbackProd).eq('id', id).select().single();
+          if (!retryFallback.error) {
+            data = retryFallback.data;
+            error = null;
+          }
+        }
       }
 
       // Fallback to server API if needed

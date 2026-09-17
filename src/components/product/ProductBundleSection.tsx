@@ -18,7 +18,7 @@ export function ProductBundleSection({
   product,
   allProducts,
   activeColorName,
-  activeSize = "M",
+  activeSize,
   isAgotado = false,
 }: ProductBundleSectionProps) {
   const { addBundle, addItem } = useCartStore();
@@ -87,7 +87,7 @@ export function ProductBundleSection({
       ...activeCompanions.map((comp) => ({
         product: comp,
         color: comp.colors?.[0]?.name,
-        size: comp.sizes?.[0] || "Estándar",
+        size: comp.sizes?.[0] || undefined,
       })),
     ];
 

@@ -32,7 +32,7 @@ export default function ProductDetail({ params }: { params: Promise<{ id: string
 
   const [activeImage, setActiveImage] = useState(0);
   const [activeColor, setActiveColor] = useState(0);
-  const [activeSize, setActiveSize] = useState(product.sizes?.[0] || "M");
+  const [activeSize, setActiveSize] = useState(product.sizes?.[0] || "");
   const [activeTab, setActiveTab] = useState<'detalles' | 'materiales' | 'dimensiones' | 'envios' | 'cuidados'>('detalles');
   const [selectedCombo, setSelectedCombo] = useState<ProductCombo | null>(null);
   const [isAdding, setIsAdding] = useState(false);
@@ -64,18 +64,20 @@ export default function ProductDetail({ params }: { params: Promise<{ id: string
     if (isAgotado) return;
     setIsAdding(true);
 
+    const hasProductSizes = Boolean(product.sizes && product.sizes.length > 0);
+
     if (selectedCombo) {
       const companions = products.filter(p => selectedCombo.companionProductIds?.includes(p.id));
       const bundleProductsList = [
         {
           product,
           color: product.colors?.[activeColor]?.name,
-          size: activeSize,
+          size: hasProductSizes ? activeSize : undefined,
         },
         ...companions.map(c => ({
           product: c,
           color: c.colors?.[0]?.name,
-          size: c.sizes?.[0] || "Estándar",
+          size: c.sizes && c.sizes.length > 0 ? c.sizes[0] : undefined,
         })),
       ];
 
@@ -87,7 +89,12 @@ export default function ProductDetail({ params }: { params: Promise<{ id: string
         products: bundleProductsList,
       });
     } else {
-      addItem(product, 1, product.colors?.[activeColor]?.name, activeSize);
+      addItem(
+        product, 
+        1, 
+        product.colors?.[activeColor]?.name, 
+        hasProductSizes ? activeSize : undefined
+      );
     }
 
     setTimeout(() => setIsAdding(false), 1500);
@@ -489,7 +496,7 @@ export default function ProductDetail({ params }: { params: Promise<{ id: string
           product={product}
           allProducts={products}
           activeColorName={product.colors?.[activeColor]?.name}
-          activeSize={activeSize}
+          activeSize={product.sizes && product.sizes.length > 0 ? activeSize : undefined}
           isAgotado={isAgotado}
         />
 
@@ -646,7 +653,7 @@ export default function ProductDetail({ params }: { params: Promise<{ id: string
                 <div className="p-5 bg-emerald-50/60 rounded-2xl border border-emerald-100">
                   <div className="flex items-center gap-2 mb-2 text-xs font-bold text-emerald-950 uppercase tracking-wider">
                     <ShieldCheck className="w-4 h-4 text-emerald-700" />
-                    <span>Garantía Oficial Lumina</span>
+                    <span>Garantía Oficial</span>
                   </div>
                   <p className="text-sm text-emerald-900 leading-relaxed">
                     {product.warranty || "2 años de garantía oficial ante cualquier defecto de fabricación o fallo prematuro de materiales."}

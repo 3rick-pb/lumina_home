@@ -185,10 +185,7 @@ const Dash = ({
             ? "opacity-0 pointer-events-none scale-95 translate-x-2"
             : active
               ? "opacity-100 scale-100 translate-x-0 bg-[#8c9276] text-white border-[#8c9276]/50 font-semibold shadow-[#8c9276]/25"
-              : cn(
-                  "opacity-75 group-hover:opacity-100 scale-100 bg-white/95 dark:bg-[#1e1e20]/95 text-gray-800 dark:text-gray-200 border-black/10 dark:border-white/10",
-                  side === "right" ? "translate-x-1 group-hover:translate-x-0" : "-translate-x-1 group-hover:translate-x-0"
-                )
+              : "opacity-0 group-hover:opacity-100 scale-95 group-hover:scale-100 bg-white/95 dark:bg-[#1e1e20]/95 text-gray-800 dark:text-gray-200 border-black/10 dark:border-white/10 translate-x-1 group-hover:translate-x-0"
         )}
       >
         {section.label}
@@ -285,14 +282,13 @@ const ProximitySidebar = ({
   const selectSection = useCallback(
     (id: string) => {
       // 1. "Inicio" -> Scroll cleanly to top of page
-      if (id === "hero-section" || id === "inicio" || id === "top") {
+      if (id === "hero-section" || id === "inicio" || id === "top" || id === "shop-header") {
         window.scrollTo({
           top: 0,
           behavior: shouldReduceMotion ? "auto" : "smooth",
         })
         window.history.replaceState(null, "", `#${id}`)
         setActiveId(id)
-        pulseDash(id)
         return
       }
 
@@ -312,7 +308,6 @@ const ProximitySidebar = ({
         }
         window.history.replaceState(null, "", `#${id}`)
         setActiveId(id)
-        pulseDash(id)
         return
       }
 
@@ -326,9 +321,8 @@ const ProximitySidebar = ({
 
       window.history.replaceState(null, "", `#${id}`)
       setActiveId(id)
-      pulseDash(id)
     },
-    [pulseDash, shouldReduceMotion]
+    [shouldReduceMotion]
   )
 
   useEffect(() => () => clearPendingReset(), [clearPendingReset])
@@ -358,18 +352,16 @@ const ProximitySidebar = ({
       frame = 0
 
       // Special case 1: If scrolled to top, always select the first section (Inicio)
-      if (window.scrollY < 120 && sections.length > 0) {
+      if (window.scrollY < 180 && sections.length > 0) {
         const topId = sections[0].id
         setActiveId(topId)
-        if (!pointerInside.current) pulseDash(topId)
         return
       }
 
       // Special case 2: If scrolled near bottom, select the last section (Envíos & Garantías)
-      if (typeof document !== "undefined" && window.innerHeight + window.scrollY >= (document.documentElement.scrollHeight - 160) && sections.length > 0) {
+      if (typeof document !== "undefined" && window.innerHeight + window.scrollY >= (document.documentElement.scrollHeight - 240) && sections.length > 0) {
         const bottomId = sections[sections.length - 1].id
         setActiveId(bottomId)
-        if (!pointerInside.current) pulseDash(bottomId)
         return
       }
 
@@ -394,10 +386,6 @@ const ProximitySidebar = ({
       }
 
       setActiveId(nextActiveId)
-
-      if (!pointerInside.current) {
-        pulseDash(nextActiveId)
-      }
     }
 
     const scheduleUpdate = () => {
