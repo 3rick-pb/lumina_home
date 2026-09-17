@@ -15,7 +15,7 @@ export function Footer() {
   }
 
   return (
-    <footer className={`${isAuthPage ? "mt-0 bg-transparent border-t border-gray-200/40 dark:border-white/5" : "mt-24 border-t border-black/[0.06] dark:border-white/[0.06] bg-[#fbfbfa] dark:bg-[#141416]"} pt-16 pb-12 transition-colors duration-300`}>
+    <footer id="envios-garantias" className={`${isAuthPage ? "mt-0 bg-transparent border-t border-gray-200/40 dark:border-white/5" : "mt-24 border-t border-black/[0.06] dark:border-white/[0.06] bg-[#fbfbfa] dark:bg-[#141416]"} pt-16 pb-12 transition-colors duration-300 scroll-mt-10`}>
       <div className="container mx-auto px-4 md:px-6">
         
         {/* ========================================================================= */}

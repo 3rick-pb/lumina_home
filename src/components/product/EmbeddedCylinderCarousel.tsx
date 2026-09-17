@@ -49,12 +49,18 @@ export function EmbeddedCylinderCarousel({
   // Build the 6 curated slides cloning Video Enveding.mp4
   // Build the 6 curated slides with clean product info (no arbitrary dates or codes)
   const slides: EmbeddedCarouselSlide[] = useMemo(() => {
-    if (config?.slides && config.slides.length >= 3) {
-      return config.slides;
-    }
-
     const imgs = productImages.length > 0 ? productImages : FALLBACK_IMAGES;
     const getImg = (idx: number) => imgs[idx % imgs.length] || FALLBACK_IMAGES[idx % FALLBACK_IMAGES.length];
+
+    if (config?.slides && config.slides.length >= 3) {
+      return config.slides.map((s, idx) => ({
+        ...s,
+        title: s.title && s.title.trim() ? s.title : productTitle,
+        tag: s.tag && s.tag.trim() ? s.tag : (category || "EDICIÓN"),
+        subtitle: s.subtitle && s.subtitle.trim() ? s.subtitle : "VISTA EDITORIAL",
+        image: s.image && s.image.trim() ? s.image : getImg(idx),
+      }));
+    }
 
     return [
       {
@@ -308,7 +314,7 @@ export function EmbeddedCylinderCarousel({
 
                     <div className="text-center space-y-1 my-auto">
                       <p className="text-sm sm:text-base font-mono font-black tracking-widest text-white/95 uppercase line-clamp-2">
-                        {productTitle}
+                        {slide.title || productTitle}
                       </p>
                     </div>
 
@@ -328,7 +334,7 @@ export function EmbeddedCylinderCarousel({
                     <div className="relative w-[46%] h-full overflow-hidden">
                       <Image
                         src={slide.image}
-                        alt={productTitle}
+                        alt={slide.title || productTitle}
                         fill
                         sizes="140px"
                         className="object-cover"
@@ -343,7 +349,7 @@ export function EmbeddedCylinderCarousel({
                       </div>
                       <div className="space-y-1 text-right my-auto">
                         <p className="text-xs sm:text-sm font-black tracking-tight text-gray-950 dark:text-white uppercase line-clamp-3">
-                          {productTitle}
+                          {slide.title || productTitle}
                         </p>
                       </div>
                       <div className="text-right text-[9px] font-bold tracking-widest text-[#8c9276] uppercase">
@@ -358,7 +364,7 @@ export function EmbeddedCylinderCarousel({
                   <div className="relative w-full h-full overflow-hidden bg-[#242620]">
                     <Image
                       src={slide.image}
-                      alt={productTitle}
+                      alt={slide.title || productTitle}
                       fill
                       sizes="300px"
                       className="object-cover opacity-60"
@@ -372,7 +378,7 @@ export function EmbeddedCylinderCarousel({
                       </div>
                       <div className="space-y-1">
                         <h4 className="text-base sm:text-lg font-black tracking-tight text-white uppercase line-clamp-2">
-                          {productTitle}
+                          {slide.title || productTitle}
                         </h4>
                         <p className="text-[10px] sm:text-xs font-bold tracking-widest text-white/70 uppercase">
                           {slide.subtitle || "PIEZA DE CATÁLOGO"}
@@ -388,7 +394,7 @@ export function EmbeddedCylinderCarousel({
                     <div className="relative w-full flex-1 rounded-[1.3rem] overflow-hidden bg-black/30">
                       <Image
                         src={slide.image}
-                        alt={productTitle}
+                        alt={slide.title || productTitle}
                         fill
                         sizes="300px"
                         className="object-cover"
@@ -401,8 +407,8 @@ export function EmbeddedCylinderCarousel({
                       </div>
                     </div>
                     <div className="pt-2 px-1 flex items-center justify-between text-[10px] font-mono">
-                      <span className="font-bold text-white/95 line-clamp-1 uppercase">{productTitle}</span>
-                      <span className="text-white/60 uppercase">{category || "AUTOR"}</span>
+                      <span className="font-bold text-white/95 line-clamp-1 uppercase">{slide.title || productTitle}</span>
+                      <span className="text-white/60 uppercase">{slide.tag || category || "AUTOR"}</span>
                     </div>
                   </div>
                 )}
@@ -412,7 +418,7 @@ export function EmbeddedCylinderCarousel({
                   <div className="relative w-full h-full overflow-hidden bg-black/40">
                     <Image
                       src={slide.image}
-                      alt={productTitle}
+                      alt={slide.title || productTitle}
                       fill
                       sizes="300px"
                       className="object-cover transition-transform duration-700 hover:scale-105"
@@ -429,7 +435,7 @@ export function EmbeddedCylinderCarousel({
 
                       <div>
                         <h4 className="text-sm sm:text-base font-bold font-mono tracking-tight text-white line-clamp-1 uppercase">
-                          {productTitle}
+                          {slide.title || productTitle}
                         </h4>
                         <p className="text-[10px] sm:text-xs text-white/70 font-mono mt-0.5 line-clamp-1 uppercase">
                           {slide.subtitle || "PERSPECTIVA VISUAL"}

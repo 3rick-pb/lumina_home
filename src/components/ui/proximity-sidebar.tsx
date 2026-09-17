@@ -43,6 +43,7 @@ type DashProps = {
   section: ProximitySection
   sectionKind: SectionKind
   side: Side
+  isSidebarHovered?: boolean
 }
 
 export type ProximitySidebarProps = {
@@ -128,6 +129,7 @@ const Dash = ({
   section,
   sectionKind,
   side,
+  isSidebarHovered = false,
 }: DashProps) => {
   const ref = useRef<HTMLButtonElement>(null)
   const preset = DASH_PRESETS[sectionKind]
@@ -174,17 +176,19 @@ const Dash = ({
       )}
       onClick={() => onSelect(section.id)}
     >
-      {/* Floating tooltip preview on hover or when active */}
+      {/* Floating tooltip preview: strictly only visible when user hovers or interacts with the sidebar */}
       <span
         className={cn(
           "pointer-events-none absolute text-[11px] font-medium px-2.5 py-1 rounded-full shadow-lg backdrop-blur-xl whitespace-nowrap transition-all duration-200 border select-none z-50",
           side === "right" ? "right-[118px]" : "left-[118px]",
-          active
-            ? "opacity-100 translate-x-0 bg-[#8c9276]/95 text-white border-[#8c9276]/40 font-semibold shadow-[#8c9276]/20"
-            : cn(
-                "opacity-0 group-hover:opacity-100 bg-white/90 dark:bg-[#1e1e20]/90 text-gray-800 dark:text-gray-200 border-black/10 dark:border-white/10",
-                side === "right" ? "translate-x-1 group-hover:translate-x-0" : "-translate-x-1 group-hover:translate-x-0"
-              )
+          !isSidebarHovered
+            ? "opacity-0 pointer-events-none scale-95 translate-x-2"
+            : active
+              ? "opacity-100 scale-100 translate-x-0 bg-[#8c9276] text-white border-[#8c9276]/50 font-semibold shadow-[#8c9276]/25"
+              : cn(
+                  "opacity-75 group-hover:opacity-100 scale-100 bg-white/95 dark:bg-[#1e1e20]/95 text-gray-800 dark:text-gray-200 border-black/10 dark:border-white/10",
+                  side === "right" ? "translate-x-1 group-hover:translate-x-0" : "-translate-x-1 group-hover:translate-x-0"
+                )
         )}
       >
         {section.label}
@@ -217,6 +221,7 @@ const ProximitySidebar = ({
   const dashRefs = useRef(new Map<string, HTMLButtonElement>())
   const pointerInside = useRef(false)
   const resetTimer = useRef<number | null>(null)
+  const [isSidebarHovered, setIsSidebarHovered] = useState(false)
   const [activeId, setActiveId] = useState(sections[0]?.id)
   const [detectedKinds, setDetectedKinds] = useState<Record<string, SectionKind>>(
     {}
@@ -279,6 +284,38 @@ const ProximitySidebar = ({
 
   const selectSection = useCallback(
     (id: string) => {
+      // 1. "Inicio" -> Scroll cleanly to top of page
+      if (id === "hero-section" || id === "inicio" || id === "top") {
+        window.scrollTo({
+          top: 0,
+          behavior: shouldReduceMotion ? "auto" : "smooth",
+        })
+        window.history.replaceState(null, "", `#${id}`)
+        setActiveId(id)
+        pulseDash(id)
+        return
+      }
+
+      // 2. "Envíos & Garantías" -> Scroll cleanly to footer / pie de página
+      if (id === "envios-garantias" || id === "trust-badges" || id === "footer") {
+        const footerEl = document.getElementById("envios-garantias") || document.querySelector("footer")
+        if (footerEl) {
+          footerEl.scrollIntoView({
+            behavior: shouldReduceMotion ? "auto" : "smooth",
+            block: "start",
+          })
+        } else {
+          window.scrollTo({
+            top: document.body.scrollHeight,
+            behavior: shouldReduceMotion ? "auto" : "smooth",
+          })
+        }
+        window.history.replaceState(null, "", `#${id}`)
+        setActiveId(id)
+        pulseDash(id)
+        return
+      }
+
       const element = getSectionElement(id)
       if (!element) return
 
@@ -319,6 +356,22 @@ const ProximitySidebar = ({
 
     const updateActiveSection = () => {
       frame = 0
+
+      // Special case 1: If scrolled to top, always select the first section (Inicio)
+      if (window.scrollY < 120 && sections.length > 0) {
+        const topId = sections[0].id
+        setActiveId(topId)
+        if (!pointerInside.current) pulseDash(topId)
+        return
+      }
+
+      // Special case 2: If scrolled near bottom, select the last section (Envíos & Garantías)
+      if (typeof document !== "undefined" && window.innerHeight + window.scrollY >= (document.documentElement.scrollHeight - 160) && sections.length > 0) {
+        const bottomId = sections[sections.length - 1].id
+        setActiveId(bottomId)
+        if (!pointerInside.current) pulseDash(bottomId)
+        return
+      }
 
       const anchorY = window.innerHeight * activeOffset
       let nextActiveId = sections[0]?.id
@@ -386,6 +439,9 @@ const ProximitySidebar = ({
         side === "left" ? "justify-start" : "justify-end",
         className
       )}
+      onPointerEnter={() => setIsSidebarHovered(true)}
+      onPointerLeave={() => setIsSidebarHovered(false)}
+      onTouchStart={() => setIsSidebarHovered(true)}
     >
       <div
         className={cn(
@@ -396,10 +452,12 @@ const ProximitySidebar = ({
         onPointerMove={(event) => {
           clearPendingReset()
           pointerInside.current = true
+          setIsSidebarHovered(true)
           mouseY.set(event.clientY)
         }}
         onPointerLeave={() => {
           pointerInside.current = false
+          setIsSidebarHovered(false)
           mouseY.set(Infinity)
         }}
       >
@@ -413,6 +471,7 @@ const ProximitySidebar = ({
             section={section}
             sectionKind={detectedKinds[section.id] ?? getSectionKind(section)}
             side={side}
+            isSidebarHovered={isSidebarHovered}
           />
         ))}
       </div>

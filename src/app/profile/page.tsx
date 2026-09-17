@@ -1430,6 +1430,12 @@ const handleConfirmDeleteNiche = async () => {
               <EmbeddedCarouselConfigurator
                 config={prodEmbeddedCarousel}
                 onChange={setProdEmbeddedCarousel}
+                productTitle={prodTitle}
+                category={prodCategory}
+                productImages={[
+                  ...(prodImageUrl.trim() ? [prodImageUrl.trim()] : []),
+                  ...(prodExtraImages.trim() ? prodExtraImages.split(/[\n,]+/).map(u => u.trim()).filter(Boolean) : [])
+                ]}
                 productImagesCount={
                   (prodImageUrl.trim() ? 1 : 0) +
                   (prodExtraImages.trim() ? prodExtraImages.split(/[\n,]+/).map(u => u.trim()).filter(Boolean).length : 0)
@@ -1914,6 +1920,12 @@ const handleConfirmDeleteNiche = async () => {
               <EmbeddedCarouselConfigurator
                 config={editEmbeddedCarousel}
                 onChange={setEditEmbeddedCarousel}
+                productTitle={editTitle}
+                category={editCategory}
+                productImages={[
+                  ...(editImageUrl.trim() ? [editImageUrl.trim()] : []),
+                  ...(editExtraImages.trim() ? editExtraImages.split(/[\n,]+/).map(u => u.trim()).filter(Boolean) : [])
+                ]}
                 productImagesCount={
                   (editImageUrl.trim() ? 1 : 0) +
                   (editExtraImages.trim() ? editExtraImages.split(/[\n,]+/).map(u => u.trim()).filter(Boolean).length : 0)

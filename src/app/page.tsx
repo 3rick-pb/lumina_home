@@ -15,7 +15,7 @@ const HOME_SECTIONS = [
   { id: "hero-section", label: "Inicio", level: 1 as const },
   { id: "catalog-categories", label: "Explora el Catálogo", level: 2 as const },
   { id: "catalog-popular", label: "Productos Populares", level: 2 as const },
-  { id: "trust-badges", label: "Envíos & Grantías", level: 3 as const },
+  { id: "envios-garantias", label: "Envíos & Garantías", level: 3 as const },
 ];
 
 const NICHE_METADATA_MAP: Record<string, { subtitle: string; img: string; defaultPrice: string }> = {
