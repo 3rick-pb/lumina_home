@@ -19,6 +19,59 @@ import { useUserStore, Order } from "@/lib/userStore";
 import { useCatalogStore, CatalogProduct } from "@/lib/catalogStore";
 import { DROPI_HEADERS, DROPI_ECUADOR_REFERENCE } from "@/lib/dropiEcuadorData";
 
+export const NORMAL_ORDER_HEADERS = [
+  "Nº",
+  "ID Pedido",
+  "Fecha",
+  "Hora",
+  "Estado Actual",
+  "Nº Seguimiento / Guía",
+  "Cliente",
+  "Cédula / RUC",
+  "Email",
+  "Teléfono",
+  "Destinatario",
+  "Ciudad",
+  "Provincia / Estado",
+  "Dirección de Envío",
+  "Método de Pago",
+  "Total Piezas",
+  "Detalle Productos",
+  "Total Compra (USD)",
+] as const;
+
+export const PRODUCT_CATALOG_HEADERS = [
+  "Nº",
+  "ID Producto",
+  "Título / Nombre",
+  "Subtítulo / Resalte",
+  "Categoría / Nicho",
+  "Precio Actual (USD)",
+  "Precio Anterior (USD)",
+  "Descuento",
+  "Stock Unidades",
+  "Estado Stock",
+  "Insignia / Badge",
+  "Colores",
+  "Garantía",
+  "Envíos",
+  "Dimensiones",
+  "Materiales",
+  "Descripción",
+] as const;
+
+export const NICHE_INVENTORY_HEADERS = [
+  "Nº",
+  "Nicho / Colección",
+  "Variedad Productos",
+  "% del Catálogo",
+  "Stock Total (Unidades)",
+  "Disponibles",
+  "Agotados",
+  "Precio Promedio (USD)",
+  "Valor Total Inventario (USD)",
+] as const;
+
 /**
  * Excel 2025 Fluent Modern Icon
  * Multi-layer 3D emerald spreadsheet sheet + front badge with bold X
@@ -242,29 +295,6 @@ export function ExcelExportRadialMenu() {
         }
       });
 
-      if (rows.length === 0) {
-        rows.push({
-          "NOMBRES": "Juan Carlos",
-          "APELLIDOS": "Pérez Mero",
-          "DIRECCIÓN Y BARRIO": "Av. 6 de Diciembre y Eloy Alfaro, Edificio Lumina",
-          "DEPARTAMENTO": "QUITO",
-          "CIUDAD": "QUITO",
-          "TELÉFONO": "0991234567",
-          "ID DE PRODUCTO": "PROD-01",
-          "CANTIDAD": 1,
-          "PRECIO TOTAL (SIN PUNTOS NI COMAS)": 45,
-          "CON RECAUDO": "SÍ",
-          "NOTA": "Orden de Prueba Lumina",
-          "EMAIL (OPCIONAL)": "cliente@ejemplo.com",
-          "ID DE VARIABLE (OPCIONAL)": "",
-          "CODIGO POSTAL (OPCIONAL)": "170515",
-          "TRANSPORTADORA (OPCIONAL)": "",
-          "CEDULA (OPCIONAL)": "1712345678",
-          "COLONIA (OBLIGATORIO SOLO PARA QUIKEN)": "",
-          "SEGURO (SOLO APLICA PARA ENVIA)": "",
-        });
-      }
-
       let wb: XLSX.WorkBook;
       try {
         const res = await fetch("/templates/formato-ordenes-masivas-dropiEC.xlsx");
@@ -341,32 +371,9 @@ export function ExcelExportRadialMenu() {
         };
       });
 
-      if (rows.length === 0) {
-        rows.push({
-          "Nº": 1,
-          "ID Pedido": "ORD-SAMPLE-01",
-          "Fecha": new Date().toLocaleDateString("es-ES"),
-          "Hora": "10:30",
-          "Estado Actual": "Procesando",
-          "Nº Seguimiento / Guía": "TRK-98234-EC",
-          "Cliente": "Cliente de Prueba",
-          "Cédula / RUC": "1723456789",
-          "Email": "cliente@lumina.com",
-          "Teléfono": "0991234567",
-          "Destinatario": "Cliente de Prueba",
-          "Ciudad": "Quito",
-          "Provincia / Estado": "Pichincha",
-          "Dirección de Envío": "Av. República y Eloy Alfaro",
-          "Método de Pago": "Tarjeta Visa",
-          "Total Piezas": 1,
-          "Detalle Productos": "Lámpara Eclipse Minimal (x1)",
-          "Total Compra (USD)": "120.00",
-        });
-      }
-
       const wb = XLSX.utils.book_new();
-      const ws = XLSX.utils.json_to_sheet(rows);
-      const colWidths = Object.keys(rows[0] || {}).map(key => ({
+      const ws = XLSX.utils.json_to_sheet(rows, { header: NORMAL_ORDER_HEADERS as unknown as string[] });
+      const colWidths = NORMAL_ORDER_HEADERS.map(key => ({
         wch: Math.max(key.length + 3, 16)
       }));
       ws["!cols"] = colWidths;
@@ -423,8 +430,8 @@ export function ExcelExportRadialMenu() {
       });
 
       const wb = XLSX.utils.book_new();
-      const ws = XLSX.utils.json_to_sheet(rows);
-      const colWidths = Object.keys(rows[0] || {}).map(key => ({
+      const ws = XLSX.utils.json_to_sheet(rows, { header: PRODUCT_CATALOG_HEADERS as unknown as string[] });
+      const colWidths = PRODUCT_CATALOG_HEADERS.map(key => ({
         wch: Math.max(key.length + 3, 16)
       }));
       ws["!cols"] = colWidths;
@@ -526,8 +533,8 @@ export function ExcelExportRadialMenu() {
       });
 
       const wb = XLSX.utils.book_new();
-      const ws = XLSX.utils.json_to_sheet(rows);
-      const colWidths = Object.keys(rows[0] || {}).map(key => ({
+      const ws = XLSX.utils.json_to_sheet(rows, { header: NICHE_INVENTORY_HEADERS as unknown as string[] });
+      const colWidths = NICHE_INVENTORY_HEADERS.map(key => ({
         wch: Math.max(key.length + 3, 18)
       }));
       ws["!cols"] = colWidths;
@@ -657,7 +664,7 @@ export function ExcelExportRadialMenu() {
                 return (
                   <motion.div
                     key={btn.id}
-                    className="absolute z-50 pointer-events-auto"
+                    className={`absolute ${isSubmenuActive ? "z-[70]" : "z-50"} pointer-events-auto`}
                     style={{ willChange: "transform, opacity" }}
                     initial={{ 
                       x: btn.originX, 
@@ -704,8 +711,14 @@ export function ExcelExportRadialMenu() {
                           boxShadow: `0 16px 36px rgba(0,0,0,0.22), inset 0 2px 2px rgba(255,255,255,0.85), inset 0 -2px 2px rgba(0,0,0,0.12), 0 0 24px ${btn.glowColor}`
                         }}
                         className={`relative w-[50px] h-[50px] rounded-full flex items-center justify-center border ${
-                          isSubmenuActive ? "border-emerald-400 ring-2 ring-emerald-400/70" : btn.borderGlow
-                        } bg-gradient-to-br ${btn.bgGradient} backdrop-blur-2xl hover:scale-115 active:scale-90 transition-all duration-200 cursor-pointer text-gray-800 dark:text-gray-100 overflow-hidden shrink-0`}
+                          isSubmenuActive 
+                            ? "border-emerald-400 ring-2 ring-emerald-400/80 scale-105 shadow-[0_0_24px_rgba(16,185,129,0.5)]" 
+                            : btn.borderGlow
+                        } ${
+                          ordersSubmenuOpen && !isOrdersTrigger 
+                            ? "opacity-50 hover:opacity-100 hover:scale-110" 
+                            : "hover:scale-115"
+                        } bg-gradient-to-br ${btn.bgGradient} backdrop-blur-2xl active:scale-90 transition-all duration-200 cursor-pointer text-gray-800 dark:text-gray-100 overflow-hidden shrink-0`}
                       >
                         {/* Liquid glass glossy top specular highlight */}
                         <div className="pointer-events-none absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-white/80 via-white/20 to-transparent rounded-t-full opacity-90 dark:opacity-40" />
@@ -722,8 +735,8 @@ export function ExcelExportRadialMenu() {
                         )}
                       </button>
 
-                      {/* Regular Description Capsule (Shown when submenu is NOT expanded for this button) */}
-                      {!isSubmenuActive && (
+                      {/* Regular Description Capsule (Shown when submenu is NOT open) */}
+                      {!ordersSubmenuOpen && (
                         <button
                           type="button"
                           onClick={(e) => {
@@ -760,7 +773,7 @@ export function ExcelExportRadialMenu() {
                             className={`${
                               isMobile
                                 ? "fixed inset-x-4 top-24 max-w-sm mx-auto z-[80]"
-                                : "absolute right-full mr-3.5 top-1/2 -translate-y-1/2 w-[360px] z-[60]"
+                                : "absolute right-full mr-12 top-1/2 -translate-y-1/2 w-[360px] z-[80]"
                             } p-3.5 rounded-3xl bg-white/95 dark:bg-[#151c17]/95 backdrop-blur-2xl border border-emerald-500/30 dark:border-emerald-500/30 shadow-[0_20px_60px_rgba(0,0,0,0.35),0_0_30px_rgba(16,185,129,0.15)] pointer-events-auto text-left`}
                           >
                             {/* Submenu Header */}
