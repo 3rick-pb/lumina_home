@@ -18,6 +18,9 @@ import {
   Users, 
   Sparkles,
   ChevronRight,
+  ChevronDown,
+  Globe,
+  Check,
   X,
   Layers,
   Map as MapIcon
@@ -28,7 +31,6 @@ import { useRadarStore, cleanClientName, resolveCoordinates, type ConnectedClien
 import { 
   RADAR_COUNTRIES, 
   type RadarCountryCode, 
-  getSampleClientsForCountry, 
   resolveMultiCountryCoordinates 
 } from "@/lib/radarCountries";
 import { BlobatarAvatar } from "@/components/ui/BlobatarAvatar";
@@ -167,7 +169,7 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
 
   // Map Density & Cluster Mode States
   const [clusterMode, setClusterMode] = useState<"dispersed" | "clustered">("dispersed");
-  const [scatterRadius, setScatterRadius] = useState<"normal" | "wide">("normal");
+  const [scatterRadius] = useState<"normal" | "wide">("normal");
   const [expandedClusterCity, setExpandedClusterCity] = useState<string | null>(null);
   const [hoveredClusterKey, setHoveredClusterKey] = useState<string | null>(null);
 
@@ -204,40 +206,23 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
   const dragStartRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
   const panStartRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
 
-  // Zoom help tooltip hover visibility with 1s fade-out delay
-  const [showZoomHelp, setShowZoomHelp] = useState<boolean>(false);
-  const zoomHelpTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-
-  const handleZoomHelpMouseEnter = () => {
-    if (zoomHelpTimeoutRef.current) {
-      clearTimeout(zoomHelpTimeoutRef.current);
-      zoomHelpTimeoutRef.current = null;
-    }
-    setShowZoomHelp(true);
-  };
-
-  const handleZoomHelpMouseLeave = () => {
-    if (zoomHelpTimeoutRef.current) {
-      clearTimeout(zoomHelpTimeoutRef.current);
-    }
-    zoomHelpTimeoutRef.current = setTimeout(() => {
-      setShowZoomHelp(false);
-      zoomHelpTimeoutRef.current = null;
-    }, 1000);
-  };
-
-  useEffect(() => {
-    return () => {
-      if (zoomHelpTimeoutRef.current) {
-        clearTimeout(zoomHelpTimeoutRef.current);
-      }
-    };
-  }, []);
-
   const fetchActiveClients = useRadarStore((state) => state.fetchActiveClients);
   const selectedCountry = useRadarStore((state) => state.selectedCountry);
   const setSelectedCountry = useRadarStore((state) => state.setSelectedCountry);
   const activeCountry = RADAR_COUNTRIES[selectedCountry] || RADAR_COUNTRIES.EC;
+
+  const [isCountryMenuOpen, setIsCountryMenuOpen] = useState<boolean>(false);
+  const countryMenuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleCloseCountryMenu = (e: MouseEvent) => {
+      if (countryMenuRef.current && !countryMenuRef.current.contains(e.target as Node)) {
+        setIsCountryMenuOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleCloseCountryMenu);
+    return () => document.removeEventListener("mousedown", handleCloseCountryMenu);
+  }, []);
 
   const currentUser = useUserStore((state) => state.user);
   const userAddress = useUserStore((state) => state.address);
@@ -296,11 +281,8 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
         })
       : [];
 
-    let list: ConnectedClient[] = realForCountry;
-    // If exploring another country with no active sessions, provide realistic sample telemetry for that country
-    if (list.length === 0 && selectedCountry !== 'EC') {
-      list = getSampleClientsForCountry(selectedCountry);
-    }
+    // Filter strictly real connected clients for the active country (100% Real - Zero fake demo data)
+    const list: ConnectedClient[] = realForCountry;
 
     let foundSelf = false;
     const mapped = list.map(c => {
@@ -1010,41 +992,170 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
       {/* ========================================================================= */}
       {/* 3. TOP FLOATING BAR (Minimal Header Capsule with Country Selector)         */}
       {/* ========================================================================= */}
-      <div className="absolute top-3 sm:top-4 left-3 sm:left-6 right-3 sm:right-6 lg:right-96 z-50 flex flex-col gap-2 pointer-events-none">
+      {/* ========================================================================= */}
+      {/* 3. TOP FLOATING COMMAND BAR (Aesthetic Country Selector + Modes + Search)  */}
+      {/* ========================================================================= */}
+      <div className="absolute top-3 sm:top-4 left-3 sm:left-6 right-3 sm:right-6 lg:right-96 z-50 flex flex-col gap-2.5 pointer-events-none">
         
-        {/* Country Selector Capsule Bar */}
-        <div className="flex items-center gap-1.5 p-1 bg-black/80 backdrop-blur-2xl border border-white/15 rounded-full shadow-2xl overflow-x-auto pointer-events-auto self-start max-w-full" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
-          {(Object.keys(RADAR_COUNTRIES) as RadarCountryCode[]).map((code) => {
-            const cMeta = RADAR_COUNTRIES[code];
-            const isActive = selectedCountry === code;
-            return (
-              <button
-                key={code}
-                type="button"
-                onClick={() => {
-                  setSelectedCountry(code);
-                  setIsMapLoaded(false);
-                  handleResetView();
-                  setSearchQuery("");
-                }}
-                className={`px-3 py-1 sm:px-3.5 sm:py-1.5 rounded-full text-xs font-semibold transition-all duration-300 flex items-center gap-1.5 shrink-0 cursor-pointer ${
-                  isActive
-                    ? "bg-[#ccff00] text-gray-950 font-bold shadow-[0_0_16px_rgba(204,255,0,0.5)] scale-[1.02]"
-                    : "text-white/70 hover:text-white hover:bg-white/10"
-                }`}
-                title={`Ver radar topográfico de ${cMeta.name}`}
-              >
-                <span className="text-sm leading-none">{cMeta.flag}</span>
-                <span className="hidden sm:inline">{cMeta.name}</span>
-                <span className="sm:hidden text-[11px] font-mono font-bold">{code}</span>
-                <span className={`text-[9px] px-1.5 py-0.5 rounded-full ${
-                  isActive ? "bg-black/20 text-gray-950 font-mono font-bold" : "bg-white/10 text-white/50 font-mono"
-                }`}>
-                  {cMeta.totalEntities}
+        {/* Row 1: Unified Country Navigator Command Strip */}
+        <div className="flex flex-wrap items-center justify-between gap-2.5 w-full">
+          
+          {/* Custom Aesthetic Country Dropdown Selector */}
+          <div className="relative pointer-events-auto" ref={countryMenuRef}>
+            <button
+              type="button"
+              onClick={() => setIsCountryMenuOpen(!isCountryMenuOpen)}
+              className="h-10 sm:h-11 px-3.5 sm:px-4 bg-black/85 hover:bg-black/95 text-white border border-white/20 hover:border-[#ccff00]/60 rounded-2xl shadow-2xl backdrop-blur-2xl transition-all duration-200 flex items-center gap-2.5 group cursor-pointer"
+              title="Cambiar país del radar"
+            >
+              <span className="text-xl sm:text-2xl leading-none drop-shadow">{activeCountry.flag}</span>
+              <div className="flex flex-col text-left">
+                <div className="flex items-center gap-1.5">
+                  <span className="text-xs sm:text-sm font-bold tracking-tight text-white group-hover:text-[#ccff00] transition-colors leading-none">
+                    {activeCountry.name}
+                  </span>
+                  <span className="text-[9px] font-mono font-semibold px-1.5 py-0.5 rounded-full bg-[#ccff00]/15 text-[#ccff00] border border-[#ccff00]/30 leading-none">
+                    {activeCountry.entityLabel}
+                  </span>
+                </div>
+                <span className="text-[9px] text-white/50 font-mono leading-none mt-1">
+                  {connectedClients.length} {connectedClients.length === 1 ? 'cliente activo' : 'clientes activos'} · {activeCountry.currency} ({activeCountry.currencySymbol})
                 </span>
-              </button>
-            );
-          })}
+              </div>
+              <ChevronDown className={`w-4 h-4 text-white/50 group-hover:text-[#ccff00] transition-transform duration-200 ml-1 shrink-0 ${isCountryMenuOpen ? 'rotate-180 text-[#ccff00]' : ''}`} />
+            </button>
+
+            {/* Dropdown Menu Modal */}
+            {isCountryMenuOpen && (
+              <div className="absolute top-full left-0 mt-2 w-72 sm:w-84 bg-[#0c0e12]/95 backdrop-blur-3xl border border-white/20 rounded-3xl shadow-[0_25px_60px_rgba(0,0,0,0.9)] p-2 z-[70] animate-in fade-in zoom-in-95 duration-150">
+                <div className="px-3 py-2 border-b border-white/10 mb-1 flex items-center justify-between">
+                  <div className="flex items-center gap-1.5">
+                    <Globe className="w-3.5 h-3.5 text-[#ccff00]" />
+                    <span className="text-[10px] uppercase font-mono font-bold tracking-wider text-white/70">Países del Radar</span>
+                  </div>
+                  <span className="text-[9px] font-mono text-[#ccff00] bg-[#ccff00]/10 px-2 py-0.5 rounded-full border border-[#ccff00]/20">
+                    6 Regiones
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-1 gap-1">
+                  {(Object.keys(RADAR_COUNTRIES) as RadarCountryCode[]).map((code) => {
+                    const c = RADAR_COUNTRIES[code];
+                    const isSelected = selectedCountry === code;
+                    return (
+                      <button
+                        key={code}
+                        type="button"
+                        onClick={() => {
+                          setSelectedCountry(code);
+                          setIsMapLoaded(false);
+                          handleResetView();
+                          setSearchQuery("");
+                          setIsCountryMenuOpen(false);
+                        }}
+                        className={`w-full flex items-center justify-between px-3 py-2 rounded-2xl transition-all duration-150 text-left cursor-pointer group ${
+                          isSelected
+                            ? "bg-[#ccff00] text-gray-950 font-bold shadow-[0_0_20px_rgba(204,255,0,0.4)] scale-[1.01]"
+                            : "text-white/80 hover:text-white hover:bg-white/10"
+                        }`}
+                      >
+                        <div className="flex items-center gap-3">
+                          <span className="text-2xl leading-none drop-shadow">{c.flag}</span>
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <span className={`text-xs sm:text-sm leading-tight ${isSelected ? 'font-black text-gray-950' : 'font-semibold text-white'}`}>
+                                {c.name}
+                              </span>
+                              {isSelected && (
+                                <span className="w-1.5 h-1.5 rounded-full bg-gray-950 animate-ping" />
+                              )}
+                            </div>
+                            <span className={`text-[10px] font-mono block mt-0.5 ${isSelected ? 'text-gray-900/80 font-semibold' : 'text-white/50'}`}>
+                              {c.entityLabel}
+                            </span>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                          <span className={`text-[9.5px] font-mono px-2 py-0.5 rounded-lg ${
+                            isSelected ? 'bg-black/20 text-gray-950 font-bold' : 'bg-white/5 text-white/50 border border-white/10'
+                          }`}>
+                            {c.currency} ({c.currencySymbol})
+                          </span>
+                          {isSelected && <Check className="w-4 h-4 text-gray-950 stroke-[3]" />}
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Quick Segmented Pill Strip with FULL NAMES (Visible on xl+ screens, NO acronyms) */}
+          <div className="hidden xl:flex items-center gap-1 p-1 bg-black/80 backdrop-blur-2xl border border-white/15 rounded-2xl shadow-xl pointer-events-auto">
+            {(Object.keys(RADAR_COUNTRIES) as RadarCountryCode[]).map((code) => {
+              const cMeta = RADAR_COUNTRIES[code];
+              const isActive = selectedCountry === code;
+              return (
+                <button
+                  key={code}
+                  type="button"
+                  onClick={() => {
+                    setSelectedCountry(code);
+                    setIsMapLoaded(false);
+                    handleResetView();
+                    setSearchQuery("");
+                  }}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all duration-200 flex items-center gap-1.5 shrink-0 cursor-pointer ${
+                    isActive
+                      ? "bg-[#ccff00] text-gray-950 font-bold shadow-[0_0_16px_rgba(204,255,0,0.5)]"
+                      : "text-white/70 hover:text-white hover:bg-white/10"
+                  }`}
+                  title={`Ver radar topográfico de ${cMeta.name}`}
+                >
+                  <span className="text-sm leading-none">{cMeta.flag}</span>
+                  <span>{cMeta.name}</span>
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Right Controls: Density Mode Selector (Disperso / Agrupado) */}
+          <div className="flex items-center bg-black/80 backdrop-blur-2xl border border-white/15 rounded-2xl p-1 shadow-2xl text-xs font-semibold text-white pointer-events-auto shrink-0">
+            <button
+              type="button"
+              onClick={() => {
+                setClusterMode("dispersed");
+                setExpandedClusterCity(null);
+              }}
+              className={`px-3 py-1.5 rounded-xl transition-all duration-300 flex items-center gap-1.5 cursor-pointer ${
+                clusterMode === "dispersed"
+                  ? "bg-[#ccff00] text-gray-950 font-bold shadow-[0_0_14px_rgba(204,255,0,0.5)]"
+                  : "text-white/70 hover:text-white hover:bg-white/10"
+              }`}
+              title="Ver cada cliente con su propia estaca dispersa en la ciudad"
+            >
+              <Sparkles className="w-3.5 h-3.5 shrink-0" />
+              <span>Disperso</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setClusterMode("clustered");
+                setExpandedClusterCity(null);
+              }}
+              className={`px-3 py-1.5 rounded-xl transition-all duration-300 flex items-center gap-1.5 cursor-pointer ${
+                clusterMode === "clustered"
+                  ? "bg-[#ccff00] text-gray-950 font-bold shadow-[0_0_14px_rgba(204,255,0,0.5)]"
+                  : "text-white/70 hover:text-white hover:bg-white/10"
+              }`}
+              title="Agrupar ciudades con múltiples clientes en un pin numérico para evitar saturación"
+            >
+              <Layers className="w-3.5 h-3.5 shrink-0" />
+              <span>Agrupar {clusterPins.length > 0 ? `(${clusterPins.length})` : ""}</span>
+            </button>
+          </div>
         </div>
 
         {/* Row 2: Search + Mode Controls */}
@@ -1116,18 +1227,13 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
                       onClick={() => { setSearchQuery(""); handleResetView(); }} 
                       className="text-[#ccff00] hover:underline normal-case font-sans cursor-pointer text-[11px]"
                     >
-                      Ver todo Ecuador
+                      Ver todo {activeCountry.name}
                     </button>
                   )}
                 </div>
                 <div className="flex items-center gap-1.5 flex-wrap">
-                  {[
-                    { name: "Sierra", icon: "🏔️", query: "Sierra" },
-                    { name: "Costa", icon: "🌊", query: "Costa" },
-                    { name: "Amazonía", icon: "🌿", query: "Oriente" },
-                    { name: "Galápagos", icon: "🐢", query: "Galápagos" },
-                  ].map((reg) => {
-                    const isActive = searchQuery.toLowerCase() === reg.query.toLowerCase() || (reg.name === "Amazonía" && (searchQuery.toLowerCase() === "amazonia" || searchQuery.toLowerCase() === "oriente"));
+                  {(activeCountry.naturalRegions || []).map((reg) => {
+                    const isActive = searchQuery.toLowerCase() === reg.query.toLowerCase() || searchQuery.toLowerCase() === reg.name.toLowerCase();
                     return (
                       <button
                         key={reg.name}
@@ -1236,68 +1342,8 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
           )}
         </div>
 
-        {/* Right side controls: Density Mode Selector + Admin Location Prompt + Zoom Help Badge */}
+        {/* Right side controls: Admin Location Prompt */}
         <div className="flex items-center gap-2 pointer-events-auto shrink-0 flex-wrap justify-end">
-          {/* Futuristic Map Density & Cluster Mode Selector Pill */}
-          <div 
-            className="relative flex items-center bg-black/80 backdrop-blur-2xl border border-white/15 rounded-full p-1 shadow-2xl text-xs font-semibold text-white"
-            onMouseEnter={handleZoomHelpMouseEnter}
-            onMouseLeave={handleZoomHelpMouseLeave}
-          >
-            <button
-              type="button"
-              onClick={() => {
-                setClusterMode("dispersed");
-                setExpandedClusterCity(null);
-              }}
-              className={`px-3 py-1.5 rounded-full transition-all duration-300 flex items-center gap-1.5 cursor-pointer ${
-                clusterMode === "dispersed"
-                  ? "bg-[#ccff00] text-gray-950 font-bold shadow-[0_0_14px_rgba(204,255,0,0.5)]"
-                  : "text-white/70 hover:text-white hover:bg-white/10"
-              }`}
-              title="Ver cada cliente con su propia estaca dispersa en la ciudad"
-            >
-              <Sparkles className="w-3.5 h-3.5 shrink-0" />
-              <span>Disperso</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                setClusterMode("clustered");
-                setExpandedClusterCity(null);
-              }}
-              className={`px-3 py-1.5 rounded-full transition-all duration-300 flex items-center gap-1.5 cursor-pointer ${
-                clusterMode === "clustered"
-                  ? "bg-[#ccff00] text-gray-950 font-bold shadow-[0_0_14px_rgba(204,255,0,0.5)]"
-                  : "text-white/70 hover:text-white hover:bg-white/10"
-              }`}
-              title="Agrupar ciudades con múltiples clientes en un pin numérico para evitar saturación"
-            >
-              <Layers className="w-3.5 h-3.5 shrink-0" />
-              <span>Agrupar {clusterPins.length > 0 ? `(${clusterPins.length})` : ""}</span>
-            </button>
-            {clusterMode === "dispersed" && (
-              <button
-                type="button"
-                onClick={() => setScatterRadius(r => r === "normal" ? "wide" : "normal")}
-                className="hidden sm:inline-flex px-2 py-1 ml-0.5 rounded-full bg-white/10 hover:bg-white/20 text-[10px] font-mono text-white/80 cursor-pointer border border-white/10 transition-colors"
-                title="Radio de dispersión: Normal o Amplio"
-              >
-                Radio: {scatterRadius === "normal" ? "1x" : "2x"}
-              </button>
-            )}
-
-            {/* Hover Tooltip: Rueda o dos dedos para zoom */}
-            <div
-              className={`absolute top-full mt-2.5 left-1/2 -translate-x-1/2 z-30 pointer-events-none flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-black/90 backdrop-blur-xl border border-white/15 text-[11px] font-mono text-[#ccff00] shadow-[0_8px_24px_rgba(0,0,0,0.6)] whitespace-nowrap transition-all duration-500 ease-out ${
-                showZoomHelp 
-                  ? "opacity-100 translate-y-0" 
-                  : "opacity-0 -translate-y-1 pointer-events-none"
-              }`}
-            >
-              <span>💡 Rueda o dos dedos para zoom</span>
-            </div>
-          </div>
 
           {isAdmin && !hasAdminLocation && (
             <button
@@ -1793,14 +1839,22 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
                   const total = actualClients.length || 1;
                   const regionCounts: Record<string, number> = {};
                   
-                  actualClients.forEach(c => {
-                    const cityLower = (c.city || 'otro').toLowerCase().trim();
-                    const matchedEntry = Object.entries(ECUADOR_PROVINCE_COORDINATES).find(([k]) => 
-                      cityLower.includes(k) || k.includes(cityLower)
-                    );
-                    const region = matchedEntry ? matchedEntry[1].region : 'Otro';
-                    regionCounts[region] = (regionCounts[region] || 0) + 1;
-                  });
+                  if (selectedCountry === 'EC') {
+                    actualClients.forEach(c => {
+                      const cityLower = (c.city || 'otro').toLowerCase().trim();
+                      const matchedEntry = Object.entries(ECUADOR_PROVINCE_COORDINATES).find(([k]) => 
+                        cityLower.includes(k) || k.includes(cityLower)
+                      );
+                      const region = matchedEntry ? matchedEntry[1].region : 'Otro';
+                      regionCounts[region] = (regionCounts[region] || 0) + 1;
+                    });
+                  } else {
+                    actualClients.forEach(c => {
+                      const rawCity = c.city?.trim() || 'Desconocido';
+                      const cityName = rawCity.charAt(0).toUpperCase() + rawCity.slice(1);
+                      regionCounts[cityName] = (regionCounts[cityName] || 0) + 1;
+                    });
+                  }
 
                   const regionColors: Record<string, string> = {
                     'Sierra': 'bg-white',
@@ -1809,17 +1863,18 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
                     'Galápagos': 'bg-amber-400',
                     'Otro': 'bg-white/50',
                   };
+                  const fallbackPalette = ['bg-[#ccff00]', 'bg-white', 'bg-emerald-400', 'bg-cyan-400', 'bg-amber-400', 'bg-purple-400'];
 
                   const sortedRegions = Object.entries(regionCounts).sort((a, b) => b[1] - a[1]);
 
                   return (
                     <div className="space-y-1.5 text-xs">
-                      <span className="text-[11px] font-bold text-white/80 block">Distribución Geográfica</span>
+                      <span className="text-[11px] font-bold text-white/80 block">Distribución Geográfica ({activeCountry.name})</span>
                       {actualClients.length === 0 ? (
                         <p className="text-[10px] text-white/40 font-mono">Sin clientes conectados</p>
                       ) : (
                         <div className="space-y-1">
-                          {sortedRegions.map(([region, count]) => {
+                          {sortedRegions.map(([region, count], idx) => {
                             const pct = Math.round((count / total) * 100);
                             return (
                               <div key={region}>
@@ -1828,7 +1883,7 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
                                   <strong className="font-mono text-white">{pct}% ({count})</strong>
                                 </div>
                                 <div className="w-full h-1 rounded-full bg-white/10 overflow-hidden">
-                                  <div className={`h-full ${regionColors[region] || 'bg-white/50'} rounded-full transition-all duration-500`} style={{ width: `${pct}%` }} />
+                                  <div className={`h-full ${regionColors[region] || fallbackPalette[idx % fallbackPalette.length]} rounded-full transition-all duration-500`} style={{ width: `${pct}%` }} />
                                 </div>
                               </div>
                             );
