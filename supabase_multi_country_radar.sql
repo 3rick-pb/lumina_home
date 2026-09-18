@@ -8,6 +8,16 @@
 
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
+-- Pre-requisito seguro para invitaciones de administrador
+CREATE TABLE IF NOT EXISTS public.admin_invitations (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    email TEXT NOT NULL UNIQUE,
+    role TEXT DEFAULT 'admin',
+    is_active BOOLEAN DEFAULT true,
+    invited_by TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
 -- 1. TABLA DEDICADA: CONFIGURACIÓN DE PAÍSES DEL RADAR
 CREATE TABLE IF NOT EXISTS public.radar_countries (
     code VARCHAR(2) PRIMARY KEY, -- 'EC', 'CO', 'AR', 'PE', 'MX', 'CL'
@@ -118,14 +128,28 @@ DROP POLICY IF EXISTS "Clients can upsert their radar telemetry" ON public.radar
 CREATE POLICY "Clients can upsert their radar telemetry" ON public.radar_telemetry_sessions
     FOR ALL USING (true) WITH CHECK (true);
 
--- Control exclusivo de administradores para países y métricas
+-- Control de administradores para países y métricas
 DROP POLICY IF EXISTS "Admins can manage radar countries" ON public.radar_countries;
 CREATE POLICY "Admins can manage radar countries" ON public.radar_countries
     FOR ALL USING (
-        auth.jwt() ->> 'email' IN (
+        auth.role() = 'service_role'
+        OR (auth.jwt() ->> 'email') IN ('admin@lumina.com', 'arteagae796@gmail.com')
+        OR (auth.jwt() ->> 'role') = 'ADMIN'
+        OR (auth.jwt() -> 'user_metadata' ->> 'role') = 'ADMIN'
+        OR (auth.jwt() ->> 'email') IN (
             SELECT email FROM public.admin_invitations WHERE is_active = true
-            UNION
-            SELECT email FROM public.user_profiles WHERE role = 'admin'
+        )
+    );
+
+DROP POLICY IF EXISTS "Admins can manage radar metrics" ON public.radar_country_metrics;
+CREATE POLICY "Admins can manage radar metrics" ON public.radar_country_metrics
+    FOR ALL USING (
+        auth.role() = 'service_role'
+        OR (auth.jwt() ->> 'email') IN ('admin@lumina.com', 'arteagae796@gmail.com')
+        OR (auth.jwt() ->> 'role') = 'ADMIN'
+        OR (auth.jwt() -> 'user_metadata' ->> 'role') = 'ADMIN'
+        OR (auth.jwt() ->> 'email') IN (
+            SELECT email FROM public.admin_invitations WHERE is_active = true
         )
     );
 
