@@ -11,8 +11,7 @@ import {
   Loader2,
   Sparkles,
   FileSpreadsheet,
-  ChevronRight,
-  ChevronLeft
+  ChevronRight
 } from "lucide-react";
 import * as XLSX from "xlsx";
 import { useUserStore, Order } from "@/lib/userStore";
@@ -147,8 +146,9 @@ export function ExcelExportRadialMenu() {
   const [ordersSubmenuOpen, setOrdersSubmenuOpen] = useState(false);
   const [activeExport, setActiveExport] = useState<string | null>(null);
   const [successExport, setSuccessExport] = useState<string | null>(null);
+  const [isMobile, setIsMobile] = useState(false);
+  const [mobileXOffset, setMobileXOffset] = useState(-130);
   const menuRef = useRef<HTMLDivElement>(null);
-  const mobileSheetRef = useRef<HTMLDivElement>(null);
 
   const handleCloseMenu = () => {
     setIsOpen(false);
@@ -164,14 +164,29 @@ export function ExcelExportRadialMenu() {
     }
   };
 
-  // Close when clicking outside both the trigger button and the mobile sheet
+  // Detect mobile viewport and calculate safe X offset so satellites and labels never cut off
+  useEffect(() => {
+    const updateMobileLayout = () => {
+      const mobile = window.innerWidth < 640;
+      setIsMobile(mobile);
+      if (mobile && menuRef.current) {
+        const rect = menuRef.current.getBoundingClientRect();
+        // Target bubble center at 38px from the left edge of the viewport (left edge at 38 - 25 = 13px)
+        // Trigger button center is rect.left + 22px.
+        const offset = 38 - (rect.left + 22);
+        setMobileXOffset(offset);
+      }
+    };
+
+    updateMobileLayout();
+    window.addEventListener("resize", updateMobileLayout);
+    return () => window.removeEventListener("resize", updateMobileLayout);
+  }, [isOpen]);
+
+  // Close when clicking outside
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
-      const target = event.target as Node;
-      const isInsideMenu = menuRef.current?.contains(target);
-      const isInsideMobileSheet = mobileSheetRef.current?.contains(target);
-      
-      if (!isInsideMenu && !isInsideMobileSheet) {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
         handleCloseMenu();
       }
     }
@@ -581,8 +596,8 @@ export function ExcelExportRadialMenu() {
       label: "Exportar Pedidos",
       icon: ShoppingBag,
       onClick: () => setOrdersSubmenuOpen(prev => !prev),
-      targetX: -67,
-      targetY: -67,
+      targetX: isMobile ? mobileXOffset : -67,
+      targetY: isMobile ? 65 : -67,
       originX: 0,
       originY: 0,
       accentColor: "text-emerald-500 dark:text-emerald-300",
@@ -599,10 +614,10 @@ export function ExcelExportRadialMenu() {
         setOrdersSubmenuOpen(false);
         handleExportProducts();
       },
-      targetX: -95,
-      targetY: 0,
-      originX: 0,
-      originY: 0,
+      targetX: isMobile ? mobileXOffset : -95,
+      targetY: isMobile ? 128 : 0,
+      originX: isMobile ? mobileXOffset : -67,
+      originY: isMobile ? 65 : -67,
       accentColor: "text-sky-500 dark:text-cyan-300",
       glowColor: "rgba(6, 182, 212, 0.45)",
       badgeColor: "bg-sky-500/20 text-sky-700 dark:text-cyan-300 border-sky-500/30",
@@ -617,10 +632,10 @@ export function ExcelExportRadialMenu() {
         setOrdersSubmenuOpen(false);
         handleExportNiches();
       },
-      targetX: -67,
-      targetY: 67,
-      originX: 0,
-      originY: 0,
+      targetX: isMobile ? mobileXOffset : -67,
+      targetY: isMobile ? 191 : 67,
+      originX: isMobile ? mobileXOffset : -95,
+      originY: isMobile ? 128 : 0,
       accentColor: "text-amber-500 dark:text-amber-300",
       glowColor: "rgba(245, 158, 11, 0.45)",
       badgeColor: "bg-amber-500/20 text-amber-700 dark:text-amber-300 border-amber-500/30",
@@ -651,10 +666,10 @@ export function ExcelExportRadialMenu() {
         ref={menuRef} 
         className={`relative inline-flex items-center justify-center w-11 h-11 shrink-0 select-none ${isOpen ? "z-50" : "z-20"}`}
       >
-        {/* Liquid Glass Emergence Orbit (Desktop >= 640px) */}
+        {/* Liquid Glass Emergence Orbit */}
         <AnimatePresence>
           {isOpen && (
-            <div className="hidden sm:contents">
+            <>
               {/* Vibrant ambient light bloom behind bubbles */}
               <motion.div
                 style={{ willChange: "transform, opacity" }}
@@ -690,8 +705,8 @@ export function ExcelExportRadialMenu() {
                     animate={{ 
                       x: btn.targetX, 
                       y: btn.targetY, 
-                      scale: 1, 
-                      opacity: 1
+                      scale: (ordersSubmenuOpen && !isOrdersTrigger && isMobile) ? 0 : 1, 
+                      opacity: (ordersSubmenuOpen && !isOrdersTrigger && isMobile) ? 0 : 1
                     }}
                     exit={{ 
                       x: btn.originX, 
@@ -750,7 +765,7 @@ export function ExcelExportRadialMenu() {
                         )}
                       </button>
 
-                      {/* Regular Description Capsule (Shown when submenu is NOT open on desktop) */}
+                      {/* Regular Description Capsule (Shown when submenu is NOT open) */}
                       {!ordersSubmenuOpen && (
                         <button
                           type="button"
@@ -759,7 +774,7 @@ export function ExcelExportRadialMenu() {
                             btn.onClick();
                           }}
                           disabled={isExporting}
-                          className="absolute right-full mr-3 top-1/2 -translate-y-1/2 px-3.5 py-1.5 rounded-2xl bg-white/95 dark:bg-[#1a1f1c]/95 backdrop-blur-xl border border-white/80 dark:border-white/15 shadow-[0_8px_24px_rgba(0,0,0,0.15)] text-gray-900 dark:text-white text-xs font-bold tracking-tight whitespace-nowrap cursor-pointer hover:scale-105 active:scale-95 transition-all duration-200 z-50 flex items-center gap-2 opacity-100 pointer-events-auto"
+                          className={`absolute ${isMobile ? "left-full ml-3" : "right-full mr-3"} top-1/2 -translate-y-1/2 px-3.5 py-1.5 rounded-2xl bg-white/95 dark:bg-[#1a1f1c]/95 backdrop-blur-xl border border-white/80 dark:border-white/15 shadow-[0_8px_24px_rgba(0,0,0,0.15)] text-gray-900 dark:text-white text-xs font-bold tracking-tight whitespace-nowrap cursor-pointer hover:scale-105 active:scale-95 transition-all duration-200 z-50 flex items-center gap-2 opacity-100 pointer-events-auto`}
                         >
                           <Sparkles className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
                           <span>{btn.label}</span>
@@ -776,16 +791,20 @@ export function ExcelExportRadialMenu() {
                         </button>
                       )}
 
-                      {/* Desktop Orders Submenu Flyout: 2 Exclusive Modalities */}
+                      {/* Orders Submenu Flyout: 2 Exclusive Modalities (Adjusted for mobile and desktop) */}
                       <AnimatePresence>
                         {isSubmenuActive && (
                           <motion.div
-                            initial={{ opacity: 0, scale: 0.94, x: 12 }}
+                            initial={{ opacity: 0, scale: 0.94, x: isMobile ? 0 : 12 }}
                             animate={{ opacity: 1, scale: 1, x: 0 }}
-                            exit={{ opacity: 0, scale: 0.94, x: 12 }}
+                            exit={{ opacity: 0, scale: 0.94, x: isMobile ? 0 : 12 }}
                             transition={{ duration: 0.22, ease: "easeOut" }}
                             onClick={(e) => e.stopPropagation()}
-                            className="absolute right-full mr-12 top-1/2 -translate-y-1/2 w-[360px] z-[80] p-3.5 rounded-3xl bg-white/95 dark:bg-[#151c17]/95 backdrop-blur-2xl border border-emerald-500/30 dark:border-emerald-500/30 shadow-[0_20px_60px_rgba(0,0,0,0.35),0_0_30px_rgba(16,185,129,0.15)] pointer-events-auto text-left"
+                            className={`${
+                              isMobile
+                                ? "fixed inset-x-3.5 top-1/2 -translate-y-1/2 max-w-[calc(100vw-28px)] mx-auto z-[90] max-h-[90vh] overflow-y-auto"
+                                : "absolute right-full mr-12 top-1/2 -translate-y-1/2 w-[360px] z-[80]"
+                            } p-3.5 rounded-3xl bg-white/95 dark:bg-[#151c17]/95 backdrop-blur-2xl border border-emerald-500/30 dark:border-emerald-500/30 shadow-[0_20px_60px_rgba(0,0,0,0.35),0_0_30px_rgba(16,185,129,0.15)] pointer-events-auto text-left`}
                           >
                             {/* Submenu Header */}
                             <div className="flex items-center justify-between pb-2.5 mb-2.5 border-b border-gray-100 dark:border-white/10">
@@ -825,7 +844,7 @@ export function ExcelExportRadialMenu() {
                                   handleExportOrdersDropi();
                                 }}
                                 disabled={activeExport !== null}
-                                className="w-full text-left p-3 rounded-2xl border border-orange-500/35 bg-gradient-to-r from-orange-500/12 via-orange-500/5 to-transparent hover:border-orange-500/60 hover:bg-orange-500/18 dark:from-orange-950/45 dark:via-orange-900/20 dark:to-[#1a1410] hover:shadow-[0_8px_24px_rgba(255,85,0,0.16)] transition-all group flex items-start gap-3 cursor-pointer relative overflow-hidden"
+                                className="w-full text-left p-3 rounded-2xl border border-orange-500/35 bg-gradient-to-r from-orange-500/12 via-orange-500/5 to-transparent hover:border-orange-500/60 hover:bg-orange-500/18 dark:from-orange-950/45 dark:via-orange-900/20 dark:to-[#1a1410] hover:shadow-[0_8px_24px_rgba(255,85,0,0.16)] transition-all group flex items-start gap-3 cursor-pointer relative overflow-hidden active:scale-[0.98]"
                               >
                                 {/* Subtle orange ambient glow on hover */}
                                 <div className="pointer-events-none absolute -right-6 -bottom-6 w-20 h-20 rounded-full bg-orange-500/10 blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
@@ -841,7 +860,7 @@ export function ExcelExportRadialMenu() {
                                   )}
                                 </div>
                                 <div className="flex-1 min-w-0">
-                                  <div className="flex items-center justify-between gap-1.5 mb-1">
+                                  <div className="flex flex-wrap items-center justify-between gap-1 mb-1">
                                     <span className="text-xs font-bold text-gray-900 dark:text-white group-hover:text-orange-600 dark:group-hover:text-orange-400 transition-colors">
                                       Para Carga masiva de Órdenes - Dropi EC
                                     </span>
@@ -864,7 +883,7 @@ export function ExcelExportRadialMenu() {
                                   handleExportOrdersNormal();
                                 }}
                                 disabled={activeExport !== null}
-                                className="w-full text-left p-3 rounded-2xl border border-sky-500/25 bg-gradient-to-r from-sky-500/10 via-sky-500/5 to-transparent hover:border-sky-500/50 hover:bg-sky-500/15 dark:from-sky-950/50 dark:to-[#141e24] transition-all group flex items-start gap-3 cursor-pointer"
+                                className="w-full text-left p-3 rounded-2xl border border-sky-500/25 bg-gradient-to-r from-sky-500/10 via-sky-500/5 to-transparent hover:border-sky-500/50 hover:bg-sky-500/15 dark:from-sky-950/50 dark:to-[#141e24] transition-all group flex items-start gap-3 cursor-pointer active:scale-[0.98]"
                               >
                                 <div className="w-9 h-9 rounded-xl bg-sky-500/20 border border-sky-500/30 flex items-center justify-center text-sky-600 dark:text-sky-300 shrink-0 mt-0.5 group-hover:scale-108 transition-transform shadow-sm">
                                   {activeExport === "orders-normal" ? (
@@ -876,7 +895,7 @@ export function ExcelExportRadialMenu() {
                                   )}
                                 </div>
                                 <div className="flex-1 min-w-0">
-                                  <div className="flex items-center justify-between gap-1.5 mb-1">
+                                  <div className="flex flex-wrap items-center justify-between gap-1 mb-1">
                                     <span className="text-xs font-bold text-gray-900 dark:text-white group-hover:text-sky-600 dark:group-hover:text-sky-400 transition-colors">
                                       Exportación Normal
                                     </span>
@@ -897,7 +916,7 @@ export function ExcelExportRadialMenu() {
                   </motion.div>
                 );
               })}
-            </div>
+            </>
           )}
         </AnimatePresence>
 
@@ -948,238 +967,6 @@ export function ExcelExportRadialMenu() {
           </motion.div>
         </button>
       </div>
-
-      {/* 4. MOBILE INTERACTIVE ACTION SHEET (< 640px) */}
-      <AnimatePresence>
-        {isOpen && (
-          <div className="block sm:hidden">
-            <motion.div
-              ref={mobileSheetRef}
-              initial={{ opacity: 0, y: 50, scale: 0.95 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: 50, scale: 0.95 }}
-              transition={{ type: "spring", damping: 26, stiffness: 320 }}
-              onClick={(e) => e.stopPropagation()}
-              className="fixed inset-x-3 bottom-5 max-w-sm mx-auto z-50 p-4 rounded-3xl bg-white/95 dark:bg-[#141c16]/95 backdrop-blur-2xl border border-emerald-500/30 dark:border-emerald-500/30 shadow-[0_20px_60px_rgba(0,0,0,0.5),0_0_30px_rgba(16,185,129,0.18)] pointer-events-auto"
-            >
-              {/* Grab Handle */}
-              <div className="w-10 h-1 rounded-full bg-gray-300 dark:bg-white/20 mx-auto mb-3" />
-
-              {!ordersSubmenuOpen ? (
-                /* Screen 1: 3 Main Export Options */
-                <div>
-                  {/* Header */}
-                  <div className="flex items-center justify-between pb-3 mb-3 border-b border-gray-100 dark:border-white/10">
-                    <div className="flex items-center gap-2.5">
-                      <div className="w-8 h-8 rounded-xl bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center shrink-0">
-                        <Excel2025Icon className="w-5 h-5" />
-                      </div>
-                      <div>
-                        <h3 className="text-sm font-bold text-gray-900 dark:text-white leading-tight">
-                          Exportar a Excel
-                        </h3>
-                        <p className="text-[11px] text-gray-500 dark:text-gray-400">
-                          Reportes oficiales en formato .xlsx
-                        </p>
-                      </div>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={handleCloseMenu}
-                      className="w-7 h-7 rounded-full flex items-center justify-center text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-white/10 transition-colors cursor-pointer"
-                      title="Cerrar"
-                    >
-                      <X className="w-4 h-4" />
-                    </button>
-                  </div>
-
-                  {/* 3 Action Buttons */}
-                  <div className="space-y-2">
-                    {/* Option 1: Pedidos */}
-                    <button
-                      type="button"
-                      onClick={() => setOrdersSubmenuOpen(true)}
-                      className="w-full text-left p-3 rounded-2xl border border-emerald-500/30 bg-gradient-to-r from-emerald-500/10 via-emerald-500/5 to-transparent hover:bg-emerald-500/15 dark:from-emerald-950/40 dark:via-emerald-900/20 dark:to-[#162019] transition-all flex items-center gap-3 active:scale-[0.98] cursor-pointer"
-                    >
-                      <div className="w-10 h-10 rounded-xl bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center text-emerald-600 dark:text-emerald-400 shrink-0">
-                        <ShoppingBag className="w-5 h-5" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center justify-between gap-1 mb-0.5">
-                          <span className="text-xs font-bold text-gray-900 dark:text-white">
-                            Exportar Pedidos
-                          </span>
-                          <span className="flex items-center gap-1 text-[9px] font-bold px-1.5 py-0.5 rounded-md bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 shrink-0">
-                            2 opciones
-                            <ChevronRight className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />
-                          </span>
-                        </div>
-                        <p className="text-[11px] text-gray-500 dark:text-gray-400 truncate">
-                          Dropi Ecuador masivo o reporte estándar
-                        </p>
-                      </div>
-                    </button>
-
-                    {/* Option 2: Catálogo */}
-                    <button
-                      type="button"
-                      onClick={handleExportProducts}
-                      disabled={activeExport !== null}
-                      className="w-full text-left p-3 rounded-2xl border border-sky-500/25 bg-gradient-to-r from-sky-500/10 via-sky-500/5 to-transparent hover:bg-sky-500/15 dark:from-sky-950/40 dark:via-sky-900/20 dark:to-[#141c22] transition-all flex items-center gap-3 active:scale-[0.98] cursor-pointer"
-                    >
-                      <div className="w-10 h-10 rounded-xl bg-sky-500/15 border border-sky-500/30 flex items-center justify-center text-sky-600 dark:text-sky-300 shrink-0">
-                        {activeExport === "products" ? (
-                          <Loader2 className="w-5 h-5 animate-spin text-sky-500" />
-                        ) : successExport === "products" ? (
-                          <Check className="w-5 h-5 text-emerald-500 stroke-[3]" />
-                        ) : (
-                          <Package className="w-5 h-5" />
-                        )}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center justify-between gap-1 mb-0.5">
-                          <span className="text-xs font-bold text-gray-900 dark:text-white">
-                            Exportar Catálogo
-                          </span>
-                          <span className="text-[9px] font-mono font-bold px-1.5 py-0.5 rounded-md bg-sky-500/20 text-sky-700 dark:text-sky-300 border border-sky-500/30 shrink-0">
-                            .xlsx
-                          </span>
-                        </div>
-                        <p className="text-[11px] text-gray-500 dark:text-gray-400 truncate">
-                          Todos los productos, precios, stock y categorías
-                        </p>
-                      </div>
-                    </button>
-
-                    {/* Option 3: Inventario por Nicho */}
-                    <button
-                      type="button"
-                      onClick={handleExportNiches}
-                      disabled={activeExport !== null}
-                      className="w-full text-left p-3 rounded-2xl border border-amber-500/25 bg-gradient-to-r from-amber-500/10 via-amber-500/5 to-transparent hover:bg-amber-500/15 dark:from-amber-950/40 dark:via-amber-900/20 dark:to-[#221c14] transition-all flex items-center gap-3 active:scale-[0.98] cursor-pointer"
-                    >
-                      <div className="w-10 h-10 rounded-xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-600 dark:text-amber-300 shrink-0">
-                        {activeExport === "niches" ? (
-                          <Loader2 className="w-5 h-5 animate-spin text-amber-500" />
-                        ) : successExport === "niches" ? (
-                          <Check className="w-5 h-5 text-emerald-500 stroke-[3]" />
-                        ) : (
-                          <Layers className="w-5 h-5" />
-                        )}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center justify-between gap-1 mb-0.5">
-                          <span className="text-xs font-bold text-gray-900 dark:text-white">
-                            Exportar Inventario por Nicho
-                          </span>
-                          <span className="text-[9px] font-mono font-bold px-1.5 py-0.5 rounded-md bg-amber-500/20 text-amber-700 dark:text-amber-300 border border-amber-500/30 shrink-0">
-                            .xlsx
-                          </span>
-                        </div>
-                        <p className="text-[11px] text-gray-500 dark:text-gray-400 truncate">
-                          Resumen analítico por categorías y valor total
-                        </p>
-                      </div>
-                    </button>
-                  </div>
-                </div>
-              ) : (
-                /* Screen 2: Orders Submenu (Dropi EC & Normal) */
-                <div>
-                  {/* Header with Back Button */}
-                  <div className="flex items-center justify-between pb-3 mb-3 border-b border-gray-100 dark:border-white/10">
-                    <button
-                      type="button"
-                      onClick={() => setOrdersSubmenuOpen(false)}
-                      className="flex items-center gap-1 text-xs font-bold text-gray-700 dark:text-gray-200 hover:text-emerald-600 dark:hover:text-emerald-400 px-2 py-1 -ml-1 rounded-lg hover:bg-gray-100 dark:hover:bg-white/10 transition-colors cursor-pointer"
-                    >
-                      <ChevronLeft className="w-4 h-4" />
-                      <span>Volver</span>
-                    </button>
-                    <span className="text-xs font-bold text-gray-900 dark:text-white">
-                      Exportar Pedidos
-                    </span>
-                    <button
-                      type="button"
-                      onClick={handleCloseMenu}
-                      className="w-7 h-7 rounded-full flex items-center justify-center text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-white/10 transition-colors cursor-pointer"
-                      title="Cerrar menú"
-                    >
-                      <X className="w-4 h-4" />
-                    </button>
-                  </div>
-
-                  {/* Submenu Options */}
-                  <div className="space-y-2">
-                    {/* Option #1: Para Carga masiva de Órdenes - Dropi EC */}
-                    <button
-                      type="button"
-                      onClick={handleExportOrdersDropi}
-                      disabled={activeExport !== null}
-                      className="w-full text-left p-3 rounded-2xl border border-orange-500/35 bg-gradient-to-r from-orange-500/12 via-orange-500/5 to-transparent hover:border-orange-500/60 hover:bg-orange-500/18 dark:from-orange-950/45 dark:via-orange-900/20 dark:to-[#1c140e] transition-all flex items-start gap-3 active:scale-[0.98] cursor-pointer"
-                    >
-                      <div className="w-10 h-10 rounded-xl bg-orange-500/15 border border-orange-500/40 flex items-center justify-center text-orange-500 shrink-0 mt-0.5">
-                        {activeExport === "orders-dropi" ? (
-                          <Loader2 className="w-5 h-5 animate-spin text-orange-500" />
-                        ) : successExport === "orders-dropi" ? (
-                          <Check className="w-5 h-5 text-emerald-500 stroke-[3]" />
-                        ) : (
-                          <DropiIsotipo className="w-6 h-6 shrink-0" />
-                        )}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center justify-between gap-1 mb-1">
-                          <span className="text-xs font-bold text-gray-900 dark:text-white">
-                            Para Carga masiva de Órdenes - Dropi EC
-                          </span>
-                          <span className="inline-flex items-center gap-1 text-[9px] font-bold px-2 py-0.5 rounded-md bg-orange-500/20 text-orange-700 dark:text-orange-300 border border-orange-500/40 shrink-0">
-                            <span className="w-1.5 h-1.5 rounded-full bg-[#FF5500]" />
-                            Dropi EC
-                          </span>
-                        </div>
-                        <p className="text-[11px] text-gray-600 dark:text-gray-300 leading-snug">
-                          Formato oficial para subir órdenes masivas en Dropi Ecuador (Cantones/Provincias y Ciudad en Departamento).
-                        </p>
-                      </div>
-                    </button>
-
-                    {/* Option #2: Exportación Normal */}
-                    <button
-                      type="button"
-                      onClick={handleExportOrdersNormal}
-                      disabled={activeExport !== null}
-                      className="w-full text-left p-3 rounded-2xl border border-sky-500/25 bg-gradient-to-r from-sky-500/10 via-sky-500/5 to-transparent hover:border-sky-500/50 hover:bg-sky-500/15 dark:from-sky-950/50 dark:to-[#141e24] transition-all flex items-start gap-3 active:scale-[0.98] cursor-pointer"
-                    >
-                      <div className="w-10 h-10 rounded-xl bg-sky-500/20 border border-sky-500/30 flex items-center justify-center text-sky-600 dark:text-sky-300 shrink-0 mt-0.5">
-                        {activeExport === "orders-normal" ? (
-                          <Loader2 className="w-4 h-4 animate-spin text-sky-500" />
-                        ) : successExport === "orders-normal" ? (
-                          <Check className="w-4 h-4 text-emerald-500 stroke-[3]" />
-                        ) : (
-                          <FileSpreadsheet className="w-4 h-4 text-sky-500" />
-                        )}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center justify-between gap-1 mb-1">
-                          <span className="text-xs font-bold text-gray-900 dark:text-white">
-                            Exportación Normal
-                          </span>
-                          <span className="text-[9px] font-mono font-bold px-1.5 py-0.5 rounded bg-sky-500/20 text-sky-700 dark:text-sky-300 border border-sky-500/30 shrink-0">
-                            Estándar
-                          </span>
-                        </div>
-                        <p className="text-[11px] text-gray-600 dark:text-gray-300 leading-snug">
-                          Reporte detallado con cliente, dirección, ítems y en qué estado va cada pedido (Procesando / Enviado / Entregado).
-                        </p>
-                      </div>
-                    </button>
-                  </div>
-                </div>
-              )}
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
     </>
   );
 }
