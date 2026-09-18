@@ -17,6 +17,7 @@ import {
   Eye,
   Monitor,
   Sparkles,
+  RefreshCw,
 } from 'lucide-react';
 import { 
   useAdminAlertStore, 
@@ -177,11 +178,20 @@ export function CartAlertsTab() {
               type="button"
               onClick={() => saveConfigToCloud()}
               disabled={isSyncing}
-              className="px-4 py-2.5 rounded-2xl font-semibold text-white text-xs bg-emerald-600 hover:bg-emerald-500 shadow-sm active:scale-95 transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-60"
-              title="Guardar cambios permanentemente en base de datos"
+              className="px-4 py-2.5 rounded-2xl font-semibold text-xs bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-800 dark:text-emerald-300 border border-emerald-500/30 shadow-2xs active:scale-95 transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-60"
+              title="Tus cambios se guardan automáticamente en tiempo real. Puedes usar este botón si deseas forzar un guardado manual inmediato."
             >
-              <Check className="w-3.5 h-3.5 stroke-[2.5]" />
-              <span>{isSyncing ? 'Guardando...' : 'Guardar en nube'}</span>
+              {isSyncing ? (
+                <>
+                  <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                  <span>Guardando...</span>
+                </>
+              ) : (
+                <>
+                  <Check className="w-3.5 h-3.5 stroke-[2.5]" />
+                  <span>Guardar en nube (Manual)</span>
+                </>
+              )}
             </button>
             <button
               type="button"

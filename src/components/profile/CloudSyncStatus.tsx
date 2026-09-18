@@ -51,7 +51,7 @@ export function CloudSyncStatus({
       {effectiveSyncing ? (
         <div className="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1 rounded-full bg-amber-50 dark:bg-amber-950/40 border border-amber-200/60 dark:border-amber-900/40 text-amber-700 dark:text-amber-400 text-[10.5px] sm:text-[11px] font-semibold animate-pulse select-none whitespace-nowrap shrink-0">
           <div className="w-2 h-2 rounded-full bg-amber-500 animate-ping" />
-          <span>Sincronizando con base de datos...</span>
+          <span>Guardando automáticamente en nube...</span>
         </div>
       ) : syncError ? (
         <button
@@ -63,32 +63,37 @@ export function CloudSyncStatus({
           <AlertTriangle className="w-3.5 h-3.5 text-red-500" />
           <span>Error al sincronizar (reintentar)</span>
         </button>
-      ) : (
+      ) : internalJustSaved ? (
         <div className="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1 rounded-full bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200/60 dark:border-emerald-900/40 text-emerald-700 dark:text-emerald-400 text-[10.5px] sm:text-[11px] font-semibold select-none whitespace-nowrap shrink-0">
           <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
-          <span>Base de datos Supabase conectada</span>
+          <span>✓ Guardado en base de datos</span>
+        </div>
+      ) : (
+        <div className="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1 rounded-full bg-emerald-50/80 dark:bg-emerald-950/30 border border-emerald-200/50 dark:border-emerald-900/30 text-emerald-700 dark:text-emerald-400 text-[10.5px] sm:text-[11px] font-semibold select-none whitespace-nowrap shrink-0">
+          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+          <span>Autoguardado en tiempo real activo</span>
         </div>
       )}
 
-      {/* 2. Manual Save to Cloud Button */}
+      {/* 2. Manual Save to Cloud Button (Optional Reassurance) */}
       {showSaveButton && onSave && (
         <button
           type="button"
           onClick={handleManualSave}
           disabled={effectiveSyncing}
-          className={`font-semibold rounded-xl shadow-xs transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-60 active:scale-95 select-none whitespace-nowrap shrink-0 ${
+          className={`font-semibold rounded-xl shadow-2xs transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-60 active:scale-95 select-none whitespace-nowrap shrink-0 ${
             compact ? "px-2.5 sm:px-3 py-1.5 text-[10.5px] sm:text-[11px]" : "px-3 sm:px-4 py-1.5 sm:py-2 text-[11px] sm:text-xs"
           } ${
             internalJustSaved
-              ? "bg-emerald-700 text-white"
-              : "bg-emerald-600 hover:bg-emerald-500 text-white"
+              ? "bg-emerald-600 text-white shadow-emerald-500/20"
+              : "bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-800 dark:text-emerald-300 border border-emerald-500/30"
           }`}
-          title="Guardar o sincronizar permanentemente en la base de datos Supabase"
+          title="Tus cambios se sincronizan automáticamente en tiempo real. Puedes usar este botón si deseas forzar un guardado manual."
         >
           {effectiveSyncing ? (
             <>
               <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-              <span>Sincronizando...</span>
+              <span>Guardando...</span>
             </>
           ) : internalJustSaved ? (
             <>

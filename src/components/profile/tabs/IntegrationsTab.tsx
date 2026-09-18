@@ -61,6 +61,7 @@ export function IntegrationsTab() {
   const [isSavingDispatch, setIsSavingDispatch] = useState(false);
   const [isTestingDispatch, setIsTestingDispatch] = useState(false);
   const [dispatchMsg, setDispatchMsg] = useState<{ success: boolean; text: string } | null>(null);
+  const [dispatchJustSaved, setDispatchJustSaved] = useState(false);
 
   // Guide accordion
   const [showGoogleGuide, setShowGoogleGuide] = useState(false);
@@ -276,7 +277,49 @@ PAYPHONE_PAYMENT_MODE="${payphoneMode}"`;
     }
   };
 
-  // Dispatch recipients actions
+  // Dedicated persistence routine for dispatch recipients (instant auto-save + optional manual save)
+  const persistDispatchRecipients = async (listToSave: string[], isAuto = false) => {
+    setIsSavingDispatch(true);
+    if (!isAuto) setDispatchMsg(null);
+
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+      if (session?.access_token) headers['Authorization'] = `Bearer ${session.access_token}`;
+
+      const res = await fetch("/api/admin/smtp", {
+        method: "POST",
+        headers,
+        body: JSON.stringify({
+          action: "save_dispatch_recipients",
+          recipients: listToSave,
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        throw new Error(data.error || data.message || "Error al guardar receptores.");
+      }
+
+      setDispatchRecipients(data.dispatchRecipients || listToSave);
+      setDispatchJustSaved(true);
+      setTimeout(() => setDispatchJustSaved(false), 2800);
+
+      setDispatchMsg({
+        success: true,
+        text: isAuto 
+          ? "✓ Guardado automáticamente en la base de datos." 
+          : (data.message || "Receptores de despacho guardados exitosamente."),
+      });
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Error inesperado al guardar.";
+      setDispatchMsg({ success: false, text: msg });
+    } finally {
+      setIsSavingDispatch(false);
+    }
+  };
+
+  // Dispatch recipients actions (Auto-saves on every action)
   const handleAddRecipient = () => {
     const raw = recipientInput.trim();
     if (!raw) return;
@@ -319,55 +362,19 @@ PAYPHONE_PAYMENT_MODE="${payphoneMode}"`;
 
     setDispatchRecipients(nextList);
     setRecipientInput("");
-    setDispatchMsg({
-      success: true,
-      text: `Se agregaron ${newItems.length} correo(s) a la lista. Haz clic en "Guardar Receptores" para aplicar los cambios en el sistema.`,
-    });
+    // Instant background persistence
+    persistDispatchRecipients(nextList, true);
   };
 
   const handleRemoveRecipient = (emailToRemove: string) => {
     const nextList = dispatchRecipients.filter(e => e.toLowerCase().trim() !== emailToRemove.toLowerCase().trim());
     setDispatchRecipients(nextList);
-    setDispatchMsg({
-      success: true,
-      text: `Se eliminó '${emailToRemove}'. Haz clic en "Guardar Receptores" para confirmar la actualización.`,
-    });
+    // Instant background persistence
+    persistDispatchRecipients(nextList, true);
   };
 
   const handleSaveDispatchRecipients = async () => {
-    setIsSavingDispatch(true);
-    setDispatchMsg(null);
-
-    try {
-      const { data: { session } } = await supabase.auth.getSession();
-      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-      if (session?.access_token) headers['Authorization'] = `Bearer ${session.access_token}`;
-
-      const res = await fetch("/api/admin/smtp", {
-        method: "POST",
-        headers,
-        body: JSON.stringify({
-          action: "save_dispatch_recipients",
-          recipients: dispatchRecipients,
-        }),
-      });
-
-      const data = await res.json();
-      if (!res.ok || !data.success) {
-        throw new Error(data.error || data.message || "Error al guardar receptores.");
-      }
-
-      setDispatchRecipients(data.dispatchRecipients || dispatchRecipients);
-      setDispatchMsg({
-        success: true,
-        text: data.message || "Receptores de despacho guardados exitosamente.",
-      });
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "Error inesperado al guardar.";
-      setDispatchMsg({ success: false, text: msg });
-    } finally {
-      setIsSavingDispatch(false);
-    }
+    await persistDispatchRecipients(dispatchRecipients, false);
   };
 
   const handleTestDispatchEmail = async () => {
@@ -605,8 +612,9 @@ PAYPHONE_PAYMENT_MODE="${payphoneMode}"`;
 
           {/* Action Bar */}
           <div className="pt-3 border-t border-gray-100 dark:border-white/5 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
-            <div className="text-[11px] text-gray-400 dark:text-gray-500">
-              * Los cambios se aplican inmediatamente para los próximos pedidos una vez guardados.
+            <div className="text-[11px] text-gray-400 dark:text-gray-500 flex items-center gap-1.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+              <span>Sincronización automática activa: cada cambio se guarda de inmediato en la base de datos.</span>
             </div>
 
             <div className="flex items-center gap-2.5 self-end sm:self-auto flex-wrap">
@@ -629,14 +637,29 @@ PAYPHONE_PAYMENT_MODE="${payphoneMode}"`;
                 type="button"
                 onClick={handleSaveDispatchRecipients}
                 disabled={isSavingDispatch}
-                className="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 shadow-sm disabled:opacity-50"
+                className={`px-5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 shadow-sm disabled:opacity-50 ${
+                  dispatchJustSaved
+                    ? "bg-emerald-600 text-white shadow-emerald-500/20"
+                    : "bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-800 dark:text-emerald-300 border border-emerald-500/30"
+                }`}
+                title="Los cambios se guardan automáticamente en tiempo real. Puedes usar este botón si deseas forzar un guardado manual."
               >
                 {isSavingDispatch ? (
-                  <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                  <>
+                    <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                    <span>Guardando...</span>
+                  </>
+                ) : dispatchJustSaved ? (
+                  <>
+                    <Check className="w-3.5 h-3.5 stroke-[3]" />
+                    <span>Guardado</span>
+                  </>
                 ) : (
-                  <Check className="w-3.5 h-3.5" />
+                  <>
+                    <Check className="w-3.5 h-3.5" />
+                    <span>Guardar Receptores</span>
+                  </>
                 )}
-                <span>{isSavingDispatch ? "Guardando..." : "Guardar Receptores"}</span>
               </button>
             </div>
           </div>
@@ -944,7 +967,10 @@ PAYPHONE_PAYMENT_MODE="${payphoneMode}"`;
               
               {/* Option 1: Cajita de Pagos */}
               <div 
-                onClick={() => setPayphoneMode("box")}
+                onClick={() => {
+                  setPayphoneMode("box");
+                  handleSavePayphoneMode("box");
+                }}
                 className={`p-4 rounded-2xl border transition-all cursor-pointer relative ${
                   payphoneMode === "box" 
                     ? "border-[#FF5E00] bg-orange-50/40 dark:bg-orange-950/20 shadow-sm" 
@@ -962,8 +988,8 @@ PAYPHONE_PAYMENT_MODE="${payphoneMode}"`;
                     </div>
                     <div>
                       <div className="flex items-center gap-2">
-                        <h4 className="text-xs font-bold text-gray-900 dark:text-gray-100">Cajita de Pagos</h4>
-                        <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20">
+                        <h4 className="text-xs font-bold text-gray-900 dark:text-gray-100">Cajita de Pagos (IFrame Embebido)</h4>
+                        <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
                           Recomendado
                         </span>
                       </div>
@@ -987,7 +1013,10 @@ PAYPHONE_PAYMENT_MODE="${payphoneMode}"`;
 
               {/* Option 2: Botón por Redirección */}
               <div 
-                onClick={() => setPayphoneMode("redirect")}
+                onClick={() => {
+                  setPayphoneMode("redirect");
+                  handleSavePayphoneMode("redirect");
+                }}
                 className={`p-4 rounded-2xl border transition-all cursor-pointer relative ${
                   payphoneMode === "redirect" 
                     ? "border-[#FF5E00] bg-orange-50/40 dark:bg-orange-950/20 shadow-sm" 
@@ -1036,15 +1065,16 @@ PAYPHONE_PAYMENT_MODE="${payphoneMode}"`;
                 type="button"
                 onClick={() => handleSavePayphoneMode(payphoneMode)}
                 disabled={isSavingPayphone || isLoadingPayphone}
-                className="w-full py-3 bg-gray-900 dark:bg-white text-white dark:text-gray-900 hover:bg-gray-800 dark:hover:bg-gray-100 rounded-2xl text-xs font-bold transition-all cursor-pointer disabled:opacity-50 flex items-center justify-center gap-2 shadow-sm"
+                className="w-full py-3 bg-gray-100 hover:bg-gray-200 dark:bg-white/10 dark:hover:bg-white/15 text-gray-800 dark:text-gray-100 rounded-2xl text-xs font-bold transition-all cursor-pointer disabled:opacity-50 flex items-center justify-center gap-2 border border-gray-200/80 dark:border-white/10"
+                title="Se guarda automáticamente al seleccionar. Puedes hacer clic aquí si deseas forzar un guardado manual."
               >
                 {isSavingPayphone ? (
                   <>
-                    <RefreshCw className="w-4 h-4 animate-spin" /> Guardando Configuración...
+                    <RefreshCw className="w-4 h-4 animate-spin" /> Guardando en base de datos...
                   </>
                 ) : (
                   <>
-                    <Check className="w-4 h-4 text-[#FF5E00]" /> Guardar Modalidad ({payphoneMode === 'box' ? 'Cajita' : 'Redirección'})
+                    <Check className="w-4 h-4 text-emerald-500 stroke-[3]" /> Modalidad Activa: {payphoneMode === 'box' ? 'Cajita de Pagos' : 'Redirección'} (Autoguardado)
                   </>
                 )}
               </button>

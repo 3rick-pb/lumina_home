@@ -376,7 +376,7 @@ interface AdminAlertState {
   syncError: string | null;
   loadConfigFromCloud: () => Promise<void>;
   saveConfigToCloud: (newConfig?: CartAlertConfig) => Promise<void>;
-  updateConfig: (patch: Partial<CartAlertConfig>) => void;
+  updateConfig: (patch: Partial<CartAlertConfig>, immediate?: boolean) => void;
   applyPreset: (presetId: string) => void;
   applyRecommendedContrast: () => void;
   resetConfig: () => void;
@@ -390,12 +390,17 @@ let isRealtimeAlertListenerAttached = false;
 
 const triggerDebouncedCloudSave = (
   newConfig: CartAlertConfig,
-  saveFn: (cfg: CartAlertConfig) => Promise<void>
+  saveFn: (cfg: CartAlertConfig) => Promise<void>,
+  immediate = false
 ) => {
   if (saveDebounceTimer) clearTimeout(saveDebounceTimer);
+  if (immediate) {
+    saveFn(newConfig);
+    return;
+  }
   saveDebounceTimer = setTimeout(() => {
     saveFn(newConfig);
-  }, 800);
+  }, 350);
 };
 
 export const hydrateAlertConfigFromClient = () => {
@@ -562,13 +567,14 @@ export const useAdminAlertStore = create<AdminAlertState>((set, get) => ({
     }
   },
 
-  updateConfig: (patch) => {
+  updateConfig: (patch, immediate = false) => {
     const next = { ...get().config, ...patch };
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
     } catch {}
     set({ config: next });
-    triggerDebouncedCloudSave(next, get().saveConfigToCloud);
+    const isDiscrete = immediate || 'layout' in patch || 'soundEnabled' in patch || 'position' in patch || 'maxAlerts' in patch;
+    triggerDebouncedCloudSave(next, get().saveConfigToCloud, isDiscrete);
   },
 
   applyPreset: (presetId: string) => {
@@ -586,7 +592,7 @@ export const useAdminAlertStore = create<AdminAlertState>((set, get) => ({
       localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
     } catch {}
     set({ config: next });
-    triggerDebouncedCloudSave(next, get().saveConfigToCloud);
+    triggerDebouncedCloudSave(next, get().saveConfigToCloud, true);
   },
 
   applyRecommendedContrast: () => {
@@ -601,7 +607,7 @@ export const useAdminAlertStore = create<AdminAlertState>((set, get) => ({
       localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
     } catch {}
     set({ config: next });
-    triggerDebouncedCloudSave(next, get().saveConfigToCloud);
+    triggerDebouncedCloudSave(next, get().saveConfigToCloud, true);
   },
 
   resetConfig: () => {
