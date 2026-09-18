@@ -10,7 +10,6 @@ import {
   Check, 
   Loader2,
   Sparkles,
-  UploadCloud,
   FileSpreadsheet,
   ChevronRight
 } from "lucide-react";
@@ -116,6 +115,28 @@ function Excel2025Icon({ className = "w-6 h-6" }: { className?: string }) {
 
       {/* Specular gloss sheen across top */}
       <path d="M7.5 4.5C9 6.5 14 7.5 23 5V9.5C16 10.5 10 9 7.5 7V4.5Z" fill="white" fillOpacity="0.22" />
+    </svg>
+  );
+}
+
+/**
+ * Official Dropi Isotipo (Iconic Smiling Character)
+ * Brand Color: #FF5500 (Dropi Official Vibrant Orange)
+ */
+function DropiIsotipo({ className = "w-6 h-6" }: { className?: string }) {
+  return (
+    <svg 
+      className={className} 
+      viewBox="6 1 52 46" 
+      fill="none" 
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <path d="M27.1204 9.15337C24.9081 7.62606 22.3744 6.50662 19.6434 5.89038C18.8366 6.38027 18.2469 6.83691 17.5132 7.41547C20.3084 7.9896 22.9109 9.10238 25.163 10.6496C25.8103 10.0666 26.3423 9.61887 27.1204 9.15558" fill="#FF5500" />
+      <path d="M31.7112 19.2527C30.2792 19.3059 29.1863 21.1214 29.2661 23.3092C29.3481 25.4971 30.5718 27.2262 32.0038 27.173C33.4357 27.1198 34.5286 25.3043 34.4488 23.1186C34.3668 20.9307 33.1431 19.2017 31.7112 19.2549" fill="#FF5500" />
+      <path d="M48.5137 22.6132C48.4406 20.6159 47.4852 19.0288 46.3857 19.0709C45.2818 19.1108 44.4461 20.7644 44.5214 22.7617C44.5946 24.7589 45.55 26.3461 46.6539 26.3062C47.7534 26.2663 48.5891 24.6126 48.5137 22.6154" fill="#FF5500" />
+      <path d="M32.017 9.64112C25.6351 10.3239 23.2899 16.7745 23.0793 17.3907C23.0704 17.4173 23.0615 17.4461 23.0638 17.4749C23.0638 17.4838 23.0638 17.4927 23.066 17.5015C23.0682 17.5193 23.0748 17.5348 23.0815 17.5503C23.097 17.5813 23.1192 17.6057 23.148 17.6257C23.1768 17.6456 23.2123 17.6545 23.2455 17.6567C23.3231 17.6589 23.3896 17.6102 23.4251 17.5437C23.9926 16.4752 25.2539 15.1895 25.2539 15.1895C28.1555 11.9598 32.3362 11.7248 32.3362 11.7248C34.2603 11.6539 34.3822 10.9734 34.3822 10.9734C34.8411 9.11354 32.017 9.6389 32.017 9.6389" fill="#FF5500" />
+      <path d="M23.5204 31.981L23.465 31.9323C23.465 31.9323 23.485 31.95 23.5204 31.981Z" fill="#FF5500" />
+      <path d="M55.2215 23.347C54.7759 11.3192 44.0648 1.95143 31.3011 2.42359C28.0425 2.54329 24.9613 3.29475 22.1904 4.54719C24.7662 5.3319 27.147 6.54887 29.224 8.12273C30.758 7.51535 32.4936 7.12078 34.431 6.98999C43.9096 6.34936 50.7836 12.5207 52.0006 20.4432C54.1774 34.6323 43.5439 36.4366 35.5549 35.9977C34.9209 35.9623 34.3025 35.9113 33.7017 35.8448C33.6884 35.8448 33.6774 35.8426 33.6641 35.8404C33.0988 35.7761 32.5513 35.6985 32.017 35.6054C31.9173 35.5877 31.8153 35.5699 31.7178 35.55C31.6934 35.5455 31.6712 35.5411 31.6469 35.5367C26.7524 34.5569 23.9394 32.3313 23.5249 31.9855C22.6759 33.1404 21.317 34.1778 19.2466 34.5037C19.2466 34.5037 16.1388 35.0423 13.3391 32.5862C13.2261 32.4865 13.3591 32.2604 13.4987 32.3202C15.3275 33.1448 19.3198 34.4039 22.1771 30.139C22.1815 30.1479 22.3101 29.9373 22.3101 29.9373C22.381 29.8264 22.4498 29.7156 22.5185 29.5981C22.5251 29.5826 22.6803 29.2678 22.7402 29.1459C23.4162 27.6873 23.7776 25.9605 23.7111 24.1207C23.7089 24.032 23.7044 23.9433 23.7 23.8547C23.7 23.8414 23.7 23.8281 23.6956 23.8148C23.6933 23.7749 23.6889 23.735 23.6845 23.6951C23.6756 23.5776 23.6601 23.4645 23.649 23.3492C23.6357 23.2229 23.6268 23.0965 23.6091 22.9746C23.5891 22.8239 23.567 22.6732 23.5404 22.5246C23.5359 22.5003 23.5337 22.4737 23.5271 22.447L23.4805 22.2963L23.5293 22.4493C23.1392 20.3035 22.166 18.4481 20.8493 17.1602C21.4478 15.3713 22.4143 13.5869 23.6047 12.1394C21.2616 10.5434 18.5262 9.44831 15.5846 8.98281C14.2967 10.2375 12.9601 11.9687 12.0202 13.4827L11.998 9.18453C13.4677 8.73232 14.494 7.30698 14.3566 5.68435C14.2103 3.97528 12.7495 2.62309 11.036 2.60757C9.10301 2.59206 7.57126 4.18586 7.6422 6.09444C7.69762 7.62175 8.76607 8.87197 10.1781 9.23108L10.2535 17.0582C9.37788 19.9111 8.88577 22.0946 8.99439 25.0583C9.03429 26.1113 9.15177 27.162 9.35128 28.1972C9.54635 29.2146 9.819 30.2188 10.1648 31.1941C10.5062 32.1584 10.9207 33.0983 11.3995 34.0027C11.8761 34.9027 12.4192 35.7694 13.0199 36.5918C13.6229 37.4164 14.2812 38.1989 14.9928 38.9304C15.7066 39.6686 16.4735 40.3558 17.2804 40.9898C18.0962 41.6282 18.9562 42.2134 19.8496 42.7365C20.7562 43.2663 21.6961 43.7362 22.6648 44.1419C23.649 44.5542 24.6598 44.8978 25.6906 45.1749C26.7435 45.4564 27.8142 45.667 28.8937 45.8044C29.4279 45.8731 29.9622 45.9219 30.4986 45.9552C30.9575 45.984 31.4318 46.0483 31.8973 45.9995C32.3917 45.9485 32.8151 45.7158 33.2495 45.4919C33.7416 45.237 34.2227 44.9599 34.6793 44.6429C35.3687 44.1641 36.0115 43.5899 36.4815 42.8895C36.5147 42.8385 36.5413 42.7919 36.5635 42.7365C35.9517 42.69 35.2822 42.5725 34.5906 42.3597C34.584 42.3575 34.5751 42.3552 34.5663 42.353C34.564 42.353 34.5596 42.353 34.5552 42.3464C34.4599 42.302 34.369 42.2222 34.3645 42.1092C34.3601 42.0072 34.4133 41.9185 34.4909 41.8587C34.4909 41.8587 36.8051 40.1873 38.3635 38.4006L38.3901 38.4051C38.4543 38.3541 38.5275 38.3208 38.6073 38.3386C38.6805 38.3541 38.7403 38.4073 38.7891 38.4627C38.7891 38.4627 40.8329 40.6439 41.4358 41.0984C41.5023 41.1494 41.5489 41.2247 41.5511 41.3156C41.5511 41.3245 41.5466 41.3333 41.5466 41.3444C41.5466 41.3511 41.5511 41.3577 41.5533 41.3644C41.5577 41.4397 41.5112 41.4996 41.4469 41.5528C41.4136 41.5794 41.376 41.606 41.3405 41.6282C41.3316 41.6348 41.3205 41.6392 41.3117 41.6459C41.0612 41.8055 40.4782 42.1402 39.6359 42.404C39.1881 43.6875 38.9442 44.4323 38.5053 45.0064C38.962 44.9022 39.4652 44.787 40.0371 44.654C49.1898 41.4708 55.5806 33.0229 55.2215 23.3515M10.9695 24.4399C10.8276 20.6116 13.1241 17.4174 16.0967 17.3065C19.0693 17.1957 21.5963 20.2104 21.7382 24.0409C21.8801 27.8691 19.5836 31.0634 16.611 31.1742C13.6362 31.285 11.1113 28.2703 10.9695 24.4399Z" fill="#FF5500" />
     </svg>
   );
 }
@@ -806,7 +827,7 @@ export function ExcelExportRadialMenu() {
 
                             {/* Options List */}
                             <div className="space-y-2">
-                              {/* Option #1: Para Carga masiva de Órdenes - Dropi EC */}
+                              {/* Option #1: Para Carga masiva de Órdenes - Dropi EC (Branding Naranja Dropi Oficial) */}
                               <button
                                 type="button"
                                 onClick={(e) => {
@@ -814,23 +835,28 @@ export function ExcelExportRadialMenu() {
                                   handleExportOrdersDropi();
                                 }}
                                 disabled={activeExport !== null}
-                                className="w-full text-left p-3 rounded-2xl border border-emerald-500/25 bg-gradient-to-r from-emerald-500/10 via-emerald-500/5 to-transparent hover:border-emerald-500/50 hover:bg-emerald-500/15 dark:from-emerald-950/50 dark:to-[#17221b] transition-all group flex items-start gap-3 cursor-pointer"
+                                className="w-full text-left p-3 rounded-2xl border border-orange-500/35 bg-gradient-to-r from-orange-500/12 via-orange-500/5 to-transparent hover:border-orange-500/60 hover:bg-orange-500/18 dark:from-orange-950/45 dark:via-orange-900/20 dark:to-[#1a1410] hover:shadow-[0_8px_24px_rgba(255,85,0,0.16)] transition-all group flex items-start gap-3 cursor-pointer relative overflow-hidden"
                               >
-                                <div className="w-9 h-9 rounded-xl bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center text-emerald-600 dark:text-emerald-300 shrink-0 mt-0.5 group-hover:scale-108 transition-transform shadow-sm">
+                                {/* Subtle orange ambient glow on hover */}
+                                <div className="pointer-events-none absolute -right-6 -bottom-6 w-20 h-20 rounded-full bg-orange-500/10 blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+
+                                {/* Dropi Official Icon Container */}
+                                <div className="w-10 h-10 rounded-xl bg-orange-500/15 dark:bg-orange-500/25 border border-orange-500/40 flex items-center justify-center text-orange-500 shrink-0 mt-0.5 group-hover:scale-110 group-hover:border-orange-500 transition-all duration-200 shadow-xs">
                                   {activeExport === "orders-dropi" ? (
-                                    <Loader2 className="w-4 h-4 animate-spin text-emerald-500" />
+                                    <Loader2 className="w-5 h-5 animate-spin text-orange-500" />
                                   ) : successExport === "orders-dropi" ? (
-                                    <Check className="w-4 h-4 text-emerald-500 stroke-[3]" />
+                                    <Check className="w-5 h-5 text-emerald-500 stroke-[3]" />
                                   ) : (
-                                    <UploadCloud className="w-4 h-4" />
+                                    <DropiIsotipo className="w-6 h-6 shrink-0" />
                                   )}
                                 </div>
                                 <div className="flex-1 min-w-0">
                                   <div className="flex items-center justify-between gap-1.5 mb-1">
-                                    <span className="text-xs font-bold text-gray-900 dark:text-white group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors">
+                                    <span className="text-xs font-bold text-gray-900 dark:text-white group-hover:text-orange-600 dark:group-hover:text-orange-400 transition-colors">
                                       Para Carga masiva de Órdenes - Dropi EC
                                     </span>
-                                    <span className="text-[9px] font-mono font-bold px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 shrink-0">
+                                    <span className="inline-flex items-center gap-1.5 text-[9px] font-bold px-2 py-0.5 rounded-md bg-orange-500/20 text-orange-700 dark:text-orange-300 border border-orange-500/40 shrink-0 shadow-2xs">
+                                      <span className="w-1.5 h-1.5 rounded-full bg-[#FF5500]" />
                                       Dropi EC
                                     </span>
                                   </div>
