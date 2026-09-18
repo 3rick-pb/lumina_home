@@ -60,121 +60,131 @@ export async function GET(request: Request) {
 
     const supabase = getScopedSupabaseClient(request);
 
-    let addresses: ShippingAddress[] = [];
-    let cards: PaymentCard[] = [];
-    let favorites: string[] = [];
-    let defaultAddress: ShippingAddress | null = null;
-
-    // 1. Fetch addresses from public.addresses
-    try {
-      let { data: dbAddrs, error: addrErr } = await supabase
-        .from('addresses')
-        .select('*')
-        .eq('user_id', targetUserId)
-        .order('updated_at', { ascending: false });
-
-      if (addrErr && addrErr.message?.includes('addresses.updated_at does not exist')) {
-        const alt = await supabase
+    // Parallel execution of all user data queries (Eliminates sequential waterfalls)
+    const fetchAddresses = async (): Promise<ShippingAddress[]> => {
+      try {
+        let { data: dbAddrs, error: addrErr } = await supabase
           .from('addresses')
           .select('*')
           .eq('user_id', targetUserId)
-          .order('created_at', { ascending: false });
-        dbAddrs = alt.data;
-        addrErr = alt.error;
-      } else if (addrErr) {
-        const fallback = await supabase
-          .from('addresses')
-          .select('*')
-          .eq('user_id', targetUserId);
-        dbAddrs = fallback.data;
-        addrErr = fallback.error;
+          .order('updated_at', { ascending: false });
+
+        if (addrErr && addrErr.message?.includes('addresses.updated_at does not exist')) {
+          const alt = await supabase
+            .from('addresses')
+            .select('*')
+            .eq('user_id', targetUserId)
+            .order('created_at', { ascending: false });
+          dbAddrs = alt.data;
+          addrErr = alt.error;
+        } else if (addrErr) {
+          const fallback = await supabase
+            .from('addresses')
+            .select('*')
+            .eq('user_id', targetUserId);
+          dbAddrs = fallback.data;
+          addrErr = fallback.error;
+        }
+
+        if (!addrErr && dbAddrs && dbAddrs.length > 0) {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          return dbAddrs.map((a: any) => ({
+            id: a.id,
+            recipient: a.recipient || 'Destinatario',
+            idNumber: a.id_number || '',
+            phone: a.phone || '',
+            email: a.email || '',
+            street: a.street || '',
+            city: a.city || '',
+            state: a.state || '',
+            postalCode: a.postal_code || '',
+            country: a.country || 'Ecuador',
+            isDefault: !!a.is_default,
+          }));
+        }
+      } catch (err) {
+        console.warn('Notice: Error reading addresses table:', err);
       }
+      return [];
+    };
 
-      if (!addrErr && dbAddrs && dbAddrs.length > 0) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        addresses = dbAddrs.map((a: any) => ({
-          id: a.id,
-          recipient: a.recipient || 'Destinatario',
-          idNumber: a.id_number || '',
-          phone: a.phone || '',
-          email: a.email || '',
-          street: a.street || '',
-          city: a.city || '',
-          state: a.state || '',
-          postalCode: a.postal_code || '',
-          country: a.country || 'Ecuador',
-          isDefault: !!a.is_default,
-        }));
-      }
-    } catch (err) {
-      console.warn('Notice: Error reading addresses table:', err);
-    }
-
-    // 2. Fetch cards from public.payment_cards
-    try {
-      let { data: dbCards, error: cardErr } = await supabase
-        .from('payment_cards')
-        .select('*')
-        .eq('user_id', targetUserId)
-        .order('created_at', { ascending: false });
-
-      if (cardErr) {
-        const fallback = await supabase
+    const fetchCards = async (): Promise<PaymentCard[]> => {
+      try {
+        let { data: dbCards, error: cardErr } = await supabase
           .from('payment_cards')
           .select('*')
+          .eq('user_id', targetUserId)
+          .order('created_at', { ascending: false });
+
+        if (cardErr) {
+          const fallback = await supabase
+            .from('payment_cards')
+            .select('*')
+            .eq('user_id', targetUserId);
+          dbCards = fallback.data;
+          cardErr = fallback.error;
+        }
+
+        if (!cardErr && dbCards && dbCards.length > 0) {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          return dbCards.map((c: any) => ({
+            id: c.id,
+            number: c.number,
+            holder: c.holder,
+            exp: c.exp,
+            type: c.type,
+            isDefault: !!c.is_default,
+          }));
+        }
+      } catch (err) {
+        console.warn('Notice: Error reading payment_cards table:', err);
+      }
+      return [];
+    };
+
+    const fetchFavorites = async (): Promise<string[]> => {
+      try {
+        const { data: dbFavs, error: favErr } = await supabase
+          .from('favorites')
+          .select('product_id')
           .eq('user_id', targetUserId);
-        dbCards = fallback.data;
-        cardErr = fallback.error;
-      }
 
-      if (!cardErr && dbCards && dbCards.length > 0) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        cards = dbCards.map((c: any) => ({
-          id: c.id,
-          number: c.number,
-          holder: c.holder,
-          exp: c.exp,
-          type: c.type,
-          isDefault: !!c.is_default,
-        }));
+        if (!favErr && dbFavs && dbFavs.length > 0) {
+          return dbFavs.map(f => String(f.product_id));
+        }
+      } catch (err) {
+        console.warn('Notice: Error reading favorites table:', err);
       }
-    } catch (err) {
-      console.warn('Notice: Error reading payment_cards table:', err);
-    }
+      return [];
+    };
 
-    // 3. Fetch favorites from public.favorites
-    try {
-      const { data: dbFavs, error: favErr } = await supabase
-        .from('favorites')
-        .select('product_id')
-        .eq('user_id', targetUserId);
+    const fetchProfile = async (): Promise<{ displayName?: string; phone?: string; avatarUrl?: string } | null> => {
+      try {
+        const { data: dbProf } = await supabase
+          .from('user_profiles')
+          .select('*')
+          .eq('user_id', targetUserId)
+          .maybeSingle();
+        if (dbProf) {
+          return {
+            displayName: dbProf.display_name || undefined,
+            phone: dbProf.phone || undefined,
+            avatarUrl: dbProf.avatar_url || undefined,
+          };
+        }
+      } catch {}
+      return null;
+    };
 
-      if (!favErr && dbFavs && dbFavs.length > 0) {
-        favorites = dbFavs.map(f => String(f.product_id));
-      }
-    } catch (err) {
-      console.warn('Notice: Error reading favorites table:', err);
-    }
-
-    // 4. Fetch profile from public.user_profiles
-    let profile: { displayName?: string; phone?: string; avatarUrl?: string } | null = null;
-    try {
-      const { data: dbProf } = await supabase
-        .from('user_profiles')
-        .select('*')
-        .eq('user_id', targetUserId)
-        .maybeSingle();
-      if (dbProf) {
-        profile = {
-          displayName: dbProf.display_name || undefined,
-          phone: dbProf.phone || undefined,
-          avatarUrl: dbProf.avatar_url || undefined,
-        };
-      }
-    } catch {}
+    const [addresses, cards, favorites, profile] = await Promise.all([
+      fetchAddresses(),
+      fetchCards(),
+      fetchFavorites(),
+      fetchProfile(),
+    ]);
 
     // Determine default address
-    defaultAddress = addresses.find(a => a.isDefault) || addresses[0] || null;
+    const defaultAddress = addresses.find(a => a.isDefault) || addresses[0] || null;
 
     return NextResponse.json({
       success: true,

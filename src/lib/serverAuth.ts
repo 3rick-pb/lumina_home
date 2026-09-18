@@ -1,4 +1,4 @@
-import { createClient } from '@supabase/supabase-js';
+import { createClient, SupabaseClient } from '@supabase/supabase-js';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
@@ -8,31 +8,39 @@ export const supabaseServer = createClient(supabaseUrl, supabaseServiceKey);
 
 export const MASTER_ADMIN_EMAIL = 'admin@lumina.com';
 
+// Client pooling to prevent socket and connection exhaustion under high traffic
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+let serviceRoleClientInstance: SupabaseClient<any, any, any> | null = null;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const scopedClientsPool = new Map<string, { client: SupabaseClient<any, any, any>; expires: number }>();
+
 /**
  * Obtains an exclusive Supabase Client. If SUPABASE_SERVICE_ROLE_KEY is present,
  * it operates with service credentials. Otherwise, it gracefully falls back to supabaseServer
- * without crashing the application.
+ * without crashing the application. Reuses a singleton instance to pool connections.
  */
 export function getServiceSupabaseClient() {
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY?.trim();
   if (serviceKey) {
-    return createClient(supabaseUrl, serviceKey, {
-      auth: { persistSession: false, autoRefreshToken: false }
-    });
+    if (!serviceRoleClientInstance) {
+      serviceRoleClientInstance = createClient(supabaseUrl, serviceKey, {
+        auth: { persistSession: false, autoRefreshToken: false }
+      });
+    }
+    return serviceRoleClientInstance;
   }
   return supabaseServer;
 }
 
 /**
- * Creates a Supabase client for server backend operations.
+ * Creates or retrieves a pooled Supabase client for server backend operations.
  * If a request with Authorization Bearer token is provided, forwards it to preserve RLS context.
+ * Reuses pooled instances by token to prevent connection exhaustion under heavy load.
  */
 export function getScopedSupabaseClient(request?: Request | string | null) {
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY?.trim();
   if (serviceKey) {
-    return createClient(supabaseUrl, serviceKey, {
-      auth: { persistSession: false, autoRefreshToken: false }
-    });
+    return getServiceSupabaseClient();
   }
 
   let token: string | null = null;
@@ -44,10 +52,20 @@ export function getScopedSupabaseClient(request?: Request | string | null) {
   }
 
   if (token) {
-    return createClient(supabaseUrl, supabaseAnonKey, {
+    const now = Date.now();
+    const pooled = scopedClientsPool.get(token);
+    if (pooled && now < pooled.expires) {
+      return pooled.client;
+    }
+
+    const newClient = createClient(supabaseUrl, supabaseAnonKey, {
       global: { headers: { Authorization: `Bearer ${token}` } },
       auth: { persistSession: false, autoRefreshToken: false }
     });
+
+    // Pool client for 2 minutes to reuse connection pool
+    scopedClientsPool.set(token, { client: newClient, expires: now + 2 * 60 * 1000 });
+    return newClient;
   }
 
   return supabaseServer;
@@ -121,69 +139,76 @@ export async function checkIfUserExists(
     return { exists: true };
   }
 
-  // 2. Try Supabase Auth Admin API if service role key is present
-  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY?.trim();
-  if (serviceKey) {
+  // Parallel execution of all user existence checks (Eliminates sequential waterfalls)
+  const checkAuthAdmin = async (): Promise<boolean> => {
+    const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY?.trim();
+    if (!serviceKey) return false;
     try {
       const client = getServiceSupabaseClient();
       const { data, error } = await client.auth.admin.listUsers({ page: 1, perPage: 1000 });
       if (!error && data?.users) {
-        const found = data.users.some(
-          (u) => u.email?.toLowerCase().trim() === cleanEmail
-        );
-        if (found) return { exists: true };
+        return data.users.some(u => u.email?.toLowerCase().trim() === cleanEmail);
       }
-    } catch (e) {
-      console.warn('Notice: Error verifying user in auth.admin.listUsers:', e);
+    } catch {}
+    return false;
+  };
+
+  const checkUserProfiles = async (): Promise<boolean> => {
+    try {
+      const client = getScopedSupabaseClient(request);
+      const { data } = await client
+        .from('user_profiles')
+        .select('user_id')
+        .ilike('email', cleanEmail)
+        .limit(1)
+        .maybeSingle();
+      return !!data;
+    } catch {
+      return false;
     }
+  };
+
+  const checkAddresses = async (): Promise<boolean> => {
+    try {
+      const client = getScopedSupabaseClient(request);
+      const { data } = await client
+        .from('addresses')
+        .select('id')
+        .ilike('email', cleanEmail)
+        .limit(1)
+        .maybeSingle();
+      return !!data;
+    } catch {
+      return false;
+    }
+  };
+
+  const checkOrders = async (): Promise<boolean> => {
+    try {
+      const client = getScopedSupabaseClient(request);
+      const { data } = await client
+        .from('orders')
+        .select('id')
+        .ilike('customer_email', cleanEmail)
+        .limit(1)
+        .maybeSingle();
+      return !!data;
+    } catch {
+      return false;
+    }
+  };
+
+  const results = await Promise.allSettled([
+    checkAuthAdmin(),
+    checkUserProfiles(),
+    checkAddresses(),
+    checkOrders(),
+  ]);
+
+  const exists = results.some(r => r.status === 'fulfilled' && r.value === true);
+  if (exists) {
+    return { exists: true };
   }
-
-  // 3. Query public.user_profiles table
-  try {
-    const client = getScopedSupabaseClient(request);
-    const { data: profile, error } = await client
-      .from('user_profiles')
-      .select('user_id, email')
-      .ilike('email', cleanEmail)
-      .limit(1)
-      .maybeSingle();
-
-    if (!error && profile) {
-      return { exists: true };
-    }
-  } catch (e) {
-    console.warn('Notice: Error checking user_profiles for email:', e);
-  }
-
-  // 4. Query public.addresses table (saved user customer addresses)
-  try {
-    const client = getScopedSupabaseClient(request);
-    const { data: addr, error } = await client
-      .from('addresses')
-      .select('id')
-      .ilike('email', cleanEmail)
-      .limit(1)
-      .maybeSingle();
-
-    if (!error && addr) {
-      return { exists: true };
-    }
-  } catch {}
-
-  // 5. Query public.orders table (customer order records)
-  try {
-    const client = getScopedSupabaseClient(request);
-    const { data: ord, error } = await client
-      .from('orders')
-      .select('id')
-      .ilike('customer_email', cleanEmail)
-      .limit(1)
-      .maybeSingle();
-
-    if (!error && ord) {
-      return { exists: true };
-    }
-  } catch {}
 
   return {
     exists: false,

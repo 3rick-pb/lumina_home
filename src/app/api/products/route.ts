@@ -1,23 +1,53 @@
 import { NextResponse } from 'next/server';
 import { verifyIsAdmin, getAuthenticatedUser, getScopedSupabaseClient } from '@/lib/serverAuth';
+import { appCache } from '@/lib/cache';
+import { checkRateLimit, createRateLimitResponse } from '@/lib/rateLimit';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
-// GET: List all products from Supabase (Public)
+// GET: List all products from Supabase (High-Concurrency In-Memory Cache + Stampede Protection)
 export async function GET(request: Request) {
+  // 1. Rate Limiting Protection (180 requests/min per IP)
+  const rateLimit = checkRateLimit(request, {
+    keyPrefix: 'products_get',
+    maxRequests: 180,
+    windowMs: 60 * 1000,
+  });
+  if (!rateLimit.isAllowed) {
+    return createRateLimitResponse('Límite de solicitudes de catálogo excedido.', rateLimit.resetTimeMs);
+  }
+
   try {
-    const supabase = getScopedSupabaseClient(request);
-    const { data, error } = await supabase
-      .from('products')
-      .select('*')
-      .order('created_at', { ascending: false });
+    // 2. Cache-Aside with Stampede Protection:
+    // 100 concurrent requests share a single in-flight Promise and resolve simultaneously
+    const products = await appCache.getOrSet(
+      'products:all',
+      async () => {
+        const supabase = getScopedSupabaseClient(request);
+        const { data, error } = await supabase
+          .from('products')
+          .select('*')
+          .order('created_at', { ascending: false });
 
-    if (error) {
-      return NextResponse.json({ success: false, error: error.message }, { status: 500 });
-    }
+        if (error) {
+          throw new Error(error.message);
+        }
+        return data || [];
+      },
+      20, // 20 seconds fresh TTL
+      40  // 40 seconds stale-while-revalidate
+    );
 
-    return NextResponse.json({ success: true, products: data || [] });
+    return NextResponse.json(
+      { success: true, products },
+      {
+        headers: {
+          'Cache-Control': 'public, s-maxage=20, stale-while-revalidate=40',
+          'X-Cache-Status': 'OPTIMIZED',
+        },
+      }
+    );
   } catch (err) {
     return NextResponse.json({ success: false, error: String(err) }, { status: 500 });
   }
@@ -123,6 +153,7 @@ export async function DELETE(request: Request) {
     }
 
     const deletedCount = data ? data.length : 0;
+    appCache.invalidate('products');
 
     return NextResponse.json({
       success: true,
@@ -194,6 +225,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: false, error: error.message }, { status: 500 });
     }
 
+    appCache.invalidate('products');
     return NextResponse.json({ success: true, product: data });
   } catch (err) {
     return NextResponse.json({ success: false, error: String(err) }, { status: 500 });
@@ -259,6 +291,7 @@ export async function PUT(request: Request) {
       return NextResponse.json({ success: false, error: error.message }, { status: 500 });
     }
 
+    appCache.invalidate('products');
     return NextResponse.json({ success: true, product: data });
   } catch (err) {
     return NextResponse.json({ success: false, error: String(err) }, { status: 500 });

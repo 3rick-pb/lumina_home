@@ -132,10 +132,10 @@ export async function getExtraDispatchRecipientEmails(): Promise<string[]> {
  * 3. Up to 7 extra external dispatch emails (warehouse, packing, logistics)
  */
 export async function getAllDispatchRecipients(extraEmails?: string[]): Promise<string[]> {
-  const adminEmails = await getAllAdminEmails();
-  const configuredExtras = extraEmails && extraEmails.length > 0
-    ? extraEmails
-    : await getExtraDispatchRecipientEmails();
+  const [adminEmails, configuredExtras] = await Promise.all([
+    getAllAdminEmails(),
+    extraEmails && extraEmails.length > 0 ? Promise.resolve(extraEmails) : getExtraDispatchRecipientEmails(),
+  ]);
 
   const combined = new Set<string>();
 
@@ -840,42 +840,47 @@ export async function sendOrderEmails({
       }
     }
 
-    // 2. Envío de Alerta de Despacho a Receptores Autorizados
+    // 2. Envío Concurrente de Alertas de Despacho a Receptores Autorizados (Elimina bloqueo secuencial)
     if (resolvedDispatchRecipients.length > 0) {
-      for (const admEmail of resolvedDispatchRecipients) {
-        try {
-          await transporter.sendMail({
-            from: fromAddress,
-            to: admEmail,
-            subject: adminSubject,
-            html: adminHtml,
-          });
-          adminsSent = true;
-          await logEmailNotification({
-            orderId: order.id,
-            recipientEmail: admEmail,
-            recipientName: 'Receptor de Despacho',
-            recipientType: 'admin',
-            emailType: 'admin_dispatch_notice',
-            subject: adminSubject,
-            status: 'sent',
-            metadata: { from: fromAddress, total: order.total }
-          });
-        } catch (adminErr: unknown) {
-          const errorMsg = adminErr instanceof Error ? adminErr.message : String(adminErr);
-          console.error(`[emailService] Error enviando alerta a receptor (${admEmail}):`, adminErr);
-          await logEmailNotification({
-            orderId: order.id,
-            recipientEmail: admEmail,
-            recipientName: 'Receptor de Despacho',
-            recipientType: 'admin',
-            emailType: 'admin_dispatch_notice',
-            subject: adminSubject,
-            status: 'failed',
-            errorMessage: errorMsg,
-          });
-        }
-      }
+      const dispatchResults = await Promise.allSettled(
+        resolvedDispatchRecipients.map(async (admEmail) => {
+          try {
+            await transporter.sendMail({
+              from: fromAddress,
+              to: admEmail,
+              subject: adminSubject,
+              html: adminHtml,
+            });
+            await logEmailNotification({
+              orderId: order.id,
+              recipientEmail: admEmail,
+              recipientName: 'Receptor de Despacho',
+              recipientType: 'admin',
+              emailType: 'admin_dispatch_notice',
+              subject: adminSubject,
+              status: 'sent',
+              metadata: { from: fromAddress, total: order.total },
+            });
+            return true;
+          } catch (adminErr: unknown) {
+            const errorMsg = adminErr instanceof Error ? adminErr.message : String(adminErr);
+            console.error(`[emailService] Error enviando alerta a receptor (${admEmail}):`, adminErr);
+            await logEmailNotification({
+              orderId: order.id,
+              recipientEmail: admEmail,
+              recipientName: 'Receptor de Despacho',
+              recipientType: 'admin',
+              emailType: 'admin_dispatch_notice',
+              subject: adminSubject,
+              status: 'failed',
+              errorMessage: errorMsg,
+            });
+            return false;
+          }
+        })
+      );
+
+      adminsSent = dispatchResults.some(r => r.status === 'fulfilled' && r.value === true);
     }
 
     return { success: true, customerSent, adminsSent };

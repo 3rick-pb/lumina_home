@@ -81,12 +81,12 @@ export function CloudSyncStatus({
           type="button"
           onClick={handleManualSave}
           disabled={effectiveSyncing}
-          className={`font-semibold rounded-xl shadow-2xs transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-60 active:scale-95 select-none whitespace-nowrap shrink-0 ${
+          className={`font-bold rounded-xl transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-60 active:scale-95 select-none whitespace-nowrap shrink-0 ${
             compact ? "px-2.5 sm:px-3 py-1.5 text-[10.5px] sm:text-[11px]" : "px-3 sm:px-4 py-1.5 sm:py-2 text-[11px] sm:text-xs"
           } ${
             internalJustSaved
-              ? "bg-emerald-600 text-white shadow-emerald-500/20"
-              : "bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-800 dark:text-emerald-300 border border-emerald-500/30"
+              ? "bg-emerald-700 hover:bg-emerald-800 text-white shadow-md shadow-emerald-700/30 border border-emerald-600"
+              : "bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm shadow-emerald-600/30 border border-emerald-500/60 dark:border-emerald-400/40"
           }`}
           title="Tus cambios se sincronizan automáticamente en tiempo real en la base de datos."
         >

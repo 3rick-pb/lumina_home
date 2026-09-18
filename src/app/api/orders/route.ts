@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import { verifyIsAdmin, getAuthenticatedUser, getScopedSupabaseClient } from '@/lib/serverAuth';
 import { sendOrderEmails, getAllDispatchRecipients } from '@/lib/emailService';
+import { checkRateLimit, createRateLimitResponse } from '@/lib/rateLimit';
+import { appCache } from '@/lib/cache';
 
 export interface ApiOrder {
   id: string;
@@ -42,6 +44,15 @@ export interface ApiOrder {
 }
 
 export async function GET(request: Request) {
+  const rateLimit = checkRateLimit(request, {
+    keyPrefix: 'orders_get',
+    maxRequests: 60,
+    windowMs: 60 * 1000,
+  });
+  if (!rateLimit.isAllowed) {
+    return createRateLimitResponse('Demasiadas consultas de pedidos.', rateLimit.resetTimeMs);
+  }
+
   try {
     // Verify authenticated user via JWT Bearer
     const authUser = await getAuthenticatedUser(request);
@@ -107,6 +118,15 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
+  const rateLimit = checkRateLimit(request, {
+    keyPrefix: 'orders_post',
+    maxRequests: 20,
+    windowMs: 60 * 1000,
+  });
+  if (!rateLimit.isAllowed) {
+    return createRateLimitResponse('Límite de creación de pedidos excedido. Por favor espera un momento.', rateLimit.resetTimeMs);
+  }
+
   try {
     const body = await request.json();
     const { order } = body;
@@ -196,6 +216,7 @@ export async function POST(request: Request) {
             }
           }
         }
+        appCache.invalidate('products');
       }
     } catch (stockErr) {
       console.warn('[orders/route] Could not deduct inventory stock:', stockErr);

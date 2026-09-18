@@ -43,6 +43,7 @@ import { AddCardAnimatedModal } from "@/components/profile/AddCardAnimatedModal"
 import { OverviewTab } from "@/components/profile/tabs/OverviewTab";
 import { OrdersTab } from "@/components/profile/tabs/OrdersTab";
 import { CardsTab } from "@/components/profile/tabs/CardsTab";
+import { LuminaBrandEmblem } from "@/components/ui/LuminaBrandEmblem";
 import { FavoritesTab } from "@/components/profile/tabs/FavoritesTab";
 import { CatalogTab } from "@/components/profile/tabs/CatalogTab";
 import { NichesTab } from "@/components/profile/tabs/NichesTab";
@@ -613,18 +614,11 @@ const handleConfirmDeleteNiche = async () => {
   <div className="flex flex-col items-center gap-5 w-full">
   <Link 
     href="/" 
-    className="sidebar-dock-btn group relative w-11 h-11 md:w-12 md:h-12 rounded-2xl bg-black border border-[#c49a3f]/40 dark:border-[#c49a3f]/50 overflow-hidden flex items-center justify-center shadow-md shadow-[#c49a3f]/20 hover:border-[#c49a3f] hover:shadow-[0_0_15px_rgba(196,154,63,0.35)] hover:scale-105 active:scale-95 transition-all duration-300" 
-    title="Volver a Lumina"
+    className="sidebar-dock-btn group relative w-11 h-11 md:w-12 md:h-12 rounded-2xl bg-gradient-to-br from-[#1c1b18] via-[#121210] to-[#080808] border border-[#c49a3f]/50 dark:border-[#c49a3f]/60 flex items-center justify-center shadow-lg shadow-[#c49a3f]/15 hover:border-[#e0be70] hover:shadow-[0_0_20px_rgba(218,175,85,0.4)] hover:scale-105 active:scale-95 transition-all duration-300" 
+    title="Lumina Home • Volver a la Tienda"
   >
-    <Image 
-      src="/images/lumina-luxury-logo.jpg" 
-      alt="Lumina Home" 
-      fill 
-      sizes="48px"
-      className="object-cover group-hover:scale-110 transition-transform duration-500" 
-      priority
-    />
-    <span className="absolute -bottom-1 w-1.5 h-1.5 rounded-full bg-[#c49a3f] opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+    <LuminaBrandEmblem size={38} />
+    <span className="absolute -bottom-1 w-1.5 h-1.5 rounded-full bg-[#c49a3f] shadow-[0_0_8px_#c49a3f] opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
   </Link>
 
  {/* Visible section divider */}
