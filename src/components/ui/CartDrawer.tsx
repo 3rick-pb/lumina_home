@@ -36,7 +36,7 @@ import { useUserStore, Order, formatCleanName } from "@/lib/userStore";
 import { useCatalogStore, isAgotadoBadge } from "@/lib/catalogStore";
 import { getRefinedCoordinates } from "@/lib/locationUtils";
 
-// Official Card & Payment Gateway Logos
+// Official Card & Payment Gateway Logos (Authentic Vector Brandmarks)
 function MastercardLogo({ className = "h-4" }: { className?: string }) {
   return (
     <svg className={`shrink-0 ${className}`} viewBox="0 0 38 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -50,12 +50,16 @@ function MastercardLogo({ className = "h-4" }: { className?: string }) {
   );
 }
 
-function VisaLogo({ className = "h-4", fill = "#FFFFFF" }: { className?: string; fill?: string }) {
+function VisaLogo({ className = "h-4", fill = "#1A1F71" }: { className?: string; fill?: string }) {
   return (
-    <svg className={`shrink-0 ${className}`} viewBox="0 0 50 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <svg className={`shrink-0 ${className}`} viewBox="0 0 54 18" fill="none" xmlns="http://www.w3.org/2000/svg">
       <path
-        d="M19.1 1.2L12.6 15.2H8.5L5.3 3.6C5.1 2.8 4.9 2.5 4.3 2.2C3.3 1.6 1.6 1.1 0.2 0.8L0.3 0.4H7C7.9 0.4 8.6 1 8.8 1.9L10.5 10.5L14.6 1.2H19.1ZM35.6 10.5C35.6 6.6 30.1 6.4 30.2 4.7C30.2 4.1 30.7 3.6 31.8 3.4C32.3 3.3 33.9 3.3 35.6 4.1L36.3 1C35.4 0.6 34.2 0.3 32.7 0.3C28.8 0.3 26 2.4 26 5.4C26 7.6 28 8.8 29.5 9.5C31 10.3 31.5 10.8 31.5 11.4C31.5 12.4 30.3 12.9 29.2 12.9C27.2 12.9 26 12.3 25.1 11.9L24.4 15.2C25.3 15.6 27.1 16 28.9 16C33.1 16 35.6 14 35.6 10.5ZM45.9 15.2H49.5L46.4 1.2H43.1C42.3 1.2 41.6 1.7 41.3 2.4L35.3 15.2H39.6L40.5 12.8H45.4L45.9 15.2ZM41.7 9.5L43.6 4.2L44.7 9.5H41.7ZM25.3 1.2L21.9 15.2H18L21.4 1.2H25.3Z"
+        d="M20.87 1.2L13.75 16.8H9.11L5.6 3.84C5.38 2.96 5.16 2.65 4.5 2.3C3.4 1.73 1.54 1.2 0 0.85L0.13 0.41H7.52C8.49 0.41 9.32 1.07 9.54 2.09L11.39 11.59L15.88 1.2H20.87ZM39.02 11.66C39.06 7.3 32.99 7.08 33.08 5.19C33.12 4.62 33.65 4.01 34.88 3.83C35.5 3.74 37.22 3.7 39.11 4.58L39.9 1.15C38.89 0.75 37.52 0.4 35.85 0.4C31.58 0.4 28.5 2.69 28.46 5.99C28.42 8.41 30.62 9.73 32.25 10.52C33.92 11.36 34.49 11.89 34.49 12.59C34.45 13.69 33.17 14.17 31.98 14.17C29.78 14.17 28.46 13.51 27.45 13.07L26.66 16.77C27.67 17.21 29.65 17.65 31.67 17.65C36.25 17.65 38.98 15.45 39.02 11.66ZM50.37 16.8H54.28L50.9 1.2H47.29C46.41 1.2 45.62 1.73 45.31 2.52L38.71 16.8H43.46L44.43 14.12H49.84L50.37 16.8ZM45.75 10.47L47.86 4.67L49.09 10.47H45.75ZM27.72 1.2L23.98 16.8H19.67L23.41 1.2H27.72Z"
         fill={fill}
+      />
+      <path
+        d="M7.52 0.41H0.13L0 0.85C3.52 1.69 6.47 3.62 7.52 6.52L9.54 2.09C9.32 1.07 8.49 0.41 7.52 0.41Z"
+        fill="#F7B600"
       />
     </svg>
   );
@@ -63,53 +67,78 @@ function VisaLogo({ className = "h-4", fill = "#FFFFFF" }: { className?: string;
 
 function PayPhoneIcon({ className = "w-4 h-4" }: { className?: string }) {
   return (
-    <svg className={`shrink-0 ${className}`} viewBox="0 0 100 100" fill="none">
-      <rect width="100" height="100" rx="24" fill="#FF5E00" />
-      <path d="M32 25h36a7 7 0 017 7v36a7 7 0 01-7 7H32a7 7 0 01-7-7V32a7 7 0 017-7z" fill="#FFFFFF" />
-      <path d="M42 38h16a3 3 0 013 3v18a3 3 0 01-3 3H42a3 3 0 01-3-3V41a3 3 0 013-3z" fill="#FF5E00" />
-      <circle cx="50" cy="68" r="2.5" fill="#FF5E00" />
-      <path d="M46 45h8M46 49h5" stroke="#FFFFFF" strokeWidth="2.5" strokeLinecap="round" />
+    <svg className={`shrink-0 ${className}`} viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <rect width="100" height="100" rx="26" fill="#FF5E00" />
+      <path
+        d="M32 24H52C65.2548 24 76 34.7452 76 48C76 61.2548 65.2548 72 52 72H46V86H32V24Z"
+        fill="#FFFFFF"
+      />
+      <path
+        d="M46 38H52C57.5228 38 62 42.4772 62 48C62 53.5228 57.5228 58 52 58H46V38Z"
+        fill="#FF5E00"
+      />
     </svg>
   );
 }
 
 function DinersClubLogo({ className = "h-4" }: { className?: string }) {
   return (
-    <svg className={`shrink-0 ${className}`} viewBox="0 0 34 22" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <rect width="34" height="22" rx="4" fill="#0079BE" />
-      <circle cx="17" cy="11" r="7.5" fill="#004A97" />
-      <path d="M14.5 6.5C12.3 6.5 10.5 8.5 10.5 11C10.5 13.5 12.3 15.5 14.5 15.5V6.5ZM19.5 6.5V15.5C21.7 15.5 23.5 13.5 23.5 11C23.5 8.5 21.7 6.5 19.5 6.5Z" fill="#FFFFFF" />
+    <svg className={`shrink-0 ${className}`} viewBox="0 0 46 26" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <rect width="46" height="26" rx="4" fill="#0079BE" />
+      <circle cx="23" cy="13" r="10" fill="#004A97" />
+      <path
+        d="M19 7C15.7 7 13 9.7 13 13C13 16.3 15.7 19 19 19V7ZM27 7V19C30.3 19 33 16.3 33 13C33 9.7 30.3 7 27 7Z"
+        fill="#FFFFFF"
+      />
+      <rect x="20.5" y="8" width="5" height="10" fill="#004A97" />
     </svg>
   );
 }
 
 function DiscoverLogo({ className = "h-4" }: { className?: string }) {
   return (
-    <svg className={`shrink-0 ${className}`} viewBox="0 0 34 22" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <rect width="34" height="22" rx="4" fill="#FF6000" />
-      <circle cx="23.5" cy="11" r="5" fill="#FFA500" />
-      <circle cx="23.5" cy="11" r="2.5" fill="#FF6000" />
-      <path d="M6 7H10.5C12.5 7 14 8.6 14 11C14 13.4 12.5 15 10.5 15H6V7ZM8.5 13H10.2C11.3 13 11.8 12.2 11.8 11C11.8 9.8 11.3 9 10.2 9H8.5V13Z" fill="#FFFFFF" />
+    <svg className={`shrink-0 ${className}`} viewBox="0 0 62 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M1 2.5H6.2C10.2 2.5 13 5.4 13 10C13 14.6 10.2 17.5 6.2 17.5H1V2.5ZM4.2 14.7H6C8.5 14.7 10 13 10 10C10 7 8.5 5.3 6 5.3H4.2V14.7Z" fill="#18181B" />
+      <path d="M15.5 2.5H18.7V17.5H15.5V2.5Z" fill="#18181B" />
+      <path d="M21.5 14.2L23.8 13.5C24.5 15.2 25.8 15.8 27.2 15.8C28.5 15.8 29.4 15.2 29.4 14.3C29.4 13.3 28.5 12.9 26.8 12.3C23.8 11.3 22 10.2 22 7.5C22 4.7 24.5 2.8 27.5 2.8C30.1 2.8 32.1 4.1 32.8 6.2L30.6 7C30.1 5.7 29 4.9 27.6 4.9C26.4 4.9 25.4 5.5 25.4 6.5C25.4 7.4 26.1 7.9 27.9 8.5C30.9 9.5 32.8 10.6 32.8 13.4C32.8 16.4 30.5 18 27.3 18C24.2 18 22.2 16.4 21.5 14.2Z" fill="#18181B" />
+      <path d="M34.5 10C34.5 5.4 38 2.5 42.5 2.5C45.6 2.5 47.9 3.9 49 6L46.6 7.2C45.8 5.8 44.4 4.8 42.5 4.8C39.8 4.8 37.8 7 37.8 10C37.8 13 39.8 15.2 42.5 15.2C44.4 15.2 45.8 14.2 46.6 12.8L49 14C47.9 16.1 45.6 17.5 42.5 17.5C38 17.5 34.5 14.6 34.5 10Z" fill="#18181B" />
+      <circle cx="53.5" cy="10" r="7" fill="#FF6000" />
     </svg>
   );
 }
 
 function AmexLogo({ className = "h-4" }: { className?: string }) {
   return (
-    <svg className={`shrink-0 ${className}`} viewBox="0 0 34 22" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <rect width="34" height="22" rx="4" fill="#006FCF" />
-      <path d="M5.5 15L7.2 10.4L9 15H10.8L8.2 8.4L10.5 3H8.8L7.2 6.9L5.6 3H3.9L6.2 8.4L3.6 15H5.5ZM11.8 15H13.4V5.2H15.4L17 11.8L18.6 5.2H20.6V15H19.1V8.2L17.6 14.2H16.4L14.9 8.2V15H11.8ZM21.6 15H27.5V13.3H23.5V10.2H26.8V8.6H23.5V5H27.5V3.3H21.6V15Z" fill="#FFFFFF" />
+    <svg className={`shrink-0 ${className}`} viewBox="0 0 46 26" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <rect width="46" height="26" rx="4" fill="#006FCF" />
+      <path
+        d="M7 18L10 9.5H12.8L15.8 18H13.4L12.8 16.2H10L9.4 18H7ZM10.6 14.5H12.2L11.4 11.8L10.6 14.5Z"
+        fill="#FFFFFF"
+      />
+      <path
+        d="M16.5 18V9.5H19.5L21.5 15.5L23.5 9.5H26.5V18H24.5V12.2L22.3 18H20.7L18.5 12.2V18H16.5Z"
+        fill="#FFFFFF"
+      />
+      <path
+        d="M28 18V9.5H34.5V11.5H30.2V12.7H34.1V14.7H30.2V16H34.5V18H28Z"
+        fill="#FFFFFF"
+      />
+      <path
+        d="M35.5 18L38.8 13.8L35.8 9.5H38.5L40.2 12.1L41.9 9.5H44.6L41.6 13.8L45 18H42.3L40.2 15.4L38.1 18H35.5Z"
+        fill="#FFFFFF"
+      />
     </svg>
   );
 }
 
 function AliaLogo({ className = "h-4" }: { className?: string }) {
   return (
-    <svg className={`shrink-0 ${className}`} viewBox="0 0 34 22" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <rect width="34" height="22" rx="4" fill="#E21D24" />
-      <path d="M7 11C7 8.8 8.8 7 11 7C13.2 7 15 8.8 15 11C15 13.2 13.2 15 11 15C8.8 15 7 13.2 7 11Z" fill="#FFA500" />
-      <path d="M11 8.5C9.6 8.5 8.5 9.6 8.5 11C8.5 12.4 9.6 13.5 11 13.5C12.4 13.5 13.5 12.4 13.5 11C13.5 9.6 12.4 8.5 11 8.5Z" fill="#E21D24" />
-      <path d="M17 7.5H18.8V14.5H17V7.5ZM20.8 9H22.6V14.5H20.8V9ZM20.8 6.5H22.6V8H20.8V6.5ZM24.6 10.5C24.6 9.4 25.4 8.7 26.5 8.7C27.6 8.7 28.3 9.4 28.3 10.5V14.5H26.5V11C26.5 10.6 26.2 10.3 25.8 10.3C25.4 10.3 25.1 10.6 25.1 11V14.5H23.3V10.5H24.6Z" fill="#FFFFFF" />
+    <svg className={`shrink-0 ${className}`} viewBox="0 0 46 26" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <rect width="46" height="26" rx="4" fill="#E30613" />
+      <circle cx="12" cy="13" r="6" fill="#FFFFFF" />
+      <circle cx="12" cy="13" r="3.8" fill="#E30613" />
+      <circle cx="12" cy="13" r="1.8" fill="#FFC800" />
+      <text x="21" y="16.5" fill="#FFFFFF" fontFamily="system-ui, -apple-system, sans-serif" fontWeight="900" fontSize="11" letterSpacing="-0.3">alia</text>
     </svg>
   );
 }
@@ -145,30 +174,7 @@ function DeliveryTruckIcon({ className = "w-12 h-8" }: { className?: string }) {
   );
 }
 
-function EmvChip({ className = "w-8 h-6" }: { className?: string }) {
-  return (
-    <div className={`relative rounded-md bg-gradient-to-br from-[#E8D19F] via-[#D8B676] to-[#B8924B] p-0.5 border border-[#c49a3f]/40 shadow-xs flex items-center justify-center overflow-hidden shrink-0 ${className}`}>
-      <div className="w-full h-full rounded-[3px] border border-black/15 flex flex-col justify-between p-[2px] opacity-80">
-        <div className="h-px bg-black/30 w-full" />
-        <div className="flex justify-between w-full h-[6px]">
-          <div className="w-2 border-r border-black/30" />
-          <div className="w-2 border-l border-black/30" />
-        </div>
-        <div className="h-px bg-black/30 w-full" />
-      </div>
-    </div>
-  );
-}
 
-function ContactlessIcon({ className = "w-5 h-5" }: { className?: string }) {
-  return (
-    <svg className={`shrink-0 ${className}`} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M8.5 16.5a5 5 0 0 1 0-9" />
-      <path d="M12 19a8.5 8.5 0 0 1 0-14" />
-      <path d="M15.5 21.5a12 12 0 0 1 0-19" />
-    </svg>
-  );
-}
 
 export function CartDrawer() {
  const { 
@@ -1895,15 +1901,24 @@ export function CartDrawer() {
       <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-white/80 dark:via-white/20 to-transparent pointer-events-none" />
       <div className="absolute -top-16 -right-16 w-48 h-48 rounded-full bg-gradient-to-br from-[#FAF8F5]/80 via-white/40 to-transparent dark:from-white/5 dark:to-transparent blur-2xl pointer-events-none" />
 
-      {/* Card Top Row: Chip, Contactless, & PayPhone Brand Capsule */}
+      {/* Card Top Row: Official Security Seal & Gateway Badge */}
       <div className="relative z-10 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <EmvChip />
-          <ContactlessIcon className="w-5 h-5 text-gray-500 dark:text-gray-400" />
+        <div className="flex items-center gap-2.5">
+          <div className="w-8 h-8 rounded-xl bg-emerald-500/10 dark:bg-emerald-400/10 border border-emerald-500/20 flex items-center justify-center text-emerald-600 dark:text-emerald-400 shadow-2xs shrink-0">
+            <ShieldCheck className="w-4.5 h-4.5" />
+          </div>
+          <div>
+            <span className="text-[11px] font-extrabold uppercase tracking-wider text-gray-800 dark:text-gray-200 block">
+              Cobro Seguro Cifrado
+            </span>
+            <span className="text-[10px] text-gray-500 dark:text-gray-400 font-mono block">
+              Tokenización Bancaria SSL
+            </span>
+          </div>
         </div>
         
         <div className="flex items-center gap-2">
-          <span className="px-3 py-1 rounded-full bg-white/80 dark:bg-black/30 text-[11px] font-mono font-bold text-gray-800 dark:text-gray-200 border border-black/[0.06] dark:border-white/10 flex items-center gap-1.5 shadow-2xs">
+          <span className="px-3 py-1 rounded-full bg-white/90 dark:bg-black/40 text-[11px] font-bold text-gray-800 dark:text-gray-200 border border-black/[0.06] dark:border-white/10 flex items-center gap-1.5 shadow-2xs">
             <PayPhoneIcon className="w-3.5 h-3.5 text-[#FF5E00]" />
             <span>PayPhone</span>
           </span>
@@ -1962,30 +1977,65 @@ export function CartDrawer() {
         </div>
       )}
 
-      {/* Card Bottom Row: Supported Cards Badges in Symmetrical Luxury Pills */}
+      {/* Card Bottom Row: Supported Official Payment Methods in Authentic Bank Card Tiles */}
       <div className="relative z-10 pt-1 space-y-3">
         <div className="flex flex-wrap items-center gap-2">
-          <span className="px-3 py-1.5 rounded-full bg-white/90 dark:bg-black/40 border border-black/[0.06] dark:border-white/10 text-[11px] font-bold text-gray-800 dark:text-gray-200 flex items-center gap-1.5 shadow-2xs">
-            <PayPhoneIcon className="w-3.5 h-3.5" /> <span>PayPhone</span>
-          </span>
-          <span className="px-3 py-1.5 rounded-full bg-white/90 dark:bg-black/40 border border-black/[0.06] dark:border-white/10 text-[11px] font-bold text-gray-800 dark:text-gray-200 flex items-center gap-1.5 shadow-2xs">
-            <VisaLogo className="h-3" fill="#1A1F71" /> <span>Visa</span>
-          </span>
-          <span className="px-3 py-1.5 rounded-full bg-white/90 dark:bg-black/40 border border-black/[0.06] dark:border-white/10 text-[11px] font-bold text-gray-800 dark:text-gray-200 flex items-center gap-1.5 shadow-2xs">
-            <MastercardLogo className="h-3.5" /> <span>Mastercard</span>
-          </span>
-          <span className="px-3 py-1.5 rounded-full bg-white/90 dark:bg-black/40 border border-black/[0.06] dark:border-white/10 text-[11px] font-bold text-gray-800 dark:text-gray-200 flex items-center gap-1.5 shadow-2xs">
-            <AmexLogo className="h-3.5" /> <span>American Express</span>
-          </span>
-          <span className="px-3 py-1.5 rounded-full bg-white/90 dark:bg-black/40 border border-black/[0.06] dark:border-white/10 text-[11px] font-bold text-gray-800 dark:text-gray-200 flex items-center gap-1.5 shadow-2xs">
-            <DinersClubLogo className="h-3.5" /> <span>Diners Club</span>
-          </span>
-          <span className="px-3 py-1.5 rounded-full bg-white/90 dark:bg-black/40 border border-black/[0.06] dark:border-white/10 text-[11px] font-bold text-gray-800 dark:text-gray-200 flex items-center gap-1.5 shadow-2xs">
-            <DiscoverLogo className="h-3.5" /> <span>Discover</span>
-          </span>
-          <span className="px-3 py-1.5 rounded-full bg-white/90 dark:bg-black/40 border border-black/[0.06] dark:border-white/10 text-[11px] font-bold text-gray-800 dark:text-gray-200 flex items-center gap-1.5 shadow-2xs">
-            <AliaLogo className="h-3.5" /> <span>Alia</span>
-          </span>
+          {/* PayPhone */}
+          <div 
+            className="h-8 px-2.5 rounded-lg bg-white dark:bg-white/95 border border-black/10 dark:border-white/20 shadow-2xs flex items-center justify-center gap-1.5 transition-transform hover:scale-105" 
+            title="PayPhone Ecuador"
+          >
+            <PayPhoneIcon className="w-4 h-4" />
+            <span className="text-[11px] font-extrabold text-gray-900 tracking-tight">PayPhone</span>
+          </div>
+
+          {/* Visa */}
+          <div 
+            className="h-8 px-2.5 rounded-lg bg-white dark:bg-white/95 border border-black/10 dark:border-white/20 shadow-2xs flex items-center justify-center transition-transform hover:scale-105" 
+            title="Visa"
+          >
+            <VisaLogo className="h-3.5" />
+          </div>
+
+          {/* Mastercard */}
+          <div 
+            className="h-8 px-2.5 rounded-lg bg-white dark:bg-white/95 border border-black/10 dark:border-white/20 shadow-2xs flex items-center justify-center transition-transform hover:scale-105" 
+            title="Mastercard"
+          >
+            <MastercardLogo className="h-4" />
+          </div>
+
+          {/* American Express */}
+          <div 
+            className="h-8 px-2 rounded-lg bg-white dark:bg-white/95 border border-black/10 dark:border-white/20 shadow-2xs flex items-center justify-center transition-transform hover:scale-105" 
+            title="American Express"
+          >
+            <AmexLogo className="h-4.5" />
+          </div>
+
+          {/* Diners Club */}
+          <div 
+            className="h-8 px-2 rounded-lg bg-white dark:bg-white/95 border border-black/10 dark:border-white/20 shadow-2xs flex items-center justify-center transition-transform hover:scale-105" 
+            title="Diners Club International"
+          >
+            <DinersClubLogo className="h-4.5" />
+          </div>
+
+          {/* Discover */}
+          <div 
+            className="h-8 px-2.5 rounded-lg bg-white dark:bg-white/95 border border-black/10 dark:border-white/20 shadow-2xs flex items-center justify-center transition-transform hover:scale-105" 
+            title="Discover Network"
+          >
+            <DiscoverLogo className="h-3" />
+          </div>
+
+          {/* Alia */}
+          <div 
+            className="h-8 px-2 rounded-lg bg-white dark:bg-white/95 border border-black/10 dark:border-white/20 shadow-2xs flex items-center justify-center transition-transform hover:scale-105" 
+            title="Tarjetas Alia"
+          >
+            <AliaLogo className="h-4.5" />
+          </div>
         </div>
 
         <div className="pt-3 border-t border-black/[0.06] dark:border-white/10 flex items-center justify-between text-[11px] text-gray-500 dark:text-gray-400">
@@ -2140,12 +2190,10 @@ export function CartDrawer() {
                   <PayPhoneIcon className="w-4.5 h-4.5 text-white dark:text-[#18181b]" />
                 )}
               </div>
-              <span className="text-xs sm:text-sm font-bold tracking-tight text-white dark:text-[#18181b] whitespace-nowrap truncate">
+              <span className="text-xs sm:text-sm font-bold tracking-tight text-white dark:text-[#18181b] whitespace-nowrap">
                 {isProcessing 
                   ? "Conectando con PayPhone..." 
-                  : payphoneMode === "box" 
-                    ? "Pagar con Cajita PayPhone" 
-                    : "Pagar con PayPhone"}
+                  : "Pagar con PayPhone"}
               </span>
             </div>
 
