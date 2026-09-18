@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { supabaseServer, getAuthenticatedUser, verifyIsAdmin } from '@/lib/serverAuth';
-import { verifyAndSendTestEmail, sendOrderEmails, getDispatchRecipientEmails, OrderEmailData } from '@/lib/emailService';
+import { verifyAndSendTestEmail, sendOrderEmails, getAllDispatchRecipients, OrderEmailData } from '@/lib/emailService';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -8,9 +8,30 @@ export const revalidate = 0;
 const MAX_DISPATCH_RECIPIENTS = 7;
 
 /**
- * Loads the current list of dispatch notification recipients from admin_notification_settings
+ * Loads the current list of extra dispatch notification recipients.
+ * Prioritizes the dedicated table `admin_dispatch_recipients`.
+ * Falls back gracefully to `admin_notification_settings` for zero-downtime compatibility.
  */
 async function loadDispatchRecipients(): Promise<string[]> {
+  // 1. Dedicated public.admin_dispatch_recipients table
+  try {
+    const { data: rows, error } = await supabaseServer
+      .from('admin_dispatch_recipients')
+      .select('email')
+      .eq('is_active', true)
+      .limit(MAX_DISPATCH_RECIPIENTS);
+
+    if (!error && Array.isArray(rows) && rows.length > 0) {
+      const clean = rows
+        .map((r: { email?: string }) => String(r.email || '').toLowerCase().trim())
+        .filter((e: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e));
+      return Array.from(new Set(clean)).slice(0, MAX_DISPATCH_RECIPIENTS);
+    }
+  } catch (err) {
+    console.warn('[smtp/route] Notice reading admin_dispatch_recipients:', err);
+  }
+
+  // 2. Dual-persistence fallback
   try {
     const { data: row } = await supabaseServer
       .from('admin_notification_settings')
@@ -30,8 +51,9 @@ async function loadDispatchRecipients(): Promise<string[]> {
       } catch {}
     }
   } catch (err) {
-    console.warn('[smtp/route] Could not load dispatch recipients:', err);
+    console.warn('[smtp/route] Could not load dispatch recipients from fallback:', err);
   }
+
   return [];
 }
 
@@ -162,26 +184,57 @@ export async function POST(request: Request) {
         );
       }
 
-      const { error: dbErr } = await supabaseServer
-        .from('admin_notification_settings')
-        .upsert({
-          id: 'dispatch_recipients',
-          admin_email: authUser.email || 'admin@lumina.com',
-          title: JSON.stringify(cleanList),
-          position: 'dispatch',
-          layout: 'recipients',
-          updated_at: new Date().toISOString(),
-        }, { onConflict: 'id' });
+      // 1. Primary: Dedicated public.admin_dispatch_recipients table
+      try {
+        const { data: existingRows } = await supabaseServer
+          .from('admin_dispatch_recipients')
+          .select('email');
 
-      if (dbErr) {
-        return NextResponse.json({ success: false, error: 'Error al persistir receptores: ' + dbErr.message }, { status: 500 });
+        if (Array.isArray(existingRows)) {
+          for (const row of existingRows) {
+            if (row.email && !cleanList.includes(row.email.toLowerCase().trim())) {
+              await supabaseServer
+                .from('admin_dispatch_recipients')
+                .delete()
+                .eq('email', row.email);
+            }
+          }
+        }
+
+        for (const em of cleanList) {
+          await supabaseServer
+            .from('admin_dispatch_recipients')
+            .upsert({
+              email: em,
+              label: 'Bodega / Logística',
+              is_active: true,
+              added_by: authUser.email || 'admin@lumina.com',
+              updated_at: new Date().toISOString(),
+            }, { onConflict: 'email' });
+        }
+      } catch (tableErr) {
+        console.warn('[smtp/route] Notice writing to admin_dispatch_recipients:', tableErr);
       }
+
+      // 2. Secondary: Dual-persistence backup to admin_notification_settings
+      try {
+        await supabaseServer
+          .from('admin_notification_settings')
+          .upsert({
+            id: 'dispatch_recipients',
+            admin_email: authUser.email || 'admin@lumina.com',
+            title: JSON.stringify(cleanList),
+            position: 'dispatch',
+            layout: 'recipients',
+            updated_at: new Date().toISOString(),
+          }, { onConflict: 'id' });
+      } catch {}
 
       return NextResponse.json({
         success: true,
         message: cleanList.length > 0 
-          ? `Se guardaron exitosamente ${cleanList.length} correo(s) de despacho.` 
-          : 'Lista de correos de despacho vaciada. Las órdenes se enviarán a los administradores principales.',
+          ? `Se guardaron exitosamente ${cleanList.length} correo(s) extra(s) para despacho.` 
+          : 'Lista de correos extras vaciada. Las órdenes de despacho se enviarán exclusivamente a los Administradores del sistema.',
         dispatchRecipients: cleanList,
       });
     }
@@ -194,12 +247,12 @@ export async function POST(request: Request) {
       if (explicitTarget && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(explicitTarget)) {
         targetList = [explicitTarget];
       } else {
-        targetList = await getDispatchRecipientEmails();
+        targetList = await getAllDispatchRecipients();
       }
 
       if (targetList.length === 0) {
         return NextResponse.json(
-          { success: false, error: 'No hay correos de destino configurados para enviar la orden de prueba.' },
+          { success: false, error: 'No hay correos de administradores ni extras configurados para recibir la orden de prueba.' },
           { status: 400 }
         );
       }

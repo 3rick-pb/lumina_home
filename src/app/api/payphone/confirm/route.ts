@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { confirmPayPhonePayment, sanitizeString } from '@/lib/payphone';
 import { getAuthenticatedUser, getScopedSupabaseClient } from '@/lib/serverAuth';
-import { sendOrderEmails, getDispatchRecipientEmails } from '@/lib/emailService';
+import { sendOrderEmails, getAllDispatchRecipients } from '@/lib/emailService';
 import { ApiOrder } from '@/app/api/orders/route';
 import { checkRateLimit, createRateLimitResponse } from '@/lib/rateLimit';
 
@@ -243,10 +243,10 @@ export async function POST(request: Request) {
 
     // 6. Trigger Automatic Invoice & Warehouse Dispatch Notification Emails
     try {
-      const dispatchEmails = await getDispatchRecipientEmails();
+      const allDispatchRecipients = await getAllDispatchRecipients();
       await sendOrderEmails({
         order: apiOrder,
-        adminEmails: dispatchEmails
+        adminEmails: allDispatchRecipients
       });
     } catch (emailErr) {
       console.warn('[PayPhone] Warning: email dispatch encountered an issue:', emailErr);

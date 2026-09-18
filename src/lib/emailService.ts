@@ -67,11 +67,33 @@ export async function getAllAdminEmails(): Promise<string[]> {
 }
 
 /**
- * Retrieves the configured dispatch recipient emails (up to 7 emails).
- * Configured in "Mi Perfil -> Servidor SMTP" by administrators.
- * If no dispatch recipients are configured, falls back to getAllAdminEmails().
+ * Retrieves the extra dispatch recipient emails (up to 7 emails) configured by administrators.
+ * Dedicated for warehouse, logistics, or couriers who do NOT need to be store administrators
+ * nor registered accounts.
+ * Checks the dedicated table `admin_dispatch_recipients` first, with resilient fallback.
  */
-export async function getDispatchRecipientEmails(): Promise<string[]> {
+export async function getExtraDispatchRecipientEmails(): Promise<string[]> {
+  // 1. Primary: Dedicated public.admin_dispatch_recipients table
+  try {
+    const { data: rows, error } = await supabaseServer
+      .from('admin_dispatch_recipients')
+      .select('email')
+      .eq('is_active', true)
+      .limit(7);
+
+    if (!error && Array.isArray(rows) && rows.length > 0) {
+      const valid = rows
+        .map((r: { email?: string }) => String(r.email || '').toLowerCase().trim())
+        .filter((e: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e));
+      if (valid.length > 0) {
+        return Array.from(new Set(valid)).slice(0, 7);
+      }
+    }
+  } catch (err) {
+    console.warn('[emailService] Could not load from admin_dispatch_recipients:', err);
+  }
+
+  // 2. Secondary: Fallback setting row in admin_notification_settings
   try {
     const { data: row } = await supabaseServer
       .from('admin_notification_settings')
@@ -95,11 +117,50 @@ export async function getDispatchRecipientEmails(): Promise<string[]> {
       }
     }
   } catch (err) {
-    console.warn('[emailService] Could not load dispatch recipients from admin_notification_settings:', err);
+    console.warn('[emailService] Could not load dispatch recipients from fallback settings:', err);
   }
 
-  // Fallback: If no dispatch recipients configured, use admin emails
-  return getAllAdminEmails();
+  return [];
+}
+
+/**
+ * Returns the FULL consolidated list of recipients for the dispatch order notification:
+ * ALWAYS includes:
+ * 1. Master Administrator (admin@lumina.com)
+ * 2. All active secondary administrators (admin_invitations)
+ * PLUS:
+ * 3. Up to 7 extra external dispatch emails (warehouse, packing, logistics)
+ */
+export async function getAllDispatchRecipients(extraEmails?: string[]): Promise<string[]> {
+  const adminEmails = await getAllAdminEmails();
+  const configuredExtras = extraEmails && extraEmails.length > 0
+    ? extraEmails
+    : await getExtraDispatchRecipientEmails();
+
+  const combined = new Set<string>();
+
+  // 1. All administrators ALWAYS receive dispatch orders
+  for (const adm of adminEmails) {
+    if (adm && adm.includes('@')) {
+      combined.add(adm.toLowerCase().trim());
+    }
+  }
+
+  // 2. Up to 7 extra external dispatch emails receive it as well
+  for (const ext of configuredExtras) {
+    if (ext && ext.includes('@')) {
+      combined.add(ext.toLowerCase().trim());
+    }
+  }
+
+  return Array.from(combined);
+}
+
+/**
+ * Backwards compatibility alias for getAllDispatchRecipients
+ */
+export async function getDispatchRecipientEmails(): Promise<string[]> {
+  return getAllDispatchRecipients();
 }
 
 /**
@@ -682,7 +743,8 @@ export async function sendOrderEmails({
 
     const customerEmail = order.customerEmail || order.shippingAddress?.email;
     const customerName = order.customerName || order.recipient || 'Cliente';
-    const resolvedDispatchRecipients = adminEmails && adminEmails.length > 0 ? adminEmails : await getDispatchRecipientEmails();
+    // Guarantees ALL store administrators + up to 7 extra dispatch emails always receive the notice
+    const resolvedDispatchRecipients = await getAllDispatchRecipients(adminEmails);
 
     const customerSubject = `🧾 Factura Digital y Confirmación de Pedido #${order.id} - Lumina Home`;
     const adminSubject = `📦 [DESPACHO INMEDIATO] Nueva Orden #${order.id} - ${customerName} · Total: $${Number(order.total || 0).toFixed(2)}`;
@@ -909,7 +971,7 @@ export async function resendOrderEmail({
     }
 
     if (emailType === 'admin_dispatch_notice') {
-      const recipientList = targetEmail ? [targetEmail] : await getDispatchRecipientEmails();
+      const recipientList = targetEmail ? [targetEmail] : await getAllDispatchRecipients();
       if (recipientList.length === 0) {
         return { success: false, message: 'No hay correos de despacho o administradores configurados.' };
       }

@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { verifyIsAdmin, getAuthenticatedUser, getScopedSupabaseClient } from '@/lib/serverAuth';
-import { sendOrderEmails, getDispatchRecipientEmails } from '@/lib/emailService';
+import { sendOrderEmails, getAllDispatchRecipients } from '@/lib/emailService';
 
 export interface ApiOrder {
   id: string;
@@ -203,11 +203,11 @@ export async function POST(request: Request) {
 
     // 3. Trigger customer invoice and store admin dispatch notice safely
     try {
-      const dispatchEmails = await getDispatchRecipientEmails();
+      const allDispatchRecipients = await getAllDispatchRecipients();
       // Await email dispatch so serverless lambda does not freeze before completion
       await sendOrderEmails({
         order: newApiOrder,
-        adminEmails: dispatchEmails
+        adminEmails: allDispatchRecipients
       });
     } catch (emailInitErr) {
       console.warn('[emailService] Could not trigger email dispatch:', emailInitErr);

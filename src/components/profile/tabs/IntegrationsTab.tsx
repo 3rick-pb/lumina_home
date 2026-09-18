@@ -452,26 +452,27 @@ PAYPHONE_PAYMENT_MODE="${payphoneMode}"`;
               </div>
               <div>
                 <div className="flex items-center gap-2 mb-1 flex-wrap">
-                  <span className="font-mono text-[9px] font-bold px-2 py-0.5 rounded-md bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-500/20 uppercase tracking-widest flex items-center gap-1">
-                    <PackageCheck className="w-3 h-3" /> Logística & Almacén
+                  <span className="font-mono text-[9px] font-bold px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20 uppercase tracking-widest flex items-center gap-1">
+                    <ShieldCheck className="w-3 h-3" /> Administradores: Envío Siempre Garantizado
                   </span>
-                  <span className="font-mono text-[9px] font-bold px-2 py-0.5 rounded-md bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20 uppercase tracking-widest">
-                    Hasta 7 Correos Máximo
+                  <span className="font-mono text-[9px] font-bold px-2 py-0.5 rounded-md bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-500/20 uppercase tracking-widest flex items-center gap-1">
+                    <PackageCheck className="w-3 h-3" /> Hasta 7 Correos Extras
                   </span>
                 </div>
                 <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100 tracking-tight flex items-center gap-2">
-                  Receptores de Órdenes de Despacho
+                  Correos Extras para Notificaciones de Despacho
                 </h3>
                 <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 max-w-3xl leading-relaxed">
-                  Configura hasta <strong>7 correos electrónicos</strong> para recibir automáticamente las alertas y guías de despacho cada vez que un cliente realiza una compra.
-                  <span className="text-gray-700 dark:text-gray-300 font-medium"> Estos correos no necesitan ser administradores del sistema</span> (ideal para bodegueros, equipo de empaque o logística externa). Si la lista está vacía, se enviará a los Administradores Principales.
+                  Los <strong>Administradores del sistema</strong> (<code className="text-[#8c9276] font-mono">admin@lumina.com</code> y los administradores invitados) <strong>siempre reciben automáticamente</strong> la orden de despacho cada vez que un cliente realiza una compra.
+                  Aquí puedes agregar <strong>hasta 7 correos electrónicos adicionales</strong> (por ejemplo: bodegas, personal de empaque o logística externa).
+                  <span className="text-emerald-600 dark:text-emerald-400 font-medium"> Estos 7 correos extras no requieren estar registrados en la tienda ni pertenecer al equipo de administradores.</span>
                 </p>
               </div>
             </div>
 
             {/* Counter badge */}
             <div className="self-start sm:self-auto shrink-0 flex items-center gap-2">
-              <div className={`px-3 py-1.5 rounded-xl border text-xs font-mono font-bold flex items-center gap-1.5 shadow-2xs ${
+              <div className={`px-3.5 py-2 rounded-xl border text-xs font-mono font-bold flex items-center gap-2 shadow-2xs ${
                 dispatchRecipients.length >= 7 
                   ? 'bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-500/30' 
                   : dispatchRecipients.length > 0 
@@ -479,7 +480,25 @@ PAYPHONE_PAYMENT_MODE="${payphoneMode}"`;
                   : 'bg-gray-100 dark:bg-white/10 text-gray-600 dark:text-gray-400 border-gray-200 dark:border-white/10'
               }`}>
                 <Users className="w-3.5 h-3.5" />
-                <span>{dispatchRecipients.length} / 7 configurados</span>
+                <span>{dispatchRecipients.length} / 7 extras configurados</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Quick Context Summary */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 p-3.5 rounded-2xl bg-gray-50/80 dark:bg-[#1a1a1c]/70 border border-gray-200/60 dark:border-white/5 text-xs">
+            <div className="flex items-center gap-2.5">
+              <div className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" />
+              <div>
+                <span className="font-bold text-gray-900 dark:text-gray-100">Receptores Fijos (Siempre activos):</span>
+                <p className="text-[11px] text-gray-500 dark:text-gray-400">Todos los Administradores de Lumina Home reciben la orden de despacho de cada compra.</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2.5">
+              <div className="w-2 h-2 rounded-full bg-amber-500 shrink-0" />
+              <div>
+                <span className="font-bold text-gray-900 dark:text-gray-100">Receptores Extras ({dispatchRecipients.length} de 7):</span>
+                <p className="text-[11px] text-gray-500 dark:text-gray-400">Correos externos (bodegas, almacén, logística) sin necesidad de tener cuenta ni rol admin.</p>
               </div>
             </div>
           </div>
@@ -527,7 +546,7 @@ PAYPHONE_PAYMENT_MODE="${payphoneMode}"`;
           {/* Recipients List Grid */}
           <div className="space-y-3 pt-1">
             <span className="text-[11px] font-bold uppercase tracking-wider text-gray-400">
-              Correos Autorizados para Recibir Órdenes de Despacho:
+              Correos Extras Registrados para Recibir la Orden de Despacho ({dispatchRecipients.length} de 7):
             </span>
 
             {dispatchRecipients.length === 0 ? (
@@ -536,10 +555,10 @@ PAYPHONE_PAYMENT_MODE="${payphoneMode}"`;
                   <Mail className="w-5 h-5" />
                 </div>
                 <p className="text-xs font-semibold text-gray-700 dark:text-gray-300">
-                  No hay correos de despacho específicos configurados
+                  No hay correos extras configurados actualmente
                 </p>
                 <p className="text-[11px] text-gray-400 dark:text-gray-500 max-w-md mx-auto">
-                  En este momento, cada orden de despacho se enviará por defecto a los <strong>Administradores Principales</strong> de Lumina Home. Agrega correos arriba si deseas redirigir o incluir a tu equipo logístico.
+                  Cada orden de despacho se enviará de forma garantizada a los <strong>Administradores del sistema</strong>. Agrega hasta 7 correos extras arriba para incluir adicionalmente a tu equipo de bodega, logística o couriers externos.
                 </p>
               </div>
             ) : (
@@ -557,8 +576,8 @@ PAYPHONE_PAYMENT_MODE="${payphoneMode}"`;
                         <p className="text-xs font-bold text-gray-900 dark:text-gray-100 truncate font-mono">
                           {email}
                         </p>
-                        <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-medium flex items-center gap-1">
-                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" /> Receptor de Despacho
+                        <span className="text-[10px] text-amber-600 dark:text-amber-400 font-medium flex items-center gap-1">
+                          <span className="w-1.5 h-1.5 rounded-full bg-amber-500" /> Receptor Extra
                         </span>
                       </div>
                     </div>
@@ -615,14 +634,14 @@ PAYPHONE_PAYMENT_MODE="${payphoneMode}"`;
                 onClick={handleTestDispatchEmail}
                 disabled={isTestingDispatch || isSavingDispatch}
                 className="px-4 py-2 bg-gray-100 dark:bg-[#2c2c2e] hover:bg-gray-200 dark:hover:bg-[#3a3a3c] text-gray-700 dark:text-gray-200 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 disabled:opacity-50 border border-gray-200/50 dark:border-white/5"
-                title="Envía una orden de despacho de prueba a los destinatarios configurados"
+                title="Envía una orden de despacho de prueba a todos los administradores y a los receptores extras"
               >
                 {isTestingDispatch ? (
                   <RefreshCw className="w-3.5 h-3.5 animate-spin" />
                 ) : (
                   <Send className="w-3.5 h-3.5 text-[#8c9276]" />
                 )}
-                <span>{isTestingDispatch ? "Enviando Prueba..." : "Probar Envío de Despacho"}</span>
+                <span>{isTestingDispatch ? "Enviando Prueba..." : "Probar Envío a Admins & Extras"}</span>
               </button>
 
               <button
@@ -636,7 +655,7 @@ PAYPHONE_PAYMENT_MODE="${payphoneMode}"`;
                 ) : (
                   <Check className="w-3.5 h-3.5" />
                 )}
-                <span>{isSavingDispatch ? "Guardando..." : "Guardar Receptores"}</span>
+                <span>{isSavingDispatch ? "Guardando..." : "Guardar Receptores Extras"}</span>
               </button>
             </div>
           </div>
