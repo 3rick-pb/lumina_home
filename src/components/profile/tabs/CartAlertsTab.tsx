@@ -17,7 +17,6 @@ import {
   Eye,
   Monitor,
   Sparkles,
-  RefreshCw,
 } from 'lucide-react';
 import { 
   useAdminAlertStore, 
@@ -174,25 +173,6 @@ export function CartAlertsTab() {
           </div>
 
           <div className="flex flex-wrap items-center gap-3 shrink-0">
-            <button
-              type="button"
-              onClick={() => saveConfigToCloud()}
-              disabled={isSyncing}
-              className="px-4 py-2.5 rounded-2xl font-semibold text-xs bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-800 dark:text-emerald-300 border border-emerald-500/30 shadow-2xs active:scale-95 transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-60"
-              title="Tus cambios se guardan automáticamente en tiempo real. Puedes usar este botón si deseas forzar un guardado manual inmediato."
-            >
-              {isSyncing ? (
-                <>
-                  <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                  <span>Guardando...</span>
-                </>
-              ) : (
-                <>
-                  <Check className="w-3.5 h-3.5 stroke-[2.5]" />
-                  <span>Guardar en nube (Manual)</span>
-                </>
-              )}
-            </button>
             <button
               type="button"
               onClick={() => handleFireLiveTest(0)}
@@ -478,7 +458,7 @@ export function CartAlertsTab() {
                 Colores y Legibilidad
               </h3>
               <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-                Elige entre combinaciones sobrias de autor o ajusta los tonos manualmente con verificación WCAG.
+                Elige entre combinaciones sobrias de autor o personaliza los tonos con verificación WCAG.
               </p>
             </div>
 
@@ -512,7 +492,7 @@ export function CartAlertsTab() {
                         A
                       </div>
                       <div className="min-w-0 flex-1">
-                        <span className="text-[11px] font-bold text-gray-900 dark:text-white block truncate">
+                        <span className="text-[11px] font-bold text-gray-900 dark:text-gray-100 block truncate">
                           {preset.name}
                         </span>
                         <span className="text-[10px] text-gray-400 block truncate">
@@ -525,10 +505,10 @@ export function CartAlertsTab() {
               </div>
             </div>
 
-            {/* Manual Color Pickers */}
+            {/* Custom Color Pickers */}
             <div className="pt-3 border-t border-gray-100 dark:border-white/5 space-y-3">
               <label className="text-xs font-semibold text-gray-700 dark:text-gray-300 block">
-                Ajuste manual de tonos:
+                Ajuste personalizado de tonos:
               </label>
 
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">

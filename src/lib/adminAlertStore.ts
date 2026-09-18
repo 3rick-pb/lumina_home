@@ -385,22 +385,24 @@ interface AdminAlertState {
   bringToFront: (id: string) => void;
 }
 
+const CLIENT_INSTANCE_ID = typeof window !== 'undefined'
+  ? (window as unknown as { __lumina_cid?: string }).__lumina_cid ||
+    ((window as unknown as { __lumina_cid?: string }).__lumina_cid = `c_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`)
+  : 'srv';
+
+let lastUserChangeTimestamp = 0;
 let saveDebounceTimer: NodeJS.Timeout | null = null;
+let inFlightAbortController: AbortController | null = null;
 let isRealtimeAlertListenerAttached = false;
 
 const triggerDebouncedCloudSave = (
   newConfig: CartAlertConfig,
-  saveFn: (cfg: CartAlertConfig) => Promise<void>,
-  immediate = false
+  saveFn: (cfg: CartAlertConfig) => Promise<void>
 ) => {
   if (saveDebounceTimer) clearTimeout(saveDebounceTimer);
-  if (immediate) {
-    saveFn(newConfig);
-    return;
-  }
   saveDebounceTimer = setTimeout(() => {
     saveFn(newConfig);
-  }, 350);
+  }, 400);
 };
 
 export const hydrateAlertConfigFromClient = () => {
@@ -490,6 +492,14 @@ export const useAdminAlertStore = create<AdminAlertState>((set, get) => ({
         const chan = supabase.channel('admin:cart_alerts');
         chan.on('broadcast', { event: 'config_updated' }, ({ payload }) => {
           if (payload?.config) {
+            // 1. Ignore echoes originating from this very same client tab
+            if (payload.senderClientId === CLIENT_INSTANCE_ID) {
+              return;
+            }
+            // 2. If the user changed settings locally more recently than this broadcast, ignore it to prevent race jumps
+            if (payload.timestamp && payload.timestamp < lastUserChangeTimestamp) {
+              return;
+            }
             const currentConfig = get().config;
             if (JSON.stringify(currentConfig) !== JSON.stringify(payload.config)) {
               try {
@@ -513,15 +523,18 @@ export const useAdminAlertStore = create<AdminAlertState>((set, get) => ({
       if (res.ok) {
         const data = await res.json();
         if (data.success && data.config) {
-          try {
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(data.config));
-          } catch {}
-          set({
-            config: data.config,
-            lastSyncedAt: Date.now(),
-            isSyncing: false,
-            syncError: null,
-          });
+          // If the user already interacted locally during initial load, do not revert
+          if (lastUserChangeTimestamp === 0) {
+            try {
+              localStorage.setItem(STORAGE_KEY, JSON.stringify(data.config));
+            } catch {}
+            set({
+              config: data.config,
+              lastSyncedAt: Date.now(),
+              isSyncing: false,
+              syncError: null,
+            });
+          }
         }
       }
     } catch (err) {
@@ -531,6 +544,15 @@ export const useAdminAlertStore = create<AdminAlertState>((set, get) => ({
 
   saveConfigToCloud: async (newConfig?: CartAlertConfig) => {
     const targetConfig = newConfig || get().config;
+    const requestTimestamp = Date.now();
+
+    // Abort any previous pending save request so older responses cannot arrive out of order
+    if (inFlightAbortController) {
+      inFlightAbortController.abort();
+    }
+    inFlightAbortController = new AbortController();
+    const { signal } = inFlightAbortController;
+
     set({ isSyncing: true, syncError: null });
 
     try {
@@ -542,39 +564,52 @@ export const useAdminAlertStore = create<AdminAlertState>((set, get) => ({
 
       const res = await fetch('/api/admin/cart-alerts/config', {
         method: 'POST',
+        signal,
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${session.access_token}`,
         },
-        body: JSON.stringify(targetConfig),
+        body: JSON.stringify({
+          ...targetConfig,
+          clientId: CLIENT_INSTANCE_ID,
+        }),
       });
 
       if (res.ok) {
         const data = await res.json();
-        if (data.success && data.config) {
-          set({
-            config: data.config,
+        if (data.success) {
+          // CRITICAL: NEVER overwrite local state if the user made another change while this request was in flight!
+          const stateUpdate: Partial<AdminAlertState> = {
             lastSyncedAt: Date.now(),
             isSyncing: false,
             syncError: null,
-          });
+          };
+          if (data.config && lastUserChangeTimestamp <= requestTimestamp) {
+            stateUpdate.config = data.config;
+          }
+          set(stateUpdate);
           return;
         }
       }
       set({ isSyncing: false, syncError: 'No se pudo sincronizar con la nube.' });
-    } catch {
+    } catch (err: unknown) {
+      if (err instanceof Error && err.name === 'AbortError') {
+        // Ignored: superseded by a newer save request
+        return;
+      }
       set({ isSyncing: false, syncError: 'Error de conexión al guardar.' });
     }
   },
 
-  updateConfig: (patch, immediate = false) => {
+  updateConfig: (patch) => {
     const next = { ...get().config, ...patch };
+    lastUserChangeTimestamp = Date.now();
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
     } catch {}
+    // Optimistic UI update: instantly changes without delay or jump
     set({ config: next });
-    const isDiscrete = immediate || 'layout' in patch || 'soundEnabled' in patch || 'position' in patch || 'maxAlerts' in patch;
-    triggerDebouncedCloudSave(next, get().saveConfigToCloud, isDiscrete);
+    triggerDebouncedCloudSave(next, get().saveConfigToCloud);
   },
 
   applyPreset: (presetId: string) => {
@@ -588,11 +623,12 @@ export const useAdminAlertStore = create<AdminAlertState>((set, get) => ({
       subtextColor: preset.subtextColor,
       accentColor: preset.accentColor,
     };
+    lastUserChangeTimestamp = Date.now();
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
     } catch {}
     set({ config: next });
-    triggerDebouncedCloudSave(next, get().saveConfigToCloud, true);
+    triggerDebouncedCloudSave(next, get().saveConfigToCloud);
   },
 
   applyRecommendedContrast: () => {
@@ -603,14 +639,16 @@ export const useAdminAlertStore = create<AdminAlertState>((set, get) => ({
       textColor: audit.suggestedTextColor,
       subtextColor: audit.suggestedSubtextColor,
     };
+    lastUserChangeTimestamp = Date.now();
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
     } catch {}
     set({ config: next });
-    triggerDebouncedCloudSave(next, get().saveConfigToCloud, true);
+    triggerDebouncedCloudSave(next, get().saveConfigToCloud);
   },
 
   resetConfig: () => {
+    lastUserChangeTimestamp = Date.now();
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(DEFAULT_CONFIG));
     } catch {}

@@ -88,7 +88,7 @@ export function CloudSyncStatus({
               ? "bg-emerald-600 text-white shadow-emerald-500/20"
               : "bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-800 dark:text-emerald-300 border border-emerald-500/30"
           }`}
-          title="Tus cambios se sincronizan automáticamente en tiempo real. Puedes usar este botón si deseas forzar un guardado manual."
+          title="Tus cambios se sincronizan automáticamente en tiempo real en la base de datos."
         >
           {effectiveSyncing ? (
             <>

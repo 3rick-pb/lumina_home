@@ -175,12 +175,13 @@ export async function POST(request: Request) {
       { onConflict: 'id' }
     );
 
-    // 2. Clean up any rogue non-global rows in admin_notification_settings
+    // 2. Clean up any rogue non-global rows in admin_notification_settings (preserve dispatch_recipients)
     try {
       await supabase
         .from('admin_notification_settings')
         .delete()
-        .neq('id', 'global');
+        .neq('id', 'global')
+        .neq('id', 'dispatch_recipients');
     } catch {}
 
     // 3. Proactively clean any legacy garbage rows in active_sessions
@@ -191,9 +192,10 @@ export async function POST(request: Request) {
         .or(`user_id.like.SYS_ALERT_CFG_%,user_id.eq.SYS_ADMIN_CART_ALERT_CONFIG`);
     } catch {}
 
-    // Broadcast config update in realtime to any active client tabs
+    // Broadcast config update in realtime to other active client tabs
     try {
       const alertChannel = supabase.channel('admin:cart_alerts');
+      const senderClientId = typeof body.clientId === 'string' ? body.clientId : null;
       await new Promise<void>((resolve) => {
         alertChannel.subscribe(async (status) => {
           if (status === 'SUBSCRIBED') {
@@ -203,6 +205,7 @@ export async function POST(request: Request) {
               payload: {
                 config: validatedConfig,
                 updatedBy: cleanEmail,
+                senderClientId,
                 timestamp: Date.now(),
               },
             });

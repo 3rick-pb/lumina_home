@@ -642,7 +642,7 @@ PAYPHONE_PAYMENT_MODE="${payphoneMode}"`;
                     ? "bg-emerald-600 text-white shadow-emerald-500/20"
                     : "bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-800 dark:text-emerald-300 border border-emerald-500/30"
                 }`}
-                title="Los cambios se guardan automáticamente en tiempo real. Puedes usar este botón si deseas forzar un guardado manual."
+                title="Los cambios se guardan automáticamente en tiempo real en la base de datos."
               >
                 {isSavingDispatch ? (
                   <>
@@ -1066,7 +1066,7 @@ PAYPHONE_PAYMENT_MODE="${payphoneMode}"`;
                 onClick={() => handleSavePayphoneMode(payphoneMode)}
                 disabled={isSavingPayphone || isLoadingPayphone}
                 className="w-full py-3 bg-gray-100 hover:bg-gray-200 dark:bg-white/10 dark:hover:bg-white/15 text-gray-800 dark:text-gray-100 rounded-2xl text-xs font-bold transition-all cursor-pointer disabled:opacity-50 flex items-center justify-center gap-2 border border-gray-200/80 dark:border-white/10"
-                title="Se guarda automáticamente al seleccionar. Puedes hacer clic aquí si deseas forzar un guardado manual."
+                title="Se guarda automáticamente al seleccionar en tiempo real en la base de datos."
               >
                 {isSavingPayphone ? (
                   <>
