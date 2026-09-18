@@ -9,6 +9,7 @@ import { EmptyState } from "@/components/ui/EmptyState";
 import { useCatalogStore } from "@/lib/catalogStore";
 import { normalizeSearchText as normalizeText } from "@/lib/utils";
 import { ProximitySidebar } from "@/components/ui/proximity-sidebar";
+import { useBrand } from "@/core";
 
 const SHOP_SECTIONS = [
   { id: "shop-header", label: "Catálogo", level: 1 as const },
@@ -16,6 +17,7 @@ const SHOP_SECTIONS = [
 ];
 
 export default function ShopPage({ searchParams }: { searchParams: Promise<{ category?: string, search?: string }> }) {
+  const brand = useBrand();
   const resolvedSearchParams = React.use(searchParams);
   const categoryFilter = resolvedSearchParams.category;
   const searchQuery = resolvedSearchParams.search;
@@ -90,7 +92,7 @@ export default function ShopPage({ searchParams }: { searchParams: Promise<{ cat
           {filteredProducts.length === 0 ? (
             <EmptyState
               icon={PackageSearch}
-              badge="Catálogo Lumina"
+              badge={`Catálogo ${brand.shortName}`}
               title={searchQuery ? `Sin resultados para "${searchQuery}"` : "No encontramos productos en esta colección"}
               description={
                 searchQuery

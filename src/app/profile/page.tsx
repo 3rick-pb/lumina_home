@@ -55,11 +55,11 @@ import { ExcelExportRadialMenu } from "@/components/profile/ExcelExportRadialMen
 import { BlobatarAvatar } from "@/components/ui/BlobatarAvatar";
 import { useAvatarSettingsStore } from "@/lib/avatarSettingsStore";
 import { LuminaCombobox } from "@/components/ui/LuminaCombobox";
-
-
+import { useBrand } from "@/core";
 
 export default function ProfilePage() {
- const router = useRouter();
+  const brand = useBrand();
+  const router = useRouter();
   const { 
     user, 
     isLoading,
@@ -615,7 +615,7 @@ const handleConfirmDeleteNiche = async () => {
   <Link 
     href="/" 
     className="sidebar-dock-btn group relative w-11 h-11 md:w-12 md:h-12 rounded-2xl bg-gradient-to-br from-[#1c1b18] via-[#121210] to-[#080808] border border-[#c49a3f]/50 dark:border-[#c49a3f]/60 flex items-center justify-center shadow-lg shadow-[#c49a3f]/15 hover:border-[#e0be70] hover:shadow-[0_0_20px_rgba(218,175,85,0.4)] hover:scale-105 active:scale-95 transition-all duration-300" 
-    title="Lumina Home • Volver a la Tienda"
+    title={`${brand.name} • Volver a la Tienda`}
   >
     <LuminaBrandEmblem size={38} />
     <span className="absolute -bottom-1 w-1.5 h-1.5 rounded-full bg-[#c49a3f] shadow-[0_0_8px_#c49a3f] opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
@@ -829,7 +829,7 @@ const handleConfirmDeleteNiche = async () => {
   {/* Brand & Top Navigation Pill Bar */}
   <div className="flex items-center justify-center sm:justify-start gap-3 md:gap-4 min-w-0 flex-1 overflow-hidden">
   <Link href="/" className="font-display font-bold text-xl sm:text-2xl text-gray-900 dark:text-gray-100 tracking-tight shrink-0 flex items-center hover:opacity-85 transition-opacity mx-auto sm:mx-0" title="Ir a la tienda">
-  Lumina<span className="text-[#8c9276]">.</span>
+  {brand.logo.text}<span className="text-[#8c9276]">{brand.logo.accentDot}</span>
   </Link>
 
   {/* Top Bar Tabs (Visible on Laptop and Desktop, Hidden on Mobile) */}

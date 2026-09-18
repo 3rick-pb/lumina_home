@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { Product } from './data';
 import { supabase } from './supabase';
 import { playAddToCartSound } from './soundUtils';
+import { storeConfig } from '@/config';
 
 export interface CartBundleProduct {
   id: string;
@@ -434,8 +435,8 @@ export const useCartStore = create<CartState>((set, get) => ({
   getShipping: () => {
     const subtotal = get().getSubtotal();
     if (subtotal === 0) return 0;
-    if (get().isFreeShippingCoupon || subtotal >= 100) return 0;
-    return 4.99;
+    if (get().isFreeShippingCoupon || subtotal >= storeConfig.shipping.freeShippingThreshold) return 0;
+    return storeConfig.shipping.standardCost;
   },
 
   getTotal: () => {
@@ -482,23 +483,17 @@ export const useCartStore = create<CartState>((set, get) => ({
       console.warn("Could not query coupons from Supabase:", e);
     }
 
-    // 2. Fallback to predefined coupons if offline or table not yet migrated
+    // 2. Fallback to predefined store config coupons if offline or table not yet migrated
     if (!codeName) {
-      const DEFAULT_COUPONS: Record<string, { discountPercent: number; isFreeShipping: boolean; message: string }> = {
-        'LUMINA10': { discountPercent: 10, isFreeShipping: false, message: '¡Cupón LUMINA10 aplicado! 10% de descuento.' },
-        'VIP20': { discountPercent: 20, isFreeShipping: false, message: '¡Cupón VIP20 aplicado! 20% de descuento exclusivo.' },
-        'BIENVENIDO': { discountPercent: 15, isFreeShipping: false, message: '¡Cupón BIENVENIDO aplicado! 15% de descuento.' },
-        'ENVIOGRATIS': { discountPercent: 0, isFreeShipping: true, message: '¡Cupón de Envío Gratuito aplicado con éxito!' }
-      };
-
-      const fallback = DEFAULT_COUPONS[clean];
+      const fallback = storeConfig.defaultCoupons.find(c => c.code === clean);
       if (fallback) {
         codeName = clean;
         discount = fallback.discountPercent;
         freeShipping = fallback.isFreeShipping;
         message = fallback.message;
       } else {
-        return { success: false, message: 'Código no válido o expirado. Prueba con LUMINA10.' };
+        const primaryCoupon = storeConfig.defaultCoupons[0]?.code || "LUMINA10";
+        return { success: false, message: `Código no válido o expirado. Prueba con ${primaryCoupon}.` };
       }
     }
 

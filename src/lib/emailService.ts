@@ -1,5 +1,6 @@
 import nodemailer from 'nodemailer';
 import { supabaseServer, MASTER_ADMIN_EMAIL } from './serverAuth';
+import { brandConfig } from '@/config/brand.config';
 
 export interface OrderEmailItem {
   product: {
@@ -298,7 +299,7 @@ export function generateCustomerInvoiceHtml(order: OrderEmailData): string {
   const timeStr = order.time || new Date().toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
 
   const itemsRows = (order.items || []).map((item) => {
-    const title = item.product?.title || 'Pieza Lumina';
+    const title = item.product?.title || `Pieza ${brandConfig.shortName}`;
     const price = Number(item.product?.price || 0).toFixed(2);
     const qty = item.quantity || 1;
     const subtotal = (Number(item.product?.price || 0) * qty).toFixed(2);
@@ -480,7 +481,7 @@ export function generateCustomerInvoiceHtml(order: OrderEmailData): string {
                   ¿Tienes dudas o necesitas asistencia con tu entrega?
                 </div>
                 <div style="font-size:12px;color:#3b82f6;margin-top:4px;">
-                  Nuestro equipo de atención al cliente está siempre a tu disposición en <a href="mailto:soporte@lumina.com" style="color:#1d4ed8;font-weight:600;text-decoration:underline;">soporte@lumina.com</a>
+                  Nuestro equipo de atención al cliente está siempre a tu disposición en <a href="mailto:${brandConfig.contact.supportEmail}" style="color:#1d4ed8;font-weight:600;text-decoration:underline;">${brandConfig.contact.supportEmail}</a>
                 </div>
               </div>
 
@@ -491,7 +492,7 @@ export function generateCustomerInvoiceHtml(order: OrderEmailData): string {
           <tr>
             <td style="background-color:#f1f5f9;padding:24px 36px;text-align:center;border-top:1px solid #e2e8f0;">
               <div style="font-size:12px;font-weight:600;color:#475569;">
-                Lumina Home · Innovación &amp; Mobiliario de Alta Gama
+                ${brandConfig.name} · ${brandConfig.tagline}
               </div>
               <div style="font-size:11px;color:#94a3b8;margin-top:4px;">
                 Este es un comprobante de compra digital generado automáticamente. Todos los derechos reservados.
@@ -526,11 +527,11 @@ export function generateAdminDispatchNoticeHtml(order: OrderEmailData): string {
   const total = Number(order.total || 0).toFixed(2);
   const paymentMethod = order.paymentMethod || 'Tarjeta de Crédito / Débito';
   const cleanPhone = cleanPhoneForWhatsApp(phone);
-  const waText = encodeURIComponent(`Hola ${recipient}, te contactamos de Lumina Home respecto a tu orden #${orderId}.`);
+  const waText = encodeURIComponent(`Hola ${recipient}, te contactamos de ${brandConfig.name} respecto a tu orden #${orderId}.`);
   const waUrl = cleanPhone ? `https://wa.me/${cleanPhone}?text=${waText}` : '';
 
   const itemsRows = (order.items || []).map((item) => {
-    const title = item.product?.title || 'Pieza Lumina';
+    const title = item.product?.title || `Pieza ${brandConfig.shortName}`;
     const price = Number(item.product?.price || 0).toFixed(2);
     const qty = item.quantity || 1;
     const subtotal = (Number(item.product?.price || 0) * qty).toFixed(2);
@@ -711,7 +712,7 @@ export function generateAdminDispatchNoticeHtml(order: OrderEmailData): string {
           <tr>
             <td style="background-color:#f8fafc;padding:20px 36px;text-align:center;border-top:1px solid #e2e8f0;">
               <div style="font-size:11px;color:#94a3b8;">
-                Panel de Administración Lumina Home · Notificación Automática de Despacho
+                Panel de Administración ${brandConfig.name} · Notificación Automática de Despacho
               </div>
             </td>
           </tr>
@@ -739,14 +740,14 @@ export async function sendOrderEmails({
 }): Promise<{ success: boolean; customerSent: boolean; adminsSent: boolean; mocked?: boolean }> {
   try {
     const transporter = getTransporter();
-    const fromAddress = process.env.SMTP_FROM || 'Lumina Home <ventas@lumina.com>';
+    const fromAddress = process.env.SMTP_FROM || `${brandConfig.name} <${brandConfig.contact.supportEmail}>`;
 
     const customerEmail = order.customerEmail || order.shippingAddress?.email;
     const customerName = order.customerName || order.recipient || 'Cliente';
     // Guarantees ALL store administrators + up to 7 extra dispatch emails always receive the notice
     const resolvedDispatchRecipients = await getAllDispatchRecipients(adminEmails);
 
-    const customerSubject = `🧾 Factura Digital y Confirmación de Pedido #${order.id} - Lumina Home`;
+    const customerSubject = `🧾 Factura Digital y Confirmación de Pedido #${order.id} - ${brandConfig.name}`;
     const adminSubject = `📦 [DESPACHO INMEDIATO] Nueva Orden #${order.id} - ${customerName} · Total: $${Number(order.total || 0).toFixed(2)}`;
 
     const customerHtml = generateCustomerInvoiceHtml(order);
@@ -930,14 +931,14 @@ export async function resendOrderEmail({
     };
 
     const transporter = getTransporter();
-    const fromAddress = process.env.SMTP_FROM || 'Lumina Home <ventas@lumina.com>';
+    const fromAddress = process.env.SMTP_FROM || `${brandConfig.name} <${brandConfig.contact.supportEmail}>`;
 
     if (emailType === 'customer_invoice') {
       const recipient = targetEmail || mappedOrder.customerEmail || mappedOrder.shippingAddress?.email;
       if (!recipient || !recipient.includes('@')) {
         return { success: false, message: 'La orden no tiene un correo de cliente válido configurado.' };
       }
-      const subject = `🧾 Factura Digital y Confirmación de Pedido #${mappedOrder.id} - Lumina Home`;
+      const subject = `🧾 Factura Digital y Confirmación de Pedido #${mappedOrder.id} - ${brandConfig.name}`;
       const html = generateCustomerInvoiceHtml(mappedOrder);
 
       if (!transporter) {
@@ -988,7 +989,7 @@ export async function resendOrderEmail({
           await logEmailNotification({
             orderId: mappedOrder.id,
             recipientEmail: adm,
-            recipientName: 'Administrador Lumina',
+            recipientName: 'Administrador',
             recipientType: 'admin',
             emailType: 'admin_dispatch_notice',
             subject: `${subject} [Reenvío]`,
@@ -1010,7 +1011,7 @@ export async function resendOrderEmail({
         await logEmailNotification({
           orderId: mappedOrder.id,
           recipientEmail: adm,
-          recipientName: 'Administrador Lumina',
+          recipientName: 'Administrador',
           recipientType: 'admin',
           emailType: 'admin_dispatch_notice',
           subject,

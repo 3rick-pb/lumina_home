@@ -6,7 +6,7 @@ const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || supabaseAnon
 
 export const supabaseServer = createClient(supabaseUrl, supabaseServiceKey);
 
-export const MASTER_ADMIN_EMAIL = 'admin@lumina.com';
+export const MASTER_ADMIN_EMAIL = process.env.MASTER_ADMIN_EMAIL || 'admin@lumina.com';
 
 // Client pooling to prevent socket and connection exhaustion under high traffic
 // eslint-disable-next-line @typescript-eslint/no-explicit-any

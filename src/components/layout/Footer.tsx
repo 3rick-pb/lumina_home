@@ -3,8 +3,12 @@
 import React from "react";
 import { ShieldCheck, Truck, RotateCcw, Sparkles, CheckCircle2, Lock } from "lucide-react";
 import { usePathname } from "next/navigation";
+import { useBrand } from "@/core/hooks/useBrand";
+import { useStoreConfig } from "@/core/hooks/useStoreConfig";
 
 export function Footer() {
+  const brand = useBrand();
+  const store = useStoreConfig();
   const pathname = usePathname();
   const isDashboardPage = pathname?.startsWith("/profile") || pathname?.startsWith("/admin");
   const isAuthPage = pathname?.startsWith("/auth");
@@ -31,7 +35,7 @@ export function Footer() {
             <div className="pt-5 sm:pt-6 px-4 sm:px-10 flex items-center justify-between border-b border-black/[0.04] dark:border-white/[0.04] pb-4">
               <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#8c9276]/10 dark:bg-[#ccff00]/10 text-[#8c9276] dark:text-[#ccff00] text-[10px] sm:text-[11px] font-bold tracking-wider uppercase">
                 <Sparkles className="w-3.5 h-3.5" />
-                <span>Compromiso de Excelencia Lumina</span>
+                <span>Compromiso de Excelencia {brand.shortName}</span>
               </div>
               <span className="text-[11px] font-medium text-gray-400 dark:text-gray-500 hidden sm:inline-block">
                 Servicio certificado a nivel nacional
@@ -65,7 +69,7 @@ export function Footer() {
 
                 <div className="pt-3 border-t border-black/[0.04] dark:border-white/[0.04] flex items-center gap-2 text-[11px] font-semibold text-gray-600 dark:text-gray-300">
                   <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
-                  <span>Gratis en compras superiores a $99</span>
+                  <span>Gratis en compras superiores a {store.currency.symbol}{store.shipping.freeShippingThreshold}</span>
                 </div>
               </div>
 
@@ -121,7 +125,7 @@ export function Footer() {
 
                 <div className="pt-3 border-t border-black/[0.04] dark:border-white/[0.04] flex items-center gap-2 text-[11px] font-semibold text-gray-600 dark:text-gray-300">
                   <CheckCircle2 className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400 shrink-0" />
-                  <span>2 Años de Garantía Oficial Lumina</span>
+                  <span>2 Años de Garantía Oficial {brand.shortName}</span>
                 </div>
               </div>
 
@@ -132,7 +136,7 @@ export function Footer() {
         <div className="grid grid-cols-2 gap-6 sm:gap-8 md:grid-cols-4 lg:grid-cols-5">
           <div className="col-span-2 lg:col-span-2">
             <span className="font-display text-2xl font-bold tracking-tight text-brand-900 dark:text-white">
-              Lumina<span className="text-[#8c9276]">.</span>
+              {brand.logo.text}<span className="text-[#8c9276]">{brand.logo.accentDot}</span>
             </span>
             <p className="mt-3 sm:mt-4 text-xs sm:text-sm text-gray-500 dark:text-gray-400 max-w-xs leading-relaxed">
               Curamos los mejores artículos para transformar tu casa en el hogar que siempre soñaste. Calidad, diseño y confort.
@@ -150,7 +154,7 @@ export function Footer() {
           <div>
             <h3 className="text-xs sm:text-sm font-semibold text-gray-900 dark:text-gray-100 uppercase tracking-wider">Soporte</h3>
             <ul className="mt-3 sm:mt-4 space-y-2.5 sm:space-y-3">
-              <li><a href="#" className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 hover:text-accent-600 dark:hover:text-accent-400 transition-colors">Contacto</a></li>
+              <li><a href={`mailto:${brand.contact.supportEmail}`} className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 hover:text-accent-600 dark:hover:text-accent-400 transition-colors">Contacto</a></li>
               <li><a href="#" className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 hover:text-accent-600 dark:hover:text-accent-400 transition-colors">Envíos y Entregas</a></li>
               <li><a href="#" className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 hover:text-accent-600 dark:hover:text-accent-400 transition-colors">Devoluciones</a></li>
               <li><a href="#" className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 hover:text-accent-600 dark:hover:text-accent-400 transition-colors">FAQ</a></li>
@@ -167,7 +171,7 @@ export function Footer() {
         </div>
         <div className="mt-10 sm:mt-12 border-t border-gray-200/80 dark:border-white/10 pt-6 sm:pt-8 flex flex-col md:flex-row items-center justify-between gap-4">
           <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 text-center md:text-left">
-            &copy; {new Date().getFullYear()} Lumina Home. Todos los derechos reservados.
+            &copy; {new Date().getFullYear()} {brand.name}. Todos los derechos reservados.
           </p>
         </div>
       </div>

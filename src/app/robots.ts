@@ -1,6 +1,7 @@
 import { MetadataRoute } from "next";
+import { brandConfig } from "@/config/brand.config";
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://lumina-home.vercel.app";
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || brandConfig.meta.siteUrl;
 
 export default function robots(): MetadataRoute.Robots {
   return {

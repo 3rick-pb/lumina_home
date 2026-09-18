@@ -17,8 +17,10 @@ import {
 import { useCatalogStore, normalizeCategory, CatalogProduct, isAgotadoBadge } from "@/lib/catalogStore";
 import { ColorVariantsManager, ColorVariant } from "@/components/admin/ColorVariantsManager";
 import { normalizeImageUrl, normalizeImagesList, isGoogleDriveUrl } from "@/lib/imageUtils";
+import { useBrand } from "@/core";
 
 export default function AdminPage() {
+  const brand = useBrand();
   const { products, categories, addProduct, updateProduct, deleteProduct, addCategory, deleteCategory } = useCatalogStore();
   
   // Modal State
@@ -258,7 +260,7 @@ export default function AdminPage() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
         <div>
           <h1 className="text-3xl font-display italic font-bold text-gray-900 mb-1">Panel de Control</h1>
-          <p className="text-sm text-gray-600">Gestión ejecutiva de catálogo, nichos e inventario Lumina Home.</p>
+          <p className="text-sm text-gray-600">Gestión ejecutiva de catálogo, nichos e inventario {brand.name}.</p>
         </div>
         <div className="flex items-center gap-3">
           <button 

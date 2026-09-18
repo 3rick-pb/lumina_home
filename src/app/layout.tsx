@@ -32,91 +32,19 @@ const moonwalk = localFont({
   display: "swap",
 });
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://lumina-home.vercel.app";
+import { buildBrandMetadata } from "@/core/services/seo";
+import { brandConfig, themeConfig } from "@/config";
 
 export const viewport: Viewport = {
   themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#faf8f5" },
-    { media: "(prefers-color-scheme: dark)", color: "#161618" },
+    { media: "(prefers-color-scheme: light)", color: themeConfig.colors.surface.backgroundLight },
+    { media: "(prefers-color-scheme: dark)", color: themeConfig.colors.surface.backgroundDark },
   ],
   width: "device-width",
   initialScale: 1,
 };
 
-export const metadata: Metadata = {
-  metadataBase: new URL(SITE_URL),
-  title: {
-    default: "Lumina Home | Espacios con Alma y Diseño de Autor",
-    template: "%s | Lumina Home",
-  },
-  description:
-    "Descubre piezas exclusivas de diseño contemporáneo, iluminación escultural, aromaterapia, cerámica artesanal y mobiliario minimalista creados para transformar tu hogar.",
-  applicationName: "Lumina Home",
-  keywords: [
-    "Lumina Home",
-    "Lumina",
-    "muebles de diseño",
-    "iluminación escultórica",
-    "decoración minimalista",
-    "diseño de interiores",
-    "cerámica de autor",
-    "aromaterapia",
-    "textiles naturales",
-    "arquitectura de interiores",
-    "tienda de diseño"
-  ],
-  authors: [{ name: "Lumina Living Studio" }],
-  creator: "Lumina Home",
-  publisher: "Lumina Home",
-  formatDetection: {
-    telephone: false,
-    email: false,
-    address: false,
-  },
-  alternates: {
-    canonical: "/",
-  },
-  openGraph: {
-    type: "website",
-    locale: "es_EC",
-    url: SITE_URL,
-    siteName: "Lumina Home",
-    title: "Lumina Home | Espacios con Alma y Diseño de Autor",
-    description:
-      "Descubre piezas exclusivas de diseño contemporáneo, iluminación escultural, aromaterapia, cerámica artesanal y mobiliario minimalista creados para transformar tu hogar.",
-    images: [
-      {
-        url: "https://images.unsplash.com/photo-1507473885765-e6ed057f782c?q=80&w=1200&auto=format&fit=crop",
-        width: 1200,
-        height: 630,
-        alt: "Lumina Home — Colección de Autor",
-      },
-    ],
-  },
-  twitter: {
-    card: "summary_large_image",
-    title: "Lumina Home | Espacios con Alma y Diseño de Autor",
-    description:
-      "Descubre piezas exclusivas de diseño contemporáneo, iluminación escultural y mobiliario minimalista para tu hogar.",
-    images: [
-      "https://images.unsplash.com/photo-1507473885765-e6ed057f782c?q=80&w=1200&auto=format&fit=crop",
-    ],
-  },
-  robots: {
-    index: true,
-    follow: true,
-    googleBot: {
-      index: true,
-      follow: true,
-      "max-video-preview": -1,
-      "max-image-preview": "large",
-      "max-snippet": -1,
-    },
-  },
-  icons: {
-    icon: "/favicon.ico",
-  },
-};
+export const metadata: Metadata = buildBrandMetadata(brandConfig);
 
 export default function RootLayout({
   children,

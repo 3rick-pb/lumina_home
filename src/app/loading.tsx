@@ -1,6 +1,9 @@
 import React from "react";
+import { brandConfig } from "@/config/brand.config";
 
 export default function Loading() {
+  const monogram = brandConfig.shortName ? brandConfig.shortName.charAt(0) : "L";
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#fbfaf8]/80 dark:bg-[#121214]/85 backdrop-blur-xl transition-all duration-300">
       {/* Ambient background glows */}
@@ -13,14 +16,14 @@ export default function Loading() {
           <div className="absolute inset-0 rounded-2xl border-2 border-black/[0.06] dark:border-white/10" />
           <div className="absolute inset-0 rounded-2xl border-2 border-transparent border-t-[#8c9276] dark:border-t-amber-400 animate-spin" />
           <span className="font-display font-bold text-xl text-gray-900 dark:text-white tracking-widest pl-0.5 select-none">
-            L
+            {monogram}
           </span>
         </div>
 
         {/* Brand Caption & Minimal Progress */}
         <div className="text-center space-y-1.5">
           <p className="font-display font-semibold text-sm tracking-widest uppercase text-gray-900 dark:text-gray-100">
-            Lumina
+            {brandConfig.shortName}
           </p>
           <p className="text-[11px] text-gray-500 dark:text-gray-400 font-medium tracking-wide">
             Cargando experiencia...

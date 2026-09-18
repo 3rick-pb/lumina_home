@@ -19,12 +19,14 @@ const CartDrawer = dynamic(() => import('@/components/ui/CartDrawer').then(mod =
 import { usePathname, useRouter } from "next/navigation";
 import { normalizeSearchText } from "@/lib/utils";
 import { getSavedNicheSlots, fetchNicheSlotsFromCloud, getNicheIconByName, type NicheSlotConfig, DEFAULT_NICHE_SLOTS } from "@/lib/nicheIcons";
+import { useBrand } from "@/core/hooks/useBrand";
 
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
 export function Header() {
+  const brand = useBrand();
   const pathname = usePathname();
   const router = useRouter();
   const [nicheSlots, setNicheSlots] = useState<NicheSlotConfig[]>(DEFAULT_NICHE_SLOTS);
@@ -153,7 +155,7 @@ export function Header() {
           {/* Logo Section */}
           <Link href="/" className="pl-3 sm:pl-4 pr-3 sm:pr-6 flex items-center gap-1.5 group shrink-0">
             <span className="font-display italic text-lg sm:text-2xl font-bold tracking-tight text-gray-900 dark:text-gray-100 active:text-[#8c9276] [@media(hover:hover)]:group-hover:text-[#8c9276] transition-colors">
-              Lumina<span className="text-[#8c9276]">.</span>
+              {brand.logo.text}<span className="text-[#8c9276]">{brand.logo.accentDot}</span>
             </span>
           </Link>
 
@@ -400,7 +402,7 @@ export function Header() {
               className="pointer-events-auto absolute top-full mt-3 inset-x-3 sm:inset-x-4 max-w-sm mx-auto bg-white/95 dark:bg-[#1e1e20]/95 backdrop-blur-2xl border border-white/80 dark:border-white/10 rounded-3xl shadow-[0_20px_60px_rgba(0,0,0,0.12)] dark:shadow-[0_20px_60px_rgba(0,0,0,0.6)] p-4 z-50 md:hidden space-y-2.5"
             >
               <div className="flex items-center justify-between pb-2 border-b border-gray-100 dark:border-white/10 text-[10px] uppercase font-bold text-gray-400 tracking-wider">
-                <span>Navegación Lumina</span>
+                <span>Navegación {brand.shortName}</span>
                 <button 
                   onClick={() => setIsMobileMenuOpen(false)}
                   className="text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 text-xs font-semibold"
