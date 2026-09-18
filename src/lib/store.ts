@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { Product } from './data';
 import { supabase } from './supabase';
+import { playAddToCartSound } from './soundUtils';
 
 export interface CartBundleProduct {
   id: string;
@@ -232,6 +233,9 @@ export const useCartStore = create<CartState>((set, get) => ({
   },
 
   addItem: (product, quantity = 1, color, size) => {
+    // Play signature luxury add-to-cart chime
+    playAddToCartSound();
+
     const currentUserId = get().currentUserId;
     const cartItemId = `${product.id}-${color || 'default'}-${size || 'default'}`;
     const existingItem = get().items.find((item) => item.id === cartItemId);
@@ -268,6 +272,9 @@ export const useCartStore = create<CartState>((set, get) => ({
   },
 
   addBundle: (bundle) => {
+    // Play signature luxury add-to-cart chime
+    playAddToCartSound();
+
     const currentUserId = get().currentUserId;
     const bundleKey = `${bundle.bundleName}-${bundle.products.map(p => `${p.product.id}_${p.color || ''}_${p.size || ''}`).join('-')}`;
     const cartItemId = `bundle-${bundleKey}`;

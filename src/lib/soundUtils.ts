@@ -157,3 +157,130 @@ export function playFavoriteSound(): void {
     // Graceful fallback for restricted environments
   }
 }
+
+/**
+ * Schedules and executes the luxury tactile "Add to Cart" chime.
+ * Organic tactile drop transient + ascending major arpeggio (G5 -> C6 -> G6) with velvet harmonic overtone.
+ */
+function executeAddToCartChime(ctx: AudioContext): void {
+  try {
+    const now = ctx.currentTime + 0.008;
+
+    // Warm Low-pass filter for velvety, organic acoustic texture
+    const filter = ctx.createBiquadFilter();
+    filter.type = 'lowpass';
+    filter.frequency.setValueAtTime(3400, now);
+    filter.Q.setValueAtTime(1.1, now);
+
+    // 1. Organic tactile drop (gentle woody/bubble pop)
+    const popOsc = ctx.createOscillator();
+    popOsc.type = 'sine';
+    popOsc.frequency.setValueAtTime(360, now);
+    popOsc.frequency.exponentialRampToValueAtTime(140, now + 0.035);
+
+    const popGain = ctx.createGain();
+    popGain.gain.setValueAtTime(0.0001, now);
+    popGain.gain.linearRampToValueAtTime(0.07, now + 0.006);
+    popGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.05);
+
+    // 2. Chime Note 1 (G5 gliding to C6 - warm foundation)
+    const t1 = now + 0.012;
+    const osc1 = ctx.createOscillator();
+    osc1.type = 'sine';
+    osc1.frequency.setValueAtTime(784, t1); // G5
+    osc1.frequency.exponentialRampToValueAtTime(1046.5, t1 + 0.045); // C6
+
+    const osc1Gain = ctx.createGain();
+    osc1Gain.gain.setValueAtTime(0.0001, t1);
+    osc1Gain.gain.linearRampToValueAtTime(0.11, t1 + 0.012);
+    osc1Gain.gain.exponentialRampToValueAtTime(0.0001, t1 + 0.22);
+
+    // 3. Chime Note 2 (E6 sparkling up to G6 - luxury arrival confirmation)
+    const t2 = now + 0.055;
+    const osc2 = ctx.createOscillator();
+    osc2.type = 'sine';
+    osc2.frequency.setValueAtTime(1318.5, t2); // E6
+    osc2.frequency.exponentialRampToValueAtTime(1567.98, t2 + 0.05); // G6
+
+    const osc2Gain = ctx.createGain();
+    osc2Gain.gain.setValueAtTime(0.0001, t2);
+    osc2Gain.gain.linearRampToValueAtTime(0.13, t2 + 0.014);
+    osc2Gain.gain.exponentialRampToValueAtTime(0.0001, t2 + 0.26);
+
+    // 4. Subtle shimmer harmonic (C7 overtone for airy crystal elegance)
+    const osc3 = ctx.createOscillator();
+    osc3.type = 'sine';
+    osc3.frequency.setValueAtTime(2093, t2); // C7
+    const osc3Gain = ctx.createGain();
+    osc3Gain.gain.setValueAtTime(0.0001, t2);
+    osc3Gain.gain.linearRampToValueAtTime(0.028, t2 + 0.01);
+    osc3Gain.gain.exponentialRampToValueAtTime(0.0001, t2 + 0.16);
+
+    // Routing
+    popOsc.connect(popGain);
+    popGain.connect(filter);
+
+    osc1.connect(osc1Gain);
+    osc1Gain.connect(filter);
+
+    osc2.connect(osc2Gain);
+    osc2Gain.connect(filter);
+
+    osc3.connect(osc3Gain);
+    osc3Gain.connect(filter);
+
+    filter.connect(ctx.destination);
+
+    // Playback
+    popOsc.start(now);
+    popOsc.stop(now + 0.06);
+
+    osc1.start(t1);
+    osc1.stop(t1 + 0.24);
+
+    osc2.start(t2);
+    osc2.stop(t2 + 0.28);
+
+    osc3.start(t2);
+    osc3.stop(t2 + 0.18);
+
+    // Clean up active nodes after chime completes
+    setTimeout(() => {
+      try {
+        popOsc.disconnect();
+        popGain.disconnect();
+        osc1.disconnect();
+        osc1Gain.disconnect();
+        osc2.disconnect();
+        osc2Gain.disconnect();
+        osc3.disconnect();
+        osc3Gain.disconnect();
+        filter.disconnect();
+      } catch {}
+    }, 380);
+  } catch {
+    // Audio node creation fallback
+  }
+}
+
+/**
+ * Triggers the signature Lumina Home Add-to-Cart tactile chime.
+ */
+export function playAddToCartSound(): void {
+  if (typeof window === 'undefined') return;
+
+  try {
+    const ctx = getOrCreateContext();
+    if (!ctx) return;
+
+    if (ctx.state === 'suspended') {
+      ctx.resume()
+        .then(() => executeAddToCartChime(ctx))
+        .catch(() => {});
+    } else {
+      executeAddToCartChime(ctx);
+    }
+  } catch {
+    // Graceful fallback for restricted environments
+  }
+}
