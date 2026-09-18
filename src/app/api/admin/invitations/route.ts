@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getAuthenticatedUser, verifyIsAdmin, getScopedSupabaseClient } from '@/lib/serverAuth';
+import { getAuthenticatedUser, verifyIsAdmin, getScopedSupabaseClient, checkIfUserExists } from '@/lib/serverAuth';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -244,6 +244,18 @@ export async function POST(request: Request) {
       if (normalized === MASTER_ADMIN_EMAIL) {
         return NextResponse.json(
           { success: false, error: `El correo '${normalized}' es la cuenta Principal del sistema.` },
+          { status: 400 }
+        );
+      }
+
+      // Check if user is registered or has an active account in Lumina Home
+      const userCheck = await checkIfUserExists(normalized, request);
+      if (!userCheck.exists) {
+        return NextResponse.json(
+          {
+            success: false,
+            error: userCheck.reason || `El correo '${normalized}' no está registrado en el sistema. Para ser agregado como administrador, el usuario debe tener una cuenta creada previamente en Lumina Home.`,
+          },
           { status: 400 }
         );
       }

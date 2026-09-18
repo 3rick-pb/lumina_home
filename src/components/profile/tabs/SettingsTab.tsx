@@ -601,6 +601,14 @@ export function SettingsTab({
                     {invitedAdmins.length} de 3 cupos utilizados
                   </div>
 
+                  {/* Informative notice about pre-registered account requirement */}
+                  <div className="p-3 rounded-xl bg-blue-500/10 dark:bg-blue-500/15 border border-blue-500/20 text-blue-800 dark:text-blue-300 text-[11px] leading-relaxed flex items-start gap-2">
+                    <AlertCircle className="w-4 h-4 shrink-0 text-blue-600 dark:text-blue-400 mt-0.5" />
+                    <div>
+                      <span className="font-bold">Requisito de Seguridad:</span> El usuario debe tener una cuenta registrada previamente en Lumina Home con ese correo antes de poder ser agregado como administrador.
+                    </div>
+                  </div>
+
                   <div className="space-y-3">
                     <div className="flex gap-2">
                       <div className="relative flex-1">

@@ -67,6 +67,42 @@ export async function getAllAdminEmails(): Promise<string[]> {
 }
 
 /**
+ * Retrieves the configured dispatch recipient emails (up to 7 emails).
+ * Configured in "Mi Perfil -> Servidor SMTP" by administrators.
+ * If no dispatch recipients are configured, falls back to getAllAdminEmails().
+ */
+export async function getDispatchRecipientEmails(): Promise<string[]> {
+  try {
+    const { data: row } = await supabaseServer
+      .from('admin_notification_settings')
+      .select('title')
+      .eq('id', 'dispatch_recipients')
+      .maybeSingle();
+
+    if (row?.title) {
+      try {
+        const parsed = JSON.parse(row.title);
+        if (Array.isArray(parsed)) {
+          const validEmails = parsed
+            .map((e: unknown) => String(e || '').toLowerCase().trim())
+            .filter((e: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e));
+          if (validEmails.length > 0) {
+            return Array.from(new Set(validEmails)).slice(0, 7);
+          }
+        }
+      } catch (parseErr) {
+        console.warn('[emailService] Could not parse dispatch recipients JSON:', parseErr);
+      }
+    }
+  } catch (err) {
+    console.warn('[emailService] Could not load dispatch recipients from admin_notification_settings:', err);
+  }
+
+  // Fallback: If no dispatch recipients configured, use admin emails
+  return getAllAdminEmails();
+}
+
+/**
  * Creates the nodemailer transporter or returns null if credentials are not configured
  */
 function getTransporter() {
@@ -646,7 +682,7 @@ export async function sendOrderEmails({
 
     const customerEmail = order.customerEmail || order.shippingAddress?.email;
     const customerName = order.customerName || order.recipient || 'Cliente';
-    const resolvedAdmins = adminEmails && adminEmails.length > 0 ? adminEmails : await getAllAdminEmails();
+    const resolvedDispatchRecipients = adminEmails && adminEmails.length > 0 ? adminEmails : await getDispatchRecipientEmails();
 
     const customerSubject = `🧾 Factura Digital y Confirmación de Pedido #${order.id} - Lumina Home`;
     const adminSubject = `📦 [DESPACHO INMEDIATO] Nueva Orden #${order.id} - ${customerName} · Total: $${Number(order.total || 0).toFixed(2)}`;
@@ -658,7 +694,7 @@ export async function sendOrderEmails({
       console.log('----------------------------------------------------');
       console.log('📦 [emailService - SIMULATED MODE] SMTP no configurado en entorno local.');
       console.log(`✉️ Factura registrada para Cliente: ${customerEmail || '(Sin correo de cliente)'}`);
-      console.log(`✉️ Alerta de Despacho registrada para Admins: ${resolvedAdmins.join(', ')}`);
+      console.log(`✉️ Alerta de Despacho registrada para Receptores: ${resolvedDispatchRecipients.join(', ')}`);
       console.log(`📋 Orden: #${order.id} | Total: $${Number(order.total || 0).toFixed(2)} | Cédula: ${order.customerIdNumber || 'N/A'}`);
       console.log('----------------------------------------------------');
 
@@ -681,12 +717,12 @@ export async function sendOrderEmails({
         });
       }
 
-      // 2. Registrar simulación de Alerta de Despacho para cada Admin
-      for (const admEmail of resolvedAdmins) {
+      // 2. Registrar simulación de Alerta de Despacho para cada Receptor
+      for (const admEmail of resolvedDispatchRecipients) {
         await logEmailNotification({
           orderId: order.id,
           recipientEmail: admEmail,
-          recipientName: 'Administrador Lumina',
+          recipientName: 'Receptor de Despacho',
           recipientType: 'admin',
           emailType: 'admin_dispatch_notice',
           subject: adminSubject,
@@ -742,9 +778,9 @@ export async function sendOrderEmails({
       }
     }
 
-    // 2. Envío de Alerta de Despacho a Administradores
-    if (resolvedAdmins.length > 0) {
-      for (const admEmail of resolvedAdmins) {
+    // 2. Envío de Alerta de Despacho a Receptores Autorizados
+    if (resolvedDispatchRecipients.length > 0) {
+      for (const admEmail of resolvedDispatchRecipients) {
         try {
           await transporter.sendMail({
             from: fromAddress,
@@ -756,7 +792,7 @@ export async function sendOrderEmails({
           await logEmailNotification({
             orderId: order.id,
             recipientEmail: admEmail,
-            recipientName: 'Administrador Lumina',
+            recipientName: 'Receptor de Despacho',
             recipientType: 'admin',
             emailType: 'admin_dispatch_notice',
             subject: adminSubject,
@@ -765,11 +801,11 @@ export async function sendOrderEmails({
           });
         } catch (adminErr: unknown) {
           const errorMsg = adminErr instanceof Error ? adminErr.message : String(adminErr);
-          console.error(`[emailService] Error enviando alerta a admin (${admEmail}):`, adminErr);
+          console.error(`[emailService] Error enviando alerta a receptor (${admEmail}):`, adminErr);
           await logEmailNotification({
             orderId: order.id,
             recipientEmail: admEmail,
-            recipientName: 'Administrador Lumina',
+            recipientName: 'Receptor de Despacho',
             recipientType: 'admin',
             emailType: 'admin_dispatch_notice',
             subject: adminSubject,
@@ -873,9 +909,9 @@ export async function resendOrderEmail({
     }
 
     if (emailType === 'admin_dispatch_notice') {
-      const recipientList = targetEmail ? [targetEmail] : await getAllAdminEmails();
+      const recipientList = targetEmail ? [targetEmail] : await getDispatchRecipientEmails();
       if (recipientList.length === 0) {
-        return { success: false, message: 'No hay correos de administradores configurados.' };
+        return { success: false, message: 'No hay correos de despacho o administradores configurados.' };
       }
       const subject = `📦 [DESPACHO INMEDIATO] Nueva Orden #${mappedOrder.id} - ${mappedOrder.customerName || 'Cliente'} · Total: $${Number(mappedOrder.total).toFixed(2)}`;
       const html = generateAdminDispatchNoticeHtml(mappedOrder);

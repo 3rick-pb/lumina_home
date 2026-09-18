@@ -103,3 +103,90 @@ export async function verifyIsAdmin(email?: string | null, request?: Request | s
 
   return false;
 }
+
+/**
+ * Checks whether an email belongs to a registered or active account in Lumina Home.
+ * Checks master administrators, Supabase auth (via service role if available),
+ * user_profiles, addresses, and orders.
+ */
+export async function checkIfUserExists(
+  email: string, 
+  request?: Request | string | null
+): Promise<{ exists: boolean; reason?: string }> {
+  if (!email) return { exists: false, reason: 'Correo electrónico vacío.' };
+  const cleanEmail = email.toLowerCase().trim();
+
+  // 1. Master admin accounts are always valid
+  if (cleanEmail === MASTER_ADMIN_EMAIL || cleanEmail === 'arteagae796@gmail.com') {
+    return { exists: true };
+  }
+
+  // 2. Try Supabase Auth Admin API if service role key is present
+  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY?.trim();
+  if (serviceKey) {
+    try {
+      const client = getServiceSupabaseClient();
+      const { data, error } = await client.auth.admin.listUsers({ page: 1, perPage: 1000 });
+      if (!error && data?.users) {
+        const found = data.users.some(
+          (u) => u.email?.toLowerCase().trim() === cleanEmail
+        );
+        if (found) return { exists: true };
+      }
+    } catch (e) {
+      console.warn('Notice: Error verifying user in auth.admin.listUsers:', e);
+    }
+  }
+
+  // 3. Query public.user_profiles table
+  try {
+    const client = getScopedSupabaseClient(request);
+    const { data: profile, error } = await client
+      .from('user_profiles')
+      .select('user_id, email')
+      .ilike('email', cleanEmail)
+      .limit(1)
+      .maybeSingle();
+
+    if (!error && profile) {
+      return { exists: true };
+    }
+  } catch (e) {
+    console.warn('Notice: Error checking user_profiles for email:', e);
+  }
+
+  // 4. Query public.addresses table (saved user customer addresses)
+  try {
+    const client = getScopedSupabaseClient(request);
+    const { data: addr, error } = await client
+      .from('addresses')
+      .select('id')
+      .ilike('email', cleanEmail)
+      .limit(1)
+      .maybeSingle();
+
+    if (!error && addr) {
+      return { exists: true };
+    }
+  } catch {}
+
+  // 5. Query public.orders table (customer order records)
+  try {
+    const client = getScopedSupabaseClient(request);
+    const { data: ord, error } = await client
+      .from('orders')
+      .select('id')
+      .ilike('customer_email', cleanEmail)
+      .limit(1)
+      .maybeSingle();
+
+    if (!error && ord) {
+      return { exists: true };
+    }
+  } catch {}
+
+  return {
+    exists: false,
+    reason: `El correo '${email}' no está registrado en el sistema. Para ser agregado como administrador, el usuario debe tener una cuenta creada previamente en Lumina Home.`,
+  };
+}

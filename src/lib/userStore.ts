@@ -792,6 +792,19 @@ export const useUserStore = create<UserState>((set, get) => ({
           useAvatarSettingsStore.getState().loadSettingsFromDatabase(session.user.id);
           setupAvatarRealtimeListener(session.user.id);
 
+          // Proactively ensure profile and email are indexed in user_profiles
+          if (session.user.id && email) {
+            supabase
+              .from('user_profiles')
+              .upsert({
+                user_id: session.user.id,
+                display_name: name,
+                email: email.toLowerCase().trim(),
+                updated_at: new Date().toISOString()
+              }, { onConflict: 'user_id' })
+              .then(() => {});
+          }
+
           const currentUserId = get().user?.id;
           if (currentUserId !== session.user.id) {
             set({ 
@@ -939,6 +952,16 @@ export const useUserStore = create<UserState>((set, get) => ({
       const personalData = await fetchUserDataFromDatabase(data.user.id, role, userEmail);
       const userObj: User = { id: data.user.id, email: userEmail, name, role, isRootAdmin };
 
+      // Ensure user_profiles has latest email and display name
+      try {
+        await supabase.from('user_profiles').upsert({
+          user_id: data.user.id,
+          display_name: name,
+          email: userEmail.toLowerCase().trim(),
+          updated_at: new Date().toISOString()
+        }, { onConflict: 'user_id' });
+      } catch {}
+
       set({ 
         user: userObj, 
         isAuthenticated: true, 
@@ -1046,8 +1069,9 @@ export const useUserStore = create<UserState>((set, get) => ({
         await supabase.from('user_profiles').upsert({
           user_id: data.user.id,
           display_name: cleanName,
+          email: cleanEmail,
           updated_at: new Date().toISOString()
-        });
+        }, { onConflict: 'user_id' });
       } catch {}
 
       // Transfer any guest data to Database
@@ -1415,8 +1439,9 @@ export const useUserStore = create<UserState>((set, get) => ({
           await supabase.from('user_profiles').upsert({
             user_id: currentUser.id,
             display_name: cleanName,
+            email: currentUser.email?.toLowerCase().trim() || null,
             updated_at: new Date().toISOString()
-          });
+          }, { onConflict: 'user_id' });
         } catch {}
       }
     }

@@ -334,6 +334,7 @@ export async function POST(request: Request) {
         await supabase.from('user_profiles').upsert({
           user_id: targetUserId,
           display_name: body.profile.displayName || null,
+          email: authUser?.email || body.profile.email || null,
           phone: body.profile.phone || null,
           avatar_url: body.profile.avatarUrl || null,
           updated_at: new Date().toISOString(),

@@ -16,7 +16,14 @@ import {
   Wallet, 
   Eye, 
   EyeOff, 
-  RefreshCw 
+  RefreshCw,
+  Truck,
+  PackageCheck,
+  Trash2,
+  Plus,
+  Users,
+  CheckCircle2,
+  Info
 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { useUserStore } from "@/lib/userStore";
@@ -48,6 +55,13 @@ export function IntegrationsTab() {
   const [isTesting, setIsTesting] = useState(false);
   const [testResult, setTestResult] = useState<{ success: boolean; message: string } | null>(null);
 
+  // Receptores de Órdenes de Despacho (Máximo 7 correos)
+  const [dispatchRecipients, setDispatchRecipients] = useState<string[]>([]);
+  const [recipientInput, setRecipientInput] = useState("");
+  const [isSavingDispatch, setIsSavingDispatch] = useState(false);
+  const [isTestingDispatch, setIsTestingDispatch] = useState(false);
+  const [dispatchMsg, setDispatchMsg] = useState<{ success: boolean; text: string } | null>(null);
+
   // Guide accordion
   const [showGoogleGuide, setShowGoogleGuide] = useState(false);
 
@@ -66,7 +80,7 @@ export function IntegrationsTab() {
   const [showPayphoneToken, setShowPayphoneToken] = useState(false);
   const [copiedPayphone, setCopiedPayphone] = useState(false);
 
-  // Fetch current Vercel environment variable status
+  // Fetch current Vercel environment variable status & dispatch recipients
   const fetchSmtpStatus = useCallback(async () => {
     setIsLoadingStatus(true);
     try {
@@ -80,6 +94,9 @@ export function IntegrationsTab() {
         setSmtpStatus(data);
         if (data.user) {
           setGmailUser(prev => prev || data.user);
+        }
+        if (Array.isArray(data.dispatchRecipients)) {
+          setDispatchRecipients(data.dispatchRecipients);
         }
       }
     } catch (err) {
@@ -259,6 +276,134 @@ PAYPHONE_PAYMENT_MODE="${payphoneMode}"`;
     }
   };
 
+  // Dispatch recipients actions
+  const handleAddRecipient = () => {
+    const raw = recipientInput.trim();
+    if (!raw) return;
+
+    // Support comma, semicolon or whitespace separated emails
+    const candidates = raw
+      .split(/[,;\s]+/)
+      .map(e => e.trim().toLowerCase())
+      .filter(Boolean);
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const invalid = candidates.find(e => !emailRegex.test(e));
+    if (invalid) {
+      setDispatchMsg({ success: false, text: `El correo '${invalid}' no tiene un formato válido.` });
+      return;
+    }
+
+    const currentSet = new Set(dispatchRecipients.map(e => e.toLowerCase().trim()));
+    const newItems: string[] = [];
+
+    for (const c of candidates) {
+      if (currentSet.has(c)) continue;
+      currentSet.add(c);
+      newItems.push(c);
+    }
+
+    if (newItems.length === 0) {
+      setDispatchMsg({ success: false, text: "Los correos ingresados ya están presentes en la lista." });
+      return;
+    }
+
+    const nextList = [...dispatchRecipients, ...newItems];
+    if (nextList.length > 7) {
+      setDispatchMsg({
+        success: false,
+        text: `Límite alcanzado: Puedes registrar hasta un máximo de 7 correos. Actualmente tendrías ${nextList.length}.`,
+      });
+      return;
+    }
+
+    setDispatchRecipients(nextList);
+    setRecipientInput("");
+    setDispatchMsg({
+      success: true,
+      text: `Se agregaron ${newItems.length} correo(s) a la lista. Haz clic en "Guardar Receptores" para aplicar los cambios en el sistema.`,
+    });
+  };
+
+  const handleRemoveRecipient = (emailToRemove: string) => {
+    const nextList = dispatchRecipients.filter(e => e.toLowerCase().trim() !== emailToRemove.toLowerCase().trim());
+    setDispatchRecipients(nextList);
+    setDispatchMsg({
+      success: true,
+      text: `Se eliminó '${emailToRemove}'. Haz clic en "Guardar Receptores" para confirmar la actualización.`,
+    });
+  };
+
+  const handleSaveDispatchRecipients = async () => {
+    setIsSavingDispatch(true);
+    setDispatchMsg(null);
+
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+      if (session?.access_token) headers['Authorization'] = `Bearer ${session.access_token}`;
+
+      const res = await fetch("/api/admin/smtp", {
+        method: "POST",
+        headers,
+        body: JSON.stringify({
+          action: "save_dispatch_recipients",
+          recipients: dispatchRecipients,
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        throw new Error(data.error || data.message || "Error al guardar receptores.");
+      }
+
+      setDispatchRecipients(data.dispatchRecipients || dispatchRecipients);
+      setDispatchMsg({
+        success: true,
+        text: data.message || "Receptores de despacho guardados exitosamente.",
+      });
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Error inesperado al guardar.";
+      setDispatchMsg({ success: false, text: msg });
+    } finally {
+      setIsSavingDispatch(false);
+    }
+  };
+
+  const handleTestDispatchEmail = async () => {
+    setIsTestingDispatch(true);
+    setDispatchMsg(null);
+
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+      if (session?.access_token) headers['Authorization'] = `Bearer ${session.access_token}`;
+
+      const res = await fetch("/api/admin/smtp", {
+        method: "POST",
+        headers,
+        body: JSON.stringify({
+          action: "test_dispatch",
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        throw new Error(data.error || data.message || "Error al enviar correo de prueba de despacho.");
+      }
+
+      setDispatchMsg({
+        success: true,
+        text: data.message || "Alerta de despacho de prueba enviada exitosamente.",
+      });
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Error al enviar prueba de despacho.";
+      setDispatchMsg({ success: false, text: msg });
+    } finally {
+      setIsTestingDispatch(false);
+    }
+  };
+
   return (
     <div className="space-y-8 animate-fade-in">
       
@@ -295,6 +440,208 @@ PAYPHONE_PAYMENT_MODE="${payphoneMode}"`;
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+
+        {/* MODULE: RECEPTORES DE ÓRDENES DE DESPACHO (BODEGA & LOGÍSTICA) */}
+        <div className="lg:col-span-12 bg-white/90 dark:bg-[#202022]/90 backdrop-blur-2xl p-6 md:p-8 rounded-3xl sm:rounded-[2.5rem] border border-white/80 dark:border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.03)] space-y-6">
+          
+          {/* Header Bar */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-gray-100 dark:border-white/5">
+            <div className="flex items-start gap-3">
+              <div className="w-10 h-10 rounded-2xl bg-amber-500/10 dark:bg-amber-500/15 flex items-center justify-center text-amber-600 dark:text-amber-400 font-bold shrink-0 mt-0.5">
+                <Truck className="w-5 h-5" />
+              </div>
+              <div>
+                <div className="flex items-center gap-2 mb-1 flex-wrap">
+                  <span className="font-mono text-[9px] font-bold px-2 py-0.5 rounded-md bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-500/20 uppercase tracking-widest flex items-center gap-1">
+                    <PackageCheck className="w-3 h-3" /> Logística & Almacén
+                  </span>
+                  <span className="font-mono text-[9px] font-bold px-2 py-0.5 rounded-md bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20 uppercase tracking-widest">
+                    Hasta 7 Correos Máximo
+                  </span>
+                </div>
+                <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100 tracking-tight flex items-center gap-2">
+                  Receptores de Órdenes de Despacho
+                </h3>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 max-w-3xl leading-relaxed">
+                  Configura hasta <strong>7 correos electrónicos</strong> para recibir automáticamente las alertas y guías de despacho cada vez que un cliente realiza una compra.
+                  <span className="text-gray-700 dark:text-gray-300 font-medium"> Estos correos no necesitan ser administradores del sistema</span> (ideal para bodegueros, equipo de empaque o logística externa). Si la lista está vacía, se enviará a los Administradores Principales.
+                </p>
+              </div>
+            </div>
+
+            {/* Counter badge */}
+            <div className="self-start sm:self-auto shrink-0 flex items-center gap-2">
+              <div className={`px-3 py-1.5 rounded-xl border text-xs font-mono font-bold flex items-center gap-1.5 shadow-2xs ${
+                dispatchRecipients.length >= 7 
+                  ? 'bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-500/30' 
+                  : dispatchRecipients.length > 0 
+                  ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border-emerald-500/25' 
+                  : 'bg-gray-100 dark:bg-white/10 text-gray-600 dark:text-gray-400 border-gray-200 dark:border-white/10'
+              }`}>
+                <Users className="w-3.5 h-3.5" />
+                <span>{dispatchRecipients.length} / 7 configurados</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Input & Quick Add */}
+          <div className="space-y-2">
+            <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300">
+              Agregar Nuevo Correo de Despacho
+            </label>
+            <div className="flex flex-col sm:flex-row gap-2">
+              <div className="relative flex-1">
+                <Mail className="w-4 h-4 absolute left-3.5 top-3 text-gray-400" />
+                <input
+                  type="email"
+                  value={recipientInput}
+                  onChange={(e) => setRecipientInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      handleAddRecipient();
+                    }
+                  }}
+                  placeholder="ej: bodega@lumina.com, despacho@logistica.com"
+                  disabled={dispatchRecipients.length >= 7 || isSavingDispatch}
+                  className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-xs bg-white dark:bg-[#1a1a1c] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#8c9276] disabled:opacity-50 transition-all font-medium"
+                />
+              </div>
+
+              <button
+                type="button"
+                onClick={handleAddRecipient}
+                disabled={!recipientInput.trim() || dispatchRecipients.length >= 7 || isSavingDispatch}
+                className="px-5 py-2.5 bg-[#8c9276] hover:bg-[#7a8065] text-white rounded-xl text-xs font-bold transition-all disabled:opacity-50 cursor-pointer shrink-0 shadow-sm flex items-center justify-center gap-1.5"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                <span>Agregar</span>
+              </button>
+            </div>
+            <p className="text-[11px] text-gray-400 dark:text-gray-500 flex items-center gap-1">
+              <Info className="w-3 h-3 text-gray-400" />
+              Puedes ingresar varios correos separados por coma o espacio. Quedan {Math.max(0, 7 - dispatchRecipients.length)} cupos disponibles.
+            </p>
+          </div>
+
+          {/* Recipients List Grid */}
+          <div className="space-y-3 pt-1">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-gray-400">
+              Correos Autorizados para Recibir Órdenes de Despacho:
+            </span>
+
+            {dispatchRecipients.length === 0 ? (
+              <div className="p-6 rounded-2xl bg-gray-50/70 dark:bg-[#1a1a1c]/60 border border-dashed border-gray-200 dark:border-white/10 text-center space-y-2">
+                <div className="w-10 h-10 rounded-full bg-gray-200/50 dark:bg-white/5 flex items-center justify-center mx-auto text-gray-400">
+                  <Mail className="w-5 h-5" />
+                </div>
+                <p className="text-xs font-semibold text-gray-700 dark:text-gray-300">
+                  No hay correos de despacho específicos configurados
+                </p>
+                <p className="text-[11px] text-gray-400 dark:text-gray-500 max-w-md mx-auto">
+                  En este momento, cada orden de despacho se enviará por defecto a los <strong>Administradores Principales</strong> de Lumina Home. Agrega correos arriba si deseas redirigir o incluir a tu equipo logístico.
+                </p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                {dispatchRecipients.map((email, idx) => (
+                  <div
+                    key={email}
+                    className="p-3.5 rounded-2xl bg-gray-50 dark:bg-[#1a1a1c] border border-gray-200/70 dark:border-white/10 flex items-center justify-between gap-3 shadow-2xs group hover:border-[#8c9276]/40 transition-all"
+                  >
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <span className="w-6 h-6 rounded-lg bg-[#8c9276]/10 text-[#8c9276] font-mono text-[10px] font-bold flex items-center justify-center shrink-0">
+                        #{idx + 1}
+                      </span>
+                      <div className="min-w-0">
+                        <p className="text-xs font-bold text-gray-900 dark:text-gray-100 truncate font-mono">
+                          {email}
+                        </p>
+                        <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-medium flex items-center gap-1">
+                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" /> Receptor de Despacho
+                        </span>
+                      </div>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveRecipient(email)}
+                      disabled={isSavingDispatch}
+                      className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 rounded-lg transition-colors cursor-pointer shrink-0"
+                      title="Eliminar de la lista de despacho"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Feedback banner */}
+          {dispatchMsg && (
+            <div className={`p-3.5 rounded-2xl text-xs flex items-center justify-between gap-2 border ${
+              dispatchMsg.success 
+                ? 'bg-emerald-50 text-emerald-800 border-emerald-200 dark:bg-emerald-950/30 dark:text-emerald-300 dark:border-emerald-800/40' 
+                : 'bg-red-50 text-red-800 border-red-200 dark:bg-red-950/30 dark:text-red-300 dark:border-red-800/40'
+            }`}>
+              <div className="flex items-center gap-2">
+                {dispatchMsg.success ? (
+                  <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                ) : (
+                  <AlertTriangle className="w-4 h-4 text-red-600 shrink-0" />
+                )}
+                <span className="font-medium">{dispatchMsg.text}</span>
+              </div>
+              <button 
+                type="button" 
+                onClick={() => setDispatchMsg(null)}
+                className="text-[11px] font-bold underline cursor-pointer"
+              >
+                Cerrar
+              </button>
+            </div>
+          )}
+
+          {/* Action Bar */}
+          <div className="pt-3 border-t border-gray-100 dark:border-white/5 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+            <div className="text-[11px] text-gray-400 dark:text-gray-500">
+              * Los cambios se aplican inmediatamente para los próximos pedidos una vez guardados.
+            </div>
+
+            <div className="flex items-center gap-2.5 self-end sm:self-auto flex-wrap">
+              <button
+                type="button"
+                onClick={handleTestDispatchEmail}
+                disabled={isTestingDispatch || isSavingDispatch}
+                className="px-4 py-2 bg-gray-100 dark:bg-[#2c2c2e] hover:bg-gray-200 dark:hover:bg-[#3a3a3c] text-gray-700 dark:text-gray-200 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 disabled:opacity-50 border border-gray-200/50 dark:border-white/5"
+                title="Envía una orden de despacho de prueba a los destinatarios configurados"
+              >
+                {isTestingDispatch ? (
+                  <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                ) : (
+                  <Send className="w-3.5 h-3.5 text-[#8c9276]" />
+                )}
+                <span>{isTestingDispatch ? "Enviando Prueba..." : "Probar Envío de Despacho"}</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={handleSaveDispatchRecipients}
+                disabled={isSavingDispatch}
+                className="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 shadow-sm disabled:opacity-50"
+              >
+                {isSavingDispatch ? (
+                  <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                ) : (
+                  <Check className="w-3.5 h-3.5" />
+                )}
+                <span>{isSavingDispatch ? "Guardando..." : "Guardar Receptores"}</span>
+              </button>
+            </div>
+          </div>
+
+        </div>
 
         {/* LEFT COLUMN: VERCEL STATUS & GENERATOR (7 Cols) */}
         <div className="lg:col-span-7 space-y-6">
