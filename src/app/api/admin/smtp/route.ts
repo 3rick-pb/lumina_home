@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { supabaseServer, getAuthenticatedUser, verifyIsAdmin } from '@/lib/serverAuth';
 import { verifyAndSendTestEmail, sendOrderEmails, getAllDispatchRecipients, OrderEmailData } from '@/lib/emailService';
+import { brandConfig } from '@/config';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -78,7 +79,7 @@ export async function GET(request: Request) {
     const host = process.env.SMTP_HOST || 'smtp.gmail.com';
     const port = Number(process.env.SMTP_PORT) || 587;
     const user = process.env.SMTP_USER || '';
-    const from = process.env.SMTP_FROM || (user ? `Lumina Home <${user}>` : '');
+    const from = process.env.SMTP_FROM || (user ? `${brandConfig.name} <${user}>` : '');
     const hasPassword = Boolean(process.env.SMTP_PASS);
     const isConfigured = Boolean(process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS);
 

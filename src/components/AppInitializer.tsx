@@ -6,6 +6,7 @@ import { useCatalogStore } from "@/lib/catalogStore";
 import { useUserStore, hydrateStoreFromClient } from "@/lib/userStore";
 import { useRadarStore } from "@/lib/radarStore";
 import { useCartStore } from "@/lib/store";
+import { useBrand } from "@/core/hooks/useBrand";
 
 function getOrCreateSessionId(userId?: string): string {
   if (typeof window === "undefined") return `sess_${userId || "anon"}_init`;
@@ -23,6 +24,7 @@ function getOrCreateSessionId(userId?: string): string {
 }
 
 function ActivityTracker() {
+  const brand = useBrand();
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const user = useUserStore((state) => state.user);
@@ -66,7 +68,7 @@ function ActivityTracker() {
   } else if (pathname === "/checkout") {
     currentSection = "En Proceso de Pago";
   } else if (pathname === "/") {
-    currentSection = "Inicio • Lumina Home";
+    currentSection = `Inicio • ${brand.name}`;
   } else {
     currentSection = "Explorando Tienda";
   }

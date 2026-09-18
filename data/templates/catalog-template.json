@@ -1,0 +1,42 @@
+[
+  {
+    "title": "Mesa de Centro Minimalista",
+    "slug": "mesa-centro-minimalista",
+    "price": 249.99,
+    "originalPrice": 299.99,
+    "category": "Mobiliario",
+    "stock": 15,
+    "badge": "Diseño de Autor",
+    "description": "Mesa de centro fabricada en madera maciza de roble con acabado mate natural.",
+    "material": "Madera de Roble",
+    "dimensions": "120x60x45 cm",
+    "warranty": "2 años de garantía",
+    "images": [
+      "https://images.unsplash.com/photo-1533090161767-e6ffed986b88?q=80&w=800"
+    ],
+    "variants": [
+      { "id": "v1", "name": "Roble Natural", "stock": 10 },
+      { "id": "v2", "name": "Roble Oscuro", "stock": 5 }
+    ]
+  },
+  {
+    "title": "Lámpara Escultural Nórdica",
+    "slug": "lampara-escultural-nordica",
+    "price": 129.50,
+    "originalPrice": 150.00,
+    "category": "Iluminación",
+    "stock": 25,
+    "badge": "Bestseller",
+    "description": "Lámpara de suspensión con difusor esférico opalino y estructura de latón pulido.",
+    "material": "Latón y Cristal Opalino",
+    "dimensions": "Diámetro 30 cm",
+    "warranty": "1 año de garantía",
+    "images": [
+      "https://images.unsplash.com/photo-1507473885765-e6ed057f782c?q=80&w=800"
+    ],
+    "variants": [
+      { "id": "v3", "name": "Latón Dorado", "stock": 15 },
+      { "id": "v4", "name": "Negro Mate", "stock": 10 }
+    ]
+  }
+]

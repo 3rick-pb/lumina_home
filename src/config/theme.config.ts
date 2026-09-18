@@ -1,10 +1,11 @@
-import { luminaThemeConfig } from './brands/lumina/theme';
+import { activeThemeConfig } from './active-brand';
 import { ThemeConfig } from './types';
 
 /**
- * ACTIVE THEME CONFIGURATION
+ * ACTIVE THEME CONFIGURATION (FACADE)
  * 
- * To switch the active visual theme in the E-Commerce Core, point this to another ThemeConfig implementation.
- * Defaults to the reference model: Lumina Luxury Editorial & Liquid Glass.
+ * Automatically re-exports from the active brand defined in active-brand.ts.
+ * Preserves 100% backwards compatibility with all imports across the engine.
  */
-export const themeConfig: ThemeConfig = luminaThemeConfig;
+export const themeConfig: ThemeConfig = activeThemeConfig;
+

@@ -25,6 +25,12 @@ import {
 import { useUserStore, type User, type ShippingAddress, type Order } from "@/lib/userStore";
 import type { CatalogProduct } from "@/lib/catalogStore";
 import { useRadarStore, cleanClientName, resolveCoordinates, type ConnectedClient } from "@/lib/radarStore";
+import { 
+  RADAR_COUNTRIES, 
+  type RadarCountryCode, 
+  getSampleClientsForCountry, 
+  resolveMultiCountryCoordinates 
+} from "@/lib/radarCountries";
 import { BlobatarAvatar } from "@/components/ui/BlobatarAvatar";
 
 export type { ConnectedClient } from "@/lib/radarStore";
@@ -229,6 +235,10 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
   }, []);
 
   const fetchActiveClients = useRadarStore((state) => state.fetchActiveClients);
+  const selectedCountry = useRadarStore((state) => state.selectedCountry);
+  const setSelectedCountry = useRadarStore((state) => state.setSelectedCountry);
+  const activeCountry = RADAR_COUNTRIES[selectedCountry] || RADAR_COUNTRIES.EC;
+
   const currentUser = useUserStore((state) => state.user);
   const userAddress = useUserStore((state) => state.address);
   const userAddresses = useUserStore((state) => state.addresses);
@@ -275,20 +285,29 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
   // Real-time clients synchronized via centralized radarStore (both authenticated accounts and anonymous visitors)
   const rawConnectedClients = useRadarStore((state) => state.clients);
   const connectedClients = useMemo(() => {
-    const list = Array.isArray(rawConnectedClients) 
-      ? rawConnectedClients.filter(c => 
-          c && 
-          c.id && 
-          c.isOnline !== false
-        )
+    // Filter real clients matching active country
+    const realForCountry = Array.isArray(rawConnectedClients) 
+      ? rawConnectedClients.filter(c => {
+          if (!c || !c.id || c.isOnline === false) return false;
+          if (selectedCountry === 'EC') {
+            return !c.countryCode || c.countryCode === 'EC' || (c.country && c.country.toLowerCase().includes('ecuador'));
+          }
+          return c.countryCode === selectedCountry || (c.country && c.country.toLowerCase().includes(activeCountry.name.toLowerCase()));
+        })
       : [];
+
+    let list: ConnectedClient[] = realForCountry;
+    // If exploring another country with no active sessions, provide realistic sample telemetry for that country
+    if (list.length === 0 && selectedCountry !== 'EC') {
+      list = getSampleClientsForCountry(selectedCountry);
+    }
 
     let foundSelf = false;
     const mapped = list.map(c => {
       if (isUserSelf(c)) {
         foundSelf = true;
-        const selfCity = currentUserCity || c.city || "";
-        const coords = selfCity ? resolveCoordinates(selfCity) : { x: -100, y: -100 };
+        const selfCity = currentUserCity || c.city || activeCountry.capital;
+        const coords = selfCity ? resolveMultiCountryCoordinates(selfCity, selectedCountry) : { x: -100, y: -100 };
         return {
           ...c,
           name: cleanClientName(currentUser?.name || c.name),
@@ -303,7 +322,7 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
       const parsedX = typeof c.x === 'number' ? c.x : Number(c.x);
       const parsedY = typeof c.y === 'number' ? c.y : Number(c.y);
       if (clientCity && (isNaN(parsedX) || parsedX < 0 || isNaN(parsedY) || parsedY < 0)) {
-        const coords = resolveCoordinates(clientCity);
+        const coords = resolveMultiCountryCoordinates(clientCity, selectedCountry);
         return {
           ...c,
           x: coords.x >= 0 ? coords.x : (isNaN(parsedX) ? -100 : parsedX),
@@ -313,9 +332,9 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
       return c;
     });
 
-    if (!foundSelf && currentUser?.id && !currentUser.id.startsWith('vis_') && !currentUser.id.startsWith('guest_')) {
+    if (!foundSelf && selectedCountry === 'EC' && currentUser?.id && !currentUser.id.startsWith('vis_') && !currentUser.id.startsWith('guest_')) {
       const selfCity = currentUserCity || "Quito";
-      const coords = resolveCoordinates(selfCity);
+      const coords = resolveMultiCountryCoordinates(selfCity, 'EC');
       const spent = userOrders?.reduce((acc, o) => acc + (o.total || 0), 0) || 0;
       const purchases = userOrders?.length || 0;
       mapped.unshift({
@@ -324,6 +343,7 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
         email: currentUser.email || '',
         city: selfCity,
         country: 'Ecuador',
+        countryCode: 'EC',
         x: coords.x >= 0 ? coords.x : 48.8,
         y: coords.y >= 0 ? coords.y : 26.5,
         frequency: purchases >= 12 ? 'Semanal' : purchases >= 6 ? 'Quincenal' : purchases >= 3 ? 'Mensual' : purchases >= 1 ? 'Ocasional' : '1ª Vez',
@@ -339,7 +359,7 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
     }
 
     return mapped;
-  }, [rawConnectedClients, isUserSelf, currentUserCity, isAdmin, currentUser, userOrders]);
+  }, [rawConnectedClients, isUserSelf, currentUserCity, isAdmin, currentUser, userOrders, selectedCountry, activeCountry]);
 
   // Actual clients and visitors connected (Excludes only administrators from customer lists)
   const actualClients = useMemo(() => {
@@ -681,9 +701,10 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
           style={{
             transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`,
             transformOrigin: "center center",
-            transition: isDragging ? "none" : "transform 0.6s cubic-bezier(0.16, 1, 0.3, 1)"
+            transition: isDragging ? "none" : "transform 0.6s cubic-bezier(0.16, 1, 0.3, 1)",
+            aspectRatio: `${activeCountry.width} / ${activeCountry.height}`,
           }}
-          className="relative w-[780px] lg:w-[920px] aspect-[1024/682] flex items-center justify-center pointer-events-auto shrink-0"
+          className="relative w-[780px] lg:w-[920px] max-w-full flex items-center justify-center pointer-events-auto shrink-0"
         >
           {/* Ambient Ground Shadow */}
           <div className="absolute inset-x-12 bottom-4 h-32 bg-black/75 blur-3xl rounded-full pointer-events-none -z-10" />
@@ -692,17 +713,18 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
           {!isMapLoaded && (
             <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 pointer-events-none z-10">
               <div className="w-9 h-9 rounded-full border-2 border-[#ccff00]/30 border-t-[#ccff00] animate-spin" />
-              <span className="text-[10px] font-mono text-white/50 tracking-wider">Cargando topografía 3D...</span>
+              <span className="text-[10px] font-mono text-white/50 tracking-wider">Cargando topografía 3D de {activeCountry.name}...</span>
             </div>
           )}
 
-          {/* Authentic 4K High-Res Transparent 3D Relief Landmass (Instant WebP < 480KB) */}
+          {/* Authentic 4K High-Res Transparent 3D Relief Landmass (Instant WebP < 150KB) */}
           <picture className="w-full h-full pointer-events-none select-none">
-            <source srcSet="/images/map_3d_relief_cutout.webp" type="image/webp" />
+            <source srcSet={activeCountry.mapWebp} type="image/webp" />
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img 
-              src="/images/map_3d_relief_cutout.png" 
-              alt="Mapa 3D Topográfico en Relieve del Territorio de Ecuador en Alta Resolución"
+              key={selectedCountry}
+              src={activeCountry.mapPng} 
+              alt={`Mapa 3D Topográfico en Relieve de ${activeCountry.name} en Alta Resolución`}
               draggable={false}
               loading="eager"
               onLoad={() => setIsMapLoaded(true)}
@@ -986,10 +1008,48 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
       </div>
 
       {/* ========================================================================= */}
-      {/* 3. TOP FLOATING BAR (Minimal Header Capsule)                              */}
+      {/* 3. TOP FLOATING BAR (Minimal Header Capsule with Country Selector)         */}
       {/* ========================================================================= */}
-      <div className="absolute top-4 sm:top-5 left-3 sm:left-6 right-3 sm:right-6 lg:right-96 z-50 flex items-center justify-between gap-3 pointer-events-none">
+      <div className="absolute top-3 sm:top-4 left-3 sm:left-6 right-3 sm:right-6 lg:right-96 z-50 flex flex-col gap-2 pointer-events-none">
         
+        {/* Country Selector Capsule Bar */}
+        <div className="flex items-center gap-1.5 p-1 bg-black/80 backdrop-blur-2xl border border-white/15 rounded-full shadow-2xl overflow-x-auto pointer-events-auto self-start max-w-full" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+          {(Object.keys(RADAR_COUNTRIES) as RadarCountryCode[]).map((code) => {
+            const cMeta = RADAR_COUNTRIES[code];
+            const isActive = selectedCountry === code;
+            return (
+              <button
+                key={code}
+                type="button"
+                onClick={() => {
+                  setSelectedCountry(code);
+                  setIsMapLoaded(false);
+                  handleResetView();
+                  setSearchQuery("");
+                }}
+                className={`px-3 py-1 sm:px-3.5 sm:py-1.5 rounded-full text-xs font-semibold transition-all duration-300 flex items-center gap-1.5 shrink-0 cursor-pointer ${
+                  isActive
+                    ? "bg-[#ccff00] text-gray-950 font-bold shadow-[0_0_16px_rgba(204,255,0,0.5)] scale-[1.02]"
+                    : "text-white/70 hover:text-white hover:bg-white/10"
+                }`}
+                title={`Ver radar topográfico de ${cMeta.name}`}
+              >
+                <span className="text-sm leading-none">{cMeta.flag}</span>
+                <span className="hidden sm:inline">{cMeta.name}</span>
+                <span className="sm:hidden text-[11px] font-mono font-bold">{code}</span>
+                <span className={`text-[9px] px-1.5 py-0.5 rounded-full ${
+                  isActive ? "bg-black/20 text-gray-950 font-mono font-bold" : "bg-white/10 text-white/50 font-mono"
+                }`}>
+                  {cMeta.totalEntities}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Row 2: Search + Mode Controls */}
+        <div className="flex items-center justify-between gap-3 w-full">
+
         {/* Interactive Dynamic Search Capsule & Live Suggester */}
         <div 
           ref={searchContainerRef}
@@ -1005,7 +1065,7 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
               <div className="relative w-6 h-6 rounded-full bg-gradient-to-tr from-[#ccff00] to-white text-gray-950 flex items-center justify-center shadow-[0_0_10px_#ccff00]/40">
                 <MapIcon className="w-3.5 h-3.5 text-gray-950 stroke-[2.5]" />
               </div>
-              <span className="font-extrabold tracking-wider text-xs hidden sm:inline font-mono text-[#ccff00]">MAPA</span>
+              <span className="font-extrabold tracking-wider text-xs hidden sm:inline font-mono text-[#ccff00]">RADAR</span>
             </div>
 
             <Search className={`w-3.5 h-3.5 mx-2 shrink-0 transition-colors duration-200 ${isSearchFocused ? "text-[#ccff00]" : "text-white/50"}`} />
@@ -1015,7 +1075,7 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
               value={searchQuery}
               onFocus={() => setIsSearchFocused(true)}
               onChange={e => setSearchQuery(e.target.value)}
-              placeholder="Buscar ciudad, provincia o región..."
+              placeholder={`Buscar ciudad o provincia en ${activeCountry.name}...`}
               className="bg-transparent border-none outline-none text-xs text-white placeholder:text-white/45 flex-1 min-w-0"
             />
 
@@ -1038,7 +1098,7 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
                 searchQuery ? "bg-[#ccff00] shadow-[0_0_8px_#ccff00]" : "bg-emerald-400 animate-pulse"
               }`} />
               <span className="text-[10px] font-mono text-white/80 font-semibold">
-                {searchQuery ? `${filteredActualClients.length} en radar` : "24 Provincias"}
+                {searchQuery ? `${filteredActualClients.length} en radar` : activeCountry.entityLabel}
               </span>
             </div>
           </div>
@@ -1097,24 +1157,15 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
                   </span>
                 </div>
                 <div className="flex items-center gap-1.5 flex-wrap">
-                  {[
-                    { city: "Quito", coords: ECUADOR_PROVINCE_COORDINATES["quito"] },
-                    { city: "Guayaquil", coords: ECUADOR_PROVINCE_COORDINATES["guayaquil"] },
-                    { city: "Cuenca", coords: ECUADOR_PROVINCE_COORDINATES["cuenca"] },
-                    { city: "Santo Domingo", coords: ECUADOR_PROVINCE_COORDINATES["santo domingo"] },
-                    { city: "Manta", coords: ECUADOR_PROVINCE_COORDINATES["manta"] },
-                    { city: "Ambato", coords: ECUADOR_PROVINCE_COORDINATES["ambato"] },
-                    { city: "Loja", coords: ECUADOR_PROVINCE_COORDINATES["loja"] },
-                    { city: "Puyo", coords: ECUADOR_PROVINCE_COORDINATES["puyo"] },
-                    { city: "Galápagos", coords: ECUADOR_PROVINCE_COORDINATES["galapagos"] },
-                  ].map(({ city, coords }) => {
+                  {activeCountry.majorCities.map((city) => {
+                    const coords = resolveMultiCountryCoordinates(city, selectedCountry);
                     const clientMatch = connectedClients.find(c => c && c.city && c.city.toLowerCase().includes(city.toLowerCase()));
                     return (
                       <button
                         key={city}
                         onClick={() => {
                           setSearchQuery(city);
-                          if (coords) {
+                          if (coords.x >= 0 && coords.y >= 0) {
                             focusOnLocation(coords.x, coords.y, 1.8);
                           }
                           if (clientMatch) {
@@ -1264,6 +1315,7 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
               <ArrowUpRight className="w-3.5 h-3.5 text-[#ccff00] transition-transform duration-300 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 shrink-0" />
             </button>
           )}
+        </div>
         </div>
 
       </div>
@@ -1810,7 +1862,7 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
                     <div className="py-12 text-center text-white/40 text-xs flex flex-col items-center justify-center">
                       <Users className="w-7 h-7 mx-auto mb-2 opacity-30 text-[#ccff00]" />
                       <p className="font-semibold text-white/80">Sin clientes conectados</p>
-                      <p className="text-[10px] text-white/40 mt-1">El radar monitorea en vivo las 24 provincias</p>
+                      <p className="text-[10px] text-white/40 mt-1">El radar monitorea en vivo: {activeCountry.entityLabel}</p>
                     </div>
                   ) : (
                     filteredActualClients.map(c => {
@@ -1841,7 +1893,7 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
                             <div className="truncate">
                               <p className="leading-tight truncate font-semibold">{cleanClientName(c.name)}</p>
                               <p className={`text-[9.5px] mt-0.5 ${isSelected ? "text-gray-700 font-medium" : "text-white/45"}`}>
-                                {c.city || "Ecuador"} • <span className="font-mono">${c.totalSpent || 0}</span>
+                                {c.city || activeCountry.name} • <span className="font-mono">{activeCountry.currencySymbol}{c.totalSpent || 0}</span>
                               </p>
                             </div>
                           </div>
@@ -1880,10 +1932,10 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
           return (
             <div className="pt-3 border-t border-white/10 flex items-center justify-between text-[10px] text-white/50">
               <span className="flex items-center gap-1.5">
-                <Activity className="w-3 h-3 text-[#ccff00]" /> Radar Lumina Activo
+                <Activity className="w-3 h-3 text-[#ccff00]" /> Radar {activeCountry.name} Activo
               </span>
               <span className="font-mono text-emerald-400 font-semibold">
-                {activeProvincesCount > 0 ? `${activeProvincesCount}/24 Provincias Activas` : '24 Provincias en Espera'}
+                {activeProvincesCount > 0 ? `${activeProvincesCount}/${activeCountry.totalEntities} Activas` : `${activeCountry.entityLabel} en Espera`}
               </span>
             </div>
           );
@@ -1898,25 +1950,25 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
       <div onClick={(e) => e.stopPropagation()}
         className="absolute bottom-5 left-6 right-6 lg:right-96 z-30 grid grid-cols-1 sm:grid-cols-3 gap-3 pointer-events-auto">
         
-        {/* Card 1: Cobertura Territorial (Actualizada con 24 Provincias) */}
+        {/* Card 1: Cobertura Territorial */}
         {(() => {
           const activeProvincesCount = new Set(actualClients.map(c => c.city).filter(Boolean)).size;
           return (
             <div className="rounded-2xl bg-black/60 backdrop-blur-xl border border-white/15 p-3.5 shadow-xl flex flex-col justify-between">
               <div className="flex items-center justify-between text-[11px] font-bold text-white mb-1">
                 <span className="flex items-center gap-1.5">
-                  <MapPin className="w-3 h-3 text-[#ccff00]" /> Alcance Territorial
+                  <MapPin className="w-3 h-3 text-[#ccff00]" /> {activeCountry.name} ({activeCountry.flag})
                 </span>
-                <span className="text-[9px] font-mono text-white/50">24 Provincias</span>
+                <span className="text-[9px] font-mono text-white/50">{activeCountry.entityLabel}</span>
               </div>
-              <p className="text-[10px] text-white/70">
-                Sierra • Costa • Amazonía • Galápagos
+              <p className="text-[10px] text-white/70 truncate">
+                {activeCountry.capital} • {activeCountry.majorCities.slice(1, 4).join(' • ')}
               </p>
               <div className="flex items-center gap-1 text-[9.5px] font-mono text-[#ccff00] mt-1">
                 <span>
                   {activeProvincesCount > 0 
-                    ? `${activeProvincesCount} ${activeProvincesCount === 1 ? 'provincia activa' : 'provincias activas'} en vivo` 
-                    : 'Monitoreo en tiempo real • 24 Provincias'}
+                    ? `${activeProvincesCount} zonas activas en tiempo real` 
+                    : `Monitoreo • ${activeCountry.entityLabel}`}
                 </span>
               </div>
             </div>

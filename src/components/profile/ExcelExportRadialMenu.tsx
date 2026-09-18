@@ -18,6 +18,7 @@ import * as XLSX from "xlsx";
 import { useUserStore, Order } from "@/lib/userStore";
 import { useCatalogStore, CatalogProduct } from "@/lib/catalogStore";
 import { DROPI_HEADERS, DROPI_ECUADOR_REFERENCE } from "@/lib/dropiEcuadorData";
+import { useBrand } from "@/core/hooks/useBrand";
 
 export const NORMAL_ORDER_HEADERS = [
   "Nº",
@@ -143,6 +144,7 @@ function DropiIsotipo({ className = "w-6 h-6" }: { className?: string }) {
 }
 
 export function ExcelExportRadialMenu() {
+  const brand = useBrand();
   const [isOpen, setIsOpen] = useState(false);
   const [ordersSubmenuOpen, setOrdersSubmenuOpen] = useState(false);
   const [activeExport, setActiveExport] = useState<string | null>(null);
@@ -244,10 +246,10 @@ export function ExcelExportRadialMenu() {
       const rows: Record<string, string | number>[] = [];
 
       ordersList.forEach((ord) => {
-        const customerName = (ord.customerName || ord.recipient || ord.shippingAddress?.recipient || "Cliente Lumina").trim();
+        const customerName = (ord.customerName || ord.recipient || ord.shippingAddress?.recipient || `Cliente ${brand.shortName}`).trim();
         const nameParts = customerName.split(/\s+/).filter(Boolean);
         let nombres = "Cliente";
-        let apellidos = "Lumina";
+        let apellidos = brand.shortName;
         if (nameParts.length === 1) {
           nombres = nameParts[0];
           apellidos = "";
@@ -280,7 +282,7 @@ export function ExcelExportRadialMenu() {
                                 (ord.paymentMethod || "").toLowerCase().includes("cod");
         const conRecaudo = isContraEntrega ? "SÍ" : "NO";
 
-        const orderNote = ord.id ? `Orden #${ord.id}` : "Entrega Lumina Home";
+        const orderNote = ord.id ? `Orden #${ord.id}` : `Entrega ${brand.name}`;
         const emailVal = ord.customerEmail || ord.shippingAddress?.email || "";
         const postalVal = ord.shippingAddress?.postalCode || "";
         const cedulaVal = ord.customerIdNumber || ord.shippingAddress?.idNumber || "";

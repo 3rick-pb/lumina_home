@@ -27,8 +27,10 @@ import {
 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { useUserStore } from "@/lib/userStore";
+import { useBrand } from "@/core/hooks/useBrand";
 
 export function IntegrationsTab() {
+  const brand = useBrand();
   const { user } = useUserStore();
 
   // Server status state
@@ -46,7 +48,7 @@ export function IntegrationsTab() {
   // Vercel Generator state (Option B: Gmail)
   const [gmailUser, setGmailUser] = useState("");
   const [gmailPass, setGmailPass] = useState("");
-  const [senderName, setSenderName] = useState("Lumina Home");
+  const [senderName, setSenderName] = useState(brand.name);
   const [showPass, setShowPass] = useState(false);
   const [copied, setCopied] = useState(false);
 

@@ -54,6 +54,14 @@ export default function RootLayout({
   return (
     <html lang="es">
       <body
+        style={{
+          '--brand-primary': themeConfig.colors.primary.DEFAULT,
+          '--brand-accent': themeConfig.colors.accent.DEFAULT,
+          '--brand-signature': themeConfig.colors.brandAccent,
+          '--hero-gold': themeConfig.colors.heroGold,
+          '--bg-light': themeConfig.colors.surface.backgroundLight,
+          '--bg-dark': themeConfig.colors.surface.backgroundDark,
+        } as React.CSSProperties}
         className={`${inter.variable} ${lora.variable} ${moonwalk.variable} font-sans antialiased text-gray-900 bg-transparent flex flex-col min-h-screen relative`}
       >
         <Suspense fallback={null}>

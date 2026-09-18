@@ -1,10 +1,11 @@
-import { luminaBrandConfig } from './brands/lumina/brand';
+import { activeBrandConfig } from './active-brand';
 import { BrandConfig } from './types';
 
 /**
- * ACTIVE BRAND CONFIGURATION
+ * ACTIVE BRAND CONFIGURATION (FACADE)
  * 
- * To switch the active brand in the E-Commerce Core, point this to another BrandConfig implementation.
- * Defaults to the reference model: Lumina Home.
+ * Automatically re-exports from the active brand defined in active-brand.ts.
+ * Preserves 100% backwards compatibility with all imports across the engine.
  */
-export const brandConfig: BrandConfig = luminaBrandConfig;
+export const brandConfig: BrandConfig = activeBrandConfig;
+

@@ -1,0 +1,126 @@
+{
+  "brandId": "aura-studio",
+  "sourceType": "instagram",
+  "analyzedAt": "2026-09-18T12:00:00.000Z",
+  "identity": {
+    "name": {
+      "value": "Aura Studio",
+      "status": "CONFIRMED",
+      "confidence": 1.0,
+      "source": "Captura del logo y biografía de Instagram"
+    },
+    "shortName": {
+      "value": "Aura",
+      "status": "INFERRED",
+      "confidence": 0.95,
+      "source": "Nombre común usado en el feed"
+    },
+    "tagline": {
+      "value": "Moda Atemporal & Lino Orgánico",
+      "status": "CONFIRMED",
+      "confidence": 1.0,
+      "source": "Bio de Instagram visible"
+    },
+    "slogan": {
+      "value": "Vestimenta de autor con fibras sustentables",
+      "status": "PROPOSED",
+      "confidence": 0.85,
+      "notes": "Sugerido según las publicaciones de colecciones cápsula"
+    },
+    "description": {
+      "value": "Colecciones cápsula de indumentaria en lino 100% orgánico confeccionadas artesanalmente con diseño consciente.",
+      "status": "CONFIRMED",
+      "confidence": 0.95
+    },
+    "niche": {
+      "value": "Moda y Textiles Sustentables",
+      "status": "CONFIRMED",
+      "confidence": 1.0
+    },
+    "toneOfVoice": {
+      "value": "Sereno, refinado, minimalista",
+      "status": "INFERRED",
+      "confidence": 0.90
+    }
+  },
+  "visual": {
+    "primaryColor": {
+      "value": "#1c1917",
+      "status": "INFERRED",
+      "confidence": 0.95,
+      "source": "Paleta dominante de tonos carbón y negro cálido en feed"
+    },
+    "accentColor": {
+      "value": "#a18072",
+      "status": "INFERRED",
+      "confidence": 0.92,
+      "source": "Tono arena tostada presente en prendas y accesorios"
+    },
+    "brandAccent": {
+      "value": "#d4a574",
+      "status": "PROPOSED",
+      "confidence": 0.85,
+      "notes": "Acento dorado suave para insignias y badges"
+    },
+    "heroGold": {
+      "value": "#c5a059",
+      "status": "PROPOSED",
+      "confidence": 0.80
+    },
+    "surface": {
+      "backgroundLight": { "value": "#fafaf9", "status": "PROPOSED", "confidence": 0.90 },
+      "backgroundDark": { "value": "#0c0a09", "status": "PROPOSED", "confidence": 0.90 },
+      "cardLight": { "value": "rgba(255, 255, 255, 0.75)", "status": "PROPOSED", "confidence": 0.90 },
+      "cardDark": { "value": "rgba(28, 25, 23, 0.75)", "status": "PROPOSED", "confidence": 0.90 }
+    },
+    "typography": {
+      "candidateHeadingFont": { "value": "Lora", "status": "PROPOSED", "confidence": 0.80 },
+      "candidateBodyFont": { "value": "Inter", "status": "PROPOSED", "confidence": 0.90 },
+      "fontStyle": { "value": "editorial", "status": "INFERRED", "confidence": 0.88 }
+    },
+    "photographyStyle": {
+      "value": "Luz difusa de tarde, texturas de lino en primer plano, composición asimétrica",
+      "status": "INFERRED",
+      "confidence": 0.92
+    },
+    "artDirection": {
+      "value": "Minimalismo orgánico, sin saturación artificial",
+      "status": "INFERRED",
+      "confidence": 0.95
+    }
+  },
+  "ecommerce": {
+    "recommendedVariants": {
+      "headerStyle": { "value": "floating-glass-pill", "status": "PROPOSED", "confidence": 0.85 },
+      "heroStyle": { "value": "split-editorial", "status": "PROPOSED", "confidence": 0.90 },
+      "productCardStyle": { "value": "luxury-editorial", "status": "PROPOSED", "confidence": 0.90 }
+    },
+    "featuresSuggested": {
+      "value": ["enableCoupons", "enableDropiExport", "enablePayPhone", "enableCashOnDelivery"],
+      "status": "PROPOSED",
+      "confidence": 0.90
+    }
+  },
+  "store": {
+    "currency": {
+      "value": { "code": "USD", "symbol": "$", "decimals": 2 },
+      "status": "PROPOSED",
+      "confidence": 0.95
+    },
+    "regional": {
+      "value": { "country": "Ecuador", "countryCode": "EC", "locale": "es-EC", "defaultCity": "Guayaquil" },
+      "status": "INFERRED",
+      "confidence": 0.85
+    },
+    "shipping": {
+      "value": { "freeShippingThreshold": 80, "standardCost": 3.99 },
+      "status": "PROPOSED",
+      "confidence": 0.85
+    }
+  },
+  "missingInfo": [
+    "Teléfono o WhatsApp oficial para pedidos",
+    "RUC para pasarela de pagos PayPhone",
+    "Credenciales de correo transaccional SMTP"
+  ]
+}

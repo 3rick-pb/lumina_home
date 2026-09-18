@@ -41,7 +41,9 @@ const config: Config = {
           800: '#873322',
           900: '#712d1f',
           DEFAULT: '#c24b33'
-        }
+        },
+        brandAccent: "var(--brand-signature, #8c9276)",
+        heroGold: "var(--hero-gold, #d2b48c)",
       },
     },
   },

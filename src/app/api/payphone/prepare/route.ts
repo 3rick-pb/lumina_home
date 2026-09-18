@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { preparePayPhonePayment, validateEcuadorianId, sanitizeString } from '@/lib/payphone';
 import { getAuthenticatedUser, getScopedSupabaseClient } from '@/lib/serverAuth';
 import { checkRateLimit, createRateLimitResponse } from '@/lib/rateLimit';
+import { brandConfig } from '@/config';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -213,7 +214,7 @@ export async function POST(request: Request) {
       customerEmail: cleanEmail,
       customerPhone: cleanPhone,
       documentId: rawDoc || '9999999999',
-      customReference: `Pedido #${orderId} Lumina Home - ${cleanRecipient}`
+      customReference: `Pedido #${orderId} ${brandConfig.name} - ${cleanRecipient}`
     });
 
     if (!prepareResult.success) {

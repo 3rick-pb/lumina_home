@@ -1,0 +1,36 @@
+{
+  "id": "aura-studio",
+  "slug": "aura-studio",
+  "name": "Aura Studio",
+  "shortName": "Aura",
+  "version": "1.0.0",
+  "status": "ACTIVE",
+  "source": "ai-analysis",
+  "description": "Colecciones cápsula de indumentaria en lino 100% orgánico confeccionadas artesanalmente con diseño consciente.",
+  "createdAt": "2026-09-18T20:12:36.559Z",
+  "updatedAt": "2026-09-18T20:13:18.693Z",
+  "config": {
+    "brand": true,
+    "theme": true,
+    "store": true
+  },
+  "assets": {
+    "logo": false,
+    "favicon": false,
+    "ogImage": false,
+    "heroImage": false,
+    "banners": false
+  },
+  "validation": {
+    "status": "warning",
+    "errors": [],
+    "warnings": [
+      "El email de contacto parece ser un placeholder."
+    ],
+    "lastValidatedAt": "2026-09-18T20:13:00.660Z"
+  },
+  "metadata": {
+    "analysisSource": ".\\data\\examples\\aura-studio-analysis.json",
+    "certaintyScore": 0.85
+  }
+}

@@ -1,10 +1,11 @@
-import { luminaStoreConfig } from './brands/lumina/store';
+import { activeStoreConfig } from './active-brand';
 import { StoreConfig } from './types';
 
 /**
- * ACTIVE STORE CONFIGURATION
+ * ACTIVE STORE CONFIGURATION (FACADE)
  * 
- * To switch the active store operational rules, point this to another StoreConfig implementation.
- * Defaults to the reference model: Lumina Home.
+ * Automatically re-exports from the active brand defined in active-brand.ts.
+ * Preserves 100% backwards compatibility with all imports across the engine.
  */
-export const storeConfig: StoreConfig = luminaStoreConfig;
+export const storeConfig: StoreConfig = activeStoreConfig;
+

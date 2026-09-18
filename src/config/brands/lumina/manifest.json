@@ -1,0 +1,28 @@
+{
+  "id": "lumina",
+  "slug": "lumina",
+  "name": "Lumina Home",
+  "shortName": "Lumina",
+  "version": "1.0.0",
+  "status": "ACTIVE",
+  "source": "reference-model",
+  "description": "Modelo de referencia inmutable de la arquitectura E-Commerce Core",
+  "createdAt": "2026-09-18T00:00:00.000Z",
+  "updatedAt": "2026-09-18T20:14:31.954Z",
+  "config": {
+    "brand": true,
+    "theme": true,
+    "store": true
+  },
+  "assets": {
+    "logo": true,
+    "favicon": true,
+    "ogImage": true
+  },
+  "validation": {
+    "status": "valid",
+    "errors": [],
+    "warnings": [],
+    "lastValidatedAt": "2026-09-18T20:14:59.633Z"
+  }
+}

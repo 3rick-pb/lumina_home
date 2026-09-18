@@ -1,19 +1,20 @@
 import type { Metadata } from "next";
+import { brandConfig } from "@/config";
 
 export const metadata: Metadata = {
-  title: "Catálogo y Colecciones",
+  title: `Catálogo y Colecciones | ${brandConfig.name}`,
   description:
-    "Descubre nuestra selección de artículos diseñados para convertir tu hogar en tu refugio ideal: iluminación de autor, cerámica, aromaterapia y mobiliario minimalista.",
+    brandConfig.description,
   openGraph: {
-    title: "Catálogo y Colecciones | Lumina Home",
+    title: `Catálogo y Colecciones | ${brandConfig.name}`,
     description:
-      "Descubre nuestra selección de artículos diseñados para convertir tu hogar en tu refugio ideal: iluminación de autor, cerámica, aromaterapia y mobiliario minimalista.",
+      brandConfig.description,
   },
   twitter: {
     card: "summary_large_image",
-    title: "Catálogo y Colecciones | Lumina Home",
+    title: `Catálogo y Colecciones | ${brandConfig.name}`,
     description:
-      "Descubre nuestra selección de artículos diseñados para convertir tu hogar en tu refugio ideal: iluminación de autor, cerámica, aromaterapia y mobiliario minimalista.",
+      brandConfig.description,
   },
 };
 

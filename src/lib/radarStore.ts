@@ -1,6 +1,10 @@
 import { create } from 'zustand';
 import { supabase } from './supabase';
 import type { RealtimeChannel } from '@supabase/supabase-js';
+import { 
+  resolveMultiCountryCoordinates, 
+  type RadarCountryCode 
+} from './radarCountries';
 
 export interface ConnectedClient {
   id: string; // user_id
@@ -9,6 +13,7 @@ export interface ConnectedClient {
   email: string;
   city: string;
   country: string;
+  countryCode?: RadarCountryCode;
   x: number;
   y: number;
   frequency: "Semanal" | "Quincenal" | "Mensual" | "Ocasional" | "1ª Vez";
@@ -60,81 +65,12 @@ export const cleanClientName = (rawName?: string) => {
   return words.map(w => w.toUpperCase() === 'ADMIN' ? 'ADMIN' : w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ');
 };
 
-// ── Province coordinate lookup table ──
-const CITY_COORDINATES: Record<string, { x: number; y: number }> = {
-  // Sierra
-  "quito": { x: 48.8, y: 26.5 },
-  "pichincha": { x: 48.8, y: 26.5 },
-  "cuenca": { x: 40.5, y: 67.5 },
-  "azuay": { x: 40.5, y: 67.5 },
-  "ambato": { x: 50.5, y: 41.5 },
-  "tungurahua": { x: 50.5, y: 41.5 },
-  "latacunga": { x: 49.5, y: 35.0 },
-  "cotopaxi": { x: 49.5, y: 35.0 },
-  "riobamba": { x: 50.0, y: 49.0 },
-  "chimborazo": { x: 50.0, y: 49.0 },
-  "loja": { x: 37.5, y: 82.5 },
-  "ibarra": { x: 55.0, y: 17.5 },
-  "imbabura": { x: 55.0, y: 17.5 },
-  "tulcan": { x: 60.5, y: 12.0 },
-  "carchi": { x: 60.5, y: 12.0 },
-  "azogues": { x: 42.0, y: 63.5 },
-  "cañar": { x: 42.0, y: 63.5 },
-  "guaranda": { x: 45.0, y: 47.0 },
-  "bolivar": { x: 45.0, y: 47.0 },
-  // Costa
-  "guayaquil": { x: 35.5, y: 52.0 },
-  "guayas": { x: 35.5, y: 52.0 },
-  "manta": { x: 21.0, y: 39.5 },
-  "portoviejo": { x: 24.5, y: 41.0 },
-  "manabi": { x: 24.5, y: 41.0 },
-  "santo domingo": { x: 41.0, y: 29.5 },
-  "machala": { x: 27.5, y: 69.5 },
-  "el oro": { x: 27.5, y: 69.5 },
-  "esmeraldas": { x: 38.0, y: 12.0 },
-  "santa elena": { x: 25.0, y: 50.0 },
-  "salinas": { x: 24.4, y: 50.5 },
-  "babahoyo": { x: 34.0, y: 49.0 },
-  "los rios": { x: 34.0, y: 49.0 },
-  // Galápagos
-  "galapagos": { x: 10.0, y: 22.0 },
-  "baquerizo moreno": { x: 10.0, y: 22.0 },
-  "santa cruz": { x: 10.0, y: 22.0 },
-  // Amazonía
-  "nueva loja": { x: 75.0, y: 22.0 },
-  "lago agrio": { x: 75.0, y: 22.0 },
-  "sucumbios": { x: 75.0, y: 22.0 },
-  "coca": { x: 73.0, y: 34.0 },
-  "orellana": { x: 73.0, y: 34.0 },
-  "tena": { x: 62.0, y: 39.0 },
-  "napo": { x: 62.0, y: 39.0 },
-  "puyo": { x: 63.0, y: 49.0 },
-  "pastaza": { x: 63.0, y: 49.0 },
-  "macas": { x: 58.0, y: 56.0 },
-  "morona santiago": { x: 58.0, y: 56.0 },
-  "zamora": { x: 48.0, y: 83.0 },
-  "zamora chinchipe": { x: 48.0, y: 83.0 },
-};
 
-export function resolveCoordinates(city?: string): { x: number; y: number } {
-  if (!city || !city.trim()) return { x: -100, y: -100 };
-
-  const normalized = city.toLowerCase().trim();
-  if (normalized === 'ecuador' || normalized === 'desconocido' || normalized === 'null' || normalized === 'undefined') {
-    return { x: -100, y: -100 };
-  }
-
-  if (CITY_COORDINATES[normalized]) {
-    return CITY_COORDINATES[normalized];
-  }
-
-  for (const key of Object.keys(CITY_COORDINATES)) {
-    if (normalized.includes(key) || key.includes(normalized)) {
-      return CITY_COORDINATES[key];
-    }
-  }
-
-  return { x: -100, y: -100 };
+export function resolveCoordinates(
+  city?: string,
+  countryCode: RadarCountryCode = 'EC'
+): { x: number; y: number } {
+  return resolveMultiCountryCoordinates(city, countryCode);
 }
 
 export function resolveFrequency(purchasesCount: number): ConnectedClient['frequency'] {
@@ -235,6 +171,8 @@ interface RadarStore {
   clients: ConnectedClient[];
   channel: RealtimeChannel | null;
   pollIntervalId: ReturnType<typeof setInterval> | null;
+  selectedCountry: RadarCountryCode;
+  setSelectedCountry: (country: RadarCountryCode) => void;
   initRadar: (
     user?: { id: string; name?: string; email?: string } | null,
     sessionId?: string
@@ -259,6 +197,8 @@ export const useRadarStore = create<RadarStore>((set, get) => ({
   clients: [],
   channel: null,
   pollIntervalId: null,
+  selectedCountry: 'EC',
+  setSelectedCountry: (country) => set({ selectedCountry: country }),
 
   cleanup: () => {
     const { channel } = get();
@@ -366,6 +306,29 @@ export const useRadarStore = create<RadarStore>((set, get) => ({
           payload,
         }).catch(() => {});
         chan.track(payload).catch(() => {});
+      }
+
+      // Persistencia en segundo plano en tabla dedicada de Supabase (radar_telemetry_sessions)
+      if (typeof window !== 'undefined') {
+        fetch('/api/radar/telemetry', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            sessionId: sessionId || clientId,
+            userId: user?.id || null,
+            clientName: payload.name,
+            countryCode: get().selectedCountry || 'EC',
+            city: cleanCity || 'Quito',
+            coordinateX: coords.x >= 0 ? coords.x : 48.8,
+            coordinateY: coords.y >= 0 ? coords.y : 26.5,
+            deviceType: device.toLowerCase(),
+            currentSection,
+            cartAmount: totalSpent || 0,
+            purchasesCount,
+            isOnline: true,
+            isGuest: isAnon,
+          }),
+        }).catch(() => {});
       }
     };
 

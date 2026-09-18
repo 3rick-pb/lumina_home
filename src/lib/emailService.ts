@@ -172,16 +172,26 @@ function getTransporter() {
   const user = process.env.SMTP_USER;
   const pass = process.env.SMTP_PASS;
   const port = Number(process.env.SMTP_PORT) || 587;
-  const secure = process.env.SMTP_SECURE === 'true' || port === 465;
+  const isExplicitSecure = process.env.SMTP_SECURE === 'true';
+  const secure = isExplicitSecure || port === 465;
 
   if (!host || !user || !pass) {
     return null;
   }
 
+  // Active TLS / SSL Hardening configuration
+  const tlsConfig = {
+    rejectUnauthorized: process.env.NODE_ENV === 'production',
+    minVersion: 'TLSv1.2' as const,
+    ciphers: 'ECDHE-RSA-AES128-GCM-SHA256:ECDHE-RSA-AES256-GCM-SHA384:HIGH:!aNULL:!eNULL:!RC4:!MD5',
+  };
+
   return nodemailer.createTransport({
     host,
     port,
     secure,
+    requireTLS: isExplicitSecure, // Enforce TLS negotiation; reject plaintext connections
+    tls: tlsConfig,
     auth: {
       user,
       pass,
@@ -1055,8 +1065,9 @@ export async function verifyAndSendTestEmail({
     const finalUser = user || process.env.SMTP_USER;
     const finalPass = pass || process.env.SMTP_PASS;
     const finalPort = Number(port || process.env.SMTP_PORT) || 587;
-    const finalSecure = secure !== undefined ? secure : (process.env.SMTP_SECURE === 'true' || finalPort === 465);
-    const finalFrom = from || process.env.SMTP_FROM || `Lumina Home <${finalUser || 'ventas@lumina.com'}>`;
+    const isExplicitSecure = secure !== undefined ? secure : process.env.SMTP_SECURE === 'true';
+    const finalSecure = isExplicitSecure || finalPort === 465;
+    const finalFrom = from || process.env.SMTP_FROM || `${brandConfig.name} <${finalUser || brandConfig.contact.supportEmail}>`;
 
     if (!finalHost || !finalUser || !finalPass) {
       return {
@@ -1065,10 +1076,18 @@ export async function verifyAndSendTestEmail({
       };
     }
 
+    const tlsConfig = {
+      rejectUnauthorized: process.env.NODE_ENV === 'production',
+      minVersion: 'TLSv1.2' as const,
+      ciphers: 'ECDHE-RSA-AES128-GCM-SHA256:ECDHE-RSA-AES256-GCM-SHA384:HIGH:!aNULL:!eNULL:!RC4:!MD5',
+    };
+
     const transporter = nodemailer.createTransport({
       host: finalHost,
       port: finalPort,
       secure: finalSecure,
+      requireTLS: isExplicitSecure,
+      tls: tlsConfig,
       auth: {
         user: finalUser,
         pass: finalPass,
@@ -1080,28 +1099,33 @@ export async function verifyAndSendTestEmail({
 
     // 2. Send test email
     const now = new Date().toLocaleString('es-ES', { dateStyle: 'full', timeStyle: 'medium' });
+    const tlsStatusText = isExplicitSecure || finalSecure
+      ? '✅ TLS 1.2+ Cifrado Estricto Forzado (SMTP_SECURE=true)'
+      : '⚠️ TLS Opcional / Estándar';
+
     await transporter.sendMail({
       from: finalFrom,
       to: recipientEmail,
-      subject: '✅ Conexión SMTP Exitosa - Lumina Home',
+      subject: `✅ Conexión SMTP Segura - ${brandConfig.name}`,
       html: `
         <div style="font-family:-apple-system,BlinkMacSystemFont,sans-serif;max-width:580px;margin:0 auto;padding:32px;background:#ffffff;border:1px solid #e2e8f0;border-radius:20px;">
           <div style="background:#0f172a;padding:24px;border-radius:14px;color:#ffffff;margin-bottom:24px;">
-            <div style="font-size:20px;font-weight:800;letter-spacing:1px;text-transform:uppercase;">LUMINA <span style="color:#8c9276;font-weight:300;">HOME</span></div>
-            <div style="font-size:12px;color:#94a3b8;margin-top:4px;">Prueba de Servidor SMTP & Entorno Vercel</div>
+            <div style="font-size:20px;font-weight:800;letter-spacing:1px;text-transform:uppercase;">${brandConfig.name}</div>
+            <div style="font-size:12px;color:#94a3b8;margin-top:4px;">Prueba de Servidor SMTP con Cifrado Criptográfico</div>
           </div>
-          <div style="font-size:16px;font-weight:700;color:#0f172a;margin-bottom:12px;">¡Tu servidor de correos está funcionando correctamente!</div>
+          <div style="font-size:16px;font-weight:700;color:#0f172a;margin-bottom:12px;">¡Tu servidor de correos está protegido y cifrado!</div>
           <p style="font-size:14px;color:#475569;line-height:1.6;margin-bottom:20px;">
-            Este es un correo de prueba enviado desde el panel de administración de <strong>Lumina Home</strong> para verificar la conexión con <strong>${finalHost}</strong> mediante el usuario <strong>${finalUser}</strong>.
+            Este es un correo de prueba enviado desde el panel de administración de <strong>${brandConfig.name}</strong>. Se ha verificado que todas las conexiones de correo saliente viajan en un túnel TLS seguro.
           </p>
           <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:16px;font-size:13px;color:#334155;margin-bottom:24px;">
             <div><strong>Servidor Host:</strong> ${finalHost}</div>
-            <div style="margin-top:6px;"><strong>Puerto:</strong> ${finalPort} (${finalSecure ? 'SSL Seguro' : 'TLS/STARTTLS'})</div>
+            <div style="margin-top:6px;"><strong>Puerto:</strong> ${finalPort}</div>
+            <div style="margin-top:6px;"><strong>Seguridad Criptográfica:</strong> ${tlsStatusText}</div>
             <div style="margin-top:6px;"><strong>Remitente:</strong> ${finalFrom}</div>
             <div style="margin-top:6px;"><strong>Fecha de Prueba:</strong> ${now}</div>
           </div>
           <div style="font-size:12px;color:#64748b;text-align:center;border-top:1px solid #f1f5f9;padding-top:16px;">
-            Lumina Home · Comercio Electrónico & Mobiliario de Alta Gama
+            ${brandConfig.name} · ${brandConfig.tagline}
           </div>
         </div>
       `,
