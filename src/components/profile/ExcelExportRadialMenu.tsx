@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useRef, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
   ShoppingBag, 
@@ -147,8 +148,14 @@ export function ExcelExportRadialMenu() {
   const [activeExport, setActiveExport] = useState<string | null>(null);
   const [successExport, setSuccessExport] = useState<string | null>(null);
   const [isMobile, setIsMobile] = useState(false);
+  const [mounted, setMounted] = useState(false);
   const [mobileXOffset, setMobileXOffset] = useState(-130);
   const menuRef = useRef<HTMLDivElement>(null);
+  const modalRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const handleCloseMenu = () => {
     setIsOpen(false);
@@ -186,7 +193,12 @@ export function ExcelExportRadialMenu() {
   // Close when clicking outside
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
-      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+      const target = event.target as Node;
+      if (
+        menuRef.current && 
+        !menuRef.current.contains(target) &&
+        (!modalRef.current || !modalRef.current.contains(target))
+      ) {
         handleCloseMenu();
       }
     }
@@ -644,6 +656,114 @@ export function ExcelExportRadialMenu() {
     },
   ];
 
+  const renderOrdersSubmenuContent = () => (
+    <>
+      {/* Submenu Header */}
+      <div className="flex items-center justify-between pb-2.5 mb-2.5 border-b border-gray-100 dark:border-white/10">
+        <div className="flex items-center gap-2">
+          <div className="w-7 h-7 rounded-lg bg-emerald-500/20 flex items-center justify-center text-emerald-600 dark:text-emerald-400 shrink-0">
+            <ShoppingBag className="w-4 h-4" />
+          </div>
+          <div>
+            <h4 className="text-xs font-bold text-gray-900 dark:text-white leading-tight">
+              Exportar Pedidos
+            </h4>
+            <span className="text-[10px] text-gray-500 dark:text-gray-400">
+              Selecciona el destino o formato
+            </span>
+          </div>
+        </div>
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            setOrdersSubmenuOpen(false);
+          }}
+          className="w-7 h-7 rounded-full flex items-center justify-center text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-white/10 transition-colors cursor-pointer"
+          title="Cerrar opciones"
+        >
+          <X className="w-4 h-4" />
+        </button>
+      </div>
+
+      {/* Options List */}
+      <div className="space-y-2.5">
+        {/* Option #1: Para Carga masiva de Órdenes - Dropi EC (Branding Naranja Dropi Oficial) */}
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            handleExportOrdersDropi();
+          }}
+          disabled={activeExport !== null}
+          className="w-full text-left p-3.5 rounded-2xl border border-orange-500/35 bg-gradient-to-r from-orange-500/12 via-orange-500/5 to-transparent hover:border-orange-500/60 hover:bg-orange-500/18 dark:from-orange-950/45 dark:via-orange-900/20 dark:to-[#1a1410] hover:shadow-[0_8px_24px_rgba(255,85,0,0.16)] transition-all group flex items-start gap-3 cursor-pointer relative overflow-hidden active:scale-[0.98]"
+        >
+          {/* Subtle orange ambient glow on hover */}
+          <div className="pointer-events-none absolute -right-6 -bottom-6 w-20 h-20 rounded-full bg-orange-500/10 blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+
+          {/* Dropi Official Icon Container */}
+          <div className="w-10 h-10 rounded-xl bg-orange-500/15 dark:bg-orange-500/25 border border-orange-500/40 flex items-center justify-center text-orange-500 shrink-0 mt-0.5 group-hover:scale-110 group-hover:border-orange-500 transition-all duration-200 shadow-xs">
+            {activeExport === "orders-dropi" ? (
+              <Loader2 className="w-5 h-5 animate-spin text-orange-500" />
+            ) : successExport === "orders-dropi" ? (
+              <Check className="w-5 h-5 text-emerald-500 stroke-[3]" />
+            ) : (
+              <DropiIsotipo className="w-6 h-6 shrink-0" />
+            )}
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="flex flex-wrap items-center justify-between gap-1.5 mb-1">
+              <span className="text-xs font-bold text-gray-900 dark:text-white group-hover:text-orange-600 dark:group-hover:text-orange-400 transition-colors">
+                Para Carga masiva de Órdenes - Dropi EC
+              </span>
+              <span className="inline-flex items-center gap-1.5 text-[9px] font-bold px-2 py-0.5 rounded-md bg-orange-500/20 text-orange-700 dark:text-orange-300 border border-orange-500/40 shrink-0 shadow-2xs">
+                <span className="w-1.5 h-1.5 rounded-full bg-[#FF5500]" />
+                Dropi EC
+              </span>
+            </div>
+            <p className="text-[11px] text-gray-600 dark:text-gray-300 leading-snug">
+              Formato oficial para subir órdenes masivas en Dropi Ecuador (Cantones/Provincias y Ciudad en Departamento).
+            </p>
+          </div>
+        </button>
+
+        {/* Option #2: Exportación Normal */}
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            handleExportOrdersNormal();
+          }}
+          disabled={activeExport !== null}
+          className="w-full text-left p-3.5 rounded-2xl border border-sky-500/25 bg-gradient-to-r from-sky-500/10 via-sky-500/5 to-transparent hover:border-sky-500/50 hover:bg-sky-500/15 dark:from-sky-950/50 dark:to-[#141e24] transition-all group flex items-start gap-3 cursor-pointer active:scale-[0.98]"
+        >
+          <div className="w-10 h-10 rounded-xl bg-sky-500/20 border border-sky-500/30 flex items-center justify-center text-sky-600 dark:text-sky-300 shrink-0 mt-0.5 group-hover:scale-108 transition-transform shadow-sm">
+            {activeExport === "orders-normal" ? (
+              <Loader2 className="w-4 h-4 animate-spin text-sky-500" />
+            ) : successExport === "orders-normal" ? (
+              <Check className="w-4 h-4 text-emerald-500 stroke-[3]" />
+            ) : (
+              <FileSpreadsheet className="w-4 h-4 text-sky-500" />
+            )}
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="flex flex-wrap items-center justify-between gap-1.5 mb-1">
+              <span className="text-xs font-bold text-gray-900 dark:text-white group-hover:text-sky-600 dark:group-hover:text-sky-400 transition-colors">
+                Exportación Normal
+              </span>
+              <span className="text-[9px] font-mono font-bold px-1.5 py-0.5 rounded bg-sky-500/20 text-sky-700 dark:text-sky-300 border border-sky-500/30 shrink-0">
+                Estándar
+              </span>
+            </div>
+            <p className="text-[11px] text-gray-600 dark:text-gray-300 leading-snug">
+              Reporte detallado con cliente, dirección, ítems y en qué estado va cada pedido (Procesando / Enviado / Entregado).
+            </p>
+          </div>
+        </button>
+      </div>
+    </>
+  );
+
   return (
     <>
       {/* 1. CINEMATIC FULLSCREEN BACKDROP: Dims page for spotlight focus */}
@@ -705,8 +825,8 @@ export function ExcelExportRadialMenu() {
                     animate={{ 
                       x: btn.targetX, 
                       y: btn.targetY, 
-                      scale: (ordersSubmenuOpen && !isOrdersTrigger && isMobile) ? 0 : 1, 
-                      opacity: (ordersSubmenuOpen && !isOrdersTrigger && isMobile) ? 0 : 1
+                      scale: 1, 
+                      opacity: 1
                     }}
                     exit={{ 
                       x: btn.originX, 
@@ -791,124 +911,18 @@ export function ExcelExportRadialMenu() {
                         </button>
                       )}
 
-                      {/* Orders Submenu Flyout: 2 Exclusive Modalities (Adjusted for mobile and desktop) */}
+                      {/* Orders Submenu Flyout: Desktop Only (Rendered alongside satellite bubble) */}
                       <AnimatePresence>
-                        {isSubmenuActive && (
+                        {isSubmenuActive && !isMobile && (
                           <motion.div
-                            initial={{ opacity: 0, scale: 0.94, x: isMobile ? 0 : 12 }}
+                            initial={{ opacity: 0, scale: 0.94, x: 12 }}
                             animate={{ opacity: 1, scale: 1, x: 0 }}
-                            exit={{ opacity: 0, scale: 0.94, x: isMobile ? 0 : 12 }}
+                            exit={{ opacity: 0, scale: 0.94, x: 12 }}
                             transition={{ duration: 0.22, ease: "easeOut" }}
                             onClick={(e) => e.stopPropagation()}
-                            className={`${
-                              isMobile
-                                ? "fixed inset-x-3.5 top-1/2 -translate-y-1/2 max-w-[calc(100vw-28px)] mx-auto z-[90] max-h-[90vh] overflow-y-auto"
-                                : "absolute right-full mr-12 top-1/2 -translate-y-1/2 w-[360px] z-[80]"
-                            } p-3.5 rounded-3xl bg-white/95 dark:bg-[#151c17]/95 backdrop-blur-2xl border border-emerald-500/30 dark:border-emerald-500/30 shadow-[0_20px_60px_rgba(0,0,0,0.35),0_0_30px_rgba(16,185,129,0.15)] pointer-events-auto text-left`}
+                            className="absolute right-full mr-12 top-1/2 -translate-y-1/2 w-[360px] z-[80] p-4 rounded-3xl bg-white/95 dark:bg-[#151c17]/95 backdrop-blur-2xl border border-emerald-500/30 dark:border-emerald-500/30 shadow-[0_20px_60px_rgba(0,0,0,0.35),0_0_30px_rgba(16,185,129,0.15)] pointer-events-auto text-left"
                           >
-                            {/* Submenu Header */}
-                            <div className="flex items-center justify-between pb-2.5 mb-2.5 border-b border-gray-100 dark:border-white/10">
-                              <div className="flex items-center gap-2">
-                                <div className="w-6 h-6 rounded-lg bg-emerald-500/20 flex items-center justify-center text-emerald-600 dark:text-emerald-400 shrink-0">
-                                  <ShoppingBag className="w-3.5 h-3.5" />
-                                </div>
-                                <div>
-                                  <h4 className="text-xs font-bold text-gray-900 dark:text-white leading-tight">
-                                    Exportar Pedidos
-                                  </h4>
-                                  <span className="text-[10px] text-gray-500 dark:text-gray-400">
-                                    Selecciona el destino o formato
-                                  </span>
-                                </div>
-                              </div>
-                              <button
-                                type="button"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setOrdersSubmenuOpen(false);
-                                }}
-                                className="w-6 h-6 rounded-full flex items-center justify-center text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-white/10 transition-colors cursor-pointer"
-                                title="Cerrar opciones"
-                              >
-                                <X className="w-3.5 h-3.5" />
-                              </button>
-                            </div>
-
-                            {/* Options List */}
-                            <div className="space-y-2">
-                              {/* Option #1: Para Carga masiva de Órdenes - Dropi EC (Branding Naranja Dropi Oficial) */}
-                              <button
-                                type="button"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleExportOrdersDropi();
-                                }}
-                                disabled={activeExport !== null}
-                                className="w-full text-left p-3 rounded-2xl border border-orange-500/35 bg-gradient-to-r from-orange-500/12 via-orange-500/5 to-transparent hover:border-orange-500/60 hover:bg-orange-500/18 dark:from-orange-950/45 dark:via-orange-900/20 dark:to-[#1a1410] hover:shadow-[0_8px_24px_rgba(255,85,0,0.16)] transition-all group flex items-start gap-3 cursor-pointer relative overflow-hidden active:scale-[0.98]"
-                              >
-                                {/* Subtle orange ambient glow on hover */}
-                                <div className="pointer-events-none absolute -right-6 -bottom-6 w-20 h-20 rounded-full bg-orange-500/10 blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-
-                                {/* Dropi Official Icon Container */}
-                                <div className="w-10 h-10 rounded-xl bg-orange-500/15 dark:bg-orange-500/25 border border-orange-500/40 flex items-center justify-center text-orange-500 shrink-0 mt-0.5 group-hover:scale-110 group-hover:border-orange-500 transition-all duration-200 shadow-xs">
-                                  {activeExport === "orders-dropi" ? (
-                                    <Loader2 className="w-5 h-5 animate-spin text-orange-500" />
-                                  ) : successExport === "orders-dropi" ? (
-                                    <Check className="w-5 h-5 text-emerald-500 stroke-[3]" />
-                                  ) : (
-                                    <DropiIsotipo className="w-6 h-6 shrink-0" />
-                                  )}
-                                </div>
-                                <div className="flex-1 min-w-0">
-                                  <div className="flex flex-wrap items-center justify-between gap-1 mb-1">
-                                    <span className="text-xs font-bold text-gray-900 dark:text-white group-hover:text-orange-600 dark:group-hover:text-orange-400 transition-colors">
-                                      Para Carga masiva de Órdenes - Dropi EC
-                                    </span>
-                                    <span className="inline-flex items-center gap-1.5 text-[9px] font-bold px-2 py-0.5 rounded-md bg-orange-500/20 text-orange-700 dark:text-orange-300 border border-orange-500/40 shrink-0 shadow-2xs">
-                                      <span className="w-1.5 h-1.5 rounded-full bg-[#FF5500]" />
-                                      Dropi EC
-                                    </span>
-                                  </div>
-                                  <p className="text-[11px] text-gray-600 dark:text-gray-300 leading-snug">
-                                    Formato oficial para subir órdenes masivas en Dropi Ecuador (Cantones/Provincias y Ciudad en Departamento).
-                                  </p>
-                                </div>
-                              </button>
-
-                              {/* Option #2: Exportación Normal */}
-                              <button
-                                type="button"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleExportOrdersNormal();
-                                }}
-                                disabled={activeExport !== null}
-                                className="w-full text-left p-3 rounded-2xl border border-sky-500/25 bg-gradient-to-r from-sky-500/10 via-sky-500/5 to-transparent hover:border-sky-500/50 hover:bg-sky-500/15 dark:from-sky-950/50 dark:to-[#141e24] transition-all group flex items-start gap-3 cursor-pointer active:scale-[0.98]"
-                              >
-                                <div className="w-9 h-9 rounded-xl bg-sky-500/20 border border-sky-500/30 flex items-center justify-center text-sky-600 dark:text-sky-300 shrink-0 mt-0.5 group-hover:scale-108 transition-transform shadow-sm">
-                                  {activeExport === "orders-normal" ? (
-                                    <Loader2 className="w-4 h-4 animate-spin text-sky-500" />
-                                  ) : successExport === "orders-normal" ? (
-                                    <Check className="w-4 h-4 text-emerald-500 stroke-[3]" />
-                                  ) : (
-                                    <FileSpreadsheet className="w-4 h-4" />
-                                  )}
-                                </div>
-                                <div className="flex-1 min-w-0">
-                                  <div className="flex flex-wrap items-center justify-between gap-1 mb-1">
-                                    <span className="text-xs font-bold text-gray-900 dark:text-white group-hover:text-sky-600 dark:group-hover:text-sky-400 transition-colors">
-                                      Exportación Normal
-                                    </span>
-                                    <span className="text-[9px] font-mono font-bold px-1.5 py-0.5 rounded bg-sky-500/20 text-sky-700 dark:text-sky-300 border border-sky-500/30 shrink-0">
-                                      Estándar
-                                    </span>
-                                  </div>
-                                  <p className="text-[11px] text-gray-600 dark:text-gray-300 leading-snug">
-                                    Reporte detallado con cliente, dirección, ítems y en qué estado va cada pedido (Procesando / Enviado / Entregado).
-                                  </p>
-                                </div>
-                              </button>
-                            </div>
+                            {renderOrdersSubmenuContent()}
                           </motion.div>
                         )}
                       </AnimatePresence>
@@ -967,6 +981,43 @@ export function ExcelExportRadialMenu() {
           </motion.div>
         </button>
       </div>
+
+      {/* 4. ORDERS SUBMENU FOR MOBILE: Rendered via Portal into document.body to avoid ancestor CSS transform clipping */}
+      {mounted && isMobile && typeof document !== "undefined" && createPortal(
+        <AnimatePresence>
+          {ordersSubmenuOpen && (
+            <div ref={modalRef}>
+              {/* Mobile Submenu Backdrop */}
+              <motion.div
+                key="mobile-orders-backdrop"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.2 }}
+                onClick={() => setOrdersSubmenuOpen(false)}
+                className="fixed inset-0 z-[110] bg-black/60 backdrop-blur-sm pointer-events-auto"
+                aria-hidden="true"
+              />
+
+              {/* Mobile Centered Modal Dialog */}
+              <div className="fixed inset-0 z-[120] flex items-center justify-center p-4 pointer-events-none">
+                <motion.div
+                  key="mobile-orders-card"
+                  initial={{ opacity: 0, scale: 0.92, y: 16 }}
+                  animate={{ opacity: 1, scale: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.92, y: 16 }}
+                  transition={{ type: "spring", stiffness: 360, damping: 26 }}
+                  onClick={(e) => e.stopPropagation()}
+                  className="w-full max-w-sm rounded-3xl bg-white/95 dark:bg-[#151c17]/95 backdrop-blur-2xl border border-emerald-500/30 dark:border-emerald-500/30 p-4 shadow-[0_24px_60px_rgba(0,0,0,0.45),0_0_35px_rgba(16,185,129,0.2)] pointer-events-auto max-h-[85vh] overflow-y-auto text-left"
+                >
+                  {renderOrdersSubmenuContent()}
+                </motion.div>
+              </div>
+            </div>
+          )}
+        </AnimatePresence>,
+        document.body
+      )}
     </>
   );
 }
