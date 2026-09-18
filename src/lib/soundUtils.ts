@@ -1,23 +1,84 @@
 /**
  * Lumina Home — Luxury Sound System
  * Generates short, elegant, crystalline chimes using native Web Audio API.
- * Zero external audio assets, zero latency, velvety harmonic chime.
+ * High-performance singleton AudioContext with zero-latency pre-warming.
+ * Eliminates cold-start lag, dropped notes, and hardware delay.
  */
 
-export function playFavoriteSound() {
-  if (typeof window === 'undefined') return;
+let sharedAudioCtx: AudioContext | null = null;
+let isAudioWarmed = false;
+
+/**
+ * Retrieves or lazily creates the singleton AudioContext instance.
+ * Automatically attempts to resume if in suspended state.
+ */
+function getOrCreateContext(): AudioContext | null {
+  if (typeof window === 'undefined') return null;
 
   try {
-    const win = typeof window !== 'undefined' ? (window as unknown as { AudioContext?: typeof AudioContext; webkitAudioContext?: typeof AudioContext }) : null;
-    const AudioCtx = win?.AudioContext || win?.webkitAudioContext;
-    if (!AudioCtx) return;
+    if (!sharedAudioCtx) {
+      const win = window as unknown as { AudioContext?: typeof AudioContext; webkitAudioContext?: typeof AudioContext };
+      const AudioContextClass = win.AudioContext || win.webkitAudioContext;
+      if (!AudioContextClass) return null;
 
-    const ctx = new AudioCtx();
-    if (ctx.state === 'suspended') {
-      ctx.resume();
+      sharedAudioCtx = new AudioContextClass();
     }
 
-    const now = ctx.currentTime;
+    if (sharedAudioCtx.state === 'suspended') {
+      sharedAudioCtx.resume().catch(() => {});
+    }
+
+    // Play an ultra-short 1-sample silent pulse to wake hardware buffers (WASAPI / CoreAudio)
+    if (!isAudioWarmed && sharedAudioCtx.state === 'running') {
+      try {
+        const buffer = sharedAudioCtx.createBuffer(1, 1, 22050);
+        const source = sharedAudioCtx.createBufferSource();
+        source.buffer = buffer;
+        source.connect(sharedAudioCtx.destination);
+        source.start(0);
+        isAudioWarmed = true;
+      } catch {}
+    }
+
+    return sharedAudioCtx;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Proactive AudioContext unlocker on first user gesture anywhere on the website.
+ */
+export function warmAudioContext(): void {
+  const ctx = getOrCreateContext();
+  if (ctx && ctx.state === 'suspended') {
+    ctx.resume().then(() => {
+      isAudioWarmed = true;
+    }).catch(() => {});
+  }
+}
+
+// Auto-register warm-up on first user interaction in browser
+if (typeof window !== 'undefined') {
+  const onInitialGesture = () => {
+    warmAudioContext();
+    window.removeEventListener('pointerdown', onInitialGesture);
+    window.removeEventListener('touchstart', onInitialGesture);
+    window.removeEventListener('keydown', onInitialGesture);
+  };
+
+  window.addEventListener('pointerdown', onInitialGesture, { once: true, passive: true });
+  window.addEventListener('touchstart', onInitialGesture, { once: true, passive: true });
+  window.addEventListener('keydown', onInitialGesture, { once: true, passive: true });
+}
+
+/**
+ * Schedules and executes the exact luxury crystalline chime.
+ */
+function executeChime(ctx: AudioContext): void {
+  try {
+    // 8ms lookahead buffer guarantees the hardware clock has headroom, preventing under-run pops
+    const now = ctx.currentTime + 0.008;
 
     // Master volume envelope (gentle attack, soft exponential decay)
     const masterGain = ctx.createGain();
@@ -59,13 +120,40 @@ export function playFavoriteSound() {
     osc1.stop(now + 0.34);
     osc2.stop(now + 0.2);
 
-    // Clean up AudioContext resource after chime finishes
+    // Disconnect active nodes after sound completes to allow clean garbage collection
+    // Notice: We NEVER close the shared AudioContext, preserving the warm hardware pipeline.
     setTimeout(() => {
       try {
-        ctx.close();
+        osc1.disconnect();
+        osc2.disconnect();
+        osc2Gain.disconnect();
+        filter.disconnect();
+        masterGain.disconnect();
       } catch {}
-    }, 450);
+    }, 400);
   } catch {
-    // Graceful fallback for environments where audio autoplay is restricted
+    // Audio node creation fallback
+  }
+}
+
+/**
+ * Triggers the signature Lumina Home favorite chime with zero cold-start delay.
+ */
+export function playFavoriteSound(): void {
+  if (typeof window === 'undefined') return;
+
+  try {
+    const ctx = getOrCreateContext();
+    if (!ctx) return;
+
+    if (ctx.state === 'suspended') {
+      ctx.resume()
+        .then(() => executeChime(ctx))
+        .catch(() => {});
+    } else {
+      executeChime(ctx);
+    }
+  } catch {
+    // Graceful fallback for restricted environments
   }
 }
