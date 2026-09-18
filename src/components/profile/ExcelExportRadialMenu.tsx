@@ -9,11 +9,15 @@ import {
   X, 
   Check, 
   Loader2,
-  Sparkles
+  Sparkles,
+  UploadCloud,
+  FileSpreadsheet,
+  ChevronRight
 } from "lucide-react";
 import * as XLSX from "xlsx";
 import { useUserStore, Order } from "@/lib/userStore";
 import { useCatalogStore, CatalogProduct } from "@/lib/catalogStore";
+import { DROPI_HEADERS, DROPI_ECUADOR_REFERENCE } from "@/lib/dropiEcuadorData";
 
 /**
  * Excel 2025 Fluent Modern Icon
@@ -65,11 +69,17 @@ function Excel2025Icon({ className = "w-6 h-6" }: { className?: string }) {
 
 export function ExcelExportRadialMenu() {
   const [isOpen, setIsOpen] = useState(false);
+  const [ordersSubmenuOpen, setOrdersSubmenuOpen] = useState(false);
   const [activeExport, setActiveExport] = useState<string | null>(null);
   const [successExport, setSuccessExport] = useState<string | null>(null);
   const [isMobile, setIsMobile] = useState(false);
   const [mobileXOffset, setMobileXOffset] = useState(-130);
   const menuRef = useRef<HTMLDivElement>(null);
+
+  const handleCloseMenu = () => {
+    setIsOpen(false);
+    setOrdersSubmenuOpen(false);
+  };
 
   // Detect mobile viewport and calculate safe X offset so satellites and labels never cut off
   useEffect(() => {
@@ -94,7 +104,7 @@ export function ExcelExportRadialMenu() {
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
-        setIsOpen(false);
+        handleCloseMenu();
       }
     }
     if (isOpen) {
@@ -106,13 +116,19 @@ export function ExcelExportRadialMenu() {
   // Close on Escape key
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
-      if (e.key === "Escape") setIsOpen(false);
+      if (e.key === "Escape") {
+        if (ordersSubmenuOpen) {
+          setOrdersSubmenuOpen(false);
+        } else {
+          handleCloseMenu();
+        }
+      }
     }
     if (isOpen) {
       window.addEventListener("keydown", handleKeyDown);
       return () => window.removeEventListener("keydown", handleKeyDown);
     }
-  }, [isOpen]);
+  }, [isOpen, ordersSubmenuOpen]);
 
   // Helper to format current date for filenames
   const getDateSlug = () => {
@@ -120,9 +136,175 @@ export function ExcelExportRadialMenu() {
     return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
   };
 
-  // 1. EXPORT ALL ORDERS TO EXCEL
-  const handleExportOrders = async () => {
-    setActiveExport("orders");
+  // 1.A EXPORT ORDERS SPECIFICALLY FOR DROPI ECUADOR (MASSIVE UPLOAD FORMAT)
+  const handleExportOrdersDropi = async () => {
+    setActiveExport("orders-dropi");
+    try {
+      let ordersList: Order[] = useUserStore.getState().orders;
+      if (ordersList.length === 0) {
+        await useUserStore.getState().refreshOrders();
+        ordersList = useUserStore.getState().orders;
+      }
+
+      const rows: Record<string, string | number>[] = [];
+
+      ordersList.forEach((ord) => {
+        const customerName = (ord.customerName || ord.recipient || ord.shippingAddress?.recipient || "Cliente Lumina").trim();
+        const nameParts = customerName.split(/\s+/).filter(Boolean);
+        let nombres = "Cliente";
+        let apellidos = "Lumina";
+        if (nameParts.length === 1) {
+          nombres = nameParts[0];
+          apellidos = "";
+        } else if (nameParts.length === 2) {
+          nombres = nameParts[0];
+          apellidos = nameParts[1];
+        } else if (nameParts.length === 3) {
+          nombres = `${nameParts[0]} ${nameParts[1]}`;
+          apellidos = nameParts[2];
+        } else {
+          nombres = nameParts.slice(0, 2).join(" ");
+          apellidos = nameParts.slice(2).join(" ");
+        }
+
+        const direccion = ord.shippingAddress 
+          ? `${ord.shippingAddress.street}${ord.shippingAddress.state ? ` (${ord.shippingAddress.state})` : ""}`.trim()
+          : "Dirección de Entrega";
+
+        // IMPORTANT (User Requirement): In DEPARTAMENTO column, put the Ciudad!
+        const rawCity = (ord.shippingAddress?.city || "Quito").trim();
+        const ciudadUpper = rawCity.toUpperCase();
+        const departamentoVal = ciudadUpper;
+        const ciudadVal = ciudadUpper;
+
+        const rawPhone = ord.customerPhone || ord.shippingAddress?.phone || "";
+        const telefono = rawPhone.replace(/\D/g, "") || "0999999999";
+
+        const isContraEntrega = (ord.paymentMethod || "").toLowerCase().includes("contra") || 
+                                (ord.paymentMethod || "").toLowerCase().includes("efectivo") || 
+                                (ord.paymentMethod || "").toLowerCase().includes("cod");
+        const conRecaudo = isContraEntrega ? "SÍ" : "NO";
+
+        const orderNote = ord.id ? `Orden #${ord.id}` : "Entrega Lumina Home";
+        const emailVal = ord.customerEmail || ord.shippingAddress?.email || "";
+        const postalVal = ord.shippingAddress?.postalCode || "";
+        const cedulaVal = ord.customerIdNumber || ord.shippingAddress?.idNumber || "";
+
+        if (ord.items && ord.items.length > 0) {
+          ord.items.forEach((it) => {
+            const itemPrice = typeof it.product?.price === "number" ? it.product.price : Number(ord.total || 0);
+            const itemQty = it.quantity || 1;
+            const lineTotal = Math.round(itemPrice * itemQty);
+            const variant = [it.color, it.size].filter(Boolean).join(" - ");
+
+            rows.push({
+              "NOMBRES": nombres,
+              "APELLIDOS": apellidos,
+              "DIRECCIÓN Y BARRIO": direccion,
+              "DEPARTAMENTO": departamentoVal,
+              "CIUDAD": ciudadVal,
+              "TELÉFONO": telefono,
+              "ID DE PRODUCTO": it.product?.id || it.productId || "PROD-01",
+              "CANTIDAD": itemQty,
+              "PRECIO TOTAL (SIN PUNTOS NI COMAS)": lineTotal || Math.round(Number(ord.total || 0)),
+              "CON RECAUDO": conRecaudo,
+              "NOTA": orderNote,
+              "EMAIL (OPCIONAL)": emailVal,
+              "ID DE VARIABLE (OPCIONAL)": variant,
+              "CODIGO POSTAL (OPCIONAL)": postalVal,
+              "TRANSPORTADORA (OPCIONAL)": "",
+              "CEDULA (OPCIONAL)": cedulaVal,
+              "COLONIA (OBLIGATORIO SOLO PARA QUIKEN)": "",
+              "SEGURO (SOLO APLICA PARA ENVIA)": "",
+            });
+          });
+        } else {
+          rows.push({
+            "NOMBRES": nombres,
+            "APELLIDOS": apellidos,
+            "DIRECCIÓN Y BARRIO": direccion,
+            "DEPARTAMENTO": departamentoVal,
+            "CIUDAD": ciudadVal,
+            "TELÉFONO": telefono,
+            "ID DE PRODUCTO": ord.id || "PROD-01",
+            "CANTIDAD": 1,
+            "PRECIO TOTAL (SIN PUNTOS NI COMAS)": Math.round(Number(ord.total || 0)),
+            "CON RECAUDO": conRecaudo,
+            "NOTA": orderNote,
+            "EMAIL (OPCIONAL)": emailVal,
+            "ID DE VARIABLE (OPCIONAL)": "",
+            "CODIGO POSTAL (OPCIONAL)": postalVal,
+            "TRANSPORTADORA (OPCIONAL)": "",
+            "CEDULA (OPCIONAL)": cedulaVal,
+            "COLONIA (OBLIGATORIO SOLO PARA QUIKEN)": "",
+            "SEGURO (SOLO APLICA PARA ENVIA)": "",
+          });
+        }
+      });
+
+      if (rows.length === 0) {
+        rows.push({
+          "NOMBRES": "Juan Carlos",
+          "APELLIDOS": "Pérez Mero",
+          "DIRECCIÓN Y BARRIO": "Av. 6 de Diciembre y Eloy Alfaro, Edificio Lumina",
+          "DEPARTAMENTO": "QUITO",
+          "CIUDAD": "QUITO",
+          "TELÉFONO": "0991234567",
+          "ID DE PRODUCTO": "PROD-01",
+          "CANTIDAD": 1,
+          "PRECIO TOTAL (SIN PUNTOS NI COMAS)": 45,
+          "CON RECAUDO": "SÍ",
+          "NOTA": "Orden de Prueba Lumina",
+          "EMAIL (OPCIONAL)": "cliente@ejemplo.com",
+          "ID DE VARIABLE (OPCIONAL)": "",
+          "CODIGO POSTAL (OPCIONAL)": "170515",
+          "TRANSPORTADORA (OPCIONAL)": "",
+          "CEDULA (OPCIONAL)": "1712345678",
+          "COLONIA (OBLIGATORIO SOLO PARA QUIKEN)": "",
+          "SEGURO (SOLO APLICA PARA ENVIA)": "",
+        });
+      }
+
+      let wb: XLSX.WorkBook;
+      try {
+        const res = await fetch("/templates/formato-ordenes-masivas-dropiEC.xlsx");
+        if (res.ok) {
+          const arrayBuffer = await res.arrayBuffer();
+          wb = XLSX.read(arrayBuffer, { type: "array" });
+        } else {
+          throw new Error("Template not found");
+        }
+      } catch {
+        wb = XLSX.utils.book_new();
+        const refWs = XLSX.utils.aoa_to_sheet(DROPI_ECUADOR_REFERENCE);
+        XLSX.utils.book_append_sheet(wb, refWs, "Ecuador");
+      }
+
+      const ws = XLSX.utils.json_to_sheet(rows, { header: DROPI_HEADERS as unknown as string[] });
+      ws["!cols"] = DROPI_HEADERS.map(h => ({ wch: Math.max(h.length + 3, 16) }));
+
+      wb.Sheets["Hoja1"] = ws;
+      if (!wb.SheetNames.includes("Hoja1")) {
+        wb.SheetNames.unshift("Hoja1");
+      }
+
+      XLSX.writeFile(wb, `ordenes_masivas_dropi_ec_${getDateSlug()}.xlsx`);
+
+      setSuccessExport("orders-dropi");
+      setTimeout(() => {
+        setSuccessExport(null);
+        handleCloseMenu();
+      }, 1600);
+    } catch (err) {
+      console.error("Error al exportar para Dropi EC:", err);
+    } finally {
+      setActiveExport(null);
+    }
+  };
+
+  // 1.B NORMAL ORDERS EXPORT (DETAILED WITH DELIVERY STATUS)
+  const handleExportOrdersNormal = async () => {
+    setActiveExport("orders-normal");
     try {
       let ordersList: Order[] = useUserStore.getState().orders;
       if (ordersList.length === 0) {
@@ -132,7 +314,7 @@ export function ExcelExportRadialMenu() {
 
       const rows = ordersList.map((ord, idx) => {
         const itemsSummary = (ord.items || [])
-          .map(it => `${it.product.title} (x${it.quantity})`)
+          .map(it => `${it.product?.title || 'Producto'} (x${it.quantity || 1})`)
           .join(" | ");
 
         const totalUnits = (ord.items || []).reduce((acc, it) => acc + (it.quantity || 1), 0);
@@ -142,16 +324,19 @@ export function ExcelExportRadialMenu() {
           "ID Pedido": ord.id,
           "Fecha": ord.date || (ord.createdAt ? new Date(ord.createdAt).toLocaleDateString("es-ES") : "Reciente"),
           "Hora": ord.time || (ord.createdAt ? new Date(ord.createdAt).toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" }) : ""),
+          "Estado Actual": ord.status, // Procesando / Enviado / Entregado
+          "Nº Seguimiento / Guía": ord.trackingNumber || "Pendiente de Despacho",
           "Cliente": ord.customerName || "Cliente",
-          "Email": ord.customerEmail || "",
+          "Cédula / RUC": ord.customerIdNumber || ord.shippingAddress?.idNumber || "N/A",
+          "Email": ord.customerEmail || ord.shippingAddress?.email || "",
+          "Teléfono": ord.customerPhone || ord.shippingAddress?.phone || "N/A",
           "Destinatario": ord.recipient || ord.customerName || "",
           "Ciudad": ord.shippingAddress?.city || "",
+          "Provincia / Estado": ord.shippingAddress?.state || "",
           "Dirección de Envío": ord.shippingAddress ? `${ord.shippingAddress.street}, ${ord.shippingAddress.city}, ${ord.shippingAddress.state}` : "No especificada",
-          "Estado": ord.status,
           "Método de Pago": ord.paymentMethod || "Tarjeta",
-          "Nº Seguimiento": ord.trackingNumber || "N/A",
           "Total Piezas": totalUnits,
-          "Productos": itemsSummary,
+          "Detalle Productos": itemsSummary || "Sin productos",
           "Total Compra (USD)": Number(ord.total || 0).toFixed(2),
         };
       });
@@ -162,16 +347,19 @@ export function ExcelExportRadialMenu() {
           "ID Pedido": "ORD-SAMPLE-01",
           "Fecha": new Date().toLocaleDateString("es-ES"),
           "Hora": "10:30",
+          "Estado Actual": "Procesando",
+          "Nº Seguimiento / Guía": "TRK-98234-EC",
           "Cliente": "Cliente de Prueba",
+          "Cédula / RUC": "1723456789",
           "Email": "cliente@lumina.com",
+          "Teléfono": "0991234567",
           "Destinatario": "Cliente de Prueba",
           "Ciudad": "Quito",
+          "Provincia / Estado": "Pichincha",
           "Dirección de Envío": "Av. República y Eloy Alfaro",
-          "Estado": "Procesando",
           "Método de Pago": "Tarjeta Visa",
-          "Nº Seguimiento": "TRK-98234-EC",
           "Total Piezas": 1,
-          "Productos": "Lámpara Eclipse Minimal (x1)",
+          "Detalle Productos": "Lámpara Eclipse Minimal (x1)",
           "Total Compra (USD)": "120.00",
         });
       }
@@ -179,17 +367,20 @@ export function ExcelExportRadialMenu() {
       const wb = XLSX.utils.book_new();
       const ws = XLSX.utils.json_to_sheet(rows);
       const colWidths = Object.keys(rows[0] || {}).map(key => ({
-        wch: Math.max(key.length + 3, 14)
+        wch: Math.max(key.length + 3, 16)
       }));
       ws["!cols"] = colWidths;
 
       XLSX.utils.book_append_sheet(wb, ws, "Pedidos Lumina");
-      XLSX.writeFile(wb, `pedidos_lumina_${getDateSlug()}.xlsx`);
+      XLSX.writeFile(wb, `pedidos_lumina_normal_${getDateSlug()}.xlsx`);
 
-      setSuccessExport("orders");
-      setTimeout(() => setSuccessExport(null), 2500);
+      setSuccessExport("orders-normal");
+      setTimeout(() => {
+        setSuccessExport(null);
+        handleCloseMenu();
+      }, 1600);
     } catch (err) {
-      console.error("Error al exportar pedidos:", err);
+      console.error("Error al exportar pedidos en formato normal:", err);
     } finally {
       setActiveExport(null);
     }
@@ -367,7 +558,7 @@ export function ExcelExportRadialMenu() {
       id: "orders",
       label: "Exportar Pedidos",
       icon: ShoppingBag,
-      onClick: handleExportOrders,
+      onClick: () => setOrdersSubmenuOpen(prev => !prev),
       targetX: isMobile ? mobileXOffset : -67,
       targetY: isMobile ? 65 : -67,
       originX: 0,
@@ -382,7 +573,10 @@ export function ExcelExportRadialMenu() {
       id: "products",
       label: "Exportar Catálogo",
       icon: Package,
-      onClick: handleExportProducts,
+      onClick: () => {
+        setOrdersSubmenuOpen(false);
+        handleExportProducts();
+      },
       targetX: isMobile ? mobileXOffset : -95,
       targetY: isMobile ? 128 : 0,
       originX: isMobile ? mobileXOffset : -67,
@@ -395,9 +589,12 @@ export function ExcelExportRadialMenu() {
     },
     {
       id: "niches",
-      label: "Inventario por Nicho",
+      label: "Exportar Inventario por Nicho",
       icon: Layers,
-      onClick: handleExportNiches,
+      onClick: () => {
+        setOrdersSubmenuOpen(false);
+        handleExportNiches();
+      },
       targetX: isMobile ? mobileXOffset : -67,
       targetY: isMobile ? 191 : 67,
       originX: isMobile ? mobileXOffset : -95,
@@ -420,7 +617,7 @@ export function ExcelExportRadialMenu() {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.28, ease: "easeOut" }}
-            onClick={() => setIsOpen(false)}
+            onClick={handleCloseMenu}
             className="fixed inset-0 z-40 bg-black/50 dark:bg-black/70 backdrop-blur-[4px] pointer-events-auto"
             aria-hidden="true"
           />
@@ -448,8 +645,14 @@ export function ExcelExportRadialMenu() {
 
               {subButtons.map((btn, index) => {
                 const Icon = btn.icon;
-                const isExporting = activeExport === btn.id;
-                const isSuccess = successExport === btn.id;
+                const isExporting = btn.id === "orders" 
+                  ? (activeExport === "orders" || activeExport === "orders-dropi" || activeExport === "orders-normal")
+                  : activeExport === btn.id;
+                const isSuccess = btn.id === "orders"
+                  ? (successExport === "orders" || successExport === "orders-dropi" || successExport === "orders-normal")
+                  : successExport === btn.id;
+                const isOrdersTrigger = btn.id === "orders";
+                const isSubmenuActive = isOrdersTrigger && ordersSubmenuOpen;
 
                 return (
                   <motion.div
@@ -500,7 +703,9 @@ export function ExcelExportRadialMenu() {
                         style={{
                           boxShadow: `0 16px 36px rgba(0,0,0,0.22), inset 0 2px 2px rgba(255,255,255,0.85), inset 0 -2px 2px rgba(0,0,0,0.12), 0 0 24px ${btn.glowColor}`
                         }}
-                        className={`relative w-[50px] h-[50px] rounded-full flex items-center justify-center border ${btn.borderGlow} bg-gradient-to-br ${btn.bgGradient} backdrop-blur-2xl hover:scale-115 active:scale-90 transition-all duration-200 cursor-pointer text-gray-800 dark:text-gray-100 overflow-hidden shrink-0`}
+                        className={`relative w-[50px] h-[50px] rounded-full flex items-center justify-center border ${
+                          isSubmenuActive ? "border-emerald-400 ring-2 ring-emerald-400/70" : btn.borderGlow
+                        } bg-gradient-to-br ${btn.bgGradient} backdrop-blur-2xl hover:scale-115 active:scale-90 transition-all duration-200 cursor-pointer text-gray-800 dark:text-gray-100 overflow-hidden shrink-0`}
                       >
                         {/* Liquid glass glossy top specular highlight */}
                         <div className="pointer-events-none absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-white/80 via-white/20 to-transparent rounded-t-full opacity-90 dark:opacity-40" />
@@ -517,22 +722,148 @@ export function ExcelExportRadialMenu() {
                         )}
                       </button>
 
-                      {/* Interactive Description Capsule (Always visible by default on all devices) */}
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          btn.onClick();
-                        }}
-                        disabled={isExporting}
-                        className={`absolute ${isMobile ? "left-full ml-3" : "right-full mr-3"} top-1/2 -translate-y-1/2 px-3.5 py-1.5 rounded-2xl bg-white/95 dark:bg-[#1a1f1c]/95 backdrop-blur-xl border border-white/80 dark:border-white/15 shadow-[0_8px_24px_rgba(0,0,0,0.15)] text-gray-900 dark:text-white text-xs font-bold tracking-tight whitespace-nowrap cursor-pointer hover:scale-105 active:scale-95 transition-all duration-200 z-50 flex items-center gap-2 opacity-100 pointer-events-auto`}
-                      >
-                        <Sparkles className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
-                        <span>{btn.label}</span>
-                        <span className={`text-[9px] font-mono font-semibold px-1.5 py-0.5 rounded-md border ${btn.badgeColor}`}>
-                          .xlsx
-                        </span>
-                      </button>
+                      {/* Regular Description Capsule (Shown when submenu is NOT expanded for this button) */}
+                      {!isSubmenuActive && (
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            btn.onClick();
+                          }}
+                          disabled={isExporting}
+                          className={`absolute ${isMobile ? "left-full ml-3" : "right-full mr-3"} top-1/2 -translate-y-1/2 px-3.5 py-1.5 rounded-2xl bg-white/95 dark:bg-[#1a1f1c]/95 backdrop-blur-xl border border-white/80 dark:border-white/15 shadow-[0_8px_24px_rgba(0,0,0,0.15)] text-gray-900 dark:text-white text-xs font-bold tracking-tight whitespace-nowrap cursor-pointer hover:scale-105 active:scale-95 transition-all duration-200 z-50 flex items-center gap-2 opacity-100 pointer-events-auto`}
+                        >
+                          <Sparkles className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+                          <span>{btn.label}</span>
+                          {isOrdersTrigger ? (
+                            <span className="flex items-center gap-1 text-[9px] font-bold px-1.5 py-0.5 rounded-md bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30">
+                              2 opciones
+                              <ChevronRight className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />
+                            </span>
+                          ) : (
+                            <span className={`text-[9px] font-mono font-semibold px-1.5 py-0.5 rounded-md border ${btn.badgeColor}`}>
+                              .xlsx
+                            </span>
+                          )}
+                        </button>
+                      )}
+
+                      {/* Orders Submenu Flyout: 2 Exclusive Modalities */}
+                      <AnimatePresence>
+                        {isSubmenuActive && (
+                          <motion.div
+                            initial={{ opacity: 0, scale: 0.94, x: isMobile ? 0 : 12 }}
+                            animate={{ opacity: 1, scale: 1, x: 0 }}
+                            exit={{ opacity: 0, scale: 0.94, x: isMobile ? 0 : 12 }}
+                            transition={{ duration: 0.22, ease: "easeOut" }}
+                            onClick={(e) => e.stopPropagation()}
+                            className={`${
+                              isMobile
+                                ? "fixed inset-x-4 top-24 max-w-sm mx-auto z-[80]"
+                                : "absolute right-full mr-3.5 top-1/2 -translate-y-1/2 w-[360px] z-[60]"
+                            } p-3.5 rounded-3xl bg-white/95 dark:bg-[#151c17]/95 backdrop-blur-2xl border border-emerald-500/30 dark:border-emerald-500/30 shadow-[0_20px_60px_rgba(0,0,0,0.35),0_0_30px_rgba(16,185,129,0.15)] pointer-events-auto text-left`}
+                          >
+                            {/* Submenu Header */}
+                            <div className="flex items-center justify-between pb-2.5 mb-2.5 border-b border-gray-100 dark:border-white/10">
+                              <div className="flex items-center gap-2">
+                                <div className="w-6 h-6 rounded-lg bg-emerald-500/20 flex items-center justify-center text-emerald-600 dark:text-emerald-400 shrink-0">
+                                  <ShoppingBag className="w-3.5 h-3.5" />
+                                </div>
+                                <div>
+                                  <h4 className="text-xs font-bold text-gray-900 dark:text-white leading-tight">
+                                    Exportar Pedidos
+                                  </h4>
+                                  <span className="text-[10px] text-gray-500 dark:text-gray-400">
+                                    Selecciona el destino o formato
+                                  </span>
+                                </div>
+                              </div>
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setOrdersSubmenuOpen(false);
+                                }}
+                                className="w-6 h-6 rounded-full flex items-center justify-center text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-white/10 transition-colors cursor-pointer"
+                                title="Cerrar opciones"
+                              >
+                                <X className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+
+                            {/* Options List */}
+                            <div className="space-y-2">
+                              {/* Option #1: Para Carga masiva de Órdenes - Dropi EC */}
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleExportOrdersDropi();
+                                }}
+                                disabled={activeExport !== null}
+                                className="w-full text-left p-3 rounded-2xl border border-emerald-500/25 bg-gradient-to-r from-emerald-500/10 via-emerald-500/5 to-transparent hover:border-emerald-500/50 hover:bg-emerald-500/15 dark:from-emerald-950/50 dark:to-[#17221b] transition-all group flex items-start gap-3 cursor-pointer"
+                              >
+                                <div className="w-9 h-9 rounded-xl bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center text-emerald-600 dark:text-emerald-300 shrink-0 mt-0.5 group-hover:scale-108 transition-transform shadow-sm">
+                                  {activeExport === "orders-dropi" ? (
+                                    <Loader2 className="w-4 h-4 animate-spin text-emerald-500" />
+                                  ) : successExport === "orders-dropi" ? (
+                                    <Check className="w-4 h-4 text-emerald-500 stroke-[3]" />
+                                  ) : (
+                                    <UploadCloud className="w-4 h-4" />
+                                  )}
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex items-center justify-between gap-1.5 mb-1">
+                                    <span className="text-xs font-bold text-gray-900 dark:text-white group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors">
+                                      Para Carga masiva de Órdenes - Dropi EC
+                                    </span>
+                                    <span className="text-[9px] font-mono font-bold px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 shrink-0">
+                                      Dropi EC
+                                    </span>
+                                  </div>
+                                  <p className="text-[11px] text-gray-600 dark:text-gray-300 leading-snug">
+                                    Formato oficial para subir órdenes masivas en Dropi Ecuador (Cantones/Provincias y Ciudad en Departamento).
+                                  </p>
+                                </div>
+                              </button>
+
+                              {/* Option #2: Exportación Normal */}
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleExportOrdersNormal();
+                                }}
+                                disabled={activeExport !== null}
+                                className="w-full text-left p-3 rounded-2xl border border-sky-500/25 bg-gradient-to-r from-sky-500/10 via-sky-500/5 to-transparent hover:border-sky-500/50 hover:bg-sky-500/15 dark:from-sky-950/50 dark:to-[#141e24] transition-all group flex items-start gap-3 cursor-pointer"
+                              >
+                                <div className="w-9 h-9 rounded-xl bg-sky-500/20 border border-sky-500/30 flex items-center justify-center text-sky-600 dark:text-sky-300 shrink-0 mt-0.5 group-hover:scale-108 transition-transform shadow-sm">
+                                  {activeExport === "orders-normal" ? (
+                                    <Loader2 className="w-4 h-4 animate-spin text-sky-500" />
+                                  ) : successExport === "orders-normal" ? (
+                                    <Check className="w-4 h-4 text-emerald-500 stroke-[3]" />
+                                  ) : (
+                                    <FileSpreadsheet className="w-4 h-4" />
+                                  )}
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex items-center justify-between gap-1.5 mb-1">
+                                    <span className="text-xs font-bold text-gray-900 dark:text-white group-hover:text-sky-600 dark:group-hover:text-sky-400 transition-colors">
+                                      Exportación Normal
+                                    </span>
+                                    <span className="text-[9px] font-mono font-bold px-1.5 py-0.5 rounded bg-sky-500/20 text-sky-700 dark:text-sky-300 border border-sky-500/30 shrink-0">
+                                      Estándar
+                                    </span>
+                                  </div>
+                                  <p className="text-[11px] text-gray-600 dark:text-gray-300 leading-snug">
+                                    Reporte detallado con cliente, dirección, ítems y en qué estado va cada pedido (Procesando / Enviado / Entregado).
+                                  </p>
+                                </div>
+                              </button>
+                            </div>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
                     </div>
                   </motion.div>
                 );
