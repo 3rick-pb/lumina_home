@@ -71,8 +71,8 @@ export const CHART_COLORS_LIGHT = CHART_COLORS.map((c) => c + "33");
  */
 export async function renderChartToBase64(
   config: ChartConfiguration,
-  width = 720,
-  height = 420
+  width = 800,
+  height = 450
 ): Promise<string> {
   // Create offscreen canvas
   const canvas = document.createElement("canvas");
@@ -86,6 +86,24 @@ export async function renderChartToBase64(
   canvas.style.pointerEvents = "none";
   document.body.appendChild(canvas);
 
+  // Background plugin to ensure a clean, solid white card container with subtle border
+  const whiteBackgroundPlugin = {
+    id: "whiteBackgroundCard",
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    beforeDraw: (chartInstance: any) => {
+      const { ctx, width: w, height: h } = chartInstance;
+      ctx.save();
+      // Pure white fill
+      ctx.fillStyle = "#ffffff";
+      ctx.fillRect(0, 0, w, h);
+      // Subtle elegant card border
+      ctx.strokeStyle = "#e4e4e7";
+      ctx.lineWidth = 1.5;
+      ctx.strokeRect(1, 1, w - 2, h - 2);
+      ctx.restore();
+    },
+  };
+
   // Default chart options for a clean, professional look
   const defaults: ChartConfiguration["options"] = {
     responsive: false,
@@ -96,34 +114,35 @@ export async function renderChartToBase64(
         position: "bottom",
         labels: {
           font: { family: "system-ui, -apple-system, sans-serif", size: 12, weight: "bold" },
-          color: "#18181b",
+          color: "#27272a",
           padding: 16,
           usePointStyle: true,
-          pointStyleWidth: 14,
+          pointStyleWidth: 12,
         },
       },
       title: {
         display: !!config.options?.plugins?.title?.text,
         font: { family: "system-ui, -apple-system, sans-serif", size: 16, weight: "bold" },
-        color: "#18181b",
-        padding: { top: 12, bottom: 20 },
+        color: "#09090b",
+        padding: { top: 16, bottom: 20 },
       },
     },
     layout: {
-      padding: { top: 16, right: 24, bottom: 16, left: 24 },
+      padding: { top: 18, right: 28, bottom: 18, left: 28 },
     },
   };
 
   // Deep merge options
   const mergedConfig: ChartConfiguration = {
     ...config,
+    plugins: [whiteBackgroundPlugin, ...(config.plugins || [])],
     options: deepMerge(defaults, config.options || {}),
   };
 
   const chart = new Chart(canvas, mergedConfig);
 
   // Wait for render
-  await new Promise((r) => setTimeout(r, 100));
+  await new Promise((r) => setTimeout(r, 120));
 
   // Get Base64 PNG (strip data URL prefix)
   const dataUrl = canvas.toDataURL("image/png", 1.0);

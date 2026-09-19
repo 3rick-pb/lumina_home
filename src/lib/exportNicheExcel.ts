@@ -95,10 +95,11 @@ function aggregateNiches(products: CatalogProduct[]) {
 export async function exportNicheToExcel(
   products: CatalogProduct[],
   dateSlug: string,
-  brandName: string
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  _brandName?: string
 ) {
   const wb = new ExcelJS.Workbook();
-  wb.creator = brandName;
+  wb.creator = "Sistema de Gestión";
   wb.created = new Date();
 
   const nicheMap = aggregateNiches(products);
@@ -212,23 +213,58 @@ export async function exportNicheToExcel(
     properties: { showGridLines: false },
   });
 
+  // Set generous column widths so chart images render with ample margins
+  // Columns 1-8 (A-H) for Left Chart (~800px)
+  for (let c = 1; c <= 8; c++) {
+    dash.getColumn(c).width = 13.5;
+  }
+  // Column 9 (I) is a spacer column between Left and Right charts
+  dash.getColumn(9).width = 4;
+  // Columns 10-17 (J-Q) for Right Chart (~800px)
+  for (let c = 10; c <= 17; c++) {
+    dash.getColumn(c).width = 13.5;
+  }
+  // Column 18 (R) right margin
+  dash.getColumn(18).width = 4;
+
   // ── Title ──
-  dash.mergeCells("A1:L2");
+  dash.mergeCells("A1:Q2");
   const titleCell = dash.getCell("A1");
-  titleCell.value = `📊  DASHBOARD — INVENTARIO ${brandName.toUpperCase()}`;
-  titleCell.font = { name: "Calibri", size: 20, bold: true, color: { argb: DARK } };
+  titleCell.value = "📊  DASHBOARD ANALÍTICO — INVENTARIO POR NICHO";
+  titleCell.font = { name: "Calibri", size: 18, bold: true, color: { argb: DARK } };
   titleCell.alignment = { vertical: "middle", horizontal: "center" };
   titleCell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: LIGHT_GRAY } };
-  dash.getRow(1).height = 24;
-  dash.getRow(2).height = 24;
+  dash.getRow(1).height = 26;
+  dash.getRow(2).height = 26;
 
   // ── Subtitle ──
-  dash.mergeCells("A3:L3");
+  dash.mergeCells("A3:Q3");
   const subtitleCell = dash.getCell("A3");
-  subtitleCell.value = `Generado el ${new Date().toLocaleDateString("es-ES", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}  •  ${sortedNiches.length} nichos  •  ${products.length} productos  •  ${grandTotalStock} unidades en stock`;
+  subtitleCell.value = `Generado el ${new Date().toLocaleDateString("es-ES", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}  •  ${sortedNiches.length} colecciones  •  ${products.length} productos  •  ${grandTotalStock} unidades en stock`;
   subtitleCell.font = { name: "Calibri", size: 11, italic: true, color: { argb: "FF71717A" } };
   subtitleCell.alignment = { vertical: "middle", horizontal: "center" };
   dash.getRow(3).height = 22;
+
+  // Row 4 is spacer
+  dash.getRow(4).height = 14;
+
+  // Set row heights for chart area 1 (rows 5 to 27)
+  for (let r = 5; r <= 27; r++) {
+    dash.getRow(r).height = 20;
+  }
+
+  // Row 28 is spacer between top charts and bottom charts
+  dash.getRow(28).height = 24;
+
+  // Set row heights for chart area 2 (rows 29 to 51)
+  for (let r = 29; r <= 51; r++) {
+    dash.getRow(r).height = 20;
+  }
+
+  // Row 52 is spacer
+  dash.getRow(52).height = 16;
+  // Row 53 is footer
+  dash.getRow(53).height = 24;
 
   // ── Chart Data ──
   const nicheNames = sortedNiches.map(([n]) => n);
@@ -251,9 +287,17 @@ export async function exportNicheToExcel(
     options: {
       plugins: {
         title: { display: true, text: "Distribución del Catálogo por Nicho" },
+        legend: {
+          position: "right",
+          labels: {
+            font: { size: 11, weight: "bold" },
+            boxWidth: 12,
+            padding: 12,
+          },
+        },
       },
     } as Record<string, unknown>,
-  } as Parameters<typeof renderChartToBase64>[0], 700, 400);
+  } as Parameters<typeof renderChartToBase64>[0], 800, 450);
 
   // ── Chart 2: Total Stock by Niche (Bar) ──
   const chart2Base64 = await renderChartToBase64({
@@ -270,15 +314,15 @@ export async function exportNicheToExcel(
     },
     options: {
       plugins: {
-        title: { display: true, text: "Stock Total por Nicho" },
+        title: { display: true, text: "Stock Total Disponible por Nicho" },
         legend: { display: false },
       },
       scales: {
-        y: { beginAtZero: true, ticks: { font: { size: 11 } }, grid: { color: "#f0f0f0" } },
-        x: { ticks: { font: { size: 10 } }, grid: { display: false } },
+        y: { beginAtZero: true, ticks: { font: { size: 11 } }, grid: { color: "#f4f4f5" } },
+        x: { ticks: { font: { size: 11, weight: "bold" }, maxRotation: 25, minRotation: 0 }, grid: { display: false } },
       },
     },
-  }, 700, 400);
+  }, 800, 450);
 
   // ── Chart 3: Inventory Value by Niche (Bar) ──
   const chart3Base64 = await renderChartToBase64({
@@ -286,7 +330,7 @@ export async function exportNicheToExcel(
     data: {
       labels: nicheNames,
       datasets: [{
-        label: "Valor (USD)",
+        label: "Valor Total (USD)",
         data: nicheValues,
         backgroundColor: CHART_COLORS.slice(0, nicheNames.length),
         borderRadius: 6,
@@ -295,15 +339,15 @@ export async function exportNicheToExcel(
     },
     options: {
       plugins: {
-        title: { display: true, text: "Valor de Inventario por Nicho (USD)" },
+        title: { display: true, text: "Valor Monetario de Inventario por Nicho (USD)" },
         legend: { display: false },
       },
       scales: {
-        y: { beginAtZero: true, ticks: { callback: (v) => `$${v}`, font: { size: 11 } }, grid: { color: "#f0f0f0" } },
-        x: { ticks: { font: { size: 10 } }, grid: { display: false } },
+        y: { beginAtZero: true, ticks: { callback: (v) => `$${v}`, font: { size: 11 } }, grid: { color: "#f4f4f5" } },
+        x: { ticks: { font: { size: 11, weight: "bold" }, maxRotation: 25, minRotation: 0 }, grid: { display: false } },
       },
     },
-  }, 700, 400);
+  }, 800, 450);
 
   // ── Chart 4: Availability Status (Pie) ──
   const chart4Base64 = await renderChartToBase64({
@@ -319,35 +363,42 @@ export async function exportNicheToExcel(
     },
     options: {
       plugins: {
-        title: { display: true, text: "Disponibilidad General" },
+        title: { display: true, text: "Disponibilidad General de Inventario" },
+        legend: {
+          position: "bottom",
+          labels: {
+            font: { size: 12, weight: "bold" },
+            padding: 16,
+          },
+        },
       },
     },
-  }, 700, 400);
+  }, 800, 450);
 
-  // ── Insert charts as images ──
+  // ── Insert charts as images with absolute dimensions (no squishing) ──
   const img1 = wb.addImage({ base64: chart1Base64, extension: "png" });
   const img2 = wb.addImage({ base64: chart2Base64, extension: "png" });
   const img3 = wb.addImage({ base64: chart3Base64, extension: "png" });
   const img4 = wb.addImage({ base64: chart4Base64, extension: "png" });
 
-  // Row 5-22: Chart 1 (left) + Chart 2 (right)
+  // Row 5: Chart 1 (left) + Chart 2 (right)
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  dash.addImage(img1, { tl: { col: 0, row: 4 }, br: { col: 6, row: 22 }, editAs: "oneCell" } as any);
+  dash.addImage(img1, { tl: { col: 0, row: 4 }, ext: { width: 780, height: 440 }, editAs: "oneCell" } as any);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  dash.addImage(img2, { tl: { col: 6, row: 4 }, br: { col: 12, row: 22 }, editAs: "oneCell" } as any);
+  dash.addImage(img2, { tl: { col: 9, row: 4 }, ext: { width: 780, height: 440 }, editAs: "oneCell" } as any);
 
-  // Row 24-41: Chart 3 (left) + Chart 4 (right)
+  // Row 29: Chart 3 (left) + Chart 4 (right)
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  dash.addImage(img3, { tl: { col: 0, row: 23 }, br: { col: 6, row: 41 }, editAs: "oneCell" } as any);
+  dash.addImage(img3, { tl: { col: 0, row: 28 }, ext: { width: 780, height: 440 }, editAs: "oneCell" } as any);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  dash.addImage(img4, { tl: { col: 6, row: 23 }, br: { col: 12, row: 41 }, editAs: "oneCell" } as any);
+  dash.addImage(img4, { tl: { col: 9, row: 28 }, ext: { width: 780, height: 440 }, editAs: "oneCell" } as any);
 
   // ── Footer ──
-  dash.mergeCells("A43:L43");
-  const footerCell = dash.getCell("A43");
-  footerCell.value = `© ${new Date().getFullYear()} ${brandName} — Reporte generado automáticamente`;
-  footerCell.font = { name: "Calibri", size: 9, italic: true, color: { argb: "FF9CA3AF" } };
-  footerCell.alignment = { horizontal: "center" };
+  dash.mergeCells("A53:Q53");
+  const footerCell = dash.getCell("A53");
+  footerCell.value = "Reporte analítico generado automáticamente • Registro del sistema";
+  footerCell.font = { name: "Calibri", size: 10, italic: true, color: { argb: "FF71717A" } };
+  footerCell.alignment = { horizontal: "center", vertical: "middle" };
 
   // ═══════════════════════════════════════════════════════════════
   // Download
