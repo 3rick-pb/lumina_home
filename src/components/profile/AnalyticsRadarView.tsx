@@ -31,6 +31,7 @@ import {
   resolveMultiCountryCoordinates 
 } from "@/lib/radarCountries";
 import { BlobatarAvatar } from "@/components/ui/BlobatarAvatar";
+import { useAvatarSettingsStore } from "@/lib/avatarSettingsStore";
 
 export type { ConnectedClient } from "@/lib/radarStore";
 
@@ -420,6 +421,55 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
     return Boolean(currentUserCity.trim());
   }, [isAdmin, currentUserCity]);
 
+  const customSeed = useAvatarSettingsStore((state) => state.customSeed);
+  const backgroundShape = useAvatarSettingsStore((state) => state.backgroundShape);
+
+  // Authoritative avatar resolver for clients and administrators
+  const getClientAvatarProps = useCallback((client?: ConnectedClient | null) => {
+    if (!client) {
+      return {
+        name: "lumina-client",
+        role: "USER" as const,
+        background: "circle" as const,
+        showGlow: false,
+        title: "Cliente Lumina",
+      };
+    }
+
+    const isSelf = isUserSelf(client);
+    const isClientAdminAccount = isClientAdmin(client);
+    const clientRole = isClientAdminAccount ? ("ADMIN" as const) : ("USER" as const);
+
+    if (isSelf && currentUser) {
+      // 100% exact match with Profile Header, Navbar, and Settings avatar
+      const authenticSeed = customSeed || currentUser.id || currentUser.email || currentUser.name || "lumina-client";
+      return {
+        name: authenticSeed,
+        role: clientRole,
+        background: backgroundShape || "circle",
+        showGlow: true,
+        title: `Avatar oficial de ${cleanClientName(currentUser.name || client.name)}`,
+      };
+    }
+
+    // For other clients or administrators in the radar
+    const authenticSeed = 
+      client.customSeed || 
+      client.avatarSeed || 
+      client.id || 
+      client.email || 
+      client.name || 
+      "lumina-client";
+
+    return {
+      name: authenticSeed,
+      role: clientRole,
+      background: "circle" as const,
+      showGlow: isClientAdminAccount,
+      title: `Avatar de ${cleanClientName(client.name)}`,
+    };
+  }, [isUserSelf, isClientAdmin, currentUser, customSeed, backgroundShape]);
+
   const handleNavigateToAddress = () => {
     if (props.onNavigateToAddresses) {
       props.onNavigateToAddresses();
@@ -458,21 +508,27 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
           x: coords.x,
           y: coords.y,
           currentSection: isAdmin ? "Mi Perfil / Mapa" : (c.currentSection || "Explorando Tienda"),
+          customSeed: customSeed || c.customSeed || null,
+          avatarSeed: customSeed || currentUser?.id || currentUser?.email || currentUser?.name || c.avatarSeed || null,
+          role: isAdmin ? ('ADMIN' as const) : ('USER' as const),
         };
       }
-      // Guarantee valid coordinates for any external client or anonymous visitor with a city
       const clientCity = c.city || "";
       const parsedX = typeof c.x === 'number' ? c.x : Number(c.x);
       const parsedY = typeof c.y === 'number' ? c.y : Number(c.y);
+      let nextX = parsedX;
+      let nextY = parsedY;
       if (clientCity && (isNaN(parsedX) || parsedX < 0 || isNaN(parsedY) || parsedY < 0)) {
         const coords = resolveMultiCountryCoordinates(clientCity, selectedCountry);
-        return {
-          ...c,
-          x: coords.x >= 0 ? coords.x : (isNaN(parsedX) ? -100 : parsedX),
-          y: coords.y >= 0 ? coords.y : (isNaN(parsedY) ? -100 : parsedY),
-        };
+        nextX = coords.x >= 0 ? coords.x : (isNaN(parsedX) ? -100 : parsedX);
+        nextY = coords.y >= 0 ? coords.y : (isNaN(parsedY) ? -100 : parsedY);
       }
-      return c;
+      return {
+        ...c,
+        x: nextX,
+        y: nextY,
+        role: isClientAdmin(c) ? ('ADMIN' as const) : (c.role || ('USER' as const)),
+      };
     });
 
     if (!foundSelf && selectedCountry === 'EC' && currentUser?.id && !currentUser.id.startsWith('vis_') && !currentUser.id.startsWith('guest_')) {
@@ -498,11 +554,14 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
         hasCart: false,
         cartItemsCount: 0,
         isRealUser: true,
+        customSeed: customSeed || null,
+        avatarSeed: customSeed || currentUser.id || currentUser.email || currentUser.name || null,
+        role: isAdmin ? 'ADMIN' : 'USER',
       });
     }
 
     return mapped;
-  }, [rawConnectedClients, isUserSelf, currentUserCity, isAdmin, currentUser, userOrders, selectedCountry, activeCountry]);
+  }, [rawConnectedClients, isUserSelf, isClientAdmin, currentUserCity, isAdmin, currentUser, userOrders, selectedCountry, activeCountry, customSeed]);
 
   // Actual clients and visitors connected (Excludes only administrators from customer lists)
   const actualClients = useMemo(() => {
@@ -1081,8 +1140,16 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
                       : activeStage === "frequent" && isStageMatch
                       ? "bg-amber-400 text-gray-950 border-white shadow-[0_0_18px_#f59e0b] scale-110"
                       : "bg-[#ccff00] text-gray-950 border-white/90 shadow-[0_0_14px_#ccff00]"
-                  } w-6 h-6`}>
-                    {client.device === "Computador" ? (
+                  } ${!client.isAnonymous ? "w-7 h-7 p-0.5 overflow-hidden" : "w-6 h-6"}`}>
+                    {!client.isAnonymous ? (
+                      <BlobatarAvatar
+                        {...getClientAvatarProps(client)}
+                        size={22}
+                        animate={isActive ? "always" : "hover"}
+                        background="circle"
+                        className="pointer-events-none"
+                      />
+                    ) : client.device === "Computador" ? (
                       <Monitor className="w-3 h-3 shrink-0" />
                     ) : client.device === "Celular" ? (
                       <Smartphone className="w-3 h-3 shrink-0" />
@@ -1091,7 +1158,7 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
                     )}
 
                     {client.hasCart && (
-                      <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-rose-500 border border-white" />
+                      <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-rose-500 border border-white z-10" />
                     )}
                   </div>
 
@@ -1133,6 +1200,54 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
                 }`}>
                   {client.isAnonymous ? `Visitante • ${beacon.cityName}` : beaconLabel}
                 </div>
+
+                {/* Hover Tooltip for Registered Clients & Admins */}
+                {isHovered && !client.isAnonymous && (
+                  <div className="absolute bottom-full mb-3 left-1/2 -translate-x-1/2 w-54 p-3 rounded-2xl bg-[#0e1311]/95 backdrop-blur-2xl border border-[#ccff00]/40 shadow-[0_14px_36px_rgba(0,0,0,0.7)] z-50 pointer-events-none space-y-2 animate-fade-in text-left">
+                    <div className="flex items-center gap-2.5 border-b border-white/10 pb-2">
+                      <BlobatarAvatar
+                        {...getClientAvatarProps(client)}
+                        size={30}
+                        animate="always"
+                        className="shrink-0"
+                      />
+                      <div className="min-w-0 flex-1">
+                        <p className="text-xs font-bold text-white truncate leading-tight">
+                          {cleanClientName(client.name)}
+                        </p>
+                        <span className={`text-[8.5px] font-mono px-1.5 py-0.5 rounded font-bold inline-block mt-0.5 ${
+                          isClientAdmin(client)
+                            ? "bg-amber-400/20 text-amber-300 border border-amber-400/30"
+                            : "bg-emerald-400/20 text-emerald-300 border border-emerald-400/30"
+                        }`}>
+                          {isUserSelf(client) ? (isAdmin ? "Tú (Admin)" : "Tú") : isClientAdmin(client) ? "Administrador" : "Cliente"}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="space-y-1 text-[10px] text-white/80">
+                      <div className="flex items-center justify-between">
+                        <span className="text-white/50">Ubicación:</span>
+                        <span className="font-semibold text-white truncate max-w-[110px]">
+                          {beacon.cityName}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-white/50">Actividad:</span>
+                        <span className="font-medium text-[#ccff00] truncate max-w-[110px]">
+                          {client.currentSection || "En Línea"}
+                        </span>
+                      </div>
+                      {!isClientAdmin(client) && (
+                        <div className="flex items-center justify-between pt-0.5 border-t border-white/10 text-[9.5px]">
+                          <span className="text-white/50">Compras:</span>
+                          <span className="font-mono font-bold text-white">
+                            {client.purchasesCount || 0} pedidos • ${Number(client.totalSpent || 0).toFixed(0)}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
 
                 {/* Lightweight Hover Tooltip for Anonymous Visitors */}
                 {isHovered && client.isAnonymous && (
@@ -1373,10 +1488,9 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
                         >
                           <div className="flex items-center gap-2 truncate">
                             <BlobatarAvatar
-                              name={client.id || client.name}
-                              size={26}
+                              {...getClientAvatarProps(client)}
+                              size={28}
                               animate="hover"
-                              background="circle"
                               className="shrink-0"
                             />
                             <div className="truncate">
@@ -1607,10 +1721,9 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex items-start gap-3 min-w-0 flex-1">
                       <BlobatarAvatar
-                        name={displayedDossierClient.id || displayedDossierClient.name}
-                        size={38}
+                        {...getClientAvatarProps(displayedDossierClient)}
+                        size={40}
                         animate="always"
-                        background="circle"
                         className="shrink-0 mt-0.5 shadow-md hover:scale-105"
                       />
                       <div className="min-w-0 flex-1">
@@ -2033,10 +2146,9 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
                         >
                           <div className="flex items-center gap-2.5 truncate pr-2">
                             <BlobatarAvatar
-                              name={c.id || c.name}
+                              {...getClientAvatarProps(c)}
                               size={28}
                               animate="hover"
-                              background="circle"
                               className="shrink-0"
                             />
                             <div className="truncate">

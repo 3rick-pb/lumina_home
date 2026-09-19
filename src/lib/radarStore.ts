@@ -5,6 +5,7 @@ import {
   resolveMultiCountryCoordinates, 
   type RadarCountryCode 
 } from './radarCountries';
+import { useAvatarSettingsStore } from './avatarSettingsStore';
 
 export interface ConnectedClient {
   id: string; // user_id
@@ -30,6 +31,9 @@ export interface ConnectedClient {
   lastSeen?: number;
   lastUpdated?: number;
   activeSessionsCount?: number;
+  avatarSeed?: string | null;
+  customSeed?: string | null;
+  role?: 'USER' | 'ADMIN';
 }
 
 export const RADAR_CLIENT_TTL_MS = 60 * 1000; // 60s Enterprise TTL
@@ -151,6 +155,9 @@ export function parsePresenceState(state: Record<string, unknown>): ConnectedCli
           lastSeen: Math.max(existing?.lastSeen || 0, p.lastSeen || now),
           lastUpdated: Math.max(existing?.lastUpdated || 0, p.lastUpdated || now),
           activeSessionsCount: (existing?.activeSessionsCount || 0) + 1,
+          avatarSeed: p.avatarSeed || p.customSeed || (isAnon ? null : (p.id || p.email || p.name)),
+          customSeed: p.customSeed || null,
+          role: p.role || (p.name?.toLowerCase().includes('admin') || p.email?.toLowerCase().includes('admin') ? 'ADMIN' : 'USER'),
         };
 
         map.set(clientKey, clientObj);
@@ -272,6 +279,10 @@ export const useRadarStore = create<RadarStore>((set, get) => ({
     const isTablet = typeof window !== 'undefined' && window.innerWidth >= 768 && window.innerWidth < 1024;
     const device: ConnectedClient['device'] = isMobile ? 'Celular' : isTablet ? 'Tablet' : 'Computador';
     const now = Date.now();
+    const userSeed = useAvatarSettingsStore.getState().customSeed;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const userRole = (user as any)?.role || 'USER';
+    const avatarSeed = isAnon ? null : (userSeed || user?.id || user?.email || user?.name || null);
 
     const payload: ConnectedClient = {
       id: clientId,
@@ -295,6 +306,9 @@ export const useRadarStore = create<RadarStore>((set, get) => ({
       isOnline: true,
       lastSeen: now,
       lastUpdated: now,
+      avatarSeed,
+      customSeed: userSeed || null,
+      role: isAnon ? 'USER' : userRole,
     };
 
     const dispatchRealtime = () => {
@@ -396,6 +410,9 @@ export const useRadarStore = create<RadarStore>((set, get) => ({
               lastSeen: now,
               lastUpdated: now,
               isOnline: true,
+              avatarSeed: payload.avatarSeed || payload.customSeed || (isAnon ? null : (payload.id || payload.email || payload.name)),
+              customSeed: payload.customSeed || null,
+              role: payload.role || (payload.name?.toLowerCase().includes('admin') || payload.email?.toLowerCase().includes('admin') ? 'ADMIN' : 'USER'),
             };
 
             const idx = state.clients.findIndex((c) => c.id === payload.id);

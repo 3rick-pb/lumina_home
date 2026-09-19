@@ -5,7 +5,7 @@ import { useUserStore } from "@/lib/userStore";
 import { usePathname, useRouter } from "next/navigation";
 
 export function AuthGuard({ children }: { children: React.ReactNode }) {
-  const { isAuthenticated, isLoading, isAuthInitialized, isGuestMode } = useUserStore();
+  const { isAuthenticated, isLoading, isAuthInitialized } = useUserStore();
   const pathname = usePathname();
   const router = useRouter();
   const [mounted, setMounted] = useState(false);
@@ -26,19 +26,12 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
       return;
     }
 
-    // 2. Default Store Entry Gatekeeper:
-    // New / unauthenticated visitors who haven't selected "Continuar sin cuenta" are routed to /auth/login
-    if (!isAuthenticated && !isGuestMode && !isAuthPage) {
-      router.replace("/auth/login");
-      return;
-    }
-
-    // 3. If already authenticated and visiting login/register, redirect to store home
+    // 2. If already authenticated and visiting login/register, redirect to store home
     if (isAuthenticated && isAuthPage) {
       router.replace("/");
       return;
     }
-  }, [mounted, isAuthInitialized, isLoading, isAuthenticated, isGuestMode, isStrictProtected, isAuthPage, router]);
+  }, [mounted, isAuthInitialized, isLoading, isAuthenticated, isStrictProtected, isAuthPage, router]);
 
   // For strict protected routes (/profile, /admin), render deterministic loader on both SSR and CSR until session is verified
   if (isStrictProtected && (!mounted || !isAuthInitialized || isLoading || !isAuthenticated)) {
@@ -48,16 +41,6 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
           <div className="w-8 h-8 border-2 border-[#8c9276] border-t-transparent rounded-full animate-spin" />
           <span className="text-xs text-stone-500 font-medium">Verificando sesión...</span>
         </div>
-      </div>
-    );
-  }
-
-  // Visual Shield for non-guest unauthenticated visitors on client
-  const shouldBlockVisitor = mounted && !isAuthPage && isAuthInitialized && !isLoading && !isAuthenticated && !isGuestMode;
-  if (shouldBlockVisitor) {
-    return (
-      <div className="min-h-[70vh] flex items-center justify-center bg-transparent">
-        <div className="w-8 h-8 border-2 border-[#8c9276] border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
