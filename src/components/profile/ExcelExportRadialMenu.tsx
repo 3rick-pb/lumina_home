@@ -19,6 +19,8 @@ import { useUserStore, Order } from "@/lib/userStore";
 import { useCatalogStore, CatalogProduct } from "@/lib/catalogStore";
 import { DROPI_HEADERS, DROPI_ECUADOR_REFERENCE } from "@/lib/dropiEcuadorData";
 import { useBrand } from "@/core/hooks/useBrand";
+import { exportCatalogToExcel } from "@/lib/exportCatalogExcel";
+import { exportNicheToExcel } from "@/lib/exportNicheExcel";
 
 export const NORMAL_ORDER_HEADERS = [
   "Nº",
@@ -437,7 +439,7 @@ export function ExcelExportRadialMenu() {
     }
   };
 
-  // 2. EXPORT ALL PRODUCTS TO EXCEL
+  // 2. EXPORT ALL PRODUCTS TO EXCEL (WITH PROFESSIONAL CHARTS)
   const handleExportProducts = async () => {
     setActiveExport("products");
     try {
@@ -447,41 +449,7 @@ export function ExcelExportRadialMenu() {
         prods = useCatalogStore.getState().products;
       }
 
-      const rows = prods.map((p, idx) => {
-        const colorsList = (p.colors || []).map(c => c.name).join(", ");
-        const stockQty = typeof p.stock === "number" ? p.stock : 10;
-        const isOutOfStock = stockQty === 0 || (p.badge && p.badge.toUpperCase() === "AGOTADO");
-
-        return {
-          "Nº": idx + 1,
-          "ID Producto": p.id,
-          "Título / Nombre": p.title,
-          "Subtítulo / Resalte": p.titleHighlight || "",
-          "Categoría / Nicho": p.category || "General",
-          "Precio Actual (USD)": Number(p.price || 0).toFixed(2),
-          "Precio Anterior (USD)": p.oldPrice ? Number(p.oldPrice).toFixed(2) : "",
-          "Descuento": p.discount || "",
-          "Stock Unidades": stockQty,
-          "Estado Stock": isOutOfStock ? "AGOTADO" : "DISPONIBLE",
-          "Insignia / Badge": p.badge || "Ninguna",
-          "Colores": colorsList || "Estándar",
-          "Garantía": p.warranty || "1 Año",
-          "Envíos": p.shipping || "Nacional",
-          "Dimensiones": p.dimensions || "N/A",
-          "Materiales": p.materials || "Acabados de autor",
-          "Descripción": p.description || "",
-        };
-      });
-
-      const wb = XLSX.utils.book_new();
-      const ws = XLSX.utils.json_to_sheet(rows, { header: PRODUCT_CATALOG_HEADERS as unknown as string[] });
-      const colWidths = PRODUCT_CATALOG_HEADERS.map(key => ({
-        wch: Math.max(key.length + 3, 16)
-      }));
-      ws["!cols"] = colWidths;
-
-      XLSX.utils.book_append_sheet(wb, ws, "Catálogo de Productos");
-      XLSX.writeFile(wb, `catalogo_productos_${getDateSlug()}.xlsx`);
+      await exportCatalogToExcel(prods, getDateSlug(), brand.name || "Lumina Home");
 
       setSuccessExport("products");
       setTimeout(() => setSuccessExport(null), 2500);
@@ -492,7 +460,7 @@ export function ExcelExportRadialMenu() {
     }
   };
 
-  // 3. EXPORT NICHE INVENTORY TO EXCEL
+  // 3. EXPORT NICHE INVENTORY TO EXCEL (WITH PROFESSIONAL CHARTS)
   const handleExportNiches = async () => {
     setActiveExport("niches");
     try {
@@ -502,89 +470,7 @@ export function ExcelExportRadialMenu() {
         prods = useCatalogStore.getState().products;
       }
 
-      const nicheMap = new Map<string, {
-        count: number;
-        totalStock: number;
-        totalValue: number;
-        prices: number[];
-        inStockCount: number;
-        outOfStockCount: number;
-      }>();
-
-      prods.forEach(p => {
-        const cat = p.category || "General";
-        const current = nicheMap.get(cat) || {
-          count: 0,
-          totalStock: 0,
-          totalValue: 0,
-          prices: [],
-          inStockCount: 0,
-          outOfStockCount: 0,
-        };
-
-        const stock = typeof p.stock === "number" ? p.stock : 10;
-        const price = Number(p.price || 0);
-        const isOutOfStock = stock === 0 || (p.badge && p.badge.toUpperCase() === "AGOTADO");
-
-        current.count += 1;
-        current.totalStock += stock;
-        current.totalValue += stock * price;
-        current.prices.push(price);
-        if (isOutOfStock) current.outOfStockCount += 1;
-        else current.inStockCount += 1;
-
-        nicheMap.set(cat, current);
-      });
-
-      const totalCatalogProducts = prods.length || 1;
-      const rows: Record<string, string | number>[] = [];
-      let grandTotalStock = 0;
-      let grandTotalValue = 0;
-
-      Array.from(nicheMap.entries())
-        .sort((a, b) => b[1].totalValue - a[1].totalValue)
-        .forEach(([niche, data], idx) => {
-          grandTotalStock += data.totalStock;
-          grandTotalValue += data.totalValue;
-          const avgPrice = data.prices.length > 0 
-            ? data.prices.reduce((a, b) => a + b, 0) / data.prices.length 
-            : 0;
-          const pct = ((data.count / totalCatalogProducts) * 100).toFixed(1);
-
-          rows.push({
-            "Nº": idx + 1,
-            "Nicho / Colección": niche,
-            "Variedad Productos": data.count,
-            "% del Catálogo": `${pct}%`,
-            "Stock Total (Unidades)": data.totalStock,
-            "Disponibles": data.inStockCount,
-            "Agotados": data.outOfStockCount,
-            "Precio Promedio (USD)": avgPrice.toFixed(2),
-            "Valor Total Inventario (USD)": data.totalValue.toFixed(2),
-          });
-        });
-
-      rows.push({
-        "Nº": "TOTAL",
-        "Nicho / Colección": "TOTAL CATÁLOGO",
-        "Variedad Productos": prods.length,
-        "% del Catálogo": "100%",
-        "Stock Total (Unidades)": grandTotalStock,
-        "Disponibles": rows.reduce((acc, r) => acc + (typeof r["Disponibles"] === "number" ? r["Disponibles"] : 0), 0),
-        "Agotados": rows.reduce((acc, r) => acc + (typeof r["Agotados"] === "number" ? r["Agotados"] : 0), 0),
-        "Precio Promedio (USD)": (rows.length > 0 ? (grandTotalValue / (grandTotalStock || 1)).toFixed(2) : "0.00"),
-        "Valor Total Inventario (USD)": grandTotalValue.toFixed(2),
-      });
-
-      const wb = XLSX.utils.book_new();
-      const ws = XLSX.utils.json_to_sheet(rows, { header: NICHE_INVENTORY_HEADERS as unknown as string[] });
-      const colWidths = NICHE_INVENTORY_HEADERS.map(key => ({
-        wch: Math.max(key.length + 3, 18)
-      }));
-      ws["!cols"] = colWidths;
-
-      XLSX.utils.book_append_sheet(wb, ws, "Inventario por Nicho");
-      XLSX.writeFile(wb, `inventario_por_nicho_${getDateSlug()}.xlsx`);
+      await exportNicheToExcel(prods, getDateSlug(), brand.name || "Lumina Home");
 
       setSuccessExport("niches");
       setTimeout(() => setSuccessExport(null), 2500);
