@@ -69,116 +69,120 @@ function VisaLogo({ className = "h-4", fill = "#1A1F71" }: { className?: string;
 
 function PayPhoneIcon({ className = "w-4 h-4" }: { className?: string }) {
   return (
-    <Image
-      src="/images/payments/payphone.png"
-      alt="PayPhone"
-      width={48}
-      height={48}
-      className={`shrink-0 object-contain rounded-[4px] ${className}`}
-    />
+    <svg className={`shrink-0 ${className}`} viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path
+        d="M9 8C5.1 8 2 11.1 2 15C2 18.9 5.1 22 9 22C12.4 22 15.3 19.6 16 16.5C16.7 19.6 19.6 22 23 22C26.9 22 30 18.9 30 15C30 11.1 26.9 8 23 8C19.6 8 16.7 10.4 16 13.5C15.3 10.4 12.4 8 9 8ZM9 18.5C7.1 18.5 5.5 16.9 5.5 15C5.5 13.1 7.1 11.5 9 11.5C10.9 11.5 12.5 13.1 12.5 15C12.5 16.9 10.9 18.5 9 18.5ZM23 18.5C21.1 18.5 19.5 16.9 19.5 15C19.5 13.1 21.1 11.5 23 11.5C24.9 11.5 26.5 13.1 26.5 15C26.5 16.9 24.9 18.5 23 18.5Z"
+        fill="#FF5900"
+      />
+      <path
+        d="M16 16.5L14.2 24H17.8L16 16.5Z"
+        fill="#FF5900"
+      />
+    </svg>
   );
 }
 
 function DinersClubLogo({ className = "h-4" }: { className?: string }) {
   return (
-    <Image
-      src="/images/payments/diners.png"
-      alt="Diners Club"
-      width={48}
-      height={32}
-      className={`shrink-0 object-contain ${className}`}
-    />
+    <svg className={`shrink-0 ${className}`} viewBox="0 0 38 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <rect width="38" height="24" rx="4" fill="#0079BE" />
+      <g transform="translate(6, 3)">
+        <circle cx="13" cy="9" r="8.5" fill="white" />
+        <path
+          d="M12.3 3.5C9.26 3.5 6.8 5.96 6.8 9C6.8 12.04 9.26 14.5 12.3 14.5C12.7 14.5 13.1 14.4 13.5 14.3V3.7C13.1 3.6 12.7 3.5 12.3 3.5ZM12.1 13.1C10.2 13.1 8.6 11.3 8.6 9C8.6 6.7 10.2 4.9 12.1 4.9V13.1Z"
+          fill="#0079BE"
+        />
+        <path
+          d="M13.7 3.5C13.3 3.5 12.9 3.6 12.5 3.7V14.3C12.9 14.4 13.3 14.5 13.7 14.5C16.74 14.5 19.2 12.04 19.2 9C19.2 5.96 16.74 3.5 13.7 3.5ZM13.9 4.9C15.8 4.9 17.4 6.7 17.4 9C17.4 11.3 15.8 13.1 13.9 13.1V4.9Z"
+          fill="#0079BE"
+        />
+      </g>
+    </svg>
   );
 }
 
 function DiscoverLogo({ className = "h-4" }: { className?: string }) {
   return (
-    <Image
-      src="/images/payments/discover.svg"
-      alt="Discover Network"
-      width={72}
-      height={22}
-      className={`shrink-0 object-contain ${className}`}
-    />
-  );
-}
-
-function AmexLogo({ className = "h-4" }: { className?: string }) {
-  return (
-    <Image
-      src="/images/payments/amex.png"
-      alt="American Express"
-      width={48}
-      height={32}
-      className={`shrink-0 object-contain ${className}`}
-    />
-  );
-}
-
-function DeliveryTruckIcon({ className = "w-12 h-8" }: { className?: string }) {
-  return (
-    <svg className={className} viewBox="0 0 64 36" fill="none" xmlns="http://www.w3.org/2000/svg">
-      {/* Headlight beam */}
-      <polygon points="56,21 64,17 64,27 56,23" fill="#FEF08A" opacity="0.65" />
-      {/* Truck Box / Cargo */}
-      <rect x="2" y="6" width="34" height="20" rx="3" fill="#FFFFFF" />
-      {/* Cargo Door line */}
-      <line x1="10" y1="6" x2="10" y2="26" stroke="#E5E7EB" strokeWidth="1.5" />
-      {/* Brand accent circle */}
-      <circle cx="21" cy="16" r="4.5" fill="#8c9276" opacity="0.9" />
-      <circle cx="21" cy="16" r="2" fill="#FFFFFF" />
-      {/* Cabin */}
-      <path d="M36 12H48L55 20V26H36V12Z" fill="#2563EB" />
-      {/* Windshield */}
-      <path d="M47 13.5H38V19H51L47 13.5Z" fill="#BAE6FD" />
-      {/* Headlight */}
-      <rect x="53.5" y="21.5" width="2" height="3" rx="0.5" fill="#FDE047" />
-      {/* Bumper */}
-      <rect x="54" y="25" width="3" height="2" rx="0.5" fill="#4B5563" />
-      {/* Chassis */}
-      <rect x="2" y="26" width="54" height="2" fill="#374151" />
-      {/* Wheels */}
-      <circle cx="14" cy="28" r="4.5" fill="#1F2937" />
-      <circle cx="14" cy="28" r="2" fill="#9CA3AF" />
-      <circle cx="45" cy="28" r="4.5" fill="#1F2937" />
-      <circle cx="45" cy="28" r="2" fill="#9CA3AF" />
+    <svg className={`shrink-0 ${className}`} viewBox="0 0 74 18" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <text
+        x="0"
+        y="14"
+        fill="#231F20"
+        fontFamily="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif"
+        fontWeight="800"
+        fontSize="12.5"
+        letterSpacing="0.4"
+      >
+        DISC
+      </text>
+      <circle cx="43.5" cy="10" r="5.5" fill="#F68B1F" />
+      <text
+        x="51"
+        y="14"
+        fill="#231F20"
+        fontFamily="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif"
+        fontWeight="800"
+        fontSize="12.5"
+        letterSpacing="0.4"
+      >
+        VER
+      </text>
     </svg>
   );
 }
 
-function VerifiedByVisaLogo({ className = "h-4" }: { className?: string }) {
+
+function VerifiedByVisaLogo({ className = "h-5" }: { className?: string }) {
   return (
-    <div className={`inline-flex items-center gap-1 text-[9px] font-sans font-bold text-gray-700 dark:text-gray-300 ${className}`}>
-      <span className="italic font-serif text-[8.5px] text-gray-500 dark:text-gray-400 font-normal">Verified by</span>
-      <VisaLogo className="h-2.5" fill="#1A1F71" />
+    <div className={`inline-flex flex-col items-center justify-center ${className}`}>
+      <span className="text-[7.5px] italic font-serif text-gray-700 dark:text-gray-300 font-normal tracking-tight leading-none mb-0.5">
+        Verified by
+      </span>
+      <VisaLogo className="h-2.5 sm:h-3" fill="#1A1F71" />
     </div>
   );
 }
 
-function MastercardSecureCodeLogo({ className = "h-4" }: { className?: string }) {
+function MastercardSecureCodeLogo({ className = "h-5" }: { className?: string }) {
   return (
-    <div className={`inline-flex items-center gap-1 text-[9px] font-sans font-bold text-gray-700 dark:text-gray-300 ${className}`}>
-      <MastercardLogo className="h-3" />
-      <span className="text-[8px] font-mono font-semibold tracking-tight">SecureCode.</span>
+    <div className={`inline-flex items-center gap-1.5 ${className}`}>
+      <MastercardLogo className="h-3.5 sm:h-4" />
+      <div className="flex flex-col text-left leading-none">
+        <span className="text-[7px] font-sans font-bold text-gray-800 dark:text-gray-200 tracking-tight">
+          MasterCard.
+        </span>
+        <span className="text-[7.5px] font-sans font-bold text-gray-900 dark:text-white tracking-tight">
+          SecureCode.
+        </span>
+      </div>
     </div>
   );
 }
 
-function PciDssLogo({ className = "h-4" }: { className?: string }) {
+function PciDssLogo({ className = "h-5" }: { className?: string }) {
   return (
-    <div className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded border border-gray-300 dark:border-white/20 text-[8px] font-sans font-extrabold text-gray-800 dark:text-gray-200 uppercase tracking-tight ${className}`}>
-      <ShieldCheck className="w-2.5 h-2.5 text-emerald-600 dark:text-emerald-400" />
-      <span>PCI DSS</span>
-    </div>
+    <svg className={`shrink-0 ${className}`} viewBox="0 0 52 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <rect x="0.5" y="0.5" width="51" height="19" rx="3.5" fill="#1E2026" stroke="#374151" strokeWidth="0.8" />
+      <path d="M7.5 9V7.5C7.5 6.1 8.6 5 10 5C11.4 5 12.5 6.1 12.5 7.5V9H13.2C13.6 9 14 9.4 14 9.8V13.2C14 13.6 13.6 14 13.2 14H6.8C6.4 14 6 13.6 6 13.2V9.8C6 9.4 6.4 9 6.8 9H7.5ZM8.5 9H11.5V7.5C11.5 6.7 10.8 6 10 6C9.2 6 8.5 6.7 8.5 7.5V9Z" fill="#10B981" />
+      <text x="17" y="10.5" fill="white" fontFamily="-apple-system, BlinkMacSystemFont, sans-serif" fontSize="7.5" fontWeight="900" letterSpacing="0.2">
+        PCI
+      </text>
+      <text x="31" y="10.5" fill="#10B981" fontFamily="-apple-system, BlinkMacSystemFont, sans-serif" fontSize="7.5" fontWeight="900" letterSpacing="0.2">
+        DSS
+      </text>
+      <text x="17" y="16.5" fill="#9CA3AF" fontFamily="-apple-system, BlinkMacSystemFont, sans-serif" fontSize="4.5" fontWeight="700" letterSpacing="0.6">
+        SECURITY
+      </text>
+    </svg>
   );
 }
 
-function PoweredByPayphoneLogo({ className = "h-4" }: { className?: string }) {
+function PoweredByPayphoneLogo({ className = "h-5" }: { className?: string }) {
   return (
-    <div className={`inline-flex items-center gap-1.5 text-[9.5px] font-sans font-medium text-gray-500 dark:text-gray-400 ${className}`}>
-      <span>Powered by</span>
+    <div className={`inline-flex items-center gap-1.5 ${className}`}>
+      <span className="text-[9px] font-sans font-medium text-gray-500 dark:text-gray-400">Powered by</span>
+      <span className="text-[11.5px] font-sans font-bold text-[#FF5900] lowercase tracking-tight">payphone</span>
       <PayPhoneIcon className="w-3.5 h-3.5" />
-      <span className="font-bold text-[#FF5900] lowercase text-[10.5px]">payphone</span>
     </div>
   );
 }
@@ -265,9 +269,6 @@ export function CartDrawer() {
 
   // Checkout Processing
   const [isProcessing, setIsProcessing] = useState(false);
-  // Aaron Iker Delivery Truck Micro-Interaction
-  const [isTruckAnimating, setIsTruckAnimating] = useState(false);
-  const [isTruckComplete, setIsTruckComplete] = useState(false);
 
  const { mode } = useThemeStore();
  const [resolvedTheme, setResolvedTheme] = useState<'light' | 'dark'>('light');
@@ -407,8 +408,8 @@ export function CartDrawer() {
  const amountToFreeShipping = Math.max(0, FREE_SHIPPING_TARGET - subtotal);
  const hasFreeShipping = subtotal >= FREE_SHIPPING_TARGET || isFreeShippingCoupon;
 
-  const handleApplyCoupon = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleApplyCoupon = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
     if (!couponInput.trim()) return;
     const res = await applyCoupon(couponInput);
     setCouponFeedback({ msg: res.message, success: res.success });
@@ -635,21 +636,9 @@ export function CartDrawer() {
   };
 
   const handleTriggerPaymentWithAnimation = () => {
-    if (isProcessing || isTruckAnimating) return;
-    setIsTruckAnimating(true);
+    if (isProcessing) return;
     setPayphoneError(null);
-
-    // Aaron Iker Order Button animation sequence (~1.5s drive across button, then complete)
-    setTimeout(() => {
-      setIsTruckComplete(true);
-      setTimeout(() => {
-        handleConfirmOrder();
-        setTimeout(() => {
-          setIsTruckAnimating(false);
-          setIsTruckComplete(false);
-        }, 1200);
-      }, 400);
-    }, 1500);
+    handleConfirmOrder();
   };
 
   const handleApprovePayPhoneSimulation = async () => {
@@ -1552,10 +1541,7 @@ export function CartDrawer() {
     </p>
   </div>
 
-  <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-  
-  {/* Left 7 cols: Address & Card Selector */}
-  <div className="lg:col-span-7 space-y-6">
+  <div className="max-w-xl mx-auto space-y-6">
   
   {/* Shipping Address */}
   <div id="cart-address-section" className="p-5 sm:p-7 rounded-[2rem] bg-white/90 dark:bg-[#18181b]/90 backdrop-blur-xl border border-black/[0.06] dark:border-white/10 shadow-[0_8px_30px_rgba(0,0,0,0.04)] space-y-5">
@@ -1891,28 +1877,109 @@ export function CartDrawer() {
     )}
   </div>
 
-  {/* Pasarela Oficial PayPhone Ecuador: Checkout Embebido Oficial */}
-  <div className="p-6 sm:p-7 rounded-2xl sm:rounded-3xl bg-white dark:bg-[#18181b] border border-gray-200/90 dark:border-white/10 shadow-sm space-y-4 font-sans antialiased text-left">
+  {/* Unified Order Summary & PayPhone Embedded Gateway (100% vector & matching Example.mp4) */}
+  <div className="p-6 sm:p-8 rounded-2xl sm:rounded-3xl bg-white dark:bg-[#18181b] border border-gray-200/90 dark:border-white/10 shadow-sm space-y-5 font-sans antialiased text-left">
     
-    {/* Header: Elige tu forma de pago + Editar datos */}
-    <div className="flex items-center justify-between">
-      <span className="text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 font-sans">
-        Elige tu forma de pago
-      </span>
-      <button 
-        type="button"
-        onClick={() => {
-          setIsEditingAddress(true);
-          const addrElem = document.getElementById("cart-address-section");
-          if (addrElem) addrElem.scrollIntoView({ behavior: "smooth" });
-        }}
-        className="text-xs text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-white underline underline-offset-2 transition-colors cursor-pointer font-sans"
-      >
-        Editar datos
-      </button>
+    {/* 1. ORDER SUMMARY SECTION */}
+    <div className="space-y-3 font-sans pb-1">
+      <div className="flex justify-between items-center text-xs sm:text-sm text-gray-700 dark:text-gray-300 font-sans">
+        <span>Subtotal</span>
+        <span className="font-semibold text-gray-900 dark:text-white">${subtotal.toFixed(2)}</span>
+      </div>
+
+      {discountAmount > 0 && (
+        <div className="flex justify-between items-center text-xs sm:text-sm text-emerald-600 dark:text-emerald-400 font-sans font-medium">
+          <span>Descuento {discountPercent ? `(${discountPercent}%)` : ""}</span>
+          <span>-${discountAmount.toFixed(2)}</span>
+        </div>
+      )}
+
+      <div className="flex justify-between items-center text-xs sm:text-sm text-gray-700 dark:text-gray-300 font-sans">
+        <span>Envío Servientrega</span>
+        <span className="font-semibold text-gray-900 dark:text-white">
+          {shipping === 0 ? <span className="text-emerald-600 dark:text-emerald-400 font-bold">GRATIS</span> : `$${shipping.toFixed(2)}`}
+        </span>
+      </div>
+
+      {/* Coupon Code Input or Active Badge */}
+      {couponCode ? (
+        <div className="flex items-center justify-between px-3.5 py-2.5 rounded-xl bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/20 text-xs text-emerald-700 dark:text-emerald-400 font-sans">
+          <div className="flex items-center gap-2">
+            <Tag className="w-3.5 h-3.5 shrink-0" />
+            <span className="font-mono font-bold tracking-wider">{couponCode}</span>
+          </div>
+          <button
+            type="button"
+            onClick={removeCoupon}
+            className="text-[11px] font-semibold underline hover:text-emerald-900 dark:hover:text-emerald-300 cursor-pointer"
+          >
+            Quitar
+          </button>
+        </div>
+      ) : (
+        <div className="relative">
+          <input
+            type="text"
+            value={couponInput}
+            onChange={(e) => setCouponInput(e.target.value.toUpperCase())}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.preventDefault();
+                handleApplyCoupon();
+              }
+            }}
+            placeholder="CÓDIGO DE DESCUENTO"
+            className="w-full h-11 sm:h-12 px-4 pr-24 rounded-xl border border-gray-200 dark:border-white/15 bg-gray-50/70 dark:bg-white/[0.03] text-xs sm:text-sm font-sans tracking-wider placeholder-gray-400 uppercase outline-none focus:border-gray-400 dark:focus:border-white/30 text-gray-900 dark:text-white transition-colors"
+          />
+          <button
+            type="button"
+            onClick={() => handleApplyCoupon()}
+            disabled={!couponInput.trim()}
+            className="absolute right-1.5 top-1.5 bottom-1.5 px-3.5 rounded-lg bg-gray-900 hover:bg-black dark:bg-white dark:hover:bg-gray-100 text-white dark:text-gray-900 font-sans font-bold text-xs transition-all disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
+          >
+            Aplicar
+          </button>
+        </div>
+      )}
+
+      {couponFeedback && (
+        <p className={`text-[11px] font-sans ${couponFeedback.success ? "text-emerald-600 dark:text-emerald-400" : "text-rose-500"}`}>
+          {couponFeedback.msg}
+        </p>
+      )}
+
+      {/* Summary Total Row */}
+      <div className="flex justify-between items-baseline pt-1">
+        <span className="font-sans font-bold text-base sm:text-lg text-gray-900 dark:text-white">
+          Total
+        </span>
+        <span className="font-sans font-bold text-lg sm:text-xl text-gray-950 dark:text-white tracking-tight">
+          ${finalTotal.toFixed(2)}
+        </span>
+      </div>
     </div>
 
-    {/* Subtitle: Selecciona método de pago */}
+    {/* 2. PAYMENT CONFIGURATION HEADER */}
+    <div className="pt-2">
+      <div className="flex items-center justify-between">
+        <span className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 font-sans">
+          Elige tu forma de pago
+        </span>
+        <button 
+          type="button"
+          onClick={() => {
+            setIsEditingAddress(true);
+            const addrElem = document.getElementById("cart-address-section");
+            if (addrElem) addrElem.scrollIntoView({ behavior: "smooth" });
+          }}
+          className="text-xs text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-white underline underline-offset-2 transition-colors cursor-pointer font-sans"
+        >
+          Editar datos
+        </button>
+      </div>
+    </div>
+
+    {/* 3. METHOD SELECTION */}
     <div className="pt-1">
       <h4 className="font-sans font-bold text-xs sm:text-sm text-gray-900 dark:text-white mb-2.5">
         Selecciona método de pago
@@ -1931,13 +1998,16 @@ export function CartDrawer() {
           }`}
         >
           <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
-            <CreditCard className={`w-4 sm:w-4.5 h-4 sm:h-4.5 shrink-0 ${selectedPayMethod === "card" ? "text-[#FF5900]" : "text-gray-400"}`} />
+            <svg className={`w-4 sm:w-4.5 h-3 sm:h-3.5 shrink-0 ${selectedPayMethod === "card" ? "text-[#FF5900]" : "text-gray-400"}`} viewBox="0 0 20 14" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+              <rect x="1" y="1" width="18" height="12" rx="2" />
+              <line x1="1" y1="5" x2="19" y2="5" />
+              <circle cx="5" cy="9.5" r="0.8" fill="currentColor" />
+            </svg>
             <div className="h-4 w-px bg-gray-200 dark:bg-white/10 shrink-0" />
           </div>
           <div className="flex items-center gap-1 sm:gap-1.5 shrink-0">
             <VisaLogo className="h-2.5 sm:h-3" fill="#1A1F71" />
             <MastercardLogo className="h-3 sm:h-3.5" />
-            <AmexLogo className="h-2.5 sm:h-3" />
             <DinersClubLogo className="h-2.5 sm:h-3" />
             <DiscoverLogo className="h-2.5 sm:h-3" />
           </div>
@@ -1953,23 +2023,23 @@ export function CartDrawer() {
               : "border border-gray-200 dark:border-white/10 hover:border-gray-300 dark:hover:border-white/20 bg-white dark:bg-[#18181b]"
           }`}
         >
-          <PayPhoneIcon className="w-5 h-5" />
+          <PayPhoneIcon className="w-5 h-5 text-[#FF5900]" />
           <span className="font-sans font-bold text-xs sm:text-sm text-[#FF5900]">App</span>
         </button>
       </div>
     </div>
 
-    {/* Section: Información de tarjeta OR PayPhone App */}
+    {/* 4. CARD OR APP INPUT FORM */}
     {selectedPayMethod === "card" ? (
       <div className="pt-2 space-y-2.5">
         <h4 className="font-sans font-bold text-xs sm:text-sm text-gray-900 dark:text-white">
           Información de tarjeta
         </h4>
 
-        {/* Grouped Inputs Container */}
+        {/* Grouped 3-Row Input Container */}
         <div className="rounded-xl border border-gray-300 dark:border-white/15 bg-white dark:bg-[#141416] overflow-hidden divide-y divide-gray-300 dark:divide-white/15 shadow-2xs">
           {/* Row 1: Card Number */}
-          <div className="px-3.5 py-2.5">
+          <div className="px-3.5 py-3">
             <input 
               type="text"
               inputMode="numeric"
@@ -1986,7 +2056,7 @@ export function CartDrawer() {
 
           {/* Row 2: MM/AA + CVV */}
           <div className="grid grid-cols-2 divide-x divide-gray-300 dark:divide-white/15">
-            <div className="flex items-center px-3 py-2.5 gap-2">
+            <div className="flex items-center px-3.5 py-3 gap-2">
               <Calendar className="w-4 h-4 text-gray-400 shrink-0" />
               <input 
                 type="text"
@@ -2002,7 +2072,7 @@ export function CartDrawer() {
                 className="w-full text-xs sm:text-sm bg-transparent outline-none text-gray-900 dark:text-white placeholder-gray-400 font-sans"
               />
             </div>
-            <div className="flex items-center px-3 py-2.5 gap-2">
+            <div className="flex items-center px-3.5 py-3 gap-2">
               <CreditCard className="w-4 h-4 text-gray-400 shrink-0" />
               <input 
                 type="password"
@@ -2015,18 +2085,18 @@ export function CartDrawer() {
               />
             </div>
           </div>
-        </div>
 
-        {/* Cardholder Name Input */}
-        <div className="rounded-xl border border-gray-300 dark:border-white/15 bg-white dark:bg-[#141416] flex items-center px-3.5 py-2.5 gap-2 shadow-2xs">
-          <User className="w-4 h-4 text-gray-400 shrink-0" />
-          <input 
-            type="text"
-            value={cardHolder}
-            onChange={(e) => setCardHolder(e.target.value)}
-            placeholder="Ingresa titular de tarjeta"
-            className="w-full text-xs sm:text-sm bg-transparent outline-none text-gray-900 dark:text-white placeholder-gray-400 font-sans"
-          />
+          {/* Row 3: Cardholder Name */}
+          <div className="flex items-center px-3.5 py-3 gap-2">
+            <User className="w-4 h-4 text-gray-400 shrink-0" />
+            <input 
+              type="text"
+              value={cardHolder}
+              onChange={(e) => setCardHolder(e.target.value)}
+              placeholder="Ingresa titular de tarjeta"
+              className="w-full text-xs sm:text-sm bg-transparent outline-none text-gray-900 dark:text-white placeholder-gray-400 font-sans"
+            />
+          </div>
         </div>
       </div>
     ) : (
@@ -2034,7 +2104,7 @@ export function CartDrawer() {
         <h4 className="font-sans font-bold text-xs sm:text-sm text-gray-900 dark:text-white">
           Cuenta PayPhone
         </h4>
-        <div className="rounded-xl border border-gray-300 dark:border-white/15 bg-white dark:bg-[#141416] flex items-center px-3.5 py-2.5 gap-2 shadow-2xs">
+        <div className="rounded-xl border border-gray-300 dark:border-white/15 bg-white dark:bg-[#141416] flex items-center px-3.5 py-3 gap-2 shadow-2xs">
           <Phone className="w-4 h-4 text-gray-400 shrink-0" />
           <input 
             type="tel"
@@ -2059,7 +2129,7 @@ export function CartDrawer() {
     </div>
 
     {/* TOTAL Row */}
-    <div className="flex items-center justify-between pt-2">
+    <div className="flex items-center justify-between pt-1">
       <span className="font-sans font-bold text-base sm:text-lg text-gray-900 dark:text-white tracking-wide">
         TOTAL:
       </span>
@@ -2068,12 +2138,23 @@ export function CartDrawer() {
       </span>
     </div>
 
-    {/* Action Button: Pagar */}
+    {/* PayPhone Error Notification if any */}
+    {payphoneError && (
+      <div className="p-3.5 rounded-xl bg-rose-50 dark:bg-rose-500/10 border border-rose-200 dark:border-rose-500/20 text-rose-700 dark:text-rose-400 text-xs flex items-start gap-2.5 animate-shake">
+        <AlertTriangle className="w-4 h-4 shrink-0 text-rose-500 mt-0.5" />
+        <div className="space-y-0.5">
+          <p className="font-bold font-sans">Error al procesar el pago</p>
+          <p className="text-[11px] leading-relaxed font-sans">{payphoneError}</p>
+        </div>
+      </div>
+    )}
+
+    {/* Action Button: Single "Pagar" Button in PayPhone Orange */}
     <div className="pt-1">
       <button
         type="button"
         onClick={handleTriggerPaymentWithAnimation}
-        disabled={isProcessing || isTruckAnimating}
+        disabled={isProcessing}
         className="w-full py-3.5 sm:py-4 rounded-xl bg-[#FF5900] hover:bg-[#e04f00] text-white font-sans font-bold text-base transition-all shadow-md hover:shadow-lg active:scale-[0.99] flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60"
       >
         {isProcessing ? (
@@ -2087,8 +2168,8 @@ export function CartDrawer() {
       </button>
     </div>
 
-    {/* Trust & Security Badges Row */}
-    <div className="flex flex-wrap items-center justify-center gap-3 sm:gap-4 pt-2">
+    {/* Trust & Security Badges Row (100% Vectorized) */}
+    <div className="flex flex-wrap items-center justify-center gap-4 sm:gap-6 pt-2">
       <VerifiedByVisaLogo />
       <MastercardSecureCodeLogo />
       <PciDssLogo />
@@ -2103,167 +2184,6 @@ export function CartDrawer() {
   </div>
 
   </div>
-
-  {/* Right 5 cols: Order Final Summary & Confirm */}
-  <div className="lg:col-span-5 bg-white/90 dark:bg-[#18181b]/90 backdrop-blur-xl p-6 sm:p-7 rounded-[2rem] border border-black/[0.06] dark:border-white/10 shadow-[0_12px_32px_rgba(0,0,0,0.05)] space-y-5">
-    <h4 className="font-sans font-bold text-base text-gray-900 dark:text-gray-100 border-b border-black/[0.06] dark:border-white/5 pb-3 tracking-tight uppercase">
-      Resumen del Pedido
-    </h4>
-
-    <div className="space-y-3 text-xs sm:text-sm text-gray-600 dark:text-gray-400 font-sans">
-      <div className="flex justify-between">
-        <span>Subtotal ({items.length} artículos)</span>
-        <span className="font-semibold text-gray-900 dark:text-gray-100">${subtotal.toFixed(2)} USD</span>
-      </div>
-      {discountAmount > 0 && (
-        <div className="flex justify-between text-emerald-700 font-semibold">
-          <span>Descuento aplicado</span>
-          <span>-${discountAmount.toFixed(2)} USD</span>
-        </div>
-      )}
-      <div className="flex justify-between">
-        <span>Envío Nacional</span>
-        <span className="font-semibold">
-          {shipping === 0 ? <span className="text-emerald-700 font-bold">GRATIS</span> : `$${shipping.toFixed(2)} USD`}
-        </span>
-      </div>
-      <div className="pt-3 border-t border-black/[0.06] dark:border-white/10 flex justify-between items-baseline">
-        <span className="font-bold text-gray-900 dark:text-gray-100">Total Final</span>
-        <span className="font-sans font-extrabold text-2xl text-gray-950 dark:text-white tracking-tight">
-          ${finalTotal.toFixed(2)} USD
-        </span>
-      </div>
-    </div>
-
-    <div className="p-3.5 rounded-2xl bg-black/[0.02] dark:bg-white/[0.03] border border-black/[0.05] dark:border-white/[0.05] flex items-center gap-3 text-xs text-gray-600 dark:text-gray-400">
-      <ShieldCheck className="w-5 h-5 text-gray-700 dark:text-gray-300 shrink-0" />
-      <span className="text-[11px] leading-relaxed">
-        Pago seguro SSL 256-bit y garantía oficial de satisfacción de 30 días.
-      </span>
-    </div>
-
-    {payphoneError && (
-      <div className="p-3.5 rounded-2xl bg-rose-50 dark:bg-rose-500/10 border border-rose-200 dark:border-rose-500/20 text-rose-700 dark:text-rose-400 text-xs flex items-start gap-2.5 animate-shake">
-        <AlertTriangle className="w-4 h-4 shrink-0 text-rose-500 mt-0.5" />
-        <div className="space-y-0.5">
-          <p className="font-bold">Error al procesar el pago</p>
-          <p className="text-[11px] leading-relaxed">{payphoneError}</p>
-        </div>
-      </div>
-    )}
-
-    {/* ANIMATED DELIVERY TRUCK ORDER BUTTON (Aaron Iker Order Animation inspired by Orden.mp4) */}
-    <button 
-      onClick={handleTriggerPaymentWithAnimation}
-      disabled={isProcessing || isTruckAnimating}
-      className={`group relative overflow-hidden w-full h-14 sm:h-15 rounded-full font-sans font-bold text-white transition-all duration-300 border border-white/10 shadow-[0_14px_34px_rgba(0,0,0,0.25)] select-none active:scale-[0.98] ${
-        isTruckComplete
-          ? "bg-emerald-600 shadow-emerald-500/25 border-emerald-400/30 cursor-default"
-          : isTruckAnimating
-          ? "bg-[#111113] shadow-black/40 cursor-wait"
-          : "bg-[#18181b] dark:bg-white text-white dark:text-[#18181b] hover:bg-black dark:hover:bg-gray-100 cursor-pointer"
-      }`}
-    >
-      {/* Specular curved liquid rim */}
-      <div className="absolute inset-x-6 top-0 h-[1.5px] bg-gradient-to-r from-transparent via-white/30 dark:via-white/60 to-transparent pointer-events-none" />
-
-      <AnimatePresence mode="wait">
-        {isTruckComplete ? (
-          /* STATE 3: ORDER COMPLETED CELEBRATION */
-          <motion.div
-            key="complete"
-            initial={{ scale: 0.7, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ type: "spring", stiffness: 450, damping: 22 }}
-            className="flex items-center justify-center gap-2.5 text-white"
-          >
-            <div className="w-7 h-7 rounded-full bg-white/20 flex items-center justify-center shrink-0 shadow-xs">
-              <Check className="w-4 h-4 stroke-[3]" />
-            </div>
-            <span className="text-sm sm:text-base font-extrabold tracking-tight">
-              ¡Orden Confirmada! Conectando...
-            </span>
-          </motion.div>
-        ) : isTruckAnimating ? (
-          /* STATE 2: ANIMATED DELIVERY TRUCK DRIVING ACROSS BUTTON (Inspired by Orden.mp4) */
-          <motion.div
-            key="animating"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="relative w-full h-full flex items-center justify-center overflow-hidden"
-          >
-            {/* Moving road stripes */}
-            <div className="absolute inset-x-0 bottom-2.5 h-[2px] overflow-hidden opacity-30 flex items-center pointer-events-none">
-              <motion.div
-                animate={{ x: [-40, 0] }}
-                transition={{ repeat: Infinity, duration: 0.2, ease: "linear" }}
-                className="w-[200%] flex justify-between shrink-0"
-              >
-                {[...Array(16)].map((_, i) => (
-                  <span key={i} className="w-3 h-[2px] bg-white rounded-full inline-block" />
-                ))}
-              </motion.div>
-            </div>
-
-            {/* Status Text in center */}
-            <span className="text-xs font-mono font-bold tracking-wider text-gray-300 uppercase animate-pulse">
-              Despachando Orden...
-            </span>
-
-            {/* Delivery Truck driving across */}
-            <motion.div
-              initial={{ x: "-180%" }}
-              animate={{ x: "280%" }}
-              transition={{ duration: 1.5, ease: [0.25, 1, 0.5, 1] }}
-              className="absolute z-10 flex items-center pointer-events-none"
-            >
-              <DeliveryTruckIcon className="w-14 h-8 drop-shadow-[0_4px_12px_rgba(255,255,255,0.25)]" />
-            </motion.div>
-          </motion.div>
-        ) : (
-          /* STATE 1: IDLE SLEEK LUXURY BUTTON (Single line, spacious, zero overflow) */
-          <motion.div
-            key="idle"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="w-full h-full flex items-center justify-between px-3.5 sm:px-5"
-          >
-            {/* Left: PayPhone icon + Action Title in a clean single line */}
-            <div className="flex items-center gap-2.5 sm:gap-3 min-w-0 flex-1">
-              <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-white/15 dark:bg-black/10 flex items-center justify-center shrink-0 border border-white/20 dark:border-black/10 shadow-2xs">
-                {isProcessing ? (
-                  <Loader2 className="w-4 h-4 animate-spin text-white dark:text-[#18181b]" />
-                ) : (
-                  <PayPhoneIcon className="w-5 h-5" />
-                )}
-              </div>
-              <span className="text-xs sm:text-sm font-bold tracking-tight text-white dark:text-[#18181b] truncate">
-                {isProcessing 
-                  ? "Conectando con PayPhone..." 
-                  : "Pagar con PayPhone"}
-              </span>
-            </div>
-
-            {/* Right: Amount pill + Circular Arrow badge */}
-            <div className="flex items-center gap-2 shrink-0 ml-2">
-              <span className="text-xs font-mono font-extrabold px-2.5 sm:px-3 py-1 rounded-full bg-white/15 dark:bg-black/10 text-white dark:text-[#18181b] border border-white/20 dark:border-black/10 whitespace-nowrap shrink-0">
-                ${finalTotal.toFixed(2)}
-              </span>
-              <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-white dark:bg-[#18181b] text-[#18181b] dark:text-white flex items-center justify-center shadow-xs group-hover:translate-x-0.5 transition-transform shrink-0">
-                <ArrowRight className="w-3.5 h-3.5 stroke-[2.5]" />
-              </div>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </button>
-  </div>
-
-  </div>
-
   </div>
   )}
 
