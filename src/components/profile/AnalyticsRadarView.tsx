@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useMemo, useRef, useEffect, useCallback } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import { 
   MapPin, 
   Search, 
@@ -250,6 +251,7 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
   const [activeStage, setActiveStage] = useState<"all" | "cart" | "frequent">("all");
   const [activeTab, setActiveTab] = useState<"metrics" | "clients">("metrics");
   const [isMobilePanelOpen, setIsMobilePanelOpen] = useState<boolean>(false);
+  const [isCountryMenuOpen, setIsCountryMenuOpen] = useState<boolean>(false);
   const scrollTrackRef = useRef<HTMLDivElement>(null);
   const [isMapLoaded, setIsMapLoaded] = useState<boolean>(false);
 
@@ -267,7 +269,7 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
     img.onerror = () => setIsMapLoaded(true);
   }, []);
 
-  // Keyboard shortcut: Escape to deselect active client or close expanded cluster
+  // Keyboard shortcut: Escape to deselect active client or close expanded cluster / country menu
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
@@ -275,6 +277,7 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
         setHoveredClientId(null);
         setExpandedClusterCity(null);
         setHoveredClusterKey(null);
+        setIsCountryMenuOpen(false);
       }
     };
     window.addEventListener("keydown", handleKeyDown);
@@ -975,6 +978,7 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
               activeStage === "cart" ? cluster.hasCart :
               cluster.hasFrequent;
             const isDimmed = !isHovered && !isStageMatch;
+            const openDownward = cluster.baseY < 38;
 
             return (
               <div
@@ -1020,12 +1024,14 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
                   <span className="text-[#ccff00] font-black">({count})</span>
                 </div>
 
-                {/* Floating Hover Tooltip showing preview of clients */}
+                {/* Floating Hover Tooltip showing preview of clients (opens downward if near top to avoid HUD collision) */}
                 {isHovered && (() => {
                   const anonCount = cluster.clients.filter(c => c.isAnonymous).length;
                   const regCount = count - anonCount;
                   return (
-                    <div className="absolute bottom-full mb-2.5 left-1/2 -translate-x-1/2 w-56 p-3 rounded-2xl bg-[#111614]/95 backdrop-blur-2xl border border-[#ccff00]/50 shadow-[0_15px_35px_rgba(0,0,0,0.8)] z-50 pointer-events-none space-y-2 animate-fade-in">
+                    <div className={`absolute left-1/2 -translate-x-1/2 w-56 p-3 rounded-2xl bg-[#111614]/95 backdrop-blur-2xl border border-[#ccff00]/50 shadow-[0_15px_35px_rgba(0,0,0,0.8)] z-50 pointer-events-none space-y-2 animate-fade-in ${
+                      openDownward ? "top-full mt-7" : "bottom-full mb-2.5"
+                    }`}>
                       <div className="flex items-center justify-between text-[10px] font-mono border-b border-white/10 pb-1.5">
                         <span className="text-white font-bold">{cluster.cityName}</span>
                         <span className="text-[#ccff00] font-bold">
@@ -1085,6 +1091,9 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
             const beaconLabel = beacon.clusterTotal > 1 && clientFirstName
               ? `${clientFirstName} • ${beacon.cityName}`
               : beacon.cityName;
+
+            // Intelligent directional flip: when pin is in northern latitudes (dispY < 38%), open downward to avoid top HUD obstruction
+            const openDownward = beacon.dispY < 38;
 
             return (
               <div 
@@ -1203,7 +1212,9 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
 
                 {/* Hover Tooltip for Registered Clients & Admins */}
                 {isHovered && !client.isAnonymous && (
-                  <div className="absolute bottom-full mb-3 left-1/2 -translate-x-1/2 w-54 p-3 rounded-2xl bg-[#0e1311]/95 backdrop-blur-2xl border border-[#ccff00]/40 shadow-[0_14px_36px_rgba(0,0,0,0.7)] z-50 pointer-events-none space-y-2 animate-fade-in text-left">
+                  <div className={`absolute left-1/2 -translate-x-1/2 w-54 p-3 rounded-2xl bg-[#0e1311]/95 backdrop-blur-2xl border border-[#ccff00]/40 shadow-[0_14px_36px_rgba(0,0,0,0.7)] z-50 pointer-events-none space-y-2 animate-fade-in text-left ${
+                    openDownward ? "top-full mt-7" : "bottom-full mb-3"
+                  }`}>
                     <div className="flex items-center gap-2.5 border-b border-white/10 pb-2">
                       <BlobatarAvatar
                         {...getClientAvatarProps(client)}
@@ -1251,7 +1262,9 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
 
                 {/* Lightweight Hover Tooltip for Anonymous Visitors */}
                 {isHovered && client.isAnonymous && (
-                  <div className="absolute bottom-full mb-3 left-1/2 -translate-x-1/2 w-48 p-2.5 rounded-2xl bg-[#0b131b]/95 backdrop-blur-xl border border-sky-400/50 shadow-[0_10px_30px_rgba(56,189,248,0.25)] z-50 pointer-events-none space-y-1.5 animate-fade-in text-left">
+                  <div className={`absolute left-1/2 -translate-x-1/2 w-48 p-2.5 rounded-2xl bg-[#0b131b]/95 backdrop-blur-xl border border-sky-400/50 shadow-[0_10px_30px_rgba(56,189,248,0.25)] z-50 pointer-events-none space-y-1.5 animate-fade-in text-left ${
+                    openDownward ? "top-full mt-7" : "bottom-full mb-3"
+                  }`}>
                     <div className="flex items-center justify-between border-b border-white/10 pb-1">
                       <div className="flex items-center gap-1.5">
                         <span className="w-2 h-2 rounded-full bg-sky-400 shadow-[0_0_6px_#38bdf8]" />
@@ -1296,12 +1309,12 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
       {/* ========================================================================= */}
       {/* 3. TOP FLOATING COMMAND BAR (Branded Search Bar + Modes + Admin Location)  */}
       {/* ========================================================================= */}
-      <div className="absolute top-3 sm:top-4 left-3 sm:left-6 right-3 sm:right-6 lg:right-96 z-50 flex flex-wrap items-center justify-between gap-3 pointer-events-none">
+      <div className="absolute top-3 sm:top-4 left-3 sm:left-6 right-3 sm:right-6 lg:right-96 z-30 flex flex-wrap items-center justify-between gap-3 pointer-events-none">
         
-        {/* Left: Branded Search Bar with Integrated Country Switcher */}
+        {/* Left: Branded Search Bar for Cities & Provinces */}
         <div 
           ref={searchContainerRef}
-          className="relative max-w-lg w-full pointer-events-auto"
+          className="relative max-w-xs sm:max-w-sm w-full pointer-events-auto"
         >
           {/* Main Clean Search Pill */}
           <div className={`flex items-center bg-black/80 backdrop-blur-2xl border rounded-full px-3.5 py-2 shadow-2xl text-xs text-white w-full transition-all duration-300 ${
@@ -1316,7 +1329,7 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
               value={searchQuery}
               onFocus={() => setIsSearchFocused(true)}
               onChange={e => setSearchQuery(e.target.value)}
-              placeholder={`Buscar ciudad, provincia o cambiar de país...`}
+              placeholder={`Buscar ciudad o provincia en ${activeCountry.name}...`}
               className="bg-transparent border-none outline-none text-xs text-white placeholder:text-white/45 flex-1 min-w-0 font-sans"
             />
 
@@ -1349,52 +1362,8 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
           {isSearchFocused && (
             <div className="absolute top-full left-0 right-0 mt-2 rounded-3xl bg-[#0c0e12]/95 backdrop-blur-3xl border border-white/20 p-4 shadow-[0_25px_60px_rgba(0,0,0,0.9)] z-[70] animate-in fade-in zoom-in-95 duration-150 space-y-3.5">
               
-              {/* 1. Country Switcher Section (Symmetrical Micro-SaaS Grid) */}
-              <div className="space-y-2">
-                <div className="flex items-center justify-between text-[10px] font-mono text-white/50 font-bold uppercase tracking-wider">
-                  <div className="flex items-center gap-1.5">
-                    <Globe className="w-3 h-3 text-[#ccff00]" />
-                    <span>País Seleccionado</span>
-                  </div>
-                  <span className="text-[9.5px] font-mono text-[#ccff00] bg-[#ccff00]/10 px-2.5 py-0.5 rounded-full border border-[#ccff00]/20 font-bold flex items-center gap-1.5">
-                    <CountrySvgFlag code={selectedCountry} className="w-4 h-2.5 rounded-[2px] shadow-sm shrink-0" />
-                    <span>{activeCountry.name}</span>
-                  </span>
-                </div>
-
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                  {(Object.keys(RADAR_COUNTRIES) as RadarCountryCode[]).map((code) => {
-                    const c = RADAR_COUNTRIES[code];
-                    const isSelected = selectedCountry === code;
-                    return (
-                      <button
-                        key={code}
-                        type="button"
-                        onClick={() => {
-                          handleSwitchCountry(code);
-                          setIsSearchFocused(false);
-                          setSearchQuery("");
-                        }}
-                        className={`h-9 px-3 rounded-xl text-xs font-semibold transition-all duration-150 flex items-center justify-center gap-2 border cursor-pointer select-none ${
-                          isSelected
-                            ? "bg-[#ccff00] text-gray-950 font-bold border-[#ccff00] shadow-[0_0_12px_rgba(204,255,0,0.25)]"
-                            : "bg-white/5 hover:bg-white/10 text-white/85 hover:text-white border-white/10 hover:border-white/20"
-                        }`}
-                        title={`Cambiar radar a ${c.name}`}
-                      >
-                        <CountrySvgFlag code={code} className="w-5 h-3.5 rounded-[2px] shadow-sm shrink-0" />
-                        <span className="truncate tracking-tight font-medium">{c.name}</span>
-                        {isSelected && (
-                          <span className="w-1.5 h-1.5 rounded-full bg-gray-950 shrink-0" />
-                        )}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {/* 2. Quick Regional Filters */}
-              <div className="space-y-1.5 pt-2 border-t border-white/10">
+              {/* 1. Quick Regional Filters for Active Country */}
+              <div className="space-y-1.5">
                 <div className="flex items-center justify-between text-[10px] font-mono text-white/50 font-bold uppercase tracking-wider">
                   <span>Regiones Naturales ({activeCountry.name})</span>
                   {searchQuery && (
@@ -1577,9 +1546,26 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
       {/* ========================================================================= */}
       {/* 4. LEFT HUD CONTROLS (ShotScape GIS Floating Toolstrip - Zero Widgets)    */}
       {/* ========================================================================= */}
-      <div className="absolute left-6 top-1/2 -translate-y-1/2 z-20 flex flex-col items-center gap-2 pointer-events-auto">
+      <div className="absolute left-3 sm:left-6 top-1/2 -translate-y-1/2 z-30 flex flex-col items-center gap-2 pointer-events-auto">
         <div className="flex flex-col items-center bg-black/60 backdrop-blur-xl border border-white/15 rounded-2xl p-1.5 shadow-2xl space-y-1">
           
+          {/* Country Selector Trigger Button (Flag + Indicator) */}
+          <button 
+            type="button"
+            onClick={() => setIsCountryMenuOpen(prev => !prev)}
+            title={`Cambiar país del Radar (actual: ${activeCountry.name})`}
+            className={`relative w-8 h-8 rounded-xl flex items-center justify-center transition-all duration-200 cursor-pointer group ${
+              isCountryMenuOpen
+                ? "bg-[#ccff00] text-gray-950 font-bold shadow-[0_0_16px_#ccff00] scale-110"
+                : "bg-black/50 border border-white/20 hover:border-[#ccff00]/60 text-white hover:scale-110 active:scale-95 shadow-[0_0_10px_rgba(204,255,0,0.12)]"
+            }`}
+          >
+            <CountrySvgFlag code={selectedCountry} className="w-5 h-3.5 rounded-[2px] shadow-sm pointer-events-none" />
+            <span className="absolute -bottom-0.5 -right-0.5 w-2 h-2 rounded-full bg-[#ccff00] border border-black shadow-[0_0_4px_#ccff00]" />
+          </button>
+
+          <div className="w-5 h-[1px] bg-white/15 my-0.5" />
+
           {/* Zoom In Button */}
           <button 
             onClick={handleZoomIn}
@@ -1589,7 +1575,7 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
             <ZoomIn className="w-4 h-4" />
           </button>
 
-          {/* Compass Indicator / Center on Ecuador Button */}
+          {/* Compass Indicator / Center on Country Button */}
           <button 
             onClick={handleResetView}
             title="Orientación Norte & Centrar Mapa"
@@ -1654,6 +1640,128 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
           {Math.round(zoom * 100)}%
         </span>
       </div>
+
+      {/* ========================================================================= */}
+      {/* 4.B COUNTRY SELECTOR GLASS MODAL & BACKDROP (Excel Export Style)         */}
+      {/* ========================================================================= */}
+      <AnimatePresence>
+        {isCountryMenuOpen && (
+          <>
+            {/* Cinematic Backdrop Overlay */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.22, ease: "easeOut" }}
+              onClick={() => setIsCountryMenuOpen(false)}
+              className="fixed inset-0 z-40 bg-black/60 backdrop-blur-[4px] pointer-events-auto"
+              aria-hidden="true"
+            />
+
+            {/* Country Selector Menu Card */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.92, x: -16 }}
+              animate={{ opacity: 1, scale: 1, x: 0 }}
+              exit={{ opacity: 0, scale: 0.92, x: -16 }}
+              transition={{ type: "spring", stiffness: 350, damping: 26 }}
+              className="absolute left-4 right-4 sm:right-auto sm:left-20 top-1/2 -translate-y-1/2 z-50 w-auto sm:w-[350px] max-w-[calc(100vw-2rem)] rounded-3xl bg-[#0c0f13]/95 backdrop-blur-2xl border border-white/20 p-4 shadow-[0_25px_70px_rgba(0,0,0,0.85),0_0_40px_rgba(204,255,0,0.15)] pointer-events-auto select-none"
+            >
+              {/* Ambient Glow */}
+              <div className="pointer-events-none absolute -inset-6 rounded-full bg-[#ccff00]/10 blur-2xl -z-10" />
+
+              {/* Menu Header */}
+              <div className="flex items-center justify-between pb-3 mb-3 border-b border-white/10">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-8 h-8 rounded-xl bg-[#ccff00]/15 border border-[#ccff00]/30 flex items-center justify-center text-[#ccff00] shrink-0 shadow-[0_0_12px_rgba(204,255,0,0.2)]">
+                    <Globe className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <h4 className="text-xs font-bold text-white tracking-tight leading-tight flex items-center gap-1.5">
+                      <span>Cambiar País</span>
+                      <span className="text-[9px] font-mono text-[#ccff00] bg-[#ccff00]/10 px-1.5 py-0.2 rounded border border-[#ccff00]/25">
+                        Radar 3D
+                      </span>
+                    </h4>
+                    <p className="text-[10px] text-white/50 leading-none mt-0.5">
+                      Topografía 3D y clientes en vivo
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setIsCountryMenuOpen(false)}
+                  className="w-7 h-7 rounded-full flex items-center justify-center text-white/50 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
+                  title="Cerrar menú (Esc)"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              {/* Country Cards Grid */}
+              <div className="grid grid-cols-2 gap-2">
+                {(Object.keys(RADAR_COUNTRIES) as RadarCountryCode[]).map((code) => {
+                  const c = RADAR_COUNTRIES[code];
+                  const isSelected = selectedCountry === code;
+                  return (
+                    <button
+                      key={code}
+                      type="button"
+                      onClick={() => {
+                        if (code !== selectedCountry) {
+                          handleSwitchCountry(code);
+                        }
+                        setIsCountryMenuOpen(false);
+                      }}
+                      className={`group relative p-2.5 rounded-2xl border text-left transition-all duration-200 cursor-pointer flex flex-col justify-between overflow-hidden active:scale-95 ${
+                        isSelected
+                          ? "bg-[#ccff00]/15 border-[#ccff00] shadow-[0_0_20px_rgba(204,255,0,0.25)] ring-1 ring-[#ccff00]/50"
+                          : "bg-white/[0.04] hover:bg-white/[0.08] border-white/10 hover:border-[#ccff00]/40"
+                      }`}
+                      title={`Cambiar radar a ${c.name}`}
+                    >
+                      {/* Specular gloss highlight */}
+                      <div className="pointer-events-none absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-white/10 to-transparent rounded-t-2xl opacity-50" />
+
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="w-8 h-6 rounded-lg bg-black/50 border border-white/15 flex items-center justify-center overflow-hidden shrink-0 shadow-sm group-hover:scale-105 transition-transform">
+                          <CountrySvgFlag code={code} className="w-6 h-4 rounded-[2px]" />
+                        </div>
+                        {isSelected ? (
+                          <span className="w-2 h-2 rounded-full bg-[#ccff00] shadow-[0_0_8px_#ccff00]" />
+                        ) : (
+                          <ChevronRight className="w-3.5 h-3.5 text-white/30 group-hover:text-[#ccff00] group-hover:translate-x-0.5 transition-all" />
+                        )}
+                      </div>
+
+                      <div>
+                        <div className="flex items-center gap-1">
+                          <span className={`text-xs font-bold truncate transition-colors ${
+                            isSelected ? "text-[#ccff00]" : "text-white group-hover:text-white"
+                          }`}>
+                            {c.name}
+                          </span>
+                        </div>
+                        <span className="text-[9.5px] font-mono text-white/50 block truncate mt-0.5">
+                          {c.entityLabel.split(' ')[0]} {c.entityLabel.includes('Provincias') ? 'prov.' : c.entityLabel.includes('Departamentos') ? 'deptos.' : 'regiones'}
+                        </span>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Footer Micro-Prompt */}
+              <div className="mt-3 pt-2.5 border-t border-white/10 flex items-center justify-between text-[9.5px] font-mono text-white/50">
+                <span className="flex items-center gap-1">
+                  <Compass className="w-3 h-3 text-[#ccff00]" />
+                  <span>Vuelo orbital satelital 4K</span>
+                </span>
+                <span className="text-white/40">Esc para cerrar</span>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
 
       {/* ========================================================================= */}
       {/* 5. RIGHT FLOATING GLASS PANEL (Concise Metrics & Live Client Dossier)     */}
