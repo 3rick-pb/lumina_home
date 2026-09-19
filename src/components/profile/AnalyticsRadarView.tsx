@@ -18,7 +18,6 @@ import {
   Users, 
   Sparkles,
   ChevronRight,
-  ChevronDown,
   Globe,
   X,
   Layers
@@ -245,9 +244,10 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
     const dy = toPos.y - fromPos.y;
 
     const length = Math.hypot(dx, dy) || 1;
-    const travelDist = Math.min(320, Math.max(180, length * 1.15));
-    const travelX = Number(((dx / length) * travelDist).toFixed(1));
-    const travelY = Number(((dy / length) * travelDist).toFixed(1));
+    // Stable, gentle drift (24-38px max) to keep map firmly anchored and centered
+    const driftDist = Math.min(38, Math.max(22, length * 0.16));
+    const driftX = Number(((dx / length) * driftDist).toFixed(1));
+    const driftY = Number(((dy / length) * driftDist).toFixed(1));
 
     // Clear any pending timeouts
     flightTimeoutsRef.current.forEach(t => clearTimeout(t));
@@ -260,28 +260,28 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
     setSelectedClientId(null);
     setExpandedClusterCity(null);
 
-    // 1. TAKEOFF: Zoom out (away) while drifting laterally along flight path
-    setFlightVector({ x: travelX, y: travelY });
+    // 1. TAKEOFF (260ms): Gentle zoom out to 0.86 with subtle directional drift
+    setFlightVector({ x: driftX, y: driftY });
     setFlightPhase('takeoff');
 
-    // 2. APEX (380ms): Switch country, instantaneously position at high-altitude arrival vector
+    // 2. APEX (260ms): Swap country at high altitude
     const t1 = setTimeout(() => {
       setSelectedCountry(nextCode);
       setFlightPhase('approach');
 
-      // 3. LANDING (40ms later): Zoom in and glide to center, landing on the selected map
+      // 3. LANDING (30ms later): Smoothly zoom back to 1.0 and dock at center
       const t2 = setTimeout(() => {
         setFlightPhase('landing');
 
-        // 4. TOUCHDOWN & SETTLE (680ms descent)
+        // 4. TOUCHDOWN (420ms descent)
         const t3 = setTimeout(() => {
           setFlightPhase('idle');
           setFlightVector({ x: 0, y: 0 });
-        }, 680);
+        }, 420);
         flightTimeoutsRef.current.push(t3);
-      }, 40);
+      }, 30);
       flightTimeoutsRef.current.push(t2);
-    }, 380);
+    }, 260);
     flightTimeoutsRef.current.push(t1);
   }, [selectedCountry, flightPhase, setSelectedCountry]);
 
@@ -312,13 +312,15 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
   }, [currentUser]);
 
   // Check whether an entity is an administrator (Admins are NOT clients!)
-  const isClientAdmin = useCallback((c?: { id?: string; email?: string; name?: string } | null) => {
+  const isClientAdmin = useCallback((c?: { id?: string; email?: string; name?: string; role?: string; isAdmin?: boolean } | null) => {
     if (!c) return false;
-    if (isUserSelf(c) && isAdmin) return true;
+    if (isAdmin && isUserSelf(c)) return true;
+    if (currentUser?.role === 'ADMIN' && (isUserSelf(c) || c.id === currentUser.id || (currentUser.email && c.email?.toLowerCase() === currentUser.email.toLowerCase()))) return true;
+    if (c.role === 'ADMIN' || Boolean(c.isAdmin)) return true;
     if (c.name && c.name.toLowerCase().includes('admin')) return true;
     if (c.email && c.email.toLowerCase().includes('admin')) return true;
     return false;
-  }, [isUserSelf, isAdmin]);
+  }, [isUserSelf, isAdmin, currentUser]);
 
   // Verify whether the Admin has a configured shipping/location address
   const hasAdminLocation = useMemo(() => {
@@ -750,35 +752,35 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
           style={{
             transform: 
               flightPhase === 'takeoff'
-                ? `translate(${-flightVector.x * 0.9}px, ${-flightVector.y * 0.9}px) scale(0.32)`
+                ? `translate(${-flightVector.x}px, ${-flightVector.y}px) scale(0.86)`
                 : flightPhase === 'approach'
-                ? `translate(${flightVector.x * 0.9}px, ${flightVector.y * 0.9}px) scale(0.32)`
+                ? `translate(${flightVector.x * 0.5}px, ${flightVector.y * 0.5}px) scale(0.88)`
                 : flightPhase === 'landing'
                 ? `translate(0px, 0px) scale(1)`
                 : `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`,
             transformOrigin: "center center",
             opacity: 
               flightPhase === 'takeoff' 
-                ? 0.2 
+                ? 0.15 
                 : flightPhase === 'approach'
-                ? 0.3
+                ? 0.25
                 : isMapLoaded 
                 ? 1 
                 : 0,
             filter: 
               flightPhase === 'takeoff' || flightPhase === 'approach'
-                ? "blur(4px)" 
+                ? "blur(2px)" 
                 : "blur(0px)",
             transition: 
               isDragging 
                 ? "none" 
                 : flightPhase === 'takeoff'
-                ? "transform 0.38s cubic-bezier(0.35, 0, 0.65, 0.2), opacity 0.38s ease, filter 0.38s ease"
+                ? "transform 0.26s cubic-bezier(0.3, 0, 0.7, 0.3), opacity 0.26s ease, filter 0.26s ease"
                 : flightPhase === 'approach'
                 ? "none"
                 : flightPhase === 'landing'
-                ? "transform 0.68s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.45s ease-out, filter 0.45s ease-out"
-                : "transform 0.6s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.3s ease",
+                ? "transform 0.42s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.35s ease-out, filter 0.35s ease-out"
+                : "transform 0.5s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.3s ease",
             aspectRatio: `${activeCountry.width} / ${activeCountry.height}`,
           }}
           className="relative w-[780px] lg:w-[920px] max-w-full flex items-center justify-center pointer-events-auto shrink-0"
@@ -1094,40 +1096,20 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
           ref={searchContainerRef}
           className="relative max-w-lg w-full pointer-events-auto"
         >
-          {/* Main Search Pill with Country Branding */}
-          <div className={`flex items-center bg-black/80 backdrop-blur-2xl border rounded-full pl-1.5 pr-3.5 py-1.5 shadow-2xl text-xs text-white w-full transition-all duration-300 ${
+          {/* Main Clean Search Pill */}
+          <div className={`flex items-center bg-black/80 backdrop-blur-2xl border rounded-full px-3.5 py-2 shadow-2xl text-xs text-white w-full transition-all duration-300 ${
             isSearchFocused 
               ? "border-[#ccff00] ring-2 ring-[#ccff00]/30 shadow-[0_0_24px_rgba(204,255,0,0.25)] bg-black/95" 
               : "border-white/15 hover:border-white/30"
           }`}>
-            
-            {/* Integrated Country Branding Pill (Click to open Country Switcher) */}
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                setIsSearchFocused(true);
-              }}
-              className="flex items-center gap-1.5 pl-2.5 pr-3 py-1 rounded-full bg-white/10 hover:bg-white/20 border border-white/15 hover:border-[#ccff00]/50 text-white transition-all cursor-pointer shrink-0 group mr-1 shadow-sm"
-              title="Clic para cambiar de país o ver regiones del radar"
-            >
-              <span className="text-base leading-none drop-shadow">{activeCountry.flag}</span>
-              <span className="text-xs font-bold tracking-tight text-white group-hover:text-[#ccff00] transition-colors leading-none">
-                {activeCountry.name}
-              </span>
-              <ChevronDown className={`w-3 h-3 text-white/50 group-hover:text-[#ccff00] transition-transform duration-200 ${isSearchFocused ? 'rotate-180 text-[#ccff00]' : ''}`} />
-            </button>
-
-            <div className="h-4 w-[1px] bg-white/15 mx-1 shrink-0" />
-
-            <Search className={`w-3.5 h-3.5 mx-1.5 shrink-0 transition-colors duration-200 ${isSearchFocused ? "text-[#ccff00]" : "text-white/50"}`} />
+            <Search className={`w-3.5 h-3.5 mr-2 shrink-0 transition-colors duration-200 ${isSearchFocused ? "text-[#ccff00]" : "text-white/50"}`} />
             
             <input 
               type="text"
               value={searchQuery}
               onFocus={() => setIsSearchFocused(true)}
               onChange={e => setSearchQuery(e.target.value)}
-              placeholder={`Buscar en ${activeCountry.name} o cambiar país...`}
+              placeholder={`Buscar ciudad, provincia o cambiar de país...`}
               className="bg-transparent border-none outline-none text-xs text-white placeholder:text-white/45 flex-1 min-w-0 font-sans"
             />
 
@@ -1151,7 +1133,7 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
               <span className="text-[10px] font-mono text-white/80 font-semibold hidden sm:inline">
                 {searchQuery 
                   ? `${filteredActualClients.length} en radar` 
-                  : `${connectedClients.length} ${connectedClients.length === 1 ? 'cliente' : 'clientes'}`}
+                  : `${actualClients.length} ${actualClients.length === 1 ? 'cliente' : 'clientes'}`}
               </span>
             </div>
           </div>
@@ -1160,19 +1142,19 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
           {isSearchFocused && (
             <div className="absolute top-full left-0 right-0 mt-2 rounded-3xl bg-[#0c0e12]/95 backdrop-blur-3xl border border-white/20 p-4 shadow-[0_25px_60px_rgba(0,0,0,0.9)] z-[70] animate-in fade-in zoom-in-95 duration-150 space-y-3.5">
               
-              {/* 1. Country Switcher Section (Beautiful 6-Country Grid) */}
-              <div className="space-y-2">
+              {/* 1. Country Switcher Section (Sleek Compact Pill Buttons) */}
+              <div className="space-y-1.5">
                 <div className="flex items-center justify-between text-[10px] font-mono text-white/50 font-bold uppercase tracking-wider">
                   <div className="flex items-center gap-1.5">
                     <Globe className="w-3 h-3 text-[#ccff00]" />
                     <span>Seleccionar País del Radar</span>
                   </div>
-                  <span className="text-[9px] font-mono text-[#ccff00] bg-[#ccff00]/10 px-2 py-0.5 rounded-full border border-[#ccff00]/20">
-                    6 Países Disponibles
+                  <span className="text-[9.5px] font-mono text-[#ccff00] bg-[#ccff00]/10 px-2 py-0.5 rounded-full border border-[#ccff00]/20 font-bold">
+                    {activeCountry.flag} {activeCountry.name}
                   </span>
                 </div>
 
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                <div className="flex items-center gap-1.5 flex-wrap">
                   {(Object.keys(RADAR_COUNTRIES) as RadarCountryCode[]).map((code) => {
                     const c = RADAR_COUNTRIES[code];
                     const isSelected = selectedCountry === code;
@@ -1183,27 +1165,18 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
                         onClick={() => {
                           handleSwitchCountry(code);
                         }}
-                        className={`flex items-center gap-2.5 p-2.5 rounded-2xl border transition-all duration-200 cursor-pointer text-left group ${
+                        className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-all duration-200 flex items-center gap-1.5 border cursor-pointer ${
                           isSelected
-                            ? "bg-[#ccff00] text-gray-950 border-[#ccff00] shadow-[0_0_18px_rgba(204,255,0,0.35)] scale-[1.02]"
-                            : "bg-white/5 hover:bg-white/15 border-white/10 hover:border-[#ccff00]/40 text-white"
+                            ? "bg-[#ccff00] text-gray-950 font-bold border-[#ccff00] shadow-[0_0_14px_rgba(204,255,0,0.4)] scale-105"
+                            : "bg-white/5 hover:bg-white/15 text-white/85 border-white/10 hover:border-white/25 hover:text-white"
                         }`}
                         title={`Cambiar radar a ${c.name}`}
                       >
-                        <span className="text-xl sm:text-2xl leading-none drop-shadow shrink-0">{c.flag}</span>
-                        <div className="min-w-0 flex-1">
-                          <div className="flex items-center justify-between gap-1">
-                            <span className={`text-xs font-bold truncate leading-tight ${isSelected ? 'text-gray-950' : 'text-white group-hover:text-[#ccff00]'}`}>
-                              {c.name}
-                            </span>
-                            {isSelected && (
-                              <span className="w-1.5 h-1.5 rounded-full bg-gray-950 animate-ping shrink-0" />
-                            )}
-                          </div>
-                          <div className={`text-[9.5px] font-mono truncate leading-tight mt-0.5 ${isSelected ? 'text-gray-950/80 font-medium' : 'text-white/50'}`}>
-                            {c.entityLabel} · {c.currency}
-                          </div>
-                        </div>
+                        <span className="text-sm leading-none">{c.flag}</span>
+                        <span>{c.name}</span>
+                        {isSelected && (
+                          <span className="w-1.5 h-1.5 rounded-full bg-gray-950 animate-ping shrink-0" />
+                        )}
                       </button>
                     );
                   })}
