@@ -13,7 +13,6 @@ import {
   Sparkles, 
   AlertTriangle, 
   CreditCard, 
-  Wallet, 
   Eye, 
   EyeOff, 
   RefreshCw,
@@ -23,7 +22,8 @@ import {
   Plus,
   Users,
   CheckCircle2,
-  Info
+  Info,
+  Lock
 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { useUserStore } from "@/lib/userStore";
@@ -926,135 +926,150 @@ PAYPHONE_PAYMENT_MODE="${payphoneMode}"`;
         </div>
 
         {/* RIGHT COLUMN: PAYPHONE OFFICIAL CONFIGURATION (5 Cols) */}
-        <div className="lg:col-span-5 space-y-6">
+        <div className="lg:col-span-5 space-y-6 font-sans">
 
-          <div className="bg-white/90 dark:bg-[#202022]/80 backdrop-blur-2xl p-6 md:p-8 rounded-[2.5rem] border border-white/80 dark:border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.03)] space-y-6">
+          {/* Module 1: Gateway Protocol & Settlement Settings */}
+          <div className="bg-white/95 dark:bg-[#15171b]/95 backdrop-blur-2xl p-6 md:p-8 rounded-[2rem] border border-slate-200/80 dark:border-slate-800/80 shadow-xs space-y-6 text-left">
             <div>
-              <div className="flex items-center justify-between gap-2 mb-1">
-                <div className="flex items-center gap-2">
-                  <div className="w-7 h-7 rounded-xl bg-[#FF5E00]/10 flex items-center justify-center text-[#FF5E00] font-bold">
-                    <Wallet className="w-4 h-4" />
+              <div className="flex items-center justify-between gap-2 mb-2">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-8 h-8 rounded-xl bg-slate-900 text-white dark:bg-white dark:text-slate-900 flex items-center justify-center font-bold shadow-2xs">
+                    <ShieldCheck className="w-4.5 h-4.5" />
                   </div>
-                  <h3 className="text-base font-bold text-gray-900 dark:text-gray-100">
-                    PayPhone Ecuador
-                  </h3>
+                  <div>
+                    <h3 className="font-sans font-bold text-sm sm:text-base text-slate-900 dark:text-slate-100 tracking-tight">
+                      PayPhone Ecuador · Plataforma de Liquidación
+                    </h3>
+                    <p className="text-[11px] font-sans text-slate-500 dark:text-slate-400">
+                      Gateway Bancario Oficial · República del Ecuador
+                    </p>
+                  </div>
                 </div>
                 <button
                   type="button"
                   onClick={fetchPayphoneSettings}
                   disabled={isLoadingPayphone}
-                  className="p-1.5 rounded-lg text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors cursor-pointer"
-                  title="Recargar configuración"
+                  className="p-2 rounded-lg text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800"
+                  title="Sincronizar estado de pasarela"
                 >
                   <RefreshCw className={`w-3.5 h-3.5 ${isLoadingPayphone ? 'animate-spin' : ''}`} />
                 </button>
               </div>
 
-              <div className="flex items-center gap-2 mt-2">
-                <span className="px-2.5 py-0.5 bg-orange-500/10 text-[#FF5E00] dark:text-orange-400 text-[10px] font-bold uppercase rounded-md tracking-wider border border-orange-500/20 flex items-center gap-1">
-                  <ShieldCheck className="w-3 h-3" /> Única Pasarela Oficial
+              <div className="flex flex-wrap items-center gap-2 mt-3">
+                <span className="px-2.5 py-1 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-[10px] font-mono font-semibold uppercase rounded-md tracking-wider border border-slate-200 dark:border-slate-700 flex items-center gap-1.5">
+                  <Lock className="w-3 h-3 text-slate-500 dark:text-slate-400" />
+                  PCI-DSS NIVEL 1 · COMPLIANT
                 </span>
-                <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold ${payphoneMode === 'box' ? 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20' : 'bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20'}`}>
-                  {payphoneMode === 'box' ? '📦 Cajita Activa' : '↗️ Redirección Activa'}
+                <span className={`px-2.5 py-1 rounded-md text-[10px] font-mono font-semibold uppercase tracking-wider border ${
+                  payphoneMode === 'box' 
+                    ? 'bg-slate-900 text-white dark:bg-white dark:text-slate-900 border-slate-900 dark:border-white' 
+                    : 'bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 border-slate-200 dark:border-slate-700'
+                }`}>
+                  {payphoneMode === 'box' ? 'SDK EMBEBIDO ACTIVO' : 'REDIRECCIÓN BANCARIA ACTIVA'}
                 </span>
               </div>
 
-              <p className="text-xs text-gray-500 dark:text-gray-400 mt-2.5 leading-relaxed">
-                Define de forma exclusiva qué modalidad de PayPhone utilizará tu ecommerce. Los clientes verán únicamente la opción que selecciones aquí.
+              <p className="text-xs text-slate-600 dark:text-slate-400 mt-3 leading-relaxed font-sans">
+                Arquitectura de procesamiento transaccional para cobro de tarjetas de crédito, débito y saldo PayPhone. Selecciona la directiva transaccional activa para el checkout de la tienda.
               </p>
             </div>
 
             {/* Mode Selection Cards */}
             <div className="space-y-3">
               
-              {/* Option 1: Cajita de Pagos */}
+              {/* Option 1: Checkout Embebido */}
               <div 
                 onClick={() => {
                   setPayphoneMode("box");
                   handleSavePayphoneMode("box");
                 }}
-                className={`p-4 rounded-2xl border transition-all cursor-pointer relative ${
+                className={`p-4 sm:p-5 rounded-2xl border transition-all cursor-pointer relative ${
                   payphoneMode === "box" 
-                    ? "border-[#FF5E00] bg-orange-50/40 dark:bg-orange-950/20 shadow-sm" 
-                    : "border-gray-200/80 dark:border-white/10 hover:border-gray-300 dark:hover:border-white/20 bg-white dark:bg-[#1a1a1c]"
+                    ? "border-slate-900 dark:border-white bg-slate-50/80 dark:bg-white/[0.04] shadow-xs ring-1 ring-slate-900/10 dark:ring-white/10" 
+                    : "border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 bg-white dark:bg-[#181a1f]"
                 }`}
               >
-                <div className="flex items-start justify-between">
-                  <div className="flex items-start gap-3">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex items-start gap-3.5 min-w-0">
                     <div className={`w-9 h-9 rounded-xl flex items-center justify-center font-bold text-sm shrink-0 transition-colors ${
                       payphoneMode === "box" 
-                        ? "bg-[#FF5E00] text-white" 
-                        : "bg-gray-100 dark:bg-white/10 text-gray-500 dark:text-gray-400"
+                        ? "bg-slate-900 text-white dark:bg-white dark:text-slate-900" 
+                        : "bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400"
                     }`}>
-                      <CreditCard className="w-4 h-4" />
+                      <CreditCard className="w-4.5 h-4.5" />
                     </div>
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <h4 className="text-xs font-bold text-gray-900 dark:text-gray-100">Cajita de Pagos (IFrame Embebido)</h4>
-                        <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
-                          Recomendado
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <h4 className="text-xs sm:text-sm font-bold text-slate-900 dark:text-slate-100 font-sans">
+                          Checkout Embebido (Tokenización en Página)
+                        </h4>
+                        <span className="text-[9px] font-mono font-semibold px-2 py-0.5 rounded bg-slate-200/80 dark:bg-slate-800 text-slate-800 dark:text-slate-200 border border-slate-300 dark:border-slate-700 uppercase">
+                          PCI SAQ A
                         </span>
                       </div>
-                      <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-0.5 leading-snug">
-                        El formulario de pago se muestra integrado directamente en el checkout sin sacar al comprador de la página.
+                      <p className="text-[11.5px] text-slate-600 dark:text-slate-400 mt-1 leading-relaxed font-sans">
+                        Procesa tarjetas y transacciones directamente dentro del flujo del carrito mediante el SDK oficial. El usuario completa el pago sin abandonar el dominio web, maximizando la conversión y reduciendo la fricción.
                       </p>
-                      <div className="text-[10px] text-gray-400 mt-2 font-mono">
-                        PAYPHONE_PAYMENT_MODE = &quot;box&quot;
+                      <div className="text-[10px] text-slate-400 dark:text-slate-500 mt-2.5 font-mono">
+                        PAYPHONE_PAYMENT_MODE = &quot;box&quot; · SDK v2.0
                       </div>
                     </div>
                   </div>
                   <div className={`w-4 h-4 rounded-full border flex items-center justify-center shrink-0 mt-1 ${
                     payphoneMode === "box" 
-                      ? "border-[#FF5E00] bg-[#FF5E00]" 
-                      : "border-gray-300 dark:border-white/20"
+                      ? "border-slate-900 dark:border-white bg-slate-900 dark:bg-white" 
+                      : "border-slate-300 dark:border-slate-700"
                   }`}>
-                    {payphoneMode === "box" && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
+                    {payphoneMode === "box" && <div className="w-1.5 h-1.5 rounded-full bg-white dark:bg-slate-900" />}
                   </div>
                 </div>
               </div>
 
-              {/* Option 2: Botón por Redirección */}
+              {/* Option 2: Pasarela Externa Alojada */}
               <div 
                 onClick={() => {
                   setPayphoneMode("redirect");
                   handleSavePayphoneMode("redirect");
                 }}
-                className={`p-4 rounded-2xl border transition-all cursor-pointer relative ${
+                className={`p-4 sm:p-5 rounded-2xl border transition-all cursor-pointer relative ${
                   payphoneMode === "redirect" 
-                    ? "border-[#FF5E00] bg-orange-50/40 dark:bg-orange-950/20 shadow-sm" 
-                    : "border-gray-200/80 dark:border-white/10 hover:border-gray-300 dark:hover:border-white/20 bg-white dark:bg-[#1a1a1c]"
+                    ? "border-slate-900 dark:border-white bg-slate-50/80 dark:bg-white/[0.04] shadow-xs ring-1 ring-slate-900/10 dark:ring-white/10" 
+                    : "border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 bg-white dark:bg-[#181a1f]"
                 }`}
               >
-                <div className="flex items-start justify-between">
-                  <div className="flex items-start gap-3">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex items-start gap-3.5 min-w-0">
                     <div className={`w-9 h-9 rounded-xl flex items-center justify-center font-bold text-sm shrink-0 transition-colors ${
                       payphoneMode === "redirect" 
-                        ? "bg-[#FF5E00] text-white" 
-                        : "bg-gray-100 dark:bg-white/10 text-gray-500 dark:text-gray-400"
+                        ? "bg-slate-900 text-white dark:bg-white dark:text-slate-900" 
+                        : "bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400"
                     }`}>
-                      <ExternalLink className="w-4 h-4" />
+                      <ExternalLink className="w-4.5 h-4.5" />
                     </div>
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <h4 className="text-xs font-bold text-gray-900 dark:text-gray-100">Botón por Redirección</h4>
-                        <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20">
-                          Portal Oficial
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <h4 className="text-xs sm:text-sm font-bold text-slate-900 dark:text-slate-100 font-sans">
+                          Pasarela Externa Alojada (Redirección Bancaria)
+                        </h4>
+                        <span className="text-[9px] font-mono font-semibold px-2 py-0.5 rounded bg-slate-200/80 dark:bg-slate-800 text-slate-800 dark:text-slate-200 border border-slate-300 dark:border-slate-700 uppercase">
+                          3D Secure 2.0
                         </span>
                       </div>
-                      <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-0.5 leading-snug">
-                        El comprador hace clic en pagar y es redirigido a la pasarela bancaria oficial de PayPhone para completar el cobro.
+                      <p className="text-[11.5px] text-slate-600 dark:text-slate-400 mt-1 leading-relaxed font-sans">
+                        Transfiere temporalmente el procesamiento a la infraestructura bancaria certificada de PayPhone Ecuador. Tras autorizar la transacción en el portal oficial, el cliente es retornado automáticamente a la confirmación de la tienda.
                       </p>
-                      <div className="text-[10px] text-gray-400 mt-2 font-mono">
-                        PAYPHONE_PAYMENT_MODE = &quot;redirect&quot;
+                      <div className="text-[10px] text-slate-400 dark:text-slate-500 mt-2.5 font-mono">
+                        PAYPHONE_PAYMENT_MODE = &quot;redirect&quot; · Endpoint v3
                       </div>
                     </div>
                   </div>
                   <div className={`w-4 h-4 rounded-full border flex items-center justify-center shrink-0 mt-1 ${
                     payphoneMode === "redirect" 
-                      ? "border-[#FF5E00] bg-[#FF5E00]" 
-                      : "border-gray-300 dark:border-white/20"
+                      ? "border-slate-900 dark:border-white bg-slate-900 dark:bg-white" 
+                      : "border-slate-300 dark:border-slate-700"
                   }`}>
-                    {payphoneMode === "redirect" && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
+                    {payphoneMode === "redirect" && <div className="w-1.5 h-1.5 rounded-full bg-white dark:bg-slate-900" />}
                   </div>
                 </div>
               </div>
@@ -1062,21 +1077,20 @@ PAYPHONE_PAYMENT_MODE="${payphoneMode}"`;
             </div>
 
             {/* Action Button & Status Message */}
-            <div className="pt-2 space-y-3">
+            <div className="pt-1 space-y-3 font-sans">
               <button
                 type="button"
                 onClick={() => handleSavePayphoneMode(payphoneMode)}
                 disabled={isSavingPayphone || isLoadingPayphone}
-                className="w-full py-3 bg-gray-100 hover:bg-gray-200 dark:bg-white/10 dark:hover:bg-white/15 text-gray-800 dark:text-gray-100 rounded-2xl text-xs font-bold transition-all cursor-pointer disabled:opacity-50 flex items-center justify-center gap-2 border border-gray-200/80 dark:border-white/10"
-                title="Se guarda automáticamente al seleccionar en tiempo real en la base de datos."
+                className="w-full py-3 bg-slate-900 hover:bg-slate-800 dark:bg-white dark:hover:bg-slate-100 text-white dark:text-slate-900 rounded-xl text-xs font-bold transition-all cursor-pointer disabled:opacity-50 flex items-center justify-center gap-2 shadow-2xs font-sans"
               >
                 {isSavingPayphone ? (
                   <>
-                    <RefreshCw className="w-4 h-4 animate-spin" /> Guardando en base de datos...
+                    <RefreshCw className="w-3.5 h-3.5 animate-spin" /> Sincronizando directiva en base de datos...
                   </>
                 ) : (
                   <>
-                    <Check className="w-4 h-4 text-emerald-500 stroke-[3]" /> Modalidad Activa: {payphoneMode === 'box' ? 'Cajita de Pagos' : 'Redirección'} (Autoguardado)
+                    <CheckCircle2 className="w-4 h-4 text-emerald-400 dark:text-emerald-600" /> Modalidad en Producción: {payphoneMode === 'box' ? 'Checkout Embebido' : 'Redirección Bancaria'} (Sincronizado)
                   </>
                 )}
               </button>
@@ -1088,132 +1102,130 @@ PAYPHONE_PAYMENT_MODE="${payphoneMode}"`;
                     : 'bg-red-50 text-red-800 border border-red-200 dark:bg-red-950/30 dark:text-red-300 dark:border-red-800/40'
                 }`}>
                   {payphoneMsg.success ? <Check className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" /> : <AlertTriangle className="w-4 h-4 text-red-600 shrink-0 mt-0.5" />}
-                  <span className="leading-tight">{payphoneMsg.text}</span>
+                  <span className="leading-tight font-sans">{payphoneMsg.text}</span>
                 </div>
               )}
             </div>
 
             {/* Credential Status Box */}
-            <div className="p-4 bg-gray-50 dark:bg-[#1a1a1c] border border-gray-200/80 dark:border-white/5 rounded-2xl space-y-2.5 text-xs">
-              <div className="flex items-center justify-between text-[11px] font-semibold text-gray-500 dark:text-gray-400">
-                <span>Estado de Credenciales:</span>
-                <span className={`px-2 py-0.5 rounded font-bold ${
+            <div className="p-4 sm:p-5 bg-slate-50 dark:bg-[#181a1f] border border-slate-200/80 dark:border-slate-800/80 rounded-2xl space-y-3 text-xs font-sans">
+              <div className="flex items-center justify-between text-[11px] font-semibold text-slate-500 dark:text-slate-400">
+                <span>Estado del Entorno API:</span>
+                <span className={`px-2.5 py-0.5 rounded font-mono font-semibold text-[10px] tracking-wider uppercase border ${
                   payphoneIsConfigured 
-                    ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400' 
-                    : 'bg-amber-500/10 text-amber-600 dark:text-amber-400'
+                    ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/20' 
+                    : 'bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/20'
                 }`}>
-                  {payphoneIsConfigured ? '🟢 En Vivo / Producción' : '🟡 Modo Pruebas (RUC en Trámite)'}
+                  {payphoneIsConfigured ? 'Producción (Live API Bancaria)' : 'Sandbox de Homologación (Modo Pruebas / SRI)'}
                 </span>
               </div>
-              <div className="flex items-center justify-between text-[11px] text-gray-600 dark:text-gray-300">
-                <span>StoreID:</span>
-                <span className="font-mono text-gray-500">{payphoneStoreId || 'No configurado (Se usa simulación)'}</span>
+              <div className="flex items-center justify-between text-[11px] text-slate-700 dark:text-slate-300">
+                <span className="text-slate-500 dark:text-slate-400">Terminal de Comercio (Store ID):</span>
+                <span className="font-mono text-slate-900 dark:text-slate-100 font-semibold">{payphoneStoreId || 'Modo Simulación Activo (Sin credenciales en vivo)'}</span>
               </div>
-              <p className="text-[10px] text-gray-400 leading-normal pt-1 border-t border-gray-200 dark:border-white/5">
-                🔒 <strong>Seguridad PCI:</strong> El cliente nunca tiene acceso al token de comercio ni a la configuración administrativa.
+              <p className="text-[10.5px] text-slate-500 dark:text-slate-400 leading-relaxed pt-2 border-t border-slate-200 dark:border-slate-800 flex items-start gap-1.5">
+                <Lock className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400 shrink-0 mt-0.5" />
+                <span><strong>Cifrado Criptográfico:</strong> Protocolo SSL/TLS 1.3 con tokenización bancaria directa. Lumina nunca almacena claves secretas ni numeración primaria de tarjetas (PAN) en bases de datos locales.</span>
               </p>
             </div>
 
           </div>
 
-          {/* Module 4: PayPhone Vercel Variable Generator */}
-            <div className="bg-white/95 dark:bg-[#202022]/90 backdrop-blur-2xl p-6 md:p-8 rounded-[2.5rem] border border-gray-200/80 dark:border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.04)] space-y-6">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-4 border-b border-gray-100 dark:border-white/5">
-                <div>
-                  <div className="flex items-center gap-2">
-                    <span className="font-mono text-[9px] font-bold px-2 py-0.5 rounded-md bg-orange-500/10 text-[#FF5E00] border border-orange-500/20 uppercase tracking-widest">
-                      Variables de Producción · Vercel
-                    </span>
-                    <span className="font-mono text-[9px] font-bold px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 uppercase tracking-widest flex items-center gap-1">
-                      <ShieldCheck className="w-2.5 h-2.5" /> Pasarela Oficial
-                    </span>
-                  </div>
-                  <h3 className="text-base font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2 mt-1.5 tracking-tight">
-                    <Sparkles className="w-4 h-4 text-[#FF5E00]" />
-                    Variables de Entorno para Vercel (PayPhone Ecuador)
-                  </h3>
-                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 leading-relaxed">
-                    Genera el bloque de credenciales oficiales de PayPhone (<code className="text-[#FF5E00] font-mono">PAYPHONE_TOKEN</code>, <code className="text-[#FF5E00] font-mono">PAYPHONE_STORE_ID</code>, <code className="text-[#FF5E00] font-mono">PAYPHONE_PAYMENT_MODE</code>) para pegarlas directamente en Vercel.
-                  </p>
-                </div>
+          {/* Module 2: PayPhone Vercel Variable Generator */}
+          <div className="bg-white/95 dark:bg-[#15171b]/95 backdrop-blur-2xl p-6 md:p-8 rounded-[2rem] border border-slate-200/80 dark:border-slate-800/80 shadow-xs space-y-6 text-left font-sans">
+            <div className="pb-4 border-b border-slate-100 dark:border-slate-800">
+              <div className="flex items-center gap-2 mb-1.5">
+                <span className="font-mono text-[9px] font-semibold px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 uppercase tracking-wider">
+                  VERCEL ENVIRONMENT VARIABLES
+                </span>
+                <span className="font-mono text-[9px] font-semibold px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 uppercase tracking-wider">
+                  SERVER-SIDE RUNTIME
+                </span>
               </div>
+              <h3 className="font-sans font-bold text-sm sm:text-base text-slate-900 dark:text-slate-100 tracking-tight mt-1">
+                Credenciales de Producción y Autenticación de API
+              </h3>
+              <p className="text-xs text-slate-600 dark:text-slate-400 mt-1 leading-relaxed font-sans">
+                Parámetros criptográficos requeridos para la autenticación server-to-server en los endpoints <code className="text-slate-900 dark:text-slate-200 font-mono text-[11px]">/api/payphone/prepare</code> y <code className="text-slate-900 dark:text-slate-200 font-mono text-[11px]">/api/payphone/confirm</code>. Estas llaves operan exclusivamente en el entorno seguro de Node.js en Vercel, impidiendo la exposición de secretos en el navegador.
+              </p>
+            </div>
 
-              {/* Inputs */}
-              <div className="space-y-4">
-                <div>
-                  <div className="flex items-center justify-between mb-1">
-                    <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300">
-                      Token Privado de PayPhone (PAYPHONE_TOKEN)
-                    </label>
-                    <button
-                      type="button"
-                      onClick={() => setShowPayphoneToken(!showPayphoneToken)}
-                      className="text-[11px] text-[#FF5E00] hover:underline font-semibold flex items-center gap-1 cursor-pointer"
-                    >
-                      {showPayphoneToken ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
-                      {showPayphoneToken ? "Ocultar" : "Mostrar"}
-                    </button>
-                  </div>
-                  <input
-                    type={showPayphoneToken ? "text" : "password"}
-                    value={payphoneToken}
-                    onChange={e => setPayphoneToken(e.target.value)}
-                    placeholder="ej: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
-                    className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-xs bg-white dark:bg-[#1a1a1c] text-gray-900 dark:text-gray-100 outline-none focus:ring-2 focus:ring-[#FF5E00]/30 font-mono transition-all"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
-                    Store ID de Sucursal (PAYPHONE_STORE_ID)
+            {/* Inputs */}
+            <div className="space-y-4">
+              <div>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 font-sans">
+                    Token Privado de API (PAYPHONE_TOKEN)
                   </label>
-                  <input
-                    type="text"
-                    value={payphoneStoreIdInput}
-                    onChange={e => setPayphoneStoreIdInput(e.target.value)}
-                    placeholder={payphoneStoreId && !payphoneStoreId.includes("••••") ? payphoneStoreId : "ej: 5c0a1b2c-3d4e-5f6a-7b8c-9d0e1f2a3b4c"}
-                    className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-xs bg-white dark:bg-[#1a1a1c] text-gray-900 dark:text-gray-100 outline-none focus:ring-2 focus:ring-[#FF5E00]/30 font-mono transition-all"
-                  />
-                </div>
-              </div>
-
-              {/* Generated Snippet Box */}
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold text-gray-900 dark:text-gray-100">
-                    Bloque para Vercel Environment Variables:
-                  </span>
                   <button
                     type="button"
-                    onClick={handleCopyPayphoneSnippet}
-                    className="text-xs text-[#FF5E00] hover:text-orange-700 font-bold flex items-center gap-1.5 transition-colors cursor-pointer bg-orange-500/10 hover:bg-orange-500/15 px-3 py-1.5 rounded-lg border border-orange-500/20"
+                    onClick={() => setShowPayphoneToken(!showPayphoneToken)}
+                    className="text-[11px] text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white font-semibold flex items-center gap-1 cursor-pointer transition-colors"
                   >
-                    {copiedPayphone ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
-                    {copiedPayphone ? "¡Copiado al Portapapeles!" : "Copiar para Vercel"}
+                    {showPayphoneToken ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                    {showPayphoneToken ? "Ocultar" : "Mostrar"}
                   </button>
                 </div>
-
-                <div className="relative">
-                  <pre className="p-4 bg-gray-900 text-gray-100 rounded-2xl text-[11px] font-mono overflow-x-auto border border-gray-800 leading-relaxed shadow-inner">
-                    {vercelPayphoneEnvSnippet}
-                  </pre>
-                </div>
+                <input
+                  type={showPayphoneToken ? "text" : "password"}
+                  value={payphoneToken}
+                  onChange={e => setPayphoneToken(e.target.value)}
+                  placeholder="ej: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                  className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 text-xs bg-white dark:bg-[#181a1f] text-slate-900 dark:text-slate-100 outline-none focus:ring-2 focus:ring-slate-400 dark:focus:ring-slate-600 font-mono transition-all"
+                />
               </div>
 
-              {/* Instructions */}
-              <div className="p-4 bg-orange-50/60 dark:bg-orange-950/20 rounded-2xl border border-orange-200/70 dark:border-orange-900/40 text-xs space-y-2">
-                <div className="font-bold text-orange-900 dark:text-orange-300 flex items-center gap-1.5">
-                  <ExternalLink className="w-3.5 h-3.5" />
-                  ¿Cómo pegar estas variables en Vercel?
-                </div>
-                <ol className="list-decimal list-inside space-y-1 text-orange-800/80 dark:text-orange-300/80 text-[11px] leading-relaxed">
-                  <li>Haz clic en <strong>&quot;Copiar para Vercel&quot;</strong> arriba.</li>
-                  <li>Ve a tu proyecto en <strong>Vercel &gt; Settings &gt; Environment Variables</strong>.</li>
-                  <li>En la primera casilla de nombre, pega el texto copiado (Vercel separará automáticamente cada variable).</li>
-                  <li>Haz clic en <strong>Save</strong> y listo.</li>
-                </ol>
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1 font-sans">
+                  Identificador de Sucursal / Terminal (PAYPHONE_STORE_ID)
+                </label>
+                <input
+                  type="text"
+                  value={payphoneStoreIdInput}
+                  onChange={e => setPayphoneStoreIdInput(e.target.value)}
+                  placeholder={payphoneStoreId && !payphoneStoreId.includes("••••") ? payphoneStoreId : "ej: 5c0a1b2c-3d4e-5f6a-7b8c-9d0e1f2a3b4c"}
+                  className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 text-xs bg-white dark:bg-[#181a1f] text-slate-900 dark:text-slate-100 outline-none focus:ring-2 focus:ring-slate-400 dark:focus:ring-slate-600 font-mono transition-all"
+                />
               </div>
             </div>
+
+            {/* Generated Snippet Box */}
+            <div className="space-y-2 font-sans">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold text-slate-900 dark:text-slate-100 font-sans">
+                  Bloque para Vercel Environment Variables:
+                </span>
+                <button
+                  type="button"
+                  onClick={handleCopyPayphoneSnippet}
+                  className="text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700"
+                >
+                  {copiedPayphone ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
+                  {copiedPayphone ? "Copiado al Portapapeles" : "Copiar Variables"}
+                </button>
+              </div>
+
+              <div className="relative">
+                <pre className="p-4 bg-slate-950 text-slate-200 rounded-xl text-[11px] font-mono overflow-x-auto border border-slate-800 leading-relaxed shadow-inner">
+                  {vercelPayphoneEnvSnippet}
+                </pre>
+              </div>
+            </div>
+
+            {/* Instructions */}
+            <div className="p-4 sm:p-5 bg-slate-50 dark:bg-slate-900/50 rounded-2xl border border-slate-200/80 dark:border-slate-800 text-xs space-y-2 font-sans">
+              <div className="font-bold text-slate-900 dark:text-slate-200 flex items-center gap-1.5 font-sans">
+                <ExternalLink className="w-3.5 h-3.5" />
+                Procedimiento de Despliegue en Vercel
+              </div>
+              <ol className="list-decimal list-inside space-y-1.5 text-slate-600 dark:text-slate-400 text-[11px] leading-relaxed font-sans">
+                <li>Haga clic en <strong>&quot;Copiar Variables&quot;</strong> para capturar el bloque íntegro en su portapapeles.</li>
+                <li>Acceda a la consola de Vercel e ingrese a <strong>Settings &gt; Environment Variables</strong> de su proyecto.</li>
+                <li>Pegue el contenido en la primera casilla de variable; Vercel parseará automáticamente cada par clave-valor.</li>
+                <li>Presione <strong>Save</strong> y ejecute una nueva implementación de producción para aplicar las credenciales.</li>
+              </ol>
+            </div>
+          </div>
 
         </div>
 

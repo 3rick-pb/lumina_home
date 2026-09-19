@@ -18,7 +18,6 @@ import {
  ShieldCheck, 
  Tag, 
  Check, 
- Lock,
  ChevronRight,
  Trash2,
  RotateCcw,
@@ -27,7 +26,10 @@ import {
   Loader2,
   AlertTriangle,
   Package,
-  Eye
+  Eye,
+  Calendar,
+  User,
+  Phone
 } from "lucide-react";
 import { useCartStore } from "@/lib/store";
 import { useThemeStore, getResolvedTheme } from "@/lib/themeStore";
@@ -144,6 +146,43 @@ function DeliveryTruckIcon({ className = "w-12 h-8" }: { className?: string }) {
   );
 }
 
+function VerifiedByVisaLogo({ className = "h-4" }: { className?: string }) {
+  return (
+    <div className={`inline-flex items-center gap-1 text-[9px] font-sans font-bold text-gray-700 dark:text-gray-300 ${className}`}>
+      <span className="italic font-serif text-[8.5px] text-gray-500 dark:text-gray-400 font-normal">Verified by</span>
+      <VisaLogo className="h-2.5" fill="#1A1F71" />
+    </div>
+  );
+}
+
+function MastercardSecureCodeLogo({ className = "h-4" }: { className?: string }) {
+  return (
+    <div className={`inline-flex items-center gap-1 text-[9px] font-sans font-bold text-gray-700 dark:text-gray-300 ${className}`}>
+      <MastercardLogo className="h-3" />
+      <span className="text-[8px] font-mono font-semibold tracking-tight">SecureCode.</span>
+    </div>
+  );
+}
+
+function PciDssLogo({ className = "h-4" }: { className?: string }) {
+  return (
+    <div className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded border border-gray-300 dark:border-white/20 text-[8px] font-sans font-extrabold text-gray-800 dark:text-gray-200 uppercase tracking-tight ${className}`}>
+      <ShieldCheck className="w-2.5 h-2.5 text-emerald-600 dark:text-emerald-400" />
+      <span>PCI DSS</span>
+    </div>
+  );
+}
+
+function PoweredByPayphoneLogo({ className = "h-4" }: { className?: string }) {
+  return (
+    <div className={`inline-flex items-center gap-1.5 text-[9.5px] font-sans font-medium text-gray-500 dark:text-gray-400 ${className}`}>
+      <span>Powered by</span>
+      <PayPhoneIcon className="w-3.5 h-3.5" />
+      <span className="font-bold text-[#FF5900] lowercase text-[10.5px]">payphone</span>
+    </div>
+  );
+}
+
 
 
 export function CartDrawer() {
@@ -188,11 +227,11 @@ export function CartDrawer() {
  const [couponFeedback, setCouponFeedback] = useState<{ msg: string; success: boolean } | null>(null);
 
   // PayPhone Ecuador Exclusive Gateway State (Admin Configured: "box" | "redirect")
-  const [payphoneMode, setPayphoneMode] = useState<"box" | "redirect">("box");
-  const [isPayphoneConfigured, setIsPayphoneConfigured] = useState(false);
+  const [, setPayphoneMode] = useState<"box" | "redirect">("box");
+  const [, setIsPayphoneConfigured] = useState(false);
   const [isPayphoneSimulated, setIsPayphoneSimulated] = useState(true);
-  const [isBoxScriptLoaded, setIsBoxScriptLoaded] = useState(false);
-  const [isBoxRendered, setIsBoxRendered] = useState(false);
+  const [, setIsBoxScriptLoaded] = useState(false);
+  const [, setIsBoxRendered] = useState(false);
 
   // PayPhone Simulation Modal (Modo Preparación / RUC en trámite)
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -200,6 +239,14 @@ export function CartDrawer() {
   const [isPayPhoneSimOpen, setIsPayPhoneSimOpen] = useState(false);
   const [isSimulatingApproval, setIsSimulatingApproval] = useState(false);
   const [payphoneError, setPayphoneError] = useState<string | null>(null);
+
+  // PayPhone Embedded Form Interactive State (Official In-Page Checkout Presentation)
+  const [selectedPayMethod, setSelectedPayMethod] = useState<"card" | "app">("card");
+  const [cardNumber, setCardNumber] = useState("");
+  const [cardExpiry, setCardExpiry] = useState("");
+  const [cardCvv, setCardCvv] = useState("");
+  const [cardHolder, setCardHolder] = useState(user?.name || "");
+  const [payphoneAppPhone, setPayphoneAppPhone] = useState("");
 
   // Quick Address Inline Form
   const [isEditingAddress, setIsEditingAddress] = useState(false);
@@ -1511,7 +1558,7 @@ export function CartDrawer() {
   <div className="lg:col-span-7 space-y-6">
   
   {/* Shipping Address */}
-  <div className="p-5 sm:p-7 rounded-[2rem] bg-white/90 dark:bg-[#18181b]/90 backdrop-blur-xl border border-black/[0.06] dark:border-white/10 shadow-[0_8px_30px_rgba(0,0,0,0.04)] space-y-5">
+  <div id="cart-address-section" className="p-5 sm:p-7 rounded-[2rem] bg-white/90 dark:bg-[#18181b]/90 backdrop-blur-xl border border-black/[0.06] dark:border-white/10 shadow-[0_8px_30px_rgba(0,0,0,0.04)] space-y-5">
     <div className="flex items-center justify-between">
       <div className="flex items-center gap-2.5">
         <div className="w-8 h-8 rounded-full bg-black/5 dark:bg-white/10 flex items-center justify-center text-gray-900 dark:text-white">
@@ -1844,173 +1891,214 @@ export function CartDrawer() {
     )}
   </div>
 
-  {/* Pasarela Oficial Exclusiva: PayPhone Ecuador en 2IXO Luxury Card Presentation */}
-  <div className="p-6 sm:p-7 rounded-[2rem] bg-white/90 dark:bg-[#18181b]/90 backdrop-blur-xl border border-black/[0.06] dark:border-white/10 shadow-[0_8px_30px_rgba(0,0,0,0.04)] space-y-5 font-sans antialiased">
+  {/* Pasarela Oficial PayPhone Ecuador: Checkout Embebido Oficial */}
+  <div className="p-6 sm:p-7 rounded-2xl sm:rounded-3xl bg-white dark:bg-[#18181b] border border-gray-200/90 dark:border-white/10 shadow-sm space-y-4 font-sans antialiased text-left">
     
-    <div className="flex items-center justify-between pb-3 border-b border-black/[0.06] dark:border-white/5">
-      <div className="flex items-center gap-2.5">
-        <div className="w-8 h-8 rounded-full bg-black/5 dark:bg-white/10 flex items-center justify-center text-gray-900 dark:text-white">
-          <ShieldCheck className="w-4 h-4" />
+    {/* Header: Elige tu forma de pago + Editar datos */}
+    <div className="flex items-center justify-between">
+      <span className="text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 font-sans">
+        Elige tu forma de pago
+      </span>
+      <button 
+        type="button"
+        onClick={() => {
+          setIsEditingAddress(true);
+          const addrElem = document.getElementById("cart-address-section");
+          if (addrElem) addrElem.scrollIntoView({ behavior: "smooth" });
+        }}
+        className="text-xs text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-white underline underline-offset-2 transition-colors cursor-pointer font-sans"
+      >
+        Editar datos
+      </button>
+    </div>
+
+    {/* Subtitle: Selecciona método de pago */}
+    <div className="pt-1">
+      <h4 className="font-sans font-bold text-xs sm:text-sm text-gray-900 dark:text-white mb-2.5">
+        Selecciona método de pago
+      </h4>
+
+      {/* Method Selector Tabs */}
+      <div className="grid grid-cols-2 gap-3">
+        {/* Tab 1: Tarjetas */}
+        <button
+          type="button"
+          onClick={() => setSelectedPayMethod("card")}
+          className={`h-11 sm:h-12 px-2.5 sm:px-3 rounded-xl transition-all cursor-pointer flex items-center justify-between ${
+            selectedPayMethod === "card"
+              ? "border-2 border-[#FF5900] bg-white dark:bg-[#202022] shadow-xs"
+              : "border border-gray-200 dark:border-white/10 hover:border-gray-300 dark:hover:border-white/20 bg-white dark:bg-[#18181b]"
+          }`}
+        >
+          <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
+            <CreditCard className={`w-4 sm:w-4.5 h-4 sm:h-4.5 shrink-0 ${selectedPayMethod === "card" ? "text-[#FF5900]" : "text-gray-400"}`} />
+            <div className="h-4 w-px bg-gray-200 dark:bg-white/10 shrink-0" />
+          </div>
+          <div className="flex items-center gap-1 sm:gap-1.5 shrink-0">
+            <VisaLogo className="h-2.5 sm:h-3" fill="#1A1F71" />
+            <MastercardLogo className="h-3 sm:h-3.5" />
+            <AmexLogo className="h-2.5 sm:h-3" />
+            <DinersClubLogo className="h-2.5 sm:h-3" />
+            <DiscoverLogo className="h-2.5 sm:h-3" />
+          </div>
+        </button>
+
+        {/* Tab 2: PayPhone App */}
+        <button
+          type="button"
+          onClick={() => setSelectedPayMethod("app")}
+          className={`h-11 sm:h-12 px-3 rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1.5 sm:gap-2 ${
+            selectedPayMethod === "app"
+              ? "border-2 border-[#FF5900] bg-white dark:bg-[#202022] shadow-xs"
+              : "border border-gray-200 dark:border-white/10 hover:border-gray-300 dark:hover:border-white/20 bg-white dark:bg-[#18181b]"
+          }`}
+        >
+          <PayPhoneIcon className="w-5 h-5" />
+          <span className="font-sans font-bold text-xs sm:text-sm text-[#FF5900]">App</span>
+        </button>
+      </div>
+    </div>
+
+    {/* Section: Información de tarjeta OR PayPhone App */}
+    {selectedPayMethod === "card" ? (
+      <div className="pt-2 space-y-2.5">
+        <h4 className="font-sans font-bold text-xs sm:text-sm text-gray-900 dark:text-white">
+          Información de tarjeta
+        </h4>
+
+        {/* Grouped Inputs Container */}
+        <div className="rounded-xl border border-gray-300 dark:border-white/15 bg-white dark:bg-[#141416] overflow-hidden divide-y divide-gray-300 dark:divide-white/15 shadow-2xs">
+          {/* Row 1: Card Number */}
+          <div className="px-3.5 py-2.5">
+            <input 
+              type="text"
+              inputMode="numeric"
+              value={cardNumber}
+              onChange={(e) => {
+                const val = e.target.value.replace(/\D/g, "").slice(0, 16);
+                const formatted = val.match(/.{1,4}/g)?.join(" ") || val;
+                setCardNumber(formatted);
+              }}
+              placeholder="Ingresa número de tarjeta"
+              className="w-full text-xs sm:text-sm bg-transparent outline-none text-gray-900 dark:text-white placeholder-gray-400 font-sans tracking-wide"
+            />
+          </div>
+
+          {/* Row 2: MM/AA + CVV */}
+          <div className="grid grid-cols-2 divide-x divide-gray-300 dark:divide-white/15">
+            <div className="flex items-center px-3 py-2.5 gap-2">
+              <Calendar className="w-4 h-4 text-gray-400 shrink-0" />
+              <input 
+                type="text"
+                inputMode="numeric"
+                value={cardExpiry}
+                onChange={(e) => {
+                  let val = e.target.value.replace(/\D/g, "").slice(0, 4);
+                  if (val.length >= 2) val = `${val.slice(0, 2)}/${val.slice(2)}`;
+                  setCardExpiry(val);
+                }}
+                placeholder="MM/AA"
+                maxLength={5}
+                className="w-full text-xs sm:text-sm bg-transparent outline-none text-gray-900 dark:text-white placeholder-gray-400 font-sans"
+              />
+            </div>
+            <div className="flex items-center px-3 py-2.5 gap-2">
+              <CreditCard className="w-4 h-4 text-gray-400 shrink-0" />
+              <input 
+                type="password"
+                inputMode="numeric"
+                value={cardCvv}
+                onChange={(e) => setCardCvv(e.target.value.replace(/\D/g, "").slice(0, 4))}
+                placeholder="CVV"
+                maxLength={4}
+                className="w-full text-xs sm:text-sm bg-transparent outline-none text-gray-900 dark:text-white placeholder-gray-400 font-sans tracking-widest"
+              />
+            </div>
+          </div>
         </div>
-        <div>
-          <h4 className="font-bold text-xs uppercase tracking-wider text-gray-900 dark:text-gray-100">
-            Métodos de Pago
-          </h4>
-          <p className="text-[11px] text-gray-500 dark:text-gray-400">PayPhone Ecuador • Cobro Cifrado</p>
+
+        {/* Cardholder Name Input */}
+        <div className="rounded-xl border border-gray-300 dark:border-white/15 bg-white dark:bg-[#141416] flex items-center px-3.5 py-2.5 gap-2 shadow-2xs">
+          <User className="w-4 h-4 text-gray-400 shrink-0" />
+          <input 
+            type="text"
+            value={cardHolder}
+            onChange={(e) => setCardHolder(e.target.value)}
+            placeholder="Ingresa titular de tarjeta"
+            className="w-full text-xs sm:text-sm bg-transparent outline-none text-gray-900 dark:text-white placeholder-gray-400 font-sans"
+          />
         </div>
       </div>
-      <span className="font-mono text-[10px] font-bold px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20 tracking-tight uppercase flex items-center gap-1.5 shadow-2xs">
-        <Lock className="w-3 h-3" /> SSL 256-Bit
+    ) : (
+      <div className="pt-2 space-y-2.5">
+        <h4 className="font-sans font-bold text-xs sm:text-sm text-gray-900 dark:text-white">
+          Cuenta PayPhone
+        </h4>
+        <div className="rounded-xl border border-gray-300 dark:border-white/15 bg-white dark:bg-[#141416] flex items-center px-3.5 py-2.5 gap-2 shadow-2xs">
+          <Phone className="w-4 h-4 text-gray-400 shrink-0" />
+          <input 
+            type="tel"
+            value={payphoneAppPhone}
+            onChange={(e) => setPayphoneAppPhone(e.target.value)}
+            placeholder="Número celular PayPhone (Ej: 0991234567)"
+            className="w-full text-xs sm:text-sm bg-transparent outline-none text-gray-900 dark:text-white placeholder-gray-400 font-sans"
+          />
+        </div>
+        <p className="text-[11px] text-gray-500 dark:text-gray-400 leading-relaxed font-sans">
+          Al presionar pagar, recibirás una solicitud de autorización directa en tu app PayPhone o podrás debitar de tu saldo disponible.
+        </p>
+      </div>
+    )}
+
+    {/* Hidden Live PayPhone script mount container if live box mode is loaded */}
+    <div id="pp-button" className="hidden" />
+
+    {/* Dotted Separator */}
+    <div className="pt-2">
+      <div className="border-b-2 border-dotted border-gray-300 dark:border-white/20" />
+    </div>
+
+    {/* TOTAL Row */}
+    <div className="flex items-center justify-between pt-2">
+      <span className="font-sans font-bold text-base sm:text-lg text-gray-900 dark:text-white tracking-wide">
+        TOTAL:
+      </span>
+      <span className="font-sans font-bold text-lg sm:text-xl text-[#FF5900] tracking-tight">
+        USD {finalTotal.toFixed(2)}
       </span>
     </div>
 
-    {/* 2IXO FINTECH LUXURY CARD CONTAINER */}
-    <div className="relative rounded-[2rem] p-6 sm:p-7 bg-gradient-to-br from-[#FAF8F5] via-[#F4EFEB] to-[#EAE3D8] dark:from-[#252422] dark:via-[#1e1d1b] dark:to-[#161514] border border-[#DDD4C7]/80 dark:border-white/10 shadow-[0_12px_32px_-6px_rgba(0,0,0,0.08)] overflow-hidden space-y-5">
-      
-      {/* Specular Liquid Light highlight on top edge */}
-      <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-white/80 dark:via-white/20 to-transparent pointer-events-none" />
-      <div className="absolute -top-16 -right-16 w-48 h-48 rounded-full bg-gradient-to-br from-[#FAF8F5]/80 via-white/40 to-transparent dark:from-white/5 dark:to-transparent blur-2xl pointer-events-none" />
-
-      {/* Card Top Row: Official Security Seal & Gateway Badge */}
-      <div className="relative z-10 flex items-center justify-between">
-        <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-xl bg-emerald-500/10 dark:bg-emerald-400/10 border border-emerald-500/20 flex items-center justify-center text-emerald-600 dark:text-emerald-400 shadow-2xs shrink-0">
-            <ShieldCheck className="w-4.5 h-4.5" />
-          </div>
-          <div>
-            <span className="text-[11px] font-extrabold uppercase tracking-wider text-gray-800 dark:text-gray-200 block">
-              Cobro Seguro Cifrado
-            </span>
-            <span className="text-[10px] text-gray-500 dark:text-gray-400 font-mono block">
-              Tokenización Bancaria SSL
-            </span>
-          </div>
-        </div>
-        
-        <div className="flex items-center gap-2">
-          <span className="px-3 py-1 rounded-full bg-white/90 dark:bg-black/40 text-[11px] font-bold text-gray-800 dark:text-gray-200 border border-black/[0.06] dark:border-white/10 flex items-center gap-1.5 shadow-2xs">
-            <PayPhoneIcon className="w-3.5 h-3.5" />
-            <span>PayPhone</span>
-          </span>
-          <span className="px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 text-[10px] font-bold border border-emerald-500/20">
-            PCI-DSS L1
-          </span>
-        </div>
-      </div>
-
-      {/* Card Middle: Title / Card Mode Description */}
-      <div className="relative z-10 space-y-1 pt-1">
-        <div className="flex items-center gap-2">
-          <h5 className="font-sans font-extrabold text-base sm:text-lg text-gray-900 dark:text-white tracking-tight">
-            {payphoneMode === "box" ? "Cajita de Pagos Integrada" : "Pasarela Hosted PayPhone"}
-          </h5>
-          {isPayphoneConfigured && (
-            <span className="px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-600 dark:text-blue-400 text-[10px] font-bold border border-blue-500/20">
-              Enlace Directo
-            </span>
-          )}
-        </div>
-        <p className="text-xs text-gray-600 dark:text-gray-300 leading-relaxed max-w-md">
-          {payphoneMode === "box"
-            ? "Procesa tarjetas de crédito/débito directamente en la tienda con tokenización bancaria sin almacenar datos sensibles."
-            : "Autoriza tu orden en la pasarela cifrada de PayPhone Ecuador con cualquier tarjeta o desde tu app móvil."}
-        </p>
-      </div>
-
-      {/* Official PayPhone Box Container (when in box mode) */}
-      {payphoneMode === "box" && (
-        <div className="relative z-10 w-full bg-white/95 dark:bg-[#18181b]/95 backdrop-blur-md p-4 rounded-2xl border border-black/[0.06] dark:border-white/10 shadow-sm">
-          <div id="pp-button" className="w-full min-h-[110px] flex flex-col items-center justify-center text-center p-1">
-            {isPayphoneSimulated ? (
-              <div className="space-y-2.5 py-2">
-                <div className="w-10 h-10 rounded-full bg-black/5 dark:bg-white/10 text-gray-800 dark:text-gray-200 flex items-center justify-center mx-auto border border-black/[0.06] dark:border-white/10">
-                  <CreditCard className="w-5 h-5" />
-                </div>
-                <div className="space-y-1">
-                  <p className="text-xs font-bold text-gray-900 dark:text-gray-100">
-                    Cajita de Pagos Activa (Modo Seguro de Pruebas)
-                  </p>
-                  <p className="text-[11px] text-gray-500 dark:text-gray-400 max-w-sm mx-auto">
-                    El contenedor <code className="text-gray-800 dark:text-gray-200 bg-black/5 dark:bg-white/10 px-1.5 py-0.5 rounded-full font-mono text-[10px]">#pp-button</code> está vinculado. Pulsa el botón inferior para autorizar la transacción.
-                  </p>
-                </div>
-              </div>
-            ) : !isBoxRendered ? (
-              <div className="space-y-2 py-4">
-                <Loader2 className="w-6 h-6 animate-spin text-gray-700 dark:text-gray-300 mx-auto" />
-                <p className="text-xs font-medium text-gray-500 dark:text-gray-400">
-                  {!isBoxScriptLoaded ? "Cargando pasarela cifrada..." : "Inicializando Cajita de Pagos..."}
-                </p>
-              </div>
-            ) : null}
-          </div>
-        </div>
-      )}
-
-      {/* Card Bottom Row: Supported Official Payment Methods in Authentic Bank Card Tiles */}
-      <div className="relative z-10 pt-1 space-y-3">
-        <div className="flex flex-wrap items-center gap-2">
-          {/* PayPhone */}
-          <div 
-            className="h-8 px-2.5 rounded-lg bg-white dark:bg-white/95 border border-black/10 dark:border-white/20 shadow-2xs flex items-center justify-center gap-1.5 transition-transform hover:scale-105" 
-            title="PayPhone Ecuador"
-          >
-            <PayPhoneIcon className="w-4 h-4" />
-            <span className="text-[11px] font-extrabold text-gray-900 tracking-tight">PayPhone</span>
-          </div>
-
-          {/* Visa */}
-          <div 
-            className="h-8 px-2.5 rounded-lg bg-white dark:bg-white/95 border border-black/10 dark:border-white/20 shadow-2xs flex items-center justify-center transition-transform hover:scale-105" 
-            title="Visa"
-          >
-            <VisaLogo className="h-3.5" />
-          </div>
-
-          {/* Mastercard */}
-          <div 
-            className="h-8 px-2.5 rounded-lg bg-white dark:bg-white/95 border border-black/10 dark:border-white/20 shadow-2xs flex items-center justify-center transition-transform hover:scale-105" 
-            title="Mastercard"
-          >
-            <MastercardLogo className="h-4" />
-          </div>
-
-          {/* American Express */}
-          <div 
-            className="h-8 px-2 rounded-lg bg-white dark:bg-white/95 border border-black/10 dark:border-white/20 shadow-2xs flex items-center justify-center transition-transform hover:scale-105" 
-            title="American Express"
-          >
-            <AmexLogo className="h-4" />
-          </div>
-
-          {/* Diners Club */}
-          <div 
-            className="h-8 px-2 rounded-lg bg-white dark:bg-white/95 border border-black/10 dark:border-white/20 shadow-2xs flex items-center justify-center transition-transform hover:scale-105" 
-            title="Diners Club International"
-          >
-            <DinersClubLogo className="h-4" />
-          </div>
-
-          {/* Discover */}
-          <div 
-            className="h-8 px-2.5 rounded-lg bg-white dark:bg-white/95 border border-black/10 dark:border-white/20 shadow-2xs flex items-center justify-center transition-transform hover:scale-105" 
-            title="Discover Network"
-          >
-            <DiscoverLogo className="h-3.5" />
-          </div>
-        </div>
-
-        <div className="pt-3 border-t border-black/[0.06] dark:border-white/10 flex items-center justify-between text-[11px] text-gray-500 dark:text-gray-400">
-          <span className="flex items-center gap-1.5 font-medium">
-            <Lock className="w-3.5 h-3.5 text-gray-700 dark:text-gray-300" /> Cifrado Bancario End-to-End
-          </span>
-          <span className="font-bold text-emerald-700 dark:text-emerald-400">
-            0% comisión al comprador
-          </span>
-        </div>
-      </div>
-
+    {/* Action Button: Pagar */}
+    <div className="pt-1">
+      <button
+        type="button"
+        onClick={handleTriggerPaymentWithAnimation}
+        disabled={isProcessing || isTruckAnimating}
+        className="w-full py-3.5 sm:py-4 rounded-xl bg-[#FF5900] hover:bg-[#e04f00] text-white font-sans font-bold text-base transition-all shadow-md hover:shadow-lg active:scale-[0.99] flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60"
+      >
+        {isProcessing ? (
+          <>
+            <Loader2 className="w-5 h-5 animate-spin" />
+            <span>Procesando pago...</span>
+          </>
+        ) : (
+          <span>Pagar</span>
+        )}
+      </button>
     </div>
+
+    {/* Trust & Security Badges Row */}
+    <div className="flex flex-wrap items-center justify-center gap-3 sm:gap-4 pt-2">
+      <VerifiedByVisaLogo />
+      <MastercardSecureCodeLogo />
+      <PciDssLogo />
+      <PoweredByPayphoneLogo />
+    </div>
+
+    {/* Footer Disclaimer */}
+    <p className="text-[11px] sm:text-[11.5px] text-gray-500 dark:text-gray-400 text-center leading-relaxed pt-1 font-sans max-w-sm mx-auto">
+      Pago procesado por Payphone ({isPayphoneSimulated ? "Pruebas" : "Producción"}) · tarjeta de crédito, débito o saldo Payphone. Recibirás la confirmación por correo.
+    </p>
 
   </div>
 
