@@ -297,13 +297,19 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
   const activeCountry = RADAR_COUNTRIES[selectedCountry] || RADAR_COUNTRIES.EC;
 
 
-  // Preload all 6 country 2.8K maps into browser memory for zero-lag flyover switches
+  // Preload all 6 country 2.8K maps into browser GPU memory for zero-lag flyover switches
   useEffect(() => {
     (Object.keys(RADAR_COUNTRIES) as RadarCountryCode[]).forEach((code) => {
       const meta = RADAR_COUNTRIES[code];
       if (meta?.mapWebp) {
         const img = new Image();
         img.src = meta.mapWebp;
+        img.decode?.().catch(() => {});
+      }
+      if (meta?.mapPng) {
+        const img = new Image();
+        img.src = meta.mapPng;
+        img.decode?.().catch(() => {});
       }
     });
   }, []);
@@ -323,12 +329,12 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
     const dy = toPos.y - fromPos.y;
 
     const length = Math.hypot(dx, dy) || 1;
-    // Ultra-stable, gentle drift (16-26px max) to keep map firmly anchored and centered
-    const driftDist = Math.min(26, Math.max(16, length * 0.12));
+    // Expressive, silky smooth continental drift (24-42px)
+    const driftDist = Math.min(42, Math.max(24, length * 0.18));
     const driftX = Number(((dx / length) * driftDist).toFixed(1));
     const driftY = Number(((dy / length) * driftDist).toFixed(1));
-    // Gyroscopic landing rotation angle: smooth gentle rotation (+1.8deg / -1.8deg) depending on flight heading
-    const rotAngle = dx >= 0 ? 1.8 : -1.8;
+    // Noticeable yet elegant gyroscopic rotation (3.0deg) for cinematic landing
+    const rotAngle = dx >= 0 ? 3.0 : -3.0;
 
     // Clear any pending timeouts
     flightTimeoutsRef.current.forEach(t => clearTimeout(t));
@@ -341,31 +347,33 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
     setSelectedClientId(null);
     setExpandedClusterCity(null);
 
-    // 1. TAKEOFF (220ms): Ultra-stable elevation to 0.92 with subtle drift & slight tilt
+    // 1. TAKEOFF (480ms): Soft, longer cinematic ascent to 0.88 with smooth drift & tilt
     setFlightVector({ x: driftX, y: driftY });
     setFlightRotation(rotAngle * 0.4);
     setFlightPhase('takeoff');
 
-    // 2. APEX (220ms): Swap country at high altitude and prime orbital landing angle
+    // 2. APEX (480ms): Swap country at altitude and prepare orbital entry
     const t1 = setTimeout(() => {
       setSelectedCountry(nextCode);
       setFlightRotation(rotAngle);
       setFlightPhase('approach');
 
-      // 3. LANDING (30ms later): Initiate the 1.20s smooth descent and rotation
-      const t2 = setTimeout(() => {
-        setFlightPhase('landing');
+      // 3. LANDING (rAF-synchronized): Smooth 2.20-second descent and gyroscopic rotation
+      requestAnimationFrame(() => {
+        const t2 = setTimeout(() => {
+          setFlightPhase('landing');
 
-        // 4. TOUCHDOWN (1200ms duration = exactly 1.20s of gentle rotation & landing)
-        const t3 = setTimeout(() => {
-          setFlightPhase('idle');
-          setFlightVector({ x: 0, y: 0 });
-          setFlightRotation(0);
-        }, 1200);
-        flightTimeoutsRef.current.push(t3);
-      }, 30);
-      flightTimeoutsRef.current.push(t2);
-    }, 220);
+          // 4. TOUCHDOWN (2200ms duration = exactly 2.20s of gentle rotation & landing)
+          const t3 = setTimeout(() => {
+            setFlightPhase('idle');
+            setFlightVector({ x: 0, y: 0 });
+            setFlightRotation(0);
+          }, 2200);
+          flightTimeoutsRef.current.push(t3);
+        }, 40);
+        flightTimeoutsRef.current.push(t2);
+      });
+    }, 480);
     flightTimeoutsRef.current.push(t1);
   }, [selectedCountry, flightPhase, setSelectedCountry]);
 
@@ -836,34 +844,33 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
           style={{
             transform: 
               flightPhase === 'takeoff'
-                ? `translate(${-flightVector.x * 0.5}px, ${-flightVector.y * 0.5}px) scale(0.92) rotate(${-flightRotation * 0.5}deg)`
+                ? `translate3d(${-flightVector.x * 0.7}px, ${-flightVector.y * 0.7}px, 0) scale(0.88) rotate(${-flightRotation * 0.5}deg)`
                 : flightPhase === 'approach'
-                ? `translate(${flightVector.x * 0.4}px, ${flightVector.y * 0.4}px) scale(0.94) rotate(${flightRotation}deg)`
+                ? `translate3d(${flightVector.x * 0.5}px, ${flightVector.y * 0.5}px, 0) scale(0.90) rotate(${flightRotation}deg)`
                 : flightPhase === 'landing'
-                ? `translate(0px, 0px) scale(1) rotate(0deg)`
-                : `translate(${pan.x}px, ${pan.y}px) scale(${zoom}) rotate(0deg)`,
+                ? `translate3d(0px, 0px, 0) scale(1) rotate(0deg)`
+                : `translate3d(${pan.x}px, ${pan.y}px, 0) scale(${zoom}) rotate(0deg)`,
             transformOrigin: "center center",
+            willChange: "transform, opacity",
+            transformStyle: "preserve-3d",
+            backfaceVisibility: "hidden",
             opacity: 
               flightPhase === 'takeoff' 
-                ? 0.5 
+                ? 0.4 
                 : flightPhase === 'approach'
-                ? 0.65
+                ? 0.7
                 : isMapLoaded 
                 ? 1 
                 : 0,
-            filter: 
-              flightPhase === 'takeoff' || flightPhase === 'approach'
-                ? "blur(1px)" 
-                : "blur(0px)",
             transition: 
               isDragging 
                 ? "none" 
                 : flightPhase === 'takeoff'
-                ? "transform 0.22s cubic-bezier(0.25, 1, 0.5, 1), opacity 0.22s ease, filter 0.22s ease"
+                ? "transform 0.48s cubic-bezier(0.2, 0.9, 0.3, 1), opacity 0.48s ease"
                 : flightPhase === 'approach'
                 ? "none"
                 : flightPhase === 'landing'
-                ? "transform 1.2s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.45s ease-out, filter 0.45s ease-out"
+                ? "transform 2.2s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.6s ease-out"
                 : "transform 0.5s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.3s ease",
             aspectRatio: `${activeCountry.width} / ${activeCountry.height}`,
           }}
@@ -890,6 +897,7 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
               alt={`Mapa 3D Topográfico en Relieve de ${activeCountry.name} en Alta Resolución`}
               draggable={false}
               loading="eager"
+              decoding="async"
               onLoad={() => setIsMapLoaded(true)}
               className={`w-full h-full object-contain pointer-events-none select-none filter contrast-110 brightness-105 drop-shadow-[0_28px_40px_rgba(0,0,0,0.7)] transition-opacity duration-300 ${
                 isMapLoaded ? "opacity-100" : "opacity-0"
@@ -1249,6 +1257,8 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
                         type="button"
                         onClick={() => {
                           handleSwitchCountry(code);
+                          setIsSearchFocused(false);
+                          setSearchQuery("");
                         }}
                         className={`h-9 px-3 rounded-xl text-xs font-semibold transition-all duration-150 flex items-center justify-center gap-2 border cursor-pointer select-none ${
                           isSelected
