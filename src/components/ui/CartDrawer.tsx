@@ -839,10 +839,14 @@ export function CartDrawer() {
   </div>
 </header>
 
- {/* ========================================================================= */}
+  {/* ========================================================================= */}
   {/* MAIN CANVAS SCROLLABLE AREA */}
   {/* ========================================================================= */}
-  <div className="flex-1 overflow-y-auto p-3.5 sm:p-6 lg:p-10 hide-scrollbar space-y-6 sm:space-y-10">
+  <div className={`flex-1 overflow-y-auto ${
+    items.length === 0 && step === "bag"
+      ? "p-3.5 sm:px-6 sm:pb-6 sm:pt-2.5 lg:px-10 lg:pb-10 lg:pt-3"
+      : "p-3.5 sm:p-6 lg:p-10"
+  } hide-scrollbar space-y-6 sm:space-y-10`}>
 
   {/* ======================================================================= */}
   {/* STEP 1: CART PAGE VIEW (Skyrise Decor / Crescendo Spacious Studio) */}
@@ -870,7 +874,7 @@ export function CartDrawer() {
   )}
 
   {items.length === 0 ? (
-  <div className="relative overflow-hidden my-6 rounded-[2.5rem] p-10 sm:p-14 border border-black/[0.04] dark:border-white/10 bg-gradient-to-b from-white/95 via-[#faf8f4] to-[#f2eee7] dark:from-[#222226] dark:via-[#1c1c1f] dark:to-[#161619] shadow-[0_20px_50px_rgba(0,0,0,0.04)] backdrop-blur-2xl text-center flex flex-col items-center justify-center">
+  <div className="relative overflow-hidden my-2 sm:my-2.5 sm:mt-1 rounded-[2.5rem] p-8 sm:p-10 lg:p-12 border border-black/[0.04] dark:border-white/10 bg-gradient-to-b from-white/95 via-[#faf8f4] to-[#f2eee7] dark:from-[#222226] dark:via-[#1c1c1f] dark:to-[#161619] shadow-[0_20px_50px_rgba(0,0,0,0.04)] backdrop-blur-2xl text-center flex flex-col items-center justify-center">
     {/* 3D Radial Champagne Aura */}
     <div className="absolute w-80 h-80 rounded-full bg-gradient-to-tr from-amber-500/[0.08] via-[#8c9276]/[0.08] to-amber-400/[0.06] blur-3xl pointer-events-none" />
     <div className="absolute inset-x-12 top-0 h-[1.5px] bg-gradient-to-r from-transparent via-black/[0.04] dark:via-white/15 to-transparent pointer-events-none" />

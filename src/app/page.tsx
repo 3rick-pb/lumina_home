@@ -498,7 +498,7 @@ export default function Home() {
                 <p className="text-gray-600 dark:text-gray-400 font-medium text-sm">No hay productos en esta categoría por el momento.</p>
               </div>
             ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6">
                 {filteredProducts.slice(0, 8).map((product, idx) => (
                   <motion.div 
                     key={product.id}
