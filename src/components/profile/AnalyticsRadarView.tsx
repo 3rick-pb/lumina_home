@@ -1128,7 +1128,7 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
 
             <div className="flex items-center gap-1.5 pl-2.5 border-l border-white/10 shrink-0">
               <span className={`w-2 h-2 rounded-full transition-colors ${
-                searchQuery ? "bg-[#ccff00] shadow-[0_0_8px_#ccff00]" : "bg-[#ccff00] animate-pulse"
+                searchQuery ? "bg-[#ccff00] shadow-[0_0_8px_#ccff00]" : "bg-[#ccff00] shadow-[0_0_6px_#ccff00]"
               }`} />
               <span className="text-[10px] font-mono text-white/80 font-semibold hidden sm:inline">
                 {searchQuery 
@@ -1142,19 +1142,19 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
           {isSearchFocused && (
             <div className="absolute top-full left-0 right-0 mt-2 rounded-3xl bg-[#0c0e12]/95 backdrop-blur-3xl border border-white/20 p-4 shadow-[0_25px_60px_rgba(0,0,0,0.9)] z-[70] animate-in fade-in zoom-in-95 duration-150 space-y-3.5">
               
-              {/* 1. Country Switcher Section (Sleek Compact Pill Buttons) */}
-              <div className="space-y-1.5">
+              {/* 1. Country Switcher Section (Symmetrical Micro-SaaS Grid) */}
+              <div className="space-y-2">
                 <div className="flex items-center justify-between text-[10px] font-mono text-white/50 font-bold uppercase tracking-wider">
                   <div className="flex items-center gap-1.5">
                     <Globe className="w-3 h-3 text-[#ccff00]" />
-                    <span>Seleccionar País del Radar</span>
+                    <span>País Seleccionado</span>
                   </div>
                   <span className="text-[9.5px] font-mono text-[#ccff00] bg-[#ccff00]/10 px-2 py-0.5 rounded-full border border-[#ccff00]/20 font-bold">
                     {activeCountry.flag} {activeCountry.name}
                   </span>
                 </div>
 
-                <div className="flex items-center gap-1.5 flex-wrap">
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                   {(Object.keys(RADAR_COUNTRIES) as RadarCountryCode[]).map((code) => {
                     const c = RADAR_COUNTRIES[code];
                     const isSelected = selectedCountry === code;
@@ -1165,17 +1165,17 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
                         onClick={() => {
                           handleSwitchCountry(code);
                         }}
-                        className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-all duration-200 flex items-center gap-1.5 border cursor-pointer ${
+                        className={`h-9 px-3 rounded-xl text-xs font-semibold transition-all duration-150 flex items-center justify-center gap-2 border cursor-pointer select-none ${
                           isSelected
-                            ? "bg-[#ccff00] text-gray-950 font-bold border-[#ccff00] shadow-[0_0_14px_rgba(204,255,0,0.4)] scale-105"
-                            : "bg-white/5 hover:bg-white/15 text-white/85 border-white/10 hover:border-white/25 hover:text-white"
+                            ? "bg-[#ccff00] text-gray-950 font-bold border-[#ccff00] shadow-[0_0_12px_rgba(204,255,0,0.25)]"
+                            : "bg-white/5 hover:bg-white/10 text-white/85 hover:text-white border-white/10 hover:border-white/20"
                         }`}
                         title={`Cambiar radar a ${c.name}`}
                       >
-                        <span className="text-sm leading-none">{c.flag}</span>
-                        <span>{c.name}</span>
+                        <span className="text-base leading-none shrink-0 drop-shadow-sm">{c.flag}</span>
+                        <span className="truncate tracking-tight">{c.name}</span>
                         {isSelected && (
-                          <span className="w-1.5 h-1.5 rounded-full bg-gray-950 animate-ping shrink-0" />
+                          <span className="w-1.5 h-1.5 rounded-full bg-gray-950 shrink-0" />
                         )}
                       </button>
                     );
@@ -1352,9 +1352,8 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
               className="group relative flex items-center gap-2 px-3.5 py-1.5 sm:px-4 sm:py-2 rounded-full bg-black/90 hover:bg-black backdrop-blur-2xl border border-[#ccff00]/80 hover:border-[#ccff00] text-white text-xs font-semibold shadow-[0_0_24px_rgba(204,255,0,0.35)] transition-all duration-300 hover:scale-[1.03] active:scale-95 cursor-pointer shrink-0"
               title="Añade tu dirección para mostrar tu ubicación en el mapa"
             >
-              <div className="relative flex items-center justify-center w-5 h-5 rounded-full bg-[#ccff00] text-gray-950 font-black shrink-0 shadow-[0_0_10px_#ccff00]/50">
+              <div className="relative flex items-center justify-center w-5 h-5 rounded-full bg-[#ccff00] text-gray-950 font-black shrink-0 shadow-[0_0_8px_rgba(204,255,0,0.5)]">
                 <MapPin className="w-3 h-3 text-gray-950" />
-                <span className="absolute inset-0 rounded-full bg-[#ccff00] animate-ping opacity-75 pointer-events-none" />
               </div>
               <span className="font-semibold text-xs text-white group-hover:text-[#ccff00] transition-colors whitespace-nowrap">
                 Mi Ubicación
