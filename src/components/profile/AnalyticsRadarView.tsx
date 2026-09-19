@@ -149,6 +149,84 @@ export interface ClusterMapBeacon {
   hasFrequent: boolean;
 }
 
+// Crisp Vector SVG Flags (eliminates Windows emoji fallback rendering of country abbreviations like 'EC', 'AR', etc.)
+export function CountrySvgFlag({ 
+  code, 
+  className = "w-5 h-3.5" 
+}: { 
+  code: RadarCountryCode | string; 
+  className?: string; 
+}) {
+  const c = (code || "").toUpperCase();
+  if (c === "EC") {
+    return (
+      <svg className={`shrink-0 rounded-[2px] overflow-hidden border border-white/20 shadow-sm ${className}`} viewBox="0 0 24 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect width="24" height="16" fill="#FFDD00" />
+        <rect y="8" width="24" height="4" fill="#034EA2" />
+        <rect y="12" width="24" height="4" fill="#ED1C24" />
+        <ellipse cx="12" cy="8" rx="2.2" ry="2.6" fill="#034EA2" stroke="#FFDD00" strokeWidth="0.4" />
+        <ellipse cx="12" cy="8" rx="1.6" ry="1.9" fill="#009A44" />
+        <path d="M10.8 6.8 C11.4 6.2 12.6 6.2 13.2 6.8 L12.6 7.4 C12.3 7.1 11.7 7.1 11.4 7.4 Z" fill="#8B5A2B" />
+      </svg>
+    );
+  }
+  if (c === "CO") {
+    return (
+      <svg className={`shrink-0 rounded-[2px] overflow-hidden border border-white/20 shadow-sm ${className}`} viewBox="0 0 24 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect width="24" height="16" fill="#FCD116" />
+        <rect y="8" width="24" height="4" fill="#003893" />
+        <rect y="12" width="24" height="4" fill="#CE1126" />
+      </svg>
+    );
+  }
+  if (c === "AR") {
+    return (
+      <svg className={`shrink-0 rounded-[2px] overflow-hidden border border-white/20 shadow-sm ${className}`} viewBox="0 0 24 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect width="24" height="16" fill="#75AADB" />
+        <rect y="5.33" width="24" height="5.34" fill="#FFFFFF" />
+        <rect y="10.67" width="24" height="5.33" fill="#75AADB" />
+        <circle cx="12" cy="8" r="1.8" fill="#F6B40E" stroke="#85340A" strokeWidth="0.25" />
+        <circle cx="12" cy="8" r="1.1" fill="#FFF275" />
+        <path d="M12 5.5 L12 6.1 M12 9.9 L12 10.5 M9.5 8 L10.1 8 M13.9 8 L14.5 8 M10.2 6.2 L10.6 6.6 M13.4 9.4 L13.8 9.8 M10.2 9.8 L10.6 9.4 M13.4 6.6 L13.8 6.2" stroke="#F6B40E" strokeWidth="0.5" strokeLinecap="round" />
+      </svg>
+    );
+  }
+  if (c === "PE") {
+    return (
+      <svg className={`shrink-0 rounded-[2px] overflow-hidden border border-white/20 shadow-sm ${className}`} viewBox="0 0 24 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect width="24" height="16" fill="#D91023" />
+        <rect x="8" width="8" height="16" fill="#FFFFFF" />
+        <rect x="10.5" y="6.5" width="3" height="3.2" rx="0.5" fill="#C49A45" stroke="#7E5616" strokeWidth="0.3" />
+        <path d="M10.8 6.7 H13.2 V8 H10.8 Z" fill="#4A777A" />
+        <circle cx="12" cy="8.9" r="0.6" fill="#D91023" />
+      </svg>
+    );
+  }
+  if (c === "MX") {
+    return (
+      <svg className={`shrink-0 rounded-[2px] overflow-hidden border border-white/20 shadow-sm ${className}`} viewBox="0 0 24 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect width="24" height="16" fill="#006847" />
+        <rect x="8" width="8" height="16" fill="#FFFFFF" />
+        <rect x="16" width="8" height="16" fill="#CE1126" />
+        <ellipse cx="12" cy="8" rx="1.8" ry="1.6" fill="#8B5A2B" stroke="#4C2F15" strokeWidth="0.2" />
+        <path d="M11 8.5 C11.5 9.2 12.5 9.2 13 8.5" stroke="#006847" strokeWidth="0.4" fill="none" />
+        <circle cx="12" cy="7.2" r="0.4" fill="#F1BF00" />
+      </svg>
+    );
+  }
+  if (c === "CL") {
+    return (
+      <svg className={`shrink-0 rounded-[2px] overflow-hidden border border-white/20 shadow-sm ${className}`} viewBox="0 0 24 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect width="24" height="16" fill="#D52B1E" />
+        <rect width="24" height="8" fill="#FFFFFF" />
+        <rect width="8" height="8" fill="#0039A6" />
+        <path d="M4 2.2 L4.5 3.6 L5.9 3.6 L4.8 4.5 L5.2 5.9 L4 5 L2.8 5.9 L3.2 4.5 L2.1 3.6 L3.5 3.6 Z" fill="#FFFFFF" />
+      </svg>
+    );
+  }
+  return null;
+}
+
 export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
   // Interaction & filter states
   const [hoveredClientId, setHoveredClientId] = useState<string | null>(null);
@@ -233,6 +311,7 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
   // Cinematic Satellite Flight Transition State
   const [flightPhase, setFlightPhase] = useState<'idle' | 'takeoff' | 'approach' | 'landing'>('idle');
   const [flightVector, setFlightVector] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
+  const [flightRotation, setFlightRotation] = useState<number>(0);
   const flightTimeoutsRef = useRef<NodeJS.Timeout[]>([]);
 
   const handleSwitchCountry = useCallback((nextCode: RadarCountryCode) => {
@@ -244,10 +323,12 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
     const dy = toPos.y - fromPos.y;
 
     const length = Math.hypot(dx, dy) || 1;
-    // Stable, gentle drift (24-38px max) to keep map firmly anchored and centered
-    const driftDist = Math.min(38, Math.max(22, length * 0.16));
+    // Ultra-stable, gentle drift (16-26px max) to keep map firmly anchored and centered
+    const driftDist = Math.min(26, Math.max(16, length * 0.12));
     const driftX = Number(((dx / length) * driftDist).toFixed(1));
     const driftY = Number(((dy / length) * driftDist).toFixed(1));
+    // Gyroscopic landing rotation angle: smooth gentle rotation (+1.8deg / -1.8deg) depending on flight heading
+    const rotAngle = dx >= 0 ? 1.8 : -1.8;
 
     // Clear any pending timeouts
     flightTimeoutsRef.current.forEach(t => clearTimeout(t));
@@ -260,28 +341,31 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
     setSelectedClientId(null);
     setExpandedClusterCity(null);
 
-    // 1. TAKEOFF (260ms): Gentle zoom out to 0.86 with subtle directional drift
+    // 1. TAKEOFF (220ms): Ultra-stable elevation to 0.92 with subtle drift & slight tilt
     setFlightVector({ x: driftX, y: driftY });
+    setFlightRotation(rotAngle * 0.4);
     setFlightPhase('takeoff');
 
-    // 2. APEX (260ms): Swap country at high altitude
+    // 2. APEX (220ms): Swap country at high altitude and prime orbital landing angle
     const t1 = setTimeout(() => {
       setSelectedCountry(nextCode);
+      setFlightRotation(rotAngle);
       setFlightPhase('approach');
 
-      // 3. LANDING (30ms later): Smoothly zoom back to 1.0 and dock at center
+      // 3. LANDING (30ms later): Initiate the 1.20s smooth descent and rotation
       const t2 = setTimeout(() => {
         setFlightPhase('landing');
 
-        // 4. TOUCHDOWN (420ms descent)
+        // 4. TOUCHDOWN (1200ms duration = exactly 1.20s of gentle rotation & landing)
         const t3 = setTimeout(() => {
           setFlightPhase('idle');
           setFlightVector({ x: 0, y: 0 });
-        }, 420);
+          setFlightRotation(0);
+        }, 1200);
         flightTimeoutsRef.current.push(t3);
       }, 30);
       flightTimeoutsRef.current.push(t2);
-    }, 260);
+    }, 220);
     flightTimeoutsRef.current.push(t1);
   }, [selectedCountry, flightPhase, setSelectedCountry]);
 
@@ -752,34 +836,34 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
           style={{
             transform: 
               flightPhase === 'takeoff'
-                ? `translate(${-flightVector.x}px, ${-flightVector.y}px) scale(0.86)`
+                ? `translate(${-flightVector.x * 0.5}px, ${-flightVector.y * 0.5}px) scale(0.92) rotate(${-flightRotation * 0.5}deg)`
                 : flightPhase === 'approach'
-                ? `translate(${flightVector.x * 0.5}px, ${flightVector.y * 0.5}px) scale(0.88)`
+                ? `translate(${flightVector.x * 0.4}px, ${flightVector.y * 0.4}px) scale(0.94) rotate(${flightRotation}deg)`
                 : flightPhase === 'landing'
-                ? `translate(0px, 0px) scale(1)`
-                : `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`,
+                ? `translate(0px, 0px) scale(1) rotate(0deg)`
+                : `translate(${pan.x}px, ${pan.y}px) scale(${zoom}) rotate(0deg)`,
             transformOrigin: "center center",
             opacity: 
               flightPhase === 'takeoff' 
-                ? 0.15 
+                ? 0.5 
                 : flightPhase === 'approach'
-                ? 0.25
+                ? 0.65
                 : isMapLoaded 
                 ? 1 
                 : 0,
             filter: 
               flightPhase === 'takeoff' || flightPhase === 'approach'
-                ? "blur(2px)" 
+                ? "blur(1px)" 
                 : "blur(0px)",
             transition: 
               isDragging 
                 ? "none" 
                 : flightPhase === 'takeoff'
-                ? "transform 0.26s cubic-bezier(0.3, 0, 0.7, 0.3), opacity 0.26s ease, filter 0.26s ease"
+                ? "transform 0.22s cubic-bezier(0.25, 1, 0.5, 1), opacity 0.22s ease, filter 0.22s ease"
                 : flightPhase === 'approach'
                 ? "none"
                 : flightPhase === 'landing'
-                ? "transform 0.42s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.35s ease-out, filter 0.35s ease-out"
+                ? "transform 1.2s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.45s ease-out, filter 0.45s ease-out"
                 : "transform 0.5s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.3s ease",
             aspectRatio: `${activeCountry.width} / ${activeCountry.height}`,
           }}
@@ -843,9 +927,9 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
                   setExpandedClusterCity(cluster.cityKey);
                 }}
               >
-                {/* Pulsing Ground Halo */}
+                {/* Ground Halo (Soft static ambient glow - zero blinking) */}
                 <div className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2 pointer-events-none">
-                  <span className="block rounded-full w-5 h-5 bg-[#ccff00] animate-ping shadow-[0_0_18px_#ccff00]" />
+                  <span className="block rounded-full w-4 h-4 bg-[#ccff00]/40 blur-[2px] shadow-[0_0_12px_#ccff00]" />
                 </div>
 
                 {/* Cluster Head & Stem */}
@@ -958,18 +1042,18 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
                   }
                 }}
               >
-                {/* Pulsing Ground Halo */}
+                {/* Ground Halo (Soft static ambient glow - zero blinking) */}
                 <div className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2 pointer-events-none">
-                  <span className={`block rounded-full ${
+                  <span className={`block rounded-full blur-[2px] ${
                     isSelf 
-                      ? "w-4 h-4 bg-emerald-400 animate-ping shadow-[0_0_14px_#34d399]" 
+                      ? "w-4 h-4 bg-emerald-400/40 shadow-[0_0_12px_#34d399]" 
                       : client.isAnonymous
-                      ? "w-3.5 h-3.5 bg-sky-400 animate-ping shadow-[0_0_14px_#38bdf8]"
+                      ? "w-3.5 h-3.5 bg-sky-400/40 shadow-[0_0_10px_#38bdf8]"
                       : activeStage === "cart" && client.hasCart
-                      ? "w-4 h-4 bg-rose-500 animate-ping shadow-[0_0_18px_#f43f5e]"
+                      ? "w-4 h-4 bg-rose-500/40 shadow-[0_0_14px_#f43f5e]"
                       : activeStage === "frequent" && isStageMatch
-                      ? "w-4 h-4 bg-amber-400 animate-ping shadow-[0_0_18px_#f59e0b]"
-                      : "w-3 h-3 bg-[#ccff00] animate-ping shadow-[0_0_12px_#ccff00]"
+                      ? "w-4 h-4 bg-amber-400/40 shadow-[0_0_14px_#f59e0b]"
+                      : "w-3 h-3 bg-[#ccff00]/40 shadow-[0_0_10px_#ccff00]"
                   }`} />
                 </div>
 
@@ -1047,7 +1131,7 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
                   <div className="absolute bottom-full mb-3 left-1/2 -translate-x-1/2 w-48 p-2.5 rounded-2xl bg-[#0b131b]/95 backdrop-blur-xl border border-sky-400/50 shadow-[0_10px_30px_rgba(56,189,248,0.25)] z-50 pointer-events-none space-y-1.5 animate-fade-in text-left">
                     <div className="flex items-center justify-between border-b border-white/10 pb-1">
                       <div className="flex items-center gap-1.5">
-                        <span className="w-2 h-2 rounded-full bg-sky-400 animate-pulse" />
+                        <span className="w-2 h-2 rounded-full bg-sky-400 shadow-[0_0_6px_#38bdf8]" />
                         <span className="text-[11px] font-bold text-white font-sans">Visitante Anónimo</span>
                       </div>
                       <span className="text-[8.5px] font-mono px-1.5 py-0.5 rounded bg-sky-400/20 text-sky-300 font-bold border border-sky-400/30">
@@ -1149,8 +1233,9 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
                     <Globe className="w-3 h-3 text-[#ccff00]" />
                     <span>País Seleccionado</span>
                   </div>
-                  <span className="text-[9.5px] font-mono text-[#ccff00] bg-[#ccff00]/10 px-2 py-0.5 rounded-full border border-[#ccff00]/20 font-bold">
-                    {activeCountry.flag} {activeCountry.name}
+                  <span className="text-[9.5px] font-mono text-[#ccff00] bg-[#ccff00]/10 px-2.5 py-0.5 rounded-full border border-[#ccff00]/20 font-bold flex items-center gap-1.5">
+                    <CountrySvgFlag code={selectedCountry} className="w-4 h-2.5 rounded-[2px] shadow-sm shrink-0" />
+                    <span>{activeCountry.name}</span>
                   </span>
                 </div>
 
@@ -1172,8 +1257,8 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
                         }`}
                         title={`Cambiar radar a ${c.name}`}
                       >
-                        <span className="text-base leading-none shrink-0 drop-shadow-sm">{c.flag}</span>
-                        <span className="truncate tracking-tight">{c.name}</span>
+                        <CountrySvgFlag code={code} className="w-5 h-3.5 rounded-[2px] shadow-sm shrink-0" />
+                        <span className="truncate tracking-tight font-medium">{c.name}</span>
                         {isSelected && (
                           <span className="w-1.5 h-1.5 rounded-full bg-gray-950 shrink-0" />
                         )}
@@ -2012,7 +2097,8 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
             <div className="rounded-2xl bg-black/60 backdrop-blur-xl border border-white/15 p-3.5 shadow-xl flex flex-col justify-between">
               <div className="flex items-center justify-between text-[11px] font-bold text-white mb-1">
                 <span className="flex items-center gap-1.5">
-                  <MapPin className="w-3 h-3 text-[#ccff00]" /> {activeCountry.name} ({activeCountry.flag})
+                  <CountrySvgFlag code={selectedCountry} className="w-4 h-3 rounded-[2px] shadow-sm shrink-0" />
+                  <span className="text-white font-bold">{activeCountry.name}</span>
                 </span>
                 <span className="text-[9px] font-mono text-white/50">{activeCountry.entityLabel}</span>
               </div>
