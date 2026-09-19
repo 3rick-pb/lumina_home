@@ -18,6 +18,9 @@ import {
   Users, 
   Sparkles,
   ChevronRight,
+  ChevronDown,
+  Globe,
+  Check,
   X,
   Layers
 } from "lucide-react";
@@ -99,6 +102,16 @@ export const ECUADOR_PROVINCE_COORDINATES: Record<string, { x: number; y: number
   "morona santiago": { x: 58.0, y: 56.0, province: "Morona Santiago", region: "Oriente" },
   "zamora": { x: 48.0, y: 83.0, province: "Zamora Chinchipe", region: "Oriente" },
   "zamora chinchipe": { x: 48.0, y: 83.0, province: "Zamora Chinchipe", region: "Oriente" }
+};
+
+// Continental coordinate anchors for cinematic satellite flight vectors between countries
+export const COUNTRY_GEO_VECTORS: Record<RadarCountryCode, { x: number; y: number }> = {
+  MX: { x: -320, y: -180 }, // Northwest (North America)
+  CO: { x: 40,   y: -110 }, // North (South America)
+  EC: { x: -60,  y: -30 },  // Equator / Center-North
+  PE: { x: -30,  y: 80 },   // Central Andes
+  CL: { x: -80,  y: 280 },  // Southwest / Pacific Margin
+  AR: { x: 110,  y: 260 },  // Southeast / Atlantic Margin
 };
 
 // Helper to extract full clean city name (e.g. "Santo Domingo", "Quito") before parentheses or hyphens
@@ -206,6 +219,90 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
   const selectedCountry = useRadarStore((state) => state.selectedCountry);
   const setSelectedCountry = useRadarStore((state) => state.setSelectedCountry);
   const activeCountry = RADAR_COUNTRIES[selectedCountry] || RADAR_COUNTRIES.EC;
+
+  const [isCountryMenuOpen, setIsCountryMenuOpen] = useState<boolean>(false);
+  const countryMenuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleCloseCountryMenu = (e: MouseEvent) => {
+      if (countryMenuRef.current && !countryMenuRef.current.contains(e.target as Node)) {
+        setIsCountryMenuOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleCloseCountryMenu);
+    return () => document.removeEventListener("mousedown", handleCloseCountryMenu);
+  }, []);
+
+  // Preload all 6 country 2.8K maps into browser memory for zero-lag flyover switches
+  useEffect(() => {
+    (Object.keys(RADAR_COUNTRIES) as RadarCountryCode[]).forEach((code) => {
+      const meta = RADAR_COUNTRIES[code];
+      if (meta?.mapWebp) {
+        const img = new Image();
+        img.src = meta.mapWebp;
+      }
+    });
+  }, []);
+
+  // Cinematic Satellite Flight Transition State
+  const [flightPhase, setFlightPhase] = useState<'idle' | 'takeoff' | 'approach' | 'landing'>('idle');
+  const [flightVector, setFlightVector] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
+  const flightTimeoutsRef = useRef<NodeJS.Timeout[]>([]);
+
+  const handleSwitchCountry = useCallback((nextCode: RadarCountryCode) => {
+    if (nextCode === selectedCountry || flightPhase !== 'idle') return;
+
+    const fromPos = COUNTRY_GEO_VECTORS[selectedCountry] || { x: 0, y: 0 };
+    const toPos = COUNTRY_GEO_VECTORS[nextCode] || { x: 0, y: 0 };
+    const dx = toPos.x - fromPos.x;
+    const dy = toPos.y - fromPos.y;
+
+    const length = Math.hypot(dx, dy) || 1;
+    const travelDist = Math.min(320, Math.max(180, length * 1.15));
+    const travelX = Number(((dx / length) * travelDist).toFixed(1));
+    const travelY = Number(((dy / length) * travelDist).toFixed(1));
+
+    // Clear any pending timeouts
+    flightTimeoutsRef.current.forEach(t => clearTimeout(t));
+    flightTimeoutsRef.current = [];
+
+    // Reset interaction states
+    setPan({ x: 0, y: 0 });
+    setZoom(1);
+    setSearchQuery("");
+    setSelectedClientId(null);
+    setExpandedClusterCity(null);
+
+    // 1. TAKEOFF: Zoom out (away) while drifting laterally along flight path
+    setFlightVector({ x: travelX, y: travelY });
+    setFlightPhase('takeoff');
+
+    // 2. APEX (380ms): Switch country, instantaneously position at high-altitude arrival vector
+    const t1 = setTimeout(() => {
+      setSelectedCountry(nextCode);
+      setFlightPhase('approach');
+
+      // 3. LANDING (40ms later): Zoom in and glide to center, landing on the selected map
+      const t2 = setTimeout(() => {
+        setFlightPhase('landing');
+
+        // 4. TOUCHDOWN & SETTLE (680ms descent)
+        const t3 = setTimeout(() => {
+          setFlightPhase('idle');
+          setFlightVector({ x: 0, y: 0 });
+        }, 680);
+        flightTimeoutsRef.current.push(t3);
+      }, 40);
+      flightTimeoutsRef.current.push(t2);
+    }, 380);
+    flightTimeoutsRef.current.push(t1);
+  }, [selectedCountry, flightPhase, setSelectedCountry]);
+
+  useEffect(() => {
+    return () => {
+      flightTimeoutsRef.current.forEach(t => clearTimeout(t));
+    };
+  }, []);
 
   const currentUser = useUserStore((state) => state.user);
   const userAddress = useUserStore((state) => state.address);
@@ -660,13 +757,41 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
           isDragging ? "cursor-grabbing" : "cursor-grab"
         }`}
       >
-        {/* Zoomed & Panned 3D Terrain Wrapper */}
+        {/* Zoomed & Panned 3D Terrain Wrapper with Cinematic Satellite Flight */}
         <div 
           ref={mapLayerTransformRef}
           style={{
-            transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`,
+            transform: 
+              flightPhase === 'takeoff'
+                ? `translate(${-flightVector.x * 0.9}px, ${-flightVector.y * 0.9}px) scale(0.32)`
+                : flightPhase === 'approach'
+                ? `translate(${flightVector.x * 0.9}px, ${flightVector.y * 0.9}px) scale(0.32)`
+                : flightPhase === 'landing'
+                ? `translate(0px, 0px) scale(1)`
+                : `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`,
             transformOrigin: "center center",
-            transition: isDragging ? "none" : "transform 0.6s cubic-bezier(0.16, 1, 0.3, 1)",
+            opacity: 
+              flightPhase === 'takeoff' 
+                ? 0.2 
+                : flightPhase === 'approach'
+                ? 0.3
+                : isMapLoaded 
+                ? 1 
+                : 0,
+            filter: 
+              flightPhase === 'takeoff' || flightPhase === 'approach'
+                ? "blur(4px)" 
+                : "blur(0px)",
+            transition: 
+              isDragging 
+                ? "none" 
+                : flightPhase === 'takeoff'
+                ? "transform 0.38s cubic-bezier(0.35, 0, 0.65, 0.2), opacity 0.38s ease, filter 0.38s ease"
+                : flightPhase === 'approach'
+                ? "none"
+                : flightPhase === 'landing'
+                ? "transform 0.68s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.45s ease-out, filter 0.45s ease-out"
+                : "transform 0.6s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.3s ease",
             aspectRatio: `${activeCountry.width} / ${activeCountry.height}`,
           }}
           className="relative w-[780px] lg:w-[920px] max-w-full flex items-center justify-center pointer-events-auto shrink-0"
@@ -973,26 +1098,104 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
       </div>
 
       {/* ========================================================================= */}
-      {/* 3. TOP COMMAND BAR (Symmetrical Aerospace HUD Island & Country Switcher)  */}
+      {/* 3. TOP FLOATING COMMAND BAR (Aesthetic Country Selector + Modes + Search)  */}
       {/* ========================================================================= */}
-      <div className="absolute top-4 left-4 sm:left-6 right-4 sm:right-6 lg:right-[22.5rem] z-50 pointer-events-none flex flex-col items-center gap-2.5">
+      <div className="absolute top-3 sm:top-4 left-3 sm:left-6 right-3 sm:right-6 lg:right-96 z-50 flex flex-col gap-2.5 pointer-events-none">
         
-        {/* Row 1: Unified Horizontal Command Dock */}
-        <div className="w-full flex items-center justify-between gap-3 pointer-events-auto">
+        {/* Row 1: Unified Country Navigator Command Strip */}
+        <div className="flex flex-wrap items-center justify-between gap-2.5 w-full">
           
-          {/* Brand & Live Indicator */}
-          <div className="flex items-center gap-2 px-3.5 py-2 rounded-2xl bg-black/85 backdrop-blur-2xl border border-white/15 shadow-2xl shrink-0 select-none">
-            <div className="relative flex items-center justify-center w-5 h-5 rounded-full bg-[#ccff00] text-gray-950 shadow-[0_0_12px_#ccff00]/60">
-              <span className="w-2 h-2 rounded-full bg-gray-950 animate-pulse" />
-            </div>
-            <span className="font-mono font-black text-xs tracking-wider text-white">RADAR</span>
-            <span className="text-[9px] font-mono font-bold text-[#ccff00] px-1.5 py-0.5 rounded-md bg-[#ccff00]/10 border border-[#ccff00]/25">
-              EN VIVO
-            </span>
+          {/* Custom Aesthetic Country Dropdown Selector */}
+          <div className="relative pointer-events-auto" ref={countryMenuRef}>
+            <button
+              type="button"
+              onClick={() => setIsCountryMenuOpen(!isCountryMenuOpen)}
+              className="h-10 sm:h-11 px-3.5 sm:px-4 bg-black/85 hover:bg-black/95 text-white border border-white/20 hover:border-[#ccff00]/60 rounded-2xl shadow-2xl backdrop-blur-2xl transition-all duration-200 flex items-center gap-2.5 group cursor-pointer"
+              title="Cambiar país del radar"
+            >
+              <span className="text-xl sm:text-2xl leading-none drop-shadow">{activeCountry.flag}</span>
+              <div className="flex flex-col text-left">
+                <div className="flex items-center gap-1.5">
+                  <span className="text-xs sm:text-sm font-bold tracking-tight text-white group-hover:text-[#ccff00] transition-colors leading-none">
+                    {activeCountry.name}
+                  </span>
+                  <span className="text-[9px] font-mono font-semibold px-1.5 py-0.5 rounded-full bg-[#ccff00]/15 text-[#ccff00] border border-[#ccff00]/30 leading-none">
+                    {activeCountry.entityLabel}
+                  </span>
+                </div>
+                <span className="text-[9px] text-white/50 font-mono leading-none mt-1">
+                  {connectedClients.length} {connectedClients.length === 1 ? 'cliente activo' : 'clientes activos'} · {activeCountry.currency} ({activeCountry.currencySymbol})
+                </span>
+              </div>
+              <ChevronDown className={`w-4 h-4 text-white/50 group-hover:text-[#ccff00] transition-transform duration-200 ml-1 shrink-0 ${isCountryMenuOpen ? 'rotate-180 text-[#ccff00]' : ''}`} />
+            </button>
+
+            {/* Dropdown Menu Modal */}
+            {isCountryMenuOpen && (
+              <div className="absolute top-full left-0 mt-2 w-72 sm:w-84 bg-[#0c0e12]/95 backdrop-blur-3xl border border-white/20 rounded-3xl shadow-[0_25px_60px_rgba(0,0,0,0.9)] p-2 z-[70] animate-in fade-in zoom-in-95 duration-150">
+                <div className="px-3 py-2 border-b border-white/10 mb-1 flex items-center justify-between">
+                  <div className="flex items-center gap-1.5">
+                    <Globe className="w-3.5 h-3.5 text-[#ccff00]" />
+                    <span className="text-[10px] uppercase font-mono font-bold tracking-wider text-white/70">Países del Radar</span>
+                  </div>
+                  <span className="text-[9px] font-mono text-[#ccff00] bg-[#ccff00]/10 px-2 py-0.5 rounded-full border border-[#ccff00]/20">
+                    6 Regiones
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-1 gap-1">
+                  {(Object.keys(RADAR_COUNTRIES) as RadarCountryCode[]).map((code) => {
+                    const c = RADAR_COUNTRIES[code];
+                    const isSelected = selectedCountry === code;
+                    return (
+                      <button
+                        key={code}
+                        type="button"
+                        onClick={() => {
+                          handleSwitchCountry(code);
+                          setIsCountryMenuOpen(false);
+                        }}
+                        className={`w-full flex items-center justify-between px-3 py-2 rounded-2xl transition-all duration-150 text-left cursor-pointer group ${
+                          isSelected
+                            ? "bg-[#ccff00] text-gray-950 font-bold shadow-[0_0_20px_rgba(204,255,0,0.4)] scale-[1.01]"
+                            : "text-white/80 hover:text-white hover:bg-white/10"
+                        }`}
+                      >
+                        <div className="flex items-center gap-3">
+                          <span className="text-2xl leading-none drop-shadow">{c.flag}</span>
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <span className={`text-xs sm:text-sm leading-tight ${isSelected ? 'font-black text-gray-950' : 'font-semibold text-white'}`}>
+                                {c.name}
+                              </span>
+                              {isSelected && (
+                                <span className="w-1.5 h-1.5 rounded-full bg-gray-950 animate-ping" />
+                              )}
+                            </div>
+                            <span className={`text-[10px] font-mono block mt-0.5 ${isSelected ? 'text-gray-900/80 font-semibold' : 'text-white/50'}`}>
+                              {c.entityLabel}
+                            </span>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                          <span className={`text-[9.5px] font-mono px-2 py-0.5 rounded-lg ${
+                            isSelected ? 'bg-black/20 text-gray-950 font-bold' : 'bg-white/5 text-white/50 border border-white/10'
+                          }`}>
+                            {c.currency} ({c.currencySymbol})
+                          </span>
+                          {isSelected && <Check className="w-4 h-4 text-gray-950 stroke-[3]" />}
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
           </div>
 
-          {/* Central Country Selector Dock (Full Names, Crisp Flags, ZERO abbreviations) */}
-          <div className="flex items-center gap-1 p-1 bg-black/85 backdrop-blur-2xl border border-white/15 rounded-2xl shadow-2xl overflow-x-auto select-none max-w-full" style={{ scrollbarWidth: 'none' }}>
+          {/* Quick Segmented Pill Strip with FULL NAMES (Visible on xl+ screens, NO acronyms!) */}
+          <div className="hidden xl:flex items-center gap-1 p-1 bg-black/80 backdrop-blur-2xl border border-white/15 rounded-2xl shadow-xl pointer-events-auto">
             {(Object.keys(RADAR_COUNTRIES) as RadarCountryCode[]).map((code) => {
               const cMeta = RADAR_COUNTRIES[code];
               const isActive = selectedCountry === code;
@@ -1000,43 +1203,38 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
                 <button
                   key={code}
                   type="button"
-                  onClick={() => {
-                    setSelectedCountry(code);
-                    setIsMapLoaded(false);
-                    handleResetView();
-                    setSearchQuery("");
-                  }}
+                  onClick={() => handleSwitchCountry(code)}
                   className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all duration-200 flex items-center gap-1.5 shrink-0 cursor-pointer ${
                     isActive
-                      ? "bg-[#ccff00] text-gray-950 font-bold shadow-[0_0_16px_rgba(204,255,0,0.5)] scale-[1.02]"
+                      ? "bg-[#ccff00] text-gray-950 font-bold shadow-[0_0_16px_rgba(204,255,0,0.5)]"
                       : "text-white/70 hover:text-white hover:bg-white/10"
                   }`}
                   title={`Ver radar topográfico 3D de ${cMeta.name}`}
                 >
-                  <span className="text-base leading-none drop-shadow">{cMeta.flag}</span>
-                  <span className="tracking-tight">{cMeta.name}</span>
+                  <span className="text-sm leading-none">{cMeta.flag}</span>
+                  <span>{cMeta.name}</span>
                 </button>
               );
             })}
           </div>
 
-          {/* Right Action: Density Mode Selector */}
-          <div className="flex items-center bg-black/85 backdrop-blur-2xl border border-white/15 rounded-2xl p-1 shadow-2xl text-xs font-semibold text-white shrink-0">
+          {/* Right Controls: Density Mode Selector (Disperso / Agrupado) */}
+          <div className="flex items-center bg-black/80 backdrop-blur-2xl border border-white/15 rounded-2xl p-1 shadow-2xl text-xs font-semibold text-white pointer-events-auto shrink-0">
             <button
               type="button"
               onClick={() => {
                 setClusterMode("dispersed");
                 setExpandedClusterCity(null);
               }}
-              className={`px-3 py-1.5 rounded-xl transition-all duration-200 flex items-center gap-1.5 cursor-pointer ${
+              className={`px-3 py-1.5 rounded-xl transition-all duration-300 flex items-center gap-1.5 cursor-pointer ${
                 clusterMode === "dispersed"
-                  ? "bg-[#ccff00] text-gray-950 font-bold shadow-[0_0_12px_rgba(204,255,0,0.5)]"
-                  : "text-white/60 hover:text-white hover:bg-white/10"
+                  ? "bg-[#ccff00] text-gray-950 font-bold shadow-[0_0_14px_rgba(204,255,0,0.5)]"
+                  : "text-white/70 hover:text-white hover:bg-white/10"
               }`}
-              title="Pines individuales dispersos por ciudad"
+              title="Ver cada cliente con su propia estaca dispersa en la ciudad"
             >
-              <Sparkles className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">Disperso</span>
+              <Sparkles className="w-3.5 h-3.5 shrink-0" />
+              <span>Disperso</span>
             </button>
             <button
               type="button"
@@ -1044,192 +1242,227 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
                 setClusterMode("clustered");
                 setExpandedClusterCity(null);
               }}
-              className={`px-3 py-1.5 rounded-xl transition-all duration-200 flex items-center gap-1.5 cursor-pointer ${
+              className={`px-3 py-1.5 rounded-xl transition-all duration-300 flex items-center gap-1.5 cursor-pointer ${
                 clusterMode === "clustered"
-                  ? "bg-[#ccff00] text-gray-950 font-bold shadow-[0_0_12px_rgba(204,255,0,0.5)]"
-                  : "text-white/60 hover:text-white hover:bg-white/10"
+                  ? "bg-[#ccff00] text-gray-950 font-bold shadow-[0_0_14px_rgba(204,255,0,0.5)]"
+                  : "text-white/70 hover:text-white hover:bg-white/10"
               }`}
-              title="Agrupar pines en clúster numérico"
+              title="Agrupar ciudades con múltiples clientes en un pin numérico para evitar saturación"
             >
-              <Layers className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">Agrupar {clusterPins.length > 0 ? `(${clusterPins.length})` : ""}</span>
+              <Layers className="w-3.5 h-3.5 shrink-0" />
+              <span>Agrupar {clusterPins.length > 0 ? `(${clusterPins.length})` : ""}</span>
             </button>
           </div>
         </div>
 
-        {/* Row 2: Centered Search Bar & Live Teleport Popover */}
-        <div 
-          ref={searchContainerRef}
-          className="relative w-full max-w-lg pointer-events-auto"
-        >
-          <div className={`flex items-center bg-black/80 backdrop-blur-2xl border rounded-full px-4 py-2 shadow-2xl text-xs text-white w-full transition-all duration-300 ${
-            isSearchFocused 
-              ? "border-[#ccff00] ring-2 ring-[#ccff00]/30 shadow-[0_0_24px_rgba(204,255,0,0.25)] bg-black/95" 
-              : "border-white/15 hover:border-white/30"
-          }`}>
-            <Search className={`w-3.5 h-3.5 mr-2 shrink-0 transition-colors duration-200 ${isSearchFocused ? "text-[#ccff00]" : "text-white/50"}`} />
-            
-            <input 
-              type="text"
-              value={searchQuery}
-              onFocus={() => setIsSearchFocused(true)}
-              onChange={e => setSearchQuery(e.target.value)}
-              placeholder={`Buscar ciudad o provincia en ${activeCountry.name}...`}
-              className="bg-transparent border-none outline-none text-xs text-white placeholder:text-white/45 flex-1 min-w-0 font-sans"
-            />
-
-            {searchQuery && (
-              <button 
-                onClick={() => {
-                  setSearchQuery("");
-                  handleResetView();
-                }}
-                className="w-4 h-4 rounded-full bg-white/20 hover:bg-white/40 text-white flex items-center justify-center transition-all cursor-pointer mr-2 shrink-0"
-                title="Limpiar búsqueda"
-              >
-                <X className="w-2.5 h-2.5" />
-              </button>
-            )}
-
-            <div className="flex items-center gap-1.5 pl-2.5 border-l border-white/10 shrink-0">
-              <span className={`w-2 h-2 rounded-full transition-colors ${
-                searchQuery ? "bg-[#ccff00] shadow-[0_0_8px_#ccff00]" : "bg-emerald-400 animate-pulse"
-              }`} />
-              <span className="text-[10px] font-mono text-white/80 font-semibold">
-                {searchQuery ? `${filteredActualClients.length} en radar` : activeCountry.entityLabel}
-              </span>
-            </div>
-          </div>
-
-          {/* FLOATING LIVE INTERACTIVE SUGGESTER & REGIONAL TELEPORT POPOVER */}
-          {isSearchFocused && (
-            <div className="absolute top-full left-0 right-0 mt-2 rounded-3xl bg-[#111614]/95 backdrop-blur-3xl border border-white/20 p-4 shadow-[0_25px_60px_rgba(0,0,0,0.9)] z-[70] animate-fade-in space-y-3.5">
+        {/* Row 2: Search + Mode Controls (NO RADAR TAG, NO RADAR EN VIVO) */}
+        <div className="flex items-center justify-between gap-3 w-full">
+          <div 
+            ref={searchContainerRef}
+            className="relative max-w-md w-full pointer-events-auto"
+          >
+            {/* Main Search Pill (CLEAN, NO "RADAR EN VIVO" TAG) */}
+            <div className={`flex items-center bg-black/75 backdrop-blur-2xl border rounded-full px-3.5 py-2 shadow-2xl text-xs text-white w-full transition-all duration-300 ${
+              isSearchFocused 
+                ? "border-[#ccff00] ring-2 ring-[#ccff00]/30 shadow-[0_0_24px_rgba(204,255,0,0.25)] bg-black/90" 
+                : "border-white/15 hover:border-white/30"
+            }`}>
+              <Search className={`w-3.5 h-3.5 mx-2 shrink-0 transition-colors duration-200 ${isSearchFocused ? "text-[#ccff00]" : "text-white/50"}`} />
               
-              {/* 1. Quick Regional Filters */}
-              <div className="space-y-1.5">
-                <div className="flex items-center justify-between text-[10px] font-mono text-white/50 font-bold uppercase tracking-wider">
-                  <span>Regiones Naturales</span>
-                  {searchQuery && (
-                    <button 
-                      onClick={() => { setSearchQuery(""); handleResetView(); }} 
-                      className="text-[#ccff00] hover:underline normal-case font-sans cursor-pointer text-[11px]"
-                    >
-                      Ver todo {activeCountry.name}
-                    </button>
-                  )}
-                </div>
-                <div className="flex items-center gap-1.5 flex-wrap">
-                  {(activeCountry.naturalRegions || []).map((reg) => {
-                    const isActive = searchQuery.toLowerCase() === reg.query.toLowerCase() || searchQuery.toLowerCase() === reg.name.toLowerCase();
-                    return (
-                      <button
-                        key={reg.name}
-                        onClick={() => {
-                          setSearchQuery(reg.query);
-                        }}
-                        className={`px-2.5 py-1 rounded-full text-[11px] font-semibold transition-all flex items-center gap-1.5 border cursor-pointer ${
-                          isActive
-                            ? "bg-[#ccff00] text-gray-950 font-bold border-[#ccff00] shadow-[0_0_12px_rgba(204,255,0,0.4)]"
-                            : "bg-white/5 hover:bg-white/15 text-white/80 border-white/10 hover:border-white/20 hover:text-white"
-                        }`}
-                      >
-                        <span>{reg.icon}</span>
-                        <span>{reg.name}</span>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
+              <input 
+                type="text"
+                value={searchQuery}
+                onFocus={() => setIsSearchFocused(true)}
+                onChange={e => setSearchQuery(e.target.value)}
+                placeholder={`Buscar ciudad o provincia en ${activeCountry.name}...`}
+                className="bg-transparent border-none outline-none text-xs text-white placeholder:text-white/45 flex-1 min-w-0 font-sans"
+              />
 
-              {/* 2. Key Cities Quick Teleport */}
-              <div className="space-y-1.5 pt-2 border-t border-white/10">
-                <div className="flex items-center justify-between text-[10px] font-mono text-white/50 font-bold uppercase tracking-wider">
-                  <span>Explorar Ciudades</span>
-                  <span className="text-[9.5px] font-mono text-[#ccff00] flex items-center gap-1">
-                    <MapPin className="w-2.5 h-2.5" /> Clic para enfocar
-                  </span>
-                </div>
-                <div className="flex items-center gap-1.5 flex-wrap">
-                  {activeCountry.majorCities.map((city) => {
-                    const coords = resolveMultiCountryCoordinates(city, selectedCountry);
-                    const clientMatch = connectedClients.find(c => c && c.city && c.city.toLowerCase().includes(city.toLowerCase()));
-                    return (
-                      <button
-                        key={city}
-                        onClick={() => {
-                          setSearchQuery(city);
-                          if (coords.x >= 0 && coords.y >= 0) {
-                            focusOnLocation(coords.x, coords.y, 1.8);
-                          }
-                          if (clientMatch) {
-                            setSelectedClientId(clientMatch.id);
-                          }
-                          setIsSearchFocused(false);
-                        }}
-                        className="px-2.5 py-1 rounded-xl text-[10.5px] bg-white/5 hover:bg-[#ccff00]/15 hover:border-[#ccff00]/40 text-white/85 hover:text-[#ccff00] border border-white/10 transition-all flex items-center gap-1 cursor-pointer group"
-                      >
-                        <MapPin className="w-2.5 h-2.5 opacity-60 group-hover:opacity-100 group-hover:text-[#ccff00]" />
-                        <span>{city}</span>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {/* 3. Live Matching Clients List */}
-              {searchQuery.trim().length > 0 && (
-                <div className="space-y-1.5 pt-2 border-t border-white/10">
-                  <div className="flex items-center justify-between text-[10px] font-mono text-white/50 font-bold uppercase tracking-wider">
-                    <span>Coincidencias en Vivo ({filteredActualClients.length})</span>
-                  </div>
-                  {filteredActualClients.length === 0 ? (
-                    <div className="py-3 text-center text-white/50 text-[11px]">
-                      No hay clientes conectados en &quot;{searchQuery}&quot;
-                    </div>
-                  ) : (
-                    <div className="max-h-44 overflow-y-auto space-y-1 pr-1" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
-                      {filteredActualClients.map((client) => (
-                        <div
-                          key={client.id}
-                          onClick={() => {
-                            setSelectedClientId(client.id);
-                            focusOnLocation(client.x, client.y, 1.9);
-                            setIsSearchFocused(false);
-                          }}
-                          className="p-2 rounded-xl bg-white/5 hover:bg-white/15 border border-white/10 hover:border-[#ccff00]/40 flex items-center justify-between cursor-pointer transition-all group"
-                        >
-                          <div className="flex items-center gap-2 truncate">
-                            <BlobatarAvatar
-                              name={client.id || client.name}
-                              size={26}
-                              animate="hover"
-                              background="circle"
-                              className="shrink-0"
-                            />
-                            <div className="truncate">
-                              <p className="text-xs font-semibold text-white group-hover:text-[#ccff00] transition-colors truncate">
-                                {cleanClientName(client.name)}
-                              </p>
-                              <p className="text-[10px] text-white/50 truncate">
-                                {client.city || activeCountry.name} • <span className="font-mono text-white/80">${client.totalSpent || 0}</span>
-                              </p>
-                            </div>
-                          </div>
-                          <span className="text-[9.5px] font-mono px-2 py-0.5 rounded bg-white/10 text-white/80 group-hover:bg-[#ccff00] group-hover:text-gray-950 font-bold transition-all shrink-0">
-                            Enfocar &rarr;
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
+              {searchQuery && (
+                <button 
+                  onClick={() => {
+                    setSearchQuery("");
+                    handleResetView();
+                  }}
+                  className="w-4 h-4 rounded-full bg-white/20 hover:bg-white/40 text-white flex items-center justify-center transition-all cursor-pointer mr-1.5 shrink-0"
+                  title="Limpiar búsqueda"
+                >
+                  <X className="w-2.5 h-2.5" />
+                </button>
               )}
 
+              <div className="flex items-center gap-1.5 pl-2 border-l border-white/10 shrink-0">
+                <span className={`w-2 h-2 rounded-full transition-colors ${
+                  searchQuery ? "bg-[#ccff00] shadow-[0_0_8px_#ccff00]" : "bg-emerald-400 animate-pulse"
+                }`} />
+                <span className="text-[10px] font-mono text-white/80 font-semibold">
+                  {searchQuery ? `${filteredActualClients.length} en radar` : activeCountry.entityLabel}
+                </span>
+              </div>
             </div>
-          )}
+
+            {/* FLOATING LIVE INTERACTIVE SUGGESTER & REGIONAL TELEPORT POPOVER */}
+            {isSearchFocused && (
+              <div className="absolute top-full left-0 right-0 mt-2 rounded-3xl bg-[#111614]/95 backdrop-blur-3xl border border-white/20 p-4 shadow-[0_25px_60px_rgba(0,0,0,0.9)] z-[70] animate-fade-in space-y-3.5">
+                
+                {/* 1. Quick Regional Filters */}
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between text-[10px] font-mono text-white/50 font-bold uppercase tracking-wider">
+                    <span>Regiones Naturales</span>
+                    {searchQuery && (
+                      <button 
+                        onClick={() => { setSearchQuery(""); handleResetView(); }} 
+                        className="text-[#ccff00] hover:underline normal-case font-sans cursor-pointer text-[11px]"
+                      >
+                        Ver todo {activeCountry.name}
+                      </button>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    {(activeCountry.naturalRegions || []).map((reg) => {
+                      const isActive = searchQuery.toLowerCase() === reg.query.toLowerCase() || searchQuery.toLowerCase() === reg.name.toLowerCase();
+                      return (
+                        <button
+                          key={reg.name}
+                          onClick={() => {
+                            setSearchQuery(reg.query);
+                          }}
+                          className={`px-2.5 py-1 rounded-full text-[11px] font-semibold transition-all flex items-center gap-1.5 border cursor-pointer ${
+                            isActive
+                              ? "bg-[#ccff00] text-gray-950 font-bold border-[#ccff00] shadow-[0_0_12px_rgba(204,255,0,0.4)]"
+                              : "bg-white/5 hover:bg-white/15 text-white/80 border-white/10 hover:border-white/20 hover:text-white"
+                          }`}
+                        >
+                          <span>{reg.icon}</span>
+                          <span>{reg.name}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* 2. Key Cities Quick Teleport */}
+                <div className="space-y-1.5 pt-2 border-t border-white/10">
+                  <div className="flex items-center justify-between text-[10px] font-mono text-white/50 font-bold uppercase tracking-wider">
+                    <span>Explorar Ciudades</span>
+                    <span className="text-[9.5px] font-mono text-[#ccff00] flex items-center gap-1">
+                      <MapPin className="w-2.5 h-2.5" /> Clic para enfocar
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    {activeCountry.majorCities.map((city) => {
+                      const coords = resolveMultiCountryCoordinates(city, selectedCountry);
+                      const clientMatch = connectedClients.find(c => c && c.city && c.city.toLowerCase().includes(city.toLowerCase()));
+                      return (
+                        <button
+                          key={city}
+                          onClick={() => {
+                            setSearchQuery(city);
+                            if (coords.x >= 0 && coords.y >= 0) {
+                              focusOnLocation(coords.x, coords.y, 1.8);
+                            }
+                            if (clientMatch) {
+                              setSelectedClientId(clientMatch.id);
+                            }
+                            setIsSearchFocused(false);
+                          }}
+                          className="px-2.5 py-1 rounded-xl text-[10.5px] bg-white/5 hover:bg-[#ccff00]/15 hover:border-[#ccff00]/40 text-white/85 hover:text-[#ccff00] border border-white/10 transition-all flex items-center gap-1 cursor-pointer group"
+                        >
+                          <MapPin className="w-2.5 h-2.5 opacity-60 group-hover:opacity-100 group-hover:text-[#ccff00]" />
+                          <span>{city}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* 3. Live Matching Clients List */}
+                {searchQuery.trim().length > 0 && (
+                  <div className="space-y-1.5 pt-2 border-t border-white/10">
+                    <div className="flex items-center justify-between text-[10px] font-mono text-white/50 font-bold uppercase tracking-wider">
+                      <span>Coincidencias en Vivo ({filteredActualClients.length})</span>
+                    </div>
+                    {filteredActualClients.length === 0 ? (
+                      <div className="py-3 text-center text-white/50 text-[11px]">
+                        No hay clientes conectados en &quot;{searchQuery}&quot;
+                      </div>
+                    ) : (
+                      <div className="max-h-44 overflow-y-auto space-y-1 pr-1" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+                        {filteredActualClients.map((client) => (
+                          <div
+                            key={client.id}
+                            onClick={() => {
+                              setSelectedClientId(client.id);
+                              focusOnLocation(client.x, client.y, 1.9);
+                              setIsSearchFocused(false);
+                            }}
+                            className="p-2 rounded-xl bg-white/5 hover:bg-white/15 border border-white/10 hover:border-[#ccff00]/40 flex items-center justify-between cursor-pointer transition-all group"
+                          >
+                            <div className="flex items-center gap-2 truncate">
+                              <BlobatarAvatar
+                                name={client.id || client.name}
+                                size={26}
+                                animate="hover"
+                                background="circle"
+                                className="shrink-0"
+                              />
+                              <div className="truncate">
+                                <p className="text-xs font-semibold text-white group-hover:text-[#ccff00] transition-colors truncate">
+                                  {cleanClientName(client.name)}
+                                </p>
+                                <p className="text-[10px] text-white/50 truncate">
+                                  {client.city || activeCountry.name} • <span className="font-mono text-white/80">${client.totalSpent || 0}</span>
+                                </p>
+                              </div>
+                            </div>
+                            <span className="text-[9.5px] font-mono px-2 py-0.5 rounded bg-white/10 text-white/80 group-hover:bg-[#ccff00] group-hover:text-gray-950 font-bold transition-all shrink-0">
+                              Enfocar &rarr;
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+              </div>
+            )}
+          </div>
+
+          {/* Right side controls: Admin Location Prompt */}
+          <div className="flex items-center gap-2 pointer-events-auto shrink-0 flex-wrap justify-end">
+            {isAdmin && !hasAdminLocation && (
+              <button
+                onClick={handleNavigateToAddress}
+                className="group relative flex items-center gap-2 px-3.5 py-1.5 sm:px-4 sm:py-2 rounded-full bg-black/90 hover:bg-black backdrop-blur-2xl border border-[#ccff00]/80 hover:border-[#ccff00] text-white text-xs font-semibold shadow-[0_0_24px_rgba(204,255,0,0.35)] transition-all duration-300 hover:scale-[1.03] active:scale-95 cursor-pointer shrink-0"
+                title="Añade tu dirección para mostrar tu ubicación en el mapa"
+              >
+                <div className="relative flex items-center justify-center w-5 h-5 rounded-full bg-[#ccff00] text-gray-950 font-black shrink-0 shadow-[0_0_10px_#ccff00]/50">
+                  <MapPin className="w-3 h-3 text-gray-950" />
+                  <span className="absolute inset-0 rounded-full bg-[#ccff00] animate-ping opacity-75 pointer-events-none" />
+                </div>
+                <span className="font-semibold text-xs text-white group-hover:text-[#ccff00] transition-colors whitespace-nowrap">
+                  Mostrar mi ubicación también
+                </span>
+                <ArrowUpRight className="w-3.5 h-3.5 text-[#ccff00] transition-transform duration-300 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 shrink-0" />
+              </button>
+            )}
+          </div>
         </div>
 
       </div>
+
+      {/* Satellite Flight Transition HUD Badge */}
+      {flightPhase !== 'idle' && (
+        <div className="absolute top-20 left-1/2 -translate-x-1/2 z-50 pointer-events-none animate-in fade-in zoom-in-90 duration-200">
+          <div className="flex items-center gap-2.5 px-4 py-1.5 rounded-full bg-black/90 backdrop-blur-2xl border border-[#ccff00]/70 text-white shadow-[0_0_25px_rgba(204,255,0,0.35)]">
+            <span className="w-2 h-2 rounded-full bg-[#ccff00] animate-ping" />
+            <span className="text-[11px] font-mono font-bold tracking-wider text-[#ccff00]">
+              {flightPhase === 'takeoff' ? '🛰️ VUELO ORBITAL: ELEVANDO ALTITUD...' : `🎯 DESCENDIENDO EN ${activeCountry.name.toUpperCase()}...`}
+            </span>
+          </div>
+        </div>
+      )}
 
       {/* ========================================================================= */}
       {/* 4. LEFT HUD CONTROLS (ShotScape GIS Floating Toolstrip - Zero Widgets)    */}
@@ -1865,53 +2098,104 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
       </div>
 
       {/* ========================================================================= */}
-      {/* 6. BOTTOM STATUS DOCK (Sleek, Symmetrical Minimalist Telemetry Bar)       */}
+      {/* 6. BOTTOM FLOATING WIDGETS (ShotScape 3-Card Dock along bottom)           */}
       {/* ========================================================================= */}
       <div 
         onClick={(e) => e.stopPropagation()}
-        className="absolute bottom-4 left-4 sm:left-6 right-4 sm:right-6 lg:right-[22.5rem] z-30 pointer-events-none flex items-center justify-between gap-3"
+        className="absolute bottom-5 left-6 right-6 lg:right-96 z-30 grid grid-cols-1 sm:grid-cols-3 gap-3 pointer-events-auto"
       >
-        {/* Left: Active Country Badge with Full Details */}
-        <div className="flex items-center gap-2.5 px-3.5 py-2 rounded-2xl bg-black/80 backdrop-blur-2xl border border-white/15 shadow-xl text-xs pointer-events-auto">
-          <span className="text-lg leading-none">{activeCountry.flag}</span>
-          <span className="font-bold text-white tracking-tight">{activeCountry.name}</span>
-          <span className="text-white/30 font-mono">/</span>
-          <span className="text-white/60 font-mono text-[11px]">{activeCountry.entityLabel}</span>
-          <span className="text-white/30 font-mono hidden sm:inline">/</span>
-          <span className="text-white/60 text-[11px] truncate hidden sm:inline">Capital: {activeCountry.capital}</span>
-        </div>
+        {/* Card 1: Cobertura Territorial */}
+        {(() => {
+          const activeProvincesCount = new Set(actualClients.map(c => c.city).filter(Boolean)).size;
+          return (
+            <div className="rounded-2xl bg-black/60 backdrop-blur-xl border border-white/15 p-3.5 shadow-xl flex flex-col justify-between">
+              <div className="flex items-center justify-between text-[11px] font-bold text-white mb-1">
+                <span className="flex items-center gap-1.5">
+                  <MapPin className="w-3 h-3 text-[#ccff00]" /> {activeCountry.name} ({activeCountry.flag})
+                </span>
+                <span className="text-[9px] font-mono text-white/50">{activeCountry.entityLabel}</span>
+              </div>
+              <p className="text-[10px] text-white/70 truncate">
+                {activeCountry.capital} • {activeCountry.majorCities.slice(1, 4).join(' • ')}
+              </p>
+              <div className="flex items-center gap-1 text-[9.5px] font-mono text-[#ccff00] mt-1">
+                <span>
+                  {activeProvincesCount > 0 
+                    ? `${activeProvincesCount} zonas activas en tiempo real` 
+                    : `Monitoreo • ${activeCountry.entityLabel}`}
+                </span>
+              </div>
+            </div>
+          );
+        })()}
 
-        {/* Center: Live Traffic Presence Ticker */}
-        <div className="hidden md:flex items-center gap-2 px-3.5 py-2 rounded-2xl bg-black/80 backdrop-blur-2xl border border-white/15 shadow-xl text-xs pointer-events-auto">
-          <span className="relative flex h-2 w-2">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#ccff00] opacity-75" />
-            <span className="relative inline-flex rounded-full h-2 w-2 bg-[#ccff00]" />
-          </span>
-          <span className="text-[11px] font-mono text-white/80">
-            {actualClients.length > 0 
-              ? `${actualClients.length} ${actualClients.length === 1 ? 'cliente activo' : 'clientes activos'} en mapa`
-              : "Red satelital en espera de conexiones"}
-          </span>
-        </div>
+        {/* Card 2: Embudo de Conversión — Computed from real client data */}
+        {(() => {
+          const total = actualClients.length;
+          const totalSafe = total || 1;
+          const cartCount = actualClients.filter(c => c.hasCart).length;
+          const frequentCount = actualClients.filter(c => (c.purchasesCount || 0) >= 3).length;
+          const browsingCount = Math.max(0, total - cartCount - frequentCount);
+          const browsingPct = total > 0 ? Math.round((browsingCount / totalSafe) * 100) : 0;
+          const cartPct = total > 0 ? Math.round((cartCount / totalSafe) * 100) : 0;
+          const frequentPct = total > 0 ? Math.round((frequentCount / totalSafe) * 100) : 0;
+          return (
+            <div className="rounded-2xl bg-black/60 backdrop-blur-xl border border-white/15 p-3.5 shadow-xl flex flex-col justify-between">
+              <div className="mb-1">
+                <div className="flex items-center gap-1.5 text-[11px] font-bold text-white whitespace-nowrap">
+                  <Users className="w-3 h-3 text-emerald-400 shrink-0" />
+                  <span>Embudo de Conversión</span>
+                </div>
+                <p className="text-[9.5px] font-mono text-emerald-400 font-bold mt-0.5 pl-4.5">
+                  {total} {total === 1 ? 'cliente activo' : 'clientes activos'}
+                </p>
+              </div>
+              <div className="flex items-center justify-between text-[9.5px] text-white/70">
+                <span>Catálogo: <strong>{browsingPct}%</strong></span>
+                <span>Carrito: <strong>{cartPct}%</strong></span>
+                <span>Recurrentes: <strong>{frequentPct}%</strong></span>
+              </div>
+              <div className="w-full h-1.5 rounded-full bg-white/10 flex overflow-hidden mt-1.5">
+                <div className="h-full bg-white transition-all duration-500" style={{ width: `${browsingPct}%` }} />
+                <div className="h-full bg-amber-400 transition-all duration-500" style={{ width: `${cartPct}%` }} />
+                <div className="h-full bg-[#ccff00] transition-all duration-500" style={{ width: `${frequentPct}%` }} />
+              </div>
+            </div>
+          );
+        })()}
 
-        {/* Right: Currency & Location Prompt */}
-        <div className="flex items-center gap-2 pointer-events-auto">
-          <div className="flex items-center gap-1.5 px-3.5 py-2 rounded-2xl bg-black/80 backdrop-blur-2xl border border-white/15 shadow-xl text-[11px] font-mono text-white/70">
-            <span>Moneda:</span>
-            <span className="font-bold text-[#ccff00]">{activeCountry.currency} ({activeCountry.currencySymbol})</span>
-          </div>
+        {/* Card 3: Resumen Radar — Live data */}
+        {(() => {
+          const totalOrders = actualClients.reduce((sum, c) => sum + (c.purchasesCount || 0), 0);
+          const totalRevenue = actualClients.reduce((sum, c) => sum + (c.totalSpent || 0), 0);
+          const storeOrders = props.orders || [];
+          const storeRevenue = storeOrders.reduce((sum, o) => sum + (o.total || 0), 0);
+          const avgTicket = totalOrders > 0 
+            ? (totalRevenue / totalOrders) 
+            : storeOrders.length > 0 
+            ? (storeRevenue / storeOrders.length) 
+            : 0;
+          const avgIntent = actualClients.length > 0 ? Math.round(actualClients.reduce((sum, c) => sum + (c.intentScore || 0), 0) / actualClients.length) : 0;
+          return (
+            <div className="rounded-2xl bg-black/60 backdrop-blur-xl border border-white/15 p-3.5 shadow-xl flex flex-col justify-between">
+              <div className="flex items-center justify-between text-[11px] font-bold text-white mb-1">
+                <span className="flex items-center gap-1.5">
+                  <Sparkles className="w-3 h-3 text-[#ccff00]" /> Resumen Radar
+                </span>
+                <span className="text-[9px] font-mono text-[#ccff00] font-bold">En Vivo</span>
+              </div>
+              <p className="text-[10px] text-white/70">
+                {actualClients.length} cliente{actualClients.length !== 1 ? 's' : ''}
+                {connectedClients.filter(c => c.isAnonymous).length > 0 ? ` • ${connectedClients.filter(c => c.isAnonymous).length} visitante${connectedClients.filter(c => c.isAnonymous).length !== 1 ? 's' : ''}` : ''} conectado{actualClients.length + connectedClients.filter(c => c.isAnonymous).length !== 1 ? 's' : ''} ahora
+              </p>
+              <div className="flex items-center justify-between text-[9px] font-mono text-white/60 mt-1 pt-1 border-t border-white/10">
+                <span>Ticket Promedio: <strong className="text-white">${avgTicket.toFixed(0)} USD</strong></span>
+                <span>Intent: <strong className="text-[#ccff00]">{avgIntent}%</strong></span>
+              </div>
+            </div>
+          );
+        })()}
 
-          {isAdmin && !hasAdminLocation && (
-            <button
-              onClick={handleNavigateToAddress}
-              className="flex items-center gap-1.5 px-3.5 py-2 rounded-2xl bg-[#ccff00] hover:bg-[#b8e600] text-gray-950 font-bold text-[11px] shadow-[0_0_16px_rgba(204,255,0,0.4)] transition-all cursor-pointer hover:scale-105 active:scale-95"
-              title="Añadir mi ubicación al mapa"
-            >
-              <MapPin className="w-3 h-3 text-gray-950" />
-              <span>Mi Ubicación</span>
-            </button>
-          )}
-        </div>
       </div>
 
     </div>
