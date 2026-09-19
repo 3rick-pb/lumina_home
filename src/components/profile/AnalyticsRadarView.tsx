@@ -20,7 +20,6 @@ import {
   ChevronRight,
   ChevronDown,
   Globe,
-  Check,
   X,
   Layers
 } from "lucide-react";
@@ -220,18 +219,6 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
   const setSelectedCountry = useRadarStore((state) => state.setSelectedCountry);
   const activeCountry = RADAR_COUNTRIES[selectedCountry] || RADAR_COUNTRIES.EC;
 
-  const [isCountryMenuOpen, setIsCountryMenuOpen] = useState<boolean>(false);
-  const countryMenuRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const handleCloseCountryMenu = (e: MouseEvent) => {
-      if (countryMenuRef.current && !countryMenuRef.current.contains(e.target as Node)) {
-        setIsCountryMenuOpen(false);
-      }
-    };
-    document.addEventListener("mousedown", handleCloseCountryMenu);
-    return () => document.removeEventListener("mousedown", handleCloseCountryMenu);
-  }, []);
 
   // Preload all 6 country 2.8K maps into browser memory for zero-lag flyover switches
   useEffect(() => {
@@ -1098,52 +1085,94 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
       </div>
 
       {/* ========================================================================= */}
-      {/* 3. TOP FLOATING COMMAND BAR (Aesthetic Country Selector + Modes + Search)  */}
+      {/* 3. TOP FLOATING COMMAND BAR (Branded Search Bar + Modes + Admin Location)  */}
       {/* ========================================================================= */}
-      <div className="absolute top-3 sm:top-4 left-3 sm:left-6 right-3 sm:right-6 lg:right-96 z-50 flex flex-col gap-2.5 pointer-events-none">
+      <div className="absolute top-3 sm:top-4 left-3 sm:left-6 right-3 sm:right-6 lg:right-96 z-50 flex flex-wrap items-center justify-between gap-3 pointer-events-none">
         
-        {/* Row 1: Unified Country Navigator Command Strip */}
-        <div className="flex flex-wrap items-center justify-between gap-2.5 w-full">
-          
-          {/* Custom Aesthetic Country Dropdown Selector */}
-          <div className="relative pointer-events-auto" ref={countryMenuRef}>
+        {/* Left: Branded Search Bar with Integrated Country Switcher */}
+        <div 
+          ref={searchContainerRef}
+          className="relative max-w-lg w-full pointer-events-auto"
+        >
+          {/* Main Search Pill with Country Branding */}
+          <div className={`flex items-center bg-black/80 backdrop-blur-2xl border rounded-full pl-1.5 pr-3.5 py-1.5 shadow-2xl text-xs text-white w-full transition-all duration-300 ${
+            isSearchFocused 
+              ? "border-[#ccff00] ring-2 ring-[#ccff00]/30 shadow-[0_0_24px_rgba(204,255,0,0.25)] bg-black/95" 
+              : "border-white/15 hover:border-white/30"
+          }`}>
+            
+            {/* Integrated Country Branding Pill (Click to open Country Switcher) */}
             <button
               type="button"
-              onClick={() => setIsCountryMenuOpen(!isCountryMenuOpen)}
-              className="h-10 sm:h-11 px-3.5 sm:px-4 bg-black/85 hover:bg-black/95 text-white border border-white/20 hover:border-[#ccff00]/60 rounded-2xl shadow-2xl backdrop-blur-2xl transition-all duration-200 flex items-center gap-2.5 group cursor-pointer"
-              title="Cambiar país del radar"
+              onClick={(e) => {
+                e.stopPropagation();
+                setIsSearchFocused(true);
+              }}
+              className="flex items-center gap-1.5 pl-2.5 pr-3 py-1 rounded-full bg-white/10 hover:bg-white/20 border border-white/15 hover:border-[#ccff00]/50 text-white transition-all cursor-pointer shrink-0 group mr-1 shadow-sm"
+              title="Clic para cambiar de país o ver regiones del radar"
             >
-              <span className="text-xl sm:text-2xl leading-none drop-shadow">{activeCountry.flag}</span>
-              <div className="flex flex-col text-left">
-                <div className="flex items-center gap-1.5">
-                  <span className="text-xs sm:text-sm font-bold tracking-tight text-white group-hover:text-[#ccff00] transition-colors leading-none">
-                    {activeCountry.name}
-                  </span>
-                  <span className="text-[9px] font-mono font-semibold px-1.5 py-0.5 rounded-full bg-[#ccff00]/15 text-[#ccff00] border border-[#ccff00]/30 leading-none">
-                    {activeCountry.entityLabel}
-                  </span>
-                </div>
-                <span className="text-[9px] text-white/50 font-mono leading-none mt-1">
-                  {connectedClients.length} {connectedClients.length === 1 ? 'cliente activo' : 'clientes activos'} · {activeCountry.currency} ({activeCountry.currencySymbol})
-                </span>
-              </div>
-              <ChevronDown className={`w-4 h-4 text-white/50 group-hover:text-[#ccff00] transition-transform duration-200 ml-1 shrink-0 ${isCountryMenuOpen ? 'rotate-180 text-[#ccff00]' : ''}`} />
+              <span className="text-base leading-none drop-shadow">{activeCountry.flag}</span>
+              <span className="text-xs font-bold tracking-tight text-white group-hover:text-[#ccff00] transition-colors leading-none">
+                {activeCountry.name}
+              </span>
+              <ChevronDown className={`w-3 h-3 text-white/50 group-hover:text-[#ccff00] transition-transform duration-200 ${isSearchFocused ? 'rotate-180 text-[#ccff00]' : ''}`} />
             </button>
 
-            {/* Dropdown Menu Modal */}
-            {isCountryMenuOpen && (
-              <div className="absolute top-full left-0 mt-2 w-72 sm:w-84 bg-[#0c0e12]/95 backdrop-blur-3xl border border-white/20 rounded-3xl shadow-[0_25px_60px_rgba(0,0,0,0.9)] p-2 z-[70] animate-in fade-in zoom-in-95 duration-150">
-                <div className="px-3 py-2 border-b border-white/10 mb-1 flex items-center justify-between">
+            <div className="h-4 w-[1px] bg-white/15 mx-1 shrink-0" />
+
+            <Search className={`w-3.5 h-3.5 mx-1.5 shrink-0 transition-colors duration-200 ${isSearchFocused ? "text-[#ccff00]" : "text-white/50"}`} />
+            
+            <input 
+              type="text"
+              value={searchQuery}
+              onFocus={() => setIsSearchFocused(true)}
+              onChange={e => setSearchQuery(e.target.value)}
+              placeholder={`Buscar en ${activeCountry.name} o cambiar país...`}
+              className="bg-transparent border-none outline-none text-xs text-white placeholder:text-white/45 flex-1 min-w-0 font-sans"
+            />
+
+            {searchQuery && (
+              <button 
+                onClick={() => {
+                  setSearchQuery("");
+                  handleResetView();
+                }}
+                className="w-4 h-4 rounded-full bg-white/20 hover:bg-white/40 text-white flex items-center justify-center transition-all cursor-pointer mr-1.5 shrink-0"
+                title="Limpiar búsqueda"
+              >
+                <X className="w-2.5 h-2.5" />
+              </button>
+            )}
+
+            <div className="flex items-center gap-1.5 pl-2.5 border-l border-white/10 shrink-0">
+              <span className={`w-2 h-2 rounded-full transition-colors ${
+                searchQuery ? "bg-[#ccff00] shadow-[0_0_8px_#ccff00]" : "bg-[#ccff00] animate-pulse"
+              }`} />
+              <span className="text-[10px] font-mono text-white/80 font-semibold hidden sm:inline">
+                {searchQuery 
+                  ? `${filteredActualClients.length} en radar` 
+                  : `${connectedClients.length} ${connectedClients.length === 1 ? 'cliente' : 'clientes'}`}
+              </span>
+            </div>
+          </div>
+
+          {/* FLOATING LIVE INTERACTIVE SUGGESTER & REGIONAL TELEPORT POPOVER */}
+          {isSearchFocused && (
+            <div className="absolute top-full left-0 right-0 mt-2 rounded-3xl bg-[#0c0e12]/95 backdrop-blur-3xl border border-white/20 p-4 shadow-[0_25px_60px_rgba(0,0,0,0.9)] z-[70] animate-in fade-in zoom-in-95 duration-150 space-y-3.5">
+              
+              {/* 1. Country Switcher Section (Beautiful 6-Country Grid) */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between text-[10px] font-mono text-white/50 font-bold uppercase tracking-wider">
                   <div className="flex items-center gap-1.5">
-                    <Globe className="w-3.5 h-3.5 text-[#ccff00]" />
-                    <span className="text-[10px] uppercase font-mono font-bold tracking-wider text-white/70">Países del Radar</span>
+                    <Globe className="w-3 h-3 text-[#ccff00]" />
+                    <span>Seleccionar País del Radar</span>
                   </div>
                   <span className="text-[9px] font-mono text-[#ccff00] bg-[#ccff00]/10 px-2 py-0.5 rounded-full border border-[#ccff00]/20">
-                    6 Regiones
+                    6 Países Disponibles
                   </span>
                 </div>
 
-                <div className="grid grid-cols-1 gap-1">
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                   {(Object.keys(RADAR_COUNTRIES) as RadarCountryCode[]).map((code) => {
                     const c = RADAR_COUNTRIES[code];
                     const isSelected = selectedCountry === code;
@@ -1153,73 +1182,162 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
                         type="button"
                         onClick={() => {
                           handleSwitchCountry(code);
-                          setIsCountryMenuOpen(false);
                         }}
-                        className={`w-full flex items-center justify-between px-3 py-2 rounded-2xl transition-all duration-150 text-left cursor-pointer group ${
+                        className={`flex items-center gap-2.5 p-2.5 rounded-2xl border transition-all duration-200 cursor-pointer text-left group ${
                           isSelected
-                            ? "bg-[#ccff00] text-gray-950 font-bold shadow-[0_0_20px_rgba(204,255,0,0.4)] scale-[1.01]"
-                            : "text-white/80 hover:text-white hover:bg-white/10"
+                            ? "bg-[#ccff00] text-gray-950 border-[#ccff00] shadow-[0_0_18px_rgba(204,255,0,0.35)] scale-[1.02]"
+                            : "bg-white/5 hover:bg-white/15 border-white/10 hover:border-[#ccff00]/40 text-white"
                         }`}
+                        title={`Cambiar radar a ${c.name}`}
                       >
-                        <div className="flex items-center gap-3">
-                          <span className="text-2xl leading-none drop-shadow">{c.flag}</span>
-                          <div>
-                            <div className="flex items-center gap-2">
-                              <span className={`text-xs sm:text-sm leading-tight ${isSelected ? 'font-black text-gray-950' : 'font-semibold text-white'}`}>
-                                {c.name}
-                              </span>
-                              {isSelected && (
-                                <span className="w-1.5 h-1.5 rounded-full bg-gray-950 animate-ping" />
-                              )}
-                            </div>
-                            <span className={`text-[10px] font-mono block mt-0.5 ${isSelected ? 'text-gray-900/80 font-semibold' : 'text-white/50'}`}>
-                              {c.entityLabel}
+                        <span className="text-xl sm:text-2xl leading-none drop-shadow shrink-0">{c.flag}</span>
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center justify-between gap-1">
+                            <span className={`text-xs font-bold truncate leading-tight ${isSelected ? 'text-gray-950' : 'text-white group-hover:text-[#ccff00]'}`}>
+                              {c.name}
                             </span>
+                            {isSelected && (
+                              <span className="w-1.5 h-1.5 rounded-full bg-gray-950 animate-ping shrink-0" />
+                            )}
                           </div>
-                        </div>
-
-                        <div className="flex items-center gap-2">
-                          <span className={`text-[9.5px] font-mono px-2 py-0.5 rounded-lg ${
-                            isSelected ? 'bg-black/20 text-gray-950 font-bold' : 'bg-white/5 text-white/50 border border-white/10'
-                          }`}>
-                            {c.currency} ({c.currencySymbol})
-                          </span>
-                          {isSelected && <Check className="w-4 h-4 text-gray-950 stroke-[3]" />}
+                          <div className={`text-[9.5px] font-mono truncate leading-tight mt-0.5 ${isSelected ? 'text-gray-950/80 font-medium' : 'text-white/50'}`}>
+                            {c.entityLabel} · {c.currency}
+                          </div>
                         </div>
                       </button>
                     );
                   })}
                 </div>
               </div>
-            )}
-          </div>
 
-          {/* Quick Segmented Pill Strip with FULL NAMES (Visible on xl+ screens, NO acronyms!) */}
-          <div className="hidden xl:flex items-center gap-1 p-1 bg-black/80 backdrop-blur-2xl border border-white/15 rounded-2xl shadow-xl pointer-events-auto">
-            {(Object.keys(RADAR_COUNTRIES) as RadarCountryCode[]).map((code) => {
-              const cMeta = RADAR_COUNTRIES[code];
-              const isActive = selectedCountry === code;
-              return (
-                <button
-                  key={code}
-                  type="button"
-                  onClick={() => handleSwitchCountry(code)}
-                  className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all duration-200 flex items-center gap-1.5 shrink-0 cursor-pointer ${
-                    isActive
-                      ? "bg-[#ccff00] text-gray-950 font-bold shadow-[0_0_16px_rgba(204,255,0,0.5)]"
-                      : "text-white/70 hover:text-white hover:bg-white/10"
-                  }`}
-                  title={`Ver radar topográfico 3D de ${cMeta.name}`}
-                >
-                  <span className="text-sm leading-none">{cMeta.flag}</span>
-                  <span>{cMeta.name}</span>
-                </button>
-              );
-            })}
-          </div>
+              {/* 2. Quick Regional Filters */}
+              <div className="space-y-1.5 pt-2 border-t border-white/10">
+                <div className="flex items-center justify-between text-[10px] font-mono text-white/50 font-bold uppercase tracking-wider">
+                  <span>Regiones Naturales ({activeCountry.name})</span>
+                  {searchQuery && (
+                    <button 
+                      onClick={() => { setSearchQuery(""); handleResetView(); }} 
+                      className="text-[#ccff00] hover:underline normal-case font-sans cursor-pointer text-[11px]"
+                    >
+                      Ver todo {activeCountry.name}
+                    </button>
+                  )}
+                </div>
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  {(activeCountry.naturalRegions || []).map((reg) => {
+                    const isActive = searchQuery.toLowerCase() === reg.query.toLowerCase() || searchQuery.toLowerCase() === reg.name.toLowerCase();
+                    return (
+                      <button
+                        key={reg.name}
+                        onClick={() => {
+                          setSearchQuery(reg.query);
+                        }}
+                        className={`px-2.5 py-1 rounded-full text-[11px] font-semibold transition-all flex items-center gap-1.5 border cursor-pointer ${
+                          isActive
+                            ? "bg-[#ccff00] text-gray-950 font-bold border-[#ccff00] shadow-[0_0_12px_rgba(204,255,0,0.4)]"
+                            : "bg-white/5 hover:bg-white/15 text-white/80 border-white/10 hover:border-white/20 hover:text-white"
+                        }`}
+                      >
+                        <span>{reg.icon}</span>
+                        <span>{reg.name}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
 
-          {/* Right Controls: Density Mode Selector (Disperso / Agrupado) */}
-          <div className="flex items-center bg-black/80 backdrop-blur-2xl border border-white/15 rounded-2xl p-1 shadow-2xl text-xs font-semibold text-white pointer-events-auto shrink-0">
+              {/* 3. Key Cities Quick Teleport */}
+              <div className="space-y-1.5 pt-2 border-t border-white/10">
+                <div className="flex items-center justify-between text-[10px] font-mono text-white/50 font-bold uppercase tracking-wider">
+                  <span>Explorar Ciudades ({activeCountry.name})</span>
+                  <span className="text-[9.5px] font-mono text-[#ccff00] flex items-center gap-1">
+                    <MapPin className="w-2.5 h-2.5" /> Clic para enfocar
+                  </span>
+                </div>
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  {activeCountry.majorCities.map((city) => {
+                    const coords = resolveMultiCountryCoordinates(city, selectedCountry);
+                    const clientMatch = connectedClients.find(c => c && c.city && c.city.toLowerCase().includes(city.toLowerCase()));
+                    return (
+                      <button
+                        key={city}
+                        onClick={() => {
+                          setSearchQuery(city);
+                          if (coords.x >= 0 && coords.y >= 0) {
+                            focusOnLocation(coords.x, coords.y, 1.8);
+                          }
+                          if (clientMatch) {
+                            setSelectedClientId(clientMatch.id);
+                          }
+                          setIsSearchFocused(false);
+                        }}
+                        className="px-2.5 py-1 rounded-xl text-[10.5px] bg-white/5 hover:bg-[#ccff00]/15 hover:border-[#ccff00]/40 text-white/85 hover:text-[#ccff00] border border-white/10 transition-all flex items-center gap-1 cursor-pointer group"
+                      >
+                        <MapPin className="w-2.5 h-2.5 opacity-60 group-hover:opacity-100 group-hover:text-[#ccff00]" />
+                        <span>{city}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* 4. Live Matching Clients List */}
+              {searchQuery.trim().length > 0 && (
+                <div className="space-y-1.5 pt-2 border-t border-white/10">
+                  <div className="flex items-center justify-between text-[10px] font-mono text-white/50 font-bold uppercase tracking-wider">
+                    <span>Coincidencias en Vivo ({filteredActualClients.length})</span>
+                  </div>
+                  {filteredActualClients.length === 0 ? (
+                    <div className="py-3 text-center text-white/50 text-[11px]">
+                      No hay clientes conectados en &quot;{searchQuery}&quot;
+                    </div>
+                  ) : (
+                    <div className="max-h-44 overflow-y-auto space-y-1 pr-1" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+                      {filteredActualClients.map((client) => (
+                        <div
+                          key={client.id}
+                          onClick={() => {
+                            setSelectedClientId(client.id);
+                            focusOnLocation(client.x, client.y, 1.9);
+                            setIsSearchFocused(false);
+                          }}
+                          className="p-2 rounded-xl bg-white/5 hover:bg-white/15 border border-white/10 hover:border-[#ccff00]/40 flex items-center justify-between cursor-pointer transition-all group"
+                        >
+                          <div className="flex items-center gap-2 truncate">
+                            <BlobatarAvatar
+                              name={client.id || client.name}
+                              size={26}
+                              animate="hover"
+                              background="circle"
+                              className="shrink-0"
+                            />
+                            <div className="truncate">
+                              <p className="text-xs font-semibold text-white group-hover:text-[#ccff00] transition-colors truncate">
+                                {cleanClientName(client.name)}
+                              </p>
+                              <p className="text-[10px] text-white/50 truncate">
+                                {client.city || activeCountry.name} • <span className="font-mono text-white/80">${client.totalSpent || 0}</span>
+                              </p>
+                            </div>
+                          </div>
+                          <span className="text-[9.5px] font-mono px-2 py-0.5 rounded bg-white/10 text-white/80 group-hover:bg-[#ccff00] group-hover:text-gray-950 font-bold transition-all shrink-0">
+                            Enfocar &rarr;
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+
+            </div>
+          )}
+        </div>
+
+        {/* Right Controls: Density Mode Selector + Admin Location Prompt */}
+        <div className="flex items-center gap-2 pointer-events-auto shrink-0 flex-wrap justify-end">
+          {/* Density Mode Selector (Disperso / Agrupado) */}
+          <div className="flex items-center bg-black/80 backdrop-blur-2xl border border-white/15 rounded-2xl p-1 shadow-2xl text-xs font-semibold text-white">
             <button
               type="button"
               onClick={() => {
@@ -1247,222 +1365,33 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
                   ? "bg-[#ccff00] text-gray-950 font-bold shadow-[0_0_14px_rgba(204,255,0,0.5)]"
                   : "text-white/70 hover:text-white hover:bg-white/10"
               }`}
-              title="Agrupar ciudades con múltiples clientes en un pin numérico para evitar saturación"
+              title="Agrupar ciudades con múltiples clientes en un pin numérico"
             >
               <Layers className="w-3.5 h-3.5 shrink-0" />
               <span>Agrupar {clusterPins.length > 0 ? `(${clusterPins.length})` : ""}</span>
             </button>
           </div>
-        </div>
 
-        {/* Row 2: Search + Mode Controls (NO RADAR TAG, NO RADAR EN VIVO) */}
-        <div className="flex items-center justify-between gap-3 w-full">
-          <div 
-            ref={searchContainerRef}
-            className="relative max-w-md w-full pointer-events-auto"
-          >
-            {/* Main Search Pill (CLEAN, NO "RADAR EN VIVO" TAG) */}
-            <div className={`flex items-center bg-black/75 backdrop-blur-2xl border rounded-full px-3.5 py-2 shadow-2xl text-xs text-white w-full transition-all duration-300 ${
-              isSearchFocused 
-                ? "border-[#ccff00] ring-2 ring-[#ccff00]/30 shadow-[0_0_24px_rgba(204,255,0,0.25)] bg-black/90" 
-                : "border-white/15 hover:border-white/30"
-            }`}>
-              <Search className={`w-3.5 h-3.5 mx-2 shrink-0 transition-colors duration-200 ${isSearchFocused ? "text-[#ccff00]" : "text-white/50"}`} />
-              
-              <input 
-                type="text"
-                value={searchQuery}
-                onFocus={() => setIsSearchFocused(true)}
-                onChange={e => setSearchQuery(e.target.value)}
-                placeholder={`Buscar ciudad o provincia en ${activeCountry.name}...`}
-                className="bg-transparent border-none outline-none text-xs text-white placeholder:text-white/45 flex-1 min-w-0 font-sans"
-              />
-
-              {searchQuery && (
-                <button 
-                  onClick={() => {
-                    setSearchQuery("");
-                    handleResetView();
-                  }}
-                  className="w-4 h-4 rounded-full bg-white/20 hover:bg-white/40 text-white flex items-center justify-center transition-all cursor-pointer mr-1.5 shrink-0"
-                  title="Limpiar búsqueda"
-                >
-                  <X className="w-2.5 h-2.5" />
-                </button>
-              )}
-
-              <div className="flex items-center gap-1.5 pl-2 border-l border-white/10 shrink-0">
-                <span className={`w-2 h-2 rounded-full transition-colors ${
-                  searchQuery ? "bg-[#ccff00] shadow-[0_0_8px_#ccff00]" : "bg-emerald-400 animate-pulse"
-                }`} />
-                <span className="text-[10px] font-mono text-white/80 font-semibold">
-                  {searchQuery ? `${filteredActualClients.length} en radar` : activeCountry.entityLabel}
-                </span>
+          {/* Admin Location Prompt */}
+          {isAdmin && !hasAdminLocation && (
+            <button
+              onClick={handleNavigateToAddress}
+              className="group relative flex items-center gap-2 px-3.5 py-1.5 sm:px-4 sm:py-2 rounded-full bg-black/90 hover:bg-black backdrop-blur-2xl border border-[#ccff00]/80 hover:border-[#ccff00] text-white text-xs font-semibold shadow-[0_0_24px_rgba(204,255,0,0.35)] transition-all duration-300 hover:scale-[1.03] active:scale-95 cursor-pointer shrink-0"
+              title="Añade tu dirección para mostrar tu ubicación en el mapa"
+            >
+              <div className="relative flex items-center justify-center w-5 h-5 rounded-full bg-[#ccff00] text-gray-950 font-black shrink-0 shadow-[0_0_10px_#ccff00]/50">
+                <MapPin className="w-3 h-3 text-gray-950" />
+                <span className="absolute inset-0 rounded-full bg-[#ccff00] animate-ping opacity-75 pointer-events-none" />
               </div>
-            </div>
-
-            {/* FLOATING LIVE INTERACTIVE SUGGESTER & REGIONAL TELEPORT POPOVER */}
-            {isSearchFocused && (
-              <div className="absolute top-full left-0 right-0 mt-2 rounded-3xl bg-[#111614]/95 backdrop-blur-3xl border border-white/20 p-4 shadow-[0_25px_60px_rgba(0,0,0,0.9)] z-[70] animate-fade-in space-y-3.5">
-                
-                {/* 1. Quick Regional Filters */}
-                <div className="space-y-1.5">
-                  <div className="flex items-center justify-between text-[10px] font-mono text-white/50 font-bold uppercase tracking-wider">
-                    <span>Regiones Naturales</span>
-                    {searchQuery && (
-                      <button 
-                        onClick={() => { setSearchQuery(""); handleResetView(); }} 
-                        className="text-[#ccff00] hover:underline normal-case font-sans cursor-pointer text-[11px]"
-                      >
-                        Ver todo {activeCountry.name}
-                      </button>
-                    )}
-                  </div>
-                  <div className="flex items-center gap-1.5 flex-wrap">
-                    {(activeCountry.naturalRegions || []).map((reg) => {
-                      const isActive = searchQuery.toLowerCase() === reg.query.toLowerCase() || searchQuery.toLowerCase() === reg.name.toLowerCase();
-                      return (
-                        <button
-                          key={reg.name}
-                          onClick={() => {
-                            setSearchQuery(reg.query);
-                          }}
-                          className={`px-2.5 py-1 rounded-full text-[11px] font-semibold transition-all flex items-center gap-1.5 border cursor-pointer ${
-                            isActive
-                              ? "bg-[#ccff00] text-gray-950 font-bold border-[#ccff00] shadow-[0_0_12px_rgba(204,255,0,0.4)]"
-                              : "bg-white/5 hover:bg-white/15 text-white/80 border-white/10 hover:border-white/20 hover:text-white"
-                          }`}
-                        >
-                          <span>{reg.icon}</span>
-                          <span>{reg.name}</span>
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                {/* 2. Key Cities Quick Teleport */}
-                <div className="space-y-1.5 pt-2 border-t border-white/10">
-                  <div className="flex items-center justify-between text-[10px] font-mono text-white/50 font-bold uppercase tracking-wider">
-                    <span>Explorar Ciudades</span>
-                    <span className="text-[9.5px] font-mono text-[#ccff00] flex items-center gap-1">
-                      <MapPin className="w-2.5 h-2.5" /> Clic para enfocar
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-1.5 flex-wrap">
-                    {activeCountry.majorCities.map((city) => {
-                      const coords = resolveMultiCountryCoordinates(city, selectedCountry);
-                      const clientMatch = connectedClients.find(c => c && c.city && c.city.toLowerCase().includes(city.toLowerCase()));
-                      return (
-                        <button
-                          key={city}
-                          onClick={() => {
-                            setSearchQuery(city);
-                            if (coords.x >= 0 && coords.y >= 0) {
-                              focusOnLocation(coords.x, coords.y, 1.8);
-                            }
-                            if (clientMatch) {
-                              setSelectedClientId(clientMatch.id);
-                            }
-                            setIsSearchFocused(false);
-                          }}
-                          className="px-2.5 py-1 rounded-xl text-[10.5px] bg-white/5 hover:bg-[#ccff00]/15 hover:border-[#ccff00]/40 text-white/85 hover:text-[#ccff00] border border-white/10 transition-all flex items-center gap-1 cursor-pointer group"
-                        >
-                          <MapPin className="w-2.5 h-2.5 opacity-60 group-hover:opacity-100 group-hover:text-[#ccff00]" />
-                          <span>{city}</span>
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                {/* 3. Live Matching Clients List */}
-                {searchQuery.trim().length > 0 && (
-                  <div className="space-y-1.5 pt-2 border-t border-white/10">
-                    <div className="flex items-center justify-between text-[10px] font-mono text-white/50 font-bold uppercase tracking-wider">
-                      <span>Coincidencias en Vivo ({filteredActualClients.length})</span>
-                    </div>
-                    {filteredActualClients.length === 0 ? (
-                      <div className="py-3 text-center text-white/50 text-[11px]">
-                        No hay clientes conectados en &quot;{searchQuery}&quot;
-                      </div>
-                    ) : (
-                      <div className="max-h-44 overflow-y-auto space-y-1 pr-1" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
-                        {filteredActualClients.map((client) => (
-                          <div
-                            key={client.id}
-                            onClick={() => {
-                              setSelectedClientId(client.id);
-                              focusOnLocation(client.x, client.y, 1.9);
-                              setIsSearchFocused(false);
-                            }}
-                            className="p-2 rounded-xl bg-white/5 hover:bg-white/15 border border-white/10 hover:border-[#ccff00]/40 flex items-center justify-between cursor-pointer transition-all group"
-                          >
-                            <div className="flex items-center gap-2 truncate">
-                              <BlobatarAvatar
-                                name={client.id || client.name}
-                                size={26}
-                                animate="hover"
-                                background="circle"
-                                className="shrink-0"
-                              />
-                              <div className="truncate">
-                                <p className="text-xs font-semibold text-white group-hover:text-[#ccff00] transition-colors truncate">
-                                  {cleanClientName(client.name)}
-                                </p>
-                                <p className="text-[10px] text-white/50 truncate">
-                                  {client.city || activeCountry.name} • <span className="font-mono text-white/80">${client.totalSpent || 0}</span>
-                                </p>
-                              </div>
-                            </div>
-                            <span className="text-[9.5px] font-mono px-2 py-0.5 rounded bg-white/10 text-white/80 group-hover:bg-[#ccff00] group-hover:text-gray-950 font-bold transition-all shrink-0">
-                              Enfocar &rarr;
-                            </span>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                )}
-
-              </div>
-            )}
-          </div>
-
-          {/* Right side controls: Admin Location Prompt */}
-          <div className="flex items-center gap-2 pointer-events-auto shrink-0 flex-wrap justify-end">
-            {isAdmin && !hasAdminLocation && (
-              <button
-                onClick={handleNavigateToAddress}
-                className="group relative flex items-center gap-2 px-3.5 py-1.5 sm:px-4 sm:py-2 rounded-full bg-black/90 hover:bg-black backdrop-blur-2xl border border-[#ccff00]/80 hover:border-[#ccff00] text-white text-xs font-semibold shadow-[0_0_24px_rgba(204,255,0,0.35)] transition-all duration-300 hover:scale-[1.03] active:scale-95 cursor-pointer shrink-0"
-                title="Añade tu dirección para mostrar tu ubicación en el mapa"
-              >
-                <div className="relative flex items-center justify-center w-5 h-5 rounded-full bg-[#ccff00] text-gray-950 font-black shrink-0 shadow-[0_0_10px_#ccff00]/50">
-                  <MapPin className="w-3 h-3 text-gray-950" />
-                  <span className="absolute inset-0 rounded-full bg-[#ccff00] animate-ping opacity-75 pointer-events-none" />
-                </div>
-                <span className="font-semibold text-xs text-white group-hover:text-[#ccff00] transition-colors whitespace-nowrap">
-                  Mostrar mi ubicación también
-                </span>
-                <ArrowUpRight className="w-3.5 h-3.5 text-[#ccff00] transition-transform duration-300 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 shrink-0" />
-              </button>
-            )}
-          </div>
+              <span className="font-semibold text-xs text-white group-hover:text-[#ccff00] transition-colors whitespace-nowrap">
+                Mi Ubicación
+              </span>
+              <ArrowUpRight className="w-3.5 h-3.5 text-[#ccff00] transition-transform duration-300 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 shrink-0" />
+            </button>
+          )}
         </div>
 
       </div>
-
-      {/* Satellite Flight Transition HUD Badge */}
-      {flightPhase !== 'idle' && (
-        <div className="absolute top-20 left-1/2 -translate-x-1/2 z-50 pointer-events-none animate-in fade-in zoom-in-90 duration-200">
-          <div className="flex items-center gap-2.5 px-4 py-1.5 rounded-full bg-black/90 backdrop-blur-2xl border border-[#ccff00]/70 text-white shadow-[0_0_25px_rgba(204,255,0,0.35)]">
-            <span className="w-2 h-2 rounded-full bg-[#ccff00] animate-ping" />
-            <span className="text-[11px] font-mono font-bold tracking-wider text-[#ccff00]">
-              {flightPhase === 'takeoff' ? '🛰️ VUELO ORBITAL: ELEVANDO ALTITUD...' : `🎯 DESCENDIENDO EN ${activeCountry.name.toUpperCase()}...`}
-            </span>
-          </div>
-        </div>
-      )}
 
       {/* ========================================================================= */}
       {/* 4. LEFT HUD CONTROLS (ShotScape GIS Floating Toolstrip - Zero Widgets)    */}
