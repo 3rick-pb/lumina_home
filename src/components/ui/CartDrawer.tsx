@@ -67,79 +67,49 @@ function VisaLogo({ className = "h-4", fill = "#1A1F71" }: { className?: string;
 
 function PayPhoneIcon({ className = "w-4 h-4" }: { className?: string }) {
   return (
-    <svg className={`shrink-0 ${className}`} viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <rect width="100" height="100" rx="26" fill="#FF5E00" />
-      <path
-        d="M32 24H52C65.2548 24 76 34.7452 76 48C76 61.2548 65.2548 72 52 72H46V86H32V24Z"
-        fill="#FFFFFF"
-      />
-      <path
-        d="M46 38H52C57.5228 38 62 42.4772 62 48C62 53.5228 57.5228 58 52 58H46V38Z"
-        fill="#FF5E00"
-      />
-    </svg>
+    <Image
+      src="/images/payments/payphone.png"
+      alt="PayPhone"
+      width={48}
+      height={48}
+      className={`shrink-0 object-contain rounded-[4px] ${className}`}
+    />
   );
 }
 
 function DinersClubLogo({ className = "h-4" }: { className?: string }) {
   return (
-    <svg className={`shrink-0 ${className}`} viewBox="0 0 46 26" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <rect width="46" height="26" rx="4" fill="#0079BE" />
-      <circle cx="23" cy="13" r="10" fill="#004A97" />
-      <path
-        d="M19 7C15.7 7 13 9.7 13 13C13 16.3 15.7 19 19 19V7ZM27 7V19C30.3 19 33 16.3 33 13C33 9.7 30.3 7 27 7Z"
-        fill="#FFFFFF"
-      />
-      <rect x="20.5" y="8" width="5" height="10" fill="#004A97" />
-    </svg>
+    <Image
+      src="/images/payments/diners.png"
+      alt="Diners Club"
+      width={48}
+      height={32}
+      className={`shrink-0 object-contain ${className}`}
+    />
   );
 }
 
 function DiscoverLogo({ className = "h-4" }: { className?: string }) {
   return (
-    <svg className={`shrink-0 ${className}`} viewBox="0 0 62 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <path d="M1 2.5H6.2C10.2 2.5 13 5.4 13 10C13 14.6 10.2 17.5 6.2 17.5H1V2.5ZM4.2 14.7H6C8.5 14.7 10 13 10 10C10 7 8.5 5.3 6 5.3H4.2V14.7Z" fill="#18181B" />
-      <path d="M15.5 2.5H18.7V17.5H15.5V2.5Z" fill="#18181B" />
-      <path d="M21.5 14.2L23.8 13.5C24.5 15.2 25.8 15.8 27.2 15.8C28.5 15.8 29.4 15.2 29.4 14.3C29.4 13.3 28.5 12.9 26.8 12.3C23.8 11.3 22 10.2 22 7.5C22 4.7 24.5 2.8 27.5 2.8C30.1 2.8 32.1 4.1 32.8 6.2L30.6 7C30.1 5.7 29 4.9 27.6 4.9C26.4 4.9 25.4 5.5 25.4 6.5C25.4 7.4 26.1 7.9 27.9 8.5C30.9 9.5 32.8 10.6 32.8 13.4C32.8 16.4 30.5 18 27.3 18C24.2 18 22.2 16.4 21.5 14.2Z" fill="#18181B" />
-      <path d="M34.5 10C34.5 5.4 38 2.5 42.5 2.5C45.6 2.5 47.9 3.9 49 6L46.6 7.2C45.8 5.8 44.4 4.8 42.5 4.8C39.8 4.8 37.8 7 37.8 10C37.8 13 39.8 15.2 42.5 15.2C44.4 15.2 45.8 14.2 46.6 12.8L49 14C47.9 16.1 45.6 17.5 42.5 17.5C38 17.5 34.5 14.6 34.5 10Z" fill="#18181B" />
-      <circle cx="53.5" cy="10" r="7" fill="#FF6000" />
-    </svg>
+    <Image
+      src="/images/payments/discover.svg"
+      alt="Discover Network"
+      width={72}
+      height={22}
+      className={`shrink-0 object-contain ${className}`}
+    />
   );
 }
 
 function AmexLogo({ className = "h-4" }: { className?: string }) {
   return (
-    <svg className={`shrink-0 ${className}`} viewBox="0 0 46 26" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <rect width="46" height="26" rx="4" fill="#006FCF" />
-      <path
-        d="M7 18L10 9.5H12.8L15.8 18H13.4L12.8 16.2H10L9.4 18H7ZM10.6 14.5H12.2L11.4 11.8L10.6 14.5Z"
-        fill="#FFFFFF"
-      />
-      <path
-        d="M16.5 18V9.5H19.5L21.5 15.5L23.5 9.5H26.5V18H24.5V12.2L22.3 18H20.7L18.5 12.2V18H16.5Z"
-        fill="#FFFFFF"
-      />
-      <path
-        d="M28 18V9.5H34.5V11.5H30.2V12.7H34.1V14.7H30.2V16H34.5V18H28Z"
-        fill="#FFFFFF"
-      />
-      <path
-        d="M35.5 18L38.8 13.8L35.8 9.5H38.5L40.2 12.1L41.9 9.5H44.6L41.6 13.8L45 18H42.3L40.2 15.4L38.1 18H35.5Z"
-        fill="#FFFFFF"
-      />
-    </svg>
-  );
-}
-
-function AliaLogo({ className = "h-4" }: { className?: string }) {
-  return (
-    <svg className={`shrink-0 ${className}`} viewBox="0 0 46 26" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <rect width="46" height="26" rx="4" fill="#E30613" />
-      <circle cx="12" cy="13" r="6" fill="#FFFFFF" />
-      <circle cx="12" cy="13" r="3.8" fill="#E30613" />
-      <circle cx="12" cy="13" r="1.8" fill="#FFC800" />
-      <text x="21" y="16.5" fill="#FFFFFF" fontFamily="system-ui, -apple-system, sans-serif" fontWeight="900" fontSize="11" letterSpacing="-0.3">alia</text>
-    </svg>
+    <Image
+      src="/images/payments/amex.png"
+      alt="American Express"
+      width={48}
+      height={32}
+      className={`shrink-0 object-contain ${className}`}
+    />
   );
 }
 
@@ -1884,7 +1854,7 @@ export function CartDrawer() {
         </div>
         <div>
           <h4 className="font-bold text-xs uppercase tracking-wider text-gray-900 dark:text-gray-100">
-            Pasarela Oficial de Pago
+            Métodos de Pago
           </h4>
           <p className="text-[11px] text-gray-500 dark:text-gray-400">PayPhone Ecuador • Cobro Cifrado</p>
         </div>
@@ -1919,7 +1889,7 @@ export function CartDrawer() {
         
         <div className="flex items-center gap-2">
           <span className="px-3 py-1 rounded-full bg-white/90 dark:bg-black/40 text-[11px] font-bold text-gray-800 dark:text-gray-200 border border-black/[0.06] dark:border-white/10 flex items-center gap-1.5 shadow-2xs">
-            <PayPhoneIcon className="w-3.5 h-3.5 text-[#FF5E00]" />
+            <PayPhoneIcon className="w-3.5 h-3.5" />
             <span>PayPhone</span>
           </span>
           <span className="px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 text-[10px] font-bold border border-emerald-500/20">
@@ -2010,7 +1980,7 @@ export function CartDrawer() {
             className="h-8 px-2 rounded-lg bg-white dark:bg-white/95 border border-black/10 dark:border-white/20 shadow-2xs flex items-center justify-center transition-transform hover:scale-105" 
             title="American Express"
           >
-            <AmexLogo className="h-4.5" />
+            <AmexLogo className="h-4" />
           </div>
 
           {/* Diners Club */}
@@ -2018,7 +1988,7 @@ export function CartDrawer() {
             className="h-8 px-2 rounded-lg bg-white dark:bg-white/95 border border-black/10 dark:border-white/20 shadow-2xs flex items-center justify-center transition-transform hover:scale-105" 
             title="Diners Club International"
           >
-            <DinersClubLogo className="h-4.5" />
+            <DinersClubLogo className="h-4" />
           </div>
 
           {/* Discover */}
@@ -2026,15 +1996,7 @@ export function CartDrawer() {
             className="h-8 px-2.5 rounded-lg bg-white dark:bg-white/95 border border-black/10 dark:border-white/20 shadow-2xs flex items-center justify-center transition-transform hover:scale-105" 
             title="Discover Network"
           >
-            <DiscoverLogo className="h-3" />
-          </div>
-
-          {/* Alia */}
-          <div 
-            className="h-8 px-2 rounded-lg bg-white dark:bg-white/95 border border-black/10 dark:border-white/20 shadow-2xs flex items-center justify-center transition-transform hover:scale-105" 
-            title="Tarjetas Alia"
-          >
-            <AliaLogo className="h-4.5" />
+            <DiscoverLogo className="h-3.5" />
           </div>
         </div>
 
@@ -2182,15 +2144,15 @@ export function CartDrawer() {
             className="w-full h-full flex items-center justify-between px-3.5 sm:px-5"
           >
             {/* Left: PayPhone icon + Action Title in a clean single line */}
-            <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
+            <div className="flex items-center gap-2.5 sm:gap-3 min-w-0 flex-1">
               <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-white/15 dark:bg-black/10 flex items-center justify-center shrink-0 border border-white/20 dark:border-black/10 shadow-2xs">
                 {isProcessing ? (
                   <Loader2 className="w-4 h-4 animate-spin text-white dark:text-[#18181b]" />
                 ) : (
-                  <PayPhoneIcon className="w-4.5 h-4.5 text-white dark:text-[#18181b]" />
+                  <PayPhoneIcon className="w-5 h-5" />
                 )}
               </div>
-              <span className="text-xs sm:text-sm font-bold tracking-tight text-white dark:text-[#18181b] whitespace-nowrap">
+              <span className="text-xs sm:text-sm font-bold tracking-tight text-white dark:text-[#18181b] truncate">
                 {isProcessing 
                   ? "Conectando con PayPhone..." 
                   : "Pagar con PayPhone"}
@@ -2199,7 +2161,7 @@ export function CartDrawer() {
 
             {/* Right: Amount pill + Circular Arrow badge */}
             <div className="flex items-center gap-2 shrink-0 ml-2">
-              <span className="text-xs font-mono font-extrabold px-2.5 sm:px-3 py-1 rounded-full bg-white/15 dark:bg-black/10 text-white dark:text-[#18181b] border border-white/20 dark:border-black/10 whitespace-nowrap">
+              <span className="text-xs font-mono font-extrabold px-2.5 sm:px-3 py-1 rounded-full bg-white/15 dark:bg-black/10 text-white dark:text-[#18181b] border border-white/20 dark:border-black/10 whitespace-nowrap shrink-0">
                 ${finalTotal.toFixed(2)}
               </span>
               <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-white dark:bg-[#18181b] text-[#18181b] dark:text-white flex items-center justify-center shadow-xs group-hover:translate-x-0.5 transition-transform shrink-0">
@@ -2306,7 +2268,7 @@ export function CartDrawer() {
         <div className="flex items-center justify-between pb-4 border-b border-black/[0.06] dark:border-white/5">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-full bg-black/5 dark:bg-white/10 flex items-center justify-center border border-black/[0.06] dark:border-white/10">
-              <PayPhoneIcon className="w-6 h-6 text-[#FF5E00]" />
+              <PayPhoneIcon className="w-6 h-6" />
             </div>
             <div>
               <h3 className="font-extrabold text-base text-gray-900 dark:text-gray-100 flex items-center gap-2">
