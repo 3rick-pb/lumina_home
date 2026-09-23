@@ -24,7 +24,10 @@ interface ProductCardProps {
 }
 
 export function ProductCard({ id, title, price, oldPrice, discount, badge, imageUrl, colors, stock }: ProductCardProps) {
-  const { addItem } = useCartStore();
+  const addItem = useCartStore((state) => state.addItem);
+  const isInBag = useCartStore((state) =>
+    state.items.some((item) => !item.isBundle && (item.productId === id || item.product?.id === id))
+  );
   const { toggleFavorite, isFavorite } = useUserStore();
   const [isMounted, setIsMounted] = React.useState(false);
   const [isAdding, setIsAdding] = React.useState(false);
@@ -43,6 +46,7 @@ export function ProductCard({ id, title, price, oldPrice, discount, badge, image
 
   const isFav = isMounted ? isFavorite(id) : false;
   const isAgotado = isAgotadoBadge(badge) || (stock !== undefined && stock <= 0);
+  const showAddedState = (isMounted && isInBag) || isAdding;
 
   return (
     <Link href={`/product/${id}`} className="group flex flex-col bg-transparent transform-gpu">
@@ -138,13 +142,13 @@ export function ProductCard({ id, title, price, oldPrice, discount, badge, image
           className={`mt-auto w-full py-1.5 sm:py-2.5 rounded-lg sm:rounded-xl backdrop-blur-md border text-xs sm:text-sm font-medium flex items-center justify-center gap-1.5 sm:gap-2 shadow-sm cursor-pointer ${
             isAgotado 
               ? "bg-gray-100/90 dark:bg-white/5 border-gray-200 dark:border-white/10 text-gray-400 cursor-not-allowed" 
-              : isAdding
+              : showAddedState
                 ? "bg-emerald-500/15 dark:bg-emerald-400/15 border-emerald-500/40 text-emerald-800 dark:text-emerald-300 shadow-[0_0_16px_rgba(16,185,129,0.2)]"
                 : "bg-white/40 dark:bg-white/10 border-white/60 dark:border-white/15 text-gray-900 dark:text-gray-100 hover:bg-white/60 dark:hover:bg-white/20 active:scale-[0.96]"
           }`}
           onClick={(e) => { 
             e.preventDefault(); 
-            if (isAgotado) return;
+            if (isAgotado || (isMounted && isInBag)) return;
             setIsAdding(true);
             setTimeout(() => setIsAdding(false), 750);
             const product = useCatalogStore.getState().products.find(p => p.id === id);
@@ -158,9 +162,9 @@ export function ProductCard({ id, title, price, oldPrice, discount, badge, image
             <span className="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-red-600">Agotado</span>
           ) : (
             <BeUIActionSwapLabel
-              active={isAdding}
+              active={showAddedState}
               idleText="Añadir a la Bolsa"
-              activeText="¡En tu Bolsa!"
+              activeText="Se agregó a la bolsa"
               idleIcon={<ShoppingBag className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />}
               activeIcon={<Check className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-emerald-500 shrink-0" />}
             />

@@ -61,8 +61,14 @@ export default function ProductDetail({ params }: { params: Promise<{ id: string
     return rawTotal;
   }, [selectedCombo, product.price, products]);
 
+  const isInBag = useCartStore((state) =>
+    state.items.some((item) => !item.isBundle && (item.productId === product.id || item.product?.id === product.id))
+  );
+  const showAddedState = (isMounted && !selectedCombo && isInBag) || isAdding;
+
   const handleAddToCart = () => {
     if (isAgotado) return;
+    if (!selectedCombo && isInBag) return;
     setIsAdding(true);
 
     const hasProductSizes = Boolean(product.sizes && product.sizes.length > 0);
@@ -98,7 +104,7 @@ export default function ProductDetail({ params }: { params: Promise<{ id: string
       );
     }
 
-    setTimeout(() => setIsAdding(false), 1500);
+    setTimeout(() => setIsAdding(false), 1000);
   };
 
   const defaultFallback = "https://images.unsplash.com/photo-1507473885765-e6ed057f782c?q=80&w=800&auto=format&fit=crop";
@@ -444,9 +450,9 @@ export default function ProductDetail({ params }: { params: Promise<{ id: string
                   </span>
                 ) : (
                   <BeUIActionSwapLabel
-                    active={isAdding}
+                    active={showAddedState}
                     idleText="Añadir a la Bolsa"
-                    activeText="Añadido a la Bolsa"
+                    activeText="Se agregó a la bolsa"
                     idleIcon={<ShoppingBag className="w-5 h-5" />}
                     activeIcon={<Check className="w-5 h-5 text-emerald-600" />}
                   />

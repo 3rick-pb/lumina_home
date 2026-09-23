@@ -552,49 +552,53 @@ export function BeUIAdaptiveStepper({
   const atMin = disableDecrement || value <= min;
   const atMax = disableIncrement || value >= max;
 
-  // Geometry presets matching official `@beui/adaptive-stepper` proportions
-  // Compact enough to fit table columns with generous breathing room while preserving full liquid morph
+  // Geometry presets with resting gap >= 4x blur radius so (-), [value], and (+)
+  // snap 100% cleanly apart into 3 separate islands at rest (value >= 2), while
+  // fusing and stretching with the liquid bridge during 1 <-> 2 transitions.
   const dims = useMemo(() => {
     if (size === "lg") {
       return {
-        totalW: 168,
-        h: 42,
+        totalW: 176,
+        h: 40,
         btnW: 40,
+        blur: 4.4,
         minHiddenX: 24,
-        maxHiddenX: 104,
-        maxVisibleX: 128,
-        bothAtBounds: { x: 0, width: 168 },
-        atMinGeo: { x: 0, width: 118 },
-        atMaxGeo: { x: 50, width: 118 },
-        midGeo: { x: 48, width: 72 },
+        maxHiddenX: 112,
+        maxVisibleX: 136,
+        bothAtBounds: { x: 0, width: 176 },
+        atMinGeo: { x: 0, width: 120 },
+        atMaxGeo: { x: 56, width: 120 },
+        midGeo: { x: 56, width: 64 }, // 16px clear gap on both sides (3.6x blur)
       };
     }
     if (size === "sm") {
       return {
-        totalW: 118,
-        h: 32,
+        totalW: 124,
+        h: 30,
         btnW: 30,
+        blur: 3.0,
         minHiddenX: 18,
-        maxHiddenX: 72,
-        maxVisibleX: 88,
-        bothAtBounds: { x: 0, width: 118 },
+        maxHiddenX: 76,
+        maxVisibleX: 94,
+        bothAtBounds: { x: 0, width: 124 },
         atMinGeo: { x: 0, width: 82 },
-        atMaxGeo: { x: 36, width: 82 },
-        midGeo: { x: 35, width: 48 },
+        atMaxGeo: { x: 42, width: 82 },
+        midGeo: { x: 42, width: 40 }, // 12px clear gap on both sides (4.0x blur)
       };
     }
-    // `md` default (used in Shopping Bag — 132px wide x 36px high so it never touches Subtotal or Product title)
+    // `md` default (used in Shopping Bag — 140px wide x 34px high)
     return {
-      totalW: 132,
-      h: 36,
+      totalW: 140,
+      h: 34,
       btnW: 34,
+      blur: 3.5,
       minHiddenX: 20,
-      maxHiddenX: 80,
-      maxVisibleX: 98,
-      bothAtBounds: { x: 0, width: 132 },
+      maxHiddenX: 86,
+      maxVisibleX: 106,
+      bothAtBounds: { x: 0, width: 140 },
       atMinGeo: { x: 0, width: 92 },
-      atMaxGeo: { x: 40, width: 92 },
-      midGeo: { x: 39, width: 54 },
+      atMaxGeo: { x: 48, width: 92 },
+      midGeo: { x: 48, width: 44 }, // 14px clear gap on both sides (4.0x blur -> 100% separated at rest!)
     };
   }, [size]);
 
@@ -607,10 +611,9 @@ export function BeUIAdaptiveStepper({
       ? dims.atMaxGeo
       : dims.midGeo;
 
-  // Subtle liquid bridge kiss on intermediate steps (`2 -> 3`, `3 -> 2`) so the
-  // SVG gooey filter visibly stretches even when neither bound is reached.
-  const centerX = baseCenterGeo.x + stepNudge * 6;
-  const centerW = baseCenterGeo.width + Math.abs(stepNudge) * 6;
+  // Subtle recoil on intermediate steps (`2 -> 3`, `3 -> 2`) that stays well clear of the 14px gap
+  const centerX = baseCenterGeo.x + stepNudge * 3.5;
+  const centerW = baseCenterGeo.width + Math.abs(stepNudge) * 3;
 
   const leftBtnX = atMin ? dims.minHiddenX : 0;
   const rightBtnX = atMax ? dims.maxHiddenX : dims.maxVisibleX;
@@ -621,7 +624,7 @@ export function BeUIAdaptiveStepper({
     setDirection(dir);
     setStepNudge(dir);
     playStepperTickSound(dir === 1 ? "up" : "down");
-    setTimeout(() => setStepNudge(0), 220);
+    setTimeout(() => setStepNudge(0), 200);
     callback();
   };
 
@@ -633,8 +636,8 @@ export function BeUIAdaptiveStepper({
       className="relative isolate inline-block select-none shrink-0 text-[#f3f3f6] dark:text-[#232329]"
     >
       <Liquid
-        blur={7}
-        contrast={22}
+        blur={dims.blur}
+        contrast={20}
         fill="currentColor"
         edgeColor="rgba(140, 140, 155, 0.35)"
         edgeOpacity={0.32}

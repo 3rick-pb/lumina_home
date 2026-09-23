@@ -12,7 +12,7 @@ import { CloudSyncStatus } from "../CloudSyncStatus";
 export function FavoritesTab() {
   const { favorites, toggleFavorite, user } = useUserStore();
   const { products } = useCatalogStore();
-  const { addItem, setIsOpen: setCartOpen } = useCartStore();
+  const { items, addItem, setIsOpen: setCartOpen } = useCartStore();
   const [isSyncing, setIsSyncing] = useState(false);
   const [syncError, setSyncError] = useState<string | null>(null);
 
@@ -70,7 +70,11 @@ export function FavoritesTab() {
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          {favoritedProductsList.map((prod) => (
+          {favoritedProductsList.map((prod) => {
+            const isInBag = items.some(
+              (item) => !item.isBundle && (item.productId === prod.id || item.product?.id === prod.id)
+            );
+            return (
             <div key={prod.id} className="bg-white dark:bg-[#202022] rounded-3xl border border-gray-100 dark:border-white/5 p-4 shadow-sm dark:shadow-none hover:shadow-md dark:shadow-none transition-shadow flex flex-col justify-between">
               <div className="relative aspect-square rounded-2xl overflow-hidden mb-3 bg-gray-50 dark:bg-[#2a2a2c]">
                 <Image 
@@ -104,17 +108,23 @@ export function FavoritesTab() {
                 </Link>
                 <button 
                   onClick={() => {
+                    if (isInBag) return;
                     addItem(prod);
                     setCartOpen(true);
                   }}
-                  className="py-2 px-3 bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 rounded-xl text-xs font-medium hover:bg-gray-800 transition-colors"
-                  title="Añadir a la bolsa"
+                  className={`py-2 px-3 rounded-xl text-xs font-medium transition-colors cursor-pointer ${
+                    isInBag
+                      ? "bg-emerald-500/15 text-emerald-800 dark:text-emerald-300 border border-emerald-500/30"
+                      : "bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 hover:bg-gray-800"
+                  }`}
+                  title={isInBag ? "Se agregó a la bolsa" : "Añadir a la bolsa"}
                 >
-                  Comprar
+                  {isInBag ? "Se agregó a la bolsa" : "Añadir a la Bolsa"}
                 </button>
               </div>
             </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>

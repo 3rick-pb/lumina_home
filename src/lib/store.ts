@@ -284,24 +284,22 @@ export const useCartStore = create<CartState>((set, get) => ({
   },
 
   addItem: (product, quantity = 1, color, size) => {
+    const alreadyInBag = get().items.some(
+      (item) => !item.isBundle && (item.productId === product.id || item.product?.id === product.id)
+    );
+    if (alreadyInBag) {
+      return;
+    }
+
     // Play signature luxury add-to-cart chime
     playAddToCartSound();
 
     const currentUserId = get().currentUserId;
     const cartItemId = `${product.id}-${color || 'default'}-${size || 'default'}`;
-    const existingItem = get().items.find((item) => item.id === cartItemId);
-    
-    let newItems: CartItem[];
-    if (existingItem) {
-      newItems = get().items.map((item) =>
-        item.id === cartItemId ? { ...item, quantity: item.quantity + quantity } : item
-      );
-    } else {
-      newItems = [
-        ...get().items,
-        { id: cartItemId, productId: product.id, product, quantity, color, size },
-      ];
-    }
+    const newItems: CartItem[] = [
+      ...get().items,
+      { id: cartItemId, productId: product.id, product, quantity, color, size },
+    ];
 
     const payload: CartStoragePayload = {
       items: newItems,

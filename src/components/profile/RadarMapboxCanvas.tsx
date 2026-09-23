@@ -362,10 +362,12 @@ interface RadarMapboxCanvasProps {
   ) => React.ReactNode;
 }
 
-// Cap cache size to protect low-VRAM / integrated GPU devices
-const MAX_TILE_CACHE_SIZE = 180;
+// Cap cache size at 2000 tiles with LRU refresh so visible viewport tiles are NEVER evicted
+const MAX_TILE_CACHE_SIZE = 2000;
 function cacheTileImage(url: string, img: HTMLImageElement) {
-  if (tileImageCache.size >= MAX_TILE_CACHE_SIZE) {
+  if (tileImageCache.has(url)) {
+    tileImageCache.delete(url);
+  } else if (tileImageCache.size >= MAX_TILE_CACHE_SIZE) {
     const oldestKey = tileImageCache.keys().next().value;
     if (oldestKey) tileImageCache.delete(oldestKey);
   }
@@ -383,6 +385,8 @@ export function RadarMapboxCanvas({
 }: RadarMapboxCanvasProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const onMapReadyRef = useRef(onMapReady);
+  onMapReadyRef.current = onMapReady;
 
   const initialGeo = COUNTRY_GEO_CONFIG[selectedCountry] || COUNTRY_GEO_CONFIG.EC;
 
@@ -424,7 +428,7 @@ export function RadarMapboxCanvas({
       for (const entry of entries) {
         const w = Math.round(entry.contentRect.width);
         const h = Math.round(entry.contentRect.height);
-        if (w > 0 && h > 0 && (Math.abs(camRef.current.width - w) > 1 || Math.abs(camRef.current.height - h) > 1)) {
+        if (w > 0 && h > 0 && (Math.abs(camRef.current.width - w) > 2 || Math.abs(camRef.current.height - h) > 2)) {
           camRef.current.width = w;
           camRef.current.height = h;
           requestRepaint();
@@ -444,7 +448,12 @@ export function RadarMapboxCanvas({
 
       const url = getTileUrl(provider, z, x, y);
       const cached = tileImageCache.get(url);
-      if (cached) return cached;
+      if (cached) {
+        // Refresh LRU position so active screen tiles are never evicted
+        tileImageCache.delete(url);
+        tileImageCache.set(url, cached);
+        return cached;
+      }
 
       if (!tileLoadingSet.has(url) && typeof window !== "undefined") {
         tileLoadingSet.add(url);
@@ -521,11 +530,11 @@ export function RadarMapboxCanvas({
           if (exactImg) {
             ctx.drawImage(exactImg, screenX, screenY, drawnTileSize + 0.35, drawnTileSize + 0.35);
           } else if (zTile > 2) {
-            // Level-1 Parent Fallback (Standard z) while HD tile streams in
+            // Level-1 Parent Fallback from cache (without spawning redundant network requests)
             const parentZ1 = zTile - 1;
             const p1x = Math.floor(tx / 2);
             const p1y = Math.floor(ty / 2);
-            const parentImg1 = fetchTile(provider, parentZ1, p1x, p1y);
+            const parentImg1 = tileImageCache.get(getTileUrl(provider, parentZ1, p1x, p1y));
             if (parentImg1) {
               const subX = ((tx % 2) + 2) % 2;
               const subY = ((ty % 2) + 2) % 2;
@@ -543,11 +552,11 @@ export function RadarMapboxCanvas({
                 drawnTileSize + 0.4
               );
             } else if (zTile > 3) {
-              // Level-2 Grandparent Fallback so zooming never shows blank squares
+              // Level-2 Grandparent Fallback from cache
               const parentZ2 = zTile - 2;
               const p2x = Math.floor(tx / 4);
               const p2y = Math.floor(ty / 4);
-              const parentImg2 = fetchTile(provider, parentZ2, p2x, p2y);
+              const parentImg2 = tileImageCache.get(getTileUrl(provider, parentZ2, p2x, p2y));
               if (parentImg2) {
                 const subX = ((tx % 4) + 4) % 4;
                 const subY = ((ty % 4) + 4) % 4;
@@ -578,7 +587,7 @@ export function RadarMapboxCanvas({
   // Event-Driven On-Demand Render Loop (0% Idle GPU usage on low-end hardware)
   useEffect(() => {
     let mounted = true;
-    onMapReady?.();
+    onMapReadyRef.current?.();
 
     const renderStep = () => {
       rafIdRef.current = 0;
@@ -707,7 +716,7 @@ export function RadarMapboxCanvas({
         rafIdRef.current = 0;
       }
     };
-  }, [drawTileLayer, mapStyleMode, onMapReady]);
+  }, [drawTileLayer, mapStyleMode]);
 
   // Fly to selected country when changed
   useEffect(() => {

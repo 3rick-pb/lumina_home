@@ -303,8 +303,13 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
   const setSelectedCountry = useRadarStore((state) => state.setSelectedCountry);
   const activeCountry = RADAR_COUNTRIES[selectedCountry] || RADAR_COUNTRIES.EC;
 
-  // 5-Second Fluid Giant ThinkingOrb Preparation State while background telemetry & Mapbox WebGL sync
-  const [isPreparingRadar, setIsPreparingRadar] = useState<boolean>(true);
+  // 5-Second Fluid Giant ThinkingOrb Preparation State — locked once finished so it never flickers back
+  const [isPreparingRadar, setIsPreparingRadar] = useState<boolean>(() => {
+    if (typeof window !== "undefined" && (window as unknown as { __luminaRadarIntroDone?: boolean }).__luminaRadarIntroDone) {
+      return false;
+    }
+    return true;
+  });
   const [focusTarget, setFocusTarget] = useState<{
     xPct: number;
     yPct: number;
@@ -315,8 +320,15 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
   const [resetCommandSeq, setResetCommandSeq] = useState<number>(0);
 
   useEffect(() => {
-    setIsPreparingRadar(true);
+    if (typeof window !== "undefined" && (window as unknown as { __luminaRadarIntroDone?: boolean }).__luminaRadarIntroDone) {
+      setIsPreparingRadar(false);
+      setIsMapLoaded(true);
+      return;
+    }
     const t = setTimeout(() => {
+      if (typeof window !== "undefined") {
+        (window as unknown as { __luminaRadarIntroDone?: boolean }).__luminaRadarIntroDone = true;
+      }
       setIsPreparingRadar(false);
       setIsMapLoaded(true);
     }, 5000);
@@ -1059,8 +1071,8 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
       {/* ========================================================================= */}
       <div 
         ref={mapContainerRef}
-        className={`absolute inset-0 z-10 overflow-hidden transition-all duration-700 ${
-          isPreparingRadar ? "opacity-45 scale-[1.02] pointer-events-none" : "opacity-100 scale-100"
+        className={`absolute inset-0 z-10 overflow-hidden transition-opacity duration-500 ${
+          isPreparingRadar ? "opacity-45 pointer-events-none" : "opacity-100"
         }`}
       >
         <RadarMapboxCanvas

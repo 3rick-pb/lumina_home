@@ -68,6 +68,9 @@ export function ProductLandingView({
 }: ProductLandingViewProps) {
   const isAgotado = isAgotadoProp || (product.stock !== undefined && product.stock <= 0);
   const { addItem, addBundle } = useCartStore();
+  const isInBag = useCartStore((state) =>
+    state.items.some((item) => !item.isBundle && (item.productId === product.id || item.product?.id === product.id))
+  );
   const { toggleFavorite, isFavorite } = useUserStore();
   const isFav = isFavorite(product.id);
 
@@ -309,6 +312,7 @@ export function ProductLandingView({
 
   const handleBuyBoxAction = () => {
     if (isAgotado) return;
+    if (!selectedCombo && isInBag) return;
     if (selectedCombo) {
       const companions = allProducts.filter(p => selectedCombo.companionProductIds?.includes(p.id));
       const comboProductsList = [
@@ -674,19 +678,19 @@ export function ProductLandingView({
 
                 <button
                   onClick={handleBuyBoxAction}
-                  disabled={isAgotado || isAdding}
-                  className={`flex-1 flex items-center justify-center gap-2.5 py-4 px-6 rounded-2xl font-bold text-sm sm:text-base tracking-wide transition-all shadow-xl ${
+                  disabled={isAgotado}
+                  className={`flex-1 flex items-center justify-center gap-2.5 py-4 px-6 rounded-2xl font-bold text-sm sm:text-base tracking-wide transition-all shadow-xl cursor-pointer ${
                     isAgotado
                       ? "bg-gray-200 dark:bg-white/10 text-gray-400 cursor-not-allowed"
-                      : isAdding
-                      ? "bg-emerald-600 text-white shadow-emerald-500/20 scale-[0.99]"
+                      : (!selectedCombo && isInBag) || isAdding
+                      ? "bg-emerald-600 text-white shadow-emerald-500/20"
                       : "bg-gray-950 dark:bg-white text-white dark:text-gray-950 hover:opacity-90 shadow-gray-950/20 dark:shadow-white/10 active:scale-[0.98]"
                   }`}
                 >
-                  {isAdding ? (
+                  {(!selectedCombo && isInBag) || isAdding ? (
                     <>
                       <Check className="w-5 h-5" />
-                      <span>¡Añadido a la bolsa!</span>
+                      <span>Se agregó a la bolsa</span>
                     </>
                   ) : isAgotado ? (
                     <span>Agotado Temporalmente</span>
