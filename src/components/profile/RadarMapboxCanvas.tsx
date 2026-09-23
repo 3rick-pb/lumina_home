@@ -729,15 +729,16 @@ export function RadarMapboxCanvas({
           const dLng = cam.targetLng - cam.lng;
           const dLat = cam.targetLat - cam.lat;
           const dZoom = cam.targetZoom - cam.zoom;
-          if (Math.abs(dLng) < 0.0003 && Math.abs(dLat) < 0.0003 && Math.abs(dZoom) < 0.0015) {
+          if (Math.abs(dLng) < 0.00015 && Math.abs(dLat) < 0.00015 && Math.abs(dZoom) < 0.0008) {
             cam.lng = cam.targetLng;
             cam.lat = cam.targetLat;
             cam.zoom = cam.targetZoom;
             cam.animating = false;
           } else {
-            cam.lng += dLng * 0.14;
-            cam.lat += dLat * 0.14;
-            cam.zoom += dZoom * 0.14;
+            // Silky smooth exponential spring interpolation (60-120fps)
+            cam.lng += dLng * 0.105;
+            cam.lat += dLat * 0.105;
+            cam.zoom += dZoom * 0.115;
           }
           dirtyRef.current = true;
           setRenderTick((t) => (t + 1) % 1000000);
@@ -844,7 +845,7 @@ export function RadarMapboxCanvas({
     prevZoomCommandRef.current = zoomCommand;
 
     const delta = Math.log2(ratio);
-    camRef.current.targetZoom = Math.max(3.2, Math.min(14.5, camRef.current.zoom + delta * 1.25));
+    camRef.current.targetZoom = Math.max(3.2, Math.min(14.5, camRef.current.targetZoom + delta * 1.25));
     camRef.current.animating = true;
     requestRepaint();
   }, [zoomCommand, requestRepaint]);
@@ -878,7 +879,7 @@ export function RadarMapboxCanvas({
     requestRepaint();
   }, [focusTarget, selectedCountry, requestRepaint]);
 
-  // Exact Web Mercator projection helper — uses live container dimensions and exact `(centerWx, centerWy)` origin
+  // Exact Web Mercator projection helper — uses live container dimensions and integer pixel snapping for crisp avatars
   const projectPin = useCallback(
     (
       cityName: string | undefined,
@@ -900,9 +901,9 @@ export function RadarMapboxCanvas({
       const pinWx = lngToMercatorX(lng, cam.zoom);
       const pinWy = latToMercatorY(lat, cam.zoom);
 
-      // Exact GPS city origin + radial dispersion ring in screen pixels (1x = ~19px ring, 2x = ~39px ring)
-      const x = pinWx - centerWx + liveW / 2 + offsetX * 7.5;
-      const y = pinWy - centerWy + liveH / 2 + offsetY * 7.5;
+      // Snap to exact integer pixels so anchor avatars are never subpixel-blurred
+      const x = Math.round(pinWx - centerWx + liveW / 2 + offsetX * 7.5);
+      const y = Math.round(pinWy - centerWy + liveH / 2 + offsetY * 7.5);
       const visible = x >= -60 && x <= liveW + 60 && y >= -60 && y <= liveH + 60;
       const isMoving = isDraggingRef.current || cam.animating;
 
@@ -975,11 +976,10 @@ export function RadarMapboxCanvas({
 
   const handleWheel = (e: React.WheelEvent<HTMLDivElement>) => {
     e.preventDefault();
-    const zoomDelta = -e.deltaY * 0.0018;
-    const nextZoom = Math.max(3.2, Math.min(14.5, camRef.current.zoom + zoomDelta));
-    camRef.current.zoom = nextZoom;
-    camRef.current.targetZoom = nextZoom;
-    camRef.current.animating = false;
+    const zoomDelta = -e.deltaY * 0.0022;
+    const nextTargetZoom = Math.max(3.2, Math.min(14.5, camRef.current.targetZoom + zoomDelta));
+    camRef.current.targetZoom = nextTargetZoom;
+    camRef.current.animating = true;
     requestRepaint();
   };
 

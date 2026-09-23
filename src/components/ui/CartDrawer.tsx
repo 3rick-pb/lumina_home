@@ -769,7 +769,6 @@ export function CartDrawer() {
       />
       <button 
         onClick={() => {
-          playStepperTickSound("down");
           setStep("bag");
         }}
         className={`relative z-10 text-center px-3.5 sm:px-4 py-1.5 rounded-full text-xs font-semibold transition-colors cursor-pointer whitespace-nowrap active:scale-95 ${
@@ -783,7 +782,6 @@ export function CartDrawer() {
       <button 
         onClick={() => {
           if (items.length > 0) {
-            playStepperTickSound("up");
             handleProceedToPayment();
           }
         }}

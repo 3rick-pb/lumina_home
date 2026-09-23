@@ -129,13 +129,8 @@ export function AdminCartNotifier() {
     >
       {/* CSS Grid stack: All cards share gridArea 1 / 1 / 2 / 2 for zero-thrash, butter-smooth 120fps card stacking */}
       <div className={`relative pointer-events-auto grid grid-cols-1 grid-rows-1 ${isBottom ? "items-end" : "items-start"} ${isRight ? "justify-items-end" : "justify-items-start"} select-none`}>
-        <AnimatePresence mode="popLayout">
+        <AnimatePresence initial={false}>
           {displayAlerts.map((item, index) => {
-            // Directional corner stacking offsets (Inverted to stack towards the corner origin):
-            // - bottom-left: stacks down (+Y) and left (-X) towards bottom-left corner
-            // - bottom-right: stacks down (+Y) and right (+X) towards bottom-right corner
-            // - top-right: stacks up (-Y) and right (+X) towards top-right corner
-            // - top-left: stacks up (-Y) and left (-X) towards top-left corner
             const step = 14;
             const yOffset = isBottom ? index * step : -index * step;
             const xOffset = isRight ? index * step : -index * step;
@@ -150,17 +145,17 @@ export function AdminCartNotifier() {
             return (
               <motion.div
                 key={item.id}
-                layout
                 style={{ 
                   gridArea: "1 / 1 / 2 / 2",
                   zIndex,
                   transformOrigin,
+                  willChange: "transform, opacity",
                 }}
                 initial={{
                   opacity: 0,
-                  scale: 0.8,
-                  y: isBottom ? 35 : -35,
-                  x: isRight ? 20 : -20,
+                  scale: 0.88,
+                  y: isBottom ? 28 : -28,
+                  x: isRight ? 16 : -16,
                 }}
                 animate={{
                   opacity,
@@ -168,22 +163,22 @@ export function AdminCartNotifier() {
                   y: yOffset,
                   x: xOffset,
                   zIndex,
-                  filter: index > 0 ? `brightness(${Math.max(0.85, 1 - index * 0.07)})` : "none",
                   transition: {
                     type: "spring",
-                    stiffness: 350,
-                    damping: 26,
-                    mass: 0.8,
+                    stiffness: 420,
+                    damping: 30,
+                    mass: 0.7,
                   },
                 }}
                 exit={{
                   opacity: 0,
-                  scale: 0.7,
-                  y: isBottom ? 20 : -20,
-                  x: isRight ? 20 : -20,
+                  scale: 0.88,
+                  y: isBottom ? 18 : -18,
+                  x: isRight ? 14 : -14,
+                  pointerEvents: "none",
                   transition: {
-                    duration: 0.22,
-                    ease: [0.32, 0, 0.67, 0],
+                    duration: 0.16,
+                    ease: [0.22, 1, 0.36, 1],
                   },
                 }}
                 onClick={() => {
@@ -191,8 +186,8 @@ export function AdminCartNotifier() {
                     bringToFront(item.id);
                   }
                 }}
-                className={`filter drop-shadow-2xl transition-all duration-200 ${
-                  index > 0 ? "cursor-pointer hover:scale-[0.96] hover:brightness-100" : ""
+                className={`transform-gpu ${
+                  index > 0 ? "cursor-pointer" : ""
                 }`}
               >
                 <CartAlertCard

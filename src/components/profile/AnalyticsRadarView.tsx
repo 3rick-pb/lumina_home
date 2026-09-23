@@ -1027,8 +1027,33 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
       {/* ========================================================================= */}
       <div 
         ref={mapContainerRef}
-        className={`absolute inset-0 z-10 overflow-hidden transition-opacity duration-500 ${
-          isPreparingRadar ? "opacity-45 pointer-events-none" : "opacity-100"
+        style={{
+          transform:
+            flightPhase === "takeoff"
+              ? `translate3d(${-flightVector.x * 0.7}px, ${-flightVector.y * 0.7}px, 0) scale(0.88) rotate(${-flightRotation * 0.5}deg)`
+              : flightPhase === "approach"
+              ? `translate3d(${flightVector.x * 0.5}px, ${flightVector.y * 0.5}px, 0) scale(0.90) rotate(${flightRotation}deg)`
+              : "translate3d(0px, 0px, 0) scale(1) rotate(0deg)",
+          transformOrigin: "center center",
+          willChange: "transform, opacity",
+          opacity: isPreparingRadar
+            ? 0.45
+            : flightPhase === "takeoff"
+            ? 0.4
+            : flightPhase === "approach"
+            ? 0.7
+            : 1,
+          transition:
+            flightPhase === "takeoff"
+              ? "transform 0.48s cubic-bezier(0.2, 0.9, 0.3, 1), opacity 0.48s ease"
+              : flightPhase === "approach"
+              ? "none"
+              : flightPhase === "landing"
+              ? "transform 2.2s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.6s ease-out"
+              : "transform 0.5s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.35s ease",
+        }}
+        className={`absolute inset-0 z-10 overflow-hidden ${
+          isPreparingRadar ? "pointer-events-none" : ""
         }`}
       >
         <RadarMapboxCanvas
@@ -1062,8 +1087,11 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
                     style={{
                       left: `${pos.x}px`,
                       top: `${pos.y}px`,
+                      transition: pos.isMoving
+                        ? "opacity 220ms ease, transform 240ms cubic-bezier(0.16, 1, 0.3, 1)"
+                        : "left 480ms cubic-bezier(0.16, 1, 0.3, 1), top 480ms cubic-bezier(0.16, 1, 0.3, 1), transform 320ms cubic-bezier(0.16, 1, 0.3, 1), opacity 280ms ease",
                     }}
-                    className={`absolute -translate-x-1/2 -translate-y-full cursor-pointer group transition-opacity duration-300 pointer-events-auto ${
+                    className={`absolute -translate-x-1/2 -translate-y-full cursor-pointer group pointer-events-auto ${
                       isHovered ? "z-50 scale-110" : "z-30"
                     } ${isDimmed ? "opacity-35 scale-90 hover:opacity-100 hover:scale-100" : "opacity-100 scale-100"}`}
                     onMouseEnter={() => setHoveredClusterKey(cluster.cityKey)}
@@ -1176,6 +1204,20 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
 
                 const openDownward = pos.y < 220;
 
+                // Crisp integer avatar sizes (avoids CSS scale transform bitmap blurring)
+                const avatarSize = isActive ? 34 : scatterRadius === "wide" ? 30 : 28;
+                const pinBoxClass = !client.isAnonymous
+                  ? isActive
+                    ? "w-10 h-10 p-[2px] overflow-hidden"
+                    : scatterRadius === "wide"
+                    ? "w-9 h-9 p-[2px] overflow-hidden"
+                    : "w-8 h-8 p-[1.5px] overflow-hidden"
+                  : isActive
+                  ? "w-8 h-8"
+                  : scatterRadius === "wide"
+                  ? "w-7 h-7"
+                  : "w-6 h-6";
+
                 return (
                   <div 
                     key={client.id}
@@ -1184,16 +1226,14 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
                       top: `${pos.y}px`,
                       transition: pos.isMoving
                         ? "opacity 200ms ease"
-                        : "left 320ms cubic-bezier(0.22, 1, 0.36, 1), top 320ms cubic-bezier(0.22, 1, 0.36, 1), transform 280ms cubic-bezier(0.22, 1, 0.36, 1), opacity 250ms ease",
+                        : "left 480ms cubic-bezier(0.16, 1, 0.3, 1), top 480ms cubic-bezier(0.16, 1, 0.3, 1), opacity 280ms ease",
                     }}
                     className={`absolute -translate-x-1/2 -translate-y-full cursor-pointer group pointer-events-auto ${
                       isActive ? "z-50" : "z-30"
                     } ${
                       isDimmed
-                        ? "opacity-25 scale-90 hover:opacity-100 hover:scale-100"
-                        : scatterRadius === "wide"
-                        ? "opacity-100 scale-[1.15]"
-                        : "opacity-100 scale-100"
+                        ? "opacity-25 hover:opacity-100"
+                        : "opacity-100"
                     }`}
                     onMouseEnter={() => setHoveredClientId(client.id)}
                     onMouseLeave={() => setHoveredClientId(null)}
@@ -1225,25 +1265,25 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
 
                 {/* Beacon Head & Stem */}
                 <div className="flex flex-col items-center">
-                  <div className={`relative transition-all duration-300 flex items-center justify-center rounded-full border shadow-xl ${
+                  <div className={`relative transition-colors duration-300 flex items-center justify-center rounded-full border shadow-xl ${
                     isActive 
                       ? client.isAnonymous
-                        ? "scale-125 z-50 bg-sky-400 text-gray-950 border-white shadow-[0_0_24px_#38bdf8]"
-                        : "scale-125 z-50 bg-white text-gray-950 border-[#ccff00] shadow-[0_0_24px_#ccff00]" 
+                        ? "z-50 bg-sky-400 text-gray-950 border-white shadow-[0_0_24px_#38bdf8]"
+                        : "z-50 bg-white text-gray-950 border-[#ccff00] shadow-[0_0_24px_#ccff00]" 
                       : isSelf 
                       ? "bg-emerald-400 text-gray-950 border-white shadow-[0_0_16px_#34d399]" 
                       : client.isAnonymous
                       ? "bg-sky-400 text-gray-950 border-white/90 shadow-[0_0_14px_#38bdf8]"
                       : activeStage === "cart" && client.hasCart
-                      ? "bg-rose-500 text-white border-white shadow-[0_0_18px_#f43f5e] scale-110"
+                      ? "bg-rose-500 text-white border-white shadow-[0_0_18px_#f43f5e]"
                       : activeStage === "frequent" && isStageMatch
-                      ? "bg-amber-400 text-gray-950 border-white shadow-[0_0_18px_#f59e0b] scale-110"
+                      ? "bg-amber-400 text-gray-950 border-white shadow-[0_0_18px_#f59e0b]"
                       : "bg-[#ccff00] text-gray-950 border-white/90 shadow-[0_0_14px_#ccff00]"
-                  } ${!client.isAnonymous ? "w-7 h-7 p-0.5 overflow-hidden" : "w-6 h-6"}`}>
+                  } ${pinBoxClass}`}>
                     {!client.isAnonymous ? (
                       <BlobatarAvatar
                         {...getClientAvatarProps(client)}
-                        size={22}
+                        size={avatarSize}
                         animate={isActive ? "always" : "hover"}
                         background="circle"
                         className="pointer-events-none"
@@ -1405,17 +1445,17 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
         }`}
       >
       {/* ========================================================================= */}
-      {/* 3. TOP FLOATING COMMAND BAR (Branded Search Bar + Modes + Admin Location)  */}
+      {/* 3. TOP FLOATING COMMAND BAR (Branded Search Bar + Disperso/Agrupar Dock)  */}
       {/* ========================================================================= */}
-      <div className={`absolute top-3 sm:top-4 left-3 sm:left-20 lg:left-20 right-3 sm:right-6 lg:right-96 ${isSearchFocused ? "z-50" : "z-30"} flex flex-wrap items-center justify-between gap-3 pointer-events-none transition-all`}>
+      <div className={`absolute top-4 sm:top-5 left-3 sm:left-20 lg:left-20 right-3 sm:right-6 lg:right-[22.5rem] ${isSearchFocused ? "z-50" : "z-30"} flex items-center justify-between gap-3 pointer-events-none transition-all`}>
         
         {/* Left: Branded Search Bar for Cities & Provinces */}
         <div 
           ref={searchContainerRef}
-          className="relative max-w-xs sm:max-w-sm w-full pointer-events-auto"
+          className="relative max-w-xs sm:max-w-sm flex-1 min-w-0 pointer-events-auto"
         >
-          {/* Main Clean Search Pill */}
-          <div className={`flex items-center bg-black/80 backdrop-blur-2xl border rounded-full px-3.5 py-2 shadow-2xl text-xs text-white w-full transition-all duration-300 ${
+          {/* Main Clean Search Pill (h-10 aligned with Disperso/Agrupar & Right Panel) */}
+          <div className={`flex items-center h-10 bg-black/80 backdrop-blur-2xl border rounded-full px-3.5 shadow-2xl text-xs text-white w-full transition-all duration-300 ${
             isSearchFocused 
               ? "border-[#ccff00] ring-2 ring-[#ccff00]/30 shadow-[0_0_24px_rgba(204,255,0,0.25)] bg-black/95" 
               : "border-white/15 hover:border-white/30"
@@ -1583,105 +1623,18 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
           )}
         </div>
 
-        {/* Right Controls: Live Traffic Country Slider + Symmetrical Disperso (1x/2x) & Agrupar Dock + Admin Location */}
-        <div className="flex items-center gap-2 pointer-events-auto shrink-0 flex-wrap justify-end">
-          {/* 1. DYNAMIC REAL-TIME TRAFFIC COUNTRY SLIDER (Only countries with connected people > 0 appear) */}
-          <div className="flex items-center bg-black/85 backdrop-blur-2xl border border-white/15 rounded-2xl p-1 shadow-2xl text-xs font-semibold text-white gap-1">
-            {activeTrafficCountries.length > 1 && (
-              <button
-                type="button"
-                onClick={() => {
-                  const idx = activeTrafficCountries.findIndex((item) => item.code === selectedCountry);
-                  const prevIdx = idx <= 0 ? activeTrafficCountries.length - 1 : idx - 1;
-                  handleSwitchCountry(activeTrafficCountries[prevIdx].code);
-                }}
-                className="w-6 h-7 rounded-xl bg-white/5 hover:bg-white/15 flex items-center justify-center text-white/70 hover:text-[#ccff00] transition-all cursor-pointer shrink-0"
-                title="País anterior con clientes activos"
-              >
-                <ChevronLeft className="w-3.5 h-3.5" />
-              </button>
-            )}
-
-            <div className="flex items-center gap-1 overflow-x-auto no-scrollbar max-w-[260px] sm:max-w-[340px]">
-              <AnimatePresence mode="popLayout" initial={false}>
-                {activeTrafficCountries.map((item) => {
-                  const isCurrent = item.code === selectedCountry;
-                  return (
-                    <motion.button
-                      key={item.code}
-                      layout
-                      initial={{ opacity: 0, scale: 0.85 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      exit={{ opacity: 0, scale: 0.85 }}
-                      transition={{ type: "spring", stiffness: 380, damping: 28 }}
-                      type="button"
-                      onClick={() => {
-                        if (item.code !== selectedCountry) {
-                          handleSwitchCountry(item.code);
-                        }
-                      }}
-                      className={`relative px-2.5 py-1.5 rounded-xl flex items-center gap-1.5 transition-colors cursor-pointer shrink-0 ${
-                        isCurrent
-                          ? "text-gray-950 font-bold"
-                          : "text-white/75 hover:text-white hover:bg-white/10"
-                      }`}
-                      title={`${item.country.name}: ${item.count} ${item.count === 1 ? "persona conectada" : "personas conectadas"} en tiempo real`}
-                    >
-                      {isCurrent && (
-                        <motion.div
-                          layoutId="activeTrafficCountryPill"
-                          transition={{ type: "spring", stiffness: 400, damping: 30 }}
-                          className="absolute inset-0 rounded-xl bg-[#ccff00] shadow-[0_0_14px_rgba(204,255,0,0.45)] -z-10"
-                        />
-                      )}
-                      <CountrySvgFlag code={item.code} className="w-4 h-3 rounded-[2px] shadow-sm shrink-0" />
-                      <span className="text-[11px] tracking-tight whitespace-nowrap">{item.country.name}</span>
-                      <span
-                        className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[9.5px] font-mono font-black leading-none ${
-                          isCurrent
-                            ? "bg-gray-950/20 text-gray-950"
-                            : "bg-[#ccff00]/15 text-[#ccff00] border border-[#ccff00]/30"
-                        }`}
-                      >
-                        <span
-                          className={`w-1.5 h-1.5 rounded-full ${
-                            isCurrent ? "bg-gray-950" : "bg-[#ccff00] animate-pulse"
-                          }`}
-                        />
-                        {item.count}
-                      </span>
-                    </motion.button>
-                  );
-                })}
-              </AnimatePresence>
-            </div>
-
-            {activeTrafficCountries.length > 1 && (
-              <button
-                type="button"
-                onClick={() => {
-                  const idx = activeTrafficCountries.findIndex((item) => item.code === selectedCountry);
-                  const nextIdx = idx < 0 || idx >= activeTrafficCountries.length - 1 ? 0 : idx + 1;
-                  handleSwitchCountry(activeTrafficCountries[nextIdx].code);
-                }}
-                className="w-6 h-7 rounded-xl bg-white/5 hover:bg-white/15 flex items-center justify-center text-white/70 hover:text-[#ccff00] transition-all cursor-pointer shrink-0"
-                title="Siguiente país con clientes activos"
-              >
-                <ChevronRight className="w-3.5 h-3.5" />
-              </button>
-            )}
-          </div>
-
-          {/* 2. SYMMETRICAL DENSITY MODE DOCK (Disperso [1x | 2x] / Agrupar) */}
-          <div className="flex items-center bg-black/85 backdrop-blur-2xl border border-white/15 rounded-2xl p-1 shadow-2xl text-xs font-semibold text-white">
-            <div className="relative grid grid-cols-2 items-center">
+        {/* Right of Search Bar: Symmetrical Disperso (1x/2x) & Agrupar Dock + Admin Location */}
+        <div className="flex items-center gap-2 pointer-events-auto shrink-0">
+          {/* SYMMETRICAL DENSITY MODE DOCK (Disperso [1x | 2x] / Agrupar) */}
+          <div className="flex items-center h-10 bg-black/85 backdrop-blur-2xl border border-white/15 rounded-full p-1 shadow-2xl text-xs font-semibold text-white">
+            <div className="relative grid grid-cols-2 items-center h-full">
               <button
                 type="button"
                 onClick={() => {
                   setClusterMode("dispersed");
                   setExpandedClusterCity(null);
                 }}
-                className={`relative z-10 min-w-[104px] px-3 py-1.5 rounded-xl transition-colors duration-200 flex items-center justify-center gap-1.5 cursor-pointer ${
+                className={`relative z-10 min-w-[96px] sm:min-w-[104px] h-full px-3 rounded-full transition-colors duration-200 flex items-center justify-center gap-1.5 cursor-pointer ${
                   clusterMode === "dispersed"
                     ? "text-gray-950 font-bold"
                     : "text-white/70 hover:text-white"
@@ -1692,7 +1645,7 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
                   <motion.div
                     layoutId="radarDensityModeIndicator"
                     transition={{ type: "spring", stiffness: 420, damping: 30 }}
-                    className="absolute inset-0 rounded-xl bg-[#ccff00] shadow-[0_0_14px_rgba(204,255,0,0.5)] -z-10"
+                    className="absolute inset-0 rounded-full bg-[#ccff00] shadow-[0_0_14px_rgba(204,255,0,0.5)] -z-10"
                   />
                 )}
                 <Sparkles className="w-3.5 h-3.5 shrink-0" />
@@ -1705,7 +1658,7 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
                   setClusterMode("clustered");
                   setExpandedClusterCity(null);
                 }}
-                className={`relative z-10 min-w-[104px] px-3 py-1.5 rounded-xl transition-colors duration-200 flex items-center justify-center gap-1.5 cursor-pointer ${
+                className={`relative z-10 min-w-[96px] sm:min-w-[104px] h-full px-3 rounded-full transition-colors duration-200 flex items-center justify-center gap-1.5 cursor-pointer ${
                   clusterMode === "clustered"
                     ? "text-gray-950 font-bold"
                     : "text-white/70 hover:text-white"
@@ -1716,7 +1669,7 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
                   <motion.div
                     layoutId="radarDensityModeIndicator"
                     transition={{ type: "spring", stiffness: 420, damping: 30 }}
-                    className="absolute inset-0 rounded-xl bg-[#ccff00] shadow-[0_0_14px_rgba(204,255,0,0.5)] -z-10"
+                    className="absolute inset-0 rounded-full bg-[#ccff00] shadow-[0_0_14px_rgba(204,255,0,0.5)] -z-10"
                   />
                 )}
                 <Layers className="w-3.5 h-3.5 shrink-0" />
@@ -1734,11 +1687,11 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
                   transition={{ type: "spring", stiffness: 380, damping: 28 }}
                   className="overflow-hidden flex items-center pl-1.5 border-l border-white/15 shrink-0"
                 >
-                  <div className="flex items-center bg-white/[0.06] rounded-xl p-0.5 gap-0.5">
+                  <div className="flex items-center bg-white/[0.06] rounded-full p-0.5 gap-0.5">
                     <button
                       type="button"
                       onClick={() => setScatterRadius("normal")}
-                      className={`px-2 py-1 rounded-lg font-mono text-[10px] font-bold transition-all cursor-pointer ${
+                      className={`px-2 py-1 rounded-full font-mono text-[10px] font-bold transition-all cursor-pointer ${
                         scatterRadius === "normal"
                           ? "bg-[#ccff00] text-gray-950 shadow-[0_0_10px_rgba(204,255,0,0.4)]"
                           : "text-white/65 hover:text-white"
@@ -1750,7 +1703,7 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
                     <button
                       type="button"
                       onClick={() => setScatterRadius("wide")}
-                      className={`px-2 py-1 rounded-lg font-mono text-[10px] font-bold transition-all cursor-pointer ${
+                      className={`px-2 py-1 rounded-full font-mono text-[10px] font-bold transition-all cursor-pointer ${
                         scatterRadius === "wide"
                           ? "bg-[#ccff00] text-gray-950 shadow-[0_0_10px_rgba(204,255,0,0.4)]"
                           : "text-white/65 hover:text-white"
@@ -1769,7 +1722,7 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
           {isAdmin && !hasAdminLocation && (
             <button
               onClick={handleNavigateToAddress}
-              className="group relative flex items-center gap-2 px-3.5 py-1.5 sm:px-4 sm:py-2 rounded-full bg-black/90 hover:bg-black backdrop-blur-2xl border border-[#ccff00]/80 hover:border-[#ccff00] text-white text-xs font-semibold shadow-[0_0_24px_rgba(204,255,0,0.35)] transition-all duration-300 hover:scale-[1.03] active:scale-95 cursor-pointer shrink-0"
+              className="group relative flex items-center gap-2 h-10 px-3.5 sm:px-4 rounded-full bg-black/90 hover:bg-black backdrop-blur-2xl border border-[#ccff00]/80 hover:border-[#ccff00] text-white text-xs font-semibold shadow-[0_0_24px_rgba(204,255,0,0.35)] transition-all duration-300 hover:scale-[1.03] active:scale-95 cursor-pointer shrink-0"
               title="Añade tu dirección para mostrar tu ubicación en el mapa"
             >
               <div className="relative flex items-center justify-center w-5 h-5 rounded-full bg-[#ccff00] text-gray-950 font-black shrink-0 shadow-[0_0_8px_rgba(204,255,0,0.5)]">
@@ -2012,7 +1965,7 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
       {/* ========================================================================= */}
       <div 
         onClick={(e) => e.stopPropagation()} 
-        className={`absolute right-3 sm:right-6 top-16 sm:top-5 bottom-20 sm:bottom-24 w-[calc(100%-1.5rem)] sm:w-80 lg:w-84 z-30 flex-col pointer-events-auto transition-all duration-500 ease-out overflow-hidden ${
+        className={`absolute right-3 sm:right-6 top-16 lg:top-5 bottom-20 sm:bottom-24 w-[calc(100%-1.5rem)] sm:w-80 lg:w-84 z-30 flex-col pointer-events-auto transition-all duration-500 ease-out overflow-hidden ${
           isMobilePanelOpen ? "flex" : "hidden lg:flex"
         }`}
       >

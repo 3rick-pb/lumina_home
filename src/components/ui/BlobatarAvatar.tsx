@@ -37,6 +37,8 @@ export function BlobatarAvatar({
       ? `${Math.round(size * 0.28)}px` 
       : undefined;
 
+  const hiResSize = Math.max(48, Math.round(size * 2));
+
   return (
     <div
       onClick={onClick}
@@ -44,9 +46,11 @@ export function BlobatarAvatar({
       style={{ 
         width: size, 
         height: size,
-        borderRadius 
+        borderRadius,
+        transform: "translateZ(0)",
+        backfaceVisibility: "hidden",
       }}
-      className={`relative shrink-0 flex items-center justify-center select-none overflow-hidden transition-all duration-200 ${
+      className={`relative shrink-0 flex items-center justify-center select-none overflow-hidden transition-transform duration-200 [&>svg]:w-full [&>svg]:h-full [&>svg]:block [&>img]:w-full [&>img]:h-full [&>img]:block ${
         onClick ? "cursor-pointer hover:scale-105 active:scale-95" : ""
       } ${
         isAdmin 
@@ -62,10 +66,16 @@ export function BlobatarAvatar({
     >
       <Blobatar
         name={seed}
-        size={size}
+        size={hiResSize}
         animate={animate || undefined}
         background={background}
         title={title}
+        style={{
+          width: "100%",
+          height: "100%",
+          display: "block",
+          shapeRendering: "geometricPrecision",
+        }}
       />
     </div>
   );

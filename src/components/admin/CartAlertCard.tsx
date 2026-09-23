@@ -93,7 +93,10 @@ export const CartAlertCard = React.memo(function CartAlertCard({
               {!isPreview && onClose && (
                 <button
                   type="button"
-                  onClick={onClose}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onClose();
+                  }}
                   className="p-1 rounded-full hover:bg-black/10 dark:hover:bg-white/10 transition-colors cursor-pointer"
                   style={{ color: config.subtextColor }}
                   aria-label="Cerrar notificación"
@@ -324,7 +327,10 @@ export const CartAlertCard = React.memo(function CartAlertCard({
               {!isPreview && onClose && (
                 <button
                   type="button"
-                  onClick={onClose}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onClose();
+                  }}
                   className="p-1 rounded-full hover:bg-black/10 dark:hover:bg-white/10 transition-colors cursor-pointer"
                   style={{ color: config.subtextColor }}
                 >
@@ -498,7 +504,10 @@ export const CartAlertCard = React.memo(function CartAlertCard({
             {!isPreview && onClose && (
               <button
                 type="button"
-                onClick={onClose}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onClose();
+                }}
                 className="p-1 rounded-full hover:bg-black/10 dark:hover:bg-white/10 transition-colors shrink-0 cursor-pointer"
                 style={{ color: config.subtextColor }}
               >
@@ -535,7 +544,10 @@ export const CartAlertCard = React.memo(function CartAlertCard({
           {!isPreview && onClose && (
             <button
               type="button"
-              onClick={onClose}
+              onClick={(e) => {
+                e.stopPropagation();
+                onClose();
+              }}
               className="p-1 rounded-full hover:bg-black/10 dark:hover:bg-white/10 transition-colors cursor-pointer"
               style={{ color: config.subtextColor }}
             >
