@@ -317,24 +317,35 @@ const tileLoadingSet = new Set<string>();
 
 type TileProvider = "satellite" | "dark-base" | "boundaries-labels" | "street-topo";
 
-function getTileUrl(provider: TileProvider, z: number, x: number, y: number): string {
+function getTileCacheKey(provider: TileProvider, z: number, x: number, y: number): string {
   const maxIndex = Math.pow(2, z);
   const wrappedX = ((x % maxIndex) + maxIndex) % maxIndex;
+  return `${provider}:${z}:${wrappedX}:${y}`;
+}
+
+function getTileUrl(provider: TileProvider, z: number, x: number, y: number, useAltHost = false): string {
+  const maxIndex = Math.pow(2, z);
+  const wrappedX = ((x % maxIndex) + maxIndex) % maxIndex;
+  // Load-balance across both official Esri ArcGIS CDN hosts to double concurrent tile throughput
+  const host =
+    useAltHost
+      ? (wrappedX + y) % 2 === 0
+        ? "services.arcgisonline.com"
+        : "server.arcgisonline.com"
+      : (wrappedX + y) % 2 === 0
+      ? "server.arcgisonline.com"
+      : "services.arcgisonline.com";
 
   if (provider === "satellite") {
-    // Esri World Imagery (100% Free, Zero Watermark)
-    return `https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/${z}/${y}/${wrappedX}`;
+    return `https://${host}/ArcGIS/rest/services/World_Imagery/MapServer/tile/${z}/${y}/${wrappedX}`;
   }
   if (provider === "dark-base") {
-    // Esri World Dark Gray Canvas Base (100% Free, Zero Watermark — replaces Carto watermarked base)
-    return `https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/${z}/${y}/${wrappedX}`;
+    return `https://${host}/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/${z}/${y}/${wrappedX}`;
   }
   if (provider === "boundaries-labels") {
-    // Esri World Boundaries & Places (100% Free, Zero Watermark — crisp white city/province names & borders on transparent PNG)
-    return `https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/${z}/${y}/${wrappedX}`;
+    return `https://${host}/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/${z}/${y}/${wrappedX}`;
   }
-  // Esri World Topographic / Street Map (100% Free, Zero Watermark)
-  return `https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/${z}/${y}/${wrappedX}`;
+  return `https://${host}/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/${z}/${y}/${wrappedX}`;
 }
 
 export interface ProjectedPinPosition {
@@ -362,16 +373,63 @@ interface RadarMapboxCanvasProps {
   ) => React.ReactNode;
 }
 
-// Cap cache size at 2000 tiles with LRU refresh so visible viewport tiles are NEVER evicted
-const MAX_TILE_CACHE_SIZE = 2000;
-function cacheTileImage(url: string, img: HTMLImageElement) {
-  if (tileImageCache.has(url)) {
-    tileImageCache.delete(url);
+// Cap cache size at 2500 tiles with LRU refresh so continental + regional tiles are NEVER evicted
+const MAX_TILE_CACHE_SIZE = 2500;
+function cacheTileImage(key: string, img: HTMLImageElement) {
+  if (tileImageCache.has(key)) {
+    tileImageCache.delete(key);
   } else if (tileImageCache.size >= MAX_TILE_CACHE_SIZE) {
     const oldestKey = tileImageCache.keys().next().value;
     if (oldestKey) tileImageCache.delete(oldestKey);
   }
-  tileImageCache.set(url, img);
+  tileImageCache.set(key, img);
+}
+
+// Eagerly warm low-zoom continental & world overview tiles (z = 2, 3, 4, 5) once so zooming out
+// across South/Central/North America is 100% instantaneous and NEVER shows a blank green background.
+let continentalTilesPreloaded = false;
+function preloadContinentalBaseTiles(onTileLoaded?: () => void) {
+  if (continentalTilesPreloaded || typeof window === "undefined") return;
+  continentalTilesPreloaded = true;
+
+  const providers: TileProvider[] = ["dark-base", "satellite", "boundaries-labels"];
+  const ranges: Array<{ z: number; xMin: number; xMax: number; yMin: number; yMax: number }> = [
+    { z: 2, xMin: 0, xMax: 2, yMin: 1, yMax: 2 }, // Entire Western Hemisphere at z=2
+    { z: 3, xMin: 1, xMax: 3, yMin: 3, yMax: 5 }, // Entire Latin America at z=3
+    { z: 4, xMin: 3, xMax: 6, yMin: 6, yMax: 11 }, // Andean & South America overview at z=4
+    { z: 5, xMin: 7, xMax: 11, yMin: 14, yMax: 19 }, // Regional zoom-out ring around Ecuador/Colombia/Peru at z=5
+  ];
+
+  for (const r of ranges) {
+    for (let x = r.xMin; x <= r.xMax; x++) {
+      for (let y = r.yMin; y <= r.yMax; y++) {
+        for (const provider of providers) {
+          const key = getTileCacheKey(provider, r.z, x, y);
+          if (tileImageCache.has(key) || tileLoadingSet.has(key)) continue;
+          tileLoadingSet.add(key);
+          const img = new window.Image();
+          img.referrerPolicy = "no-referrer";
+          img.decoding = "async";
+          img.onload = () => {
+            cacheTileImage(key, img);
+            tileLoadingSet.delete(key);
+            onTileLoaded?.();
+          };
+          img.onerror = () => {
+            tileLoadingSet.delete(key);
+            const retryImg = new window.Image();
+            retryImg.referrerPolicy = "no-referrer";
+            retryImg.onload = () => {
+              cacheTileImage(key, retryImg);
+              onTileLoaded?.();
+            };
+            retryImg.src = getTileUrl(provider, r.z, x, y, true);
+          };
+          img.src = getTileUrl(provider, r.z, x, y, false);
+        }
+      }
+    }
+  }
 }
 
 export function RadarMapboxCanvas({
@@ -420,6 +478,14 @@ export function RadarMapboxCanvas({
     triggerLoopRef.current?.();
   }, []);
 
+  // Warm continental overview tiles immediately so zooming out never hits an empty cache
+  useEffect(() => {
+    preloadContinentalBaseTiles(() => {
+      dirtyRef.current = true;
+      triggerLoopRef.current?.();
+    });
+  }, []);
+
   // Observe container size changes so pin coordinates and canvas dimensions stay 100% synchronized
   useEffect(() => {
     const el = containerRef.current;
@@ -439,57 +505,70 @@ export function RadarMapboxCanvas({
     return () => ro.disconnect();
   }, [requestRepaint]);
 
-  // Load a tile image (no-referrer, zero watermark) and trigger on-demand repaint when ready
+  // Load a tile image (no-referrer, dual-CDN failover) and trigger on-demand repaint when ready
   const fetchTile = useCallback(
     (provider: TileProvider, z: number, x: number, y: number): HTMLImageElement | null => {
       if (z < 1 || z > 18) return null;
       const maxTile = Math.pow(2, z);
       if (y < 0 || y >= maxTile) return null;
 
-      const url = getTileUrl(provider, z, x, y);
-      const cached = tileImageCache.get(url);
+      const key = getTileCacheKey(provider, z, x, y);
+      const cached = tileImageCache.get(key);
       if (cached) {
         // Refresh LRU position so active screen tiles are never evicted
-        tileImageCache.delete(url);
-        tileImageCache.set(url, cached);
+        tileImageCache.delete(key);
+        tileImageCache.set(key, cached);
         return cached;
       }
 
-      if (!tileLoadingSet.has(url) && typeof window !== "undefined") {
-        tileLoadingSet.add(url);
+      if (!tileLoadingSet.has(key) && typeof window !== "undefined") {
+        tileLoadingSet.add(key);
+        const primaryUrl = getTileUrl(provider, z, x, y, false);
         const img = new window.Image();
         img.referrerPolicy = "no-referrer";
         img.decoding = "async";
         img.onload = () => {
-          cacheTileImage(url, img);
-          tileLoadingSet.delete(url);
+          cacheTileImage(key, img);
+          tileLoadingSet.delete(key);
           dirtyRef.current = true;
           triggerLoopRef.current?.();
         };
         img.onerror = () => {
-          tileLoadingSet.delete(url);
-          const maxIndex = Math.pow(2, z);
-          const wrappedX = ((x % maxIndex) + maxIndex) % maxIndex;
-          const fallbackUrl = `https://tile.openstreetmap.org/${z}/${wrappedX}/${y}.png`;
-          if (provider === "street-topo" && url !== fallbackUrl && !tileImageCache.has(url)) {
-            const fbImg = new window.Image();
-            fbImg.referrerPolicy = "no-referrer";
-            fbImg.onload = () => {
-              cacheTileImage(url, fbImg);
-              dirtyRef.current = true;
-              triggerLoopRef.current?.();
-            };
-            fbImg.src = fallbackUrl;
-          }
+          // Retry on alternate Esri CDN host first, then fallback to OpenStreetMap if needed
+          const retryImg = new window.Image();
+          retryImg.referrerPolicy = "no-referrer";
+          retryImg.decoding = "async";
+          retryImg.onload = () => {
+            cacheTileImage(key, retryImg);
+            tileLoadingSet.delete(key);
+            dirtyRef.current = true;
+            triggerLoopRef.current?.();
+          };
+          retryImg.onerror = () => {
+            tileLoadingSet.delete(key);
+            if (provider === "street-topo" || provider === "dark-base") {
+              const wrappedX = ((x % maxTile) + maxTile) % maxTile;
+              const osmImg = new window.Image();
+              osmImg.referrerPolicy = "no-referrer";
+              osmImg.onload = () => {
+                cacheTileImage(key, osmImg);
+                dirtyRef.current = true;
+                triggerLoopRef.current?.();
+              };
+              osmImg.src = `https://tile.openstreetmap.org/${z}/${wrappedX}/${y}.png`;
+            }
+          };
+          retryImg.src = getTileUrl(provider, z, x, y, true);
         };
-        img.src = url;
+        img.src = primaryUrl;
       }
       return null;
     },
     []
   );
 
-  // High-Definition Retina (z + 1) Tile Layer Renderer — ZERO per-tile software filters for maximum GPU efficiency
+  // High-Definition Retina (z + 1) Tile Layer Renderer with Multi-Level Ancestor & Child Fallback
+  // Guarantees ZERO green/blank screens when zooming out across countries or zooming in rapidly.
   const drawTileLayer = useCallback(
     (
       ctx: CanvasRenderingContext2D,
@@ -528,42 +607,27 @@ export function RadarMapboxCanvas({
 
           const exactImg = fetchTile(provider, zTile, tx, ty);
           if (exactImg) {
-            ctx.drawImage(exactImg, screenX, screenY, drawnTileSize + 0.35, drawnTileSize + 0.35);
-          } else if (zTile > 2) {
-            // Level-1 Parent Fallback from cache (without spawning redundant network requests)
-            const parentZ1 = zTile - 1;
-            const p1x = Math.floor(tx / 2);
-            const p1y = Math.floor(ty / 2);
-            const parentImg1 = tileImageCache.get(getTileUrl(provider, parentZ1, p1x, p1y));
-            if (parentImg1) {
-              const subX = ((tx % 2) + 2) % 2;
-              const subY = ((ty % 2) + 2) % 2;
-              const srcW = parentImg1.width / 2;
-              const srcH = parentImg1.height / 2;
-              ctx.drawImage(
-                parentImg1,
-                subX * srcW,
-                subY * srcH,
-                srcW,
-                srcH,
-                screenX,
-                screenY,
-                drawnTileSize + 0.4,
-                drawnTileSize + 0.4
-              );
-            } else if (zTile > 3) {
-              // Level-2 Grandparent Fallback from cache
-              const parentZ2 = zTile - 2;
-              const p2x = Math.floor(tx / 4);
-              const p2y = Math.floor(ty / 4);
-              const parentImg2 = tileImageCache.get(getTileUrl(provider, parentZ2, p2x, p2y));
-              if (parentImg2) {
-                const subX = ((tx % 4) + 4) % 4;
-                const subY = ((ty % 4) + 4) % 4;
-                const srcW = parentImg2.width / 4;
-                const srcH = parentImg2.height / 4;
+            ctx.drawImage(exactImg, screenX, screenY, drawnTileSize + 0.4, drawnTileSize + 0.4);
+            continue;
+          }
+
+          // 1. MULTI-LEVEL ANCESTOR FALLBACK (walk from zTile - 1 all the way down to z = 2)
+          // Also triggers fetch on immediate parent (zTile - 1) so overview tiles stream in immediately.
+          if (zTile > 2) {
+            fetchTile(provider, zTile - 1, Math.floor(tx / 2), Math.floor(ty / 2));
+            for (let dz = 1; dz <= zTile - 2; dz++) {
+              const ancZ = zTile - dz;
+              const div = 1 << dz;
+              const ax = Math.floor(tx / div);
+              const ay = Math.floor(ty / div);
+              const ancImg = tileImageCache.get(getTileCacheKey(provider, ancZ, ax, ay));
+              if (ancImg) {
+                const subX = ((tx % div) + div) % div;
+                const subY = ((ty % div) + div) % div;
+                const srcW = ancImg.width / div;
+                const srcH = ancImg.height / div;
                 ctx.drawImage(
-                  parentImg2,
+                  ancImg,
                   subX * srcW,
                   subY * srcH,
                   srcW,
@@ -573,6 +637,51 @@ export function RadarMapboxCanvas({
                   drawnTileSize + 0.5,
                   drawnTileSize + 0.5
                 );
+                break;
+              }
+            }
+          }
+
+          // 2. CHILD-TILE QUADRANT COMPOSITE FALLBACK (zTile + 1 and zTile + 2)
+          // When zooming OUT from a country, the higher-zoom tiles (zTile + 1 / zTile + 2) are ALREADY
+          // in `tileImageCache`! Drawing them into their 2x2 or 4x4 sub-quadrants keeps the country
+          // 100% crisp with zero flicker while the lower-zoom tile finishes loading.
+          if (zTile < 18) {
+            const halfSize = drawnTileSize / 2;
+            for (let cy = 0; cy < 2; cy++) {
+              for (let cx = 0; cx < 2; cx++) {
+                const childX = tx * 2 + cx;
+                const childY = ty * 2 + cy;
+                const childImg = tileImageCache.get(getTileCacheKey(provider, zTile + 1, childX, childY));
+                if (childImg) {
+                  ctx.drawImage(
+                    childImg,
+                    screenX + cx * halfSize,
+                    screenY + cy * halfSize,
+                    halfSize + 0.4,
+                    halfSize + 0.4
+                  );
+                } else if (zTile + 2 <= 18) {
+                  const quarterSize = drawnTileSize / 4;
+                  for (let gcy = 0; gcy < 2; gcy++) {
+                    for (let gcx = 0; gcx < 2; gcx++) {
+                      const grandX = childX * 2 + gcx;
+                      const grandY = childY * 2 + gcy;
+                      const grandImg = tileImageCache.get(
+                        getTileCacheKey(provider, zTile + 2, grandX, grandY)
+                      );
+                      if (grandImg) {
+                        ctx.drawImage(
+                          grandImg,
+                          screenX + cx * halfSize + gcx * quarterSize,
+                          screenY + cy * halfSize + gcy * quarterSize,
+                          quarterSize + 0.35,
+                          quarterSize + 0.35
+                        );
+                      }
+                    }
+                  }
+                }
               }
             }
           }

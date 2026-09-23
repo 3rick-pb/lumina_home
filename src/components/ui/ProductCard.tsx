@@ -3,7 +3,7 @@
 import React from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { Heart, ShoppingBag, Check } from "lucide-react";
+import { Heart, ShoppingBag, Check, PackageX } from "lucide-react";
 import { useCartStore } from "@/lib/store";
 import { useCatalogStore, isAgotadoBadge } from "@/lib/catalogStore";
 import { useUserStore } from "@/lib/userStore";
@@ -139,9 +139,9 @@ export function ProductCard({ id, title, price, oldPrice, discount, badge, image
             transform: isAdding ? "scale3d(0.96, 0.96, 1)" : "scale3d(1, 1, 1)",
             transition: "transform 420ms cubic-bezier(0.22, 1.35, 0.36, 1), background-color 220ms ease, border-color 220ms ease",
           }}
-          className={`mt-auto w-full py-1.5 sm:py-2.5 rounded-lg sm:rounded-xl backdrop-blur-md border text-xs sm:text-sm font-medium flex items-center justify-center gap-1.5 sm:gap-2 shadow-sm cursor-pointer ${
+          className={`mt-auto w-full h-9 sm:h-11 px-3 rounded-lg sm:rounded-xl backdrop-blur-md border text-xs sm:text-sm font-medium flex items-center justify-center shadow-sm cursor-pointer ${
             isAgotado 
-              ? "bg-gray-100/90 dark:bg-white/5 border-gray-200 dark:border-white/10 text-gray-400 cursor-not-allowed" 
+              ? "bg-red-500/10 dark:bg-red-500/10 border-red-500/30 dark:border-red-500/25 text-red-600 dark:text-red-400 cursor-not-allowed" 
               : showAddedState
                 ? "bg-emerald-500/15 dark:bg-emerald-400/15 border-emerald-500/40 text-emerald-800 dark:text-emerald-300 shadow-[0_0_16px_rgba(16,185,129,0.2)]"
                 : "bg-white/40 dark:bg-white/10 border-white/60 dark:border-white/15 text-gray-900 dark:text-gray-100 hover:bg-white/60 dark:hover:bg-white/20 active:scale-[0.96]"
@@ -159,7 +159,14 @@ export function ProductCard({ id, title, price, oldPrice, discount, badge, image
           }}
         >
           {isAgotado ? (
-            <span className="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-red-600">Agotado</span>
+            <span className="inline-flex items-center justify-center gap-1.5 sm:gap-2">
+              <span className="relative inline-flex items-center justify-center w-4 h-4 sm:w-[18px] sm:h-[18px] shrink-0">
+                <PackageX className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-red-500 shrink-0" />
+              </span>
+              <span className="inline-flex items-center justify-center whitespace-nowrap leading-none" style={{ height: "1.35em" }}>
+                Agotado
+              </span>
+            </span>
           ) : (
             <BeUIActionSwapLabel
               active={showAddedState}

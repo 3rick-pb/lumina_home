@@ -539,7 +539,6 @@ export function BeUIAdaptiveStepper({
 }: BeUIAdaptiveStepperProps) {
   const prevValueRef = useRef(value);
   const [direction, setDirection] = useState<-1 | 0 | 1>(0);
-  const [stepNudge, setStepNudge] = useState<-1 | 0 | 1>(0);
 
   if (value !== prevValueRef.current) {
     const nextDir = value > prevValueRef.current ? 1 : -1;
@@ -551,239 +550,194 @@ export function BeUIAdaptiveStepper({
 
   const atMin = disableDecrement || value <= min;
   const atMax = disableIncrement || value >= max;
+  const distance = (direction || 1) * 40;
 
-  // Geometry presets with resting gap >= 4x blur radius so (-), [value], and (+)
-  // snap 100% cleanly apart into 3 separate islands at rest (value >= 2), while
-  // fusing and stretching with the liquid bridge during 1 <-> 2 transitions.
-  const dims = useMemo(() => {
-    if (size === "lg") {
-      return {
-        totalW: 176,
-        h: 40,
-        btnW: 40,
-        blur: 4.4,
-        minHiddenX: 24,
-        maxHiddenX: 112,
-        maxVisibleX: 136,
-        bothAtBounds: { x: 0, width: 176 },
-        atMinGeo: { x: 0, width: 120 },
-        atMaxGeo: { x: 56, width: 120 },
-        midGeo: { x: 56, width: 64 }, // 16px clear gap on both sides (3.6x blur)
-      };
-    }
-    if (size === "sm") {
-      return {
-        totalW: 124,
-        h: 30,
-        btnW: 30,
-        blur: 3.0,
-        minHiddenX: 18,
-        maxHiddenX: 76,
-        maxVisibleX: 94,
-        bothAtBounds: { x: 0, width: 124 },
-        atMinGeo: { x: 0, width: 82 },
-        atMaxGeo: { x: 42, width: 82 },
-        midGeo: { x: 42, width: 40 }, // 12px clear gap on both sides (4.0x blur)
-      };
-    }
-    // `md` default (used in Shopping Bag — 140px wide x 34px high)
-    return {
-      totalW: 140,
-      h: 34,
-      btnW: 34,
-      blur: 3.5,
-      minHiddenX: 20,
-      maxHiddenX: 86,
-      maxVisibleX: 106,
-      bothAtBounds: { x: 0, width: 140 },
-      atMinGeo: { x: 0, width: 92 },
-      atMaxGeo: { x: 48, width: 92 },
-      midGeo: { x: 48, width: 44 }, // 14px clear gap on both sides (4.0x blur -> 100% separated at rest!)
-    };
-  }, [size]);
+  // Verbatim 216px x 48px internal coordinate system from @beui/adaptive-stepper
+  // (https://beui.dev/r/adaptive-stepper.json & Video Referencia.mp4)
+  // Scaled cleanly via outer CSS transform so the SVG gooey filter (blur=6, contrast=22,
+  // 16px resting gap = 64 - 48) retains 100% original beUI liquid physics.
+  const scale = size === "lg" ? 0.84 : size === "sm" ? 0.58 : 0.65;
+  const outerW = Math.round(216 * scale);
+  const outerH = Math.round(48 * scale);
 
-  const baseCenterGeo =
+  const centerGeometry =
     atMin && atMax
-      ? dims.bothAtBounds
+      ? { x: 0, width: 216 }
       : atMin
-      ? dims.atMinGeo
+      ? { x: 0, width: 152 }
       : atMax
-      ? dims.atMaxGeo
-      : dims.midGeo;
-
-  // Subtle recoil on intermediate steps (`2 -> 3`, `3 -> 2`) that stays well clear of the 14px gap
-  const centerX = baseCenterGeo.x + stepNudge * 3.5;
-  const centerW = baseCenterGeo.width + Math.abs(stepNudge) * 3;
-
-  const leftBtnX = atMin ? dims.minHiddenX : 0;
-  const rightBtnX = atMax ? dims.maxHiddenX : dims.maxVisibleX;
-  const radius = dims.h / 2;
-  const distance = (direction || 1) * 38;
-
-  const triggerStep = (dir: -1 | 1, callback: () => void) => {
-    setDirection(dir);
-    setStepNudge(dir);
-    playStepperTickSound(dir === 1 ? "up" : "down");
-    setTimeout(() => setStepNudge(0), 200);
-    callback();
-  };
+      ? { x: 64, width: 152 }
+      : { x: 64, width: 88 };
 
   return (
     <div
-      role="group"
-      aria-label={`Cantidad: ${value}`}
-      style={{ width: dims.totalW, height: dims.h }}
-      className="relative isolate inline-block select-none shrink-0 text-[#f3f3f6] dark:text-[#232329]"
+      style={{ width: outerW, height: outerH }}
+      className="relative inline-block select-none shrink-0"
     >
-      <Liquid
-        blur={dims.blur}
-        contrast={20}
-        fill="currentColor"
-        edgeColor="rgba(140, 140, 155, 0.35)"
-        edgeOpacity={0.32}
-        edgeWidth={1}
-        className="size-full"
+      <fieldset
+        aria-label={`Cantidad: ${value}`}
+        style={{
+          width: 216,
+          height: 48,
+          transform: `scale(${scale})`,
+          transformOrigin: "top left",
+        }}
+        className="relative isolate m-0 border-0 p-0 text-[#f3f3f6] dark:text-[#232329]"
       >
-        {/* 1. LEFT DECREMENT BUTTON (`-`) */}
-        <LiquidItem
-          x={leftBtnX}
-          y={0}
-          width={dims.btnW}
-          height={dims.h}
-          radius={radius}
-          transition={STEPPER_LIQUID_TRANSITION}
+        <Liquid
+          blur={6}
+          contrast={22}
+          fill="currentColor"
+          edgeColor="rgba(160, 160, 175, 0.45)"
+          edgeOpacity={0.35}
+          edgeWidth={1}
+          className="size-full"
         >
-          <motion.button
-            type="button"
-            aria-label={decrementTitle}
-            aria-hidden={atMin || undefined}
-            tabIndex={atMin ? -1 : 0}
-            disabled={disabled || atMin}
-            title={decrementTitle}
-            whileTap={disabled || atMin ? undefined : { scale: 0.92 }}
-            transition={SPRING_PRESS}
-            onClick={(e) => {
-              e.stopPropagation();
-              if (disabled || atMin) return;
-              triggerStep(-1, onDecrement);
-            }}
-            className={cn(
-              "grid size-full place-items-center rounded-full text-gray-900 dark:text-gray-100 outline-none transition-colors hover:bg-black/[0.04] dark:hover:bg-white/[0.06] cursor-pointer disabled:pointer-events-none",
-              atMin && "pointer-events-none"
-            )}
+          {/* 1. LEFT DECREMENT BUTTON (`-`) */}
+          <LiquidItem
+            x={atMin ? 32 : 0}
+            y={0}
+            width={48}
+            height={48}
+            radius={24}
+            transition={STEPPER_LIQUID_TRANSITION}
           >
-            <motion.span
-              aria-hidden="true"
-              initial={false}
-              animate={{
-                opacity: atMin ? 0 : 1,
-                scale: atMin ? 0.5 : 1,
-                filter: atMin ? "blur(3px)" : "blur(0px)",
+            <motion.button
+              type="button"
+              aria-label={decrementTitle}
+              aria-hidden={atMin || undefined}
+              tabIndex={atMin ? -1 : 0}
+              disabled={disabled || atMin}
+              title={decrementTitle}
+              whileTap={disabled || atMin ? undefined : { scale: 0.94 }}
+              transition={SPRING_PRESS}
+              onClick={(e) => {
+                e.stopPropagation();
+                if (disabled || atMin) return;
+                setDirection(-1);
+                playStepperTickSound("down");
+                onDecrement();
               }}
-              transition={{ duration: 0.18, ease: EASE_OUT }}
+              className={cn(
+                "grid size-full place-items-center rounded-full text-gray-900 dark:text-gray-100 outline-none transition-colors hover:bg-black/[0.04] dark:hover:bg-white/[0.06] cursor-pointer disabled:pointer-events-none",
+                atMin && "pointer-events-none"
+              )}
             >
-              <Minus className="w-4 h-4 stroke-[2.4]" />
-            </motion.span>
-          </motion.button>
-        </LiquidItem>
+              <motion.span
+                aria-hidden="true"
+                initial={false}
+                animate={{
+                  opacity: atMin ? 0 : 1,
+                  scale: atMin ? 0.6 : 1,
+                  filter: atMin ? "blur(3px)" : "blur(0px)",
+                }}
+                transition={{ duration: 0.2, ease: EASE_OUT }}
+              >
+                <Minus className="w-5 h-5 stroke-[2.2]" />
+              </motion.span>
+            </motion.button>
+          </LiquidItem>
 
-        {/* 2. CENTER ADAPTIVE VALUE PILL (stretches across hidden buttons + rolls numbers) */}
-        <LiquidItem
-          x={centerX}
-          y={0}
-          width={centerW}
-          height={dims.h}
-          radius={radius}
-          transition={STEPPER_LIQUID_TRANSITION}
-        >
-          <output
-            aria-live="polite"
-            aria-atomic="true"
-            className="flex size-full min-w-0 items-center justify-center overflow-hidden rounded-full px-3 text-sm sm:text-base font-bold tabular-nums text-gray-950 dark:text-white pointer-events-none"
+          {/* 2. CENTER ADAPTIVE VALUE PILL */}
+          <LiquidItem
+            x={centerGeometry.x}
+            y={0}
+            width={centerGeometry.width}
+            height={48}
+            radius={24}
+            transition={STEPPER_LIQUID_TRANSITION}
           >
-            <span className="sr-only">{value}</span>
-            <span
-              aria-hidden="true"
-              className="relative grid min-h-[1.2em] min-w-[1.5ch] place-items-center overflow-hidden leading-none"
+            <output
+              aria-live="polite"
+              aria-atomic="true"
+              className="flex size-full min-w-0 items-center justify-center overflow-hidden rounded-full px-5 text-xl font-semibold tabular-nums text-gray-950 dark:text-white pointer-events-none"
             >
-              <AnimatePresence initial={false} mode="popLayout">
-                <motion.span
-                  key={value}
-                  initial={{
-                    opacity: 0.25,
-                    filter: "blur(2.5px)",
-                    y: `${distance}%`,
-                  }}
-                  animate={{
-                    opacity: 1,
-                    filter: "blur(0px)",
-                    y: "0%",
-                  }}
-                  exit={{
-                    opacity: 0,
-                    filter: "blur(2.5px)",
-                    y: `${-distance}%`,
-                    transition: {
-                      duration: 0.14,
+              <span className="sr-only">{value}</span>
+              <span
+                aria-hidden="true"
+                className="relative grid min-h-[1.2em] min-w-[1.5ch] place-items-center overflow-hidden leading-none"
+              >
+                <AnimatePresence initial={false} mode="popLayout">
+                  <motion.span
+                    key={value}
+                    initial={{
+                      opacity: 0.25,
+                      filter: "blur(2.5px)",
+                      y: `${distance}%`,
+                    }}
+                    animate={{
+                      opacity: 1,
+                      filter: "blur(0px)",
+                      y: "0%",
+                    }}
+                    exit={{
+                      opacity: 0,
+                      filter: "blur(2.5px)",
+                      y: `${-distance}%`,
+                      transition: {
+                        duration: 0.14,
+                        ease: EASE_OUT,
+                      },
+                    }}
+                    transition={{
+                      duration: 0.2,
                       ease: EASE_OUT,
-                    },
-                  }}
-                  transition={{
-                    duration: 0.22,
-                    ease: EASE_OUT,
-                  }}
-                  className="col-start-1 row-start-1 will-change-[transform,filter,opacity]"
-                >
-                  {value}
-                </motion.span>
-              </AnimatePresence>
-            </span>
-          </output>
-        </LiquidItem>
+                    }}
+                    className="col-start-1 row-start-1 will-change-[transform,filter,opacity]"
+                  >
+                    {value}
+                  </motion.span>
+                </AnimatePresence>
+              </span>
+            </output>
+          </LiquidItem>
 
-        {/* 3. RIGHT INCREMENT BUTTON (`+`) */}
-        <LiquidItem
-          x={rightBtnX}
-          y={0}
-          width={dims.btnW}
-          height={dims.h}
-          radius={radius}
-          transition={STEPPER_LIQUID_TRANSITION}
-        >
-          <motion.button
-            type="button"
-            aria-label={incrementTitle}
-            aria-hidden={atMax || undefined}
-            tabIndex={atMax ? -1 : 0}
-            disabled={disabled || atMax}
-            title={incrementTitle}
-            whileTap={disabled || atMax ? undefined : { scale: 0.92 }}
-            transition={SPRING_PRESS}
-            onClick={(e) => {
-              e.stopPropagation();
-              if (disabled || atMax) return;
-              triggerStep(1, onIncrement);
-            }}
-            className={cn(
-              "grid size-full place-items-center rounded-full text-gray-900 dark:text-gray-100 outline-none transition-colors hover:bg-black/[0.04] dark:hover:bg-white/[0.06] cursor-pointer disabled:pointer-events-none",
-              atMax && "pointer-events-none"
-            )}
+          {/* 3. RIGHT INCREMENT BUTTON (`+`) */}
+          <LiquidItem
+            x={atMax ? 136 : 168}
+            y={0}
+            width={48}
+            height={48}
+            radius={24}
+            transition={STEPPER_LIQUID_TRANSITION}
           >
-            <motion.span
-              aria-hidden="true"
-              initial={false}
-              animate={{
-                opacity: atMax ? 0 : 1,
-                scale: atMax ? 0.5 : 1,
-                filter: atMax ? "blur(3px)" : "blur(0px)",
+            <motion.button
+              type="button"
+              aria-label={incrementTitle}
+              aria-hidden={atMax || undefined}
+              tabIndex={atMax ? -1 : 0}
+              disabled={disabled || atMax}
+              title={incrementTitle}
+              whileTap={disabled || atMax ? undefined : { scale: 0.94 }}
+              transition={SPRING_PRESS}
+              onClick={(e) => {
+                e.stopPropagation();
+                if (disabled || atMax) return;
+                setDirection(1);
+                playStepperTickSound("up");
+                onIncrement();
               }}
-              transition={{ duration: 0.18, ease: EASE_OUT }}
+              className={cn(
+                "grid size-full place-items-center rounded-full text-gray-900 dark:text-gray-100 outline-none transition-colors hover:bg-black/[0.04] dark:hover:bg-white/[0.06] cursor-pointer disabled:pointer-events-none",
+                atMax && "pointer-events-none"
+              )}
             >
-              <Plus className="w-4 h-4 stroke-[2.4]" />
-            </motion.span>
-          </motion.button>
-        </LiquidItem>
-      </Liquid>
+              <motion.span
+                aria-hidden="true"
+                initial={false}
+                animate={{
+                  opacity: atMax ? 0 : 1,
+                  scale: atMax ? 0.6 : 1,
+                  filter: atMax ? "blur(3px)" : "blur(0px)",
+                }}
+                transition={{ duration: 0.2, ease: EASE_OUT }}
+              >
+                <Plus className="w-5 h-5 stroke-[2.2]" />
+              </motion.span>
+            </motion.button>
+          </LiquidItem>
+        </Liquid>
+      </fieldset>
     </div>
   );
 }
@@ -927,14 +881,10 @@ export function BeUIActionSwapLabel({
   activeIcon,
   className = "",
 }: BeUIActionSwapLabelProps) {
-  const maxLen = Math.max(idleText.length, activeText.length);
-  const paddedIdle = idleText.padEnd(maxLen, " ");
-  const paddedActive = activeText.padEnd(maxLen, " ");
-
   return (
-    <span className={`inline-flex items-center justify-center gap-2 ${className}`}>
+    <span className={`inline-flex items-center justify-center gap-1.5 sm:gap-2 ${className}`}>
       {/* Dual-State Icon Slot */}
-      <span className="relative inline-flex items-center justify-center w-5 h-5 overflow-hidden shrink-0">
+      <span className="relative inline-flex items-center justify-center w-4 h-4 sm:w-[18px] sm:h-[18px] overflow-hidden shrink-0">
         <span
           style={{
             transform: active ? "translate3d(0, -120%, 0) scale(0.5)" : "translate3d(0, 0%, 0) scale(1)",
@@ -948,7 +898,7 @@ export function BeUIActionSwapLabel({
         </span>
         <span
           style={{
-            transform: active ? "translate3d(0, 0%, 0) scale(1.1)" : "translate3d(0, 120%, 0) scale(0.5)",
+            transform: active ? "translate3d(0, 0%, 0) scale(1.05)" : "translate3d(0, 120%, 0) scale(0.5)",
             opacity: active ? 1 : 0,
             filter: active ? "blur(0px)" : "blur(3px)",
             transition: "transform 420ms cubic-bezier(0.22, 1.3, 0.36, 1) 40ms, opacity 280ms ease 40ms, filter 280ms ease",
@@ -959,44 +909,58 @@ export function BeUIActionSwapLabel({
         </span>
       </span>
 
-      {/* Letter-by-Letter Staggered Cascade Slot Roll */}
-      <span className="inline-flex items-center overflow-hidden" style={{ height: "1.35em" }}>
-        {Array.from({ length: maxLen }).map((_, idx) => {
-          const idleChar = paddedIdle[idx] || " ";
-          const activeChar = paddedActive[idx] || " ";
-          const delayMs = idx * 14;
-
-          return (
-            <span
-              key={idx}
-              className="relative inline-flex flex-col overflow-hidden"
-              style={{ height: "1.35em", lineHeight: "1.35em" }}
-            >
+      {/* Two Independent Centered Layers for Natural Typography Kerning + Letter-by-Letter Cascade */}
+      <span
+        className="relative inline-grid place-items-center overflow-hidden leading-none"
+        style={{ height: "1.35em" }}
+      >
+        {/* Idle Text Layer */}
+        <span
+          aria-hidden={active || undefined}
+          className="col-start-1 row-start-1 inline-flex items-center justify-center whitespace-nowrap"
+        >
+          {Array.from(idleText).map((ch, idx) => {
+            const delayMs = idx * 12;
+            return (
               <span
+                key={`idle-${idx}`}
                 style={{
-                  transform: active ? "translate3d(0, -105%, 0)" : "translate3d(0, 0%, 0)",
+                  transform: active ? "translate3d(0, -115%, 0)" : "translate3d(0, 0%, 0)",
                   opacity: active ? 0 : 1,
                   filter: active ? "blur(2.5px)" : "blur(0px)",
-                  transition: `transform 420ms cubic-bezier(0.22, 1.3, 0.36, 1) ${delayMs}ms, opacity 260ms ease ${delayMs}ms, filter 260ms ease ${delayMs}ms`,
+                  transition: `transform 400ms cubic-bezier(0.22, 1.3, 0.36, 1) ${delayMs}ms, opacity 240ms ease ${delayMs}ms, filter 240ms ease ${delayMs}ms`,
                 }}
                 className="inline-block whitespace-pre"
               >
-                {idleChar}
+                {ch}
               </span>
+            );
+          })}
+        </span>
+
+        {/* Active Text Layer */}
+        <span
+          aria-hidden={!active || undefined}
+          className="col-start-1 row-start-1 inline-flex items-center justify-center whitespace-nowrap"
+        >
+          {Array.from(activeText).map((ch, idx) => {
+            const delayMs = idx * 12;
+            return (
               <span
+                key={`active-${idx}`}
                 style={{
-                  transform: active ? "translate3d(0, -100%, 0)" : "translate3d(0, 15%, 0)",
+                  transform: active ? "translate3d(0, 0%, 0)" : "translate3d(0, 115%, 0)",
                   opacity: active ? 1 : 0,
                   filter: active ? "blur(0px)" : "blur(2.5px)",
-                  transition: `transform 420ms cubic-bezier(0.22, 1.3, 0.36, 1) ${delayMs}ms, opacity 260ms ease ${delayMs}ms, filter 260ms ease ${delayMs}ms`,
+                  transition: `transform 400ms cubic-bezier(0.22, 1.3, 0.36, 1) ${delayMs}ms, opacity 240ms ease ${delayMs}ms, filter 240ms ease ${delayMs}ms`,
                 }}
                 className="inline-block whitespace-pre"
               >
-                {activeChar}
+                {ch}
               </span>
-            </span>
-          );
-        })}
+            );
+          })}
+        </span>
       </span>
     </span>
   );
