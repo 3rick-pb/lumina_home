@@ -264,14 +264,6 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
   const [expandedClusterCity, setExpandedClusterCity] = useState<string | null>(null);
   const [hoveredClusterKey, setHoveredClusterKey] = useState<string | null>(null);
 
-  // Preload optimized WebP 3D relief landmass (< 480KB) for instant load
-  useEffect(() => {
-    const img = new Image();
-    img.src = "/images/map_3d_relief_cutout.webp";
-    img.onload = () => setIsMapLoaded(true);
-    img.onerror = () => setIsMapLoaded(true);
-  }, []);
-
   // Keyboard shortcut: Escape to deselect active client or close expanded cluster / country menu
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -287,16 +279,11 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, []);
 
-  // Zoom & Pan states
+  // Zoom state
   const [zoom, setZoom] = useState<number>(1);
-  const [pan, setPan] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
-  const [isDragging, setIsDragging] = useState<boolean>(false);
   
   const mapContainerRef = useRef<HTMLDivElement>(null);
-  const mapLayerTransformRef = useRef<HTMLDivElement>(null);
   const clientsListRef = useRef<HTMLDivElement>(null);
-  const dragStartRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
-  const panStartRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
 
   const fetchActiveClients = useRadarStore((state) => state.fetchActiveClients);
   const selectedCountry = useRadarStore((state) => state.selectedCountry);
@@ -364,7 +351,6 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
     flightTimeoutsRef.current = [];
 
     // Reset interaction states
-    setPan({ x: 0, y: 0 });
     setZoom(1);
     setSearchQuery("");
     setSelectedClientId(null);
@@ -856,61 +842,6 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
     return { dispersedPins: dispersed, clusterPins: clusters };
   }, [rawMapClients, isUserSelf, currentUserCity, clusterMode, scatterRadius, expandedClusterCity]);
 
-  const [mapRenderMode, setMapRenderMode] = useState<"relief3d" | "mapbox">("relief3d");
-
-  // Natural Zoom handling via mouse wheel & laptop trackpad (2 fingers up / down) for 3D Relief Map
-  const handleReliefWheel = useCallback((e: WheelEvent) => {
-    if (mapRenderMode !== "relief3d") return;
-    e.preventDefault();
-    const factor = e.deltaY < 0 ? 1.15 : 0.87;
-    setZoom(prev => {
-      const next = Math.min(Math.max(prev * factor, 0.75), 4.5);
-      return Number(next.toFixed(2));
-    });
-  }, [mapRenderMode]);
-
-  useEffect(() => {
-    const el = mapContainerRef.current;
-    if (!el) return;
-    el.addEventListener("wheel", handleReliefWheel, { passive: false });
-    return () => {
-      el.removeEventListener("wheel", handleReliefWheel);
-    };
-  }, [handleReliefWheel]);
-
-  // Drag & Pan handlers for 3D Relief Map
-  const handleMouseDown = (e: React.MouseEvent) => {
-    if (mapRenderMode !== "relief3d" || e.button !== 0) return;
-    const target = e.target as HTMLElement | null;
-    if (target?.closest("button, input, select, a, [data-no-map-pan='true']")) return;
-    setIsDragging(true);
-    dragStartRef.current = { x: e.clientX, y: e.clientY };
-    panStartRef.current = { ...pan };
-  };
-
-  const handleMouseMove = (e: React.MouseEvent) => {
-    if (!isDragging || mapRenderMode !== "relief3d") return;
-    const dx = e.clientX - dragStartRef.current.x;
-    const dy = e.clientY - dragStartRef.current.y;
-    const newX = panStartRef.current.x + dx;
-    const newY = panStartRef.current.y + dy;
-    if (mapLayerTransformRef.current) {
-      mapLayerTransformRef.current.style.transform = `translate3d(${newX}px, ${newY}px, 0) scale(${zoom}) rotate(0deg)`;
-    }
-  };
-
-  const handleMouseUp = (e: React.MouseEvent) => {
-    if (isDragging) {
-      setIsDragging(false);
-      const dx = e.clientX - dragStartRef.current.x;
-      const dy = e.clientY - dragStartRef.current.y;
-      setPan({
-        x: panStartRef.current.x + dx,
-        y: panStartRef.current.y + dy,
-      });
-    }
-  };
-
   // Scroll handler for the clients list to update the luminous green vertical bar
   const handleClientsScroll = () => {
     const el = clientsListRef.current;
@@ -934,16 +865,12 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
 
   const handleResetView = () => {
     setZoom(1);
-    setPan({ x: 0, y: 0 });
     setResetCommandSeq((s) => s + 1);
   };
 
-  // Smooth camera fly-to function for cities and coordinates on both 3D Relief Map & Mapbox Canvas
+  // Smooth camera fly-to function for cities and coordinates on Mapbox Canvas
   const focusOnLocation = useCallback((xPct: number, yPct: number, zoomLevel: number = 1.6, cityName?: string) => {
-    const targetPanX = Math.round((50 - xPct) * 5.4 * (zoomLevel / 1.5));
-    const targetPanY = Math.round((50 - yPct) * 3.8 * (zoomLevel / 1.5));
     setZoom(zoomLevel);
-    setPan({ x: targetPanX, y: targetPanY });
     setFocusTarget((prev) => ({
       xPct,
       yPct,
@@ -971,9 +898,9 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
 
   const displayedDossierClient = isTargetClientOnline ? activeHUDClient : null;
 
-  // Unified helper to render Cluster Beacons & Dispersed Beacons with full Sept 19 1 PM animations + radial bloom
+  // Render Cluster Beacons & Dispersed Beacons on RadarMapboxCanvas with full Sept 19 1 PM animations + radial bloom
   const renderMapBeaconsOverlay = (
-    projectPin?: (
+    projectPin: (
       cityName: string | undefined,
       baseX: number,
       baseY: number,
@@ -982,16 +909,13 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
     ) => { x: number; y: number; visible: boolean; isMoving: boolean }
   ) => {
     if (isPreparingRadar) return null;
-    const isPercentMode = !projectPin;
 
     return (
       <>
         {/* 1. CLUSTER BEACONS (Animated entry/exit & smooth hover elevation) */}
         <AnimatePresence initial={false}>
           {clusterPins.map((cluster) => {
-            const pos = projectPin
-              ? projectPin(cluster.cityName, cluster.baseX, cluster.baseY)
-              : { x: cluster.baseX, y: cluster.baseY, visible: true, isMoving: isDragging };
+            const pos = projectPin(cluster.cityName, cluster.baseX, cluster.baseY);
             if (!pos.visible) return null;
 
             const isHovered = hoveredClusterKey === cluster.cityKey;
@@ -1001,14 +925,14 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
               activeStage === "cart" ? cluster.hasCart :
               cluster.hasFrequent;
             const isDimmed = !isHovered && !isStageMatch;
-            const openDownward = isPercentMode ? cluster.baseY < 28 : pos.y < 220;
+            const openDownward = pos.y < 220;
 
             return (
               <div
                 key={`cluster-${cluster.cityKey}`}
                 style={{
-                  left: isPercentMode ? `${cluster.baseX}%` : `${pos.x}px`,
-                  top: isPercentMode ? `${cluster.baseY}%` : `${pos.y}px`,
+                  left: `${pos.x}px`,
+                  top: `${pos.y}px`,
                   transition: pos.isMoving
                     ? "opacity 220ms ease"
                     : "left 520ms cubic-bezier(0.16, 1, 0.3, 1), top 520ms cubic-bezier(0.16, 1, 0.3, 1), opacity 320ms ease",
@@ -1118,12 +1042,8 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
         {/* 2. DISPERSED INDIVIDUAL BEACONS (Radial bloom from city center + Sept 19 1 PM hover/scale/stem animations) */}
         <AnimatePresence initial={false}>
           {dispersedPins.map((beacon) => {
-            const pos = projectPin
-              ? projectPin(beacon.cityName, beacon.baseX, beacon.baseY, beacon.dispX, beacon.dispY)
-              : { x: beacon.dispX, y: beacon.dispY, visible: true, isMoving: isDragging };
-            const basePos = projectPin
-              ? projectPin(beacon.cityName, beacon.baseX, beacon.baseY)
-              : { x: beacon.baseX, y: beacon.baseY, visible: true, isMoving: isDragging };
+            const pos = projectPin(beacon.cityName, beacon.baseX, beacon.baseY, beacon.dispX, beacon.dispY);
+            const basePos = projectPin(beacon.cityName, beacon.baseX, beacon.baseY);
 
             if (!pos.visible) return null;
 
@@ -1145,22 +1065,18 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
               ? `${clientFirstName} • ${beacon.cityName}`
               : beacon.cityName;
 
-            const openDownward = isPercentMode ? beacon.dispY < 28 : pos.y < 220;
+            const openDownward = pos.y < 220;
 
             // Radial bloom offset from city center so toggling Disperso <-> Agrupar physically blooms/converges
-            const bloomOffsetX = isPercentMode
-              ? (beacon.baseX - beacon.dispX) * 7.5
-              : basePos.x - pos.x;
-            const bloomOffsetY = isPercentMode
-              ? (beacon.baseY - beacon.dispY) * 6.5
-              : basePos.y - pos.y;
+            const bloomOffsetX = basePos.x - pos.x;
+            const bloomOffsetY = basePos.y - pos.y;
 
             return (
               <div
                 key={`pin-${client.id}`}
                 style={{
-                  left: isPercentMode ? `${beacon.dispX}%` : `${pos.x}px`,
-                  top: isPercentMode ? `${beacon.dispY}%` : `${pos.y}px`,
+                  left: `${pos.x}px`,
+                  top: `${pos.y}px`,
                   transition: pos.isMoving
                     ? "opacity 200ms ease"
                     : "left 520ms cubic-bezier(0.16, 1, 0.3, 1), top 520ms cubic-bezier(0.16, 1, 0.3, 1), opacity 300ms ease",
@@ -1420,9 +1336,6 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
     <div 
       draggable={false}
       onDragStart={(e) => e.preventDefault()}
-      onMouseMove={handleMouseMove}
-      onMouseUp={handleMouseUp}
-      onMouseLeave={handleMouseUp}
       onMouseDown={(e) => {
         const target = e.target as HTMLElement | null;
         if (target?.closest("input, textarea, select, button, a")) return;
@@ -1512,171 +1425,48 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
       {/* Base wrapper: map refracts softly through the dark frosted glass while HUD stays 100% hidden */}
       <div className="absolute inset-0">
       {/* ========================================================================= */}
-      {/* 2. THE MAIN HERO: PROTAGONIC 3D RELIEF MAP (Sept 19 1 PM) & SATELLITE MAP */}
+      {/* 2. THE MAIN HERO: CARTOGRAPHIC RADAR MAP CANVAS                           */}
       {/* ========================================================================= */}
-      {mapRenderMode === "relief3d" ? (
-        <div 
-          ref={mapContainerRef}
-          onMouseDown={handleMouseDown}
-          onClick={() => setSelectedClientId(null)}
-          className={`absolute inset-0 z-10 flex items-center justify-center overflow-hidden ${
-            isPreparingRadar ? "pointer-events-none" : isDragging ? "cursor-grabbing" : "cursor-grab"
-          }`}
-        >
-          {/* Zoomed & Panned 3D Terrain Wrapper with Cinematic Satellite Flight (Sept 19 1 PM) */}
-          <div 
-            ref={mapLayerTransformRef}
-            style={{
-              transform: 
-                flightPhase === 'takeoff'
-                  ? `translate3d(${-flightVector.x * 0.7}px, ${-flightVector.y * 0.7}px, 0) scale(0.88) rotate(${-flightRotation * 0.5}deg)`
-                  : flightPhase === 'approach'
-                  ? `translate3d(${flightVector.x * 0.5}px, ${flightVector.y * 0.5}px, 0) scale(0.90) rotate(${flightRotation}deg)`
-                  : flightPhase === 'landing'
-                  ? `translate3d(0px, 0px, 0) scale(1) rotate(0deg)`
-                  : `translate3d(${pan.x}px, ${pan.y}px, 0) scale(${zoom}) rotate(0deg)`,
-              transformOrigin: "center center",
-              willChange: "transform, opacity",
-              transformStyle: "preserve-3d",
-              backfaceVisibility: "hidden",
-              opacity: 
-                isPreparingRadar
-                  ? 0.45
-                  : flightPhase === 'takeoff' 
-                  ? 0.4 
-                  : flightPhase === 'approach'
-                  ? 0.7
-                  : isMapLoaded 
-                  ? 1 
-                  : 0,
-              transition: 
-                isDragging 
-                  ? "none" 
-                  : flightPhase === 'takeoff'
-                  ? "transform 0.48s cubic-bezier(0.2, 0.9, 0.3, 1), opacity 0.48s ease"
-                  : flightPhase === 'approach'
-                  ? "none"
-                  : flightPhase === 'landing'
-                  ? "transform 2.2s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.6s ease-out"
-                  : "transform 0.55s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.35s ease",
-              aspectRatio: `${activeCountry.width} / ${activeCountry.height}`,
-            }}
-            className="relative w-[780px] lg:w-[920px] max-w-full flex items-center justify-center pointer-events-auto shrink-0"
-          >
-            {/* Ambient Ground Shadow */}
-            <div className="absolute inset-x-12 bottom-4 h-32 bg-black/75 blur-3xl rounded-full pointer-events-none -z-10" />
-
-            {/* Authentic 4K High-Res Transparent 3D Relief Landmass */}
-            <picture className="w-full h-full pointer-events-none select-none">
-              <source srcSet={activeCountry.mapWebp} type="image/webp" />
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img 
-                key={selectedCountry}
-                src={activeCountry.mapPng} 
-                alt={`Mapa 3D Topográfico en Relieve de ${activeCountry.name} en Alta Resolución`}
-                draggable={false}
-                loading="eager"
-                decoding="async"
-                onLoad={() => setIsMapLoaded(true)}
-                className={`w-full h-full object-contain pointer-events-none select-none filter contrast-110 brightness-105 drop-shadow-[0_28px_40px_rgba(0,0,0,0.7)] transition-opacity duration-500 ${
-                  isMapLoaded ? "opacity-100" : "opacity-0"
-                }`}
-              />
-            </picture>
-
-            {/* Render All Cluster & Dispersed Beacons with Sept 19 1 PM Animations */}
-            {renderMapBeaconsOverlay()}
-          </div>
-        </div>
-      ) : (
-        <div 
-          ref={mapContainerRef}
-          style={{
-            transform:
-              flightPhase === "takeoff"
-                ? `translate3d(${-flightVector.x * 0.7}px, ${-flightVector.y * 0.7}px, 0) scale(0.88) rotate(${-flightRotation * 0.5}deg)`
-                : flightPhase === "approach"
-                ? `translate3d(${flightVector.x * 0.5}px, ${flightVector.y * 0.5}px, 0) scale(0.90) rotate(${flightRotation}deg)`
-                : "translate3d(0px, 0px, 0) scale(1) rotate(0deg)",
-            transformOrigin: "center center",
-            willChange: "transform, opacity",
-            opacity: isPreparingRadar
-              ? 0.45
-              : flightPhase === "takeoff"
-              ? 0.4
+      <div 
+        ref={mapContainerRef}
+        style={{
+          transform:
+            flightPhase === "takeoff"
+              ? `translate3d(${-flightVector.x * 0.7}px, ${-flightVector.y * 0.7}px, 0) scale(0.88) rotate(${-flightRotation * 0.5}deg)`
               : flightPhase === "approach"
-              ? 0.7
-              : 1,
-            transition:
-              flightPhase === "takeoff"
-                ? "transform 0.48s cubic-bezier(0.2, 0.9, 0.3, 1), opacity 0.48s ease"
-                : flightPhase === "approach"
-                ? "none"
-                : flightPhase === "landing"
-                ? "transform 2.2s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.6s ease-out"
-                : "transform 0.55s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.35s ease",
-          }}
-          className={`absolute inset-0 z-10 overflow-hidden ${
-            isPreparingRadar ? "pointer-events-none" : ""
-          }`}
-        >
-          <RadarMapboxCanvas
-            selectedCountry={selectedCountry}
-            zoomCommand={zoom}
-            focusTarget={focusTarget}
-            resetCommandSeq={resetCommandSeq}
-            onMapReady={() => setIsMapLoaded(true)}
-            onCanvasClick={() => setSelectedClientId(null)}
-            renderOverlayPins={(projectPin) => renderMapBeaconsOverlay(projectPin)}
-          />
-        </div>
-      )}
-
-      {/* Map Engine Switcher Pill (Relieve 3D Sept 19 1 PM <-> Mapa Satelital/Vectorial) */}
-      <div
-        className={`absolute bottom-28 sm:bottom-32 left-3 sm:left-6 z-30 pointer-events-auto transition-opacity duration-500 ${
-          isPreparingRadar ? "opacity-0 pointer-events-none invisible" : "opacity-100"
+              ? `translate3d(${flightVector.x * 0.5}px, ${flightVector.y * 0.5}px, 0) scale(0.90) rotate(${flightRotation}deg)`
+              : "translate3d(0px, 0px, 0) scale(1) rotate(0deg)",
+          transformOrigin: "center center",
+          willChange: "transform, opacity",
+          opacity: isPreparingRadar
+            ? 0.45
+            : flightPhase === "takeoff"
+            ? 0.4
+            : flightPhase === "approach"
+            ? 0.7
+            : 1,
+          transition:
+            flightPhase === "takeoff"
+              ? "transform 0.48s cubic-bezier(0.2, 0.9, 0.3, 1), opacity 0.48s ease"
+              : flightPhase === "approach"
+              ? "none"
+              : flightPhase === "landing"
+              ? "transform 2.2s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.6s ease-out"
+              : "transform 0.55s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.35s ease",
+        }}
+        className={`absolute inset-0 z-10 overflow-hidden ${
+          isPreparingRadar ? "pointer-events-none" : ""
         }`}
-        onClick={(e) => e.stopPropagation()}
       >
-        <div className="inline-flex items-center bg-black/85 backdrop-blur-2xl border border-white/15 rounded-full p-0.5 shadow-2xl text-[10px] font-mono">
-          <button
-            type="button"
-            onClick={() => setMapRenderMode("relief3d")}
-            className={`relative px-2.5 py-1 rounded-full transition-colors duration-200 cursor-pointer flex items-center gap-1 ${
-              mapRenderMode === "relief3d" ? "text-gray-950 font-bold" : "text-white/70 hover:text-white"
-            }`}
-            title="Mapa Topográfico en Relieve 3D (Con vuelo y física suave)"
-          >
-            {mapRenderMode === "relief3d" && (
-              <motion.div
-                layoutId="radarMapRenderModePill"
-                transition={{ type: "spring", stiffness: 420, damping: 30 }}
-                className="absolute inset-0 rounded-full bg-[#ccff00] shadow-[0_0_12px_rgba(204,255,0,0.45)] -z-10"
-              />
-            )}
-            <Sparkles className="w-3 h-3 shrink-0" />
-            <span>Relieve 3D</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => setMapRenderMode("mapbox")}
-            className={`relative px-2.5 py-1 rounded-full transition-colors duration-200 cursor-pointer flex items-center gap-1 ${
-              mapRenderMode === "mapbox" ? "text-gray-950 font-bold" : "text-white/70 hover:text-white"
-            }`}
-            title="Mapa Cartográfico Satelital / Táctico"
-          >
-            {mapRenderMode === "mapbox" && (
-              <motion.div
-                layoutId="radarMapRenderModePill"
-                transition={{ type: "spring", stiffness: 420, damping: 30 }}
-                className="absolute inset-0 rounded-full bg-[#ccff00] shadow-[0_0_12px_rgba(204,255,0,0.45)] -z-10"
-              />
-            )}
-            <Globe className="w-3 h-3 shrink-0" />
-            <span>Satélite HD</span>
-          </button>
-        </div>
+        <RadarMapboxCanvas
+          selectedCountry={selectedCountry}
+          zoomCommand={zoom}
+          focusTarget={focusTarget}
+          resetCommandSeq={resetCommandSeq}
+          onMapReady={() => setIsMapLoaded(true)}
+          onCanvasClick={() => setSelectedClientId(null)}
+          renderOverlayPins={(projectPin) => renderMapBeaconsOverlay(projectPin)}
+        />
       </div>
 
       {/* Hide all HUD panels during the 5-second dark frosted glass Solving animation */}
