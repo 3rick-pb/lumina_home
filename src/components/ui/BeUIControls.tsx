@@ -1497,6 +1497,7 @@ export interface BeUILateralExpandableSidebarProps {
   brandHref?: string;
   brandTitle?: string;
   brandSubtitle?: string;
+  brandLogo?: React.ReactNode;
   isAdmin?: boolean;
   topSpecialItem?: BeUISidebarNavItem;
   primaryItems: BeUISidebarNavItem[];
@@ -1509,6 +1510,7 @@ export function BeUILateralExpandableSidebar({
   brandHref = "/",
   brandTitle = "Lumina",
   brandSubtitle,
+  brandLogo,
   isAdmin = false,
   topSpecialItem,
   primaryItems,
@@ -1639,10 +1641,10 @@ export function BeUILateralExpandableSidebar({
   };
 
   return (
-    /* Reserved 84px footprint in flex layout so expanding rightwards smoothly overlays without shifting page layout */
+    /* Reserved 80px footprint in flex row; motion.aside is relative in normal flow so it stretches full height and overflows rightwards on hover */
     <div
       className={cn(
-        "hidden md:block relative w-[84px] shrink-0 h-full z-40 select-none",
+        "hidden md:flex relative w-[80px] shrink-0 self-stretch z-40 select-none overflow-visible",
         className
       )}
     >
@@ -1656,23 +1658,29 @@ export function BeUILateralExpandableSidebar({
           setHoveredItemId(null);
         }}
         className={cn(
-          "absolute left-0 top-0 bottom-0 flex flex-col justify-between py-4 px-3 rounded-[2rem] bg-white/90 dark:bg-[#121316]/95 backdrop-blur-2xl border border-gray-200/80 dark:border-white/[0.08] transition-shadow duration-300 overflow-hidden",
+          "relative min-h-full shrink-0 flex flex-col justify-between py-6 px-3 rounded-3xl bg-white/95 dark:bg-[#1e1e20]/95 backdrop-blur-2xl border border-gray-200/80 dark:border-white/10 transition-shadow duration-300 overflow-hidden",
           isExpanded
             ? "shadow-[0_24px_60px_rgba(0,0,0,0.18)] dark:shadow-[0_24px_70px_rgba(0,0,0,0.75)] ring-1 ring-black/5 dark:ring-[#ccff00]/20"
-            : "shadow-xl shadow-gray-200/40 dark:shadow-none"
+            : "shadow-[0_12px_40px_rgba(0,0,0,0.05)] dark:shadow-[0_12px_40px_rgba(0,0,0,0.4)]"
         )}
       >
         {/* Top Brand + Tablet/Mouse Pin Toggle */}
-        <div className="flex flex-col gap-2 w-full">
-          <div className="flex items-center justify-between px-1 mb-1">
+        <div className="flex flex-col gap-2.5 w-full">
+          <div className="flex items-center justify-between px-0.5 mb-1">
             <a
               href={brandHref}
               className="flex items-center gap-3 group focus:outline-none min-w-0"
               title="Volver a la tienda Lumina"
             >
-              <div className="w-11 h-11 rounded-2xl bg-gray-900 dark:bg-white text-white dark:text-gray-950 flex items-center justify-center font-serif font-bold text-lg shadow-md group-hover:scale-105 transition-transform shrink-0">
-                L.
-              </div>
+              {brandLogo ? (
+                <div className="w-11 h-11 md:w-12 md:h-12 rounded-2xl bg-gradient-to-br from-[#1c1b18] via-[#121210] to-[#080808] border border-[#c49a3f]/50 dark:border-[#c49a3f]/60 flex items-center justify-center shadow-lg shadow-[#c49a3f]/15 group-hover:border-[#e0be70] group-hover:scale-105 transition-all shrink-0">
+                  {brandLogo}
+                </div>
+              ) : (
+                <div className="w-11 h-11 rounded-2xl bg-gray-900 dark:bg-white text-white dark:text-gray-950 flex items-center justify-center font-serif font-bold text-lg shadow-md group-hover:scale-105 transition-transform shrink-0">
+                  L.
+                </div>
+              )}
               <AnimatePresence initial={false}>
                 {isExpanded && (
                   <motion.div

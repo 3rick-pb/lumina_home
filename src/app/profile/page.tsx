@@ -49,7 +49,6 @@ import {
   BeUILateralExpandableSidebar,
   BeUIMobileExpandableTabs,
 } from "@/components/ui/BeUIControls";
-import { BeUIThemeToggleCircleBlur } from "@/components/ui/ThemeToggle";
 import { LuminaBrandEmblem } from "@/components/ui/LuminaBrandEmblem";
 import { FavoritesTab } from "@/components/profile/tabs/FavoritesTab";
 import { CatalogTab } from "@/components/profile/tabs/CatalogTab";
@@ -664,6 +663,7 @@ const handleConfirmDeleteNiche = async () => {
     brandHref="/"
     brandTitle={brand.name}
     brandSubtitle={isAdmin ? "Panel Ejecutivo" : "Mi Espacio"}
+    brandLogo={<LuminaBrandEmblem size={38} />}
     isAdmin={isAdmin}
     className="mr-4 md:mr-6 self-stretch"
     primaryItems={[
@@ -758,19 +758,17 @@ const handleConfirmDeleteNiche = async () => {
     ]}
     footerSlot={(isExpanded) => (
       <div className="flex flex-col gap-2 w-full">
-        <div className={clsx("flex items-center", isExpanded ? "justify-between px-1" : "justify-center")}>
-          <BeUIThemeToggleCircleBlur size="sm" showLabel={isExpanded} />
-          {isExpanded && (
-            <Link
-              href="/"
-              className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-semibold text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-white/5 transition-colors"
-              title="Volver a la Tienda"
-            >
-              <Store className="w-4 h-4" />
-              <span>Tienda</span>
-            </Link>
+        <Link
+          href="/"
+          title="Volver a la Tienda"
+          className={clsx(
+            "w-full h-10 rounded-2xl flex items-center gap-3 px-3 text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100/80 dark:hover:bg-white/5 transition-colors",
+            !isExpanded && "justify-center"
           )}
-        </div>
+        >
+          <Store className="w-5 h-5 shrink-0" />
+          {isExpanded && <span className="text-xs font-semibold truncate">Volver a la Tienda</span>}
+        </Link>
 
         <button
           type="button"
@@ -784,7 +782,7 @@ const handleConfirmDeleteNiche = async () => {
             !isExpanded && "justify-center"
           )}
         >
-          <LogOut className="w-4 h-4 shrink-0" />
+          <LogOut className="w-5 h-5 shrink-0" />
           {isExpanded && <span className="text-xs font-bold truncate">Cerrar Sesión</span>}
         </button>
       </div>
@@ -954,8 +952,6 @@ const handleConfirmDeleteNiche = async () => {
  <Link href="/" className="hidden lg:flex text-xs font-medium text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 px-3 py-1.5 rounded-xl hover:bg-gray-100 dark:hover:bg-[#3a3a3c] transition-colors">
  Ver Tienda &rarr;
  </Link>
-
- <BeUIThemeToggleCircleBlur size="md" className="shrink-0" />
 
  <div className="flex items-center gap-2.5 sm:gap-3 pl-3 border-l border-gray-200 dark:border-white/10">
  <BlobatarAvatar

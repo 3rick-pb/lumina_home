@@ -206,7 +206,7 @@ export function BeUIThemeToggleCircleBlur({
 }
 
 /* ============================================================================
- * Full ThemeToggle Control with Circle-Blur View Transition Support
+ * ThemeToggle Control with Circle-Blur View Transition (@beui/theme-toggle)
  * ============================================================================ */
 export function ThemeToggle() {
   const { mode, setMode } = useThemeStore();
@@ -223,55 +223,49 @@ export function ThemeToggle() {
   ];
 
   return (
-    <div className="flex items-center gap-2.5 w-full max-w-[390px] select-none">
-      {/* Official @beui/theme-toggle Circle Blur Instant Button */}
-      <BeUIThemeToggleCircleBlur size="md" className="shrink-0" />
+    <div className="relative flex items-center bg-[#e5e5e5]/80 dark:bg-[#1a1a1a]/80 backdrop-blur-3xl rounded-full p-1.5 shadow-[inset_0_2px_12px_rgba(0,0,0,0.06),inset_0_4px_4px_rgba(0,0,0,0.04)] dark:shadow-[inset_0_2px_12px_rgba(0,0,0,0.4),inset_0_4px_4px_rgba(0,0,0,0.4)] border border-white/60 dark:border-white/5 w-full max-w-[340px] transition-colors duration-500 select-none">
+      {options.map((option) => {
+        const Icon = option.icon;
+        const isActive = mode === option.id;
 
-      {/* 3-Mode Selector Pills wired to the same Circle-Blur View Transition */}
-      <div className="relative flex flex-1 items-center bg-[#e5e5e5]/80 dark:bg-[#1a1a1a]/80 backdrop-blur-3xl rounded-full p-1.5 shadow-[inset_0_2px_12px_rgba(0,0,0,0.06),inset_0_4px_4px_rgba(0,0,0,0.04)] dark:shadow-[inset_0_2px_12px_rgba(0,0,0,0.4),inset_0_4px_4px_rgba(0,0,0,0.4)] border border-white/60 dark:border-white/5 transition-colors duration-500">
-        {options.map((option) => {
-          const Icon = option.icon;
-          const isActive = mode === option.id;
-
-          return (
-            <button
-              key={option.id}
-              type="button"
-              onClick={(e) =>
-                executeCircleBlurThemeTransition(
-                  option.id,
-                  setMode,
-                  user?.id,
-                  e,
-                  e.currentTarget
-                )
-              }
-              className={`relative flex-1 flex items-center justify-center gap-2 py-2 text-[13px] font-bold transition-colors duration-300 cursor-pointer rounded-full ${
-                isActive
-                  ? "text-gray-950 dark:text-white"
-                  : "text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200"
-              }`}
-            >
-              {isActive && (
-                <motion.div
-                  layoutId="theme-knob"
-                  className="absolute inset-0 rounded-full bg-white dark:bg-[#2c2c2e] shadow-[0_3px_12px_rgba(0,0,0,0.1),0_1px_3px_rgba(0,0,0,0.08)] dark:shadow-[0_3px_12px_rgba(0,0,0,0.4)] border border-black/[0.04] dark:border-white/10"
-                  initial={false}
-                  transition={{ type: "spring", stiffness: 350, damping: 28 }}
-                />
-              )}
-              <div className="relative z-10 flex items-center gap-1.5">
-                <Icon
-                  className={`w-3.5 h-3.5 transition-colors duration-300 ${
-                    isActive ? "text-amber-500 dark:text-[#ccff00]" : ""
-                  }`}
-                />
-                <span className="tracking-wide">{option.label}</span>
-              </div>
-            </button>
-          );
-        })}
-      </div>
+        return (
+          <button
+            key={option.id}
+            type="button"
+            onClick={(e) =>
+              executeCircleBlurThemeTransition(
+                option.id,
+                setMode,
+                user?.id,
+                e,
+                e.currentTarget
+              )
+            }
+            className={`relative flex-1 flex items-center justify-center gap-2 py-2.5 text-[13px] font-bold transition-colors duration-300 cursor-pointer rounded-full ${
+              isActive
+                ? "text-gray-950 dark:text-white"
+                : "text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200"
+            }`}
+          >
+            {isActive && (
+              <motion.div
+                layoutId="theme-knob"
+                className="absolute inset-0 rounded-full bg-white dark:bg-[#2c2c2e] shadow-[0_3px_12px_rgba(0,0,0,0.1),0_1px_3px_rgba(0,0,0,0.08)] dark:shadow-[0_3px_12px_rgba(0,0,0,0.4)] border border-black/[0.04] dark:border-white/10"
+                initial={false}
+                transition={{ type: "spring", stiffness: 350, damping: 28 }}
+              />
+            )}
+            <div className="relative z-10 flex items-center gap-2">
+              <Icon
+                className={`w-4 h-4 transition-colors duration-300 ${
+                  isActive ? "text-amber-500 dark:text-[#ccff00]" : ""
+                }`}
+              />
+              <span className="tracking-wide">{option.label}</span>
+            </div>
+          </button>
+        );
+      })}
     </div>
   );
 }
