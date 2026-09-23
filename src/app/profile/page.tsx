@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState, useMemo } from "react";
+import React, { useEffect, useState, useMemo, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { clsx } from "clsx";
 import Image from "next/image";
@@ -242,6 +242,59 @@ export default function ProfilePage() {
   const [nicheBlockedModal, setNicheBlockedModal] = useState<{ category: string; count: number } | null>(null);
   const [nicheToDelete, setNicheToDelete] = useState<string | null>(null);
   const [isDeletingNiche, setIsDeletingNiche] = useState(false);
+
+  // --- Tab bar drag-to-scroll (desktop mouse) ---
+  const tabsContainerRef = useRef<HTMLDivElement>(null);
+  const isDraggingTabs = useRef(false);
+  const dragStartX = useRef(0);
+  const scrollStartX = useRef(0);
+  const hasDraggedPastThreshold = useRef(false);
+
+  const handleTabsMouseDown = useCallback((e: React.MouseEvent) => {
+    const el = tabsContainerRef.current;
+    if (!el) return;
+    isDraggingTabs.current = true;
+    hasDraggedPastThreshold.current = false;
+    dragStartX.current = e.clientX;
+    scrollStartX.current = el.scrollLeft;
+    el.style.cursor = 'grabbing';
+    el.style.userSelect = 'none';
+  }, []);
+
+  const handleTabsMouseMove = useCallback((e: React.MouseEvent) => {
+    if (!isDraggingTabs.current) return;
+    const el = tabsContainerRef.current;
+    if (!el) return;
+    const dx = e.clientX - dragStartX.current;
+    if (Math.abs(dx) > 5) hasDraggedPastThreshold.current = true;
+    el.scrollLeft = scrollStartX.current - dx * 1.25;
+  }, []);
+
+  const handleTabsMouseUp = useCallback(() => {
+    isDraggingTabs.current = false;
+    const el = tabsContainerRef.current;
+    if (el) {
+      el.style.cursor = 'grab';
+      el.style.userSelect = '';
+    }
+  }, []);
+
+  const handleTabsClickCapture = useCallback((e: React.MouseEvent) => {
+    if (hasDraggedPastThreshold.current) {
+      e.stopPropagation();
+      e.preventDefault();
+      hasDraggedPastThreshold.current = false;
+    }
+  }, []);
+
+  const handleTabsWheel = useCallback((e: React.WheelEvent) => {
+    const el = tabsContainerRef.current;
+    if (!el) return;
+    if (Math.abs(e.deltaY) > Math.abs(e.deltaX)) {
+      e.preventDefault();
+      el.scrollLeft += e.deltaY;
+    }
+  }, []);
 
   // Category & Badge manager state
 
@@ -833,7 +886,16 @@ const handleConfirmDeleteNiche = async () => {
   </Link>
 
   {/* Top Bar Tabs (Visible on Laptop and Desktop, Hidden on Mobile) */}
-  <div className="hidden md:flex items-center bg-gray-100/80 dark:bg-[#3a3a3c]/80 p-1 rounded-2xl overflow-x-auto hide-scrollbar min-w-0 shrink">
+  <div
+    ref={tabsContainerRef}
+    onMouseDown={handleTabsMouseDown}
+    onMouseMove={handleTabsMouseMove}
+    onMouseUp={handleTabsMouseUp}
+    onMouseLeave={handleTabsMouseUp}
+    onClickCapture={handleTabsClickCapture}
+    onWheel={handleTabsWheel}
+    className="hidden md:flex items-center bg-gray-100/80 dark:bg-[#3a3a3c]/80 p-1 rounded-2xl overflow-x-auto hide-scrollbar min-w-0 shrink cursor-grab active:cursor-grabbing select-none"
+  >
   <button 
   onClick={() => setActiveTab("overview")} 
   className={`px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all cursor-pointer ${activeTab === "overview" ? "bg-white dark:bg-[#202022] text-gray-900 dark:text-gray-100 shadow-sm dark:shadow-none" : "text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100"}`}

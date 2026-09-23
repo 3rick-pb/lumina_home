@@ -1309,7 +1309,7 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
       {/* ========================================================================= */}
       {/* 3. TOP FLOATING COMMAND BAR (Branded Search Bar + Modes + Admin Location)  */}
       {/* ========================================================================= */}
-      <div className="absolute top-3 sm:top-4 left-3 sm:left-6 right-3 sm:right-6 lg:right-96 z-30 flex flex-wrap items-center justify-between gap-3 pointer-events-none">
+      <div className={`absolute top-3 sm:top-4 left-3 sm:left-20 lg:left-20 right-3 sm:right-6 lg:right-96 ${isSearchFocused ? "z-50" : "z-30"} flex flex-wrap items-center justify-between gap-3 pointer-events-none transition-all`}>
         
         {/* Left: Branded Search Bar for Cities & Provinces */}
         <div 
@@ -1360,7 +1360,7 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
 
           {/* FLOATING LIVE INTERACTIVE SUGGESTER & REGIONAL TELEPORT POPOVER */}
           {isSearchFocused && (
-            <div className="absolute top-full left-0 right-0 mt-2 rounded-3xl bg-[#0c0e12]/95 backdrop-blur-3xl border border-white/20 p-4 shadow-[0_25px_60px_rgba(0,0,0,0.9)] z-[70] animate-in fade-in zoom-in-95 duration-150 space-y-3.5">
+            <div className="absolute top-full left-0 right-0 mt-2 rounded-3xl bg-[#0c0e12]/95 backdrop-blur-3xl border border-white/20 p-4 shadow-[0_25px_60px_rgba(0,0,0,0.9)] z-[70] animate-in fade-in zoom-in-95 duration-150 space-y-3.5 max-h-[min(380px,55vh)] overflow-y-auto">
               
               {/* 1. Quick Regional Filters for Active Country */}
               <div className="space-y-1.5">
