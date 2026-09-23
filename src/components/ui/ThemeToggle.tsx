@@ -86,7 +86,11 @@ export function executeCircleBlurThemeTransition(
     flushSync(() => {
       setMode(nextMode, userId);
     });
-    if (nextResolved === "dark") {
+    const isProfileSection =
+      typeof window !== "undefined" &&
+      (window.location.pathname.startsWith("/profile") ||
+        window.location.pathname.startsWith("/admin"));
+    if (nextResolved === "dark" && isProfileSection) {
       html.classList.add("dark");
       html.style.colorScheme = "dark";
     } else {

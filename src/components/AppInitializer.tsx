@@ -6,6 +6,7 @@ import { useCatalogStore } from "@/lib/catalogStore";
 import { useUserStore, hydrateStoreFromClient } from "@/lib/userStore";
 import { useRadarStore } from "@/lib/radarStore";
 import { useCartStore } from "@/lib/store";
+import { useThemeStore, getResolvedTheme } from "@/lib/themeStore";
 import { useBrand } from "@/core/hooks/useBrand";
 import { initSilentAudioEngine } from "@/lib/soundUtils";
 
@@ -52,6 +53,26 @@ function ActivityTracker() {
   const isCartOpen = useCartStore((state) => state.isOpen);
   const cartItems = useCartStore((state) => state.items);
   const products = useCatalogStore((state) => state.products);
+  const themeMode = useThemeStore((state) => state.mode);
+
+  // Strictly scope document-level Dark Mode ONLY to Mi Perfil (/profile)
+  // while CartDrawer scopes Dark Mode internally via its own .dark wrapper.
+  // All storefront & auth routes remain strictly in Light Mode.
+  useEffect(() => {
+    if (typeof document === "undefined") return;
+    const html = document.documentElement;
+    const isProfileSection = Boolean(
+      pathname?.startsWith("/profile") || pathname?.startsWith("/admin")
+    );
+    const isDark = getResolvedTheme(themeMode) === "dark";
+    if (isProfileSection && isDark) {
+      html.classList.add("dark");
+      html.style.colorScheme = "dark";
+    } else {
+      html.classList.remove("dark");
+      html.style.colorScheme = "light";
+    }
+  }, [pathname, themeMode]);
 
   // Compute readable user location/activity
   let currentSection = "Explorando Tienda";

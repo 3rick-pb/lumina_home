@@ -164,24 +164,29 @@ export async function getDispatchRecipientEmails(): Promise<string[]> {
   return getAllDispatchRecipients();
 }
 
+export const IS_SMTP_SECURE_ENFORCED =
+  (process.env.SMTP_SECURE ?? 'true').toLowerCase() !== 'false';
+
 /**
- * Creates the nodemailer transporter or returns null if credentials are not configured
+ * Creates the nodemailer transporter or returns null if credentials are not configured.
+ * Enforces SMTP_SECURE=true from root (TLS 1.2+ mandatory encryption & certificate validation).
  */
 function getTransporter() {
   const host = process.env.SMTP_HOST;
   const user = process.env.SMTP_USER;
   const pass = process.env.SMTP_PASS;
   const port = Number(process.env.SMTP_PORT) || 587;
-  const isExplicitSecure = process.env.SMTP_SECURE === 'true';
-  const secure = isExplicitSecure || port === 465;
+  const isExplicitSecure = IS_SMTP_SECURE_ENFORCED;
+  // Port 465 uses implicit SSL/TLS from byte 0; port 587 uses mandatory STARTTLS upgrade via requireTLS: true
+  const secure = port === 465 || (isExplicitSecure && port !== 587 && port !== 2525);
 
   if (!host || !user || !pass) {
     return null;
   }
 
-  // Active TLS / SSL Hardening configuration
+  // Active TLS / SSL Hardening configuration enforced from root
   const tlsConfig = {
-    rejectUnauthorized: process.env.NODE_ENV === 'production',
+    rejectUnauthorized: true,
     minVersion: 'TLSv1.2' as const,
     ciphers: 'ECDHE-RSA-AES128-GCM-SHA256:ECDHE-RSA-AES256-GCM-SHA384:HIGH:!aNULL:!eNULL:!RC4:!MD5',
   };
@@ -190,7 +195,7 @@ function getTransporter() {
     host,
     port,
     secure,
-    requireTLS: isExplicitSecure, // Enforce TLS negotiation; reject plaintext connections
+    requireTLS: isExplicitSecure, // Enforce TLS negotiation from root; reject plaintext connections
     tls: tlsConfig,
     auth: {
       user,
@@ -1065,8 +1070,8 @@ export async function verifyAndSendTestEmail({
     const finalUser = user || process.env.SMTP_USER;
     const finalPass = pass || process.env.SMTP_PASS;
     const finalPort = Number(port || process.env.SMTP_PORT) || 587;
-    const isExplicitSecure = secure !== undefined ? secure : process.env.SMTP_SECURE === 'true';
-    const finalSecure = isExplicitSecure || finalPort === 465;
+    const isExplicitSecure = secure !== undefined ? secure : IS_SMTP_SECURE_ENFORCED;
+    const finalSecure = finalPort === 465 || (isExplicitSecure && finalPort !== 587 && finalPort !== 2525);
     const finalFrom = from || process.env.SMTP_FROM || `${brandConfig.name} <${finalUser || brandConfig.contact.supportEmail}>`;
 
     if (!finalHost || !finalUser || !finalPass) {
@@ -1077,7 +1082,7 @@ export async function verifyAndSendTestEmail({
     }
 
     const tlsConfig = {
-      rejectUnauthorized: process.env.NODE_ENV === 'production',
+      rejectUnauthorized: true,
       minVersion: 'TLSv1.2' as const,
       ciphers: 'ECDHE-RSA-AES128-GCM-SHA256:ECDHE-RSA-AES256-GCM-SHA384:HIGH:!aNULL:!eNULL:!RC4:!MD5',
     };

@@ -200,6 +200,7 @@ export function IntegrationsTab() {
 
   const vercelEnvSnippet = `SMTP_HOST="smtp.gmail.com"
 SMTP_PORT="587"
+SMTP_SECURE="true"
 SMTP_USER="${finalEmail}"
 SMTP_PASS="${finalPass}"
 SMTP_FROM="${finalFrom}"`;
@@ -243,6 +244,7 @@ PAYPHONE_PAYMENT_MODE="${payphoneMode}"`;
       const payload: Record<string, unknown> = {
         action: 'test',
         recipientEmail: testEmail.trim(),
+        secure: true,
       };
 
       if (useCurrentFormCredentials) {
@@ -253,6 +255,7 @@ PAYPHONE_PAYMENT_MODE="${payphoneMode}"`;
         }
         payload.host = 'smtp.gmail.com';
         payload.port = 587;
+        payload.secure = true;
         payload.user = gmailUser.trim();
         payload.pass = gmailPass.trim();
         payload.from = finalFrom;
@@ -714,9 +717,12 @@ PAYPHONE_PAYMENT_MODE="${payphoneMode}"`;
               </div>
 
               <div className="p-3.5 bg-gray-50 dark:bg-[#1a1a1c] rounded-2xl border border-gray-100 dark:border-white/5 space-y-1">
-                <span className="text-[10px] uppercase font-bold text-gray-400 tracking-wider">Puerto TLS</span>
-                <p className="font-semibold text-gray-900 dark:text-gray-100 font-mono">
-                  {smtpStatus?.port || 587} (Seguro TLS)
+                <span className="text-[10px] uppercase font-bold text-gray-400 tracking-wider">Puerto & Túnel TLS</span>
+                <p className="font-semibold text-gray-900 dark:text-gray-100 font-mono flex items-center gap-1.5">
+                  <span>{smtpStatus?.port || 587}</span>
+                  <span className="px-2 py-0.5 rounded-md bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/25 text-[10px] font-bold">
+                    SMTP_SECURE=true
+                  </span>
                 </p>
               </div>
 

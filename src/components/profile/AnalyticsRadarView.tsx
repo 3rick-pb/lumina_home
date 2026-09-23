@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useMemo, useRef, useEffect, useCallback } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, MotionConfig } from "framer-motion";
 import { 
   MapPin, 
   Search, 
@@ -856,13 +856,67 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
     return { dispersedPins: dispersed, clusterPins: clusters };
   }, [rawMapClients, isUserSelf, currentUserCity, clusterMode, scatterRadius, expandedClusterCity]);
 
+  const [mapRenderMode, setMapRenderMode] = useState<"relief3d" | "mapbox">("relief3d");
+
+  // Natural Zoom handling via mouse wheel & laptop trackpad (2 fingers up / down) for 3D Relief Map
+  const handleReliefWheel = useCallback((e: WheelEvent) => {
+    if (mapRenderMode !== "relief3d") return;
+    e.preventDefault();
+    const factor = e.deltaY < 0 ? 1.15 : 0.87;
+    setZoom(prev => {
+      const next = Math.min(Math.max(prev * factor, 0.75), 4.5);
+      return Number(next.toFixed(2));
+    });
+  }, [mapRenderMode]);
+
+  useEffect(() => {
+    const el = mapContainerRef.current;
+    if (!el) return;
+    el.addEventListener("wheel", handleReliefWheel, { passive: false });
+    return () => {
+      el.removeEventListener("wheel", handleReliefWheel);
+    };
+  }, [handleReliefWheel]);
+
+  // Drag & Pan handlers for 3D Relief Map
+  const handleMouseDown = (e: React.MouseEvent) => {
+    if (mapRenderMode !== "relief3d" || e.button !== 0) return;
+    const target = e.target as HTMLElement | null;
+    if (target?.closest("button, input, select, a, [data-no-map-pan='true']")) return;
+    setIsDragging(true);
+    dragStartRef.current = { x: e.clientX, y: e.clientY };
+    panStartRef.current = { ...pan };
+  };
+
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (!isDragging || mapRenderMode !== "relief3d") return;
+    const dx = e.clientX - dragStartRef.current.x;
+    const dy = e.clientY - dragStartRef.current.y;
+    const newX = panStartRef.current.x + dx;
+    const newY = panStartRef.current.y + dy;
+    if (mapLayerTransformRef.current) {
+      mapLayerTransformRef.current.style.transform = `translate3d(${newX}px, ${newY}px, 0) scale(${zoom}) rotate(0deg)`;
+    }
+  };
+
+  const handleMouseUp = (e: React.MouseEvent) => {
+    if (isDragging) {
+      setIsDragging(false);
+      const dx = e.clientX - dragStartRef.current.x;
+      const dy = e.clientY - dragStartRef.current.y;
+      setPan({
+        x: panStartRef.current.x + dx,
+        y: panStartRef.current.y + dy,
+      });
+    }
+  };
+
   // Scroll handler for the clients list to update the luminous green vertical bar
   const handleClientsScroll = () => {
     const el = clientsListRef.current;
     if (!el) return;
     const maxScroll = el.scrollHeight - el.clientHeight;
     if (maxScroll > 0) {
-      // DIRECT DOM MUTATION: Bypasses React rendering entirely during scroll frames for extreme performance
       const progress = el.scrollTop / maxScroll;
       if (scrollTrackRef.current) {
         scrollTrackRef.current.style.top = `${progress * 68}%`;
@@ -884,7 +938,7 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
     setResetCommandSeq((s) => s + 1);
   };
 
-  // Smooth camera fly-to function for cities and coordinates on the Mapbox WebGL canvas
+  // Smooth camera fly-to function for cities and coordinates on both 3D Relief Map & Mapbox Canvas
   const focusOnLocation = useCallback((xPct: number, yPct: number, zoomLevel: number = 1.6, cityName?: string) => {
     const targetPanX = Math.round((50 - xPct) * 5.4 * (zoomLevel / 1.5));
     const targetPanY = Math.round((50 - yPct) * 3.8 * (zoomLevel / 1.5));
@@ -900,7 +954,6 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
   }, []);
 
   const activeHUDClient = hoveredClient || selectedClient;
-
 
   // Target client is displayed in dossier only while strictly active and online
   const isTargetClientOnline = Boolean(
@@ -918,10 +971,458 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
 
   const displayedDossierClient = isTargetClientOnline ? activeHUDClient : null;
 
+  // Unified helper to render Cluster Beacons & Dispersed Beacons with full Sept 19 1 PM animations + radial bloom
+  const renderMapBeaconsOverlay = (
+    projectPin?: (
+      cityName: string | undefined,
+      baseX: number,
+      baseY: number,
+      dispX?: number,
+      dispY?: number
+    ) => { x: number; y: number; visible: boolean; isMoving: boolean }
+  ) => {
+    if (isPreparingRadar) return null;
+    const isPercentMode = !projectPin;
+
+    return (
+      <>
+        {/* 1. CLUSTER BEACONS (Animated entry/exit & smooth hover elevation) */}
+        <AnimatePresence initial={false}>
+          {clusterPins.map((cluster) => {
+            const pos = projectPin
+              ? projectPin(cluster.cityName, cluster.baseX, cluster.baseY)
+              : { x: cluster.baseX, y: cluster.baseY, visible: true, isMoving: isDragging };
+            if (!pos.visible) return null;
+
+            const isHovered = hoveredClusterKey === cluster.cityKey;
+            const count = cluster.clients.length;
+            const isStageMatch =
+              activeStage === "all" ? true :
+              activeStage === "cart" ? cluster.hasCart :
+              cluster.hasFrequent;
+            const isDimmed = !isHovered && !isStageMatch;
+            const openDownward = isPercentMode ? cluster.baseY < 28 : pos.y < 220;
+
+            return (
+              <div
+                key={`cluster-${cluster.cityKey}`}
+                style={{
+                  left: isPercentMode ? `${cluster.baseX}%` : `${pos.x}px`,
+                  top: isPercentMode ? `${cluster.baseY}%` : `${pos.y}px`,
+                  transition: pos.isMoving
+                    ? "opacity 220ms ease"
+                    : "left 520ms cubic-bezier(0.16, 1, 0.3, 1), top 520ms cubic-bezier(0.16, 1, 0.3, 1), opacity 320ms ease",
+                }}
+                className={`absolute -translate-x-1/2 -translate-y-full cursor-pointer group pointer-events-auto ${
+                  isHovered ? "z-50" : "z-30"
+                }`}
+                onMouseEnter={() => setHoveredClusterKey(cluster.cityKey)}
+                onMouseLeave={() => setHoveredClusterKey(null)}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  focusOnLocation(cluster.baseX, cluster.baseY, 2.0, cluster.cityName);
+                  setExpandedClusterCity(cluster.cityKey);
+                }}
+              >
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.35, y: 10 }}
+                  animate={{
+                    opacity: isDimmed ? 0.3 : 1,
+                    scale: isHovered ? 1.12 : isDimmed ? 0.9 : 1,
+                    y: 0,
+                  }}
+                  exit={{ opacity: 0, scale: 0.35, y: 8 }}
+                  transition={{ type: "spring", stiffness: 380, damping: 26 }}
+                  className="relative flex flex-col items-center"
+                >
+                  {/* Ground Halo */}
+                  <div className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2 pointer-events-none">
+                    <span className="block rounded-full w-4 h-4 bg-[#ccff00]/40 blur-[2px] shadow-[0_0_12px_#ccff00]" />
+                  </div>
+
+                  {/* Cluster Head & Stem */}
+                  <div className="flex flex-col items-center">
+                    <div className="relative transition-all duration-300 flex items-center justify-center rounded-full border border-white bg-gray-950 text-white shadow-2xl px-2.5 py-0.5 min-w-[32px] h-7 gap-1 shadow-[0_0_18px_rgba(204,255,0,0.6)] group-hover:bg-[#ccff00] group-hover:text-gray-950 group-hover:border-[#ccff00]">
+                      <Users className="w-3.5 h-3.5 shrink-0" />
+                      <span className="font-mono text-xs font-black">{count}</span>
+                      {cluster.hasCart && (
+                        <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-rose-500 border border-white" />
+                      )}
+                    </div>
+
+                    {/* Vertical Pin Line */}
+                    <div className={`w-[2px] transition-all duration-300 ${isHovered ? "h-9" : "h-8"} bg-gradient-to-t from-[#ccff00] to-white shadow-[0_0_10px_#ccff00]`} />
+                    <div className="w-1.5 h-1.5 rotate-45 bg-[#ccff00] shadow-[0_0_6px_#ccff00]" />
+                  </div>
+
+                  {/* Tag Label */}
+                  <div className="absolute top-full mt-1 left-1/2 -translate-x-1/2 whitespace-nowrap px-2.5 py-0.5 rounded-full text-[9px] font-bold font-mono tracking-wider transition-all duration-300 pointer-events-none bg-black/90 text-white border border-[#ccff00]/40 backdrop-blur-md shadow-md flex items-center gap-1 group-hover:scale-105">
+                    <span>{cluster.cityName}</span>
+                    <span className="text-[#ccff00] font-black">({count})</span>
+                  </div>
+
+                  {/* Animated Floating Hover Tooltip */}
+                  <AnimatePresence>
+                    {isHovered && (() => {
+                      const anonCount = cluster.clients.filter(c => c.isAnonymous).length;
+                      const regCount = count - anonCount;
+                      return (
+                        <motion.div
+                          key={`cluster-tip-${cluster.cityKey}`}
+                          initial={{ opacity: 0, y: openDownward ? -8 : 8, scale: 0.93 }}
+                          animate={{ opacity: 1, y: 0, scale: 1 }}
+                          exit={{ opacity: 0, y: openDownward ? -6 : 6, scale: 0.95 }}
+                          transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
+                          className={`absolute left-1/2 -translate-x-1/2 w-56 p-3 rounded-2xl bg-[#111614]/95 backdrop-blur-2xl border border-[#ccff00]/50 shadow-[0_15px_35px_rgba(0,0,0,0.8)] z-50 pointer-events-none space-y-2 ${
+                            openDownward ? "top-full mt-7" : "bottom-full mb-2.5"
+                          }`}
+                        >
+                          <div className="flex items-center justify-between text-[10px] font-mono border-b border-white/10 pb-1.5">
+                            <span className="text-white font-bold">{cluster.cityName}</span>
+                            <span className="text-[#ccff00] font-bold">
+                              {regCount > 0 ? `${regCount} reg.` : ''}
+                              {regCount > 0 && anonCount > 0 ? ' • ' : ''}
+                              {anonCount > 0 ? `${anonCount} anon.` : ''}
+                            </span>
+                          </div>
+                          <div className="space-y-1">
+                            {cluster.clients.slice(0, 4).map(c => (
+                              <div key={c.id} className="flex items-center justify-between text-[9.5px]">
+                                <span className={`truncate max-w-[120px] ${c.isAnonymous ? "text-sky-300 font-medium" : "text-white/85"}`}>
+                                  {c.isAnonymous ? "Visitante Anónimo" : cleanClientName(c.name)}
+                                </span>
+                                <span className={`font-mono font-semibold ${c.isAnonymous ? "text-sky-400" : "text-[#ccff00]"}`}>
+                                  {c.isAnonymous ? "Explorando" : `$${c.totalSpent || 0}`}
+                                </span>
+                              </div>
+                            ))}
+                            {count > 4 && (
+                              <div className="text-[8.5px] text-white/50 text-center font-mono">
+                                +{count - 4} clientes adicionales
+                              </div>
+                            )}
+                          </div>
+                          <div className="text-[8.5px] text-center text-[#ccff00] font-mono pt-1 border-t border-white/10 flex items-center justify-center gap-1">
+                            <span>Clic para acercar y desplegar</span> &rarr;
+                          </div>
+                        </motion.div>
+                      );
+                    })()}
+                  </AnimatePresence>
+                </motion.div>
+              </div>
+            );
+          })}
+        </AnimatePresence>
+
+        {/* 2. DISPERSED INDIVIDUAL BEACONS (Radial bloom from city center + Sept 19 1 PM hover/scale/stem animations) */}
+        <AnimatePresence initial={false}>
+          {dispersedPins.map((beacon) => {
+            const pos = projectPin
+              ? projectPin(beacon.cityName, beacon.baseX, beacon.baseY, beacon.dispX, beacon.dispY)
+              : { x: beacon.dispX, y: beacon.dispY, visible: true, isMoving: isDragging };
+            const basePos = projectPin
+              ? projectPin(beacon.cityName, beacon.baseX, beacon.baseY)
+              : { x: beacon.baseX, y: beacon.baseY, visible: true, isMoving: isDragging };
+
+            if (!pos.visible) return null;
+
+            const client = beacon.client;
+            const isHovered = hoveredClient?.id === client.id;
+            const isSelected = selectedClient?.id === client.id;
+            const isActive = isHovered || isSelected;
+            const isSelf = beacon.isSelf;
+
+            const isStageMatch =
+              activeStage === "all" ? true :
+              activeStage === "cart" ? Boolean(client.hasCart) :
+              ((client.purchasesCount || 0) >= 3 || (client.frequency && client.frequency !== "1ª Vez"));
+
+            const isDimmed = !isSelf && !isActive && !isStageMatch;
+
+            const clientFirstName = cleanClientName(client.name).split(' ')[0] || '';
+            const beaconLabel = beacon.clusterTotal > 1 && clientFirstName
+              ? `${clientFirstName} • ${beacon.cityName}`
+              : beacon.cityName;
+
+            const openDownward = isPercentMode ? beacon.dispY < 28 : pos.y < 220;
+
+            // Radial bloom offset from city center so toggling Disperso <-> Agrupar physically blooms/converges
+            const bloomOffsetX = isPercentMode
+              ? (beacon.baseX - beacon.dispX) * 7.5
+              : basePos.x - pos.x;
+            const bloomOffsetY = isPercentMode
+              ? (beacon.baseY - beacon.dispY) * 6.5
+              : basePos.y - pos.y;
+
+            return (
+              <div
+                key={`pin-${client.id}`}
+                style={{
+                  left: isPercentMode ? `${beacon.dispX}%` : `${pos.x}px`,
+                  top: isPercentMode ? `${beacon.dispY}%` : `${pos.y}px`,
+                  transition: pos.isMoving
+                    ? "opacity 200ms ease"
+                    : "left 520ms cubic-bezier(0.16, 1, 0.3, 1), top 520ms cubic-bezier(0.16, 1, 0.3, 1), opacity 300ms ease",
+                }}
+                className={`absolute -translate-x-1/2 -translate-y-full cursor-pointer group pointer-events-auto ${
+                  isActive ? "z-50" : "z-30"
+                }`}
+                onMouseEnter={() => setHoveredClientId(client.id)}
+                onMouseLeave={() => setHoveredClientId(null)}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (!client.isAnonymous) {
+                    setSelectedClientId(prev => {
+                      const next = prev === client.id ? null : client.id;
+                      if (next) {
+                        setIsMobilePanelOpen(true);
+                        focusOnLocation(beacon.dispX, beacon.dispY, Math.max(zoom, 1.75), beacon.cityName);
+                      }
+                      return next;
+                    });
+                  }
+                }}
+              >
+                <motion.div
+                  initial={{
+                    opacity: 0,
+                    scale: 0.35,
+                    x: bloomOffsetX,
+                    y: bloomOffsetY,
+                  }}
+                  animate={{
+                    opacity: isDimmed ? 0.22 : 1,
+                    scale: isDimmed ? 0.9 : 1,
+                    x: 0,
+                    y: 0,
+                  }}
+                  exit={{
+                    opacity: 0,
+                    scale: 0.35,
+                    x: bloomOffsetX,
+                    y: bloomOffsetY,
+                  }}
+                  transition={{ type: "spring", stiffness: 360, damping: 26 }}
+                  className="relative flex flex-col items-center"
+                >
+                  {/* Ground Halo */}
+                  <div className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2 pointer-events-none">
+                    <span className={`block rounded-full blur-[2px] transition-all duration-300 ${
+                      isSelf 
+                        ? "w-4 h-4 bg-emerald-400/40 shadow-[0_0_12px_#34d399]" 
+                        : client.isAnonymous
+                        ? "w-3.5 h-3.5 bg-sky-400/40 shadow-[0_0_10px_#38bdf8]"
+                        : activeStage === "cart" && client.hasCart
+                        ? "w-4 h-4 bg-rose-500/40 shadow-[0_0_14px_#f43f5e]"
+                        : activeStage === "frequent" && isStageMatch
+                        ? "w-4 h-4 bg-amber-400/40 shadow-[0_0_14px_#f59e0b]"
+                        : "w-3 h-3 bg-[#ccff00]/40 shadow-[0_0_10px_#ccff00]"
+                    }`} />
+                  </div>
+
+                  {/* Beacon Head & Stem (Restored Sept 19 1 PM scale-125 & stem growth + Crisp 30px SVG Avatar) */}
+                  <div className="flex flex-col items-center">
+                    <div className={`relative transition-all duration-300 flex items-center justify-center rounded-full border shadow-xl ${
+                      isActive 
+                        ? client.isAnonymous
+                          ? "scale-125 z-50 bg-sky-400 text-gray-950 border-white shadow-[0_0_24px_#38bdf8]"
+                          : "scale-125 z-50 bg-white text-gray-950 border-[#ccff00] shadow-[0_0_24px_#ccff00]" 
+                        : isSelf 
+                        ? "bg-emerald-400 text-gray-950 border-white shadow-[0_0_16px_#34d399]" 
+                        : client.isAnonymous
+                        ? "bg-sky-400 text-gray-950 border-white/90 shadow-[0_0_14px_#38bdf8]"
+                        : activeStage === "cart" && client.hasCart
+                        ? "bg-rose-500 text-white border-white shadow-[0_0_18px_#f43f5e] scale-110"
+                        : activeStage === "frequent" && isStageMatch
+                        ? "bg-amber-400 text-gray-950 border-white shadow-[0_0_18px_#f59e0b] scale-110"
+                        : "bg-[#ccff00] text-gray-950 border-white/90 shadow-[0_0_14px_#ccff00]"
+                    } ${!client.isAnonymous ? (scatterRadius === "wide" ? "w-9 h-9 p-[1.5px] overflow-hidden" : "w-8 h-8 p-[1.5px] overflow-hidden") : "w-6 h-6"}`}>
+                      {!client.isAnonymous ? (
+                        <BlobatarAvatar
+                          {...getClientAvatarProps(client)}
+                          size={scatterRadius === "wide" ? 32 : 28}
+                          animate={isActive ? "always" : "hover"}
+                          background="circle"
+                          className="pointer-events-none"
+                        />
+                      ) : client.device === "Computador" ? (
+                        <Monitor className="w-3 h-3 shrink-0" />
+                      ) : client.device === "Celular" ? (
+                        <Smartphone className="w-3 h-3 shrink-0" />
+                      ) : (
+                        <Tablet className="w-3 h-3 shrink-0" />
+                      )}
+
+                      {client.hasCart && (
+                        <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-rose-500 border border-white z-10" />
+                      )}
+                    </div>
+
+                    {/* Vertical Pin Line */}
+                    <div className={`w-[2px] transition-all duration-300 ${
+                      isActive 
+                        ? client.isAnonymous
+                          ? "h-9 bg-gradient-to-t from-sky-400 to-white shadow-[0_0_12px_#38bdf8]"
+                          : "h-9 bg-gradient-to-t from-[#ccff00] to-white shadow-[0_0_12px_#ccff00]" 
+                        : isSelf
+                        ? "h-7 bg-gradient-to-t from-emerald-400 to-white shadow-[0_0_8px_#34d399]"
+                        : client.isAnonymous
+                        ? "h-7 bg-gradient-to-t from-sky-400 to-sky-100 shadow-[0_0_8px_#38bdf8]"
+                        : activeStage === "cart" && client.hasCart
+                        ? "h-8 bg-gradient-to-t from-rose-500 to-white shadow-[0_0_10px_#f43f5e]"
+                        : activeStage === "frequent" && isStageMatch
+                        ? "h-8 bg-gradient-to-t from-amber-400 to-yellow-100 shadow-[0_0_10px_#f59e0b]"
+                        : "h-7 bg-gradient-to-t from-[#ccff00] to-yellow-200 shadow-[0_0_8px_#ccff00]"
+                    }`} />
+                    <div className={`w-1 h-1 rotate-45 ${
+                      client.isAnonymous ? "bg-sky-400 shadow-[0_0_6px_#38bdf8]" :
+                      activeStage === "cart" && client.hasCart ? "bg-rose-500 shadow-[0_0_6px_#f43f5e]" :
+                      activeStage === "frequent" && isStageMatch ? "bg-amber-400 shadow-[0_0_6px_#f59e0b]" :
+                      "bg-[#ccff00] shadow-[0_0_6px_#ccff00]"
+                    }`} />
+                  </div>
+
+                  {/* City & Client Tag Label */}
+                  <div className={`absolute top-full mt-1 left-1/2 -translate-x-1/2 whitespace-nowrap px-2 py-0.5 rounded text-[9px] font-bold font-mono tracking-wider transition-all duration-300 pointer-events-none ${
+                    isActive 
+                      ? client.isAnonymous
+                        ? "bg-sky-400 text-gray-950 shadow-md scale-105 z-50"
+                        : "bg-white text-gray-950 shadow-md scale-105 z-50" 
+                      : isDimmed
+                      ? "bg-black/40 text-white/50 border border-white/5"
+                      : client.isAnonymous
+                      ? "bg-black/85 text-sky-300 border border-sky-400/30 backdrop-blur-md"
+                      : "bg-black/85 text-white/90 border border-white/10 backdrop-blur-md"
+                  }`}>
+                    {client.isAnonymous ? `Visitante • ${beacon.cityName}` : beaconLabel}
+                  </div>
+
+                  {/* Animated Hover Tooltip for Registered Clients & Admins */}
+                  <AnimatePresence>
+                    {isHovered && !client.isAnonymous && (
+                      <motion.div
+                        key={`client-tip-${client.id}`}
+                        initial={{ opacity: 0, y: openDownward ? -8 : 8, scale: 0.93 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        exit={{ opacity: 0, y: openDownward ? -6 : 6, scale: 0.95 }}
+                        transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
+                        className={`absolute left-1/2 -translate-x-1/2 w-54 p-3 rounded-2xl bg-[#0e1311]/95 backdrop-blur-2xl border border-[#ccff00]/40 shadow-[0_14px_36px_rgba(0,0,0,0.7)] z-50 pointer-events-none space-y-2 text-left ${
+                          openDownward ? "top-full mt-7" : "bottom-full mb-3"
+                        }`}
+                      >
+                        <div className="flex items-center gap-2.5 border-b border-white/10 pb-2">
+                          <BlobatarAvatar
+                            {...getClientAvatarProps(client)}
+                            size={30}
+                            animate="always"
+                            className="shrink-0"
+                          />
+                          <div className="min-w-0 flex-1">
+                            <p className="text-xs font-bold text-white truncate leading-tight">
+                              {cleanClientName(client.name)}
+                            </p>
+                            <span className={`text-[8.5px] font-mono px-1.5 py-0.5 rounded font-bold inline-block mt-0.5 ${
+                              isClientAdmin(client)
+                                ? "bg-amber-400/20 text-amber-300 border border-amber-400/30"
+                                : "bg-emerald-400/20 text-emerald-300 border border-emerald-400/30"
+                            }`}>
+                              {isUserSelf(client) ? (isAdmin ? "Tú (Admin)" : "Tú") : isClientAdmin(client) ? "Administrador" : "Cliente"}
+                            </span>
+                          </div>
+                        </div>
+                        <div className="space-y-1 text-[10px] text-white/80">
+                          <div className="flex items-center justify-between">
+                            <span className="text-white/50">Ubicación:</span>
+                            <span className="font-semibold text-white truncate max-w-[110px]">
+                              {beacon.cityName}
+                            </span>
+                          </div>
+                          <div className="flex items-center justify-between">
+                            <span className="text-white/50">Actividad:</span>
+                            <span className="font-medium text-[#ccff00] truncate max-w-[110px]">
+                              {client.currentSection || "En Línea"}
+                            </span>
+                          </div>
+                          {!isClientAdmin(client) && (
+                            <div className="flex items-center justify-between pt-0.5 border-t border-white/10 text-[9.5px]">
+                              <span className="text-white/50">Compras:</span>
+                              <span className="font-mono font-bold text-white">
+                                {client.purchasesCount || 0} pedidos • ${Number(client.totalSpent || 0).toFixed(0)}
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+
+                  {/* Animated Hover Tooltip for Anonymous Visitors */}
+                  <AnimatePresence>
+                    {isHovered && client.isAnonymous && (
+                      <motion.div
+                        key={`anon-tip-${client.id}`}
+                        initial={{ opacity: 0, y: openDownward ? -8 : 8, scale: 0.93 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        exit={{ opacity: 0, y: openDownward ? -6 : 6, scale: 0.95 }}
+                        transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
+                        className={`absolute left-1/2 -translate-x-1/2 w-48 p-2.5 rounded-2xl bg-[#0b131b]/95 backdrop-blur-xl border border-sky-400/50 shadow-[0_10px_30px_rgba(56,189,248,0.25)] z-50 pointer-events-none space-y-1.5 text-left ${
+                          openDownward ? "top-full mt-7" : "bottom-full mb-3"
+                        }`}
+                      >
+                        <div className="flex items-center justify-between border-b border-white/10 pb-1">
+                          <div className="flex items-center gap-1.5">
+                            <span className="w-2 h-2 rounded-full bg-sky-400 shadow-[0_0_6px_#38bdf8]" />
+                            <span className="text-[11px] font-bold text-white font-sans">Visitante Anónimo</span>
+                          </div>
+                          <span className="text-[8.5px] font-mono px-1.5 py-0.5 rounded bg-sky-400/20 text-sky-300 font-bold border border-sky-400/30">
+                            En Vivo
+                          </span>
+                        </div>
+                        <div className="space-y-1 text-[10px] text-white/80">
+                          <div className="flex items-center justify-between">
+                            <span className="text-white/50">Ubicación:</span>
+                            <span className="font-semibold text-white">{beacon.cityName}</span>
+                          </div>
+                          <div className="flex items-center justify-between">
+                            <span className="text-white/50">Dispositivo:</span>
+                            <span className="font-mono text-white/90">{client.device || "Computador"}</span>
+                          </div>
+                          <div className="flex items-center justify-between">
+                            <span className="text-white/50">Sección:</span>
+                            <span className="font-medium text-sky-300 truncate max-w-[105px]" title={client.currentSection}>
+                              {client.currentSection || "Explorando"}
+                            </span>
+                          </div>
+                          {client.hasCart && (
+                            <div className="flex items-center justify-between text-rose-300 pt-0.5 border-t border-white/10 text-[9.5px]">
+                              <span className="flex items-center gap-1">
+                                <ShoppingBag className="w-2.5 h-2.5" /> En bolsa:
+                              </span>
+                              <span className="font-mono font-bold">{client.cartItemsCount || 1} pzs</span>
+                            </div>
+                          )}
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </motion.div>
+              </div>
+            );
+          })}
+        </AnimatePresence>
+      </>
+    );
+  };
+
   return (
+    <MotionConfig reducedMotion="never">
     <div 
       draggable={false}
       onDragStart={(e) => e.preventDefault()}
+      onMouseMove={handleMouseMove}
+      onMouseUp={handleMouseUp}
+      onMouseLeave={handleMouseUp}
       onMouseDown={(e) => {
         const target = e.target as HTMLElement | null;
         if (target?.closest("input, textarea, select, button, a")) return;
@@ -955,7 +1456,6 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
             transition={{ duration: 0.45, ease: "easeOut" }}
             className="absolute inset-0 z-[100] bg-[#060908]/88 backdrop-blur-2xl flex items-center justify-center overflow-hidden select-none"
           >
-            {/* Technical CAD / Telemetry Micro-Grid Backdrop (Zero Inner Boxes) */}
             <div
               className="absolute inset-0 pointer-events-none opacity-80"
               style={{
@@ -964,8 +1464,6 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
                 backgroundSize: "32px 32px",
               }}
             />
-
-            {/* Radial Vignette to blend grid smoothly into deep obsidian edges */}
             <div
               className="absolute inset-0 pointer-events-none"
               style={{
@@ -973,28 +1471,21 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
                   "radial-gradient(circle at 50% 50%, transparent 25%, rgba(6, 9, 8, 0.65) 75%, rgba(6, 9, 8, 0.96) 100%)",
               }}
             />
-
-            {/* Concentric Technical Radar Polar Range Rings & Axis Crosshairs */}
             <svg
               className="absolute w-[620px] h-[620px] sm:w-[740px] sm:h-[740px] pointer-events-none opacity-55"
               viewBox="0 0 740 740"
               fill="none"
             >
-              {/* Horizontal & Vertical Precision Hairlines */}
               <line x1="0" y1="370" x2="740" y2="370" stroke="rgba(204,255,0,0.09)" strokeWidth="1" strokeDasharray="3 6" />
               <line x1="370" y1="0" x2="370" y2="740" stroke="rgba(204,255,0,0.09)" strokeWidth="1" strokeDasharray="3 6" />
-              {/* Concentric Range Rings */}
               <circle cx="370" cy="370" r="175" stroke="rgba(255,255,255,0.07)" strokeWidth="1" strokeDasharray="2 5" />
               <circle cx="370" cy="370" r="245" stroke="rgba(204,255,0,0.11)" strokeWidth="1" strokeDasharray="6 8" />
               <circle cx="370" cy="370" r="320" stroke="rgba(255,255,255,0.05)" strokeWidth="1" />
-              {/* Corner Reticle Brackets */}
               <path d="M 130 160 L 130 130 L 160 130" stroke="rgba(204,255,0,0.3)" strokeWidth="1.5" />
               <path d="M 610 160 L 610 130 L 580 130" stroke="rgba(204,255,0,0.3)" strokeWidth="1.5" />
               <path d="M 130 580 L 130 610 L 160 610" stroke="rgba(204,255,0,0.3)" strokeWidth="1.5" />
               <path d="M 610 580 L 610 610 L 580 610" stroke="rgba(204,255,0,0.3)" strokeWidth="1.5" />
             </svg>
-
-            {/* Technical Corner Telemetry Readouts */}
             <div className="absolute top-5 left-6 pointer-events-none flex items-center gap-2 text-[9.5px] font-mono tracking-widest text-[#ccff00]/60 uppercase">
               <span className="w-1.5 h-1.5 rounded-full bg-[#ccff00] animate-pulse shadow-[0_0_8px_#ccff00]" />
               <span>SYS.RADAR // EPSG:3857 HD</span>
@@ -1008,8 +1499,6 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
             <div className="absolute bottom-5 right-6 pointer-events-none text-[9.5px] font-mono tracking-widest text-[#ccff00]/55 uppercase">
               <span>STATE // SOLVING_TOPOLOGY</span>
             </div>
-
-            {/* Direct Floating Giant Solving Orb (Zero Inner Box / Frame) */}
             <FluidGiantThinkingOrb
               size={430}
               state="solving"
@@ -1023,419 +1512,171 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
       {/* Base wrapper: map refracts softly through the dark frosted glass while HUD stays 100% hidden */}
       <div className="absolute inset-0">
       {/* ========================================================================= */}
-      {/* 2. THE MAIN HERO: INTERACTIVE WEBGL MAPBOX / MAPLIBRE VECTOR MAP          */}
+      {/* 2. THE MAIN HERO: PROTAGONIC 3D RELIEF MAP (Sept 19 1 PM) & SATELLITE MAP */}
       {/* ========================================================================= */}
-      <div 
-        ref={mapContainerRef}
-        style={{
-          transform:
-            flightPhase === "takeoff"
-              ? `translate3d(${-flightVector.x * 0.7}px, ${-flightVector.y * 0.7}px, 0) scale(0.88) rotate(${-flightRotation * 0.5}deg)`
+      {mapRenderMode === "relief3d" ? (
+        <div 
+          ref={mapContainerRef}
+          onMouseDown={handleMouseDown}
+          onClick={() => setSelectedClientId(null)}
+          className={`absolute inset-0 z-10 flex items-center justify-center overflow-hidden ${
+            isPreparingRadar ? "pointer-events-none" : isDragging ? "cursor-grabbing" : "cursor-grab"
+          }`}
+        >
+          {/* Zoomed & Panned 3D Terrain Wrapper with Cinematic Satellite Flight (Sept 19 1 PM) */}
+          <div 
+            ref={mapLayerTransformRef}
+            style={{
+              transform: 
+                flightPhase === 'takeoff'
+                  ? `translate3d(${-flightVector.x * 0.7}px, ${-flightVector.y * 0.7}px, 0) scale(0.88) rotate(${-flightRotation * 0.5}deg)`
+                  : flightPhase === 'approach'
+                  ? `translate3d(${flightVector.x * 0.5}px, ${flightVector.y * 0.5}px, 0) scale(0.90) rotate(${flightRotation}deg)`
+                  : flightPhase === 'landing'
+                  ? `translate3d(0px, 0px, 0) scale(1) rotate(0deg)`
+                  : `translate3d(${pan.x}px, ${pan.y}px, 0) scale(${zoom}) rotate(0deg)`,
+              transformOrigin: "center center",
+              willChange: "transform, opacity",
+              transformStyle: "preserve-3d",
+              backfaceVisibility: "hidden",
+              opacity: 
+                isPreparingRadar
+                  ? 0.45
+                  : flightPhase === 'takeoff' 
+                  ? 0.4 
+                  : flightPhase === 'approach'
+                  ? 0.7
+                  : isMapLoaded 
+                  ? 1 
+                  : 0,
+              transition: 
+                isDragging 
+                  ? "none" 
+                  : flightPhase === 'takeoff'
+                  ? "transform 0.48s cubic-bezier(0.2, 0.9, 0.3, 1), opacity 0.48s ease"
+                  : flightPhase === 'approach'
+                  ? "none"
+                  : flightPhase === 'landing'
+                  ? "transform 2.2s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.6s ease-out"
+                  : "transform 0.55s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.35s ease",
+              aspectRatio: `${activeCountry.width} / ${activeCountry.height}`,
+            }}
+            className="relative w-[780px] lg:w-[920px] max-w-full flex items-center justify-center pointer-events-auto shrink-0"
+          >
+            {/* Ambient Ground Shadow */}
+            <div className="absolute inset-x-12 bottom-4 h-32 bg-black/75 blur-3xl rounded-full pointer-events-none -z-10" />
+
+            {/* Authentic 4K High-Res Transparent 3D Relief Landmass */}
+            <picture className="w-full h-full pointer-events-none select-none">
+              <source srcSet={activeCountry.mapWebp} type="image/webp" />
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img 
+                key={selectedCountry}
+                src={activeCountry.mapPng} 
+                alt={`Mapa 3D Topográfico en Relieve de ${activeCountry.name} en Alta Resolución`}
+                draggable={false}
+                loading="eager"
+                decoding="async"
+                onLoad={() => setIsMapLoaded(true)}
+                className={`w-full h-full object-contain pointer-events-none select-none filter contrast-110 brightness-105 drop-shadow-[0_28px_40px_rgba(0,0,0,0.7)] transition-opacity duration-500 ${
+                  isMapLoaded ? "opacity-100" : "opacity-0"
+                }`}
+              />
+            </picture>
+
+            {/* Render All Cluster & Dispersed Beacons with Sept 19 1 PM Animations */}
+            {renderMapBeaconsOverlay()}
+          </div>
+        </div>
+      ) : (
+        <div 
+          ref={mapContainerRef}
+          style={{
+            transform:
+              flightPhase === "takeoff"
+                ? `translate3d(${-flightVector.x * 0.7}px, ${-flightVector.y * 0.7}px, 0) scale(0.88) rotate(${-flightRotation * 0.5}deg)`
+                : flightPhase === "approach"
+                ? `translate3d(${flightVector.x * 0.5}px, ${flightVector.y * 0.5}px, 0) scale(0.90) rotate(${flightRotation}deg)`
+                : "translate3d(0px, 0px, 0) scale(1) rotate(0deg)",
+            transformOrigin: "center center",
+            willChange: "transform, opacity",
+            opacity: isPreparingRadar
+              ? 0.45
+              : flightPhase === "takeoff"
+              ? 0.4
               : flightPhase === "approach"
-              ? `translate3d(${flightVector.x * 0.5}px, ${flightVector.y * 0.5}px, 0) scale(0.90) rotate(${flightRotation}deg)`
-              : "translate3d(0px, 0px, 0) scale(1) rotate(0deg)",
-          transformOrigin: "center center",
-          willChange: "transform, opacity",
-          opacity: isPreparingRadar
-            ? 0.45
-            : flightPhase === "takeoff"
-            ? 0.4
-            : flightPhase === "approach"
-            ? 0.7
-            : 1,
-          transition:
-            flightPhase === "takeoff"
-              ? "transform 0.48s cubic-bezier(0.2, 0.9, 0.3, 1), opacity 0.48s ease"
-              : flightPhase === "approach"
-              ? "none"
-              : flightPhase === "landing"
-              ? "transform 2.2s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.6s ease-out"
-              : "transform 0.5s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.35s ease",
-        }}
-        className={`absolute inset-0 z-10 overflow-hidden ${
-          isPreparingRadar ? "pointer-events-none" : ""
+              ? 0.7
+              : 1,
+            transition:
+              flightPhase === "takeoff"
+                ? "transform 0.48s cubic-bezier(0.2, 0.9, 0.3, 1), opacity 0.48s ease"
+                : flightPhase === "approach"
+                ? "none"
+                : flightPhase === "landing"
+                ? "transform 2.2s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.6s ease-out"
+                : "transform 0.55s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.35s ease",
+          }}
+          className={`absolute inset-0 z-10 overflow-hidden ${
+            isPreparingRadar ? "pointer-events-none" : ""
+          }`}
+        >
+          <RadarMapboxCanvas
+            selectedCountry={selectedCountry}
+            zoomCommand={zoom}
+            focusTarget={focusTarget}
+            resetCommandSeq={resetCommandSeq}
+            onMapReady={() => setIsMapLoaded(true)}
+            onCanvasClick={() => setSelectedClientId(null)}
+            renderOverlayPins={(projectPin) => renderMapBeaconsOverlay(projectPin)}
+          />
+        </div>
+      )}
+
+      {/* Map Engine Switcher Pill (Relieve 3D Sept 19 1 PM <-> Mapa Satelital/Vectorial) */}
+      <div
+        className={`absolute bottom-28 sm:bottom-32 left-3 sm:left-6 z-30 pointer-events-auto transition-opacity duration-500 ${
+          isPreparingRadar ? "opacity-0 pointer-events-none invisible" : "opacity-100"
         }`}
+        onClick={(e) => e.stopPropagation()}
       >
-        <RadarMapboxCanvas
-          selectedCountry={selectedCountry}
-          zoomCommand={zoom}
-          focusTarget={focusTarget}
-          resetCommandSeq={resetCommandSeq}
-          onMapReady={() => setIsMapLoaded(true)}
-          onCanvasClick={() => setSelectedClientId(null)}
-          renderOverlayPins={(projectPin) => isPreparingRadar ? null : (
-            <>
-              {/* ========================================================================= */}
-              {/* 1. CLUSTER BEACONS (Rendered when multiple clients exist in the same city) */}
-              {/* ========================================================================= */}
-              {clusterPins.map((cluster) => {
-                const pos = projectPin(cluster.cityName, cluster.baseX, cluster.baseY);
-                if (!pos.visible) return null;
-
-                const isHovered = hoveredClusterKey === cluster.cityKey;
-                const count = cluster.clients.length;
-                const isStageMatch =
-                  activeStage === "all" ? true :
-                  activeStage === "cart" ? cluster.hasCart :
-                  cluster.hasFrequent;
-                const isDimmed = !isHovered && !isStageMatch;
-                const openDownward = pos.y < 220;
-
-                return (
-                  <div
-                    key={cluster.cityKey}
-                    style={{
-                      left: `${pos.x}px`,
-                      top: `${pos.y}px`,
-                      transition: pos.isMoving
-                        ? "opacity 220ms ease, transform 240ms cubic-bezier(0.16, 1, 0.3, 1)"
-                        : "left 480ms cubic-bezier(0.16, 1, 0.3, 1), top 480ms cubic-bezier(0.16, 1, 0.3, 1), transform 320ms cubic-bezier(0.16, 1, 0.3, 1), opacity 280ms ease",
-                    }}
-                    className={`absolute -translate-x-1/2 -translate-y-full cursor-pointer group pointer-events-auto ${
-                      isHovered ? "z-50 scale-110" : "z-30"
-                    } ${isDimmed ? "opacity-35 scale-90 hover:opacity-100 hover:scale-100" : "opacity-100 scale-100"}`}
-                    onMouseEnter={() => setHoveredClusterKey(cluster.cityKey)}
-                    onMouseLeave={() => setHoveredClusterKey(null)}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      focusOnLocation(cluster.baseX, cluster.baseY, 2.0, cluster.cityName);
-                      setExpandedClusterCity(cluster.cityKey);
-                    }}
-                  >
-                    {/* Ground Halo */}
-                    <div className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2 pointer-events-none">
-                      <span className="block rounded-full w-4 h-4 bg-[#ccff00]/40 blur-[2px] shadow-[0_0_12px_#ccff00]" />
-                    </div>
-
-                    {/* Cluster Head & Stem */}
-                    <div className="flex flex-col items-center">
-                      <div className="relative transition-all duration-300 flex items-center justify-center rounded-full border border-white bg-gray-950 text-white shadow-2xl px-2.5 py-0.5 min-w-[32px] h-7 gap-1 shadow-[0_0_18px_rgba(204,255,0,0.6)] group-hover:bg-[#ccff00] group-hover:text-gray-950 group-hover:border-[#ccff00]">
-                        <Users className="w-3.5 h-3.5 shrink-0" />
-                        <span className="font-mono text-xs font-black">{count}</span>
-                        {cluster.hasCart && (
-                          <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-rose-500 border border-white" />
-                        )}
-                      </div>
-
-                      {/* Vertical Pin Line */}
-                      <div className="w-[2px] h-8 bg-gradient-to-t from-[#ccff00] to-white shadow-[0_0_10px_#ccff00]" />
-                      <div className="w-1.5 h-1.5 rotate-45 bg-[#ccff00] shadow-[0_0_6px_#ccff00]" />
-                    </div>
-
-                    {/* Tag Label */}
-                    <div className="absolute top-full mt-1 left-1/2 -translate-x-1/2 whitespace-nowrap px-2.5 py-0.5 rounded-full text-[9px] font-bold font-mono tracking-wider transition-all pointer-events-none bg-black/90 text-white border border-[#ccff00]/40 backdrop-blur-md shadow-md flex items-center gap-1">
-                      <span>{cluster.cityName}</span>
-                      <span className="text-[#ccff00] font-black">({count})</span>
-                    </div>
-
-                    {/* Floating Hover Tooltip */}
-                    {isHovered && (() => {
-                      const anonCount = cluster.clients.filter(c => c.isAnonymous).length;
-                      const regCount = count - anonCount;
-                      return (
-                        <div className={`absolute left-1/2 -translate-x-1/2 w-56 p-3 rounded-2xl bg-[#111614]/95 backdrop-blur-2xl border border-[#ccff00]/50 shadow-[0_15px_35px_rgba(0,0,0,0.8)] z-50 pointer-events-none space-y-2 animate-fade-in ${
-                          openDownward ? "top-full mt-7" : "bottom-full mb-2.5"
-                        }`}>
-                          <div className="flex items-center justify-between text-[10px] font-mono border-b border-white/10 pb-1.5">
-                            <span className="text-white font-bold">{cluster.cityName}</span>
-                            <span className="text-[#ccff00] font-bold">
-                              {regCount > 0 ? `${regCount} reg.` : ''}
-                              {regCount > 0 && anonCount > 0 ? ' • ' : ''}
-                              {anonCount > 0 ? `${anonCount} anon.` : ''}
-                            </span>
-                          </div>
-                          <div className="space-y-1">
-                            {cluster.clients.slice(0, 4).map(c => (
-                              <div key={c.id} className="flex items-center justify-between text-[9.5px]">
-                                <span className={`truncate max-w-[120px] ${c.isAnonymous ? "text-sky-300 font-medium" : "text-white/85"}`}>
-                                  {c.isAnonymous ? "Visitante Anónimo" : cleanClientName(c.name)}
-                                </span>
-                                <span className={`font-mono font-semibold ${c.isAnonymous ? "text-sky-400" : "text-[#ccff00]"}`}>
-                                  {c.isAnonymous ? "Explorando" : `$${c.totalSpent || 0}`}
-                                </span>
-                              </div>
-                            ))}
-                            {count > 4 && (
-                              <div className="text-[8.5px] text-white/50 text-center font-mono">
-                                +{count - 4} clientes adicionales
-                              </div>
-                            )}
-                          </div>
-                          <div className="text-[8.5px] text-center text-[#ccff00] font-mono pt-1 border-t border-white/10 flex items-center justify-center gap-1">
-                            <span>Clic para acercar y desplegar</span> &rarr;
-                          </div>
-                        </div>
-                      );
-                    })()}
-                  </div>
-                );
-              })}
-
-              {/* ========================================================================= */}
-              {/* 2. DISPERSED INDIVIDUAL BEACONS (Projected onto Mapbox [lng, lat])         */}
-              {/* ========================================================================= */}
-              {dispersedPins.map((beacon) => {
-                const pos = projectPin(
-                  beacon.cityName,
-                  beacon.baseX,
-                  beacon.baseY,
-                  beacon.dispX,
-                  beacon.dispY
-                );
-                if (!pos.visible) return null;
-
-                const client = beacon.client;
-                const isHovered = hoveredClient?.id === client.id;
-                const isSelected = selectedClient?.id === client.id;
-                const isActive = isHovered || isSelected;
-                const isSelf = beacon.isSelf;
-
-                const isStageMatch =
-                  activeStage === "all" ? true :
-                  activeStage === "cart" ? Boolean(client.hasCart) :
-                  ((client.purchasesCount || 0) >= 3 || (client.frequency && client.frequency !== "1ª Vez"));
-
-                const isDimmed = !isSelf && !isActive && !isStageMatch;
-
-                const clientFirstName = cleanClientName(client.name).split(' ')[0] || '';
-                const beaconLabel = beacon.clusterTotal > 1 && clientFirstName
-                  ? `${clientFirstName} • ${beacon.cityName}`
-                  : beacon.cityName;
-
-                const openDownward = pos.y < 220;
-
-                // Crisp integer avatar sizes (avoids CSS scale transform bitmap blurring)
-                const avatarSize = isActive ? 34 : scatterRadius === "wide" ? 30 : 28;
-                const pinBoxClass = !client.isAnonymous
-                  ? isActive
-                    ? "w-10 h-10 p-[2px] overflow-hidden"
-                    : scatterRadius === "wide"
-                    ? "w-9 h-9 p-[2px] overflow-hidden"
-                    : "w-8 h-8 p-[1.5px] overflow-hidden"
-                  : isActive
-                  ? "w-8 h-8"
-                  : scatterRadius === "wide"
-                  ? "w-7 h-7"
-                  : "w-6 h-6";
-
-                return (
-                  <div 
-                    key={client.id}
-                    style={{
-                      left: `${pos.x}px`,
-                      top: `${pos.y}px`,
-                      transition: pos.isMoving
-                        ? "opacity 200ms ease"
-                        : "left 480ms cubic-bezier(0.16, 1, 0.3, 1), top 480ms cubic-bezier(0.16, 1, 0.3, 1), opacity 280ms ease",
-                    }}
-                    className={`absolute -translate-x-1/2 -translate-y-full cursor-pointer group pointer-events-auto ${
-                      isActive ? "z-50" : "z-30"
-                    } ${
-                      isDimmed
-                        ? "opacity-25 hover:opacity-100"
-                        : "opacity-100"
-                    }`}
-                    onMouseEnter={() => setHoveredClientId(client.id)}
-                    onMouseLeave={() => setHoveredClientId(null)}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      if (!client.isAnonymous) {
-                        setSelectedClientId(prev => {
-                          const next = prev === client.id ? null : client.id;
-                          if (next) setIsMobilePanelOpen(true);
-                          return next;
-                        });
-                      }
-                    }}
-                  >
-                {/* Ground Halo (Soft static ambient glow - zero blinking) */}
-                <div className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2 pointer-events-none">
-                  <span className={`block rounded-full blur-[2px] ${
-                    isSelf 
-                      ? "w-4 h-4 bg-emerald-400/40 shadow-[0_0_12px_#34d399]" 
-                      : client.isAnonymous
-                      ? "w-3.5 h-3.5 bg-sky-400/40 shadow-[0_0_10px_#38bdf8]"
-                      : activeStage === "cart" && client.hasCart
-                      ? "w-4 h-4 bg-rose-500/40 shadow-[0_0_14px_#f43f5e]"
-                      : activeStage === "frequent" && isStageMatch
-                      ? "w-4 h-4 bg-amber-400/40 shadow-[0_0_14px_#f59e0b]"
-                      : "w-3 h-3 bg-[#ccff00]/40 shadow-[0_0_10px_#ccff00]"
-                  }`} />
-                </div>
-
-                {/* Beacon Head & Stem */}
-                <div className="flex flex-col items-center">
-                  <div className={`relative transition-colors duration-300 flex items-center justify-center rounded-full border shadow-xl ${
-                    isActive 
-                      ? client.isAnonymous
-                        ? "z-50 bg-sky-400 text-gray-950 border-white shadow-[0_0_24px_#38bdf8]"
-                        : "z-50 bg-white text-gray-950 border-[#ccff00] shadow-[0_0_24px_#ccff00]" 
-                      : isSelf 
-                      ? "bg-emerald-400 text-gray-950 border-white shadow-[0_0_16px_#34d399]" 
-                      : client.isAnonymous
-                      ? "bg-sky-400 text-gray-950 border-white/90 shadow-[0_0_14px_#38bdf8]"
-                      : activeStage === "cart" && client.hasCart
-                      ? "bg-rose-500 text-white border-white shadow-[0_0_18px_#f43f5e]"
-                      : activeStage === "frequent" && isStageMatch
-                      ? "bg-amber-400 text-gray-950 border-white shadow-[0_0_18px_#f59e0b]"
-                      : "bg-[#ccff00] text-gray-950 border-white/90 shadow-[0_0_14px_#ccff00]"
-                  } ${pinBoxClass}`}>
-                    {!client.isAnonymous ? (
-                      <BlobatarAvatar
-                        {...getClientAvatarProps(client)}
-                        size={avatarSize}
-                        animate={isActive ? "always" : "hover"}
-                        background="circle"
-                        className="pointer-events-none"
-                      />
-                    ) : client.device === "Computador" ? (
-                      <Monitor className="w-3 h-3 shrink-0" />
-                    ) : client.device === "Celular" ? (
-                      <Smartphone className="w-3 h-3 shrink-0" />
-                    ) : (
-                      <Tablet className="w-3 h-3 shrink-0" />
-                    )}
-
-                    {client.hasCart && (
-                      <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-rose-500 border border-white z-10" />
-                    )}
-                  </div>
-
-                  {/* Vertical Pin Line */}
-                  <div className={`w-[2px] transition-all duration-300 ${
-                    isActive 
-                      ? client.isAnonymous
-                        ? "h-9 bg-gradient-to-t from-sky-400 to-white shadow-[0_0_12px_#38bdf8]"
-                        : "h-9 bg-gradient-to-t from-[#ccff00] to-white shadow-[0_0_12px_#ccff00]" 
-                      : isSelf
-                      ? "h-7 bg-gradient-to-t from-emerald-400 to-white shadow-[0_0_8px_#34d399]"
-                      : client.isAnonymous
-                      ? "h-7 bg-gradient-to-t from-sky-400 to-sky-100 shadow-[0_0_8px_#38bdf8]"
-                      : activeStage === "cart" && client.hasCart
-                      ? "h-8 bg-gradient-to-t from-rose-500 to-white shadow-[0_0_10px_#f43f5e]"
-                      : activeStage === "frequent" && isStageMatch
-                      ? "h-8 bg-gradient-to-t from-amber-400 to-yellow-100 shadow-[0_0_10px_#f59e0b]"
-                      : "h-7 bg-gradient-to-t from-[#ccff00] to-yellow-200 shadow-[0_0_8px_#ccff00]"
-                  }`} />
-                  <div className={`w-1 h-1 rotate-45 ${
-                    client.isAnonymous ? "bg-sky-400 shadow-[0_0_6px_#38bdf8]" :
-                    activeStage === "cart" && client.hasCart ? "bg-rose-500 shadow-[0_0_6px_#f43f5e]" :
-                    activeStage === "frequent" && isStageMatch ? "bg-amber-400 shadow-[0_0_6px_#f59e0b]" :
-                    "bg-[#ccff00] shadow-[0_0_6px_#ccff00]"
-                  }`} />
-                </div>
-
-                {/* City & Client Tag Label */}
-                <div className={`absolute top-full mt-1 left-1/2 -translate-x-1/2 whitespace-nowrap px-2 py-0.5 rounded text-[9px] font-bold font-mono tracking-wider transition-all pointer-events-none ${
-                  isActive 
-                    ? client.isAnonymous
-                      ? "bg-sky-400 text-gray-950 shadow-md scale-105 z-50"
-                      : "bg-white text-gray-950 shadow-md scale-105 z-50" 
-                    : isDimmed
-                    ? "bg-black/40 text-white/50 border border-white/5"
-                    : client.isAnonymous
-                    ? "bg-black/85 text-sky-300 border border-sky-400/30 backdrop-blur-md"
-                    : "bg-black/85 text-white/90 border border-white/10 backdrop-blur-md"
-                }`}>
-                  {client.isAnonymous ? `Visitante • ${beacon.cityName}` : beaconLabel}
-                </div>
-
-                {/* Hover Tooltip for Registered Clients & Admins */}
-                {isHovered && !client.isAnonymous && (
-                  <div className={`absolute left-1/2 -translate-x-1/2 w-54 p-3 rounded-2xl bg-[#0e1311]/95 backdrop-blur-2xl border border-[#ccff00]/40 shadow-[0_14px_36px_rgba(0,0,0,0.7)] z-50 pointer-events-none space-y-2 animate-fade-in text-left ${
-                    openDownward ? "top-full mt-7" : "bottom-full mb-3"
-                  }`}>
-                    <div className="flex items-center gap-2.5 border-b border-white/10 pb-2">
-                      <BlobatarAvatar
-                        {...getClientAvatarProps(client)}
-                        size={30}
-                        animate="always"
-                        className="shrink-0"
-                      />
-                      <div className="min-w-0 flex-1">
-                        <p className="text-xs font-bold text-white truncate leading-tight">
-                          {cleanClientName(client.name)}
-                        </p>
-                        <span className={`text-[8.5px] font-mono px-1.5 py-0.5 rounded font-bold inline-block mt-0.5 ${
-                          isClientAdmin(client)
-                            ? "bg-amber-400/20 text-amber-300 border border-amber-400/30"
-                            : "bg-emerald-400/20 text-emerald-300 border border-emerald-400/30"
-                        }`}>
-                          {isUserSelf(client) ? (isAdmin ? "Tú (Admin)" : "Tú") : isClientAdmin(client) ? "Administrador" : "Cliente"}
-                        </span>
-                      </div>
-                    </div>
-                    <div className="space-y-1 text-[10px] text-white/80">
-                      <div className="flex items-center justify-between">
-                        <span className="text-white/50">Ubicación:</span>
-                        <span className="font-semibold text-white truncate max-w-[110px]">
-                          {beacon.cityName}
-                        </span>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-white/50">Actividad:</span>
-                        <span className="font-medium text-[#ccff00] truncate max-w-[110px]">
-                          {client.currentSection || "En Línea"}
-                        </span>
-                      </div>
-                      {!isClientAdmin(client) && (
-                        <div className="flex items-center justify-between pt-0.5 border-t border-white/10 text-[9.5px]">
-                          <span className="text-white/50">Compras:</span>
-                          <span className="font-mono font-bold text-white">
-                            {client.purchasesCount || 0} pedidos • ${Number(client.totalSpent || 0).toFixed(0)}
-                          </span>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                )}
-
-                {/* Lightweight Hover Tooltip for Anonymous Visitors */}
-                {isHovered && client.isAnonymous && (
-                  <div className={`absolute left-1/2 -translate-x-1/2 w-48 p-2.5 rounded-2xl bg-[#0b131b]/95 backdrop-blur-xl border border-sky-400/50 shadow-[0_10px_30px_rgba(56,189,248,0.25)] z-50 pointer-events-none space-y-1.5 animate-fade-in text-left ${
-                    openDownward ? "top-full mt-7" : "bottom-full mb-3"
-                  }`}>
-                    <div className="flex items-center justify-between border-b border-white/10 pb-1">
-                      <div className="flex items-center gap-1.5">
-                        <span className="w-2 h-2 rounded-full bg-sky-400 shadow-[0_0_6px_#38bdf8]" />
-                        <span className="text-[11px] font-bold text-white font-sans">Visitante Anónimo</span>
-                      </div>
-                      <span className="text-[8.5px] font-mono px-1.5 py-0.5 rounded bg-sky-400/20 text-sky-300 font-bold border border-sky-400/30">
-                        En Vivo
-                      </span>
-                    </div>
-                    <div className="space-y-1 text-[10px] text-white/80">
-                      <div className="flex items-center justify-between">
-                        <span className="text-white/50">Ubicación:</span>
-                        <span className="font-semibold text-white">{beacon.cityName}</span>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-white/50">Dispositivo:</span>
-                        <span className="font-mono text-white/90">{client.device || "Computador"}</span>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-white/50">Sección:</span>
-                        <span className="font-medium text-sky-300 truncate max-w-[105px]" title={client.currentSection}>
-                          {client.currentSection || "Explorando"}
-                        </span>
-                      </div>
-                      {client.hasCart && (
-                        <div className="flex items-center justify-between text-rose-300 pt-0.5 border-t border-white/10 text-[9.5px]">
-                          <span className="flex items-center gap-1">
-                            <ShoppingBag className="w-2.5 h-2.5" /> En bolsa:
-                          </span>
-                          <span className="font-mono font-bold">{client.cartItemsCount || 1} pzs</span>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                )}
-              </div>
-            );
-          })}
-            </>
-          )}
-        />
+        <div className="inline-flex items-center bg-black/85 backdrop-blur-2xl border border-white/15 rounded-full p-0.5 shadow-2xl text-[10px] font-mono">
+          <button
+            type="button"
+            onClick={() => setMapRenderMode("relief3d")}
+            className={`relative px-2.5 py-1 rounded-full transition-colors duration-200 cursor-pointer flex items-center gap-1 ${
+              mapRenderMode === "relief3d" ? "text-gray-950 font-bold" : "text-white/70 hover:text-white"
+            }`}
+            title="Mapa Topográfico en Relieve 3D (Con vuelo y física suave)"
+          >
+            {mapRenderMode === "relief3d" && (
+              <motion.div
+                layoutId="radarMapRenderModePill"
+                transition={{ type: "spring", stiffness: 420, damping: 30 }}
+                className="absolute inset-0 rounded-full bg-[#ccff00] shadow-[0_0_12px_rgba(204,255,0,0.45)] -z-10"
+              />
+            )}
+            <Sparkles className="w-3 h-3 shrink-0" />
+            <span>Relieve 3D</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setMapRenderMode("mapbox")}
+            className={`relative px-2.5 py-1 rounded-full transition-colors duration-200 cursor-pointer flex items-center gap-1 ${
+              mapRenderMode === "mapbox" ? "text-gray-950 font-bold" : "text-white/70 hover:text-white"
+            }`}
+            title="Mapa Cartográfico Satelital / Táctico"
+          >
+            {mapRenderMode === "mapbox" && (
+              <motion.div
+                layoutId="radarMapRenderModePill"
+                transition={{ type: "spring", stiffness: 420, damping: 30 }}
+                className="absolute inset-0 rounded-full bg-[#ccff00] shadow-[0_0_12px_rgba(204,255,0,0.45)] -z-10"
+              />
+            )}
+            <Globe className="w-3 h-3 shrink-0" />
+            <span>Satélite HD</span>
+          </button>
+        </div>
       </div>
 
       {/* Hide all HUD panels during the 5-second dark frosted glass Solving animation */}
@@ -1497,8 +1738,15 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
           </div>
 
           {/* FLOATING LIVE INTERACTIVE SUGGESTER & REGIONAL TELEPORT POPOVER */}
-          {isSearchFocused && (
-            <div className="absolute top-full left-0 right-0 mt-2 rounded-3xl bg-[#0c0e12]/95 backdrop-blur-3xl border border-white/20 p-4 shadow-[0_25px_60px_rgba(0,0,0,0.9)] z-[70] animate-in fade-in zoom-in-95 duration-150 space-y-3.5 max-h-[min(380px,55vh)] overflow-y-auto">
+          <AnimatePresence>
+            {isSearchFocused && (
+              <motion.div
+                initial={{ opacity: 0, y: -8, scale: 0.96 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: -6, scale: 0.96 }}
+                transition={{ type: "spring", stiffness: 420, damping: 28 }}
+                className="absolute top-full left-0 right-0 mt-2 rounded-3xl bg-[#0c0e12]/95 backdrop-blur-3xl border border-white/20 p-4 shadow-[0_25px_60px_rgba(0,0,0,0.9)] z-[70] space-y-3.5 max-h-[min(380px,55vh)] overflow-y-auto origin-top"
+              >
               
               {/* 1. Quick Regional Filters for Active Country */}
               <div className="space-y-1.5">
@@ -1619,8 +1867,9 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
                 </div>
               )}
 
-            </div>
-          )}
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
 
         {/* Right of Search Bar: Symmetrical Disperso (1x/2x) & Agrupar Dock + Admin Location */}
@@ -1977,18 +2226,32 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
               <div className="flex items-center gap-1 p-0.5 rounded-full bg-black/50 border border-white/10 text-[11px] font-semibold">
                 <button 
                   onClick={() => setActiveTab("metrics")}
-                  className={`px-3 py-1 rounded-full transition-all duration-300 ease-out cursor-pointer ${
-                    activeTab === "metrics" ? "bg-white text-gray-950 font-bold shadow-sm" : "text-white/60 hover:text-white"
+                  className={`relative z-10 px-3 py-1 rounded-full transition-colors duration-200 cursor-pointer ${
+                    activeTab === "metrics" ? "text-gray-950 font-bold" : "text-white/60 hover:text-white"
                   }`}
                 >
+                  {activeTab === "metrics" && (
+                    <motion.div
+                      layoutId="radarRightPanelTabPill"
+                      transition={{ type: "spring", stiffness: 420, damping: 30 }}
+                      className="absolute inset-0 rounded-full bg-white shadow-sm -z-10"
+                    />
+                  )}
                   Métricas
                 </button>
                 <button 
                   onClick={() => setActiveTab("clients")}
-                  className={`px-3 py-1 rounded-full transition-all duration-300 ease-out cursor-pointer ${
-                    activeTab === "clients" ? "bg-white text-gray-950 font-bold shadow-sm" : "text-white/60 hover:text-white"
+                  className={`relative z-10 px-3 py-1 rounded-full transition-colors duration-200 cursor-pointer ${
+                    activeTab === "clients" ? "text-gray-950 font-bold" : "text-white/60 hover:text-white"
                   }`}
                 >
+                  {activeTab === "clients" && (
+                    <motion.div
+                      layoutId="radarRightPanelTabPill"
+                      transition={{ type: "spring", stiffness: 420, damping: 30 }}
+                      className="absolute inset-0 rounded-full bg-white shadow-sm -z-10"
+                    />
+                  )}
                   Clientes ({actualClients.length})
                 </button>
               </div>
@@ -2143,26 +2406,47 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
                       <div className="grid grid-cols-3 gap-1 p-1 rounded-full bg-black/50 border border-white/10 text-[10px] text-center font-bold">
                         <button 
                           onClick={() => setActiveStage("all")}
-                          className={`py-1 rounded-full transition-all cursor-pointer ${
-                            activeStage === "all" ? "bg-white text-gray-950 shadow-sm" : "text-white/60 hover:text-white"
+                          className={`relative z-10 py-1 rounded-full transition-colors duration-200 cursor-pointer ${
+                            activeStage === "all" ? "text-gray-950 font-bold" : "text-white/60 hover:text-white"
                           }`}
                         >
+                          {activeStage === "all" && (
+                            <motion.div
+                              layoutId="radarStageFilterPill"
+                              transition={{ type: "spring", stiffness: 420, damping: 30 }}
+                              className="absolute inset-0 rounded-full bg-white shadow-sm -z-10"
+                            />
+                          )}
                           Todos ({actualClients.length})
                         </button>
                         <button 
                           onClick={() => setActiveStage("cart")}
-                          className={`py-1 rounded-full transition-all cursor-pointer ${
-                            activeStage === "cart" ? "bg-rose-500 text-white shadow-[0_0_12px_#f43f5e]" : "text-white/60 hover:text-white"
+                          className={`relative z-10 py-1 rounded-full transition-colors duration-200 cursor-pointer ${
+                            activeStage === "cart" ? "text-white font-bold" : "text-white/60 hover:text-white"
                           }`}
                         >
+                          {activeStage === "cart" && (
+                            <motion.div
+                              layoutId="radarStageFilterPill"
+                              transition={{ type: "spring", stiffness: 420, damping: 30 }}
+                              className="absolute inset-0 rounded-full bg-rose-500 shadow-[0_0_12px_#f43f5e] -z-10"
+                            />
+                          )}
                           En Carrito ({cartCount})
                         </button>
                         <button 
                           onClick={() => setActiveStage("frequent")}
-                          className={`py-1 rounded-full transition-all cursor-pointer ${
-                            activeStage === "frequent" ? "bg-[#ccff00] text-gray-950 shadow-[0_0_10px_#ccff00]" : "text-white/60 hover:text-white"
+                          className={`relative z-10 py-1 rounded-full transition-colors duration-200 cursor-pointer ${
+                            activeStage === "frequent" ? "text-gray-950 font-bold" : "text-white/60 hover:text-white"
                           }`}
                         >
+                          {activeStage === "frequent" && (
+                            <motion.div
+                              layoutId="radarStageFilterPill"
+                              transition={{ type: "spring", stiffness: 420, damping: 30 }}
+                              className="absolute inset-0 rounded-full bg-[#ccff00] shadow-[0_0_10px_#ccff00] -z-10"
+                            />
+                          )}
                           Recurrentes ({frequentCount})
                         </button>
                       </div>
@@ -2440,7 +2724,7 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
                           onClick={() => {
                             setSelectedClientId(prev => prev === c.id ? null : c.id);
                             if (c.x >= 0 && c.y >= 0) {
-                              focusOnLocation(c.x, c.y, 1.9);
+                              focusOnLocation(c.x, c.y, 1.9, c.city);
                             }
                           }}
                           className={`p-2.5 rounded-2xl flex items-center justify-between text-xs cursor-pointer transition-all duration-300 ease-out border ${
@@ -2615,5 +2899,6 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
       </div>
 
     </div>
+    </MotionConfig>
   );
 }

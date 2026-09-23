@@ -1067,11 +1067,12 @@ const METABALL_NODES = [
 export interface BeUILoaderMetaballsProps {
   size?: number;
   className?: string;
+  color?: string;
 }
 
-export function BeUILoaderMetaballs({ size = 24, className }: BeUILoaderMetaballsProps) {
+export function BeUILoaderMetaballs({ size = 24, className, color = "currentColor" }: BeUILoaderMetaballsProps) {
   const rawId = useId();
-  const filterId = `beui-metaball-goo-${rawId.replace(/:/g, "")}`;
+  const filterId = `beui-metaball-goo-${rawId.replace(/[^a-zA-Z0-9_-]/g, "")}`;
   const moverRef = useRef<SVGCircleElement>(null);
   const nodeRefs = useRef<(SVGCircleElement | null)[]>([]);
 
@@ -1109,7 +1110,7 @@ export function BeUILoaderMetaballs({ size = 24, className }: BeUILoaderMetaball
       aria-hidden="true"
     >
       <defs>
-        <filter id={filterId} x="-50%" y="-50%" width="200%" height="200%">
+        <filter id={filterId} x="-50%" y="-50%" width="200%" height="200%" colorInterpolationFilters="sRGB">
           <feGaussianBlur in="SourceGraphic" stdDeviation="6.5" result="blur" />
           <feColorMatrix
             in="blur"
@@ -1120,7 +1121,7 @@ export function BeUILoaderMetaballs({ size = 24, className }: BeUILoaderMetaball
           <feComposite in="SourceGraphic" in2="goo" operator="atop" />
         </filter>
       </defs>
-      <g filter={`url(#${filterId})`} fill="currentColor">
+      <g filter={`url(#${filterId})`} fill={color}>
         {METABALL_NODES.map((c, i) => (
           <circle
             key={i}
@@ -1885,5 +1886,8 @@ export function BeUIMobileExpandableTabs({
     </nav>
   );
 }
+
+
+
 
 

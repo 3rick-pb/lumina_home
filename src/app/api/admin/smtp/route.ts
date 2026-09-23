@@ -94,7 +94,8 @@ export async function GET(request: Request) {
       from,
       hasPassword,
       source: 'Vercel / Variables de Entorno',
-      secure: process.env.SMTP_SECURE === 'true' || port === 465,
+      secure: (process.env.SMTP_SECURE ?? 'true').toLowerCase() !== 'false' || port === 465,
+      smtpSecureEnv: process.env.SMTP_SECURE ?? 'true',
       dispatchRecipients,
       maxDispatchRecipients: MAX_DISPATCH_RECIPIENTS,
     });

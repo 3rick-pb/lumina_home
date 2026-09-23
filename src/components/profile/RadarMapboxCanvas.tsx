@@ -879,7 +879,16 @@ export function RadarMapboxCanvas({
     requestRepaint();
   }, [focusTarget, selectedCountry, requestRepaint]);
 
-  // Exact Web Mercator projection helper — uses live container dimensions and integer pixel snapping for crisp avatars
+  const dragVelRef = useRef<{ x: number; y: number; t: number; vx: number; vy: number }>({
+    x: 0,
+    y: 0,
+    t: 0,
+    vx: 0,
+    vy: 0,
+  });
+
+  // Exact Web Mercator projection helper — continuous subpixel fluidity during camera motion,
+  // snapping to exact integer pixels at rest so anchor avatars are never subpixel-blurred.
   const projectPin = useCallback(
     (
       cityName: string | undefined,
@@ -901,18 +910,19 @@ export function RadarMapboxCanvas({
       const pinWx = lngToMercatorX(lng, cam.zoom);
       const pinWy = latToMercatorY(lat, cam.zoom);
 
-      // Snap to exact integer pixels so anchor avatars are never subpixel-blurred
-      const x = Math.round(pinWx - centerWx + liveW / 2 + offsetX * 7.5);
-      const y = Math.round(pinWy - centerWy + liveH / 2 + offsetY * 7.5);
-      const visible = x >= -60 && x <= liveW + 60 && y >= -60 && y <= liveH + 60;
+      const rawX = pinWx - centerWx + liveW / 2 + offsetX * 7.5;
+      const rawY = pinWy - centerWy + liveH / 2 + offsetY * 7.5;
       const isMoving = isDraggingRef.current || cam.animating;
+      const x = isMoving ? Number(rawX.toFixed(2)) : Math.round(rawX);
+      const y = isMoving ? Number(rawY.toFixed(2)) : Math.round(rawY);
+      const visible = x >= -60 && x <= liveW + 60 && y >= -60 && y <= liveH + 60;
 
       return { x, y, visible, isMoving };
     },
     [selectedCountry]
   );
 
-  // Interactive Pointer Drag & Wheel Zoom handlers with strict PointerCapture & Selection Lock
+  // Interactive Pointer Drag & Wheel Zoom handlers with strict PointerCapture, Selection Lock & Momentum Inertia
   const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
     // Ignore right-clicks or clicks originating from interactive HUD buttons/inputs
     if (e.button !== 0) return;
@@ -940,11 +950,24 @@ export function RadarMapboxCanvas({
       lng: camRef.current.lng,
       lat: camRef.current.lat,
     };
+    dragVelRef.current = { x: e.clientX, y: e.clientY, t: performance.now(), vx: 0, vy: 0 };
   };
 
   const handlePointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
     if (!isDraggingRef.current) return;
     e.preventDefault();
+    const now = performance.now();
+    const dt = Math.max(4, now - dragVelRef.current.t);
+    const instVx = (e.clientX - dragVelRef.current.x) / dt;
+    const instVy = (e.clientY - dragVelRef.current.y) / dt;
+    dragVelRef.current = {
+      x: e.clientX,
+      y: e.clientY,
+      t: now,
+      vx: dragVelRef.current.vx * 0.45 + instVx * 0.55,
+      vy: dragVelRef.current.vy * 0.45 + instVy * 0.55,
+    };
+
     const dx = e.clientX - dragStartRef.current.x;
     const dy = e.clientY - dragStartRef.current.y;
     if (Math.abs(dx) > 3 || Math.abs(dy) > 3) {
@@ -969,6 +992,16 @@ export function RadarMapboxCanvas({
         }
       } catch {
         // Ignore release errors
+      }
+      const { vx, vy, t } = dragVelRef.current;
+      const age = performance.now() - t;
+      if (age < 80 && Math.hypot(vx, vy) > 0.12) {
+        const z = camRef.current.zoom;
+        const curWx = lngToMercatorX(camRef.current.lng, z);
+        const curWy = latToMercatorY(camRef.current.lat, z);
+        camRef.current.targetLng = mercatorXToLng(curWx - vx * 160, z);
+        camRef.current.targetLat = mercatorYToLat(curWy - vy * 160, z);
+        camRef.current.animating = true;
       }
       requestRepaint();
     }

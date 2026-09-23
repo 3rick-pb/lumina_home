@@ -1,6 +1,9 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   compress: true,
+  env: {
+    SMTP_SECURE: process.env.SMTP_SECURE || 'true',
+  },
   experimental: {
     optimizePackageImports: ['lucide-react', 'framer-motion'],
   },
