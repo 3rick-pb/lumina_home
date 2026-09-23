@@ -33,7 +33,7 @@ import {
 } from "@/lib/radarCountries";
 import { BlobatarAvatar } from "@/components/ui/BlobatarAvatar";
 import { useAvatarSettingsStore } from "@/lib/avatarSettingsStore";
-import { ThinkingOrb } from "thinking-orbs";
+import { FluidGiantThinkingOrb } from "@/components/ui/BeUIControls";
 import { RadarMapboxCanvas } from "./RadarMapboxCanvas";
 
 export type { ConnectedClient } from "@/lib/radarStore";
@@ -302,9 +302,8 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
   const setSelectedCountry = useRadarStore((state) => state.setSelectedCountry);
   const activeCountry = RADAR_COUNTRIES[selectedCountry] || RADAR_COUNTRIES.EC;
 
-  // 3-Second ThinkingOrb Preparation Overlay State while background telemetry & Mapbox WebGL sync
+  // 5-Second Fluid Giant ThinkingOrb Preparation State while background telemetry & Mapbox WebGL sync
   const [isPreparingRadar, setIsPreparingRadar] = useState<boolean>(true);
-  const [orbState, setOrbState] = useState<"searching" | "connecting" | "working">("searching");
   const [focusTarget, setFocusTarget] = useState<{
     xPct: number;
     yPct: number;
@@ -316,17 +315,12 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
 
   useEffect(() => {
     setIsPreparingRadar(true);
-    setOrbState("searching");
-    const t1 = setTimeout(() => setOrbState("connecting"), 1000);
-    const t2 = setTimeout(() => setOrbState("working"), 2000);
-    const t3 = setTimeout(() => {
+    const t = setTimeout(() => {
       setIsPreparingRadar(false);
       setIsMapLoaded(true);
-    }, 3000);
+    }, 5000);
     return () => {
-      clearTimeout(t1);
-      clearTimeout(t2);
-      clearTimeout(t3);
+      clearTimeout(t);
     };
   }, []);
 
@@ -910,41 +904,34 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
       <div className="absolute -top-32 left-1/2 -translate-x-1/2 w-[700px] h-80 bg-[#ccff00]/5 rounded-full blur-3xl pointer-events-none" />
 
       {/* ========================================================================= */}
-      {/* 0. 3-SECOND THINKING ORB PREPARATION OVERLAY (Semi-transparent Grayish)    */}
+      {/* 0. 5-SECOND PURE THINKING ORB SCREEN (ONLY THE GIANT FLUID ANIMATION)      */}
       {/* ========================================================================= */}
       <AnimatePresence>
         {isPreparingRadar && (
           <motion.div
             key="radar-preparation-overlay"
-            initial={{ opacity: 0 }}
+            initial={{ opacity: 1 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.45, ease: "easeOut" }}
-            className="absolute inset-0 z-[80] bg-zinc-900/75 backdrop-blur-2xl flex flex-col items-center justify-center p-6 text-center select-none"
+            className="absolute inset-0 z-[100] bg-[#181b1a] flex items-center justify-center select-none"
           >
-            <div className="relative flex flex-col items-center max-w-sm">
-              <div className="relative p-5 rounded-full bg-white/[0.04] border border-white/10 shadow-[0_0_60px_rgba(204,255,0,0.12)] mb-5">
-                <ThinkingOrb state={orbState} size={64} />
-              </div>
-              <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 border border-white/15 text-[10px] font-mono uppercase tracking-widest text-[#ccff00] mb-2.5">
-                <span className="w-1.5 h-1.5 rounded-full bg-[#ccff00] animate-ping" />
-                {orbState === "searching"
-                  ? "Calibrando Satélite & Telemetría"
-                  : orbState === "connecting"
-                  ? "Sincronizando Vector Mapbox GL"
-                  : "Posicionando Nodos en Tiempo Real"}
-              </span>
-              <h3 className="text-lg sm:text-xl font-bold text-white tracking-tight">
-                Preparando Radar 3D de {activeCountry.name}
-              </h3>
-              <p className="text-xs text-zinc-300/80 mt-1.5 leading-relaxed">
-                Cargando cartografía vectorial interactiva y geolocalización de clientes activos en segundo plano...
-              </p>
-            </div>
+            <FluidGiantThinkingOrb
+              size={420}
+              state="searching"
+              speed={1.18}
+              className="w-[320px] h-[320px] sm:w-[400px] sm:h-[400px] lg:w-[440px] lg:h-[440px]"
+            />
           </motion.div>
         )}
       </AnimatePresence>
 
+      {/* Wrap all Radar map & HUD layers so NOTHING else is visible during the 5s animation */}
+      <div
+        className={`absolute inset-0 transition-opacity duration-500 ${
+          isPreparingRadar ? "opacity-0 pointer-events-none invisible" : "opacity-100"
+        }`}
+      >
       {/* ========================================================================= */}
       {/* 2. THE MAIN HERO: INTERACTIVE WEBGL MAPBOX / MAPLIBRE VECTOR MAP          */}
       {/* ========================================================================= */}
@@ -2417,6 +2404,7 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
           );
         })()}
 
+      </div>
       </div>
 
     </div>

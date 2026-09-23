@@ -8,6 +8,26 @@ import { useRadarStore } from "@/lib/radarStore";
 import { useCartStore } from "@/lib/store";
 import { useBrand } from "@/core/hooks/useBrand";
 
+// Ensure 60-144 FPS animations always run on performance OS builds (e.g. WinterOS) where Windows disables OS desktop animations
+if (typeof window !== "undefined" && typeof window.matchMedia === "function") {
+  const origMatchMedia = window.matchMedia.bind(window);
+  window.matchMedia = (query: string): MediaQueryList => {
+    if (query && query.includes("prefers-reduced-motion")) {
+      return {
+        matches: false,
+        media: query,
+        onchange: null,
+        addListener: () => {},
+        removeListener: () => {},
+        addEventListener: () => {},
+        removeEventListener: () => {},
+        dispatchEvent: () => false,
+      } as MediaQueryList;
+    }
+    return origMatchMedia(query);
+  };
+}
+
 function getOrCreateSessionId(userId?: string): string {
   if (typeof window === "undefined") return `sess_${userId || "anon"}_init`;
   try {

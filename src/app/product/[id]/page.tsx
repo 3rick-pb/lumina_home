@@ -6,6 +6,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ShoppingBag, Heart, ShieldCheck, Truck, RotateCcw, Check, Star, ChevronDown, Layers, Ruler, Sparkles, Box, CheckCircle2, X } from "lucide-react";
 import { ProductCard } from "@/components/ui/ProductCard";
+import { BeUIActionSwapLabel } from "@/components/ui/BeUIControls";
 import { useCartStore } from "@/lib/store";
 import { useCatalogStore, isAgotadoBadge, ProductCombo } from "@/lib/catalogStore";
 import { useUserStore } from "@/lib/userStore";
@@ -442,14 +443,13 @@ export default function ProductDetail({ params }: { params: Promise<{ id: string
                     <X className="w-4 h-4" /> Producto Agotado
                   </span>
                 ) : (
-                  <>
-                    <span className={`transition-transform duration-300 flex items-center gap-2 ${isAdding ? '-translate-y-12' : 'translate-y-0'}`}>
-                      <ShoppingBag className="w-5 h-5" /> Añadir a la Bolsa
-                    </span>
-                    <span className={`absolute inset-0 flex items-center justify-center gap-2 transition-transform duration-300 ${isAdding ? 'translate-y-0' : 'translate-y-12'}`}>
-                      <Check className="w-6 h-6" /> Añadido a la Bolsa
-                    </span>
-                  </>
+                  <BeUIActionSwapLabel
+                    active={isAdding}
+                    idleText="Añadir a la Bolsa"
+                    activeText="Añadido a la Bolsa"
+                    idleIcon={<ShoppingBag className="w-5 h-5" />}
+                    activeIcon={<Check className="w-5 h-5 text-emerald-600" />}
+                  />
                 )}
               </button>
               <button 
