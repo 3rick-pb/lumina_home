@@ -444,10 +444,10 @@ export default function ProductDetail({ params }: { params: Promise<{ id: string
                 ) : (
                   <>
                     <span className={`transition-transform duration-300 flex items-center gap-2 ${isAdding ? '-translate-y-12' : 'translate-y-0'}`}>
-                      <ShoppingBag className="w-5 h-5" /> Añadir al carrito
+                      <ShoppingBag className="w-5 h-5" /> Añadir a la Bolsa
                     </span>
                     <span className={`absolute inset-0 flex items-center justify-center gap-2 transition-transform duration-300 ${isAdding ? 'translate-y-0' : 'translate-y-12'}`}>
-                      <Check className="w-6 h-6" /> Añadido
+                      <Check className="w-6 h-6" /> Añadido a la Bolsa
                     </span>
                   </>
                 )}
@@ -455,7 +455,6 @@ export default function ProductDetail({ params }: { params: Promise<{ id: string
               <button 
                 onClick={(e) => {
                   e.preventDefault();
-                  if (!isAuthenticated) return;
                   toggleFavorite(product.id);
                 }}
                 className={`h-14 w-14 rounded-2xl backdrop-blur-xl border shadow-[0_8px_32px_rgba(0,0,0,0.04)] flex items-center justify-center transition-all shrink-0 ${isFav ? 'bg-red-500/10 border-red-500 text-red-500' : 'bg-white/40 border-white/60 text-gray-700 hover:bg-white/60 hover:text-red-500'}`}

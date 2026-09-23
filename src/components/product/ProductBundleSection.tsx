@@ -443,7 +443,7 @@ export function ProductBundleSection({
               ) : (
                 <>
                   <ShoppingBag className="w-4 h-4" />
-                  <span>Añadir Pack Completo al Carrito (${discountedTotal.toFixed(2)})</span>
+                  <span>Añadir Pack Completo a la Bolsa (${discountedTotal.toFixed(2)})</span>
                 </>
               )}
             </button>

@@ -39,7 +39,7 @@ function ActivityTracker() {
     currentSection = "";
   } else if (isCartOpen) {
     const count = cartItems.reduce((sum, item) => sum + (item.quantity || 1), 0);
-    currentSection = count > 0 ? `Revisando Carrito (${count} prod.)` : "Carrito (Vacío)";
+    currentSection = count > 0 ? `Revisando Bolsa (${count} prod.)` : "Bolsa de Compras (Vacía)";
   } else if (pathname === "/shop") {
     const category = searchParams?.get("category");
     const search = searchParams?.get("search");

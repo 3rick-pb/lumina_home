@@ -267,18 +267,18 @@ export const formatAlertContent = (
       };
     case 'stacked_ticket':
       return {
-        title: customTitle || 'Ficha de Carrito',
+        title: customTitle || 'Ficha de Bolsa de Compras',
         description: `${customer} (${city}) sumó ${prodTitle} ($${itemPrice})`,
       };
     case 'split_capsule':
       return {
-        title: customTitle || 'Adición de Carrito',
+        title: customTitle || 'Adición a la Bolsa',
         description: `${customer} (${city}) sumó ${prodTitle} ($${itemPrice})`,
       };
     case 'bento_grid':
     default:
       return {
-        title: customTitle || 'Actividad de Carrito',
+        title: customTitle || 'Actividad de Bolsa de Compras',
         description: `${customer} (${city}) sumó ${prodTitle} ($${itemPrice})`,
       };
   }
@@ -293,7 +293,7 @@ const DEFAULT_CONFIG: CartAlertConfig = {
   textColor: '#0a0a0a',
   subtextColor: '#4b5563',
   accentColor: '#0f172a',
-  title: 'Nuevo producto en el carrito',
+  title: 'Nuevo producto en la bolsa de compras',
   duration: 6000,
   soundEnabled: true,
   toastType: 'action',

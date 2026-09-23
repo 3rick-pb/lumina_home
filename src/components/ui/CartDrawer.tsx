@@ -4,6 +4,7 @@ import React, { useEffect, useState, useMemo } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence, Variants } from "framer-motion";
+import { BeUIAdaptiveStepper, BeUIRollingPrice } from "./BeUIControls";
 import { 
  X, 
  Minus, 
@@ -754,17 +755,24 @@ export function CartDrawer() {
     </button>
   </div>
 
-  {/* Center Step Indicator (2IXO Pill Dock) - Sits below title on mobile */}
+  {/* Center Step Indicator (2IXO Pill Dock with beUI spring pill) - Sits below title on mobile */}
   <div className="flex items-center justify-center w-full sm:w-auto">
-    <div className="flex items-center gap-1 bg-black/[0.04] dark:bg-white/[0.06] p-1 rounded-full border border-black/[0.04] dark:border-white/10 backdrop-blur-xl w-full sm:w-auto justify-center">
+    <div className="relative flex items-center gap-1 bg-black/[0.04] dark:bg-white/[0.06] p-1 rounded-full border border-black/[0.04] dark:border-white/10 backdrop-blur-xl w-full sm:w-auto justify-center">
       <button 
         onClick={() => setStep("bag")}
-        className={`flex-1 sm:flex-initial text-center px-3 sm:px-4 py-1.5 rounded-full text-xs font-semibold transition-all cursor-pointer whitespace-nowrap ${
+        className={`relative z-10 flex-1 sm:flex-initial text-center px-3.5 sm:px-4 py-1.5 rounded-full text-xs font-semibold transition-colors cursor-pointer whitespace-nowrap ${
           step === "bag" 
-            ? "bg-white dark:bg-[#27272a] text-gray-950 dark:text-white shadow-[0_2px_8px_rgba(0,0,0,0.06)]" 
+            ? "text-gray-950 dark:text-white" 
             : "text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100"
         }`}
       >
+        {step === "bag" && (
+          <motion.div
+            layoutId="cart-step-active-pill"
+            transition={{ type: "spring", stiffness: 500, damping: 34 }}
+            className="absolute inset-0 rounded-full bg-white dark:bg-[#27272a] shadow-[0_2px_8px_rgba(0,0,0,0.08)] -z-10"
+          />
+        )}
         1. Bolsa ({items.length})
       </button>
       <button 
@@ -772,12 +780,19 @@ export function CartDrawer() {
           if (items.length > 0) handleProceedToPayment();
         }}
         disabled={items.length === 0}
-        className={`flex-1 sm:flex-initial text-center px-3 sm:px-4 py-1.5 rounded-full text-xs font-semibold transition-all disabled:opacity-40 cursor-pointer whitespace-nowrap ${
+        className={`relative z-10 flex-1 sm:flex-initial text-center px-3.5 sm:px-4 py-1.5 rounded-full text-xs font-semibold transition-colors disabled:opacity-40 cursor-pointer whitespace-nowrap ${
           step === "payment" 
-            ? "bg-white dark:bg-[#27272a] text-gray-950 dark:text-white shadow-[0_2px_8px_rgba(0,0,0,0.06)]" 
+            ? "text-gray-950 dark:text-white" 
             : "text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100"
         }`}
       >
+        {step === "payment" && (
+          <motion.div
+            layoutId="cart-step-active-pill"
+            transition={{ type: "spring", stiffness: 500, damping: 34 }}
+            className="absolute inset-0 rounded-full bg-white dark:bg-[#27272a] shadow-[0_2px_8px_rgba(0,0,0,0.08)] -z-10"
+          />
+        )}
         2. Pasarela de Pago
       </button>
     </div>
@@ -866,12 +881,9 @@ export function CartDrawer() {
       </div>
     </div>
 
-    <h3 className="font-display font-bold text-2xl sm:text-3xl text-gray-950 dark:text-white mb-2 tracking-tight">
-      Tu bolsa de autor está vacía
+    <h3 className="font-display font-bold text-2xl sm:text-3xl text-gray-950 dark:text-white mb-7 tracking-tight">
+      Tu bolsa de compras está vacía
     </h3>
-    <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 max-w-md leading-relaxed mb-8">
-      Descubre piezas de diseño lumínico, aromaterapia orgánica y mobiliario minimalista confeccionadas para transformar la energía de tus espacios.
-    </p>
 
     {/* 2IXO Dock Capsule CTA Button */}
     <button 
@@ -1024,45 +1036,36 @@ export function CartDrawer() {
         </div>
 
         {/* Bottom Actions Row: Quantity, Subtotal and Delete */}
-        <div className="pt-3 border-t border-emerald-500/15 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div className="pt-3 border-t border-emerald-500/15 flex flex-wrap items-center justify-between gap-3">
           {/* Quantity Stepper for the Bundle */}
-          <div className="flex items-center gap-3">
-            <span className="text-xs text-gray-500 dark:text-gray-400 font-medium">Cantidad de packs:</span>
-            <div className="flex items-center bg-white/80 dark:bg-white/10 rounded-full p-1 border border-black/[0.06] dark:border-white/15 shadow-xs backdrop-blur-md">
-              <button 
-                onClick={() => updateQuantity(item.id, item.quantity - 1)}
-                className="w-7 h-7 rounded-full bg-white dark:bg-[#2c2c30] hover:bg-gray-50 text-gray-800 dark:text-gray-200 flex items-center justify-center border border-black/[0.04] dark:border-white/10 shadow-xs active:scale-90 transition-all cursor-pointer"
-                title="Disminuir packs"
-              >
-                <Minus className="w-3 h-3" />
-              </button>
-              <span className="w-8 text-center font-mono font-bold text-xs text-gray-900 dark:text-white">
-                {item.quantity < 10 ? `0${item.quantity}` : item.quantity}
-              </span>
-              <button 
-                onClick={() => updateQuantity(item.id, item.quantity + 1)}
-                className="w-7 h-7 rounded-full bg-white dark:bg-[#2c2c30] hover:bg-gray-50 text-gray-800 dark:text-gray-200 flex items-center justify-center border border-black/[0.04] dark:border-white/10 shadow-xs active:scale-90 transition-all cursor-pointer"
-                title="Aumentar packs"
-              >
-                <Plus className="w-3 h-3" />
-              </button>
-            </div>
+          <div className="flex items-center gap-2.5">
+            <span className="text-xs text-gray-500 dark:text-gray-400 font-medium hidden sm:inline">Cantidad de packs:</span>
+            <BeUIAdaptiveStepper
+              value={item.quantity}
+              onDecrement={() => updateQuantity(item.id, item.quantity - 1)}
+              onIncrement={() => updateQuantity(item.id, item.quantity + 1)}
+              size="sm"
+              decrementTitle="Disminuir packs"
+              incrementTitle="Aumentar packs"
+            />
           </div>
 
           {/* Subtotal with discount display */}
-          <div className="flex items-center justify-between sm:justify-end gap-4">
+          <div className="flex items-center justify-end gap-3 ml-auto">
             <div className="text-right">
               {totalSavings > 0 && (
                 <span className="text-xs text-gray-400 line-through mr-2">
                   ${originalTotal.toFixed(2)}
                 </span>
               )}
-              <span className="font-extrabold text-base sm:text-lg text-emerald-700 dark:text-emerald-400">
-                ${discountedTotal.toFixed(2)} USD
-              </span>
+              <BeUIRollingPrice
+                amount={discountedTotal}
+                suffix=" USD"
+                className="font-extrabold text-sm sm:text-lg text-emerald-700 dark:text-emerald-400"
+              />
               {totalSavings > 0 && (
                 <p className="text-[10px] text-emerald-600 font-bold">
-                  Ahorro de ${totalSavings.toFixed(2)} USD en este pack
+                  Ahorro de ${totalSavings.toFixed(2)} USD
                 </p>
               )}
             </div>
@@ -1070,7 +1073,7 @@ export function CartDrawer() {
             {/* Delete Bundle button */}
             <button 
               onClick={() => removeItem(item.id)}
-              className="w-8 h-8 rounded-full bg-white/80 dark:bg-white/10 hover:bg-rose-50 text-gray-400 hover:text-rose-600 border border-rose-200/60 shadow-xs transition-all flex items-center justify-center cursor-pointer active:scale-90"
+              className="w-8 h-8 rounded-full bg-white/80 dark:bg-white/10 hover:bg-rose-50 text-gray-400 hover:text-rose-600 border border-rose-200/60 shadow-xs transition-all flex items-center justify-center cursor-pointer active:scale-90 shrink-0"
               title="Eliminar este pack"
             >
               <Trash2 className="w-3.5 h-3.5" />
@@ -1090,10 +1093,10 @@ export function CartDrawer() {
   return (
  <div 
  key={item.id} 
- className={`p-3.5 sm:p-4 flex flex-col sm:grid sm:grid-cols-12 gap-4 sm:items-center group transition-all rounded-2xl ${
+ className={`p-3.5 sm:p-4 flex flex-col sm:grid sm:grid-cols-12 gap-3 sm:gap-4 sm:items-center group transition-all rounded-2xl ${
  itemIsAgotado 
  ? "bg-red-50/40 border border-red-200/80 shadow-xs" 
- : "border border-transparent hover:bg-gray-50 dark:hover:bg-[#151515]/50 hover:border-gray-100 dark:hover:border-white/5/80"
+ : "border border-gray-100/80 dark:border-white/5 sm:border-transparent bg-gray-50/40 sm:bg-transparent dark:bg-white/[0.02] sm:dark:bg-transparent hover:bg-gray-50 dark:hover:bg-[#151515]/50 hover:border-gray-100 dark:hover:border-white/5/80"
  }`}
  >
   {/* Product Info (5 cols) */}
@@ -1172,58 +1175,53 @@ export function CartDrawer() {
           <span>Ver producto</span>
         </button>
 
-        <span className="text-xs text-gray-400 dark:text-gray-500 sm:hidden">
+        <span className="text-xs font-medium text-gray-500 dark:text-gray-400 sm:hidden">
           • ${Number(item.product?.price || 0).toFixed(2)} c/u
         </span>
       </div>
     </div>
   </div>
 
-  {/* Quantity Capsule with 2IXO Liquid Glass (3 cols) */}
-  <div className="sm:col-span-3 flex sm:justify-center items-center">
-  <div className="flex items-center bg-white/80 dark:bg-white/10 rounded-full p-1 border border-black/[0.06] dark:border-white/15 shadow-xs backdrop-blur-md">
-  <button 
-  onClick={() => updateQuantity(item.id, item.quantity - 1)}
-  className="w-7 h-7 rounded-full bg-white dark:bg-[#2c2c30] hover:bg-gray-50 text-gray-800 dark:text-gray-200 flex items-center justify-center border border-black/[0.04] dark:border-white/10 shadow-xs active:scale-90 transition-all cursor-pointer"
-  title="Disminuir"
-  >
-  <Minus className="w-3.5 h-3.5" />
-  </button>
-  <span className="w-10 text-center font-mono font-bold text-xs sm:text-sm text-gray-900 dark:text-gray-100">
-  {item.quantity < 10 ? `0${item.quantity}` : item.quantity}
-  </span>
-  <button 
-  disabled={itemIsAgotado || isMaxStockReached}
-  onClick={() => updateQuantity(item.id, item.quantity + 1)}
-  className={`w-7 h-7 rounded-full flex items-center justify-center border border-black/[0.04] dark:border-white/10 shadow-xs active:scale-90 transition-all cursor-pointer ${
-  itemIsAgotado || isMaxStockReached 
-  ? "bg-gray-100 dark:bg-[#202022]/10 text-gray-400 dark:text-gray-400 cursor-not-allowed opacity-40" 
-  : "bg-white dark:bg-[#2c2c30] hover:bg-gray-50 text-gray-800 dark:text-gray-200"
-  }`}
-  title={itemIsAgotado ? "Producto sin existencias" : isMaxStockReached ? `Máximo stock disponible (${liveStock} uds.)` : "Aumentar"}
-  >
-  <Plus className="w-3.5 h-3.5" />
-  </button>
-  </div>
-  </div>
+  {/* Unified Mobile Bottom Controls Row + Desktop Grid Columns (Quantity 3 cols, Subtotal 2 cols, Delete 2 cols) */}
+  <div className="flex items-center justify-between gap-2 pt-2.5 mt-0.5 border-t border-gray-200/60 dark:border-white/10 sm:border-t-0 sm:pt-0 sm:mt-0 sm:contents">
+    {/* Quantity Capsule with beUI Adaptive Stepper (3 cols on sm+) */}
+    <div className="sm:col-span-3 flex sm:justify-center items-center shrink-0">
+      <BeUIAdaptiveStepper
+        value={item.quantity}
+        onDecrement={() => updateQuantity(item.id, item.quantity - 1)}
+        onIncrement={() => updateQuantity(item.id, item.quantity + 1)}
+        disableIncrement={itemIsAgotado || isMaxStockReached}
+        size="md"
+        decrementTitle="Disminuir"
+        incrementTitle={
+          itemIsAgotado
+            ? "Producto sin existencias"
+            : isMaxStockReached
+            ? `Máximo stock disponible (${liveStock} uds.)`
+            : "Aumentar"
+        }
+      />
+    </div>
 
-  {/* Subtotal Price (2 cols) */}
-  <div className="sm:col-span-2 sm:text-right flex items-center justify-between sm:block pr-6">
-  <span className="text-xs text-gray-400 dark:text-gray-400 sm:hidden">Subtotal:</span>
-  <span className="font-extrabold text-base sm:text-lg text-gray-900 dark:text-gray-100">
-  ${(Number(item.product?.price || 0) * (item.quantity || 1)).toFixed(2)}
-  </span>
-  </div>
+    {/* Subtotal Price with beUI Rolling Ticker (2 cols on sm+) */}
+    <div className="sm:col-span-2 sm:text-right flex items-center gap-1.5 sm:block sm:pr-6 ml-auto sm:ml-0">
+      <span className="text-[11px] font-medium text-gray-400 dark:text-gray-400 sm:hidden">Subtotal:</span>
+      <BeUIRollingPrice
+        amount={Number(item.product?.price || 0) * (item.quantity || 1)}
+        className="font-extrabold text-sm sm:text-lg text-gray-900 dark:text-gray-100"
+      />
+    </div>
 
-  {/* 2IXO CIRCULAR GLASS DELETE BUTTON */}
-  <div className="sm:col-span-2 flex justify-end items-center sm:text-right">
-  <button 
-  onClick={() => removeItem(item.id)}
-  className="w-8 h-8 rounded-full bg-white/80 dark:bg-white/10 hover:bg-rose-50/90 dark:hover:bg-rose-950/30 text-gray-400 hover:text-rose-600 dark:hover:text-rose-400 border border-black/[0.06] dark:border-white/15 shadow-xs flex items-center justify-center transition-all active:scale-90 cursor-pointer ml-auto"
-  title="Eliminar producto"
-  >
-  <Trash2 className="w-3.5 h-3.5" />
-  </button>
+    {/* 2IXO CIRCULAR GLASS DELETE BUTTON (2 cols on sm+) */}
+    <div className="sm:col-span-2 flex justify-end items-center sm:text-right shrink-0">
+      <button 
+        onClick={() => removeItem(item.id)}
+        className="w-8 h-8 rounded-full bg-white/80 dark:bg-white/10 hover:bg-rose-50/90 dark:hover:bg-rose-950/30 text-gray-400 hover:text-rose-600 dark:hover:text-rose-400 border border-black/[0.06] dark:border-white/15 shadow-xs flex items-center justify-center transition-all active:scale-90 cursor-pointer sm:ml-auto"
+        title="Eliminar producto"
+      >
+        <Trash2 className="w-3.5 h-3.5" />
+      </button>
+    </div>
   </div>
 
   </div>
@@ -1232,14 +1230,14 @@ export function CartDrawer() {
   </div>
 
   {/* Bottom Actions Row */}
-  <div className="pt-4 border-t border-gray-100 dark:border-white/5 flex items-center justify-between">
+  <div className="pt-4 border-t border-gray-100 dark:border-white/5 flex flex-col sm:flex-row items-center justify-between gap-2.5">
   <button 
   onClick={() => { setIsOpen(false); router.push("/shop"); }}
-  className="px-4 py-2 rounded-full text-xs font-semibold text-gray-700 dark:text-gray-300 hover:text-gray-950 bg-white/80 dark:bg-white/5 hover:bg-white border border-black/[0.06] dark:border-white/10 shadow-xs transition-all flex items-center gap-2 cursor-pointer active:scale-95"
+  className="w-full sm:w-auto justify-center px-4 py-2.5 sm:py-2 rounded-full text-xs font-semibold text-gray-700 dark:text-gray-300 hover:text-gray-950 bg-white/80 dark:bg-white/5 hover:bg-white border border-black/[0.06] dark:border-white/10 shadow-xs transition-all flex items-center gap-2 cursor-pointer active:scale-95"
   >
   <ArrowLeft className="w-3.5 h-3.5" /> Continuar Comprando
   </button>
-  <span className="text-xs text-gray-400 dark:text-gray-400 font-medium">
+  <span className="text-xs text-gray-400 dark:text-gray-400 font-medium text-center sm:text-right">
   {items.length === 1 
   ? "1 producto listo para despacho" 
   : `${items.length} productos listos para despacho`}
@@ -1328,7 +1326,11 @@ export function CartDrawer() {
     <div className="space-y-3 pt-2 border-t border-black/[0.05] dark:border-white/10">
       <div className="flex items-center justify-between text-xs sm:text-sm text-gray-600 dark:text-gray-400">
         <span>Subtotal</span>
-        <span className="font-mono font-bold text-gray-900 dark:text-gray-100">${subtotal.toFixed(2)} USD</span>
+        <BeUIRollingPrice
+          amount={subtotal}
+          suffix=" USD"
+          className="font-mono font-bold text-gray-900 dark:text-gray-100"
+        />
       </div>
 
       {discountAmount > 0 && (
@@ -1354,10 +1356,11 @@ export function CartDrawer() {
           <span className="text-sm sm:text-base font-bold text-gray-950 dark:text-white block">Total a Pagar</span>
           <span className="text-[11px] text-gray-400">IVA e impuestos incluidos</span>
         </div>
-        <div className="text-right">
-          <span className="font-sans font-extrabold text-2xl sm:text-3xl text-gray-950 dark:text-white tracking-tight">
-            ${finalTotal.toFixed(2)}
-          </span>
+        <div className="text-right flex items-baseline">
+          <BeUIRollingPrice
+            amount={finalTotal}
+            className="font-sans font-extrabold text-2xl sm:text-3xl text-gray-950 dark:text-white tracking-tight"
+          />
           <span className="text-xs font-semibold text-gray-400 ml-1">USD</span>
         </div>
       </div>
@@ -1837,90 +1840,11 @@ export function CartDrawer() {
     )}
   </div>
 
-  {/* Unified Order Summary & PayPhone Embedded Gateway (100% vector & matching Example.mp4) */}
+  {/* Unified PayPhone Embedded Gateway */}
   <div className="p-6 sm:p-8 rounded-2xl sm:rounded-3xl bg-white dark:bg-[#18181b] border border-gray-200/90 dark:border-white/10 shadow-sm space-y-5 font-sans antialiased text-left">
     
-    {/* 1. ORDER SUMMARY SECTION */}
-    <div className="space-y-3 font-sans pb-1">
-      <div className="flex justify-between items-center text-xs sm:text-sm text-gray-700 dark:text-gray-300 font-sans">
-        <span>Subtotal</span>
-        <span className="font-semibold text-gray-900 dark:text-white">${subtotal.toFixed(2)}</span>
-      </div>
-
-      {discountAmount > 0 && (
-        <div className="flex justify-between items-center text-xs sm:text-sm text-emerald-600 dark:text-emerald-400 font-sans font-medium">
-          <span>Descuento {discountPercent ? `(${discountPercent}%)` : ""}</span>
-          <span>-${discountAmount.toFixed(2)}</span>
-        </div>
-      )}
-
-      <div className="flex justify-between items-center text-xs sm:text-sm text-gray-700 dark:text-gray-300 font-sans">
-        <span>Envío Servientrega</span>
-        <span className="font-semibold text-gray-900 dark:text-white">
-          {shipping === 0 ? <span className="text-emerald-600 dark:text-emerald-400 font-bold">GRATIS</span> : `$${shipping.toFixed(2)}`}
-        </span>
-      </div>
-
-      {/* Coupon Code Input or Active Badge */}
-      {couponCode ? (
-        <div className="flex items-center justify-between px-3.5 py-2.5 rounded-xl bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/20 text-xs text-emerald-700 dark:text-emerald-400 font-sans">
-          <div className="flex items-center gap-2">
-            <Tag className="w-3.5 h-3.5 shrink-0" />
-            <span className="font-mono font-bold tracking-wider">{couponCode}</span>
-          </div>
-          <button
-            type="button"
-            onClick={removeCoupon}
-            className="text-[11px] font-semibold underline hover:text-emerald-900 dark:hover:text-emerald-300 cursor-pointer"
-          >
-            Quitar
-          </button>
-        </div>
-      ) : (
-        <div className="relative">
-          <input
-            type="text"
-            value={couponInput}
-            onChange={(e) => setCouponInput(e.target.value.toUpperCase())}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") {
-                e.preventDefault();
-                handleApplyCoupon();
-              }
-            }}
-            placeholder="CÓDIGO DE DESCUENTO"
-            className="w-full h-11 sm:h-12 px-4 pr-24 rounded-xl border border-gray-200 dark:border-white/15 bg-gray-50/70 dark:bg-white/[0.03] text-xs sm:text-sm font-sans tracking-wider placeholder-gray-400 uppercase outline-none focus:border-gray-400 dark:focus:border-white/30 text-gray-900 dark:text-white transition-colors"
-          />
-          <button
-            type="button"
-            onClick={() => handleApplyCoupon()}
-            disabled={!couponInput.trim()}
-            className="absolute right-1.5 top-1.5 bottom-1.5 px-3.5 rounded-lg bg-gray-900 hover:bg-black dark:bg-white dark:hover:bg-gray-100 text-white dark:text-gray-900 font-sans font-bold text-xs transition-all disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
-          >
-            Aplicar
-          </button>
-        </div>
-      )}
-
-      {couponFeedback && (
-        <p className={`text-[11px] font-sans ${couponFeedback.success ? "text-emerald-600 dark:text-emerald-400" : "text-rose-500"}`}>
-          {couponFeedback.msg}
-        </p>
-      )}
-
-      {/* Summary Total Row */}
-      <div className="flex justify-between items-baseline pt-1">
-        <span className="font-sans font-bold text-base sm:text-lg text-gray-900 dark:text-white">
-          Total
-        </span>
-        <span className="font-sans font-bold text-lg sm:text-xl text-gray-950 dark:text-white tracking-tight">
-          ${finalTotal.toFixed(2)}
-        </span>
-      </div>
-    </div>
-
-    {/* 2. PAYMENT CONFIGURATION HEADER */}
-    <div className="pt-2">
+    {/* 1. PAYMENT CONFIGURATION HEADER */}
+    <div>
       <div className="flex items-center justify-between">
         <span className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 font-sans">
           Elige tu forma de pago
@@ -1939,38 +1863,45 @@ export function CartDrawer() {
       </div>
     </div>
 
-    {/* 3. METHOD SELECTION */}
+    {/* 2. METHOD SELECTION */}
     <div className="pt-1">
       <h4 className="font-sans font-bold text-xs sm:text-sm text-gray-900 dark:text-white mb-2.5">
         Selecciona método de pago
       </h4>
 
       {/* Method Selector Tabs */}
-      <div className="grid grid-cols-2 gap-3">
-        {/* Tab 1: Tarjetas */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        {/* Tab 1: Tarjetas (Symmetrical 6-slot equal division across full button width) */}
         <button
           type="button"
           onClick={() => setSelectedPayMethod("card")}
-          className={`h-12 sm:h-13 px-2.5 sm:px-3 rounded-xl transition-all cursor-pointer flex items-center justify-between ${
+          className={`h-12 sm:h-13 px-1.5 sm:px-2 rounded-xl transition-all cursor-pointer w-full grid grid-cols-6 items-center justify-items-center divide-x divide-gray-200/70 dark:divide-white/10 ${
             selectedPayMethod === "card"
               ? "border-2 border-[#FF5900] bg-white dark:bg-[#202022] shadow-xs"
               : "border border-gray-200 dark:border-white/10 hover:border-gray-300 dark:hover:border-white/20 bg-white dark:bg-[#18181b]"
           }`}
         >
-          <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
+          <div className="w-full h-6 flex items-center justify-center px-1">
             <svg className={`w-4 sm:w-4.5 h-3.5 shrink-0 ${selectedPayMethod === "card" ? "text-[#FF5900]" : "text-gray-400"}`} viewBox="0 0 20 14" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
               <rect x="1" y="1" width="18" height="12" rx="2" />
               <line x1="1" y1="5" x2="19" y2="5" />
               <circle cx="5" cy="9.5" r="0.8" fill="currentColor" />
             </svg>
-            <div className="h-4 w-px bg-gray-200 dark:bg-white/10 shrink-0" />
           </div>
-          <div className="flex items-center justify-end gap-1.5 sm:gap-2 shrink-0 h-5">
-            <VisaLogo className="h-3.5 sm:h-4 w-auto" fill="#1A1F71" />
-            <MastercardLogo className="h-4 sm:h-4.5 w-auto" />
-            <DinersClubLogo className="h-3.5 sm:h-4 w-auto" />
-            <DiscoverLogo className="h-3.5 sm:h-4 w-auto" />
-            <AmexLogo className="h-3.5 sm:h-4 w-auto" />
+          <div className="w-full h-6 flex items-center justify-center px-1">
+            <VisaLogo className="h-3 sm:h-3.5 w-auto max-w-full object-contain" fill="#1A1F71" />
+          </div>
+          <div className="w-full h-6 flex items-center justify-center px-1">
+            <MastercardLogo className="h-3.5 sm:h-4 w-auto max-w-full object-contain" />
+          </div>
+          <div className="w-full h-6 flex items-center justify-center px-1">
+            <DinersClubLogo className="h-3 sm:h-3.5 w-auto max-w-full object-contain" />
+          </div>
+          <div className="w-full h-6 flex items-center justify-center px-1">
+            <DiscoverLogo className="h-3 sm:h-3.5 w-auto max-w-full object-contain" />
+          </div>
+          <div className="w-full h-6 flex items-center justify-center px-1">
+            <AmexLogo className="h-3 sm:h-3.5 w-auto max-w-full object-contain" />
           </div>
         </button>
 

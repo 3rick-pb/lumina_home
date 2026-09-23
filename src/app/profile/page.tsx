@@ -810,7 +810,7 @@ const handleConfirmDeleteNiche = async () => {
            ? "bg-gray-950 dark:bg-white text-white dark:text-gray-950 shadow-lg shadow-gray-950/20 dark:shadow-white/15 scale-105" 
            : "text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100/80 dark:hover:bg-white/5 hover:scale-105 active:scale-95"
        }`}
-       title="Alertas de Carrito (Sileo)"
+        title="Alertas de Bolsa (Sileo)"
      >
        {activeTab === "cart_alerts" && (
          <span className="absolute -left-2 w-1 h-5 bg-[#8c9276] dark:bg-[#ccff00] rounded-r-full transition-all duration-[600ms]" />
@@ -944,7 +944,7 @@ const handleConfirmDeleteNiche = async () => {
   onClick={() => setActiveTab("cart_alerts")} 
   className={`px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all cursor-pointer ${activeTab === "cart_alerts" ? "bg-white dark:bg-[#202022] text-gray-900 dark:text-gray-100 shadow-sm dark:shadow-none" : "text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100"}`}
   >
-  Alertas de Carrito
+  Alertas de Bolsa
   </button>
   <button 
   onClick={() => setActiveTab("integrations")} 

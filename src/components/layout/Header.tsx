@@ -362,7 +362,7 @@ export function Header() {
 
             {/* Shopping Cart Button */}
             <button 
-              aria-label="Carrito" 
+              aria-label="Bolsa de Compras" 
               onClick={(e) => {
                 const rect = e.currentTarget.getBoundingClientRect();
                 toggleCart({

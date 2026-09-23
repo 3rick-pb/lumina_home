@@ -695,6 +695,138 @@ export const setGuestModeStorage = (val: boolean) => {
   } catch {}
 };
 
+let userSyncPromise: Promise<{
+  cards: PaymentCard[];
+  orders: Order[];
+  addresses: ShippingAddress[];
+  address: ShippingAddress | null;
+  favorites: string[];
+  profileName: string | null;
+}> | null = null;
+let userSyncTargetId: string | null = null;
+
+async function syncAndFetchMergedUserData(
+  userId: string,
+  role: 'USER' | 'ADMIN',
+  email: string,
+  accessToken?: string,
+  currentStoreState?: {
+    isAuthenticated: boolean;
+    favorites: string[];
+    addresses: ShippingAddress[];
+    cards: PaymentCard[];
+  }
+) {
+  if (userSyncPromise && userSyncTargetId === userId) {
+    return userSyncPromise;
+  }
+
+  userSyncTargetId = userId;
+  userSyncPromise = (async () => {
+    // 1. Capture ALL guest data from localStorage AND unauthenticated in-memory store BEFORE clearing
+    const memFavs = currentStoreState && !currentStoreState.isAuthenticated ? currentStoreState.favorites : [];
+    const memAddrs = currentStoreState && !currentStoreState.isAuthenticated ? currentStoreState.addresses : [];
+    const memCards = currentStoreState && !currentStoreState.isAuthenticated ? currentStoreState.cards : [];
+
+    const guestFavs = Array.from(new Set([...getGuestFavorites(), ...memFavs]));
+    const guestAddrsMap = new Map<string, ShippingAddress>();
+    for (const a of [...getGuestAddresses(), ...memAddrs]) {
+      if (a && a.street) guestAddrsMap.set(a.id || `${a.street}-${a.city}`, a);
+    }
+    const guestAddrs = Array.from(guestAddrsMap.values());
+
+    const guestCardsMap = new Map<string, PaymentCard>();
+    for (const c of [...getGuestCards(), ...memCards]) {
+      if (c && c.number) guestCardsMap.set(c.id || c.number, c);
+    }
+    const guestCards = Array.from(guestCardsMap.values());
+
+    if (guestAddrs.length > 0 || guestCards.length > 0 || guestFavs.length > 0) {
+      clearGuestStorage();
+      try {
+        let token = accessToken;
+        if (!token) {
+          const { data: { session } } = await supabase.auth.getSession();
+          token = session?.access_token;
+        }
+        const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+        if (token) headers['Authorization'] = `Bearer ${token}`;
+
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const syncPayload: Record<string, any> = {
+          action: 'sync_all',
+          userId,
+        };
+        if (guestAddrs.length > 0) syncPayload.addresses = guestAddrs;
+        if (guestCards.length > 0) syncPayload.cards = guestCards;
+        if (guestFavs.length > 0) syncPayload.favorites = guestFavs;
+
+        await fetch('/api/user/data', {
+          method: 'POST',
+          headers,
+          body: JSON.stringify(syncPayload)
+        });
+      } catch {}
+
+      // Direct Supabase fallback for favorites so they are guaranteed in DB
+      if (guestFavs.length > 0) {
+        try {
+          const favRows = guestFavs.map(pid => ({
+            user_id: userId,
+            product_id: String(pid),
+          }));
+          await supabase.from('favorites').upsert(favRows, { onConflict: 'user_id,product_id' });
+        } catch {}
+      }
+    }
+
+    // 2. Fetch existing account data from database
+    const personalData = await fetchUserDataFromDatabase(userId, role, email);
+
+    // 3. Merge guest snapshot with database response so UI is immediately 100% complete
+    const mergedFavorites = Array.from(new Set([...personalData.favorites, ...guestFavs]));
+
+    const mergedAddrMap = new Map<string, ShippingAddress>();
+    for (const a of personalData.addresses) {
+      mergedAddrMap.set(a.id || `${a.street}-${a.city}`, a);
+    }
+    for (const ga of guestAddrs) {
+      const key = ga.id || `${ga.street}-${ga.city}`;
+      if (!mergedAddrMap.has(key)) mergedAddrMap.set(key, ga);
+    }
+    const mergedAddresses = Array.from(mergedAddrMap.values());
+    const mergedActiveAddress =
+      personalData.address ||
+      mergedAddresses.find(a => a.isDefault) ||
+      mergedAddresses[0] ||
+      null;
+
+    const mergedCardsMap = new Map<string, PaymentCard>();
+    for (const c of personalData.cards) {
+      mergedCardsMap.set(c.id || c.number, c);
+    }
+    for (const gc of guestCards) {
+      const key = gc.id || gc.number;
+      if (!mergedCardsMap.has(key)) mergedCardsMap.set(key, gc);
+    }
+    const mergedCards = Array.from(mergedCardsMap.values());
+
+    return {
+      cards: mergedCards,
+      orders: personalData.orders,
+      addresses: mergedAddresses,
+      address: mergedActiveAddress,
+      favorites: mergedFavorites,
+      profileName: personalData.profileName,
+    };
+  })().finally(() => {
+    userSyncPromise = null;
+    userSyncTargetId = null;
+  });
+
+  return userSyncPromise;
+}
+
 /**
  * Hydrates the client-side user store from localStorage safely after React mount.
  * Eliminates SSR hydration mismatches completely.
@@ -706,20 +838,19 @@ export const hydrateStoreFromClient = () => {
     if (state.user?.id) return;
 
     const isGuest = getInitialGuestMode();
-    if (isGuest) {
-      const addresses = getGuestAddresses();
-      const address = getGuestActiveAddress() || addresses.find(a => a.isDefault) || addresses[0] || null;
-      const cards = getGuestCards();
-      const favorites = getGuestFavorites();
+    const addresses = getGuestAddresses();
+    const address = getGuestActiveAddress() || addresses.find(a => a.isDefault) || addresses[0] || null;
+    const cards = getGuestCards();
+    const favorites = getGuestFavorites();
 
-      useUserStore.setState({
-        isGuestMode: true,
-        addresses,
-        address,
-        cards,
-        favorites,
-      });
-    }
+    useUserStore.setState({
+      isGuestMode: isGuest || addresses.length > 0 || cards.length > 0 || favorites.length > 0,
+      addresses,
+      address,
+      cards,
+      favorites,
+    });
+    useCartStore.getState().initCartForUser(null);
   } catch {}
 };
 
@@ -807,6 +938,13 @@ export const useUserStore = create<UserState>((set, get) => ({
 
           const currentUserId = get().user?.id;
           if (currentUserId !== session.user.id) {
+            const snapshotBeforeAuth = {
+              isAuthenticated: get().isAuthenticated,
+              favorites: [...get().favorites],
+              addresses: [...get().addresses],
+              cards: [...get().cards],
+            };
+
             set({ 
               user: userObj, 
               isAuthenticated: true, 
@@ -817,7 +955,14 @@ export const useUserStore = create<UserState>((set, get) => ({
             const newUserId = session.user.id;
             setTimeout(async () => {
               try {
-                const personalData = await fetchUserDataFromDatabase(newUserId, role, email);
+                await useCartStore.getState().initCartForUser(newUserId);
+                const personalData = await syncAndFetchMergedUserData(
+                  newUserId,
+                  role,
+                  email,
+                  session.access_token,
+                  snapshotBeforeAuth
+                );
                 set((state) => ({
                   user: state.user ? { ...state.user, name: personalData.profileName || state.user.name } : null,
                   cards: personalData.cards,
@@ -827,8 +972,6 @@ export const useUserStore = create<UserState>((set, get) => ({
                   favorites: personalData.favorites,
                   isLoading: false,
                 }));
-
-                useCartStore.getState().initCartForUser(newUserId);
               } catch {}
             }, 0);
           } else {
@@ -859,6 +1002,13 @@ export const useUserStore = create<UserState>((set, get) => ({
         useAvatarSettingsStore.getState().loadSettingsFromDatabase(session.user.id);
         setupAvatarRealtimeListener(session.user.id);
 
+        const snapshotBeforeAuth = {
+          isAuthenticated: get().isAuthenticated,
+          favorites: [...get().favorites],
+          addresses: [...get().addresses],
+          cards: [...get().cards],
+        };
+
         set({ 
           user: userObj, 
           isAuthenticated: true, 
@@ -869,8 +1019,14 @@ export const useUserStore = create<UserState>((set, get) => ({
         const currentUserId = session.user.id;
         setTimeout(async () => {
           try {
-            useCartStore.getState().initCartForUser(currentUserId);
-            const personalData = await fetchUserDataFromDatabase(currentUserId, role, email);
+            await useCartStore.getState().initCartForUser(currentUserId);
+            const personalData = await syncAndFetchMergedUserData(
+              currentUserId,
+              role,
+              email,
+              session.access_token,
+              snapshotBeforeAuth
+            );
             set((state) => ({
               user: state.user ? { ...state.user, name: personalData.profileName || state.user.name } : null,
               cards: personalData.cards,
@@ -884,16 +1040,20 @@ export const useUserStore = create<UserState>((set, get) => ({
         }, 0);
       } else {
         const isGuest = getInitialGuestMode();
+        const guestAddrs = getGuestAddresses();
+        const guestCards = getGuestCards();
+        const guestFavs = getGuestFavorites();
+        await useCartStore.getState().initCartForUser(null);
         set({ 
           user: null, 
           isAuthenticated: false, 
-          isGuestMode: isGuest,
+          isGuestMode: isGuest || guestAddrs.length > 0 || guestCards.length > 0 || guestFavs.length > 0,
           isLoading: false, 
           isAuthInitialized: true,
-          cards: isGuest ? getGuestCards() : [],
-          addresses: isGuest ? getGuestAddresses() : [],
-          address: isGuest ? getGuestActiveAddress() : null,
-          favorites: isGuest ? getGuestFavorites() : [],
+          cards: guestCards,
+          addresses: guestAddrs,
+          address: getGuestActiveAddress() || guestAddrs.find(a => a.isDefault) || guestAddrs[0] || null,
+          favorites: guestFavs,
         });
       }
     } catch {
@@ -915,6 +1075,13 @@ export const useUserStore = create<UserState>((set, get) => ({
       return { error: 'La contraseña excede el límite máximo de seguridad permitido.' };
     }
 
+    const snapshotBeforeLogin = {
+      isAuthenticated: get().isAuthenticated,
+      favorites: [...get().favorites],
+      addresses: [...get().addresses],
+      cards: [...get().cards],
+    };
+
     const { data, error } = await supabase.auth.signInWithPassword({ email: cleanEmail, password });
     if (!error && data?.user) {
       setGuestModeStorage(false);
@@ -922,41 +1089,22 @@ export const useUserStore = create<UserState>((set, get) => ({
       const { role, isRootAdmin } = await checkIsAdmin(userEmail);
       const name = formatCleanName(data.user.user_metadata?.name || userEmail.split('@')[0]);
 
-      // Transfer any guest data seamlessly to Database, then clear guest storage!
-      const guestAddrs = getGuestAddresses();
-      const guestCards = getGuestCards();
-      const guestFavs = getGuestFavorites();
-      if (guestAddrs.length > 0 || guestCards.length > 0 || guestFavs.length > 0) {
-        try {
-          const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-          if (data.session?.access_token) headers['Authorization'] = `Bearer ${data.session.access_token}`;
-
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          const syncPayload: Record<string, any> = {
-            action: 'sync_all',
-            userId: data.user.id,
-          };
-          if (guestAddrs.length > 0) syncPayload.addresses = guestAddrs;
-          if (guestCards.length > 0) syncPayload.cards = guestCards;
-          if (guestFavs.length > 0) syncPayload.favorites = guestFavs;
-
-          await fetch('/api/user/data', {
-            method: 'POST',
-            headers,
-            body: JSON.stringify(syncPayload)
-          });
-        } catch {}
-        clearGuestStorage();
-      }
-
-      const personalData = await fetchUserDataFromDatabase(data.user.id, role, userEmail);
-      const userObj: User = { id: data.user.id, email: userEmail, name, role, isRootAdmin };
+      // Synchronize and merge user's private cart + guest data atomically
+      await useCartStore.getState().initCartForUser(data.user.id);
+      const personalData = await syncAndFetchMergedUserData(
+        data.user.id,
+        role,
+        userEmail,
+        data.session?.access_token,
+        snapshotBeforeLogin
+      );
+      const userObj: User = { id: data.user.id, email: userEmail, name: personalData.profileName || name, role, isRootAdmin };
 
       // Ensure user_profiles has latest email and display name
       try {
         await supabase.from('user_profiles').upsert({
           user_id: data.user.id,
-          display_name: name,
+          display_name: userObj.name,
           email: userEmail.toLowerCase().trim(),
           updated_at: new Date().toISOString()
         }, { onConflict: 'user_id' });
@@ -975,8 +1123,6 @@ export const useUserStore = create<UserState>((set, get) => ({
         favorites: personalData.favorites,
       });
 
-      // Synchronize and load user's private cart from Supabase
-      await useCartStore.getState().initCartForUser(data.user.id);
       await useThemeStore.getState().loadFromDB(data.user.id);
       await useAvatarSettingsStore.getState().loadSettingsFromDatabase(data.user.id);
       setupAvatarRealtimeListener(data.user.id);
@@ -1053,6 +1199,13 @@ export const useUserStore = create<UserState>((set, get) => ({
       return { error: 'La contraseña excede el límite máximo de seguridad permitido.' };
     }
 
+    const snapshotBeforeRegister = {
+      isAuthenticated: get().isAuthenticated,
+      favorites: [...get().favorites],
+      addresses: [...get().addresses],
+      cards: [...get().cards],
+    };
+
     const { role, isRootAdmin } = await checkIsAdmin(cleanEmail);
     // Security: Never allow client to control metadata role; role is computed by server-checked logic
     const { data, error } = await supabase.auth.signUp({ 
@@ -1074,44 +1227,28 @@ export const useUserStore = create<UserState>((set, get) => ({
         }, { onConflict: 'user_id' });
       } catch {}
 
-      // Transfer any guest data to Database
-      const guestAddrs = getGuestAddresses();
-      const guestCards = getGuestCards();
-      const guestFavs = getGuestFavorites();
-      if (guestAddrs.length > 0 || guestCards.length > 0 || guestFavs.length > 0) {
-        try {
-          const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-          if (data.session?.access_token) headers['Authorization'] = `Bearer ${data.session.access_token}`;
-
-          await fetch('/api/user/data', {
-            method: 'POST',
-            headers,
-            body: JSON.stringify({
-              action: 'sync_all',
-              userId: data.user.id,
-              addresses: guestAddrs,
-              cards: guestCards,
-              favorites: guestFavs,
-            })
-          });
-        } catch {}
-        clearGuestStorage();
-      }
+      // Synchronize and merge guest cart + guest favorites/addresses/cards into the new account
+      await useCartStore.getState().initCartForUser(data.user.id);
+      const mergedData = await syncAndFetchMergedUserData(
+        data.user.id,
+        role,
+        cleanEmail,
+        data.session?.access_token,
+        snapshotBeforeRegister
+      );
 
       set({ 
         user: userObj, 
         isAuthenticated: true, 
         isGuestMode: false, 
         isLoading: false, 
-        cards: guestCards,
-        orders: [],
-        address: guestAddrs[0] || null,
-        addresses: guestAddrs,
-        favorites: guestFavs
+        cards: mergedData.cards,
+        orders: mergedData.orders,
+        address: mergedData.address,
+        addresses: mergedData.addresses,
+        favorites: mergedData.favorites
       });
 
-      // Initialize empty private cart for new user in Supabase
-      await useCartStore.getState().initCartForUser(data.user.id);
       await useThemeStore.getState().loadFromDB(data.user.id);
       await useAvatarSettingsStore.getState().loadSettingsFromDatabase(data.user.id);
       setupAvatarRealtimeListener(data.user.id);

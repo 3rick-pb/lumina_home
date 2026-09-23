@@ -294,7 +294,7 @@ export const CartAlertCard = React.memo(function CartAlertCard({
               <Check className="w-2 h-2 text-emerald-500 stroke-[3]" />
             </div>
             <span className="text-[9px] font-extrabold tracking-wide uppercase">
-              En Carrito
+              En Bolsa
             </span>
           </div>
         </div>
@@ -411,7 +411,7 @@ export const CartAlertCard = React.memo(function CartAlertCard({
               </div>
 
               <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full shrink-0">
-                En Carrito
+                En Bolsa
               </span>
             </div>
 
@@ -462,7 +462,7 @@ export const CartAlertCard = React.memo(function CartAlertCard({
                 {safeUser}
               </span>
               <span className="text-[9px] font-semibold text-emerald-600 dark:text-emerald-400 block truncate">
-                {originCode} • Carrito
+                {originCode} • Bolsa
               </span>
             </div>
           </div>
@@ -528,7 +528,7 @@ export const CartAlertCard = React.memo(function CartAlertCard({
           <div className="flex items-center gap-1.5">
             <div className="w-2 h-2 rounded-full bg-emerald-500" />
             <span className="text-[9px] font-bold uppercase tracking-wider" style={{ color: config.subtextColor }}>
-              Módulo Carrito Lumina
+              Módulo Bolsa de Compras Lumina
             </span>
           </div>
 

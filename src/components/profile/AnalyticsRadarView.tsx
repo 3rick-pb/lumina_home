@@ -33,6 +33,8 @@ import {
 } from "@/lib/radarCountries";
 import { BlobatarAvatar } from "@/components/ui/BlobatarAvatar";
 import { useAvatarSettingsStore } from "@/lib/avatarSettingsStore";
+import { ThinkingOrb } from "thinking-orbs";
+import { RadarMapboxCanvas } from "./RadarMapboxCanvas";
 
 export type { ConnectedClient } from "@/lib/radarStore";
 
@@ -300,22 +302,32 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
   const setSelectedCountry = useRadarStore((state) => state.setSelectedCountry);
   const activeCountry = RADAR_COUNTRIES[selectedCountry] || RADAR_COUNTRIES.EC;
 
+  // 3-Second ThinkingOrb Preparation Overlay State while background telemetry & Mapbox WebGL sync
+  const [isPreparingRadar, setIsPreparingRadar] = useState<boolean>(true);
+  const [orbState, setOrbState] = useState<"searching" | "connecting" | "working">("searching");
+  const [focusTarget, setFocusTarget] = useState<{
+    xPct: number;
+    yPct: number;
+    zoomLevel: number;
+    cityName?: string;
+    seq: number;
+  } | null>(null);
+  const [resetCommandSeq, setResetCommandSeq] = useState<number>(0);
 
-  // Preload all 6 country 2.8K maps into browser GPU memory for zero-lag flyover switches
   useEffect(() => {
-    (Object.keys(RADAR_COUNTRIES) as RadarCountryCode[]).forEach((code) => {
-      const meta = RADAR_COUNTRIES[code];
-      if (meta?.mapWebp) {
-        const img = new Image();
-        img.src = meta.mapWebp;
-        img.decode?.().catch(() => {});
-      }
-      if (meta?.mapPng) {
-        const img = new Image();
-        img.src = meta.mapPng;
-        img.decode?.().catch(() => {});
-      }
-    });
+    setIsPreparingRadar(true);
+    setOrbState("searching");
+    const t1 = setTimeout(() => setOrbState("connecting"), 1000);
+    const t2 = setTimeout(() => setOrbState("working"), 2000);
+    const t3 = setTimeout(() => {
+      setIsPreparingRadar(false);
+      setIsMapLoaded(true);
+    }, 3000);
+    return () => {
+      clearTimeout(t1);
+      clearTimeout(t2);
+      clearTimeout(t3);
+    };
   }, []);
 
   // Cinematic Satellite Flight Transition State
@@ -846,14 +858,22 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
   const handleResetView = () => {
     setZoom(1);
     setPan({ x: 0, y: 0 });
+    setResetCommandSeq((s) => s + 1);
   };
 
-  // Smooth camera fly-to function for cities and coordinates
-  const focusOnLocation = useCallback((xPct: number, yPct: number, zoomLevel: number = 1.6) => {
+  // Smooth camera fly-to function for cities and coordinates on the Mapbox WebGL canvas
+  const focusOnLocation = useCallback((xPct: number, yPct: number, zoomLevel: number = 1.6, cityName?: string) => {
     const targetPanX = Math.round((50 - xPct) * 5.4 * (zoomLevel / 1.5));
     const targetPanY = Math.round((50 - yPct) * 3.8 * (zoomLevel / 1.5));
     setZoom(zoomLevel);
     setPan({ x: targetPanX, y: targetPanY });
+    setFocusTarget((prev) => ({
+      xPct,
+      yPct,
+      zoomLevel,
+      cityName,
+      seq: (prev?.seq || 0) + 1,
+    }));
   }, []);
 
   const activeHUDClient = hoveredClient || selectedClient;
@@ -890,234 +910,216 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
       <div className="absolute -top-32 left-1/2 -translate-x-1/2 w-[700px] h-80 bg-[#ccff00]/5 rounded-full blur-3xl pointer-events-none" />
 
       {/* ========================================================================= */}
-      {/* 2. THE MAIN HERO: PROTAGONIC 3D RELIEF MAP (4K HIGH DEFINITION)           */}
+      {/* 0. 3-SECOND THINKING ORB PREPARATION OVERLAY (Semi-transparent Grayish)    */}
+      {/* ========================================================================= */}
+      <AnimatePresence>
+        {isPreparingRadar && (
+          <motion.div
+            key="radar-preparation-overlay"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.45, ease: "easeOut" }}
+            className="absolute inset-0 z-[80] bg-zinc-900/75 backdrop-blur-2xl flex flex-col items-center justify-center p-6 text-center select-none"
+          >
+            <div className="relative flex flex-col items-center max-w-sm">
+              <div className="relative p-5 rounded-full bg-white/[0.04] border border-white/10 shadow-[0_0_60px_rgba(204,255,0,0.12)] mb-5">
+                <ThinkingOrb state={orbState} size={64} />
+              </div>
+              <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 border border-white/15 text-[10px] font-mono uppercase tracking-widest text-[#ccff00] mb-2.5">
+                <span className="w-1.5 h-1.5 rounded-full bg-[#ccff00] animate-ping" />
+                {orbState === "searching"
+                  ? "Calibrando Satélite & Telemetría"
+                  : orbState === "connecting"
+                  ? "Sincronizando Vector Mapbox GL"
+                  : "Posicionando Nodos en Tiempo Real"}
+              </span>
+              <h3 className="text-lg sm:text-xl font-bold text-white tracking-tight">
+                Preparando Radar 3D de {activeCountry.name}
+              </h3>
+              <p className="text-xs text-zinc-300/80 mt-1.5 leading-relaxed">
+                Cargando cartografía vectorial interactiva y geolocalización de clientes activos en segundo plano...
+              </p>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* ========================================================================= */}
+      {/* 2. THE MAIN HERO: INTERACTIVE WEBGL MAPBOX / MAPLIBRE VECTOR MAP          */}
       {/* ========================================================================= */}
       <div 
         ref={mapContainerRef}
-        onMouseDown={handleMouseDown}
-        onClick={() => setSelectedClientId(null)}
-        className={`absolute inset-0 z-10 flex items-center justify-center overflow-hidden ${
-          isDragging ? "cursor-grabbing" : "cursor-grab"
-        }`}
+        className="absolute inset-0 z-10 overflow-hidden"
       >
-        {/* Zoomed & Panned 3D Terrain Wrapper with Cinematic Satellite Flight */}
-        <div 
-          ref={mapLayerTransformRef}
-          style={{
-            transform: 
-              flightPhase === 'takeoff'
-                ? `translate3d(${-flightVector.x * 0.7}px, ${-flightVector.y * 0.7}px, 0) scale(0.88) rotate(${-flightRotation * 0.5}deg)`
-                : flightPhase === 'approach'
-                ? `translate3d(${flightVector.x * 0.5}px, ${flightVector.y * 0.5}px, 0) scale(0.90) rotate(${flightRotation}deg)`
-                : flightPhase === 'landing'
-                ? `translate3d(0px, 0px, 0) scale(1) rotate(0deg)`
-                : `translate3d(${pan.x}px, ${pan.y}px, 0) scale(${zoom}) rotate(0deg)`,
-            transformOrigin: "center center",
-            willChange: "transform, opacity",
-            transformStyle: "preserve-3d",
-            backfaceVisibility: "hidden",
-            opacity: 
-              flightPhase === 'takeoff' 
-                ? 0.4 
-                : flightPhase === 'approach'
-                ? 0.7
-                : isMapLoaded 
-                ? 1 
-                : 0,
-            transition: 
-              isDragging 
-                ? "none" 
-                : flightPhase === 'takeoff'
-                ? "transform 0.48s cubic-bezier(0.2, 0.9, 0.3, 1), opacity 0.48s ease"
-                : flightPhase === 'approach'
-                ? "none"
-                : flightPhase === 'landing'
-                ? "transform 2.2s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.6s ease-out"
-                : "transform 0.5s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.3s ease",
-            aspectRatio: `${activeCountry.width} / ${activeCountry.height}`,
-          }}
-          className="relative w-[780px] lg:w-[920px] max-w-full flex items-center justify-center pointer-events-auto shrink-0"
-        >
-          {/* Ambient Ground Shadow */}
-          <div className="absolute inset-x-12 bottom-4 h-32 bg-black/75 blur-3xl rounded-full pointer-events-none -z-10" />
+        <RadarMapboxCanvas
+          selectedCountry={selectedCountry}
+          zoomCommand={zoom}
+          focusTarget={focusTarget}
+          resetCommandSeq={resetCommandSeq}
+          onMapReady={() => setIsMapLoaded(true)}
+          onCanvasClick={() => setSelectedClientId(null)}
+          renderOverlayPins={(projectPin) => (
+            <>
+              {/* ========================================================================= */}
+              {/* 1. CLUSTER BEACONS (Rendered when multiple clients exist in the same city) */}
+              {/* ========================================================================= */}
+              {clusterPins.map((cluster) => {
+                const pos = projectPin(cluster.cityName, cluster.baseX, cluster.baseY);
+                if (!pos.visible) return null;
 
-          {/* Smooth Radar Loading Spinner while WebP decodes (sub-100ms) */}
-          {!isMapLoaded && (
-            <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 pointer-events-none z-10">
-              <div className="w-9 h-9 rounded-full border-2 border-[#ccff00]/30 border-t-[#ccff00] animate-spin" />
-              <span className="text-[10px] font-mono text-white/50 tracking-wider">Cargando topografía 3D de {activeCountry.name}...</span>
-            </div>
-          )}
+                const isHovered = hoveredClusterKey === cluster.cityKey;
+                const count = cluster.clients.length;
+                const isStageMatch =
+                  activeStage === "all" ? true :
+                  activeStage === "cart" ? cluster.hasCart :
+                  cluster.hasFrequent;
+                const isDimmed = !isHovered && !isStageMatch;
+                const openDownward = pos.y < 220;
 
-          {/* Authentic 4K High-Res Transparent 3D Relief Landmass (Instant WebP < 150KB) */}
-          <picture className="w-full h-full pointer-events-none select-none">
-            <source srcSet={activeCountry.mapWebp} type="image/webp" />
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img 
-              key={selectedCountry}
-              src={activeCountry.mapPng} 
-              alt={`Mapa 3D Topográfico en Relieve de ${activeCountry.name} en Alta Resolución`}
-              draggable={false}
-              loading="eager"
-              decoding="async"
-              onLoad={() => setIsMapLoaded(true)}
-              className={`w-full h-full object-contain pointer-events-none select-none filter contrast-110 brightness-105 drop-shadow-[0_28px_40px_rgba(0,0,0,0.7)] transition-opacity duration-300 ${
-                isMapLoaded ? "opacity-100" : "opacity-0"
-              }`}
-            />
-          </picture>
+                return (
+                  <div
+                    key={cluster.cityKey}
+                    style={{
+                      left: `${pos.x}px`,
+                      top: `${pos.y}px`,
+                    }}
+                    className={`absolute -translate-x-1/2 -translate-y-full cursor-pointer group transition-opacity duration-300 pointer-events-auto ${
+                      isHovered ? "z-50 scale-110" : "z-30"
+                    } ${isDimmed ? "opacity-35 scale-90 hover:opacity-100 hover:scale-100" : "opacity-100 scale-100"}`}
+                    onMouseEnter={() => setHoveredClusterKey(cluster.cityKey)}
+                    onMouseLeave={() => setHoveredClusterKey(null)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      focusOnLocation(cluster.baseX, cluster.baseY, 2.0, cluster.cityName);
+                      setExpandedClusterCity(cluster.cityKey);
+                    }}
+                  >
+                    {/* Ground Halo */}
+                    <div className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2 pointer-events-none">
+                      <span className="block rounded-full w-4 h-4 bg-[#ccff00]/40 blur-[2px] shadow-[0_0_12px_#ccff00]" />
+                    </div>
 
-          {/* ========================================================================= */}
-          {/* 1. CLUSTER BEACONS (Rendered when multiple clients exist in the same city) */}
-          {/* ========================================================================= */}
-          {clusterPins.map((cluster) => {
-            const isHovered = hoveredClusterKey === cluster.cityKey;
-            const count = cluster.clients.length;
-            const isStageMatch =
-              activeStage === "all" ? true :
-              activeStage === "cart" ? cluster.hasCart :
-              cluster.hasFrequent;
-            const isDimmed = !isHovered && !isStageMatch;
-            const openDownward = cluster.baseY < 38;
-
-            return (
-              <div
-                key={cluster.cityKey}
-                style={{
-                  left: `${cluster.baseX}%`,
-                  top: `${cluster.baseY}%`,
-                }}
-                className={`absolute -translate-x-1/2 -translate-y-full cursor-pointer group transition-all duration-500 ${
-                  isHovered ? "z-50 scale-110" : "z-30"
-                } ${isDimmed ? "opacity-30 scale-90 hover:opacity-100 hover:scale-100" : "opacity-100 scale-100"}`}
-                onMouseEnter={() => setHoveredClusterKey(cluster.cityKey)}
-                onMouseLeave={() => setHoveredClusterKey(null)}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  focusOnLocation(cluster.baseX, cluster.baseY, 2.0);
-                  setExpandedClusterCity(cluster.cityKey);
-                }}
-              >
-                {/* Ground Halo (Soft static ambient glow - zero blinking) */}
-                <div className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2 pointer-events-none">
-                  <span className="block rounded-full w-4 h-4 bg-[#ccff00]/40 blur-[2px] shadow-[0_0_12px_#ccff00]" />
-                </div>
-
-                {/* Cluster Head & Stem */}
-                <div className="flex flex-col items-center">
-                  <div className="relative transition-all duration-300 flex items-center justify-center rounded-full border border-white bg-gray-950 text-white shadow-2xl px-2.5 py-0.5 min-w-[32px] h-7 gap-1 shadow-[0_0_18px_rgba(204,255,0,0.6)] group-hover:bg-[#ccff00] group-hover:text-gray-950 group-hover:border-[#ccff00]">
-                    <Users className="w-3.5 h-3.5 shrink-0" />
-                    <span className="font-mono text-xs font-black">{count}</span>
-                    {cluster.hasCart && (
-                      <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-rose-500 border border-white" />
-                    )}
-                  </div>
-
-                  {/* Vertical Pin Line */}
-                  <div className="w-[2px] h-8 bg-gradient-to-t from-[#ccff00] to-white shadow-[0_0_10px_#ccff00]" />
-                  <div className="w-1.5 h-1.5 rotate-45 bg-[#ccff00] shadow-[0_0_6px_#ccff00]" />
-                </div>
-
-                {/* Tag Label */}
-                <div className="absolute top-full mt-1 left-1/2 -translate-x-1/2 whitespace-nowrap px-2.5 py-0.5 rounded-full text-[9px] font-bold font-mono tracking-wider transition-all pointer-events-none bg-black/90 text-white border border-[#ccff00]/40 backdrop-blur-md shadow-md flex items-center gap-1">
-                  <span>{cluster.cityName}</span>
-                  <span className="text-[#ccff00] font-black">({count})</span>
-                </div>
-
-                {/* Floating Hover Tooltip showing preview of clients (opens downward if near top to avoid HUD collision) */}
-                {isHovered && (() => {
-                  const anonCount = cluster.clients.filter(c => c.isAnonymous).length;
-                  const regCount = count - anonCount;
-                  return (
-                    <div className={`absolute left-1/2 -translate-x-1/2 w-56 p-3 rounded-2xl bg-[#111614]/95 backdrop-blur-2xl border border-[#ccff00]/50 shadow-[0_15px_35px_rgba(0,0,0,0.8)] z-50 pointer-events-none space-y-2 animate-fade-in ${
-                      openDownward ? "top-full mt-7" : "bottom-full mb-2.5"
-                    }`}>
-                      <div className="flex items-center justify-between text-[10px] font-mono border-b border-white/10 pb-1.5">
-                        <span className="text-white font-bold">{cluster.cityName}</span>
-                        <span className="text-[#ccff00] font-bold">
-                          {regCount > 0 ? `${regCount} reg.` : ''}
-                          {regCount > 0 && anonCount > 0 ? ' • ' : ''}
-                          {anonCount > 0 ? `${anonCount} anon.` : ''}
-                        </span>
-                      </div>
-                      <div className="space-y-1">
-                        {cluster.clients.slice(0, 4).map(c => (
-                          <div key={c.id} className="flex items-center justify-between text-[9.5px]">
-                            <span className={`truncate max-w-[120px] ${c.isAnonymous ? "text-sky-300 font-medium" : "text-white/85"}`}>
-                              {c.isAnonymous ? "Visitante Anónimo" : cleanClientName(c.name)}
-                            </span>
-                            <span className={`font-mono font-semibold ${c.isAnonymous ? "text-sky-400" : "text-[#ccff00]"}`}>
-                              {c.isAnonymous ? "Explorando" : `$${c.totalSpent || 0}`}
-                            </span>
-                          </div>
-                        ))}
-                        {count > 4 && (
-                          <div className="text-[8.5px] text-white/50 text-center font-mono">
-                            +{count - 4} clientes adicionales
-                          </div>
+                    {/* Cluster Head & Stem */}
+                    <div className="flex flex-col items-center">
+                      <div className="relative transition-all duration-300 flex items-center justify-center rounded-full border border-white bg-gray-950 text-white shadow-2xl px-2.5 py-0.5 min-w-[32px] h-7 gap-1 shadow-[0_0_18px_rgba(204,255,0,0.6)] group-hover:bg-[#ccff00] group-hover:text-gray-950 group-hover:border-[#ccff00]">
+                        <Users className="w-3.5 h-3.5 shrink-0" />
+                        <span className="font-mono text-xs font-black">{count}</span>
+                        {cluster.hasCart && (
+                          <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-rose-500 border border-white" />
                         )}
                       </div>
-                      <div className="text-[8.5px] text-center text-[#ccff00] font-mono pt-1 border-t border-white/10 flex items-center justify-center gap-1">
-                        <span>Clic para acercar y desplegar</span> &rarr;
-                      </div>
+
+                      {/* Vertical Pin Line */}
+                      <div className="w-[2px] h-8 bg-gradient-to-t from-[#ccff00] to-white shadow-[0_0_10px_#ccff00]" />
+                      <div className="w-1.5 h-1.5 rotate-45 bg-[#ccff00] shadow-[0_0_6px_#ccff00]" />
                     </div>
-                  );
-                })()}
-              </div>
-            );
-          })}
 
-          {/* ========================================================================= */}
-          {/* 2. DISPERSED INDIVIDUAL BEACONS (Anti-overlap radial spacing per city)    */}
-          {/* ========================================================================= */}
-          {dispersedPins.map((beacon) => {
-            const client = beacon.client;
-            const isHovered = hoveredClient?.id === client.id;
-            const isSelected = selectedClient?.id === client.id;
-            const isActive = isHovered || isSelected;
-            const isSelf = beacon.isSelf;
+                    {/* Tag Label */}
+                    <div className="absolute top-full mt-1 left-1/2 -translate-x-1/2 whitespace-nowrap px-2.5 py-0.5 rounded-full text-[9px] font-bold font-mono tracking-wider transition-all pointer-events-none bg-black/90 text-white border border-[#ccff00]/40 backdrop-blur-md shadow-md flex items-center gap-1">
+                      <span>{cluster.cityName}</span>
+                      <span className="text-[#ccff00] font-black">({count})</span>
+                    </div>
 
-            // Stage filtering logic for visual illumination
-            const isStageMatch =
-              activeStage === "all" ? true :
-              activeStage === "cart" ? Boolean(client.hasCart) :
-              ((client.purchasesCount || 0) >= 3 || (client.frequency && client.frequency !== "1ª Vez"));
+                    {/* Floating Hover Tooltip */}
+                    {isHovered && (() => {
+                      const anonCount = cluster.clients.filter(c => c.isAnonymous).length;
+                      const regCount = count - anonCount;
+                      return (
+                        <div className={`absolute left-1/2 -translate-x-1/2 w-56 p-3 rounded-2xl bg-[#111614]/95 backdrop-blur-2xl border border-[#ccff00]/50 shadow-[0_15px_35px_rgba(0,0,0,0.8)] z-50 pointer-events-none space-y-2 animate-fade-in ${
+                          openDownward ? "top-full mt-7" : "bottom-full mb-2.5"
+                        }`}>
+                          <div className="flex items-center justify-between text-[10px] font-mono border-b border-white/10 pb-1.5">
+                            <span className="text-white font-bold">{cluster.cityName}</span>
+                            <span className="text-[#ccff00] font-bold">
+                              {regCount > 0 ? `${regCount} reg.` : ''}
+                              {regCount > 0 && anonCount > 0 ? ' • ' : ''}
+                              {anonCount > 0 ? `${anonCount} anon.` : ''}
+                            </span>
+                          </div>
+                          <div className="space-y-1">
+                            {cluster.clients.slice(0, 4).map(c => (
+                              <div key={c.id} className="flex items-center justify-between text-[9.5px]">
+                                <span className={`truncate max-w-[120px] ${c.isAnonymous ? "text-sky-300 font-medium" : "text-white/85"}`}>
+                                  {c.isAnonymous ? "Visitante Anónimo" : cleanClientName(c.name)}
+                                </span>
+                                <span className={`font-mono font-semibold ${c.isAnonymous ? "text-sky-400" : "text-[#ccff00]"}`}>
+                                  {c.isAnonymous ? "Explorando" : `$${c.totalSpent || 0}`}
+                                </span>
+                              </div>
+                            ))}
+                            {count > 4 && (
+                              <div className="text-[8.5px] text-white/50 text-center font-mono">
+                                +{count - 4} clientes adicionales
+                              </div>
+                            )}
+                          </div>
+                          <div className="text-[8.5px] text-center text-[#ccff00] font-mono pt-1 border-t border-white/10 flex items-center justify-center gap-1">
+                            <span>Clic para acercar y desplegar</span> &rarr;
+                          </div>
+                        </div>
+                      );
+                    })()}
+                  </div>
+                );
+              })}
 
-            // Dim beacons that don't match the current activeStage (never dim self)
-            const isDimmed = !isSelf && !isActive && !isStageMatch;
+              {/* ========================================================================= */}
+              {/* 2. DISPERSED INDIVIDUAL BEACONS (Projected onto Mapbox [lng, lat])         */}
+              {/* ========================================================================= */}
+              {dispersedPins.map((beacon) => {
+                const pos = projectPin(
+                  beacon.cityName,
+                  beacon.baseX,
+                  beacon.baseY,
+                  beacon.dispX,
+                  beacon.dispY
+                );
+                if (!pos.visible) return null;
 
-            // Personalized label: if multiple clients in same city, include first name to easily distinguish them!
-            const clientFirstName = cleanClientName(client.name).split(' ')[0] || '';
-            const beaconLabel = beacon.clusterTotal > 1 && clientFirstName
-              ? `${clientFirstName} • ${beacon.cityName}`
-              : beacon.cityName;
+                const client = beacon.client;
+                const isHovered = hoveredClient?.id === client.id;
+                const isSelected = selectedClient?.id === client.id;
+                const isActive = isHovered || isSelected;
+                const isSelf = beacon.isSelf;
 
-            // Intelligent directional flip: when pin is in northern latitudes (dispY < 38%), open downward to avoid top HUD obstruction
-            const openDownward = beacon.dispY < 38;
+                const isStageMatch =
+                  activeStage === "all" ? true :
+                  activeStage === "cart" ? Boolean(client.hasCart) :
+                  ((client.purchasesCount || 0) >= 3 || (client.frequency && client.frequency !== "1ª Vez"));
 
-            return (
-              <div 
-                key={client.id}
-                style={{
-                  left: `${beacon.dispX}%`,
-                  top: `${beacon.dispY}%`
-                }}
-                className={`absolute -translate-x-1/2 -translate-y-full cursor-pointer group transition-all duration-500 ${
-                  isActive ? "z-50" : "z-30"
-                } ${isDimmed ? "opacity-20 scale-90 hover:opacity-100 hover:scale-100" : "opacity-100 scale-100"}`}
-                onMouseEnter={() => setHoveredClientId(client.id)}
-                onMouseLeave={() => setHoveredClientId(null)}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  if (!client.isAnonymous) {
-                    setSelectedClientId(prev => {
-                      const next = prev === client.id ? null : client.id;
-                      if (next) setIsMobilePanelOpen(true);
-                      return next;
-                    });
-                  }
-                }}
-              >
+                const isDimmed = !isSelf && !isActive && !isStageMatch;
+
+                const clientFirstName = cleanClientName(client.name).split(' ')[0] || '';
+                const beaconLabel = beacon.clusterTotal > 1 && clientFirstName
+                  ? `${clientFirstName} • ${beacon.cityName}`
+                  : beacon.cityName;
+
+                const openDownward = pos.y < 220;
+
+                return (
+                  <div 
+                    key={client.id}
+                    style={{
+                      left: `${pos.x}px`,
+                      top: `${pos.y}px`
+                    }}
+                    className={`absolute -translate-x-1/2 -translate-y-full cursor-pointer group transition-opacity duration-300 pointer-events-auto ${
+                      isActive ? "z-50" : "z-30"
+                    } ${isDimmed ? "opacity-25 scale-90 hover:opacity-100 hover:scale-100" : "opacity-100 scale-100"}`}
+                    onMouseEnter={() => setHoveredClientId(client.id)}
+                    onMouseLeave={() => setHoveredClientId(null)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (!client.isAnonymous) {
+                        setSelectedClientId(prev => {
+                          const next = prev === client.id ? null : client.id;
+                          if (next) setIsMobilePanelOpen(true);
+                          return next;
+                        });
+                      }
+                    }}
+                  >
                 {/* Ground Halo (Soft static ambient glow - zero blinking) */}
                 <div className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2 pointer-events-none">
                   <span className={`block rounded-full blur-[2px] ${
@@ -1292,7 +1294,7 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
                       {client.hasCart && (
                         <div className="flex items-center justify-between text-rose-300 pt-0.5 border-t border-white/10 text-[9.5px]">
                           <span className="flex items-center gap-1">
-                            <ShoppingBag className="w-2.5 h-2.5" /> En carrito:
+                            <ShoppingBag className="w-2.5 h-2.5" /> En bolsa:
                           </span>
                           <span className="font-mono font-bold">{client.cartItemsCount || 1} pzs</span>
                         </div>
@@ -1303,7 +1305,9 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
               </div>
             );
           })}
-        </div>
+            </>
+          )}
+        />
       </div>
 
       {/* ========================================================================= */}
@@ -1416,7 +1420,7 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
                         onClick={() => {
                           setSearchQuery(city);
                           if (coords.x >= 0 && coords.y >= 0) {
-                            focusOnLocation(coords.x, coords.y, 1.8);
+                            focusOnLocation(coords.x, coords.y, 1.8, city);
                           }
                           if (clientMatch) {
                             setSelectedClientId(clientMatch.id);
@@ -1450,7 +1454,7 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
                           key={client.id}
                           onClick={() => {
                             setSelectedClientId(client.id);
-                            focusOnLocation(client.x, client.y, 1.9);
+                            focusOnLocation(client.x, client.y, 1.9, client.city);
                             setIsSearchFocused(false);
                           }}
                           className="p-2 rounded-xl bg-white/5 hover:bg-white/15 border border-white/10 hover:border-[#ccff00]/40 flex items-center justify-between cursor-pointer transition-all group"

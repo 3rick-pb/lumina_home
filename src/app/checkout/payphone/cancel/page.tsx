@@ -29,7 +29,7 @@ export default function PayPhoneCancelPage() {
             Pago con PayPhone Cancelado
           </h2>
           <p className="text-sm text-gray-500 dark:text-gray-400">
-            La transacción fue cancelada y no se ha realizado ningún cobro a tu tarjeta. Los productos siguen guardados en tu carrito.
+            La transacción fue cancelada y no se ha realizado ningún cobro a tu tarjeta. Los productos siguen guardados en tu bolsa de compras.
           </p>
         </div>
 
@@ -38,7 +38,7 @@ export default function PayPhoneCancelPage() {
             onClick={handleReturnToCart}
             className="w-full py-3 px-4 rounded-xl bg-[#8c9276] hover:bg-[#7a8064] text-white font-medium text-sm flex items-center justify-center gap-2 transition-colors shadow-sm"
           >
-            <ShoppingBag className="w-4 h-4" /> Reintentar en Carrito
+            <ShoppingBag className="w-4 h-4" /> Reintentar en Bolsa de Compras
           </button>
           <Link
             href="/shop"

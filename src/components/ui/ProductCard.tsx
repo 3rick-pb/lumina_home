@@ -57,7 +57,6 @@ export function ProductCard({ id, title, price, oldPrice, discount, badge, image
           className={`absolute top-2 right-2 sm:top-3 sm:right-3 w-7 h-7 sm:w-8 sm:h-8 backdrop-blur-sm transform-gpu border rounded-full flex items-center justify-center transition-all z-10 shadow-sm opacity-100 sm:opacity-0 sm:group-hover:opacity-100 sm:translate-y-2 sm:group-hover:translate-y-0 ${isFav ? 'bg-red-500/10 border-red-500 text-red-500' : 'bg-white/60 dark:bg-black/60 border-white/70 dark:border-white/20 text-gray-600 dark:text-gray-300 hover:text-red-500 hover:bg-white/80 dark:hover:bg-white/20'}`}
           onClick={(e) => { 
             e.preventDefault(); 
-            if (!isAuthenticated) return;
             toggleFavorite(id);
           }}
         >

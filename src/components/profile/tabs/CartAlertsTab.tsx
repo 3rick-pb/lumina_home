@@ -165,7 +165,7 @@ export function CartAlertsTab() {
               />
             </div>
             <h2 className="text-2xl sm:text-3xl font-display font-bold text-gray-900 dark:text-white tracking-tight">
-              Notificaciones de Carrito en Vivo
+              Notificaciones de Bolsa de Compras en Vivo
             </h2>
             <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-1 max-w-2xl leading-relaxed">
               Configuración global única para todos los administradores. Cualquier cambio aplicado aquí se actualiza inmediatamente en todos los dispositivos y cuentas de administración.

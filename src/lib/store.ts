@@ -82,17 +82,24 @@ const syncCartToDatabase = async (userId: string | null, payload: CartStoragePay
       discount_percent: payload.discountPercent,
       is_free_shipping: payload.isFreeShippingCoupon,
       updated_at: new Date().toISOString()
-    });
+    }, { onConflict: 'user_id' });
   } catch {}
 };
+
+const GUEST_CART_KEY = 'lumina_guest_cart';
 
 const getGuestCartItems = (): CartItem[] => {
   if (typeof window === 'undefined') return [];
   try {
-    const raw = sessionStorage.getItem('lumina_guest_cart');
-    if (raw) {
-      const parsed = JSON.parse(raw);
-      if (Array.isArray(parsed)) return parsed;
+    const rawLocal = localStorage.getItem(GUEST_CART_KEY);
+    if (rawLocal) {
+      const parsed = JSON.parse(rawLocal);
+      if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+    }
+    const rawSession = sessionStorage.getItem(GUEST_CART_KEY);
+    if (rawSession) {
+      const parsed = JSON.parse(rawSession);
+      if (Array.isArray(parsed) && parsed.length > 0) return parsed;
     }
   } catch {}
   return [];
@@ -102,12 +109,18 @@ const setGuestCartItems = (items: CartItem[]) => {
   if (typeof window === 'undefined') return;
   try {
     if (items.length > 0) {
-      sessionStorage.setItem('lumina_guest_cart', JSON.stringify(items));
+      const serialized = JSON.stringify(items);
+      localStorage.setItem(GUEST_CART_KEY, serialized);
+      sessionStorage.setItem(GUEST_CART_KEY, serialized);
     } else {
-      sessionStorage.removeItem('lumina_guest_cart');
+      localStorage.removeItem(GUEST_CART_KEY);
+      sessionStorage.removeItem(GUEST_CART_KEY);
     }
   } catch {}
 };
+
+let cartInitPromise: Promise<void> | null = null;
+let cartInitTargetUser: string | null = null;
 
 // Triggers real-time alert exclusively for registered customers in the store
 const triggerRegisteredUserAlert = (product: Product, quantity: number) => {
@@ -145,7 +158,7 @@ const triggerRegisteredUserAlert = (product: Product, quantity: number) => {
 
 export const useCartStore = create<CartState>((set, get) => ({
   currentUserId: null,
-  items: [],
+  items: typeof window !== 'undefined' ? getGuestCartItems() : [],
   isOpen: false,
   couponCode: null,
   discountPercent: 0,
@@ -154,83 +167,120 @@ export const useCartStore = create<CartState>((set, get) => ({
   
   initCartForUser: async (newUserId: string | null) => {
     if (!newUserId) {
-      // Guest or unauthenticated (e.g. on logout): completely clear memory and guest session
-      setGuestCartItems([]);
-      set({
-        currentUserId: null,
-        items: [],
-        couponCode: null,
-        discountPercent: 0,
-        isFreeShippingCoupon: false,
-        isOpen: false,
-      });
-      return;
-    }
-
-    // If already loaded for this exact user and items are present, prevent race-condition re-execution
-    if (get().currentUserId === newUserId && get().items.length > 0) {
-      return;
-    }
-
-    let items: CartItem[] = [];
-    let couponCode: string | null = null;
-    let discountPercent = 0;
-    let isFreeShippingCoupon = false;
-
-    try {
-      // 1. Fetch from Supabase user_carts table (single source of truth for the account)
-      const { data: dbCart, error } = await supabase
-        .from('user_carts')
-        .select('*')
-        .eq('user_id', newUserId)
-        .maybeSingle();
-
-      if (dbCart && !error) {
-        items = Array.isArray(dbCart.items) ? dbCart.items : [];
-        couponCode = dbCart.coupon_code || null;
-        discountPercent = Number(dbCart.discount_percent) || 0;
-        isFreeShippingCoupon = !!dbCart.is_free_shipping;
-      }
-    } catch (e) {
-      console.error("Error loading cart from database:", e);
-    }
-
-    // 2. Only merge genuine guest items stored in sessionStorage before login (NEVER use in-memory state!)
-    const preLoginGuestItems = getGuestCartItems();
-    if (preLoginGuestItems.length > 0) {
-      // Immediately clear guest storage so subsequent calls cannot re-merge
-      setGuestCartItems([]);
-
-      const mergedMap = new Map<string, CartItem>();
-      for (const it of items) {
-        mergedMap.set(it.id, { ...it });
-      }
-      for (const git of preLoginGuestItems) {
-        // If the user already has this item in their account, keep the existing item without adding extra quantities
-        if (!mergedMap.has(git.id)) {
-          mergedMap.set(git.id, { ...git });
+      const wasAuthenticatedUser = get().currentUserId !== null;
+      if (wasAuthenticatedUser) {
+        // Explicit logout from an authenticated account: clear memory and guest storage
+        setGuestCartItems([]);
+        set({
+          currentUserId: null,
+          items: [],
+          couponCode: null,
+          discountPercent: 0,
+          isFreeShippingCoupon: false,
+          isOpen: false,
+        });
+      } else {
+        // Unauthenticated visitor browsing the catalog: preserve and hydrate guest cart
+        const guestItems = getGuestCartItems();
+        const currentMemoryItems = get().items;
+        const activeGuestItems = currentMemoryItems.length > 0 ? currentMemoryItems : guestItems;
+        if (activeGuestItems.length > 0) {
+          setGuestCartItems(activeGuestItems);
         }
+        set({
+          currentUserId: null,
+          items: activeGuestItems,
+        });
       }
-      items = Array.from(mergedMap.values());
+      return;
+    }
 
-      // Sync merged cart to Supabase for this user
-      const payload: CartStoragePayload = {
+    // Deduplicate concurrent initCartForUser calls for the same user (e.g. onAuthStateChange + login/register)
+    if (cartInitPromise && cartInitTargetUser === newUserId) {
+      return cartInitPromise;
+    }
+
+    cartInitTargetUser = newUserId;
+    cartInitPromise = (async () => {
+      // Capture any guest items from storage AND from unauthenticated memory BEFORE switching user
+      const inMemoryGuestItems = get().currentUserId === null ? [...get().items] : [];
+      const storedGuestItems = getGuestCartItems();
+      const combinedGuestMap = new Map<string, CartItem>();
+      for (const item of storedGuestItems) {
+        combinedGuestMap.set(item.id, { ...item });
+      }
+      for (const item of inMemoryGuestItems) {
+        combinedGuestMap.set(item.id, { ...item });
+      }
+      const preLoginGuestItems = Array.from(combinedGuestMap.values());
+
+      let items: CartItem[] = [];
+      let couponCode: string | null = get().couponCode;
+      let discountPercent = get().discountPercent;
+      let isFreeShippingCoupon = get().isFreeShippingCoupon;
+
+      try {
+        // 1. Fetch from Supabase user_carts table (single source of truth for the account)
+        const { data: dbCart, error } = await supabase
+          .from('user_carts')
+          .select('*')
+          .eq('user_id', newUserId)
+          .maybeSingle();
+
+        if (dbCart && !error) {
+          items = Array.isArray(dbCart.items) ? dbCart.items : [];
+          couponCode = dbCart.coupon_code || couponCode || null;
+          discountPercent = Number(dbCart.discount_percent) || discountPercent || 0;
+          isFreeShippingCoupon = !!dbCart.is_free_shipping || isFreeShippingCoupon;
+        }
+      } catch (e) {
+        console.error("Error loading cart from database:", e);
+      }
+
+      // 2. Merge guest items captured before login/registration into the user's cart
+      if (preLoginGuestItems.length > 0) {
+        setGuestCartItems([]);
+
+        const mergedMap = new Map<string, CartItem>();
+        for (const it of items) {
+          mergedMap.set(it.id, { ...it });
+        }
+        for (const git of preLoginGuestItems) {
+          if (mergedMap.has(git.id)) {
+            const existing = mergedMap.get(git.id)!;
+            mergedMap.set(git.id, {
+              ...existing,
+              quantity: Math.max(existing.quantity, git.quantity),
+            });
+          } else {
+            mergedMap.set(git.id, { ...git });
+          }
+        }
+        items = Array.from(mergedMap.values());
+
+        // Sync merged cart to Supabase for this user
+        const payload: CartStoragePayload = {
+          items,
+          couponCode,
+          discountPercent,
+          isFreeShippingCoupon,
+        };
+        await syncCartToDatabase(newUserId, payload);
+      }
+
+      set({
+        currentUserId: newUserId,
         items,
         couponCode,
         discountPercent,
         isFreeShippingCoupon,
-      };
-      await syncCartToDatabase(newUserId, payload);
-    }
-
-    set({
-      currentUserId: newUserId,
-      items,
-      couponCode,
-      discountPercent,
-      isFreeShippingCoupon,
-      isOpen: false,
+      });
+    })().finally(() => {
+      cartInitPromise = null;
+      cartInitTargetUser = null;
     });
+
+    return cartInitPromise;
   },
 
   addItem: (product, quantity = 1, color, size) => {
