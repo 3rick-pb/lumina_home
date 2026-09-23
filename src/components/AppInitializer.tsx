@@ -7,6 +7,7 @@ import { useUserStore, hydrateStoreFromClient } from "@/lib/userStore";
 import { useRadarStore } from "@/lib/radarStore";
 import { useCartStore } from "@/lib/store";
 import { useBrand } from "@/core/hooks/useBrand";
+import { initSilentAudioEngine } from "@/lib/soundUtils";
 
 // Ensure 60-144 FPS animations always run on performance OS builds (e.g. WinterOS) where Windows disables OS desktop animations
 if (typeof window !== "undefined" && typeof window.matchMedia === "function") {
@@ -239,6 +240,7 @@ export function AppInitializer() {
   const initializeAuth = useUserStore((state) => state.initializeAuth);
 
   useEffect(() => {
+    initSilentAudioEngine();
     hydrateStoreFromClient();
     fetchProducts();
     initializeAuth();

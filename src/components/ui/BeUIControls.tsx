@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useEffect, useRef, useState } from "react";
-import { motion, AnimatePresence, MotionConfig } from "framer-motion";
 import { Minus, Plus } from "lucide-react";
 import {
   resolvePreset,
@@ -10,31 +9,11 @@ import {
   MODE_FRAMES,
   type OrbState,
 } from "thinking-orbs";
-
-// Ensure 60-144 FPS animations run even if OS prefers-reduced-motion is enabled (e.g., WinterOS)
-if (typeof window !== "undefined" && typeof window.matchMedia === "function") {
-  const origMatchMedia = window.matchMedia.bind(window);
-  window.matchMedia = (query: string): MediaQueryList => {
-    if (query && query.includes("prefers-reduced-motion")) {
-      return {
-        matches: false,
-        media: query,
-        onchange: null,
-        addListener: () => {},
-        removeListener: () => {},
-        addEventListener: () => {},
-        removeEventListener: () => {},
-        dispatchEvent: () => false,
-      } as MediaQueryList;
-    }
-    return origMatchMedia(query);
-  };
-}
+import { playStepperTickSound } from "@/lib/soundUtils";
 
 /**
  * Giant High-Framerate (60-144 FPS) Thinking Orb Canvas
- * Renders the 3D dotted sphere from `thinking-orbs` at large scale (e.g. 400x400px)
- * with an unconditional requestAnimationFrame loop and zero 1-second freezes.
+ * Supports all 9 `thinking-orbs` states including `state="solving"`, rendered at large scale (e.g. 420x420px).
  */
 interface FluidGiantThinkingOrbProps {
   size?: number;
@@ -45,7 +24,7 @@ interface FluidGiantThinkingOrbProps {
 
 export function FluidGiantThinkingOrb({
   size = 420,
-  state = "searching",
+  state = "solving",
   speed = 1.15,
   className = "",
 }: FluidGiantThinkingOrbProps) {
@@ -82,7 +61,6 @@ export function FluidGiantThinkingOrb({
 
       const frameData = frameFn(size, tSec, opts);
 
-      // Paint subtle connecting lines if mode produces them
       if (frameData.lines && frameData.lines.length > 0) {
         for (const l of frameData.lines) {
           const alpha = l.a ?? 1;
@@ -97,14 +75,13 @@ export function FluidGiantThinkingOrb({
         }
       }
 
-      // Paint 3D depth-sorted dots
       for (const d of frameData.dots) {
         const alpha = d.a ?? 1;
         const w = Math.min(1, Math.max(0, d.white));
         const brightness = Math.round((1 - w * 0.72) * 255);
         ctx.fillStyle = `rgba(${brightness},${brightness},${brightness},${alpha})`;
         ctx.beginPath();
-        ctx.arc(d.x, d.y, Math.max(1.1, d.r), 0, Math.PI * 2);
+        ctx.arc(d.x, d.y, Math.max(1.15, d.r), 0, Math.PI * 2);
         ctx.fill();
       }
 
@@ -123,7 +100,7 @@ export function FluidGiantThinkingOrb({
     <canvas
       ref={canvasRef}
       role="img"
-      aria-label="Thinking Orb Animation"
+      aria-label="Thinking Orb Solving Animation"
       className={`block select-none pointer-events-none ${className}`}
       style={{ width: size, height: size, maxWidth: "78vw", maxHeight: "78vw" }}
     />
@@ -131,8 +108,66 @@ export function FluidGiantThinkingOrb({
 }
 
 /**
- * beUI Adaptive Stepper (Exact match to Video Referencia.mp4 @ 00:19)
- * Circular '-' and '+' buttons flanking a spring-animated capsule whose digits roll vertically with motion blur.
+ * Hardware-accelerated 10-digit vertical odometer wheel (0..9).
+ * Uses GPU `translate3d` + spring overshoot `cubic-bezier(0.22, 1.35, 0.36, 1)`
+ * so digits visibly roll through intermediate values even when OS reduced-motion is enabled.
+ */
+const DIGITS = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
+
+function OdometerDigitWheel({
+  digit,
+  delayMs = 0,
+}: {
+  digit: number;
+  delayMs?: number;
+}) {
+  const [isRolling, setIsRolling] = useState(false);
+  const prevDigitRef = useRef(digit);
+
+  useEffect(() => {
+    if (digit !== prevDigitRef.current) {
+      prevDigitRef.current = digit;
+      setIsRolling(true);
+      const t = setTimeout(() => setIsRolling(false), 460 + delayMs);
+      return () => clearTimeout(t);
+    }
+  }, [digit, delayMs]);
+
+  return (
+    <span
+      className="relative inline-block overflow-hidden align-baseline"
+      style={{
+        width: "0.62em",
+        height: "1.22em",
+        verticalAlign: "bottom",
+      }}
+    >
+      <span
+        className="flex flex-col items-center w-full"
+        style={{
+          height: "12.2em",
+          transform: `translate3d(0, -${digit * 1.22}em, 0)`,
+          transition: `transform 520ms cubic-bezier(0.22, 1.35, 0.36, 1) ${delayMs}ms, filter 280ms ease ${delayMs}ms`,
+          filter: isRolling ? "blur(1.1px)" : "blur(0px)",
+          willChange: "transform, filter",
+        }}
+      >
+        {DIGITS.map((num) => (
+          <span
+            key={num}
+            className="flex items-center justify-center select-none"
+            style={{ height: "1.22em", lineHeight: "1.22em" }}
+          >
+            {num}
+          </span>
+        ))}
+      </span>
+    </span>
+  );
+}
+
+/**
+ * beUI Adaptive Stepper (Physical UX with Odometer Drum, Elastic Recoil & Tactile Sound)
  */
 interface BeUIAdaptiveStepperProps {
   value: number;
@@ -150,7 +185,6 @@ interface BeUIAdaptiveStepperProps {
 
 export function BeUIAdaptiveStepper({
   value,
-  min = 1,
   max = 999,
   disabled = false,
   disableIncrement = false,
@@ -161,19 +195,16 @@ export function BeUIAdaptiveStepper({
   incrementTitle = "Aumentar",
   decrementTitle = "Disminuir",
 }: BeUIAdaptiveStepperProps) {
-  const prevValueRef = useRef<number>(value);
-  const [direction, setDirection] = useState<1 | -1>(1);
+  const [pulseState, setPulseState] = useState<"idle" | "up" | "down">("idle");
+  const [pressedBtn, setPressedBtn] = useState<"none" | "minus" | "plus">("none");
 
-  useEffect(() => {
-    if (value > prevValueRef.current) {
-      setDirection(1);
-    } else if (value < prevValueRef.current) {
-      setDirection(-1);
-    }
-    prevValueRef.current = value;
-  }, [value]);
+  const triggerPulse = (dir: "up" | "down") => {
+    setPulseState(dir);
+    playStepperTickSound(dir);
+    setTimeout(() => setPulseState("idle"), 320);
+  };
 
-  const formatted = String(Math.max(0, value));
+  const formatted = value < 10 ? `0${Math.max(0, value)}` : String(Math.max(0, value));
   const chars = formatted.split("");
 
   const btnDims =
@@ -185,118 +216,122 @@ export function BeUIAdaptiveStepper({
 
   const pillDims =
     size === "sm"
-      ? "min-w-[46px] h-7 px-2.5 text-xs"
+      ? "min-w-[48px] h-7 px-2.5 text-xs"
       : size === "lg"
-      ? "min-w-[64px] h-9 px-4 text-sm"
-      : "min-w-[54px] h-8 px-3.5 text-xs sm:text-sm";
+      ? "min-w-[66px] h-9 px-4 text-sm"
+      : "min-w-[56px] h-8 px-3.5 text-xs sm:text-sm";
 
   const iconSize = size === "sm" ? "w-3 h-3" : "w-3.5 h-3.5";
 
   return (
-    <MotionConfig reducedMotion="never">
-      <div className="inline-flex items-center gap-1.5 select-none">
-        {/* Left Circular Minus Button */}
-        <motion.button
-          type="button"
-          whileHover={disabled || disableDecrement ? undefined : { scale: 1.06 }}
-          whileTap={disabled || disableDecrement ? undefined : { scale: 0.86 }}
-          transition={{ type: "spring", stiffness: 540, damping: 24 }}
-          disabled={disabled || disableDecrement}
-          onClick={(e) => {
-            e.stopPropagation();
-            if (disabled || disableDecrement) return;
-            onDecrement();
-          }}
-          title={decrementTitle}
-          className={`${btnDims} rounded-full flex items-center justify-center border border-gray-200/90 dark:border-white/15 shadow-xs transition-colors cursor-pointer ${
-            disabled || disableDecrement
-              ? "bg-gray-100 dark:bg-white/5 text-gray-300 dark:text-gray-600 cursor-not-allowed opacity-45"
-              : "bg-white dark:bg-[#1e1e22] hover:bg-gray-50 dark:hover:bg-[#2a2a30] text-gray-800 dark:text-gray-100"
-          }`}
-        >
-          <Minus className={iconSize} />
-        </motion.button>
+    <div className="inline-flex items-center gap-1.5 select-none">
+      {/* Left Circular Minus Button */}
+      <button
+        type="button"
+        disabled={disabled || disableDecrement}
+        onMouseDown={() => setPressedBtn("minus")}
+        onMouseUp={() => setPressedBtn("none")}
+        onMouseLeave={() => setPressedBtn("none")}
+        onClick={(e) => {
+          e.stopPropagation();
+          if (disabled || disableDecrement) return;
+          triggerPulse("down");
+          onDecrement();
+        }}
+        title={decrementTitle}
+        style={{
+          transform:
+            pressedBtn === "minus"
+              ? "scale(0.82)"
+              : pulseState === "down"
+              ? "scale(0.92)"
+              : "scale(1)",
+          transition: "transform 280ms cubic-bezier(0.34, 1.56, 0.64, 1), background-color 200ms ease, border-color 200ms ease",
+        }}
+        className={`${btnDims} rounded-full flex items-center justify-center border shadow-xs cursor-pointer ${
+          disabled || disableDecrement
+            ? "bg-gray-100 dark:bg-white/5 border-gray-200 dark:border-white/10 text-gray-300 dark:text-gray-600 cursor-not-allowed opacity-45"
+            : "bg-white dark:bg-[#1e1e22] border-gray-200/90 dark:border-white/15 hover:border-gray-400 dark:hover:border-white/35 hover:bg-gray-50 dark:hover:bg-[#2a2a30] text-gray-800 dark:text-gray-100"
+        }`}
+      >
+        <Minus className={iconSize} />
+      </button>
 
-        {/* Center Adaptive Value Pill with Rolling Digits */}
-        <motion.div
-          layout
-          transition={{ type: "spring", stiffness: 500, damping: 32 }}
-          className={`${pillDims} rounded-full bg-white dark:bg-[#18181b] border border-gray-200/90 dark:border-white/15 shadow-inner flex items-center justify-center overflow-hidden font-mono font-bold text-gray-950 dark:text-white`}
-        >
-          <div className="inline-flex items-center justify-center">
-            {chars.map((char, idx) => (
-              <span
-                key={`step-slot-${idx}`}
-                className="relative inline-flex justify-center overflow-hidden leading-none"
-                style={{ width: "0.64em", height: "1.2em" }}
-              >
-                <AnimatePresence mode="popLayout" initial={false} custom={direction}>
-                  <motion.span
-                    key={`${idx}-${char}`}
-                    custom={direction}
-                    initial={{
-                      y: direction * 15,
-                      opacity: 0,
-                      filter: "blur(3px)",
-                      scale: 0.85,
-                    }}
-                    animate={{
-                      y: 0,
-                      opacity: 1,
-                      filter: "blur(0px)",
-                      scale: 1,
-                    }}
-                    exit={{
-                      y: direction * -15,
-                      opacity: 0,
-                      filter: "blur(3px)",
-                      scale: 0.85,
-                    }}
-                    transition={{
-                      type: "spring",
-                      stiffness: 520,
-                      damping: 28,
-                      mass: 0.55,
-                    }}
-                    className="inline-block"
-                  >
-                    {char}
-                  </motion.span>
-                </AnimatePresence>
-              </span>
-            ))}
-          </div>
-        </motion.div>
-
-        {/* Right Circular Plus Button */}
-        <motion.button
-          type="button"
-          whileHover={disabled || disableIncrement || value >= max ? undefined : { scale: 1.06 }}
-          whileTap={disabled || disableIncrement || value >= max ? undefined : { scale: 0.86 }}
-          transition={{ type: "spring", stiffness: 540, damping: 24 }}
-          disabled={disabled || disableIncrement || value >= max}
-          onClick={(e) => {
-            e.stopPropagation();
-            if (disabled || disableIncrement || value >= max) return;
-            onIncrement();
-          }}
-          title={incrementTitle}
-          className={`${btnDims} rounded-full flex items-center justify-center border border-gray-200/90 dark:border-white/15 shadow-xs transition-colors cursor-pointer ${
-            disabled || disableIncrement || value >= max
-              ? "bg-gray-100 dark:bg-white/5 text-gray-300 dark:text-gray-600 cursor-not-allowed opacity-45"
-              : "bg-white dark:bg-[#1e1e22] hover:bg-gray-50 dark:hover:bg-[#2a2a30] text-gray-800 dark:text-gray-100"
-          }`}
-        >
-          <Plus className={iconSize} />
-        </motion.button>
+      {/* Center Adaptive Value Pill with Physical Odometer Drum & Recoil */}
+      <div
+        style={{
+          transform:
+            pulseState === "up"
+              ? "translate3d(0, -2.5px, 0) scale(1.07)"
+              : pulseState === "down"
+              ? "translate3d(0, 2.5px, 0) scale(0.95)"
+              : "translate3d(0, 0, 0) scale(1)",
+          transition:
+            "transform 360ms cubic-bezier(0.22, 1.4, 0.36, 1), box-shadow 300ms ease, border-color 300ms ease",
+        }}
+        className={`${pillDims} rounded-full bg-white dark:bg-[#18181b] border flex items-center justify-center overflow-hidden font-mono font-bold text-gray-950 dark:text-white ${
+          pulseState === "up"
+            ? "border-emerald-500/60 shadow-[0_0_16px_rgba(16,185,129,0.22)]"
+            : pulseState === "down"
+            ? "border-amber-500/60 shadow-[0_0_16px_rgba(245,158,11,0.2)]"
+            : "border-gray-200/90 dark:border-white/15 shadow-inner"
+        }`}
+      >
+        <div className="inline-flex items-center justify-center leading-none">
+          {chars.map((char, idx) => {
+            const num = parseInt(char, 10);
+            if (isNaN(num)) {
+              return <span key={`sep-${idx}`}>{char}</span>;
+            }
+            return (
+              <OdometerDigitWheel
+                key={`slot-${idx}`}
+                digit={num}
+                delayMs={idx * 30}
+              />
+            );
+          })}
+        </div>
       </div>
-    </MotionConfig>
+
+      {/* Right Circular Plus Button */}
+      <button
+        type="button"
+        disabled={disabled || disableIncrement || value >= max}
+        onMouseDown={() => setPressedBtn("plus")}
+        onMouseUp={() => setPressedBtn("none")}
+        onMouseLeave={() => setPressedBtn("none")}
+        onClick={(e) => {
+          e.stopPropagation();
+          if (disabled || disableIncrement || value >= max) return;
+          triggerPulse("up");
+          onIncrement();
+        }}
+        title={incrementTitle}
+        style={{
+          transform:
+            pressedBtn === "plus"
+              ? "scale(0.82)"
+              : pulseState === "up"
+              ? "scale(1.08)"
+              : "scale(1)",
+          transition: "transform 280ms cubic-bezier(0.34, 1.56, 0.64, 1), background-color 200ms ease, border-color 200ms ease",
+        }}
+        className={`${btnDims} rounded-full flex items-center justify-center border shadow-xs cursor-pointer ${
+          disabled || disableIncrement || value >= max
+            ? "bg-gray-100 dark:bg-white/5 border-gray-200 dark:border-white/10 text-gray-300 dark:text-gray-600 cursor-not-allowed opacity-45"
+            : "bg-white dark:bg-[#1e1e22] border-gray-200/90 dark:border-white/15 hover:border-gray-400 dark:hover:border-white/35 hover:bg-gray-50 dark:hover:bg-[#2a2a30] text-gray-800 dark:text-gray-100"
+        }`}
+      >
+        <Plus className={iconSize} />
+      </button>
+    </div>
   );
 }
 
 /**
- * beUI Number Animation — Digit Swap (Exact match to Video Referencia.mp4 @ 00:17)
- * Fixed-slot digits that roll on change with controllable direction, stagger, and blur motion.
+ * beUI Number Animation — Digit Swap Odometer (Video Referencia.mp4 @ 00:17)
+ * Every price change physically rolls each individual digit column with staggered spring physics.
  */
 interface BeUIRollingPriceProps {
   amount: number;
@@ -311,66 +346,54 @@ export function BeUIRollingPrice({
   suffix = "",
   className = "",
 }: BeUIRollingPriceProps) {
-  const prevRef = useRef<number>(amount);
-  const [dir, setDir] = useState<1 | -1>(1);
+  const [highlight, setHighlight] = useState(false);
+  const prevAmountRef = useRef(amount);
 
   useEffect(() => {
-    if (amount > prevRef.current) setDir(1);
-    else if (amount < prevRef.current) setDir(-1);
-    prevRef.current = amount;
+    if (Math.abs(amount - prevAmountRef.current) > 0.001) {
+      prevAmountRef.current = amount;
+      setHighlight(true);
+      const t = setTimeout(() => setHighlight(false), 450);
+      return () => clearTimeout(t);
+    }
   }, [amount]);
 
   const formatted = `${prefix}${amount.toFixed(2)}`;
   const chars = formatted.split("");
 
   return (
-    <MotionConfig reducedMotion="never">
-      <span className={`inline-flex items-baseline overflow-hidden ${className}`}>
-        {chars.map((ch, i) => {
-          const isDigit = /[0-9]/.test(ch);
-          if (!isDigit) {
-            return (
-              <span key={`sep-${i}`} className="inline-block">
-                {ch}
-              </span>
-            );
-          }
+    <span
+      style={{
+        transform: highlight ? "scale(1.04)" : "scale(1)",
+        transition: "transform 360ms cubic-bezier(0.22, 1.35, 0.36, 1), color 300ms ease",
+      }}
+      className={`inline-flex items-baseline ${className}`}
+    >
+      {chars.map((ch, i) => {
+        const num = parseInt(ch, 10);
+        if (isNaN(num)) {
           return (
-            <span
-              key={`digit-col-${i}`}
-              className="relative inline-flex justify-center overflow-hidden leading-none"
-              style={{ width: "0.61em", height: "1.12em" }}
-            >
-              <AnimatePresence mode="popLayout" initial={false}>
-                <motion.span
-                  key={`${i}-${ch}`}
-                  initial={{ y: dir * 15, opacity: 0, filter: "blur(2.5px)" }}
-                  animate={{ y: 0, opacity: 1, filter: "blur(0px)" }}
-                  exit={{ y: dir * -15, opacity: 0, filter: "blur(2.5px)" }}
-                  transition={{
-                    type: "spring",
-                    stiffness: 480,
-                    damping: 30,
-                    mass: 0.55,
-                    delay: i * 0.014,
-                  }}
-                  className="inline-block"
-                >
-                  {ch}
-                </motion.span>
-              </AnimatePresence>
+            <span key={`sym-${i}`} className="inline-block">
+              {ch}
             </span>
           );
-        })}
-        {suffix && <span className="ml-1">{suffix}</span>}
-      </span>
-    </MotionConfig>
+        }
+        return (
+          <OdometerDigitWheel
+            key={`price-digit-${chars.length - i}`}
+            digit={num}
+            delayMs={i * 25}
+          />
+        );
+      })}
+      {suffix && <span className="ml-1">{suffix}</span>}
+    </span>
   );
 }
 
 /**
- * beUI Action Swap — Cascade CTA (Exact match to Video Referencia.mp4 @ 00:18)
- * Letter-by-letter slot roll with blur motion when swapping between idle and active states.
+ * beUI Action Swap — Cascade Dual-Track Slot Roll (Video Referencia.mp4 @ 00:18)
+ * Physically rolls each character vertically left-to-right with staggered cubic-bezier spring timing.
  */
 interface BeUIActionSwapLabelProps {
   active: boolean;
@@ -389,48 +412,73 @@ export function BeUIActionSwapLabel({
   activeIcon,
   className = "",
 }: BeUIActionSwapLabelProps) {
-  const currentText = active ? activeText : idleText;
-  const currentIcon = active ? activeIcon : idleIcon;
-  const letters = currentText.split("");
+  const maxLen = Math.max(idleText.length, activeText.length);
+  const paddedIdle = idleText.padEnd(maxLen, " ");
+  const paddedActive = activeText.padEnd(maxLen, " ");
 
   return (
-    <MotionConfig reducedMotion="never">
-      <span className={`inline-flex items-center justify-center gap-2 ${className}`}>
-        <AnimatePresence mode="popLayout" initial={false}>
-          <motion.span
-            key={active ? "icon-active" : "icon-idle"}
-            initial={{ scale: 0.5, opacity: 0, filter: "blur(4px)" }}
-            animate={{ scale: 1, opacity: 1, filter: "blur(0px)" }}
-            exit={{ scale: 0.5, opacity: 0, filter: "blur(4px)" }}
-            transition={{ type: "spring", stiffness: 520, damping: 28 }}
-            className="inline-flex items-center shrink-0"
-          >
-            {currentIcon}
-          </motion.span>
-        </AnimatePresence>
-
-        <span className="inline-flex items-center overflow-hidden py-0.5">
-          <AnimatePresence mode="popLayout" initial={false}>
-            {letters.map((char, idx) => (
-              <motion.span
-                key={`${active ? "act" : "idl"}-${idx}-${char}`}
-                initial={{ y: 14, opacity: 0, filter: "blur(3px)" }}
-                animate={{ y: 0, opacity: 1, filter: "blur(0px)" }}
-                exit={{ y: -14, opacity: 0, filter: "blur(3px)" }}
-                transition={{
-                  type: "spring",
-                  stiffness: 520,
-                  damping: 30,
-                  delay: idx * 0.012,
-                }}
-                className="inline-block whitespace-pre"
-              >
-                {char}
-              </motion.span>
-            ))}
-          </AnimatePresence>
+    <span className={`inline-flex items-center justify-center gap-2 ${className}`}>
+      {/* Dual-State Icon Slot */}
+      <span className="relative inline-flex items-center justify-center w-5 h-5 overflow-hidden shrink-0">
+        <span
+          style={{
+            transform: active ? "translate3d(0, -120%, 0) scale(0.5)" : "translate3d(0, 0%, 0) scale(1)",
+            opacity: active ? 0 : 1,
+            filter: active ? "blur(3px)" : "blur(0px)",
+            transition: "transform 420ms cubic-bezier(0.22, 1.3, 0.36, 1), opacity 280ms ease, filter 280ms ease",
+          }}
+          className="absolute inset-0 flex items-center justify-center"
+        >
+          {idleIcon}
+        </span>
+        <span
+          style={{
+            transform: active ? "translate3d(0, 0%, 0) scale(1.1)" : "translate3d(0, 120%, 0) scale(0.5)",
+            opacity: active ? 1 : 0,
+            filter: active ? "blur(0px)" : "blur(3px)",
+            transition: "transform 420ms cubic-bezier(0.22, 1.3, 0.36, 1) 40ms, opacity 280ms ease 40ms, filter 280ms ease",
+          }}
+          className="absolute inset-0 flex items-center justify-center"
+        >
+          {activeIcon}
         </span>
       </span>
-    </MotionConfig>
+
+      {/* Letter-by-Letter Staggered Cascade Slot Roll */}
+      <span className="inline-flex items-center overflow-hidden" style={{ height: "1.35em" }}>
+        {Array.from({ length: maxLen }).map((_, idx) => {
+          const idleChar = paddedIdle[idx] || " ";
+          const activeChar = paddedActive[idx] || " ";
+          const delay = idx * 15;
+
+          return (
+            <span
+              key={idx}
+              className="relative inline-flex flex-col overflow-hidden"
+              style={{
+                height: "1.35em",
+                lineHeight: "1.35em",
+              }}
+            >
+              <span
+                style={{
+                  transform: active ? "translate3d(0, -100%, 0)" : "translate3d(0, 0%, 0)",
+                  transition: `transform 460ms cubic-bezier(0.22, 1.28, 0.36, 1) ${delay}ms`,
+                  willChange: "transform",
+                }}
+                className="flex flex-col"
+              >
+                <span className="inline-block whitespace-pre" style={{ height: "1.35em" }}>
+                  {idleChar}
+                </span>
+                <span className="inline-block whitespace-pre font-bold" style={{ height: "1.35em" }}>
+                  {activeChar}
+                </span>
+              </span>
+            </span>
+          );
+        })}
+      </span>
+    </span>
   );
 }

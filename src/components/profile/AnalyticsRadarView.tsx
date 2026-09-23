@@ -904,40 +904,40 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
       <div className="absolute -top-32 left-1/2 -translate-x-1/2 w-[700px] h-80 bg-[#ccff00]/5 rounded-full blur-3xl pointer-events-none" />
 
       {/* ========================================================================= */}
-      {/* 0. 5-SECOND PURE THINKING ORB SCREEN (ONLY THE GIANT FLUID ANIMATION)      */}
+      {/* 0. 5-SECOND PURE THINKING ORB SCREEN (DARK FROSTED GLASS + SOLVING ORB)   */}
       {/* ========================================================================= */}
       <AnimatePresence>
         {isPreparingRadar && (
           <motion.div
             key="radar-preparation-overlay"
-            initial={{ opacity: 1 }}
+            initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.45, ease: "easeOut" }}
-            className="absolute inset-0 z-[100] bg-[#181b1a] flex items-center justify-center select-none"
+            className="absolute inset-0 z-[100] bg-zinc-900/60 backdrop-blur-2xl border border-white/10 shadow-[inset_0_1px_1px_rgba(255,255,255,0.12)] flex items-center justify-center select-none"
           >
-            <FluidGiantThinkingOrb
-              size={420}
-              state="searching"
-              speed={1.18}
-              className="w-[320px] h-[320px] sm:w-[400px] sm:h-[400px] lg:w-[440px] lg:h-[440px]"
-            />
+            <div className="relative flex items-center justify-center p-8 rounded-[3rem] bg-zinc-950/35 backdrop-blur-xl border border-white/[0.08] shadow-[0_28px_80px_rgba(0,0,0,0.55),inset_0_1px_1px_rgba(255,255,255,0.12)]">
+              <FluidGiantThinkingOrb
+                size={420}
+                state="solving"
+                speed={1.18}
+                className="w-[320px] h-[320px] sm:w-[400px] sm:h-[400px] lg:w-[440px] lg:h-[440px]"
+              />
+            </div>
           </motion.div>
         )}
       </AnimatePresence>
 
-      {/* Wrap all Radar map & HUD layers so NOTHING else is visible during the 5s animation */}
-      <div
-        className={`absolute inset-0 transition-opacity duration-500 ${
-          isPreparingRadar ? "opacity-0 pointer-events-none invisible" : "opacity-100"
-        }`}
-      >
+      {/* Base wrapper: map refracts softly through the dark frosted glass while HUD stays 100% hidden */}
+      <div className="absolute inset-0">
       {/* ========================================================================= */}
       {/* 2. THE MAIN HERO: INTERACTIVE WEBGL MAPBOX / MAPLIBRE VECTOR MAP          */}
       {/* ========================================================================= */}
       <div 
         ref={mapContainerRef}
-        className="absolute inset-0 z-10 overflow-hidden"
+        className={`absolute inset-0 z-10 overflow-hidden transition-all duration-700 ${
+          isPreparingRadar ? "opacity-45 scale-[1.02] pointer-events-none" : "opacity-100 scale-100"
+        }`}
       >
         <RadarMapboxCanvas
           selectedCountry={selectedCountry}
@@ -946,7 +946,7 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
           resetCommandSeq={resetCommandSeq}
           onMapReady={() => setIsMapLoaded(true)}
           onCanvasClick={() => setSelectedClientId(null)}
-          renderOverlayPins={(projectPin) => (
+          renderOverlayPins={(projectPin) => isPreparingRadar ? null : (
             <>
               {/* ========================================================================= */}
               {/* 1. CLUSTER BEACONS (Rendered when multiple clients exist in the same city) */}
@@ -1297,6 +1297,12 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
         />
       </div>
 
+      {/* Hide all HUD panels during the 5-second dark frosted glass Solving animation */}
+      <div
+        className={`absolute inset-0 pointer-events-none transition-opacity duration-500 ${
+          isPreparingRadar ? "opacity-0 pointer-events-none invisible" : "opacity-100"
+        }`}
+      >
       {/* ========================================================================= */}
       {/* 3. TOP FLOATING COMMAND BAR (Branded Search Bar + Modes + Admin Location)  */}
       {/* ========================================================================= */}
@@ -2404,6 +2410,7 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
           );
         })()}
 
+      </div>
       </div>
       </div>
 

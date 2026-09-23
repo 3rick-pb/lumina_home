@@ -3,10 +3,11 @@
 import React from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { Heart, ShoppingBag } from "lucide-react";
+import { Heart, ShoppingBag, Check } from "lucide-react";
 import { useCartStore } from "@/lib/store";
 import { useCatalogStore, isAgotadoBadge } from "@/lib/catalogStore";
 import { useUserStore } from "@/lib/userStore";
+import { BeUIActionSwapLabel } from "@/components/ui/BeUIControls";
 
 import { normalizeImageUrl } from "@/lib/imageUtils";
 
@@ -24,8 +25,10 @@ interface ProductCardProps {
 
 export function ProductCard({ id, title, price, oldPrice, discount, badge, imageUrl, colors, stock }: ProductCardProps) {
   const { addItem } = useCartStore();
-  const { toggleFavorite, isFavorite, isAuthenticated } = useUserStore();
+  const { toggleFavorite, isFavorite } = useUserStore();
   const [isMounted, setIsMounted] = React.useState(false);
+  const [isAdding, setIsAdding] = React.useState(false);
+  const [heartPop, setHeartPop] = React.useState(false);
   
   React.useEffect(() => {
     setIsMounted(true);
@@ -54,13 +57,19 @@ export function ProductCard({ id, title, price, oldPrice, discount, badge, image
           </div>
         )}
         <button 
-          className={`absolute top-2 right-2 sm:top-3 sm:right-3 w-7 h-7 sm:w-8 sm:h-8 backdrop-blur-sm transform-gpu border rounded-full flex items-center justify-center transition-all z-10 shadow-sm opacity-100 sm:opacity-0 sm:group-hover:opacity-100 sm:translate-y-2 sm:group-hover:translate-y-0 ${isFav ? 'bg-red-500/10 border-red-500 text-red-500' : 'bg-white/60 dark:bg-black/60 border-white/70 dark:border-white/20 text-gray-600 dark:text-gray-300 hover:text-red-500 hover:bg-white/80 dark:hover:bg-white/20'}`}
+          style={{
+            transform: heartPop ? "scale3d(1.32, 1.32, 1)" : undefined,
+            transition: "transform 420ms cubic-bezier(0.22, 1.35, 0.36, 1), background-color 200ms ease, opacity 200ms ease",
+          }}
+          className={`absolute top-2 right-2 sm:top-3 sm:right-3 w-7 h-7 sm:w-8 sm:h-8 backdrop-blur-sm transform-gpu border rounded-full flex items-center justify-center z-10 shadow-sm opacity-100 sm:opacity-0 sm:group-hover:opacity-100 sm:translate-y-2 sm:group-hover:translate-y-0 cursor-pointer ${isFav ? 'bg-red-500/15 border-red-500 text-red-500 shadow-[0_0_12px_rgba(239,68,68,0.3)]' : 'bg-white/60 dark:bg-black/60 border-white/70 dark:border-white/20 text-gray-600 dark:text-gray-300 hover:text-red-500 hover:bg-white/80 dark:hover:bg-white/20'}`}
           onClick={(e) => { 
             e.preventDefault(); 
+            setHeartPop(true);
+            setTimeout(() => setHeartPop(false), 320);
             toggleFavorite(id);
           }}
         >
-          <Heart className={`w-3.5 h-3.5 sm:w-4 sm:h-4 ${isFav ? 'fill-current' : ''}`} />
+          <Heart className={`w-3.5 h-3.5 sm:w-4 sm:h-4 transition-transform duration-300 ${isFav ? 'fill-current scale-110' : ''}`} />
         </button>
 
         <Image
@@ -122,14 +131,22 @@ export function ProductCard({ id, title, price, oldPrice, discount, badge, image
         
         <button 
           disabled={isAgotado}
-          className={`mt-auto w-full py-1.5 sm:py-2.5 rounded-lg sm:rounded-xl backdrop-blur-md border text-xs sm:text-sm font-medium flex items-center justify-center gap-1.5 sm:gap-2 transition-all shadow-sm ${
+          style={{
+            transform: isAdding ? "scale3d(0.96, 0.96, 1)" : "scale3d(1, 1, 1)",
+            transition: "transform 420ms cubic-bezier(0.22, 1.35, 0.36, 1), background-color 220ms ease, border-color 220ms ease",
+          }}
+          className={`mt-auto w-full py-1.5 sm:py-2.5 rounded-lg sm:rounded-xl backdrop-blur-md border text-xs sm:text-sm font-medium flex items-center justify-center gap-1.5 sm:gap-2 shadow-sm cursor-pointer ${
             isAgotado 
               ? "bg-gray-100/90 dark:bg-white/5 border-gray-200 dark:border-white/10 text-gray-400 cursor-not-allowed" 
-              : "bg-white/40 dark:bg-white/10 border-white/60 dark:border-white/15 text-gray-900 dark:text-gray-100 hover:bg-white/60 dark:hover:bg-white/20 active:scale-[0.98]"
+              : isAdding
+                ? "bg-emerald-500/15 dark:bg-emerald-400/15 border-emerald-500/40 text-emerald-800 dark:text-emerald-300 shadow-[0_0_16px_rgba(16,185,129,0.2)]"
+                : "bg-white/40 dark:bg-white/10 border-white/60 dark:border-white/15 text-gray-900 dark:text-gray-100 hover:bg-white/60 dark:hover:bg-white/20 active:scale-[0.96]"
           }`}
           onClick={(e) => { 
             e.preventDefault(); 
             if (isAgotado) return;
+            setIsAdding(true);
+            setTimeout(() => setIsAdding(false), 750);
             const product = useCatalogStore.getState().products.find(p => p.id === id);
             if (product) {
               // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -140,11 +157,13 @@ export function ProductCard({ id, title, price, oldPrice, discount, badge, image
           {isAgotado ? (
             <span className="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-red-600">Agotado</span>
           ) : (
-            <>
-              <ShoppingBag className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> 
-              <span className="inline sm:hidden">Añadir</span>
-              <span className="hidden sm:inline">Añadir rápido</span>
-            </>
+            <BeUIActionSwapLabel
+              active={isAdding}
+              idleText="Añadir a la Bolsa"
+              activeText="¡En tu Bolsa!"
+              idleIcon={<ShoppingBag className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />}
+              activeIcon={<Check className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-emerald-500 shrink-0" />}
+            />
           )}
         </button>
       </div>

@@ -5,6 +5,7 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence, Variants } from "framer-motion";
 import { BeUIAdaptiveStepper, BeUIRollingPrice } from "./BeUIControls";
+import { playStepperTickSound } from "@/lib/soundUtils";
 import { 
  X, 
  Minus, 
@@ -755,44 +756,44 @@ export function CartDrawer() {
     </button>
   </div>
 
-  {/* Center Step Indicator (2IXO Pill Dock with beUI spring pill) - Sits below title on mobile */}
+  {/* Center Step Indicator (2IXO Pill Dock with pure GPU beUI spring pill) - Sits below title on mobile */}
   <div className="flex items-center justify-center w-full sm:w-auto">
-    <div className="relative flex items-center gap-1 bg-black/[0.04] dark:bg-white/[0.06] p-1 rounded-full border border-black/[0.04] dark:border-white/10 backdrop-blur-xl w-full sm:w-auto justify-center">
+    <div className="relative grid grid-cols-2 items-center bg-black/[0.04] dark:bg-white/[0.06] p-1 rounded-full border border-black/[0.04] dark:border-white/10 backdrop-blur-xl w-full sm:w-auto min-w-[270px] sm:min-w-[300px]">
+      {/* Pure GPU CSS Spring Pill Indicator */}
+      <div
+        style={{
+          transform: step === "bag" ? "translate3d(0%, 0, 0)" : "translate3d(100%, 0, 0)",
+          transition: "transform 480ms cubic-bezier(0.22, 1.35, 0.36, 1)",
+        }}
+        className="pointer-events-none absolute top-1 bottom-1 left-1 w-[calc(50%-4px)] rounded-full bg-white dark:bg-[#27272a] shadow-[0_2px_10px_rgba(0,0,0,0.09)] z-0"
+      />
       <button 
-        onClick={() => setStep("bag")}
-        className={`relative z-10 flex-1 sm:flex-initial text-center px-3.5 sm:px-4 py-1.5 rounded-full text-xs font-semibold transition-colors cursor-pointer whitespace-nowrap ${
+        onClick={() => {
+          playStepperTickSound("down");
+          setStep("bag");
+        }}
+        className={`relative z-10 text-center px-3.5 sm:px-4 py-1.5 rounded-full text-xs font-semibold transition-colors cursor-pointer whitespace-nowrap active:scale-95 ${
           step === "bag" 
             ? "text-gray-950 dark:text-white" 
             : "text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100"
         }`}
       >
-        {step === "bag" && (
-          <motion.div
-            layoutId="cart-step-active-pill"
-            transition={{ type: "spring", stiffness: 500, damping: 34 }}
-            className="absolute inset-0 rounded-full bg-white dark:bg-[#27272a] shadow-[0_2px_8px_rgba(0,0,0,0.08)] -z-10"
-          />
-        )}
         1. Bolsa ({items.length})
       </button>
       <button 
         onClick={() => {
-          if (items.length > 0) handleProceedToPayment();
+          if (items.length > 0) {
+            playStepperTickSound("up");
+            handleProceedToPayment();
+          }
         }}
         disabled={items.length === 0}
-        className={`relative z-10 flex-1 sm:flex-initial text-center px-3.5 sm:px-4 py-1.5 rounded-full text-xs font-semibold transition-colors disabled:opacity-40 cursor-pointer whitespace-nowrap ${
+        className={`relative z-10 text-center px-3.5 sm:px-4 py-1.5 rounded-full text-xs font-semibold transition-colors disabled:opacity-40 cursor-pointer whitespace-nowrap active:scale-95 ${
           step === "payment" 
             ? "text-gray-950 dark:text-white" 
             : "text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100"
         }`}
       >
-        {step === "payment" && (
-          <motion.div
-            layoutId="cart-step-active-pill"
-            transition={{ type: "spring", stiffness: 500, damping: 34 }}
-            className="absolute inset-0 rounded-full bg-white dark:bg-[#27272a] shadow-[0_2px_8px_rgba(0,0,0,0.08)] -z-10"
-          />
-        )}
         2. Pasarela de Pago
       </button>
     </div>
@@ -881,9 +882,12 @@ export function CartDrawer() {
       </div>
     </div>
 
-    <h3 className="font-display font-bold text-2xl sm:text-3xl text-gray-950 dark:text-white mb-7 tracking-tight">
+    <h3 className="font-display font-bold text-2xl sm:text-3xl text-gray-950 dark:text-white mb-2.5 tracking-tight">
       Tu bolsa de compras está vacía
     </h3>
+    <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 max-w-md leading-relaxed mb-8">
+      Descubre piezas de iluminación arquitectónica, aromaterapia orgánica y mobiliario de autor diseñadas para transformar la atmósfera de tus espacios. Añade tus artículos favoritos para calcular tu envío inmediato.
+    </p>
 
     {/* 2IXO Dock Capsule CTA Button */}
     <button 
