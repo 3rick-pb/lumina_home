@@ -18,6 +18,7 @@ import {
   Activity, 
   Users, 
   Sparkles,
+  ChevronLeft,
   ChevronRight,
   Globe,
   X,
@@ -259,7 +260,7 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
 
   // Map Density & Cluster Mode States
   const [clusterMode, setClusterMode] = useState<"dispersed" | "clustered">("dispersed");
-  const [scatterRadius] = useState<"normal" | "wide">("normal");
+  const [scatterRadius, setScatterRadius] = useState<"normal" | "wide">("normal");
   const [expandedClusterCity, setExpandedClusterCity] = useState<string | null>(null);
   const [hoveredClusterKey, setHoveredClusterKey] = useState<string | null>(null);
 
@@ -577,6 +578,76 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
     return connectedClients.filter(c => !isClientAdmin(c));
   }, [connectedClients, isClientAdmin]);
 
+  // Dynamic Real-Time Traffic Countries: ONLY countries with >= 1 connected person appear in the slider
+  const activeTrafficCountries = useMemo(() => {
+    const counts: Record<RadarCountryCode, number> = {
+      EC: 0,
+      CO: 0,
+      AR: 0,
+      PE: 0,
+      MX: 0,
+      CL: 0,
+    };
+
+    if (Array.isArray(rawConnectedClients)) {
+      rawConnectedClients.forEach((c) => {
+        if (!c || !c.id || c.isOnline === false) return;
+        const rawCode = (c.countryCode || "").toUpperCase() as RadarCountryCode;
+        const rawCountry = (c.country || "").toLowerCase();
+        if (rawCode && counts[rawCode] !== undefined) {
+          counts[rawCode]++;
+        } else if (rawCountry.includes("colombia")) {
+          counts.CO++;
+        } else if (rawCountry.includes("argentina")) {
+          counts.AR++;
+        } else if (rawCountry.includes("perú") || rawCountry.includes("peru")) {
+          counts.PE++;
+        } else if (rawCountry.includes("méxico") || rawCountry.includes("mexico")) {
+          counts.MX++;
+        } else if (rawCountry.includes("chile")) {
+          counts.CL++;
+        } else {
+          counts.EC++;
+        }
+      });
+    }
+
+    // Ensure current logged-in user in EC is counted
+    if (counts.EC === 0 && currentUser?.id) {
+      counts.EC = 1;
+    }
+
+    const activeList = (Object.keys(RADAR_COUNTRIES) as RadarCountryCode[])
+      .filter((code) => counts[code] > 0)
+      .map((code) => ({
+        code,
+        country: RADAR_COUNTRIES[code],
+        count: counts[code],
+      }));
+
+    if (activeList.length === 0) {
+      return [
+        {
+          code: "EC" as RadarCountryCode,
+          country: RADAR_COUNTRIES.EC,
+          count: Math.max(1, actualClients.length),
+        },
+      ];
+    }
+
+    return activeList;
+  }, [rawConnectedClients, currentUser, actualClients.length]);
+
+  // Auto-switch to an active country if the currently viewed country drops to 0 connected people
+  useEffect(() => {
+    if (
+      activeTrafficCountries.length > 0 &&
+      !activeTrafficCountries.some((item) => item.code === selectedCountry)
+    ) {
+      handleSwitchCountry(activeTrafficCountries[0].code);
+    }
+  }, [activeTrafficCountries, selectedCountry, handleSwitchCountry]);
+
   // Guarantee the active logged-in user is immediately registered and visible on the radar ("Tú")
   useEffect(() => {
     if (currentUser?.id && !currentUser.id.startsWith('vis_') && !currentUser.id.startsWith('guest_')) {
@@ -728,9 +799,9 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
           hasFrequent: grp.clients.some(g => (g.client.purchasesCount || 0) >= 3 || (g.client.frequency && g.client.frequency !== "1ª Vez")),
         });
       } else {
-        // Disperse clients in this city organically so no pins overlap
+        // Disperse clients in this city organically so no pins overlap (1x = 2.5, 2x = 5.2)
         const sorted = [...grp.clients].sort((a, b) => a.client.id.localeCompare(b.client.id));
-        const baseRadius = scatterRadius === "wide" ? 3.8 : 2.5;
+        const baseRadius = scatterRadius === "wide" ? 5.2 : 2.5;
 
         // Stable city angle seed from name characters
         const citySeed = grp.cityName.split("").reduce((acc, char) => acc + char.charCodeAt(0), 0);
@@ -904,7 +975,7 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
       <div className="absolute -top-32 left-1/2 -translate-x-1/2 w-[700px] h-80 bg-[#ccff00]/5 rounded-full blur-3xl pointer-events-none" />
 
       {/* ========================================================================= */}
-      {/* 0. 5-SECOND PURE THINKING ORB SCREEN (DARK FROSTED GLASS + SOLVING ORB)   */}
+      {/* 0. 5-SECOND TECHNICAL TELEMETRY VIEWPORT (UNIFIED CAD GRID + SOLVING ORB) */}
       {/* ========================================================================= */}
       <AnimatePresence>
         {isPreparingRadar && (
@@ -914,16 +985,69 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.45, ease: "easeOut" }}
-            className="absolute inset-0 z-[100] bg-zinc-900/60 backdrop-blur-2xl border border-white/10 shadow-[inset_0_1px_1px_rgba(255,255,255,0.12)] flex items-center justify-center select-none"
+            className="absolute inset-0 z-[100] bg-[#060908]/88 backdrop-blur-2xl flex items-center justify-center overflow-hidden select-none"
           >
-            <div className="relative flex items-center justify-center p-8 rounded-[3rem] bg-zinc-950/35 backdrop-blur-xl border border-white/[0.08] shadow-[0_28px_80px_rgba(0,0,0,0.55),inset_0_1px_1px_rgba(255,255,255,0.12)]">
-              <FluidGiantThinkingOrb
-                size={420}
-                state="solving"
-                speed={1.18}
-                className="w-[320px] h-[320px] sm:w-[400px] sm:h-[400px] lg:w-[440px] lg:h-[440px]"
-              />
+            {/* Technical CAD / Telemetry Micro-Grid Backdrop (Zero Inner Boxes) */}
+            <div
+              className="absolute inset-0 pointer-events-none opacity-80"
+              style={{
+                backgroundImage:
+                  "linear-gradient(to right, rgba(204, 255, 0, 0.04) 1px, transparent 1px), linear-gradient(to bottom, rgba(204, 255, 0, 0.04) 1px, transparent 1px)",
+                backgroundSize: "32px 32px",
+              }}
+            />
+
+            {/* Radial Vignette to blend grid smoothly into deep obsidian edges */}
+            <div
+              className="absolute inset-0 pointer-events-none"
+              style={{
+                background:
+                  "radial-gradient(circle at 50% 50%, transparent 25%, rgba(6, 9, 8, 0.65) 75%, rgba(6, 9, 8, 0.96) 100%)",
+              }}
+            />
+
+            {/* Concentric Technical Radar Polar Range Rings & Axis Crosshairs */}
+            <svg
+              className="absolute w-[620px] h-[620px] sm:w-[740px] sm:h-[740px] pointer-events-none opacity-55"
+              viewBox="0 0 740 740"
+              fill="none"
+            >
+              {/* Horizontal & Vertical Precision Hairlines */}
+              <line x1="0" y1="370" x2="740" y2="370" stroke="rgba(204,255,0,0.09)" strokeWidth="1" strokeDasharray="3 6" />
+              <line x1="370" y1="0" x2="370" y2="740" stroke="rgba(204,255,0,0.09)" strokeWidth="1" strokeDasharray="3 6" />
+              {/* Concentric Range Rings */}
+              <circle cx="370" cy="370" r="175" stroke="rgba(255,255,255,0.07)" strokeWidth="1" strokeDasharray="2 5" />
+              <circle cx="370" cy="370" r="245" stroke="rgba(204,255,0,0.11)" strokeWidth="1" strokeDasharray="6 8" />
+              <circle cx="370" cy="370" r="320" stroke="rgba(255,255,255,0.05)" strokeWidth="1" />
+              {/* Corner Reticle Brackets */}
+              <path d="M 130 160 L 130 130 L 160 130" stroke="rgba(204,255,0,0.3)" strokeWidth="1.5" />
+              <path d="M 610 160 L 610 130 L 580 130" stroke="rgba(204,255,0,0.3)" strokeWidth="1.5" />
+              <path d="M 130 580 L 130 610 L 160 610" stroke="rgba(204,255,0,0.3)" strokeWidth="1.5" />
+              <path d="M 610 580 L 610 610 L 580 610" stroke="rgba(204,255,0,0.3)" strokeWidth="1.5" />
+            </svg>
+
+            {/* Technical Corner Telemetry Readouts */}
+            <div className="absolute top-5 left-6 pointer-events-none flex items-center gap-2 text-[9.5px] font-mono tracking-widest text-[#ccff00]/60 uppercase">
+              <span className="w-1.5 h-1.5 rounded-full bg-[#ccff00] animate-pulse shadow-[0_0_8px_#ccff00]" />
+              <span>SYS.RADAR // EPSG:3857 HD</span>
             </div>
+            <div className="absolute top-5 right-6 pointer-events-none text-[9.5px] font-mono tracking-widest text-white/35 uppercase">
+              <span>{activeCountry.code} • {activeCountry.capital}</span>
+            </div>
+            <div className="absolute bottom-5 left-6 pointer-events-none text-[9.5px] font-mono tracking-widest text-white/35 uppercase">
+              <span>RES: 512PX @2X RETINA</span>
+            </div>
+            <div className="absolute bottom-5 right-6 pointer-events-none text-[9.5px] font-mono tracking-widest text-[#ccff00]/55 uppercase">
+              <span>STATE // SOLVING_TOPOLOGY</span>
+            </div>
+
+            {/* Direct Floating Giant Solving Orb (Zero Inner Box / Frame) */}
+            <FluidGiantThinkingOrb
+              size={430}
+              state="solving"
+              speed={1.2}
+              className="relative z-10 w-[320px] h-[320px] sm:w-[400px] sm:h-[400px] lg:w-[440px] lg:h-[440px]"
+            />
           </motion.div>
         )}
       </AnimatePresence>
@@ -1089,11 +1213,20 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
                     key={client.id}
                     style={{
                       left: `${pos.x}px`,
-                      top: `${pos.y}px`
+                      top: `${pos.y}px`,
+                      transition: pos.isMoving
+                        ? "opacity 200ms ease"
+                        : "left 320ms cubic-bezier(0.22, 1, 0.36, 1), top 320ms cubic-bezier(0.22, 1, 0.36, 1), transform 280ms cubic-bezier(0.22, 1, 0.36, 1), opacity 250ms ease",
                     }}
-                    className={`absolute -translate-x-1/2 -translate-y-full cursor-pointer group transition-opacity duration-300 pointer-events-auto ${
+                    className={`absolute -translate-x-1/2 -translate-y-full cursor-pointer group pointer-events-auto ${
                       isActive ? "z-50" : "z-30"
-                    } ${isDimmed ? "opacity-25 scale-90 hover:opacity-100 hover:scale-100" : "opacity-100 scale-100"}`}
+                    } ${
+                      isDimmed
+                        ? "opacity-25 scale-90 hover:opacity-100 hover:scale-100"
+                        : scatterRadius === "wide"
+                        ? "opacity-100 scale-[1.15]"
+                        : "opacity-100 scale-100"
+                    }`}
                     onMouseEnter={() => setHoveredClientId(client.id)}
                     onMouseLeave={() => setHoveredClientId(null)}
                     onClick={(e) => {
@@ -1482,42 +1615,186 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
           )}
         </div>
 
-        {/* Right Controls: Density Mode Selector + Admin Location Prompt */}
+        {/* Right Controls: Live Traffic Country Slider + Symmetrical Disperso (1x/2x) & Agrupar Dock + Admin Location */}
         <div className="flex items-center gap-2 pointer-events-auto shrink-0 flex-wrap justify-end">
-          {/* Density Mode Selector (Disperso / Agrupado) */}
-          <div className="flex items-center bg-black/80 backdrop-blur-2xl border border-white/15 rounded-2xl p-1 shadow-2xl text-xs font-semibold text-white">
-            <button
-              type="button"
-              onClick={() => {
-                setClusterMode("dispersed");
-                setExpandedClusterCity(null);
-              }}
-              className={`px-3 py-1.5 rounded-xl transition-all duration-300 flex items-center gap-1.5 cursor-pointer ${
-                clusterMode === "dispersed"
-                  ? "bg-[#ccff00] text-gray-950 font-bold shadow-[0_0_14px_rgba(204,255,0,0.5)]"
-                  : "text-white/70 hover:text-white hover:bg-white/10"
-              }`}
-              title="Ver cada cliente con su propia estaca dispersa en la ciudad"
-            >
-              <Sparkles className="w-3.5 h-3.5 shrink-0" />
-              <span>Disperso</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                setClusterMode("clustered");
-                setExpandedClusterCity(null);
-              }}
-              className={`px-3 py-1.5 rounded-xl transition-all duration-300 flex items-center gap-1.5 cursor-pointer ${
-                clusterMode === "clustered"
-                  ? "bg-[#ccff00] text-gray-950 font-bold shadow-[0_0_14px_rgba(204,255,0,0.5)]"
-                  : "text-white/70 hover:text-white hover:bg-white/10"
-              }`}
-              title="Agrupar ciudades con múltiples clientes en un pin numérico"
-            >
-              <Layers className="w-3.5 h-3.5 shrink-0" />
-              <span>Agrupar {clusterPins.length > 0 ? `(${clusterPins.length})` : ""}</span>
-            </button>
+          {/* 1. DYNAMIC REAL-TIME TRAFFIC COUNTRY SLIDER (Only countries with connected people > 0 appear) */}
+          <div className="flex items-center bg-black/85 backdrop-blur-2xl border border-white/15 rounded-2xl p-1 shadow-2xl text-xs font-semibold text-white gap-1">
+            {activeTrafficCountries.length > 1 && (
+              <button
+                type="button"
+                onClick={() => {
+                  const idx = activeTrafficCountries.findIndex((item) => item.code === selectedCountry);
+                  const prevIdx = idx <= 0 ? activeTrafficCountries.length - 1 : idx - 1;
+                  handleSwitchCountry(activeTrafficCountries[prevIdx].code);
+                }}
+                className="w-6 h-7 rounded-xl bg-white/5 hover:bg-white/15 flex items-center justify-center text-white/70 hover:text-[#ccff00] transition-all cursor-pointer shrink-0"
+                title="País anterior con clientes activos"
+              >
+                <ChevronLeft className="w-3.5 h-3.5" />
+              </button>
+            )}
+
+            <div className="flex items-center gap-1 overflow-x-auto no-scrollbar max-w-[260px] sm:max-w-[340px]">
+              <AnimatePresence mode="popLayout" initial={false}>
+                {activeTrafficCountries.map((item) => {
+                  const isCurrent = item.code === selectedCountry;
+                  return (
+                    <motion.button
+                      key={item.code}
+                      layout
+                      initial={{ opacity: 0, scale: 0.85 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      exit={{ opacity: 0, scale: 0.85 }}
+                      transition={{ type: "spring", stiffness: 380, damping: 28 }}
+                      type="button"
+                      onClick={() => {
+                        if (item.code !== selectedCountry) {
+                          handleSwitchCountry(item.code);
+                        }
+                      }}
+                      className={`relative px-2.5 py-1.5 rounded-xl flex items-center gap-1.5 transition-colors cursor-pointer shrink-0 ${
+                        isCurrent
+                          ? "text-gray-950 font-bold"
+                          : "text-white/75 hover:text-white hover:bg-white/10"
+                      }`}
+                      title={`${item.country.name}: ${item.count} ${item.count === 1 ? "persona conectada" : "personas conectadas"} en tiempo real`}
+                    >
+                      {isCurrent && (
+                        <motion.div
+                          layoutId="activeTrafficCountryPill"
+                          transition={{ type: "spring", stiffness: 400, damping: 30 }}
+                          className="absolute inset-0 rounded-xl bg-[#ccff00] shadow-[0_0_14px_rgba(204,255,0,0.45)] -z-10"
+                        />
+                      )}
+                      <CountrySvgFlag code={item.code} className="w-4 h-3 rounded-[2px] shadow-sm shrink-0" />
+                      <span className="text-[11px] tracking-tight whitespace-nowrap">{item.country.name}</span>
+                      <span
+                        className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[9.5px] font-mono font-black leading-none ${
+                          isCurrent
+                            ? "bg-gray-950/20 text-gray-950"
+                            : "bg-[#ccff00]/15 text-[#ccff00] border border-[#ccff00]/30"
+                        }`}
+                      >
+                        <span
+                          className={`w-1.5 h-1.5 rounded-full ${
+                            isCurrent ? "bg-gray-950" : "bg-[#ccff00] animate-pulse"
+                          }`}
+                        />
+                        {item.count}
+                      </span>
+                    </motion.button>
+                  );
+                })}
+              </AnimatePresence>
+            </div>
+
+            {activeTrafficCountries.length > 1 && (
+              <button
+                type="button"
+                onClick={() => {
+                  const idx = activeTrafficCountries.findIndex((item) => item.code === selectedCountry);
+                  const nextIdx = idx < 0 || idx >= activeTrafficCountries.length - 1 ? 0 : idx + 1;
+                  handleSwitchCountry(activeTrafficCountries[nextIdx].code);
+                }}
+                className="w-6 h-7 rounded-xl bg-white/5 hover:bg-white/15 flex items-center justify-center text-white/70 hover:text-[#ccff00] transition-all cursor-pointer shrink-0"
+                title="Siguiente país con clientes activos"
+              >
+                <ChevronRight className="w-3.5 h-3.5" />
+              </button>
+            )}
+          </div>
+
+          {/* 2. SYMMETRICAL DENSITY MODE DOCK (Disperso [1x | 2x] / Agrupar) */}
+          <div className="flex items-center bg-black/85 backdrop-blur-2xl border border-white/15 rounded-2xl p-1 shadow-2xl text-xs font-semibold text-white">
+            <div className="relative grid grid-cols-2 items-center">
+              <button
+                type="button"
+                onClick={() => {
+                  setClusterMode("dispersed");
+                  setExpandedClusterCity(null);
+                }}
+                className={`relative z-10 min-w-[104px] px-3 py-1.5 rounded-xl transition-colors duration-200 flex items-center justify-center gap-1.5 cursor-pointer ${
+                  clusterMode === "dispersed"
+                    ? "text-gray-950 font-bold"
+                    : "text-white/70 hover:text-white"
+                }`}
+                title="Ver cada cliente con su propia estaca dispersa en la ciudad"
+              >
+                {clusterMode === "dispersed" && (
+                  <motion.div
+                    layoutId="radarDensityModeIndicator"
+                    transition={{ type: "spring", stiffness: 420, damping: 30 }}
+                    className="absolute inset-0 rounded-xl bg-[#ccff00] shadow-[0_0_14px_rgba(204,255,0,0.5)] -z-10"
+                  />
+                )}
+                <Sparkles className="w-3.5 h-3.5 shrink-0" />
+                <span>Disperso</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setClusterMode("clustered");
+                  setExpandedClusterCity(null);
+                }}
+                className={`relative z-10 min-w-[104px] px-3 py-1.5 rounded-xl transition-colors duration-200 flex items-center justify-center gap-1.5 cursor-pointer ${
+                  clusterMode === "clustered"
+                    ? "text-gray-950 font-bold"
+                    : "text-white/70 hover:text-white"
+                }`}
+                title="Agrupar ciudades con múltiples clientes en un pin numérico"
+              >
+                {clusterMode === "clustered" && (
+                  <motion.div
+                    layoutId="radarDensityModeIndicator"
+                    transition={{ type: "spring", stiffness: 420, damping: 30 }}
+                    className="absolute inset-0 rounded-xl bg-[#ccff00] shadow-[0_0_14px_rgba(204,255,0,0.5)] -z-10"
+                  />
+                )}
+                <Layers className="w-3.5 h-3.5 shrink-0" />
+                <span>Agrupar{clusterPins.length > 0 ? ` (${clusterPins.length})` : ""}</span>
+              </button>
+            </div>
+
+            {/* Inline 1x | 2x Scale Multiplier Sub-Pill (Enabled when Disperso is active) */}
+            <AnimatePresence initial={false}>
+              {clusterMode === "dispersed" && (
+                <motion.div
+                  initial={{ width: 0, opacity: 0, marginLeft: 0 }}
+                  animate={{ width: "auto", opacity: 1, marginLeft: 6 }}
+                  exit={{ width: 0, opacity: 0, marginLeft: 0 }}
+                  transition={{ type: "spring", stiffness: 380, damping: 28 }}
+                  className="overflow-hidden flex items-center pl-1.5 border-l border-white/15 shrink-0"
+                >
+                  <div className="flex items-center bg-white/[0.06] rounded-xl p-0.5 gap-0.5">
+                    <button
+                      type="button"
+                      onClick={() => setScatterRadius("normal")}
+                      className={`px-2 py-1 rounded-lg font-mono text-[10px] font-bold transition-all cursor-pointer ${
+                        scatterRadius === "normal"
+                          ? "bg-[#ccff00] text-gray-950 shadow-[0_0_10px_rgba(204,255,0,0.4)]"
+                          : "text-white/65 hover:text-white"
+                      }`}
+                      title="Escala 1x: Dispersión compacta de estacas"
+                    >
+                      1x
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setScatterRadius("wide")}
+                      className={`px-2 py-1 rounded-lg font-mono text-[10px] font-bold transition-all cursor-pointer ${
+                        scatterRadius === "wide"
+                          ? "bg-[#ccff00] text-gray-950 shadow-[0_0_10px_rgba(204,255,0,0.4)]"
+                          : "text-white/65 hover:text-white"
+                      }`}
+                      title="Escala 2x: Dispersión amplia y estacas aumentadas"
+                    >
+                      2x
+                    </button>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
 
           {/* Admin Location Prompt */}
@@ -1546,11 +1823,23 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
       <div className="absolute left-3 sm:left-6 top-1/2 -translate-y-1/2 z-30 flex flex-col items-center gap-2 pointer-events-auto">
         <div className="flex flex-col items-center bg-black/60 backdrop-blur-xl border border-white/15 rounded-2xl p-1.5 shadow-2xl space-y-1">
           
-          {/* Country Selector Trigger Button (Flag + Indicator) */}
+          {/* Live Traffic Country Quick-Slider Trigger Button (Flag + Active Count Indicator) */}
           <button 
             type="button"
-            onClick={() => setIsCountryMenuOpen(prev => !prev)}
-            title={`Cambiar país del Radar (actual: ${activeCountry.name})`}
+            onClick={() => {
+              if (activeTrafficCountries.length > 1) {
+                const idx = activeTrafficCountries.findIndex((item) => item.code === selectedCountry);
+                const nextIdx = idx < 0 || idx >= activeTrafficCountries.length - 1 ? 0 : idx + 1;
+                handleSwitchCountry(activeTrafficCountries[nextIdx].code);
+              } else {
+                setIsCountryMenuOpen(prev => !prev);
+              }
+            }}
+            title={
+              activeTrafficCountries.length > 1
+                ? `Deslizar al siguiente país con tráfico en vivo (${activeTrafficCountries.length} activos)`
+                : `País activo en tiempo real: ${activeCountry.name}`
+            }
             className={`relative w-8 h-8 rounded-xl flex items-center justify-center transition-all duration-200 cursor-pointer group ${
               isCountryMenuOpen
                 ? "bg-[#ccff00] text-gray-950 font-bold shadow-[0_0_16px_#ccff00] scale-110"
@@ -1639,7 +1928,7 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
       </div>
 
       {/* ========================================================================= */}
-      {/* 4.B COUNTRY SELECTOR GLASS MODAL & BACKDROP (Excel Export Style)         */}
+      {/* 4.B LIVE TRAFFIC COUNTRIES MODAL (Filtered strictly to active countries)  */}
       {/* ========================================================================= */}
       <AnimatePresence>
         {isCountryMenuOpen && (
@@ -1655,7 +1944,7 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
               aria-hidden="true"
             />
 
-            {/* Country Selector Menu Card */}
+            {/* Country Selector Menu Card (Only shows countries with connected clients) */}
             <motion.div
               initial={{ opacity: 0, scale: 0.92, x: -16 }}
               animate={{ opacity: 1, scale: 1, x: 0 }}
@@ -1674,13 +1963,13 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
                   </div>
                   <div>
                     <h4 className="text-xs font-bold text-white tracking-tight leading-tight flex items-center gap-1.5">
-                      <span>Cambiar País</span>
+                      <span>Países con Tráfico Activo</span>
                       <span className="text-[9px] font-mono text-[#ccff00] bg-[#ccff00]/10 px-1.5 py-0.2 rounded border border-[#ccff00]/25">
-                        Radar 3D
+                        {activeTrafficCountries.length} en vivo
                       </span>
                     </h4>
                     <p className="text-[10px] text-white/50 leading-none mt-0.5">
-                      Topografía 3D y clientes en vivo
+                      Solo aparecen países con personas conectadas
                     </p>
                   </div>
                 </div>
@@ -1694,10 +1983,9 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
                 </button>
               </div>
 
-              {/* Country Cards Grid */}
-              <div className="grid grid-cols-2 gap-2">
-                {(Object.keys(RADAR_COUNTRIES) as RadarCountryCode[]).map((code) => {
-                  const c = RADAR_COUNTRIES[code];
+              {/* Active Country Cards Grid */}
+              <div className="grid grid-cols-1 gap-2">
+                {activeTrafficCountries.map(({ code, country: c, count }) => {
                   const isSelected = selectedCountry === code;
                   return (
                     <button
@@ -1709,39 +1997,30 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
                         }
                         setIsCountryMenuOpen(false);
                       }}
-                      className={`group relative p-2.5 rounded-2xl border text-left transition-all duration-200 cursor-pointer flex flex-col justify-between overflow-hidden active:scale-95 ${
+                      className={`group relative p-3 rounded-2xl border text-left transition-all duration-200 cursor-pointer flex items-center justify-between overflow-hidden active:scale-95 ${
                         isSelected
                           ? "bg-[#ccff00]/15 border-[#ccff00] shadow-[0_0_20px_rgba(204,255,0,0.25)] ring-1 ring-[#ccff00]/50"
                           : "bg-white/[0.04] hover:bg-white/[0.08] border-white/10 hover:border-[#ccff00]/40"
                       }`}
                       title={`Cambiar radar a ${c.name}`}
                     >
-                      {/* Specular gloss highlight */}
-                      <div className="pointer-events-none absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-white/10 to-transparent rounded-t-2xl opacity-50" />
-
-                      <div className="flex items-center justify-between mb-2">
-                        <div className="w-8 h-6 rounded-lg bg-black/50 border border-white/15 flex items-center justify-center overflow-hidden shrink-0 shadow-sm group-hover:scale-105 transition-transform">
+                      <div className="flex items-center gap-3">
+                        <div className="w-9 h-6 rounded-lg bg-black/50 border border-white/15 flex items-center justify-center overflow-hidden shrink-0 shadow-sm">
                           <CountrySvgFlag code={code} className="w-6 h-4 rounded-[2px]" />
                         </div>
-                        {isSelected ? (
-                          <span className="w-2 h-2 rounded-full bg-[#ccff00] shadow-[0_0_8px_#ccff00]" />
-                        ) : (
-                          <ChevronRight className="w-3.5 h-3.5 text-white/30 group-hover:text-[#ccff00] group-hover:translate-x-0.5 transition-all" />
-                        )}
-                      </div>
-
-                      <div>
-                        <div className="flex items-center gap-1">
-                          <span className={`text-xs font-bold truncate transition-colors ${
-                            isSelected ? "text-[#ccff00]" : "text-white group-hover:text-white"
-                          }`}>
+                        <div>
+                          <span className={`text-xs font-bold block ${isSelected ? "text-[#ccff00]" : "text-white"}`}>
                             {c.name}
                           </span>
+                          <span className="text-[10px] font-mono text-white/55">
+                            {count} {count === 1 ? "persona conectada" : "personas conectadas"}
+                          </span>
                         </div>
-                        <span className="text-[9.5px] font-mono text-white/50 block truncate mt-0.5">
-                          {c.entityLabel.split(' ')[0]} {c.entityLabel.includes('Provincias') ? 'prov.' : c.entityLabel.includes('Departamentos') ? 'deptos.' : 'regiones'}
-                        </span>
                       </div>
+                      <span className="px-2 py-0.5 rounded-full bg-[#ccff00]/15 border border-[#ccff00]/30 text-[10px] font-mono font-bold text-[#ccff00] flex items-center gap-1">
+                        <span className="w-1.5 h-1.5 rounded-full bg-[#ccff00] animate-pulse" />
+                        En vivo
+                      </span>
                     </button>
                   );
                 })}
@@ -1751,7 +2030,7 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
               <div className="mt-3 pt-2.5 border-t border-white/10 flex items-center justify-between text-[9.5px] font-mono text-white/50">
                 <span className="flex items-center gap-1">
                   <Compass className="w-3 h-3 text-[#ccff00]" />
-                  <span>Vuelo orbital satelital 4K</span>
+                  <span>Detección automática de países</span>
                 </span>
                 <span className="text-white/40">Esc para cerrar</span>
               </div>

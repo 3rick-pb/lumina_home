@@ -280,12 +280,7 @@ export function resolveGeoLngLat(
     baseLat = bounds.center[1];
   }
 
-  // Tight urban neighborhood dispersion (~2.2 km) when multiple clients are in the same city
-  // so dispersed pins stay inside the city itself and never drift into other provinces or the ocean.
-  const finalLng = baseLng + (offsetXPct / 100) * 0.16;
-  const finalLat = baseLat - (offsetYPct / 100) * 0.16;
-
-  return [finalLng, finalLat];
+  return [baseLng, baseLat];
 }
 
 // ============================================================================
@@ -346,6 +341,7 @@ export interface ProjectedPinPosition {
   x: number;
   y: number;
   visible: boolean;
+  isMoving: boolean;
 }
 
 interface RadarMapboxCanvasProps {
@@ -364,6 +360,16 @@ interface RadarMapboxCanvasProps {
       dispY?: number
     ) => ProjectedPinPosition
   ) => React.ReactNode;
+}
+
+// Cap cache size to protect low-VRAM / integrated GPU devices
+const MAX_TILE_CACHE_SIZE = 180;
+function cacheTileImage(url: string, img: HTMLImageElement) {
+  if (tileImageCache.size >= MAX_TILE_CACHE_SIZE) {
+    const oldestKey = tileImageCache.keys().next().value;
+    if (oldestKey) tileImageCache.delete(oldestKey);
+  }
+  tileImageCache.set(url, img);
 }
 
 export function RadarMapboxCanvas({
@@ -399,8 +405,15 @@ export function RadarMapboxCanvas({
   const dragMovedRef = useRef(false);
   const dragStartRef = useRef({ x: 0, y: 0, lng: 0, lat: 0 });
 
+  // Event-driven dirty flag & RAF scheduler — 0% GPU usage when camera is stationary
+  const dirtyRef = useRef<boolean>(true);
+  const rafIdRef = useRef<number>(0);
+  const triggerLoopRef = useRef<(() => void) | null>(null);
+
   const requestRepaint = useCallback(() => {
+    dirtyRef.current = true;
     setRenderTick((t) => (t + 1) % 1000000);
+    triggerLoopRef.current?.();
   }, []);
 
   // Observe container size changes so pin coordinates and canvas dimensions stay 100% synchronized
@@ -409,9 +422,9 @@ export function RadarMapboxCanvas({
     if (!el || typeof ResizeObserver === "undefined") return;
     const ro = new ResizeObserver((entries) => {
       for (const entry of entries) {
-        const w = entry.contentRect.width;
-        const h = entry.contentRect.height;
-        if (w > 0 && h > 0) {
+        const w = Math.round(entry.contentRect.width);
+        const h = Math.round(entry.contentRect.height);
+        if (w > 0 && h > 0 && (Math.abs(camRef.current.width - w) > 1 || Math.abs(camRef.current.height - h) > 1)) {
           camRef.current.width = w;
           camRef.current.height = h;
           requestRepaint();
@@ -422,7 +435,7 @@ export function RadarMapboxCanvas({
     return () => ro.disconnect();
   }, [requestRepaint]);
 
-  // Load a tile image (no-referrer, zero watermark) and trigger repaint when ready
+  // Load a tile image (no-referrer, zero watermark) and trigger on-demand repaint when ready
   const fetchTile = useCallback(
     (provider: TileProvider, z: number, x: number, y: number): HTMLImageElement | null => {
       if (z < 1 || z > 18) return null;
@@ -439,9 +452,10 @@ export function RadarMapboxCanvas({
         img.referrerPolicy = "no-referrer";
         img.decoding = "async";
         img.onload = () => {
-          tileImageCache.set(url, img);
+          cacheTileImage(url, img);
           tileLoadingSet.delete(url);
-          requestRepaint();
+          dirtyRef.current = true;
+          triggerLoopRef.current?.();
         };
         img.onerror = () => {
           tileLoadingSet.delete(url);
@@ -452,8 +466,9 @@ export function RadarMapboxCanvas({
             const fbImg = new window.Image();
             fbImg.referrerPolicy = "no-referrer";
             fbImg.onload = () => {
-              tileImageCache.set(url, fbImg);
-              requestRepaint();
+              cacheTileImage(url, fbImg);
+              dirtyRef.current = true;
+              triggerLoopRef.current?.();
             };
             fbImg.src = fallbackUrl;
           }
@@ -462,10 +477,10 @@ export function RadarMapboxCanvas({
       }
       return null;
     },
-    [requestRepaint]
+    []
   );
 
-  // Draw a tile layer using the EXACT same `(centerWx, centerWy)` origin as `projectPin`
+  // High-Definition Retina (z + 1) Tile Layer Renderer — ZERO per-tile software filters for maximum GPU efficiency
   const drawTileLayer = useCallback(
     (
       ctx: CanvasRenderingContext2D,
@@ -476,10 +491,11 @@ export function RadarMapboxCanvas({
       width: number,
       height: number,
       alpha: number = 1,
-      filterStr: string = "none"
+      retinaBoost: number = 1
     ) => {
-      const zInt = Math.max(2, Math.min(18, Math.floor(camZoom)));
-      const scaleFactor = Math.pow(2, camZoom - zInt);
+      // Fetch tiles at z + retinaBoost (1 level deeper = 4x pixel density / true @2x Retina sharpness)
+      const zTile = Math.max(2, Math.min(18, Math.floor(camZoom) + retinaBoost));
+      const scaleFactor = Math.pow(2, camZoom - zTile);
       const drawnTileSize = TILE_SIZE * scaleFactor;
 
       // Exact camera center in continuous zoom world pixels (`TILE_SIZE * 2^camZoom`)
@@ -493,39 +509,62 @@ export function RadarMapboxCanvas({
 
       ctx.save();
       ctx.globalAlpha = alpha;
-      if (filterStr !== "none") {
-        ctx.filter = filterStr;
-      }
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = "high";
 
       for (let ty = startTileY; ty <= endTileY; ty++) {
         for (let tx = startTileX; tx <= endTileX; tx++) {
           const screenX = tx * drawnTileSize - centerWx + width / 2;
           const screenY = ty * drawnTileSize - centerWy + height / 2;
 
-          const exactImg = fetchTile(provider, zInt, tx, ty);
+          const exactImg = fetchTile(provider, zTile, tx, ty);
           if (exactImg) {
-            ctx.drawImage(exactImg, screenX, screenY, drawnTileSize + 0.5, drawnTileSize + 0.5);
-          } else if (zInt > 2) {
-            const parentZ = zInt - 1;
-            const ptx = Math.floor(tx / 2);
-            const pty = Math.floor(ty / 2);
-            const parentImg = fetchTile(provider, parentZ, ptx, pty);
-            if (parentImg) {
+            ctx.drawImage(exactImg, screenX, screenY, drawnTileSize + 0.35, drawnTileSize + 0.35);
+          } else if (zTile > 2) {
+            // Level-1 Parent Fallback (Standard z) while HD tile streams in
+            const parentZ1 = zTile - 1;
+            const p1x = Math.floor(tx / 2);
+            const p1y = Math.floor(ty / 2);
+            const parentImg1 = fetchTile(provider, parentZ1, p1x, p1y);
+            if (parentImg1) {
               const subX = ((tx % 2) + 2) % 2;
               const subY = ((ty % 2) + 2) % 2;
-              const srcW = parentImg.width / 2;
-              const srcH = parentImg.height / 2;
+              const srcW = parentImg1.width / 2;
+              const srcH = parentImg1.height / 2;
               ctx.drawImage(
-                parentImg,
+                parentImg1,
                 subX * srcW,
                 subY * srcH,
                 srcW,
                 srcH,
                 screenX,
                 screenY,
-                drawnTileSize + 0.5,
-                drawnTileSize + 0.5
+                drawnTileSize + 0.4,
+                drawnTileSize + 0.4
               );
+            } else if (zTile > 3) {
+              // Level-2 Grandparent Fallback so zooming never shows blank squares
+              const parentZ2 = zTile - 2;
+              const p2x = Math.floor(tx / 4);
+              const p2y = Math.floor(ty / 4);
+              const parentImg2 = fetchTile(provider, parentZ2, p2x, p2y);
+              if (parentImg2) {
+                const subX = ((tx % 4) + 4) % 4;
+                const subY = ((ty % 4) + 4) % 4;
+                const srcW = parentImg2.width / 4;
+                const srcH = parentImg2.height / 4;
+                ctx.drawImage(
+                  parentImg2,
+                  subX * srcW,
+                  subY * srcH,
+                  srcW,
+                  srcH,
+                  screenX,
+                  screenY,
+                  drawnTileSize + 0.5,
+                  drawnTileSize + 0.5
+                );
+              }
             }
           }
         }
@@ -536,165 +575,137 @@ export function RadarMapboxCanvas({
     [fetchTile]
   );
 
-  // Main Canvas Render Loop
+  // Event-Driven On-Demand Render Loop (0% Idle GPU usage on low-end hardware)
   useEffect(() => {
-    let rafId = 0;
     let mounted = true;
-
     onMapReady?.();
 
-    const renderFrame = () => {
+    const renderStep = () => {
+      rafIdRef.current = 0;
       if (!mounted) return;
 
       const container = containerRef.current;
       const canvas = canvasRef.current;
+      const cam = camRef.current;
+
       if (container && canvas) {
         const w = container.clientWidth || 960;
         const h = container.clientHeight || 680;
-        const cam = camRef.current;
-        if (cam.width !== w || cam.height !== h) {
+        if (Math.abs(cam.width - w) > 1 || Math.abs(cam.height - h) > 1) {
           cam.width = w;
           cam.height = h;
-          setRenderTick((t) => (t + 1) % 1000000);
+          dirtyRef.current = true;
         }
 
-        const dpr = Math.min(2, (typeof window !== "undefined" && window.devicePixelRatio) || 1);
+        // True 2x Retina framebuffer resolution for razor-sharp typography & borders
+        const dpr = Math.min(2, Math.max(1.5, (typeof window !== "undefined" && window.devicePixelRatio) || 2));
         const targetW = Math.round(w * dpr);
         const targetH = Math.round(h * dpr);
         if (canvas.width !== targetW || canvas.height !== targetH) {
           canvas.width = targetW;
           canvas.height = targetH;
+          dirtyRef.current = true;
         }
 
         if (cam.animating) {
           const dLng = cam.targetLng - cam.lng;
           const dLat = cam.targetLat - cam.lat;
           const dZoom = cam.targetZoom - cam.zoom;
-          if (Math.abs(dLng) < 0.0005 && Math.abs(dLat) < 0.0005 && Math.abs(dZoom) < 0.002) {
+          if (Math.abs(dLng) < 0.0003 && Math.abs(dLat) < 0.0003 && Math.abs(dZoom) < 0.0015) {
             cam.lng = cam.targetLng;
             cam.lat = cam.targetLat;
             cam.zoom = cam.targetZoom;
             cam.animating = false;
           } else {
-            cam.lng += dLng * 0.12;
-            cam.lat += dLat * 0.12;
-            cam.zoom += dZoom * 0.12;
+            cam.lng += dLng * 0.14;
+            cam.lat += dLat * 0.14;
+            cam.zoom += dZoom * 0.14;
           }
+          dirtyRef.current = true;
           setRenderTick((t) => (t + 1) % 1000000);
         }
 
-        const ctx = canvas.getContext("2d");
-        if (ctx) {
-          ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        if (dirtyRef.current) {
+          dirtyRef.current = false;
+          const ctx = canvas.getContext("2d", { alpha: false });
+          if (ctx) {
+            ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
-          ctx.fillStyle = mapStyleMode === "street" ? "#e8ecef" : "#121a18";
-          ctx.fillRect(0, 0, w, h);
+            ctx.fillStyle = mapStyleMode === "street" ? "#e8ecef" : "#101715";
+            ctx.fillRect(0, 0, w, h);
 
-          if (mapStyleMode === "tactical") {
-            // Layer A: Esri Dark Gray Base (100% Watermark-Free)
-            drawTileLayer(
-              ctx,
-              "dark-base",
-              cam.lng,
-              cam.lat,
-              cam.zoom,
-              w,
-              h,
-              1.0,
-              "contrast(1.18) brightness(1.15)"
-            );
-            // Layer B: Subtle Esri Satellite Relief Blend (Andes / Amazon texture)
-            drawTileLayer(
-              ctx,
-              "satellite",
-              cam.lng,
-              cam.lat,
-              cam.zoom,
-              w,
-              h,
-              0.36,
-              "contrast(1.22) brightness(0.95) saturate(0.85)"
-            );
-            // Layer C: Esri World Boundaries & Places Reference (Zero-Watermark Crisp Borders & City Names)
-            drawTileLayer(
-              ctx,
-              "boundaries-labels",
-              cam.lng,
-              cam.lat,
-              cam.zoom,
-              w,
-              h,
-              1.0,
-              "brightness(1.2) contrast(1.25)"
-            );
-          } else if (mapStyleMode === "satellite") {
-            // Full HD Esri Satellite Imagery + Esri Boundaries & Places Reference (Zero-Watermark)
-            drawTileLayer(
-              ctx,
-              "satellite",
-              cam.lng,
-              cam.lat,
-              cam.zoom,
-              w,
-              h,
-              1.0,
-              "contrast(1.1) brightness(1.05) saturate(1.15)"
-            );
-            drawTileLayer(
-              ctx,
-              "boundaries-labels",
-              cam.lng,
-              cam.lat,
-              cam.zoom,
-              w,
-              h,
-              1.0,
-              "brightness(1.2) contrast(1.25)"
-            );
-          } else {
-            // Esri World Topographic / Street Map (Zero-Watermark)
-            drawTileLayer(ctx, "street-topo", cam.lng, cam.lat, cam.zoom, w, h, 1.0, "none");
-          }
-
-          // Subtle Tactical Radar Coordinate Grid Lines
-          if (mapStyleMode !== "street") {
-            ctx.save();
-            ctx.strokeStyle = "rgba(204, 255, 0, 0.07)";
-            ctx.lineWidth = 1;
-            const stepDeg = cam.zoom > 7 ? 1 : 2;
-            const centerWx = lngToMercatorX(cam.lng, cam.zoom);
-            const centerWy = latToMercatorY(cam.lat, cam.zoom);
-
-            for (let lngLine = -120; lngLine <= -50; lngLine += stepDeg) {
-              const sx = lngToMercatorX(lngLine, cam.zoom) - centerWx + w / 2;
-              if (sx >= 0 && sx <= w) {
-                ctx.beginPath();
-                ctx.moveTo(sx, 0);
-                ctx.lineTo(sx, h);
-                ctx.stroke();
-              }
+            if (mapStyleMode === "tactical") {
+              // Layer A: Esri Dark Gray Base at Retina z+1 resolution
+              drawTileLayer(ctx, "dark-base", cam.lng, cam.lat, cam.zoom, w, h, 1.0, 1);
+              // Layer B: Esri Satellite Relief Blend (standard z to save 75% bandwidth while preserving terrain texture)
+              drawTileLayer(ctx, "satellite", cam.lng, cam.lat, cam.zoom, w, h, 0.34, 0);
+              // Layer C: Esri World Boundaries & Places Reference at Retina z+1 resolution for razor-sharp labels
+              drawTileLayer(ctx, "boundaries-labels", cam.lng, cam.lat, cam.zoom, w, h, 1.0, 1);
+            } else if (mapStyleMode === "satellite") {
+              // Full HD Esri Satellite Imagery + Retina z+1 Boundaries & Places Reference
+              drawTileLayer(ctx, "satellite", cam.lng, cam.lat, cam.zoom, w, h, 1.0, 1);
+              drawTileLayer(ctx, "boundaries-labels", cam.lng, cam.lat, cam.zoom, w, h, 1.0, 1);
+            } else {
+              // Esri World Topographic / Street Map at Retina z+1 resolution
+              drawTileLayer(ctx, "street-topo", cam.lng, cam.lat, cam.zoom, w, h, 1.0, 1);
             }
-            for (let latLine = -60; latLine <= 35; latLine += stepDeg) {
-              const sy = latToMercatorY(latLine, cam.zoom) - centerWy + h / 2;
-              if (sy >= 0 && sy <= h) {
-                ctx.beginPath();
-                ctx.moveTo(0, sy);
-                ctx.lineTo(w, sy);
-                ctx.stroke();
+
+            // Subtle Tactical Radar Coordinate Grid Lines
+            if (mapStyleMode !== "street") {
+              ctx.save();
+              ctx.strokeStyle = "rgba(204, 255, 0, 0.065)";
+              ctx.lineWidth = 1;
+              const stepDeg = cam.zoom > 7 ? 1 : 2;
+              const centerWx = lngToMercatorX(cam.lng, cam.zoom);
+              const centerWy = latToMercatorY(cam.lat, cam.zoom);
+
+              for (let lngLine = -120; lngLine <= -50; lngLine += stepDeg) {
+                const sx = lngToMercatorX(lngLine, cam.zoom) - centerWx + w / 2;
+                if (sx >= 0 && sx <= w) {
+                  ctx.beginPath();
+                  ctx.moveTo(sx, 0);
+                  ctx.lineTo(sx, h);
+                  ctx.stroke();
+                }
               }
+              for (let latLine = -60; latLine <= 35; latLine += stepDeg) {
+                const sy = latToMercatorY(latLine, cam.zoom) - centerWy + h / 2;
+                if (sy >= 0 && sy <= h) {
+                  ctx.beginPath();
+                  ctx.moveTo(0, sy);
+                  ctx.lineTo(w, sy);
+                  ctx.stroke();
+                }
+              }
+              ctx.restore();
             }
-            ctx.restore();
           }
         }
       }
 
-      rafId = window.requestAnimationFrame(renderFrame);
+      // Only schedule next frame if camera is actively animating or dirty
+      if (camRef.current.animating || dirtyRef.current) {
+        rafIdRef.current = window.requestAnimationFrame(renderStep);
+      }
     };
 
-    rafId = window.requestAnimationFrame(renderFrame);
+    const scheduleFrame = () => {
+      if (rafIdRef.current === 0 && mounted) {
+        rafIdRef.current = window.requestAnimationFrame(renderStep);
+      }
+    };
+
+    triggerLoopRef.current = scheduleFrame;
+    dirtyRef.current = true;
+    scheduleFrame();
+
     return () => {
       mounted = false;
-      window.cancelAnimationFrame(rafId);
+      triggerLoopRef.current = null;
+      if (rafIdRef.current !== 0) {
+        window.cancelAnimationFrame(rafIdRef.current);
+        rafIdRef.current = 0;
+      }
     };
   }, [drawTileLayer, mapStyleMode, onMapReady]);
 
@@ -705,7 +716,8 @@ export function RadarMapboxCanvas({
     camRef.current.targetLat = geo.center[1];
     camRef.current.targetZoom = geo.zoom;
     camRef.current.animating = true;
-  }, [selectedCountry]);
+    requestRepaint();
+  }, [selectedCountry, requestRepaint]);
 
   // Respond to external zoom buttons (+ / -)
   useEffect(() => {
@@ -716,7 +728,8 @@ export function RadarMapboxCanvas({
     const delta = Math.log2(ratio);
     camRef.current.targetZoom = Math.max(3.2, Math.min(14.5, camRef.current.zoom + delta * 1.25));
     camRef.current.animating = true;
-  }, [zoomCommand]);
+    requestRepaint();
+  }, [zoomCommand, requestRepaint]);
 
   // Respond to Reset View command
   useEffect(() => {
@@ -726,7 +739,8 @@ export function RadarMapboxCanvas({
     camRef.current.targetLat = geo.center[1];
     camRef.current.targetZoom = geo.zoom;
     camRef.current.animating = true;
-  }, [resetCommandSeq, selectedCountry]);
+    requestRepaint();
+  }, [resetCommandSeq, selectedCountry, requestRepaint]);
 
   // Respond to focusOnLocation (search bar city selection or cluster click)
   useEffect(() => {
@@ -743,7 +757,8 @@ export function RadarMapboxCanvas({
     camRef.current.targetLat = lat;
     camRef.current.targetZoom = targetMapZoom;
     camRef.current.animating = true;
-  }, [focusTarget, selectedCountry]);
+    requestRepaint();
+  }, [focusTarget, selectedCountry, requestRepaint]);
 
   // Exact Web Mercator projection helper — uses live container dimensions and exact `(centerWx, centerWy)` origin
   const projectPin = useCallback(
@@ -760,18 +775,20 @@ export function RadarMapboxCanvas({
 
       const offsetX = dispX !== undefined ? dispX - baseX : 0;
       const offsetY = dispY !== undefined ? dispY - baseY : 0;
-      const [lng, lat] = resolveGeoLngLat(cityName, baseX, baseY, selectedCountry, offsetX, offsetY);
+      const [lng, lat] = resolveGeoLngLat(cityName, baseX, baseY, selectedCountry);
 
       const centerWx = lngToMercatorX(cam.lng, cam.zoom);
       const centerWy = latToMercatorY(cam.lat, cam.zoom);
       const pinWx = lngToMercatorX(lng, cam.zoom);
       const pinWy = latToMercatorY(lat, cam.zoom);
 
-      const x = pinWx - centerWx + liveW / 2;
-      const y = pinWy - centerWy + liveH / 2;
+      // Exact GPS city origin + radial dispersion ring in screen pixels (1x = ~19px ring, 2x = ~39px ring)
+      const x = pinWx - centerWx + liveW / 2 + offsetX * 7.5;
+      const y = pinWy - centerWy + liveH / 2 + offsetY * 7.5;
       const visible = x >= -60 && x <= liveW + 60 && y >= -60 && y <= liveH + 60;
+      const isMoving = isDraggingRef.current || cam.animating;
 
-      return { x, y, visible };
+      return { x, y, visible, isMoving };
     },
     [selectedCountry]
   );
@@ -807,7 +824,10 @@ export function RadarMapboxCanvas({
   };
 
   const handlePointerUp = () => {
-    isDraggingRef.current = false;
+    if (isDraggingRef.current) {
+      isDraggingRef.current = false;
+      requestRepaint();
+    }
   };
 
   const handleWheel = (e: React.WheelEvent<HTMLDivElement>) => {
@@ -819,6 +839,14 @@ export function RadarMapboxCanvas({
     camRef.current.animating = false;
     requestRepaint();
   };
+
+  // Hardware-composited CSS filter applied once to the canvas element instead of 75x per frame in JS
+  const canvasHardwareFilter =
+    mapStyleMode === "tactical"
+      ? "contrast(1.18) brightness(1.12)"
+      : mapStyleMode === "satellite"
+      ? "contrast(1.1) brightness(1.04) saturate(1.14)"
+      : "none";
 
   return (
     <div
@@ -835,9 +863,10 @@ export function RadarMapboxCanvas({
       }}
       className="relative w-full h-full overflow-hidden select-none cursor-grab active:cursor-grabbing"
     >
-      {/* Direct Hardware-Accelerated 2D Slippy Tile Canvas (100% Watermark-Free Esri / ArcGIS Services) */}
+      {/* Direct Hardware-Accelerated 2D Slippy Tile Canvas (Retina z+1 Oversampled + Hardware CSS Filter) */}
       <canvas
         ref={canvasRef}
+        style={{ filter: canvasHardwareFilter }}
         className="block w-full h-full pointer-events-none"
       />
 
