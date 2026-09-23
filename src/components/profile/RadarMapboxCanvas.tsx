@@ -911,8 +911,25 @@ export function RadarMapboxCanvas({
     [selectedCountry]
   );
 
-  // Interactive Pointer Drag & Wheel Zoom handlers
+  // Interactive Pointer Drag & Wheel Zoom handlers with strict PointerCapture & Selection Lock
   const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    // Ignore right-clicks or clicks originating from interactive HUD buttons/inputs
+    if (e.button !== 0) return;
+    const targetEl = e.target as HTMLElement | null;
+    if (targetEl?.closest("button, input, select, a, [data-no-map-pan='true']")) {
+      return;
+    }
+
+    e.preventDefault();
+    e.stopPropagation();
+    window.getSelection()?.removeAllRanges();
+
+    try {
+      e.currentTarget.setPointerCapture(e.pointerId);
+    } catch {
+      // Fallback if pointer capture is unsupported
+    }
+
     isDraggingRef.current = true;
     dragMovedRef.current = false;
     camRef.current.animating = false;
@@ -926,6 +943,7 @@ export function RadarMapboxCanvas({
 
   const handlePointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
     if (!isDraggingRef.current) return;
+    e.preventDefault();
     const dx = e.clientX - dragStartRef.current.x;
     const dy = e.clientY - dragStartRef.current.y;
     if (Math.abs(dx) > 3 || Math.abs(dy) > 3) {
@@ -941,9 +959,16 @@ export function RadarMapboxCanvas({
     requestRepaint();
   };
 
-  const handlePointerUp = () => {
+  const handlePointerUp = (e: React.PointerEvent<HTMLDivElement>) => {
     if (isDraggingRef.current) {
       isDraggingRef.current = false;
+      try {
+        if (e.currentTarget.hasPointerCapture(e.pointerId)) {
+          e.currentTarget.releasePointerCapture(e.pointerId);
+        }
+      } catch {
+        // Ignore release errors
+      }
       requestRepaint();
     }
   };
@@ -969,15 +994,23 @@ export function RadarMapboxCanvas({
   return (
     <div
       ref={containerRef}
+      draggable={false}
+      onDragStart={(e) => e.preventDefault()}
       onPointerDown={handlePointerDown}
       onPointerMove={handlePointerMove}
       onPointerUp={handlePointerUp}
-      onPointerLeave={handlePointerUp}
+      onPointerCancel={handlePointerUp}
       onWheel={handleWheel}
       onClick={() => {
         if (!dragMovedRef.current) {
           onCanvasClick?.();
         }
+      }}
+      style={{
+        touchAction: "none",
+        userSelect: "none",
+        WebkitUserSelect: "none",
+        WebkitTouchCallout: "none",
       }}
       className="relative w-full h-full overflow-hidden select-none cursor-grab active:cursor-grabbing"
     >

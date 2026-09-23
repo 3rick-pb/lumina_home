@@ -10,6 +10,7 @@ import { useCatalogStore, CatalogProduct } from "@/lib/catalogStore";
 import { ArrowRight, Mail, Lock, Sparkles, ShieldCheck, Search, X, Eye, Compass } from "lucide-react";
 import { normalizeSearchText } from "@/lib/utils";
 import { useBrand } from "@/core";
+import { BeUILoaderMetaballs } from "@/components/ui/BeUIControls";
 
 export default function LoginPage() {
   const brand = useBrand();
@@ -81,9 +82,12 @@ export default function LoginPage() {
     }
 
     setIsLoading(true);
-    const { error } = await login(cleanEmail, password);
-    setIsLoading(false);
+    const [{ error }] = await Promise.all([
+      login(cleanEmail, password),
+      new Promise((resolve) => setTimeout(resolve, 850)),
+    ]);
     if (error) {
+      setIsLoading(false);
       setErrorMsg(error === "Invalid login credentials" ? "Credenciales incorrectas. Verifica tu correo y contraseña." : error);
     } else {
       if (typeof window !== "undefined" && sessionStorage.getItem("lumina_cart_reopen") === "true") {
@@ -268,10 +272,13 @@ export default function LoginPage() {
             <button 
               type="submit"
               disabled={isLoading}
-              className="w-full mt-2 h-12 bg-gray-900 text-white rounded-2xl font-medium flex items-center justify-center gap-2 hover:bg-gray-800 transition-all shadow-lg shadow-gray-900/15 group disabled:opacity-50 cursor-pointer"
+              className="w-full mt-2 h-12 bg-gray-900 dark:bg-white text-white dark:text-gray-950 rounded-2xl font-medium flex items-center justify-center gap-2.5 hover:bg-gray-800 dark:hover:bg-gray-100 transition-all shadow-lg shadow-gray-900/15 group disabled:opacity-90 cursor-pointer"
             >
               {isLoading ? (
-                <span>Ingresando...</span>
+                <div className="flex items-center justify-center gap-2.5">
+                  <BeUILoaderMetaballs size={26} className="text-[#ccff00] dark:text-gray-950" />
+                  <span className="font-semibold tracking-wide">Ingresando...</span>
+                </div>
               ) : (
                 <>
                   <span>Acceder a {brand.shortName}</span>

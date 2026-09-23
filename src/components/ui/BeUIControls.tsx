@@ -15,8 +15,16 @@ import React, {
   useRef,
   useState,
 } from "react";
-import { Minus, Plus } from "lucide-react";
-import { AnimatePresence, motion } from "framer-motion";
+import { createPortal } from "react-dom";
+import { Check, ChevronDown, Minus, Plus, X } from "lucide-react";
+import {
+  AnimatePresence,
+  LayoutGroup,
+  motion,
+  useIsPresent,
+  type Transition,
+  type Variants,
+} from "framer-motion";
 import {
   MODE_DRAWS,
   resolvePreset,
@@ -539,6 +547,20 @@ export function BeUIAdaptiveStepper({
 }: BeUIAdaptiveStepperProps) {
   const prevValueRef = useRef(value);
   const [direction, setDirection] = useState<-1 | 0 | 1>(0);
+  // Liquid droplet state: emits a metaball droplet from the clicked button (`+` or `-`)
+  // across the 16px gap into the center `[value]` capsule so the button and center capsule
+  // physically unite and pass a liquid droplet on every click.
+  const [dropletState, setDropletState] = useState<{
+    dir: -1 | 0 | 1;
+    phase: "idle" | "bridge" | "absorb";
+  }>({ dir: 0, phase: "idle" });
+  const dropletTimersRef = useRef<number[]>([]);
+
+  useEffect(() => {
+    return () => {
+      dropletTimersRef.current.forEach((id) => window.clearTimeout(id));
+    };
+  }, []);
 
   if (value !== prevValueRef.current) {
     const nextDir = value > prevValueRef.current ? 1 : -1;
@@ -548,19 +570,42 @@ export function BeUIAdaptiveStepper({
     }
   }
 
+  const triggerLiquidTransfer = (dir: -1 | 1, callback: () => void) => {
+    dropletTimersRef.current.forEach((id) => window.clearTimeout(id));
+    dropletTimersRef.current = [];
+
+    setDirection(dir);
+    playStepperTickSound(dir === 1 ? "up" : "down");
+
+    // Phase 1 ("bridge"): Droplet emerges from the clicked `+` or `-` button while
+    // the center capsule reaches out to unite with the button across the 16px gap
+    setDropletState({ dir, phase: "bridge" });
+    callback();
+
+    // Phase 2 ("absorb"): Droplet detaches from the button and flows into the center capsule
+    const t1 = window.setTimeout(() => {
+      setDropletState({ dir, phase: "absorb" });
+    }, 105);
+
+    // Phase 3 ("idle"): Settle cleanly back into the 3 separated islands
+    const t2 = window.setTimeout(() => {
+      setDropletState({ dir: 0, phase: "idle" });
+    }, 440);
+
+    dropletTimersRef.current.push(t1, t2);
+  };
+
   const atMin = disableDecrement || value <= min;
   const atMax = disableIncrement || value >= max;
   const distance = (direction || 1) * 40;
 
   // Verbatim 216px x 48px internal coordinate system from @beui/adaptive-stepper
   // (https://beui.dev/r/adaptive-stepper.json & Video Referencia.mp4)
-  // Scaled cleanly via outer CSS transform so the SVG gooey filter (blur=6, contrast=22,
-  // 16px resting gap = 64 - 48) retains 100% original beUI liquid physics.
   const scale = size === "lg" ? 0.84 : size === "sm" ? 0.58 : 0.65;
   const outerW = Math.round(216 * scale);
   const outerH = Math.round(48 * scale);
 
-  const centerGeometry =
+  const baseCenterGeometry =
     atMin && atMax
       ? { x: 0, width: 216 }
       : atMin
@@ -568,6 +613,35 @@ export function BeUIAdaptiveStepper({
       : atMax
       ? { x: 64, width: 152 }
       : { x: 64, width: 88 };
+
+  // When a droplet is bridging from `+` (dir === 1) or `-` (dir === -1), the center pill
+  // reaches slightly toward the clicked button to fuse with the droplet, then swells as it absorbs it.
+  const centerGeometry = useMemo(() => {
+    if (dropletState.phase === "bridge" && !atMin && !atMax) {
+      if (dropletState.dir === 1) {
+        return { x: 64, width: 100 }; // Reaches right toward `+`
+      }
+      if (dropletState.dir === -1) {
+        return { x: 52, width: 100 }; // Reaches left toward `-`
+      }
+    }
+    if (dropletState.phase === "absorb" && !atMin && !atMax) {
+      return { x: 62, width: 92 }; // Slight swell as droplet merges into center
+    }
+    return baseCenterGeometry;
+  }, [dropletState, atMin, atMax, baseCenterGeometry]);
+
+  // Coordinates of the travelling liquid droplet inside the 216x48 SVG Gooey field
+  const dropletX = useMemo(() => {
+    const restCenter = baseCenterGeometry.x + (baseCenterGeometry.width - 36) / 2;
+    if (dropletState.phase === "bridge") {
+      return dropletState.dir === 1 ? 156 : 24;
+    }
+    if (dropletState.phase === "absorb") {
+      return dropletState.dir === 1 ? 96 : 84;
+    }
+    return restCenter;
+  }, [dropletState, baseCenterGeometry]);
 
   return (
     <div
@@ -593,9 +667,24 @@ export function BeUIAdaptiveStepper({
           edgeWidth={1}
           className="size-full"
         >
+          {/* LIQUID DROPLET BRIDGE ITEM: Travels from `+` or `-` into the center `[value]` pill */}
+          <LiquidItem
+            x={dropletX}
+            y={6}
+            width={36}
+            height={36}
+            radius={18}
+            transition={{
+              duration: dropletState.phase === "bridge" ? 110 : 340,
+              ease: [0.22, 1.3, 0.71, 1],
+            }}
+          >
+            <span aria-hidden="true" className="block size-full pointer-events-none" />
+          </LiquidItem>
+
           {/* 1. LEFT DECREMENT BUTTON (`-`) */}
           <LiquidItem
-            x={atMin ? 32 : 0}
+            x={atMin ? 32 : dropletState.phase === "bridge" && dropletState.dir === -1 ? 8 : 0}
             y={0}
             width={48}
             height={48}
@@ -614,9 +703,7 @@ export function BeUIAdaptiveStepper({
               onClick={(e) => {
                 e.stopPropagation();
                 if (disabled || atMin) return;
-                setDirection(-1);
-                playStepperTickSound("down");
-                onDecrement();
+                triggerLiquidTransfer(-1, onDecrement);
               }}
               className={cn(
                 "grid size-full place-items-center rounded-full text-gray-900 dark:text-gray-100 outline-none transition-colors hover:bg-black/[0.04] dark:hover:bg-white/[0.06] cursor-pointer disabled:pointer-events-none",
@@ -694,7 +781,7 @@ export function BeUIAdaptiveStepper({
 
           {/* 3. RIGHT INCREMENT BUTTON (`+`) */}
           <LiquidItem
-            x={atMax ? 136 : 168}
+            x={atMax ? 136 : dropletState.phase === "bridge" && dropletState.dir === 1 ? 160 : 168}
             y={0}
             width={48}
             height={48}
@@ -713,9 +800,7 @@ export function BeUIAdaptiveStepper({
               onClick={(e) => {
                 e.stopPropagation();
                 if (disabled || atMax) return;
-                setDirection(1);
-                playStepperTickSound("up");
-                onIncrement();
+                triggerLiquidTransfer(1, onIncrement);
               }}
               className={cn(
                 "grid size-full place-items-center rounded-full text-gray-900 dark:text-gray-100 outline-none transition-colors hover:bg-black/[0.04] dark:hover:bg-white/[0.06] cursor-pointer disabled:pointer-events-none",
@@ -965,3 +1050,879 @@ export function BeUIActionSwapLabel({
     </span>
   );
 }
+
+/* ============================================================================
+ * 5. @beui/loader (variant="metaballs")
+ * Official SVG Metaballs Gooey Loader for Login & Action States
+ * ============================================================================ */
+
+const METABALL_ORBIT_MS = 1600;
+const METABALL_NODES = [
+  { x: 50, y: 20, phase: 0 },
+  { x: 80, y: 50, phase: 0.25 },
+  { x: 50, y: 80, phase: 0.5 },
+  { x: 20, y: 50, phase: 0.75 },
+];
+
+export interface BeUILoaderMetaballsProps {
+  size?: number;
+  className?: string;
+}
+
+export function BeUILoaderMetaballs({ size = 24, className }: BeUILoaderMetaballsProps) {
+  const rawId = useId();
+  const filterId = `beui-metaball-goo-${rawId.replace(/:/g, "")}`;
+  const moverRef = useRef<SVGCircleElement>(null);
+  const nodeRefs = useRef<(SVGCircleElement | null)[]>([]);
+
+  useEffect(() => {
+    let raf: number;
+    const t0 = performance.now();
+
+    const frame = (now: number) => {
+      const progress = ((now - t0) % METABALL_ORBIT_MS) / METABALL_ORBIT_MS;
+      const angle = progress * Math.PI * 2 - Math.PI / 2;
+
+      moverRef.current?.setAttribute("cx", String(50 + 30 * Math.cos(angle)));
+      moverRef.current?.setAttribute("cy", String(50 + 30 * Math.sin(angle)));
+
+      for (let i = 0; i < METABALL_NODES.length; i++) {
+        let dist = Math.abs(progress - METABALL_NODES[i].phase);
+        if (dist > 0.5) dist = 1 - dist;
+        const scale = dist < 0.15 ? 1 + 0.3 * Math.cos((dist / 0.15) * (Math.PI / 2)) : 1;
+        nodeRefs.current[i]?.setAttribute("r", String(10 * scale));
+      }
+
+      raf = requestAnimationFrame(frame);
+    };
+
+    raf = requestAnimationFrame(frame);
+    return () => cancelAnimationFrame(raf);
+  }, []);
+
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 100 100"
+      className={cn("shrink-0 overflow-visible", className)}
+      aria-hidden="true"
+    >
+      <defs>
+        <filter id={filterId} x="-50%" y="-50%" width="200%" height="200%">
+          <feGaussianBlur in="SourceGraphic" stdDeviation="6.5" result="blur" />
+          <feColorMatrix
+            in="blur"
+            mode="matrix"
+            values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 22 -9"
+            result="goo"
+          />
+          <feComposite in="SourceGraphic" in2="goo" operator="atop" />
+        </filter>
+      </defs>
+      <g filter={`url(#${filterId})`} fill="currentColor">
+        {METABALL_NODES.map((c, i) => (
+          <circle
+            key={i}
+            ref={(el) => {
+              nodeRefs.current[i] = el;
+            }}
+            cx={c.x}
+            cy={c.y}
+            r={10}
+          />
+        ))}
+        <circle ref={moverRef} cx={50} cy={20} r={11} />
+      </g>
+    </svg>
+  );
+}
+
+/* ============================================================================
+ * 6. @beui/select
+ * Official Gooey Pinch-Off Border-Radius Select with Staggered Option Reveal
+ * ============================================================================ */
+
+const SELECT_BORDER_RADIUS = 16;
+const SELECT_DURATION = 0.25;
+const SELECT_EASE: [number, number, number, number] = [0.77, 0, 0.175, 1];
+const SELECT_STAGGER = 0.025;
+const SELECT_GAP = 8;
+
+const selectTriggerVariants = {
+  open: {
+    borderBottomLeftRadius: [SELECT_BORDER_RADIUS, 0, SELECT_BORDER_RADIUS],
+    borderBottomRightRadius: [SELECT_BORDER_RADIUS, 0, SELECT_BORDER_RADIUS],
+    transition: { duration: SELECT_DURATION, ease: SELECT_EASE, times: [0, 0.4, 1] },
+  },
+  closed: {
+    borderBottomLeftRadius: [SELECT_BORDER_RADIUS, 0, SELECT_BORDER_RADIUS],
+    borderBottomRightRadius: [SELECT_BORDER_RADIUS, 0, SELECT_BORDER_RADIUS],
+    transition: { duration: SELECT_DURATION, ease: SELECT_EASE, times: [0, 0.6, 1] },
+  },
+};
+
+const selectMenuVariants = {
+  open: {
+    opacity: 1,
+    y: [-1, SELECT_GAP],
+    scale: [0.95, 1],
+    borderTopLeftRadius: [0, SELECT_BORDER_RADIUS],
+    borderTopRightRadius: [0, SELECT_BORDER_RADIUS],
+    transition: {
+      duration: SELECT_DURATION,
+      ease: SELECT_EASE,
+      borderTopLeftRadius: { duration: SELECT_DURATION, ease: SELECT_EASE, times: [0.4, 1] },
+      borderTopRightRadius: { duration: SELECT_DURATION, ease: SELECT_EASE, times: [0.4, 1] },
+      delayChildren: 0.05,
+      staggerChildren: SELECT_STAGGER,
+    },
+  },
+  closed: {
+    opacity: [1, 1, 0],
+    y: [SELECT_GAP, -1, -1],
+    scale: [1, 0.95, 0.95],
+    borderTopLeftRadius: [SELECT_BORDER_RADIUS, 0, SELECT_BORDER_RADIUS],
+    borderTopRightRadius: [SELECT_BORDER_RADIUS, 0, SELECT_BORDER_RADIUS],
+    transition: {
+      duration: SELECT_DURATION,
+      ease: SELECT_EASE,
+      times: [0, 0.6, 1],
+      staggerChildren: SELECT_STAGGER,
+      staggerDirection: -1,
+    },
+  },
+};
+
+const selectItemVariants = {
+  open: {
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.2, ease: "easeOut" as const },
+  },
+  closed: {
+    opacity: 0,
+    y: -10,
+    transition: { duration: 0.12, ease: "easeIn" as const },
+  },
+};
+
+export interface BeUISelectOption {
+  value: string;
+  label: string;
+  icon?: React.ReactNode;
+}
+
+export interface BeUISelectFieldProps {
+  value: string;
+  onChange: (value: string) => void;
+  options: (string | BeUISelectOption)[];
+  placeholder?: string;
+  className?: string;
+  triggerClassName?: string;
+  disabled?: boolean;
+}
+
+export function BeUISelectField({
+  value,
+  onChange,
+  options,
+  placeholder = "Seleccionar...",
+  className,
+  triggerClassName,
+  disabled = false,
+}: BeUISelectFieldProps) {
+  const [open, setOpen] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  const normalizedOptions: BeUISelectOption[] = useMemo(
+    () =>
+      options.map((opt) =>
+        typeof opt === "string" ? { value: opt, label: opt } : opt
+      ),
+    [options]
+  );
+
+  const selectedOption = useMemo(
+    () => normalizedOptions.find((opt) => opt.value === value),
+    [normalizedOptions, value]
+  );
+
+  useEffect(() => {
+    if (!open) return;
+    const handlePointerDown = (e: MouseEvent) => {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    };
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setOpen(false);
+    };
+    document.addEventListener("mousedown", handlePointerDown);
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.removeEventListener("mousedown", handlePointerDown);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [open]);
+
+  return (
+    <div ref={containerRef} className={cn("relative inline-block w-full", className)}>
+      <motion.button
+        type="button"
+        disabled={disabled}
+        onClick={() => !disabled && setOpen((prev) => !prev)}
+        variants={selectTriggerVariants}
+        initial={false}
+        animate={open ? "open" : "closed"}
+        style={{
+          borderTopLeftRadius: SELECT_BORDER_RADIUS,
+          borderTopRightRadius: SELECT_BORDER_RADIUS,
+          borderBottomLeftRadius: SELECT_BORDER_RADIUS,
+          borderBottomRightRadius: SELECT_BORDER_RADIUS,
+        }}
+        className={cn(
+          "flex w-full items-center justify-between gap-2.5 border border-gray-200 dark:border-white/15 bg-white dark:bg-[#161920] px-4 py-2.5 text-xs sm:text-sm font-semibold text-gray-900 dark:text-white shadow-sm transition-colors hover:border-gray-300 dark:hover:border-[#ccff00]/40 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#ccff00]/40 cursor-pointer select-none",
+          open && "border-gray-900/30 dark:border-[#ccff00]/60 ring-2 ring-gray-900/5 dark:ring-[#ccff00]/15",
+          disabled && "opacity-50 cursor-not-allowed",
+          triggerClassName
+        )}
+        aria-expanded={open}
+        aria-haspopup="listbox"
+      >
+        <span className="truncate flex items-center gap-2">
+          {selectedOption?.icon}
+          <span className={cn("truncate", !selectedOption && "text-gray-400 dark:text-gray-500")}>
+            {selectedOption ? selectedOption.label : placeholder}
+          </span>
+        </span>
+        <motion.span
+          animate={{ rotate: open ? 180 : 0 }}
+          transition={{ duration: SELECT_DURATION, ease: SELECT_EASE }}
+          className="inline-flex shrink-0 text-gray-500 dark:text-gray-400"
+        >
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2.2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <path d="m6 9 6 6 6-6" />
+          </svg>
+        </motion.span>
+      </motion.button>
+
+      <AnimatePresence>
+        {open && (
+          <motion.div
+            role="listbox"
+            variants={selectMenuVariants}
+            initial="closed"
+            animate="open"
+            exit="closed"
+            style={{
+              borderBottomLeftRadius: SELECT_BORDER_RADIUS,
+              borderBottomRightRadius: SELECT_BORDER_RADIUS,
+              transformOrigin: "top center",
+            }}
+            className="absolute left-0 right-0 z-[120] overflow-hidden border border-gray-200/90 dark:border-white/15 bg-white/95 dark:bg-[#12151c]/95 backdrop-blur-2xl p-1.5 text-gray-900 dark:text-white shadow-[0_20px_50px_rgba(0,0,0,0.28)] dark:shadow-[0_24px_60px_rgba(0,0,0,0.75)]"
+          >
+            <div className="max-h-60 overflow-y-auto overscroll-contain space-y-0.5 pr-0.5 custom-scrollbar">
+              {normalizedOptions.map((item) => {
+                const isSelected = item.value === value;
+                return (
+                  <motion.div
+                    key={item.value}
+                    role="option"
+                    aria-selected={isSelected}
+                    variants={selectItemVariants}
+                    onClick={() => {
+                      onChange(item.value);
+                      setOpen(false);
+                    }}
+                    className={cn(
+                      "flex w-full cursor-pointer select-none items-center justify-between rounded-xl px-3 py-2 text-xs sm:text-sm font-medium transition-colors",
+                      isSelected
+                        ? "bg-gray-900 text-white dark:bg-[#ccff00] dark:text-gray-950 font-bold shadow-sm"
+                        : "text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-white/10"
+                    )}
+                  >
+                    <span className="truncate flex items-center gap-2">
+                      {item.icon}
+                      <span className="truncate">{item.label}</span>
+                    </span>
+                    {isSelected && (
+                      <svg
+                        width="15"
+                        height="15"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2.5"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        className="shrink-0 ml-2"
+                      >
+                        <path d="M20 6 9 17l-5-5" />
+                      </svg>
+                    )}
+                  </motion.div>
+                );
+              })}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
+
+/* ============================================================================
+ * 7. @beui/center-morph-modal
+ * Official Center Morph Modal (`clipPath: inset(48% 48% 48% 48% round 30px)` -> `inset(0% 0% 0% 0% round 30px)`)
+ * ============================================================================ */
+
+const CENTER_MORPH_BACKDROP_VARIANTS = {
+  closed: { opacity: 0 },
+  open: { opacity: 1 },
+};
+
+const CENTER_MORPH_MODAL_VARIANTS = {
+  closed: {
+    clipPath: "inset(48% 48% 48% 48% round 30px)",
+    scale: 0.9,
+    opacity: 0,
+  },
+  open: {
+    clipPath: "inset(0% 0% 0% 0% round 30px)",
+    scale: 1,
+    opacity: 1,
+  },
+};
+
+const CENTER_MORPH_TRANSITION = {
+  duration: 0.43,
+  ease: [0.2, 0, 0.2, 1] as const,
+};
+
+export interface BeUICenterMorphModalProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  children: React.ReactNode;
+  className?: string;
+}
+
+export function BeUICenterMorphModal({
+  open,
+  onOpenChange,
+  children,
+  className,
+}: BeUICenterMorphModalProps) {
+  useEffect(() => {
+    if (!open) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onOpenChange(false);
+    };
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [open, onOpenChange]);
+
+  return (
+    <AnimatePresence>
+      {open && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 overflow-y-auto">
+          <motion.div
+            variants={CENTER_MORPH_BACKDROP_VARIANTS}
+            initial="closed"
+            animate="open"
+            exit="closed"
+            transition={CENTER_MORPH_TRANSITION}
+            onClick={() => onOpenChange(false)}
+            className="fixed inset-0 bg-black/75 backdrop-blur-md"
+          />
+          <motion.div
+            role="dialog"
+            aria-modal="true"
+            variants={CENTER_MORPH_MODAL_VARIANTS}
+            initial="closed"
+            animate="open"
+            exit="closed"
+            transition={CENTER_MORPH_TRANSITION}
+            className={cn(
+              "relative z-10 w-full max-w-2xl rounded-[30px] overflow-hidden shadow-2xl will-change-[clip-path,transform,opacity]",
+              className
+            )}
+          >
+            {children}
+          </motion.div>
+        </div>
+      )}
+    </AnimatePresence>
+  );
+}
+
+/* ============================================================================
+ * 8. @beui/expandable-action-bar (Lateral Rightwards Expandable Sidebar for PC & Tablets)
+ * Expands laterally to the right on pointer hover or tablet tap toggle
+ * ============================================================================ */
+
+const SIDEBAR_EXPAND_SPRING = {
+  type: "spring" as const,
+  duration: 0.38,
+  bounce: 0.1,
+};
+
+const SIDEBAR_LABEL_TRANSITION = {
+  opacity: { duration: 0.2 },
+  x: { type: "spring" as const, duration: 0.35, bounce: 0.08 },
+};
+
+export interface BeUISidebarNavItem {
+  id: string;
+  label: string;
+  subtitle?: string;
+  icon: React.ReactNode;
+  active: boolean;
+  onClick: () => void;
+  badgeCount?: number;
+  alertDot?: boolean;
+  accentColor?: "lime" | "default";
+}
+
+export interface BeUILateralExpandableSidebarProps {
+  brandHref?: string;
+  brandTitle?: string;
+  brandSubtitle?: string;
+  isAdmin?: boolean;
+  topSpecialItem?: BeUISidebarNavItem;
+  primaryItems: BeUISidebarNavItem[];
+  secondaryItems?: BeUISidebarNavItem[];
+  footerSlot?: (isExpanded: boolean) => React.ReactNode;
+  className?: string;
+}
+
+export function BeUILateralExpandableSidebar({
+  brandHref = "/",
+  brandTitle = "Lumina",
+  brandSubtitle,
+  isAdmin = false,
+  topSpecialItem,
+  primaryItems,
+  secondaryItems = [],
+  footerSlot,
+  className,
+}: BeUILateralExpandableSidebarProps) {
+  const [isHovered, setIsHovered] = useState(false);
+  const [isPinned, setIsPinned] = useState(false);
+  const [hoveredItemId, setHoveredItemId] = useState<string | null>(null);
+
+  const isExpanded = isHovered || isPinned;
+
+  const renderNavButton = (item: BeUISidebarNavItem, isSpecialLime = false) => {
+    const isHighlighted = hoveredItemId === item.id;
+    return (
+      <motion.button
+        key={item.id}
+        type="button"
+        onClick={item.onClick}
+        onMouseEnter={() => setHoveredItemId(item.id)}
+        onMouseLeave={() => setHoveredItemId(null)}
+        className={cn(
+          "relative w-full h-11 rounded-2xl flex items-center px-3 gap-3.5 transition-colors duration-200 cursor-pointer select-none group overflow-hidden",
+          item.active
+            ? isSpecialLime
+              ? "bg-[#ccff00] text-gray-950 font-bold shadow-[0_6px_20px_rgba(204,255,0,0.28)]"
+              : "bg-gray-900 dark:bg-white text-white dark:text-gray-950 font-semibold shadow-md"
+            : "text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
+        )}
+      >
+        {/* @beui/expandable-action-bar shared hover highlight pill */}
+        {!item.active && isHighlighted && (
+          <motion.span
+            layoutId="beui-sidebar-hover-pill"
+            className="absolute inset-0 rounded-2xl bg-gray-100/90 dark:bg-white/[0.07] -z-10"
+            transition={SIDEBAR_EXPAND_SPRING}
+          />
+        )}
+
+        {/* Active left indicator accent */}
+        {item.active && !isSpecialLime && (
+          <motion.span
+            layoutId="beui-sidebar-active-bar"
+            className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-5 rounded-r-full bg-[#ccff00]"
+            transition={SIDEBAR_EXPAND_SPRING}
+          />
+        )}
+
+        {/* Fixed 28px Icon Column so icons never jump horizontally */}
+        <span className="relative w-7 h-7 flex items-center justify-center shrink-0">
+          {item.icon}
+
+          {/* Collapsed badge / alert dot */}
+          {!isExpanded && item.alertDot && (
+            <span className="absolute -top-1 -right-1 w-3.5 h-3.5 rounded-full bg-amber-500 text-white text-[8px] font-extrabold flex items-center justify-center shadow-sm ring-2 ring-white dark:ring-[#121316]">
+              !
+            </span>
+          )}
+          {!isExpanded && !item.alertDot && item.badgeCount !== undefined && item.badgeCount > 0 && (
+            <span
+              className={cn(
+                "absolute -top-1 -right-1.5 min-w-[16px] h-4 px-1 rounded-full text-[9px] font-bold flex items-center justify-center shadow-sm",
+                item.active
+                  ? "bg-[#ccff00] text-gray-950"
+                  : "bg-gray-900 dark:bg-white text-white dark:text-gray-900"
+              )}
+            >
+              {item.badgeCount}
+            </span>
+          )}
+        </span>
+
+        {/* Lateral Expanded Label & Badges */}
+        <AnimatePresence initial={false}>
+          {isExpanded && (
+            <motion.div
+              initial={{ opacity: 0, x: -8 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -8 }}
+              transition={SIDEBAR_LABEL_TRANSITION}
+              className="flex-1 min-w-0 flex items-center justify-between gap-2 overflow-hidden whitespace-nowrap"
+            >
+              <div className="text-left truncate">
+                <span className="block text-xs sm:text-[13px] tracking-tight truncate">
+                  {item.label}
+                </span>
+                {item.subtitle && (
+                  <span
+                    className={cn(
+                      "block text-[10px] font-normal truncate",
+                      item.active
+                        ? isSpecialLime
+                          ? "text-gray-900/75"
+                          : "text-white/70 dark:text-gray-700"
+                        : "text-gray-400 dark:text-gray-500"
+                    )}
+                  >
+                    {item.subtitle}
+                  </span>
+                )}
+              </div>
+
+              {item.alertDot && (
+                <span className="px-1.5 py-0.5 rounded-full bg-amber-500/20 text-amber-500 border border-amber-500/30 text-[9px] font-extrabold uppercase shrink-0">
+                  Pendiente
+                </span>
+              )}
+              {!item.alertDot && item.badgeCount !== undefined && item.badgeCount > 0 && (
+                <span
+                  className={cn(
+                    "px-2 py-0.5 rounded-full text-[10px] font-bold shrink-0",
+                    item.active
+                      ? isSpecialLime
+                        ? "bg-gray-950 text-[#ccff00]"
+                        : "bg-[#ccff00] text-gray-950"
+                      : "bg-gray-200/80 dark:bg-white/10 text-gray-700 dark:text-gray-300"
+                  )}
+                >
+                  {item.badgeCount}
+                </span>
+              )}
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </motion.button>
+    );
+  };
+
+  return (
+    /* Reserved 84px footprint in flex layout so expanding rightwards smoothly overlays without shifting page layout */
+    <div
+      className={cn(
+        "hidden md:block relative w-[84px] shrink-0 h-full z-40 select-none",
+        className
+      )}
+    >
+      <motion.aside
+        initial={false}
+        animate={{ width: isExpanded ? 256 : 76 }}
+        transition={SIDEBAR_EXPAND_SPRING}
+        onMouseEnter={() => setIsHovered(true)}
+        onMouseLeave={() => {
+          setIsHovered(false);
+          setHoveredItemId(null);
+        }}
+        className={cn(
+          "absolute left-0 top-0 bottom-0 flex flex-col justify-between py-4 px-3 rounded-[2rem] bg-white/90 dark:bg-[#121316]/95 backdrop-blur-2xl border border-gray-200/80 dark:border-white/[0.08] transition-shadow duration-300 overflow-hidden",
+          isExpanded
+            ? "shadow-[0_24px_60px_rgba(0,0,0,0.18)] dark:shadow-[0_24px_70px_rgba(0,0,0,0.75)] ring-1 ring-black/5 dark:ring-[#ccff00]/20"
+            : "shadow-xl shadow-gray-200/40 dark:shadow-none"
+        )}
+      >
+        {/* Top Brand + Tablet/Mouse Pin Toggle */}
+        <div className="flex flex-col gap-2 w-full">
+          <div className="flex items-center justify-between px-1 mb-1">
+            <a
+              href={brandHref}
+              className="flex items-center gap-3 group focus:outline-none min-w-0"
+              title="Volver a la tienda Lumina"
+            >
+              <div className="w-11 h-11 rounded-2xl bg-gray-900 dark:bg-white text-white dark:text-gray-950 flex items-center justify-center font-serif font-bold text-lg shadow-md group-hover:scale-105 transition-transform shrink-0">
+                L.
+              </div>
+              <AnimatePresence initial={false}>
+                {isExpanded && (
+                  <motion.div
+                    initial={{ opacity: 0, x: -8 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: -8 }}
+                    transition={SIDEBAR_LABEL_TRANSITION}
+                    className="min-w-0 overflow-hidden whitespace-nowrap"
+                  >
+                    <span className="block font-serif font-bold text-base text-gray-900 dark:text-white tracking-tight truncate">
+                      {brandTitle}
+                    </span>
+                    <span className="block text-[10px] font-mono uppercase tracking-wider text-gray-400 dark:text-[#ccff00]">
+                      {brandSubtitle || (isAdmin ? "Panel Ejecutivo" : "Mi Espacio")}
+                    </span>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </a>
+
+            {/* Pin / Expand Toggle Button for Tablet & Mouse Users */}
+            <AnimatePresence initial={false}>
+              {isExpanded && (
+                <motion.button
+                  initial={{ opacity: 0, scale: 0.8 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.8 }}
+                  type="button"
+                  onClick={() => setIsPinned((prev) => !prev)}
+                  title={isPinned ? "Desfijar menú lateral" : "Fijar menú desplegado"}
+                  className={cn(
+                    "w-7 h-7 rounded-xl flex items-center justify-center transition-colors cursor-pointer shrink-0",
+                    isPinned
+                      ? "bg-[#ccff00] text-gray-950 shadow-sm"
+                      : "bg-gray-100 dark:bg-white/10 text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
+                  )}
+                >
+                  <svg
+                    width="14"
+                    height="14"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2.2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    {isPinned ? (
+                      <path d="m15 18-6-6 6-6" />
+                    ) : (
+                      <path d="m9 18 6-6-6-6" />
+                    )}
+                  </svg>
+                </motion.button>
+              )}
+            </AnimatePresence>
+          </div>
+
+          <div className="w-full h-[1px] bg-gray-200/70 dark:bg-white/[0.06] my-0.5" />
+
+          {/* Special Admin / Top Action Item */}
+          {topSpecialItem && (
+            <>
+              {renderNavButton(topSpecialItem, true)}
+              <div className="w-full h-[1px] bg-gray-200/70 dark:bg-white/[0.06] my-0.5" />
+            </>
+          )}
+
+          {/* Primary Navigation Items */}
+          <nav className="flex flex-col gap-1 w-full">
+            {primaryItems.map((item) => renderNavButton(item, false))}
+          </nav>
+
+          {/* Secondary Navigation Items */}
+          {secondaryItems.length > 0 && (
+            <>
+              <div className="w-full h-[1px] bg-gray-200/70 dark:bg-white/[0.06] my-0.5" />
+              <nav className="flex flex-col gap-1 w-full">
+                {secondaryItems.map((item) => renderNavButton(item, false))}
+              </nav>
+            </>
+          )}
+        </div>
+
+        {/* Bottom User Profile & Quick Actions Footer */}
+        {footerSlot && (
+          <div className="w-full pt-2 border-t border-gray-200/70 dark:border-white/[0.06]">
+            {footerSlot(isExpanded)}
+          </div>
+        )}
+      </motion.aside>
+    </div>
+  );
+}
+
+/* ============================================================================
+ * 9. @beui/expandable-tabs (Mobile Bottom Navigation Bar for Small Screens)
+ * Official Expandable Tabs with dynamic label width measurement & spring pills
+ * ============================================================================ */
+
+const MOBILE_TAB_SPRING = {
+  type: "spring" as const,
+  duration: 0.45,
+  bounce: 0.05,
+};
+
+const MOBILE_LABEL_OPEN = {
+  opacity: { duration: 0.2, delay: 0.08 },
+  x: { type: "spring" as const, duration: 0.35, bounce: 0.05, delay: 0.04 },
+};
+
+const MOBILE_LABEL_CLOSE = {
+  opacity: { duration: 0.12 },
+  x: { duration: 0.15 },
+};
+
+export interface BeUIMobileTabItem {
+  id: string;
+  label: string;
+  icon: React.ReactNode;
+  active: boolean;
+  onClick: () => void;
+  badgeCount?: number;
+  alertDot?: boolean;
+  isSpecialLime?: boolean;
+}
+
+export interface BeUIMobileExpandableTabsProps {
+  items: BeUIMobileTabItem[];
+  trailingAction?: React.ReactNode;
+  className?: string;
+}
+
+export function BeUIMobileExpandableTabs({
+  items,
+  trailingAction,
+  className,
+}: BeUIMobileExpandableTabsProps) {
+  const [labelWidths, setLabelWidths] = useState<Record<string, number>>({});
+  const measureRefs = useRef<Record<string, HTMLSpanElement | null>>({});
+
+  useEffect(() => {
+    const measure = () => {
+      const next: Record<string, number> = {};
+      for (const item of items) {
+        const el = measureRefs.current[item.id];
+        if (el) {
+          next[item.id] = Math.ceil(el.getBoundingClientRect().width);
+        }
+      }
+      setLabelWidths(next);
+    };
+    measure();
+    window.addEventListener("resize", measure);
+    return () => window.removeEventListener("resize", measure);
+  }, [items]);
+
+  const collapsedSize = 42;
+  const expandedExtraPadding = 22;
+
+  return (
+    <nav
+      aria-label="Navegación móvil expandible"
+      className={cn(
+        "fixed bottom-3 inset-x-3 z-40 md:hidden bg-white/95 dark:bg-[#121316]/95 backdrop-blur-2xl border border-gray-200/80 dark:border-white/[0.08] rounded-full p-1.5 shadow-[0_12px_40px_rgba(0,0,0,0.18)] dark:shadow-[0_16px_50px_rgba(0,0,0,0.75)] flex items-center justify-between gap-1 overflow-x-auto no-scrollbar select-none",
+        className
+      )}
+    >
+      {/* Hidden measurement spans for exact @beui/expandable-tabs width spring */}
+      <div
+        aria-hidden
+        className="pointer-events-none fixed left-0 top-0 -z-50 flex opacity-0 whitespace-nowrap"
+      >
+        {items.map((item) => (
+          <span
+            key={item.id}
+            ref={(el) => {
+              measureRefs.current[item.id] = el;
+            }}
+            className="text-xs font-bold tracking-tight px-1"
+          >
+            {item.label}
+          </span>
+        ))}
+      </div>
+
+      <div className="flex items-center justify-around flex-1 min-w-0 gap-1">
+        {items.map((item) => {
+          const isActive = item.active;
+          const measuredW = labelWidths[item.id] ?? 64;
+          const targetWidth = isActive
+            ? collapsedSize + measuredW + expandedExtraPadding
+            : collapsedSize;
+
+          return (
+            <motion.button
+              key={item.id}
+              type="button"
+              onClick={item.onClick}
+              initial={false}
+              animate={{ width: targetWidth }}
+              transition={MOBILE_TAB_SPRING}
+              className={cn(
+                "relative flex h-[42px] shrink-0 items-center justify-center overflow-hidden rounded-full cursor-pointer select-none transition-colors duration-200",
+                isActive
+                  ? item.isSpecialLime
+                    ? "bg-[#ccff00] text-gray-950 font-bold shadow-[0_0_15px_rgba(204,255,0,0.35)]"
+                    : "bg-gray-900 dark:bg-white text-white dark:text-gray-950 font-bold shadow-md"
+                  : "text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-white/5"
+              )}
+            >
+              <div className="relative z-10 flex items-center justify-center gap-1.5 px-2.5">
+                <span className="relative flex items-center justify-center shrink-0">
+                  {item.icon}
+                  {!isActive && item.alertDot && (
+                    <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-amber-500 ring-2 ring-white dark:ring-[#121316]" />
+                  )}
+                  {!isActive && !item.alertDot && item.badgeCount !== undefined && item.badgeCount > 0 && (
+                    <span className="absolute -top-1.5 -right-1.5 min-w-[14px] h-3.5 px-1 rounded-full bg-[#ccff00] text-gray-950 text-[8px] font-black flex items-center justify-center">
+                      {item.badgeCount}
+                    </span>
+                  )}
+                </span>
+
+                <motion.span
+                  initial={false}
+                  animate={{
+                    opacity: isActive ? 1 : 0,
+                    x: isActive ? 0 : 8,
+                  }}
+                  transition={isActive ? MOBILE_LABEL_OPEN : MOBILE_LABEL_CLOSE}
+                  className={cn(
+                    " whitespace-nowrap text-xs font-bold tracking-tight",
+                    !isActive && "pointer-events-none absolute left-full"
+                  )}
+                >
+                  {item.label}
+                </motion.span>
+              </div>
+            </motion.button>
+          );
+        })}
+      </div>
+
+      {trailingAction && (
+        <div className="pl-1 border-l border-gray-200/70 dark:border-white/10 shrink-0">
+          {trailingAction}
+        </div>
+      )}
+    </nav>
+  );
+}
+

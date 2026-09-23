@@ -43,6 +43,13 @@ import { AddCardAnimatedModal } from "@/components/profile/AddCardAnimatedModal"
 import { OverviewTab } from "@/components/profile/tabs/OverviewTab";
 import { OrdersTab } from "@/components/profile/tabs/OrdersTab";
 import { CardsTab } from "@/components/profile/tabs/CardsTab";
+import {
+  BeUISelectField,
+  BeUICenterMorphModal,
+  BeUILateralExpandableSidebar,
+  BeUIMobileExpandableTabs,
+} from "@/components/ui/BeUIControls";
+import { BeUIThemeToggleCircleBlur } from "@/components/ui/ThemeToggle";
 import { LuminaBrandEmblem } from "@/components/ui/LuminaBrandEmblem";
 import { FavoritesTab } from "@/components/profile/tabs/FavoritesTab";
 import { CatalogTab } from "@/components/profile/tabs/CatalogTab";
@@ -633,19 +640,11 @@ const handleConfirmDeleteNiche = async () => {
  return (
  <div className={clsx(resolvedTheme === 'dark' ? 'dark' : '')}>
  <style>{`
- :where(.theme-transition), :where(.theme-transition *) {
+ html:not([data-beui-vt]) :where(.theme-transition),
+ html:not([data-beui-vt]) :where(.theme-transition *) {
  transition-property: background-color, border-color, color, fill, stroke;
  transition-duration: 1500ms;
  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
- }
- /* Left Vertical Navigation Dock: Precisely 0.6s (600ms) transition */
- .sidebar-dock-nav,
- .sidebar-dock-nav *,
- .sidebar-dock-btn,
- .sidebar-dock-btn * {
- transition-property: all !important;
- transition-duration: 600ms !important;
- transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1) !important;
  }
   /* Clean seamless scroll for order details modal (no native bar) */
   .lumina-order-modal-scroll {
@@ -660,218 +659,137 @@ const handleConfirmDeleteNiche = async () => {
  `}</style>
   <div className="theme-transition min-h-screen w-full max-w-full overflow-x-hidden bg-[#f3f4f6] dark:bg-[#202022] text-gray-900 dark:text-gray-100 flex flex-col md:flex-row p-2.5 sm:p-4 md:p-6 lg:p-8 selection:bg-[#8c9276]/20">
   
-  {/* 1. Left Vertical Icon Sidebar (Desktop Dock) */}
-  <aside className="hidden md:flex sidebar-dock-nav w-16 md:w-20 bg-white/95 dark:bg-[#1e1e20]/95 backdrop-blur-2xl rounded-3xl border border-gray-200/80 dark:border-white/10 shadow-[0_12px_40px_rgba(0,0,0,0.05)] dark:shadow-[0_12px_40px_rgba(0,0,0,0.4)] flex-col items-center py-6 gap-6 justify-between shrink-0 mr-4 md:mr-6 self-stretch relative z-30">
- 
-  {/* Brand Logo Symbol */}
-  <div className="flex flex-col items-center gap-5 w-full">
-  <Link 
-    href="/" 
-    className="sidebar-dock-btn group relative w-11 h-11 md:w-12 md:h-12 rounded-2xl bg-gradient-to-br from-[#1c1b18] via-[#121210] to-[#080808] border border-[#c49a3f]/50 dark:border-[#c49a3f]/60 flex items-center justify-center shadow-lg shadow-[#c49a3f]/15 hover:border-[#e0be70] hover:shadow-[0_0_20px_rgba(218,175,85,0.4)] hover:scale-105 active:scale-95 transition-all duration-300" 
-    title={`${brand.name} • Volver a la Tienda`}
-  >
-    <LuminaBrandEmblem size={38} />
-    <span className="absolute -bottom-1 w-1.5 h-1.5 rounded-full bg-[#c49a3f] shadow-[0_0_8px_#c49a3f] opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-  </Link>
+  {/* 1. Left Vertical Expandable Action Sidebar (PC, Laptops & Tablets) */}
+  <BeUILateralExpandableSidebar
+    brandHref="/"
+    brandTitle={brand.name}
+    brandSubtitle={isAdmin ? "Panel Ejecutivo" : "Mi Espacio"}
+    isAdmin={isAdmin}
+    className="mr-4 md:mr-6 self-stretch"
+    primaryItems={[
+      {
+        id: "overview",
+        label: "Vista General",
+        subtitle: "Resumen de actividad",
+        icon: <LayoutDashboard className="w-5 h-5" />,
+        active: activeTab === "overview",
+        onClick: () => setActiveTab("overview"),
+      },
+      {
+        id: "orders",
+        label: "Pedidos & Historial",
+        subtitle: `${orders.length} registrados`,
+        icon: <ShoppingBag className="w-5 h-5" />,
+        active: activeTab === "orders",
+        onClick: () => setActiveTab("orders"),
+        badgeCount: pendingOrdersCount > 0 ? pendingOrdersCount : undefined,
+      },
+      {
+        id: "cards",
+        label: "Mis Tarjetas",
+        subtitle: `${cards.length} vinculadas`,
+        icon: <CreditCard className="w-5 h-5" />,
+        active: activeTab === "cards",
+        onClick: () => setActiveTab("cards"),
+      },
+      {
+        id: "favorites",
+        label: "Favoritos Guardados",
+        subtitle: `${favorites.length} artículos`,
+        icon: <Heart className="w-5 h-5" />,
+        active: activeTab === "favorites",
+        onClick: () => setActiveTab("favorites"),
+        badgeCount: favorites.length > 0 ? favorites.length : undefined,
+      },
+    ]}
+    secondaryItems={[
+      ...(isAdmin
+        ? [
+            {
+              id: "catalog",
+              label: "Control del Inventario",
+              subtitle: `${products.length} productos activos`,
+              icon: <Package className="w-5 h-5" />,
+              active: activeTab === "catalog",
+              onClick: () => setActiveTab("catalog"),
+            },
+            {
+              id: "niches",
+              label: "Gestión de Nichos",
+              subtitle: `${categories.length} categorías`,
+              icon: <Layers className="w-5 h-5" />,
+              active: activeTab === "niches",
+              onClick: () => setActiveTab("niches"),
+            },
+            {
+              id: "analytics",
+              label: "Radar & Analítica",
+              subtitle: "Telemetría en vivo",
+              icon: <Globe className="w-5 h-5" />,
+              active: activeTab === "analytics",
+              onClick: () => setActiveTab("analytics"),
+            },
+            {
+              id: "cart_alerts",
+              label: "Alertas de Bolsa",
+              subtitle: "Monitor Sileo en vivo",
+              icon: <BellRing className="w-5 h-5" />,
+              active: activeTab === "cart_alerts",
+              onClick: () => setActiveTab("cart_alerts"),
+            },
+            {
+              id: "integrations",
+              label: "Servidor & Pasarelas",
+              subtitle: "SMTP y PayPhone",
+              icon: <Server className="w-5 h-5" />,
+              active: activeTab === "integrations",
+              onClick: () => setActiveTab("integrations"),
+            },
+          ]
+        : []),
+      {
+        id: "settings",
+        label: "Ajustes de Cuenta",
+        subtitle: "Tema, seguridad y perfil",
+        icon: <Settings className="w-5 h-5" />,
+        active: activeTab === "settings",
+        onClick: () => setActiveTab("settings"),
+      },
+    ]}
+    footerSlot={(isExpanded) => (
+      <div className="flex flex-col gap-2 w-full">
+        <div className={clsx("flex items-center", isExpanded ? "justify-between px-1" : "justify-center")}>
+          <BeUIThemeToggleCircleBlur size="sm" showLabel={isExpanded} />
+          {isExpanded && (
+            <Link
+              href="/"
+              className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-semibold text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-white/5 transition-colors"
+              title="Volver a la Tienda"
+            >
+              <Store className="w-4 h-4" />
+              <span>Tienda</span>
+            </Link>
+          )}
+        </div>
 
- {/* Visible section divider */}
- <div className="w-9 md:w-10 h-[2px] bg-gray-300/80 dark:bg-white/20 rounded-full my-0.5 transition-colors shrink-0" />
-
- {/* Navigation Icons */}
- <nav className="flex flex-col items-center gap-2.5 w-full px-2">
- <button 
-   onClick={() => setActiveTab("overview")} 
-   className={`sidebar-dock-btn relative w-11 h-11 md:w-12 md:h-12 rounded-2xl flex items-center justify-center transition-all duration-[600ms] cursor-pointer group ${
-     activeTab === "overview" 
-       ? "bg-gray-950 dark:bg-white text-white dark:text-gray-950 shadow-lg shadow-gray-950/20 dark:shadow-white/15 scale-105" 
-       : "text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100/80 dark:hover:bg-white/5 hover:scale-105 active:scale-95"
-   }`}
-   title="Vista General"
- >
-   {activeTab === "overview" && (
-     <span className="absolute -left-2 w-1 h-5 bg-[#8c9276] dark:bg-[#ccff00] rounded-r-full transition-all duration-[600ms]" />
-   )}
-   <LayoutDashboard className="w-5 h-5 transition-all duration-300 group-hover:scale-115 group-hover:rotate-6 group-hover:-translate-y-0.5" />
- </button>
-
- <button 
-   onClick={() => setActiveTab("orders")} 
-   className={`sidebar-dock-btn relative w-11 h-11 md:w-12 md:h-12 rounded-2xl flex items-center justify-center transition-all duration-[600ms] cursor-pointer group ${
-     activeTab === "orders" 
-       ? "bg-gray-950 dark:bg-white text-white dark:text-gray-950 shadow-lg shadow-gray-950/20 dark:shadow-white/15 scale-105" 
-       : "text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100/80 dark:hover:bg-white/5 hover:scale-105 active:scale-95"
-   }`}
-   title="Pedidos & Historial"
- >
-   {activeTab === "orders" && (
-     <span className="absolute -left-2 w-1 h-5 bg-[#8c9276] dark:bg-[#ccff00] rounded-r-full transition-all duration-[600ms]" />
-   )}
-   <ShoppingBag className="w-5 h-5 transition-all duration-300 group-hover:scale-115 group-hover:-rotate-12 group-hover:-translate-y-0.5" />
-   {pendingOrdersCount > 0 && (
-     <span 
-       className={`absolute flex items-center justify-center select-none pointer-events-none transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] ${
-         activeTab === "orders"
-           ? "top-1 right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-[#8c9276] text-white dark:text-gray-950 text-[10px] font-extrabold ring-2 ring-gray-950 dark:ring-white shadow-sm scale-100"
-           : "top-[9px] right-[8px] md:top-[10px] md:right-[9px] min-w-0 h-auto p-0 rounded-none bg-transparent text-[#8c9276] dark:text-[#a3a98d] text-xs font-black ring-0 shadow-none scale-105"
-       }`}
-       title={`${pendingOrdersCount} pedido(s) en curso`}
-     >
-       {pendingOrdersCount > 99 ? "99+" : pendingOrdersCount}
-     </span>
-   )}
- </button>
-
- <button 
-   onClick={() => setActiveTab("cards")} 
-   className={`sidebar-dock-btn relative w-11 h-11 md:w-12 md:h-12 rounded-2xl flex items-center justify-center transition-all duration-[600ms] cursor-pointer group ${
-     activeTab === "cards" 
-       ? "bg-gray-950 dark:bg-white text-white dark:text-gray-950 shadow-lg shadow-gray-950/20 dark:shadow-white/15 scale-105" 
-       : "text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100/80 dark:hover:bg-white/5 hover:scale-105 active:scale-95"
-   }`}
-   title="Mis Tarjetas"
- >
-   {activeTab === "cards" && (
-     <span className="absolute -left-2 w-1 h-5 bg-[#8c9276] dark:bg-[#ccff00] rounded-r-full transition-all duration-[600ms]" />
-   )}
-   <CreditCard className="w-5 h-5 transition-all duration-300 group-hover:scale-115 group-hover:-rotate-6 group-hover:-translate-y-0.5" />
- </button>
-
- <button 
-   onClick={() => setActiveTab("favorites")} 
-   className={`sidebar-dock-btn relative w-11 h-11 md:w-12 md:h-12 rounded-2xl flex items-center justify-center transition-all duration-[600ms] cursor-pointer group ${
-     activeTab === "favorites" 
-       ? "bg-gray-950 dark:bg-white text-white dark:text-gray-950 shadow-lg shadow-gray-950/20 dark:shadow-white/15 scale-105" 
-       : "text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100/80 dark:hover:bg-white/5 hover:scale-105 active:scale-95"
-   }`}
-   title="Favoritos Guardados"
- >
-   {activeTab === "favorites" && (
-     <span className="absolute -left-2 w-1 h-5 bg-[#8c9276] dark:bg-[#ccff00] rounded-r-full transition-all duration-[600ms]" />
-   )}
-   <Heart className="w-5 h-5 transition-all duration-300 group-hover:scale-125 group-hover:text-rose-500 group-hover:-translate-y-0.5" />
-   {favorites.length > 0 && activeTab !== "favorites" && (
-     <span className="absolute top-2 right-2 w-2 h-2 rounded-full bg-rose-500 ring-2 ring-white dark:ring-[#1e1e20]" />
-   )}
- </button>
-
- {isAdmin && (
-   <>
-     <div className="w-9 md:w-10 h-[2px] bg-gray-300/80 dark:bg-white/20 rounded-full my-0.5 transition-colors shrink-0" />
-
-     <button 
-       onClick={() => setActiveTab("catalog")} 
-       className={`sidebar-dock-btn relative w-11 h-11 md:w-12 md:h-12 rounded-2xl flex items-center justify-center transition-all duration-[600ms] cursor-pointer group ${
-         activeTab === "catalog" 
-           ? "bg-gray-950 dark:bg-white text-white dark:text-gray-950 shadow-lg shadow-gray-950/20 dark:shadow-white/15 scale-105" 
-           : "text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100/80 dark:hover:bg-white/5 hover:scale-105 active:scale-95"
-       }`}
-       title="Control de Catálogo"
-     >
-       {activeTab === "catalog" && (
-         <span className="absolute -left-2 w-1 h-5 bg-[#8c9276] dark:bg-[#ccff00] rounded-r-full transition-all duration-[600ms]" />
-       )}
-       <Package className="w-5 h-5 transition-all duration-300 group-hover:scale-115 group-hover:-translate-y-1" />
-     </button>
-
-     <button 
-       onClick={() => setActiveTab("niches")} 
-       className={`sidebar-dock-btn relative w-11 h-11 md:w-12 md:h-12 rounded-2xl flex items-center justify-center transition-all duration-[600ms] cursor-pointer group ${
-         activeTab === "niches" 
-           ? "bg-gray-950 dark:bg-white text-white dark:text-gray-950 shadow-lg shadow-gray-950/20 dark:shadow-white/15 scale-105" 
-           : "text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100/80 dark:hover:bg-white/5 hover:scale-105 active:scale-95"
-       }`}
-       title="Gestión de Nichos"
-     >
-       {activeTab === "niches" && (
-         <span className="absolute -left-2 w-1 h-5 bg-[#8c9276] dark:bg-[#ccff00] rounded-r-full transition-all duration-[600ms]" />
-       )}
-       <Layers className="w-5 h-5 transition-all duration-300 group-hover:scale-115 group-hover:-translate-y-1 group-hover:rotate-3" />
-     </button>
-
-     <button 
-       onClick={() => setActiveTab("analytics")} 
-       className={`sidebar-dock-btn relative w-11 h-11 md:w-12 md:h-12 rounded-2xl flex items-center justify-center transition-all duration-[600ms] cursor-pointer group ${
-         activeTab === "analytics" 
-           ? "bg-gray-950 dark:bg-white text-white dark:text-gray-950 shadow-lg shadow-gray-950/20 dark:shadow-white/15 scale-105" 
-           : "text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100/80 dark:hover:bg-white/5 hover:scale-105 active:scale-95"
-       }`}
-       title="Radar de Clientes & Analítica"
-     >
-       {activeTab === "analytics" && (
-         <span className="absolute -left-2 w-1 h-5 bg-[#8c9276] dark:bg-[#ccff00] rounded-r-full transition-all duration-[600ms]" />
-       )}
-       <Globe className="w-5 h-5 transition-all duration-500 group-hover:scale-115 group-hover:rotate-90 group-hover:text-[#8c9276]" />
-     </button>
-
-     <button 
-       onClick={() => setActiveTab("cart_alerts")} 
-       className={`sidebar-dock-btn relative w-11 h-11 md:w-12 md:h-12 rounded-2xl flex items-center justify-center transition-all duration-[600ms] cursor-pointer group ${
-         activeTab === "cart_alerts" 
-           ? "bg-gray-950 dark:bg-white text-white dark:text-gray-950 shadow-lg shadow-gray-950/20 dark:shadow-white/15 scale-105" 
-           : "text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100/80 dark:hover:bg-white/5 hover:scale-105 active:scale-95"
-       }`}
-        title="Alertas de Bolsa (Sileo)"
-     >
-       {activeTab === "cart_alerts" && (
-         <span className="absolute -left-2 w-1 h-5 bg-[#8c9276] dark:bg-[#ccff00] rounded-r-full transition-all duration-[600ms]" />
-       )}
-       <BellRing className="w-5 h-5 transition-all duration-300 group-hover:scale-115 group-hover:rotate-12 group-hover:-translate-y-0.5" />
-     </button>
-        <button 
-        onClick={() => setActiveTab("integrations")} 
-        className={`sidebar-dock-btn relative w-11 h-11 md:w-12 md:h-12 rounded-2xl flex items-center justify-center transition-all duration-[600ms] cursor-pointer group ${
-          activeTab === "integrations" 
-            ? "bg-gray-950 dark:bg-white text-white dark:text-gray-950 shadow-lg shadow-gray-950/20 dark:shadow-white/15 scale-105" 
-            : "text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100/80 dark:hover:bg-white/5 hover:scale-105 active:scale-95"
-        }`}
-        title="Servidor SMTP & Pasarelas (Vercel)"
-      >
-        {activeTab === "integrations" && (
-          <span className="absolute -left-2 w-1 h-5 bg-[#8c9276] dark:bg-[#ccff00] rounded-r-full transition-all duration-[600ms]" />
-        )}
-        <Server className="w-5 h-5 transition-all duration-300 group-hover:scale-115 group-hover:rotate-3 group-hover:-translate-y-0.5" />
-      </button>
-   </>
- )}
-
- <div className="w-9 md:w-10 h-[2px] bg-gray-300/80 dark:bg-white/20 rounded-full my-0.5 transition-colors shrink-0" />
-
- <button 
-   onClick={() => setActiveTab("settings")} 
-   className={`sidebar-dock-btn relative w-11 h-11 md:w-12 md:h-12 rounded-2xl flex items-center justify-center transition-all duration-[600ms] cursor-pointer group ${
-     activeTab === "settings" 
-       ? "bg-gray-950 dark:bg-white text-white dark:text-gray-950 shadow-lg shadow-gray-950/20 dark:shadow-white/15 scale-105" 
-       : "text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100/80 dark:hover:bg-white/5 hover:scale-105 active:scale-95"
-   }`}
-   title="Ajustes de Cuenta"
- >
-   {activeTab === "settings" && (
-     <span className="absolute -left-2 w-1 h-5 bg-[#8c9276] dark:bg-[#ccff00] rounded-r-full transition-all duration-[600ms]" />
-   )}
-   <Settings className="w-5 h-5 transition-all duration-500 group-hover:scale-115 group-hover:rotate-90 group-hover:-translate-y-0.5" />
- </button>
- </nav>
- </div>
-
- {/* Bottom Actions */}
- <div className="flex flex-col items-center gap-3 w-full px-2">
- <div className="w-9 md:w-10 h-[2px] bg-gray-300/80 dark:bg-white/20 rounded-full my-0.5 transition-colors shrink-0" />
- <Link 
-   href="/" 
-   className="sidebar-dock-btn relative w-10 h-10 md:w-11 md:h-11 rounded-2xl flex items-center justify-center text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100/80 dark:hover:bg-white/5 transition-all duration-[600ms] group" 
-   title="Volver a la Tienda"
- >
-   <Store className="w-5 h-5 transition-all duration-300 group-hover:scale-115 group-hover:-translate-y-1" />
- </Link>
- <button 
-   onClick={() => { logout(); router.push("/auth/login"); }} 
-   className="sidebar-dock-btn relative w-10 h-10 md:w-11 md:h-11 rounded-2xl flex items-center justify-center text-red-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/40 transition-all duration-[600ms] group cursor-pointer"
-   title="Cerrar Sesión"
- >
-   <LogOut className="w-5 h-5 transition-all duration-300 group-hover:scale-115 group-hover:translate-x-1" />
- </button>
- </div>
- </aside>
+        <button
+          type="button"
+          onClick={() => {
+            logout();
+            router.push("/auth/login");
+          }}
+          title="Cerrar Sesión"
+          className={clsx(
+            "w-full h-10 rounded-2xl flex items-center gap-3 px-3 text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/40 transition-colors cursor-pointer",
+            !isExpanded && "justify-center"
+          )}
+        >
+          <LogOut className="w-4 h-4 shrink-0" />
+          {isExpanded && <span className="text-xs font-bold truncate">Cerrar Sesión</span>}
+        </button>
+      </div>
+    )}
+  />
 
   {/* 2. Main Bento Canvas */}
   <main className={`flex-1 flex flex-col min-w-0 w-full space-y-6 pb-24 md:pb-0 ${activeTab === "cart_alerts" || activeTab === "analytics" ? "max-w-none" : "max-w-7xl mx-auto"}`}>
@@ -1036,6 +954,8 @@ const handleConfirmDeleteNiche = async () => {
  <Link href="/" className="hidden lg:flex text-xs font-medium text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 px-3 py-1.5 rounded-xl hover:bg-gray-100 dark:hover:bg-[#3a3a3c] transition-colors">
  Ver Tienda &rarr;
  </Link>
+
+ <BeUIThemeToggleCircleBlur size="md" className="shrink-0" />
 
  <div className="flex items-center gap-2.5 sm:gap-3 pl-3 border-l border-gray-200 dark:border-white/10">
  <BlobatarAvatar
@@ -1235,17 +1155,20 @@ const handleConfirmDeleteNiche = async () => {
   />
 
  {/* ========================================================================= */}
- {/* MODAL: ADMIN NUEVO PRODUCTO */}
+ {/* MODAL: ADMIN NUEVO PRODUCTO (@beui/center-morph-modal) */}
  {/* ========================================================================= */}
- {showProductModal && (
- <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-fade-in">
- <div className="bg-white dark:bg-[#202022] rounded-3xl w-full max-w-3xl shadow-2xl dark:shadow-none overflow-hidden flex flex-col max-h-[90vh]">
+ <BeUICenterMorphModal
+   open={showProductModal}
+   onOpenChange={setShowProductModal}
+   className="max-w-3xl"
+ >
+ <div className="bg-white dark:bg-[#202022] rounded-[30px] w-full shadow-2xl dark:shadow-none overflow-hidden flex flex-col max-h-[90vh]">
  <div className="p-6 border-b border-gray-100 dark:border-white/5 flex items-center justify-between bg-gray-50/50 dark:bg-[#2a2a2c]/50">
  <div>
  <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100">Publicar Nuevo Producto</h2>
  <p className="text-xs text-gray-500 dark:text-gray-400">Se adaptará automáticamente al diseño de la tienda y se sincronizará en la base de datos.</p>
  </div>
- <button onClick={() => setShowProductModal(false)} className="p-2 text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 bg-white dark:bg-[#202022] rounded-full shadow-sm dark:shadow-none">
+ <button onClick={() => setShowProductModal(false)} className="p-2 text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 bg-white dark:bg-[#202022] rounded-full shadow-sm dark:shadow-none cursor-pointer">
  <X className="w-5 h-5" />
  </button>
  </div>
@@ -1351,12 +1274,11 @@ const handleConfirmDeleteNiche = async () => {
                     + Gestionar nichos y categorías
                   </button>
                 </div>
-                <LuminaCombobox
+                <BeUISelectField
                   value={prodCategory}
                   onChange={setProdCategory}
                   options={categories.map(c => ({ value: c, label: c }))}
                   placeholder="Selecciona un nicho..."
-                  required
                 />
               </div>
               <div>
@@ -1370,12 +1292,12 @@ const handleConfirmDeleteNiche = async () => {
                     + Gestionar badges
                   </button>
                 </div>
-                <LuminaCombobox
+                <BeUISelectField
                   value={prodBadge}
                   onChange={setProdBadge}
                   options={[
                     { value: "", label: "Sin badge" },
-                    ...badges.map(b => ({ value: b, label: b, badge: b }))
+                    ...badges.map(b => ({ value: b, label: b }))
                   ]}
                   placeholder="Sin badge"
                 />
@@ -1792,15 +1714,17 @@ const handleConfirmDeleteNiche = async () => {
           </div>
         </form>
  </div>
- </div>
- )}
+ </BeUICenterMorphModal>
 
  {/* ========================================================================= */}
- {/* MODAL: ADMIN EDITAR PRODUCTO */}
+ {/* MODAL: ADMIN EDITAR PRODUCTO (@beui/center-morph-modal) */}
  {/* ========================================================================= */}
- {showEditProductModal && (
- <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-fade-in">
- <div className="bg-white dark:bg-[#202022] rounded-3xl w-full max-w-3xl shadow-2xl dark:shadow-none overflow-hidden flex flex-col max-h-[90vh]">
+ <BeUICenterMorphModal
+   open={showEditProductModal}
+   onOpenChange={setShowEditProductModal}
+   className="max-w-3xl"
+ >
+ <div className="bg-white dark:bg-[#202022] rounded-[30px] w-full shadow-2xl dark:shadow-none overflow-hidden flex flex-col max-h-[90vh]">
  <div className="p-6 border-b border-gray-100 dark:border-white/5 flex items-center justify-between bg-gray-50/70 dark:bg-[#2a2a2c]/70">
  <div className="flex items-center gap-3">
  <div className="w-10 h-10 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center shadow-sm dark:shadow-none">
@@ -1813,7 +1737,7 @@ const handleConfirmDeleteNiche = async () => {
  </div>
  <button 
  onClick={() => setShowEditProductModal(false)} 
- className="p-2 text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 bg-white dark:bg-[#202022] rounded-full shadow-sm dark:shadow-none"
+ className="p-2 text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 bg-white dark:bg-[#202022] rounded-full shadow-sm dark:shadow-none cursor-pointer"
  >
  <X className="w-5 h-5" />
  </button>
@@ -1925,12 +1849,11 @@ const handleConfirmDeleteNiche = async () => {
                     + Gestionar nichos y categorías
                   </button>
                 </div>
-                <LuminaCombobox
+                <BeUISelectField
                   value={editCategory}
                   onChange={setEditCategory}
                   options={categories.map(c => ({ value: c, label: c }))}
                   placeholder="Selecciona un nicho..."
-                  required
                 />
               </div>
               <div>
@@ -1944,12 +1867,12 @@ const handleConfirmDeleteNiche = async () => {
                     + Gestionar badges
                   </button>
                 </div>
-                <LuminaCombobox
+                <BeUISelectField
                   value={editBadge}
                   onChange={setEditBadge}
                   options={[
                     { value: "", label: "Sin badge" },
-                    ...badges.map(b => ({ value: b, label: b, badge: b }))
+                    ...badges.map(b => ({ value: b, label: b }))
                   ]}
                   placeholder="Sin badge"
                 />
@@ -2342,8 +2265,7 @@ const handleConfirmDeleteNiche = async () => {
           </div>
         </form>
         </div>
-      </div>
-    )}
+      </BeUICenterMorphModal>
 
       {/* MODAL: Confirmar Eliminación de Producto */}
       {productToDelete && (
@@ -2542,154 +2464,96 @@ const handleConfirmDeleteNiche = async () => {
         </div>
       )}
 
-      {/* Mobile Floating Bottom Navigation Dock (Hidden on md and up) */}
-      <nav className="fixed bottom-3 inset-x-3 z-40 md:hidden flex items-center justify-between py-2 px-2.5 rounded-2xl bg-white/95 dark:bg-[#1e1e20]/95 backdrop-blur-2xl border border-gray-200/80 dark:border-white/10 shadow-[0_12px_40px_rgba(0,0,0,0.15)] overflow-x-auto hide-scrollbar gap-1">
-        <button
-          onClick={() => setActiveTab("overview")}
-          className={`relative p-2 rounded-xl flex items-center justify-center transition-all shrink-0 ${
-            activeTab === "overview"
-              ? "bg-gray-950 dark:bg-white text-white dark:text-gray-950 shadow-md"
-              : "text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
-          }`}
-          title="Resumen"
-        >
-          <LayoutDashboard className="w-4 h-4" />
-        </button>
-
-        <button
-          onClick={() => setActiveTab("orders")}
-          className={`relative w-10 h-10 rounded-xl flex items-center justify-center transition-all shrink-0 ${
-            activeTab === "orders"
-              ? "bg-gray-950 dark:bg-white text-white dark:text-gray-950 shadow-md"
-              : "text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
-          }`}
-          title="Pedidos"
-        >
-          <ShoppingBag className="w-4 h-4" />
-          {pendingOrdersCount > 0 && (
-            <span 
-              className={`absolute flex items-center justify-center select-none pointer-events-none transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] ${
-                activeTab === "orders"
-                  ? "top-0.5 right-0.5 min-w-[16px] h-[16px] px-0.5 rounded-full bg-[#8c9276] text-white dark:text-gray-950 text-[9px] font-extrabold ring-1.5 ring-gray-950 dark:ring-white shadow-sm scale-100"
-                  : "top-1.5 right-1.5 min-w-0 h-auto p-0 rounded-none bg-transparent text-[#8c9276] dark:text-[#a3a98d] text-[10px] font-black ring-0 shadow-none scale-105"
-              }`}
-              title={`${pendingOrdersCount} pedido(s) en curso`}
-            >
-              {pendingOrdersCount > 99 ? "99+" : pendingOrdersCount}
-            </span>
-          )}
-        </button>
-
-        <button
-          onClick={() => setActiveTab("cards")}
-          className={`relative p-2 rounded-xl flex items-center justify-center transition-all shrink-0 ${
-            activeTab === "cards"
-              ? "bg-gray-950 dark:bg-white text-white dark:text-gray-950 shadow-md"
-              : "text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
-          }`}
-          title="Tarjetas"
-        >
-          <CreditCard className="w-4 h-4" />
-        </button>
-
-        <button
-          onClick={() => setActiveTab("favorites")}
-          className={`relative p-2 rounded-xl flex items-center justify-center transition-all shrink-0 ${
-            activeTab === "favorites"
-              ? "bg-gray-950 dark:bg-white text-white dark:text-gray-950 shadow-md"
-              : "text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
-          }`}
-          title="Favoritos"
-        >
-          <Heart className="w-4 h-4" />
-          {favorites.length > 0 && activeTab !== "favorites" && (
-            <span className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full bg-rose-500" />
-          )}
-        </button>
-
-        {isAdmin && (
-          <>
-            <button
-              onClick={() => setActiveTab("catalog")}
-              className={`relative p-2 rounded-xl flex items-center justify-center transition-all shrink-0 ${
-                activeTab === "catalog"
-                  ? "bg-gray-950 dark:bg-white text-white dark:text-gray-950 shadow-md"
-                  : "text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
-              }`}
-              title="Catálogo"
-            >
-              <Package className="w-4 h-4" />
-            </button>
-
-            <button
-              onClick={() => setActiveTab("niches")}
-              className={`relative p-2 rounded-xl flex items-center justify-center transition-all shrink-0 ${
-                activeTab === "niches"
-                  ? "bg-gray-950 dark:bg-white text-white dark:text-gray-950 shadow-md"
-                  : "text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
-              }`}
-              title="Nichos"
-            >
-              <Layers className="w-4 h-4" />
-            </button>
-
-            <button
-              onClick={() => setActiveTab("analytics")}
-              className={`relative p-2 rounded-xl flex items-center justify-center transition-all shrink-0 ${
-                activeTab === "analytics"
-                  ? "bg-gray-950 dark:bg-white text-white dark:text-gray-950 shadow-md"
-                  : "text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
-              }`}
-              title="Radar"
-            >
-              <Globe className="w-4 h-4" />
-            </button>
-
-            <button
-              onClick={() => setActiveTab("cart_alerts")}
-              className={`relative p-2 rounded-xl flex items-center justify-center transition-all shrink-0 ${
-                activeTab === "cart_alerts"
-                  ? "bg-gray-950 dark:bg-white text-white dark:text-gray-950 shadow-md"
-                  : "text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
-              }`}
-              title="Alertas"
-            >
-              <BellRing className="w-4 h-4" />
-            </button>
-            <button
-              onClick={() => setActiveTab("integrations")}
-              className={`relative p-2 rounded-xl flex items-center justify-center transition-all shrink-0 ${
-                activeTab === "integrations"
-                  ? "bg-gray-950 dark:bg-white text-white dark:text-gray-950 shadow-md"
-                  : "text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
-              }`}
-              title="SMTP y Pasarelas"
-            >
-              <Server className="w-4 h-4" />
-            </button>
-          </>
-        )}
-
-        <button
-          onClick={() => setActiveTab("settings")}
-          className={`relative p-2 rounded-xl flex items-center justify-center transition-all shrink-0 ${
-            activeTab === "settings"
-              ? "bg-gray-950 dark:bg-white text-white dark:text-gray-950 shadow-md"
-              : "text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
-          }`}
-          title="Ajustes"
-        >
-          <Settings className="w-4 h-4" />
-        </button>
-
-        <Link
-          href="/"
-          className="relative p-2 rounded-xl flex items-center justify-center text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-all shrink-0"
-          title="Volver a la Tienda"
-        >
-          <Store className="w-4 h-4" />
-        </Link>
-      </nav>
+      {/* Mobile Floating Bottom Expandable Tabs (@beui/expandable-tabs, Hidden on md and up) */}
+      <BeUIMobileExpandableTabs
+        items={[
+          {
+            id: "overview",
+            label: "Resumen",
+            icon: <LayoutDashboard className="w-4 h-4" />,
+            active: activeTab === "overview",
+            onClick: () => setActiveTab("overview"),
+          },
+          {
+            id: "orders",
+            label: "Pedidos",
+            icon: <ShoppingBag className="w-4 h-4" />,
+            active: activeTab === "orders",
+            onClick: () => setActiveTab("orders"),
+            badgeCount: pendingOrdersCount > 0 ? pendingOrdersCount : undefined,
+          },
+          {
+            id: "cards",
+            label: "Tarjetas",
+            icon: <CreditCard className="w-4 h-4" />,
+            active: activeTab === "cards",
+            onClick: () => setActiveTab("cards"),
+          },
+          {
+            id: "favorites",
+            label: "Favoritos",
+            icon: <Heart className="w-4 h-4" />,
+            active: activeTab === "favorites",
+            onClick: () => setActiveTab("favorites"),
+            badgeCount: favorites.length > 0 ? favorites.length : undefined,
+          },
+          ...(isAdmin
+            ? [
+                {
+                  id: "catalog",
+                  label: "Inventario",
+                  icon: <Package className="w-4 h-4" />,
+                  active: activeTab === "catalog",
+                  onClick: () => setActiveTab("catalog"),
+                },
+                {
+                  id: "niches",
+                  label: "Nichos",
+                  icon: <Layers className="w-4 h-4" />,
+                  active: activeTab === "niches",
+                  onClick: () => setActiveTab("niches"),
+                },
+                {
+                  id: "analytics",
+                  label: "Radar",
+                  icon: <Globe className="w-4 h-4" />,
+                  active: activeTab === "analytics",
+                  onClick: () => setActiveTab("analytics"),
+                },
+                {
+                  id: "cart_alerts",
+                  label: "Alertas",
+                  icon: <BellRing className="w-4 h-4" />,
+                  active: activeTab === "cart_alerts",
+                  onClick: () => setActiveTab("cart_alerts"),
+                },
+                {
+                  id: "integrations",
+                  label: "Servidor",
+                  icon: <Server className="w-4 h-4" />,
+                  active: activeTab === "integrations",
+                  onClick: () => setActiveTab("integrations"),
+                },
+              ]
+            : []),
+          {
+            id: "settings",
+            label: "Ajustes",
+            icon: <Settings className="w-4 h-4" />,
+            active: activeTab === "settings",
+            onClick: () => setActiveTab("settings"),
+          },
+        ]}
+        trailingAction={
+          <Link
+            href="/"
+            className="w-9 h-9 rounded-full flex items-center justify-center text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-white/10 transition-colors"
+            title="Volver a la Tienda"
+          >
+            <Store className="w-4 h-4" />
+          </Link>
+        }
+      />
 
   </div>
   </div>

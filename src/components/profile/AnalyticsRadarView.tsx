@@ -856,27 +856,6 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
     return { dispersedPins: dispersed, clusterPins: clusters };
   }, [rawMapClients, isUserSelf, currentUserCity, clusterMode, scatterRadius, expandedClusterCity]);
 
-  // Natural Zoom handling via mouse wheel & laptop trackpad (2 fingers up / down)
-  const handleWheel = useCallback((e: WheelEvent) => {
-    e.preventDefault();
-    const factor = e.deltaY < 0 ? 1.15 : 0.87;
-
-    setZoom(prev => {
-      const next = Math.min(Math.max(prev * factor, 0.75), 4.5);
-      return Number(next.toFixed(2));
-    });
-  }, []);
-
-  useEffect(() => {
-    const el = mapContainerRef.current;
-    if (!el) return;
-
-    el.addEventListener("wheel", handleWheel, { passive: false });
-    return () => {
-      el.removeEventListener("wheel", handleWheel);
-    };
-  }, [handleWheel]);
-
   // Scroll handler for the clients list to update the luminous green vertical bar
   const handleClientsScroll = () => {
     const el = clientsListRef.current;
@@ -888,39 +867,6 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
       if (scrollTrackRef.current) {
         scrollTrackRef.current.style.top = `${progress * 68}%`;
       }
-    }
-  };
-
-  // Drag & Pan handlers
-  const handleMouseDown = (e: React.MouseEvent) => {
-    if (e.button !== 0) return;
-    setIsDragging(true);
-    dragStartRef.current = { x: e.clientX, y: e.clientY };
-    panStartRef.current = { ...pan };
-  };
-
-  const handleMouseMove = (e: React.MouseEvent) => {
-    if (!isDragging) return;
-    const dx = e.clientX - dragStartRef.current.x;
-    const dy = e.clientY - dragStartRef.current.y;
-    const newX = panStartRef.current.x + dx;
-    const newY = panStartRef.current.y + dy;
-    // DIRECT DOM MUTATION: Bypasses React rendering entirely during drag frames for extreme performance
-    if (mapLayerTransformRef.current) {
-      mapLayerTransformRef.current.style.transform = `translate(${newX}px, ${newY}px) scale(${zoom})`;
-    }
-  };
-
-  const handleMouseUp = (e: React.MouseEvent) => {
-    if (isDragging) {
-      setIsDragging(false);
-      // Sync state back on drag end to ensure consistency on next React render
-      const dx = e.clientX - dragStartRef.current.x;
-      const dy = e.clientY - dragStartRef.current.y;
-      setPan({
-        x: panStartRef.current.x + dx,
-        y: panStartRef.current.y + dy
-      });
     }
   };
 
@@ -974,10 +920,20 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
 
   return (
     <div 
-      className="relative w-full h-[660px] lg:h-[720px] rounded-[2.5rem] overflow-hidden bg-[#181d1b] text-white shadow-xl shadow-black/20 dark:shadow-none border border-white/10 select-none animate-fade-in font-sans"
-      onMouseMove={handleMouseMove}
-      onMouseUp={handleMouseUp}
-      onMouseLeave={handleMouseUp}
+      draggable={false}
+      onDragStart={(e) => e.preventDefault()}
+      onMouseDown={(e) => {
+        const target = e.target as HTMLElement | null;
+        if (target?.closest("input, textarea, select, button, a")) return;
+        e.preventDefault();
+        window.getSelection()?.removeAllRanges();
+      }}
+      style={{
+        userSelect: "none",
+        WebkitUserSelect: "none",
+        overscrollBehavior: "contain",
+      }}
+      className="relative w-full h-[660px] lg:h-[720px] rounded-[2.5rem] overflow-hidden bg-[#181d1b] text-white shadow-xl shadow-black/20 dark:shadow-none border border-white/10 select-none overscroll-none animate-fade-in font-sans"
     >
       
       {/* ========================================================================= */}

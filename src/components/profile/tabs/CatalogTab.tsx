@@ -7,7 +7,7 @@ import { Package, Plus, Pencil, ExternalLink, Trash2 } from "lucide-react";
 import { useCatalogStore, CatalogProduct, isAgotadoBadge } from "@/lib/catalogStore";
 import { normalizeSearchText } from "@/lib/utils";
 import { CloudSyncStatus } from "../CloudSyncStatus";
-import { LuminaCombobox } from "@/components/ui/LuminaCombobox";
+import { BeUISelectField } from "@/components/ui/BeUIControls";
 
 interface CatalogTabProps {
   searchQuery?: string;
@@ -77,15 +77,15 @@ export function CatalogTab({
         </div>
 
         <div className="flex flex-wrap sm:flex-nowrap items-center gap-2.5 sm:gap-3">
-          <div className="w-52 min-w-[190px] flex-1 sm:flex-initial">
-            <LuminaCombobox 
-              value={catalogCategoryFilter} 
+          <div className="w-56 min-w-[200px] flex-1 sm:flex-initial">
+            <BeUISelectField
+              value={catalogCategoryFilter}
               onChange={setCatalogCategoryFilter}
               options={[
                 { value: "all", label: "Todas las categorías" },
-                ...categories.map(c => ({ value: c, label: c }))
+                ...categories.map((c) => ({ value: c, label: c })),
               ]}
-              size="sm"
+              placeholder="Todas las categorías"
             />
           </div>
 
