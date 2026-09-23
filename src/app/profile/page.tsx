@@ -658,136 +658,218 @@ const handleConfirmDeleteNiche = async () => {
  `}</style>
   <div className="theme-transition min-h-screen w-full max-w-full overflow-x-hidden bg-[#f3f4f6] dark:bg-[#202022] text-gray-900 dark:text-gray-100 flex flex-col md:flex-row p-2.5 sm:p-4 md:p-6 lg:p-8 selection:bg-[#8c9276]/20">
   
-  {/* 1. Left Vertical Expandable Action Sidebar (PC, Laptops & Tablets) */}
-  <BeUILateralExpandableSidebar
-    brandHref="/"
-    brandTitle={brand.name}
-    brandSubtitle={isAdmin ? "Panel Ejecutivo" : "Mi Espacio"}
-    brandLogo={<LuminaBrandEmblem size={38} />}
-    isAdmin={isAdmin}
-    className="mr-4 md:mr-6 self-stretch"
-    primaryItems={[
-      {
-        id: "overview",
-        label: "Vista General",
-        subtitle: "Resumen de actividad",
-        icon: <LayoutDashboard className="w-5 h-5" />,
-        active: activeTab === "overview",
-        onClick: () => setActiveTab("overview"),
-      },
-      {
-        id: "orders",
-        label: "Pedidos & Historial",
-        subtitle: `${orders.length} registrados`,
-        icon: <ShoppingBag className="w-5 h-5" />,
-        active: activeTab === "orders",
-        onClick: () => setActiveTab("orders"),
-        badgeCount: pendingOrdersCount > 0 ? pendingOrdersCount : undefined,
-      },
-      {
-        id: "cards",
-        label: "Mis Tarjetas",
-        subtitle: `${cards.length} vinculadas`,
-        icon: <CreditCard className="w-5 h-5" />,
-        active: activeTab === "cards",
-        onClick: () => setActiveTab("cards"),
-      },
-      {
-        id: "favorites",
-        label: "Favoritos Guardados",
-        subtitle: `${favorites.length} artículos`,
-        icon: <Heart className="w-5 h-5" />,
-        active: activeTab === "favorites",
-        onClick: () => setActiveTab("favorites"),
-        badgeCount: favorites.length > 0 ? favorites.length : undefined,
-      },
-    ]}
-    secondaryItems={[
-      ...(isAdmin
-        ? [
-            {
-              id: "catalog",
-              label: "Control del Inventario",
-              subtitle: `${products.length} productos activos`,
-              icon: <Package className="w-5 h-5" />,
-              active: activeTab === "catalog",
-              onClick: () => setActiveTab("catalog"),
-            },
-            {
-              id: "niches",
-              label: "Gestión de Nichos",
-              subtitle: `${categories.length} categorías`,
-              icon: <Layers className="w-5 h-5" />,
-              active: activeTab === "niches",
-              onClick: () => setActiveTab("niches"),
-            },
-            {
-              id: "analytics",
-              label: "Radar & Analítica",
-              subtitle: "Telemetría en vivo",
-              icon: <Globe className="w-5 h-5" />,
-              active: activeTab === "analytics",
-              onClick: () => setActiveTab("analytics"),
-            },
-            {
-              id: "cart_alerts",
-              label: "Alertas de Bolsa",
-              subtitle: "Monitor Sileo en vivo",
-              icon: <BellRing className="w-5 h-5" />,
-              active: activeTab === "cart_alerts",
-              onClick: () => setActiveTab("cart_alerts"),
-            },
-            {
-              id: "integrations",
-              label: "Servidor & Pasarelas",
-              subtitle: "SMTP y PayPhone",
-              icon: <Server className="w-5 h-5" />,
-              active: activeTab === "integrations",
-              onClick: () => setActiveTab("integrations"),
-            },
-          ]
-        : []),
-      {
-        id: "settings",
-        label: "Ajustes de Cuenta",
-        subtitle: "Tema, seguridad y perfil",
-        icon: <Settings className="w-5 h-5" />,
-        active: activeTab === "settings",
-        onClick: () => setActiveTab("settings"),
-      },
-    ]}
-    footerSlot={(isExpanded) => (
-      <div className="flex flex-col gap-2 w-full">
-        <Link
-          href="/"
-          title="Volver a la Tienda"
-          className={clsx(
-            "w-full h-10 rounded-2xl flex items-center gap-3 px-3 text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100/80 dark:hover:bg-white/5 transition-colors",
-            !isExpanded && "justify-center"
-          )}
-        >
-          <Store className="w-5 h-5 shrink-0" />
-          {isExpanded && <span className="text-xs font-semibold truncate">Volver a la Tienda</span>}
-        </Link>
+  {/* 1. Left Vertical Icon Sidebar (Desktop Dock) */}
+  <aside className="hidden md:flex w-16 md:w-20 bg-white/95 dark:bg-[#1e1e20]/95 backdrop-blur-2xl rounded-3xl border border-gray-200/80 dark:border-white/10 shadow-[0_12px_40px_rgba(0,0,0,0.05)] dark:shadow-[0_12px_40px_rgba(0,0,0,0.4)] flex-col items-center py-6 gap-6 justify-between shrink-0 mr-4 md:mr-6 self-stretch relative z-30">
+  
+    {/* Brand Logo Symbol */}
+    <div className="flex flex-col items-center gap-5 w-full">
+      <Link 
+        href="/" 
+        className="relative w-11 h-11 md:w-12 md:h-12 rounded-2xl bg-gradient-to-br from-[#1c1b18] via-[#121210] to-[#080808] border border-[#c49a3f]/50 dark:border-[#c49a3f]/60 flex items-center justify-center shadow-lg shadow-[#c49a3f]/15 hover:border-[#e0be70] transition-colors" 
+        title={`${brand.name} • Volver a la Tienda`}
+      >
+        <LuminaBrandEmblem size={38} />
+      </Link>
 
-        <button
-          type="button"
-          onClick={() => {
-            logout();
-            router.push("/auth/login");
-          }}
-          title="Cerrar Sesión"
-          className={clsx(
-            "w-full h-10 rounded-2xl flex items-center gap-3 px-3 text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/40 transition-colors cursor-pointer",
-            !isExpanded && "justify-center"
-          )}
+      {/* Visible section divider */}
+      <div className="w-9 md:w-10 h-[2px] bg-gray-300/80 dark:bg-white/20 rounded-full my-0.5 shrink-0" />
+
+      {/* Navigation Icons (Static, Clean & Crisp) */}
+      <nav className="flex flex-col items-center gap-2.5 w-full px-2">
+        <button 
+          onClick={() => setActiveTab("overview")} 
+          className={`relative w-11 h-11 md:w-12 md:h-12 rounded-2xl flex items-center justify-center transition-colors cursor-pointer ${
+            activeTab === "overview" 
+              ? "bg-gray-950 dark:bg-white text-white dark:text-gray-950 shadow-lg shadow-gray-950/20 dark:shadow-white/15" 
+              : "text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100/80 dark:hover:bg-white/5"
+          }`}
+          title="Vista General"
         >
-          <LogOut className="w-5 h-5 shrink-0" />
-          {isExpanded && <span className="text-xs font-bold truncate">Cerrar Sesión</span>}
+          {activeTab === "overview" && (
+            <span className="absolute -left-2 w-1 h-5 bg-[#8c9276] dark:bg-[#ccff00] rounded-r-full" />
+          )}
+          <LayoutDashboard className="w-5 h-5" />
         </button>
-      </div>
-    )}
-  />
+
+        <button 
+          onClick={() => setActiveTab("orders")} 
+          className={`relative w-11 h-11 md:w-12 md:h-12 rounded-2xl flex items-center justify-center transition-colors cursor-pointer ${
+            activeTab === "orders" 
+              ? "bg-gray-950 dark:bg-white text-white dark:text-gray-950 shadow-lg shadow-gray-950/20 dark:shadow-white/15" 
+              : "text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100/80 dark:hover:bg-white/5"
+          }`}
+          title="Pedidos & Historial"
+        >
+          {activeTab === "orders" && (
+            <span className="absolute -left-2 w-1 h-5 bg-[#8c9276] dark:bg-[#ccff00] rounded-r-full" />
+          )}
+          <ShoppingBag className="w-5 h-5" />
+          {pendingOrdersCount > 0 && (
+            <span 
+              className={`absolute flex items-center justify-center select-none pointer-events-none ${
+                activeTab === "orders"
+                  ? "top-1 right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-[#8c9276] text-white dark:text-gray-950 text-[10px] font-extrabold ring-2 ring-gray-950 dark:ring-white shadow-sm"
+                  : "top-[9px] right-[8px] md:top-[10px] md:right-[9px] min-w-0 h-auto p-0 rounded-none bg-transparent text-[#8c9276] dark:text-[#a3a98d] text-xs font-black"
+              }`}
+              title={`${pendingOrdersCount} pedido(s) en curso`}
+            >
+              {pendingOrdersCount > 99 ? "99+" : pendingOrdersCount}
+            </span>
+          )}
+        </button>
+
+        <button 
+          onClick={() => setActiveTab("cards")} 
+          className={`relative w-11 h-11 md:w-12 md:h-12 rounded-2xl flex items-center justify-center transition-colors cursor-pointer ${
+            activeTab === "cards" 
+              ? "bg-gray-950 dark:bg-white text-white dark:text-gray-950 shadow-lg shadow-gray-950/20 dark:shadow-white/15" 
+              : "text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100/80 dark:hover:bg-white/5"
+          }`}
+          title="Mis Tarjetas"
+        >
+          {activeTab === "cards" && (
+            <span className="absolute -left-2 w-1 h-5 bg-[#8c9276] dark:bg-[#ccff00] rounded-r-full" />
+          )}
+          <CreditCard className="w-5 h-5" />
+        </button>
+
+        <button 
+          onClick={() => setActiveTab("favorites")} 
+          className={`relative w-11 h-11 md:w-12 md:h-12 rounded-2xl flex items-center justify-center transition-colors cursor-pointer ${
+            activeTab === "favorites" 
+              ? "bg-gray-950 dark:bg-white text-white dark:text-gray-950 shadow-lg shadow-gray-950/20 dark:shadow-white/15" 
+              : "text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100/80 dark:hover:bg-white/5"
+          }`}
+          title="Favoritos Guardados"
+        >
+          {activeTab === "favorites" && (
+            <span className="absolute -left-2 w-1 h-5 bg-[#8c9276] dark:bg-[#ccff00] rounded-r-full" />
+          )}
+          <Heart className="w-5 h-5" />
+          {favorites.length > 0 && activeTab !== "favorites" && (
+            <span className="absolute top-2 right-2 w-2 h-2 rounded-full bg-rose-500 ring-2 ring-white dark:ring-[#1e1e20]" />
+          )}
+        </button>
+
+        {isAdmin && (
+          <>
+            <div className="w-9 md:w-10 h-[2px] bg-gray-300/80 dark:bg-white/20 rounded-full my-0.5 shrink-0" />
+
+            <button 
+              onClick={() => setActiveTab("catalog")} 
+              className={`relative w-11 h-11 md:w-12 md:h-12 rounded-2xl flex items-center justify-center transition-colors cursor-pointer ${
+                activeTab === "catalog" 
+                  ? "bg-gray-950 dark:bg-white text-white dark:text-gray-950 shadow-lg shadow-gray-950/20 dark:shadow-white/15" 
+                  : "text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100/80 dark:hover:bg-white/5"
+              }`}
+              title="Control de Catálogo"
+            >
+              {activeTab === "catalog" && (
+                <span className="absolute -left-2 w-1 h-5 bg-[#8c9276] dark:bg-[#ccff00] rounded-r-full" />
+              )}
+              <Package className="w-5 h-5" />
+            </button>
+
+            <button 
+              onClick={() => setActiveTab("niches")} 
+              className={`relative w-11 h-11 md:w-12 md:h-12 rounded-2xl flex items-center justify-center transition-colors cursor-pointer ${
+                activeTab === "niches" 
+                  ? "bg-gray-950 dark:bg-white text-white dark:text-gray-950 shadow-lg shadow-gray-950/20 dark:shadow-white/15" 
+                  : "text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100/80 dark:hover:bg-white/5"
+              }`}
+              title="Gestión de Nichos"
+            >
+              {activeTab === "niches" && (
+                <span className="absolute -left-2 w-1 h-5 bg-[#8c9276] dark:bg-[#ccff00] rounded-r-full" />
+              )}
+              <Layers className="w-5 h-5" />
+            </button>
+
+            <button 
+              onClick={() => setActiveTab("analytics")} 
+              className={`relative w-11 h-11 md:w-12 md:h-12 rounded-2xl flex items-center justify-center transition-colors cursor-pointer ${
+                activeTab === "analytics" 
+                  ? "bg-gray-950 dark:bg-white text-white dark:text-gray-950 shadow-lg shadow-gray-950/20 dark:shadow-white/15" 
+                  : "text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100/80 dark:hover:bg-white/5"
+              }`}
+              title="Radar de Clientes & Analítica"
+            >
+              {activeTab === "analytics" && (
+                <span className="absolute -left-2 w-1 h-5 bg-[#8c9276] dark:bg-[#ccff00] rounded-r-full" />
+              )}
+              <Globe className="w-5 h-5" />
+            </button>
+
+            <button 
+              onClick={() => setActiveTab("cart_alerts")} 
+              className={`relative w-11 h-11 md:w-12 md:h-12 rounded-2xl flex items-center justify-center transition-colors cursor-pointer ${
+                activeTab === "cart_alerts" 
+                  ? "bg-gray-950 dark:bg-white text-white dark:text-gray-950 shadow-lg shadow-gray-950/20 dark:shadow-white/15" 
+                  : "text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100/80 dark:hover:bg-white/5"
+              }`}
+              title="Alertas de Bolsa (Sileo)"
+            >
+              {activeTab === "cart_alerts" && (
+                <span className="absolute -left-2 w-1 h-5 bg-[#8c9276] dark:bg-[#ccff00] rounded-r-full" />
+              )}
+              <BellRing className="w-5 h-5" />
+            </button>
+
+            <button 
+              onClick={() => setActiveTab("integrations")} 
+              className={`relative w-11 h-11 md:w-12 md:h-12 rounded-2xl flex items-center justify-center transition-colors cursor-pointer ${
+                activeTab === "integrations" 
+                  ? "bg-gray-950 dark:bg-white text-white dark:text-gray-950 shadow-lg shadow-gray-950/20 dark:shadow-white/15" 
+                  : "text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100/80 dark:hover:bg-white/5"
+              }`}
+              title="Servidor SMTP & Pasarelas (Vercel)"
+            >
+              {activeTab === "integrations" && (
+                <span className="absolute -left-2 w-1 h-5 bg-[#8c9276] dark:bg-[#ccff00] rounded-r-full" />
+              )}
+              <Server className="w-5 h-5" />
+            </button>
+          </>
+        )}
+
+        <div className="w-9 md:w-10 h-[2px] bg-gray-300/80 dark:bg-white/20 rounded-full my-0.5 shrink-0" />
+
+        <button 
+          onClick={() => setActiveTab("settings")} 
+          className={`relative w-11 h-11 md:w-12 md:h-12 rounded-2xl flex items-center justify-center transition-colors cursor-pointer ${
+            activeTab === "settings" 
+              ? "bg-gray-950 dark:bg-white text-white dark:text-gray-950 shadow-lg shadow-gray-950/20 dark:shadow-white/15" 
+              : "text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100/80 dark:hover:bg-white/5"
+          }`}
+          title="Ajustes de Cuenta"
+        >
+          {activeTab === "settings" && (
+            <span className="absolute -left-2 w-1 h-5 bg-[#8c9276] dark:bg-[#ccff00] rounded-r-full" />
+          )}
+          <Settings className="w-5 h-5" />
+        </button>
+      </nav>
+    </div>
+
+    {/* Bottom Actions */}
+    <div className="flex flex-col items-center gap-3 w-full px-2">
+      <div className="w-9 md:w-10 h-[2px] bg-gray-300/80 dark:bg-white/20 rounded-full my-0.5 shrink-0" />
+      <Link 
+        href="/" 
+        className="relative w-10 h-10 md:w-11 md:h-11 rounded-2xl flex items-center justify-center text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100/80 dark:hover:bg-white/5 transition-colors" 
+        title="Volver a la Tienda"
+      >
+        <Store className="w-5 h-5" />
+      </Link>
+      <button 
+        onClick={() => { logout(); router.push("/auth/login"); }} 
+        className="relative w-10 h-10 md:w-11 md:h-11 rounded-2xl flex items-center justify-center text-red-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/40 transition-colors cursor-pointer"
+        title="Cerrar Sesión"
+      >
+        <LogOut className="w-5 h-5" />
+      </button>
+    </div>
+  </aside>
 
   {/* 2. Main Bento Canvas */}
   <main className={`flex-1 flex flex-col min-w-0 w-full space-y-6 pb-24 md:pb-0 ${activeTab === "cart_alerts" || activeTab === "analytics" ? "max-w-none" : "max-w-7xl mx-auto"}`}>

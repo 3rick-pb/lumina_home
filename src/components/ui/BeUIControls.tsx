@@ -1819,118 +1819,71 @@ export function BeUIMobileExpandableTabs({
   trailingAction,
   className,
 }: BeUIMobileExpandableTabsProps) {
-  const [labelWidths, setLabelWidths] = useState<Record<string, number>>({});
-  const measureRefs = useRef<Record<string, HTMLSpanElement | null>>({});
-
-  useEffect(() => {
-    const measure = () => {
-      const next: Record<string, number> = {};
-      for (const item of items) {
-        const el = measureRefs.current[item.id];
-        if (el) {
-          next[item.id] = Math.ceil(el.getBoundingClientRect().width);
-        }
-      }
-      setLabelWidths(next);
-    };
-    measure();
-    window.addEventListener("resize", measure);
-    return () => window.removeEventListener("resize", measure);
-  }, [items]);
-
-  const collapsedSize = 42;
-  const expandedExtraPadding = 22;
-
   return (
     <nav
       aria-label="Navegación móvil expandible"
       className={cn(
-        "fixed bottom-3 inset-x-3 z-40 md:hidden bg-white/95 dark:bg-[#121316]/95 backdrop-blur-2xl border border-gray-200/80 dark:border-white/[0.08] rounded-full p-1.5 shadow-[0_12px_40px_rgba(0,0,0,0.18)] dark:shadow-[0_16px_50px_rgba(0,0,0,0.75)] flex items-center justify-between gap-1 overflow-x-auto no-scrollbar select-none",
+        "fixed bottom-3 inset-x-2.5 sm:inset-x-4 z-40 md:hidden bg-white/95 dark:bg-[#16171a]/95 backdrop-blur-2xl border border-gray-200/80 dark:border-white/10 rounded-full px-1.5 py-1.5 shadow-[0_12px_40px_rgba(0,0,0,0.18)] dark:shadow-[0_16px_50px_rgba(0,0,0,0.75)] flex items-center justify-between gap-0.5 overflow-hidden select-none",
         className
       )}
     >
-      {/* Hidden measurement spans for exact @beui/expandable-tabs width spring */}
-      <div
-        aria-hidden
-        className="pointer-events-none fixed left-0 top-0 -z-50 flex opacity-0 whitespace-nowrap"
-      >
-        {items.map((item) => (
-          <span
+      {items.map((item) => {
+        const isActive = item.active;
+
+        return (
+          <motion.button
             key={item.id}
-            ref={(el) => {
-              measureRefs.current[item.id] = el;
-            }}
-            className="text-xs font-bold tracking-tight px-1"
+            layout
+            type="button"
+            onClick={item.onClick}
+            transition={MOBILE_TAB_SPRING}
+            title={item.label}
+            className={cn(
+              "relative flex h-9 sm:h-10 items-center justify-center overflow-hidden rounded-full cursor-pointer select-none transition-colors duration-200",
+              isActive
+                ? item.isSpecialLime
+                  ? "shrink-0 px-2.5 sm:px-3.5 gap-1.5 bg-[#ccff00] text-gray-950 font-bold shadow-[0_0_14px_rgba(204,255,0,0.35)]"
+                  : "shrink-0 px-2.5 sm:px-3.5 gap-1.5 bg-gray-950 dark:bg-white text-white dark:text-gray-950 font-bold shadow-md"
+                : "flex-1 min-w-[24px] text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
+            )}
           >
-            {item.label}
-          </span>
-        ))}
-      </div>
-
-      <div className="flex items-center justify-around flex-1 min-w-0 gap-1">
-        {items.map((item) => {
-          const isActive = item.active;
-          const measuredW = labelWidths[item.id] ?? 64;
-          const targetWidth = isActive
-            ? collapsedSize + measuredW + expandedExtraPadding
-            : collapsedSize;
-
-          return (
-            <motion.button
-              key={item.id}
-              type="button"
-              onClick={item.onClick}
-              initial={false}
-              animate={{ width: targetWidth }}
-              transition={MOBILE_TAB_SPRING}
-              className={cn(
-                "relative flex h-[42px] shrink-0 items-center justify-center overflow-hidden rounded-full cursor-pointer select-none transition-colors duration-200",
-                isActive
-                  ? item.isSpecialLime
-                    ? "bg-[#ccff00] text-gray-950 font-bold shadow-[0_0_15px_rgba(204,255,0,0.35)]"
-                    : "bg-gray-900 dark:bg-white text-white dark:text-gray-950 font-bold shadow-md"
-                  : "text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-white/5"
+            <motion.span layout="position" className="relative flex items-center justify-center shrink-0">
+              {item.icon}
+              {!isActive && item.alertDot && (
+                <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-amber-500 ring-1 ring-white dark:ring-[#16171a]" />
               )}
-            >
-              <div className="relative z-10 flex items-center justify-center gap-1.5 px-2.5">
-                <span className="relative flex items-center justify-center shrink-0">
-                  {item.icon}
-                  {!isActive && item.alertDot && (
-                    <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-amber-500 ring-2 ring-white dark:ring-[#121316]" />
-                  )}
-                  {!isActive && !item.alertDot && item.badgeCount !== undefined && item.badgeCount > 0 && (
-                    <span className="absolute -top-1.5 -right-1.5 min-w-[14px] h-3.5 px-1 rounded-full bg-[#ccff00] text-gray-950 text-[8px] font-black flex items-center justify-center">
-                      {item.badgeCount}
-                    </span>
-                  )}
+              {!isActive && !item.alertDot && item.badgeCount !== undefined && item.badgeCount > 0 && (
+                <span className="absolute -top-1.5 -right-1.5 min-w-[13px] h-3.5 px-0.5 rounded-full bg-[#8c9276] dark:bg-[#ccff00] text-white dark:text-gray-950 text-[8px] font-black flex items-center justify-center">
+                  {item.badgeCount > 99 ? "99+" : item.badgeCount}
                 </span>
+              )}
+            </motion.span>
 
+            <AnimatePresence initial={false}>
+              {isActive && (
                 <motion.span
-                  initial={false}
-                  animate={{
-                    opacity: isActive ? 1 : 0,
-                    x: isActive ? 0 : 8,
-                  }}
-                  transition={isActive ? MOBILE_LABEL_OPEN : MOBILE_LABEL_CLOSE}
-                  className={cn(
-                    " whitespace-nowrap text-xs font-bold tracking-tight",
-                    !isActive && "pointer-events-none absolute left-full"
-                  )}
+                  key={`${item.id}-label`}
+                  initial={{ width: 0, opacity: 0 }}
+                  animate={{ width: "auto", opacity: 1 }}
+                  exit={{ width: 0, opacity: 0 }}
+                  transition={MOBILE_TAB_SPRING}
+                  className="overflow-hidden whitespace-nowrap text-[11px] sm:text-xs font-bold tracking-tight"
                 >
                   {item.label}
                 </motion.span>
-              </div>
-            </motion.button>
-          );
-        })}
-      </div>
+              )}
+            </AnimatePresence>
+          </motion.button>
+        );
+      })}
 
       {trailingAction && (
-        <div className="pl-1 border-l border-gray-200/70 dark:border-white/10 shrink-0">
+        <div className="flex-1 min-w-[24px] flex items-center justify-center shrink-0">
           {trailingAction}
         </div>
       )}
     </nav>
   );
 }
+
 
