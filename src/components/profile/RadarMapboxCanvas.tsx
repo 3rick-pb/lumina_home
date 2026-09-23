@@ -1,17 +1,14 @@
 "use client";
 
 import React, { useEffect, useRef, useState, useCallback } from "react";
-import * as maplibregl from "maplibre-gl";
-import "maplibre-gl/dist/maplibre-gl.css";
 import { RadarCountryCode } from "@/lib/radarCountries";
-import { KeyRound, Layers, Compass, Check, X } from "lucide-react";
+import { Layers, Satellite, Map as MapIcon } from "lucide-react";
 
 export interface CountryGeoBounds {
   center: [number, number]; // [lng, lat]
   zoom: number;
   pitch: number;
   bearing: number;
-  // Bounding box corresponding to x: 0..100%, y: 0..100% of the radar coordinate system
   west: number;
   east: number;
   north: number;
@@ -20,10 +17,10 @@ export interface CountryGeoBounds {
 
 export const COUNTRY_GEO_CONFIG: Record<RadarCountryCode, CountryGeoBounds> = {
   EC: {
-    center: [-78.4678, -1.55],
-    zoom: 6.1,
-    pitch: 42,
-    bearing: -6,
+    center: [-78.4678, -1.45],
+    zoom: 6.4,
+    pitch: 0,
+    bearing: 0,
     west: -81.2,
     east: -75.1,
     north: 1.48,
@@ -31,9 +28,9 @@ export const COUNTRY_GEO_CONFIG: Record<RadarCountryCode, CountryGeoBounds> = {
   },
   CO: {
     center: [-74.0721, 4.5709],
-    zoom: 5.1,
-    pitch: 42,
-    bearing: -5,
+    zoom: 5.5,
+    pitch: 0,
+    bearing: 0,
     west: -79.2,
     east: -66.8,
     north: 12.5,
@@ -41,8 +38,8 @@ export const COUNTRY_GEO_CONFIG: Record<RadarCountryCode, CountryGeoBounds> = {
   },
   AR: {
     center: [-64.1888, -34.6037],
-    zoom: 3.9,
-    pitch: 38,
+    zoom: 4.3,
+    pitch: 0,
     bearing: 0,
     west: -73.6,
     east: -53.6,
@@ -51,9 +48,9 @@ export const COUNTRY_GEO_CONFIG: Record<RadarCountryCode, CountryGeoBounds> = {
   },
   PE: {
     center: [-75.5, -9.8],
-    zoom: 4.8,
-    pitch: 42,
-    bearing: -8,
+    zoom: 5.2,
+    pitch: 0,
+    bearing: 0,
     west: -81.4,
     east: -68.6,
     north: -0.05,
@@ -61,9 +58,9 @@ export const COUNTRY_GEO_CONFIG: Record<RadarCountryCode, CountryGeoBounds> = {
   },
   MX: {
     center: [-101.5, 23.2],
-    zoom: 4.3,
-    pitch: 40,
-    bearing: -4,
+    zoom: 4.8,
+    pitch: 0,
+    bearing: 0,
     west: -117.1,
     east: -86.7,
     north: 32.7,
@@ -71,9 +68,9 @@ export const COUNTRY_GEO_CONFIG: Record<RadarCountryCode, CountryGeoBounds> = {
   },
   CL: {
     center: [-70.6693, -35.6751],
-    zoom: 4.1,
-    pitch: 38,
-    bearing: 4,
+    zoom: 4.5,
+    pitch: 0,
+    bearing: 0,
     west: -75.7,
     east: -66.4,
     north: -17.5,
@@ -179,7 +176,6 @@ export function resolveGeoLngLat(
   const bounds = COUNTRY_GEO_CONFIG[countryCode] || COUNTRY_GEO_CONFIG.EC;
   const cleanCity = (cityName || "").toLowerCase().trim();
 
-  // Check exact city dictionary first
   let baseLng: number | null = null;
   let baseLat: number | null = null;
 
@@ -193,20 +189,67 @@ export function resolveGeoLngLat(
   }
 
   if (baseLng === null || baseLat === null) {
-    // Bilinear interpolation from percentage coordinates (0..100)
     const clampedX = Math.max(2, Math.min(98, xPct)) / 100;
     const clampedY = Math.max(2, Math.min(98, yPct)) / 100;
     baseLng = bounds.west + clampedX * (bounds.east - bounds.west);
     baseLat = bounds.north - clampedY * (bounds.north - bounds.south);
   }
 
-  // Apply radial dispersion offset in degrees so multiple pins in the same city don't stack
   const lngSpan = Math.abs(bounds.east - bounds.west) * 0.14;
   const latSpan = Math.abs(bounds.north - bounds.south) * 0.14;
   const finalLng = baseLng + (offsetXPct / 100) * lngSpan;
   const finalLat = baseLat - (offsetYPct / 100) * latSpan;
 
   return [finalLng, finalLat];
+}
+
+// ============================================================================
+// WEB MERCATOR (EPSG:3857) EXACT PROJECTION HELPERS
+// ============================================================================
+const TILE_SIZE = 256;
+
+function lngToMercatorX(lng: number, zoom: number): number {
+  const scale = TILE_SIZE * Math.pow(2, zoom);
+  return ((lng + 180) / 360) * scale;
+}
+
+function latToMercatorY(lat: number, zoom: number): number {
+  const clampedLat = Math.max(-85.05112878, Math.min(85.05112878, lat));
+  const rad = (clampedLat * Math.PI) / 180;
+  const scale = TILE_SIZE * Math.pow(2, zoom);
+  return (0.5 - Math.log(Math.tan(Math.PI / 4 + rad / 2)) / (2 * Math.PI)) * scale;
+}
+
+function mercatorXToLng(wx: number, zoom: number): number {
+  const scale = TILE_SIZE * Math.pow(2, zoom);
+  return (wx / scale) * 360 - 180;
+}
+
+function mercatorYToLat(wy: number, zoom: number): number {
+  const scale = TILE_SIZE * Math.pow(2, zoom);
+  const n = Math.PI - (2 * Math.PI * wy) / scale;
+  return (180 / Math.PI) * Math.atan(0.5 * (Math.exp(n) - Math.exp(-n)));
+}
+
+// Global in-memory tile cache so switching modes/countries is instantaneous
+const tileImageCache = new Map<string, HTMLImageElement>();
+const tileLoadingSet = new Set<string>();
+
+function getTileUrl(provider: "satellite" | "dark-base" | "dark-labels" | "voyager", z: number, x: number, y: number): string {
+  const maxIndex = Math.pow(2, z);
+  const wrappedX = ((x % maxIndex) + maxIndex) % maxIndex;
+  const sub = ["a", "b", "c"][Math.abs(wrappedX + y) % 3];
+
+  if (provider === "satellite") {
+    return `https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/${z}/${y}/${wrappedX}`;
+  }
+  if (provider === "dark-base") {
+    return `https://${sub}.basemaps.cartocdn.com/dark_nolabels/${z}/${wrappedX}/${y}@2x.png`;
+  }
+  if (provider === "dark-labels") {
+    return `https://${sub}.basemaps.cartocdn.com/dark_only_labels/${z}/${wrappedX}/${y}@2x.png`;
+  }
+  return `https://${sub}.basemaps.cartocdn.com/rastertiles/voyager/${z}/${wrappedX}/${y}@2x.png`;
 }
 
 export interface ProjectedPinPosition {
@@ -222,7 +265,15 @@ interface RadarMapboxCanvasProps {
   resetCommandSeq: number;
   onMapReady?: () => void;
   onCanvasClick?: () => void;
-  renderOverlayPins: (projectFn: (cityName: string | undefined, baseX: number, baseY: number, dispX?: number, dispY?: number) => ProjectedPinPosition) => React.ReactNode;
+  renderOverlayPins: (
+    projectFn: (
+      cityName: string | undefined,
+      baseX: number,
+      baseY: number,
+      dispX?: number,
+      dispY?: number
+    ) => ProjectedPinPosition
+  ) => React.ReactNode;
 }
 
 export function RadarMapboxCanvas({
@@ -235,290 +286,344 @@ export function RadarMapboxCanvas({
   renderOverlayPins,
 }: RadarMapboxCanvasProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
-  const mapRef = useRef<maplibregl.Map | null>(null);
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+
+  const initialGeo = COUNTRY_GEO_CONFIG[selectedCountry] || COUNTRY_GEO_CONFIG.EC;
+
+  // Live camera state in ref for 144 FPS canvas rendering + state tick for React pin overlay
+  const camRef = useRef({
+    lng: initialGeo.center[0],
+    lat: initialGeo.center[1],
+    zoom: initialGeo.zoom,
+    targetLng: initialGeo.center[0],
+    targetLat: initialGeo.center[1],
+    targetZoom: initialGeo.zoom,
+    animating: false,
+    width: 960,
+    height: 680,
+  });
+
   const prevZoomCommandRef = useRef<number>(zoomCommand);
   const [, setRenderTick] = useState(0);
-  const [mapStyleMode, setMapStyleMode] = useState<"dark" | "satellite" | "voyager">("dark");
-  const [mapboxToken, setMapboxToken] = useState<string>(() => {
-    if (typeof window !== "undefined") {
-      return process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN || localStorage.getItem("lumina_mapbox_token") || "";
-    }
-    return process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN || "";
-  });
-  const [isTokenModalOpen, setIsTokenModalOpen] = useState(false);
-  const [tokenDraft, setTokenDraft] = useState("");
+  const [mapStyleMode, setMapStyleMode] = useState<"tactical" | "satellite" | "street">("tactical");
+  const isDraggingRef = useRef(false);
+  const dragMovedRef = useRef(false);
+  const dragStartRef = useRef({ x: 0, y: 0, lng: 0, lat: 0 });
 
-  const buildFreeHdStyle = useCallback(
-    (mode: "dark" | "satellite" | "voyager"): maplibregl.StyleSpecification => {
-      if (mode === "satellite") {
-        return {
-          version: 8,
-          sources: {
-            "esri-satellite": {
-              type: "raster",
-              tiles: [
-                "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
-              ],
-              tileSize: 256,
-              maxzoom: 19,
-            },
-            "carto-labels": {
-              type: "raster",
-              tiles: [
-                "https://a.basemaps.cartocdn.com/rastertiles/voyager_only_labels/{z}/{x}/{y}@2x.png",
-                "https://b.basemaps.cartocdn.com/rastertiles/voyager_only_labels/{z}/{x}/{y}@2x.png",
-              ],
-              tileSize: 256,
-              maxzoom: 20,
-            },
-          },
-          layers: [
-            {
-              id: "satellite-base",
-              type: "raster",
-              source: "esri-satellite",
-              paint: {
-                "raster-contrast": 0.12,
-                "raster-saturation": 0.15,
-                "raster-brightness-min": 0.05,
-              },
-            },
-            {
-              id: "satellite-labels",
-              type: "raster",
-              source: "carto-labels",
-              paint: {
-                "raster-opacity": 0.95,
-              },
-            },
-          ],
-        };
-      }
-
-      if (mode === "voyager") {
-        return {
-          version: 8,
-          sources: {
-            "carto-voyager": {
-              type: "raster",
-              tiles: [
-                "https://a.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}@2x.png",
-                "https://b.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}@2x.png",
-                "https://c.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}@2x.png",
-              ],
-              tileSize: 256,
-              maxzoom: 20,
-            },
-          },
-          layers: [
-            {
-              id: "voyager-base",
-              type: "raster",
-              source: "carto-voyager",
-            },
-          ],
-        };
-      }
-
-      // Default `dark` — High-Visibility Tactical Radar Hybrid (Dark Matter @2x + Crisp Voyager Labels @2x)
-      return {
-        version: 8,
-        sources: {
-          "carto-dark-base": {
-            type: "raster",
-            tiles: [
-              "https://a.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}@2x.png",
-              "https://b.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}@2x.png",
-              "https://c.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}@2x.png",
-            ],
-            tileSize: 256,
-            maxzoom: 20,
-          },
-          "esri-relief-tint": {
-            type: "raster",
-            tiles: [
-              "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
-            ],
-            tileSize: 256,
-            maxzoom: 18,
-          },
-          "carto-crisp-labels": {
-            type: "raster",
-            tiles: [
-              "https://a.basemaps.cartocdn.com/dark_only_labels/{z}/{x}/{y}@2x.png",
-              "https://b.basemaps.cartocdn.com/dark_only_labels/{z}/{x}/{y}@2x.png",
-            ],
-            tileSize: 256,
-            maxzoom: 20,
-          },
-        },
-        layers: [
-          {
-            id: "tactical-dark-base",
-            type: "raster",
-            source: "carto-dark-base",
-            paint: {
-              "raster-brightness-min": 0.14,
-              "raster-brightness-max": 0.95,
-              "raster-contrast": 0.28,
-            },
-          },
-          {
-            id: "tactical-satellite-blend",
-            type: "raster",
-            source: "esri-relief-tint",
-            paint: {
-              "raster-opacity": 0.24,
-              "raster-contrast": 0.3,
-              "raster-saturation": -0.35,
-            },
-          },
-          {
-            id: "tactical-crisp-labels",
-            type: "raster",
-            source: "carto-crisp-labels",
-            paint: {
-              "raster-opacity": 1,
-              "raster-contrast": 0.25,
-            },
-          },
-        ],
-      };
-    },
-    []
-  );
-
-  const getMapStyle = useCallback(
-    (mode: "dark" | "satellite" | "voyager", token: string): string | maplibregl.StyleSpecification => {
-      if (token && token.startsWith("pk.")) {
-        if (mode === "satellite") {
-          return `https://api.mapbox.com/styles/v1/mapbox/satellite-streets-v12?access_token=${token}`;
-        }
-        return mode === "dark"
-          ? `https://api.mapbox.com/styles/v1/mapbox/navigation-night-v1?access_token=${token}`
-          : `https://api.mapbox.com/styles/v1/mapbox/streets-v12?access_token=${token}`;
-      }
-      return buildFreeHdStyle(mode);
-    },
-    [buildFreeHdStyle]
-  );
-
-  // Initialize WebGL Map
-  useEffect(() => {
-    if (!containerRef.current || mapRef.current) return;
-
-    const initialGeo = COUNTRY_GEO_CONFIG[selectedCountry] || COUNTRY_GEO_CONFIG.EC;
-
-    const map = new maplibregl.Map({
-      container: containerRef.current,
-      style: getMapStyle(mapStyleMode, mapboxToken),
-      center: initialGeo.center,
-      zoom: initialGeo.zoom,
-      pitch: initialGeo.pitch,
-      bearing: initialGeo.bearing,
-      attributionControl: false,
-      dragRotate: true,
-      touchZoomRotate: true,
-    });
-
-    mapRef.current = map;
-
-    const triggerProjectionUpdate = () => {
-      setRenderTick((t) => (t + 1) % 1000000);
-    };
-
-    map.on("load", () => {
-      map.resize();
-      triggerProjectionUpdate();
-      onMapReady?.();
-    });
-
-    map.on("move", triggerProjectionUpdate);
-    map.on("zoom", triggerProjectionUpdate);
-    map.on("rotate", triggerProjectionUpdate);
-    map.on("pitch", triggerProjectionUpdate);
-    map.on("resize", triggerProjectionUpdate);
-
-    // Ensure WebGL surface automatically resizes whenever the container or overlay transitions
-    const ro =
-      typeof ResizeObserver !== "undefined"
-        ? new ResizeObserver(() => {
-            map.resize();
-            triggerProjectionUpdate();
-          })
-        : null;
-    if (ro && containerRef.current) {
-      ro.observe(containerRef.current);
-    }
-
-    const t1 = setTimeout(() => map.resize(), 300);
-    const t2 = setTimeout(() => map.resize(), 1200);
-    const t3 = setTimeout(() => map.resize(), 5200);
-
-    return () => {
-      clearTimeout(t1);
-      clearTimeout(t2);
-      clearTimeout(t3);
-      ro?.disconnect();
-      map.remove();
-      mapRef.current = null;
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+  const requestRepaint = useCallback(() => {
+    setRenderTick((t) => (t + 1) % 1000000);
   }, []);
+
+  // Load a tile image and trigger repaint when ready
+  const fetchTile = useCallback(
+    (provider: "satellite" | "dark-base" | "dark-labels" | "voyager", z: number, x: number, y: number): HTMLImageElement | null => {
+      if (z < 1 || z > 18) return null;
+      const maxTile = Math.pow(2, z);
+      if (y < 0 || y >= maxTile) return null;
+
+      const url = getTileUrl(provider, z, x, y);
+      const cached = tileImageCache.get(url);
+      if (cached) return cached;
+
+      if (!tileLoadingSet.has(url) && typeof window !== "undefined") {
+        tileLoadingSet.add(url);
+        const img = new window.Image();
+        img.decoding = "async";
+        img.onload = () => {
+          tileImageCache.set(url, img);
+          tileLoadingSet.delete(url);
+          requestRepaint();
+        };
+        img.onerror = () => {
+          tileLoadingSet.delete(url);
+          // Fallback to standard OpenStreetMap tile if primary CDN fails
+          const maxIndex = Math.pow(2, z);
+          const wrappedX = ((x % maxIndex) + maxIndex) % maxIndex;
+          const fallbackUrl = `https://tile.openstreetmap.org/${z}/${wrappedX}/${y}.png`;
+          if (url !== fallbackUrl && !tileImageCache.has(url)) {
+            const fbImg = new window.Image();
+            fbImg.onload = () => {
+              tileImageCache.set(url, fbImg);
+              requestRepaint();
+            };
+            fbImg.src = fallbackUrl;
+          }
+        };
+        img.src = url;
+      }
+      return null;
+    },
+    [requestRepaint]
+  );
+
+  // Draw a single tile layer with automatic parent-tile fallback (`z - 1`, `z - 2`) so there are NEVER blank gaps
+  const drawTileLayer = useCallback(
+    (
+      ctx: CanvasRenderingContext2D,
+      provider: "satellite" | "dark-base" | "dark-labels" | "voyager",
+      camLng: number,
+      camLat: number,
+      camZoom: number,
+      width: number,
+      height: number,
+      alpha: number = 1,
+      filterStr: string = "none"
+    ) => {
+      const zInt = Math.max(2, Math.min(18, Math.floor(camZoom)));
+      const scaleFactor = Math.pow(2, camZoom - zInt);
+      const drawnTileSize = TILE_SIZE * scaleFactor;
+
+      const centerWorldX = lngToMercatorX(camLng, zInt);
+      const centerWorldY = latToMercatorY(camLat, zInt);
+
+      const topLeftWorldX = centerWorldX - width / 2 / scaleFactor;
+      const topLeftWorldY = centerWorldY - height / 2 / scaleFactor;
+
+      const startTileX = Math.floor(topLeftWorldX / TILE_SIZE) - 1;
+      const endTileX = Math.ceil((topLeftWorldX + width / scaleFactor) / TILE_SIZE) + 1;
+      const startTileY = Math.floor(topLeftWorldY / TILE_SIZE) - 1;
+      const endTileY = Math.ceil((topLeftWorldY + height / scaleFactor) / TILE_SIZE) + 1;
+
+      ctx.save();
+      ctx.globalAlpha = alpha;
+      if (filterStr !== "none") {
+        ctx.filter = filterStr;
+      }
+
+      for (let ty = startTileY; ty <= endTileY; ty++) {
+        for (let tx = startTileX; tx <= endTileX; tx++) {
+          const screenX = (tx * TILE_SIZE - topLeftWorldX) * scaleFactor;
+          const screenY = (ty * TILE_SIZE - topLeftWorldY) * scaleFactor;
+
+          const exactImg = fetchTile(provider, zInt, tx, ty);
+          if (exactImg) {
+            ctx.drawImage(exactImg, screenX, screenY, drawnTileSize + 0.6, drawnTileSize + 0.6);
+          } else if (zInt > 2) {
+            // Fallback to parent tile (zInt - 1) while high-res tile downloads
+            const parentZ = zInt - 1;
+            const ptx = Math.floor(tx / 2);
+            const pty = Math.floor(ty / 2);
+            const parentImg = fetchTile(provider, parentZ, ptx, pty);
+            if (parentImg) {
+              const subX = ((tx % 2) + 2) % 2;
+              const subY = ((ty % 2) + 2) % 2;
+              const srcW = parentImg.width / 2;
+              const srcH = parentImg.height / 2;
+              ctx.drawImage(
+                parentImg,
+                subX * srcW,
+                subY * srcH,
+                srcW,
+                srcH,
+                screenX,
+                screenY,
+                drawnTileSize + 0.6,
+                drawnTileSize + 0.6
+              );
+            }
+          }
+        }
+      }
+
+      ctx.restore();
+    },
+    [fetchTile]
+  );
+
+  // Main Canvas Render Loop
+  useEffect(() => {
+    let rafId = 0;
+    let mounted = true;
+
+    onMapReady?.();
+
+    const renderFrame = () => {
+      if (!mounted) return;
+
+      const container = containerRef.current;
+      const canvas = canvasRef.current;
+      if (container && canvas) {
+        const w = container.clientWidth || 960;
+        const h = container.clientHeight || 680;
+        const cam = camRef.current;
+        cam.width = w;
+        cam.height = h;
+
+        const dpr = Math.min(2, (typeof window !== "undefined" && window.devicePixelRatio) || 1);
+        const targetW = Math.round(w * dpr);
+        const targetH = Math.round(h * dpr);
+        if (canvas.width !== targetW || canvas.height !== targetH) {
+          canvas.width = targetW;
+          canvas.height = targetH;
+        }
+
+        // Smooth camera interpolation (`flyTo` / `easeTo`)
+        if (cam.animating) {
+          const dLng = cam.targetLng - cam.lng;
+          const dLat = cam.targetLat - cam.lat;
+          const dZoom = cam.targetZoom - cam.zoom;
+          if (Math.abs(dLng) < 0.0005 && Math.abs(dLat) < 0.0005 && Math.abs(dZoom) < 0.002) {
+            cam.lng = cam.targetLng;
+            cam.lat = cam.targetLat;
+            cam.zoom = cam.targetZoom;
+            cam.animating = false;
+          } else {
+            cam.lng += dLng * 0.12;
+            cam.lat += dLat * 0.12;
+            cam.zoom += dZoom * 0.12;
+          }
+          setRenderTick((t) => (t + 1) % 1000000);
+        }
+
+        const ctx = canvas.getContext("2d");
+        if (ctx) {
+          ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+          // 1. Base Tactical Ocean / Terrain Backdrop
+          ctx.fillStyle = mapStyleMode === "street" ? "#e8ecef" : "#111b18";
+          ctx.fillRect(0, 0, w, h);
+
+          if (mapStyleMode === "tactical") {
+            // Layer A: Real Satellite Terrain Relief (Andes mountains, Amazon, Coastline)
+            drawTileLayer(
+              ctx,
+              "satellite",
+              cam.lng,
+              cam.lat,
+              cam.zoom,
+              w,
+              h,
+              0.68,
+              "contrast(1.18) brightness(0.92) saturate(0.82)"
+            );
+            // Layer B: Dark Cartographic Vector Roads & Borders
+            drawTileLayer(
+              ctx,
+              "dark-base",
+              cam.lng,
+              cam.lat,
+              cam.zoom,
+              w,
+              h,
+              0.48,
+              "contrast(1.3) brightness(1.35)"
+            );
+            // Layer C: High-DPI Crisp White City & Province Names (`@2x`)
+            drawTileLayer(
+              ctx,
+              "dark-labels",
+              cam.lng,
+              cam.lat,
+              cam.zoom,
+              w,
+              h,
+              1.0,
+              "brightness(1.55) contrast(1.35)"
+            );
+          } else if (mapStyleMode === "satellite") {
+            // Full HD Satellite Imagery + High-Contrast White Labels
+            drawTileLayer(
+              ctx,
+              "satellite",
+              cam.lng,
+              cam.lat,
+              cam.zoom,
+              w,
+              h,
+              1.0,
+              "contrast(1.1) brightness(1.06) saturate(1.18)"
+            );
+            drawTileLayer(
+              ctx,
+              "dark-labels",
+              cam.lng,
+              cam.lat,
+              cam.zoom,
+              w,
+              h,
+              1.0,
+              "brightness(1.6) contrast(1.4)"
+            );
+          } else {
+            // Crisp Full-Color Street & Topographic Map (`Voyager @2x`)
+            drawTileLayer(ctx, "voyager", cam.lng, cam.lat, cam.zoom, w, h, 1.0, "none");
+          }
+
+          // Subtle Tactical Radar Coordinate Grid Lines (`lat` / `lng` every 2 degrees)
+          if (mapStyleMode !== "street") {
+            ctx.save();
+            ctx.strokeStyle = "rgba(204, 255, 0, 0.08)";
+            ctx.lineWidth = 1;
+            const stepDeg = cam.zoom > 7 ? 1 : 2;
+            const centerWx = lngToMercatorX(cam.lng, cam.zoom);
+            const centerWy = latToMercatorY(cam.lat, cam.zoom);
+
+            for (let lngLine = -120; lngLine <= -50; lngLine += stepDeg) {
+              const sx = lngToMercatorX(lngLine, cam.zoom) - centerWx + w / 2;
+              if (sx >= 0 && sx <= w) {
+                ctx.beginPath();
+                ctx.moveTo(sx, 0);
+                ctx.lineTo(sx, h);
+                ctx.stroke();
+              }
+            }
+            for (let latLine = -60; latLine <= 35; latLine += stepDeg) {
+              const sy = latToMercatorY(latLine, cam.zoom) - centerWy + h / 2;
+              if (sy >= 0 && sy <= h) {
+                ctx.beginPath();
+                ctx.moveTo(0, sy);
+                ctx.lineTo(w, sy);
+                ctx.stroke();
+              }
+            }
+            ctx.restore();
+          }
+        }
+      }
+
+      rafId = window.requestAnimationFrame(renderFrame);
+    };
+
+    rafId = window.requestAnimationFrame(renderFrame);
+    return () => {
+      mounted = false;
+      window.cancelAnimationFrame(rafId);
+    };
+  }, [drawTileLayer, mapStyleMode, onMapReady]);
 
   // Fly to selected country when changed
   useEffect(() => {
-    const map = mapRef.current;
-    if (!map) return;
     const geo = COUNTRY_GEO_CONFIG[selectedCountry] || COUNTRY_GEO_CONFIG.EC;
-    map.flyTo({
-      center: geo.center,
-      zoom: geo.zoom,
-      pitch: geo.pitch,
-      bearing: geo.bearing,
-      duration: 2200,
-      essential: true,
-    });
+    camRef.current.targetLng = geo.center[0];
+    camRef.current.targetLat = geo.center[1];
+    camRef.current.targetZoom = geo.zoom;
+    camRef.current.animating = true;
   }, [selectedCountry]);
 
   // Respond to external zoom buttons (+ / -)
   useEffect(() => {
-    const map = mapRef.current;
-    if (!map) return;
     if (zoomCommand === prevZoomCommandRef.current) return;
-
     const ratio = zoomCommand / Math.max(0.5, prevZoomCommandRef.current);
     prevZoomCommandRef.current = zoomCommand;
 
-    const currentMapZoom = map.getZoom();
     const delta = Math.log2(ratio);
-    map.easeTo({
-      zoom: Math.max(2.5, Math.min(16, currentMapZoom + delta * 1.35)),
-      duration: 380,
-    });
+    camRef.current.targetZoom = Math.max(3.2, Math.min(14.5, camRef.current.zoom + delta * 1.25));
+    camRef.current.animating = true;
   }, [zoomCommand]);
 
   // Respond to Reset View command
   useEffect(() => {
     if (resetCommandSeq === 0) return;
-    const map = mapRef.current;
-    if (!map) return;
     const geo = COUNTRY_GEO_CONFIG[selectedCountry] || COUNTRY_GEO_CONFIG.EC;
-    map.flyTo({
-      center: geo.center,
-      zoom: geo.zoom,
-      pitch: geo.pitch,
-      bearing: geo.bearing,
-      duration: 1200,
-      essential: true,
-    });
+    camRef.current.targetLng = geo.center[0];
+    camRef.current.targetLat = geo.center[1];
+    camRef.current.targetZoom = geo.zoom;
+    camRef.current.animating = true;
   }, [resetCommandSeq, selectedCountry]);
 
   // Respond to focusOnLocation (search bar city selection or cluster click)
   useEffect(() => {
     if (!focusTarget) return;
-    const map = mapRef.current;
-    if (!map) return;
     const geo = COUNTRY_GEO_CONFIG[selectedCountry] || COUNTRY_GEO_CONFIG.EC;
     const [lng, lat] = resolveGeoLngLat(
       focusTarget.cityName,
@@ -526,17 +631,14 @@ export function RadarMapboxCanvas({
       focusTarget.yPct,
       selectedCountry
     );
-    const targetMapZoom = Math.min(13.5, geo.zoom + Math.max(1.8, (focusTarget.zoomLevel - 1) * 2.6));
-    map.flyTo({
-      center: [lng, lat],
-      zoom: targetMapZoom,
-      pitch: 48,
-      duration: 1600,
-      essential: true,
-    });
+    const targetMapZoom = Math.min(12.5, geo.zoom + Math.max(1.6, (focusTarget.zoomLevel - 1) * 2.2));
+    camRef.current.targetLng = lng;
+    camRef.current.targetLat = lat;
+    camRef.current.targetZoom = targetMapZoom;
+    camRef.current.animating = true;
   }, [focusTarget, selectedCountry]);
 
-  // Projection helper passed to overlay pins
+  // Exact Web Mercator projection helper passed to overlay pins
   const projectPin = useCallback(
     (
       cityName: string | undefined,
@@ -545,85 +647,96 @@ export function RadarMapboxCanvas({
       dispX?: number,
       dispY?: number
     ): ProjectedPinPosition => {
-      const map = mapRef.current;
-      if (!map) {
-        return { x: (dispX ?? baseX) * 8, y: (dispY ?? baseY) * 6, visible: false };
-      }
-
+      const cam = camRef.current;
       const offsetX = dispX !== undefined ? dispX - baseX : 0;
       const offsetY = dispY !== undefined ? dispY - baseY : 0;
       const [lng, lat] = resolveGeoLngLat(cityName, baseX, baseY, selectedCountry, offsetX, offsetY);
-      const pt = map.project([lng, lat]);
 
-      const canvas = map.getCanvas();
-      const w = canvas?.clientWidth || 900;
-      const h = canvas?.clientHeight || 680;
-      const visible = pt.x >= -60 && pt.x <= w + 60 && pt.y >= -60 && pt.y <= h + 60;
+      const centerWx = lngToMercatorX(cam.lng, cam.zoom);
+      const centerWy = latToMercatorY(cam.lat, cam.zoom);
+      const pinWx = lngToMercatorX(lng, cam.zoom);
+      const pinWy = latToMercatorY(lat, cam.zoom);
 
-      return {
-        x: pt.x,
-        y: pt.y,
-        visible,
-      };
+      const x = pinWx - centerWx + cam.width / 2;
+      const y = pinWy - centerWy + cam.height / 2;
+      const visible = x >= -60 && x <= cam.width + 60 && y >= -60 && y <= cam.height + 60;
+
+      return { x, y, visible };
     },
     [selectedCountry]
   );
 
-  const handleToggleMapStyle = () => {
-    const nextMode: "dark" | "satellite" | "voyager" =
-      mapStyleMode === "dark"
-        ? "satellite"
-        : mapStyleMode === "satellite"
-        ? "voyager"
-        : "dark";
-    setMapStyleMode(nextMode);
-    if (mapRef.current) {
-      mapRef.current.setStyle(getMapStyle(nextMode, mapboxToken));
-    }
+  // Interactive Pointer Drag & Wheel Zoom handlers
+  const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    isDraggingRef.current = true;
+    dragMovedRef.current = false;
+    camRef.current.animating = false;
+    dragStartRef.current = {
+      x: e.clientX,
+      y: e.clientY,
+      lng: camRef.current.lng,
+      lat: camRef.current.lat,
+    };
   };
 
-  const handleSaveToken = (e: React.FormEvent) => {
+  const handlePointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (!isDraggingRef.current) return;
+    const dx = e.clientX - dragStartRef.current.x;
+    const dy = e.clientY - dragStartRef.current.y;
+    if (Math.abs(dx) > 3 || Math.abs(dy) > 3) {
+      dragMovedRef.current = true;
+    }
+    const z = camRef.current.zoom;
+    const startWx = lngToMercatorX(dragStartRef.current.lng, z);
+    const startWy = latToMercatorY(dragStartRef.current.lat, z);
+    camRef.current.lng = mercatorXToLng(startWx - dx, z);
+    camRef.current.lat = mercatorYToLat(startWy - dy, z);
+    camRef.current.targetLng = camRef.current.lng;
+    camRef.current.targetLat = camRef.current.lat;
+    requestRepaint();
+  };
+
+  const handlePointerUp = () => {
+    isDraggingRef.current = false;
+  };
+
+  const handleWheel = (e: React.WheelEvent<HTMLDivElement>) => {
     e.preventDefault();
-    const cleaned = tokenDraft.trim();
-    setMapboxToken(cleaned);
-    if (typeof window !== "undefined") {
-      if (cleaned) {
-        localStorage.setItem("lumina_mapbox_token", cleaned);
-      } else {
-        localStorage.removeItem("lumina_mapbox_token");
-      }
-    }
-    if (mapRef.current) {
-      mapRef.current.setStyle(getMapStyle(mapStyleMode, cleaned));
-    }
-    setIsTokenModalOpen(false);
+    const zoomDelta = -e.deltaY * 0.0018;
+    const nextZoom = Math.max(3.2, Math.min(14.5, camRef.current.zoom + zoomDelta));
+    camRef.current.zoom = nextZoom;
+    camRef.current.targetZoom = nextZoom;
+    camRef.current.animating = false;
+    requestRepaint();
   };
 
   return (
     <div
-      className="relative w-full h-full overflow-hidden select-none"
-      onClick={() => onCanvasClick?.()}
+      ref={containerRef}
+      onPointerDown={handlePointerDown}
+      onPointerMove={handlePointerMove}
+      onPointerUp={handlePointerUp}
+      onPointerLeave={handlePointerUp}
+      onWheel={handleWheel}
+      onClick={() => {
+        if (!dragMovedRef.current) {
+          onCanvasClick?.();
+        }
+      }}
+      className="relative w-full h-full overflow-hidden select-none cursor-grab active:cursor-grabbing"
     >
-      {/* Interactive WebGL Mapbox / MapLibre GL Surface */}
-      <div
-        ref={containerRef}
-        className="w-full h-full"
-        style={{
-          filter:
-            mapStyleMode === "dark"
-              ? "contrast(1.18) brightness(1.28) saturate(1.22)"
-              : mapStyleMode === "satellite"
-              ? "contrast(1.1) brightness(1.08) saturate(1.18)"
-              : "contrast(1.04) brightness(0.96)",
-        }}
+      {/* Direct Hardware-Accelerated 2D Slippy Tile Canvas (Zero WebWorker / Zero Token Dependencies) */}
+      <canvas
+        ref={canvasRef}
+        className="block w-full h-full pointer-events-none"
       />
 
-      {/* Subtle Tactical Radar Vignette & Grid Overlay */}
+      {/* Subtle Tactical Edge Vignette */}
       <div
         className="absolute inset-0 pointer-events-none"
         style={{
           background:
-            "radial-gradient(circle at 50% 50%, rgba(204,255,0,0.02) 0%, rgba(15,20,18,0.08) 72%, rgba(10,14,12,0.42) 100%)",
+            "radial-gradient(circle at 50% 50%, rgba(204,255,0,0.01) 0%, rgba(12,16,14,0.06) 72%, rgba(8,11,10,0.38) 100%)",
         }}
       />
 
@@ -632,101 +745,37 @@ export function RadarMapboxCanvas({
         {renderOverlayPins(projectPin)}
       </div>
 
-      {/* Bottom-Left Mapbox / WebGL Engine Badge & Style Controls */}
+      {/* Unobstructed Map Mode Selector Pill (Positioned above bottom cards on the left) */}
       <div
-        className="absolute bottom-3 left-16 sm:left-20 z-30 flex items-center gap-2 pointer-events-auto"
+        className="absolute bottom-36 sm:bottom-40 left-3 sm:left-4 z-30 flex flex-col gap-1.5 pointer-events-auto"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-black/80 backdrop-blur-xl border border-white/15 text-[10px] font-mono text-white/80 shadow-lg">
-          <span className="w-1.5 h-1.5 rounded-full bg-[#ccff00] shadow-[0_0_6px_#ccff00]" />
-          <span className="font-bold tracking-wider">WEBGL 3D</span>
-          <span className="text-white/40">•</span>
-          <span className="text-[#ccff00] font-semibold">ACTIVO (GRATIS)</span>
-        </div>
-
         <button
           type="button"
-          onClick={handleToggleMapStyle}
-          className="px-2.5 py-1 rounded-full bg-black/80 hover:bg-black backdrop-blur-xl border border-white/15 hover:border-[#ccff00]/50 text-[10px] font-mono text-white/85 hover:text-[#ccff00] flex items-center gap-1.5 transition-all cursor-pointer shadow-lg"
-          title="Cambiar modo cartográfico (Táctico / Satélite 3D / Calle)"
+          onClick={() =>
+            setMapStyleMode((prev) =>
+              prev === "tactical" ? "satellite" : prev === "satellite" ? "street" : "tactical"
+            )
+          }
+          className="px-3 py-1.5 rounded-full bg-black/85 hover:bg-black backdrop-blur-xl border border-white/15 hover:border-[#ccff00]/60 text-[10px] font-mono text-white hover:text-[#ccff00] flex items-center gap-1.5 transition-all cursor-pointer shadow-xl"
+          title="Cambiar vista del mapa (Táctico HD / Satélite Real / Mapa Calle)"
         >
-          <Layers className="w-3 h-3 text-[#ccff00]" />
-          <span>
-            {mapStyleMode === "dark"
-              ? "Modo Táctico HD"
+          {mapStyleMode === "tactical" ? (
+            <Layers className="w-3.5 h-3.5 text-[#ccff00]" />
+          ) : mapStyleMode === "satellite" ? (
+            <Satellite className="w-3.5 h-3.5 text-[#ccff00]" />
+          ) : (
+            <MapIcon className="w-3.5 h-3.5 text-[#ccff00]" />
+          )}
+          <span className="font-bold">
+            {mapStyleMode === "tactical"
+              ? "Táctico HD"
               : mapStyleMode === "satellite"
-              ? "Modo Satélite Real"
-              : "Modo Calle Claro"}
+              ? "Satélite Real"
+              : "Mapa Calle"}
           </span>
         </button>
-
-        <button
-          type="button"
-          onClick={() => {
-            setTokenDraft(mapboxToken);
-            setIsTokenModalOpen(true);
-          }}
-          className="p-1.5 rounded-full bg-black/80 hover:bg-black backdrop-blur-xl border border-white/15 hover:border-[#ccff00]/50 text-white/70 hover:text-[#ccff00] transition-all cursor-pointer shadow-lg"
-          title="Configurar Access Token de Mapbox (pk.*)"
-        >
-          <KeyRound className="w-3 h-3" />
-        </button>
       </div>
-
-      {/* Optional Mapbox Access Token Configuration Modal */}
-      {isTokenModalOpen && (
-        <div
-          className="absolute inset-0 z-50 bg-black/70 backdrop-blur-md flex items-center justify-center p-4 pointer-events-auto"
-          onClick={() => setIsTokenModalOpen(false)}
-        >
-          <form
-            onSubmit={handleSaveToken}
-            onClick={(e) => e.stopPropagation()}
-            className="w-full max-w-md rounded-3xl bg-[#121615] border border-white/15 p-5 shadow-2xl space-y-4 text-left"
-          >
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Compass className="w-4 h-4 text-[#ccff00]" />
-                <h4 className="text-xs font-bold uppercase tracking-wider text-white font-mono">
-                  Motor Cartográfico Mapbox GL
-                </h4>
-              </div>
-              <button
-                type="button"
-                onClick={() => setIsTokenModalOpen(false)}
-                className="w-6 h-6 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white/70 cursor-pointer"
-              >
-                <X className="w-3.5 h-3.5" />
-              </button>
-            </div>
-            <p className="text-[11px] text-white/65 leading-relaxed">
-              El radar vectorial 3D está activo en tiempo real. Si dispones de una llave pública de Mapbox (<code className="text-[#ccff00]">pk.eyJ1...</code>), puedes ingresarla aquí para habilitar los estilos propietarios de Mapbox Studio.
-            </p>
-            <input
-              type="text"
-              value={tokenDraft}
-              onChange={(e) => setTokenDraft(e.target.value)}
-              placeholder="pk.eyJ1Ijoi..."
-              className="w-full h-10 px-3.5 rounded-xl bg-black/60 border border-white/15 focus:border-[#ccff00] text-xs font-mono text-white outline-none"
-            />
-            <div className="flex items-center justify-end gap-2">
-              <button
-                type="button"
-                onClick={() => setIsTokenModalOpen(false)}
-                className="px-3.5 py-1.5 rounded-xl text-xs text-white/70 hover:text-white bg-white/5 cursor-pointer"
-              >
-                Cancelar
-              </button>
-              <button
-                type="submit"
-                className="px-4 py-1.5 rounded-xl text-xs font-bold bg-[#ccff00] text-gray-950 hover:bg-[#d8ff33] flex items-center gap-1.5 cursor-pointer"
-              >
-                <Check className="w-3.5 h-3.5" /> Guardar
-              </button>
-            </div>
-          </form>
-        </div>
-      )}
     </div>
   );
 }
