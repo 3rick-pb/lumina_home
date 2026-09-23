@@ -553,48 +553,48 @@ export function BeUIAdaptiveStepper({
   const atMax = disableIncrement || value >= max;
 
   // Geometry presets matching official `@beui/adaptive-stepper` proportions
-  // Standard (`lg`): 216 x 46 | Medium (`md`): 184 x 40 | Small (`sm`): 160 x 36
+  // Compact enough to fit table columns with generous breathing room while preserving full liquid morph
   const dims = useMemo(() => {
     if (size === "lg") {
       return {
-        totalW: 216,
-        h: 46,
-        btnW: 46,
-        minHiddenX: 32,
-        maxHiddenX: 138,
-        maxVisibleX: 170,
-        bothAtBounds: { x: 0, width: 216 },
-        atMinGeo: { x: 0, width: 156 },
-        atMaxGeo: { x: 60, width: 156 },
-        midGeo: { x: 58, width: 100 },
+        totalW: 168,
+        h: 42,
+        btnW: 40,
+        minHiddenX: 24,
+        maxHiddenX: 104,
+        maxVisibleX: 128,
+        bothAtBounds: { x: 0, width: 168 },
+        atMinGeo: { x: 0, width: 118 },
+        atMaxGeo: { x: 50, width: 118 },
+        midGeo: { x: 48, width: 72 },
       };
     }
     if (size === "sm") {
       return {
-        totalW: 160,
-        h: 36,
-        btnW: 36,
-        minHiddenX: 24,
-        maxHiddenX: 100,
-        maxVisibleX: 124,
-        bothAtBounds: { x: 0, width: 160 },
-        atMinGeo: { x: 0, width: 114 },
-        atMaxGeo: { x: 46, width: 114 },
-        midGeo: { x: 46, width: 68 },
+        totalW: 118,
+        h: 32,
+        btnW: 30,
+        minHiddenX: 18,
+        maxHiddenX: 72,
+        maxVisibleX: 88,
+        bothAtBounds: { x: 0, width: 118 },
+        atMinGeo: { x: 0, width: 82 },
+        atMaxGeo: { x: 36, width: 82 },
+        midGeo: { x: 35, width: 48 },
       };
     }
-    // `md` default (used in Shopping Bag & Product Page)
+    // `md` default (used in Shopping Bag — 132px wide x 36px high so it never touches Subtotal or Product title)
     return {
-      totalW: 184,
-      h: 40,
-      btnW: 40,
-      minHiddenX: 28,
-      maxHiddenX: 116,
-      maxVisibleX: 144,
-      bothAtBounds: { x: 0, width: 184 },
-      atMinGeo: { x: 0, width: 132 },
-      atMaxGeo: { x: 52, width: 132 },
-      midGeo: { x: 52, width: 80 },
+      totalW: 132,
+      h: 36,
+      btnW: 34,
+      minHiddenX: 20,
+      maxHiddenX: 80,
+      maxVisibleX: 98,
+      bothAtBounds: { x: 0, width: 132 },
+      atMinGeo: { x: 0, width: 92 },
+      atMaxGeo: { x: 40, width: 92 },
+      midGeo: { x: 39, width: 54 },
     };
   }, [size]);
 

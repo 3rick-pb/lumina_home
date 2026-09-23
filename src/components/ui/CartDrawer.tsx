@@ -882,11 +882,11 @@ export function CartDrawer() {
       </div>
     </div>
 
-    <h3 className="font-display font-bold text-2xl sm:text-3xl text-gray-950 dark:text-white mb-2.5 tracking-tight">
+    <h3 className="font-display font-bold text-2xl sm:text-3xl text-gray-950 dark:text-white mb-2 tracking-tight">
       Tu bolsa de compras está vacía
     </h3>
-    <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 max-w-md leading-relaxed mb-8">
-      Descubre piezas de iluminación arquitectónica, aromaterapia orgánica y mobiliario de autor diseñadas para transformar la atmósfera de tus espacios. Añade tus artículos favoritos para calcular tu envío inmediato.
+    <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 max-w-sm leading-relaxed mb-7">
+      <span className="font-semibold text-gray-800 dark:text-gray-200">Dato curioso:</span> Una luz cálida (2700K) reduce el estrés visual y mejora el descanso un 40%.
     </p>
 
     {/* 2IXO Dock Capsule CTA Button */}
@@ -924,12 +924,12 @@ export function CartDrawer() {
     )}
   </div>
 
- {/* Table Column Headers (Directly from Reference Image) */}
- <div className="hidden sm:grid grid-cols-12 text-xs font-bold text-gray-400 dark:text-gray-400 uppercase tracking-wider pb-3 border-b border-gray-100 dark:border-white/5 px-3.5 sm:px-4">
+ {/* Table Column Headers (Aligned 5 + 3 + 3 + 1 = 12 cols) */}
+ <div className="hidden sm:grid grid-cols-12 text-xs font-bold text-gray-400 dark:text-gray-400 uppercase tracking-wider pb-3 border-b border-gray-100 dark:border-white/5 px-3.5 sm:px-4 items-center">
  <span className="col-span-5">Producto</span>
  <span className="col-span-3 text-center">Cantidad</span>
- <span className="col-span-2 text-right pr-6">Subtotal</span>
- <span className="col-span-2 text-right pr-1">Acción</span>
+ <span className="col-span-3 text-right pr-4">Subtotal</span>
+ <span className="col-span-1 text-right pr-1">Acción</span>
  </div>
 
  {/* Product Rows with generous breathing room */}
@@ -1188,7 +1188,7 @@ export function CartDrawer() {
     </div>
   </div>
 
-  {/* Unified Mobile Bottom Controls Row + Desktop Grid Columns (Quantity 3 cols, Subtotal 2 cols, Delete 2 cols) */}
+  {/* Unified Mobile Bottom Controls Row + Desktop Grid Columns (Product 5 cols, Quantity 3 cols, Subtotal 3 cols, Delete 1 col) */}
   <div className="flex items-center justify-between gap-2 pt-2.5 mt-0.5 border-t border-gray-200/60 dark:border-white/10 sm:border-t-0 sm:pt-0 sm:mt-0 sm:contents">
     {/* Quantity Capsule with beUI Adaptive Stepper (3 cols on sm+) */}
     <div className="sm:col-span-3 flex sm:justify-center items-center shrink-0">
@@ -1211,8 +1211,8 @@ export function CartDrawer() {
       />
     </div>
 
-    {/* Subtotal Price with beUI Rolling Ticker (2 cols on sm+) */}
-    <div className="sm:col-span-2 sm:text-right flex items-center gap-1.5 sm:block sm:pr-6 ml-auto sm:ml-0">
+    {/* Subtotal Price with beUI Rolling Ticker (3 cols on sm+) */}
+    <div className="sm:col-span-3 sm:text-right flex items-center gap-1.5 sm:block sm:pr-4 ml-auto sm:ml-0">
       <span className="text-[11px] font-medium text-gray-400 dark:text-gray-400 sm:hidden">Subtotal:</span>
       <BeUIRollingPrice
         amount={Number(item.product?.price || 0) * (item.quantity || 1)}
@@ -1220,8 +1220,8 @@ export function CartDrawer() {
       />
     </div>
 
-    {/* 2IXO CIRCULAR GLASS DELETE BUTTON (2 cols on sm+) */}
-    <div className="sm:col-span-2 flex justify-end items-center sm:text-right shrink-0">
+    {/* 2IXO CIRCULAR GLASS DELETE BUTTON (1 col on sm+) */}
+    <div className="sm:col-span-1 flex justify-end items-center sm:text-right shrink-0">
       <button 
         onClick={() => removeItem(item.id)}
         className="w-8 h-8 rounded-full bg-white/80 dark:bg-white/10 hover:bg-rose-50/90 dark:hover:bg-rose-950/30 text-gray-400 hover:text-rose-600 dark:hover:text-rose-400 border border-black/[0.06] dark:border-white/15 shadow-xs flex items-center justify-center transition-all active:scale-90 cursor-pointer sm:ml-auto"

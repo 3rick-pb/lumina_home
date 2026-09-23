@@ -18,7 +18,7 @@ export interface CountryGeoBounds {
 export const COUNTRY_GEO_CONFIG: Record<RadarCountryCode, CountryGeoBounds> = {
   EC: {
     center: [-78.4678, -1.45],
-    zoom: 6.4,
+    zoom: 6.45,
     pitch: 0,
     bearing: 0,
     west: -81.2,
@@ -78,86 +78,169 @@ export const COUNTRY_GEO_CONFIG: Record<RadarCountryCode, CountryGeoBounds> = {
   },
 };
 
-// Exact [lng, lat] coordinates for major cities across all 6 countries
+function normalizeGeoKey(str: string): string {
+  return str
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .trim();
+}
+
+// Calibrated GPS [lng, lat] coordinates for all 24 Ecuadorian provinces, cantons & Latin American cities
 const EXACT_CITY_LNG_LAT: Record<string, [number, number]> = {
-  // Ecuador
+  // Ecuador — Sierra (Capitals & Provinces)
   quito: [-78.4678, -0.1807],
-  guayaquil: [-79.8891, -2.1894],
+  pichincha: [-78.4678, -0.1807],
+  cumbaya: [-78.4301, -0.2015],
+  tumbaco: [-78.4005, -0.2131],
+  sangolqui: [-78.4475, -0.3341],
+  rumiahui: [-78.4475, -0.3341],
+  cayambe: [-78.1453, 0.0408],
+  machachi: [-78.5671, -0.5101],
   cuenca: [-79.0045, -2.9001],
-  manta: [-80.7089, -0.9677],
+  azuay: [-79.0045, -2.9001],
+  gualaceo: [-78.7781, -2.8926],
   ambato: [-78.6197, -1.2491],
+  tungurahua: [-78.6197, -1.2491],
+  banos: [-78.4229, -1.3964],
   loja: [-79.2042, -3.9931],
-  "santo domingo": [-79.1754, -0.253],
-  portoviejo: [-80.4545, -1.0546],
-  machala: [-79.9554, -3.2581],
+  catamayo: [-79.3592, -3.9866],
   ibarra: [-78.1223, 0.3517],
+  imbabura: [-78.1223, 0.3517],
+  otavalo: [-78.2611, 0.2343],
+  cotacachi: [-78.2642, 0.3011],
   riobamba: [-78.6471, -1.6635],
-  esmeraldas: [-79.654, 0.9592],
+  chimborazo: [-78.6471, -1.6635],
   latacunga: [-78.6155, -0.9352],
+  cotopaxi: [-78.6155, -0.9352],
+  salcedo: [-78.5906, -1.0455],
   tulcan: [-77.7173, 0.8119],
-  tulcán: [-77.7173, 0.8119],
+  carchi: [-77.7173, 0.8119],
+  azogues: [-78.8486, -2.7397],
+  canar: [-78.8486, -2.7397],
+  guaranda: [-79.001, -1.5926],
+  bolivar: [-79.001, -1.5926],
+
+  // Ecuador — Costa (Capitals, Cantons & Provinces)
+  guayaquil: [-79.8891, -2.1894],
+  guayas: [-79.8891, -2.1894],
+  samborondon: [-79.865, -2.085],
+  duran: [-79.831, -2.171],
+  daule: [-79.978, -1.862],
+  milagro: [-79.5942, -2.134],
+  playas: [-80.388, -2.632],
+  manta: [-80.7089, -0.9677],
+  portoviejo: [-80.4545, -1.0546],
+  manabi: [-80.4545, -1.0546],
+  chone: [-80.0936, -0.6982],
+  montecristi: [-80.6589, -1.0458],
+  jipijapa: [-80.5786, -1.3486],
+  "bahia de caraquez": [-80.4236, -0.5979],
+  "santo domingo": [-79.1754, -0.253],
+  tsachilas: [-79.1754, -0.253],
+  machala: [-79.9554, -3.2581],
+  "el oro": [-79.9554, -3.2581],
+  pasaje: [-79.807, -3.3256],
+  "santa rosa": [-79.9595, -3.4488],
+  huaquillas: [-80.2308, -3.4752],
+  esmeraldas: [-79.654, 0.9592],
+  atacames: [-79.845, 0.869],
+  quininde: [-79.469, 0.327],
   babahoyo: [-79.5346, -1.8019],
   quevedo: [-79.4628, -1.0286],
-  milagro: [-79.5942, -2.134],
+  "los rios": [-79.5346, -1.8019],
+  ventanas: [-79.459, -1.441],
   salinas: [-80.9515, -2.2145],
+  "santa elena": [-80.8587, -2.2262],
+  libertad: [-80.9103, -2.233],
+  montanita: [-80.7528, -1.8267],
+
+  // Ecuador — Amazonía / Oriente
   tena: [-77.8129, -0.9938],
+  napo: [-77.8129, -0.9938],
   puyo: [-78.0026, -1.4924],
+  pastaza: [-78.0026, -1.4924],
   macas: [-78.1114, -2.3087],
+  "morona santiago": [-78.1114, -2.3087],
   zamora: [-78.9549, -4.0692],
-  galapagos: [-90.3042, -0.7402],
-  galápagos: [-90.3042, -0.7402],
+  "zamora chinchipe": [-78.9549, -4.0692],
+  "nueva loja": [-76.8885, 0.0847],
+  "lago agrio": [-76.8885, 0.0847],
+  sucumbios: [-76.8885, 0.0847],
+  coca: [-76.9871, -0.4665],
+  "el coca": [-76.9871, -0.4665],
+  orellana: [-76.9871, -0.4665],
+
+  // Ecuador — Galápagos
+  galapagos: [-90.3138, -0.7443],
   "puerto ayora": [-90.3138, -0.7443],
+  "santa cruz": [-90.3138, -0.7443],
+  "san cristobal": [-89.6103, -0.9022],
+  "baquerizo moreno": [-89.6103, -0.9022],
+
   // Colombia
   bogota: [-74.0721, 4.711],
-  bogotá: [-74.0721, 4.711],
+  cundinamarca: [-74.0721, 4.711],
   medellin: [-75.5636, 6.2442],
-  medellín: [-75.5636, 6.2442],
+  antioquia: [-75.5636, 6.2442],
   cali: [-76.532, 3.4516],
+  "valle del cauca": [-76.532, 3.4516],
   barranquilla: [-74.7964, 10.9685],
+  atlantico: [-74.7964, 10.9685],
   cartagena: [-75.4794, 10.391],
   bucaramanga: [-73.1198, 7.1254],
+  santander: [-73.1198, 7.1254],
   pereira: [-75.6961, 4.8133],
   "santa marta": [-74.199, 11.2408],
+
   // Argentina
   "buenos aires": [-58.3816, -34.6037],
+  caba: [-58.3816, -34.6037],
   cordoba: [-64.1888, -31.4201],
-  córdoba: [-64.1888, -31.4201],
   rosario: [-60.6393, -32.9468],
+  "santa fe": [-60.7, -31.6333],
   mendoza: [-68.8458, -32.8895],
   "la plata": [-57.9545, -34.9215],
   tucuman: [-65.2176, -26.8083],
-  tucumán: [-65.2176, -26.8083],
   "mar del plata": [-57.5426, -38.0055],
   salta: [-65.4117, -24.7859],
+
   // Perú
   lima: [-77.0428, -12.0464],
+  callao: [-77.1181, -12.0566],
   arequipa: [-71.5375, -16.409],
   trujillo: [-79.029, -8.116],
+  "la libertad": [-79.029, -8.116],
   cusco: [-71.9675, -13.532],
+  cuzco: [-71.9675, -13.532],
   chiclayo: [-79.8409, -6.7714],
+  lambayeque: [-79.8409, -6.7714],
   piura: [-80.6328, -5.1945],
   iquitos: [-73.2516, -3.7437],
   huancayo: [-75.2049, -12.0651],
+
   // México
   "ciudad de mexico": [-99.1332, 19.4326],
-  "ciudad de méxico": [-99.1332, 19.4326],
   cdmx: [-99.1332, 19.4326],
   guadalajara: [-103.3496, 20.6597],
+  jalisco: [-103.3496, 20.6597],
   monterrey: [-100.3161, 25.6866],
+  "nuevo leon": [-100.3161, 25.6866],
   puebla: [-98.2063, 19.0414],
   cancun: [-86.8515, 21.1619],
-  cancún: [-86.8515, 21.1619],
+  "quintana roo": [-86.8515, 21.1619],
   queretaro: [-100.3899, 20.5888],
-  querétaro: [-100.3899, 20.5888],
   merida: [-89.5926, 20.9674],
-  mérida: [-89.5926, 20.9674],
+  yucatan: [-89.5926, 20.9674],
   tijuana: [-117.0382, 32.5149],
+
   // Chile
   santiago: [-70.6693, -33.4489],
+  "region metropolitana": [-70.6693, -33.4489],
   valparaiso: [-71.6127, -33.0472],
-  valparaíso: [-71.6127, -33.0472],
+  "vina del mar": [-71.5518, -33.0245],
   concepcion: [-73.0444, -36.8201],
-  concepción: [-73.0444, -36.8201],
+  biobio: [-73.0444, -36.8201],
   "la serena": [-71.252, -29.9027],
   antofagasta: [-70.3975, -23.6509],
   temuco: [-72.5904, -38.7359],
@@ -174,7 +257,7 @@ export function resolveGeoLngLat(
   offsetYPct: number = 0
 ): [number, number] {
   const bounds = COUNTRY_GEO_CONFIG[countryCode] || COUNTRY_GEO_CONFIG.EC;
-  const cleanCity = (cityName || "").toLowerCase().trim();
+  const cleanCity = normalizeGeoKey(cityName || "");
 
   let baseLng: number | null = null;
   let baseLat: number | null = null;
@@ -182,23 +265,25 @@ export function resolveGeoLngLat(
   if (cleanCity && EXACT_CITY_LNG_LAT[cleanCity]) {
     [baseLng, baseLat] = EXACT_CITY_LNG_LAT[cleanCity];
   } else if (cleanCity) {
-    const matchedKey = Object.keys(EXACT_CITY_LNG_LAT).find((k) => cleanCity.includes(k));
+    // Sort keys by length descending so multi-word names ("santo domingo", "santa elena") match before shorter substrings
+    const matchedKey = Object.keys(EXACT_CITY_LNG_LAT)
+      .sort((a, b) => b.length - a.length)
+      .find((k) => cleanCity.includes(k));
     if (matchedKey) {
       [baseLng, baseLat] = EXACT_CITY_LNG_LAT[matchedKey];
     }
   }
 
   if (baseLng === null || baseLat === null) {
-    const clampedX = Math.max(2, Math.min(98, xPct)) / 100;
-    const clampedY = Math.max(2, Math.min(98, yPct)) / 100;
-    baseLng = bounds.west + clampedX * (bounds.east - bounds.west);
-    baseLat = bounds.north - clampedY * (bounds.north - bounds.south);
+    // Default to country capital if generic country name ("ecuador", "colombia", etc.)
+    baseLng = bounds.center[0];
+    baseLat = bounds.center[1];
   }
 
-  const lngSpan = Math.abs(bounds.east - bounds.west) * 0.14;
-  const latSpan = Math.abs(bounds.north - bounds.south) * 0.14;
-  const finalLng = baseLng + (offsetXPct / 100) * lngSpan;
-  const finalLat = baseLat - (offsetYPct / 100) * latSpan;
+  // Tight urban neighborhood dispersion (~2.2 km) when multiple clients are in the same city
+  // so dispersed pins stay inside the city itself and never drift into other provinces or the ocean.
+  const finalLng = baseLng + (offsetXPct / 100) * 0.16;
+  const finalLat = baseLat - (offsetYPct / 100) * 0.16;
 
   return [finalLng, finalLat];
 }
@@ -231,25 +316,30 @@ function mercatorYToLat(wy: number, zoom: number): number {
   return (180 / Math.PI) * Math.atan(0.5 * (Math.exp(n) - Math.exp(-n)));
 }
 
-// Global in-memory tile cache so switching modes/countries is instantaneous
+// Global in-memory tile cache — 100% Watermark-Free ArcGIS / Esri + OpenStreetMap Endpoints
 const tileImageCache = new Map<string, HTMLImageElement>();
 const tileLoadingSet = new Set<string>();
 
-function getTileUrl(provider: "satellite" | "dark-base" | "dark-labels" | "voyager", z: number, x: number, y: number): string {
+type TileProvider = "satellite" | "dark-base" | "boundaries-labels" | "street-topo";
+
+function getTileUrl(provider: TileProvider, z: number, x: number, y: number): string {
   const maxIndex = Math.pow(2, z);
   const wrappedX = ((x % maxIndex) + maxIndex) % maxIndex;
-  const sub = ["a", "b", "c"][Math.abs(wrappedX + y) % 3];
 
   if (provider === "satellite") {
+    // Esri World Imagery (100% Free, Zero Watermark)
     return `https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/${z}/${y}/${wrappedX}`;
   }
   if (provider === "dark-base") {
-    return `https://${sub}.basemaps.cartocdn.com/dark_nolabels/${z}/${wrappedX}/${y}@2x.png`;
+    // Esri World Dark Gray Canvas Base (100% Free, Zero Watermark — replaces Carto watermarked base)
+    return `https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/${z}/${y}/${wrappedX}`;
   }
-  if (provider === "dark-labels") {
-    return `https://${sub}.basemaps.cartocdn.com/dark_only_labels/${z}/${wrappedX}/${y}@2x.png`;
+  if (provider === "boundaries-labels") {
+    // Esri World Boundaries & Places (100% Free, Zero Watermark — crisp white city/province names & borders on transparent PNG)
+    return `https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/${z}/${y}/${wrappedX}`;
   }
-  return `https://${sub}.basemaps.cartocdn.com/rastertiles/voyager/${z}/${wrappedX}/${y}@2x.png`;
+  // Esri World Topographic / Street Map (100% Free, Zero Watermark)
+  return `https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/${z}/${y}/${wrappedX}`;
 }
 
 export interface ProjectedPinPosition {
@@ -290,7 +380,6 @@ export function RadarMapboxCanvas({
 
   const initialGeo = COUNTRY_GEO_CONFIG[selectedCountry] || COUNTRY_GEO_CONFIG.EC;
 
-  // Live camera state in ref for 144 FPS canvas rendering + state tick for React pin overlay
   const camRef = useRef({
     lng: initialGeo.center[0],
     lat: initialGeo.center[1],
@@ -314,9 +403,28 @@ export function RadarMapboxCanvas({
     setRenderTick((t) => (t + 1) % 1000000);
   }, []);
 
-  // Load a tile image and trigger repaint when ready
+  // Observe container size changes so pin coordinates and canvas dimensions stay 100% synchronized
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el || typeof ResizeObserver === "undefined") return;
+    const ro = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        const w = entry.contentRect.width;
+        const h = entry.contentRect.height;
+        if (w > 0 && h > 0) {
+          camRef.current.width = w;
+          camRef.current.height = h;
+          requestRepaint();
+        }
+      }
+    });
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [requestRepaint]);
+
+  // Load a tile image (no-referrer, zero watermark) and trigger repaint when ready
   const fetchTile = useCallback(
-    (provider: "satellite" | "dark-base" | "dark-labels" | "voyager", z: number, x: number, y: number): HTMLImageElement | null => {
+    (provider: TileProvider, z: number, x: number, y: number): HTMLImageElement | null => {
       if (z < 1 || z > 18) return null;
       const maxTile = Math.pow(2, z);
       if (y < 0 || y >= maxTile) return null;
@@ -328,6 +436,7 @@ export function RadarMapboxCanvas({
       if (!tileLoadingSet.has(url) && typeof window !== "undefined") {
         tileLoadingSet.add(url);
         const img = new window.Image();
+        img.referrerPolicy = "no-referrer";
         img.decoding = "async";
         img.onload = () => {
           tileImageCache.set(url, img);
@@ -336,12 +445,12 @@ export function RadarMapboxCanvas({
         };
         img.onerror = () => {
           tileLoadingSet.delete(url);
-          // Fallback to standard OpenStreetMap tile if primary CDN fails
           const maxIndex = Math.pow(2, z);
           const wrappedX = ((x % maxIndex) + maxIndex) % maxIndex;
           const fallbackUrl = `https://tile.openstreetmap.org/${z}/${wrappedX}/${y}.png`;
-          if (url !== fallbackUrl && !tileImageCache.has(url)) {
+          if (provider === "street-topo" && url !== fallbackUrl && !tileImageCache.has(url)) {
             const fbImg = new window.Image();
+            fbImg.referrerPolicy = "no-referrer";
             fbImg.onload = () => {
               tileImageCache.set(url, fbImg);
               requestRepaint();
@@ -356,11 +465,11 @@ export function RadarMapboxCanvas({
     [requestRepaint]
   );
 
-  // Draw a single tile layer with automatic parent-tile fallback (`z - 1`, `z - 2`) so there are NEVER blank gaps
+  // Draw a tile layer using the EXACT same `(centerWx, centerWy)` origin as `projectPin`
   const drawTileLayer = useCallback(
     (
       ctx: CanvasRenderingContext2D,
-      provider: "satellite" | "dark-base" | "dark-labels" | "voyager",
+      provider: TileProvider,
       camLng: number,
       camLat: number,
       camZoom: number,
@@ -373,16 +482,14 @@ export function RadarMapboxCanvas({
       const scaleFactor = Math.pow(2, camZoom - zInt);
       const drawnTileSize = TILE_SIZE * scaleFactor;
 
-      const centerWorldX = lngToMercatorX(camLng, zInt);
-      const centerWorldY = latToMercatorY(camLat, zInt);
+      // Exact camera center in continuous zoom world pixels (`TILE_SIZE * 2^camZoom`)
+      const centerWx = lngToMercatorX(camLng, camZoom);
+      const centerWy = latToMercatorY(camLat, camZoom);
 
-      const topLeftWorldX = centerWorldX - width / 2 / scaleFactor;
-      const topLeftWorldY = centerWorldY - height / 2 / scaleFactor;
-
-      const startTileX = Math.floor(topLeftWorldX / TILE_SIZE) - 1;
-      const endTileX = Math.ceil((topLeftWorldX + width / scaleFactor) / TILE_SIZE) + 1;
-      const startTileY = Math.floor(topLeftWorldY / TILE_SIZE) - 1;
-      const endTileY = Math.ceil((topLeftWorldY + height / scaleFactor) / TILE_SIZE) + 1;
+      const startTileX = Math.floor((centerWx - width / 2) / drawnTileSize) - 1;
+      const endTileX = Math.ceil((centerWx + width / 2) / drawnTileSize) + 1;
+      const startTileY = Math.floor((centerWy - height / 2) / drawnTileSize) - 1;
+      const endTileY = Math.ceil((centerWy + height / 2) / drawnTileSize) + 1;
 
       ctx.save();
       ctx.globalAlpha = alpha;
@@ -392,14 +499,13 @@ export function RadarMapboxCanvas({
 
       for (let ty = startTileY; ty <= endTileY; ty++) {
         for (let tx = startTileX; tx <= endTileX; tx++) {
-          const screenX = (tx * TILE_SIZE - topLeftWorldX) * scaleFactor;
-          const screenY = (ty * TILE_SIZE - topLeftWorldY) * scaleFactor;
+          const screenX = tx * drawnTileSize - centerWx + width / 2;
+          const screenY = ty * drawnTileSize - centerWy + height / 2;
 
           const exactImg = fetchTile(provider, zInt, tx, ty);
           if (exactImg) {
-            ctx.drawImage(exactImg, screenX, screenY, drawnTileSize + 0.6, drawnTileSize + 0.6);
+            ctx.drawImage(exactImg, screenX, screenY, drawnTileSize + 0.5, drawnTileSize + 0.5);
           } else if (zInt > 2) {
-            // Fallback to parent tile (zInt - 1) while high-res tile downloads
             const parentZ = zInt - 1;
             const ptx = Math.floor(tx / 2);
             const pty = Math.floor(ty / 2);
@@ -417,8 +523,8 @@ export function RadarMapboxCanvas({
                 srcH,
                 screenX,
                 screenY,
-                drawnTileSize + 0.6,
-                drawnTileSize + 0.6
+                drawnTileSize + 0.5,
+                drawnTileSize + 0.5
               );
             }
           }
@@ -446,8 +552,11 @@ export function RadarMapboxCanvas({
         const w = container.clientWidth || 960;
         const h = container.clientHeight || 680;
         const cam = camRef.current;
-        cam.width = w;
-        cam.height = h;
+        if (cam.width !== w || cam.height !== h) {
+          cam.width = w;
+          cam.height = h;
+          setRenderTick((t) => (t + 1) % 1000000);
+        }
 
         const dpr = Math.min(2, (typeof window !== "undefined" && window.devicePixelRatio) || 1);
         const targetW = Math.round(w * dpr);
@@ -457,7 +566,6 @@ export function RadarMapboxCanvas({
           canvas.height = targetH;
         }
 
-        // Smooth camera interpolation (`flyTo` / `easeTo`)
         if (cam.animating) {
           const dLng = cam.targetLng - cam.lng;
           const dLat = cam.targetLat - cam.lat;
@@ -479,24 +587,11 @@ export function RadarMapboxCanvas({
         if (ctx) {
           ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
-          // 1. Base Tactical Ocean / Terrain Backdrop
-          ctx.fillStyle = mapStyleMode === "street" ? "#e8ecef" : "#111b18";
+          ctx.fillStyle = mapStyleMode === "street" ? "#e8ecef" : "#121a18";
           ctx.fillRect(0, 0, w, h);
 
           if (mapStyleMode === "tactical") {
-            // Layer A: Real Satellite Terrain Relief (Andes mountains, Amazon, Coastline)
-            drawTileLayer(
-              ctx,
-              "satellite",
-              cam.lng,
-              cam.lat,
-              cam.zoom,
-              w,
-              h,
-              0.68,
-              "contrast(1.18) brightness(0.92) saturate(0.82)"
-            );
-            // Layer B: Dark Cartographic Vector Roads & Borders
+            // Layer A: Esri Dark Gray Base (100% Watermark-Free)
             drawTileLayer(
               ctx,
               "dark-base",
@@ -505,23 +600,35 @@ export function RadarMapboxCanvas({
               cam.zoom,
               w,
               h,
-              0.48,
-              "contrast(1.3) brightness(1.35)"
+              1.0,
+              "contrast(1.18) brightness(1.15)"
             );
-            // Layer C: High-DPI Crisp White City & Province Names (`@2x`)
+            // Layer B: Subtle Esri Satellite Relief Blend (Andes / Amazon texture)
             drawTileLayer(
               ctx,
-              "dark-labels",
+              "satellite",
+              cam.lng,
+              cam.lat,
+              cam.zoom,
+              w,
+              h,
+              0.36,
+              "contrast(1.22) brightness(0.95) saturate(0.85)"
+            );
+            // Layer C: Esri World Boundaries & Places Reference (Zero-Watermark Crisp Borders & City Names)
+            drawTileLayer(
+              ctx,
+              "boundaries-labels",
               cam.lng,
               cam.lat,
               cam.zoom,
               w,
               h,
               1.0,
-              "brightness(1.55) contrast(1.35)"
+              "brightness(1.2) contrast(1.25)"
             );
           } else if (mapStyleMode === "satellite") {
-            // Full HD Satellite Imagery + High-Contrast White Labels
+            // Full HD Esri Satellite Imagery + Esri Boundaries & Places Reference (Zero-Watermark)
             drawTileLayer(
               ctx,
               "satellite",
@@ -531,28 +638,28 @@ export function RadarMapboxCanvas({
               w,
               h,
               1.0,
-              "contrast(1.1) brightness(1.06) saturate(1.18)"
+              "contrast(1.1) brightness(1.05) saturate(1.15)"
             );
             drawTileLayer(
               ctx,
-              "dark-labels",
+              "boundaries-labels",
               cam.lng,
               cam.lat,
               cam.zoom,
               w,
               h,
               1.0,
-              "brightness(1.6) contrast(1.4)"
+              "brightness(1.2) contrast(1.25)"
             );
           } else {
-            // Crisp Full-Color Street & Topographic Map (`Voyager @2x`)
-            drawTileLayer(ctx, "voyager", cam.lng, cam.lat, cam.zoom, w, h, 1.0, "none");
+            // Esri World Topographic / Street Map (Zero-Watermark)
+            drawTileLayer(ctx, "street-topo", cam.lng, cam.lat, cam.zoom, w, h, 1.0, "none");
           }
 
-          // Subtle Tactical Radar Coordinate Grid Lines (`lat` / `lng` every 2 degrees)
+          // Subtle Tactical Radar Coordinate Grid Lines
           if (mapStyleMode !== "street") {
             ctx.save();
-            ctx.strokeStyle = "rgba(204, 255, 0, 0.08)";
+            ctx.strokeStyle = "rgba(204, 255, 0, 0.07)";
             ctx.lineWidth = 1;
             const stepDeg = cam.zoom > 7 ? 1 : 2;
             const centerWx = lngToMercatorX(cam.lng, cam.zoom);
@@ -638,7 +745,7 @@ export function RadarMapboxCanvas({
     camRef.current.animating = true;
   }, [focusTarget, selectedCountry]);
 
-  // Exact Web Mercator projection helper passed to overlay pins
+  // Exact Web Mercator projection helper — uses live container dimensions and exact `(centerWx, centerWy)` origin
   const projectPin = useCallback(
     (
       cityName: string | undefined,
@@ -648,6 +755,9 @@ export function RadarMapboxCanvas({
       dispY?: number
     ): ProjectedPinPosition => {
       const cam = camRef.current;
+      const liveW = containerRef.current?.clientWidth || cam.width || 960;
+      const liveH = containerRef.current?.clientHeight || cam.height || 680;
+
       const offsetX = dispX !== undefined ? dispX - baseX : 0;
       const offsetY = dispY !== undefined ? dispY - baseY : 0;
       const [lng, lat] = resolveGeoLngLat(cityName, baseX, baseY, selectedCountry, offsetX, offsetY);
@@ -657,9 +767,9 @@ export function RadarMapboxCanvas({
       const pinWx = lngToMercatorX(lng, cam.zoom);
       const pinWy = latToMercatorY(lat, cam.zoom);
 
-      const x = pinWx - centerWx + cam.width / 2;
-      const y = pinWy - centerWy + cam.height / 2;
-      const visible = x >= -60 && x <= cam.width + 60 && y >= -60 && y <= cam.height + 60;
+      const x = pinWx - centerWx + liveW / 2;
+      const y = pinWy - centerWy + liveH / 2;
+      const visible = x >= -60 && x <= liveW + 60 && y >= -60 && y <= liveH + 60;
 
       return { x, y, visible };
     },
@@ -725,7 +835,7 @@ export function RadarMapboxCanvas({
       }}
       className="relative w-full h-full overflow-hidden select-none cursor-grab active:cursor-grabbing"
     >
-      {/* Direct Hardware-Accelerated 2D Slippy Tile Canvas (Zero WebWorker / Zero Token Dependencies) */}
+      {/* Direct Hardware-Accelerated 2D Slippy Tile Canvas (100% Watermark-Free Esri / ArcGIS Services) */}
       <canvas
         ref={canvasRef}
         className="block w-full h-full pointer-events-none"
