@@ -1046,6 +1046,8 @@ export function CartDrawer() {
             <span className="text-xs text-gray-500 dark:text-gray-400 font-medium hidden sm:inline">Cantidad de packs:</span>
             <BeUIAdaptiveStepper
               value={item.quantity}
+              min={1}
+              max={10}
               onDecrement={() => updateQuantity(item.id, item.quantity - 1)}
               onIncrement={() => updateQuantity(item.id, item.quantity + 1)}
               size="sm"
@@ -1192,6 +1194,8 @@ export function CartDrawer() {
     <div className="sm:col-span-3 flex sm:justify-center items-center shrink-0">
       <BeUIAdaptiveStepper
         value={item.quantity}
+        min={1}
+        max={liveStock !== undefined && liveStock > 0 ? liveStock : 10}
         onDecrement={() => updateQuantity(item.id, item.quantity - 1)}
         onIncrement={() => updateQuantity(item.id, item.quantity + 1)}
         disableIncrement={itemIsAgotado || isMaxStockReached}

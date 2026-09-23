@@ -238,7 +238,7 @@ export function RadarMapboxCanvas({
   const mapRef = useRef<maplibregl.Map | null>(null);
   const prevZoomCommandRef = useRef<number>(zoomCommand);
   const [, setRenderTick] = useState(0);
-  const [mapStyleMode, setMapStyleMode] = useState<"dark" | "voyager">("dark");
+  const [mapStyleMode, setMapStyleMode] = useState<"dark" | "satellite" | "voyager">("dark");
   const [mapboxToken, setMapboxToken] = useState<string>(() => {
     if (typeof window !== "undefined") {
       return process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN || localStorage.getItem("lumina_mapbox_token") || "";
@@ -248,18 +248,159 @@ export function RadarMapboxCanvas({
   const [isTokenModalOpen, setIsTokenModalOpen] = useState(false);
   const [tokenDraft, setTokenDraft] = useState("");
 
-  const getStyleUrl = useCallback(
-    (mode: "dark" | "voyager", token: string) => {
-      if (token && token.startsWith("pk.")) {
-        return mode === "dark"
-          ? `https://api.mapbox.com/styles/v1/mapbox/navigation-night-v1?access_token=${token}`
-          : `https://api.mapbox.com/styles/v1/mapbox/dark-v11?access_token=${token}`;
+  const buildFreeHdStyle = useCallback(
+    (mode: "dark" | "satellite" | "voyager"): maplibregl.StyleSpecification => {
+      if (mode === "satellite") {
+        return {
+          version: 8,
+          sources: {
+            "esri-satellite": {
+              type: "raster",
+              tiles: [
+                "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
+              ],
+              tileSize: 256,
+              maxzoom: 19,
+            },
+            "carto-labels": {
+              type: "raster",
+              tiles: [
+                "https://a.basemaps.cartocdn.com/rastertiles/voyager_only_labels/{z}/{x}/{y}@2x.png",
+                "https://b.basemaps.cartocdn.com/rastertiles/voyager_only_labels/{z}/{x}/{y}@2x.png",
+              ],
+              tileSize: 256,
+              maxzoom: 20,
+            },
+          },
+          layers: [
+            {
+              id: "satellite-base",
+              type: "raster",
+              source: "esri-satellite",
+              paint: {
+                "raster-contrast": 0.12,
+                "raster-saturation": 0.15,
+                "raster-brightness-min": 0.05,
+              },
+            },
+            {
+              id: "satellite-labels",
+              type: "raster",
+              source: "carto-labels",
+              paint: {
+                "raster-opacity": 0.95,
+              },
+            },
+          ],
+        };
       }
-      return mode === "dark"
-        ? "https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json"
-        : "https://basemaps.cartocdn.com/gl/voyager-gl-style/style.json";
+
+      if (mode === "voyager") {
+        return {
+          version: 8,
+          sources: {
+            "carto-voyager": {
+              type: "raster",
+              tiles: [
+                "https://a.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}@2x.png",
+                "https://b.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}@2x.png",
+                "https://c.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}@2x.png",
+              ],
+              tileSize: 256,
+              maxzoom: 20,
+            },
+          },
+          layers: [
+            {
+              id: "voyager-base",
+              type: "raster",
+              source: "carto-voyager",
+            },
+          ],
+        };
+      }
+
+      // Default `dark` — High-Visibility Tactical Radar Hybrid (Dark Matter @2x + Crisp Voyager Labels @2x)
+      return {
+        version: 8,
+        sources: {
+          "carto-dark-base": {
+            type: "raster",
+            tiles: [
+              "https://a.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}@2x.png",
+              "https://b.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}@2x.png",
+              "https://c.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}@2x.png",
+            ],
+            tileSize: 256,
+            maxzoom: 20,
+          },
+          "esri-relief-tint": {
+            type: "raster",
+            tiles: [
+              "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
+            ],
+            tileSize: 256,
+            maxzoom: 18,
+          },
+          "carto-crisp-labels": {
+            type: "raster",
+            tiles: [
+              "https://a.basemaps.cartocdn.com/dark_only_labels/{z}/{x}/{y}@2x.png",
+              "https://b.basemaps.cartocdn.com/dark_only_labels/{z}/{x}/{y}@2x.png",
+            ],
+            tileSize: 256,
+            maxzoom: 20,
+          },
+        },
+        layers: [
+          {
+            id: "tactical-dark-base",
+            type: "raster",
+            source: "carto-dark-base",
+            paint: {
+              "raster-brightness-min": 0.14,
+              "raster-brightness-max": 0.95,
+              "raster-contrast": 0.28,
+            },
+          },
+          {
+            id: "tactical-satellite-blend",
+            type: "raster",
+            source: "esri-relief-tint",
+            paint: {
+              "raster-opacity": 0.24,
+              "raster-contrast": 0.3,
+              "raster-saturation": -0.35,
+            },
+          },
+          {
+            id: "tactical-crisp-labels",
+            type: "raster",
+            source: "carto-crisp-labels",
+            paint: {
+              "raster-opacity": 1,
+              "raster-contrast": 0.25,
+            },
+          },
+        ],
+      };
     },
     []
+  );
+
+  const getMapStyle = useCallback(
+    (mode: "dark" | "satellite" | "voyager", token: string): string | maplibregl.StyleSpecification => {
+      if (token && token.startsWith("pk.")) {
+        if (mode === "satellite") {
+          return `https://api.mapbox.com/styles/v1/mapbox/satellite-streets-v12?access_token=${token}`;
+        }
+        return mode === "dark"
+          ? `https://api.mapbox.com/styles/v1/mapbox/navigation-night-v1?access_token=${token}`
+          : `https://api.mapbox.com/styles/v1/mapbox/streets-v12?access_token=${token}`;
+      }
+      return buildFreeHdStyle(mode);
+    },
+    [buildFreeHdStyle]
   );
 
   // Initialize WebGL Map
@@ -270,7 +411,7 @@ export function RadarMapboxCanvas({
 
     const map = new maplibregl.Map({
       container: containerRef.current,
-      style: getStyleUrl(mapStyleMode, mapboxToken),
+      style: getMapStyle(mapStyleMode, mapboxToken),
       center: initialGeo.center,
       zoom: initialGeo.zoom,
       pitch: initialGeo.pitch,
@@ -287,6 +428,7 @@ export function RadarMapboxCanvas({
     };
 
     map.on("load", () => {
+      map.resize();
       triggerProjectionUpdate();
       onMapReady?.();
     });
@@ -297,7 +439,27 @@ export function RadarMapboxCanvas({
     map.on("pitch", triggerProjectionUpdate);
     map.on("resize", triggerProjectionUpdate);
 
+    // Ensure WebGL surface automatically resizes whenever the container or overlay transitions
+    const ro =
+      typeof ResizeObserver !== "undefined"
+        ? new ResizeObserver(() => {
+            map.resize();
+            triggerProjectionUpdate();
+          })
+        : null;
+    if (ro && containerRef.current) {
+      ro.observe(containerRef.current);
+    }
+
+    const t1 = setTimeout(() => map.resize(), 300);
+    const t2 = setTimeout(() => map.resize(), 1200);
+    const t3 = setTimeout(() => map.resize(), 5200);
+
     return () => {
+      clearTimeout(t1);
+      clearTimeout(t2);
+      clearTimeout(t3);
+      ro?.disconnect();
       map.remove();
       mapRef.current = null;
     };
@@ -408,10 +570,15 @@ export function RadarMapboxCanvas({
   );
 
   const handleToggleMapStyle = () => {
-    const nextMode = mapStyleMode === "dark" ? "voyager" : "dark";
+    const nextMode: "dark" | "satellite" | "voyager" =
+      mapStyleMode === "dark"
+        ? "satellite"
+        : mapStyleMode === "satellite"
+        ? "voyager"
+        : "dark";
     setMapStyleMode(nextMode);
     if (mapRef.current) {
-      mapRef.current.setStyle(getStyleUrl(nextMode, mapboxToken));
+      mapRef.current.setStyle(getMapStyle(nextMode, mapboxToken));
     }
   };
 
@@ -427,7 +594,7 @@ export function RadarMapboxCanvas({
       }
     }
     if (mapRef.current) {
-      mapRef.current.setStyle(getStyleUrl(mapStyleMode, cleaned));
+      mapRef.current.setStyle(getMapStyle(mapStyleMode, cleaned));
     }
     setIsTokenModalOpen(false);
   };
@@ -444,8 +611,10 @@ export function RadarMapboxCanvas({
         style={{
           filter:
             mapStyleMode === "dark"
-              ? "contrast(1.08) brightness(0.96) saturate(1.15)"
-              : "contrast(1.02) brightness(0.88)",
+              ? "contrast(1.18) brightness(1.28) saturate(1.22)"
+              : mapStyleMode === "satellite"
+              ? "contrast(1.1) brightness(1.08) saturate(1.18)"
+              : "contrast(1.04) brightness(0.96)",
         }}
       />
 
@@ -454,7 +623,7 @@ export function RadarMapboxCanvas({
         className="absolute inset-0 pointer-events-none"
         style={{
           background:
-            "radial-gradient(circle at 50% 50%, rgba(204,255,0,0.03) 0%, rgba(15,20,18,0.22) 65%, rgba(10,14,12,0.72) 100%)",
+            "radial-gradient(circle at 50% 50%, rgba(204,255,0,0.02) 0%, rgba(15,20,18,0.08) 72%, rgba(10,14,12,0.42) 100%)",
         }}
       />
 
@@ -470,19 +639,25 @@ export function RadarMapboxCanvas({
       >
         <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-black/80 backdrop-blur-xl border border-white/15 text-[10px] font-mono text-white/80 shadow-lg">
           <span className="w-1.5 h-1.5 rounded-full bg-[#ccff00] shadow-[0_0_6px_#ccff00]" />
-          <span className="font-bold tracking-wider">MAPBOX GL</span>
+          <span className="font-bold tracking-wider">WEBGL 3D</span>
           <span className="text-white/40">•</span>
-          <span className="text-[#ccff00] font-semibold">WEBGL 3D</span>
+          <span className="text-[#ccff00] font-semibold">ACTIVO (GRATIS)</span>
         </div>
 
         <button
           type="button"
           onClick={handleToggleMapStyle}
           className="px-2.5 py-1 rounded-full bg-black/80 hover:bg-black backdrop-blur-xl border border-white/15 hover:border-[#ccff00]/50 text-[10px] font-mono text-white/85 hover:text-[#ccff00] flex items-center gap-1.5 transition-all cursor-pointer shadow-lg"
-          title="Cambiar estilo cartográfico"
+          title="Cambiar modo cartográfico (Táctico / Satélite 3D / Calle)"
         >
           <Layers className="w-3 h-3 text-[#ccff00]" />
-          <span>{mapStyleMode === "dark" ? "Modo Táctico Oscuro" : "Modo Satélite / Calle"}</span>
+          <span>
+            {mapStyleMode === "dark"
+              ? "Modo Táctico HD"
+              : mapStyleMode === "satellite"
+              ? "Modo Satélite Real"
+              : "Modo Calle Claro"}
+          </span>
         </button>
 
         <button

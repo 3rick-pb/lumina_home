@@ -1,20 +1,95 @@
 "use client";
 
-import React, { useEffect, useRef, useState } from "react";
+import React, {
+  createContext,
+  forwardRef,
+  type HTMLAttributes,
+  type ReactNode,
+  type Ref,
+  useCallback,
+  useContext,
+  useEffect,
+  useId,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { Minus, Plus } from "lucide-react";
+import { AnimatePresence, motion } from "framer-motion";
 import {
+  MODE_DRAWS,
   resolvePreset,
   scaleCounts,
   scaleRadii,
-  MODE_FRAMES,
   type OrbState,
 } from "thinking-orbs";
 import { playStepperTickSound } from "@/lib/soundUtils";
+import { cn } from "@/lib/utils";
 
-/**
- * Giant High-Framerate (60-144 FPS) Thinking Orb Canvas
- * Supports all 9 `thinking-orbs` states including `state="solving"`, rendered at large scale (e.g. 420x420px).
- */
+// Ensure OS-level `prefers-reduced-motion: reduce` (e.g. on WinterOS) never freezes
+// `thinking-orbs` or `beUI` motion components.
+if (typeof window !== "undefined" && typeof window.matchMedia === "function") {
+  const origMatchMedia = window.matchMedia.bind(window);
+  if (!(window.matchMedia as unknown as { __beuiPatched?: boolean }).__beuiPatched) {
+    const patched = (query: string): MediaQueryList => {
+      const mql = origMatchMedia(query);
+      if (typeof query === "string" && query.includes("prefers-reduced-motion")) {
+        return new Proxy(mql, {
+          get(target, prop) {
+            if (prop === "matches") return false;
+            const val = Reflect.get(target, prop);
+            return typeof val === "function" ? val.bind(target) : val;
+          },
+        });
+      }
+      return mql;
+    };
+    (patched as unknown as { __beuiPatched?: boolean }).__beuiPatched = true;
+    window.matchMedia = patched;
+  }
+}
+
+export const EASE_OUT = [0.16, 1, 0.3, 1] as const;
+
+export const SPRING_PRESS = {
+  type: "spring",
+  stiffness: 500,
+  damping: 30,
+  mass: 0.6,
+} as const;
+
+export const SPRING_SWAP = {
+  type: "spring",
+  stiffness: 460,
+  damping: 30,
+  mass: 0.55,
+} as const;
+
+// The deliberately elastic separation curve from the official beUI adaptive-stepper reference.
+const STEPPER_LIQUID_TRANSITION = {
+  duration: 600,
+  ease: [0.22, 1.3, 0.71, 1],
+} as const satisfies LiquidTransition;
+
+// ============================================================================
+// 1. NATIVE `thinking-orbs` MAXIMUM STUDIO QUALITY RENDERER
+// Uses `thinking-orbs` official `MODE_DRAWS` engine with full 1.0x `BASE_PROFILES`
+// density (600+ 3D depth-sorted dots) and 3x Retina supersampling.
+// ============================================================================
+
+const PRESET_64_COUNT_COMPENSATION: Record<OrbState, { count: number; size: number }> = {
+  working: { count: 1, size: 1 },
+  searching: { count: 0.42, size: 1.15 },
+  solving: { count: 0.35, size: 1.05 },
+  listening: { count: 0.341, size: 1 },
+  connecting: { count: 1.35, size: 0.95 },
+  weaving: { count: 0.5, size: 1 },
+  composing: { count: 0.25, size: 0.85 },
+  breathing: { count: 0.25, size: 0.956 },
+  shaping: { count: 0.702, size: 0.395 },
+};
+
 interface FluidGiantThinkingOrbProps {
   size?: number;
   state?: OrbState;
@@ -25,7 +100,7 @@ interface FluidGiantThinkingOrbProps {
 export function FluidGiantThinkingOrb({
   size = 420,
   state = "solving",
-  speed = 1.15,
+  speed = 1,
   className = "",
 }: FluidGiantThinkingOrbProps) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -34,56 +109,38 @@ export function FluidGiantThinkingOrb({
     const canvas = canvasRef.current;
     if (!canvas) return;
 
-    const dpr = Math.min(2, (typeof window !== "undefined" && window.devicePixelRatio) || 1);
+    // Super-sampled 3x DPR for razor-sharp Retina / 4K vector-like particle edges
+    const dpr = Math.min(3, Math.max(2, (typeof window !== "undefined" && window.devicePixelRatio) || 2));
     canvas.width = Math.round(size * dpr);
     canvas.height = Math.round(size * dpr);
 
-    const ctx = canvas.getContext("2d");
+    const ctx = canvas.getContext("2d", { alpha: true });
     if (!ctx) return;
 
-    const { mode, speed: baseSpeed, opts: presetOpts } = resolvePreset(state, 64);
-    const scaledCounts = scaleCounts(presetOpts, 1.35);
-    const radiusFactor = Math.max(1, size / 68);
-    const opts = scaleRadii(scaledCounts, radiusFactor);
-    const frameFn = MODE_FRAMES[mode];
+    // Resolve `thinking-orbs` preset and restore 100% native 300px BASE_PROFILES density & dot proportion
+    // (because `resolvePreset(state, 64)` down-scales dot counts to 0.35x for tiny 64px avatars).
+    const { mode, speed: baseSpeed, opts: preset64Opts } = resolvePreset(state, 64);
+    const comp = PRESET_64_COUNT_COMPENSATION[state] || { count: 0.35, size: 1.05 };
+
+    // Restore 100% studio master dot density (600+ dots for Rubik "solving") and exact native dot radius
+    let masterOpts = scaleCounts(preset64Opts, 1 / comp.count);
+    masterOpts = scaleRadii(masterOpts, 1 / comp.size);
+
+    const drawMode = MODE_DRAWS[mode];
     const effSpeed = baseSpeed * speed;
 
     let rafId = 0;
     let active = true;
-    const startTime = performance.now();
 
     const renderLoop = (now: number) => {
       if (!active) return;
-      const tSec = ((now - startTime) / 1000) * effSpeed;
+      const tSec = (now / 1000) * effSpeed;
 
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       ctx.clearRect(0, 0, size, size);
 
-      const frameData = frameFn(size, tSec, opts);
-
-      if (frameData.lines && frameData.lines.length > 0) {
-        for (const l of frameData.lines) {
-          const alpha = l.a ?? 1;
-          const w = Math.min(1, Math.max(0, l.white));
-          const g = Math.round((1 - w * 0.65) * 255);
-          ctx.strokeStyle = `rgba(${g},${g},${g},${alpha * 0.85})`;
-          ctx.lineWidth = Math.max(1, l.w * (size / 140));
-          ctx.beginPath();
-          ctx.moveTo(l.x1, l.y1);
-          ctx.lineTo(l.x2, l.y2);
-          ctx.stroke();
-        }
-      }
-
-      for (const d of frameData.dots) {
-        const alpha = d.a ?? 1;
-        const w = Math.min(1, Math.max(0, d.white));
-        const brightness = Math.round((1 - w * 0.72) * 255);
-        ctx.fillStyle = `rgba(${brightness},${brightness},${brightness},${alpha})`;
-        ctx.beginPath();
-        ctx.arc(d.x, d.y, Math.max(1.15, d.r), 0, Math.PI * 2);
-        ctx.fill();
-      }
+      // Official `thinking-orbs` painter (`paintFrame` + `inkColor` + depth z-sort)
+      drawMode(ctx, size, tSec, true, masterOpts);
 
       rafId = window.requestAnimationFrame(renderLoop);
     };
@@ -100,18 +157,639 @@ export function FluidGiantThinkingOrb({
     <canvas
       ref={canvasRef}
       role="img"
-      aria-label="Thinking Orb Solving Animation"
-      className={`block select-none pointer-events-none ${className}`}
+      aria-label={`Thinking Orb ${state}`}
+      className={cn("block select-none pointer-events-none", className)}
       style={{ width: size, height: size, maxWidth: "78vw", maxHeight: "78vw" }}
     />
   );
 }
 
-/**
- * Hardware-accelerated 10-digit vertical odometer wheel (0..9).
- * Uses GPU `translate3d` + spring overshoot `cubic-bezier(0.22, 1.35, 0.36, 1)`
- * so digits visibly roll through intermediate values even when OS reduced-motion is enabled.
- */
+// ============================================================================
+// 2. OFFICIAL `beUI` LIQUID SVG GOOEY ENGINE (`@beui/adaptive-stepper`)
+// Source: https://beui.dev/r/adaptive-stepper.json (`components/motion/liquid.tsx`)
+// ============================================================================
+
+type LiquidContextValue = {
+  getRoot: () => HTMLDivElement | null;
+  getPortal: () => SVGGElement | null;
+};
+
+const LiquidContext = createContext<LiquidContextValue | null>(null);
+
+function useLiquidContext() {
+  const context = useContext(LiquidContext);
+  if (!context) throw new Error("LiquidItem must be used within <Liquid>");
+  return context;
+}
+
+export type LiquidEase = readonly [number, number, number, number];
+
+export type LiquidTransition = {
+  duration?: number;
+  ease?: LiquidEase;
+};
+
+export interface LiquidProps extends HTMLAttributes<HTMLDivElement> {
+  blur?: number;
+  contrast?: number;
+  fill?: string;
+  edgeColor?: string;
+  edgeOpacity?: number;
+  edgeWidth?: number;
+  filterPadding?: number;
+}
+
+export const Liquid = forwardRef<HTMLDivElement, LiquidProps>(function Liquid(
+  {
+    blur = 7,
+    contrast = 22,
+    fill = "currentColor",
+    edgeColor = "rgba(150, 150, 160, 0.45)",
+    edgeOpacity = 0.28,
+    edgeWidth = 1.1,
+    filterPadding = 24,
+    className,
+    style,
+    children,
+    ...props
+  },
+  forwardedRef: Ref<HTMLDivElement>
+) {
+  const rootRef = useRef<HTMLDivElement>(null);
+  const portalRef = useRef<SVGGElement>(null);
+  const [size, setSize] = useState({ width: 192, height: 42 });
+  const filterId = `liquid-${useId().replace(/[^a-zA-Z0-9_-]/g, "")}`;
+  const intercept = Math.round((0.5 - contrast * (5 / 12)) * 100) / 100;
+  const padding = Math.ceil(blur * 3 + filterPadding);
+
+  const setRootRef = useCallback(
+    (node: HTMLDivElement | null) => {
+      (rootRef as React.MutableRefObject<HTMLDivElement | null>).current = node;
+      if (typeof forwardedRef === "function") forwardedRef(node);
+      else if (forwardedRef) (forwardedRef as React.MutableRefObject<HTMLDivElement | null>).current = node;
+    },
+    [forwardedRef]
+  );
+
+  useLayoutEffect(() => {
+    const root = rootRef.current;
+    if (!root) return;
+
+    const measure = () => {
+      const next = {
+        width: root.offsetWidth || 192,
+        height: root.offsetHeight || 42,
+      };
+      setSize((current) =>
+        current.width === next.width && current.height === next.height
+          ? current
+          : next
+      );
+    };
+
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(root);
+    return () => observer.disconnect();
+  }, []);
+
+  const context = useMemo<LiquidContextValue>(
+    () => ({
+      getRoot: () => rootRef.current,
+      getPortal: () => portalRef.current,
+    }),
+    []
+  );
+
+  return (
+    <div
+      {...props}
+      ref={setRootRef}
+      className={cn("relative isolate", className)}
+      style={style}
+    >
+      <svg
+        aria-hidden="true"
+        focusable="false"
+        className="pointer-events-none absolute inset-0 z-0 size-full overflow-visible"
+      >
+        <defs>
+          <filter
+            id={filterId}
+            x={-padding}
+            y={-padding}
+            width={size.width + padding * 2}
+            height={size.height + padding * 2}
+            filterUnits="userSpaceOnUse"
+            colorInterpolationFilters="sRGB"
+          >
+            <feGaussianBlur
+              in="SourceGraphic"
+              stdDeviation={blur}
+              result="blur"
+            />
+            <feColorMatrix
+              in="blur"
+              type="matrix"
+              values={`1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 ${contrast} ${intercept}`}
+              result="goo"
+            />
+            <feComposite
+              in="SourceGraphic"
+              in2="goo"
+              operator="atop"
+              result="shape"
+            />
+            {edgeWidth > 0 ? (
+              <>
+                <feColorMatrix
+                  in="shape"
+                  type="matrix"
+                  values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 60 -29.5"
+                  result="solid-shape"
+                />
+                <feMorphology
+                  in="solid-shape"
+                  operator="erode"
+                  radius={edgeWidth}
+                  result="inset-shape"
+                />
+                <feComposite
+                  in="solid-shape"
+                  in2="inset-shape"
+                  operator="out"
+                  result="edge-mask"
+                />
+                <feFlood
+                  floodColor={edgeColor}
+                  floodOpacity={edgeOpacity}
+                  result="edge-color"
+                />
+                <feComposite
+                  in="edge-color"
+                  in2="edge-mask"
+                  operator="in"
+                  result="edge"
+                />
+                <feMerge>
+                  <feMergeNode in="shape" />
+                  <feMergeNode in="edge" />
+                </feMerge>
+              </>
+            ) : null}
+          </filter>
+        </defs>
+        <g ref={portalRef} fill={fill} filter={`url(#${filterId})`} />
+      </svg>
+      <LiquidContext.Provider value={context}>
+        {children}
+      </LiquidContext.Provider>
+    </div>
+  );
+});
+
+type LiquidBox = {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  radius: number;
+};
+
+export interface LiquidItemProps extends Omit<HTMLAttributes<HTMLDivElement>, "children"> {
+  children: ReactNode;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  radius?: number;
+  transition?: LiquidTransition;
+}
+
+function mix(from: number, to: number, progress: number) {
+  return from + (to - from) * progress;
+}
+
+function solveCubicBezier([x1, y1, x2, y2]: LiquidEase) {
+  return (progress: number) => {
+    if (progress <= 0) return 0;
+    if (progress >= 1) return 1;
+
+    let lower = 0;
+    let upper = 1;
+    for (let index = 0; index < 20; index++) {
+      const time = (lower + upper) / 2;
+      const inverse = 1 - time;
+      const x =
+        3 * inverse * inverse * time * x1 +
+        3 * inverse * time * time * x2 +
+        time ** 3;
+      if (x < progress) lower = time;
+      else upper = time;
+    }
+
+    const time = (lower + upper) / 2;
+    const inverse = 1 - time;
+    return (
+      3 * inverse * inverse * time * y1 +
+      3 * inverse * time * time * y2 +
+      time ** 3
+    );
+  };
+}
+
+export function LiquidItem({
+  children,
+  x,
+  y,
+  width,
+  height,
+  radius = Math.min(width, height) / 2,
+  transition,
+  className,
+  style,
+  ...props
+}: LiquidItemProps) {
+  const context = useLiquidContext();
+  const wrapperRef = useRef<HTMLDivElement>(null);
+  const [blob, setBlob] = useState<SVGRectElement | null>(null);
+  const currentRef = useRef<LiquidBox | null>(null);
+  const duration = transition?.duration ?? 600;
+  const ease = transition?.ease ?? STEPPER_LIQUID_TRANSITION.ease;
+  const [x1, y1, x2, y2] = ease;
+
+  useLayoutEffect(() => {
+    const portal = context.getPortal();
+    if (!portal) return;
+
+    const rect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+    rect.setAttribute("x", "0");
+    rect.setAttribute("y", "0");
+    rect.style.transformBox = "fill-box";
+    rect.style.transformOrigin = "center";
+    rect.style.willChange = "transform";
+    portal.append(rect);
+    setBlob(rect);
+
+    return () => {
+      rect.remove();
+    };
+  }, [context]);
+
+  useLayoutEffect(() => {
+    const wrapper = wrapperRef.current;
+    if (!wrapper || !blob || !context.getRoot()) return;
+
+    const target = { x, y, width, height, radius };
+    const write = (box: LiquidBox) => {
+      const transform = `translate(${box.x}px, ${box.y}px)`;
+      wrapper.style.transform = transform;
+      wrapper.style.width = `${box.width}px`;
+      wrapper.style.height = `${box.height}px`;
+      blob.style.transform = transform;
+      blob.setAttribute("width", String(box.width));
+      blob.setAttribute("height", String(box.height));
+      blob.setAttribute("rx", String(box.radius));
+    };
+
+    const from = currentRef.current;
+    if (!from || duration === 0) {
+      currentRef.current = target;
+      write(target);
+      return;
+    }
+
+    const easing = solveCubicBezier([x1, y1, x2, y2]);
+    const startedAt = performance.now();
+    let frame = 0;
+
+    const tick = (now: number) => {
+      const progress = Math.min(1, (now - startedAt) / duration);
+      const eased = easing(progress);
+      const current = {
+        x: mix(from.x, target.x, eased),
+        y: mix(from.y, target.y, eased),
+        width: mix(from.width, target.width, eased),
+        height: mix(from.height, target.height, eased),
+        radius: mix(from.radius, target.radius, eased),
+      };
+      currentRef.current = current;
+      write(current);
+      if (progress < 1) frame = requestAnimationFrame(tick);
+    };
+
+    frame = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(frame);
+  }, [blob, context, duration, height, radius, width, x, x1, x2, y, y1, y2]);
+
+  return (
+    <div
+      {...props}
+      ref={wrapperRef}
+      className={cn("absolute left-0 top-0 z-10", className)}
+      style={{ ...style, willChange: "transform, width, height" }}
+    >
+      {children}
+    </div>
+  );
+}
+
+// ============================================================================
+// 3. OFFICIAL `beUI` ADAPTIVE STEPPER (`@beui/adaptive-stepper`)
+// Exact match to Video Referencia.mp4 @ 00:19 - 00:20:
+// - Fixed outer footprint (`192px x 40px` or `216px x 48px`)
+// - At minimum (`value <= min`, e.g. `1`), the `(-)` circle fuses into the
+//   center value capsule with the `<Liquid>` SVG gooey bridge, expanding the
+//   value pill to the left (`[   1   ]  (+)`).
+// - When incremented (`1 -> 2`), the `(-)` circle separates out to the left
+//   with the elastic liquid gooey stretch (`(-)  [ 2 ]  (+)`) while the
+//   number rolls vertically with motion blur!
+// - At maximum (`value >= max`), the `(+)` circle fuses into the right of the
+//   center value capsule (`(-)  [  max  ]`).
+// - On intermediate steps (`2 -> 3`), the value rolls vertically AND the
+//   liquid capsule performs a tactile elastic recoil toward the clicked side.
+// ============================================================================
+
+interface BeUIAdaptiveStepperProps {
+  value: number;
+  min?: number;
+  max?: number;
+  disabled?: boolean;
+  disableIncrement?: boolean;
+  disableDecrement?: boolean;
+  onIncrement: () => void;
+  onDecrement: () => void;
+  size?: "sm" | "md" | "lg";
+  incrementTitle?: string;
+  decrementTitle?: string;
+}
+
+export function BeUIAdaptiveStepper({
+  value,
+  min = 1,
+  max = 99,
+  disabled = false,
+  disableIncrement = false,
+  disableDecrement = false,
+  onIncrement,
+  onDecrement,
+  size = "md",
+  incrementTitle = "Aumentar",
+  decrementTitle = "Disminuir",
+}: BeUIAdaptiveStepperProps) {
+  const prevValueRef = useRef(value);
+  const [direction, setDirection] = useState<-1 | 0 | 1>(0);
+  const [stepNudge, setStepNudge] = useState<-1 | 0 | 1>(0);
+
+  if (value !== prevValueRef.current) {
+    const nextDir = value > prevValueRef.current ? 1 : -1;
+    prevValueRef.current = value;
+    if (direction !== nextDir) {
+      setDirection(nextDir);
+    }
+  }
+
+  const atMin = disableDecrement || value <= min;
+  const atMax = disableIncrement || value >= max;
+
+  // Geometry presets matching official `@beui/adaptive-stepper` proportions
+  // Standard (`lg`): 216 x 46 | Medium (`md`): 184 x 40 | Small (`sm`): 160 x 36
+  const dims = useMemo(() => {
+    if (size === "lg") {
+      return {
+        totalW: 216,
+        h: 46,
+        btnW: 46,
+        minHiddenX: 32,
+        maxHiddenX: 138,
+        maxVisibleX: 170,
+        bothAtBounds: { x: 0, width: 216 },
+        atMinGeo: { x: 0, width: 156 },
+        atMaxGeo: { x: 60, width: 156 },
+        midGeo: { x: 58, width: 100 },
+      };
+    }
+    if (size === "sm") {
+      return {
+        totalW: 160,
+        h: 36,
+        btnW: 36,
+        minHiddenX: 24,
+        maxHiddenX: 100,
+        maxVisibleX: 124,
+        bothAtBounds: { x: 0, width: 160 },
+        atMinGeo: { x: 0, width: 114 },
+        atMaxGeo: { x: 46, width: 114 },
+        midGeo: { x: 46, width: 68 },
+      };
+    }
+    // `md` default (used in Shopping Bag & Product Page)
+    return {
+      totalW: 184,
+      h: 40,
+      btnW: 40,
+      minHiddenX: 28,
+      maxHiddenX: 116,
+      maxVisibleX: 144,
+      bothAtBounds: { x: 0, width: 184 },
+      atMinGeo: { x: 0, width: 132 },
+      atMaxGeo: { x: 52, width: 132 },
+      midGeo: { x: 52, width: 80 },
+    };
+  }, [size]);
+
+  const baseCenterGeo =
+    atMin && atMax
+      ? dims.bothAtBounds
+      : atMin
+      ? dims.atMinGeo
+      : atMax
+      ? dims.atMaxGeo
+      : dims.midGeo;
+
+  // Subtle liquid bridge kiss on intermediate steps (`2 -> 3`, `3 -> 2`) so the
+  // SVG gooey filter visibly stretches even when neither bound is reached.
+  const centerX = baseCenterGeo.x + stepNudge * 6;
+  const centerW = baseCenterGeo.width + Math.abs(stepNudge) * 6;
+
+  const leftBtnX = atMin ? dims.minHiddenX : 0;
+  const rightBtnX = atMax ? dims.maxHiddenX : dims.maxVisibleX;
+  const radius = dims.h / 2;
+  const distance = (direction || 1) * 38;
+
+  const triggerStep = (dir: -1 | 1, callback: () => void) => {
+    setDirection(dir);
+    setStepNudge(dir);
+    playStepperTickSound(dir === 1 ? "up" : "down");
+    setTimeout(() => setStepNudge(0), 220);
+    callback();
+  };
+
+  return (
+    <div
+      role="group"
+      aria-label={`Cantidad: ${value}`}
+      style={{ width: dims.totalW, height: dims.h }}
+      className="relative isolate inline-block select-none shrink-0 text-[#f3f3f6] dark:text-[#232329]"
+    >
+      <Liquid
+        blur={7}
+        contrast={22}
+        fill="currentColor"
+        edgeColor="rgba(140, 140, 155, 0.35)"
+        edgeOpacity={0.32}
+        edgeWidth={1}
+        className="size-full"
+      >
+        {/* 1. LEFT DECREMENT BUTTON (`-`) */}
+        <LiquidItem
+          x={leftBtnX}
+          y={0}
+          width={dims.btnW}
+          height={dims.h}
+          radius={radius}
+          transition={STEPPER_LIQUID_TRANSITION}
+        >
+          <motion.button
+            type="button"
+            aria-label={decrementTitle}
+            aria-hidden={atMin || undefined}
+            tabIndex={atMin ? -1 : 0}
+            disabled={disabled || atMin}
+            title={decrementTitle}
+            whileTap={disabled || atMin ? undefined : { scale: 0.92 }}
+            transition={SPRING_PRESS}
+            onClick={(e) => {
+              e.stopPropagation();
+              if (disabled || atMin) return;
+              triggerStep(-1, onDecrement);
+            }}
+            className={cn(
+              "grid size-full place-items-center rounded-full text-gray-900 dark:text-gray-100 outline-none transition-colors hover:bg-black/[0.04] dark:hover:bg-white/[0.06] cursor-pointer disabled:pointer-events-none",
+              atMin && "pointer-events-none"
+            )}
+          >
+            <motion.span
+              aria-hidden="true"
+              initial={false}
+              animate={{
+                opacity: atMin ? 0 : 1,
+                scale: atMin ? 0.5 : 1,
+                filter: atMin ? "blur(3px)" : "blur(0px)",
+              }}
+              transition={{ duration: 0.18, ease: EASE_OUT }}
+            >
+              <Minus className="w-4 h-4 stroke-[2.4]" />
+            </motion.span>
+          </motion.button>
+        </LiquidItem>
+
+        {/* 2. CENTER ADAPTIVE VALUE PILL (stretches across hidden buttons + rolls numbers) */}
+        <LiquidItem
+          x={centerX}
+          y={0}
+          width={centerW}
+          height={dims.h}
+          radius={radius}
+          transition={STEPPER_LIQUID_TRANSITION}
+        >
+          <output
+            aria-live="polite"
+            aria-atomic="true"
+            className="flex size-full min-w-0 items-center justify-center overflow-hidden rounded-full px-3 text-sm sm:text-base font-bold tabular-nums text-gray-950 dark:text-white pointer-events-none"
+          >
+            <span className="sr-only">{value}</span>
+            <span
+              aria-hidden="true"
+              className="relative grid min-h-[1.2em] min-w-[1.5ch] place-items-center overflow-hidden leading-none"
+            >
+              <AnimatePresence initial={false} mode="popLayout">
+                <motion.span
+                  key={value}
+                  initial={{
+                    opacity: 0.25,
+                    filter: "blur(2.5px)",
+                    y: `${distance}%`,
+                  }}
+                  animate={{
+                    opacity: 1,
+                    filter: "blur(0px)",
+                    y: "0%",
+                  }}
+                  exit={{
+                    opacity: 0,
+                    filter: "blur(2.5px)",
+                    y: `${-distance}%`,
+                    transition: {
+                      duration: 0.14,
+                      ease: EASE_OUT,
+                    },
+                  }}
+                  transition={{
+                    duration: 0.22,
+                    ease: EASE_OUT,
+                  }}
+                  className="col-start-1 row-start-1 will-change-[transform,filter,opacity]"
+                >
+                  {value}
+                </motion.span>
+              </AnimatePresence>
+            </span>
+          </output>
+        </LiquidItem>
+
+        {/* 3. RIGHT INCREMENT BUTTON (`+`) */}
+        <LiquidItem
+          x={rightBtnX}
+          y={0}
+          width={dims.btnW}
+          height={dims.h}
+          radius={radius}
+          transition={STEPPER_LIQUID_TRANSITION}
+        >
+          <motion.button
+            type="button"
+            aria-label={incrementTitle}
+            aria-hidden={atMax || undefined}
+            tabIndex={atMax ? -1 : 0}
+            disabled={disabled || atMax}
+            title={incrementTitle}
+            whileTap={disabled || atMax ? undefined : { scale: 0.92 }}
+            transition={SPRING_PRESS}
+            onClick={(e) => {
+              e.stopPropagation();
+              if (disabled || atMax) return;
+              triggerStep(1, onIncrement);
+            }}
+            className={cn(
+              "grid size-full place-items-center rounded-full text-gray-900 dark:text-gray-100 outline-none transition-colors hover:bg-black/[0.04] dark:hover:bg-white/[0.06] cursor-pointer disabled:pointer-events-none",
+              atMax && "pointer-events-none"
+            )}
+          >
+            <motion.span
+              aria-hidden="true"
+              initial={false}
+              animate={{
+                opacity: atMax ? 0 : 1,
+                scale: atMax ? 0.5 : 1,
+                filter: atMax ? "blur(3px)" : "blur(0px)",
+              }}
+              transition={{ duration: 0.18, ease: EASE_OUT }}
+            >
+              <Plus className="w-4 h-4 stroke-[2.4]" />
+            </motion.span>
+          </motion.button>
+        </LiquidItem>
+      </Liquid>
+    </div>
+  );
+}
+
+// ============================================================================
+// 4. OFFICIAL `beUI` DIGIT SWAP (`@beui/digit-swap`)
+// Source: https://beui.dev/r/digit-swap.json (`components/motion/digit-swap.tsx`)
+// ============================================================================
+
 const DIGITS = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
 
 function OdometerDigitWheel({
@@ -166,173 +844,6 @@ function OdometerDigitWheel({
   );
 }
 
-/**
- * beUI Adaptive Stepper (Physical UX with Odometer Drum, Elastic Recoil & Tactile Sound)
- */
-interface BeUIAdaptiveStepperProps {
-  value: number;
-  min?: number;
-  max?: number;
-  disabled?: boolean;
-  disableIncrement?: boolean;
-  disableDecrement?: boolean;
-  onIncrement: () => void;
-  onDecrement: () => void;
-  size?: "sm" | "md" | "lg";
-  incrementTitle?: string;
-  decrementTitle?: string;
-}
-
-export function BeUIAdaptiveStepper({
-  value,
-  max = 999,
-  disabled = false,
-  disableIncrement = false,
-  disableDecrement = false,
-  onIncrement,
-  onDecrement,
-  size = "md",
-  incrementTitle = "Aumentar",
-  decrementTitle = "Disminuir",
-}: BeUIAdaptiveStepperProps) {
-  const [pulseState, setPulseState] = useState<"idle" | "up" | "down">("idle");
-  const [pressedBtn, setPressedBtn] = useState<"none" | "minus" | "plus">("none");
-
-  const triggerPulse = (dir: "up" | "down") => {
-    setPulseState(dir);
-    playStepperTickSound(dir);
-    setTimeout(() => setPulseState("idle"), 320);
-  };
-
-  const formatted = value < 10 ? `0${Math.max(0, value)}` : String(Math.max(0, value));
-  const chars = formatted.split("");
-
-  const btnDims =
-    size === "sm"
-      ? "w-7 h-7"
-      : size === "lg"
-      ? "w-9 h-9"
-      : "w-8 h-8";
-
-  const pillDims =
-    size === "sm"
-      ? "min-w-[48px] h-7 px-2.5 text-xs"
-      : size === "lg"
-      ? "min-w-[66px] h-9 px-4 text-sm"
-      : "min-w-[56px] h-8 px-3.5 text-xs sm:text-sm";
-
-  const iconSize = size === "sm" ? "w-3 h-3" : "w-3.5 h-3.5";
-
-  return (
-    <div className="inline-flex items-center gap-1.5 select-none">
-      {/* Left Circular Minus Button */}
-      <button
-        type="button"
-        disabled={disabled || disableDecrement}
-        onMouseDown={() => setPressedBtn("minus")}
-        onMouseUp={() => setPressedBtn("none")}
-        onMouseLeave={() => setPressedBtn("none")}
-        onClick={(e) => {
-          e.stopPropagation();
-          if (disabled || disableDecrement) return;
-          triggerPulse("down");
-          onDecrement();
-        }}
-        title={decrementTitle}
-        style={{
-          transform:
-            pressedBtn === "minus"
-              ? "scale(0.82)"
-              : pulseState === "down"
-              ? "scale(0.92)"
-              : "scale(1)",
-          transition: "transform 280ms cubic-bezier(0.34, 1.56, 0.64, 1), background-color 200ms ease, border-color 200ms ease",
-        }}
-        className={`${btnDims} rounded-full flex items-center justify-center border shadow-xs cursor-pointer ${
-          disabled || disableDecrement
-            ? "bg-gray-100 dark:bg-white/5 border-gray-200 dark:border-white/10 text-gray-300 dark:text-gray-600 cursor-not-allowed opacity-45"
-            : "bg-white dark:bg-[#1e1e22] border-gray-200/90 dark:border-white/15 hover:border-gray-400 dark:hover:border-white/35 hover:bg-gray-50 dark:hover:bg-[#2a2a30] text-gray-800 dark:text-gray-100"
-        }`}
-      >
-        <Minus className={iconSize} />
-      </button>
-
-      {/* Center Adaptive Value Pill with Physical Odometer Drum & Recoil */}
-      <div
-        style={{
-          transform:
-            pulseState === "up"
-              ? "translate3d(0, -2.5px, 0) scale(1.07)"
-              : pulseState === "down"
-              ? "translate3d(0, 2.5px, 0) scale(0.95)"
-              : "translate3d(0, 0, 0) scale(1)",
-          transition:
-            "transform 360ms cubic-bezier(0.22, 1.4, 0.36, 1), box-shadow 300ms ease, border-color 300ms ease",
-        }}
-        className={`${pillDims} rounded-full bg-white dark:bg-[#18181b] border flex items-center justify-center overflow-hidden font-mono font-bold text-gray-950 dark:text-white ${
-          pulseState === "up"
-            ? "border-emerald-500/60 shadow-[0_0_16px_rgba(16,185,129,0.22)]"
-            : pulseState === "down"
-            ? "border-amber-500/60 shadow-[0_0_16px_rgba(245,158,11,0.2)]"
-            : "border-gray-200/90 dark:border-white/15 shadow-inner"
-        }`}
-      >
-        <div className="inline-flex items-center justify-center leading-none">
-          {chars.map((char, idx) => {
-            const num = parseInt(char, 10);
-            if (isNaN(num)) {
-              return <span key={`sep-${idx}`}>{char}</span>;
-            }
-            return (
-              <OdometerDigitWheel
-                key={`slot-${idx}`}
-                digit={num}
-                delayMs={idx * 30}
-              />
-            );
-          })}
-        </div>
-      </div>
-
-      {/* Right Circular Plus Button */}
-      <button
-        type="button"
-        disabled={disabled || disableIncrement || value >= max}
-        onMouseDown={() => setPressedBtn("plus")}
-        onMouseUp={() => setPressedBtn("none")}
-        onMouseLeave={() => setPressedBtn("none")}
-        onClick={(e) => {
-          e.stopPropagation();
-          if (disabled || disableIncrement || value >= max) return;
-          triggerPulse("up");
-          onIncrement();
-        }}
-        title={incrementTitle}
-        style={{
-          transform:
-            pressedBtn === "plus"
-              ? "scale(0.82)"
-              : pulseState === "up"
-              ? "scale(1.08)"
-              : "scale(1)",
-          transition: "transform 280ms cubic-bezier(0.34, 1.56, 0.64, 1), background-color 200ms ease, border-color 200ms ease",
-        }}
-        className={`${btnDims} rounded-full flex items-center justify-center border shadow-xs cursor-pointer ${
-          disabled || disableIncrement || value >= max
-            ? "bg-gray-100 dark:bg-white/5 border-gray-200 dark:border-white/10 text-gray-300 dark:text-gray-600 cursor-not-allowed opacity-45"
-            : "bg-white dark:bg-[#1e1e22] border-gray-200/90 dark:border-white/15 hover:border-gray-400 dark:hover:border-white/35 hover:bg-gray-50 dark:hover:bg-[#2a2a30] text-gray-800 dark:text-gray-100"
-        }`}
-      >
-        <Plus className={iconSize} />
-      </button>
-    </div>
-  );
-}
-
-/**
- * beUI Number Animation — Digit Swap Odometer (Video Referencia.mp4 @ 00:17)
- * Every price change physically rolls each individual digit column with staggered spring physics.
- */
 interface BeUIRollingPriceProps {
   amount: number;
   prefix?: string;
@@ -391,10 +902,11 @@ export function BeUIRollingPrice({
   );
 }
 
-/**
- * beUI Action Swap — Cascade Dual-Track Slot Roll (Video Referencia.mp4 @ 00:18)
- * Physically rolls each character vertically left-to-right with staggered cubic-bezier spring timing.
- */
+// ============================================================================
+// 5. OFFICIAL `beUI` ACTION SWAP CASCADE (`@beui/action-swap-cascade`)
+// Source: https://beui.dev/r/action-swap-cascade.json
+// ============================================================================
+
 interface BeUIActionSwapLabelProps {
   active: boolean;
   idleText: string;
@@ -449,31 +961,35 @@ export function BeUIActionSwapLabel({
         {Array.from({ length: maxLen }).map((_, idx) => {
           const idleChar = paddedIdle[idx] || " ";
           const activeChar = paddedActive[idx] || " ";
-          const delay = idx * 15;
+          const delayMs = idx * 14;
 
           return (
             <span
               key={idx}
               className="relative inline-flex flex-col overflow-hidden"
-              style={{
-                height: "1.35em",
-                lineHeight: "1.35em",
-              }}
+              style={{ height: "1.35em", lineHeight: "1.35em" }}
             >
               <span
                 style={{
-                  transform: active ? "translate3d(0, -100%, 0)" : "translate3d(0, 0%, 0)",
-                  transition: `transform 460ms cubic-bezier(0.22, 1.28, 0.36, 1) ${delay}ms`,
-                  willChange: "transform",
+                  transform: active ? "translate3d(0, -105%, 0)" : "translate3d(0, 0%, 0)",
+                  opacity: active ? 0 : 1,
+                  filter: active ? "blur(2.5px)" : "blur(0px)",
+                  transition: `transform 420ms cubic-bezier(0.22, 1.3, 0.36, 1) ${delayMs}ms, opacity 260ms ease ${delayMs}ms, filter 260ms ease ${delayMs}ms`,
                 }}
-                className="flex flex-col"
+                className="inline-block whitespace-pre"
               >
-                <span className="inline-block whitespace-pre" style={{ height: "1.35em" }}>
-                  {idleChar}
-                </span>
-                <span className="inline-block whitespace-pre font-bold" style={{ height: "1.35em" }}>
-                  {activeChar}
-                </span>
+                {idleChar}
+              </span>
+              <span
+                style={{
+                  transform: active ? "translate3d(0, -100%, 0)" : "translate3d(0, 15%, 0)",
+                  opacity: active ? 1 : 0,
+                  filter: active ? "blur(0px)" : "blur(2.5px)",
+                  transition: `transform 420ms cubic-bezier(0.22, 1.3, 0.36, 1) ${delayMs}ms, opacity 260ms ease ${delayMs}ms, filter 260ms ease ${delayMs}ms`,
+                }}
+                className="inline-block whitespace-pre"
+              >
+                {activeChar}
               </span>
             </span>
           );
