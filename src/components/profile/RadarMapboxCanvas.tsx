@@ -462,24 +462,23 @@ const tileLoadingSet = new Set<string>();
 type TileProvider =
   | "satellite"
   | "dark-base"
+  | "dark-ref"
   | "boundaries-labels"
-  | "street-topo"
-  | "osm-streets"
-  | "carto-dark-all"
-  | "carto-dark-labels"
-  | "carto-voyager";
+  | "transportation-labels"
+  | "street-map"
+  | "street-topo";
 
-// Maximum safe native zoom per tile provider in Latin America / Ecuador
-// Prevents Esri ArcGIS from ever returning HTTP 200 "Map Data Not Available" placeholder images
+// Maximum safe native zoom per Esri ArcGIS tile provider in Latin America / Ecuador.
+// Guarantees 100% watermark-free tiles ("API KEY REQUIRED" / "Map Data Not Available" never appear),
+// while the HTML5 canvas smoothly overzooms up to z=18.
 const PROVIDER_MAX_NATIVE_Z: Record<TileProvider, number> = {
-  "dark-base": 11,
-  "boundaries-labels": 11,
-  "satellite": 13,
-  "street-topo": 12,
-  "osm-streets": 18,
-  "carto-dark-all": 18,
-  "carto-dark-labels": 18,
-  "carto-voyager": 18,
+  "dark-base": 16,
+  "dark-ref": 16,
+  "transportation-labels": 16,
+  "boundaries-labels": 13,
+  "street-map": 16,
+  "satellite": 14,
+  "street-topo": 13,
 };
 
 function getTileCacheKey(provider: TileProvider, z: number, x: number, y: number): string {
@@ -491,18 +490,6 @@ function getTileCacheKey(provider: TileProvider, z: number, x: number, y: number
 function getTileUrl(provider: TileProvider, z: number, x: number, y: number, useAltHost = false): string {
   const maxIndex = Math.pow(2, z);
   const wrappedX = ((x % maxIndex) + maxIndex) % maxIndex;
-  const cartoSubs = ["a", "b", "c", "d"];
-  const cartoSub = cartoSubs[(wrappedX + y + (useAltHost ? 1 : 0)) % cartoSubs.length];
-
-  if (provider === "carto-dark-all") {
-    return `https://${cartoSub}.basemaps.cartocdn.com/dark_all/${z}/${wrappedX}/${y}@2x.png`;
-  }
-  if (provider === "carto-dark-labels") {
-    return `https://${cartoSub}.basemaps.cartocdn.com/dark_only_labels/${z}/${wrappedX}/${y}@2x.png`;
-  }
-  if (provider === "carto-voyager" || provider === "osm-streets") {
-    return `https://${cartoSub}.basemaps.cartocdn.com/rastertiles/voyager/${z}/${wrappedX}/${y}@2x.png`;
-  }
 
   // Load-balance across both official Esri ArcGIS CDN hosts to double concurrent tile throughput
   const host =
@@ -520,8 +507,17 @@ function getTileUrl(provider: TileProvider, z: number, x: number, y: number, use
   if (provider === "dark-base") {
     return `https://${host}/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/${z}/${y}/${wrappedX}`;
   }
+  if (provider === "dark-ref") {
+    return `https://${host}/ArcGIS/rest/services/Canvas/World_Dark_Gray_Reference/MapServer/tile/${z}/${y}/${wrappedX}`;
+  }
+  if (provider === "transportation-labels") {
+    return `https://${host}/ArcGIS/rest/services/Reference/World_Transportation/MapServer/tile/${z}/${y}/${wrappedX}`;
+  }
   if (provider === "boundaries-labels") {
     return `https://${host}/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/${z}/${y}/${wrappedX}`;
+  }
+  if (provider === "street-map") {
+    return `https://${host}/ArcGIS/rest/services/World_Street_Map/MapServer/tile/${z}/${y}/${wrappedX}`;
   }
   return `https://${host}/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/${z}/${y}/${wrappedX}`;
 }
@@ -732,17 +728,6 @@ export function RadarMapboxCanvas({
           };
           retryImg.onerror = () => {
             tileLoadingSet.delete(key);
-            if (provider === "street-topo" || provider === "dark-base") {
-              const wrappedX = ((x % maxTile) + maxTile) % maxTile;
-              const osmImg = new window.Image();
-              osmImg.referrerPolicy = "no-referrer";
-              osmImg.onload = () => {
-                cacheTileImage(key, osmImg);
-                dirtyRef.current = true;
-                triggerLoopRef.current?.();
-              };
-              osmImg.src = `https://a.basemaps.cartocdn.com/dark_all/${z}/${wrappedX}/${y}@2x.png`;
-            }
           };
           retryImg.src = getTileUrl(provider, z, x, y, true);
         };
@@ -765,10 +750,11 @@ export function RadarMapboxCanvas({
       width: number,
       height: number,
       alpha: number = 1,
-      retinaBoost: number = 1
+      retinaBoost: number = 1,
+      filter?: string
     ) => {
       // Clamp zTile by PROVIDER_MAX_NATIVE_Z so Esri never returns "Map Data Not Available" placeholder tiles
-      const maxNativeZ = PROVIDER_MAX_NATIVE_Z[provider] ?? 18;
+      const maxNativeZ = PROVIDER_MAX_NATIVE_Z[provider] ?? 16;
       const zTile = Math.max(2, Math.min(maxNativeZ, Math.floor(camZoom) + retinaBoost));
       const scaleFactor = Math.pow(2, camZoom - zTile);
       const drawnTileSize = TILE_SIZE * scaleFactor;
@@ -784,6 +770,9 @@ export function RadarMapboxCanvas({
 
       ctx.save();
       ctx.globalAlpha = alpha;
+      if (filter) {
+        ctx.filter = filter;
+      }
       ctx.imageSmoothingEnabled = true;
       ctx.imageSmoothingQuality = "high";
 
@@ -832,7 +821,7 @@ export function RadarMapboxCanvas({
           if (drewAncestor) continue;
 
           // 2. CHILD-TILE QUADRANT COMPOSITE FALLBACK (zTile + 1 and zTile + 2)
-          if (zTile < 18) {
+          if (zTile < maxNativeZ) {
             const halfSize = drawnTileSize / 2;
             for (let cy = 0; cy < 2; cy++) {
               for (let cx = 0; cx < 2; cx++) {
@@ -847,7 +836,7 @@ export function RadarMapboxCanvas({
                     halfSize + 0.4,
                     halfSize + 0.4
                   );
-                } else if (zTile + 2 <= 18) {
+                } else if (zTile + 2 <= maxNativeZ) {
                   const quarterSize = drawnTileSize / 4;
                   for (let gcy = 0; gcy < 2; gcy++) {
                     for (let gcx = 0; gcx < 2; gcx++) {
@@ -940,27 +929,40 @@ export function RadarMapboxCanvas({
             ctx.fillRect(0, 0, w, h);
 
             if (mapStyleMode === "tactical") {
-              if (cam.zoom < 9.8) {
-                // Country / Continental view: Esri Dark Gray Base + Satellite Relief + Boundaries
-                drawTileLayer(ctx, "dark-base", cam.lng, cam.lat, cam.zoom, w, h, 1.0, 1);
-                drawTileLayer(ctx, "satellite", cam.lng, cam.lat, cam.zoom, w, h, 0.32, 0);
+              // 100% Watermark-Free Esri Dark Gray Base (up to z=16, overzoomed to z=18)
+              drawTileLayer(
+                ctx,
+                "dark-base",
+                cam.lng,
+                cam.lat,
+                cam.zoom,
+                w,
+                h,
+                1.0,
+                1,
+                "brightness(62%) contrast(135%)"
+              );
+              if (cam.zoom < 10.5) {
+                // Country / Regional overview: subtle satellite relief + country/province boundaries
+                drawTileLayer(ctx, "satellite", cam.lng, cam.lat, cam.zoom, w, h, 0.28, 0);
                 drawTileLayer(ctx, "boundaries-labels", cam.lng, cam.lat, cam.zoom, w, h, 1.0, 1);
               } else {
-                // City / Neighborhood / Street view (up to z=18): Single clean CartoDB @2x Dark All layer
-                // (already includes high-DPI street & sector labels, preventing any double-label overlap)
-                drawTileLayer(ctx, "carto-dark-all", cam.lng, cam.lat, cam.zoom, w, h, 1.0, 0);
+                // City / Neighborhood / Street view: crisp white-on-dark street & avenue labels
+                if (cam.zoom < 13.5) {
+                  drawTileLayer(ctx, "boundaries-labels", cam.lng, cam.lat, cam.zoom, w, h, 0.88, 0);
+                }
+                drawTileLayer(ctx, "transportation-labels", cam.lng, cam.lat, cam.zoom, w, h, 0.92, 0);
               }
             } else if (mapStyleMode === "satellite") {
-              // Full HD Esri Satellite Imagery + clean labels
+              // Full HD Esri Satellite Imagery (capped at z=14 to avoid any "Map Data Not Available" tiles) + street labels
               drawTileLayer(ctx, "satellite", cam.lng, cam.lat, cam.zoom, w, h, 1.0, 1);
-              if (cam.zoom < 10.2) {
-                drawTileLayer(ctx, "boundaries-labels", cam.lng, cam.lat, cam.zoom, w, h, 1.0, 1);
-              } else {
-                drawTileLayer(ctx, "carto-dark-labels", cam.lng, cam.lat, cam.zoom, w, h, 1.0, 0);
+              drawTileLayer(ctx, "boundaries-labels", cam.lng, cam.lat, cam.zoom, w, h, 1.0, 0);
+              if (cam.zoom >= 10.5) {
+                drawTileLayer(ctx, "transportation-labels", cam.lng, cam.lat, cam.zoom, w, h, 0.95, 0);
               }
             } else {
-              // Full-color CartoDB Voyager @2x Retina street & neighborhood cartography up to z=18
-              drawTileLayer(ctx, "carto-voyager", cam.lng, cam.lat, cam.zoom, w, h, 1.0, 0);
+              // Full-color Esri World Street Map (100% watermark-free up to z=16, overzoomed to z=18)
+              drawTileLayer(ctx, "street-map", cam.lng, cam.lat, cam.zoom, w, h, 1.0, 1);
             }
 
             // Subtle Tactical Radar Coordinate Grid Lines
