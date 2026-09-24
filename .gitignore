@@ -38,3 +38,4 @@ next-env.d.ts
 
 # brand engine local state
 .brand-state/
+.agents/

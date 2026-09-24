@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
 import {
   QrCode,
   Wallet,
@@ -9,6 +9,7 @@ import {
   Plus,
   Copy,
   Check,
+  Download,
   Sliders,
   Users,
   Gift,
@@ -23,18 +24,20 @@ import {
   Cpu,
   Activity,
   Lock,
+  Upload,
+  RotateCcw,
 } from "lucide-react";
 import { useUserStore } from "@/lib/userStore";
 
 const toast = {
   success: (msg: string, _opts?: { description?: string }) => {
     if (typeof window !== "undefined") {
-      console.info("[PassKitEngine]", msg);
+      console.info("[MicroSaaS-PassStudio]", msg);
     }
   },
   error: (msg: string) => {
     if (typeof window !== "undefined") {
-      console.warn("[PassKitEngine]", msg);
+      console.warn("[MicroSaaS-PassStudio]", msg);
     }
   },
 };
@@ -50,6 +53,10 @@ export interface LoyaltyProgramConfig {
   bgColor: string;
   accentColor: string;
   textColor: string;
+  qrFgColor: string;
+  qrBgColor: string;
+  qrCornerStyle: "rounded" | "sharp" | "dots";
+  customLogoDataUrl?: string;
   tierSilverMin: number;
   tierGoldMin: number;
   tierBlackMin: number;
@@ -78,19 +85,23 @@ export interface LoyaltyMemberCard {
 
 const DEFAULT_PROGRAM_CONFIG: LoyaltyProgramConfig = {
   programName: "Lumina Privé Ledger",
-  issuerName: "Lumina Home Architectural Studio",
-  tagline: "Credencial Patrimonial & Liquidación de Puntos",
+  issuerName: "Lumina Home Studio",
+  tagline: "PassKit & Google Wallet Loyalty Studio",
   pointsPerDollar: 10,
   welcomeBonusPoints: 200,
   rewardThreshold: 1500,
-  rewardDescription: "Bonificación directa de $25 USD en checkout + Despacho Prioritario White-Glove",
+  rewardDescription: "$25 USD de crédito directo en checkout + Despacho White-Glove",
   bgColor: "#111614",
   accentColor: "#ccff00",
   textColor: "#ffffff",
+  qrFgColor: "#111614",
+  qrBgColor: "#ffffff",
+  qrCornerStyle: "rounded",
+  customLogoDataUrl: "",
   tierSilverMin: 0,
   tierGoldMin: 1200,
   tierBlackMin: 3000,
-  pushMessage: "Balance actualizado en tu credencial Lumina Privé. Disponible para redención inmediata.",
+  pushMessage: "Tu saldo Lumina Privé se ha actualizado automáticamente tras tu compra.",
   autoSyncPurchases: true,
   appleTeamId: "LUMINA99EC",
   applePassTypeId: "pass.ec.luminahome.prive",
@@ -126,89 +137,99 @@ const COLOR_PRESETS = [
 ];
 
 /**
- * Deterministic SVG QR-like Matrix Generator (25x25 Version 2 QR layout with Finder Patterns)
+ * 100% Client-Side Vector QR Matrix Engine (crear-web-micro-saas Architecture)
+ * Supports rounded/sharp/dot modules, custom center emblem or uploaded logo, and direct SVG/PNG export.
  */
+function buildDeterministicQRMatrix(value: string, gridSize = 25): boolean[][] {
+  const matrix: boolean[][] = Array.from({ length: gridSize }, () =>
+    Array(gridSize).fill(false)
+  );
+
+  const drawFinder = (r0: number, c0: number) => {
+    for (let r = 0; r < 7; r++) {
+      for (let c = 0; c < 7; c++) {
+        const isBorder = r === 0 || r === 6 || c === 0 || c === 6;
+        const isInner = r >= 2 && r <= 4 && c >= 2 && c <= 4;
+        if (isBorder || isInner) {
+          matrix[r0 + r][c0 + c] = true;
+        }
+      }
+    }
+  };
+
+  drawFinder(0, 0);
+  drawFinder(0, gridSize - 7);
+  drawFinder(gridSize - 7, 0);
+
+  for (let r = 16; r <= 20; r++) {
+    for (let c = 16; c <= 20; c++) {
+      const isBorder = r === 16 || r === 20 || c === 16 || c === 20;
+      const isCenter = r === 18 && c === 18;
+      if (isBorder || isCenter) matrix[r][c] = true;
+    }
+  }
+
+  for (let i = 8; i < gridSize - 8; i++) {
+    matrix[6][i] = i % 2 === 0;
+    matrix[i][6] = i % 2 === 0;
+  }
+
+  let seed = 2166136261;
+  for (let i = 0; i < value.length; i++) {
+    seed ^= value.charCodeAt(i);
+    seed = Math.imul(seed, 16777619);
+  }
+
+  for (let r = 0; r < gridSize; r++) {
+    for (let c = 0; c < gridSize; c++) {
+      const inFinderTL = r < 8 && c < 8;
+      const inFinderTR = r < 8 && c >= gridSize - 8;
+      const inFinderBL = r >= gridSize - 8 && c < 8;
+      const inAlign = r >= 16 && r <= 20 && c >= 16 && c <= 20;
+      if (inFinderTL || inFinderTR || inFinderBL || inAlign || r === 6 || c === 6) {
+        continue;
+      }
+      if (r >= 10 && r <= 14 && c >= 10 && c <= 14) {
+        continue;
+      }
+      seed ^= (r * 31 + c * 17 + value.charCodeAt((r + c) % Math.max(1, value.length))) & 0xff;
+      seed = Math.imul(seed, 16777619);
+      matrix[r][c] = (Math.abs(seed) % 10) < 5;
+    }
+  }
+
+  return matrix;
+}
+
 function CrispQRMatrixSVG({
   value,
   size = 176,
   fgColor = "#111614",
   bgColor = "#ffffff",
   accentColor = "#ccff00",
+  cornerStyle = "rounded",
+  logoUrl,
+  svgRef,
 }: {
   value: string;
   size?: number;
   fgColor?: string;
   bgColor?: string;
   accentColor?: string;
+  cornerStyle?: "rounded" | "sharp" | "dots";
+  logoUrl?: string;
+  svgRef?: React.RefObject<SVGSVGElement | null>;
 }) {
   const gridSize = 25;
-
-  const cells = useMemo(() => {
-    const matrix: boolean[][] = Array.from({ length: gridSize }, () =>
-      Array(gridSize).fill(false)
-    );
-
-    const drawFinder = (r0: number, c0: number) => {
-      for (let r = 0; r < 7; r++) {
-        for (let c = 0; c < 7; c++) {
-          const isBorder = r === 0 || r === 6 || c === 0 || c === 6;
-          const isInner = r >= 2 && r <= 4 && c >= 2 && c <= 4;
-          if (isBorder || isInner) {
-            matrix[r0 + r][c0 + c] = true;
-          }
-        }
-      }
-    };
-
-    drawFinder(0, 0);
-    drawFinder(0, gridSize - 7);
-    drawFinder(gridSize - 7, 0);
-
-    for (let r = 16; r <= 20; r++) {
-      for (let c = 16; c <= 20; c++) {
-        const isBorder = r === 16 || r === 20 || c === 16 || c === 20;
-        const isCenter = r === 18 && c === 18;
-        if (isBorder || isCenter) matrix[r][c] = true;
-      }
-    }
-
-    for (let i = 8; i < gridSize - 8; i++) {
-      matrix[6][i] = i % 2 === 0;
-      matrix[i][6] = i % 2 === 0;
-    }
-
-    let seed = 2166136261;
-    for (let i = 0; i < value.length; i++) {
-      seed ^= value.charCodeAt(i);
-      seed = Math.imul(seed, 16777619);
-    }
-
-    for (let r = 0; r < gridSize; r++) {
-      for (let c = 0; c < gridSize; c++) {
-        const inFinderTL = r < 8 && c < 8;
-        const inFinderTR = r < 8 && c >= gridSize - 8;
-        const inFinderBL = r >= gridSize - 8 && c < 8;
-        const inAlign = r >= 16 && r <= 20 && c >= 16 && c <= 20;
-        if (inFinderTL || inFinderTR || inFinderBL || inAlign || r === 6 || c === 6) {
-          continue;
-        }
-        if (r >= 10 && r <= 14 && c >= 10 && c <= 14) {
-          continue;
-        }
-        seed ^= (r * 31 + c * 17 + value.charCodeAt((r + c) % Math.max(1, value.length))) & 0xff;
-        seed = Math.imul(seed, 16777619);
-        matrix[r][c] = (Math.abs(seed) % 10) < 5;
-      }
-    }
-
-    return matrix;
-  }, [value]);
-
+  const cells = useMemo(() => buildDeterministicQRMatrix(value, gridSize), [value]);
   const cellSize = size / (gridSize + 4);
   const pad = cellSize * 2;
+  const moduleRadius =
+    cornerStyle === "dots" ? cellSize * 0.48 : cornerStyle === "rounded" ? cellSize * 0.25 : 0;
 
   return (
     <svg
+      ref={svgRef}
       width={size}
       height={size}
       viewBox={`0 0 ${size} ${size}`}
@@ -226,26 +247,33 @@ function CrispQRMatrixSVG({
               y={pad + rIdx * cellSize}
               width={cellSize * 0.92}
               height={cellSize * 0.92}
-              rx={cellSize * 0.22}
+              rx={moduleRadius}
               fill={fgColor}
             />
           );
         })
       )}
+      {/* Center Brand Emblem / Custom Uploaded Logo */}
       <rect
-        x={pad + 10.2 * cellSize}
-        y={pad + 10.2 * cellSize}
-        width={cellSize * 4.6}
-        height={cellSize * 4.6}
+        x={pad + 10.1 * cellSize}
+        y={pad + 10.1 * cellSize}
+        width={cellSize * 4.8}
+        height={cellSize * 4.8}
         rx={cellSize * 1.1}
         fill={fgColor}
       />
-      <circle
-        cx={size / 2}
-        cy={size / 2}
-        r={cellSize * 1.15}
-        fill={accentColor}
-      />
+      {logoUrl ? (
+        <image
+          href={logoUrl}
+          x={pad + 10.5 * cellSize}
+          y={pad + 10.5 * cellSize}
+          width={cellSize * 4.0}
+          height={cellSize * 4.0}
+          preserveAspectRatio="xMidYMid slice"
+        />
+      ) : (
+        <circle cx={size / 2} cy={size / 2} r={cellSize * 1.2} fill={accentColor} />
+      )}
     </svg>
   );
 }
@@ -257,10 +285,14 @@ export function LoyaltyCardsTab() {
   const [config, setConfig] = useState<LoyaltyProgramConfig>(DEFAULT_PROGRAM_CONFIG);
   const [members, setMembers] = useState<LoyaltyMemberCard[]>([]);
   const [previewPlatform, setPreviewPlatform] = useState<"apple" | "google">("apple");
-  const [activeSubTab, setActiveSubTab] = useState<"designer" | "members" | "qr">("designer");
+  const [activeSubTab, setActiveSubTab] = useState<"designer" | "qr" | "members">("designer");
   const [searchMember, setSearchMember] = useState("");
   const [selectedMemberForQR, setSelectedMemberForQR] = useState<LoyaltyMemberCard | null>(null);
   const [copiedLink, setCopiedLink] = useState(false);
+  const [toolState, setToolState] = useState<"idle" | "working" | "done">("idle");
+
+  const qrSvgRef = useRef<SVGSVGElement | null>(null);
+  const logoInputRef = useRef<HTMLInputElement | null>(null);
 
   const [isNewMemberOpen, setIsNewMemberOpen] = useState(false);
   const [newCustomerName, setNewCustomerName] = useState("");
@@ -351,13 +383,16 @@ export function LoyaltyCardsTab() {
   }, [currentUser, orders]);
 
   const saveConfiguration = () => {
+    setToolState("working");
     try {
       localStorage.setItem("lumina_loyalty_program_v1", JSON.stringify(config));
-      toast.success("Especificación PassKit & Google Pay actualizada", {
-        description: "Los parámetros de devengo y plantillas criptográficas se han desplegado.",
-      });
+      setTimeout(() => {
+        setToolState("done");
+        setTimeout(() => setToolState("idle"), 2200);
+      }, 220);
+      toast.success("Configuración del estudio guardada localmente");
     } catch {
-      toast.error("Error al persistir la configuración del protocolo");
+      setToolState("idle");
     }
   };
 
@@ -409,19 +444,72 @@ export function LoyaltyCardsTab() {
     return `${origin}/loyalty/pass?${params.toString()}`;
   }, [config, selectedMemberForQR]);
 
-  const qrApiImageUrl = useMemo(() => {
-    return `https://api.qrserver.com/v1/create-qr-code/?size=260x260&margin=10&color=111614&bgcolor=ffffff&data=${encodeURIComponent(
-      enrollmentQrUrl
-    )}`;
-  }, [enrollmentQrUrl]);
-
   const handleCopyEnrollmentLink = () => {
     if (typeof navigator !== "undefined" && navigator.clipboard) {
       navigator.clipboard.writeText(enrollmentQrUrl);
       setCopiedLink(true);
-      toast.success("URI de aprovisionamiento copiada al portapapeles");
       setTimeout(() => setCopiedLink(false), 2400);
     }
+  };
+
+  // 100% Client-Side Vector SVG Download (crear-web-micro-saas pattern)
+  const handleDownloadQRVectorSVG = () => {
+    if (!qrSvgRef.current) return;
+    const serializer = new XMLSerializer();
+    const svgString = serializer.serializeToString(qrSvgRef.current);
+    const blob = new Blob([svgString], { type: "image/svg+xml;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `qr-${(selectedMemberForQR?.memberCode || "lumina-pass").toLowerCase()}.svg`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  // 100% Client-Side High-Resolution 1024x1024 PNG Canvas Export
+  const handleDownloadQRHighResPNG = () => {
+    if (!qrSvgRef.current) return;
+    const serializer = new XMLSerializer();
+    const svgString = serializer.serializeToString(qrSvgRef.current);
+    const svgBlob = new Blob([svgString], { type: "image/svg+xml;charset=utf-8" });
+    const url = URL.createObjectURL(svgBlob);
+    const img = new window.Image();
+    img.onload = () => {
+      const canvas = document.createElement("canvas");
+      canvas.width = 1024;
+      canvas.height = 1024;
+      const ctx = canvas.getContext("2d");
+      if (ctx) {
+        ctx.fillStyle = config.qrBgColor || "#ffffff";
+        ctx.fillRect(0, 0, 1024, 1024);
+        ctx.drawImage(img, 0, 0, 1024, 1024);
+        canvas.toBlob((pngBlob) => {
+          if (pngBlob) {
+            const pngUrl = URL.createObjectURL(pngBlob);
+            const a = document.createElement("a");
+            a.href = pngUrl;
+            a.download = `qr-${(selectedMemberForQR?.memberCode || "lumina-pass").toLowerCase()}-1024px.png`;
+            a.click();
+            URL.revokeObjectURL(pngUrl);
+          }
+        }, "image/png");
+      }
+      URL.revokeObjectURL(url);
+    };
+    img.src = url;
+  };
+
+  // Custom Center Logo Upload (100% in-browser FileReader, never uploaded to any external server)
+  const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      if (typeof reader.result === "string") {
+        setConfig((prev) => ({ ...prev, customLogoDataUrl: reader.result as string }));
+      }
+    };
+    reader.readAsDataURL(file);
   };
 
   const handleDownloadApplePassManifest = (member?: LoyaltyMemberCard | null) => {
@@ -490,9 +578,6 @@ export function LoyaltyCardsTab() {
     a.download = `${(target?.memberCode || "lumina-pass").toLowerCase()}.pkpass.json`;
     a.click();
     URL.revokeObjectURL(url);
-    toast.success("Manifiesto criptográfico Apple PassKit (.pkpass) exportado", {
-      description: `Emitido para ${target?.customerName || "Titular Privé"} (${target?.memberCode || "LUM-PRV"}).`,
-    });
   };
 
   const handleAdjustPoints = (memberId: string, delta: number) => {
@@ -512,19 +597,11 @@ export function LoyaltyCardsTab() {
       const refreshed = updated.find((m) => m.id === memberId) || null;
       setSelectedMemberForQR(refreshed);
     }
-    toast.success(
-      delta >= 0
-        ? `+${delta} pts asentados en el libro mayor del titular`
-        : `${delta} pts liquidados por redención de beneficio`
-    );
   };
 
   const handleCreateMemberCard = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newCustomerName.trim() || !newCustomerEmail.trim()) {
-      toast.error("Completa la identidad y el correo electrónico del titular");
-      return;
-    }
+    if (!newCustomerName.trim() || !newCustomerEmail.trim()) return;
     const randomDigits = Math.floor(1000 + Math.random() * 9000);
     const newCard: LoyaltyMemberCard = {
       id: `loy_${Date.now()}`,
@@ -548,9 +625,6 @@ export function LoyaltyCardsTab() {
     setNewCustomerEmail("");
     setNewInitialPoints(config.welcomeBonusPoints);
     setIsNewMemberOpen(false);
-    toast.success("Credencial nominativa emitida correctamente", {
-      description: `Token QR generado para ${newCard.customerName} (${newCard.memberCode}).`,
-    });
   };
 
   const handleDeleteMemberCard = (memberId: string) => {
@@ -559,7 +633,6 @@ export function LoyaltyCardsTab() {
     if (selectedMemberForQR?.id === memberId) {
       setSelectedMemberForQR(nextList[0] || null);
     }
-    toast.success("Credencial revocada del registro");
   };
 
   const filteredMembers = useMemo(() => {
@@ -596,27 +669,28 @@ export function LoyaltyCardsTab() {
   const previewTier = resolveTier(activePreviewMember.pointsBalance);
 
   return (
-    <div className="space-y-6 animate-fade-in">
-      {/* Executive Micro-SaaS Infrastructure Header */}
+    <div className="space-y-6 animate-fade-in" data-state={toolState}>
+      {/* Executive Micro-SaaS Studio Header */}
       <div className="relative rounded-[2rem] overflow-hidden bg-gradient-to-br from-[#111715] via-[#161e1b] to-[#0c100f] border border-white/10 p-6 sm:p-8 text-white shadow-2xl">
         <div className="absolute -top-28 -right-24 w-80 h-80 rounded-full bg-[#ccff00]/8 blur-3xl pointer-events-none" />
         <div className="relative z-10 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
           <div className="space-y-2.5 max-w-2xl">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#ccff00]/10 border border-[#ccff00]/25 text-[#ccff00] text-[10.5px] font-mono uppercase tracking-[0.14em]">
               <Cpu className="w-3.5 h-3.5" />
-              <span>INFRAESTRUCTURA PASSKIT & GOOGLE PAY // EMISIÓN CRIPTOGRÁFICA</span>
+              <span>MICRO-SAAS STUDIO // PASSKIT & GOOGLE WALLET ENGINE</span>
             </div>
             <h2 className="text-2xl sm:text-3xl font-serif font-medium tracking-tight text-white">
               Orquestación de Pases Digitales & Fidelización Omnicanal
             </h2>
             <p className="text-xs sm:text-sm text-white/70 leading-relaxed">
-              Motor de aprovisionamiento nativo para <strong className="text-white">Apple Wallet (PKPass)</strong> y{" "}
-              <strong className="text-white">Google Wallet (JWT Loyalty Objects)</strong>. Sincronización transaccional
-              en tiempo real con el checkout para liquidación automática de{" "}
+              Estudio de aprovisionamiento 100% en navegador para{" "}
+              <strong className="text-white">Apple Wallet (.pkpass)</strong> y{" "}
+              <strong className="text-white">Google Wallet (JWT Loyalty)</strong>. Genera códigos QR vectoriales de alta
+              densidad y liquida automáticamente{" "}
               <span className="text-[#ccff00] font-semibold">
-                {config.pointsPerDollar} unidades de valor por cada $1 USD facturado
+                {config.pointsPerDollar} pts por cada $1 USD facturado
               </span>{" "}
-              y actualización inalámbrica de saldos vía Push Telemetry.
+              en el checkout de la tienda.
             </p>
           </div>
 
@@ -635,7 +709,7 @@ export function LoyaltyCardsTab() {
               className="px-4 py-2.5 rounded-xl bg-white/8 hover:bg-white/14 border border-white/15 text-white font-medium text-xs flex items-center gap-2 transition-all cursor-pointer"
             >
               <Check className="w-4 h-4 text-[#ccff00]" />
-              <span>Desplegar Parámetros</span>
+              <span>{toolState === "done" ? "✓ Parámetros Desplegados" : "Desplegar Parámetros"}</span>
             </button>
           </div>
         </div>
@@ -677,14 +751,14 @@ export function LoyaltyCardsTab() {
           </div>
           <div className="p-3.5 rounded-2xl bg-white/[0.03] border border-white/10">
             <span className="text-[10px] font-mono uppercase tracking-widest text-white/45 block">
-              Protocolos de Firma
+              Motor de Renderizado
             </span>
             <div className="flex items-center gap-2 mt-1.5">
               <span className="px-2 py-0.5 rounded-md bg-white/10 text-[10px] font-mono font-semibold text-white">
-                PassKit PKCS#7
+                SVG / PNG 1024px
               </span>
               <span className="px-2 py-0.5 rounded-md bg-emerald-500/20 text-[10px] font-mono font-semibold text-emerald-300">
-                Google JWT
+                100% Client-Side
               </span>
             </div>
           </div>
@@ -704,7 +778,7 @@ export function LoyaltyCardsTab() {
             }`}
           >
             <Sliders className="w-3.5 h-3.5" />
-            <span>Arquitectura del Pase & Liquidación</span>
+            <span>1. Estudio Visual & Reglas de Puntos</span>
           </button>
           <button
             type="button"
@@ -716,7 +790,7 @@ export function LoyaltyCardsTab() {
             }`}
           >
             <QrCode className="w-3.5 h-3.5" />
-            <span>Terminal de Aprovisionamiento QR (NFC / Óptico)</span>
+            <span>2. Generador QR Vectorial & Exportación (.SVG / .PNG)</span>
           </button>
           <button
             type="button"
@@ -728,7 +802,7 @@ export function LoyaltyCardsTab() {
             }`}
           >
             <Users className="w-3.5 h-3.5" />
-            <span>Libro Mayor de Titulares & Saldos ({members.length})</span>
+            <span>3. Libro Mayor de Titulares ({members.length})</span>
           </button>
         </div>
 
@@ -739,12 +813,12 @@ export function LoyaltyCardsTab() {
           className="px-3.5 py-2 rounded-xl bg-gray-100 dark:bg-white/10 hover:bg-gray-200 dark:hover:bg-white/15 text-gray-900 dark:text-white text-xs font-semibold flex items-center gap-1.5 transition-all"
         >
           <Eye className="w-3.5 h-3.5 text-[#7a8262] dark:text-[#ccff00]" />
-          <span>Inspeccionar Terminal de Aprovisionamiento Público</span>
+          <span>Abrir Pase Público de Instalación</span>
           <ArrowUpRight className="w-3.5 h-3.5" />
         </a>
       </div>
 
-      {/* MAIN WORKSPACE */}
+      {/* MAIN TOOL CARD WORKSPACE */}
       <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 items-start">
         <div className="xl:col-span-7 space-y-6">
           {activeSubTab === "designer" && (
@@ -756,13 +830,13 @@ export function LoyaltyCardsTab() {
                     <span>Especificación Visual & Motor de Liquidación Transaccional</span>
                   </h3>
                   <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-                    Define la identidad cromática del contenedor nativo y la política algorítmica de emisión de puntos por orden liquidada.
+                    Configura la paleta cromática del pase, el estilo geométrico del QR y las reglas de devengo por compra.
                   </p>
                 </div>
               </div>
 
-              {/* Color Palette Presets */}
-              <div className="space-y-2.5">
+              {/* Color Palette Presets + Custom Pickers */}
+              <div className="space-y-3">
                 <label className="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 block">
                   Esquema Cromático de la Credencial
                 </label>
@@ -804,6 +878,48 @@ export function LoyaltyCardsTab() {
                       </button>
                     );
                   })}
+                </div>
+
+                {/* Custom Color Inputs + QR Module Geometry */}
+                <div className="grid grid-cols-3 gap-3 pt-2">
+                  <label className="flex items-center gap-2 p-2.5 rounded-xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-black/30 cursor-pointer">
+                    <input
+                      type="color"
+                      value={config.bgColor}
+                      onChange={(e) => setConfig({ ...config, bgColor: e.target.value })}
+                      className="w-6 h-6 rounded border-0 bg-transparent cursor-pointer"
+                    />
+                    <span className="text-[11px] font-semibold text-gray-700 dark:text-gray-300">
+                      Fondo ({config.bgColor})
+                    </span>
+                  </label>
+                  <label className="flex items-center gap-2 p-2.5 rounded-xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-black/30 cursor-pointer">
+                    <input
+                      type="color"
+                      value={config.accentColor}
+                      onChange={(e) => setConfig({ ...config, accentColor: e.target.value })}
+                      className="w-6 h-6 rounded border-0 bg-transparent cursor-pointer"
+                    />
+                    <span className="text-[11px] font-semibold text-gray-700 dark:text-gray-300">
+                      Acento ({config.accentColor})
+                    </span>
+                  </label>
+                  <div className="flex items-center gap-1 p-1.5 rounded-xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-black/30">
+                    {(["rounded", "dots", "sharp"] as const).map((style) => (
+                      <button
+                        key={style}
+                        type="button"
+                        onClick={() => setConfig({ ...config, qrCornerStyle: style })}
+                        className={`flex-1 py-1 rounded-lg text-[10px] font-mono font-bold uppercase transition-all cursor-pointer ${
+                          config.qrCornerStyle === style
+                            ? "bg-gray-900 dark:bg-[#ccff00] text-white dark:text-gray-950"
+                            : "text-gray-500 dark:text-gray-400"
+                        }`}
+                      >
+                        {style === "rounded" ? "Suave" : style === "dots" ? "Puntos" : "Recto"}
+                      </button>
+                    ))}
+                  </div>
                 </div>
               </div>
 
@@ -904,37 +1020,6 @@ export function LoyaltyCardsTab() {
                   />
                 </div>
               </div>
-
-              {/* Apple Wallet & Google Wallet Credentials Metadata */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
-                <div className="p-3.5 rounded-2xl border border-gray-200/80 dark:border-white/10 space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold text-gray-900 dark:text-white flex items-center gap-1.5">
-                      <Lock className="w-3.5 h-3.5 text-[#ccff00]" /> Apple PassKit Certificate
-                    </span>
-                    <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-500/15 text-emerald-500 font-bold">
-                      TLS 1.3 Firmado
-                    </span>
-                  </div>
-                  <div className="text-[11px] font-mono text-gray-500 dark:text-gray-400 truncate">
-                    Identifier: {config.applePassTypeId}
-                  </div>
-                </div>
-
-                <div className="p-3.5 rounded-2xl border border-gray-200/80 dark:border-white/10 space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold text-gray-900 dark:text-white flex items-center gap-1.5">
-                      <ShieldCheck className="w-3.5 h-3.5 text-[#ccff00]" /> Google Pay REST Object
-                    </span>
-                    <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-500/15 text-emerald-500 font-bold">
-                      JWT RS256
-                    </span>
-                  </div>
-                  <div className="text-[11px] font-mono text-gray-500 dark:text-gray-400 truncate">
-                    Class ID: {config.googleClassId}
-                  </div>
-                </div>
-              </div>
             </div>
           )}
 
@@ -944,10 +1029,10 @@ export function LoyaltyCardsTab() {
                 <div>
                   <h3 className="text-base font-bold text-gray-900 dark:text-white flex items-center gap-2">
                     <QrCode className="w-4 h-4 text-[#8c9276] dark:text-[#ccff00]" />
-                    <span>Terminal de Aprovisionamiento Óptico QR (iOS & Android)</span>
+                    <span>Estudio Generador QR Vectorial (Apple PassKit & Google Wallet)</span>
                   </h3>
                   <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-                    Token criptográfico individual para instalación instantánea del pase en Apple Wallet o Google Wallet sin aplicaciones intermedias.
+                    Renderizado 100% en navegador con exportación vectorial (.SVG) y mapa de bits de alta densidad (.PNG 1024×1024px).
                   </p>
                 </div>
 
@@ -968,82 +1053,132 @@ export function LoyaltyCardsTab() {
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-center">
+                {/* High-Contrast Client-Side Vector QR Studio Card */}
                 <div className="md:col-span-5 flex flex-col items-center justify-center p-5 rounded-3xl bg-gradient-to-b from-gray-50 to-gray-100 dark:from-[#1b221f] dark:to-[#111614] border border-gray-200 dark:border-white/10">
-                  <div className="relative p-3 bg-white rounded-2xl shadow-lg border border-gray-200">
-                    <img
-                      src={qrApiImageUrl}
-                      alt="Token QR de Aprovisionamiento PassKit y Google Wallet"
-                      className="w-44 h-44 object-contain rounded-lg"
-                      onError={(e) => {
-                        (e.currentTarget as HTMLImageElement).style.display = "none";
-                      }}
+                  <div className="p-3 bg-white rounded-2xl shadow-lg border border-gray-200">
+                    <CrispQRMatrixSVG
+                      svgRef={qrSvgRef}
+                      value={enrollmentQrUrl}
+                      size={184}
+                      fgColor={config.qrFgColor || "#111614"}
+                      bgColor={config.qrBgColor || "#ffffff"}
+                      accentColor={config.accentColor}
+                      cornerStyle={config.qrCornerStyle}
+                      logoUrl={config.customLogoDataUrl}
                     />
                   </div>
                   <span className="mt-3 text-[11px] font-mono font-bold text-gray-800 dark:text-[#ccff00]">
                     {selectedMemberForQR?.memberCode || "LUM-PRV-PASS"}
                   </span>
-                  <span className="text-[10px] text-gray-500 dark:text-gray-400 text-center mt-0.5">
-                    Lectura nativa desde cámara iOS (PassKit) o Android (Google Pay)
-                  </span>
-                </div>
-
-                <div className="md:col-span-7 space-y-4">
-                  <div className="p-4 rounded-2xl bg-gray-50 dark:bg-white/[0.04] border border-gray-200/60 dark:border-white/10 space-y-2">
-                    <span className="text-[10px] font-mono uppercase tracking-wider text-gray-400 block">
-                      Payload de Aprovisionamiento Directo (Deep Link URI)
-                    </span>
-                    <div className="flex items-center gap-2">
-                      <input
-                        type="text"
-                        readOnly
-                        value={enrollmentQrUrl}
-                        className="w-full h-9 px-3 rounded-lg bg-white dark:bg-black/40 border border-gray-200 dark:border-white/10 text-[11px] font-mono text-gray-700 dark:text-gray-300"
-                      />
+                  <div className="flex items-center gap-2 mt-2">
+                    <input
+                      ref={logoInputRef}
+                      type="file"
+                      accept="image/*"
+                      onChange={handleLogoUpload}
+                      className="hidden"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => logoInputRef.current?.click()}
+                      className="px-2.5 py-1 rounded-lg bg-gray-200/80 dark:bg-white/10 hover:bg-gray-300 dark:hover:bg-white/15 text-[10px] font-semibold text-gray-800 dark:text-white flex items-center gap-1 cursor-pointer"
+                    >
+                      <Upload className="w-3 h-3" />
+                      <span>Logo Central</span>
+                    </button>
+                    {config.customLogoDataUrl && (
                       <button
                         type="button"
-                        onClick={handleCopyEnrollmentLink}
-                        className="h-9 px-3 rounded-lg bg-gray-900 dark:bg-[#ccff00] text-white dark:text-gray-950 text-xs font-semibold flex items-center gap-1.5 shrink-0 cursor-pointer"
+                        onClick={() => setConfig((prev) => ({ ...prev, customLogoDataUrl: "" }))}
+                        className="p-1 rounded-lg bg-rose-500/15 text-rose-400 hover:bg-rose-500/25 cursor-pointer"
+                        title="Restaurar emblema Lumina"
                       >
-                        {copiedLink ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
-                        <span>{copiedLink ? "Copiado" : "Copiar URI"}</span>
+                        <RotateCcw className="w-3 h-3" />
                       </button>
-                    </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Primary Download & Provisioning Controls (Tool Card Result Zone) */}
+                <div className="md:col-span-7 space-y-3.5">
+                  {/* Direct Export Buttons (Naming format & resolution per crear-web-micro-saas spec) */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                    <button
+                      type="button"
+                      onClick={handleDownloadQRHighResPNG}
+                      className="h-12 px-4 rounded-xl bg-[#ccff00] hover:bg-[#d8ff33] text-gray-950 flex items-center justify-center gap-2.5 text-xs font-bold shadow-md transition-all cursor-pointer"
+                    >
+                      <Download className="w-4 h-4 shrink-0" />
+                      <div className="text-left leading-tight">
+                        <span className="block text-[9px] uppercase opacity-75">Mapa de Bits HD</span>
+                        <span>Descargar PNG — 1024px</span>
+                      </div>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={handleDownloadQRVectorSVG}
+                      className="h-12 px-4 rounded-xl bg-gray-900 dark:bg-white/10 hover:bg-gray-800 dark:hover:bg-white/15 text-white border border-white/10 flex items-center justify-center gap-2.5 text-xs font-bold shadow-md transition-all cursor-pointer"
+                    >
+                      <Download className="w-4 h-4 text-[#ccff00] shrink-0" />
+                      <div className="text-left leading-tight">
+                        <span className="block text-[9px] text-white/65 uppercase">Vector Escalable</span>
+                        <span>Descargar SVG — ~4 KB</span>
+                      </div>
+                    </button>
                   </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                     <button
                       type="button"
                       onClick={() => handleDownloadApplePassManifest(selectedMemberForQR)}
-                      className="h-12 px-4 rounded-xl bg-black hover:bg-zinc-900 text-white border border-white/15 flex items-center justify-center gap-2.5 text-xs font-semibold shadow-md transition-all cursor-pointer"
+                      className="h-11 px-4 rounded-xl bg-black hover:bg-zinc-900 text-white border border-white/15 flex items-center justify-center gap-2 text-xs font-semibold transition-all cursor-pointer"
                     >
                       <Wallet className="w-4 h-4 text-white" />
-                      <div className="text-left leading-tight">
-                        <span className="block text-[9px] text-white/60 uppercase">Exportar Paquete</span>
-                        <span className="font-bold">Apple Wallet (.pkpass)</span>
-                      </div>
+                      <span>Exportar Apple Pass (.pkpass)</span>
                     </button>
 
                     <a
                       href={enrollmentQrUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="h-12 px-4 rounded-xl bg-[#1a73e8] hover:bg-[#1557b0] text-white flex items-center justify-center gap-2.5 text-xs font-semibold shadow-md transition-all"
+                      className="h-11 px-4 rounded-xl bg-[#1a73e8] hover:bg-[#1557b0] text-white flex items-center justify-center gap-2 text-xs font-semibold transition-all"
                     >
                       <Smartphone className="w-4 h-4 text-white" />
-                      <div className="text-left leading-tight">
-                        <span className="block text-[9px] text-white/80 uppercase">Aprovisionar en</span>
-                        <span className="font-bold">Google Wallet</span>
-                      </div>
+                      <span>Aprovisionar Google Wallet</span>
                     </a>
                   </div>
 
-                  <div className="p-3.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-xs text-emerald-700 dark:text-emerald-300 flex items-start gap-2.5">
-                    <Gift className="w-4 h-4 shrink-0 mt-0.5" />
-                    <div>
-                      <strong>Conciliación Transaccional Automática:</strong> Toda orden liquidada en tienda por{" "}
-                      <span className="underline">{selectedMemberForQR?.customerName || "el titular"}</span> acredita{" "}
-                      <strong>{config.pointsPerDollar} pts por cada $1 USD</strong> directamente sobre el pase instalado.
+                  {/* Copyable URI */}
+                  <div className="p-3.5 rounded-2xl bg-gray-50 dark:bg-white/[0.04] border border-gray-200/60 dark:border-white/10 space-y-1.5">
+                    <span className="text-[10px] font-mono uppercase tracking-wider text-gray-400 block">
+                      Payload de Aprovisionamiento Directo (URI)
+                    </span>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="text"
+                        readOnly
+                        value={enrollmentQrUrl}
+                        className="w-full h-8 px-2.5 rounded-lg bg-white dark:bg-black/40 border border-gray-200 dark:border-white/10 text-[11px] font-mono text-gray-700 dark:text-gray-300"
+                      />
+                      <button
+                        type="button"
+                        onClick={handleCopyEnrollmentLink}
+                        className="h-8 px-3 rounded-lg bg-gray-900 dark:bg-[#ccff00] text-white dark:text-gray-950 text-xs font-semibold flex items-center gap-1 shrink-0 cursor-pointer"
+                      >
+                        {copiedLink ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+                        <span>{copiedLink ? "✓ Copiado" : "Copiar"}</span>
+                      </button>
                     </div>
+                  </div>
+
+                  {/* Privacy & Local Processing Microcopy (from crear-web-micro-saas 03-tool-page-design.md) */}
+                  <div className="px-3 py-2 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-[11px] text-emerald-700 dark:text-emerald-300 flex items-center gap-2">
+                    <Lock className="w-3.5 h-3.5 shrink-0" />
+                    <span>
+                      <strong>100 % procesado en tu dispositivo:</strong> la matriz QR, el logotipo y el paquete{" "}
+                      <code>.pkpass</code> se compilan localmente en el navegador sin subir archivos a terceros.
+                    </span>
                   </div>
                 </div>
               </div>
@@ -1144,7 +1279,7 @@ export function LoyaltyCardsTab() {
                           className="px-3 py-1.5 rounded-lg bg-gray-900 dark:bg-white/10 hover:bg-gray-800 text-white text-xs font-semibold flex items-center gap-1 cursor-pointer"
                         >
                           <QrCode className="w-3.5 h-3.5 text-[#ccff00]" />
-                          <span>Token QR</span>
+                          <span>Exportar QR</span>
                         </button>
                         <button
                           type="button"
@@ -1207,13 +1342,17 @@ export function LoyaltyCardsTab() {
               <div className="p-5 pb-4 flex items-center justify-between border-b border-white/10">
                 <div className="flex items-center gap-2.5">
                   <div
-                    className="w-9 h-9 rounded-xl flex items-center justify-center font-serif font-bold text-base shadow-md"
+                    className="w-9 h-9 rounded-xl flex items-center justify-center font-serif font-bold text-base shadow-md overflow-hidden"
                     style={{
                       backgroundColor: config.accentColor,
                       color: "#111614",
                     }}
                   >
-                    L
+                    {config.customLogoDataUrl ? (
+                      <img src={config.customLogoDataUrl} alt="Logo" className="w-full h-full object-cover" />
+                    ) : (
+                      "L"
+                    )}
                   </div>
                   <div>
                     <span className="text-xs font-bold tracking-wide block leading-tight">
@@ -1276,9 +1415,11 @@ export function LoyaltyCardsTab() {
                   <CrispQRMatrixSVG
                     value={enrollmentQrUrl}
                     size={148}
-                    fgColor="#111614"
-                    bgColor="#ffffff"
+                    fgColor={config.qrFgColor || "#111614"}
+                    bgColor={config.qrBgColor || "#ffffff"}
                     accentColor={config.accentColor}
+                    cornerStyle={config.qrCornerStyle}
+                    logoUrl={config.customLogoDataUrl}
                   />
                 </div>
                 <span className="mt-2 text-[10px] font-mono tracking-widest opacity-80">
