@@ -26,6 +26,7 @@ import { CloudSyncStatus } from "../CloudSyncStatus";
 import { BlobatarAvatar } from "@/components/ui/BlobatarAvatar";
 import { useAvatarSettingsStore } from "@/lib/avatarSettingsStore";
 import { getRefinedCoordinates } from "@/lib/locationUtils";
+import { resolveEcuadorExactAddressLngLat } from "../RadarMapboxCanvas";
 
 interface SettingsTabProps {
   isAdmin: boolean;
@@ -98,10 +99,12 @@ export function SettingsTab({
   const [phone, setPhone] = useState("");
   const [addrEmail, setAddrEmail] = useState(user?.email || "");
   const [street, setStreet] = useState("");
+  const [reference, setReference] = useState("");
   const [city, setCity] = useState("");
   const [stateProv, setStateProv] = useState("");
   const [postalCode, setPostalCode] = useState("");
   const [country, setCountry] = useState("Ecuador");
+  const [detectedCoords, setDetectedCoords] = useState<{ lat: number; lng: number } | null>(null);
   const [isDetectingLocation, setIsDetectingLocation] = useState(false);
   const [locationError, setLocationError] = useState<string | null>(null);
   const [locationSuccess, setLocationSuccess] = useState(false);
@@ -268,26 +271,44 @@ export function SettingsTab({
     }
   };
 
-  const applyResolvedLocation = (data: {
-    data?: { street?: string; city?: string; state?: string; postalCode?: string; country?: string };
-    street?: string;
-    city?: string;
-    state?: string;
-    postalCode?: string;
-    country?: string;
-    source?: string;
-  }) => {
+  const applyResolvedLocation = (
+    data: {
+      data?: { street?: string; reference?: string; neighborhood?: string; suburb?: string; city?: string; state?: string; postalCode?: string; country?: string };
+      street?: string;
+      reference?: string;
+      neighborhood?: string;
+      suburb?: string;
+      city?: string;
+      state?: string;
+      postalCode?: string;
+      country?: string;
+      source?: string;
+    },
+    exactGps?: { lat: number; lng: number }
+  ) => {
     const resolvedStreet = data.data?.street || data.street || "";
+    const resolvedRef =
+      data.data?.reference ||
+      data.data?.neighborhood ||
+      data.data?.suburb ||
+      data.reference ||
+      data.neighborhood ||
+      data.suburb ||
+      "";
     const resolvedCity = data.data?.city || data.city || "";
     const resolvedState = data.data?.state || data.state || "";
     const resolvedPostal = data.data?.postalCode || data.postalCode || "";
     const resolvedCountry = data.data?.country || data.country || "Ecuador";
 
     if (resolvedStreet) setStreet(resolvedStreet);
+    if (resolvedRef) setReference(resolvedRef);
     if (resolvedCity) setCity(resolvedCity);
     if (resolvedState) setStateProv(resolvedState);
     if (resolvedPostal) setPostalCode(resolvedPostal);
     if (resolvedCountry) setCountry(resolvedCountry);
+    if (exactGps && Number.isFinite(exactGps.lat) && Number.isFinite(exactGps.lng)) {
+      setDetectedCoords(exactGps);
+    }
     setLocationSuccess(true);
     setLocationError(null);
   };
@@ -319,12 +340,14 @@ export function SettingsTab({
     try {
       // 3 internal sequential samples, 3rd sample used ("la tercera es la vencida")
       const coords = await getRefinedCoordinates();
+      const gpsPair = { lat: coords.latitude, lng: coords.longitude };
+      setDetectedCoords(gpsPair);
       const res = await fetch(`/api/geocode?lat=${coords.latitude}&lon=${coords.longitude}`);
       if (!res.ok) throw new Error("Error en resolución");
       const data = await res.json();
       if (data.success) {
-        // Fills the form strictly once at the end with the 3rd sample
-        applyResolvedLocation(data);
+        // Fills the form strictly once at the end with the 3rd sample + exact GPS coordinates
+        applyResolvedLocation(data, gpsPair);
       } else {
         await fetchIpLocationFallback();
       }
@@ -346,16 +369,37 @@ export function SettingsTab({
       alert("Has alcanzado el límite máximo de 4 direcciones.");
       return;
     }
+
+    let resolvedLat = detectedCoords?.lat;
+    let resolvedLng = detectedCoords?.lng;
+
+    if (!Number.isFinite(resolvedLat) || !Number.isFinite(resolvedLng)) {
+      const geocoded = await resolveEcuadorExactAddressLngLat({
+        street: street.trim(),
+        reference: reference.trim() || undefined,
+        city: city.trim(),
+        state: stateProv.trim(),
+        country: country.trim(),
+      });
+      if (geocoded) {
+        resolvedLng = geocoded[0];
+        resolvedLat = geocoded[1];
+      }
+    }
+
     await addAddress({
       recipient: recipient.trim() || user?.name || "Destinatario",
       idNumber: idNumber.trim() || undefined,
       phone: phone.trim() || undefined,
       email: addrEmail.trim() || user?.email || undefined,
       street: street.trim(),
+      reference: reference.trim() || undefined,
       city: city.trim(),
       state: stateProv.trim(),
       postalCode: postalCode.trim(),
       country: country.trim(),
+      lat: resolvedLat,
+      lng: resolvedLng,
       isDefault: addresses.length === 0,
     });
     setRecipient(user?.name || "");
@@ -363,10 +407,12 @@ export function SettingsTab({
     setPhone("");
     setAddrEmail(user?.email || "");
     setStreet("");
+    setReference("");
     setCity("");
     setStateProv("");
     setPostalCode("");
     setCountry("Ecuador");
+    setDetectedCoords(null);
     setLocationError(null);
     setLocationSuccess(false);
     setShowAddressForm(false);
@@ -965,25 +1011,35 @@ export function SettingsTab({
                 />
               </div>
               <div>
-                <label className="block text-[11px] font-semibold text-gray-700 dark:text-gray-300 mb-1">Calle y Número</label>
+                <label className="block text-[11px] font-semibold text-gray-700 dark:text-gray-300 mb-1">Calle Principal, Número e Intersección</label>
                 <input 
                   type="text" 
                   required 
                   value={street} 
                   onChange={e => setStreet(e.target.value)} 
-                  placeholder="Av. Diagonal 450, 3ro 2da" 
+                  placeholder="Ej: Av. República del Salvador N34-120 y Naciones Unidas" 
+                  className="w-full px-3 py-2 rounded-xl border border-gray-200 dark:border-white/10 text-xs outline-none focus:ring-1 focus:ring-blue-500 bg-white dark:bg-[#1a1a1c] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500"
+                />
+              </div>
+              <div>
+                <label className="block text-[11px] font-semibold text-gray-700 dark:text-gray-300 mb-1">Sector / Barrio / Parroquia (Para precisión exacta en Mapa Radar)</label>
+                <input 
+                  type="text" 
+                  value={reference} 
+                  onChange={e => setReference(e.target.value)} 
+                  placeholder="Ej: La Carolina, Iñaquito, Cumbayá, El Condado, Samborondón..." 
                   className="w-full px-3 py-2 rounded-xl border border-gray-200 dark:border-white/10 text-xs outline-none focus:ring-1 focus:ring-blue-500 bg-white dark:bg-[#1a1a1c] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500"
                 />
               </div>
               <div className="grid grid-cols-2 gap-2">
                 <div>
-                  <label className="block text-[11px] font-semibold text-gray-700 dark:text-gray-300 mb-1">Ciudad</label>
+                  <label className="block text-[11px] font-semibold text-gray-700 dark:text-gray-300 mb-1">Ciudad / Cantón</label>
                   <input 
                     type="text" 
                     required 
                     value={city} 
                     onChange={e => setCity(e.target.value)} 
-                    placeholder="Barcelona" 
+                    placeholder="Quito" 
                     className="w-full px-3 py-2 rounded-xl border border-gray-200 dark:border-white/10 text-xs outline-none focus:ring-1 focus:ring-blue-500 bg-white dark:bg-[#1a1a1c] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500"
                   />
                 </div>
@@ -994,7 +1050,7 @@ export function SettingsTab({
                     required 
                     value={postalCode} 
                     onChange={e => setPostalCode(e.target.value)} 
-                    placeholder="08006" 
+                    placeholder="170505" 
                     className="w-full px-3 py-2 rounded-xl border border-gray-200 dark:border-white/10 text-xs outline-none focus:ring-1 focus:ring-blue-500 bg-white dark:bg-[#1a1a1c] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500"
                   />
                 </div>
@@ -1007,7 +1063,7 @@ export function SettingsTab({
                     required
                     value={stateProv} 
                     onChange={e => setStateProv(e.target.value)} 
-                    placeholder="Cataluña" 
+                    placeholder="Pichincha" 
                     className="w-full px-3 py-2 rounded-xl border border-gray-200 dark:border-white/10 text-xs outline-none focus:ring-1 focus:ring-blue-500 bg-white dark:bg-[#1a1a1c] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500"
                   />
                 </div>
@@ -1018,7 +1074,7 @@ export function SettingsTab({
                     required
                     value={country} 
                     onChange={e => setCountry(e.target.value)} 
-                    placeholder="España"
+                    placeholder="Ecuador"
                     className="w-full px-3 py-2 rounded-xl border border-gray-200 dark:border-white/10 text-xs outline-none focus:ring-1 focus:ring-blue-500 bg-white dark:bg-[#1a1a1c] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500"
                   />
                 </div>

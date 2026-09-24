@@ -148,7 +148,7 @@ export function ProductGalleryStyleSelector({
 
               {/* Badge on wireframe sketch */}
               <div className="absolute top-2 right-2 flex items-center gap-1.5">
-                <span className="px-2 py-0.5 rounded-md bg-white/10 backdrop-blur-md border border-white/15 text-[9px] font-mono font-bold text-[#ccff00]">
+                <span className="px-2 py-0.5 rounded-md bg-white/10 backdrop-blur-md border border-white/15 text-[9px] font-mono font-bold text-[#d4dbc3]">
                   6 FOTOS
                 </span>
                 {autoplay && (

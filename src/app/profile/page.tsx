@@ -883,12 +883,15 @@ const handleConfirmDeleteNiche = async () => {
       </button>
    </>
  )}
+ </nav>
+ </div>
 
+ {/* Bottom Actions: Ajustes de Cuenta (arriba de Volver a la Tienda) + Volver a la Tienda + Cerrar Sesión */}
+ <div className="flex flex-col items-center gap-3 w-full px-2">
  <div className="w-9 md:w-10 h-[2px] bg-gray-300/80 dark:bg-white/20 rounded-full my-0.5 transition-colors shrink-0" />
-
  <button 
    onClick={() => setActiveTab("settings")} 
-   className={`sidebar-dock-btn relative w-11 h-11 md:w-12 md:h-12 rounded-2xl flex items-center justify-center transition-all duration-[600ms] cursor-pointer group ${
+   className={`sidebar-dock-btn relative w-10 h-10 md:w-11 md:h-11 rounded-2xl flex items-center justify-center transition-all duration-[600ms] cursor-pointer group ${
      activeTab === "settings" 
        ? "bg-gray-950 dark:bg-white text-white dark:text-gray-950 shadow-lg shadow-gray-950/20 dark:shadow-white/15 scale-105" 
        : "text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100/80 dark:hover:bg-white/5 hover:scale-105 active:scale-95"
@@ -896,16 +899,10 @@ const handleConfirmDeleteNiche = async () => {
    title="Ajustes de Cuenta"
  >
    {activeTab === "settings" && (
-     <span className="absolute -left-2 w-1 h-5 bg-[#8c9276] dark:bg-[#ccff00] rounded-r-full transition-all duration-[600ms]" />
+     <span className="absolute -left-2 w-1 h-5 bg-[#8c9276] dark:bg-white rounded-r-full transition-all duration-[600ms]" />
    )}
    <Settings className="w-5 h-5 transition-all duration-500 group-hover:scale-115 group-hover:rotate-90 group-hover:-translate-y-0.5" />
  </button>
- </nav>
- </div>
-
- {/* Bottom Actions */}
- <div className="flex flex-col items-center gap-3 w-full px-2">
- <div className="w-9 md:w-10 h-[2px] bg-gray-300/80 dark:bg-white/20 rounded-full my-0.5 transition-colors shrink-0" />
  <Link 
    href="/" 
    className="sidebar-dock-btn relative w-10 h-10 md:w-11 md:h-11 rounded-2xl flex items-center justify-center text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100/80 dark:hover:bg-white/5 transition-all duration-[600ms] group" 
@@ -1305,17 +1302,28 @@ const handleConfirmDeleteNiche = async () => {
    onOpenChange={setShowProductModal}
    className="max-w-6xl"
  >
- <div className="bg-white dark:bg-[#202022] rounded-[30px] w-full shadow-2xl dark:shadow-none overflow-hidden flex flex-col max-h-[92vh]">
-   {/* Top Bar Header (CartDrawer style with 4-Step Pill Dock) */}
-   <div className="px-5 sm:px-7 py-4 border-b border-gray-100 dark:border-white/5 flex flex-col lg:flex-row lg:items-center justify-between gap-3 bg-gray-50/70 dark:bg-[#2a2a2c]/70 shrink-0">
-     <div className="flex items-center justify-between w-full lg:w-auto">
-       <div>
-         <h2 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-gray-100 leading-tight">
-           Publicar Nuevo Producto
-         </h2>
-         <p className="text-[11px] text-gray-500 dark:text-gray-400">
-           Completa el producto área por área y previsualiza su diseño en tiempo real.
-         </p>
+ <div className="bg-[#f5f5f3] dark:bg-[#161618] rounded-[32px] w-full shadow-2xl dark:shadow-none overflow-hidden flex flex-col max-h-[92vh] border border-gray-200/90 dark:border-white/[0.12]">
+   {/* Top Bar Header (Executive Studio Header + 4-Step Pill Dock) */}
+   <div className="px-5 sm:px-7 py-4 border-b border-gray-200/80 dark:border-white/[0.08] flex flex-col lg:flex-row lg:items-center justify-between gap-3.5 bg-white/95 dark:bg-[#202022]/95 backdrop-blur-xl shrink-0">
+     <div className="flex items-center justify-between w-full lg:w-auto gap-3">
+       <div className="flex items-center gap-3">
+         <div className="w-10 h-10 rounded-2xl bg-[#8c9276]/15 border border-[#8c9276]/30 text-[#8c9276] dark:text-[#a3aa8c] flex items-center justify-center shrink-0">
+           <Package className="w-5 h-5" />
+         </div>
+         <div>
+           <div className="flex items-center gap-2 mb-0.5">
+             <span className="text-[9px] font-mono font-bold uppercase tracking-[0.18em] px-2 py-0.5 rounded-md bg-[#8c9276]/15 text-[#8c9276] dark:text-[#a3aa8c] border border-[#8c9276]/25">
+               STUDIO // COMPILADOR DE FICHA
+             </span>
+             <span className="hidden sm:inline-flex items-center gap-1 text-[9px] font-mono text-gray-500 dark:text-gray-400">
+               <span className="w-1.5 h-1.5 rounded-full bg-[#8c9276] animate-pulse" />
+               SINCRONIZACIÓN EN VIVO
+             </span>
+           </div>
+           <h2 className="font-display text-lg sm:text-xl font-medium text-gray-900 dark:text-gray-100 leading-tight">
+             Publicar Nuevo Producto
+           </h2>
+         </div>
        </div>
        <button
          type="button"
@@ -1371,8 +1379,87 @@ const handleConfirmDeleteNiche = async () => {
        }
        handleAddProductSubmit(e);
      }}
-     className="flex-1 min-h-0 overflow-y-auto p-5 sm:p-6"
+     className="flex-1 min-h-0 overflow-y-auto p-5 sm:p-6 space-y-5"
    >
+     {/* 4-KPI EXECUTIVE TELEMETRY STRIP (crear-web-micro-saas Above-The-Fold) */}
+     <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+       <div className="p-3.5 rounded-2xl bg-white/95 dark:bg-[#202022]/95 border border-gray-200/90 dark:border-white/[0.12] shadow-sm flex flex-col justify-between">
+         <div className="flex items-center justify-between gap-2">
+           <span className="text-[9px] font-mono font-bold uppercase tracking-[0.14em] text-gray-400 dark:text-gray-500">
+             01 // ARQUITECTURA
+           </span>
+           <span className="text-[9px] font-mono font-bold px-2 py-0.5 rounded-md bg-[#8c9276]/15 text-[#8c9276] dark:text-[#a3aa8c] border border-[#8c9276]/25">
+             {prodLayoutType === "landing" ? "LANDING" : "ESTÁNDAR"}
+           </span>
+         </div>
+         <div className="mt-2">
+           <p className="font-display text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
+             {prodLayoutType === "landing" ? "Landing Editorial" : "Ficha de Catálogo"}
+           </p>
+           <p className="text-[10px] font-mono text-gray-500 dark:text-gray-400 mt-0.5">
+             Galería: {prodGalleryStyle === "isometric_3d" ? "3D Isométrica" : "Tradicional"}
+           </p>
+         </div>
+       </div>
+
+       <div className="p-3.5 rounded-2xl bg-white/95 dark:bg-[#202022]/95 border border-gray-200/90 dark:border-white/[0.12] shadow-sm flex flex-col justify-between">
+         <div className="flex items-center justify-between gap-2">
+           <span className="text-[9px] font-mono font-bold uppercase tracking-[0.14em] text-gray-400 dark:text-gray-500">
+             02 // PRECIO & OFERTA
+           </span>
+           <span className="text-[9px] font-mono font-bold px-2 py-0.5 rounded-md bg-gray-100 dark:bg-white/[0.06] text-gray-700 dark:text-gray-300">
+             {hasDiscount && calculatedDiscount ? calculatedDiscount : "LISTA"}
+           </span>
+         </div>
+         <div className="mt-2">
+           <p className="font-mono text-sm font-bold text-gray-900 dark:text-gray-100">
+             ${(parseFloat(prodPrice) || 0).toFixed(2)} <span className="text-[10px] font-normal text-gray-400">USD</span>
+           </p>
+           <p className="text-[10px] font-mono text-gray-500 dark:text-gray-400 mt-0.5">
+             {prodCombos.length > 0 ? `${prodCombos.length} combos configurados` : "Sin combos cruzados"}
+           </p>
+         </div>
+       </div>
+
+       <div className="p-3.5 rounded-2xl bg-white/95 dark:bg-[#202022]/95 border border-gray-200/90 dark:border-white/[0.12] shadow-sm flex flex-col justify-between">
+         <div className="flex items-center justify-between gap-2">
+           <span className="text-[9px] font-mono font-bold uppercase tracking-[0.14em] text-gray-400 dark:text-gray-500">
+             03 // VARIANTES & STOCK
+           </span>
+           <span className="text-[9px] font-mono font-bold px-2 py-0.5 rounded-md bg-[#8c9276]/15 text-[#8c9276] dark:text-[#a3aa8c]">
+             {prodStock || "20"} UDS
+           </span>
+         </div>
+         <div className="mt-2">
+           <p className="font-mono text-sm font-bold text-gray-900 dark:text-gray-100">
+             {prodColorVariants.length} {prodColorVariants.length === 1 ? "Acabado" : "Acabados"}
+           </p>
+           <p className="text-[10px] font-mono text-gray-500 dark:text-gray-400 mt-0.5">
+             {hasSizes && prodSizes.trim() ? `Medidas: ${prodSizes.split(",").filter(Boolean).length}` : "Medida estándar única"}
+           </p>
+         </div>
+       </div>
+
+       <div className="p-3.5 rounded-2xl bg-white/95 dark:bg-[#202022]/95 border border-gray-200/90 dark:border-white/[0.12] shadow-sm flex flex-col justify-between">
+         <div className="flex items-center justify-between gap-2">
+           <span className="text-[9px] font-mono font-bold uppercase tracking-[0.14em] text-gray-400 dark:text-gray-500">
+             04 // AUDITORÍA
+           </span>
+           <span className="text-[9px] font-mono font-bold px-2 py-0.5 rounded-md bg-[#8c9276]/15 text-[#8c9276] dark:text-[#a3aa8c] border border-[#8c9276]/25">
+             {prodTitle.trim() && prodPrice.trim() && prodDescription.trim() && prodImageUrl.trim() ? "LISTO" : "EN CURSO"}
+           </span>
+         </div>
+         <div className="mt-2">
+           <p className="font-display text-sm font-medium text-gray-900 dark:text-gray-100">
+             {prodCategory || "Sin nicho asignado"}
+           </p>
+           <p className="text-[10px] font-mono text-gray-500 dark:text-gray-400 mt-0.5">
+             Paso activo: 0{addProductStep + 1} de 04
+           </p>
+         </div>
+       </div>
+     </div>
+
      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
        {/* LEFT COLUMN (7 COLS): ACTIVE STEP FORM AREA */}
        <div className="lg:col-span-7 space-y-5">
@@ -1381,13 +1468,13 @@ const handleConfirmDeleteNiche = async () => {
          {/* =============================================================== */}
          <div className={addProductStep === 0 ? "space-y-5 animate-fade-in" : "hidden"}>
           {/* BLOQUE 1: ARQUITECTURA VISUAL (LANDING PAGE O ESTÁNDAR) */}
-          <div className="p-5 bg-stone-50/95 dark:bg-[#18181b]/95 rounded-2xl border-2 border-[#FF5E00]/30 dark:border-[#FF5E00]/40 shadow-sm space-y-4">
+          <div className="p-5 sm:p-6 bg-white/95 dark:bg-[#202022]/95 rounded-[28px] border border-gray-200/90 dark:border-white/[0.12] shadow-sm space-y-4">
             <div className="flex items-center justify-between pb-3 border-b border-stone-200 dark:border-white/10">
               <div className="flex items-center gap-2.5">
-                <span className="px-2.5 py-1 text-[10px] font-black uppercase tracking-wider rounded-lg bg-[#FF5E00]/10 text-[#FF5E00] border border-[#FF5E00]/25">
+                <span className="px-2.5 py-1 text-[10px] font-mono font-bold uppercase tracking-[0.14em] rounded-lg bg-[#8c9276]/15 text-[#8c9276] dark:text-[#a3aa8c] border border-[#8c9276]/25">
                   01 • Formato Visual
                 </span>
-                <h3 className="text-xs sm:text-sm font-bold text-gray-900 dark:text-gray-100">
+                <h3 className="font-display text-sm sm:text-base font-medium text-gray-900 dark:text-gray-100">
                   Formato de Presentación *
                 </h3>
               </div>
@@ -1423,13 +1510,13 @@ const handleConfirmDeleteNiche = async () => {
          {/* =============================================================== */}
          <div className={addProductStep === 1 ? "space-y-5 animate-fade-in" : "hidden"}>
           {/* BLOQUE 2: IDENTIFICACIÓN BÁSICA */}
-          <div className="p-5 bg-stone-50/90 dark:bg-[#18181b]/90 rounded-2xl border border-gray-300 dark:border-white/20 shadow-sm space-y-4">
+          <div className="p-5 sm:p-6 bg-white/95 dark:bg-[#202022]/95 rounded-[28px] border border-gray-200/90 dark:border-white/[0.12] shadow-sm space-y-4">
             <div className="flex items-center justify-between pb-2 border-b border-gray-200 dark:border-white/10">
               <div className="flex items-center gap-2">
-                <span className="px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider rounded-lg bg-blue-100 text-blue-800 dark:bg-blue-950/50 dark:text-blue-300 border border-blue-200 dark:border-blue-800/40">
+                <span className="px-2.5 py-1 text-[10px] font-mono font-bold uppercase tracking-[0.14em] rounded-lg bg-[#8c9276]/15 text-[#8c9276] dark:text-[#a3aa8c] border border-[#8c9276]/25">
                   02 • General
                 </span>
-                <h3 className="text-xs sm:text-sm font-bold text-gray-900 dark:text-gray-100">
+                <h3 className="font-display text-sm sm:text-base font-medium text-gray-900 dark:text-gray-100">
                   Identificación
                 </h3>
               </div>
@@ -1437,23 +1524,23 @@ const handleConfirmDeleteNiche = async () => {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2 pl-1">Nombre Principal *</label>
-                <input type="text" value={prodTitle} onChange={e => setProdTitle(e.target.value)} className="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-white/15 text-sm outline-none focus:border-[#FF5E00] focus:ring-1 focus:ring-[#FF5E00] bg-white dark:bg-[#202023] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 shadow-sm" placeholder="Ej: Lámpara de Mesa" />
+                <input type="text" value={prodTitle} onChange={e => setProdTitle(e.target.value)} className="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-white/15 text-sm outline-none focus:border-[#8c9276] focus:ring-2 focus:ring-[#8c9276]/20 bg-white dark:bg-[#202023] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 shadow-sm" placeholder="Ej: Lámpara de Mesa" />
               </div>
               <div>
                 <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2 pl-1">Subtítulo Itálica</label>
-                <input type="text" value={prodHighlight} onChange={e => setProdHighlight(e.target.value)} className="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-white/15 text-sm outline-none focus:border-[#FF5E00] focus:ring-1 focus:ring-[#FF5E00] bg-white dark:bg-[#202023] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 shadow-sm" placeholder="Ej: Nova LED, Artesanal" />
+                <input type="text" value={prodHighlight} onChange={e => setProdHighlight(e.target.value)} className="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-white/15 text-sm outline-none focus:border-[#8c9276] focus:ring-2 focus:ring-[#8c9276]/20 bg-white dark:bg-[#202023] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 shadow-sm" placeholder="Ej: Nova LED, Artesanal" />
               </div>
             </div>
           </div>
 
           {/* BLOQUE 3: CATEGORÍA & BADGE */}
-          <div className="p-5 bg-stone-50/90 dark:bg-[#18181b]/90 rounded-2xl border border-gray-300 dark:border-white/20 shadow-sm space-y-4">
+          <div className="p-5 sm:p-6 bg-white/95 dark:bg-[#202022]/95 rounded-[28px] border border-gray-200/90 dark:border-white/[0.12] shadow-sm space-y-4">
             <div className="flex items-center justify-between pb-2 border-b border-gray-200 dark:border-white/10">
               <div className="flex items-center gap-2">
-                <span className="px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider rounded-lg bg-amber-100 text-amber-800 dark:bg-amber-950/50 dark:text-amber-300 border border-amber-200 dark:border-amber-800/40">
+                <span className="px-2.5 py-1 text-[10px] font-mono font-bold uppercase tracking-[0.14em] rounded-lg bg-[#8c9276]/15 text-[#8c9276] dark:text-[#a3aa8c] border border-[#8c9276]/25">
                   03 • Categoría
                 </span>
-                <h3 className="text-xs sm:text-sm font-bold text-gray-900 dark:text-gray-100">
+                <h3 className="font-display text-sm sm:text-base font-medium text-gray-900 dark:text-gray-100">
                   Nicho de Mercado y Badge
                 </h3>
               </div>
@@ -1465,7 +1552,7 @@ const handleConfirmDeleteNiche = async () => {
                   <button 
                     type="button" 
                     onClick={() => { setShowProductModal(false); setActiveTab("niches"); }}
-                    className="text-[10px] font-semibold text-[#FF5E00] hover:underline cursor-pointer"
+                    className="text-[10px] font-semibold text-[#8c9276] dark:text-[#a3aa8c] hover:underline cursor-pointer"
                     title="Ir a gestionar nichos y categorías"
                   >
                     + Gestionar nichos y categorías
@@ -1484,7 +1571,7 @@ const handleConfirmDeleteNiche = async () => {
                   <button 
                     type="button" 
                     onClick={() => { setShowProductModal(false); setActiveTab("niches"); }}
-                    className="text-[10px] font-semibold text-[#FF5E00] hover:underline cursor-pointer"
+                    className="text-[10px] font-semibold text-[#8c9276] dark:text-[#a3aa8c] hover:underline cursor-pointer"
                   >
                     + Gestionar badges
                   </button>
@@ -1503,10 +1590,10 @@ const handleConfirmDeleteNiche = async () => {
           </div>
 
           {/* BLOQUE 6: PRECIOS Y REBAJAS */}
-          <div className="p-5 bg-stone-50/90 dark:bg-[#18181b]/90 rounded-2xl border border-gray-300 dark:border-white/20 shadow-sm space-y-4">
+          <div className="p-5 sm:p-6 bg-white/95 dark:bg-[#202022]/95 rounded-[28px] border border-gray-200/90 dark:border-white/[0.12] shadow-sm space-y-4">
             <div className="flex items-center justify-between pb-2 border-b border-gray-200 dark:border-white/10">
               <div className="flex items-center gap-2">
-                <span className="px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider rounded-lg bg-emerald-100 text-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/40">
+                <span className="px-2.5 py-1 text-[10px] font-mono font-bold uppercase tracking-[0.14em] rounded-lg bg-[#8c9276]/15 text-[#8c9276] dark:text-[#a3aa8c] border border-[#8c9276]/25">
                   06 • Precios
                 </span>
                 <span className="text-xs sm:text-sm font-bold text-gray-900 dark:text-gray-100">Precios y Rebajas</span>
@@ -1520,7 +1607,7 @@ const handleConfirmDeleteNiche = async () => {
                     setHasDiscount(next);
                     handlePriceChange(prodPrice, oldPrice, next);
                   }}
-                  className={`w-10 h-5 rounded-full relative transition-colors ${hasDiscount ? "bg-[#FF5E00]" : "bg-gray-300 dark:bg-gray-600"}`}
+                  className={`w-10 h-5 rounded-full relative transition-colors ${hasDiscount ? "bg-[#8c9276]" : "bg-gray-300 dark:bg-gray-600"}`}
                 >
                   <span className={`absolute top-0.5 w-4 h-4 rounded-full bg-white transition-all ${hasDiscount ? "left-5" : "left-1"}`} />
                 </button>
@@ -1530,17 +1617,17 @@ const handleConfirmDeleteNiche = async () => {
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <div>
                 <label className="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1">{hasDiscount ? "Precio con Descuento ($) *" : "Precio Regular ($) *"}</label>
-                <input type="number" step="0.01" value={prodPrice} onChange={e => handlePriceChange(e.target.value, oldPrice, hasDiscount)} className="w-full px-3.5 py-2.5 rounded-xl border border-gray-300 dark:border-white/15 text-sm outline-none focus:border-[#FF5E00] focus:ring-1 focus:ring-[#FF5E00] bg-white dark:bg-[#202023] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 shadow-sm" placeholder="89.90" />
+                <input type="number" step="0.01" value={prodPrice} onChange={e => handlePriceChange(e.target.value, oldPrice, hasDiscount)} className="w-full px-3.5 py-2.5 rounded-xl border border-gray-300 dark:border-white/15 text-sm outline-none focus:border-[#8c9276] focus:ring-2 focus:ring-[#8c9276]/20 bg-white dark:bg-[#202023] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 shadow-sm" placeholder="89.90" />
               </div>
               {hasDiscount && (
                 <>
                   <div>
                     <label className="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1">Precio Original Antes ($)</label>
-                    <input type="number" step="0.01" value={oldPrice} onChange={e => handlePriceChange(prodPrice, e.target.value, hasDiscount)} className="w-full px-3.5 py-2.5 rounded-xl border border-gray-300 dark:border-white/15 text-sm outline-none focus:border-[#FF5E00] focus:ring-1 focus:ring-[#FF5E00] bg-white dark:bg-[#202023] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 shadow-sm" placeholder="119.90" />
+                    <input type="number" step="0.01" value={oldPrice} onChange={e => handlePriceChange(prodPrice, e.target.value, hasDiscount)} className="w-full px-3.5 py-2.5 rounded-xl border border-gray-300 dark:border-white/15 text-sm outline-none focus:border-[#8c9276] focus:ring-2 focus:ring-[#8c9276]/20 bg-white dark:bg-[#202023] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 shadow-sm" placeholder="119.90" />
                   </div>
                   <div>
                     <label className="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1">% Descuento Calculado</label>
-                    <input type="text" readOnly value={calculatedDiscount} className="w-full px-3.5 py-2.5 rounded-xl border border-gray-300 dark:border-white/15 text-sm font-bold outline-none bg-gray-100 dark:bg-[#28282b] text-[#FF5E00]" placeholder="-25%" />
+                    <input type="text" readOnly value={calculatedDiscount} className="w-full px-3.5 py-2.5 rounded-xl border border-gray-300 dark:border-white/15 text-sm font-bold outline-none bg-gray-100 dark:bg-[#28282b] text-[#8c9276] dark:text-[#a3aa8c]" placeholder="-25%" />
                   </div>
                 </>
               )}
@@ -1548,25 +1635,25 @@ const handleConfirmDeleteNiche = async () => {
           </div>
 
           {/* BLOQUE 7: DESCRIPCIÓN COMPLETA & CARACTERÍSTICAS */}
-          <div className="p-5 bg-stone-50/90 dark:bg-[#18181b]/90 rounded-2xl border border-gray-300 dark:border-white/20 shadow-sm space-y-4">
+          <div className="p-5 sm:p-6 bg-white/95 dark:bg-[#202022]/95 rounded-[28px] border border-gray-200/90 dark:border-white/[0.12] shadow-sm space-y-4">
             <div className="flex items-center justify-between pb-2 border-b border-gray-200 dark:border-white/10">
               <div className="flex items-center gap-2">
-                <span className="px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider rounded-lg bg-purple-100 text-purple-800 dark:bg-purple-950/50 dark:text-purple-300 border border-purple-200 dark:border-purple-800/40">
+                <span className="px-2.5 py-1 text-[10px] font-mono font-bold uppercase tracking-[0.14em] rounded-lg bg-[#8c9276]/15 text-[#8c9276] dark:text-[#a3aa8c] border border-[#8c9276]/25">
                   07 • Descripción
                 </span>
-                <h3 className="text-xs sm:text-sm font-bold text-gray-900 dark:text-gray-100">
+                <h3 className="font-display text-sm sm:text-base font-medium text-gray-900 dark:text-gray-100">
                   Descripción
                 </h3>
               </div>
             </div>
             <div>
               <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2 pl-1">Descripción Completa *</label>
-              <textarea rows={3} value={prodDescription} onChange={e => setProdDescription(e.target.value)} className="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-white/15 text-sm outline-none focus:border-[#FF5E00] focus:ring-1 focus:ring-[#FF5E00] resize-none bg-white dark:bg-[#202023] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 shadow-sm" placeholder="Describe los detalles de este producto..." />
+              <textarea rows={3} value={prodDescription} onChange={e => setProdDescription(e.target.value)} className="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-white/15 text-sm outline-none focus:border-[#8c9276] focus:ring-2 focus:ring-[#8c9276]/20 resize-none bg-white dark:bg-[#202023] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 shadow-sm" placeholder="Describe los detalles de este producto..." />
             </div>
 
             <div>
               <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2 pl-1">Características / Viñetas (una por línea)</label>
-              <textarea rows={3} value={prodFeatures} onChange={e => setProdFeatures(e.target.value)} className="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-white/15 text-sm outline-none focus:border-[#FF5E00] focus:ring-1 focus:ring-[#FF5E00] resize-none bg-white dark:bg-[#202023] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 shadow-sm" placeholder="Material: Cerámica artesanal&#10;Acabado mate texturizado&#10;Garantía de 2 años" />
+              <textarea rows={3} value={prodFeatures} onChange={e => setProdFeatures(e.target.value)} className="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-white/15 text-sm outline-none focus:border-[#8c9276] focus:ring-2 focus:ring-[#8c9276]/20 resize-none bg-white dark:bg-[#202023] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 shadow-sm" placeholder="Material: Cerámica artesanal&#10;Acabado mate texturizado&#10;Garantía de 2 años" />
             </div>
           </div>
          </div>
@@ -1576,15 +1663,15 @@ const handleConfirmDeleteNiche = async () => {
          {/* =============================================================== */}
          <div className={addProductStep === 2 ? "space-y-5 animate-fade-in" : "hidden"}>
           {/* BLOQUE 4: FOTOGRAFÍAS DEL PRODUCTO */}
-          <div className="p-5 bg-stone-50/90 dark:bg-[#18181b]/90 rounded-2xl border border-gray-300 dark:border-white/20 shadow-sm space-y-4">
+          <div className="p-5 sm:p-6 bg-white/95 dark:bg-[#202022]/95 rounded-[28px] border border-gray-200/90 dark:border-white/[0.12] shadow-sm space-y-4">
             <div className="flex items-center justify-between pb-2 border-b border-gray-200 dark:border-white/10">
               <div className="flex items-center gap-2">
-                <span className="px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider rounded-lg bg-cyan-100 text-cyan-800 dark:bg-cyan-950/50 dark:text-cyan-300 border border-cyan-200 dark:border-cyan-800/40">
+                <span className="px-2.5 py-1 text-[10px] font-mono font-bold uppercase tracking-[0.14em] rounded-lg bg-[#8c9276]/15 text-[#8c9276] dark:text-[#a3aa8c] border border-[#8c9276]/25">
                   04 • Fotos & Experiencia
                 </span>
                 <label className="block text-xs sm:text-sm font-bold text-gray-900 dark:text-gray-100">Galería y Portada</label>
               </div>
-              <span className="text-[11px] text-[#FF5E00] font-semibold">Vista previa en vivo</span>
+              <span className="text-[11px] text-[#8c9276] dark:text-[#a3aa8c] font-semibold">Vista previa en vivo</span>
             </div>
 
             <div className="p-3 bg-blue-50/80 border border-blue-200 rounded-xl text-xs text-blue-900 leading-relaxed">
@@ -1600,7 +1687,7 @@ const handleConfirmDeleteNiche = async () => {
                 type="text" 
                 value={prodImageUrl} 
                 onChange={e => setProdImageUrl(e.target.value)} 
-                className="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-white/15 text-sm outline-none focus:border-[#FF5E00] focus:ring-1 focus:ring-[#FF5E00] bg-white dark:bg-[#202023] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 shadow-sm" 
+                className="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-white/15 text-sm outline-none focus:border-[#8c9276] focus:ring-2 focus:ring-[#8c9276]/20 bg-white dark:bg-[#202023] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 shadow-sm" 
                 placeholder="https://images.unsplash.com/photo-... o enlace directo .jpg / .webp" 
               />
               {isGoogleDriveUrl(prodImageUrl) ? (
@@ -1620,7 +1707,7 @@ const handleConfirmDeleteNiche = async () => {
                 type="text" 
                 value={prodExtraImages} 
                 onChange={e => setProdExtraImages(e.target.value)} 
-                className="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-white/15 text-sm outline-none focus:border-[#FF5E00] focus:ring-1 focus:ring-[#FF5E00] bg-white dark:bg-[#202023] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 shadow-sm" 
+                className="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-white/15 text-sm outline-none focus:border-[#8c9276] focus:ring-2 focus:ring-[#8c9276]/20 bg-white dark:bg-[#202023] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 shadow-sm" 
                 placeholder="Separa varios enlaces con comas: https://foto2.jpg, https://foto3.webp" 
               />
             </div>
@@ -1661,13 +1748,13 @@ const handleConfirmDeleteNiche = async () => {
           </div>
 
           {/* BLOQUE 5: COLORES & ACABADOS DEL PRODUCTO */}
-          <div className="p-5 bg-stone-50/90 dark:bg-[#18181b]/90 rounded-2xl border border-gray-300 dark:border-white/20 shadow-sm space-y-4">
+          <div className="p-5 sm:p-6 bg-white/95 dark:bg-[#202022]/95 rounded-[28px] border border-gray-200/90 dark:border-white/[0.12] shadow-sm space-y-4">
             <div className="flex items-center justify-between pb-2 border-b border-gray-200 dark:border-white/10">
               <div className="flex items-center gap-2">
-                <span className="px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider rounded-lg bg-rose-100 text-rose-800 dark:bg-rose-950/50 dark:text-rose-300 border border-rose-200 dark:border-rose-800/40">
+                <span className="px-2.5 py-1 text-[10px] font-mono font-bold uppercase tracking-[0.14em] rounded-lg bg-[#8c9276]/15 text-[#8c9276] dark:text-[#a3aa8c] border border-[#8c9276]/25">
                   05 • Colores
                 </span>
-                <h3 className="text-xs sm:text-sm font-bold text-gray-900 dark:text-gray-100">
+                <h3 className="font-display text-sm sm:text-base font-medium text-gray-900 dark:text-gray-100">
                   Colores & Acabados del Producto *
                 </h3>
               </div>
@@ -1679,13 +1766,13 @@ const handleConfirmDeleteNiche = async () => {
           </div>
 
           {/* BLOQUE DE TALLAS / MEDIDAS */}
-          <div className="p-5 bg-stone-50/90 dark:bg-[#18181b]/90 rounded-2xl border border-gray-300 dark:border-white/20 shadow-sm space-y-4">
+          <div className="p-5 sm:p-6 bg-white/95 dark:bg-[#202022]/95 rounded-[28px] border border-gray-200/90 dark:border-white/[0.12] shadow-sm space-y-4">
             <div className="flex items-center justify-between pb-2 border-b border-gray-200 dark:border-white/10">
               <div className="flex items-center gap-2">
-                <span className="px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider rounded-lg bg-indigo-100 text-indigo-800 dark:bg-indigo-950/50 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800/40">
+                <span className="px-2.5 py-1 text-[10px] font-mono font-bold uppercase tracking-[0.14em] rounded-lg bg-[#8c9276]/15 text-[#8c9276] dark:text-[#a3aa8c] border border-[#8c9276]/25">
                   Tallas & Medidas (Opcional)
                 </span>
-                <h3 className="text-xs sm:text-sm font-bold text-gray-900 dark:text-gray-100">
+                <h3 className="font-display text-sm sm:text-base font-medium text-gray-900 dark:text-gray-100">
                   Variantes de Talla o Tamaño
                 </h3>
               </div>
@@ -1698,7 +1785,7 @@ const handleConfirmDeleteNiche = async () => {
                     setHasSizes(next);
                     if (!next) setProdSizes("");
                   }}
-                  className={`w-10 h-5 rounded-full relative transition-colors ${hasSizes ? "bg-[#FF5E00]" : "bg-gray-300 dark:bg-gray-600"}`}
+                  className={`w-10 h-5 rounded-full relative transition-colors ${hasSizes ? "bg-[#8c9276]" : "bg-gray-300 dark:bg-gray-600"}`}
                 >
                   <span className={`absolute top-0.5 w-4 h-4 rounded-full bg-white transition-all ${hasSizes ? "left-5" : "left-1"}`} />
                 </button>
@@ -1714,7 +1801,7 @@ const handleConfirmDeleteNiche = async () => {
                   type="text" 
                   value={prodSizes} 
                   onChange={e => setProdSizes(e.target.value)} 
-                  className="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-white/15 text-sm outline-none focus:border-[#FF5E00] focus:ring-1 focus:ring-[#FF5E00] bg-white dark:bg-[#202023] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 shadow-sm" 
+                  className="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-white/15 text-sm outline-none focus:border-[#8c9276] focus:ring-2 focus:ring-[#8c9276]/20 bg-white dark:bg-[#202023] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 shadow-sm" 
                   placeholder="Ej: S, M, L, XL  o  Chico (15cm), Mediano (25cm), Grande (35cm)" 
                 />
               </div>
@@ -1731,10 +1818,10 @@ const handleConfirmDeleteNiche = async () => {
          {/* =============================================================== */}
          <div className={addProductStep === 3 ? "space-y-5 animate-fade-in" : "hidden"}>
           {/* BLOQUE 8: FICHA TÉCNICA Y FABRICACIÓN */}
-          <div className="p-5 bg-stone-50/90 dark:bg-[#18181b]/90 rounded-2xl border border-gray-300 dark:border-white/20 shadow-sm space-y-4">
+          <div className="p-5 sm:p-6 bg-white/95 dark:bg-[#202022]/95 rounded-[28px] border border-gray-200/90 dark:border-white/[0.12] shadow-sm space-y-4">
             <div className="flex items-center justify-between pb-2 border-b border-gray-200 dark:border-white/10">
               <div className="flex items-center gap-2">
-                <span className="px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider rounded-lg bg-stone-200 text-stone-800 dark:bg-stone-800 dark:text-stone-200 border border-stone-300 dark:border-stone-700">
+                <span className="px-2.5 py-1 text-[10px] font-mono font-bold uppercase tracking-[0.14em] rounded-lg bg-[#8c9276]/15 text-[#8c9276] dark:text-[#a3aa8c] border border-[#8c9276]/25">
                   08 • Ficha Técnica (Opcional)
                 </span>
                 <span className="text-xs sm:text-sm font-bold text-gray-900 dark:text-gray-100">Materiales y Dimensiones</span>
@@ -1747,7 +1834,7 @@ const handleConfirmDeleteNiche = async () => {
                 type="text" 
                 value={prodMaterials} 
                 onChange={e => setProdMaterials(e.target.value)} 
-                className="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-white/15 text-sm outline-none focus:border-[#FF5E00] focus:ring-1 focus:ring-[#FF5E00] bg-white dark:bg-[#202023] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 shadow-sm" 
+                className="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-white/15 text-sm outline-none focus:border-[#8c9276] focus:ring-2 focus:ring-[#8c9276]/20 bg-white dark:bg-[#202023] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 shadow-sm" 
                 placeholder="Ej: Cerámica gres cocida a 1250°C, herrajes de latón macizo..." 
               />
             </div>
@@ -1759,7 +1846,7 @@ const handleConfirmDeleteNiche = async () => {
                   type="text" 
                   value={prodDimensions} 
                   onChange={e => setProdDimensions(e.target.value)} 
-                  className="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-white/15 text-sm outline-none focus:border-[#FF5E00] focus:ring-1 focus:ring-[#FF5E00] bg-white dark:bg-[#202023] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 shadow-sm" 
+                  className="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-white/15 text-sm outline-none focus:border-[#8c9276] focus:ring-2 focus:ring-[#8c9276]/20 bg-white dark:bg-[#202023] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 shadow-sm" 
                   placeholder="Ej: 45 x 28 x 20 cm · Peso neto: 1.8 kg" 
                 />
               </div>
@@ -1770,7 +1857,7 @@ const handleConfirmDeleteNiche = async () => {
                   min="0"
                   value={prodStock} 
                   onChange={e => setProdStock(e.target.value)} 
-                  className="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-white/15 text-sm outline-none focus:border-[#FF5E00] focus:ring-1 focus:ring-[#FF5E00] bg-white dark:bg-[#202023] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 shadow-sm" 
+                  className="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-white/15 text-sm outline-none focus:border-[#8c9276] focus:ring-2 focus:ring-[#8c9276]/20 bg-white dark:bg-[#202023] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 shadow-sm" 
                   placeholder="20" 
                 />
               </div>
@@ -1778,10 +1865,10 @@ const handleConfirmDeleteNiche = async () => {
           </div>
 
           {/* BLOQUE 9: LOGÍSTICA, GARANTÍA Y POSTVENTA */}
-          <div className="p-5 bg-stone-50/90 dark:bg-[#18181b]/90 rounded-2xl border border-gray-300 dark:border-white/20 shadow-sm space-y-4">
+          <div className="p-5 sm:p-6 bg-white/95 dark:bg-[#202022]/95 rounded-[28px] border border-gray-200/90 dark:border-white/[0.12] shadow-sm space-y-4">
             <div className="flex items-center justify-between pb-2 border-b border-gray-200 dark:border-white/10">
               <div className="flex items-center gap-2">
-                <span className="px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider rounded-lg bg-teal-100 text-teal-800 dark:bg-teal-950/50 dark:text-teal-300 border border-teal-200 dark:border-teal-800/40">
+                <span className="px-2.5 py-1 text-[10px] font-mono font-bold uppercase tracking-[0.14em] rounded-lg bg-[#8c9276]/15 text-[#8c9276] dark:text-[#a3aa8c] border border-[#8c9276]/25">
                   09 • Envíos y Garantía (Opcional)
                 </span>
                 <span className="text-xs sm:text-sm font-bold text-gray-900 dark:text-gray-100">Logística, Garantía y Postventa</span>
@@ -1794,7 +1881,7 @@ const handleConfirmDeleteNiche = async () => {
                 type="text" 
                 value={prodShipping} 
                 onChange={e => setProdShipping(e.target.value)} 
-                className="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-white/15 text-sm outline-none focus:border-[#FF5E00] focus:ring-1 focus:ring-[#FF5E00] bg-white dark:bg-[#202023] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 shadow-sm" 
+                className="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-white/15 text-sm outline-none focus:border-[#8c9276] focus:ring-2 focus:ring-[#8c9276]/20 bg-white dark:bg-[#202023] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 shadow-sm" 
                 placeholder="Ej: Entrega estándar en 24-48h. Embalaje reforzado..." 
               />
             </div>
@@ -1806,7 +1893,7 @@ const handleConfirmDeleteNiche = async () => {
                   type="text" 
                   value={prodWarranty} 
                   onChange={e => setProdWarranty(e.target.value)} 
-                  className="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-white/15 text-sm outline-none focus:border-[#FF5E00] focus:ring-1 focus:ring-[#FF5E00] bg-white dark:bg-[#202023] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 shadow-sm" 
+                  className="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-white/15 text-sm outline-none focus:border-[#8c9276] focus:ring-2 focus:ring-[#8c9276]/20 bg-white dark:bg-[#202023] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 shadow-sm" 
                   placeholder="Ej: 2 años de garantía de fábrica" 
                 />
               </div>
@@ -1816,7 +1903,7 @@ const handleConfirmDeleteNiche = async () => {
                   type="text" 
                   value={prodPackageContents} 
                   onChange={e => setProdPackageContents(e.target.value)} 
-                  className="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-white/15 text-sm outline-none focus:border-[#FF5E00] focus:ring-1 focus:ring-[#FF5E00] bg-white dark:bg-[#202023] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 shadow-sm" 
+                  className="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-white/15 text-sm outline-none focus:border-[#8c9276] focus:ring-2 focus:ring-[#8c9276]/20 bg-white dark:bg-[#202023] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 shadow-sm" 
                   placeholder="Ej: 1x Producto, 1x Cable USB-C..." 
                 />
               </div>
@@ -1828,20 +1915,20 @@ const handleConfirmDeleteNiche = async () => {
                 type="text" 
                 value={prodCareInstructions} 
                 onChange={e => setProdCareInstructions(e.target.value)} 
-                className="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-white/15 text-sm outline-none focus:border-[#FF5E00] focus:ring-1 focus:ring-[#FF5E00] bg-white dark:bg-[#202023] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 shadow-sm" 
+                className="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-white/15 text-sm outline-none focus:border-[#8c9276] focus:ring-2 focus:ring-[#8c9276]/20 bg-white dark:bg-[#202023] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 shadow-sm" 
                 placeholder="Ej: Limpiar con paño de microfibra seco..." 
               />
             </div>
           </div>
 
           {/* BLOQUE 10: COMBOS & PAQUETES */}
-          <div className="p-5 bg-stone-50/90 dark:bg-[#18181b]/90 rounded-2xl border border-gray-300 dark:border-white/20 shadow-sm space-y-4">
+          <div className="p-5 sm:p-6 bg-white/95 dark:bg-[#202022]/95 rounded-[28px] border border-gray-200/90 dark:border-white/[0.12] shadow-sm space-y-4">
             <div className="flex items-center justify-between pb-2 border-b border-gray-200 dark:border-white/10">
               <div className="flex items-center gap-2">
-                <span className="px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider rounded-lg bg-indigo-100 text-indigo-800 dark:bg-indigo-950/50 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800/40">
+                <span className="px-2.5 py-1 text-[10px] font-mono font-bold uppercase tracking-[0.14em] rounded-lg bg-[#8c9276]/15 text-[#8c9276] dark:text-[#a3aa8c] border border-[#8c9276]/25">
                   10 • Combos (Opcional)
                 </span>
-                <h3 className="text-xs sm:text-sm font-bold text-gray-900 dark:text-gray-100">
+                <h3 className="font-display text-sm sm:text-base font-medium text-gray-900 dark:text-gray-100">
                   Venta Cruzada con Descuento
                 </h3>
               </div>
@@ -1890,7 +1977,7 @@ const handleConfirmDeleteNiche = async () => {
            <button 
              type="submit" 
              disabled={isSubmittingProd} 
-             className="px-6 py-2.5 text-xs sm:text-sm font-bold bg-[#FF5E00] hover:bg-[#e05300] active:scale-[0.98] text-white rounded-xl shadow-lg shadow-[#FF5E00]/25 hover:shadow-[#FF5E00]/40 transition-all disabled:opacity-50 flex items-center gap-2 cursor-pointer"
+             className="px-6 py-2.5 text-xs sm:text-sm font-bold bg-gray-900 hover:bg-black dark:bg-gray-100 dark:hover:bg-white active:scale-[0.98] text-white dark:text-gray-900 rounded-2xl shadow-md transition-all disabled:opacity-50 flex items-center gap-2 cursor-pointer"
            >
              {isSubmittingProd ? (
                <>
@@ -1947,17 +2034,25 @@ const handleConfirmDeleteNiche = async () => {
     onOpenChange={setShowEditProductModal}
     className="max-w-6xl"
   >
-  <div className="bg-white dark:bg-[#202022] rounded-[30px] w-full shadow-2xl dark:shadow-none overflow-hidden flex flex-col max-h-[92vh]">
+  <div className="bg-[#f5f5f3] dark:bg-[#161618] rounded-[32px] w-full shadow-2xl dark:shadow-none overflow-hidden flex flex-col max-h-[92vh] border border-gray-200/90 dark:border-white/[0.12]">
     {/* HEADER + STEP SEPARATOR DOCK */}
-    <div className="px-6 pt-5 pb-4 border-b border-gray-100 dark:border-white/5 bg-gray-50/70 dark:bg-[#2a2a2c]/70 space-y-3.5 shrink-0">
+    <div className="px-6 pt-5 pb-4 border-b border-gray-200/80 dark:border-white/[0.08] bg-white/95 dark:bg-[#202022]/95 backdrop-blur-xl space-y-3.5 shrink-0">
       <div className="flex items-center justify-between gap-4">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-2xl bg-blue-50 dark:bg-blue-950/50 text-blue-600 dark:text-blue-400 flex items-center justify-center shadow-sm dark:shadow-none">
+          <div className="w-10 h-10 rounded-2xl bg-[#8c9276]/15 border border-[#8c9276]/30 text-[#8c9276] dark:text-[#a3aa8c] flex items-center justify-center shadow-sm dark:shadow-none">
             <Pencil className="w-5 h-5" />
           </div>
           <div>
-            <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100">Editar Producto</h2>
-            <p className="text-xs text-gray-500 dark:text-gray-400">Edita área por área y observa el bosquejo en vivo a la derecha antes de guardar.</p>
+            <div className="flex items-center gap-2 mb-0.5">
+              <span className="text-[9px] font-mono font-bold uppercase tracking-[0.18em] px-2 py-0.5 rounded-md bg-[#8c9276]/15 text-[#8c9276] dark:text-[#a3aa8c] border border-[#8c9276]/25">
+                STUDIO // EDITOR DE FICHA COMERCIAL
+              </span>
+              <span className="hidden sm:inline-flex items-center gap-1 text-[9px] font-mono text-gray-500 dark:text-gray-400">
+                <span className="w-1.5 h-1.5 rounded-full bg-[#8c9276] animate-pulse" />
+                AUDITORÍA ACTIVA
+              </span>
+            </div>
+            <h2 className="font-display text-xl font-medium text-gray-900 dark:text-gray-100">Editar Producto del Catálogo</h2>
           </div>
         </div>
         <button 
@@ -1989,6 +2084,85 @@ const handleConfirmDeleteNiche = async () => {
         </div>
       )}
 
+      {/* 4-KPI EXECUTIVE TELEMETRY STRIP (crear-web-micro-saas Above-The-Fold) */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-5">
+        <div className="p-3.5 rounded-2xl bg-white/95 dark:bg-[#202022]/95 border border-gray-200/90 dark:border-white/[0.12] shadow-sm flex flex-col justify-between">
+          <div className="flex items-center justify-between gap-2">
+            <span className="text-[9px] font-mono font-bold uppercase tracking-[0.14em] text-gray-400 dark:text-gray-500">
+              01 // ARQUITECTURA
+            </span>
+            <span className="text-[9px] font-mono font-bold px-2 py-0.5 rounded-md bg-[#8c9276]/15 text-[#8c9276] dark:text-[#a3aa8c] border border-[#8c9276]/25">
+              {editLayoutType === "landing" ? "LANDING" : "ESTÁNDAR"}
+            </span>
+          </div>
+          <div className="mt-2">
+            <p className="font-display text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
+              {editLayoutType === "landing" ? "Landing Editorial" : "Ficha de Catálogo"}
+            </p>
+            <p className="text-[10px] font-mono text-gray-500 dark:text-gray-400 mt-0.5">
+              Galería: {editGalleryStyle === "isometric_3d" ? "3D Isométrica" : "Tradicional"}
+            </p>
+          </div>
+        </div>
+
+        <div className="p-3.5 rounded-2xl bg-white/95 dark:bg-[#202022]/95 border border-gray-200/90 dark:border-white/[0.12] shadow-sm flex flex-col justify-between">
+          <div className="flex items-center justify-between gap-2">
+            <span className="text-[9px] font-mono font-bold uppercase tracking-[0.14em] text-gray-400 dark:text-gray-500">
+              02 // PRECIO & OFERTA
+            </span>
+            <span className="text-[9px] font-mono font-bold px-2 py-0.5 rounded-md bg-gray-100 dark:bg-white/[0.06] text-gray-700 dark:text-gray-300">
+              {editHasDiscount && editCalculatedDiscount ? editCalculatedDiscount : "LISTA"}
+            </span>
+          </div>
+          <div className="mt-2">
+            <p className="font-mono text-sm font-bold text-gray-900 dark:text-gray-100">
+              ${(parseFloat(editPrice) || 0).toFixed(2)} <span className="text-[10px] font-normal text-gray-400">USD</span>
+            </p>
+            <p className="text-[10px] font-mono text-gray-500 dark:text-gray-400 mt-0.5">
+              {editCombos.length > 0 ? `${editCombos.length} combos configurados` : "Sin combos cruzados"}
+            </p>
+          </div>
+        </div>
+
+        <div className="p-3.5 rounded-2xl bg-white/95 dark:bg-[#202022]/95 border border-gray-200/90 dark:border-white/[0.12] shadow-sm flex flex-col justify-between">
+          <div className="flex items-center justify-between gap-2">
+            <span className="text-[9px] font-mono font-bold uppercase tracking-[0.14em] text-gray-400 dark:text-gray-500">
+              03 // VARIANTES & STOCK
+            </span>
+            <span className="text-[9px] font-mono font-bold px-2 py-0.5 rounded-md bg-[#8c9276]/15 text-[#8c9276] dark:text-[#a3aa8c]">
+              {editStock || "20"} UDS
+            </span>
+          </div>
+          <div className="mt-2">
+            <p className="font-mono text-sm font-bold text-gray-900 dark:text-gray-100">
+              {editColorVariants.length} {editColorVariants.length === 1 ? "Acabado" : "Acabados"}
+            </p>
+            <p className="text-[10px] font-mono text-gray-500 dark:text-gray-400 mt-0.5">
+              {editHasSizes && editSizes.trim() ? `Medidas: ${editSizes.split(",").filter(Boolean).length}` : "Medida estándar única"}
+            </p>
+          </div>
+        </div>
+
+        <div className="p-3.5 rounded-2xl bg-white/95 dark:bg-[#202022]/95 border border-gray-200/90 dark:border-white/[0.12] shadow-sm flex flex-col justify-between">
+          <div className="flex items-center justify-between gap-2">
+            <span className="text-[9px] font-mono font-bold uppercase tracking-[0.14em] text-gray-400 dark:text-gray-500">
+              04 // AUDITORÍA
+            </span>
+            <span className="text-[9px] font-mono font-bold px-2 py-0.5 rounded-md bg-[#8c9276]/15 text-[#8c9276] dark:text-[#a3aa8c] border border-[#8c9276]/25">
+              {editTitle.trim() && editPrice.trim() && editDescription.trim() && editImageUrl.trim() ? "LISTO" : "EN CURSO"}
+            </span>
+          </div>
+          <div className="mt-2">
+            <p className="font-display text-sm font-medium text-gray-900 dark:text-gray-100">
+              {editCategory || "Sin nicho asignado"}
+            </p>
+            <p className="text-[10px] font-mono text-gray-500 dark:text-gray-400 mt-0.5">
+              Paso activo: 0{editProductStep + 1} de 04
+            </p>
+          </div>
+        </div>
+      </div>
+
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
         {/* LEFT COLUMN (7 COLS): ACTIVE STEP AREA FORM */}
         <div className="lg:col-span-7 space-y-5">
@@ -1997,13 +2171,13 @@ const handleConfirmDeleteNiche = async () => {
           {/* PASO 0: 1. FORMATO DE PRESENTACIÓN                                */}
           {/* ================================================================= */}
           <div className={editProductStep === 0 ? "space-y-5 animate-fade-in" : "hidden"}>
-            <div className="p-5 bg-stone-50/95 dark:bg-[#18181b]/95 rounded-2xl border-2 border-[#FF5E00]/30 dark:border-[#FF5E00]/40 shadow-sm space-y-4">
+            <div className="p-5 sm:p-6 bg-white/95 dark:bg-[#202022]/95 rounded-[28px] border border-gray-200/90 dark:border-white/[0.12] shadow-sm space-y-4">
               <div className="flex items-center justify-between pb-3 border-b border-stone-200 dark:border-white/10">
                 <div className="flex items-center gap-2.5">
-                  <span className="px-2.5 py-1 text-[10px] font-black uppercase tracking-wider rounded-lg bg-[#FF5E00]/10 text-[#FF5E00] border border-[#FF5E00]/25">
+                  <span className="px-2.5 py-1 text-[10px] font-mono font-bold uppercase tracking-[0.14em] rounded-lg bg-[#8c9276]/15 text-[#8c9276] dark:text-[#a3aa8c] border border-[#8c9276]/25">
                     Área 1 • Formato Visual
                   </span>
-                  <h3 className="text-xs sm:text-sm font-bold text-gray-900 dark:text-gray-100">
+                  <h3 className="font-display text-sm sm:text-base font-medium text-gray-900 dark:text-gray-100">
                     Formato de Presentación *
                   </h3>
                 </div>
@@ -2038,13 +2212,13 @@ const handleConfirmDeleteNiche = async () => {
           {/* ================================================================= */}
           <div className={editProductStep === 1 ? "space-y-5 animate-fade-in" : "hidden"}>
             {/* IDENTIFICACIÓN BÁSICA */}
-            <div className="p-5 bg-stone-50/90 dark:bg-[#18181b]/90 rounded-2xl border border-gray-300 dark:border-white/20 shadow-sm space-y-4">
+            <div className="p-5 sm:p-6 bg-white/95 dark:bg-[#202022]/95 rounded-[28px] border border-gray-200/90 dark:border-white/[0.12] shadow-sm space-y-4">
               <div className="flex items-center justify-between pb-2 border-b border-gray-200 dark:border-white/10">
                 <div className="flex items-center gap-2">
-                  <span className="px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider rounded-lg bg-blue-100 text-blue-800 dark:bg-blue-950/50 dark:text-blue-300 border border-blue-200 dark:border-blue-800/40">
+                  <span className="px-2.5 py-1 text-[10px] font-mono font-bold uppercase tracking-[0.14em] rounded-lg bg-[#8c9276]/15 text-[#8c9276] dark:text-[#a3aa8c] border border-[#8c9276]/25">
                     01 • General
                   </span>
-                  <h3 className="text-xs sm:text-sm font-bold text-gray-900 dark:text-gray-100">
+                  <h3 className="font-display text-sm sm:text-base font-medium text-gray-900 dark:text-gray-100">
                     Identificación del Producto
                   </h3>
                 </div>
@@ -2056,7 +2230,7 @@ const handleConfirmDeleteNiche = async () => {
                     type="text" 
                     value={editTitle} 
                     onChange={e => setEditTitle(e.target.value)} 
-                    className="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-white/15 text-sm outline-none focus:border-[#FF5E00] focus:ring-1 focus:ring-[#FF5E00] bg-white dark:bg-[#202023] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 shadow-sm" 
+                    className="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-white/15 text-sm outline-none focus:border-[#8c9276] focus:ring-2 focus:ring-[#8c9276]/20 bg-white dark:bg-[#202023] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 shadow-sm" 
                     placeholder="Ej: Lámpara de Mesa" 
                   />
                 </div>
@@ -2066,7 +2240,7 @@ const handleConfirmDeleteNiche = async () => {
                     type="text" 
                     value={editHighlight} 
                     onChange={e => setEditHighlight(e.target.value)} 
-                    className="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-white/15 text-sm outline-none focus:border-[#FF5E00] focus:ring-1 focus:ring-[#FF5E00] bg-white dark:bg-[#202023] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 shadow-sm" 
+                    className="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-white/15 text-sm outline-none focus:border-[#8c9276] focus:ring-2 focus:ring-[#8c9276]/20 bg-white dark:bg-[#202023] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 shadow-sm" 
                     placeholder="Ej: Nova LED, Artesanal" 
                   />
                 </div>
@@ -2074,13 +2248,13 @@ const handleConfirmDeleteNiche = async () => {
             </div>
 
             {/* CATEGORÍA & BADGE */}
-            <div className="p-5 bg-stone-50/90 dark:bg-[#18181b]/90 rounded-2xl border border-gray-300 dark:border-white/20 shadow-sm space-y-4">
+            <div className="p-5 sm:p-6 bg-white/95 dark:bg-[#202022]/95 rounded-[28px] border border-gray-200/90 dark:border-white/[0.12] shadow-sm space-y-4">
               <div className="flex items-center justify-between pb-2 border-b border-gray-200 dark:border-white/10">
                 <div className="flex items-center gap-2">
-                  <span className="px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider rounded-lg bg-amber-100 text-amber-800 dark:bg-amber-950/50 dark:text-amber-300 border border-amber-200 dark:border-amber-800/40">
+                  <span className="px-2.5 py-1 text-[10px] font-mono font-bold uppercase tracking-[0.14em] rounded-lg bg-[#8c9276]/15 text-[#8c9276] dark:text-[#a3aa8c] border border-[#8c9276]/25">
                     02 • Categoría
                   </span>
-                  <h3 className="text-xs sm:text-sm font-bold text-gray-900 dark:text-gray-100">
+                  <h3 className="font-display text-sm sm:text-base font-medium text-gray-900 dark:text-gray-100">
                     Nicho de Mercado y Badge
                   </h3>
                 </div>
@@ -2092,7 +2266,7 @@ const handleConfirmDeleteNiche = async () => {
                     <button 
                       type="button" 
                       onClick={() => { setShowEditProductModal(false); setActiveTab("niches"); }}
-                      className="text-[10px] font-semibold text-[#FF5E00] hover:underline cursor-pointer"
+                      className="text-[10px] font-semibold text-[#8c9276] dark:text-[#a3aa8c] hover:underline cursor-pointer"
                       title="Ir a gestionar nichos y categorías"
                     >
                       + Gestionar nichos y categorías
@@ -2111,7 +2285,7 @@ const handleConfirmDeleteNiche = async () => {
                     <button 
                       type="button" 
                       onClick={() => { setShowEditProductModal(false); setActiveTab("niches"); }}
-                      className="text-[10px] font-semibold text-[#FF5E00] hover:underline cursor-pointer"
+                      className="text-[10px] font-semibold text-[#8c9276] dark:text-[#a3aa8c] hover:underline cursor-pointer"
                     >
                       + Gestionar badges
                     </button>
@@ -2130,10 +2304,10 @@ const handleConfirmDeleteNiche = async () => {
             </div>
 
             {/* PRECIOS Y REBAJAS */}
-            <div className="p-5 bg-stone-50/90 dark:bg-[#18181b]/90 rounded-2xl border border-gray-300 dark:border-white/20 shadow-sm space-y-4">
+            <div className="p-5 sm:p-6 bg-white/95 dark:bg-[#202022]/95 rounded-[28px] border border-gray-200/90 dark:border-white/[0.12] shadow-sm space-y-4">
               <div className="flex items-center justify-between pb-2 border-b border-gray-200 dark:border-white/10">
                 <div className="flex items-center gap-2">
-                  <span className="px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider rounded-lg bg-emerald-100 text-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/40">
+                  <span className="px-2.5 py-1 text-[10px] font-mono font-bold uppercase tracking-[0.14em] rounded-lg bg-[#8c9276]/15 text-[#8c9276] dark:text-[#a3aa8c] border border-[#8c9276]/25">
                     03 • Precios
                   </span>
                   <span className="text-xs sm:text-sm font-bold text-gray-900 dark:text-gray-100">Precios y Rebajas</span>
@@ -2147,7 +2321,7 @@ const handleConfirmDeleteNiche = async () => {
                       setEditHasDiscount(next);
                       handleEditPriceChange(editPrice, editOldPrice, next);
                     }}
-                    className={`w-10 h-5 rounded-full relative transition-colors ${editHasDiscount ? "bg-[#FF5E00]" : "bg-gray-300 dark:bg-gray-600"}`}
+                    className={`w-10 h-5 rounded-full relative transition-colors ${editHasDiscount ? "bg-[#8c9276]" : "bg-gray-300 dark:bg-gray-600"}`}
                   >
                     <span className={`absolute top-0.5 w-4 h-4 rounded-full bg-white transition-all ${editHasDiscount ? "left-5" : "left-1"}`} />
                   </button>
@@ -2157,17 +2331,17 @@ const handleConfirmDeleteNiche = async () => {
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div>
                   <label className="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1">{editHasDiscount ? "Precio con Descuento ($) *" : "Precio Regular ($) *"}</label>
-                  <input type="number" step="0.01" value={editPrice} onChange={e => handleEditPriceChange(e.target.value, editOldPrice, editHasDiscount)} className="w-full px-3.5 py-2.5 rounded-xl border border-gray-300 dark:border-white/15 text-sm outline-none focus:border-[#FF5E00] focus:ring-1 focus:ring-[#FF5E00] bg-white dark:bg-[#202023] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 shadow-sm" placeholder="89.90" />
+                  <input type="number" step="0.01" value={editPrice} onChange={e => handleEditPriceChange(e.target.value, editOldPrice, editHasDiscount)} className="w-full px-3.5 py-2.5 rounded-xl border border-gray-300 dark:border-white/15 text-sm outline-none focus:border-[#8c9276] focus:ring-2 focus:ring-[#8c9276]/20 bg-white dark:bg-[#202023] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 shadow-sm" placeholder="89.90" />
                 </div>
                 {editHasDiscount && (
                   <>
                     <div>
                       <label className="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1">Precio Original Antes ($)</label>
-                      <input type="number" step="0.01" value={editOldPrice} onChange={e => handleEditPriceChange(editPrice, e.target.value, editHasDiscount)} className="w-full px-3.5 py-2.5 rounded-xl border border-gray-300 dark:border-white/15 text-sm outline-none focus:border-[#FF5E00] focus:ring-1 focus:ring-[#FF5E00] bg-white dark:bg-[#202023] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 shadow-sm" placeholder="119.90" />
+                      <input type="number" step="0.01" value={editOldPrice} onChange={e => handleEditPriceChange(editPrice, e.target.value, editHasDiscount)} className="w-full px-3.5 py-2.5 rounded-xl border border-gray-300 dark:border-white/15 text-sm outline-none focus:border-[#8c9276] focus:ring-2 focus:ring-[#8c9276]/20 bg-white dark:bg-[#202023] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 shadow-sm" placeholder="119.90" />
                     </div>
                     <div>
                       <label className="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1">% Descuento Calculado</label>
-                      <input type="text" readOnly value={editCalculatedDiscount} className="w-full px-3.5 py-2.5 rounded-xl border border-gray-300 dark:border-white/15 text-sm font-bold outline-none bg-gray-100 dark:bg-[#28282b] text-[#FF5E00]" placeholder="-25%" />
+                      <input type="text" readOnly value={editCalculatedDiscount} className="w-full px-3.5 py-2.5 rounded-xl border border-gray-300 dark:border-white/15 text-sm font-bold outline-none bg-gray-100 dark:bg-[#28282b] text-[#8c9276] dark:text-[#a3aa8c]" placeholder="-25%" />
                     </div>
                   </>
                 )}
@@ -2175,13 +2349,13 @@ const handleConfirmDeleteNiche = async () => {
             </div>
 
             {/* DESCRIPCIÓN COMPLETA & CARACTERÍSTICAS */}
-            <div className="p-5 bg-stone-50/90 dark:bg-[#18181b]/90 rounded-2xl border border-gray-300 dark:border-white/20 shadow-sm space-y-4">
+            <div className="p-5 sm:p-6 bg-white/95 dark:bg-[#202022]/95 rounded-[28px] border border-gray-200/90 dark:border-white/[0.12] shadow-sm space-y-4">
               <div className="flex items-center justify-between pb-2 border-b border-gray-200 dark:border-white/10">
                 <div className="flex items-center gap-2">
-                  <span className="px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider rounded-lg bg-purple-100 text-purple-800 dark:bg-purple-950/50 dark:text-purple-300 border border-purple-200 dark:border-purple-800/40">
+                  <span className="px-2.5 py-1 text-[10px] font-mono font-bold uppercase tracking-[0.14em] rounded-lg bg-[#8c9276]/15 text-[#8c9276] dark:text-[#a3aa8c] border border-[#8c9276]/25">
                     04 • Descripción
                   </span>
-                  <h3 className="text-xs sm:text-sm font-bold text-gray-900 dark:text-gray-100">
+                  <h3 className="font-display text-sm sm:text-base font-medium text-gray-900 dark:text-gray-100">
                     Narrativa y Características
                   </h3>
                 </div>
@@ -2192,7 +2366,7 @@ const handleConfirmDeleteNiche = async () => {
                   rows={3} 
                   value={editDescription} 
                   onChange={e => setEditDescription(e.target.value)} 
-                  className="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-white/15 text-sm outline-none focus:border-[#FF5E00] focus:ring-1 focus:ring-[#FF5E00] resize-none bg-white dark:bg-[#202023] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 shadow-sm" 
+                  className="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-white/15 text-sm outline-none focus:border-[#8c9276] focus:ring-2 focus:ring-[#8c9276]/20 resize-none bg-white dark:bg-[#202023] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 shadow-sm" 
                   placeholder="Describe los detalles de este producto..." 
                 />
               </div>
@@ -2203,7 +2377,7 @@ const handleConfirmDeleteNiche = async () => {
                   rows={3} 
                   value={editFeatures} 
                   onChange={e => setEditFeatures(e.target.value)} 
-                  className="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-white/15 text-sm outline-none focus:border-[#FF5E00] focus:ring-1 focus:ring-[#FF5E00] resize-none bg-white dark:bg-[#202023] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 shadow-sm" 
+                  className="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-white/15 text-sm outline-none focus:border-[#8c9276] focus:ring-2 focus:ring-[#8c9276]/20 resize-none bg-white dark:bg-[#202023] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 shadow-sm" 
                   placeholder="Característica 1, Característica 2..." 
                 />
               </div>
@@ -2215,15 +2389,15 @@ const handleConfirmDeleteNiche = async () => {
           {/* ================================================================= */}
           <div className={editProductStep === 2 ? "space-y-5 animate-fade-in" : "hidden"}>
             {/* FOTOGRAFÍAS DEL PRODUCTO */}
-            <div className="p-5 bg-stone-50/90 dark:bg-[#18181b]/90 rounded-2xl border border-gray-300 dark:border-white/20 shadow-sm space-y-4">
+            <div className="p-5 sm:p-6 bg-white/95 dark:bg-[#202022]/95 rounded-[28px] border border-gray-200/90 dark:border-white/[0.12] shadow-sm space-y-4">
               <div className="flex items-center justify-between pb-2 border-b border-gray-200 dark:border-white/10">
                 <div className="flex items-center gap-2">
-                  <span className="px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider rounded-lg bg-cyan-100 text-cyan-800 dark:bg-cyan-950/50 dark:text-cyan-300 border border-cyan-200 dark:border-cyan-800/40">
+                  <span className="px-2.5 py-1 text-[10px] font-mono font-bold uppercase tracking-[0.14em] rounded-lg bg-[#8c9276]/15 text-[#8c9276] dark:text-[#a3aa8c] border border-[#8c9276]/25">
                     01 • Fotos & Experiencia
                   </span>
                   <label className="block text-xs sm:text-sm font-bold text-gray-900 dark:text-gray-100">Galería y Portada</label>
                 </div>
-                <span className="text-[11px] text-[#FF5E00] font-semibold">Vista previa en vivo</span>
+                <span className="text-[11px] text-[#8c9276] dark:text-[#a3aa8c] font-semibold">Vista previa en vivo</span>
               </div>
 
               <div className="p-3 bg-blue-50/80 border border-blue-200 rounded-xl text-xs text-blue-900 leading-relaxed">
@@ -2251,7 +2425,7 @@ const handleConfirmDeleteNiche = async () => {
                     type="text" 
                     value={editImageUrl} 
                     onChange={e => setEditImageUrl(e.target.value)} 
-                    className="w-full px-4 py-2 rounded-xl border border-gray-300 dark:border-white/15 text-sm outline-none focus:border-[#FF5E00] focus:ring-1 focus:ring-[#FF5E00] bg-white dark:bg-[#202023] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 shadow-sm" 
+                    className="w-full px-4 py-2 rounded-xl border border-gray-300 dark:border-white/15 text-sm outline-none focus:border-[#8c9276] focus:ring-2 focus:ring-[#8c9276]/20 bg-white dark:bg-[#202023] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 shadow-sm" 
                     placeholder="https://..." 
                   />
                 </div>
@@ -2263,7 +2437,7 @@ const handleConfirmDeleteNiche = async () => {
                   rows={2} 
                   value={editExtraImages} 
                   onChange={e => setEditExtraImages(e.target.value)} 
-                  className="w-full px-4 py-2 rounded-xl border border-gray-300 dark:border-white/15 text-sm outline-none focus:border-[#FF5E00] focus:ring-1 focus:ring-[#FF5E00] resize-none bg-white dark:bg-[#202023] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 shadow-sm" 
+                  className="w-full px-4 py-2 rounded-xl border border-gray-300 dark:border-white/15 text-sm outline-none focus:border-[#8c9276] focus:ring-2 focus:ring-[#8c9276]/20 resize-none bg-white dark:bg-[#202023] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 shadow-sm" 
                   placeholder="https://imagen2.jpg, https://imagen3.jpg..." 
                 />
               </div>
@@ -2304,13 +2478,13 @@ const handleConfirmDeleteNiche = async () => {
             </div>
 
             {/* COLORES & ACABADOS DEL PRODUCTO */}
-            <div className="p-5 bg-stone-50/90 dark:bg-[#18181b]/90 rounded-2xl border border-gray-300 dark:border-white/20 shadow-sm space-y-4">
+            <div className="p-5 sm:p-6 bg-white/95 dark:bg-[#202022]/95 rounded-[28px] border border-gray-200/90 dark:border-white/[0.12] shadow-sm space-y-4">
               <div className="flex items-center justify-between pb-2 border-b border-gray-200 dark:border-white/10">
                 <div className="flex items-center gap-2">
-                  <span className="px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider rounded-lg bg-rose-100 text-rose-800 dark:bg-rose-950/50 dark:text-rose-300 border border-rose-200 dark:border-rose-800/40">
+                  <span className="px-2.5 py-1 text-[10px] font-mono font-bold uppercase tracking-[0.14em] rounded-lg bg-[#8c9276]/15 text-[#8c9276] dark:text-[#a3aa8c] border border-[#8c9276]/25">
                     02 • Colores
                   </span>
-                  <h3 className="text-xs sm:text-sm font-bold text-gray-900 dark:text-gray-100">
+                  <h3 className="font-display text-sm sm:text-base font-medium text-gray-900 dark:text-gray-100">
                     Colores & Acabados del Producto *
                   </h3>
                 </div>
@@ -2322,13 +2496,13 @@ const handleConfirmDeleteNiche = async () => {
             </div>
 
             {/* BLOQUE DE TALLAS / MEDIDAS */}
-            <div className="p-5 bg-stone-50/90 dark:bg-[#18181b]/90 rounded-2xl border border-gray-300 dark:border-white/20 shadow-sm space-y-4">
+            <div className="p-5 sm:p-6 bg-white/95 dark:bg-[#202022]/95 rounded-[28px] border border-gray-200/90 dark:border-white/[0.12] shadow-sm space-y-4">
               <div className="flex items-center justify-between pb-2 border-b border-gray-200 dark:border-white/10">
                 <div className="flex items-center gap-2">
-                  <span className="px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider rounded-lg bg-indigo-100 text-indigo-800 dark:bg-indigo-950/50 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800/40">
+                  <span className="px-2.5 py-1 text-[10px] font-mono font-bold uppercase tracking-[0.14em] rounded-lg bg-[#8c9276]/15 text-[#8c9276] dark:text-[#a3aa8c] border border-[#8c9276]/25">
                     03 • Tallas & Medidas (Opcional)
                   </span>
-                  <h3 className="text-xs sm:text-sm font-bold text-gray-900 dark:text-gray-100">
+                  <h3 className="font-display text-sm sm:text-base font-medium text-gray-900 dark:text-gray-100">
                     Variantes de Talla o Tamaño
                   </h3>
                 </div>
@@ -2341,7 +2515,7 @@ const handleConfirmDeleteNiche = async () => {
                       setEditHasSizes(next);
                       if (!next) setEditSizes("");
                     }}
-                    className={`w-10 h-5 rounded-full relative transition-colors ${editHasSizes ? "bg-[#FF5E00]" : "bg-gray-300 dark:bg-gray-600"}`}
+                    className={`w-10 h-5 rounded-full relative transition-colors ${editHasSizes ? "bg-[#8c9276]" : "bg-gray-300 dark:bg-gray-600"}`}
                   >
                     <span className={`absolute top-0.5 w-4 h-4 rounded-full bg-white transition-all ${editHasSizes ? "left-5" : "left-1"}`} />
                   </button>
@@ -2357,7 +2531,7 @@ const handleConfirmDeleteNiche = async () => {
                     type="text" 
                     value={editSizes} 
                     onChange={e => setEditSizes(e.target.value)} 
-                    className="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-white/15 text-sm outline-none focus:border-[#FF5E00] focus:ring-1 focus:ring-[#FF5E00] bg-white dark:bg-[#202023] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 shadow-sm" 
+                    className="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-white/15 text-sm outline-none focus:border-[#8c9276] focus:ring-2 focus:ring-[#8c9276]/20 bg-white dark:bg-[#202023] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 shadow-sm" 
                     placeholder="Ej: S, M, L, XL  o  Chico (15cm), Mediano (25cm), Grande (35cm)" 
                   />
                 </div>
@@ -2374,10 +2548,10 @@ const handleConfirmDeleteNiche = async () => {
           {/* ================================================================= */}
           <div className={editProductStep === 3 ? "space-y-5 animate-fade-in" : "hidden"}>
             {/* FICHA TÉCNICA Y FABRICACIÓN */}
-            <div className="p-5 bg-stone-50/90 dark:bg-[#18181b]/90 rounded-2xl border border-gray-300 dark:border-white/20 shadow-sm space-y-4">
+            <div className="p-5 sm:p-6 bg-white/95 dark:bg-[#202022]/95 rounded-[28px] border border-gray-200/90 dark:border-white/[0.12] shadow-sm space-y-4">
               <div className="flex items-center justify-between pb-2 border-b border-gray-200 dark:border-white/10">
                 <div className="flex items-center gap-2">
-                  <span className="px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider rounded-lg bg-stone-200 text-stone-800 dark:bg-stone-800 dark:text-stone-200 border border-stone-300 dark:border-stone-700">
+                  <span className="px-2.5 py-1 text-[10px] font-mono font-bold uppercase tracking-[0.14em] rounded-lg bg-[#8c9276]/15 text-[#8c9276] dark:text-[#a3aa8c] border border-[#8c9276]/25">
                     01 • Ficha Técnica (Opcional)
                   </span>
                   <span className="text-xs sm:text-sm font-bold text-gray-900 dark:text-gray-100">Materiales y Dimensiones</span>
@@ -2390,7 +2564,7 @@ const handleConfirmDeleteNiche = async () => {
                   type="text" 
                   value={editMaterials} 
                   onChange={e => setEditMaterials(e.target.value)} 
-                  className="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-white/15 text-sm outline-none focus:border-[#FF5E00] focus:ring-1 focus:ring-[#FF5E00] bg-white dark:bg-[#202023] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 shadow-sm" 
+                  className="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-white/15 text-sm outline-none focus:border-[#8c9276] focus:ring-2 focus:ring-[#8c9276]/20 bg-white dark:bg-[#202023] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 shadow-sm" 
                   placeholder="Ej: Cerámica gres, herrajes de latón macizo..." 
                 />
               </div>
@@ -2402,7 +2576,7 @@ const handleConfirmDeleteNiche = async () => {
                     type="text" 
                     value={editDimensions} 
                     onChange={e => setEditDimensions(e.target.value)} 
-                    className="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-white/15 text-sm outline-none focus:border-[#FF5E00] focus:ring-1 focus:ring-[#FF5E00] bg-white dark:bg-[#202023] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 shadow-sm" 
+                    className="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-white/15 text-sm outline-none focus:border-[#8c9276] focus:ring-2 focus:ring-[#8c9276]/20 bg-white dark:bg-[#202023] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 shadow-sm" 
                     placeholder="Ej: 45 x 28 x 20 cm · 1.8 kg" 
                   />
                 </div>
@@ -2413,7 +2587,7 @@ const handleConfirmDeleteNiche = async () => {
                     min="0"
                     value={editStock} 
                     onChange={e => setEditStock(e.target.value)} 
-                    className="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-white/15 text-sm outline-none focus:border-[#FF5E00] focus:ring-1 focus:ring-[#FF5E00] bg-white dark:bg-[#202023] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 shadow-sm" 
+                    className="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-white/15 text-sm outline-none focus:border-[#8c9276] focus:ring-2 focus:ring-[#8c9276]/20 bg-white dark:bg-[#202023] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 shadow-sm" 
                     placeholder="20" 
                   />
                 </div>
@@ -2421,10 +2595,10 @@ const handleConfirmDeleteNiche = async () => {
             </div>
 
             {/* LOGÍSTICA, GARANTÍA Y POSTVENTA */}
-            <div className="p-5 bg-stone-50/90 dark:bg-[#18181b]/90 rounded-2xl border border-gray-300 dark:border-white/20 shadow-sm space-y-4">
+            <div className="p-5 sm:p-6 bg-white/95 dark:bg-[#202022]/95 rounded-[28px] border border-gray-200/90 dark:border-white/[0.12] shadow-sm space-y-4">
               <div className="flex items-center justify-between pb-2 border-b border-gray-200 dark:border-white/10">
                 <div className="flex items-center gap-2">
-                  <span className="px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider rounded-lg bg-teal-100 text-teal-800 dark:bg-teal-950/50 dark:text-teal-300 border border-teal-200 dark:border-teal-800/40">
+                  <span className="px-2.5 py-1 text-[10px] font-mono font-bold uppercase tracking-[0.14em] rounded-lg bg-[#8c9276]/15 text-[#8c9276] dark:text-[#a3aa8c] border border-[#8c9276]/25">
                     02 • Envíos y Garantía (Opcional)
                   </span>
                   <span className="text-xs sm:text-sm font-bold text-gray-900 dark:text-gray-100">Logística, Garantía y Postventa</span>
@@ -2438,7 +2612,7 @@ const handleConfirmDeleteNiche = async () => {
                   type="text" 
                   value={editShipping} 
                   onChange={e => setEditShipping(e.target.value)} 
-                  className="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-white/15 text-sm outline-none focus:border-[#FF5E00] focus:ring-1 focus:ring-[#FF5E00] bg-white dark:bg-[#202023] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 shadow-sm" 
+                  className="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-white/15 text-sm outline-none focus:border-[#8c9276] focus:ring-2 focus:ring-[#8c9276]/20 bg-white dark:bg-[#202023] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 shadow-sm" 
                   placeholder="Ej: Entrega estándar en 24-48h..." 
                 />
               </div>
@@ -2450,7 +2624,7 @@ const handleConfirmDeleteNiche = async () => {
                     type="text" 
                     value={editWarranty} 
                     onChange={e => setEditWarranty(e.target.value)} 
-                    className="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-white/15 text-sm outline-none focus:border-[#FF5E00] focus:ring-1 focus:ring-[#FF5E00] bg-white dark:bg-[#202023] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 shadow-sm" 
+                    className="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-white/15 text-sm outline-none focus:border-[#8c9276] focus:ring-2 focus:ring-[#8c9276]/20 bg-white dark:bg-[#202023] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 shadow-sm" 
                     placeholder="Ej: 2 años de garantía..." 
                   />
                 </div>
@@ -2460,7 +2634,7 @@ const handleConfirmDeleteNiche = async () => {
                     type="text" 
                     value={editPackageContents} 
                     onChange={e => setEditPackageContents(e.target.value)} 
-                    className="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-white/15 text-sm outline-none focus:border-[#FF5E00] focus:ring-1 focus:ring-[#FF5E00] bg-white dark:bg-[#202023] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 shadow-sm" 
+                    className="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-white/15 text-sm outline-none focus:border-[#8c9276] focus:ring-2 focus:ring-[#8c9276]/20 bg-white dark:bg-[#202023] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 shadow-sm" 
                     placeholder="Ej: 1x Producto, 1x Cable..." 
                   />
                 </div>
@@ -2472,20 +2646,20 @@ const handleConfirmDeleteNiche = async () => {
                   type="text" 
                   value={editCareInstructions} 
                   onChange={e => setEditCareInstructions(e.target.value)} 
-                  className="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-white/15 text-sm outline-none focus:border-[#FF5E00] focus:ring-1 focus:ring-[#FF5E00] bg-white dark:bg-[#202023] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 shadow-sm" 
+                  className="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-white/15 text-sm outline-none focus:border-[#8c9276] focus:ring-2 focus:ring-[#8c9276]/20 bg-white dark:bg-[#202023] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 shadow-sm" 
                   placeholder="Ej: Limpiar con paño de microfibra seco..." 
                 />
               </div>
             </div>
 
             {/* COMBOS & PAQUETES */}
-            <div className="p-5 bg-stone-50/90 dark:bg-[#18181b]/90 rounded-2xl border border-gray-300 dark:border-white/20 shadow-sm space-y-4">
+            <div className="p-5 sm:p-6 bg-white/95 dark:bg-[#202022]/95 rounded-[28px] border border-gray-200/90 dark:border-white/[0.12] shadow-sm space-y-4">
               <div className="flex items-center justify-between pb-2 border-b border-gray-200 dark:border-white/10">
                 <div className="flex items-center gap-2">
-                  <span className="px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider rounded-lg bg-indigo-100 text-indigo-800 dark:bg-indigo-950/50 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800/40">
+                  <span className="px-2.5 py-1 text-[10px] font-mono font-bold uppercase tracking-[0.14em] rounded-lg bg-[#8c9276]/15 text-[#8c9276] dark:text-[#a3aa8c] border border-[#8c9276]/25">
                     03 • Combos (Opcional)
                   </span>
-                  <h3 className="text-xs sm:text-sm font-bold text-gray-900 dark:text-gray-100">
+                  <h3 className="font-display text-sm sm:text-base font-medium text-gray-900 dark:text-gray-100">
                     Venta Cruzada con Descuento
                   </h3>
                 </div>
@@ -2534,7 +2708,7 @@ const handleConfirmDeleteNiche = async () => {
               <button 
                 type="submit" 
                 disabled={isSubmittingEdit} 
-                className="px-6 py-2.5 text-xs sm:text-sm font-bold bg-[#FF5E00] hover:bg-[#e05300] active:scale-[0.98] text-white rounded-xl shadow-lg shadow-[#FF5E00]/25 hover:shadow-[#FF5E00]/40 transition-all disabled:opacity-50 flex items-center gap-2 cursor-pointer"
+                className="px-6 py-2.5 text-xs sm:text-sm font-bold bg-gray-900 hover:bg-black dark:bg-gray-100 dark:hover:bg-white active:scale-[0.98] text-white dark:text-gray-900 rounded-2xl shadow-md transition-all disabled:opacity-50 flex items-center gap-2 cursor-pointer"
               >
                 <Pencil className="w-4 h-4" />
                 {isSubmittingEdit ? "Actualizando..." : "Guardar Cambios"}

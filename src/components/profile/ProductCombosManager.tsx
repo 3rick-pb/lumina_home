@@ -86,7 +86,7 @@ export function ProductCombosManager({
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
           <div className="flex items-center gap-2">
-            <Package className="w-4 h-4 text-[#8c9276] dark:text-[#ccff00]" />
+            <Package className="w-4 h-4 text-[#8c9276] dark:text-[#a3aa8c]" />
             <h3 className="text-xs font-bold uppercase tracking-wider text-gray-900 dark:text-white">
               Venta en Combos y Paquetes de Ahorro
             </h3>
@@ -153,7 +153,7 @@ export function ProductCombosManager({
                         Pieza principal
                       </span>
                       {companionObjs.map(comp => (
-                        <span key={comp.id} className="px-2 py-0.5 rounded text-[10px] bg-[#8c9276]/10 text-[#8c9276] dark:text-[#ccff00] font-semibold">
+                        <span key={comp.id} className="px-2 py-0.5 rounded text-[10px] bg-[#8c9276]/10 text-[#8c9276] dark:text-[#a3aa8c] font-semibold">
                           + {comp.title}
                         </span>
                       ))}
@@ -199,7 +199,7 @@ export function ProductCombosManager({
         <form onSubmit={handleSaveCombo} className="p-4 rounded-2xl bg-white dark:bg-[#1a1a1c] border-2 border-dashed border-gray-300 dark:border-white/20 space-y-4 animate-fade-in">
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold text-gray-950 dark:text-white uppercase tracking-wider flex items-center gap-1.5">
-              <Sparkles className="w-3.5 h-3.5 text-[#8c9276] dark:text-[#ccff00]" />
+              <Sparkles className="w-3.5 h-3.5 text-[#8c9276] dark:text-[#a3aa8c]" />
               Nuevo Combo Personalizado
             </span>
             <button

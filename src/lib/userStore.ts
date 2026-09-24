@@ -56,6 +56,8 @@ export interface ShippingAddress {
   state: string;
   postalCode: string;
   country: string;
+  lat?: number;
+  lng?: number;
   isDefault?: boolean;
 }
 

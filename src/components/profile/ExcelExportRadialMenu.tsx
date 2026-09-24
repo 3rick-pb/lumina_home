@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, useId } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
@@ -21,6 +21,7 @@ import { DROPI_HEADERS, DROPI_ECUADOR_REFERENCE } from "@/lib/dropiEcuadorData";
 import { useBrand } from "@/core/hooks/useBrand";
 import { exportCatalogToExcel } from "@/lib/exportCatalogExcel";
 import { exportNicheToExcel } from "@/lib/exportNicheExcel";
+import { FluidGiantThinkingOrb } from "@/components/ui/BeUIControls";
 
 export const NORMAL_ORDER_HEADERS = [
   "Nº",
@@ -147,7 +148,9 @@ function DropiIsotipo({ className = "w-6 h-6" }: { className?: string }) {
 
 export function ExcelExportRadialMenu() {
   const brand = useBrand();
+  const gooeyFilterId = `excel-gooey-${useId().replace(/[^a-zA-Z0-9_-]/g, "")}`;
   const [isOpen, setIsOpen] = useState(false);
+  const [isThinkingOpen, setIsThinkingOpen] = useState(false);
   const [ordersSubmenuOpen, setOrdersSubmenuOpen] = useState(false);
   const [activeExport, setActiveExport] = useState<string | null>(null);
   const [successExport, setSuccessExport] = useState<string | null>(null);
@@ -156,14 +159,20 @@ export function ExcelExportRadialMenu() {
   const [mobileXOffset, setMobileXOffset] = useState(-130);
   const menuRef = useRef<HTMLDivElement>(null);
   const modalRef = useRef<HTMLDivElement>(null);
+  const thinkingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     setMounted(true);
+    return () => {
+      if (thinkingTimeoutRef.current) clearTimeout(thinkingTimeoutRef.current);
+    };
   }, []);
 
   const handleCloseMenu = () => {
     setIsOpen(false);
+    setIsThinkingOpen(false);
     setOrdersSubmenuOpen(false);
+    if (thinkingTimeoutRef.current) clearTimeout(thinkingTimeoutRef.current);
   };
 
   const handleToggleMenu = () => {
@@ -171,7 +180,12 @@ export function ExcelExportRadialMenu() {
       handleCloseMenu();
     } else {
       setOrdersSubmenuOpen(false);
+      setIsThinkingOpen(true);
       setIsOpen(true);
+      if (thinkingTimeoutRef.current) clearTimeout(thinkingTimeoutRef.current);
+      thinkingTimeoutRef.current = setTimeout(() => {
+        setIsThinkingOpen(false);
+      }, 680);
     }
   };
 
@@ -674,10 +688,109 @@ export function ExcelExportRadialMenu() {
         ref={menuRef} 
         className={`relative inline-flex items-center justify-center w-11 h-11 shrink-0 select-none ${isOpen ? "z-50" : "z-20"}`}
       >
-        {/* Liquid Glass Emergence Orbit */}
+        {/* SVG GOOEY METABALL FILTER DEFINITION (beUI Liquid Physics) */}
+        <svg aria-hidden="true" focusable="false" className="pointer-events-none absolute w-0 h-0 overflow-hidden">
+          <defs>
+            <filter id={gooeyFilterId} colorInterpolationFilters="sRGB">
+              <feGaussianBlur in="SourceGraphic" stdDeviation="8" result="goo-blur" />
+              <feColorMatrix
+                in="goo-blur"
+                type="matrix"
+                values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 24 -10"
+                result="goo-metaball"
+              />
+              <feComposite in="SourceGraphic" in2="goo-metaball" operator="atop" />
+            </filter>
+          </defs>
+        </svg>
+
+        {/* Liquid Glass & Gooey Metaball Emergence Orbit */}
         <AnimatePresence>
           {isOpen && (
             <>
+              {/* GOOEY THINKING TELEMETRY CAPSULE (Responsive for Mobile & Desktop) */}
+              <motion.div
+                key="gooey-thinking-pill"
+                initial={{ opacity: 0, y: 12, scale: 0.72 }}
+                animate={{ opacity: 1, y: isMobile ? -46 : -48, x: isMobile ? mobileXOffset * 0.45 : -54, scale: 1 }}
+                exit={{ opacity: 0, y: 8, scale: 0.75 }}
+                transition={{ duration: 0.48, ease: [0.22, 1.3, 0.71, 1] }}
+                className="pointer-events-none absolute z-[65] flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#111614]/95 dark:bg-[#0d1310]/95 backdrop-blur-2xl border border-emerald-400/35 shadow-[0_12px_30px_rgba(0,0,0,0.35),0_0_20px_rgba(16,185,129,0.22)] whitespace-nowrap"
+              >
+                <div className="relative w-6 h-6 rounded-full bg-emerald-500/15 border border-emerald-400/30 flex items-center justify-center overflow-hidden shrink-0">
+                  <FluidGiantThinkingOrb
+                    size={24}
+                    state={activeExport ? "working" : isThinkingOpen ? "solving" : "breathing"}
+                    speed={activeExport || isThinkingOpen ? 1.35 : 0.95}
+                    className="w-6 h-6"
+                  />
+                </div>
+                <div className="flex flex-col text-left pr-1">
+                  <span className="text-[9px] font-mono uppercase tracking-widest text-emerald-400 font-bold leading-none">
+                    {activeExport
+                      ? "THINKING // COMPILANDO .XLSX"
+                      : isThinkingOpen
+                      ? "GOOEY // ANALIZANDO TABLAS"
+                      : "GOOEY ENGINE // LISTO"}
+                  </span>
+                  <span className="text-[10.5px] font-sans font-semibold text-white leading-tight mt-0.5">
+                    {activeExport
+                      ? "Generando libro Excel..."
+                      : isThinkingOpen
+                      ? "Sincronizando órdenes y catálogo..."
+                      : "Selecciona el módulo a exportar"}
+                  </span>
+                </div>
+              </motion.div>
+
+              {/* GOOEY LIQUID METABALL BRIDGE LAYER (Connects central hub to emerging satellites) */}
+              <div
+                aria-hidden="true"
+                style={{ filter: `url(#${gooeyFilterId})` }}
+                className="pointer-events-none absolute inset-0 flex items-center justify-center z-40 overflow-visible"
+              >
+                {/* Central Gooey Anchor Drop */}
+                <motion.div
+                  initial={{ scale: 0.6 }}
+                  animate={{ scale: isThinkingOpen ? [1, 1.24, 1.04] : 1.02 }}
+                  exit={{ scale: 0.4, opacity: 0 }}
+                  transition={{ duration: 0.55, ease: [0.22, 1.3, 0.71, 1] }}
+                  className="absolute w-11 h-11 rounded-full bg-emerald-500/45 dark:bg-emerald-400/40"
+                />
+                {/* Satellite Liquid Tendril Droplets */}
+                {subButtons.map((btn, index) => (
+                  <React.Fragment key={`gooey-drop-${btn.id}`}>
+                    <motion.div
+                      initial={{ x: 0, y: 0, scale: 0.95, opacity: 0.85 }}
+                      animate={{
+                        x: btn.targetX * 0.48,
+                        y: btn.targetY * 0.48,
+                        scale: isThinkingOpen ? 0.52 : 0.24,
+                        opacity: isThinkingOpen ? 0.65 : 0.18,
+                      }}
+                      exit={{ x: 0, y: 0, scale: 0.8, opacity: 0 }}
+                      transition={{
+                        duration: 0.58,
+                        ease: [0.22, 1.3, 0.71, 1],
+                        delay: index * 0.045,
+                      }}
+                      className="absolute w-7 h-7 rounded-full bg-emerald-400/50"
+                    />
+                    <motion.div
+                      initial={{ x: 0, y: 0, scale: 0.85 }}
+                      animate={{ x: btn.targetX, y: btn.targetY, scale: 1 }}
+                      exit={{ x: 0, y: 0, scale: 0.3, opacity: 0 }}
+                      transition={{
+                        duration: 0.6,
+                        ease: [0.22, 1.3, 0.71, 1],
+                        delay: index * 0.05,
+                      }}
+                      className="absolute w-[48px] h-[48px] rounded-full bg-emerald-500/35 dark:bg-emerald-400/30"
+                    />
+                  </React.Fragment>
+                ))}
+              </div>
+
               {/* Vibrant ambient light bloom behind bubbles */}
               <motion.div
                 style={{ willChange: "transform, opacity" }}
@@ -705,9 +818,9 @@ export function ExcelExportRadialMenu() {
                     className={`absolute ${isSubmenuActive ? "z-[70]" : "z-50"} pointer-events-auto`}
                     style={{ willChange: "transform, opacity" }}
                     initial={{ 
-                      x: btn.originX, 
-                      y: btn.originY, 
-                      scale: 0.2, 
+                      x: 0, 
+                      y: 0, 
+                      scale: 0.25, 
                       opacity: 0
                     }}
                     animate={{ 
@@ -717,22 +830,20 @@ export function ExcelExportRadialMenu() {
                       opacity: 1
                     }}
                     exit={{ 
-                      x: btn.originX, 
-                      y: btn.originY, 
+                      x: 0, 
+                      y: 0, 
                       scale: 0.2, 
                       opacity: 0,
                       transition: { 
-                        duration: 0.16, 
+                        duration: 0.22, 
                         ease: [0.32, 0, 0.67, 0],
                         delay: (2 - index) * 0.03 
                       }
                     }}
                     transition={{
-                      type: "spring",
-                      stiffness: 280,
-                      damping: 18,
-                      mass: 0.6,
-                      delay: index * 0.05,
+                      duration: 0.6,
+                      ease: [0.22, 1.3, 0.71, 1],
+                      delay: index * 0.055,
                     }}
                   >
                     <div className="relative group flex items-center">
@@ -765,7 +876,12 @@ export function ExcelExportRadialMenu() {
                         <div className="pointer-events-none absolute inset-0 rounded-full bg-gradient-to-tr from-transparent via-white/15 to-white/60 opacity-0 group-hover:opacity-100 transition-opacity duration-200" />
 
                         {isExporting ? (
-                          <Loader2 className="w-5 h-5 animate-spin text-emerald-500 relative z-10" />
+                          <FluidGiantThinkingOrb
+                            size={30}
+                            state="working"
+                            speed={1.35}
+                            className="w-7 h-7 relative z-10"
+                          />
                         ) : isSuccess ? (
                           <Check className="w-5 h-5 text-emerald-500 stroke-[3] relative z-10" />
                         ) : (
@@ -822,8 +938,7 @@ export function ExcelExportRadialMenu() {
           )}
         </AnimatePresence>
 
-        {/* 3. MAIN CENTRAL LIQUID GLASS TRIGGER BUTTON WITH EXCEL 2025 ICON */}
-        {/* Perfectly circular, 100% symmetric, vibrant energetic emerald styling */}
+        {/* 3. MAIN CENTRAL LIQUID GLASS TRIGGER BUTTON WITH EXCEL 2025 ICON & GOOEY THINKING ORB */}
         <button
           type="button"
           onClick={handleToggleMenu}
@@ -836,7 +951,7 @@ export function ExcelExportRadialMenu() {
           }}
           className={`relative z-50 w-11 h-11 rounded-full flex items-center justify-center border transition-all duration-300 cursor-pointer backdrop-blur-3xl overflow-hidden active:scale-95 ${
             isOpen
-              ? "border-emerald-400 bg-emerald-600 text-white scale-105"
+              ? "border-emerald-400 bg-[#112419] text-white scale-105"
               : "border-emerald-500/40 dark:border-emerald-400/50 bg-gradient-to-br from-white via-emerald-50/80 to-emerald-100/70 dark:from-[#1b3826] dark:via-[#142c1e] dark:to-[#0f2317] hover:scale-108 hover:border-emerald-500 dark:hover:border-emerald-300"
           }`}
         >
@@ -855,14 +970,23 @@ export function ExcelExportRadialMenu() {
 
           <motion.div
             animate={{ 
-              rotate: isOpen ? 90 : 0, 
+              rotate: isOpen && !isThinkingOpen ? 90 : 0, 
               scale: isOpen ? 1.05 : 1 
             }}
             transition={{ type: "spring", stiffness: 380, damping: 20 }}
             className="relative z-10 flex items-center justify-center"
           >
             {isOpen ? (
-              <X className="w-5 h-5 text-white" />
+              isThinkingOpen || activeExport ? (
+                <FluidGiantThinkingOrb
+                  size={32}
+                  state={activeExport ? "working" : "solving"}
+                  speed={1.35}
+                  className="w-8 h-8"
+                />
+              ) : (
+                <X className="w-5 h-5 text-white" />
+              )
             ) : (
               <Excel2025Icon className="w-6 h-6 transition-transform duration-200" />
             )}

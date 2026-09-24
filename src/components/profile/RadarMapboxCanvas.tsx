@@ -362,17 +362,235 @@ export const EXACT_CITY_LNG_LAT: Record<string, [number, number]> = {
   "temuco": [-72.5904, -38.7359],
   "iquique": [-70.1357, -20.2307],
   "puerto montt": [-72.9429, -41.4693],
+
+  // Additional Quito & Ecuadorian Streets, Avenues & Sectors for Instant Exact Matching
+  "calle luxemburgo": [-78.4778, -0.1835],
+  "luxemburgo": [-78.4778, -0.1835],
+  "bulevar rumipamba": [-78.4815, -0.1842],
+  "calle suiza": [-78.4785, -0.1852],
+  "checoslovaquia": [-78.4769, -0.1848],
+  "calle portugal": [-78.4765, -0.1812],
+  "portugal": [-78.4765, -0.1812],
+  "calle suecia": [-78.4792, -0.1802],
+  "finlandia": [-78.4788, -0.1795],
+  "av eloy alfaro": [-78.4755, -0.1825],
+  "eloy alfaro": [-78.4755, -0.1825],
+  "av de los granados": [-78.4645, -0.1655],
+  "los granados": [-78.4645, -0.1655],
+  "gaspar de villarroel": [-78.4775, -0.1685],
+  "av gaspar de villarroel": [-78.4775, -0.1685],
+  "av la coruna": [-78.4818, -0.1978],
+  "la coruna": [-78.4818, -0.1978],
+  "reina victoria": [-78.4895, -0.2022],
+  "diego de almagro": [-78.4862, -0.1965],
+  "whymper": [-78.4828, -0.1955],
+  "paulsen": [-78.4805, -0.1962],
+  "catalina aldaz": [-78.4762, -0.1828],
+  "moscou": [-78.4772, -0.1808],
+  "rusia": [-78.4782, -0.1782],
+  "galo plaza lasso": [-78.4768, -0.1355],
+  "av galo plaza lasso": [-78.4768, -0.1355],
+  "diego vasquez de cepeda": [-78.4915, -0.1125],
+  "real audiencia": [-78.4882, -0.1215],
+  "calle real audiencia": [-78.4882, -0.1215],
+  "av mariscal sucre": [-78.4995, -0.1652],
+  "av simon bolivar": [-78.4585, -0.1855],
+  "av maldonado": [-78.5245, -0.2685],
+  "teniente hugo ortiz": [-78.5325, -0.2655],
+  "av teniente hugo ortiz": [-78.5325, -0.2655],
+  "ajavi": [-78.5365, -0.2725],
+  "capelo": [-78.4685, -0.3215],
+  "interoceanica": [-78.4255, -0.2035],
+  "av interoceanica": [-78.4255, -0.2035],
+  "via samborondon": [-79.8685, -2.1325],
+  "remigio crespo": [-79.0115, -2.9055],
+  "av remigio crespo": [-79.0115, -2.9055],
+  "el vergel": [-78.9965, -2.9065],
 };
 
-// Priority-sorted keys so specific neighborhoods ("la carolina", "el condado", "cumbaya", "inaquito")
+// Priority-sorted keys so specific streets & neighborhoods ("calle luxemburgo", "la carolina", "el condado", "cumbaya", "inaquito")
 // match BEFORE general city names ("quito", "guayaquil", "cuenca") when a full address is provided!
 const SORTED_GEO_KEYS = Object.keys(EXACT_CITY_LNG_LAT).sort((a, b) => {
-  const genericCities = new Set(["quito", "pichincha", "guayaquil", "guayas", "cuenca", "azuay", "bogota", "lima", "santiago", "buenos aires"]);
+  const genericCities = new Set([
+    "quito",
+    "pichincha",
+    "guayaquil",
+    "guayas",
+    "cuenca",
+    "azuay",
+    "manta",
+    "manabi",
+    "ambato",
+    "tungurahua",
+    "bogota",
+    "lima",
+    "santiago",
+    "buenos aires",
+  ]);
   const aGeneric = genericCities.has(a) ? 1 : 0;
   const bGeneric = genericCities.has(b) ? 1 : 0;
   if (aGeneric !== bGeneric) return aGeneric - bGeneric;
   return b.length - a.length;
 });
+
+/**
+ * Strips Ecuadorian house nomenclature (e.g. "N34-120", "E4-55", "Oe3-45", "#123", "Casa 4")
+ * so Nominatim / Photon can resolve the exact street & intersection in Ecuador.
+ */
+export function cleanEcuadorStreetForGeocoding(rawStreet: string): string {
+  return rawStreet
+    .replace(/\b(?:[NSOE]{1,2}\d+[A-Z]?[-\s]\d+[A-Z0-9-]*|#\s*\d+|casa\s*\d+|lote\s*\d+|dpto\.?\s*\d+|apto\.?\s*\d+|bloque\s*[a-z0-9]+|piso\s*\d+)\b/gi, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+/**
+ * Synchronous lookup against calibrated street/sector/parish dictionary BEFORE generic city fallback.
+ */
+export function lookupLocalStreetOrSectorLngLat(
+  street?: string,
+  reference?: string,
+  city?: string
+): [number, number] | null {
+  // 1. Check specific street + reference first (excluding generic city so "Quito" doesn't shadow a street)
+  const detailText = normalizeGeoKey([street, reference].filter(Boolean).join(" "));
+  if (detailText) {
+    if (EXACT_CITY_LNG_LAT[detailText]) {
+      return EXACT_CITY_LNG_LAT[detailText];
+    }
+    const specificKey = SORTED_GEO_KEYS.find((k) => {
+      if (k === "quito" || k === "guayaquil" || k === "cuenca" || k === "pichincha") return false;
+      return detailText.includes(k);
+    });
+    if (specificKey) {
+      return EXACT_CITY_LNG_LAT[specificKey];
+    }
+  }
+
+  // 2. Check full combined address string
+  const fullText = normalizeGeoKey([street, reference, city].filter(Boolean).join(" "));
+  if (fullText) {
+    const matched = SORTED_GEO_KEYS.find((k) => fullText.includes(k));
+    if (matched) {
+      return EXACT_CITY_LNG_LAT[matched];
+    }
+  }
+
+  return null;
+}
+
+/**
+ * Multi-stage Ecuadorian exact address geocoder.
+ * Resolves [lng, lat] from:
+ * 1. Saved GPS coordinates (`address.lng`, `address.lat`)
+ * 2. Specific street / neighborhood / parish in `EXACT_CITY_LNG_LAT`
+ * 3. Cleaned street / intersection queries via OpenStreetMap Nominatim & Komoot Photon
+ */
+export async function resolveEcuadorExactAddressLngLat(address: {
+  street?: string;
+  reference?: string;
+  city?: string;
+  state?: string;
+  country?: string;
+  lat?: number;
+  lng?: number;
+}): Promise<[number, number] | null> {
+  if (
+    typeof address.lng === "number" &&
+    typeof address.lat === "number" &&
+    Number.isFinite(address.lng) &&
+    Number.isFinite(address.lat) &&
+    Math.abs(address.lng) > 0.01
+  ) {
+    return [address.lng, address.lat];
+  }
+
+  // Check if street or reference matches a specific calibrated avenue/neighborhood in our local dictionary
+  const detailOnlyMatch = lookupLocalStreetOrSectorLngLat(address.street, address.reference, undefined);
+  if (detailOnlyMatch) {
+    return detailOnlyMatch;
+  }
+
+  const rawStreet = (address.street || "").trim();
+  const rawRef = (address.reference || "").trim();
+  const rawCity = formatCleanCityForGeocode(address.city || "Quito");
+  const rawCountry = (address.country || "Ecuador").trim();
+
+  if (!rawStreet && !rawRef) {
+    return lookupLocalStreetOrSectorLngLat(undefined, undefined, rawCity);
+  }
+
+  const cacheKey = `lumina_geo_v4_${normalizeGeoKey(`${rawStreet}_${rawRef}_${rawCity}`)}`;
+  if (typeof window !== "undefined") {
+    try {
+      const cached = localStorage.getItem(cacheKey);
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        if (typeof parsed.lng === "number" && typeof parsed.lat === "number") {
+          return [parsed.lng, parsed.lat];
+        }
+      }
+    } catch {}
+  }
+
+  const cleanedStreet = cleanEcuadorStreetForGeocoding(rawStreet);
+  // Split Ecuadorian intersections ("Av. Amazonas y Naciones Unidas" -> ["Av. Amazonas", "Naciones Unidas"])
+  const streetParts = cleanedStreet
+    .split(/\s+(?:y|e|interseccion|esq\.?|esquina)\s+/i)
+    .map((s) => s.trim())
+    .filter((s) => s.length > 2);
+
+  const candidateQueries: string[] = [];
+  if (cleanedStreet && rawRef) {
+    candidateQueries.push(`${cleanedStreet}, ${rawRef}, ${rawCity}, ${rawCountry}`);
+  }
+  if (streetParts.length > 0 && rawRef) {
+    candidateQueries.push(`${streetParts[0]}, ${rawRef}, ${rawCity}, ${rawCountry}`);
+  }
+  if (cleanedStreet) {
+    candidateQueries.push(`${cleanedStreet}, ${rawCity}, ${rawCountry}`);
+  }
+  if (streetParts.length > 0) {
+    candidateQueries.push(`${streetParts[0]}, ${rawCity}, ${rawCountry}`);
+  }
+  if (streetParts.length > 1) {
+    candidateQueries.push(`${streetParts[1]}, ${rawCity}, ${rawCountry}`);
+  }
+  if (rawRef) {
+    candidateQueries.push(`${rawRef}, ${rawCity}, ${rawCountry}`);
+  }
+
+  for (const query of candidateQueries) {
+    try {
+      const res = await fetch(
+        `https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=ec,co,pe,ar,mx,cl&q=${encodeURIComponent(query)}`,
+        { headers: { "Accept-Language": "es" } }
+      );
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data) && data.length > 0) {
+          const lat = parseFloat(data[0].lat);
+          const lng = parseFloat(data[0].lon);
+          if (Number.isFinite(lat) && Number.isFinite(lng)) {
+            if (typeof window !== "undefined") {
+              try {
+                localStorage.setItem(cacheKey, JSON.stringify({ lat, lng }));
+              } catch {}
+            }
+            return [lng, lat];
+          }
+        }
+      }
+    } catch {}
+  }
+
+  return lookupLocalStreetOrSectorLngLat(address.street, address.reference, address.city);
+}
+
+function formatCleanCityForGeocode(cityStr: string): string {
+  if (!cityStr) return "Quito";
+  return cityStr.split(/[-–(]/)[0].trim() || "Quito";
+}
 
 export function resolveGeoLngLat(
   cityName: string | undefined,
@@ -386,6 +604,7 @@ export function resolveGeoLngLat(
 ): [number, number] {
   let baseLng: number | null = null;
   let baseLat: number | null = null;
+  let hasPreciseLocation = false;
 
   if (
     exactLngLat &&
@@ -397,16 +616,29 @@ export function resolveGeoLngLat(
   ) {
     baseLng = exactLngLat[0];
     baseLat = exactLngLat[1];
+    hasPreciseLocation = true;
   } else {
     const bounds = COUNTRY_GEO_CONFIG[countryCode] || COUNTRY_GEO_CONFIG.EC;
     const cleanCity = normalizeGeoKey(cityName || "");
 
     if (cleanCity && EXACT_CITY_LNG_LAT[cleanCity]) {
       [baseLng, baseLat] = EXACT_CITY_LNG_LAT[cleanCity];
+      const isGenericCity =
+        cleanCity === "quito" ||
+        cleanCity === "guayaquil" ||
+        cleanCity === "cuenca" ||
+        cleanCity === "pichincha";
+      hasPreciseLocation = !isGenericCity;
     } else if (cleanCity) {
       const matchedKey = SORTED_GEO_KEYS.find((k) => cleanCity.includes(k));
       if (matchedKey) {
         [baseLng, baseLat] = EXACT_CITY_LNG_LAT[matchedKey];
+        const isGenericCity =
+          matchedKey === "quito" ||
+          matchedKey === "guayaquil" ||
+          matchedKey === "cuenca" ||
+          matchedKey === "pichincha";
+        hasPreciseLocation = !isGenericCity;
       }
     }
 
@@ -416,9 +648,13 @@ export function resolveGeoLngLat(
     }
   }
 
-  // Adaptive zoom-aware dispersion:
-  // At country overview (zoom ~6.45), degPerUnit is ~0.038° (~26px separation on screen so pins never pile up).
-  // As you zoom into a city/street (zoom 11 -> 15), degPerUnit smoothly tightens down to 0.0018° (~180m street block).
+  // If the pin has an exact street/sector coordinate (`hasPreciseLocation`), NEVER push it blocks away
+  // with city dispersion offsets! Keep it anchored on the exact street/sector coordinate.
+  if (hasPreciseLocation) {
+    return [baseLng, baseLat];
+  }
+
+  // Adaptive zoom-aware dispersion only for generic city-level pins:
   const zoomFactor = Math.pow(1.65, Math.max(0, 11.2 - camZoom));
   const degPerUnit = Math.min(0.038, Math.max(0.0018, 0.0018 * zoomFactor));
   const geoLng = baseLng + offsetXPct * degPerUnit;
@@ -574,7 +810,7 @@ function preloadContinentalBaseTiles(onTileLoaded?: () => void) {
   if (continentalTilesPreloaded || typeof window === "undefined") return;
   continentalTilesPreloaded = true;
 
-  const providers: TileProvider[] = ["dark-base", "satellite", "boundaries-labels"];
+  const providers: TileProvider[] = ["street-map", "dark-base", "satellite", "boundaries-labels"];
   const ranges: Array<{ z: number; xMin: number; xMax: number; yMin: number; yMax: number }> = [
     { z: 2, xMin: 0, xMax: 2, yMin: 1, yMax: 2 }, // Entire Western Hemisphere at z=2
     { z: 3, xMin: 1, xMax: 3, yMin: 3, yMax: 5 }, // Entire Latin America at z=3
@@ -644,7 +880,7 @@ export function RadarMapboxCanvas({
 
   const prevZoomCommandRef = useRef<number>(zoomCommand);
   const [, setRenderTick] = useState(0);
-  const [mapStyleMode, setMapStyleMode] = useState<"tactical" | "satellite" | "street">("tactical");
+  const [mapStyleMode, setMapStyleMode] = useState<"tactical" | "satellite" | "street">("street");
   const isDraggingRef = useRef(false);
   const dragMovedRef = useRef(false);
   const dragStartRef = useRef({ x: 0, y: 0, lng: 0, lat: 0 });

@@ -35,7 +35,12 @@ import {
 import { BlobatarAvatar } from "@/components/ui/BlobatarAvatar";
 import { useAvatarSettingsStore } from "@/lib/avatarSettingsStore";
 import { FluidGiantThinkingOrb } from "@/components/ui/BeUIControls";
-import { RadarMapboxCanvas } from "./RadarMapboxCanvas";
+import {
+  RadarMapboxCanvas,
+  resolveEcuadorExactAddressLngLat,
+  lookupLocalStreetOrSectorLngLat,
+  cleanEcuadorStreetForGeocoding,
+} from "./RadarMapboxCanvas";
 
 export type { ConnectedClient } from "@/lib/radarStore";
 
@@ -416,42 +421,61 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
       .join(", ");
   }, [primaryAddressObj]);
 
-  const [selfExactLngLat, setSelfExactLngLat] = useState<[number, number] | undefined>(undefined);
+  const [selfExactLngLat, setSelfExactLngLat] = useState<[number, number] | undefined>(() => {
+    if (!primaryAddressObj) return undefined;
+    if (
+      typeof primaryAddressObj.lng === "number" &&
+      typeof primaryAddressObj.lat === "number" &&
+      Number.isFinite(primaryAddressObj.lng) &&
+      Number.isFinite(primaryAddressObj.lat) &&
+      Math.abs(primaryAddressObj.lng) > 0.01
+    ) {
+      return [primaryAddressObj.lng, primaryAddressObj.lat];
+    }
+    return (
+      lookupLocalStreetOrSectorLngLat(
+        primaryAddressObj.street,
+        primaryAddressObj.reference,
+        undefined
+      ) || undefined
+    );
+  });
 
   useEffect(() => {
     let active = true;
     const resolveSelfCoords = async () => {
-      if (currentUserExactAddress && (primaryAddressObj?.street || primaryAddressObj?.reference)) {
-        const cacheKey = `lumina_geo_v2_${currentUserExactAddress.toLowerCase().trim()}`;
+      if (!primaryAddressObj) return;
+      if (
+        typeof primaryAddressObj.lng === "number" &&
+        typeof primaryAddressObj.lat === "number" &&
+        Number.isFinite(primaryAddressObj.lng) &&
+        Number.isFinite(primaryAddressObj.lat) &&
+        Math.abs(primaryAddressObj.lng) > 0.01
+      ) {
+        if (active) setSelfExactLngLat([primaryAddressObj.lng, primaryAddressObj.lat]);
+        return;
+      }
+
+      const resolved = await resolveEcuadorExactAddressLngLat({
+        street: primaryAddressObj.street,
+        reference: primaryAddressObj.reference,
+        city: primaryAddressObj.city,
+        state: primaryAddressObj.state,
+        country: primaryAddressObj.country,
+        lat: primaryAddressObj.lat,
+        lng: primaryAddressObj.lng,
+      });
+
+      if (resolved && active) {
+        setSelfExactLngLat(resolved);
+        // Automatically upgrade saved ShippingAddress with resolved lat/lng so future sessions are 0ms
         try {
-          const cached = localStorage.getItem(cacheKey);
-          if (cached) {
-            const parsed = JSON.parse(cached);
-            if (typeof parsed.lng === "number" && typeof parsed.lat === "number") {
-              if (active) setSelfExactLngLat([parsed.lng, parsed.lat]);
-              return;
-            }
-          }
-          const q = encodeURIComponent(`${currentUserExactAddress}, Ecuador`);
-          const res = await fetch(
-            `https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${q}`,
-            { headers: { "Accept-Language": "es" } }
-          );
-          if (res.ok) {
-            const data = await res.json();
-            if (Array.isArray(data) && data.length > 0) {
-              const lat = parseFloat(data[0].lat);
-              const lng = parseFloat(data[0].lon);
-              if (Number.isFinite(lat) && Number.isFinite(lng)) {
-                localStorage.setItem(cacheKey, JSON.stringify({ lat, lng }));
-                if (active) setSelfExactLngLat([lng, lat]);
-                return;
-              }
-            }
-          }
-        } catch {
-          // Fallback to calibrated sector dictionary
-        }
+          useUserStore.getState().setAddress({
+            ...primaryAddressObj,
+            lng: resolved[0],
+            lat: resolved[1],
+          });
+        } catch {}
       }
     };
     resolveSelfCoords();
@@ -1156,9 +1180,16 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
             const isDimmed = !isSelf && !isActive && !isStageMatch;
 
             const clientFirstName = cleanClientName(client.name).split(' ')[0] || '';
+            const selfStreetOrSector =
+              isSelf && primaryAddressObj
+                ? (primaryAddressObj.reference && primaryAddressObj.reference.trim()) ||
+                  (primaryAddressObj.street
+                    ? cleanEcuadorStreetForGeocoding(primaryAddressObj.street).split(",")[0].slice(0, 24).trim()
+                    : "")
+                : "";
             const shortCityOrSector =
-              isSelf && primaryAddressObj?.reference && primaryAddressObj.reference.length <= 18
-                ? primaryAddressObj.reference
+              selfStreetOrSector
+                ? `${selfStreetOrSector} • ${beacon.cityName}`
                 : beacon.cityName;
 
             const beaconLabel = beacon.clusterTotal > 1 && clientFirstName

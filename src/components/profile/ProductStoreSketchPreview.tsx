@@ -12,6 +12,11 @@ import {
   Tag,
   Eye,
   LayoutTemplate,
+  Copy,
+  Check,
+  Download,
+  Code2,
+  Lock,
 } from "lucide-react";
 import type { ProductCombo } from "@/lib/catalogStore";
 
@@ -23,11 +28,12 @@ export const PRODUCT_WIZARD_STEPS: Array<{
   id: ProductWizardStep;
   shortLabel: string;
   fullLabel: string;
+  code: string;
 }> = [
-  { id: 0, shortLabel: "1. Formato", fullLabel: "1. Formato Visual" },
-  { id: 1, shortLabel: "2. Info Principal", fullLabel: "2. Información Principal" },
-  { id: 2, shortLabel: "3. Galería y Color", fullLabel: "3. Galería y Variantes" },
-  { id: 3, shortLabel: "4. Ficha y Envío", fullLabel: "4. Ficha y Logística" },
+  { id: 0, code: "01", shortLabel: "1. Arquitectura", fullLabel: "1. Arquitectura Visual" },
+  { id: 1, code: "02", shortLabel: "2. Identidad & Precio", fullLabel: "2. Identidad & Precio" },
+  { id: 2, code: "03", shortLabel: "3. Galería & Variantes", fullLabel: "3. Galería & Variantes" },
+  { id: 3, code: "04", shortLabel: "4. Ficha & Logística", fullLabel: "4. Ficha & Logística" },
 ];
 
 export function ProductWizardStepHeader({
@@ -48,14 +54,14 @@ export function ProductWizardStepHeader({
 
   return (
     <div className="flex items-center justify-center w-full lg:w-auto">
-      <div className="relative grid grid-cols-4 items-center bg-black/[0.04] dark:bg-white/[0.06] p-1 rounded-full border border-black/[0.05] dark:border-white/10 backdrop-blur-xl w-full lg:w-auto min-w-[300px] sm:min-w-[540px]">
-        {/* Pure GPU CSS Spring Pill Indicator (Silent, identical to Bolsa de Compras) */}
+      <div className="relative grid grid-cols-4 items-center bg-gray-100/90 dark:bg-[#2a2a2c]/90 p-1 rounded-2xl border border-gray-200/80 dark:border-white/10 backdrop-blur-xl w-full lg:w-auto min-w-[300px] sm:min-w-[560px]">
+        {/* Pure GPU CSS Spring Pill Indicator */}
         <div
           style={{
             transform: `translate3d(${activeStep * 100}%, 0, 0)`,
             transition: "transform 480ms cubic-bezier(0.22, 1.35, 0.36, 1)",
           }}
-          className="pointer-events-none absolute top-1 bottom-1 left-1 w-[calc(25%-2px)] rounded-full bg-white dark:bg-[#27272a] shadow-[0_2px_10px_rgba(0,0,0,0.09)] z-0"
+          className="pointer-events-none absolute top-1 bottom-1 left-1 w-[calc(25%-2px)] rounded-xl bg-gray-900 dark:bg-gray-100 shadow-sm z-0"
         />
         {PRODUCT_WIZARD_STEPS.map((s, idx) => {
           const isCurrent = activeStep === s.id;
@@ -65,16 +71,16 @@ export function ProductWizardStepHeader({
               key={s.id}
               type="button"
               onClick={() => handleSelect(s.id)}
-              className={`relative z-10 flex items-center justify-center gap-1.5 text-center px-2 sm:px-3.5 py-1.5 rounded-full text-[11px] sm:text-xs font-semibold transition-colors cursor-pointer whitespace-nowrap active:scale-95 ${
+              className={`relative z-10 flex items-center justify-center gap-1.5 text-center px-2 sm:px-3.5 py-2 rounded-xl text-[11px] sm:text-xs font-semibold transition-colors cursor-pointer whitespace-nowrap active:scale-95 ${
                 isCurrent
-                  ? "text-gray-950 dark:text-white font-bold"
+                  ? "text-white dark:text-gray-900 font-bold"
                   : "text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100"
               }`}
             >
               <span className="hidden sm:inline">{s.fullLabel}</span>
               <span className="sm:hidden">{s.shortLabel}</span>
               {isDone && !isCurrent && (
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />
+                <span className="w-1.5 h-1.5 rounded-full bg-[#8c9276] shrink-0" />
               )}
             </button>
           );
@@ -139,7 +145,8 @@ export function ProductStoreSketchPreview({
   onSelectStep,
   normalizeImageUrl,
 }: ProductStoreSketchPreviewProps) {
-  const [previewTab, setPreviewTab] = useState<"card" | "detail">("card");
+  const [previewTab, setPreviewTab] = useState<"card" | "detail" | "json">("card");
+  const [copiedJson, setCopiedJson] = useState(false);
 
   const primaryImg = imageUrl.trim()
     ? normalizeImageUrl(imageUrl.trim().split(/[\n,]+/)[0])
@@ -177,33 +184,98 @@ export function ProductStoreSketchPreview({
     Boolean(materials.trim() || dimensions.trim() || shipping.trim() || warranty.trim() || stock.trim()),
   ];
   const completedCount = stepDone.filter(Boolean).length;
+  const readinessPct = Math.round((completedCount / 4) * 100);
+
+  const compiledJsonPayload = JSON.stringify(
+    {
+      schema: "lumina.catalog.product.v2",
+      layoutType,
+      title: title.trim() || "Sin título",
+      highlight: highlight.trim() || undefined,
+      category: category.trim() || "General",
+      badge: badge.trim() || undefined,
+      pricing: {
+        priceUSD: parseFloat(parsedPrice),
+        oldPriceUSD: parsedOldPrice ? parseFloat(parsedOldPrice) : undefined,
+        discountTag: hasDiscount && calculatedDiscount ? calculatedDiscount : undefined,
+      },
+      inventory: {
+        stock: !isNaN(parsedStock) ? parsedStock : 20,
+        status: isOutOfStock ? "OUT_OF_STOCK" : "IN_STOCK",
+      },
+      media: {
+        coverUrl: primaryImg || null,
+        galleryCount: 1 + extraImgList.length,
+      },
+      variants: {
+        colors: colorVariants,
+        sizes: parsedSizes,
+      },
+      specs: {
+        materials: materials.trim() || undefined,
+        dimensions: dimensions.trim() || undefined,
+        shipping: shipping.trim() || undefined,
+        warranty: warranty.trim() || undefined,
+        combosCount: combos.length,
+      },
+    },
+    null,
+    2
+  );
+
+  const handleCopyJson = () => {
+    if (typeof navigator !== "undefined" && navigator.clipboard) {
+      navigator.clipboard.writeText(compiledJsonPayload);
+      setCopiedJson(true);
+      setTimeout(() => setCopiedJson(false), 2000);
+    }
+  };
+
+  const handleDownloadJson = () => {
+    const slug = (title.trim() || "producto-lumina")
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-|-$/g, "");
+    const blob = new Blob([compiledJsonPayload], { type: "application/json;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${slug}-ficha.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
 
   return (
-    <div className="flex flex-col h-full rounded-3xl bg-stone-100/80 dark:bg-[#161618] border border-gray-200/90 dark:border-white/10 p-4 sm:p-5 space-y-4">
-      {/* Top Preview Header + Mode Switcher */}
-      <div className="flex items-center justify-between gap-2 pb-3 border-b border-gray-200/80 dark:border-white/10">
-        <div className="flex items-center gap-2">
-          <div className="w-7 h-7 rounded-xl bg-[#FF5E00]/15 text-[#FF5E00] flex items-center justify-center shrink-0">
-            <Eye className="w-3.5 h-3.5" />
+    <div className="flex flex-col h-full rounded-[2rem] bg-gray-50/90 dark:bg-[#1a1a1c]/95 border border-gray-200/80 dark:border-white/10 p-4 sm:p-5 space-y-4 shadow-[0_4px_24px_rgba(0,0,0,0.02)] font-sans">
+      {/* Top Preview Header + 3-Mode Switcher */}
+      <div className="flex flex-wrap items-center justify-between gap-2 pb-3 border-b border-gray-200/80 dark:border-white/10">
+        <div className="flex items-center gap-2.5">
+          <div className="w-8 h-8 rounded-xl bg-[#8c9276]/15 text-[#8c9276] border border-[#8c9276]/25 flex items-center justify-center shrink-0">
+            <Eye className="w-4 h-4" />
           </div>
           <div>
-            <h4 className="text-xs font-bold text-gray-900 dark:text-white leading-tight">
-              Bosquejo en Vivo • Tienda
-            </h4>
+            <div className="flex items-center gap-1.5">
+              <h4 className="text-xs font-display font-bold text-gray-900 dark:text-gray-100 leading-tight">
+                Simulador 1:1 en Vivo
+              </h4>
+              <span className="text-[9px] font-mono font-bold px-1.5 py-0.5 rounded-md bg-[#8c9276]/15 text-[#8c9276] border border-[#8c9276]/25">
+                {readinessPct}% LISTO
+              </span>
+            </div>
             <p className="text-[10px] text-gray-500 dark:text-gray-400">
-              Así se verá tu producto al publicarse
+              Previsualización instantánea en catálogo y ficha
             </p>
           </div>
         </div>
 
-        {/* Toggle between Card View & Detail Architecture View */}
-        <div className="flex items-center bg-white dark:bg-[#222225] p-0.5 rounded-full border border-gray-200/80 dark:border-white/10 text-[10px] font-semibold">
+        {/* Toggle between Card View, Detail View & JSON Schema */}
+        <div className="flex items-center bg-white dark:bg-[#242427] p-1 rounded-xl border border-gray-200/80 dark:border-white/10 text-[10px] font-semibold">
           <button
             type="button"
             onClick={() => setPreviewTab("card")}
-            className={`px-2.5 py-1 rounded-full transition-colors cursor-pointer ${
+            className={`px-2.5 py-1 rounded-lg transition-all cursor-pointer ${
               previewTab === "card"
-                ? "bg-gray-900 text-white dark:bg-white dark:text-gray-950 font-bold"
+                ? "bg-gray-900 text-white dark:bg-gray-100 dark:text-gray-900 font-bold shadow-2xs"
                 : "text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
             }`}
           >
@@ -212,22 +284,34 @@ export function ProductStoreSketchPreview({
           <button
             type="button"
             onClick={() => setPreviewTab("detail")}
-            className={`px-2.5 py-1 rounded-full transition-colors cursor-pointer ${
+            className={`px-2.5 py-1 rounded-lg transition-all cursor-pointer ${
               previewTab === "detail"
-                ? "bg-gray-900 text-white dark:bg-white dark:text-gray-950 font-bold"
+                ? "bg-gray-900 text-white dark:bg-gray-100 dark:text-gray-900 font-bold shadow-2xs"
                 : "text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
             }`}
           >
             Ficha {layoutType === "landing" ? "Landing" : "Estándar"}
           </button>
+          <button
+            type="button"
+            onClick={() => setPreviewTab("json")}
+            className={`px-2 py-1 rounded-lg transition-all cursor-pointer font-mono flex items-center gap-1 ${
+              previewTab === "json"
+                ? "bg-gray-900 text-white dark:bg-gray-100 dark:text-gray-900 font-bold shadow-2xs"
+                : "text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
+            }`}
+          >
+            <Code2 className="w-3 h-3" />
+            <span>JSON</span>
+          </button>
         </div>
       </div>
 
       {/* PREVIEW MODE A: LIVE STOREFRONT PRODUCT CARD */}
-      {previewTab === "card" ? (
-        <div className="w-full max-w-[310px] mx-auto bg-white dark:bg-[#202022] rounded-[26px] border border-gray-200/80 dark:border-white/10 shadow-xl overflow-hidden flex flex-col transition-all">
+      {previewTab === "card" && (
+        <div className="w-full max-w-[315px] mx-auto bg-white dark:bg-[#202022] rounded-[1.75rem] border border-gray-200/80 dark:border-white/10 shadow-[0_12px_32px_rgba(0,0,0,0.06)] overflow-hidden flex flex-col transition-all">
           {/* Card Image Frame */}
-          <div className="relative aspect-[4/4.3] w-full bg-stone-100 dark:bg-[#2a2a2d] overflow-hidden">
+          <div className="relative aspect-[4/4.2] w-full bg-gray-100 dark:bg-[#2a2a2c] overflow-hidden">
             {primaryImg ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img
@@ -254,15 +338,15 @@ export function ProductStoreSketchPreview({
                 <span
                   className={`px-2.5 py-1 rounded-full text-[10px] font-bold tracking-wide uppercase shadow-sm backdrop-blur-md ${
                     isOutOfStock
-                      ? "bg-stone-900/90 text-white"
-                      : "bg-white/95 text-gray-950 dark:bg-black/85 dark:text-white border border-black/5 dark:border-white/15"
+                      ? "bg-gray-900/90 text-white"
+                      : "bg-white/95 text-gray-900 dark:bg-black/85 dark:text-white border border-black/5 dark:border-white/15"
                   }`}
                 >
                   {badge}
                 </span>
               )}
               {hasDiscount && calculatedDiscount && (
-                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#FF5E00] text-white shadow-sm">
+                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold bg-[#8c9276] text-white shadow-sm">
                   {calculatedDiscount}
                 </span>
               )}
@@ -270,15 +354,15 @@ export function ProductStoreSketchPreview({
 
             {/* Top-Right Architecture Pill */}
             <div className="absolute top-3 right-3 z-10">
-              <span className="px-2 py-0.5 rounded-full text-[9.5px] font-mono font-bold bg-black/70 text-white backdrop-blur-md border border-white/15 flex items-center gap-1">
+              <span className="px-2.5 py-0.5 rounded-full text-[9.5px] font-mono font-bold bg-black/75 text-white backdrop-blur-md border border-white/15 flex items-center gap-1">
                 {layoutType === "landing" ? (
                   <>
-                    <Sparkles className="w-2.5 h-2.5 text-[#ccff00]" />
+                    <Sparkles className="w-2.5 h-2.5 text-[#8c9276]" />
                     <span>Landing</span>
                   </>
                 ) : (
                   <>
-                    <LayoutTemplate className="w-2.5 h-2.5 text-sky-300" />
+                    <LayoutTemplate className="w-2.5 h-2.5 text-gray-300" />
                     <span>Estándar</span>
                   </>
                 )}
@@ -287,7 +371,7 @@ export function ProductStoreSketchPreview({
 
             {/* Bottom Gallery Thumbnails Indicator */}
             {extraImgList.length > 0 && (
-              <div className="absolute bottom-2.5 right-2.5 px-2 py-0.5 rounded-full bg-black/70 backdrop-blur-md text-white text-[9.5px] font-mono font-bold border border-white/15">
+              <div className="absolute bottom-2.5 right-2.5 px-2 py-0.5 rounded-full bg-black/75 backdrop-blur-md text-white text-[9.5px] font-mono font-bold border border-white/15">
                 +{extraImgList.length} {extraImgList.length === 1 ? "foto" : "fotos"}
               </div>
             )}
@@ -297,20 +381,20 @@ export function ProductStoreSketchPreview({
           <div className="p-4 space-y-2.5 flex-1 flex flex-col justify-between">
             <div className="space-y-1">
               <div className="flex items-center justify-between gap-2">
-                <span className="text-[10px] font-bold uppercase tracking-widest text-[#8c9276] dark:text-[#cbd1b2] truncate">
-                  {category || "Categoría"}
+                <span className="text-[10px] font-bold uppercase tracking-widest text-[#8c9276] truncate">
+                  {category || "Colección / Nicho"}
                 </span>
                 {!isNaN(parsedStock) && parsedStock > 0 && (
                   <span className="text-[9.5px] font-mono text-emerald-600 dark:text-emerald-400 font-semibold">
-                    {parsedStock} en stock
+                    {parsedStock} uds.
                   </span>
                 )}
               </div>
 
-              <h3 className="text-sm font-bold text-gray-900 dark:text-white leading-snug line-clamp-2">
-                {title.trim() || "Nombre del Producto"}{" "}
+              <h3 className="text-sm font-display font-bold text-gray-900 dark:text-gray-100 leading-snug line-clamp-2">
+                {title.trim() || "Nombre de la Pieza"}{" "}
                 {highlight.trim() && (
-                  <span className="font-serif italic font-normal text-gray-500 dark:text-gray-400">
+                  <span className="font-display italic font-normal text-gray-500 dark:text-gray-400">
                     {highlight.trim()}
                   </span>
                 )}
@@ -318,7 +402,7 @@ export function ProductStoreSketchPreview({
 
               <p className="text-[11px] text-gray-500 dark:text-gray-400 line-clamp-2 leading-relaxed">
                 {description.trim() ||
-                  "La descripción breve y elegante de tu pieza aparecerá aquí en la tienda."}
+                  "La narrativa curada y las especificaciones técnicas de tu pieza aparecerán aquí."}
               </p>
             </div>
 
@@ -361,25 +445,23 @@ export function ProductStoreSketchPreview({
             )}
 
             {/* Price Row + Simulated Add to Bag Button */}
-            <div className="pt-2 border-t border-gray-100 dark:border-white/10 flex items-center justify-between gap-2">
-              <div>
-                <div className="flex items-baseline gap-1.5">
-                  <span className="text-base font-black text-gray-950 dark:text-white font-mono">
-                    ${parsedPrice}
+            <div className="pt-2.5 border-t border-gray-100 dark:border-white/10 flex items-center justify-between gap-2">
+              <div className="flex items-baseline gap-1.5">
+                <span className="text-base font-bold text-gray-900 dark:text-gray-100 font-mono">
+                  ${parsedPrice}
+                </span>
+                {parsedOldPrice && (
+                  <span className="text-[11px] text-gray-400 line-through font-mono">
+                    ${parsedOldPrice}
                   </span>
-                  {parsedOldPrice && (
-                    <span className="text-[11px] text-gray-400 line-through font-mono">
-                      ${parsedOldPrice}
-                    </span>
-                  )}
-                </div>
+                )}
               </div>
 
               <div
-                className={`px-3.5 py-2 rounded-full text-[11px] font-bold flex items-center gap-1.5 select-none ${
+                className={`px-3.5 py-2 rounded-xl text-[11px] font-semibold flex items-center gap-1.5 select-none ${
                   isOutOfStock
                     ? "bg-gray-200 dark:bg-white/10 text-gray-500 dark:text-gray-400"
-                    : "bg-gray-950 dark:bg-white text-white dark:text-gray-950 shadow-sm"
+                    : "bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 shadow-xs"
                 }`}
               >
                 <ShoppingBag className="w-3 h-3" />
@@ -388,25 +470,27 @@ export function ProductStoreSketchPreview({
             </div>
           </div>
         </div>
-      ) : (
-        /* PREVIEW MODE B: ARCHITECTURAL DETAIL / LANDING PAGE SKETCH */
-        <div className="rounded-2xl bg-white dark:bg-[#202022] border border-gray-200/80 dark:border-white/10 p-4 space-y-3 shadow-md">
+      )}
+
+      {/* PREVIEW MODE B: ARCHITECTURAL DETAIL / LANDING PAGE SKETCH */}
+      {previewTab === "detail" && (
+        <div className="rounded-2xl bg-white dark:bg-[#202022] border border-gray-200/80 dark:border-white/10 p-4 space-y-3 shadow-xs">
           <div className="flex items-center justify-between pb-2 border-b border-gray-100 dark:border-white/10">
-            <span className="text-[10px] font-mono uppercase tracking-wider font-bold text-[#FF5E00] flex items-center gap-1">
-              <Layers className="w-3 h-3" />
+            <span className="text-[10px] font-mono uppercase tracking-wider font-bold text-[#8c9276] flex items-center gap-1.5">
+              <Layers className="w-3.5 h-3.5" />
               <span>
-                Estructura:{" "}
-                {layoutType === "landing" ? "Landing Page Especial" : "Ficha de Producto Estándar"}
+                Arquitectura:{" "}
+                {layoutType === "landing" ? "Landing Page Editorial" : "Ficha de Producto Estándar"}
               </span>
             </span>
             <span className="text-[10px] font-mono text-gray-400">
-              {1 + extraImgList.length} {1 + extraImgList.length === 1 ? "imagen" : "imágenes"}
+              {1 + extraImgList.length} {1 + extraImgList.length === 1 ? "activo" : "activos"}
             </span>
           </div>
 
           {/* Mini Hero Wireframe */}
-          <div className="grid grid-cols-12 gap-2.5 items-center">
-            <div className="col-span-5 aspect-square rounded-xl bg-stone-100 dark:bg-[#2a2a2d] overflow-hidden border border-gray-200/60 dark:border-white/10">
+          <div className="grid grid-cols-12 gap-3 items-center">
+            <div className="col-span-5 aspect-square rounded-xl bg-gray-100 dark:bg-[#2a2a2c] overflow-hidden border border-gray-200/60 dark:border-white/10">
               {primaryImg ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img src={primaryImg} alt="Hero" className="w-full h-full object-cover" />
@@ -418,17 +502,19 @@ export function ProductStoreSketchPreview({
             </div>
             <div className="col-span-7 space-y-1.5">
               <span className="text-[9px] font-bold uppercase tracking-wider text-[#8c9276]">
-                {category || "Categoría"}
+                {category || "Nicho / Colección"}
               </span>
-              <h5 className="text-xs font-bold text-gray-900 dark:text-white truncate">
-                {title || "Nombre del Producto"}
+              <h5 className="text-xs font-display font-bold text-gray-900 dark:text-gray-100 truncate">
+                {title || "Nombre de la Pieza"}
               </h5>
-              <div className="text-xs font-mono font-black text-[#FF5E00]">${parsedPrice} USD</div>
+              <div className="text-xs font-mono font-bold text-gray-900 dark:text-gray-100">
+                ${parsedPrice} USD
+              </div>
               <div className="flex flex-wrap gap-1 pt-0.5">
                 {parsedFeatures.slice(0, 2).map((feat, idx) => (
                   <span
                     key={idx}
-                    className="text-[9px] px-1.5 py-0.5 rounded bg-stone-100 dark:bg-white/5 text-gray-600 dark:text-gray-300 truncate max-w-full"
+                    className="text-[9px] px-2 py-0.5 rounded-md bg-gray-100 dark:bg-white/5 text-gray-600 dark:text-gray-300 truncate max-w-full"
                   >
                     • {feat}
                   </span>
@@ -439,41 +525,82 @@ export function ProductStoreSketchPreview({
 
           {/* Technical & Logistics Summary Pills */}
           <div className="grid grid-cols-2 gap-2 pt-2 border-t border-gray-100 dark:border-white/10 text-[10px]">
-            <div className="p-2 rounded-xl bg-stone-50 dark:bg-white/[0.03] border border-gray-200/60 dark:border-white/5">
+            <div className="p-2.5 rounded-xl bg-gray-50 dark:bg-[#2a2a2c]/60 border border-gray-200/60 dark:border-white/5">
               <div className="text-[9px] font-bold text-gray-400 uppercase flex items-center gap-1">
-                <ShieldCheck className="w-3 h-3 text-emerald-500" /> Ficha Técnica
+                <ShieldCheck className="w-3 h-3 text-[#8c9276]" /> Ficha Técnica
               </div>
               <p className="text-gray-700 dark:text-gray-300 font-medium truncate mt-0.5">
-                {materials.trim() || dimensions.trim() || "Sin especificar"}
+                {materials.trim() || dimensions.trim() || "Pendiente de especificar"}
               </p>
             </div>
-            <div className="p-2 rounded-xl bg-stone-50 dark:bg-white/[0.03] border border-gray-200/60 dark:border-white/5">
+            <div className="p-2.5 rounded-xl bg-gray-50 dark:bg-[#2a2a2c]/60 border border-gray-200/60 dark:border-white/5">
               <div className="text-[9px] font-bold text-gray-400 uppercase flex items-center gap-1">
-                <Truck className="w-3 h-3 text-sky-500" /> Envío / Garantía
+                <Truck className="w-3 h-3 text-[#8c9276]" /> Logística & Garantía
               </div>
               <p className="text-gray-700 dark:text-gray-300 font-medium truncate mt-0.5">
-                {shipping.trim() || warranty.trim() || "Entrega estándar"}
+                {shipping.trim() || warranty.trim() || "Despacho nacional estándar"}
               </p>
             </div>
           </div>
 
           {combos.length > 0 && (
-            <div className="p-2 rounded-xl bg-[#FF5E00]/10 border border-[#FF5E00]/25 flex items-center justify-between text-[10px] text-[#FF5E00] font-semibold">
-              <span className="flex items-center gap-1">
-                <Tag className="w-3 h-3" /> Combos de Venta Cruzada
+            <div className="p-2.5 rounded-xl bg-[#8c9276]/10 border border-[#8c9276]/25 flex items-center justify-between text-[10px] text-gray-900 dark:text-gray-100 font-semibold">
+              <span className="flex items-center gap-1.5">
+                <Tag className="w-3 h-3 text-[#8c9276]" /> Combos de Venta Cruzada
               </span>
-              <span>{combos.length} activos</span>
+              <span className="font-mono text-[#8c9276] font-bold">{combos.length} activos</span>
             </div>
           )}
         </div>
       )}
 
-      {/* Interactive Checklist of the 4 Areas */}
-      <div className="rounded-2xl bg-white/80 dark:bg-[#202022]/80 border border-gray-200/70 dark:border-white/10 p-3 space-y-2">
-        <div className="flex items-center justify-between text-[10.5px] font-bold text-gray-700 dark:text-gray-200">
-          <span>Progreso del Producto</span>
-          <span className="font-mono text-[#FF5E00]">{completedCount}/4 áreas listas</span>
+      {/* PREVIEW MODE C: MICRO-SAAS ARTIFACT JSON COMPILER */}
+      {previewTab === "json" && (
+        <div className="rounded-2xl bg-white dark:bg-[#202022] border border-gray-200/80 dark:border-white/10 p-3.5 space-y-2.5 shadow-xs">
+          <div className="flex items-center justify-between">
+            <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-[#8c9276]">
+              Esquema JSON Compilado
+            </span>
+            <div className="flex items-center gap-1.5">
+              <button
+                type="button"
+                onClick={handleCopyJson}
+                className="px-2.5 py-1 rounded-lg bg-gray-100 dark:bg-[#2a2a2c] hover:bg-gray-200 dark:hover:bg-white/10 text-[10px] font-semibold text-gray-800 dark:text-gray-200 flex items-center gap-1 transition-colors cursor-pointer"
+              >
+                {copiedJson ? <Check className="w-3 h-3 text-emerald-500" /> : <Copy className="w-3 h-3" />}
+                <span>{copiedJson ? "Copiado" : "Copiar"}</span>
+              </button>
+              <button
+                type="button"
+                onClick={handleDownloadJson}
+                className="px-2.5 py-1 rounded-lg bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 text-[10px] font-semibold flex items-center gap-1 transition-colors cursor-pointer"
+              >
+                <Download className="w-3 h-3" />
+                <span>.JSON</span>
+              </button>
+            </div>
+          </div>
+          <pre className="text-[10px] font-mono leading-relaxed p-3 rounded-xl bg-gray-50 dark:bg-[#161618] border border-gray-200/70 dark:border-white/5 text-gray-700 dark:text-gray-300 max-h-[240px] overflow-y-auto select-all">
+            {compiledJsonPayload}
+          </pre>
         </div>
+      )}
+
+      {/* Interactive Checklist of the 4 Areas */}
+      <div className="rounded-2xl bg-white/90 dark:bg-[#202022]/90 border border-gray-200/80 dark:border-white/10 p-3.5 space-y-2.5">
+        <div className="flex items-center justify-between text-[10.5px] font-bold text-gray-900 dark:text-gray-100">
+          <span>Auditoría de Publicación</span>
+          <span className="font-mono text-[#8c9276]">{completedCount}/4 módulos listos</span>
+        </div>
+
+        {/* Progress Bar */}
+        <div className="w-full h-1.5 rounded-full bg-gray-100 dark:bg-[#2a2a2c] overflow-hidden">
+          <div
+            style={{ width: `${readinessPct}%` }}
+            className="h-full rounded-full bg-[#8c9276] transition-all duration-300"
+          />
+        </div>
+
         <div className="grid grid-cols-2 gap-1.5">
           {PRODUCT_WIZARD_STEPS.map((s, idx) => {
             const done = stepDone[idx];
@@ -483,25 +610,36 @@ export function ProductStoreSketchPreview({
                 key={s.id}
                 type="button"
                 onClick={() => onSelectStep(s.id)}
-                className={`px-2.5 py-1.5 rounded-xl text-left text-[10px] font-semibold flex items-center justify-between gap-1.5 border transition-all cursor-pointer ${
+                className={`px-2.5 py-2 rounded-xl text-left text-[10px] font-semibold flex items-center justify-between gap-1.5 border transition-all cursor-pointer ${
                   isCurrent
-                    ? "border-[#FF5E00] bg-[#FF5E00]/10 text-gray-900 dark:text-white"
-                    : "border-gray-200/70 dark:border-white/10 bg-stone-50/70 dark:bg-white/[0.02] text-gray-600 dark:text-gray-400 hover:border-gray-300"
+                    ? "border-gray-900 dark:border-gray-100 bg-gray-900 text-white dark:bg-gray-100 dark:text-gray-900 font-bold shadow-2xs"
+                    : "border-gray-200/80 dark:border-white/10 bg-gray-50/70 dark:bg-[#2a2a2c]/60 text-gray-600 dark:text-gray-400 hover:border-gray-300"
                 }`}
               >
                 <span className="truncate">{s.shortLabel}</span>
                 <CheckCircle2
                   className={`w-3.5 h-3.5 shrink-0 ${
                     done
-                      ? "text-emerald-500"
+                      ? isCurrent
+                        ? "text-[#8c9276]"
+                        : "text-emerald-500"
                       : isCurrent
-                      ? "text-[#FF5E00]"
+                      ? "text-white/60 dark:text-gray-900/60"
                       : "text-gray-300 dark:text-gray-600"
                   }`}
                 />
               </button>
             );
           })}
+        </div>
+
+        {/* Privacy & Client-Side Invariant Microcopy (from crear-web-micro-saas) */}
+        <div className="pt-1.5 border-t border-gray-100 dark:border-white/5 flex items-center justify-between text-[9.5px] text-gray-400 dark:text-gray-500">
+          <span className="flex items-center gap-1">
+            <Lock className="w-3 h-3 text-[#8c9276]" />
+            <span>Validación local instantánea</span>
+          </span>
+          <span className="font-mono">UTF-8 • 0ms</span>
         </div>
       </div>
     </div>
