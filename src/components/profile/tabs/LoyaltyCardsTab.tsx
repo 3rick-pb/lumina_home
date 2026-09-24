@@ -218,7 +218,7 @@ function CrispQRMatrixSVG({
   accentColor?: string;
   cornerStyle?: "rounded" | "sharp" | "dots";
   logoUrl?: string;
-  svgRef?: React.RefObject<SVGSVGElement | null>;
+  svgRef?: React.MutableRefObject<SVGSVGElement | null>;
 }) {
   const gridSize = 25;
   const cells = useMemo(() => buildDeterministicQRMatrix(value, gridSize), [value]);
