@@ -119,16 +119,22 @@ CREATE TABLE IF NOT EXISTS public.favorites (
 
 CREATE TABLE IF NOT EXISTS public.addresses (
   id TEXT PRIMARY KEY,
-  user_email TEXT NOT NULL,
-  label TEXT NOT NULL DEFAULT 'Casa',
-  recipient_name TEXT NOT NULL,
-  phone TEXT NOT NULL,
+  user_id UUID,
+  user_email TEXT,
+  recipient TEXT,
+  recipient_name TEXT,
+  id_number TEXT,
+  label TEXT DEFAULT 'Casa',
+  phone TEXT,
+  email TEXT,
   street TEXT NOT NULL,
   number TEXT,
   sector TEXT,
   city TEXT NOT NULL,
-  province TEXT NOT NULL,
+  state TEXT,
+  province TEXT,
   postal_code TEXT,
+  country TEXT DEFAULT 'Ecuador',
   reference TEXT,
   lat DOUBLE PRECISION,
   lng DOUBLE PRECISION,
@@ -136,6 +142,12 @@ CREATE TABLE IF NOT EXISTS public.addresses (
   created_at TIMESTAMPTZ DEFAULT now(),
   updated_at TIMESTAMPTZ DEFAULT now()
 );
+
+-- Garantizar que si la tabla `addresses` ya existía previamente, se agreguen las columnas de georreferenciación sin perder datos:
+ALTER TABLE public.addresses ADD COLUMN IF NOT EXISTS reference TEXT;
+ALTER TABLE public.addresses ADD COLUMN IF NOT EXISTS lat DOUBLE PRECISION;
+ALTER TABLE public.addresses ADD COLUMN IF NOT EXISTS lng DOUBLE PRECISION;
+ALTER TABLE public.addresses ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ DEFAULT now();
 
 CREATE INDEX IF NOT EXISTS idx_addresses_user_email ON public.addresses(user_email);
 
