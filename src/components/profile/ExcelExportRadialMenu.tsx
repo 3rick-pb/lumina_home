@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useRef, useEffect, useId } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
@@ -21,7 +21,6 @@ import { DROPI_HEADERS, DROPI_ECUADOR_REFERENCE } from "@/lib/dropiEcuadorData";
 import { useBrand } from "@/core/hooks/useBrand";
 import { exportCatalogToExcel } from "@/lib/exportCatalogExcel";
 import { exportNicheToExcel } from "@/lib/exportNicheExcel";
-import { FluidGiantThinkingOrb } from "@/components/ui/BeUIControls";
 
 export const NORMAL_ORDER_HEADERS = [
   "Nº",
@@ -148,9 +147,7 @@ function DropiIsotipo({ className = "w-6 h-6" }: { className?: string }) {
 
 export function ExcelExportRadialMenu() {
   const brand = useBrand();
-  const gooeyFilterId = `excel-gooey-${useId().replace(/[^a-zA-Z0-9_-]/g, "")}`;
   const [isOpen, setIsOpen] = useState(false);
-  const [isThinkingOpen, setIsThinkingOpen] = useState(false);
   const [ordersSubmenuOpen, setOrdersSubmenuOpen] = useState(false);
   const [activeExport, setActiveExport] = useState<string | null>(null);
   const [successExport, setSuccessExport] = useState<string | null>(null);
@@ -159,20 +156,14 @@ export function ExcelExportRadialMenu() {
   const [mobileXOffset, setMobileXOffset] = useState(-130);
   const menuRef = useRef<HTMLDivElement>(null);
   const modalRef = useRef<HTMLDivElement>(null);
-  const thinkingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     setMounted(true);
-    return () => {
-      if (thinkingTimeoutRef.current) clearTimeout(thinkingTimeoutRef.current);
-    };
   }, []);
 
   const handleCloseMenu = () => {
     setIsOpen(false);
-    setIsThinkingOpen(false);
     setOrdersSubmenuOpen(false);
-    if (thinkingTimeoutRef.current) clearTimeout(thinkingTimeoutRef.current);
   };
 
   const handleToggleMenu = () => {
@@ -180,12 +171,7 @@ export function ExcelExportRadialMenu() {
       handleCloseMenu();
     } else {
       setOrdersSubmenuOpen(false);
-      setIsThinkingOpen(true);
       setIsOpen(true);
-      if (thinkingTimeoutRef.current) clearTimeout(thinkingTimeoutRef.current);
-      thinkingTimeoutRef.current = setTimeout(() => {
-        setIsThinkingOpen(false);
-      }, 680);
     }
   };
 
@@ -530,8 +516,8 @@ export function ExcelExportRadialMenu() {
       },
       targetX: isMobile ? mobileXOffset : -95,
       targetY: isMobile ? 128 : 0,
-      originX: isMobile ? mobileXOffset : -67,
-      originY: isMobile ? 65 : -67,
+      originX: 0,
+      originY: 0,
       accentColor: "text-sky-500 dark:text-cyan-300",
       glowColor: "rgba(6, 182, 212, 0.45)",
       badgeColor: "bg-sky-500/20 text-sky-700 dark:text-cyan-300 border-sky-500/30",
@@ -548,8 +534,8 @@ export function ExcelExportRadialMenu() {
       },
       targetX: isMobile ? mobileXOffset : -67,
       targetY: isMobile ? 191 : 67,
-      originX: isMobile ? mobileXOffset : -95,
-      originY: isMobile ? 128 : 0,
+      originX: 0,
+      originY: 0,
       accentColor: "text-amber-500 dark:text-amber-300",
       glowColor: "rgba(245, 158, 11, 0.45)",
       badgeColor: "bg-amber-500/20 text-amber-700 dark:text-amber-300 border-amber-500/30",
@@ -683,114 +669,112 @@ export function ExcelExportRadialMenu() {
         )}
       </AnimatePresence>
 
+      {/* SVG Gooey Filter ("Touching pieces merge like goo and morph like jelly while text stays crisp") */}
+      <svg className="sr-only pointer-events-none absolute w-0 h-0" aria-hidden="true">
+        <defs>
+          <filter id="excel-gooey-jelly" x="-120%" y="-120%" width="340%" height="340%" colorInterpolationFilters="sRGB">
+            <feGaussianBlur in="SourceGraphic" stdDeviation="11" result="blur" />
+            <feColorMatrix
+              in="blur"
+              mode="matrix"
+              values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 24 -10"
+              result="goo"
+            />
+            <feComposite in="SourceGraphic" in2="goo" operator="atop" />
+          </filter>
+        </defs>
+      </svg>
+
       {/* 2. RADIAL INTERACTIVE MENU CONTAINER: Exactly 44x44px (w-11 h-11) for Pixel-Perfect Vertical Alignment */}
       <div 
         ref={menuRef} 
         className={`relative inline-flex items-center justify-center w-11 h-11 shrink-0 select-none ${isOpen ? "z-50" : "z-20"}`}
       >
-        {/* SVG GOOEY METABALL FILTER DEFINITION (beUI Liquid Physics) */}
-        <svg aria-hidden="true" focusable="false" className="pointer-events-none absolute w-0 h-0 overflow-hidden">
-          <defs>
-            <filter id={gooeyFilterId} colorInterpolationFilters="sRGB">
-              <feGaussianBlur in="SourceGraphic" stdDeviation="8" result="goo-blur" />
-              <feColorMatrix
-                in="goo-blur"
-                type="matrix"
-                values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 24 -10"
-                result="goo-metaball"
-              />
-              <feComposite in="SourceGraphic" in2="goo-metaball" operator="atop" />
-            </filter>
-          </defs>
-        </svg>
+        {/* GOOEY LIQUID LAYER: Merges touching pieces like goo and morphs like jelly while text/icons above stay 100% crisp */}
+        <div
+          aria-hidden="true"
+          style={{ filter: "url(#excel-gooey-jelly)" }}
+          className="pointer-events-none absolute inset-0 flex items-center justify-center z-30 overflow-visible"
+        >
+          {/* Central Gooey Anchor Blob */}
+          <motion.div
+            animate={
+              isOpen
+                ? { scaleX: [1, 1.24, 0.88, 1.04], scaleY: [1, 0.86, 1.18, 1.04] }
+                : { scaleX: [1.04, 1.18, 0.92, 1], scaleY: [1.04, 0.88, 1.12, 1] }
+            }
+            transition={{ duration: 0.48, ease: [0.34, 1.56, 0.64, 1] }}
+            className="w-11 h-11 rounded-full bg-emerald-500/85 dark:bg-[#1b3a28]"
+          />
 
-        {/* Liquid Glass & Gooey Metaball Emergence Orbit */}
+          <AnimatePresence>
+            {isOpen &&
+              subButtons.map((btn, index) => (
+                <React.Fragment key={`gooey-blob-${btn.id}`}>
+                  {/* Viscous Tendril Droplet that bridges the center hub and the emerging satellite */}
+                  <motion.div
+                    initial={{ x: 0, y: 0, scale: 0.9 }}
+                    animate={{
+                      x: [0, btn.targetX * 0.48, btn.targetX],
+                      y: [0, btn.targetY * 0.48, btn.targetY],
+                      scale: [0.95, 0.72, 0.35],
+                    }}
+                    exit={{
+                      x: [btn.targetX, btn.targetX * 0.42, 0],
+                      y: [btn.targetY, btn.targetY * 0.42, 0],
+                      scale: [0.4, 0.8, 0.9],
+                      transition: {
+                        duration: 0.28,
+                        ease: [0.4, 0, 0.2, 1],
+                        delay: (2 - index) * 0.025,
+                      },
+                    }}
+                    transition={{
+                      duration: 0.46,
+                      ease: [0.22, 1, 0.36, 1],
+                      delay: index * 0.045,
+                    }}
+                    className="absolute w-9 h-9 rounded-full bg-emerald-500/85 dark:bg-[#1b3a28]"
+                  />
+
+                  {/* Satellite Gooey Blob that detaches from the central hub and morphs like jelly */}
+                  <motion.div
+                    initial={{ x: 0, y: 0, scaleX: 0.45, scaleY: 0.45 }}
+                    animate={{
+                      x: btn.targetX,
+                      y: btn.targetY,
+                      scaleX: [0.45, 1.22, 0.9, 1.02, 1],
+                      scaleY: [0.45, 0.82, 1.14, 0.97, 1],
+                    }}
+                    exit={{
+                      x: 0,
+                      y: 0,
+                      scaleX: [1, 1.16, 0.4],
+                      scaleY: [1, 0.84, 0.4],
+                      transition: {
+                        duration: 0.28,
+                        ease: [0.4, 0, 0.2, 1],
+                        delay: (2 - index) * 0.025,
+                      },
+                    }}
+                    transition={{
+                      type: "spring",
+                      stiffness: 230,
+                      damping: 15,
+                      mass: 0.75,
+                      delay: index * 0.045,
+                    }}
+                    className="absolute w-[50px] h-[50px] rounded-full bg-emerald-500/85 dark:bg-[#1b3a28]"
+                  />
+                </React.Fragment>
+              ))}
+          </AnimatePresence>
+        </div>
+
+        {/* Liquid Glass Emergence Orbit (Crisp Foreground Layer) */}
         <AnimatePresence>
           {isOpen && (
             <>
-              {/* GOOEY THINKING TELEMETRY CAPSULE (Responsive for Mobile & Desktop) */}
-              <motion.div
-                key="gooey-thinking-pill"
-                initial={{ opacity: 0, y: 12, scale: 0.72 }}
-                animate={{ opacity: 1, y: isMobile ? -46 : -48, x: isMobile ? mobileXOffset * 0.45 : -54, scale: 1 }}
-                exit={{ opacity: 0, y: 8, scale: 0.75 }}
-                transition={{ duration: 0.48, ease: [0.22, 1.3, 0.71, 1] }}
-                className="pointer-events-none absolute z-[65] flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#111614]/95 dark:bg-[#0d1310]/95 backdrop-blur-2xl border border-emerald-400/35 shadow-[0_12px_30px_rgba(0,0,0,0.35),0_0_20px_rgba(16,185,129,0.22)] whitespace-nowrap"
-              >
-                <div className="relative w-6 h-6 rounded-full bg-emerald-500/15 border border-emerald-400/30 flex items-center justify-center overflow-hidden shrink-0">
-                  <FluidGiantThinkingOrb
-                    size={24}
-                    state={activeExport ? "working" : isThinkingOpen ? "solving" : "breathing"}
-                    speed={activeExport || isThinkingOpen ? 1.35 : 0.95}
-                    className="w-6 h-6"
-                  />
-                </div>
-                <div className="flex flex-col text-left pr-1">
-                  <span className="text-[9px] font-mono uppercase tracking-widest text-emerald-400 font-bold leading-none">
-                    {activeExport
-                      ? "THINKING // COMPILANDO .XLSX"
-                      : isThinkingOpen
-                      ? "GOOEY // ANALIZANDO TABLAS"
-                      : "GOOEY ENGINE // LISTO"}
-                  </span>
-                  <span className="text-[10.5px] font-sans font-semibold text-white leading-tight mt-0.5">
-                    {activeExport
-                      ? "Generando libro Excel..."
-                      : isThinkingOpen
-                      ? "Sincronizando órdenes y catálogo..."
-                      : "Selecciona el módulo a exportar"}
-                  </span>
-                </div>
-              </motion.div>
-
-              {/* GOOEY LIQUID METABALL BRIDGE LAYER (Connects central hub to emerging satellites) */}
-              <div
-                aria-hidden="true"
-                style={{ filter: `url(#${gooeyFilterId})` }}
-                className="pointer-events-none absolute inset-0 flex items-center justify-center z-40 overflow-visible"
-              >
-                {/* Central Gooey Anchor Drop */}
-                <motion.div
-                  initial={{ scale: 0.6 }}
-                  animate={{ scale: isThinkingOpen ? [1, 1.24, 1.04] : 1.02 }}
-                  exit={{ scale: 0.4, opacity: 0 }}
-                  transition={{ duration: 0.55, ease: [0.22, 1.3, 0.71, 1] }}
-                  className="absolute w-11 h-11 rounded-full bg-emerald-500/45 dark:bg-emerald-400/40"
-                />
-                {/* Satellite Liquid Tendril Droplets */}
-                {subButtons.map((btn, index) => (
-                  <React.Fragment key={`gooey-drop-${btn.id}`}>
-                    <motion.div
-                      initial={{ x: 0, y: 0, scale: 0.95, opacity: 0.85 }}
-                      animate={{
-                        x: btn.targetX * 0.48,
-                        y: btn.targetY * 0.48,
-                        scale: isThinkingOpen ? 0.52 : 0.24,
-                        opacity: isThinkingOpen ? 0.65 : 0.18,
-                      }}
-                      exit={{ x: 0, y: 0, scale: 0.8, opacity: 0 }}
-                      transition={{
-                        duration: 0.58,
-                        ease: [0.22, 1.3, 0.71, 1],
-                        delay: index * 0.045,
-                      }}
-                      className="absolute w-7 h-7 rounded-full bg-emerald-400/50"
-                    />
-                    <motion.div
-                      initial={{ x: 0, y: 0, scale: 0.85 }}
-                      animate={{ x: btn.targetX, y: btn.targetY, scale: 1 }}
-                      exit={{ x: 0, y: 0, scale: 0.3, opacity: 0 }}
-                      transition={{
-                        duration: 0.6,
-                        ease: [0.22, 1.3, 0.71, 1],
-                        delay: index * 0.05,
-                      }}
-                      className="absolute w-[48px] h-[48px] rounded-full bg-emerald-500/35 dark:bg-emerald-400/30"
-                    />
-                  </React.Fragment>
-                ))}
-              </div>
-
               {/* Vibrant ambient light bloom behind bubbles */}
               <motion.div
                 style={{ willChange: "transform, opacity" }}
@@ -818,32 +802,37 @@ export function ExcelExportRadialMenu() {
                     className={`absolute ${isSubmenuActive ? "z-[70]" : "z-50"} pointer-events-auto`}
                     style={{ willChange: "transform, opacity" }}
                     initial={{ 
-                      x: 0, 
-                      y: 0, 
-                      scale: 0.25, 
+                      x: btn.originX, 
+                      y: btn.originY, 
+                      scaleX: 0.35,
+                      scaleY: 0.35,
                       opacity: 0
                     }}
                     animate={{ 
                       x: btn.targetX, 
                       y: btn.targetY, 
-                      scale: 1, 
+                      scaleX: [0.35, 1.16, 0.92, 1.02, 1],
+                      scaleY: [0.35, 0.86, 1.1, 0.98, 1],
                       opacity: 1
                     }}
                     exit={{ 
-                      x: 0, 
-                      y: 0, 
-                      scale: 0.2, 
+                      x: btn.originX, 
+                      y: btn.originY, 
+                      scaleX: 0.3,
+                      scaleY: 0.3,
                       opacity: 0,
                       transition: { 
-                        duration: 0.22, 
-                        ease: [0.32, 0, 0.67, 0],
-                        delay: (2 - index) * 0.03 
+                        duration: 0.26, 
+                        ease: [0.4, 0, 0.2, 1],
+                        delay: (2 - index) * 0.025 
                       }
                     }}
                     transition={{
-                      duration: 0.6,
-                      ease: [0.22, 1.3, 0.71, 1],
-                      delay: index * 0.055,
+                      type: "spring",
+                      stiffness: 230,
+                      damping: 15,
+                      mass: 0.75,
+                      delay: index * 0.045,
                     }}
                   >
                     <div className="relative group flex items-center">
@@ -876,12 +865,7 @@ export function ExcelExportRadialMenu() {
                         <div className="pointer-events-none absolute inset-0 rounded-full bg-gradient-to-tr from-transparent via-white/15 to-white/60 opacity-0 group-hover:opacity-100 transition-opacity duration-200" />
 
                         {isExporting ? (
-                          <FluidGiantThinkingOrb
-                            size={30}
-                            state="working"
-                            speed={1.35}
-                            className="w-7 h-7 relative z-10"
-                          />
+                          <Loader2 className="w-5 h-5 animate-spin text-emerald-500 relative z-10" />
                         ) : isSuccess ? (
                           <Check className="w-5 h-5 text-emerald-500 stroke-[3] relative z-10" />
                         ) : (
@@ -938,7 +922,8 @@ export function ExcelExportRadialMenu() {
           )}
         </AnimatePresence>
 
-        {/* 3. MAIN CENTRAL LIQUID GLASS TRIGGER BUTTON WITH EXCEL 2025 ICON & GOOEY THINKING ORB */}
+        {/* 3. MAIN CENTRAL LIQUID GLASS TRIGGER BUTTON WITH EXCEL 2025 ICON */}
+        {/* Perfectly circular, 100% symmetric, vibrant energetic emerald styling */}
         <button
           type="button"
           onClick={handleToggleMenu}
@@ -951,7 +936,7 @@ export function ExcelExportRadialMenu() {
           }}
           className={`relative z-50 w-11 h-11 rounded-full flex items-center justify-center border transition-all duration-300 cursor-pointer backdrop-blur-3xl overflow-hidden active:scale-95 ${
             isOpen
-              ? "border-emerald-400 bg-[#112419] text-white scale-105"
+              ? "border-emerald-400 bg-emerald-600 text-white scale-105"
               : "border-emerald-500/40 dark:border-emerald-400/50 bg-gradient-to-br from-white via-emerald-50/80 to-emerald-100/70 dark:from-[#1b3826] dark:via-[#142c1e] dark:to-[#0f2317] hover:scale-108 hover:border-emerald-500 dark:hover:border-emerald-300"
           }`}
         >
@@ -970,23 +955,14 @@ export function ExcelExportRadialMenu() {
 
           <motion.div
             animate={{ 
-              rotate: isOpen && !isThinkingOpen ? 90 : 0, 
+              rotate: isOpen ? 90 : 0, 
               scale: isOpen ? 1.05 : 1 
             }}
             transition={{ type: "spring", stiffness: 380, damping: 20 }}
             className="relative z-10 flex items-center justify-center"
           >
             {isOpen ? (
-              isThinkingOpen || activeExport ? (
-                <FluidGiantThinkingOrb
-                  size={32}
-                  state={activeExport ? "working" : "solving"}
-                  speed={1.35}
-                  className="w-8 h-8"
-                />
-              ) : (
-                <X className="w-5 h-5 text-white" />
-              )
+              <X className="w-5 h-5 text-white" />
             ) : (
               <Excel2025Icon className="w-6 h-6 transition-transform duration-200" />
             )}
