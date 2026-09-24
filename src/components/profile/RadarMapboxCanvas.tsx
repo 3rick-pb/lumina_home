@@ -455,7 +455,28 @@ function mercatorYToLat(wy: number, zoom: number): number {
 const tileImageCache = new Map<string, HTMLImageElement>();
 const tileLoadingSet = new Set<string>();
 
-type TileProvider = "satellite" | "dark-base" | "boundaries-labels" | "street-topo" | "osm-streets";
+type TileProvider =
+  | "satellite"
+  | "dark-base"
+  | "boundaries-labels"
+  | "street-topo"
+  | "osm-streets"
+  | "carto-dark-all"
+  | "carto-dark-labels"
+  | "carto-voyager";
+
+// Maximum safe native zoom per tile provider in Latin America / Ecuador
+// Prevents Esri ArcGIS from ever returning HTTP 200 "Map Data Not Available" placeholder images
+const PROVIDER_MAX_NATIVE_Z: Record<TileProvider, number> = {
+  "dark-base": 11,
+  "boundaries-labels": 11,
+  "satellite": 13,
+  "street-topo": 12,
+  "osm-streets": 18,
+  "carto-dark-all": 18,
+  "carto-dark-labels": 18,
+  "carto-voyager": 18,
+};
 
 function getTileCacheKey(provider: TileProvider, z: number, x: number, y: number): string {
   const maxIndex = Math.pow(2, z);
@@ -466,11 +487,19 @@ function getTileCacheKey(provider: TileProvider, z: number, x: number, y: number
 function getTileUrl(provider: TileProvider, z: number, x: number, y: number, useAltHost = false): string {
   const maxIndex = Math.pow(2, z);
   const wrappedX = ((x % maxIndex) + maxIndex) % maxIndex;
-  if (provider === "osm-streets") {
-    const subdomains = ["a", "b", "c"];
-    const sub = subdomains[(wrappedX + y + (useAltHost ? 1 : 0)) % subdomains.length];
-    return `https://${sub}.tile.openstreetmap.org/${z}/${wrappedX}/${y}.png`;
+  const cartoSubs = ["a", "b", "c", "d"];
+  const cartoSub = cartoSubs[(wrappedX + y + (useAltHost ? 1 : 0)) % cartoSubs.length];
+
+  if (provider === "carto-dark-all") {
+    return `https://${cartoSub}.basemaps.cartocdn.com/dark_all/${z}/${wrappedX}/${y}@2x.png`;
   }
+  if (provider === "carto-dark-labels") {
+    return `https://${cartoSub}.basemaps.cartocdn.com/dark_only_labels/${z}/${wrappedX}/${y}@2x.png`;
+  }
+  if (provider === "carto-voyager" || provider === "osm-streets") {
+    return `https://${cartoSub}.basemaps.cartocdn.com/rastertiles/voyager/${z}/${wrappedX}/${y}@2x.png`;
+  }
+
   // Load-balance across both official Esri ArcGIS CDN hosts to double concurrent tile throughput
   const host =
     useAltHost
@@ -708,7 +737,7 @@ export function RadarMapboxCanvas({
                 dirtyRef.current = true;
                 triggerLoopRef.current?.();
               };
-              osmImg.src = `https://tile.openstreetmap.org/${z}/${wrappedX}/${y}.png`;
+              osmImg.src = `https://a.basemaps.cartocdn.com/dark_all/${z}/${wrappedX}/${y}@2x.png`;
             }
           };
           retryImg.src = getTileUrl(provider, z, x, y, true);
@@ -734,8 +763,9 @@ export function RadarMapboxCanvas({
       alpha: number = 1,
       retinaBoost: number = 1
     ) => {
-      // Fetch tiles at z + retinaBoost (1 level deeper = 4x pixel density / true @2x Retina sharpness)
-      const zTile = Math.max(2, Math.min(18, Math.floor(camZoom) + retinaBoost));
+      // Clamp zTile by PROVIDER_MAX_NATIVE_Z so Esri never returns "Map Data Not Available" placeholder tiles
+      const maxNativeZ = PROVIDER_MAX_NATIVE_Z[provider] ?? 18;
+      const zTile = Math.max(2, Math.min(maxNativeZ, Math.floor(camZoom) + retinaBoost));
       const scaleFactor = Math.pow(2, camZoom - zTile);
       const drawnTileSize = TILE_SIZE * scaleFactor;
 
@@ -907,31 +937,31 @@ export function RadarMapboxCanvas({
             ctx.fillRect(0, 0, w, h);
 
             if (mapStyleMode === "tactical") {
-              // Layer A: Esri Dark Gray Base at Retina z+1 resolution
-              drawTileLayer(ctx, "dark-base", cam.lng, cam.lat, cam.zoom, w, h, 1.0, 1);
-              // Layer B: Esri Satellite Relief Blend
-              drawTileLayer(ctx, "satellite", cam.lng, cam.lat, cam.zoom, w, h, 0.34, 0);
-              // Layer B2: When zoomed into a city/neighborhood (zoom >= 11.0), blend OpenStreetMap street/avenue geometry
-              if (cam.zoom >= 11.0) {
-                const streetAlpha = Math.min(0.42, (cam.zoom - 10.8) * 0.14);
-                drawTileLayer(ctx, "osm-streets", cam.lng, cam.lat, cam.zoom, w, h, streetAlpha, 0);
+              if (cam.zoom < 10.6) {
+                // Macro / Continental view: Esri Dark Gray Base + Satellite Relief + Boundaries
+                drawTileLayer(ctx, "dark-base", cam.lng, cam.lat, cam.zoom, w, h, 1.0, 1);
+                drawTileLayer(ctx, "satellite", cam.lng, cam.lat, cam.zoom, w, h, 0.34, 0);
+                drawTileLayer(ctx, "boundaries-labels", cam.lng, cam.lat, cam.zoom, w, h, 1.0, 1);
               }
-              // Layer C: Esri World Boundaries & Places Reference at Retina z+1 resolution for razor-sharp labels
-              drawTileLayer(ctx, "boundaries-labels", cam.lng, cam.lat, cam.zoom, w, h, 1.0, 1);
+              if (cam.zoom >= 9.4) {
+                // City / Neighborhood / Street view (up to z=18): CartoDB @2x Dark Matter + subtle Satellite texture
+                // 100% immune to Esri "Map Data Not Available" tiles at high zoom!
+                const cityFade = Math.min(1.0, (cam.zoom - 9.4) / 1.2);
+                drawTileLayer(ctx, "carto-dark-all", cam.lng, cam.lat, cam.zoom, w, h, cityFade, 0);
+                drawTileLayer(ctx, "satellite", cam.lng, cam.lat, cam.zoom, w, h, cityFade * 0.22, 0);
+                drawTileLayer(ctx, "carto-dark-labels", cam.lng, cam.lat, cam.zoom, w, h, cityFade, 0);
+              }
             } else if (mapStyleMode === "satellite") {
-              // Full HD Esri Satellite Imagery + Retina z+1 Boundaries & Places Reference
+              // Full HD Esri Satellite Imagery (clamped at native z=13 and smoothly overzoomed) + @2x Labels
               drawTileLayer(ctx, "satellite", cam.lng, cam.lat, cam.zoom, w, h, 1.0, 1);
-              if (cam.zoom >= 12.0) {
-                drawTileLayer(ctx, "osm-streets", cam.lng, cam.lat, cam.zoom, w, h, 0.28, 0);
-              }
-              drawTileLayer(ctx, "boundaries-labels", cam.lng, cam.lat, cam.zoom, w, h, 1.0, 1);
-            } else {
-              // High-precision OpenStreetMap Street/Neighborhood Map when zoomed in, Esri Topo at macro zoom
-              if (cam.zoom >= 10.5) {
-                drawTileLayer(ctx, "osm-streets", cam.lng, cam.lat, cam.zoom, w, h, 1.0, 0);
+              if (cam.zoom < 10.5) {
+                drawTileLayer(ctx, "boundaries-labels", cam.lng, cam.lat, cam.zoom, w, h, 1.0, 1);
               } else {
-                drawTileLayer(ctx, "street-topo", cam.lng, cam.lat, cam.zoom, w, h, 1.0, 1);
+                drawTileLayer(ctx, "carto-dark-labels", cam.lng, cam.lat, cam.zoom, w, h, 1.0, 0);
               }
+            } else {
+              // Full-color CartoDB Voyager @2x Retina street & neighborhood cartography up to z=18
+              drawTileLayer(ctx, "carto-voyager", cam.lng, cam.lat, cam.zoom, w, h, 1.0, 0);
             }
 
             // Subtle Tactical Radar Coordinate Grid Lines

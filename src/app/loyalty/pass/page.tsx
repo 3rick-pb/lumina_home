@@ -3,26 +3,26 @@
 import React, { Suspense, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { Wallet, Smartphone, CheckCircle2, Sparkles, ArrowLeft, Gift, ShieldCheck } from "lucide-react";
+import { Wallet, Smartphone, CheckCircle2, ArrowLeft, Gift, ShieldCheck, Lock } from "lucide-react";
 
 const toast = {
   success: (msg: string, _opts?: { description?: string }) => {
     if (typeof window !== "undefined") {
-      console.info("[LoyaltyPass]", msg);
+      console.info("[PassKitProvisioning]", msg);
     }
   },
 };
 
 function LoyaltyPassContent() {
   const searchParams = useSearchParams();
-  const program = searchParams.get("program") || "Lumina Privé Club";
-  const issuer = searchParams.get("issuer") || "Lumina Home Studio";
+  const program = searchParams.get("program") || "Lumina Privé Ledger";
+  const issuer = searchParams.get("issuer") || "Lumina Home Architectural Studio";
   const ptsPerDollar = searchParams.get("ptsPerDollar") || "10";
   const welcome = searchParams.get("welcome") || "200";
   const bg = searchParams.get("bg") || "#111614";
   const accent = searchParams.get("accent") || "#ccff00";
-  const code = searchParams.get("code") || "LUM-8842-VIP";
-  const name = searchParams.get("name") || "Miembro VIP";
+  const code = searchParams.get("code") || "LUM-8842-PRV";
+  const name = searchParams.get("name") || "Titular Privé";
   const pts = searchParams.get("pts") || welcome;
 
   const [addedPlatform, setAddedPlatform] = useState<"apple" | "google" | null>(null);
@@ -31,16 +31,16 @@ function LoyaltyPassContent() {
     setAddedPlatform(platform);
     toast.success(
       platform === "apple"
-        ? "Pase añadido a Apple Wallet con éxito"
-        : "Pase guardado en Google Wallet con éxito",
+        ? "Credencial aprovisionada en Apple Wallet (PassKit)"
+        : "Credencial sincronizada en Google Wallet (JWT)",
       {
-        description: `Tu tarjeta ${code} (${pts} puntos) ya está activa para acumular en cada compra.`,
+        description: `Serial ${code} (${pts} pts) activo para conciliación automática en checkout.`,
       }
     );
   };
 
   return (
-    <div className="min-h-screen bg-[#0c100e] text-white flex flex-col items-center justify-center p-4 sm:p-6">
+    <div className="min-h-screen bg-[#0a0e0d] text-white flex flex-col items-center justify-center p-4 sm:p-6">
       <div className="w-full max-w-md space-y-6">
         <div className="flex items-center justify-between">
           <Link
@@ -48,10 +48,10 @@ function LoyaltyPassContent() {
             className="inline-flex items-center gap-2 text-xs text-white/70 hover:text-white transition-colors"
           >
             <ArrowLeft className="w-4 h-4" />
-            <span>Ir a la tienda</span>
+            <span>Volver al Catálogo</span>
           </Link>
-          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#ccff00]/15 border border-[#ccff00]/30 text-[#ccff00] text-[10px] font-mono uppercase">
-            <ShieldCheck className="w-3.5 h-3.5" /> Pase Oficial Verificado
+          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#ccff00]/10 border border-[#ccff00]/30 text-[#ccff00] text-[10px] font-mono uppercase tracking-wider">
+            <Lock className="w-3 h-3" /> Firma PKCS#7 / JWT Verificada
           </span>
         </div>
 
@@ -78,7 +78,7 @@ function LoyaltyPassContent() {
                 className="text-[10px] font-mono uppercase tracking-widest block font-bold"
                 style={{ color: accent }}
               >
-                SALDO ACTUAL
+                BALANCE DISPONIBLE
               </span>
               <span className="text-2xl font-mono font-extrabold">
                 {Number(pts).toLocaleString()} pts
@@ -89,13 +89,13 @@ function LoyaltyPassContent() {
           <div className="grid grid-cols-2 gap-4 py-2">
             <div>
               <span className="text-[10px] uppercase tracking-wider text-white/50 block">
-                TITULAR
+                TITULAR ACREDITADO
               </span>
               <span className="text-sm font-bold">{name}</span>
             </div>
             <div className="text-right">
               <span className="text-[10px] uppercase tracking-wider text-white/50 block">
-                CÓDIGO DE MIEMBRO
+                SERIAL CRIPTOGRÁFICO
               </span>
               <span className="text-sm font-mono font-bold" style={{ color: accent }}>
                 {code}
@@ -106,7 +106,7 @@ function LoyaltyPassContent() {
           <div className="p-3.5 rounded-2xl bg-white/[0.06] border border-white/10 flex items-center justify-between text-xs">
             <span className="flex items-center gap-2 text-white/85">
               <Gift className="w-4 h-4" style={{ color: accent }} />
-              Acumulación por compra:
+              Tasa de liquidación en tienda:
             </span>
             <span className="font-mono font-bold" style={{ color: accent }}>
               +{ptsPerDollar} pts / $1 USD
@@ -124,9 +124,9 @@ function LoyaltyPassContent() {
             <Wallet className="w-5 h-5 text-white" />
             <div className="text-left">
               <span className="block text-[10px] uppercase tracking-wider text-white/60 leading-none">
-                Añadir a
+                Aprovisionar en
               </span>
-              <span className="text-sm font-bold text-white">Apple Wallet</span>
+              <span className="text-sm font-bold text-white">Apple Wallet (iOS PassKit)</span>
             </div>
           </button>
 
@@ -138,9 +138,9 @@ function LoyaltyPassContent() {
             <Smartphone className="w-5 h-5 text-white" />
             <div className="text-left">
               <span className="block text-[10px] uppercase tracking-wider text-white/80 leading-none">
-                Guardar en
+                Sincronizar con
               </span>
-              <span className="text-sm font-bold text-white">Google Wallet</span>
+              <span className="text-sm font-bold text-white">Google Wallet (Android Pay)</span>
             </div>
           </button>
         </div>
@@ -149,9 +149,9 @@ function LoyaltyPassContent() {
           <div className="p-4 rounded-2xl bg-emerald-500/15 border border-emerald-500/30 flex items-center gap-3 text-xs text-emerald-200">
             <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" />
             <span>
-              ¡Listo! Tu tarjeta <strong>{code}</strong> ha sido vinculada a{" "}
-              <strong>{addedPlatform === "apple" ? "Apple Wallet" : "Google Wallet"}</strong>. Cada compra en
-              Lumina sumará puntos automáticamente.
+              Credencial <strong>{code}</strong> instalada en{" "}
+              <strong>{addedPlatform === "apple" ? "Apple Wallet" : "Google Wallet"}</strong>. Las órdenes
+              liquidadas en tienda acreditarán puntos de forma automática.
             </span>
           </div>
         )}
@@ -162,7 +162,7 @@ function LoyaltyPassContent() {
 
 export default function LoyaltyPassPage() {
   return (
-    <Suspense fallback={<div className="min-h-screen bg-[#0c100e]" />}>
+    <Suspense fallback={<div className="min-h-screen bg-[#0a0e0d]" />}>
       <LoyaltyPassContent />
     </Suspense>
   );

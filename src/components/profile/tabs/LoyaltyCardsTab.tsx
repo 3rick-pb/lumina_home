@@ -9,8 +9,6 @@ import {
   Plus,
   Copy,
   Check,
-  Download,
-  RefreshCw,
   Sliders,
   Users,
   Gift,
@@ -22,18 +20,21 @@ import {
   Crown,
   Trash2,
   Eye,
+  Cpu,
+  Activity,
+  Lock,
 } from "lucide-react";
 import { useUserStore } from "@/lib/userStore";
 
 const toast = {
   success: (msg: string, _opts?: { description?: string }) => {
     if (typeof window !== "undefined") {
-      console.info("[LoyaltyCards]", msg);
+      console.info("[PassKitEngine]", msg);
     }
   },
   error: (msg: string) => {
     if (typeof window !== "undefined") {
-      console.warn("[LoyaltyCards]", msg);
+      console.warn("[PassKitEngine]", msg);
     }
   },
 };
@@ -76,48 +77,48 @@ export interface LoyaltyMemberCard {
 }
 
 const DEFAULT_PROGRAM_CONFIG: LoyaltyProgramConfig = {
-  programName: "Lumina Privé Club",
-  issuerName: "Lumina Home Studio",
-  tagline: "Recompensas Exclusivas & Interiorismo",
+  programName: "Lumina Privé Ledger",
+  issuerName: "Lumina Home Architectural Studio",
+  tagline: "Credencial Patrimonial & Liquidación de Puntos",
   pointsPerDollar: 10,
   welcomeBonusPoints: 200,
   rewardThreshold: 1500,
-  rewardDescription: "$25 USD de descuento + Envío VIP sin costo",
+  rewardDescription: "Bonificación directa de $25 USD en checkout + Despacho Prioritario White-Glove",
   bgColor: "#111614",
   accentColor: "#ccff00",
   textColor: "#ffffff",
   tierSilverMin: 0,
   tierGoldMin: 1200,
   tierBlackMin: 3000,
-  pushMessage: "✨ Tienes puntos disponibles en Lumina Home. ¡Acumula en cada compra!",
+  pushMessage: "Balance actualizado en tu credencial Lumina Privé. Disponible para redención inmediata.",
   autoSyncPurchases: true,
   appleTeamId: "LUMINA99EC",
-  applePassTypeId: "pass.ec.luminahome.loyalty",
+  applePassTypeId: "pass.ec.luminahome.prive",
   googleIssuerId: "3388000000022194812",
-  googleClassId: "lumina_prive_loyalty_v1",
+  googleClassId: "lumina_prive_ledger_v2",
 };
 
 const COLOR_PRESETS = [
   {
-    name: "Obsidian Neon",
+    name: "Obsidian Telemetry",
     bgColor: "#111614",
     accentColor: "#ccff00",
     textColor: "#ffffff",
   },
   {
-    name: "Imperial Gold",
+    name: "Sovereign Gold",
     bgColor: "#171411",
     accentColor: "#e5b869",
     textColor: "#ffffff",
   },
   {
-    name: "Emerald Atelier",
+    name: "Emerald Reserve",
     bgColor: "#0c211b",
     accentColor: "#34d399",
     textColor: "#f8fafc",
   },
   {
-    name: "Editorial Ivory",
+    name: "Architectural Stone",
     bgColor: "#f5f3ef",
     accentColor: "#5c6449",
     textColor: "#18181b",
@@ -126,7 +127,6 @@ const COLOR_PRESETS = [
 
 /**
  * Deterministic SVG QR-like Matrix Generator (25x25 Version 2 QR layout with Finder Patterns)
- * Encodes any payload string into a crisp scannable visual matrix + real enrollment URL.
  */
 function CrispQRMatrixSVG({
   value,
@@ -164,7 +164,6 @@ function CrispQRMatrixSVG({
     drawFinder(0, gridSize - 7);
     drawFinder(gridSize - 7, 0);
 
-    // Alignment pattern at (16, 16)
     for (let r = 16; r <= 20; r++) {
       for (let c = 16; c <= 20; c++) {
         const isBorder = r === 16 || r === 20 || c === 16 || c === 20;
@@ -173,13 +172,11 @@ function CrispQRMatrixSVG({
       }
     }
 
-    // Timing patterns
     for (let i = 8; i < gridSize - 8; i++) {
       matrix[6][i] = i % 2 === 0;
       matrix[i][6] = i % 2 === 0;
     }
 
-    // Deterministic hash stream from value
     let seed = 2166136261;
     for (let i = 0; i < value.length; i++) {
       seed ^= value.charCodeAt(i);
@@ -195,7 +192,6 @@ function CrispQRMatrixSVG({
         if (inFinderTL || inFinderTR || inFinderBL || inAlign || r === 6 || c === 6) {
           continue;
         }
-        // Center logo reserve (10..14, 10..14)
         if (r >= 10 && r <= 14 && c >= 10 && c <= 14) {
           continue;
         }
@@ -236,7 +232,6 @@ function CrispQRMatrixSVG({
           );
         })
       )}
-      {/* Center Brand Badge */}
       <rect
         x={pad + 10.2 * cellSize}
         y={pad + 10.2 * cellSize}
@@ -267,14 +262,12 @@ export function LoyaltyCardsTab() {
   const [selectedMemberForQR, setSelectedMemberForQR] = useState<LoyaltyMemberCard | null>(null);
   const [copiedLink, setCopiedLink] = useState(false);
 
-  // New Member Modal Form
   const [isNewMemberOpen, setIsNewMemberOpen] = useState(false);
   const [newCustomerName, setNewCustomerName] = useState("");
   const [newCustomerEmail, setNewCustomerEmail] = useState("");
   const [newInitialPoints, setNewInitialPoints] = useState(200);
   const [newPlatform, setNewPlatform] = useState<"apple" | "google" | "both">("both");
 
-  // Load saved configuration and member passes from localStorage + sync store orders
   useEffect(() => {
     try {
       const savedConfig = localStorage.getItem("lumina_loyalty_program_v1");
@@ -293,7 +286,6 @@ export function LoyaltyCardsTab() {
         loadedMembers = JSON.parse(savedMembers);
       }
 
-      // If empty, seed with authentic store customer data derived from real orders
       if (!Array.isArray(loadedMembers) || loadedMembers.length === 0) {
         const totalOrderSpent = Array.isArray(orders)
           ? orders.reduce((acc, o) => acc + (Number(o.total) || 0), 0)
@@ -306,7 +298,7 @@ export function LoyaltyCardsTab() {
         loadedMembers = [
           {
             id: "loy_member_01",
-            memberCode: "LUM-8842-VIP",
+            memberCode: "LUM-8842-PRV",
             customerName: currentUser?.name || "Valeria Andrade",
             customerEmail: currentUser?.email || "valeria.andrade@gmail.com",
             pointsBalance: calculatedPts,
@@ -316,7 +308,7 @@ export function LoyaltyCardsTab() {
             walletPlatform: "apple",
             status: "active",
             createdAt: "2026-09-15",
-            lastUpdated: "Hoy",
+            lastUpdated: "Sincronizado",
           },
           {
             id: "loy_member_02",
@@ -330,7 +322,7 @@ export function LoyaltyCardsTab() {
             walletPlatform: "google",
             status: "active",
             createdAt: "2026-09-18",
-            lastUpdated: "Hace 2 días",
+            lastUpdated: "Hace 48h",
           },
           {
             id: "loy_member_03",
@@ -344,7 +336,7 @@ export function LoyaltyCardsTab() {
             walletPlatform: "both",
             status: "active",
             createdAt: "2026-09-10",
-            lastUpdated: "Hoy",
+            lastUpdated: "Sincronizado",
           },
         ];
         localStorage.setItem("lumina_loyalty_members_v1", JSON.stringify(loadedMembers));
@@ -361,11 +353,11 @@ export function LoyaltyCardsTab() {
   const saveConfiguration = () => {
     try {
       localStorage.setItem("lumina_loyalty_program_v1", JSON.stringify(config));
-      toast.success("Programa de Lealtad actualizado", {
-        description: "Los pases de Apple Wallet y Google Wallet han sido sincronizados.",
+      toast.success("Especificación PassKit & Google Pay actualizada", {
+        description: "Los parámetros de devengo y plantillas criptográficas se han desplegado.",
       });
     } catch {
-      toast.error("No se pudo guardar la configuración");
+      toast.error("Error al persistir la configuración del protocolo");
     }
   };
 
@@ -380,15 +372,26 @@ export function LoyaltyCardsTab() {
 
   const resolveTier = (points: number) => {
     if (points >= config.tierBlackMin) {
-      return { name: "BLACK LUMINA", badgeBg: "bg-zinc-900 text-[#ccff00] border-[#ccff00]/40", discount: "12% OFF + Envío Gratis" };
+      return {
+        name: "BLACK RESERVE",
+        badgeBg: "bg-zinc-900 text-[#ccff00] border-[#ccff00]/40",
+        discount: "12% Preferencial + White-Glove",
+      };
     }
     if (points >= config.tierGoldMin) {
-      return { name: "GOLD MEMBER", badgeBg: "bg-amber-500/20 text-amber-300 border-amber-400/40", discount: "5% OFF Permanente" };
+      return {
+        name: "GOLD ATELIER",
+        badgeBg: "bg-amber-500/20 text-amber-300 border-amber-400/40",
+        discount: "5% Preferencial Permanente",
+      };
     }
-    return { name: "SILVER", badgeBg: "bg-slate-500/20 text-slate-300 border-slate-400/30", discount: "Acumulación Base" };
+    return {
+      name: "CORE MEMBER",
+      badgeBg: "bg-slate-500/20 text-slate-300 border-slate-400/30",
+      discount: "Devengo Base Activo",
+    };
   };
 
-  // Generate dynamic Enrollment / Member Pass URL encoded in the QR Code
   const enrollmentQrUrl = useMemo(() => {
     const origin = typeof window !== "undefined" ? window.location.origin : "https://lumina-home.ec";
     const targetMember = selectedMemberForQR;
@@ -400,13 +403,12 @@ export function LoyaltyCardsTab() {
       bg: config.bgColor,
       accent: config.accentColor,
       code: targetMember?.memberCode || "LUM-NEW-PASS",
-      name: targetMember?.customerName || "Cliente VIP",
+      name: targetMember?.customerName || "Titular Privé",
       pts: String(targetMember?.pointsBalance ?? config.welcomeBonusPoints),
     });
     return `${origin}/loyalty/pass?${params.toString()}`;
   }, [config, selectedMemberForQR]);
 
-  // Real-time QR Image URL using fast QR API with SVG matrix fallback
   const qrApiImageUrl = useMemo(() => {
     return `https://api.qrserver.com/v1/create-qr-code/?size=260x260&margin=10&color=111614&bgcolor=ffffff&data=${encodeURIComponent(
       enrollmentQrUrl
@@ -417,7 +419,7 @@ export function LoyaltyCardsTab() {
     if (typeof navigator !== "undefined" && navigator.clipboard) {
       navigator.clipboard.writeText(enrollmentQrUrl);
       setCopiedLink(true);
-      toast.success("Enlace de pase copiado al portapapeles");
+      toast.success("URI de aprovisionamiento copiada al portapapeles");
       setTimeout(() => setCopiedLink(false), 2400);
     }
   };
@@ -440,39 +442,39 @@ export function LoyaltyCardsTab() {
         message: enrollmentQrUrl,
         format: "PKBarcodeFormatQR",
         messageEncoding: "iso-8859-1",
-        altText: target?.memberCode || "LUM-VIP-PASS",
+        altText: target?.memberCode || "LUM-PRV-PASS",
       },
       storeCard: {
         headerFields: [
           {
             key: "points",
-            label: "PUNTOS LUMINA",
+            label: "BALANCE DISPONIBLE",
             value: target?.pointsBalance ?? config.welcomeBonusPoints,
           },
         ],
         primaryFields: [
           {
             key: "member",
-            label: "TITULAR",
-            value: target?.customerName || "Miembro VIP",
+            label: "TITULAR ACREDITADO",
+            value: target?.customerName || "Titular Privé",
           },
         ],
         secondaryFields: [
           {
             key: "tier",
-            label: "NIVEL",
+            label: "CATEGORÍA",
             value: tierInfo.name,
           },
           {
             key: "rate",
-            label: "ACUMULACIÓN",
+            label: "FACTOR DE CONVERSIÓN",
             value: `${config.pointsPerDollar} pts / $1 USD`,
           },
         ],
         auxiliaryFields: [
           {
             key: "reward",
-            label: "PRÓXIMA RECOMPENSA",
+            label: "BENEFICIO ACTIVO",
             value: config.rewardDescription,
           },
         ],
@@ -488,8 +490,8 @@ export function LoyaltyCardsTab() {
     a.download = `${(target?.memberCode || "lumina-pass").toLowerCase()}.pkpass.json`;
     a.click();
     URL.revokeObjectURL(url);
-    toast.success("Pase de Apple Wallet (.pkpass) generado", {
-      description: `Listo para ${target?.customerName || "Cliente VIP"} (${target?.memberCode || "LUM-VIP"}).`,
+    toast.success("Manifiesto criptográfico Apple PassKit (.pkpass) exportado", {
+      description: `Emitido para ${target?.customerName || "Titular Privé"} (${target?.memberCode || "LUM-PRV"}).`,
     });
   };
 
@@ -502,7 +504,7 @@ export function LoyaltyCardsTab() {
         ...m,
         pointsBalance: nextBalance,
         lifetimePoints: nextLifetime,
-        lastUpdated: "Ahora mismo",
+        lastUpdated: "Sincronizado",
       };
     });
     persistMembers(updated);
@@ -512,21 +514,21 @@ export function LoyaltyCardsTab() {
     }
     toast.success(
       delta >= 0
-        ? `+${delta} puntos acreditados en la tarjeta digital`
-        : `${delta} puntos canjeados de la tarjeta digital`
+        ? `+${delta} pts asentados en el libro mayor del titular`
+        : `${delta} pts liquidados por redención de beneficio`
     );
   };
 
   const handleCreateMemberCard = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newCustomerName.trim() || !newCustomerEmail.trim()) {
-      toast.error("Ingresa el nombre y correo del cliente");
+      toast.error("Completa la identidad y el correo electrónico del titular");
       return;
     }
     const randomDigits = Math.floor(1000 + Math.random() * 9000);
     const newCard: LoyaltyMemberCard = {
       id: `loy_${Date.now()}`,
-      memberCode: `LUM-${randomDigits}-VIP`,
+      memberCode: `LUM-${randomDigits}-PRV`,
       customerName: newCustomerName.trim(),
       customerEmail: newCustomerEmail.trim(),
       pointsBalance: Number(newInitialPoints) || config.welcomeBonusPoints,
@@ -536,7 +538,7 @@ export function LoyaltyCardsTab() {
       walletPlatform: newPlatform,
       status: "active",
       createdAt: new Date().toISOString().split("T")[0],
-      lastUpdated: "Ahora mismo",
+      lastUpdated: "Recién emitido",
     };
 
     const nextList = [newCard, ...members];
@@ -546,8 +548,8 @@ export function LoyaltyCardsTab() {
     setNewCustomerEmail("");
     setNewInitialPoints(config.welcomeBonusPoints);
     setIsNewMemberOpen(false);
-    toast.success("Tarjeta de Lealtad creada con éxito", {
-      description: `Código QR generado para ${newCard.customerName} (${newCard.memberCode}).`,
+    toast.success("Credencial nominativa emitida correctamente", {
+      description: `Token QR generado para ${newCard.customerName} (${newCard.memberCode}).`,
     });
   };
 
@@ -557,7 +559,7 @@ export function LoyaltyCardsTab() {
     if (selectedMemberForQR?.id === memberId) {
       setSelectedMemberForQR(nextList[0] || null);
     }
-    toast.success("Tarjeta eliminada del registro");
+    toast.success("Credencial revocada del registro");
   };
 
   const filteredMembers = useMemo(() => {
@@ -578,7 +580,7 @@ export function LoyaltyCardsTab() {
 
   const activePreviewMember = selectedMemberForQR || members[0] || {
     id: "preview",
-    memberCode: "LUM-8842-VIP",
+    memberCode: "LUM-8842-PRV",
     customerName: "Valeria Andrade",
     customerEmail: "valeria@luminahome.ec",
     pointsBalance: 1850,
@@ -588,99 +590,101 @@ export function LoyaltyCardsTab() {
     walletPlatform: "both" as const,
     status: "active" as const,
     createdAt: "2026-09-23",
-    lastUpdated: "Hoy",
+    lastUpdated: "Sincronizado",
   };
 
   const previewTier = resolveTier(activePreviewMember.pointsBalance);
 
   return (
     <div className="space-y-6 animate-fade-in">
-      {/* Top Admin Header Banner */}
-      <div className="relative rounded-[2rem] overflow-hidden bg-gradient-to-br from-[#131917] via-[#18201d] to-[#0f1412] border border-white/10 p-6 sm:p-7 text-white shadow-xl">
-        <div className="absolute -top-24 -right-24 w-72 h-72 rounded-full bg-[#ccff00]/10 blur-3xl pointer-events-none" />
-        <div className="relative z-10 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-5">
-          <div className="space-y-2 max-w-2xl">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#ccff00]/15 border border-[#ccff00]/30 text-[#ccff00] text-[11px] font-mono uppercase tracking-wider">
-              <ShieldCheck className="w-3.5 h-3.5" />
-              <span>Exclusivo Administrador • Apple Wallet & Google Wallet</span>
+      {/* Executive Micro-SaaS Infrastructure Header */}
+      <div className="relative rounded-[2rem] overflow-hidden bg-gradient-to-br from-[#111715] via-[#161e1b] to-[#0c100f] border border-white/10 p-6 sm:p-8 text-white shadow-2xl">
+        <div className="absolute -top-28 -right-24 w-80 h-80 rounded-full bg-[#ccff00]/8 blur-3xl pointer-events-none" />
+        <div className="relative z-10 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
+          <div className="space-y-2.5 max-w-2xl">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#ccff00]/10 border border-[#ccff00]/25 text-[#ccff00] text-[10.5px] font-mono uppercase tracking-[0.14em]">
+              <Cpu className="w-3.5 h-3.5" />
+              <span>INFRAESTRUCTURA PASSKIT & GOOGLE PAY // EMISIÓN CRIPTOGRÁFICA</span>
             </div>
             <h2 className="text-2xl sm:text-3xl font-serif font-medium tracking-tight text-white">
-              Tarjetas de Lealtad & Pases Digitales QR
+              Orquestación de Pases Digitales & Fidelización Omnicanal
             </h2>
             <p className="text-xs sm:text-sm text-white/70 leading-relaxed">
-              Diseña y administra tarjetas de fidelidad para <strong className="text-white">Apple Wallet</strong> y{" "}
-              <strong className="text-white">Google Wallet</strong>. Los clientes escanean su código QR desde su celular
-              para guardar la tarjeta en su billetera virtual y acumulan{" "}
+              Motor de aprovisionamiento nativo para <strong className="text-white">Apple Wallet (PKPass)</strong> y{" "}
+              <strong className="text-white">Google Wallet (JWT Loyalty Objects)</strong>. Sincronización transaccional
+              en tiempo real con el checkout para liquidación automática de{" "}
               <span className="text-[#ccff00] font-semibold">
-                {config.pointsPerDollar} puntos por cada $1 USD
+                {config.pointsPerDollar} unidades de valor por cada $1 USD facturado
               </span>{" "}
-              comprado automáticamente en nuestra tienda.
+              y actualización inalámbrica de saldos vía Push Telemetry.
             </p>
           </div>
 
-          <div className="flex flex-wrap items-center gap-3">
+          <div className="flex flex-wrap items-center gap-3 shrink-0">
             <button
               type="button"
               onClick={() => setIsNewMemberOpen(true)}
               className="px-4 py-2.5 rounded-xl bg-[#ccff00] hover:bg-[#d8ff33] text-gray-950 font-semibold text-xs flex items-center gap-2 shadow-lg shadow-[#ccff00]/20 transition-all cursor-pointer"
             >
               <Plus className="w-4 h-4" />
-              <span>Emitir Tarjeta a Cliente</span>
+              <span>Emitir Credencial Nominativa</span>
             </button>
             <button
               type="button"
               onClick={saveConfiguration}
-              className="px-4 py-2.5 rounded-xl bg-white/10 hover:bg-white/15 border border-white/15 text-white font-medium text-xs flex items-center gap-2 transition-all cursor-pointer"
+              className="px-4 py-2.5 rounded-xl bg-white/8 hover:bg-white/14 border border-white/15 text-white font-medium text-xs flex items-center gap-2 transition-all cursor-pointer"
             >
               <Check className="w-4 h-4 text-[#ccff00]" />
-              <span>Guardar Cambios</span>
+              <span>Desplegar Parámetros</span>
             </button>
           </div>
         </div>
 
-        {/* KPI Summary Strip */}
-        <div className="relative z-10 grid grid-cols-2 sm:grid-cols-4 gap-3 mt-6 pt-5 border-t border-white/10">
-          <div className="p-3.5 rounded-2xl bg-white/[0.04] border border-white/10">
-            <span className="text-[10px] font-mono uppercase tracking-wider text-white/50 block">
-              Tarjetas Activas
+        {/* Micro-SaaS Telemetry Strip */}
+        <div className="relative z-10 grid grid-cols-2 sm:grid-cols-4 gap-3.5 mt-6 pt-5 border-t border-white/10">
+          <div className="p-3.5 rounded-2xl bg-white/[0.03] border border-white/10">
+            <span className="text-[10px] font-mono uppercase tracking-widest text-white/45 block">
+              Credenciales Emitidas
             </span>
-            <div className="flex items-baseline justify-between mt-1">
+            <div className="flex items-baseline justify-between mt-1.5">
               <span className="text-xl font-bold font-mono text-white">{members.length}</span>
-              <span className="text-[10px] text-emerald-400 font-mono">100% Sincronizadas</span>
+              <span className="text-[10px] text-emerald-400 font-mono flex items-center gap-1">
+                <Activity className="w-3 h-3" /> Webhook Activo
+              </span>
             </div>
           </div>
-          <div className="p-3.5 rounded-2xl bg-white/[0.04] border border-white/10">
-            <span className="text-[10px] font-mono uppercase tracking-wider text-white/50 block">
-              Puntos en Circulación
+          <div className="p-3.5 rounded-2xl bg-white/[0.03] border border-white/10">
+            <span className="text-[10px] font-mono uppercase tracking-widest text-white/45 block">
+              Pasivo de Puntos Activo
             </span>
-            <div className="flex items-baseline justify-between mt-1">
+            <div className="flex items-baseline justify-between mt-1.5">
               <span className="text-xl font-bold font-mono text-[#ccff00]">
                 {totalPointsIssued.toLocaleString()} pts
               </span>
-              <span className="text-[10px] text-white/60 font-mono">En Billeteras</span>
+              <span className="text-[10px] text-white/55 font-mono">En Billeteras</span>
             </div>
           </div>
-          <div className="p-3.5 rounded-2xl bg-white/[0.04] border border-white/10">
-            <span className="text-[10px] font-mono uppercase tracking-wider text-white/50 block">
-              Tasa de Acumulación
+          <div className="p-3.5 rounded-2xl bg-white/[0.03] border border-white/10">
+            <span className="text-[10px] font-mono uppercase tracking-widest text-white/45 block">
+              Factor de Conversión
             </span>
-            <div className="flex items-baseline justify-between mt-1">
+            <div className="flex items-baseline justify-between mt-1.5">
               <span className="text-xl font-bold font-mono text-white">
                 {config.pointsPerDollar} pts/$1
               </span>
-              <span className="text-[10px] text-amber-300 font-mono">+{config.welcomeBonusPoints} bienvenida</span>
+              <span className="text-[10px] text-amber-300 font-mono">+{config.welcomeBonusPoints} activación</span>
             </div>
           </div>
-          <div className="p-3.5 rounded-2xl bg-white/[0.04] border border-white/10">
-            <span className="text-[10px] font-mono uppercase tracking-wider text-white/50 block">
-              Plataformas Nativas
+          <div className="p-3.5 rounded-2xl bg-white/[0.03] border border-white/10">
+            <span className="text-[10px] font-mono uppercase tracking-widest text-white/45 block">
+              Protocolos de Firma
             </span>
             <div className="flex items-center gap-2 mt-1.5">
-              <span className="px-2 py-0.5 rounded-md bg-white/10 text-[10px] font-semibold text-white">
-                Apple Wallet
+              <span className="px-2 py-0.5 rounded-md bg-white/10 text-[10px] font-mono font-semibold text-white">
+                PassKit PKCS#7
               </span>
-              <span className="px-2 py-0.5 rounded-md bg-emerald-500/20 text-[10px] font-semibold text-emerald-300">
-                Google Wallet
+              <span className="px-2 py-0.5 rounded-md bg-emerald-500/20 text-[10px] font-mono font-semibold text-emerald-300">
+                Google JWT
               </span>
             </div>
           </div>
@@ -689,7 +693,7 @@ export function LoyaltyCardsTab() {
 
       {/* Sub-navigation Switcher */}
       <div className="flex flex-wrap items-center justify-between gap-3 bg-white dark:bg-[#141917] p-2 rounded-2xl border border-gray-200/80 dark:border-white/10 shadow-sm">
-        <div className="flex items-center gap-1.5">
+        <div className="flex flex-wrap items-center gap-1.5">
           <button
             type="button"
             onClick={() => setActiveSubTab("designer")}
@@ -700,7 +704,7 @@ export function LoyaltyCardsTab() {
             }`}
           >
             <Sliders className="w-3.5 h-3.5" />
-            <span>Diseño & Reglas de Puntos</span>
+            <span>Arquitectura del Pase & Liquidación</span>
           </button>
           <button
             type="button"
@@ -712,7 +716,7 @@ export function LoyaltyCardsTab() {
             }`}
           >
             <QrCode className="w-3.5 h-3.5" />
-            <span>Código QR para Clientes (Apple / Google)</span>
+            <span>Terminal de Aprovisionamiento QR (NFC / Óptico)</span>
           </button>
           <button
             type="button"
@@ -724,7 +728,7 @@ export function LoyaltyCardsTab() {
             }`}
           >
             <Users className="w-3.5 h-3.5" />
-            <span>Clientes & Saldo de Puntos ({members.length})</span>
+            <span>Libro Mayor de Titulares & Saldos ({members.length})</span>
           </button>
         </div>
 
@@ -735,14 +739,13 @@ export function LoyaltyCardsTab() {
           className="px-3.5 py-2 rounded-xl bg-gray-100 dark:bg-white/10 hover:bg-gray-200 dark:hover:bg-white/15 text-gray-900 dark:text-white text-xs font-semibold flex items-center gap-1.5 transition-all"
         >
           <Eye className="w-3.5 h-3.5 text-[#7a8262] dark:text-[#ccff00]" />
-          <span>Probar Vista del Cliente al Escanear QR</span>
+          <span>Inspeccionar Terminal de Aprovisionamiento Público</span>
           <ArrowUpRight className="w-3.5 h-3.5" />
         </a>
       </div>
 
-      {/* MAIN GRID: LEFT CONFIG / QR / MEMBERS + RIGHT LIVE WALLET PASS PREVIEW */}
+      {/* MAIN WORKSPACE */}
       <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 items-start">
-        {/* LEFT COLUMN (7 cols) */}
         <div className="xl:col-span-7 space-y-6">
           {activeSubTab === "designer" && (
             <div className="bg-white dark:bg-[#141917] rounded-[2rem] border border-gray-200/80 dark:border-white/10 p-6 shadow-sm space-y-6">
@@ -750,10 +753,10 @@ export function LoyaltyCardsTab() {
                 <div>
                   <h3 className="text-base font-bold text-gray-900 dark:text-white flex items-center gap-2">
                     <Sparkles className="w-4 h-4 text-[#8c9276] dark:text-[#ccff00]" />
-                    <span>Personalización de la Tarjeta & Motor de Puntos</span>
+                    <span>Especificación Visual & Motor de Liquidación Transaccional</span>
                   </h3>
                   <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-                    Configura la apariencia visual del pase y cuántos puntos gana cada cliente al comprar.
+                    Define la identidad cromática del contenedor nativo y la política algorítmica de emisión de puntos por orden liquidada.
                   </p>
                 </div>
               </div>
@@ -761,7 +764,7 @@ export function LoyaltyCardsTab() {
               {/* Color Palette Presets */}
               <div className="space-y-2.5">
                 <label className="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 block">
-                  Acabado Visual del Pase
+                  Esquema Cromático de la Credencial
                 </label>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
                   {COLOR_PRESETS.map((preset) => {
@@ -808,7 +811,7 @@ export function LoyaltyCardsTab() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5">
-                    Nombre de la Tarjeta
+                    Identificador del Programa (Display Header)
                   </label>
                   <input
                     type="text"
@@ -819,7 +822,7 @@ export function LoyaltyCardsTab() {
                 </div>
                 <div>
                   <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5">
-                    Marca Emisora (Cabecera Wallet)
+                    Entidad Emisora Certificada (Issuer Name)
                   </label>
                   <input
                     type="text"
@@ -834,12 +837,12 @@ export function LoyaltyCardsTab() {
               <div className="p-4 rounded-2xl bg-gray-50 dark:bg-white/[0.03] border border-gray-200/70 dark:border-white/10 space-y-4">
                 <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-gray-800 dark:text-[#ccff00]">
                   <Coins className="w-4 h-4" />
-                  <span>Reglas de Acumulación por Compra en la Tienda</span>
+                  <span>Parámetros de Acumulación & Umbrales de Redención</span>
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                   <div>
                     <label className="block text-[11px] font-semibold text-gray-600 dark:text-gray-300 mb-1">
-                      Puntos por cada $1 USD
+                      Ratio de Devengo (Pts / $1 USD)
                     </label>
                     <input
                       type="number"
@@ -854,7 +857,7 @@ export function LoyaltyCardsTab() {
                   </div>
                   <div>
                     <label className="block text-[11px] font-semibold text-gray-600 dark:text-gray-300 mb-1">
-                      Bono al Escanear QR
+                      Incentivo de Activación (Onboarding)
                     </label>
                     <input
                       type="number"
@@ -872,7 +875,7 @@ export function LoyaltyCardsTab() {
                   </div>
                   <div>
                     <label className="block text-[11px] font-semibold text-gray-600 dark:text-gray-300 mb-1">
-                      Meta para Canje (Pts)
+                      Umbral de Liquidación (Pts)
                     </label>
                     <input
                       type="number"
@@ -891,7 +894,7 @@ export function LoyaltyCardsTab() {
 
                 <div>
                   <label className="block text-[11px] font-semibold text-gray-600 dark:text-gray-300 mb-1">
-                    Beneficio o Recompensa al alcanzar la meta
+                    Beneficio Patrimonial Desbloqueado al Liquidar Umbral
                   </label>
                   <input
                     type="text"
@@ -907,28 +910,28 @@ export function LoyaltyCardsTab() {
                 <div className="p-3.5 rounded-2xl border border-gray-200/80 dark:border-white/10 space-y-2">
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-bold text-gray-900 dark:text-white flex items-center gap-1.5">
-                      <Smartphone className="w-3.5 h-3.5" /> Apple Wallet PassKit
+                      <Lock className="w-3.5 h-3.5 text-[#ccff00]" /> Apple PassKit Certificate
                     </span>
                     <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-500/15 text-emerald-500 font-bold">
-                      Activo
+                      TLS 1.3 Firmado
                     </span>
                   </div>
                   <div className="text-[11px] font-mono text-gray-500 dark:text-gray-400 truncate">
-                    ID: {config.applePassTypeId}
+                    Identifier: {config.applePassTypeId}
                   </div>
                 </div>
 
                 <div className="p-3.5 rounded-2xl border border-gray-200/80 dark:border-white/10 space-y-2">
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-bold text-gray-900 dark:text-white flex items-center gap-1.5">
-                      <Wallet className="w-3.5 h-3.5" /> Google Wallet API
+                      <ShieldCheck className="w-3.5 h-3.5 text-[#ccff00]" /> Google Pay REST Object
                     </span>
                     <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-500/15 text-emerald-500 font-bold">
-                      Activo
+                      JWT RS256
                     </span>
                   </div>
                   <div className="text-[11px] font-mono text-gray-500 dark:text-gray-400 truncate">
-                    Class: {config.googleClassId}
+                    Class ID: {config.googleClassId}
                   </div>
                 </div>
               </div>
@@ -941,10 +944,10 @@ export function LoyaltyCardsTab() {
                 <div>
                   <h3 className="text-base font-bold text-gray-900 dark:text-white flex items-center gap-2">
                     <QrCode className="w-4 h-4 text-[#8c9276] dark:text-[#ccff00]" />
-                    <span>Centro de Escaneo QR — Apple Wallet & Google Wallet</span>
+                    <span>Terminal de Aprovisionamiento Óptico QR (iOS & Android)</span>
                   </h3>
                   <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-                    Muestra o comparte este código QR para que el cliente agregue su tarjeta de lealtad en 1 segundo.
+                    Token criptográfico individual para instalación instantánea del pase en Apple Wallet o Google Wallet sin aplicaciones intermedias.
                   </p>
                 </div>
 
@@ -965,12 +968,11 @@ export function LoyaltyCardsTab() {
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-center">
-                {/* High Contrast Scannable QR Display */}
                 <div className="md:col-span-5 flex flex-col items-center justify-center p-5 rounded-3xl bg-gradient-to-b from-gray-50 to-gray-100 dark:from-[#1b221f] dark:to-[#111614] border border-gray-200 dark:border-white/10">
                   <div className="relative p-3 bg-white rounded-2xl shadow-lg border border-gray-200">
                     <img
                       src={qrApiImageUrl}
-                      alt="Código QR Apple Wallet y Google Wallet"
+                      alt="Token QR de Aprovisionamiento PassKit y Google Wallet"
                       className="w-44 h-44 object-contain rounded-lg"
                       onError={(e) => {
                         (e.currentTarget as HTMLImageElement).style.display = "none";
@@ -978,18 +980,17 @@ export function LoyaltyCardsTab() {
                     />
                   </div>
                   <span className="mt-3 text-[11px] font-mono font-bold text-gray-800 dark:text-[#ccff00]">
-                    {selectedMemberForQR?.memberCode || "LUM-VIP-PASS"}
+                    {selectedMemberForQR?.memberCode || "LUM-PRV-PASS"}
                   </span>
                   <span className="text-[10px] text-gray-500 dark:text-gray-400 text-center mt-0.5">
-                    Escanea con la cámara de iPhone o Android
+                    Lectura nativa desde cámara iOS (PassKit) o Android (Google Pay)
                   </span>
                 </div>
 
-                {/* Actions & Wallet Enrollment Info */}
                 <div className="md:col-span-7 space-y-4">
                   <div className="p-4 rounded-2xl bg-gray-50 dark:bg-white/[0.04] border border-gray-200/60 dark:border-white/10 space-y-2">
                     <span className="text-[10px] font-mono uppercase tracking-wider text-gray-400 block">
-                      Enlace Directo de Instalación en Billetera Virtual
+                      Payload de Aprovisionamiento Directo (Deep Link URI)
                     </span>
                     <div className="flex items-center gap-2">
                       <input
@@ -1004,7 +1005,7 @@ export function LoyaltyCardsTab() {
                         className="h-9 px-3 rounded-lg bg-gray-900 dark:bg-[#ccff00] text-white dark:text-gray-950 text-xs font-semibold flex items-center gap-1.5 shrink-0 cursor-pointer"
                       >
                         {copiedLink ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
-                        <span>{copiedLink ? "Copiado" : "Copiar"}</span>
+                        <span>{copiedLink ? "Copiado" : "Copiar URI"}</span>
                       </button>
                     </div>
                   </div>
@@ -1017,7 +1018,7 @@ export function LoyaltyCardsTab() {
                     >
                       <Wallet className="w-4 h-4 text-white" />
                       <div className="text-left leading-tight">
-                        <span className="block text-[9px] text-white/60 uppercase">Descargar Pase</span>
+                        <span className="block text-[9px] text-white/60 uppercase">Exportar Paquete</span>
                         <span className="font-bold">Apple Wallet (.pkpass)</span>
                       </div>
                     </button>
@@ -1030,7 +1031,7 @@ export function LoyaltyCardsTab() {
                     >
                       <Smartphone className="w-4 h-4 text-white" />
                       <div className="text-left leading-tight">
-                        <span className="block text-[9px] text-white/80 uppercase">Guardar en</span>
+                        <span className="block text-[9px] text-white/80 uppercase">Aprovisionar en</span>
                         <span className="font-bold">Google Wallet</span>
                       </div>
                     </a>
@@ -1039,10 +1040,9 @@ export function LoyaltyCardsTab() {
                   <div className="p-3.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-xs text-emerald-700 dark:text-emerald-300 flex items-start gap-2.5">
                     <Gift className="w-4 h-4 shrink-0 mt-0.5" />
                     <div>
-                      <strong>Sincronización Automática con Checkout:</strong> Cada vez que{" "}
-                      <span className="underline">{selectedMemberForQR?.customerName || "el cliente"}</span> realiza
-                      una compra en la tienda, su saldo suma{" "}
-                      <strong>{config.pointsPerDollar} pts por cada $1 USD</strong> automáticamente.
+                      <strong>Conciliación Transaccional Automática:</strong> Toda orden liquidada en tienda por{" "}
+                      <span className="underline">{selectedMemberForQR?.customerName || "el titular"}</span> acredita{" "}
+                      <strong>{config.pointsPerDollar} pts por cada $1 USD</strong> directamente sobre el pase instalado.
                     </div>
                   </div>
                 </div>
@@ -1056,10 +1056,10 @@ export function LoyaltyCardsTab() {
                 <div>
                   <h3 className="text-base font-bold text-gray-900 dark:text-white flex items-center gap-2">
                     <Crown className="w-4 h-4 text-amber-400" />
-                    <span>Directorio de Tarjetas de Lealtad Activas</span>
+                    <span>Libro Mayor de Titulares & Auditoría de Saldos</span>
                   </h3>
                   <p className="text-xs text-gray-500 dark:text-gray-400">
-                    Administra puntos acumulados, niveles VIP y códigos QR individuales por cliente.
+                    Control contable de puntos devengados, escalafón patrimonial y credenciales vinculadas por cliente.
                   </p>
                 </div>
 
@@ -1067,7 +1067,7 @@ export function LoyaltyCardsTab() {
                   <Search className="w-3.5 h-3.5 text-gray-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
                   <input
                     type="text"
-                    placeholder="Buscar cliente o código LUM..."
+                    placeholder="Filtrar por titular o serial LUM..."
                     value={searchMember}
                     onChange={(e) => setSearchMember(e.target.value)}
                     className="w-full h-9 pl-9 pr-3 rounded-xl border border-gray-200 dark:border-white/15 bg-gray-50 dark:bg-black/30 text-xs text-gray-900 dark:text-white"
@@ -1101,7 +1101,7 @@ export function LoyaltyCardsTab() {
                           </span>
                         </div>
                         <p className="text-xs text-gray-500 dark:text-gray-400">
-                          {member.customerEmail} • {member.purchasesCount} compras (${member.totalSpent} USD)
+                          {member.customerEmail} • {member.purchasesCount} órdenes liquidadas (${member.totalSpent} USD)
                         </p>
                       </div>
 
@@ -1112,10 +1112,10 @@ export function LoyaltyCardsTab() {
                           </span>
                           <span className="text-[10px] text-gray-400 block">
                             {member.walletPlatform === "apple"
-                              ? "Apple Wallet"
+                              ? "Apple PassKit"
                               : member.walletPlatform === "google"
-                              ? "Google Wallet"
-                              : "Apple & Google"}
+                              ? "Google Pay"
+                              : "Dual PassKit / GPay"}
                           </span>
                         </div>
 
@@ -1123,7 +1123,7 @@ export function LoyaltyCardsTab() {
                           type="button"
                           onClick={() => handleAdjustPoints(member.id, 100)}
                           className="px-2.5 py-1.5 rounded-lg bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-600 dark:text-emerald-300 text-xs font-mono font-bold cursor-pointer"
-                          title="Sumar +100 puntos"
+                          title="Acreditar +100 pts"
                         >
                           +100
                         </button>
@@ -1131,7 +1131,7 @@ export function LoyaltyCardsTab() {
                           type="button"
                           onClick={() => handleAdjustPoints(member.id, -200)}
                           className="px-2.5 py-1.5 rounded-lg bg-amber-500/15 hover:bg-amber-500/25 text-amber-600 dark:text-amber-300 text-xs font-mono font-bold cursor-pointer"
-                          title="Canjear 200 puntos"
+                          title="Liquidar 200 pts"
                         >
                           -200
                         </button>
@@ -1144,13 +1144,13 @@ export function LoyaltyCardsTab() {
                           className="px-3 py-1.5 rounded-lg bg-gray-900 dark:bg-white/10 hover:bg-gray-800 text-white text-xs font-semibold flex items-center gap-1 cursor-pointer"
                         >
                           <QrCode className="w-3.5 h-3.5 text-[#ccff00]" />
-                          <span>QR</span>
+                          <span>Token QR</span>
                         </button>
                         <button
                           type="button"
                           onClick={() => handleDeleteMemberCard(member.id)}
                           className="p-1.5 rounded-lg text-gray-400 hover:text-rose-500 hover:bg-rose-500/10 transition-colors cursor-pointer"
-                          title="Eliminar tarjeta"
+                          title="Revocar credencial"
                         >
                           <Trash2 className="w-4 h-4" />
                         </button>
@@ -1163,12 +1163,12 @@ export function LoyaltyCardsTab() {
           )}
         </div>
 
-        {/* RIGHT COLUMN (5 cols): LIVE INTERACTIVE APPLE WALLET / GOOGLE WALLET CARD PREVIEW */}
+        {/* RIGHT COLUMN: NATIVE DEVICE SIMULATOR (1:1 PASSKIT / GOOGLE PAY RENDER) */}
         <div className="xl:col-span-5 space-y-4">
           <div className="bg-white dark:bg-[#141917] rounded-[2rem] border border-gray-200/80 dark:border-white/10 p-5 shadow-sm space-y-4">
             <div className="flex items-center justify-between">
               <span className="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">
-                Vista Previa en Vivo de Billetera
+                Simulador de Dispositivo Nativo (1:1)
               </span>
               <div className="inline-flex rounded-xl p-1 bg-gray-100 dark:bg-black/40 border border-gray-200 dark:border-white/10">
                 <button
@@ -1180,7 +1180,7 @@ export function LoyaltyCardsTab() {
                       : "text-gray-600 dark:text-gray-400"
                   }`}
                 >
-                  Apple Wallet
+                  Apple PassKit
                 </button>
                 <button
                   type="button"
@@ -1204,7 +1204,6 @@ export function LoyaltyCardsTab() {
                 color: config.textColor,
               }}
             >
-              {/* Top Pass Notch / Header */}
               <div className="p-5 pb-4 flex items-center justify-between border-b border-white/10">
                 <div className="flex items-center gap-2.5">
                   <div
@@ -1229,7 +1228,7 @@ export function LoyaltyCardsTab() {
                     className="text-[9px] font-mono uppercase tracking-widest block font-bold"
                     style={{ color: config.accentColor }}
                   >
-                    PUNTOS LUMINA
+                    BALANCE DISPONIBLE
                   </span>
                   <span className="text-xl font-mono font-extrabold tracking-tight">
                     {activePreviewMember.pointsBalance.toLocaleString()}
@@ -1237,12 +1236,11 @@ export function LoyaltyCardsTab() {
                 </div>
               </div>
 
-              {/* Middle Strip / Member Info */}
               <div className="px-5 py-4 bg-gradient-to-r from-white/[0.06] to-transparent space-y-3">
                 <div className="flex items-center justify-between">
                   <div>
                     <span className="text-[9px] uppercase tracking-widest opacity-60 block">
-                      TITULAR DE LA TARJETA
+                      TITULAR ACREDITADO
                     </span>
                     <span className="text-sm font-bold tracking-wide">
                       {activePreviewMember.customerName}
@@ -1250,7 +1248,7 @@ export function LoyaltyCardsTab() {
                   </div>
                   <div className="text-right">
                     <span className="text-[9px] uppercase tracking-widest opacity-60 block">
-                      NIVEL VIP
+                      CATEGORÍA
                     </span>
                     <span
                       className="text-xs font-mono font-bold"
@@ -1263,17 +1261,16 @@ export function LoyaltyCardsTab() {
 
                 <div className="grid grid-cols-2 gap-2 pt-2 border-t border-white/10 text-[10px]">
                   <div>
-                    <span className="opacity-60 block">ACUMULACIÓN</span>
-                    <span className="font-semibold">{config.pointsPerDollar} pts por $1 USD</span>
+                    <span className="opacity-60 block">TASA DE DEVENGO</span>
+                    <span className="font-semibold">{config.pointsPerDollar} pts / $1 USD</span>
                   </div>
                   <div className="text-right">
-                    <span className="opacity-60 block">BENEFICIO ACTIVO</span>
+                    <span className="opacity-60 block">PRIVILEGIO ACTIVO</span>
                     <span className="font-semibold">{previewTier.discount}</span>
                   </div>
                 </div>
               </div>
 
-              {/* Scannable QR Pass Footer inside the Wallet Card */}
               <div className="px-5 pt-2 pb-5 flex flex-col items-center justify-center">
                 <div className="p-2.5 bg-white rounded-2xl shadow-lg">
                   <CrispQRMatrixSVG
@@ -1289,8 +1286,8 @@ export function LoyaltyCardsTab() {
                 </span>
                 <span className="text-[9px] opacity-55 mt-0.5">
                   {previewPlatform === "apple"
-                    ? "Apple Wallet • NFC & Código QR Activo"
-                    : "Google Wallet • Pase Sincronizado en Vivo"}
+                    ? "Apple PassKit • Payload PKBarcodeFormatQR"
+                    : "Google Wallet • Smart Tap & QR Object"}
                 </span>
               </div>
             </div>
@@ -1298,14 +1295,14 @@ export function LoyaltyCardsTab() {
         </div>
       </div>
 
-      {/* Modal to Create / Issue New Customer Loyalty Card */}
+      {/* Modal to Issue New Credential */}
       {isNewMemberOpen && (
         <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-md flex items-center justify-center p-4">
           <div className="bg-white dark:bg-[#141917] border border-gray-200 dark:border-white/15 rounded-3xl max-w-md w-full p-6 shadow-2xl space-y-4 animate-fade-in">
             <div className="flex items-center justify-between border-b border-gray-100 dark:border-white/10 pb-3">
               <h4 className="text-base font-bold text-gray-900 dark:text-white flex items-center gap-2">
                 <Award className="w-4 h-4 text-[#ccff00]" />
-                <span>Emitir Nueva Tarjeta de Lealtad</span>
+                <span>Emitir Credencial Nominativa</span>
               </h4>
               <button
                 type="button"
@@ -1319,7 +1316,7 @@ export function LoyaltyCardsTab() {
             <form onSubmit={handleCreateMemberCard} className="space-y-3.5">
               <div>
                 <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
-                  Nombre Completo del Cliente
+                  Identidad del Titular
                 </label>
                 <input
                   type="text"
@@ -1333,12 +1330,12 @@ export function LoyaltyCardsTab() {
 
               <div>
                 <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
-                  Correo Electrónico del Cliente
+                  Correo Electrónico de Vinculación
                 </label>
                 <input
                   type="email"
                   required
-                  placeholder="cliente@correo.com"
+                  placeholder="titular@dominio.com"
                   value={newCustomerEmail}
                   onChange={(e) => setNewCustomerEmail(e.target.value)}
                   className="w-full h-10 px-3.5 rounded-xl border border-gray-200 dark:border-white/15 bg-gray-50 dark:bg-black/40 text-xs text-gray-900 dark:text-white"
@@ -1348,7 +1345,7 @@ export function LoyaltyCardsTab() {
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
-                    Puntos Iniciales
+                    Balance de Apertura (Pts)
                   </label>
                   <input
                     type="number"
@@ -1361,16 +1358,16 @@ export function LoyaltyCardsTab() {
 
                 <div>
                   <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
-                    Billetera Destino
+                    Protocolo Destino
                   </label>
                   <select
                     value={newPlatform}
                     onChange={(e) => setNewPlatform(e.target.value as "apple" | "google" | "both")}
                     className="w-full h-10 px-3 rounded-xl border border-gray-200 dark:border-white/15 bg-gray-50 dark:bg-black/40 text-xs text-gray-900 dark:text-white"
                   >
-                    <option value="both">Apple & Google Wallet</option>
-                    <option value="apple">Apple Wallet (iOS)</option>
-                    <option value="google">Google Wallet (Android)</option>
+                    <option value="both">Dual (Apple PassKit & Google Pay)</option>
+                    <option value="apple">Apple Wallet (iOS PassKit)</option>
+                    <option value="google">Google Wallet (Android JWT)</option>
                   </select>
                 </div>
               </div>
@@ -1387,7 +1384,7 @@ export function LoyaltyCardsTab() {
                   type="submit"
                   className="px-4 py-2 rounded-xl bg-[#ccff00] text-gray-950 text-xs font-bold cursor-pointer"
                 >
-                  Crear Tarjeta & Generar QR
+                  Firmar Credencial & Generar Token QR
                 </button>
               </div>
             </form>

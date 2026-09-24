@@ -874,7 +874,7 @@ const handleConfirmDeleteNiche = async () => {
             ? "bg-gray-950 dark:bg-white text-white dark:text-gray-950 shadow-lg shadow-gray-950/20 dark:shadow-white/15 scale-105" 
             : "text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100/80 dark:hover:bg-white/5 hover:scale-105 active:scale-95"
         }`}
-        title="Tarjetas de Lealtad (Apple Wallet & Google Wallet)"
+        title="Orquestación PassKit & Google Wallet (Pases QR)"
       >
         {activeTab === "loyalty" && (
           <span className="absolute -left-2 w-1 h-5 bg-[#8c9276] dark:bg-[#ccff00] rounded-r-full transition-all duration-[600ms]" />
