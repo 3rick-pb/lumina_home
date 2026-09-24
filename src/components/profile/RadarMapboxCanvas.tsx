@@ -1112,6 +1112,7 @@ function getTileUrl(provider: TileProvider, z: number, x: number, y: number, use
   const maxIndex = Math.pow(2, z);
   const wrappedX = ((x % maxIndex) + maxIndex) % maxIndex;
 
+  const gSub = Math.abs(wrappedX + y) % 4;
   const host =
     useAltHost
       ? (wrappedX + y) % 2 === 0
@@ -1122,6 +1123,9 @@ function getTileUrl(provider: TileProvider, z: number, x: number, y: number, use
       : "services.arcgisonline.com";
 
   if (provider === "satellite") {
+    if (!useAltHost) {
+      return `https://mt${gSub}.google.com/vt/lyrs=y&hl=es&x=${wrappedX}&y=${y}&z=${z}&scale=2`;
+    }
     return `https://${host}/ArcGIS/rest/services/World_Imagery/MapServer/tile/${z}/${y}/${wrappedX}`;
   }
   if (provider === "dark-base") {
@@ -1138,9 +1142,10 @@ function getTileUrl(provider: TileProvider, z: number, x: number, y: number, use
   }
   if (provider === "street-map") {
     if (useAltHost) {
-      return `https://${host}/ArcGIS/rest/services/World_Street_Map/MapServer/tile/${z}/${y}/${wrappedX}`;
+      const safeEsriZ = Math.min(16, z);
+      return `https://${host}/ArcGIS/rest/services/World_Street_Map/MapServer/tile/${safeEsriZ}/${y}/${wrappedX}`;
     }
-    return `https://tile.openstreetmap.org/${z}/${wrappedX}/${y}.png`;
+    return `https://mt${gSub}.google.com/vt/lyrs=m&hl=es&x=${wrappedX}&y=${y}&z=${z}&scale=2`;
   }
   return `https://${host}/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/${z}/${y}/${wrappedX}`;
 }
@@ -1216,7 +1221,6 @@ function preloadContinentalBaseTiles(onTileLoaded?: () => void) {
           if (tileImageCache.has(key) || tileLoadingSet.has(key)) continue;
           tileLoadingSet.add(key);
           const img = new window.Image();
-          img.referrerPolicy = "no-referrer";
           img.decoding = "async";
           img.onload = () => {
             cacheTileImage(key, img);
@@ -1226,7 +1230,6 @@ function preloadContinentalBaseTiles(onTileLoaded?: () => void) {
           img.onerror = () => {
             tileLoadingSet.delete(key);
             const retryImg = new window.Image();
-            retryImg.referrerPolicy = "no-referrer";
             retryImg.onload = () => {
               cacheTileImage(key, retryImg);
               onTileLoaded?.();
@@ -1321,7 +1324,7 @@ export function RadarMapboxCanvas({
     return () => ro.disconnect();
   }, [requestRepaint]);
 
-  // Load a tile image (no-referrer, dual-CDN failover) and trigger on-demand repaint when ready
+  // Load a tile image (dual-CDN failover) and trigger on-demand repaint when ready
   const fetchTile = useCallback(
     (provider: TileProvider, z: number, x: number, y: number): HTMLImageElement | null => {
       if (z < 1 || z > 20) return null;
@@ -1341,7 +1344,6 @@ export function RadarMapboxCanvas({
         tileLoadingSet.add(key);
         const primaryUrl = getTileUrl(provider, z, x, y, false);
         const img = new window.Image();
-        img.referrerPolicy = "no-referrer";
         img.decoding = "async";
         img.onload = () => {
           cacheTileImage(key, img);
@@ -1350,9 +1352,8 @@ export function RadarMapboxCanvas({
           triggerLoopRef.current?.();
         };
         img.onerror = () => {
-          // Retry on alternate Esri CDN host first, then fallback to OpenStreetMap if needed
+          // Retry on alternate Esri CDN host fallback
           const retryImg = new window.Image();
-          retryImg.referrerPolicy = "no-referrer";
           retryImg.decoding = "async";
           retryImg.onload = () => {
             cacheTileImage(key, retryImg);

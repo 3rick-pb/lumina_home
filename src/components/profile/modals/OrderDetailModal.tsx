@@ -5,6 +5,7 @@ import Image from "next/image";
 import { X, CheckCircle2, Mail, Send, RefreshCw, AlertCircle } from "lucide-react";
 import { Order } from "@/lib/userStore";
 import { BlobatarAvatar } from "@/components/ui/BlobatarAvatar";
+import { BeUICenterMorphModal, BeUIOrderStatusSelector } from "@/components/ui/BeUIControls";
 import { supabase } from "@/lib/supabase";
 
 interface EmailNotificationLog {
@@ -172,14 +173,25 @@ export function OrderDetailModal({
     }
   };
 
-  if (!order) return null;
+  const lastOrderRef = useRef<Order | null>(order);
+  if (order) {
+    lastOrderRef.current = order;
+  }
+  const activeOrder = order || lastOrderRef.current;
+  if (!activeOrder) return null;
 
   const invoiceLog = emailLogs.find(l => l.email_type === 'customer_invoice');
   const dispatchLog = emailLogs.find(l => l.email_type === 'admin_dispatch_notice');
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-fade-in">
-      <div className="bg-white dark:bg-[#202022] rounded-[2.5rem] w-full max-w-xl shadow-2xl dark:shadow-[0_20px_60px_rgba(0,0,0,0.5)] border border-gray-100 dark:border-white/10 overflow-hidden relative max-h-[90vh] flex flex-col">
+    <BeUICenterMorphModal
+      open={Boolean(order)}
+      onOpenChange={(isOpen) => {
+        if (!isOpen) onClose();
+      }}
+      className="max-w-xl"
+    >
+      <div className="bg-white dark:bg-[#202022] rounded-[2.5rem] w-full shadow-2xl dark:shadow-[0_20px_60px_rgba(0,0,0,0.5)] border border-gray-100 dark:border-white/10 overflow-hidden relative max-h-[90vh] flex flex-col">
         <style>{`
           .lumina-order-modal-scroll {
             -ms-overflow-style: none !important;
@@ -197,25 +209,33 @@ export function OrderDetailModal({
           className="w-full overflow-y-auto lumina-order-modal-scroll p-6 md:p-8 flex-1"
         >
           <div className="flex items-center justify-between pb-4 border-b border-gray-100 dark:border-white/5">
-          <div>
-            <span className="text-[10px] font-bold uppercase tracking-wider text-[#8c9276]">Detalle de Envío</span>
-            <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100 font-mono">{order.id}</h3>
+            <div>
+              <span className="text-[10px] font-bold uppercase tracking-wider text-[#8c9276]">Detalle de Envío</span>
+              <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100 font-mono">{activeOrder.id}</h3>
+            </div>
+            {/* Exact Close Button ("X") from CartDrawer (Bolsa de Compras) */}
+            <button
+              type="button"
+              onClick={onClose}
+              className="w-10 h-10 rounded-full bg-white/80 dark:bg-white/10 backdrop-blur-xl border border-black/[0.06] dark:border-white/15 shadow-[0_2px_8px_rgba(0,0,0,0.04)] text-gray-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50/90 dark:hover:bg-rose-950/40 hover:border-rose-200 dark:hover:border-rose-900/40 flex items-center justify-center hover:scale-105 active:scale-95 transition-all cursor-pointer shrink-0"
+              title="Cerrar detalle del pedido"
+            >
+              <X className="w-4 h-4" />
+            </button>
           </div>
-          <button onClick={onClose} className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-[#3a3a3c] text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 cursor-pointer">
-            <X className="w-5 h-5" />
-          </button>
-        </div>
 
-        {/* Tracking Progress Bar */}
-        <div className="my-5 p-4 bg-gray-50 dark:bg-[#2a2a2c] rounded-2xl border border-gray-100 dark:border-white/5">
-          <div className="flex items-center justify-between mb-3 text-xs">
-            <span className="font-semibold text-gray-700 dark:text-gray-300">Rastreo: <span className="font-mono">{order.trackingNumber || "LM-982410"}</span></span>
-            <span className={`px-2.5 py-0.5 rounded-full font-bold text-[10px] ${
-              order.status === "Entregado" ? "bg-emerald-100 text-emerald-800" : order.status === "Enviado" ? "bg-blue-100 text-blue-800" : "bg-amber-100 dark:bg-amber-950/40 text-amber-800 dark:text-amber-400"
-            }`}>
-              {order.status}
-            </span>
-          </div>
+          {/* Tracking Progress Bar */}
+          <div className="my-5 p-4 bg-gray-50 dark:bg-[#2a2a2c] rounded-2xl border border-gray-100 dark:border-white/5">
+            <div className="flex items-center justify-between mb-3 text-xs">
+              <span className="font-semibold text-gray-700 dark:text-gray-300">Rastreo: <span className="font-mono">{activeOrder.trackingNumber || "LM-982410"}</span></span>
+              <BeUIOrderStatusSelector
+                status={activeOrder.status}
+                isAdmin={isAdmin}
+                onUpdateStatus={(nextSt) => onUpdateStatus(activeOrder.id, nextSt)}
+                size="sm"
+                align="end"
+              />
+            </div>
 
           {/* Steps timeline */}
           <div className="flex items-center justify-between relative pt-2">
@@ -223,8 +243,8 @@ export function OrderDetailModal({
             {[
               { label: "Pagado", done: true },
               { label: "En Taller", done: true },
-              { label: "En Reparto", done: order.status === "Enviado" || order.status === "Entregado" },
-              { label: "Entregado", done: order.status === "Entregado" },
+              { label: "En Reparto", done: activeOrder.status === "Enviado" || activeOrder.status === "Entregado" },
+              { label: "Entregado", done: activeOrder.status === "Entregado" },
             ].map((st, i) => (
               <div key={i} className="flex flex-col items-center gap-1 relative z-10">
                 <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold ${st.done ? "bg-[#8c9276] text-white dark:text-gray-900" : "bg-gray-200 dark:bg-[#48484a] text-gray-500 dark:text-gray-400"}`}>
@@ -243,25 +263,25 @@ export function OrderDetailModal({
             <p className="text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-1.5">Cliente / Comprador</p>
             <div className="flex items-center gap-2.5 mb-1">
               <BlobatarAvatar
-                name={order.userId || order.customerEmail || order.customerName}
+                name={activeOrder.userId || activeOrder.customerEmail || activeOrder.customerName}
                 size={34}
                 animate="always"
                 background="squircle"
               />
               <div className="min-w-0">
-                <p className="text-xs font-bold text-gray-900 dark:text-gray-100 truncate">{order.customerName || "Cliente Lumina"}</p>
-                <p className="text-[11px] text-gray-500 dark:text-gray-400 truncate">{order.customerEmail || "cliente@lumina.com"}</p>
+                <p className="text-xs font-bold text-gray-900 dark:text-gray-100 truncate">{activeOrder.customerName || "Cliente Lumina"}</p>
+                <p className="text-[11px] text-gray-500 dark:text-gray-400 truncate">{activeOrder.customerEmail || "cliente@lumina.com"}</p>
               </div>
             </div>
             <div className="mt-2 pt-2 border-t border-gray-200/60 dark:border-white/10/60 text-[11px] text-gray-600 dark:text-gray-400 space-y-1">
               <div className="flex items-center justify-between">
                 <span className="text-[10px] text-gray-400">Fecha:</span>
-                <span className="font-semibold text-gray-800 dark:text-gray-200">{order.date}</span>
+                <span className="font-semibold text-gray-800 dark:text-gray-200">{activeOrder.date}</span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-[10px] text-gray-400">Hora:</span>
                 <span className="font-semibold text-gray-800 dark:text-gray-200">
-                  {order.time || (order.createdAt ? new Date(order.createdAt).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }) : "12:00")}
+                  {activeOrder.time || (activeOrder.createdAt ? new Date(activeOrder.createdAt).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }) : "12:00")}
                 </span>
               </div>
             </div>
@@ -270,30 +290,30 @@ export function OrderDetailModal({
           {/* Entrega & Pago */}
           <div className="p-3.5 bg-gray-50/80 dark:bg-[#2a2a2c]/80 rounded-2xl border border-gray-100 dark:border-white/5">
             <p className="text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-1">Dirección de Entrega</p>
-            {order.shippingAddress ? (
+            {activeOrder.shippingAddress ? (
               <>
-                <p className="text-xs font-semibold text-gray-900 dark:text-gray-100 truncate">{order.shippingAddress.street}</p>
-                <p className="text-[11px] text-gray-500 dark:text-gray-400 truncate">{order.shippingAddress.city}{order.shippingAddress.state ? `, ${order.shippingAddress.state}` : ""}</p>
-                <p className="text-[10px] text-gray-400">{order.shippingAddress.postalCode} • {order.shippingAddress.country}</p>
+                <p className="text-xs font-semibold text-gray-900 dark:text-gray-100 truncate">{activeOrder.shippingAddress.street}</p>
+                <p className="text-[11px] text-gray-500 dark:text-gray-400 truncate">{activeOrder.shippingAddress.city}{activeOrder.shippingAddress.state ? `, ${activeOrder.shippingAddress.state}` : ""}</p>
+                <p className="text-[10px] text-gray-400">{activeOrder.shippingAddress.postalCode} • {activeOrder.shippingAddress.country}</p>
                 
                 {/* Metadatos adicionales de entrega: Cédula & WhatsApp */}
-                {(order.customerIdNumber || order.shippingAddress.idNumber || order.customerPhone || order.shippingAddress.phone) && (
+                {(activeOrder.customerIdNumber || activeOrder.shippingAddress.idNumber || activeOrder.customerPhone || activeOrder.shippingAddress.phone) && (
                   <div className="flex flex-wrap items-center gap-1.5 mt-2 pt-1.5 border-t border-gray-200/60 dark:border-white/10/60">
-                    {(order.customerIdNumber || order.shippingAddress.idNumber) && (
+                    {(activeOrder.customerIdNumber || activeOrder.shippingAddress.idNumber) && (
                       <span className="text-[10px] font-mono px-2 py-0.5 rounded-md bg-gray-100 dark:bg-[#3a3a3c] text-gray-700 dark:text-gray-300 font-semibold">
-                        C.I.: {order.customerIdNumber || order.shippingAddress.idNumber}
+                        C.I.: {activeOrder.customerIdNumber || activeOrder.shippingAddress.idNumber}
                       </span>
                     )}
-                    {(order.customerPhone || order.shippingAddress.phone) && (
+                    {(activeOrder.customerPhone || activeOrder.shippingAddress.phone) && (
                       <a
-                        href={`https://wa.me/${(order.customerPhone || order.shippingAddress.phone || '').replace(/[^0-9]/g, '')}`}
+                        href={`https://wa.me/${(activeOrder.customerPhone || activeOrder.shippingAddress.phone || '').replace(/[^0-9]/g, '')}`}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="text-[10px] font-mono px-2 py-0.5 rounded-md bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200/50 dark:border-emerald-800/40 font-semibold hover:underline flex items-center gap-1"
                         title="Abrir chat en WhatsApp"
                       >
                         <span>WhatsApp:</span>
-                        <span>{order.customerPhone || order.shippingAddress.phone}</span>
+                        <span>{activeOrder.customerPhone || activeOrder.shippingAddress.phone}</span>
                       </a>
                     )}
                   </div>
@@ -304,7 +324,7 @@ export function OrderDetailModal({
             )}
             <div className="mt-2 pt-2 border-t border-gray-200/60 dark:border-white/10/60 text-[11px] text-gray-600 dark:text-gray-400 flex items-center justify-between">
               <span className="text-[10px] text-gray-400">Método de Pago:</span>
-              <span className="font-semibold text-gray-800 dark:text-gray-200">{order.paymentMethod || "Tarjeta de Crédito"}</span>
+              <span className="font-semibold text-gray-800 dark:text-gray-200">{activeOrder.paymentMethod || "Tarjeta de Crédito"}</span>
             </div>
           </div>
         </div>
@@ -349,7 +369,7 @@ export function OrderDetailModal({
                   {invoiceLog?.status === 'sent' ? "Enviado Real" : invoiceLog?.status === 'simulated_dev' ? "Simulado (Dev)" : invoiceLog?.status === 'failed' ? "Error Envío" : "Sin Registro"}
                 </span>
               </div>
-              <p className="text-[10px] text-gray-400 truncate">{order.customerEmail || "Sin correo"}</p>
+              <p className="text-[10px] text-gray-400 truncate">{activeOrder.customerEmail || "Sin correo"}</p>
               {isAdmin && (
                 <button
                   onClick={() => handleResend('customer_invoice')}
@@ -403,14 +423,14 @@ export function OrderDetailModal({
 
         {/* Items Purchased */}
         <div className="space-y-3 mb-5">
-          <h4 className="text-xs font-bold uppercase tracking-wider text-gray-400">Piezas Adquiridas ({order.items.length})</h4>
-          {order.items.length === 0 ? (
+          <h4 className="text-xs font-bold uppercase tracking-wider text-gray-400">Piezas Adquiridas ({activeOrder.items.length})</h4>
+          {activeOrder.items.length === 0 ? (
             <div className="p-3 bg-gray-50 dark:bg-[#2a2a2c] rounded-xl flex items-center justify-between text-xs">
               <span>Pieza Colección Exclusiva Lumina</span>
-              <span className="font-bold text-gray-900 dark:text-gray-100">${order.total.toFixed(2)}</span>
+              <span className="font-bold text-gray-900 dark:text-gray-100">${activeOrder.total.toFixed(2)}</span>
             </div>
           ) : (
-            order.items.map((item, idx) => (
+            activeOrder.items.map((item, idx) => (
               <div key={idx} className="p-3 bg-gray-50 dark:bg-[#2a2a2c] rounded-xl flex items-center justify-between text-xs">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-lg overflow-hidden bg-white dark:bg-[#202022] shrink-0 relative border border-gray-100 dark:border-white/5">
@@ -430,28 +450,23 @@ export function OrderDetailModal({
         {/* Summary */}
         <div className="pt-4 border-t border-gray-100 dark:border-white/5 flex items-center justify-between text-sm">
           <span className="text-gray-500 dark:text-gray-400 font-medium">Total Facturado</span>
-          <span className="text-xl font-bold text-gray-900 dark:text-gray-100">${order.total.toFixed(2)}</span>
+          <span className="text-xl font-bold text-gray-900 dark:text-gray-100">${activeOrder.total.toFixed(2)}</span>
         </div>
 
-        {/* If Admin: live status changer */}
+        {/* If Admin: live status changer with BeUIPopover + BeUIAnimatedBadge */}
         {isAdmin && (
-          <div className="mt-5 pt-4 border-t border-gray-100 dark:border-white/5 flex items-center justify-between bg-amber-50/70 p-3.5 rounded-2xl border border-amber-200/60">
+          <div className="mt-5 pt-4 border-t border-gray-100 dark:border-white/5 flex items-center justify-between bg-amber-50/70 dark:bg-amber-950/25 p-3.5 rounded-2xl border border-amber-200/60 dark:border-amber-800/30">
             <div>
-              <p className="text-xs font-bold text-amber-900">Actualizar Estado (Administrador)</p>
-              <p className="text-[10px] text-amber-700">Cambia la etapa del pedido en tiempo real para el cliente</p>
+              <p className="text-xs font-bold text-amber-900 dark:text-amber-300">Actualizar Estado (Administrador)</p>
+              <p className="text-[10px] text-amber-700 dark:text-amber-400/80">Cambia la etapa del pedido en tiempo real para el cliente</p>
             </div>
-            <select 
-              value={order.status}
-              onChange={(e) => {
-                const nextSt = e.target.value as "Procesando" | "Enviado" | "Entregado";
-                onUpdateStatus(order.id, nextSt);
-              }}
-              className="text-xs font-bold bg-white dark:bg-[#202022] border border-amber-300 rounded-xl px-3.5 py-2 outline-none shadow-sm dark:shadow-none cursor-pointer text-gray-900 dark:text-gray-100"
-            >
-              <option value="Procesando">Procesando</option>
-              <option value="Enviado">Enviado</option>
-              <option value="Entregado">Entregado</option>
-            </select>
+            <BeUIOrderStatusSelector
+              status={activeOrder.status}
+              isAdmin={true}
+              onUpdateStatus={(nextSt) => onUpdateStatus(activeOrder.id, nextSt)}
+              size="md"
+              align="end"
+            />
           </div>
         )}
         </div>
@@ -477,6 +492,6 @@ export function OrderDetailModal({
           </div>
         )}
       </div>
-    </div>
+    </BeUICenterMorphModal>
   );
 }

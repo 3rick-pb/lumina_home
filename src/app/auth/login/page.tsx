@@ -4,24 +4,100 @@ import React, { useState, useMemo } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { useUserStore, isValidEmail } from "@/lib/userStore";
+import { useUserStore, isValidEmail, validateStrongPassword } from "@/lib/userStore";
 import { useCartStore } from "@/lib/store";
 import { useCatalogStore, CatalogProduct } from "@/lib/catalogStore";
-import { ArrowRight, Mail, Lock, Sparkles, ShieldCheck, Search, X, Eye, Compass } from "lucide-react";
+import { ArrowRight, Mail, Lock, Sparkles, ShieldCheck, Search, X, Eye, EyeOff, Compass, KeyRound, CheckCircle2 } from "lucide-react";
 import { normalizeSearchText } from "@/lib/utils";
 import { useBrand } from "@/core";
-import { BeUILoaderMetaballs } from "@/components/ui/BeUIControls";
+import { BeUILoaderMetaballs, BeUICenterMorphModal } from "@/components/ui/BeUIControls";
 import { LuminaLoginWordmark } from "@/components/ui/LuminaLoginWordmark";
+import { StrongPasswordMeter } from "@/components/ui/StrongPasswordMeter";
 
 export default function LoginPage() {
   const brand = useBrand();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showLoginPassword, setShowLoginPassword] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
+  const [successNotice, setSuccessNotice] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+
+  // Interactive Password Change Modal State
+  const [showChangePasswordModal, setShowChangePasswordModal] = useState(false);
+  const [cpEmail, setCpEmail] = useState("");
+  const [cpNewPassword, setCpNewPassword] = useState("");
+  const [cpConfirmPassword, setCpConfirmPassword] = useState("");
+  const [showCpPassword, setShowCpPassword] = useState(false);
+  const [cpError, setCpError] = useState("");
+  const [cpSuccess, setCpSuccess] = useState("");
+  const [isUpdatingPassword, setIsUpdatingPassword] = useState(false);
+
   const router = useRouter();
   const login = useUserStore((state) => state.login);
   const continueAsGuest = useUserStore((state) => state.continueAsGuest);
+
+  const openPasswordChangeModal = () => {
+    setCpEmail(email.trim());
+    setCpNewPassword("");
+    setCpConfirmPassword("");
+    setCpError("");
+    setCpSuccess("");
+    setShowChangePasswordModal(true);
+  };
+
+  const handleChangePasswordSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setCpError("");
+    setCpSuccess("");
+
+    const cleanTargetEmail = cpEmail.trim().toLowerCase();
+    if (!cleanTargetEmail || !isValidEmail(cleanTargetEmail)) {
+      setCpError("Por favor, ingresa el correo electrónico válido de tu cuenta.");
+      return;
+    }
+
+    const strengthCheck = validateStrongPassword(cpNewPassword);
+    if (!strengthCheck.isValid) {
+      setCpError(strengthCheck.error || "La nueva contraseña debe ser fuerte y segura.");
+      return;
+    }
+
+    if (cpNewPassword !== cpConfirmPassword) {
+      setCpError("Las contraseñas ingresadas no coinciden. Verifícalas.");
+      return;
+    }
+
+    setIsUpdatingPassword(true);
+    try {
+      const res = await fetch("/api/auth/change-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: cleanTargetEmail,
+          newPassword: cpNewPassword,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        setCpError(data.error || "No se pudo actualizar la contraseña.");
+      } else {
+        setCpSuccess(
+          data.message || "Tu contraseña ha sido actualizada con éxito. Ya puedes iniciar sesión."
+        );
+        setEmail(cleanTargetEmail);
+        setPassword(cpNewPassword);
+        setSuccessNotice("Contraseña actualizada correctamente. Haz clic en Iniciar Sesión para ingresar.");
+        setTimeout(() => {
+          setShowChangePasswordModal(false);
+        }, 1200);
+      }
+    } catch {
+      setCpError("Error de conexión al intentar cambiar la contraseña.");
+    } finally {
+      setIsUpdatingPassword(false);
+    }
+  };
 
   const handleContinueAsGuest = () => {
     continueAsGuest();
@@ -223,6 +299,13 @@ export default function LoginPage() {
               </div>
             )}
 
+            {successNotice && !errorMsg && (
+              <div className="p-3.5 bg-emerald-50/95 backdrop-blur-sm text-emerald-700 text-xs rounded-2xl border border-emerald-200 text-center font-semibold flex items-center justify-center gap-2">
+                <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                <span>{successNotice}</span>
+              </div>
+            )}
+
             <div>
               <label className="block text-xs font-semibold text-gray-700 mb-1.5 ml-1">Correo Electrónico</label>
               <div className="relative">
@@ -252,19 +335,35 @@ export default function LoginPage() {
                 <input 
                   id="password"
                   name="password"
-                  type="password" 
+                  type={showLoginPassword ? "text" : "password"} 
                   autoComplete="current-password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full pl-11 pr-4 py-3 bg-white/70 backdrop-blur-md border border-white/90 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-[#8c9276]/40 focus:border-[#8c9276] transition-all placeholder:text-gray-400 shadow-sm"
+                  className="w-full pl-11 pr-11 py-3 bg-white/70 backdrop-blur-md border border-white/90 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-[#8c9276]/40 focus:border-[#8c9276] transition-all placeholder:text-gray-400 shadow-sm"
                   placeholder="••••••••"
                   required
                 />
+                <button
+                  type="button"
+                  onClick={() => setShowLoginPassword((prev) => !prev)}
+                  className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-gray-400 hover:text-gray-700 transition-colors cursor-pointer"
+                  tabIndex={-1}
+                  title={showLoginPassword ? "Ocultar contraseña" : "Ver contraseña"}
+                >
+                  {showLoginPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
               </div>
-              <div className="flex justify-end mt-1.5">
-                <Link href="#" className="text-xs font-medium text-gray-500 hover:text-gray-900 transition-colors">
-                  ¿Olvidaste tu contraseña?
-                </Link>
+              <div className="flex justify-end mt-2">
+                <button
+                  type="button"
+                  onClick={openPasswordChangeModal}
+                  className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#6b7058] hover:text-gray-900 transition-colors cursor-pointer group"
+                >
+                  <KeyRound className="w-3.5 h-3.5 text-[#8c9276] group-hover:rotate-12 transition-transform" />
+                  <span className="underline decoration-[#8c9276]/50 underline-offset-4 group-hover:decoration-gray-900">
+                    ¿Olvidaste o deseas cambiar tu contraseña?
+                  </span>
+                </button>
               </div>
             </div>
 
@@ -373,6 +472,153 @@ export default function LoginPage() {
           </div>
         </div>
       )}
+
+      {/* Interactive Password Change Modal (BeUICenterMorphModal) */}
+      <BeUICenterMorphModal
+        open={showChangePasswordModal}
+        onOpenChange={setShowChangePasswordModal}
+        className="w-full max-w-md"
+      >
+        <div className="p-6 sm:p-8 relative">
+          {/* Exact Cart Close Button */}
+          <button
+            type="button"
+            onClick={() => setShowChangePasswordModal(false)}
+            className="absolute top-4 right-4 z-30 w-10 h-10 rounded-full bg-white/95 dark:bg-[#2a2a2d]/95 backdrop-blur-xl border border-black/[0.08] dark:border-white/15 shadow-[0_4px_16px_rgba(0,0,0,0.12)] text-gray-500 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50/90 dark:hover:bg-rose-950/40 hover:border-rose-200 dark:hover:border-rose-900/40 flex items-center justify-center hover:scale-105 active:scale-95 transition-all cursor-pointer"
+            title="Cerrar ventana"
+          >
+            <X className="w-4 h-4 stroke-[2.5]" />
+          </button>
+
+          <div className="flex items-center gap-3 mb-4 pr-10">
+            <div className="w-11 h-11 rounded-2xl bg-[#8c9276]/15 border border-[#8c9276]/30 flex items-center justify-center text-[#8c9276] shrink-0">
+              <KeyRound className="w-5 h-5" />
+            </div>
+            <div>
+              <span className="text-[10px] font-extrabold uppercase tracking-widest text-[#8c9276]">
+                Seguridad de Cuenta
+              </span>
+              <h3 className="text-xl font-display italic font-bold text-gray-900 dark:text-white leading-tight">
+                Cambiar Contraseña
+              </h3>
+            </div>
+          </div>
+
+          <p className="text-xs text-gray-500 dark:text-gray-400 leading-relaxed mb-5">
+            Ingresa el correo electrónico de tu cuenta y establece una nueva contraseña fuerte y segura para recuperar o actualizar tu acceso.
+          </p>
+
+          <form onSubmit={handleChangePasswordSubmit} className="space-y-4">
+            {cpError && (
+              <div className="p-3 bg-red-50/95 dark:bg-red-950/50 text-red-600 dark:text-red-300 text-xs rounded-2xl border border-red-200 dark:border-red-900/40 font-medium text-center">
+                {cpError}
+              </div>
+            )}
+
+            {cpSuccess && (
+              <div className="p-3.5 bg-emerald-50/95 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-300 text-xs rounded-2xl border border-emerald-200 dark:border-emerald-900/40 font-semibold flex items-center justify-center gap-2 text-center">
+                <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                <span>{cpSuccess}</span>
+              </div>
+            )}
+
+            <div>
+              <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5 ml-1">
+                Correo Electrónico de tu Cuenta
+              </label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-400">
+                  <Mail className="w-4 h-4" />
+                </div>
+                <input
+                  type="email"
+                  value={cpEmail}
+                  onChange={(e) => setCpEmail(e.target.value)}
+                  placeholder="ejemplo@correo.com"
+                  required
+                  className="w-full pl-11 pr-4 py-3 bg-gray-50/90 dark:bg-[#141416] border border-gray-200/90 dark:border-white/10 rounded-2xl text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#8c9276]/40 focus:border-[#8c9276] transition-all"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5 ml-1">
+                Nueva Contraseña Segura
+              </label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-400">
+                  <Lock className="w-4 h-4" />
+                </div>
+                <input
+                  type={showCpPassword ? "text" : "password"}
+                  value={cpNewPassword}
+                  onChange={(e) => setCpNewPassword(e.target.value)}
+                  placeholder="Mín. 8 caracteres, mayúscula, número y símbolo"
+                  required
+                  className="w-full pl-11 pr-11 py-3 bg-gray-50/90 dark:bg-[#141416] border border-gray-200/90 dark:border-white/10 rounded-2xl text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#8c9276]/40 focus:border-[#8c9276] transition-all"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowCpPassword((prev) => !prev)}
+                  className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-colors cursor-pointer"
+                  tabIndex={-1}
+                >
+                  {showCpPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
+
+              {/* Interactive Live Strong Password Meter */}
+              <StrongPasswordMeter password={cpNewPassword} compact />
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5 ml-1">
+                Confirmar Nueva Contraseña
+              </label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-400">
+                  <Lock className="w-4 h-4" />
+                </div>
+                <input
+                  type={showCpPassword ? "text" : "password"}
+                  value={cpConfirmPassword}
+                  onChange={(e) => setCpConfirmPassword(e.target.value)}
+                  placeholder="Repite la nueva contraseña"
+                  required
+                  className="w-full pl-11 pr-4 py-3 bg-gray-50/90 dark:bg-[#141416] border border-gray-200/90 dark:border-white/10 rounded-2xl text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#8c9276]/40 focus:border-[#8c9276] transition-all"
+                />
+              </div>
+            </div>
+
+            <div className="pt-2 flex items-center gap-2.5">
+              <button
+                type="button"
+                onClick={() => setShowChangePasswordModal(false)}
+                className="px-4 h-12 rounded-2xl bg-gray-100 dark:bg-white/10 text-gray-700 dark:text-gray-300 text-xs font-semibold hover:bg-gray-200 dark:hover:bg-white/15 transition-colors cursor-pointer"
+              >
+                Cancelar
+              </button>
+              <button
+                type="submit"
+                disabled={isUpdatingPassword}
+                className="flex-1 h-12 rounded-2xl bg-gray-900 dark:bg-[#ccff00] text-white dark:text-gray-950 text-xs sm:text-sm font-bold flex items-center justify-center gap-2 hover:bg-gray-800 dark:hover:bg-[#b8e600] transition-all shadow-lg shadow-gray-900/15 disabled:opacity-60 cursor-pointer"
+              >
+                {isUpdatingPassword ? (
+                  <>
+                    <BeUILoaderMetaballs size={26} className="text-current" />
+                    <span>Actualizando contraseña...</span>
+                  </>
+                ) : (
+                  <>
+                    <KeyRound className="w-4 h-4" />
+                    <span>Guardar Nueva Contraseña</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </form>
+        </div>
+      </BeUICenterMorphModal>
 
     </div>
   );

@@ -163,6 +163,124 @@ export const sanitizeText = (text?: string | null, maxLength = 80): string => {
     .slice(0, maxLength);
 };
 
+export interface PasswordStrengthResult {
+  score: 0 | 1 | 2 | 3 | 4;
+  label: string;
+  isStrong: boolean;
+  checks: {
+    minLength: boolean;
+    hasUpperAndLower: boolean;
+    hasNumber: boolean;
+    hasSymbol: boolean;
+    notCommonOrSequential: boolean;
+  };
+}
+
+const WEAK_PASSWORD_BLACKLIST = [
+  '123456', '1234567', '12345678', '123456789', '1234567890',
+  '654321', '987654321', '0123456', '0123456789',
+  'password', 'password1', 'password123', 'pass1234',
+  'contrasena', 'contraseña', 'clave123', 'clave1234',
+  'qwerty', 'qwertyuiop', 'qwerty123', 'asdfgh', 'asdfghjkl', 'zxcvbnm',
+  '111111', '11111111', '000000', '00000000', '22222222', '99999999',
+  'abcdef', 'abcdefg', 'abcdefgh', 'abcd1234', '1234abcd',
+  'lumina', 'lumina123', 'admin123', 'welcome1', 'iloveyou'
+];
+
+export const evaluatePasswordStrength = (password?: string | null): PasswordStrengthResult => {
+  const pwd = typeof password === 'string' ? password : '';
+  const lower = pwd.toLowerCase().trim();
+
+  const minLength = pwd.length >= 8;
+  const hasUpperAndLower = /[a-záéíóúñ]/.test(pwd) && /[A-ZÁÉÍÓÚÑ]/.test(pwd);
+  const hasNumber = /[0-9]/.test(pwd);
+  const hasSymbol = /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?~`¡¿]/.test(pwd);
+
+  // Check blacklist, repeated single char (e.g. aaaaaaaa), or pure numeric sequences
+  const isBlacklisted = WEAK_PASSWORD_BLACKLIST.some(
+    (weak) => lower === weak || lower.includes('123456') || lower.includes('654321') || lower.includes('qwerty')
+  );
+  const isRepeatedChar = pwd.length > 0 && /^(.)\1+$/.test(pwd);
+  const isPureSequentialDigits = pwd.length >= 5 && ('01234567890'.includes(pwd) || '9876543210'.includes(pwd));
+
+  const notCommonOrSequential = pwd.length > 0 && !isBlacklisted && !isRepeatedChar && !isPureSequentialDigits;
+
+  const passedCount = [minLength, hasUpperAndLower, hasNumber, hasSymbol].filter(Boolean).length;
+  let score: 0 | 1 | 2 | 3 | 4 = 0;
+
+  if (!pwd) {
+    score = 0;
+  } else if (!notCommonOrSequential) {
+    score = 1;
+  } else {
+    score = passedCount as 0 | 1 | 2 | 3 | 4;
+  }
+
+  const labels: Record<0 | 1 | 2 | 3 | 4, string> = {
+    0: 'Ingresa una contraseña',
+    1: 'Muy débil (No permitida)',
+    2: 'Débil (Faltan requisitos)',
+    3: 'Buena (Casi lista)',
+    4: 'Contraseña Fuerte y Segura',
+  };
+
+  const isStrong = minLength && hasUpperAndLower && hasNumber && hasSymbol && notCommonOrSequential;
+
+  return {
+    score: isStrong ? 4 : score,
+    label: isStrong ? labels[4] : labels[score],
+    isStrong,
+    checks: {
+      minLength,
+      hasUpperAndLower,
+      hasNumber,
+      hasSymbol,
+      notCommonOrSequential,
+    },
+  };
+};
+
+export const validateStrongPassword = (password?: string | null): { isValid: boolean; error: string | null } => {
+  if (!password || typeof password !== 'string') {
+    return { isValid: false, error: 'Por favor, ingresa una contraseña.' };
+  }
+  if (password.length > 72) {
+    return { isValid: false, error: 'La contraseña excede el límite máximo de 72 caracteres.' };
+  }
+  const evaluation = evaluatePasswordStrength(password);
+  if (!evaluation.checks.notCommonOrSequential) {
+    return {
+      isValid: false,
+      error: 'No se permiten contraseñas comunes ni secuencias simples como "123456" o "qwerty". Usa una combinación segura.',
+    };
+  }
+  if (!evaluation.checks.minLength) {
+    return {
+      isValid: false,
+      error: 'La contraseña debe tener al menos 8 caracteres.',
+    };
+  }
+  if (!evaluation.checks.hasUpperAndLower) {
+    return {
+      isValid: false,
+      error: 'La contraseña debe incluir al menos una letra mayúscula y una letra minúscula.',
+    };
+  }
+  if (!evaluation.checks.hasNumber) {
+    return {
+      isValid: false,
+      error: 'La contraseña debe incluir al menos un número (0-9).',
+    };
+  }
+  if (!evaluation.checks.hasSymbol) {
+    return {
+      isValid: false,
+      error: 'La contraseña debe incluir al menos un carácter especial (ej. !@#$%&*).',
+    };
+  }
+  return { isValid: true, error: null };
+};
+
 const adminCache = new Map<string, { role: 'USER' | 'ADMIN'; isRootAdmin: boolean; timestamp: number }>();
 const ADMIN_CACHE_TTL_MS = 30 * 1000; // 30 seconds
 
@@ -1195,11 +1313,9 @@ export const useUserStore = create<UserState>((set, get) => ({
       return { error: 'Por favor, ingresa un nombre válido (mínimo 2 caracteres, sin símbolos).' };
     }
 
-    if (!password || typeof password !== 'string' || password.length < 6) {
-      return { error: 'La contraseña debe contener al menos 6 caracteres.' };
-    }
-    if (password.length > 72) {
-      return { error: 'La contraseña excede el límite máximo de seguridad permitido.' };
+    const pwdCheck = validateStrongPassword(password);
+    if (!pwdCheck.isValid) {
+      return { error: pwdCheck.error || 'La contraseña no cumple con los requisitos de seguridad.' };
     }
 
     const snapshotBeforeRegister = {
@@ -1591,6 +1707,10 @@ export const useUserStore = create<UserState>((set, get) => ({
   },
 
   updateUserPassword: async (password) => {
+    const pwdCheck = validateStrongPassword(password);
+    if (!pwdCheck.isValid) {
+      return { error: pwdCheck.error || 'La contraseña no cumple con los requisitos de seguridad.' };
+    }
     const { error } = await supabase.auth.updateUser({ password });
     return { error: error?.message || null };
   },

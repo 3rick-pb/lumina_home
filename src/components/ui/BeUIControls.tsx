@@ -1418,12 +1418,24 @@ export function BeUICenterMorphModal({
   className,
 }: BeUICenterMorphModalProps) {
   useEffect(() => {
-    if (!open) return;
+    if (!open || typeof document === "undefined") return;
+    const prevBodyOverflow = document.body.style.overflow;
+    const prevHtmlOverflow = document.documentElement.style.overflow;
+    const prevBodyOverscroll = document.body.style.overscrollBehavior;
+    document.body.style.overflow = "hidden";
+    document.documentElement.style.overflow = "hidden";
+    document.body.style.overscrollBehavior = "none";
+
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") onOpenChange(false);
     };
     document.addEventListener("keydown", handleKeyDown);
-    return () => document.removeEventListener("keydown", handleKeyDown);
+    return () => {
+      document.body.style.overflow = prevBodyOverflow;
+      document.documentElement.style.overflow = prevHtmlOverflow;
+      document.body.style.overscrollBehavior = prevBodyOverscroll;
+      document.removeEventListener("keydown", handleKeyDown);
+    };
   }, [open, onOpenChange]);
 
   return (
@@ -1880,6 +1892,712 @@ export function BeUIMobileExpandableTabs({
     </nav>
   );
 }
+
+/* ============================================================================
+ * 10. @beui/animated-badge (Official Animated Badge for 3-State Order Transitions)
+ * Source: https://beui.dev/r/animated-badge.json (`components/motion/animated-badge.tsx`)
+ * ============================================================================ */
+
+export type AnimatedBadgeStatus =
+  | "neutral"
+  | "info"
+  | "success"
+  | "warning"
+  | "danger"
+  | "loading";
+
+export type AnimatedBadgeSize = "sm" | "md";
+
+export interface BeUIAnimatedBadgeProps {
+  status?: AnimatedBadgeStatus;
+  size?: AnimatedBadgeSize;
+  children?: ReactNode;
+  icon?: ReactNode;
+  showIcon?: boolean;
+  pulse?: boolean;
+  contentKey?: string | number;
+  className?: string;
+}
+
+const ANIMATED_BADGE_STATUS_CLASS: Record<AnimatedBadgeStatus, string> = {
+  neutral:
+    "border-gray-200 dark:border-white/15 bg-gray-100/90 dark:bg-white/10 text-gray-700 dark:text-gray-300",
+  info: "border-blue-500/35 bg-blue-500/12 text-blue-700 dark:text-blue-400 shadow-[0_0_12px_rgba(59,130,246,0.12)]",
+  success:
+    "border-emerald-500/35 bg-emerald-500/12 text-emerald-700 dark:text-emerald-400 shadow-[0_0_12px_rgba(16,185,129,0.14)]",
+  warning:
+    "border-amber-500/35 bg-amber-500/12 text-amber-700 dark:text-amber-400 shadow-[0_0_12px_rgba(245,158,11,0.14)]",
+  danger: "border-rose-500/35 bg-rose-500/12 text-rose-700 dark:text-rose-400",
+  loading: "border-amber-500/35 bg-amber-500/12 text-amber-700 dark:text-amber-400",
+};
+
+const ANIMATED_BADGE_SIZE_CLASS: Record<AnimatedBadgeSize, string> = {
+  sm: "h-6 gap-1.5 px-2.5 text-[11px]",
+  md: "h-7 gap-2 px-3 text-xs",
+};
+
+const BADGE_ICON_ROLL_VARIANTS: Variants = {
+  initial: {
+    opacity: 0.72,
+    y: "80%",
+    scale: 0.92,
+    rotate: -8,
+    filter: "blur(6px)",
+  },
+  animate: {
+    opacity: 1,
+    y: "0%",
+    scale: 1,
+    rotate: 0,
+    filter: "blur(0px)",
+    transition: {
+      y: { type: "spring", stiffness: 210, damping: 24, mass: 0.85 },
+      scale: { type: "spring", stiffness: 250, damping: 24, mass: 0.75 },
+      rotate: { duration: 0.28, ease: EASE_OUT },
+      opacity: { duration: 0.28, ease: EASE_OUT },
+      filter: { duration: 0.42, ease: EASE_OUT },
+    },
+  },
+  exit: {
+    opacity: 0.5,
+    y: "-80%",
+    scale: 0.96,
+    rotate: 8,
+    filter: "blur(6px)",
+    transition: { duration: 0.22, ease: EASE_OUT },
+  },
+};
+
+const BADGE_TEXT_ROLL_VARIANTS: Variants = {
+  initial: { opacity: 0.76, y: "85%", filter: "blur(6px)" },
+  animate: {
+    opacity: 1,
+    y: "0%",
+    filter: "blur(0px)",
+    transition: {
+      y: { type: "spring", stiffness: 210, damping: 24, mass: 0.85 },
+      opacity: { duration: 0.3, ease: EASE_OUT },
+      filter: { duration: 0.42, ease: EASE_OUT },
+    },
+  },
+  exit: {
+    opacity: 0.5,
+    y: "-85%",
+    filter: "blur(6px)",
+    transition: { duration: 0.2, ease: EASE_OUT },
+  },
+};
+
+export function BeUIAnimatedBadge({
+  status = "neutral",
+  size = "sm",
+  children,
+  icon,
+  showIcon = true,
+  pulse = false,
+  contentKey,
+  className,
+}: BeUIAnimatedBadgeProps) {
+  const resolvedContentKey =
+    contentKey ??
+    (typeof children === "string" || typeof children === "number"
+      ? children
+      : status);
+
+  return (
+    <motion.span
+      layout
+      transition={{ type: "spring", stiffness: 420, damping: 30, mass: 0.7 }}
+      className={cn(
+        "relative inline-flex shrink-0 items-center overflow-hidden whitespace-nowrap rounded-full border font-semibold tabular-nums select-none",
+        "transition-colors duration-300",
+        ANIMATED_BADGE_STATUS_CLASS[status],
+        ANIMATED_BADGE_SIZE_CLASS[size],
+        className
+      )}
+    >
+      {pulse && (
+        <motion.span
+          aria-hidden
+          className="absolute inset-0 rounded-full bg-current opacity-10"
+          animate={{ scale: [0.94, 1.08, 0.94], opacity: [0.08, 0.18, 0.08] }}
+          transition={{ duration: 1.6, repeat: Infinity, ease: "easeInOut" }}
+        />
+      )}
+      {showIcon && (
+        <span className="relative z-10 inline-flex items-center justify-center overflow-hidden">
+          <AnimatePresence mode="popLayout" initial={false}>
+            <motion.span
+              key={String(resolvedContentKey)}
+              aria-hidden
+              data-badge-icon
+              variants={BADGE_ICON_ROLL_VARIANTS}
+              initial="initial"
+              animate="animate"
+              exit="exit"
+              className="inline-flex items-center justify-center will-change-transform"
+            >
+              {icon ?? (
+                <span
+                  className={cn(
+                    "w-2 h-2 rounded-full",
+                    status === "success"
+                      ? "bg-emerald-500 shadow-[0_0_6px_rgba(16,185,129,0.6)]"
+                      : status === "info"
+                      ? "bg-blue-500 shadow-[0_0_6px_rgba(59,130,246,0.6)]"
+                      : "bg-amber-500 shadow-[0_0_6px_rgba(245,158,11,0.6)]"
+                  )}
+                />
+              )}
+            </motion.span>
+          </AnimatePresence>
+        </span>
+      )}
+      {children != null && (
+        <span className="relative z-10 inline-flex overflow-hidden">
+          <AnimatePresence mode="popLayout" initial={false}>
+            <motion.span
+              key={String(resolvedContentKey)}
+              data-badge-label
+              variants={BADGE_TEXT_ROLL_VARIANTS}
+              initial="initial"
+              animate="animate"
+              exit="exit"
+              className="inline-block will-change-transform"
+            >
+              {children}
+            </motion.span>
+          </AnimatePresence>
+        </span>
+      )}
+    </motion.span>
+  );
+}
+
+/* ============================================================================
+ * 11. @beui/popover (Official Gooey Liquid-Neck Popover)
+ * Source: https://beui.dev/r/popover.json (`components/motion/popover.tsx`)
+ * The panel oozes out of the trigger through an SVG goo filter with a liquid neck.
+ * ============================================================================ */
+
+interface PopoverRect {
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+  r: number;
+}
+
+interface PopoverGeo {
+  layerW: number;
+  layerH: number;
+  left: number;
+  top: number;
+  trigger: PopoverRect;
+  panel: PopoverRect;
+}
+
+function buildPopoverGeo(
+  tW: number,
+  tH: number,
+  cW: number,
+  cH: number,
+  side: "top" | "bottom",
+  align: "start" | "center" | "end",
+  gap: number,
+  panelRadius: number
+): PopoverGeo {
+  const py = side === "bottom" ? tH + gap : -(gap + cH);
+  const px = align === "start" ? 0 : align === "end" ? tW - cW : (tW - cW) / 2;
+
+  const left = Math.min(0, px);
+  const top = Math.min(0, py);
+  const layerW = Math.max(tW, px + cW) - left;
+  const layerH = Math.max(tH, py + cH) - top;
+  const triggerRadius = Math.min(tH / 2, panelRadius);
+
+  return {
+    layerW,
+    layerH,
+    left,
+    top,
+    trigger: { x: -left, y: -top, w: tW, h: tH, r: triggerRadius },
+    panel: { x: px - left, y: py - top, w: cW, h: cH, r: panelRadius },
+  };
+}
+
+function popoverInsetFor(rect: PopoverRect, layerW: number, layerH: number) {
+  const top = Math.max(0, rect.y);
+  const right = Math.max(0, layerW - (rect.x + rect.w));
+  const bottom = Math.max(0, layerH - (rect.y + rect.h));
+  const left = Math.max(0, rect.x);
+  return `inset(${top.toFixed(1)}px ${right.toFixed(1)}px ${bottom.toFixed(1)}px ${left.toFixed(1)}px round ${rect.r.toFixed(1)}px)`;
+}
+
+function popoverRoundedRectPath(rect: PopoverRect) {
+  const radius = Math.max(0, Math.min(rect.r, rect.w / 2, rect.h / 2));
+  const n = (value: number) => value.toFixed(2);
+  const x1 = rect.x;
+  const y1 = rect.y;
+  const x2 = rect.x + rect.w;
+  const y2 = rect.y + rect.h;
+  const arc = `A${n(radius)} ${n(radius)} 0 0 1`;
+
+  return (
+    `M${n(x1 + radius)} ${n(y1)}` +
+    `H${n(x2 - radius)}${arc} ${n(x2)} ${n(y1 + radius)}` +
+    `V${n(y2 - radius)}${arc} ${n(x2 - radius)} ${n(y2)}` +
+    `H${n(x1 + radius)}${arc} ${n(x1)} ${n(y2 - radius)}` +
+    `V${n(y1 + radius)}${arc} ${n(x1 + radius)} ${n(y1)}Z`
+  );
+}
+
+function popoverTriggerCutout(geo: PopoverGeo) {
+  const layer = { x: 0, y: 0, w: geo.layerW, h: geo.layerH, r: 0 };
+  return `path(evenodd, "${popoverRoundedRectPath(layer)} ${popoverRoundedRectPath(geo.trigger)}")`;
+}
+
+export interface BeUIPopoverProps {
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+  trigger: ReactNode;
+  children: ReactNode;
+  side?: "top" | "bottom";
+  align?: "start" | "center" | "end";
+  sideOffset?: number;
+  panelRadius?: number;
+  gooStrength?: number;
+  className?: string;
+  panelClassName?: string;
+}
+
+export function BeUIPopover({
+  open: controlledOpen,
+  onOpenChange,
+  trigger,
+  children,
+  side = "bottom",
+  align = "center",
+  sideOffset = 12,
+  panelRadius = 18,
+  gooStrength = 7,
+  className,
+  panelClassName,
+}: BeUIPopoverProps) {
+  const [internalOpen, setInternalOpen] = useState(false);
+  const isControlled = controlledOpen !== undefined;
+  const open = isControlled ? controlledOpen : internalOpen;
+
+  const setOpen = useCallback(
+    (next: boolean) => {
+      if (!isControlled) setInternalOpen(next);
+      onOpenChange?.(next);
+    },
+    [isControlled, onOpenChange]
+  );
+
+  const gooId = `beui-popover-goo-${useId().replace(/[^a-zA-Z0-9_-]/g, "")}`;
+  const triggerRef = useRef<HTMLDivElement | null>(null);
+  const contentRef = useRef<HTMLDivElement | null>(null);
+  const blobRef = useRef<HTMLDivElement | null>(null);
+  const clipRef = useRef<HTMLDivElement | null>(null);
+
+  const [portalReady, setPortalReady] = useState(false);
+  const [progress, setProgress] = useState(0);
+  const [layout, setLayout] = useState<{
+    trigger: { left: number; top: number; width: number; height: number };
+    content: { width: number; height: number };
+  } | null>(null);
+  const [resolvedSide, setResolvedSide] = useState<"top" | "bottom">(side);
+
+  useEffect(() => {
+    setPortalReady(true);
+  }, []);
+
+  const measureLayout = useCallback(() => {
+    const trig = triggerRef.current;
+    const cont = contentRef.current;
+    if (!trig || !cont) return;
+    const rect = trig.getBoundingClientRect();
+    const cW = cont.offsetWidth || 190;
+    const cH = cont.offsetHeight || 136;
+
+    // Smart viewport flip if near bottom of screen
+    const spaceBelow = typeof window !== "undefined" ? window.innerHeight - rect.bottom : 300;
+    const nextSide = side === "bottom" && spaceBelow < cH + 24 ? "top" : side;
+    setResolvedSide(nextSide);
+
+    setLayout({
+      trigger: {
+        left: rect.left,
+        top: rect.top,
+        width: rect.width || 110,
+        height: rect.height || 28,
+      },
+      content: {
+        width: cW,
+        height: cH,
+      },
+    });
+  }, [side]);
+
+  useLayoutEffect(() => {
+    if (!portalReady) return;
+    measureLayout();
+    if (!open && progress === 0) return;
+    window.addEventListener("scroll", measureLayout, true);
+    window.addEventListener("resize", measureLayout);
+    return () => {
+      window.removeEventListener("scroll", measureLayout, true);
+      window.removeEventListener("resize", measureLayout);
+    };
+  }, [portalReady, open, progress, measureLayout]);
+
+  // Spring morph animation (GOO_OPEN_SPRING / GOO_CLOSE_SPRING)
+  useEffect(() => {
+    let raf = 0;
+    const startVal = progress;
+    const targetVal = open ? 1 : 0;
+    if (Math.abs(targetVal - startVal) < 0.001) return;
+
+    const durationMs = open ? 290 : 210;
+    const startTime = performance.now();
+
+    const step = (now: number) => {
+      const elapsed = now - startTime;
+      const t = Math.min(1, elapsed / durationMs);
+      // Spring overshoot easing matching GOO_OPEN_SPRING (bounce: 0.15)
+      const eased = open
+        ? 1 - Math.pow(1 - t, 3) * Math.cos(t * Math.PI * 0.85)
+        : 1 - Math.pow(1 - t, 2.6);
+      const nextP = startVal + (targetVal - startVal) * Math.max(0, Math.min(1.04, eased));
+      setProgress(t >= 1 ? targetVal : nextP);
+      if (t < 1) {
+        raf = window.requestAnimationFrame(step);
+      }
+    };
+    raf = window.requestAnimationFrame(step);
+    return () => window.cancelAnimationFrame(raf);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
+
+  // Light-dismiss on outside pointerdown or Escape
+  useEffect(() => {
+    if (!open) return;
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setOpen(false);
+    };
+    const handlePointerDown = (e: PointerEvent) => {
+      const target = e.target as Node | null;
+      if (!target) return;
+      if (triggerRef.current?.contains(target) || contentRef.current?.contains(target)) return;
+      setOpen(false);
+    };
+    window.addEventListener("keydown", handleKey);
+    window.addEventListener("pointerdown", handlePointerDown, true);
+    return () => {
+      window.removeEventListener("keydown", handleKey);
+      window.removeEventListener("pointerdown", handlePointerDown, true);
+    };
+  }, [open, setOpen]);
+
+  const geo = useMemo(
+    () =>
+      buildPopoverGeo(
+        layout?.trigger.width ?? 110,
+        layout?.trigger.height ?? 28,
+        layout?.content.width ?? 190,
+        layout?.content.height ?? 136,
+        resolvedSide,
+        align,
+        sideOffset,
+        panelRadius
+      ),
+    [layout, resolvedSide, align, sideOffset, panelRadius]
+  );
+
+  const clampedP = Math.max(0, Math.min(1, progress));
+  const currentRect: PopoverRect = {
+    x: geo.trigger.x + (geo.panel.x - geo.trigger.x) * clampedP,
+    y: geo.trigger.y + (geo.panel.y - geo.trigger.y) * clampedP,
+    w: geo.trigger.w + (geo.panel.w - geo.trigger.w) * clampedP,
+    h: geo.trigger.h + (geo.panel.h - geo.trigger.h) * clampedP,
+    r: geo.trigger.r + (geo.panel.r - geo.trigger.r) * clampedP,
+  };
+  const currentClip = popoverInsetFor(currentRect, geo.layerW, geo.layerH);
+
+  return (
+    <div
+      ref={triggerRef}
+      onClick={(e) => {
+        e.stopPropagation();
+        measureLayout();
+        setOpen(!open);
+      }}
+      className={cn("relative inline-flex items-center isolate cursor-pointer", className)}
+    >
+      {trigger}
+
+      {portalReady &&
+        (open || progress > 0.01) &&
+        typeof document !== "undefined" &&
+        createPortal(
+          <div
+            data-beui-popover-portal=""
+            onClick={(e) => e.stopPropagation()}
+            className="pointer-events-none fixed left-0 top-0 z-[9999] isolate size-0"
+            style={{
+              visibility: layout ? "visible" : "hidden",
+              transform: `translate3d(${layout?.trigger.left ?? 0}px, ${layout?.trigger.top ?? 0}px, 0)`,
+            }}
+          >
+            {/* Official @beui/popover SVG Goo Filter */}
+            <svg aria-hidden width="0" height="0" className="absolute">
+              <defs>
+                <filter id={gooId} x="-50%" y="-50%" width="200%" height="200%">
+                  <feGaussianBlur in="SourceGraphic" stdDeviation={gooStrength} result="blur" />
+                  <feColorMatrix
+                    in="blur"
+                    mode="matrix"
+                    values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 22 -10"
+                    result="goo"
+                  />
+                  <feComposite in="SourceGraphic" in2="goo" operator="atop" />
+                </filter>
+              </defs>
+            </svg>
+
+            {/* Goo Body: Static Trigger Pill + Morphing Liquid Neck Blob */}
+            <div
+              aria-hidden
+              className="pointer-events-none absolute z-[-1]"
+              style={{
+                left: geo.left,
+                top: geo.top,
+                width: geo.layerW,
+                height: geo.layerH,
+                filter: `url(#${gooId})`,
+                clipPath: popoverTriggerCutout(geo),
+              }}
+            >
+              <div
+                className="absolute bg-white dark:bg-[#1e1e22] shadow-lg"
+                style={{
+                  left: geo.trigger.x,
+                  top: geo.trigger.y,
+                  width: geo.trigger.w,
+                  height: geo.trigger.h,
+                  borderRadius: geo.trigger.r,
+                }}
+              />
+              <div
+                ref={blobRef}
+                className="absolute inset-0 bg-white dark:bg-[#1e1e22] shadow-2xl border border-gray-200/80 dark:border-white/15"
+                style={{
+                  clipPath: currentClip,
+                }}
+              />
+            </div>
+
+            {/* Clipped Interactive Panel Content */}
+            <div
+              className="pointer-events-none absolute z-10"
+              style={{
+                left: geo.left,
+                top: geo.top,
+                width: geo.layerW,
+                height: geo.layerH,
+              }}
+            >
+              <div
+                ref={clipRef}
+                className="absolute inset-0"
+                style={{
+                  clipPath: currentClip,
+                  pointerEvents: open ? "auto" : "none",
+                }}
+              >
+                <div
+                  ref={contentRef}
+                  role="dialog"
+                  style={{
+                    position: "absolute",
+                    left: geo.panel.x,
+                    top: geo.panel.y,
+                  }}
+                  className={cn(
+                    "w-max min-w-[192px] rounded-[18px] bg-white/95 dark:bg-[#1e1e22]/95 backdrop-blur-2xl border border-gray-200/90 dark:border-white/15 p-2 shadow-[0_20px_50px_rgba(0,0,0,0.18)] dark:shadow-[0_20px_50px_rgba(0,0,0,0.6)] text-gray-900 dark:text-gray-100 outline-none",
+                    panelClassName
+                  )}
+                >
+                  {children}
+                </div>
+              </div>
+            </div>
+          </div>,
+          document.body
+        )}
+    </div>
+  );
+}
+
+/* ============================================================================
+ * 12. BeUIOrderStatusSelector (Combines @beui/popover + @beui/animated-badge)
+ * Used in both Vista General (`OverviewTab`) & Historial Completo (`OrdersTab`)
+ * ============================================================================ */
+
+export type LuminaOrderStatus = "Procesando" | "Enviado" | "Entregado";
+
+const ORDER_STATUS_META: Record<
+  LuminaOrderStatus,
+  {
+    badgeStatus: AnimatedBadgeStatus;
+    label: string;
+    subtitle: string;
+    dotColor: string;
+  }
+> = {
+  Procesando: {
+    badgeStatus: "warning",
+    label: "Procesando",
+    subtitle: "En preparación / taller",
+    dotColor: "bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.6)]",
+  },
+  Enviado: {
+    badgeStatus: "info",
+    label: "Enviado",
+    subtitle: "En tránsito a destino",
+    dotColor: "bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.6)]",
+  },
+  Entregado: {
+    badgeStatus: "success",
+    label: "Entregado",
+    subtitle: "Recibido por el cliente",
+    dotColor: "bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.6)]",
+  },
+};
+
+export interface BeUIOrderStatusSelectorProps {
+  status: LuminaOrderStatus;
+  isAdmin: boolean;
+  onUpdateStatus?: (nextStatus: LuminaOrderStatus) => void;
+  size?: AnimatedBadgeSize;
+  align?: "start" | "center" | "end";
+}
+
+export function BeUIOrderStatusSelector({
+  status,
+  isAdmin,
+  onUpdateStatus,
+  size = "sm",
+  align = "center",
+}: BeUIOrderStatusSelectorProps) {
+  const [popoverOpen, setPopoverOpen] = useState(false);
+  const currentMeta = ORDER_STATUS_META[status] || ORDER_STATUS_META.Procesando;
+
+  if (!isAdmin || !onUpdateStatus) {
+    return (
+      <BeUIAnimatedBadge
+        status={currentMeta.badgeStatus}
+        size={size}
+        pulse={status === "Procesando"}
+        contentKey={status}
+      >
+        {status}
+      </BeUIAnimatedBadge>
+    );
+  }
+
+  return (
+    <BeUIPopover
+      open={popoverOpen}
+      onOpenChange={setPopoverOpen}
+      align={align}
+      sideOffset={10}
+      panelRadius={18}
+      gooStrength={7}
+      trigger={
+        <div className="group inline-flex items-center">
+          <BeUIAnimatedBadge
+            status={currentMeta.badgeStatus}
+            size={size}
+            pulse={status === "Procesando"}
+            contentKey={status}
+            className="pr-2.5 cursor-pointer hover:brightness-95 dark:hover:brightness-110 active:scale-95 transition-transform"
+          >
+            <span className="inline-flex items-center gap-1.5">
+              <span>{status}</span>
+              <ChevronDown
+                className={cn(
+                  "w-3 h-3 opacity-70 transition-transform duration-300",
+                  popoverOpen && "rotate-180"
+                )}
+              />
+            </span>
+          </BeUIAnimatedBadge>
+        </div>
+      }
+    >
+      <div className="w-[215px] space-y-1">
+        <div className="px-2.5 py-1.5 border-b border-gray-100 dark:border-white/10 flex items-center justify-between">
+          <span className="text-[9.5px] font-mono uppercase tracking-widest text-gray-400 font-bold">
+            Estado de Envío
+          </span>
+          <span className="text-[9px] font-mono text-[#8c9276] dark:text-[#ccff00] font-semibold">
+            beUI // Popover
+          </span>
+        </div>
+        {(["Procesando", "Enviado", "Entregado"] as const).map((opt) => {
+          const meta = ORDER_STATUS_META[opt];
+          const isSelected = status === opt;
+          return (
+            <button
+              key={opt}
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                playStepperTickSound("up");
+                if (opt !== status) {
+                  onUpdateStatus(opt);
+                }
+                setPopoverOpen(false);
+              }}
+              className={cn(
+                "w-full flex items-center justify-between gap-2.5 px-2.5 py-2 rounded-xl text-left transition-all cursor-pointer group",
+                isSelected
+                  ? "bg-gray-900/5 dark:bg-white/10 font-bold"
+                  : "hover:bg-gray-100/80 dark:hover:bg-white/[0.06]"
+              )}
+            >
+              <div className="flex items-center gap-2.5 min-w-0">
+                <BeUIAnimatedBadge
+                  status={meta.badgeStatus}
+                  size="sm"
+                  pulse={opt === "Procesando"}
+                  contentKey={opt}
+                >
+                  {opt}
+                </BeUIAnimatedBadge>
+              </div>
+              <div className="flex items-center gap-1.5 shrink-0">
+                {isSelected && (
+                  <motion.span
+                    initial={{ scale: 0.5, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    className="w-5 h-5 rounded-full bg-gray-900 dark:bg-[#ccff00] text-white dark:text-gray-950 flex items-center justify-center shadow-xs"
+                  >
+                    <Check className="w-3 h-3 stroke-[2.5]" />
+                  </motion.span>
+                )}
+              </div>
+            </button>
+          );
+        })}
+      </div>
+    </BeUIPopover>
+  );
+}
+
 
 
 

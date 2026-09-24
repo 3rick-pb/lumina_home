@@ -20,13 +20,14 @@ import {
   Sparkles 
 } from "lucide-react";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
-import { useUserStore, clearAdminCache, syncAddressesToCloud } from "@/lib/userStore";
+import { useUserStore, clearAdminCache, syncAddressesToCloud, validateStrongPassword } from "@/lib/userStore";
 import { supabase } from "@/lib/supabase";
 import { CloudSyncStatus } from "../CloudSyncStatus";
 import { BlobatarAvatar } from "@/components/ui/BlobatarAvatar";
 import { useAvatarSettingsStore } from "@/lib/avatarSettingsStore";
 import { getRefinedCoordinates } from "@/lib/locationUtils";
 import { resolveEcuadorExactAddressLngLat } from "../RadarMapboxCanvas";
+import { StrongPasswordMeter } from "@/components/ui/StrongPasswordMeter";
 
 interface SettingsTabProps {
   isAdmin: boolean;
@@ -255,10 +256,17 @@ export function SettingsTab({
         await updateUserName(editName.trim());
       }
       if (newPass.trim()) {
-        if (newPass.length < 6) {
-          throw new Error("La nueva contraseña debe tener al menos 6 caracteres.");
+        const pwdCheck = validateStrongPassword(newPass.trim());
+        if (!pwdCheck.isValid) {
+          throw new Error(
+            pwdCheck.error ||
+              "La nueva contraseña debe ser fuerte (8+ caracteres, mayúscula, minúscula, número y símbolo)."
+          );
         }
-        await updateUserPassword(newPass.trim());
+        const { error: pwdErr } = await updateUserPassword(newPass.trim());
+        if (pwdErr) {
+          throw new Error(pwdErr);
+        }
         setNewPass("");
       }
       setSettingsFeedback({ msg: "Ajustes guardados correctamente.", type: "success" });
@@ -604,17 +612,18 @@ export function SettingsTab({
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2 pl-1">Nueva Contraseña (Opcional)</label>
+            <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2 pl-1">Nueva Contraseña Segura (Opcional)</label>
             <div className="relative">
               <KeyRound className="w-4 h-4 absolute left-3.5 top-3 text-gray-400" />
               <input 
                 type="password" 
                 value={newPass}
                 onChange={e => setNewPass(e.target.value)}
-                placeholder="Escribe al menos 6 caracteres para cambiarla"
+                placeholder="Mín. 8 caracteres, mayúscula, minúscula, número y símbolo"
                 className="w-full pl-11 pr-4 py-3.5 rounded-2xl border border-gray-200 dark:border-white/10 text-sm focus:outline-none focus:ring-2 focus:ring-[#8c9276] transition-all bg-white dark:bg-[#1a1a1c] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500"
               />
             </div>
+            {newPass.length > 0 && <StrongPasswordMeter password={newPass} />}
           </div>
 
           {isAdmin && (

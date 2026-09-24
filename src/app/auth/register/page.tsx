@@ -3,17 +3,19 @@
 import React, { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useUserStore, isValidEmail, sanitizeText } from "@/lib/userStore";
+import { useUserStore, isValidEmail, sanitizeText, validateStrongPassword } from "@/lib/userStore";
 import { useCartStore } from "@/lib/store";
-import { ArrowRight, Mail, Lock, User, Sparkles, ShieldCheck, Compass } from "lucide-react";
+import { ArrowRight, Mail, Lock, User, Sparkles, ShieldCheck, Compass, Eye, EyeOff } from "lucide-react";
 import { useBrand } from "@/core";
 import { LuminaLoginWordmark } from "@/components/ui/LuminaLoginWordmark";
+import { StrongPasswordMeter } from "@/components/ui/StrongPasswordMeter";
 
 export default function RegisterPage() {
   const brand = useBrand();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
@@ -41,13 +43,12 @@ export default function RegisterPage() {
       return;
     }
 
-    if (!password || password.length < 6) {
-      setErrorMsg("La contraseña debe tener un mínimo de 6 caracteres.");
-      return;
-    }
-
-    if (password.length > 72) {
-      setErrorMsg("La contraseña excede el límite seguro de 72 caracteres.");
+    const pwdValidation = validateStrongPassword(password);
+    if (!pwdValidation.isValid) {
+      setErrorMsg(
+        pwdValidation.error ||
+          "Debes utilizar una contraseña fuerte (mín. 8 caracteres, mayúscula, minúscula, número y símbolo)."
+      );
       return;
     }
 
@@ -145,7 +146,7 @@ export default function RegisterPage() {
             </div>
             
             <div>
-              <label className="block text-xs font-semibold text-gray-700 mb-1.5 ml-1">Contraseña</label>
+              <label className="block text-xs font-semibold text-gray-700 mb-1.5 ml-1">Contraseña Segura</label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-400">
                   <Lock className="w-4 h-4" />
@@ -153,17 +154,26 @@ export default function RegisterPage() {
                 <input 
                   id="password"
                   name="password"
-                  type="password" 
+                  type={showPassword ? "text" : "password"} 
                   autoComplete="new-password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full pl-11 pr-4 py-3.5 bg-white/70 backdrop-blur-md border border-white/90 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-[#8c9276]/40 focus:border-[#8c9276] transition-all placeholder:text-gray-400 shadow-sm"
-                  placeholder="••••••••"
+                  className="w-full pl-11 pr-11 py-3.5 bg-white/70 backdrop-blur-md border border-white/90 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-[#8c9276]/40 focus:border-[#8c9276] transition-all placeholder:text-gray-400 shadow-sm"
+                  placeholder="Mín. 8 caracteres, mayúscula, número y símbolo"
                   required
-                  minLength={6}
+                  minLength={8}
                 />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((prev) => !prev)}
+                  className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-gray-400 hover:text-gray-700 transition-colors cursor-pointer"
+                  tabIndex={-1}
+                  title={showPassword ? "Ocultar contraseña" : "Ver contraseña"}
+                >
+                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
               </div>
-              <p className="text-[11px] text-gray-400 mt-1.5 ml-1">Mínimo 6 caracteres.</p>
+              <StrongPasswordMeter password={password} />
             </div>
 
             <button 

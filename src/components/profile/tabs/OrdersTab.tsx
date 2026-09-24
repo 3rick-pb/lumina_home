@@ -2,17 +2,54 @@
 
 import React, { useState, useMemo } from "react";
 import Link from "next/link";
-import { ShoppingBag, Eye } from "lucide-react";
+import { motion } from "framer-motion";
+import { ShoppingBag, Eye, Layers, Clock, Truck, CheckCircle2 } from "lucide-react";
 import { useUserStore, Order } from "@/lib/userStore";
 import { normalizeSearchText } from "@/lib/utils";
 import { CloudSyncStatus } from "../CloudSyncStatus";
 import { BlobatarAvatar } from "@/components/ui/BlobatarAvatar";
+import { BeUIOrderStatusSelector } from "@/components/ui/BeUIControls";
 
 interface OrdersTabProps {
   isAdmin: boolean;
   searchQuery?: string;
   setSelectedOrder: (order: Order) => void;
 }
+
+const FILTER_ITEMS = [
+  {
+    id: "all",
+    label: "Todos",
+    icon: Layers,
+    dotClass: "bg-[#8c9276] dark:bg-[#ccff00]",
+    activeText: "text-gray-900 dark:text-white",
+    badgeActive: "bg-gray-900 dark:bg-[#ccff00] text-white dark:text-gray-950",
+  },
+  {
+    id: "Procesando",
+    label: "Procesando",
+    icon: Clock,
+    dotClass: "bg-amber-500 shadow-[0_0_6px_rgba(245,158,11,0.6)]",
+    activeText: "text-amber-900 dark:text-amber-300",
+    badgeActive: "bg-amber-500/20 text-amber-800 dark:text-amber-300 border border-amber-500/30",
+  },
+  {
+    id: "Enviado",
+    label: "Enviado",
+    icon: Truck,
+    dotClass: "bg-blue-500 shadow-[0_0_6px_rgba(59,130,246,0.6)]",
+    activeText: "text-blue-900 dark:text-blue-300",
+    badgeActive: "bg-blue-500/20 text-blue-800 dark:text-blue-300 border border-blue-500/30",
+  },
+  {
+    id: "Entregado",
+    label: "Entregado",
+    icon: CheckCircle2,
+    dotClass: "bg-emerald-500 shadow-[0_0_6px_rgba(16,185,129,0.6)]",
+    activeText: "text-emerald-900 dark:text-emerald-300",
+    badgeActive: "bg-emerald-500/20 text-emerald-800 dark:text-emerald-300 border border-emerald-500/30",
+  },
+] as const;
 
 export function OrdersTab({
   isAdmin,
@@ -51,9 +88,22 @@ export function OrdersTab({
 
   return (
     <div className="bg-white/90 dark:bg-[#202022]/90 backdrop-blur-xl p-4 sm:p-6 md:p-8 rounded-3xl sm:rounded-[2.5rem] border border-white/80 dark:border-white/10 shadow-[0_4px_24px_rgba(0,0,0,0.02)] space-y-6 animate-fade-in">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <div className="mb-2">
+      {/* Header + Left-Aligned Architectural Status Filter Bar */}
+      <div className="flex flex-col gap-4 pb-1 border-b border-gray-100 dark:border-white/5">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div>
+            <h2 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2.5">
+              <span className="w-8 h-8 rounded-xl bg-[#8c9276]/15 border border-[#8c9276]/30 flex items-center justify-center text-[#8c9276] shrink-0">
+                <ShoppingBag className="w-4 h-4" />
+              </span>
+              <span>Historial Completo de Pedidos</span>
+            </h2>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+              Trazabilidad en tiempo real, recibos y estados de envío interactivos.
+            </p>
+          </div>
+
+          <div className="shrink-0">
             <CloudSyncStatus
               isSyncing={isSyncing}
               syncError={syncError}
@@ -62,46 +112,58 @@ export function OrdersTab({
               savedLabel="Guardado en nube"
             />
           </div>
-          <h2 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
-            <ShoppingBag className="w-5 h-5 text-[#8c9276]" /> Historial Completo de Pedidos
-          </h2>
-          <p className="text-xs text-gray-500 dark:text-gray-400">Trazabilidad en tiempo real, recibos y estados de envío.</p>
         </div>
 
-        {/* Status Filter Tabs */}
-        <div className="flex items-center gap-2 sm:gap-2.5 bg-gray-100/90 dark:bg-[#2c2c2e] px-3 pt-3.5 pb-2.5 rounded-2xl sm:rounded-[1.4rem] overflow-x-auto max-w-full hide-scrollbar border border-gray-200/50 dark:border-white/5 shadow-inner">
-          {(["all", "Procesando", "Enviado", "Entregado"] as const).map((st) => {
-            const count = st === "all" 
-              ? orders.length 
-              : orders.filter((o) => o.status === st).length;
-            const label = st === "all" ? "Todos" : st;
+        {/* Left-Aligned Luxury Segmented Filter Dock ("Todos, Procesando, Enviado, Entregado") */}
+        <div className="flex items-center justify-start overflow-x-auto max-w-full hide-scrollbar">
+          <div className="inline-flex items-center gap-1 p-1.5 rounded-2xl bg-stone-100/95 dark:bg-[#161618] border border-stone-200/80 dark:border-white/10 shadow-inner">
+            {FILTER_ITEMS.map((item) => {
+              const isActive = orderStatusFilter === item.id;
+              const count =
+                item.id === "all"
+                  ? orders.length
+                  : orders.filter((o) => o.status === item.id).length;
 
-            return (
-              <button 
-                key={st}
-                onClick={() => setOrderStatusFilter(st)}
-                className={`relative px-4 py-1.5 rounded-xl text-xs font-semibold transition-all whitespace-nowrap flex items-center ${
-                  orderStatusFilter === st 
-                    ? "bg-white dark:bg-[#1a1a1c] text-gray-900 dark:text-gray-100 shadow-sm" 
-                    : "text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-white/40 dark:hover:bg-white/5"
-                }`}
-              >
-                <span>{label}</span>
-                {count >= 1 && (
-                  <span 
-                    className={`absolute -top-1 right-0 min-w-[17px] h-[17px] px-1 rounded-full text-[9px] font-extrabold flex items-center justify-center shadow-xs pointer-events-none ring-2 transition-all ${
-                      orderStatusFilter === st
-                        ? "bg-[#8c9276] text-white ring-white dark:ring-[#1a1a1c]"
-                        : "bg-[#8c9276] text-white ring-gray-100 dark:ring-[#2c2c2e]"
+              return (
+                <button
+                  key={item.id}
+                  type="button"
+                  onClick={() => setOrderStatusFilter(item.id)}
+                  className={`relative z-10 px-3.5 py-2 rounded-xl text-xs font-semibold transition-colors duration-200 whitespace-nowrap flex items-center gap-2 cursor-pointer select-none ${
+                    isActive
+                      ? item.activeText
+                      : "text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200"
+                  }`}
+                >
+                  {isActive && (
+                    <motion.span
+                      layoutId="orders-status-filter-active-pill"
+                      transition={{ type: "spring", stiffness: 420, damping: 32, mass: 0.6 }}
+                      className="absolute inset-0 rounded-xl bg-white dark:bg-[#26262a] border border-stone-200/80 dark:border-white/15 shadow-[0_4px_14px_rgba(0,0,0,0.06)] dark:shadow-[0_4px_16px_rgba(0,0,0,0.45)] -z-10"
+                    />
+                  )}
+
+                  <span
+                    className={`w-2 h-2 rounded-full shrink-0 transition-transform duration-300 ${
+                      item.dotClass
+                    } ${isActive ? "scale-110" : "opacity-65"}`}
+                  />
+
+                  <span className="tracking-tight">{item.label}</span>
+
+                  <span
+                    className={`min-w-[20px] h-5 px-1.5 rounded-full text-[10px] font-mono font-bold inline-flex items-center justify-center transition-all ${
+                      isActive
+                        ? item.badgeActive
+                        : "bg-stone-200/75 dark:bg-white/[0.07] text-gray-600 dark:text-gray-400"
                     }`}
-                    title={`${count} pedido(s)`}
                   >
                     {count > 99 ? "99+" : count}
                   </span>
-                )}
-              </button>
-            );
-          })}
+                </button>
+              );
+            })}
+          </div>
         </div>
       </div>
 
@@ -138,7 +200,7 @@ export function OrdersTab({
                 <th className="pb-3 pr-2 pl-3 text-right whitespace-nowrap">Acción</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-100">
+            <tbody className="divide-y divide-gray-100 dark:divide-white/5">
               {filteredOrders.map((ord) => (
                 <tr key={ord.id} className="hover:bg-gray-50/70 dark:hover:bg-[#2c2c2e]/70 transition-colors">
                   <td className="py-4 px-3 font-mono font-bold text-gray-900 dark:text-gray-100">{ord.id}</td>
@@ -163,19 +225,14 @@ export function OrdersTab({
                     {ord.items.length > 0 ? `${ord.items.length} producto(s)` : "1 producto"}
                   </td>
                   <td className="py-4 px-3 font-bold text-gray-900 dark:text-gray-100">${ord.total.toFixed(2)}</td>
-                  <td className="py-4 px-3">
-                    <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-semibold ${
-                      ord.status === "Entregado" 
-                        ? "bg-emerald-50 text-emerald-700 border border-emerald-100" 
-                        : ord.status === "Enviado" 
-                        ? "bg-blue-50 text-blue-700 border border-blue-100" 
-                        : "bg-amber-50 text-amber-700 border border-amber-100"
-                    }`}>
-                      <span className={`w-1.5 h-1.5 rounded-full ${
-                        ord.status === "Entregado" ? "bg-emerald-500" : ord.status === "Enviado" ? "bg-blue-500" : "bg-amber-500"
-                      }`} />
-                      {ord.status}
-                    </span>
+                  <td className="py-4 px-3" onClick={(e) => e.stopPropagation()}>
+                    <BeUIOrderStatusSelector
+                      status={ord.status}
+                      isAdmin={isAdmin}
+                      onUpdateStatus={(nextSt) => updateOrderStatus(ord.id, nextSt)}
+                      size="sm"
+                      align="center"
+                    />
                   </td>
                   <td className="py-4 px-3 text-gray-500 dark:text-gray-400">
                     <span className="block font-medium text-gray-800 dark:text-gray-200">{ord.date}</span>
@@ -183,20 +240,9 @@ export function OrdersTab({
                   </td>
                   <td className="py-4 pr-2 pl-3 text-right whitespace-nowrap">
                     <div className="inline-flex items-center justify-end gap-2 ml-auto">
-                      {isAdmin && (
-                        <select 
-                          value={ord.status} 
-                          onChange={(e) => updateOrderStatus(ord.id, e.target.value as "Procesando" | "Enviado" | "Entregado")}
-                          className="text-[11px] font-semibold bg-gray-100 dark:bg-[#3a3a3c] rounded-lg px-2.5 py-1.5 outline-none border border-gray-200 dark:border-white/10 cursor-pointer shadow-sm dark:shadow-none"
-                        >
-                          <option value="Procesando">Procesando</option>
-                          <option value="Enviado">Enviado</option>
-                          <option value="Entregado">Entregado</option>
-                        </select>
-                      )}
                       <button 
                         onClick={() => setSelectedOrder(ord)} 
-                        className="px-3 py-1.5 bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 rounded-xl text-xs font-medium hover:bg-gray-800 transition-colors flex items-center gap-1 shrink-0"
+                        className="px-3.5 py-1.5 bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 rounded-xl text-xs font-semibold hover:bg-gray-800 dark:hover:bg-white transition-all hover:scale-[1.03] active:scale-95 flex items-center gap-1.5 shrink-0 cursor-pointer shadow-xs"
                       >
                         <Eye className="w-3.5 h-3.5" /> Detalle
                       </button>
@@ -211,3 +257,4 @@ export function OrdersTab({
     </div>
   );
 }
+

@@ -18,6 +18,7 @@ import {
 import { useCatalogStore, normalizeCategory } from "@/lib/catalogStore";
 import { useUserStore, Order } from "@/lib/userStore";
 import { LuminaCardFolderItem } from "@/components/ui/CardFolder";
+import { BeUIOrderStatusSelector } from "@/components/ui/BeUIControls";
 
 interface OverviewTabProps {
   isAdmin: boolean;
@@ -603,43 +604,13 @@ export function OverviewTab({
                     </td>
                     <td className="py-3.5 px-2 font-bold text-gray-900 dark:text-gray-100">${ord.total.toFixed(2)}</td>
                     <td className="py-3.5 px-2" onClick={(e) => e.stopPropagation()}>
-                      {isAdmin ? (
-                        <div className="relative inline-block">
-                          <select 
-                            value={ord.status}
-                            onChange={(e) => updateOrderStatus(ord.id, e.target.value as Order['status'])}
-                            className={`appearance-none text-[11px] font-bold px-2.5 py-1 pr-6 rounded-full cursor-pointer outline-none border transition-all ${
-                              ord.status === "Entregado" 
-                                ? "bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100" 
-                                : ord.status === "Enviado" 
-                                ? "bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100" 
-                                : "bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100"
-                            }`}
-                          >
-                            <option value="Procesando">Procesando</option>
-                            <option value="Enviado">Enviado</option>
-                            <option value="Entregado">Entregado</option>
-                          </select>
-                          <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2">
-                            <svg className="h-3 w-3 text-current opacity-70" viewBox="0 0 20 20" fill="currentColor">
-                              <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
-                            </svg>
-                          </div>
-                        </div>
-                      ) : (
-                        <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold ${
-                          ord.status === "Entregado" 
-                            ? "bg-emerald-50 text-emerald-700 border border-emerald-100" 
-                            : ord.status === "Enviado" 
-                            ? "bg-blue-50 text-blue-700 border border-blue-100" 
-                            : "bg-amber-50 text-amber-700 border border-amber-100"
-                        }`}>
-                          <span className={`w-1.5 h-1.5 rounded-full ${
-                            ord.status === "Entregado" ? "bg-emerald-500" : ord.status === "Enviado" ? "bg-blue-500" : "bg-amber-500"
-                          }`} />
-                          {ord.status}
-                        </span>
-                      )}
+                      <BeUIOrderStatusSelector
+                        status={ord.status}
+                        isAdmin={isAdmin}
+                        onUpdateStatus={(nextSt) => updateOrderStatus(ord.id, nextSt)}
+                        size="sm"
+                        align="center"
+                      />
                     </td>
                     <td className="py-3.5 px-2 text-gray-500 dark:text-gray-400">
                       <span className="block font-medium text-gray-800 dark:text-gray-200">{ord.date}</span>
