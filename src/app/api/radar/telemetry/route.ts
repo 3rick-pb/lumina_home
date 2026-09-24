@@ -16,11 +16,20 @@ export async function GET(req: NextRequest) {
     const country = (searchParams.get('country')?.toUpperCase() || 'EC') as RadarCountryCode;
 
     if (supabase) {
+      const activeWindowCutoff = new Date(Date.now() - 2 * 60 * 1000).toISOString();
+
+      // Purgar sesiones expiradas para evitar sesiones fantasma acumuladas en la BD
+      await supabase
+        .from('radar_telemetry_sessions')
+        .delete()
+        .lt('last_seen', activeWindowCutoff);
+
       const { data, error } = await supabase
         .from('radar_telemetry_sessions')
         .select('*')
         .eq('country_code', country)
         .eq('is_online', true)
+        .gte('last_seen', activeWindowCutoff)
         .order('last_seen', { ascending: false })
         .limit(100);
 

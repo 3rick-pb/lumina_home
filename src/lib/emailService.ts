@@ -74,7 +74,6 @@ export async function getAllAdminEmails(): Promise<string[]> {
  * Checks the dedicated table `admin_dispatch_recipients` first, with resilient fallback.
  */
 export async function getExtraDispatchRecipientEmails(): Promise<string[]> {
-  // 1. Primary: Dedicated public.admin_dispatch_recipients table
   try {
     const { data: rows, error } = await supabaseServer
       .from('admin_dispatch_recipients')
@@ -92,33 +91,6 @@ export async function getExtraDispatchRecipientEmails(): Promise<string[]> {
     }
   } catch (err) {
     console.warn('[emailService] Could not load from admin_dispatch_recipients:', err);
-  }
-
-  // 2. Secondary: Fallback setting row in admin_notification_settings
-  try {
-    const { data: row } = await supabaseServer
-      .from('admin_notification_settings')
-      .select('title')
-      .eq('id', 'dispatch_recipients')
-      .maybeSingle();
-
-    if (row?.title) {
-      try {
-        const parsed = JSON.parse(row.title);
-        if (Array.isArray(parsed)) {
-          const validEmails = parsed
-            .map((e: unknown) => String(e || '').toLowerCase().trim())
-            .filter((e: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e));
-          if (validEmails.length > 0) {
-            return Array.from(new Set(validEmails)).slice(0, 7);
-          }
-        }
-      } catch (parseErr) {
-        console.warn('[emailService] Could not parse dispatch recipients JSON:', parseErr);
-      }
-    }
-  } catch (err) {
-    console.warn('[emailService] Could not load dispatch recipients from fallback settings:', err);
   }
 
   return [];

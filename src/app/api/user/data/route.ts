@@ -13,6 +13,9 @@ export interface ShippingAddress {
   state: string;
   postalCode: string;
   country: string;
+  reference?: string;
+  lat?: number;
+  lng?: number;
   isDefault?: boolean;
 }
 
@@ -99,6 +102,9 @@ export async function GET(request: Request) {
             state: a.state || '',
             postalCode: a.postal_code || '',
             country: a.country || 'Ecuador',
+            reference: a.reference || '',
+            lat: typeof a.lat === 'number' ? a.lat : undefined,
+            lng: typeof a.lng === 'number' ? a.lng : undefined,
             isDefault: !!a.is_default,
           }));
         }
@@ -251,7 +257,7 @@ export async function POST(request: Request) {
           try {
             await supabase.from('addresses').delete().eq('user_id', targetUserId);
             if (addresses.length > 0) {
-              const rows = addresses.map(a => ({
+              const rowsWithGeo = addresses.map(a => ({
                 id: a.id && UUID_REGEX.test(a.id) ? a.id : crypto.randomUUID(),
                 user_id: targetUserId,
                 recipient: a.recipient || 'Destinatario',
@@ -263,17 +269,16 @@ export async function POST(request: Request) {
                 state: a.state || '',
                 postal_code: a.postalCode || '',
                 country: a.country || 'Ecuador',
+                reference: a.reference || null,
+                lat: typeof a.lat === 'number' ? a.lat : null,
+                lng: typeof a.lng === 'number' ? a.lng : null,
                 is_default: !!a.isDefault,
                 updated_at: new Date().toISOString(),
               }));
-              const { error: insErr } = await supabase.from('addresses').insert(rows);
+              const { error: insErr } = await supabase.from('addresses').insert(rowsWithGeo);
               if (insErr) {
-                console.warn('Warning inserting addresses:', insErr.message);
-                // Fallback if unique constraint addresses_user_id_key is still active in DB
-                if (insErr.message?.includes('addresses_user_id_key') && rows.length > 0) {
-                  const defaultRow = rows.find(r => r.is_default) || rows[0];
-                  await supabase.from('addresses').insert([defaultRow]);
-                }
+                const rowsBase = rowsWithGeo.map(({ reference: _r, lat: _lat, lng: _lng, ...rest }) => rest);
+                await supabase.from('addresses').insert(rowsBase);
               }
             }
           } catch (err) {

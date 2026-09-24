@@ -14,7 +14,6 @@ const MAX_DISPATCH_RECIPIENTS = 7;
  * Falls back gracefully to `admin_notification_settings` for zero-downtime compatibility.
  */
 async function loadDispatchRecipients(): Promise<string[]> {
-  // 1. Dedicated public.admin_dispatch_recipients table
   try {
     const { data: rows, error } = await supabaseServer
       .from('admin_dispatch_recipients')
@@ -30,29 +29,6 @@ async function loadDispatchRecipients(): Promise<string[]> {
     }
   } catch (err) {
     console.warn('[smtp/route] Notice reading admin_dispatch_recipients:', err);
-  }
-
-  // 2. Dual-persistence fallback
-  try {
-    const { data: row } = await supabaseServer
-      .from('admin_notification_settings')
-      .select('title')
-      .eq('id', 'dispatch_recipients')
-      .maybeSingle();
-
-    if (row?.title) {
-      try {
-        const parsed = JSON.parse(row.title);
-        if (Array.isArray(parsed)) {
-          const valid = parsed
-            .map((e: unknown) => String(e || '').toLowerCase().trim())
-            .filter((e: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e));
-          return Array.from(new Set(valid)).slice(0, MAX_DISPATCH_RECIPIENTS);
-        }
-      } catch {}
-    }
-  } catch (err) {
-    console.warn('[smtp/route] Could not load dispatch recipients from fallback:', err);
   }
 
   return [];
@@ -218,20 +194,6 @@ export async function POST(request: Request) {
         console.warn('[smtp/route] Notice writing to admin_dispatch_recipients:', tableErr);
       }
 
-      // 2. Secondary: Dual-persistence backup to admin_notification_settings
-      try {
-        await supabaseServer
-          .from('admin_notification_settings')
-          .upsert({
-            id: 'dispatch_recipients',
-            admin_email: authUser.email || 'admin@lumina.com',
-            title: JSON.stringify(cleanList),
-            position: 'dispatch',
-            layout: 'recipients',
-            updated_at: new Date().toISOString(),
-          }, { onConflict: 'id' });
-      } catch {}
-
       return NextResponse.json({
         success: true,
         message: cleanList.length > 0 
@@ -241,7 +203,7 @@ export async function POST(request: Request) {
       });
     }
 
-    // 3. Test Dispatch Order Notification
+    // 3. Test Dispatch Order Notification (usando datos reales del catálogo/órdenes de Supabase)
     if (action === 'test_dispatch') {
       const explicitTarget = recipientEmail ? String(recipientEmail).trim().toLowerCase() : null;
       let targetList: string[] = [];
@@ -254,43 +216,53 @@ export async function POST(request: Request) {
 
       if (targetList.length === 0) {
         return NextResponse.json(
-          { success: false, error: 'No hay correos de administradores ni extras configurados para recibir la orden de prueba.' },
+          { success: false, error: 'No hay correos de administradores ni extras configurados para recibir la orden de despacho.' },
           { status: 400 }
         );
       }
 
+      // Consultar el producto real más reciente de public.products para el diagnóstico de despacho
+      const { data: realProducts } = await supabaseServer
+        .from('products')
+        .select('id, name, price, category, image')
+        .limit(1);
+
+      const firstRealProduct = realProducts?.[0];
+
       const sampleOrder: OrderEmailData = {
-        id: 'TEST-' + Math.floor(1000 + Math.random() * 9000),
-        trackingNumber: 'LM-PRUEBA-' + Math.floor(100000 + Math.random() * 900000),
+        id: 'ORD-VERIFY-' + Math.floor(1000 + Math.random() * 9000),
+        trackingNumber: 'LM-VERIFY-' + Math.floor(100000 + Math.random() * 900000),
         date: new Date().toLocaleDateString('es-EC', { year: 'numeric', month: 'long', day: 'numeric' }),
         time: new Date().toLocaleTimeString('es-EC', { hour: '2-digit', minute: '2-digit' }),
         createdAt: new Date().toISOString(),
-        customerName: 'Cliente Demostrativo (Prueba de Despacho)',
-        customerEmail: 'prueba@luminahome.com',
-        customerIdNumber: '1799999999001',
-        customerPhone: '0999999999',
-        recipient: 'Encargado de Bodega y Logística',
-        paymentMethod: 'PayPhone Ecuador (Tarjeta Verificada)',
-        total: 185.00,
-        items: [
-          {
-            product: {
-              id: 'demo-1',
-              title: 'Lámpara de Pie Orbital Minimalista Titanium Edition',
-              price: 185.00,
-              category: 'Iluminación',
-              imageUrl: 'https://images.unsplash.com/photo-1507473885765-e6ed057f782c?w=400&q=80',
-            },
-            quantity: 1,
-            color: 'Titanium Grafito',
-          },
-        ],
+        customerName: `Verificación Operativa (${authUser.email})`,
+        customerEmail: authUser.email,
+        customerIdNumber: '1790000000001',
+        customerPhone: '0990000000',
+        recipient: 'Bodega y Logística Lumina Home',
+        paymentMethod: 'Verificación de Pasarela Activa',
+        total: Number(firstRealProduct?.price || 0),
+        items: firstRealProduct
+          ? [
+              {
+                product: {
+                  id: String(firstRealProduct.id),
+                  title: String(firstRealProduct.name),
+                  price: Number(firstRealProduct.price || 0),
+                  category: String(firstRealProduct.category || 'Catálogo'),
+                  imageUrl: String(firstRealProduct.image || ''),
+                },
+                quantity: 1,
+                color: 'Estándar Catálogo',
+              },
+            ]
+          : [],
         shippingAddress: {
-          recipient: 'Receptor de Despacho Lumina',
-          idNumber: '1799999999001',
-          phone: '0999999999',
-          email: 'prueba@luminahome.com',
-          street: 'Av. República de El Salvador N36-84 y Naciones Unidas',
+          recipient: `Despacho Verificado — ${authUser.email}`,
+          idNumber: '1790000000001',
+          phone: '0990000000',
+          email: authUser.email,
+          street: 'Centro de Operaciones Lumina Home',
           city: 'Quito',
           state: 'Pichincha',
           postalCode: '170505',
@@ -306,7 +278,7 @@ export async function POST(request: Request) {
       return NextResponse.json({
         success: true,
         message: sendResult.mocked 
-          ? `Alerta de despacho simulada registrada en base de datos para: ${targetList.join(', ')} (Servidor local sin SMTP configurado).`
+          ? `Alerta de despacho registrada para: ${targetList.join(', ')} (Servidor local sin SMTP configurado).`
           : `Alerta de despacho real enviada exitosamente a: ${targetList.join(', ')}.`,
         recipients: targetList,
         mocked: Boolean(sendResult.mocked),

@@ -449,19 +449,14 @@ export const useCatalogStore = create<CatalogState>((set) => ({
       }
     } catch {}
 
-    // 2. Fetch Products
+    // 2. Fetch Products exclusively from public.products in Supabase (0 demo/fallback injection)
     const { data, error } = await supabase.from('products').select('*').order('created_at', { ascending: false });
-    let prods: CatalogProduct[] = [];
-    if (!error && data && data.length > 0) {
-      prods = data.map(toFrontendProduct);
-    } else {
-      prods = INITIAL_NICHE_PRODUCTS;
-    }
+    const prods: CatalogProduct[] = (!error && Array.isArray(data)) ? data.map(toFrontendProduct) : [];
 
     // 3. If categories table is not yet populated, discover niches dynamically from active products
     if (activeCategories.length === 0) {
       const productCategories = Array.from(new Set(prods.map(p => p.category).filter(Boolean)));
-      activeCategories = productCategories.length > 0 ? productCategories : DEFAULT_CATEGORIES;
+      activeCategories = productCategories;
     }
 
     // 4. Badges (Supabase store_badges table + active product badges)
@@ -480,7 +475,7 @@ export const useCatalogStore = create<CatalogState>((set) => ({
     const dbBadges = Array.from(new Set(prods.map(p => p.badge).filter((b): b is string => Boolean(b))));
     const mergedBadges = Array.from(new Set([...initialBadges, ...dbCustomBadges, ...dbBadges]));
 
-    // 5. Initialize Realtime subscription for live inventory sync across all visitors
+    // 5. Initialize Realtime subscription for live inventory, categories, and badges sync across all visitors
     if (typeof window !== 'undefined' && !isProductsRealtimeSubscribed) {
       isProductsRealtimeSubscribed = true;
       try {
@@ -505,6 +500,33 @@ export const useCatalogStore = create<CatalogState>((set) => ({
               } else if (payload.eventType === 'DELETE' && payload.old) {
                 set((state) => ({
                   products: state.products.filter((p) => p.id !== (payload.old as { id: string }).id),
+                }));
+              }
+            }
+          )
+          .on(
+            'postgres_changes',
+            { event: '*', schema: 'public', table: 'categories' },
+            async () => {
+              const { data: refreshedCats } = await supabase
+                .from('categories')
+                .select('name')
+                .order('created_at', { ascending: true });
+              if (refreshedCats) {
+                set({ categories: refreshedCats.map(c => c.name).filter(Boolean) });
+              }
+            }
+          )
+          .on(
+            'postgres_changes',
+            { event: '*', schema: 'public', table: 'store_badges' },
+            async () => {
+              const { data: refreshedBadges } = await supabase
+                .from('store_badges')
+                .select('name');
+              if (refreshedBadges) {
+                set((state) => ({
+                  badges: Array.from(new Set([...DEFAULT_BADGES, ...refreshedBadges.map(b => b.name).filter(Boolean), ...state.products.map(p => p.badge).filter((b): b is string => Boolean(b))])),
                 }));
               }
             }

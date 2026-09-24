@@ -26,6 +26,7 @@ import {
 import { useUserStore } from "@/lib/userStore";
 import { useBrand } from "@/core/hooks/useBrand";
 import { CloudSyncStatus } from "../CloudSyncStatus";
+import { supabase } from "@/lib/supabase";
 
 const toast = {
   success: (msg: string, _opts?: { description?: string }) => {
@@ -314,115 +315,79 @@ export function LoyaltyCardsTab() {
   const [newInitialPoints, setNewInitialPoints] = useState(200);
   const [newPlatform, setNewPlatform] = useState<"apple" | "google" | "both">("both");
 
+  const fetchLoyaltyDataFromBackend = React.useCallback(async () => {
+    try {
+      // Purgar cualquier rastro antiguo de demos en localStorage
+      const legacyRaw = localStorage.getItem("lumina_loyalty_members_v1");
+      if (legacyRaw && (legacyRaw.includes("Valeria Andrade") || legacyRaw.includes("Sebastián Montalvo") || legacyRaw.includes("Camila Cordero"))) {
+        localStorage.removeItem("lumina_loyalty_members_v1");
+      }
+    } catch {}
+
+    try {
+      const res = await fetch("/api/loyalty", { cache: "no-store" });
+      if (res.ok) {
+        const payload = await res.json();
+        if (payload.config) {
+          setConfig((prev) => ({
+            ...prev,
+            ...payload.config,
+          }));
+        }
+        if (Array.isArray(payload.members)) {
+          setMembers(payload.members);
+          setSelectedMemberForQR((prevSelected) => {
+            if (prevSelected) {
+              const updatedMatch = payload.members.find((m: LoyaltyMemberCard) => m.id === prevSelected.id || m.customerEmail === prevSelected.customerEmail);
+              if (updatedMatch) return updatedMatch;
+            }
+            return payload.members[0] || null;
+          });
+        }
+      }
+    } catch (err) {
+      console.warn("[LoyaltyCardsTab] Error fetching from /api/loyalty:", err);
+    }
+  }, []);
+
   useEffect(() => {
-    try {
-      const savedConfig = localStorage.getItem("lumina_loyalty_program_v1");
-      if (savedConfig) {
-        const parsed = JSON.parse(savedConfig);
-        const migratedBg =
-          parsed.bgColor === "#111614" || parsed.bgColor === "#303825"
-            ? DEFAULT_PROGRAM_CONFIG.bgColor
-            : parsed.bgColor;
-        const migratedAccent =
-          parsed.accentColor === "#ccff00" || parsed.accentColor === "#d2b48c"
-            ? DEFAULT_PROGRAM_CONFIG.accentColor
-            : parsed.accentColor;
+    fetchLoyaltyDataFromBackend();
 
-        setConfig((prev) => ({
-          ...prev,
-          ...parsed,
-          bgColor: migratedBg || prev.bgColor,
-          accentColor: migratedAccent || prev.accentColor,
-          qrFgColor: "#171717",
-          qrBgColor: "#ffffff",
-        }));
-      }
-    } catch {
-      // ignore
-    }
+    if (!supabase) return;
+    const channel = supabase
+      .channel("loyalty_realtime_sync")
+      .on("postgres_changes", { event: "*", schema: "public", table: "orders" }, () => {
+        fetchLoyaltyDataFromBackend();
+      })
+      .on("postgres_changes", { event: "*", schema: "public", table: "user_profiles" }, () => {
+        fetchLoyaltyDataFromBackend();
+      })
+      .on("postgres_changes", { event: "*", schema: "public", table: "loyalty_members" }, () => {
+        fetchLoyaltyDataFromBackend();
+      })
+      .on("postgres_changes", { event: "*", schema: "public", table: "loyalty_program_settings" }, () => {
+        fetchLoyaltyDataFromBackend();
+      })
+      .subscribe();
 
-    try {
-      const savedMembers = localStorage.getItem("lumina_loyalty_members_v1");
-      let loadedMembers: LoyaltyMemberCard[] = [];
-      if (savedMembers) {
-        loadedMembers = JSON.parse(savedMembers);
-      }
-
-      if (!Array.isArray(loadedMembers) || loadedMembers.length === 0) {
-        const totalOrderSpent = Array.isArray(orders)
-          ? orders.reduce((acc, o) => acc + (Number(o.total) || 0), 0)
-          : 280;
-        const orderCount = Array.isArray(orders) && orders.length > 0 ? orders.length : 2;
-        const calculatedPts =
-          Math.round(totalOrderSpent * DEFAULT_PROGRAM_CONFIG.pointsPerDollar) +
-          DEFAULT_PROGRAM_CONFIG.welcomeBonusPoints;
-
-        loadedMembers = [
-          {
-            id: "loy_member_01",
-            memberCode: "LUM-8842-PRV",
-            customerName: currentUser?.name || "Valeria Andrade",
-            customerEmail: currentUser?.email || "valeria.andrade@gmail.com",
-            pointsBalance: calculatedPts,
-            lifetimePoints: calculatedPts,
-            totalSpent: totalOrderSpent,
-            purchasesCount: orderCount,
-            walletPlatform: "apple",
-            status: "active",
-            createdAt: "2026-09-15",
-            lastUpdated: "Sincronizado",
-          },
-          {
-            id: "loy_member_02",
-            memberCode: "LUM-3910-GLD",
-            customerName: "Sebastián Montalvo",
-            customerEmail: "s.montalvo@outlook.com",
-            pointsBalance: 1640,
-            lifetimePoints: 2140,
-            totalSpent: 194,
-            purchasesCount: 3,
-            walletPlatform: "google",
-            status: "active",
-            createdAt: "2026-09-18",
-            lastUpdated: "Hace 48h",
-          },
-          {
-            id: "loy_member_03",
-            memberCode: "LUM-9104-BLK",
-            customerName: "Camila Cordero",
-            customerEmail: "camila.cordero@icloud.com",
-            pointsBalance: 3420,
-            lifetimePoints: 4120,
-            totalSpent: 392,
-            purchasesCount: 6,
-            walletPlatform: "both",
-            status: "active",
-            createdAt: "2026-09-10",
-            lastUpdated: "Sincronizado",
-          },
-        ];
-        localStorage.setItem("lumina_loyalty_members_v1", JSON.stringify(loadedMembers));
-      }
-      setMembers(loadedMembers);
-      if (loadedMembers.length > 0) {
-        setSelectedMemberForQR(loadedMembers[0]);
-      }
-    } catch {
-      // ignore
-    }
-  }, [currentUser, orders]);
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [fetchLoyaltyDataFromBackend, currentUser, orders]);
 
   const saveConfiguration = async () => {
     setIsSyncing(true);
     setToolState("working");
     try {
-      localStorage.setItem("lumina_loyalty_program_v1", JSON.stringify(config));
-      setTimeout(() => {
-        setIsSyncing(false);
-        setToolState("done");
-        setTimeout(() => setToolState("idle"), 2200);
-      }, 250);
-      toast.success("Configuración guardada");
+      await fetch("/api/loyalty", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "save_config", config }),
+      });
+      setIsSyncing(false);
+      setToolState("done");
+      setTimeout(() => setToolState("idle"), 2200);
+      toast.success("Configuración guardada en Supabase");
     } catch {
       setIsSyncing(false);
       setToolState("idle");
@@ -431,11 +396,6 @@ export function LoyaltyCardsTab() {
 
   const persistMembers = (updated: LoyaltyMemberCard[]) => {
     setMembers(updated);
-    try {
-      localStorage.setItem("lumina_loyalty_members_v1", JSON.stringify(updated));
-    } catch {
-      // ignore
-    }
   };
 
   const resolveTier = (points: number) => {
@@ -613,26 +573,44 @@ export function LoyaltyCardsTab() {
     URL.revokeObjectURL(url);
   };
 
-  const handleAdjustPoints = (memberId: string, delta: number) => {
+  const handleAdjustPoints = async (memberId: string, delta: number) => {
+    let targetMember: LoyaltyMemberCard | undefined;
     const updated = members.map((m) => {
       if (m.id !== memberId) return m;
       const nextBalance = Math.max(0, m.pointsBalance + delta);
       const nextLifetime = delta > 0 ? m.lifetimePoints + delta : m.lifetimePoints;
-      return {
+      targetMember = {
         ...m,
         pointsBalance: nextBalance,
         lifetimePoints: nextLifetime,
-        lastUpdated: "Sincronizado",
+        lastUpdated: "Sincronizado BD",
       };
+      return targetMember;
     });
     persistMembers(updated);
     if (selectedMemberForQR?.id === memberId) {
       const refreshed = updated.find((m) => m.id === memberId) || null;
       setSelectedMemberForQR(refreshed);
     }
+    if (targetMember) {
+      try {
+        await fetch("/api/loyalty", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            action: "adjust_points",
+            memberId: targetMember.id,
+            customerEmail: targetMember.customerEmail,
+            pointsBalance: targetMember.pointsBalance,
+            lifetimePoints: targetMember.lifetimePoints,
+            delta,
+          }),
+        });
+      } catch {}
+    }
   };
 
-  const handleCreateMemberCard = (e: React.FormEvent) => {
+  const handleCreateMemberCard = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newCustomerName.trim() || !newCustomerEmail.trim()) return;
     const randomDigits = Math.floor(1000 + Math.random() * 9000);
@@ -640,7 +618,7 @@ export function LoyaltyCardsTab() {
       id: `loy_${Date.now()}`,
       memberCode: `LUM-${randomDigits}-PRV`,
       customerName: newCustomerName.trim(),
-      customerEmail: newCustomerEmail.trim(),
+      customerEmail: newCustomerEmail.trim().toLowerCase(),
       pointsBalance: Number(newInitialPoints) || config.welcomeBonusPoints,
       lifetimePoints: Number(newInitialPoints) || config.welcomeBonusPoints,
       totalSpent: 0,
@@ -648,24 +626,44 @@ export function LoyaltyCardsTab() {
       walletPlatform: newPlatform,
       status: "active",
       createdAt: new Date().toISOString().split("T")[0],
-      lastUpdated: "Recién emitido",
+      lastUpdated: "Sincronizado BD",
     };
 
-    const nextList = [newCard, ...members];
+    const nextList = [newCard, ...members.filter((m) => m.customerEmail !== newCard.customerEmail)];
     persistMembers(nextList);
     setSelectedMemberForQR(newCard);
     setNewCustomerName("");
     setNewCustomerEmail("");
     setNewInitialPoints(config.welcomeBonusPoints);
     setIsNewMemberOpen(false);
+
+    try {
+      await fetch("/api/loyalty", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "create_member", member: newCard }),
+      });
+    } catch {}
   };
 
-  const handleDeleteMemberCard = (memberId: string) => {
+  const handleDeleteMemberCard = async (memberId: string) => {
+    const target = members.find((m) => m.id === memberId);
     const nextList = members.filter((m) => m.id !== memberId);
     persistMembers(nextList);
     if (selectedMemberForQR?.id === memberId) {
       setSelectedMemberForQR(nextList[0] || null);
     }
+    try {
+      await fetch("/api/loyalty", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "delete_member",
+          memberId,
+          customerEmail: target?.customerEmail,
+        }),
+      });
+    } catch {}
   };
 
   const filteredMembers = useMemo(() => {
