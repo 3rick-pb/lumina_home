@@ -113,6 +113,17 @@ CREATE TABLE IF NOT EXISTS public.favorites (
   UNIQUE (user_email, product_id)
 );
 
+-- Garantizar columnas en tablas preexistentes antes de crear índices:
+ALTER TABLE public.user_profiles ADD COLUMN IF NOT EXISTS email TEXT;
+ALTER TABLE public.user_profiles ADD COLUMN IF NOT EXISTS full_name TEXT;
+ALTER TABLE public.user_profiles ADD COLUMN IF NOT EXISTS name TEXT;
+ALTER TABLE public.user_profiles ADD COLUMN IF NOT EXISTS phone TEXT;
+ALTER TABLE public.user_profiles ADD COLUMN IF NOT EXISTS avatar_url TEXT;
+ALTER TABLE public.user_profiles ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ DEFAULT now();
+
+ALTER TABLE public.favorites ADD COLUMN IF NOT EXISTS user_id UUID;
+ALTER TABLE public.favorites ADD COLUMN IF NOT EXISTS user_email TEXT;
+
 -- -----------------------------------------------------------------------------------------
 -- 3. DIRECCIONES GEORREFERENCIADAS Y MÉTODOS DE PAGO DE CLIENTES (ADDRESSES, PAYMENT_CARDS)
 -- -----------------------------------------------------------------------------------------
@@ -143,26 +154,47 @@ CREATE TABLE IF NOT EXISTS public.addresses (
   updated_at TIMESTAMPTZ DEFAULT now()
 );
 
--- Garantizar que si la tabla `addresses` ya existía previamente, se agreguen las columnas de georreferenciación sin perder datos:
+-- Garantizar que si la tabla `addresses` ya existía previamente, se agreguen todas las columnas requeridas antes de indexar:
+ALTER TABLE public.addresses ADD COLUMN IF NOT EXISTS user_id UUID;
+ALTER TABLE public.addresses ADD COLUMN IF NOT EXISTS user_email TEXT;
+ALTER TABLE public.addresses ADD COLUMN IF NOT EXISTS recipient TEXT;
+ALTER TABLE public.addresses ADD COLUMN IF NOT EXISTS id_number TEXT;
+ALTER TABLE public.addresses ADD COLUMN IF NOT EXISTS email TEXT;
+ALTER TABLE public.addresses ADD COLUMN IF NOT EXISTS state TEXT;
+ALTER TABLE public.addresses ADD COLUMN IF NOT EXISTS country TEXT DEFAULT 'Ecuador';
 ALTER TABLE public.addresses ADD COLUMN IF NOT EXISTS reference TEXT;
 ALTER TABLE public.addresses ADD COLUMN IF NOT EXISTS lat DOUBLE PRECISION;
 ALTER TABLE public.addresses ADD COLUMN IF NOT EXISTS lng DOUBLE PRECISION;
 ALTER TABLE public.addresses ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ DEFAULT now();
 
+CREATE INDEX IF NOT EXISTS idx_addresses_user_id ON public.addresses(user_id);
 CREATE INDEX IF NOT EXISTS idx_addresses_user_email ON public.addresses(user_email);
 
 CREATE TABLE IF NOT EXISTS public.payment_cards (
   id TEXT PRIMARY KEY,
-  user_email TEXT NOT NULL,
-  brand TEXT NOT NULL DEFAULT 'visa',
-  last4 TEXT NOT NULL,
-  exp_month TEXT NOT NULL,
-  exp_year TEXT NOT NULL,
-  holder_name TEXT NOT NULL,
+  user_id UUID,
+  user_email TEXT,
+  number TEXT,
+  holder TEXT,
+  exp TEXT,
+  type TEXT DEFAULT 'visa',
+  brand TEXT DEFAULT 'visa',
+  last4 TEXT,
+  exp_month TEXT,
+  exp_year TEXT,
+  holder_name TEXT,
   is_default BOOLEAN DEFAULT false,
   created_at TIMESTAMPTZ DEFAULT now()
 );
 
+ALTER TABLE public.payment_cards ADD COLUMN IF NOT EXISTS user_id UUID;
+ALTER TABLE public.payment_cards ADD COLUMN IF NOT EXISTS user_email TEXT;
+ALTER TABLE public.payment_cards ADD COLUMN IF NOT EXISTS number TEXT;
+ALTER TABLE public.payment_cards ADD COLUMN IF NOT EXISTS holder TEXT;
+ALTER TABLE public.payment_cards ADD COLUMN IF NOT EXISTS exp TEXT;
+ALTER TABLE public.payment_cards ADD COLUMN IF NOT EXISTS type TEXT DEFAULT 'visa';
+
+CREATE INDEX IF NOT EXISTS idx_payment_cards_user_id ON public.payment_cards(user_id);
 CREATE INDEX IF NOT EXISTS idx_payment_cards_user_email ON public.payment_cards(user_email);
 
 -- -----------------------------------------------------------------------------------------
@@ -172,14 +204,15 @@ CREATE INDEX IF NOT EXISTS idx_payment_cards_user_email ON public.payment_cards(
 CREATE TABLE IF NOT EXISTS public.orders (
   id TEXT PRIMARY KEY,
   user_id TEXT,
-  user_email TEXT NOT NULL,
+  user_email TEXT,
   customer_name TEXT,
+  customer_email TEXT,
   customer_phone TEXT,
   customer_cedula TEXT,
   total NUMERIC(12, 2) NOT NULL DEFAULT 0,
   subtotal NUMERIC(12, 2) DEFAULT 0,
   shipping_cost NUMERIC(12, 2) DEFAULT 0,
-  status TEXT NOT NULL DEFAULT 'processing' CHECK (status IN ('processing', 'shipped', 'delivered', 'cancelled')),
+  status TEXT NOT NULL DEFAULT 'processing',
   payment_method TEXT DEFAULT 'card',
   shipping_address JSONB NOT NULL DEFAULT '{}'::jsonb,
   items JSONB NOT NULL DEFAULT '[]'::jsonb,
@@ -187,6 +220,15 @@ CREATE TABLE IF NOT EXISTS public.orders (
   created_at TIMESTAMPTZ DEFAULT now(),
   updated_at TIMESTAMPTZ DEFAULT now()
 );
+
+ALTER TABLE public.orders ADD COLUMN IF NOT EXISTS user_id TEXT;
+ALTER TABLE public.orders ADD COLUMN IF NOT EXISTS user_email TEXT;
+ALTER TABLE public.orders ADD COLUMN IF NOT EXISTS customer_name TEXT;
+ALTER TABLE public.orders ADD COLUMN IF NOT EXISTS customer_email TEXT;
+ALTER TABLE public.orders ADD COLUMN IF NOT EXISTS customer_phone TEXT;
+ALTER TABLE public.orders ADD COLUMN IF NOT EXISTS shipping_address JSONB DEFAULT '{}'::jsonb;
+ALTER TABLE public.orders ADD COLUMN IF NOT EXISTS items JSONB DEFAULT '[]'::jsonb;
+ALTER TABLE public.orders ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ DEFAULT now();
 
 CREATE INDEX IF NOT EXISTS idx_orders_user_email ON public.orders(user_email);
 CREATE INDEX IF NOT EXISTS idx_orders_created_at ON public.orders(created_at DESC);
@@ -283,16 +325,24 @@ CREATE TABLE IF NOT EXISTS public.admin_notification_settings (
 
 -- Tabla exclusiva para Destinatarios de Despacho de Órdenes por Correo
 CREATE TABLE IF NOT EXISTS public.admin_dispatch_recipients (
-  id TEXT PRIMARY KEY,
-  name TEXT NOT NULL,
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  name TEXT DEFAULT 'Logística / Despacho',
+  label TEXT DEFAULT 'Bodega / Logística',
   email TEXT NOT NULL UNIQUE,
-  role TEXT NOT NULL DEFAULT 'Logística / Despacho',
-  active BOOLEAN NOT NULL DEFAULT true,
-  notify_new_order BOOLEAN NOT NULL DEFAULT true,
-  notify_low_stock BOOLEAN NOT NULL DEFAULT true,
+  role TEXT DEFAULT 'Logística / Despacho',
+  active BOOLEAN DEFAULT true,
+  is_active BOOLEAN DEFAULT true,
+  added_by TEXT,
+  notify_new_order BOOLEAN DEFAULT true,
+  notify_low_stock BOOLEAN DEFAULT true,
   created_at TIMESTAMPTZ DEFAULT now(),
   updated_at TIMESTAMPTZ DEFAULT now()
 );
+
+ALTER TABLE public.admin_dispatch_recipients ADD COLUMN IF NOT EXISTS label TEXT DEFAULT 'Bodega / Logística';
+ALTER TABLE public.admin_dispatch_recipients ADD COLUMN IF NOT EXISTS is_active BOOLEAN DEFAULT true;
+ALTER TABLE public.admin_dispatch_recipients ADD COLUMN IF NOT EXISTS added_by TEXT;
+ALTER TABLE public.admin_dispatch_recipients ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ DEFAULT now();
 
 -- Tabla exclusiva para Configuración del Servidor SMTP
 CREATE TABLE IF NOT EXISTS public.admin_smtp_settings (
