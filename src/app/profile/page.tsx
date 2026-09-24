@@ -696,7 +696,10 @@ const handleConfirmDeleteNiche = async () => {
   <div className="theme-transition min-h-screen w-full max-w-full overflow-x-hidden bg-[#f3f4f6] dark:bg-[#202022] text-gray-900 dark:text-gray-100 flex flex-col md:flex-row p-2.5 sm:p-4 md:p-6 lg:p-8 selection:bg-[#8c9276]/20">
   
   {/* 1. Left Vertical Icon Sidebar (Desktop Dock) */}
-  <aside className="hidden md:flex sidebar-dock-nav w-16 md:w-20 bg-white/95 dark:bg-[#1e1e20]/95 backdrop-blur-2xl rounded-3xl border border-gray-200/80 dark:border-white/10 shadow-[0_12px_40px_rgba(0,0,0,0.05)] dark:shadow-[0_12px_40px_rgba(0,0,0,0.4)] flex-col items-center py-6 gap-6 justify-between shrink-0 mr-4 md:mr-6 self-stretch relative z-30">
+  <aside
+    style={{ contain: "layout style" }}
+    className="hidden md:flex sidebar-dock-nav w-16 md:w-20 bg-white/95 dark:bg-[#1e1e20]/95 backdrop-blur-2xl rounded-3xl border border-gray-200/80 dark:border-white/10 shadow-[0_8px_16px_rgba(0,0,0,0.04)] dark:shadow-[0_8px_16px_rgba(0,0,0,0.35)] flex-col items-center py-6 gap-6 justify-between shrink-0 mr-4 md:mr-6 self-stretch relative z-30"
+  >
  
   {/* Brand Logo Symbol */}
   <div className="flex flex-col items-center gap-5 w-full">

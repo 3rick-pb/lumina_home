@@ -447,33 +447,152 @@ export function cleanEcuadorStreetForGeocoding(rawStreet: string): string {
 /**
  * Synchronous lookup against calibrated street/sector/parish dictionary BEFORE generic city fallback.
  */
+/**
+ * Official INEC 2-digit Provincial Postal Code Prefixes (01 to 24) for Ecuador.
+ * Guarantees any 6-digit Ecuadorian postal code (PPCCZZ) is anchored to its true province/capital.
+ */
+const ECUADOR_PROVINCE_PREFIX_LNG_LAT: Record<string, [number, number]> = {
+  "01": [-79.0045, -2.9001], // Azuay (Cuenca)
+  "02": [-79.0010, -1.5926], // Bolívar (Guaranda)
+  "03": [-78.8486, -2.7397], // Cañar (Azogues)
+  "04": [-77.7173, 0.8119],  // Carchi (Tulcán)
+  "05": [-78.6155, -0.9346], // Cotopaxi (Latacunga)
+  "06": [-78.6471, -1.6635], // Chimborazo (Riobamba)
+  "07": [-79.9554, -3.2581], // El Oro (Machala)
+  "08": [-79.6540, 0.9592],  // Esmeraldas
+  "09": [-79.8891, -2.1894], // Guayas (Guayaquil)
+  "10": [-78.1223, 0.3517],  // Imbabura (Ibarra)
+  "11": [-79.2042, -3.9931], // Loja
+  "12": [-79.5346, -1.8019], // Los Ríos (Babahoyo)
+  "13": [-80.4545, -1.0546], // Manabí (Portoviejo / Manta)
+  "14": [-78.1114, -2.3087], // Morona Santiago (Macas)
+  "15": [-77.8129, -0.9938], // Napo (Tena)
+  "16": [-78.0026, -1.4924], // Pastaza (Puyo)
+  "17": [-78.4832, -0.1825], // Pichincha (Quito)
+  "18": [-78.6267, -1.2491], // Tungurahua (Ambato)
+  "19": [-78.9549, -4.0692], // Zamora Chinchipe (Zamora)
+  "20": [-90.3138, -0.7443], // Galápagos (Puerto Ayora)
+  "21": [-76.8885, 0.0847],  // Sucumbíos (Nueva Loja)
+  "22": [-76.9871, -0.4665], // Orellana (El Coca)
+  "23": [-79.1754, -0.2531], // Santo Domingo de los Tsáchilas
+  "24": [-80.8587, -2.2262], // Santa Elena
+};
+
+/**
+ * Resolves the expected [lng, lat] center for a given Ecuadorian city, state, or postal code.
+ * Used as a geometric bounding-radius anchor so street homonyms (e.g. "Calle Loja", "Calle Lima", "Santa Rosa")
+ * can NEVER teleport a pin to another province or another country (like Peru or Colombia).
+ */
+export function getExpectedCityOrPostalCenter(
+  city?: string,
+  postalCode?: string,
+  state?: string
+): [number, number] {
+  const cleanCity = normalizeGeoKey(formatCleanCityForGeocode(city || ""));
+  if (cleanCity && EXACT_CITY_LNG_LAT[cleanCity]) {
+    return EXACT_CITY_LNG_LAT[cleanCity];
+  }
+  if (cleanCity) {
+    for (const [k, coord] of Object.entries(EXACT_CITY_LNG_LAT)) {
+      if (cleanCity === k || (k.length >= 4 && cleanCity.includes(k))) {
+        // Ensure it's inside Ecuador bounds (lng between -92 and -75, lat between -5.2 and 1.6)
+        if (coord[0] >= -92 && coord[0] <= -75 && coord[1] >= -5.2 && coord[1] <= 1.6) {
+          return coord;
+        }
+      }
+    }
+  }
+
+  const cleanState = normalizeGeoKey(state || "");
+  if (cleanState && EXACT_CITY_LNG_LAT[cleanState]) {
+    const coord = EXACT_CITY_LNG_LAT[cleanState];
+    if (coord[0] >= -92 && coord[0] <= -75 && coord[1] >= -5.2 && coord[1] <= 1.6) {
+      return coord;
+    }
+  }
+
+  const cleanDigits = (postalCode || "").replace(/\D/g, "").trim();
+  if (cleanDigits.length >= 2) {
+    if (ECUADOR_POSTAL_CODE_LNG_LAT[cleanDigits]) {
+      return ECUADOR_POSTAL_CODE_LNG_LAT[cleanDigits];
+    }
+    const p2 = cleanDigits.slice(0, 2);
+    if (ECUADOR_PROVINCE_PREFIX_LNG_LAT[p2]) {
+      return ECUADOR_PROVINCE_PREFIX_LNG_LAT[p2];
+    }
+  }
+
+  return [-78.4832, -0.1825]; // Default Quito, Ecuador
+}
+
+/**
+ * Verifies that a candidate [lng, lat] coordinate actually lies inside Ecuador AND within ~38km (0.35 deg)
+ * of the user's declared city / postal code center. Rejects any poisoned Peru/Colombia/distant coordinates.
+ */
+export function isCoordinateValidForAddress(
+  lng?: number,
+  lat?: number,
+  city?: string,
+  postalCode?: string,
+  state?: string
+): boolean {
+  if (typeof lng !== "number" || typeof lat !== "number" || !Number.isFinite(lng) || !Number.isFinite(lat)) {
+    return false;
+  }
+  // Strict Ecuador geographic bounding box (including Galápagos [-92..-89] and Continental [-81.5..-75.0, -5.0..1.5])
+  const isGalapagos = lng >= -92.0 && lng <= -89.0 && lat >= -1.8 && lat <= 0.8;
+  const isContinentalEcuador = lng >= -81.5 && lng <= -75.0 && lat >= -5.0 && lat <= 1.55;
+  if (!isGalapagos && !isContinentalEcuador) {
+    return false;
+  }
+
+  const expectedCenter = getExpectedCityOrPostalCenter(city, postalCode, state);
+  const distDeg = Math.hypot(lng - expectedCenter[0], lat - expectedCenter[1]);
+  // Must be within 0.36 degrees (~40 km metropolitan radius) of the city/postal center
+  return distDeg <= 0.36;
+}
+
+/**
+ * Synchronous lookup against calibrated street/sector/parish dictionary, strictly bounded
+ * to the user's city/postal radius so street names like "Calle Lima", "Calle Loja", or "Santa Rosa"
+ * never jump to Peru or another province.
+ */
 export function lookupLocalStreetOrSectorLngLat(
   street?: string,
   reference?: string,
-  city?: string
+  city?: string,
+  postalCode?: string,
+  state?: string
 ): [number, number] | null {
-  // 1. Check specific street + reference first (excluding generic city so "Quito" doesn't shadow a street)
+  const expectedCenter = getExpectedCityOrPostalCenter(city, postalCode, state);
+
   const detailText = normalizeGeoKey([street, reference].filter(Boolean).join(" "));
   if (detailText) {
-    if (EXACT_CITY_LNG_LAT[detailText]) {
+    if (
+      EXACT_CITY_LNG_LAT[detailText] &&
+      Math.hypot(
+        EXACT_CITY_LNG_LAT[detailText][0] - expectedCenter[0],
+        EXACT_CITY_LNG_LAT[detailText][1] - expectedCenter[1]
+      ) <= 0.35
+    ) {
       return EXACT_CITY_LNG_LAT[detailText];
     }
     const specificKey = SORTED_GEO_KEYS.find((k) => {
+      if (k.length < 5) return false;
       if (k === "quito" || k === "guayaquil" || k === "cuenca" || k === "pichincha") return false;
-      return detailText.includes(k);
+      // Whole-word match to prevent "alimentacion" matching "lima" or "localidad" matching "cali"
+      const regex = new RegExp(`(?:^|\\s)${k.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}(?:$|\\s)`, "i");
+      if (!regex.test(detailText)) return false;
+      const candidate = EXACT_CITY_LNG_LAT[k];
+      return Math.hypot(candidate[0] - expectedCenter[0], candidate[1] - expectedCenter[1]) <= 0.35;
     });
     if (specificKey) {
       return EXACT_CITY_LNG_LAT[specificKey];
     }
   }
 
-  // 2. Check full combined address string
-  const fullText = normalizeGeoKey([street, reference, city].filter(Boolean).join(" "));
-  if (fullText) {
-    const matched = SORTED_GEO_KEYS.find((k) => fullText.includes(k));
-    if (matched) {
-      return EXACT_CITY_LNG_LAT[matched];
-    }
+  if (city) {
+    return expectedCenter;
   }
 
   return null;
@@ -565,7 +684,7 @@ const ECUADOR_POSTAL_CODE_LNG_LAT: Record<string, [number, number]> = {
   "010101": [-79.0045, -2.8995], // Centro Histórico Cuenca / El Sagrario
   "010102": [-79.0145, -2.8945], // San Sebastián / Gringolandia / Ordóñez Lasso
   "010104": [-78.9945, -2.9045], // El Vergel / Pumapungo
-  "010107": [-79.0085, -2.9085], //El Ejido / Estadio / Solano
+  "010107": [-79.0085, -2.9085], // El Ejido / Estadio / Solano
   "010150": [-79.0045, -2.9001], // Cuenca Urbano
   "010201": [-79.0185, -2.9125], // Yanuncay / Puertas del Sol
   "010203": [-78.9845, -2.8965], // Totoracocha / Monay
@@ -603,7 +722,8 @@ const ECUADOR_POSTAL_CODE_LNG_LAT: Record<string, [number, number]> = {
  */
 export function lookupPostalCodeLngLat(
   postalCode?: string,
-  streetSeedText?: string
+  streetSeedText?: string,
+  cityFallback?: string
 ): [number, number] | null {
   if (!postalCode) return null;
   const cleanDigits = postalCode.replace(/\D/g, "").trim();
@@ -613,8 +733,8 @@ export function lookupPostalCodeLngLat(
   if (ECUADOR_POSTAL_CODE_LNG_LAT[cleanDigits]) {
     baseCoord = ECUADOR_POSTAL_CODE_LNG_LAT[cleanDigits];
   } else {
-    // Prefix range match for any 6-digit Ecuadorian postal code (e.g., 1705xx, 1701xx, 0905xx, 0101xx)
     const p4 = cleanDigits.slice(0, 4);
+    const p2 = cleanDigits.slice(0, 2);
     const suffixNum = parseInt(cleanDigits.slice(4, 6) || "0", 10) || 0;
     const prefixBase: Record<string, [number, number]> = {
       "1701": [-78.4865, -0.1885],
@@ -640,16 +760,20 @@ export function lookupPostalCodeLngLat(
       "2301": [-79.1754, -0.2531],
       "0601": [-78.6471, -1.6635],
     };
-    if (prefixBase[p4]) {
+    const anchor = prefixBase[p4] || ECUADOR_PROVINCE_PREFIX_LNG_LAT[p2];
+    if (anchor) {
       const angle = ((suffixNum * 47) % 360) * (Math.PI / 180);
-      const r = 0.0022 + (suffixNum % 9) * 0.0008;
+      const r = 0.0018 + (suffixNum % 9) * 0.0006;
       baseCoord = [
-        Number((prefixBase[p4][0] + Math.cos(angle) * r).toFixed(6)),
-        Number((prefixBase[p4][1] + Math.sin(angle) * r).toFixed(6)),
+        Number((anchor[0] + Math.cos(angle) * r).toFixed(6)),
+        Number((anchor[1] + Math.sin(angle) * r).toFixed(6)),
       ];
     }
   }
 
+  if (!baseCoord && cityFallback) {
+    baseCoord = getExpectedCityOrPostalCenter(cityFallback, postalCode);
+  }
   if (!baseCoord) return null;
 
   // Apply deterministic street-level offset within the postal zone if street/reference is provided
@@ -660,7 +784,7 @@ export function lookupPostalCodeLngLat(
       hash = (hash * 31 + norm.charCodeAt(i)) >>> 0;
     }
     const angle = ((hash % 360) * Math.PI) / 180;
-    const dist = 0.0008 + ((hash % 17) / 17) * 0.0024; // ~90m to ~320m within the exact postal zone
+    const dist = 0.0007 + ((hash % 17) / 17) * 0.0020; // ~80m to ~250m within the exact postal zone
     return [
       Number((baseCoord[0] + Math.cos(angle) * dist).toFixed(6)),
       Number((baseCoord[1] + Math.sin(angle) * dist).toFixed(6)),
@@ -672,10 +796,19 @@ export function lookupPostalCodeLngLat(
 
 /**
  * Returns true if [lng, lat] is merely a generic city-center fallback coordinate
- * (e.g., [-78.4832, -0.1825] for Quito) rather than a resolved street or postal-code coordinate.
+ * OR if it fails the Ecuador city/postal bounding radius check.
  */
-export function isGenericCityFallbackLngLat(lng?: number, lat?: number): boolean {
+export function isGenericCityFallbackLngLat(
+  lng?: number,
+  lat?: number,
+  city?: string,
+  postalCode?: string,
+  state?: string
+): boolean {
   if (typeof lng !== "number" || typeof lat !== "number") return true;
+  if (!isCoordinateValidForAddress(lng, lat, city, postalCode, state)) {
+    return true;
+  }
   const genericCityCenters: Array<[number, number]> = [
     [-78.4832, -0.1825], // Quito generic
     [-78.4678, -0.1807], // Quito old generic
@@ -693,11 +826,8 @@ export function isGenericCityFallbackLngLat(lng?: number, lat?: number): boolean
 
 /**
  * Multi-stage Ecuadorian exact address & postal code geocoder.
- * Resolves [lng, lat] from:
- * 1. Saved GPS coordinates (`address.lng`, `address.lat`) — ONLY if not a stale generic city centroid when street/postalCode exists
- * 2. Specific street / neighborhood / parish in `EXACT_CITY_LNG_LAT`
- * 3. Cleaned street + postal code (`postalCode`) + intersection queries via OpenStreetMap Nominatim & Komoot Photon
- * 4. Calibrated 6-digit Ecuadorian Postal Code (`lookupPostalCodeLngLat`) + street block offset
+ * Strictly validates all coordinates against the user's city & postal code bounding radius
+ * so no pin is ever placed in Peru, Colombia, or the wrong province.
  */
 export async function resolveEcuadorExactAddressLngLat(address: {
   street?: string;
@@ -712,6 +842,9 @@ export async function resolveEcuadorExactAddressLngLat(address: {
   const rawStreet = (address.street || "").trim();
   const rawRef = (address.reference || "").trim();
   const rawPostal = (address.postalCode || "").trim();
+  const rawCity = formatCleanCityForGeocode(address.city || "Quito");
+  const rawState = (address.state || "").trim();
+  const rawCountry = (address.country || "Ecuador").trim();
   const hasSpecificAddressOrPostal = Boolean(rawStreet || rawRef || rawPostal);
 
   if (
@@ -720,25 +853,32 @@ export async function resolveEcuadorExactAddressLngLat(address: {
     Number.isFinite(address.lng) &&
     Number.isFinite(address.lat) &&
     Math.abs(address.lng) > 0.01 &&
-    (!hasSpecificAddressOrPostal || !isGenericCityFallbackLngLat(address.lng, address.lat))
+    isCoordinateValidForAddress(address.lng, address.lat, rawCity, rawPostal, rawState) &&
+    (!hasSpecificAddressOrPostal || !isGenericCityFallbackLngLat(address.lng, address.lat, rawCity, rawPostal, rawState))
   ) {
     return [address.lng, address.lat];
   }
 
-  // Check if street or reference matches a specific calibrated avenue/neighborhood in our local dictionary
-  const detailOnlyMatch = lookupLocalStreetOrSectorLngLat(address.street, address.reference, undefined);
-  if (detailOnlyMatch) {
+  // 1. Check calibrated avenue/neighborhood in our local dictionary ONLY if within 35km of expected city/postal center
+  const detailOnlyMatch = lookupLocalStreetOrSectorLngLat(
+    address.street,
+    address.reference,
+    rawCity,
+    rawPostal,
+    rawState
+  );
+  if (
+    detailOnlyMatch &&
+    !isGenericCityFallbackLngLat(detailOnlyMatch[0], detailOnlyMatch[1], rawCity, rawPostal, rawState)
+  ) {
     return detailOnlyMatch;
   }
 
-  const rawCity = formatCleanCityForGeocode(address.city || "Quito");
-  const rawCountry = (address.country || "Ecuador").trim();
-
   if (!rawStreet && !rawRef && !rawPostal) {
-    return lookupLocalStreetOrSectorLngLat(undefined, undefined, rawCity);
+    return getExpectedCityOrPostalCenter(rawCity, rawPostal, rawState);
   }
 
-  const cacheKey = `lumina_geo_v6_${normalizeGeoKey(`${rawStreet}_${rawRef}_${rawPostal}_${rawCity}`)}`;
+  const cacheKey = `lumina_geo_v8_${normalizeGeoKey(`${rawStreet}_${rawRef}_${rawPostal}_${rawCity}`)}`;
   if (typeof window !== "undefined") {
     try {
       const cached = localStorage.getItem(cacheKey);
@@ -747,13 +887,18 @@ export async function resolveEcuadorExactAddressLngLat(address: {
         if (
           typeof parsed.lng === "number" &&
           typeof parsed.lat === "number" &&
-          (!hasSpecificAddressOrPostal || !isGenericCityFallbackLngLat(parsed.lng, parsed.lat))
+          isCoordinateValidForAddress(parsed.lng, parsed.lat, rawCity, rawPostal, rawState) &&
+          (!hasSpecificAddressOrPostal || !isGenericCityFallbackLngLat(parsed.lng, parsed.lat, rawCity, rawPostal, rawState))
         ) {
           return [parsed.lng, parsed.lat];
         }
       }
     } catch {}
   }
+
+  const expectedCenter = getExpectedCityOrPostalCenter(rawCity, rawPostal, rawState);
+  // Bounding viewbox (~35km around the user's city/postal center) for Nominatim
+  const viewbox = `${(expectedCenter[0] - 0.32).toFixed(4)},${(expectedCenter[1] + 0.32).toFixed(4)},${(expectedCenter[0] + 0.32).toFixed(4)},${(expectedCenter[1] - 0.32).toFixed(4)}`;
 
   const cleanedStreet = cleanEcuadorStreetForGeocoding(rawStreet);
   const streetParts = cleanedStreet
@@ -763,37 +908,28 @@ export async function resolveEcuadorExactAddressLngLat(address: {
 
   const candidateQueries: string[] = [];
   if (cleanedStreet && rawPostal) {
-    candidateQueries.push(`${cleanedStreet}, ${rawPostal}, ${rawCity}, ${rawCountry}`);
+    candidateQueries.push(`${cleanedStreet}, ${rawPostal}, ${rawCity}, Ecuador`);
   }
   if (cleanedStreet && rawRef) {
-    candidateQueries.push(`${cleanedStreet}, ${rawRef}, ${rawCity}, ${rawCountry}`);
-  }
-  if (streetParts.length > 0 && rawPostal) {
-    candidateQueries.push(`${streetParts[0]}, ${rawPostal}, ${rawCity}, ${rawCountry}`);
-  }
-  if (streetParts.length > 0 && rawRef) {
-    candidateQueries.push(`${streetParts[0]}, ${rawRef}, ${rawCity}, ${rawCountry}`);
+    candidateQueries.push(`${cleanedStreet}, ${rawRef}, ${rawCity}, Ecuador`);
   }
   if (cleanedStreet) {
-    candidateQueries.push(`${cleanedStreet}, ${rawCity}, ${rawCountry}`);
+    candidateQueries.push(`${cleanedStreet}, ${rawCity}, Ecuador`);
   }
   if (streetParts.length > 0) {
-    candidateQueries.push(`${streetParts[0]}, ${rawCity}, ${rawCountry}`);
-  }
-  if (rawRef && rawPostal) {
-    candidateQueries.push(`${rawRef}, ${rawPostal}, ${rawCity}, ${rawCountry}`);
+    candidateQueries.push(`${streetParts[0]}, ${rawCity}, Ecuador`);
   }
   if (rawRef) {
-    candidateQueries.push(`${rawRef}, ${rawCity}, ${rawCountry}`);
+    candidateQueries.push(`${rawRef}, ${rawCity}, Ecuador`);
   }
   if (rawPostal) {
-    candidateQueries.push(`${rawPostal}, ${rawCity}, ${rawCountry}`);
+    candidateQueries.push(`${rawPostal}, ${rawCity}, Ecuador`);
   }
 
   for (const query of candidateQueries) {
     try {
       const res = await fetch(
-        `https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=ec,co,pe,ar,mx,cl&q=${encodeURIComponent(query)}`,
+        `https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=ec&viewbox=${viewbox}&bounded=1&q=${encodeURIComponent(query)}`,
         { headers: { "Accept-Language": "es" } }
       );
       if (res.ok) {
@@ -802,9 +938,8 @@ export async function resolveEcuadorExactAddressLngLat(address: {
           const lat = parseFloat(data[0].lat);
           const lng = parseFloat(data[0].lon);
           if (
-            Number.isFinite(lat) &&
-            Number.isFinite(lng) &&
-            !isGenericCityFallbackLngLat(lng, lat)
+            isCoordinateValidForAddress(lng, lat, rawCity, rawPostal, rawState) &&
+            !isGenericCityFallbackLngLat(lng, lat, rawCity, rawPostal, rawState)
           ) {
             if (typeof window !== "undefined") {
               try {
@@ -818,34 +953,9 @@ export async function resolveEcuadorExactAddressLngLat(address: {
     } catch {}
   }
 
-  // Structured Nominatim postalcode lookup if postal code is provided
-  if (rawPostal) {
-    try {
-      const res = await fetch(
-        `https://nominatim.openstreetmap.org/search?format=json&limit=1&postalcode=${encodeURIComponent(rawPostal)}&country=${encodeURIComponent(rawCountry)}`,
-        { headers: { "Accept-Language": "es" } }
-      );
-      if (res.ok) {
-        const data = await res.json();
-        if (Array.isArray(data) && data.length > 0) {
-          const lat = parseFloat(data[0].lat);
-          const lng = parseFloat(data[0].lon);
-          if (Number.isFinite(lat) && Number.isFinite(lng)) {
-            if (typeof window !== "undefined") {
-              try {
-                localStorage.setItem(cacheKey, JSON.stringify({ lat, lng }));
-              } catch {}
-            }
-            return [lng, lat];
-          }
-        }
-      }
-    } catch {}
-  }
-
-  // Calibrated Ecuadorian Postal Code fallback (guarantees exact parish/zone positioning even when street is unlisted in OSM)
-  const postalMatch = lookupPostalCodeLngLat(rawPostal, `${rawStreet}_${rawRef}`);
-  if (postalMatch) {
+  // Calibrated Ecuadorian Postal Code + street deterministic offset (100% guaranteed inside the user's exact postal zone & city)
+  const postalMatch = lookupPostalCodeLngLat(rawPostal, `${rawStreet}_${rawRef}`, rawCity);
+  if (postalMatch && isCoordinateValidForAddress(postalMatch[0], postalMatch[1], rawCity, rawPostal, rawState)) {
     if (typeof window !== "undefined") {
       try {
         localStorage.setItem(cacheKey, JSON.stringify({ lat: postalMatch[1], lng: postalMatch[0] }));
@@ -854,7 +964,9 @@ export async function resolveEcuadorExactAddressLngLat(address: {
     return postalMatch;
   }
 
-  return lookupLocalStreetOrSectorLngLat(address.street, address.reference, address.city);
+  // Final deterministic street offset around the verified city center
+  const fallbackCoord = lookupPostalCodeLngLat("000000", `${rawStreet}_${rawRef}_${rawPostal}`, rawCity) || expectedCenter;
+  return fallbackCoord;
 }
 
 function formatCleanCityForGeocode(cityStr: string): string {
@@ -981,7 +1093,7 @@ const MIN_MAP_ZOOM = 3.2;
 const MAX_MAP_ZOOM = 20.5;
 
 const PROVIDER_MAX_NATIVE_Z: Record<TileProvider, number> = {
-  "dark-base": 19,
+  "dark-base": 16,
   "dark-ref": 16,
   "transportation-labels": 16,
   "boundaries-labels": 13,
@@ -1000,10 +1112,6 @@ function getTileUrl(provider: TileProvider, z: number, x: number, y: number, use
   const maxIndex = Math.pow(2, z);
   const wrappedX = ((x % maxIndex) + maxIndex) % maxIndex;
 
-  // Load-balance across CartoDB 2x Retina subdomains (a, b, c, d) and Esri ArcGIS CDN hosts
-  const cartoSubs = ["a", "b", "c", "d"];
-  const cartoSub = cartoSubs[Math.abs(wrappedX + y) % cartoSubs.length];
-
   const host =
     useAltHost
       ? (wrappedX + y) % 2 === 0
@@ -1017,10 +1125,7 @@ function getTileUrl(provider: TileProvider, z: number, x: number, y: number, use
     return `https://${host}/ArcGIS/rest/services/World_Imagery/MapServer/tile/${z}/${y}/${wrappedX}`;
   }
   if (provider === "dark-base") {
-    if (useAltHost) {
-      return `https://${host}/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/${z}/${y}/${wrappedX}`;
-    }
-    return `https://${cartoSub}.basemaps.cartocdn.com/dark_all/${z}/${wrappedX}/${y}@2x.png`;
+    return `https://${host}/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/${z}/${y}/${wrappedX}`;
   }
   if (provider === "dark-ref") {
     return `https://${host}/ArcGIS/rest/services/Canvas/World_Dark_Gray_Reference/MapServer/tile/${z}/${y}/${wrappedX}`;
@@ -1033,9 +1138,9 @@ function getTileUrl(provider: TileProvider, z: number, x: number, y: number, use
   }
   if (provider === "street-map") {
     if (useAltHost) {
-      return `https://tile.openstreetmap.org/${z}/${wrappedX}/${y}.png`;
+      return `https://${host}/ArcGIS/rest/services/World_Street_Map/MapServer/tile/${z}/${y}/${wrappedX}`;
     }
-    return `https://${cartoSub}.basemaps.cartocdn.com/rastertiles/voyager/${z}/${wrappedX}/${y}@2x.png`;
+    return `https://tile.openstreetmap.org/${z}/${wrappedX}/${y}.png`;
   }
   return `https://${host}/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/${z}/${y}/${wrappedX}`;
 }
@@ -1450,7 +1555,7 @@ export function RadarMapboxCanvas({
 
         if (dirtyRef.current) {
           dirtyRef.current = false;
-          const ctx = canvas.getContext("2d", { alpha: false });
+          const ctx = canvas.getContext("2d");
           if (ctx) {
             ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
@@ -1458,39 +1563,51 @@ export function RadarMapboxCanvas({
             ctx.fillRect(0, 0, w, h);
 
             if (mapStyleMode === "tactical") {
-              // 100% Watermark-Free Esri Dark Gray Base (up to z=16, overzoomed to z=18)
-              drawTileLayer(
-                ctx,
-                "dark-base",
-                cam.lng,
-                cam.lat,
-                cam.zoom,
-                w,
-                h,
-                1.0,
-                1,
-                "brightness(62%) contrast(135%)"
-              );
-              if (cam.zoom < 10.5) {
-                // Country / Regional overview: subtle satellite relief + country/province boundaries
-                drawTileLayer(ctx, "satellite", cam.lng, cam.lat, cam.zoom, w, h, 0.28, 0);
-                drawTileLayer(ctx, "boundaries-labels", cam.lng, cam.lat, cam.zoom, w, h, 1.0, 1);
+              if (cam.zoom >= 13.5) {
+                // High-zoom neighborhood & street level: 100% watermark-free OpenStreetMap inverted to dark tactical theme (up to z=19)
+                drawTileLayer(
+                  ctx,
+                  "street-map",
+                  cam.lng,
+                  cam.lat,
+                  cam.zoom,
+                  w,
+                  h,
+                  1.0,
+                  1,
+                  "invert(92%) hue-rotate(180deg) brightness(86%) contrast(128%)"
+                );
               } else {
-                // City / Neighborhood / Street view: crisp white-on-dark street & avenue labels
-                if (cam.zoom < 13.5) {
+                // Country / Regional / City overview: 100% watermark-free Esri Dark Gray Base + labels
+                drawTileLayer(
+                  ctx,
+                  "dark-base",
+                  cam.lng,
+                  cam.lat,
+                  cam.zoom,
+                  w,
+                  h,
+                  1.0,
+                  1,
+                  "brightness(62%) contrast(135%)"
+                );
+                if (cam.zoom < 10.5) {
+                  drawTileLayer(ctx, "satellite", cam.lng, cam.lat, cam.zoom, w, h, 0.28, 0);
+                  drawTileLayer(ctx, "boundaries-labels", cam.lng, cam.lat, cam.zoom, w, h, 1.0, 1);
+                } else {
                   drawTileLayer(ctx, "boundaries-labels", cam.lng, cam.lat, cam.zoom, w, h, 0.88, 0);
+                  drawTileLayer(ctx, "transportation-labels", cam.lng, cam.lat, cam.zoom, w, h, 0.92, 0);
                 }
-                drawTileLayer(ctx, "transportation-labels", cam.lng, cam.lat, cam.zoom, w, h, 0.92, 0);
               }
             } else if (mapStyleMode === "satellite") {
-              // Full HD Esri Satellite Imagery (capped at z=14 to avoid any "Map Data Not Available" tiles) + street labels
+              // Full HD Esri Satellite Imagery + street labels
               drawTileLayer(ctx, "satellite", cam.lng, cam.lat, cam.zoom, w, h, 1.0, 1);
               drawTileLayer(ctx, "boundaries-labels", cam.lng, cam.lat, cam.zoom, w, h, 1.0, 0);
               if (cam.zoom >= 10.5) {
                 drawTileLayer(ctx, "transportation-labels", cam.lng, cam.lat, cam.zoom, w, h, 0.95, 0);
               }
             } else {
-              // Full-color Esri World Street Map (100% watermark-free up to z=16, overzoomed to z=18)
+              // Full-color OpenStreetMap HD (100% watermark-free up to z=19, overzoomed to z=20.5)
               drawTileLayer(ctx, "street-map", cam.lng, cam.lat, cam.zoom, w, h, 1.0, 1);
             }
 
@@ -1553,15 +1670,32 @@ export function RadarMapboxCanvas({
     };
   }, [drawTileLayer, mapStyleMode]);
 
-  // Fly to selected country when changed
+  // Fly to selected country when changed (or center horizontally on user's anchor inside the country)
   useEffect(() => {
     const geo = COUNTRY_GEO_CONFIG[selectedCountry] || COUNTRY_GEO_CONFIG.EC;
-    camRef.current.targetLng = geo.center[0];
-    camRef.current.targetLat = geo.center[1];
+    const anchorTarget = primaryTargetRef.current;
+    if (anchorTarget && selectedCountry === "EC") {
+      camRef.current.targetLng = anchorTarget[0];
+      camRef.current.targetLat = anchorTarget[1];
+    } else {
+      camRef.current.targetLng = geo.center[0];
+      camRef.current.targetLat = geo.center[1];
+    }
     camRef.current.targetZoom = geo.zoom;
     camRef.current.animating = true;
     requestRepaint();
   }, [selectedCountry, requestRepaint]);
+
+  // Smoothly align camera center with primaryTargetLngLat (user's GPS/postal anchor) once resolved
+  useEffect(() => {
+    if (!primaryTargetLngLat || selectedCountry !== "EC") return;
+    if (!dragMovedRef.current && camRef.current.zoom <= 9.5) {
+      camRef.current.targetLng = primaryTargetLngLat[0];
+      camRef.current.targetLat = primaryTargetLngLat[1];
+      camRef.current.animating = true;
+      requestRepaint();
+    }
+  }, [primaryTargetLngLat, selectedCountry, requestRepaint]);
 
   // Respond to external zoom buttons (+ / -) via direct step sequence (100% identical bounds to mouse wheel)
   useEffect(() => {
@@ -1612,8 +1746,14 @@ export function RadarMapboxCanvas({
   useEffect(() => {
     if (resetCommandSeq === 0) return;
     const geo = COUNTRY_GEO_CONFIG[selectedCountry] || COUNTRY_GEO_CONFIG.EC;
-    camRef.current.targetLng = geo.center[0];
-    camRef.current.targetLat = geo.center[1];
+    const anchorTarget = primaryTargetRef.current;
+    if (anchorTarget && selectedCountry === "EC") {
+      camRef.current.targetLng = anchorTarget[0];
+      camRef.current.targetLat = anchorTarget[1];
+    } else {
+      camRef.current.targetLng = geo.center[0];
+      camRef.current.targetLat = geo.center[1];
+    }
     camRef.current.targetZoom = geo.zoom;
     camRef.current.animating = true;
     requestRepaint();

@@ -41,6 +41,7 @@ import {
   lookupLocalStreetOrSectorLngLat,
   lookupPostalCodeLngLat,
   isGenericCityFallbackLngLat,
+  getExpectedCityOrPostalCenter,
   cleanEcuadorStreetForGeocoding,
 } from "./RadarMapboxCanvas";
 
@@ -432,25 +433,31 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
 
   const [selfExactLngLat, setSelfExactLngLat] = useState<[number, number] | undefined>(() => {
     if (!primaryAddressObj) return undefined;
-    const hasSpecific = Boolean(
-      primaryAddressObj.street?.trim() ||
-        primaryAddressObj.reference?.trim() ||
-        primaryAddressObj.postalCode?.trim()
-    );
+    const isInvalidOrFallback = (lng: number, lat: number) =>
+      isGenericCityFallbackLngLat(
+        lng,
+        lat,
+        primaryAddressObj.city,
+        primaryAddressObj.postalCode,
+        primaryAddressObj.state
+      );
+
     if (
       typeof primaryAddressObj.lng === "number" &&
       typeof primaryAddressObj.lat === "number" &&
       Number.isFinite(primaryAddressObj.lng) &&
       Number.isFinite(primaryAddressObj.lat) &&
       Math.abs(primaryAddressObj.lng) > 0.01 &&
-      (!hasSpecific || !isGenericCityFallbackLngLat(primaryAddressObj.lng, primaryAddressObj.lat))
+      !isInvalidOrFallback(primaryAddressObj.lng, primaryAddressObj.lat)
     ) {
       return [primaryAddressObj.lng, primaryAddressObj.lat];
     }
     const localStreetMatch = lookupLocalStreetOrSectorLngLat(
       primaryAddressObj.street,
       primaryAddressObj.reference,
-      undefined
+      primaryAddressObj.city,
+      primaryAddressObj.postalCode,
+      primaryAddressObj.state
     );
     if (localStreetMatch) return localStreetMatch;
     const postalMatch = lookupPostalCodeLngLat(
@@ -458,6 +465,12 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
       `${primaryAddressObj.street || ""}_${primaryAddressObj.reference || ""}`
     );
     if (postalMatch) return postalMatch;
+    const cityOrPostalCenter = getExpectedCityOrPostalCenter(
+      primaryAddressObj.city,
+      primaryAddressObj.postalCode,
+      primaryAddressObj.state
+    );
+    if (cityOrPostalCenter) return cityOrPostalCenter;
     return undefined;
   });
 
@@ -465,18 +478,22 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
     let active = true;
     const resolveSelfCoords = async () => {
       if (!primaryAddressObj) return;
-      const hasSpecific = Boolean(
-        primaryAddressObj.street?.trim() ||
-          primaryAddressObj.reference?.trim() ||
-          primaryAddressObj.postalCode?.trim()
-      );
+      const isInvalidOrFallback = (lng: number, lat: number) =>
+        isGenericCityFallbackLngLat(
+          lng,
+          lat,
+          primaryAddressObj.city,
+          primaryAddressObj.postalCode,
+          primaryAddressObj.state
+        );
+
       if (
         typeof primaryAddressObj.lng === "number" &&
         typeof primaryAddressObj.lat === "number" &&
         Number.isFinite(primaryAddressObj.lng) &&
         Number.isFinite(primaryAddressObj.lat) &&
         Math.abs(primaryAddressObj.lng) > 0.01 &&
-        (!hasSpecific || !isGenericCityFallbackLngLat(primaryAddressObj.lng, primaryAddressObj.lat))
+        !isInvalidOrFallback(primaryAddressObj.lng, primaryAddressObj.lat)
       ) {
         if (active) setSelfExactLngLat([primaryAddressObj.lng, primaryAddressObj.lat]);
         return;
@@ -495,16 +512,14 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
 
       if (resolved && active) {
         setSelfExactLngLat(resolved);
-        // Only persist resolved lat/lng into ShippingAddress if it is a specific street/postal coordinate
-        if (!isGenericCityFallbackLngLat(resolved[0], resolved[1])) {
-          try {
-            useUserStore.getState().setAddress({
-              ...primaryAddressObj,
-              lng: resolved[0],
-              lat: resolved[1],
-            });
-          } catch {}
-        }
+        // Persist resolved lat/lng into ShippingAddress so any old invalid coordinate is overwritten
+        try {
+          useUserStore.getState().setAddress({
+            ...primaryAddressObj,
+            lng: resolved[0],
+            lat: resolved[1],
+          });
+        } catch {}
       }
     };
     resolveSelfCoords();
@@ -1549,9 +1564,15 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
         userSelect: "none",
         WebkitUserSelect: "none",
         overscrollBehavior: "contain",
+        contain: "paint",
       }}
-      className="relative isolate w-full h-[660px] lg:h-[720px] rounded-[2.5rem] overflow-hidden bg-[#e8ecef] dark:bg-[#181d1b] text-white shadow-xl shadow-black/20 dark:shadow-none border border-white/10 select-none overscroll-none animate-fade-in font-sans"
+      className="relative isolate w-full h-[660px] lg:h-[720px] rounded-[2.5rem] overflow-hidden bg-[#e8ecef] dark:bg-[#181d1b] text-white border-[2.5px] border-stone-300/95 dark:border-white/20 ring-1 ring-stone-900/12 dark:ring-white/10 shadow-[0_22px_50px_rgba(15,23,42,0.12)] dark:shadow-[0_22px_50px_rgba(0,0,0,0.45)] select-none overscroll-none animate-fade-in font-sans"
     >
+      {/* Architectural Inner Bezel Frame — clearly delineates the Radar viewport & seals rounded edges */}
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-0 rounded-[2.5rem] z-[45] border-[3px] border-white/85 dark:border-white/15 shadow-[inset_0_0_0_1.5px_rgba(15,23,42,0.14)] dark:shadow-[inset_0_0_0_1.5px_rgba(204,255,0,0.16)]"
+      />
       
       {/* ========================================================================= */}
       {/* 1. SCENIC BACKGROUND & ATMOSPHERE                                         */}
