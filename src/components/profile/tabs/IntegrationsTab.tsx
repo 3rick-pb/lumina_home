@@ -1,37 +1,42 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { 
-  Server, 
-  Mail, 
-  ShieldCheck, 
-  Copy, 
-  Check, 
-  ExternalLink, 
-  Send, 
-  KeyRound, 
-  Sparkles, 
-  AlertTriangle, 
-  CreditCard, 
-  Eye, 
-  EyeOff, 
+import {
+  Server,
+  Mail,
+  ShieldCheck,
+  Copy,
+  Check,
+  ExternalLink,
+  Send,
+  KeyRound,
+  Sparkles,
+  AlertTriangle,
+  CreditCard,
+  Eye,
+  EyeOff,
   RefreshCw,
   Truck,
-  PackageCheck,
   Trash2,
   Plus,
   Users,
   CheckCircle2,
   Info,
-  Lock
+  Lock,
+  Download,
+  Terminal,
 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { useUserStore } from "@/lib/userStore";
 import { useBrand } from "@/core/hooks/useBrand";
+import { CloudSyncStatus } from "../CloudSyncStatus";
 
 export function IntegrationsTab() {
   const brand = useBrand();
   const { user } = useUserStore();
+
+  const [activeSubTab, setActiveSubTab] = useState<"smtp" | "dispatch" | "payphone">("smtp");
+  const [toolState, setToolState] = useState<"idle" | "working" | "done">("idle");
 
   // Server status state
   const [isLoadingStatus, setIsLoadingStatus] = useState(true);
@@ -51,6 +56,7 @@ export function IntegrationsTab() {
   const [senderName, setSenderName] = useState(brand.name);
   const [showPass, setShowPass] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [copiedMasterEnv, setCopiedMasterEnv] = useState(false);
 
   // Live Test Email state
   const [testEmail, setTestEmail] = useState(user?.email || "");
@@ -87,16 +93,18 @@ export function IntegrationsTab() {
   const fetchSmtpStatus = useCallback(async () => {
     setIsLoadingStatus(true);
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-      if (session?.access_token) headers['Authorization'] = `Bearer ${session.access_token}`;
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      const headers: Record<string, string> = { "Content-Type": "application/json" };
+      if (session?.access_token) headers["Authorization"] = `Bearer ${session.access_token}`;
 
       const res = await fetch("/api/admin/smtp", { headers });
       const data = await res.json();
       if (data.success) {
         setSmtpStatus(data);
         if (data.user) {
-          setGmailUser(prev => prev || data.user);
+          setGmailUser((prev) => prev || data.user);
         }
         if (Array.isArray(data.dispatchRecipients)) {
           setDispatchRecipients(data.dispatchRecipients);
@@ -113,9 +121,11 @@ export function IntegrationsTab() {
   const fetchPayphoneSettings = useCallback(async () => {
     setIsLoadingPayphone(true);
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-      if (session?.access_token) headers['Authorization'] = `Bearer ${session.access_token}`;
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      const headers: Record<string, string> = { "Content-Type": "application/json" };
+      if (session?.access_token) headers["Authorization"] = `Bearer ${session.access_token}`;
 
       const res = await fetch("/api/admin/payphone/settings", { headers });
       const data = await res.json();
@@ -134,20 +144,22 @@ export function IntegrationsTab() {
 
   const handleSavePayphoneMode = async (selectedMode: "box" | "redirect") => {
     setIsSavingPayphone(true);
+    setToolState("working");
     setPayphoneMsg(null);
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-      if (session?.access_token) headers['Authorization'] = `Bearer ${session.access_token}`;
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      const headers: Record<string, string> = { "Content-Type": "application/json" };
+      if (session?.access_token) headers["Authorization"] = `Bearer ${session.access_token}`;
 
       let saved = false;
 
-      // 1. Try server endpoint with authenticated token
       try {
         const res = await fetch("/api/admin/payphone/settings", {
           method: "POST",
           headers,
-          body: JSON.stringify({ mode: selectedMode })
+          body: JSON.stringify({ mode: selectedMode }),
         });
         const data = await res.json();
         if (data.success) {
@@ -157,31 +169,36 @@ export function IntegrationsTab() {
         console.warn("API settings update notice:", apiErr);
       }
 
-      // 2. Dual-persistence: Direct Supabase client sync with active session
-      const userEmail = session?.user?.email || 'admin@lumina.com';
-      const { error: dbErr } = await supabase
-        .from('admin_payment_settings')
-        .upsert({
-          id: 'global',
+      const userEmail = session?.user?.email || "admin@lumina.com";
+      const { error: dbErr } = await supabase.from("admin_payment_settings").upsert(
+        {
+          id: "global",
           payment_mode: selectedMode,
           updated_by: userEmail,
-          updated_at: new Date().toISOString()
-        }, { onConflict: 'id' });
+          updated_at: new Date().toISOString(),
+        },
+        { onConflict: "id" }
+      );
 
       if (!dbErr || saved) {
         setPayphoneMode(selectedMode);
+        setToolState("done");
+        setTimeout(() => setToolState("idle"), 1800);
         setPayphoneMsg({
           success: true,
-          text: `Configuración guardada en la base de datos: los clientes usarán ${selectedMode === "box" ? "la Cajita de Pagos" : "el Botón de Redirección"}.`
+          text: `Directiva actualizada: el checkout usará ${
+            selectedMode === "box" ? "Checkout Embebido (Cajita)" : "Redirección Bancaria (3D Secure)"
+          }.`,
         });
       } else {
         throw new Error(dbErr?.message || "No se pudo guardar la configuración en la base de datos.");
       }
     } catch (err: unknown) {
+      setToolState("idle");
       const msg = err instanceof Error ? err.message : "Error al comunicarse con el servidor.";
       setPayphoneMsg({
         success: false,
-        text: msg
+        text: msg,
       });
     } finally {
       setIsSavingPayphone(false);
@@ -196,7 +213,7 @@ export function IntegrationsTab() {
   // Compute generated block for Vercel
   const finalEmail = gmailUser.trim() || "tu_correo@gmail.com";
   const finalPass = gmailPass.trim() || "xxxx xxxx xxxx xxxx";
-  const finalFrom = `${senderName.trim() || 'Lumina Home'} <${finalEmail}>`;
+  const finalFrom = `${senderName.trim() || brand.name} <${finalEmail}>`;
 
   const vercelEnvSnippet = `SMTP_HOST="smtp.gmail.com"
 SMTP_PORT="587"
@@ -205,55 +222,90 @@ SMTP_USER="${finalEmail}"
 SMTP_PASS="${finalPass}"
 SMTP_FROM="${finalFrom}"`;
 
+  const finalPayphoneToken = payphoneToken.trim() || "tu_token_privado_de_payphone";
+  const finalPayphoneStoreId =
+    payphoneStoreIdInput.trim() ||
+    (payphoneStoreId && !payphoneStoreId.includes("••••")
+      ? payphoneStoreId
+      : "tu_store_id_de_sucursal");
+
+  const vercelPayphoneEnvSnippet = `PAYPHONE_TOKEN="${finalPayphoneToken}"
+PAYPHONE_STORE_ID="${finalPayphoneStoreId}"
+PAYPHONE_PAYMENT_MODE="${payphoneMode}"`;
+
+  const masterEnvBundle = `# === ${brand.name.toUpperCase()} · VERCEL PRODUCTION ENVIRONMENT ===
+${vercelEnvSnippet}
+
+# === PAYPHONE ECUADOR GATEWAY ===
+${vercelPayphoneEnvSnippet}`;
+
   const handleCopySnippet = () => {
     navigator.clipboard.writeText(vercelEnvSnippet);
     setCopied(true);
-    setTimeout(() => setCopied(false), 3000);
+    setTimeout(() => setCopied(false), 2600);
   };
-
-  // Compute generated block for PayPhone in Vercel
-  const finalPayphoneToken = payphoneToken.trim() || "tu_token_privado_de_payphone";
-  const finalPayphoneStoreId = payphoneStoreIdInput.trim() || (payphoneStoreId && !payphoneStoreId.includes("••••") ? payphoneStoreId : "tu_store_id_de_sucursal");
-
-  const vercelPayphoneEnvSnippet = `# === CREDENCIALES OFICIALES PAYPHONE ECUADOR ===
-PAYPHONE_TOKEN="${finalPayphoneToken}"
-PAYPHONE_STORE_ID="${finalPayphoneStoreId}"
-PAYPHONE_PAYMENT_MODE="${payphoneMode}"`;
 
   const handleCopyPayphoneSnippet = () => {
     navigator.clipboard.writeText(vercelPayphoneEnvSnippet);
     setCopiedPayphone(true);
-    setTimeout(() => setCopiedPayphone(false), 3000);
+    setTimeout(() => setCopiedPayphone(false), 2600);
+  };
+
+  const handleCopyMasterBundle = () => {
+    navigator.clipboard.writeText(masterEnvBundle);
+    setCopiedMasterEnv(true);
+    setTimeout(() => setCopiedMasterEnv(false), 2600);
+  };
+
+  const handleDownloadEnvFile = () => {
+    const blob = new Blob([masterEnvBundle], { type: "text/plain;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "lumina-home.env.production";
+    a.click();
+    URL.revokeObjectURL(url);
   };
 
   // Run live test dispatch
   const handleTestConnection = async (useCurrentFormCredentials = false) => {
     if (!testEmail.trim() || !testEmail.includes("@")) {
-      setTestResult({ success: false, message: "Por favor ingresa un correo de destino válido para recibir la prueba." });
+      setTestResult({
+        success: false,
+        message: "Por favor ingresa un correo de destino válido para recibir la prueba.",
+      });
       return;
     }
 
     setIsTesting(true);
+    setToolState("working");
     setTestResult(null);
 
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-      if (session?.access_token) headers['Authorization'] = `Bearer ${session.access_token}`;
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      const headers: Record<string, string> = { "Content-Type": "application/json" };
+      if (session?.access_token) headers["Authorization"] = `Bearer ${session.access_token}`;
 
       const payload: Record<string, unknown> = {
-        action: 'test',
+        action: "test",
         recipientEmail: testEmail.trim(),
         secure: true,
       };
 
       if (useCurrentFormCredentials) {
         if (!gmailUser.trim() || !gmailPass.trim()) {
-          setTestResult({ success: false, message: "Ingresa tu correo de Gmail y tu contraseña de aplicación para probar estas credenciales." });
+          setTestResult({
+            success: false,
+            message:
+              "Ingresa tu correo de Gmail y tu contraseña de aplicación para probar estas credenciales.",
+          });
           setIsTesting(false);
+          setToolState("idle");
           return;
         }
-        payload.host = 'smtp.gmail.com';
+        payload.host = "smtp.gmail.com";
         payload.port = 587;
         payload.secure = true;
         payload.user = gmailUser.trim();
@@ -273,8 +325,11 @@ PAYPHONE_PAYMENT_MODE="${payphoneMode}"`;
       }
 
       setTestResult({ success: true, message: data.message });
+      setToolState("done");
+      setTimeout(() => setToolState("idle"), 2000);
       fetchSmtpStatus();
     } catch (err: unknown) {
+      setToolState("idle");
       const msg = err instanceof Error ? err.message : "Error inesperado al probar conexión.";
       setTestResult({ success: false, message: msg });
     } finally {
@@ -285,12 +340,15 @@ PAYPHONE_PAYMENT_MODE="${payphoneMode}"`;
   // Dedicated persistence routine for dispatch recipients (instant auto-save + optional manual save)
   const persistDispatchRecipients = async (listToSave: string[], isAuto = false) => {
     setIsSavingDispatch(true);
+    setToolState("working");
     if (!isAuto) setDispatchMsg(null);
 
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-      if (session?.access_token) headers['Authorization'] = `Bearer ${session.access_token}`;
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      const headers: Record<string, string> = { "Content-Type": "application/json" };
+      if (session?.access_token) headers["Authorization"] = `Bearer ${session.access_token}`;
 
       const res = await fetch("/api/admin/smtp", {
         method: "POST",
@@ -308,15 +366,20 @@ PAYPHONE_PAYMENT_MODE="${payphoneMode}"`;
 
       setDispatchRecipients(data.dispatchRecipients || listToSave);
       setDispatchJustSaved(true);
-      setTimeout(() => setDispatchJustSaved(false), 2800);
+      setToolState("done");
+      setTimeout(() => {
+        setDispatchJustSaved(false);
+        setToolState("idle");
+      }, 2400);
 
       setDispatchMsg({
         success: true,
-        text: isAuto 
-          ? "✓ Guardado automáticamente en la base de datos." 
-          : (data.message || "Receptores de despacho guardados exitosamente."),
+        text: isAuto
+          ? "✓ Guardado automáticamente en la base de datos."
+          : data.message || "Receptores de despacho guardados exitosamente.",
       });
     } catch (err: unknown) {
+      setToolState("idle");
       const msg = err instanceof Error ? err.message : "Error inesperado al guardar.";
       setDispatchMsg({ success: false, text: msg });
     } finally {
@@ -324,25 +387,26 @@ PAYPHONE_PAYMENT_MODE="${payphoneMode}"`;
     }
   };
 
-  // Dispatch recipients actions (Auto-saves on every action)
   const handleAddRecipient = () => {
     const raw = recipientInput.trim();
     if (!raw) return;
 
-    // Support comma, semicolon or whitespace separated emails
     const candidates = raw
       .split(/[,;\s]+/)
-      .map(e => e.trim().toLowerCase())
+      .map((e) => e.trim().toLowerCase())
       .filter(Boolean);
 
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    const invalid = candidates.find(e => !emailRegex.test(e));
+    const invalid = candidates.find((e) => !emailRegex.test(e));
     if (invalid) {
-      setDispatchMsg({ success: false, text: `El correo '${invalid}' no tiene un formato válido.` });
+      setDispatchMsg({
+        success: false,
+        text: `El correo '${invalid}' no tiene un formato válido.`,
+      });
       return;
     }
 
-    const currentSet = new Set(dispatchRecipients.map(e => e.toLowerCase().trim()));
+    const currentSet = new Set(dispatchRecipients.map((e) => e.toLowerCase().trim()));
     const newItems: string[] = [];
 
     for (const c of candidates) {
@@ -352,7 +416,10 @@ PAYPHONE_PAYMENT_MODE="${payphoneMode}"`;
     }
 
     if (newItems.length === 0) {
-      setDispatchMsg({ success: false, text: "Los correos ingresados ya están presentes en la lista." });
+      setDispatchMsg({
+        success: false,
+        text: "Los correos ingresados ya están presentes en la lista.",
+      });
       return;
     }
 
@@ -367,14 +434,14 @@ PAYPHONE_PAYMENT_MODE="${payphoneMode}"`;
 
     setDispatchRecipients(nextList);
     setRecipientInput("");
-    // Instant background persistence
     persistDispatchRecipients(nextList, true);
   };
 
   const handleRemoveRecipient = (emailToRemove: string) => {
-    const nextList = dispatchRecipients.filter(e => e.toLowerCase().trim() !== emailToRemove.toLowerCase().trim());
+    const nextList = dispatchRecipients.filter(
+      (e) => e.toLowerCase().trim() !== emailToRemove.toLowerCase().trim()
+    );
     setDispatchRecipients(nextList);
-    // Instant background persistence
     persistDispatchRecipients(nextList, true);
   };
 
@@ -387,9 +454,11 @@ PAYPHONE_PAYMENT_MODE="${payphoneMode}"`;
     setDispatchMsg(null);
 
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-      if (session?.access_token) headers['Authorization'] = `Bearer ${session.access_token}`;
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      const headers: Record<string, string> = { "Content-Type": "application/json" };
+      if (session?.access_token) headers["Authorization"] = `Bearer ${session.access_token}`;
 
       const res = await fetch("/api/admin/smtp", {
         method: "POST",
@@ -417,826 +486,692 @@ PAYPHONE_PAYMENT_MODE="${payphoneMode}"`;
   };
 
   return (
-    <div className="space-y-8 animate-fade-in">
-      
-      {/* Top Header Banner */}
-      <div className="bg-white/90 dark:bg-[#202022]/80 backdrop-blur-2xl p-6 md:p-8 rounded-[2.5rem] border border-white/80 dark:border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.03)] flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-2 mb-2">
-            <span className="font-mono text-[9px] font-bold px-2 py-0.5 rounded-md bg-[#8c9276]/10 text-[#8c9276] border border-[#8c9276]/20 uppercase tracking-widest flex items-center gap-1">
-              <ShieldCheck className="w-3 h-3" /> Capa 1: Vercel Production
-            </span>
-            <span className="font-mono text-[9px] font-bold px-2 py-0.5 rounded-md bg-gray-100 dark:bg-white/10 text-gray-500 dark:text-gray-400 border border-gray-200 dark:border-white/10 uppercase tracking-widest">
-              Exclusivo Administradores
-            </span>
-          </div>
-          <h2 className="text-2xl font-display font-bold text-gray-900 dark:text-gray-100 flex items-center gap-3">
-            <div className="w-8 h-8 rounded-xl bg-[#8c9276]/10 flex items-center justify-center text-[#8c9276] font-bold">
-              <Server className="w-4.5 h-4.5" />
+    <div className="space-y-6 animate-fade-in font-sans" data-state={toolState}>
+      {/* Main Container — Exact Mi Perfil Bento Architecture matching CardsTab, OverviewTab & LoyaltyCardsTab */}
+      <div className="bg-white/90 dark:bg-[#202022]/90 backdrop-blur-xl p-6 md:p-8 rounded-[2.5rem] border border-white/80 dark:border-white/10 shadow-[0_4px_24px_rgba(0,0,0,0.02)] space-y-6">
+        {/* Header */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <div className="mb-2">
+              <CloudSyncStatus
+                isSyncing={isLoadingStatus || isSavingDispatch || isSavingPayphone}
+                syncError={null}
+                onSave={() => {
+                  fetchSmtpStatus();
+                  fetchPayphoneSettings();
+                }}
+                saveLabel="Sincronizar estado"
+                savedLabel="Infraestructura verificada"
+              />
             </div>
-            Servidor SMTP & Pasarelas
-          </h2>
-          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 max-w-2xl leading-relaxed">
-            Gestiona la infraestructura de notificaciones por correo de Lumina Home y las variables de entorno para Vercel en alta disponibilidad.
-          </p>
-        </div>
-
-        <button 
-          onClick={fetchSmtpStatus}
-          disabled={isLoadingStatus}
-          className="self-start md:self-auto px-4 py-2 bg-gray-100 dark:bg-[#3a3a3c] hover:bg-gray-200 dark:hover:bg-[#4a4a4c] text-gray-700 dark:text-gray-200 rounded-xl text-xs font-bold flex items-center gap-2 transition-all cursor-pointer border border-gray-200/50 dark:border-white/5"
-        >
-          <RefreshCw className={`w-3.5 h-3.5 ${isLoadingStatus ? 'animate-spin' : ''}`} />
-          Refrescar Estado
-        </button>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-
-        {/* MODULE: RECEPTORES DE ÓRDENES DE DESPACHO (BODEGA & LOGÍSTICA) */}
-        <div className="lg:col-span-12 bg-white/90 dark:bg-[#202022]/90 backdrop-blur-2xl p-6 md:p-8 rounded-3xl sm:rounded-[2.5rem] border border-white/80 dark:border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.03)] space-y-6">
-          
-          {/* Header Bar */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-gray-100 dark:border-white/5">
-            <div className="flex items-start gap-3">
-              <div className="w-10 h-10 rounded-2xl bg-amber-500/10 dark:bg-amber-500/15 flex items-center justify-center text-amber-600 dark:text-amber-400 font-bold shrink-0 mt-0.5">
-                <Truck className="w-5 h-5" />
-              </div>
-              <div>
-                <div className="flex items-center gap-2 mb-1 flex-wrap">
-                  <span className="font-mono text-[9px] font-bold px-2 py-0.5 rounded-md bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-500/20 uppercase tracking-widest flex items-center gap-1">
-                    <PackageCheck className="w-3 h-3" /> Logística & Almacén
-                  </span>
-                  <span className="font-mono text-[9px] font-bold px-2 py-0.5 rounded-md bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20 uppercase tracking-widest">
-                    Hasta 7 Correos Máximo
-                  </span>
-                </div>
-                <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100 tracking-tight flex items-center gap-2">
-                  Receptores de Órdenes de Despacho
-                </h3>
-                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 max-w-3xl leading-relaxed">
-                  Configura hasta <strong>7 correos electrónicos</strong> para recibir automáticamente las alertas y guías de despacho cada vez que un cliente realiza una compra.
-                  <span className="text-gray-700 dark:text-gray-300 font-medium"> Estos correos no necesitan ser administradores del sistema</span> (ideal para bodegueros, equipo de empaque o logística externa).
-                </p>
-              </div>
-            </div>
-
-            {/* Counter badge */}
-            <div className="self-start sm:self-auto shrink-0 flex items-center gap-2">
-              <div className={`px-3 py-1.5 rounded-xl border text-xs font-mono font-bold flex items-center gap-1.5 shadow-2xs ${
-                dispatchRecipients.length >= 7 
-                  ? 'bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-500/30' 
-                  : dispatchRecipients.length > 0 
-                  ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border-emerald-500/25' 
-                  : 'bg-gray-100 dark:bg-white/10 text-gray-600 dark:text-gray-400 border-gray-200 dark:border-white/10'
-              }`}>
-                <Users className="w-3.5 h-3.5" />
-                <span>{dispatchRecipients.length} / 7 configurados</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Input & Quick Add */}
-          <div className="space-y-2">
-            <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300">
-              Agregar Nuevo Correo de Despacho
-            </label>
-            <div className="flex flex-col sm:flex-row gap-2">
-              <div className="relative flex-1">
-                <Mail className="w-4 h-4 absolute left-3.5 top-3 text-gray-400" />
-                <input
-                  type="email"
-                  value={recipientInput}
-                  onChange={(e) => setRecipientInput(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
-                      e.preventDefault();
-                      handleAddRecipient();
-                    }
-                  }}
-                  placeholder="ej: bodega@lumina.com, despacho@logistica.com"
-                  disabled={dispatchRecipients.length >= 7 || isSavingDispatch}
-                  className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-xs bg-white dark:bg-[#1a1a1c] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#8c9276] disabled:opacity-50 transition-all font-medium"
-                />
-              </div>
-
-              <button
-                type="button"
-                onClick={handleAddRecipient}
-                disabled={!recipientInput.trim() || dispatchRecipients.length >= 7 || isSavingDispatch}
-                className="px-5 py-2.5 bg-[#8c9276] hover:bg-[#7a8065] text-white rounded-xl text-xs font-bold transition-all disabled:opacity-50 cursor-pointer shrink-0 shadow-sm flex items-center justify-center gap-1.5"
-              >
-                <Plus className="w-3.5 h-3.5" />
-                <span>Agregar</span>
-              </button>
-            </div>
-            <p className="text-[11px] text-gray-400 dark:text-gray-500 flex items-center gap-1">
-              <Info className="w-3 h-3 text-gray-400" />
-              Puedes ingresar varios correos separados por coma o espacio. Quedan {Math.max(0, 7 - dispatchRecipients.length)} cupos disponibles.
+            <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
+              <Server className="w-5 h-5 text-[#8c9276]" /> Servidor SMTP, Logística & Pasarelas Bancarias
+            </h2>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 max-w-2xl">
+              Estudio de configuración transaccional de {brand.name}: generador de variables de entorno para Vercel, correos de despacho para bodega y pasarela oficial PayPhone Ecuador.
             </p>
           </div>
 
-          {/* Recipients List Grid */}
-          <div className="space-y-3 pt-1">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-gray-400">
-              Correos Autorizados para Recibir Órdenes de Despacho:
-            </span>
+          <div className="flex flex-wrap items-center gap-2.5 shrink-0">
+            <button
+              type="button"
+              onClick={() => {
+                fetchSmtpStatus();
+                fetchPayphoneSettings();
+              }}
+              disabled={isLoadingStatus}
+              className="flex items-center gap-1.5 px-4 py-2.5 bg-gray-100 dark:bg-[#2a2a2c] hover:bg-gray-200 dark:hover:bg-white/10 text-gray-700 dark:text-gray-300 text-xs font-semibold rounded-2xl transition-all cursor-pointer"
+            >
+              <RefreshCw className={`w-3.5 h-3.5 text-[#8c9276] ${isLoadingStatus ? "animate-spin" : ""}`} />
+              <span>Refrescar</span>
+            </button>
 
-            {dispatchRecipients.length === 0 ? (
-              <div className="p-6 rounded-2xl bg-gray-50/70 dark:bg-[#1a1a1c]/60 border border-dashed border-gray-200 dark:border-white/10 text-center space-y-2">
-                <div className="w-10 h-10 rounded-full bg-gray-200/50 dark:bg-white/5 flex items-center justify-center mx-auto text-gray-400">
-                  <Mail className="w-5 h-5" />
-                </div>
-                <p className="text-xs font-semibold text-gray-700 dark:text-gray-300">
-                  No hay correos de despacho específicos configurados
-                </p>
-                <p className="text-[11px] text-gray-400 dark:text-gray-500 max-w-md mx-auto">
-                  En este momento, cada orden de despacho se enviará por defecto a los <strong>Administradores Principales</strong> de Lumina Home. Agrega correos arriba si deseas incluir a tu equipo logístico.
-                </p>
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                {dispatchRecipients.map((email, idx) => (
-                  <div
-                    key={email}
-                    className="p-3.5 rounded-2xl bg-gray-50 dark:bg-[#1a1a1c] border border-gray-200/70 dark:border-white/10 flex items-center justify-between gap-3 shadow-2xs group hover:border-[#8c9276]/40 transition-all"
+            <button
+              type="button"
+              onClick={handleDownloadEnvFile}
+              className="flex items-center gap-2 px-5 py-2.5 bg-gray-900 dark:bg-gray-100 hover:bg-gray-800 text-white dark:text-gray-900 text-xs font-semibold rounded-2xl transition-all shadow-md dark:shadow-none cursor-pointer"
+            >
+              <Download className="w-4 h-4" />
+              <span>Descargar .env.production</span>
+            </button>
+          </div>
+        </div>
+
+        {/* Clean 4-Column Telemetry Strip matching OverviewTab & LoyaltyCardsTab */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+          <div className="p-4 rounded-3xl bg-gray-50/70 dark:bg-[#2a2a2c]/60 border border-gray-100 dark:border-white/5">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-gray-400 block">
+              Estado Servidor SMTP
+            </span>
+            <span className="text-lg font-display font-bold text-gray-900 dark:text-gray-100 mt-1 block truncate">
+              {smtpStatus?.isConfigured ? "Conectado (TLS)" : "Simulación Local"}
+            </span>
+          </div>
+          <div className="p-4 rounded-3xl bg-gray-50/70 dark:bg-[#2a2a2c]/60 border border-gray-100 dark:border-white/5">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-gray-400 block">
+              Receptores de Bodega
+            </span>
+            <span className="text-lg font-display font-bold text-[#8c9276] mt-1 block">
+              {dispatchRecipients.length} / 7 activos
+            </span>
+          </div>
+          <div className="p-4 rounded-3xl bg-gray-50/70 dark:bg-[#2a2a2c]/60 border border-gray-100 dark:border-white/5">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-gray-400 block">
+              Modalidad PayPhone
+            </span>
+            <span className="text-lg font-display font-bold text-gray-900 dark:text-gray-100 mt-1 block truncate">
+              {payphoneMode === "box" ? "Checkout Embebido" : "Redirección 3DS"}
+            </span>
+          </div>
+          <div className="p-4 rounded-3xl bg-gray-50/70 dark:bg-[#2a2a2c]/60 border border-gray-100 dark:border-white/5">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-gray-400 block">
+              Seguridad Activa
+            </span>
+            <span className="text-lg font-display font-bold text-gray-900 dark:text-gray-100 mt-1 block truncate">
+              Puerto {smtpStatus?.port || 587} • PCI-DSS
+            </span>
+          </div>
+        </div>
+
+        {/* Sub-navigation Switcher (Micro-SaaS Tool Pattern) */}
+        <div className="flex flex-wrap items-center gap-2 p-1.5 rounded-2xl bg-gray-100/80 dark:bg-[#2a2a2c]/80 border border-gray-200/60 dark:border-white/5 w-fit">
+          <button
+            type="button"
+            onClick={() => setActiveSubTab("smtp")}
+            className={`px-4 py-2 rounded-xl text-xs font-semibold flex items-center gap-2 transition-all cursor-pointer ${
+              activeSubTab === "smtp"
+                ? "bg-white dark:bg-[#202022] text-gray-900 dark:text-white shadow-xs"
+                : "text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
+            }`}
+          >
+            <Mail className="w-3.5 h-3.5 text-[#8c9276]" />
+            <span>1. Servidor SMTP & Generador .ENV</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveSubTab("dispatch")}
+            className={`px-4 py-2 rounded-xl text-xs font-semibold flex items-center gap-2 transition-all cursor-pointer ${
+              activeSubTab === "dispatch"
+                ? "bg-white dark:bg-[#202022] text-gray-900 dark:text-white shadow-xs"
+                : "text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
+            }`}
+          >
+            <Truck className="w-3.5 h-3.5 text-[#8c9276]" />
+            <span>2. Receptores de Despacho ({dispatchRecipients.length}/7)</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveSubTab("payphone")}
+            className={`px-4 py-2 rounded-xl text-xs font-semibold flex items-center gap-2 transition-all cursor-pointer ${
+              activeSubTab === "payphone"
+                ? "bg-white dark:bg-[#202022] text-gray-900 dark:text-white shadow-xs"
+                : "text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
+            }`}
+          >
+            <CreditCard className="w-3.5 h-3.5 text-[#8c9276]" />
+            <span>3. Pasarela PayPhone Ecuador</span>
+          </button>
+        </div>
+
+        {/* Workspace Grid: Active Tool (7 cols) + Live Environment Bundle & Diagnostic Console (5 cols) */}
+        <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 items-start">
+          {/* Left Column: Active Tool Module (7 cols) */}
+          <div className="xl:col-span-7 space-y-5">
+            {activeSubTab === "smtp" && (
+              <div className="p-6 rounded-3xl bg-gray-50/50 dark:bg-[#2a2a2c]/40 border border-gray-100 dark:border-white/5 space-y-5">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-4 border-b border-gray-200/60 dark:border-white/5">
+                  <div>
+                    <h3 className="text-sm font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
+                      <Sparkles className="w-4 h-4 text-[#8c9276]" />
+                      <span>Generador de Variables SMTP (Google Workspace / Gmail)</span>
+                    </h3>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                      Configura el correo remitente oficial de {brand.name} y verifica la entrega TLS en tiempo real.
+                    </p>
+                  </div>
+                  <span
+                    className={`px-2.5 py-1 rounded-lg text-[10px] font-mono font-bold shrink-0 ${
+                      smtpStatus?.isConfigured
+                        ? "bg-[#8c9276]/15 text-[#686e54] dark:text-[#cbd1b2]"
+                        : "bg-gray-200/70 dark:bg-white/10 text-gray-600 dark:text-gray-300"
+                    }`}
                   >
-                    <div className="flex items-center gap-2.5 min-w-0">
-                      <span className="w-6 h-6 rounded-lg bg-[#8c9276]/10 text-[#8c9276] font-mono text-[10px] font-bold flex items-center justify-center shrink-0">
-                        #{idx + 1}
-                      </span>
-                      <div className="min-w-0">
-                        <p className="text-xs font-bold text-gray-900 dark:text-gray-100 truncate font-mono">
-                          {email}
-                        </p>
-                        <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-medium flex items-center gap-1">
-                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" /> Receptor de Despacho
-                        </span>
+                    {smtpStatus?.isConfigured ? "SMTP ACTIVO" : "MODO SIMULACIÓN"}
+                  </span>
+                </div>
+
+                {/* Form Inputs */}
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5">
+                      Correo Gmail / Google Workspace (SMTP_USER)
+                    </label>
+                    <input
+                      type="email"
+                      value={gmailUser}
+                      onChange={(e) => setGmailUser(e.target.value)}
+                      placeholder="ej: notificaciones@luminahome.ec"
+                      className="w-full h-10 px-3.5 rounded-xl border border-gray-200 dark:border-white/10 text-xs bg-white dark:bg-[#202022] text-gray-900 dark:text-gray-100 outline-none focus:border-[#8c9276]"
+                    />
+                  </div>
+
+                  <div>
+                    <div className="flex items-center justify-between mb-1.5">
+                      <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300">
+                        Contraseña de Aplicación de Google (SMTP_PASS)
+                      </label>
+                      <div className="flex items-center gap-3">
+                        <button
+                          type="button"
+                          onClick={() => setShowGoogleGuide(!showGoogleGuide)}
+                          className="text-[11px] text-[#8c9276] hover:underline flex items-center gap-1 font-semibold cursor-pointer"
+                        >
+                          <span>¿Cómo obtenerla?</span>
+                          <ExternalLink className="w-3 h-3" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setShowPass(!showPass)}
+                          className="text-[11px] text-gray-500 hover:text-gray-900 dark:hover:text-white font-semibold flex items-center gap-1 cursor-pointer"
+                        >
+                          {showPass ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                          <span>{showPass ? "Ocultar" : "Mostrar"}</span>
+                        </button>
                       </div>
+                    </div>
+
+                    <input
+                      type={showPass ? "text" : "password"}
+                      value={gmailPass}
+                      onChange={(e) => setGmailPass(e.target.value)}
+                      placeholder="16 caracteres (ej: abcd efgh ijkl mnop)"
+                      className="w-full h-10 px-3.5 rounded-xl border border-gray-200 dark:border-white/10 text-xs bg-white dark:bg-[#202022] text-gray-900 dark:text-gray-100 font-mono outline-none focus:border-[#8c9276]"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5">
+                      Nombre Remitente Visible (SMTP_FROM)
+                    </label>
+                    <input
+                      type="text"
+                      value={senderName}
+                      onChange={(e) => setSenderName(e.target.value)}
+                      placeholder={brand.name}
+                      className="w-full h-10 px-3.5 rounded-xl border border-gray-200 dark:border-white/10 text-xs bg-white dark:bg-[#202022] text-gray-900 dark:text-gray-100 outline-none focus:border-[#8c9276]"
+                    />
+                  </div>
+                </div>
+
+                {/* Google Guide Accordion */}
+                {showGoogleGuide && (
+                  <div className="p-4 bg-white dark:bg-[#202022] border border-gray-200/80 dark:border-white/10 rounded-2xl text-xs space-y-2 animate-fade-in">
+                    <div className="font-bold flex items-center gap-1.5 text-gray-900 dark:text-white">
+                      <KeyRound className="w-4 h-4 text-[#8c9276]" />
+                      <span>Pasos para generar tu Contraseña de Aplicación en Google:</span>
+                    </div>
+                    <ol className="list-decimal list-inside space-y-1.5 text-xs text-gray-600 dark:text-gray-300 pl-1">
+                      <li>
+                        Ingresa a{" "}
+                        <a
+                          href="https://myaccount.google.com/security"
+                          target="_blank"
+                          rel="noreferrer"
+                          className="underline font-semibold text-[#8c9276]"
+                        >
+                          myaccount.google.com/security
+                        </a>
+                        .
+                      </li>
+                      <li>Activa la <strong>Verificación en dos pasos</strong>.</li>
+                      <li>Busca <em>&quot;Contraseñas de aplicaciones&quot;</em> en la barra superior.</li>
+                      <li>
+                        Crea una clave bajo el nombre <strong>{brand.name}</strong> y pega los 16
+                        caracteres arriba.
+                      </li>
+                    </ol>
+                  </div>
+                )}
+
+                {/* Live SMTP Handshake Test Box */}
+                <div className="p-4 bg-white dark:bg-[#202022] border border-gray-100 dark:border-white/5 rounded-2xl space-y-3">
+                  <div>
+                    <div className="text-xs font-bold text-gray-900 dark:text-gray-100 flex items-center gap-1.5">
+                      <Send className="w-3.5 h-3.5 text-[#8c9276]" />
+                      <span>Probar Conexión SMTP en Tiempo Real</span>
+                    </div>
+                    <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-0.5">
+                      Envía un correo de diagnóstico para validar el handshake TLS antes de desplegar en Vercel.
+                    </p>
+                  </div>
+
+                  <div className="flex flex-col sm:flex-row gap-2">
+                    <input
+                      type="email"
+                      value={testEmail}
+                      onChange={(e) => setTestEmail(e.target.value)}
+                      placeholder="Correo para recibir la prueba"
+                      className="flex-1 h-10 px-3.5 rounded-xl border border-gray-200 dark:border-white/10 text-xs bg-gray-50 dark:bg-[#2a2a2c] text-gray-900 dark:text-gray-100 outline-none focus:border-[#8c9276]"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => handleTestConnection(true)}
+                      disabled={isTesting}
+                      className="h-10 px-5 bg-gray-900 dark:bg-gray-100 hover:bg-gray-800 text-white dark:text-gray-900 rounded-xl text-xs font-semibold transition-all cursor-pointer shrink-0 disabled:opacity-50 flex items-center justify-center gap-1.5"
+                    >
+                      {isTesting ? (
+                        <>
+                          <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                          <span>Verificando...</span>
+                        </>
+                      ) : (
+                        <>
+                          <Send className="w-3.5 h-3.5" />
+                          <span>Enviar Prueba</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
+
+                  {testResult && (
+                    <div
+                      className={`p-3 rounded-xl text-xs flex items-start gap-2 ${
+                        testResult.success
+                          ? "bg-[#8c9276]/15 text-gray-900 dark:text-white border border-[#8c9276]/30"
+                          : "bg-rose-50 text-rose-800 border border-rose-200 dark:bg-rose-950/30 dark:text-rose-300 dark:border-rose-800/40"
+                      }`}
+                    >
+                      {testResult.success ? (
+                        <Check className="w-4 h-4 text-[#8c9276] shrink-0 mt-0.5" />
+                      ) : (
+                        <AlertTriangle className="w-4 h-4 text-rose-500 shrink-0 mt-0.5" />
+                      )}
+                      <span className="leading-tight font-medium">{testResult.message}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {activeSubTab === "dispatch" && (
+              <div className="p-6 rounded-3xl bg-gray-50/50 dark:bg-[#2a2a2c]/40 border border-gray-100 dark:border-white/5 space-y-5">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-gray-200/60 dark:border-white/5">
+                  <div>
+                    <h3 className="text-sm font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
+                      <Truck className="w-4 h-4 text-[#8c9276]" />
+                      <span>Receptores de Órdenes de Despacho (Bodega & Logística)</span>
+                    </h3>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                      Configura hasta 7 correos para recibir automáticamente las guías de despacho tras cada venta.
+                    </p>
+                  </div>
+                  <div className="px-3 py-1.5 rounded-xl bg-white dark:bg-[#202022] border border-gray-200/80 dark:border-white/10 text-xs font-mono font-bold text-gray-800 dark:text-gray-200 flex items-center gap-1.5 shrink-0">
+                    <Users className="w-3.5 h-3.5 text-[#8c9276]" />
+                    <span>{dispatchRecipients.length} / 7 cupos</span>
+                  </div>
+                </div>
+
+                {/* Input & Quick Add */}
+                <div className="space-y-2">
+                  <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300">
+                    Agregar Correo de Despacho
+                  </label>
+                  <div className="flex flex-col sm:flex-row gap-2">
+                    <div className="relative flex-1">
+                      <Mail className="w-4 h-4 absolute left-3.5 top-3 text-gray-400" />
+                      <input
+                        type="email"
+                        value={recipientInput}
+                        onChange={(e) => setRecipientInput(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") {
+                            e.preventDefault();
+                            handleAddRecipient();
+                          }
+                        }}
+                        placeholder="ej: bodega@luminahome.ec, logistica@empresa.com"
+                        disabled={dispatchRecipients.length >= 7 || isSavingDispatch}
+                        className="w-full h-10 pl-10 pr-4 rounded-xl border border-gray-200 dark:border-white/10 text-xs bg-white dark:bg-[#202022] text-gray-900 dark:text-gray-100 outline-none focus:border-[#8c9276] disabled:opacity-50"
+                      />
                     </div>
 
                     <button
                       type="button"
-                      onClick={() => handleRemoveRecipient(email)}
-                      disabled={isSavingDispatch}
-                      className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 rounded-lg transition-colors cursor-pointer shrink-0"
-                      title="Eliminar de la lista de despacho"
+                      onClick={handleAddRecipient}
+                      disabled={
+                        !recipientInput.trim() || dispatchRecipients.length >= 7 || isSavingDispatch
+                      }
+                      className="h-10 px-5 bg-gray-900 dark:bg-gray-100 hover:bg-gray-800 text-white dark:text-gray-900 rounded-xl text-xs font-semibold transition-all disabled:opacity-50 cursor-pointer shrink-0 flex items-center justify-center gap-1.5"
                     >
-                      <Trash2 className="w-3.5 h-3.5" />
+                      <Plus className="w-3.5 h-3.5" />
+                      <span>Agregar</span>
                     </button>
                   </div>
-                ))}
+                  <p className="text-[11px] text-gray-400 flex items-center gap-1">
+                    <Info className="w-3 h-3 text-[#8c9276]" />
+                    <span>
+                      Puedes pegar varios correos separados por coma. Quedan{" "}
+                      {Math.max(0, 7 - dispatchRecipients.length)} cupos disponibles.
+                    </span>
+                  </p>
+                </div>
+
+                {/* Recipients List Grid */}
+                <div className="space-y-2.5">
+                  {dispatchRecipients.length === 0 ? (
+                    <div className="p-6 rounded-2xl bg-white dark:bg-[#202022] border border-dashed border-gray-200 dark:border-white/10 text-center space-y-1.5">
+                      <p className="text-xs font-semibold text-gray-700 dark:text-gray-300">
+                        Sin correos logísticos adicionales
+                      </p>
+                      <p className="text-[11px] text-gray-400 max-w-md mx-auto">
+                        Las órdenes de despacho se envían actualmente al correo administrador principal.
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                      {dispatchRecipients.map((email, idx) => (
+                        <div
+                          key={email}
+                          className="p-3.5 rounded-2xl bg-white dark:bg-[#202022] border border-gray-100 dark:border-white/5 flex items-center justify-between gap-3"
+                        >
+                          <div className="flex items-center gap-2.5 min-w-0">
+                            <span className="w-6 h-6 rounded-lg bg-[#8c9276]/15 text-[#8c9276] font-mono text-[10px] font-bold flex items-center justify-center shrink-0">
+                              #{idx + 1}
+                            </span>
+                            <div className="min-w-0">
+                              <p className="text-xs font-bold text-gray-900 dark:text-gray-100 truncate font-mono">
+                                {email}
+                              </p>
+                              <span className="text-[10px] text-[#8c9276] font-medium block">
+                                Receptor Activo
+                              </span>
+                            </div>
+                          </div>
+
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveRecipient(email)}
+                            disabled={isSavingDispatch}
+                            className="p-1.5 text-gray-400 hover:text-rose-500 hover:bg-rose-500/10 rounded-lg transition-colors cursor-pointer shrink-0"
+                            title="Eliminar receptor"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {dispatchMsg && (
+                  <div
+                    className={`p-3 rounded-xl text-xs flex items-center justify-between gap-2 border ${
+                      dispatchMsg.success
+                        ? "bg-[#8c9276]/15 text-gray-900 dark:text-white border-[#8c9276]/30"
+                        : "bg-rose-50 text-rose-800 border-rose-200 dark:bg-rose-950/30 dark:text-rose-300"
+                    }`}
+                  >
+                    <div className="flex items-center gap-2">
+                      {dispatchMsg.success ? (
+                        <CheckCircle2 className="w-4 h-4 text-[#8c9276] shrink-0" />
+                      ) : (
+                        <AlertTriangle className="w-4 h-4 text-rose-500 shrink-0" />
+                      )}
+                      <span className="font-medium">{dispatchMsg.text}</span>
+                    </div>
+                  </div>
+                )}
+
+                <div className="pt-3 border-t border-gray-200/60 dark:border-white/5 flex flex-wrap items-center justify-between gap-2">
+                  <button
+                    type="button"
+                    onClick={handleTestDispatchEmail}
+                    disabled={isTestingDispatch || isSavingDispatch}
+                    className="px-4 py-2 bg-white dark:bg-[#202022] hover:bg-gray-100 text-gray-700 dark:text-gray-200 rounded-xl text-xs font-semibold transition-all cursor-pointer flex items-center gap-1.5 border border-gray-200 dark:border-white/10"
+                  >
+                    {isTestingDispatch ? (
+                      <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                    ) : (
+                      <Send className="w-3.5 h-3.5 text-[#8c9276]" />
+                    )}
+                    <span>
+                      {isTestingDispatch ? "Enviando orden..." : "Enviar Orden de Despacho de Prueba"}
+                    </span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={handleSaveDispatchRecipients}
+                    disabled={isSavingDispatch}
+                    className="px-5 py-2 rounded-xl text-xs font-semibold bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 transition-all cursor-pointer flex items-center gap-1.5"
+                  >
+                    <Check className="w-3.5 h-3.5" />
+                    <span>{dispatchJustSaved ? "Guardado" : "Guardar Lista"}</span>
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {activeSubTab === "payphone" && (
+              <div className="p-6 rounded-3xl bg-gray-50/50 dark:bg-[#2a2a2c]/40 border border-gray-100 dark:border-white/5 space-y-5">
+                <div className="flex items-center justify-between pb-4 border-b border-gray-200/60 dark:border-white/5">
+                  <div>
+                    <h3 className="text-sm font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
+                      <CreditCard className="w-4 h-4 text-[#8c9276]" />
+                      <span>Pasarela Bancaria PayPhone Ecuador</span>
+                    </h3>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                      Selecciona el modo de cobro en el checkout y genera las variables de servidor para Vercel.
+                    </p>
+                  </div>
+                  <span className="px-2.5 py-1 rounded-lg bg-white dark:bg-[#202022] border border-gray-200/80 dark:border-white/10 text-[10px] font-mono font-bold text-gray-700 dark:text-gray-200">
+                    {payphoneIsConfigured ? "LIVE API" : "MODO SANDBOX"}
+                  </span>
+                </div>
+
+                {/* Mode Selection Cards */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setPayphoneMode("box");
+                      handleSavePayphoneMode("box");
+                    }}
+                    className={`p-4 rounded-2xl border text-left transition-all cursor-pointer flex flex-col justify-between min-h-[116px] ${
+                      payphoneMode === "box"
+                        ? "border-gray-900 dark:border-white bg-white dark:bg-[#202022] shadow-xs"
+                        : "border-gray-200/80 dark:border-white/10 bg-white/60 dark:bg-[#202022]/50 hover:border-gray-300"
+                    }`}
+                  >
+                    <div>
+                      <div className="flex items-center justify-between mb-1.5">
+                        <span className="text-[10px] font-mono font-semibold px-2 py-0.5 rounded bg-gray-100 dark:bg-[#2a2a2c] text-gray-700 dark:text-gray-300">
+                          SDK EMBEBIDO
+                        </span>
+                        {payphoneMode === "box" && (
+                          <CheckCircle2 className="w-4 h-4 text-[#8c9276] shrink-0" />
+                        )}
+                      </div>
+                      <h4 className="text-xs font-bold text-gray-900 dark:text-white mt-1">
+                        Cajita de Pagos (En Página)
+                      </h4>
+                    </div>
+                    <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-2 leading-relaxed">
+                      El cliente paga con tarjeta o saldo PayPhone sin salir de la tienda.
+                    </p>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setPayphoneMode("redirect");
+                      handleSavePayphoneMode("redirect");
+                    }}
+                    className={`p-4 rounded-2xl border text-left transition-all cursor-pointer flex flex-col justify-between min-h-[116px] ${
+                      payphoneMode === "redirect"
+                        ? "border-gray-900 dark:border-white bg-white dark:bg-[#202022] shadow-xs"
+                        : "border-gray-200/80 dark:border-white/10 bg-white/60 dark:bg-[#202022]/50 hover:border-gray-300"
+                    }`}
+                  >
+                    <div>
+                      <div className="flex items-center justify-between mb-1.5">
+                        <span className="text-[10px] font-mono font-semibold px-2 py-0.5 rounded bg-gray-100 dark:bg-[#2a2a2c] text-gray-700 dark:text-gray-300">
+                          3D SECURE 2.0
+                        </span>
+                        {payphoneMode === "redirect" && (
+                          <CheckCircle2 className="w-4 h-4 text-[#8c9276] shrink-0" />
+                        )}
+                      </div>
+                      <h4 className="text-xs font-bold text-gray-900 dark:text-white mt-1">
+                        Redirección Bancaria Oficial
+                      </h4>
+                    </div>
+                    <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-2 leading-relaxed">
+                      Transfiere el cobro al portal seguro de PayPhone y retorna a la tienda al confirmar.
+                    </p>
+                  </button>
+                </div>
+
+                {/* PayPhone API Credentials Inputs */}
+                <div className="space-y-3.5 pt-2">
+                  <div>
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300">
+                        Token Privado de API (PAYPHONE_TOKEN)
+                      </label>
+                      <button
+                        type="button"
+                        onClick={() => setShowPayphoneToken(!showPayphoneToken)}
+                        className="text-[11px] text-gray-500 hover:text-gray-900 dark:hover:text-white font-semibold flex items-center gap-1 cursor-pointer"
+                      >
+                        {showPayphoneToken ? (
+                          <EyeOff className="w-3.5 h-3.5" />
+                        ) : (
+                          <Eye className="w-3.5 h-3.5" />
+                        )}
+                        <span>{showPayphoneToken ? "Ocultar" : "Mostrar"}</span>
+                      </button>
+                    </div>
+                    <input
+                      type={showPayphoneToken ? "text" : "password"}
+                      value={payphoneToken}
+                      onChange={(e) => setPayphoneToken(e.target.value)}
+                      placeholder="ej: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                      className="w-full h-10 px-3.5 rounded-xl border border-gray-200 dark:border-white/10 text-xs bg-white dark:bg-[#202022] text-gray-900 dark:text-gray-100 font-mono outline-none focus:border-[#8c9276]"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
+                      Identificador de Sucursal (PAYPHONE_STORE_ID)
+                    </label>
+                    <input
+                      type="text"
+                      value={payphoneStoreIdInput}
+                      onChange={(e) => setPayphoneStoreIdInput(e.target.value)}
+                      placeholder={
+                        payphoneStoreId && !payphoneStoreId.includes("••••")
+                          ? payphoneStoreId
+                          : "ej: 5c0a1b2c-3d4e-5f6a-7b8c-9d0e1f2a3b4c"
+                      }
+                      className="w-full h-10 px-3.5 rounded-xl border border-gray-200 dark:border-white/10 text-xs bg-white dark:bg-[#202022] text-gray-900 dark:text-gray-100 font-mono outline-none focus:border-[#8c9276]"
+                    />
+                  </div>
+                </div>
+
+                {payphoneMsg && (
+                  <div
+                    className={`p-3 rounded-xl text-xs flex items-start gap-2 ${
+                      payphoneMsg.success
+                        ? "bg-[#8c9276]/15 text-gray-900 dark:text-white border border-[#8c9276]/30"
+                        : "bg-rose-50 text-rose-800 border border-rose-200 dark:bg-rose-950/30 dark:text-rose-300"
+                    }`}
+                  >
+                    <Check className="w-4 h-4 text-[#8c9276] shrink-0 mt-0.5" />
+                    <span className="leading-tight font-medium">{payphoneMsg.text}</span>
+                  </div>
+                )}
               </div>
             )}
           </div>
 
-          {/* Feedback banner */}
-          {dispatchMsg && (
-            <div className={`p-3.5 rounded-2xl text-xs flex items-center justify-between gap-2 border ${
-              dispatchMsg.success 
-                ? 'bg-emerald-50 text-emerald-800 border-emerald-200 dark:bg-emerald-950/30 dark:text-emerald-300 dark:border-emerald-800/40' 
-                : 'bg-red-50 text-red-800 border-red-200 dark:bg-red-950/30 dark:text-red-300 dark:border-red-800/40'
-            }`}>
-              <div className="flex items-center gap-2">
-                {dispatchMsg.success ? (
-                  <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-                ) : (
-                  <AlertTriangle className="w-4 h-4 text-red-600 shrink-0" />
-                )}
-                <span className="font-medium">{dispatchMsg.text}</span>
-              </div>
-              <button 
-                type="button" 
-                onClick={() => setDispatchMsg(null)}
-                className="text-[11px] font-bold underline cursor-pointer"
-              >
-                Cerrar
-              </button>
-            </div>
-          )}
-
-          {/* Action Bar */}
-          <div className="pt-3 border-t border-gray-100 dark:border-white/5 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
-            <div className="text-[11px] text-gray-400 dark:text-gray-500 flex items-center gap-1.5">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-              <span>Sincronización automática activa: cada cambio se guarda de inmediato en la base de datos.</span>
-            </div>
-
-            <div className="flex items-center gap-2.5 self-end sm:self-auto flex-wrap">
-              <button
-                type="button"
-                onClick={handleTestDispatchEmail}
-                disabled={isTestingDispatch || isSavingDispatch}
-                className="px-4 py-2 bg-gray-100 dark:bg-[#2c2c2e] hover:bg-gray-200 dark:hover:bg-[#3a3a3c] text-gray-700 dark:text-gray-200 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 disabled:opacity-50 border border-gray-200/50 dark:border-white/5"
-                title="Envía una orden de despacho de prueba a los destinatarios configurados"
-              >
-                {isTestingDispatch ? (
-                  <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                ) : (
-                  <Send className="w-3.5 h-3.5 text-[#8c9276]" />
-                )}
-                <span>{isTestingDispatch ? "Enviando Prueba..." : "Probar Envío de Despacho"}</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={handleSaveDispatchRecipients}
-                disabled={isSavingDispatch}
-                className={`px-5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 shadow-sm disabled:opacity-50 ${
-                  dispatchJustSaved
-                    ? "bg-emerald-600 text-white shadow-emerald-500/20"
-                    : "bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-800 dark:text-emerald-300 border border-emerald-500/30"
-                }`}
-                title="Los cambios se guardan automáticamente en tiempo real en la base de datos."
-              >
-                {isSavingDispatch ? (
-                  <>
-                    <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                    <span>Guardando...</span>
-                  </>
-                ) : dispatchJustSaved ? (
-                  <>
-                    <Check className="w-3.5 h-3.5 stroke-[3]" />
-                    <span>Guardado</span>
-                  </>
-                ) : (
-                  <>
-                    <Check className="w-3.5 h-3.5" />
-                    <span>Guardar Receptores</span>
-                  </>
-                )}
-              </button>
-            </div>
-          </div>
-
-        </div>
-
-        {/* LEFT COLUMN: VERCEL STATUS & GENERATOR (7 Cols) */}
-        <div className="lg:col-span-7 space-y-6">
-
-          {/* Module 1: Live Status in Vercel */}
-          <div className="bg-white/90 dark:bg-[#202022]/90 backdrop-blur-xl p-6 md:p-8 rounded-3xl sm:rounded-[2.5rem] border border-white/80 dark:border-white/10 shadow-[0_4px_24px_rgba(0,0,0,0.02)] space-y-5">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-gray-100 dark:border-white/5">
-              <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-xl bg-[#8c9276]/10 flex items-center justify-center text-[#8c9276] font-bold">
-                  <Mail className="w-4 h-4" />
-                </div>
+          {/* Right Column: Live .ENV Output & Infrastructure Inspector (5 cols) */}
+          <div className="xl:col-span-5 space-y-5">
+            <div className="p-6 rounded-3xl bg-gray-50/50 dark:bg-[#2a2a2c]/40 border border-gray-100 dark:border-white/5 space-y-4 sticky top-6">
+              <div className="flex items-center justify-between">
                 <div>
-                  <div className="flex items-center gap-2">
-                    <span className="font-mono text-[9px] font-bold px-2 py-0.5 rounded-md bg-[#8c9276]/10 text-[#8c9276] border border-[#8c9276]/20 uppercase tracking-widest">
-                      Infraestructura SMTP
-                    </span>
-                  </div>
-                  <h3 className="text-base font-bold text-gray-900 dark:text-gray-100 mt-1">
-                    Estado del Servidor en Vercel
-                  </h3>
-                </div>
-              </div>
-              {isLoadingStatus ? (
-                <div className="w-4 h-4 border-2 border-[#8c9276] border-t-transparent rounded-full animate-spin self-start sm:self-auto" />
-              ) : smtpStatus?.isConfigured ? (
-                <span className="px-3 py-1 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 rounded-lg text-xs font-bold flex items-center gap-1.5 shadow-sm font-mono self-start sm:self-auto">
-                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                  Conectado en Vercel
-                </span>
-              ) : (
-                <span className="px-3 py-1 bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/30 rounded-lg text-xs font-bold flex items-center gap-1.5 font-mono self-start sm:self-auto">
-                  <span className="w-2 h-2 rounded-full bg-amber-500" />
-                  Modo Simulación Activo
-                </span>
-              )}
-            </div>
-
-            {/* Status Grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
-              <div className="p-3.5 bg-gray-50 dark:bg-[#1a1a1c] rounded-2xl border border-gray-100 dark:border-white/5 space-y-1">
-                <span className="text-[10px] uppercase font-bold text-gray-400 tracking-wider">Host SMTP</span>
-                <p className="font-semibold text-gray-900 dark:text-gray-100 font-mono">
-                  {smtpStatus?.host || 'smtp.gmail.com'}
-                </p>
-              </div>
-
-              <div className="p-3.5 bg-gray-50 dark:bg-[#1a1a1c] rounded-2xl border border-gray-100 dark:border-white/5 space-y-1">
-                <span className="text-[10px] uppercase font-bold text-gray-400 tracking-wider">Puerto & Túnel TLS</span>
-                <p className="font-semibold text-gray-900 dark:text-gray-100 font-mono flex items-center gap-1.5">
-                  <span>{smtpStatus?.port || 587}</span>
-                  <span className="px-2 py-0.5 rounded-md bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/25 text-[10px] font-bold">
-                    SMTP_SECURE=true
+                  <span className="text-xs font-bold text-gray-900 dark:text-white flex items-center gap-1.5">
+                    <Terminal className="w-3.5 h-3.5 text-[#8c9276]" />
+                    <span>Variables de Producción (.ENV)</span>
                   </span>
-                </p>
-              </div>
-
-              <div className="p-3.5 bg-gray-50 dark:bg-[#1a1a1c] rounded-2xl border border-gray-100 dark:border-white/5 space-y-1 sm:col-span-2">
-                <span className="text-[10px] uppercase font-bold text-gray-400 tracking-wider">Usuario Remitente Activo</span>
-                <p className="font-semibold text-gray-900 dark:text-gray-100 font-mono text-[11px] break-all">
-                  {smtpStatus?.user || 'No configurado en Vercel (Se usa simulación en consola)'}
-                </p>
-              </div>
-            </div>
-
-            {smtpStatus?.isConfigured && (
-              <div className="pt-2 border-t border-gray-100 dark:border-white/5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
-                <span className="text-xs text-gray-500">¿Deseas verificar la conexión de producción?</span>
+                  <span className="text-[11px] text-gray-500 dark:text-gray-400 block">
+                    Bloque compilado listo para Vercel Environment Variables
+                  </span>
+                </div>
                 <button
-                  onClick={() => handleTestConnection(false)}
-                  disabled={isTesting}
-                  className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold flex items-center gap-2 transition-all cursor-pointer shadow-sm disabled:opacity-50"
+                  type="button"
+                  onClick={handleCopyMasterBundle}
+                  className="px-3 py-1.5 rounded-xl bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 text-xs font-semibold flex items-center gap-1.5 cursor-pointer"
                 >
-                  <Send className="w-3.5 h-3.5" />
-                  {isTesting ? "Verificando..." : "Enviar Correo de Prueba"}
+                  {copiedMasterEnv ? (
+                    <Check className="w-3.5 h-3.5" />
+                  ) : (
+                    <Copy className="w-3.5 h-3.5" />
+                  )}
+                  <span>{copiedMasterEnv ? "Copiado" : "Copiar Todo"}</span>
                 </button>
               </div>
-            )}
-          </div>
 
-          {/* Module 2: Vercel Variable Generator (Gmail Option B) */}
-          <div className="bg-white/90 dark:bg-[#202022]/90 backdrop-blur-xl p-6 md:p-8 rounded-3xl sm:rounded-[2.5rem] border border-white/80 dark:border-white/10 shadow-[0_4px_24px_rgba(0,0,0,0.02)] space-y-6">
-            <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-2 pb-4 border-b border-gray-100 dark:border-white/5">
-              <div>
-                <div className="flex items-center gap-2">
-                  <span className="font-mono text-[9px] font-bold px-2 py-0.5 rounded-md bg-[#8c9276]/10 text-[#8c9276] border border-[#8c9276]/20 uppercase tracking-widest">
-                    Variables de Producción · Vercel
-                  </span>
-                  <span className="font-mono text-[9px] font-bold px-2 py-0.5 rounded-md bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20 uppercase tracking-widest flex items-center gap-1">
-                    <KeyRound className="w-2.5 h-2.5" /> Google Workspace / Gmail
-                  </span>
-                </div>
-                <h3 className="text-base font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2 mt-2 tracking-tight">
-                  <Sparkles className="w-4 h-4 text-[#8c9276]" />
-                  Generador de Variables de Entorno (SMTP)
-                </h3>
-                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 leading-relaxed">
-                  Ingresa tus credenciales de Google para generar el bloque de variables <code className="text-[#8c9276] font-mono font-bold">SMTP_*</code> listo para copiar a Vercel.
-                </p>
-              </div>
-            </div>
-
-            {/* Inputs */}
-            <div className="space-y-4">
-              <div>
-                <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
-                  Correo Gmail / Google Workspace (SMTP_USER)
-                </label>
-                <input 
-                  type="email" 
-                  value={gmailUser}
-                  onChange={e => setGmailUser(e.target.value)}
-                  placeholder="ej: tu_tienda@gmail.com"
-                  className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-xs bg-white dark:bg-[#1a1a1c] text-gray-900 dark:text-gray-100 outline-none focus:ring-2 focus:ring-[#8c9276]/30 focus:border-[#8c9276] font-medium transition-all"
-                />
+              {/* Code Output Box */}
+              <div className="relative">
+                <pre className="p-4 bg-[#171717] text-gray-100 rounded-2xl text-[11px] font-mono overflow-x-auto border border-white/10 leading-relaxed shadow-inner selection:bg-[#8c9276] selection:text-white">
+                  {masterEnvBundle}
+                </pre>
               </div>
 
-              <div>
-                <div className="flex items-center justify-between mb-1">
-                  <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300">
-                    Contraseña de Aplicación de Google (SMTP_PASS)
-                  </label>
-                  <div className="flex items-center gap-3">
-                    <button 
-                      type="button"
-                      onClick={() => setShowGoogleGuide(!showGoogleGuide)}
-                      className="text-[11px] text-[#8c9276] hover:underline flex items-center gap-1 font-semibold cursor-pointer"
-                    >
-                      ¿Cómo obtenerla? <ExternalLink className="w-3 h-3" />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setShowPass(!showPass)}
-                      className="text-[11px] text-[#8c9276] hover:underline font-semibold flex items-center gap-1 cursor-pointer"
-                    >
-                      {showPass ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
-                      {showPass ? "Ocultar" : "Mostrar"}
-                    </button>
-                  </div>
-                </div>
-
-                <div className="relative">
-                  <input 
-                    type={showPass ? "text" : "password"} 
-                    value={gmailPass}
-                    onChange={e => setGmailPass(e.target.value)}
-                    placeholder="16 caracteres (ej: abcd efgh ijkl mnop)"
-                    className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-xs bg-white dark:bg-[#1a1a1c] text-gray-900 dark:text-gray-100 outline-none focus:ring-2 focus:ring-[#8c9276]/30 focus:border-[#8c9276] font-mono transition-all"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
-                  Nombre Remitente Visible (SMTP_FROM)
-                </label>
-                <input 
-                  type="text" 
-                  value={senderName}
-                  onChange={e => setSenderName(e.target.value)}
-                  placeholder="Lumina Home"
-                  className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-xs bg-white dark:bg-[#1a1a1c] text-gray-900 dark:text-gray-100 outline-none focus:ring-2 focus:ring-[#8c9276]/30 focus:border-[#8c9276] font-medium transition-all"
-                />
-              </div>
-            </div>
-
-            {/* Google Guide Accordion */}
-            {showGoogleGuide && (
-              <div className="p-4 bg-[#8c9276]/5 dark:bg-[#8c9276]/10 border border-[#8c9276]/20 rounded-2xl text-xs space-y-2.5 animate-fade-in text-gray-800 dark:text-gray-200">
-                <div className="font-bold flex items-center gap-1.5 text-gray-900 dark:text-white">
-                  <KeyRound className="w-4 h-4 text-[#8c9276]" />
-                  Pasos para generar tu Contraseña de Aplicación en Google:
-                </div>
-                <ol className="list-decimal list-inside space-y-1.5 text-xs text-gray-700 dark:text-gray-300 pl-1">
-                  <li>Ingresa a tu cuenta de Google en <a href="https://myaccount.google.com/security" target="_blank" rel="noreferrer" className="underline font-semibold text-[#8c9276]">myaccount.google.com/security</a>.</li>
-                  <li>Asegúrate de tener activa la <strong>Verificación en dos pasos</strong>.</li>
-                  <li>En el buscador superior de Google Account escribe <em>&quot;Contraseñas de aplicaciones&quot;</em> o accede a dicha sección en Seguridad.</li>
-                  <li>En nombre de la aplicación escribe <strong className="font-mono text-[#8c9276]">Lumina Home</strong> y presiona <strong>Crear</strong>.</li>
-                  <li>Google te entregará una clave de 16 caracteres amarillos. Cópiala y pégala aquí.</li>
-                </ol>
-              </div>
-            )}
-
-            {/* Code Output Box */}
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-gray-900 dark:text-gray-100">
-                  Bloque para Vercel Environment Variables:
-                </span>
+              {/* Quick Section Copy Buttons */}
+              <div className="grid grid-cols-2 gap-2.5">
                 <button
                   type="button"
                   onClick={handleCopySnippet}
-                  className="text-xs text-[#8c9276] hover:text-[#6f755c] font-bold flex items-center gap-1.5 transition-colors cursor-pointer bg-[#8c9276]/10 hover:bg-[#8c9276]/20 px-3 py-1.5 rounded-lg border border-[#8c9276]/25"
+                  className="py-2.5 px-3 rounded-xl bg-white dark:bg-[#202022] hover:bg-gray-100 border border-gray-200/80 dark:border-white/10 text-xs font-semibold text-gray-800 dark:text-gray-200 flex items-center justify-center gap-1.5 cursor-pointer"
                 >
-                  {copied ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
-                  {copied ? "¡Copiado al Portapapeles!" : "Copiar para Vercel"}
-                </button>
-              </div>
-              <div className="relative">
-                <pre className="p-4 bg-gray-900 text-gray-100 rounded-2xl text-[11px] font-mono overflow-x-auto border border-gray-800 leading-relaxed shadow-inner selection:bg-[#8c9276] selection:text-white">
-                  {vercelEnvSnippet}
-                </pre>
-              </div>
-            </div>
-
-            {/* Test Credentials Action */}
-            <div className="p-4 bg-gray-50 dark:bg-[#1a1a1c] border border-gray-200/80 dark:border-white/5 rounded-2xl space-y-3">
-              <div className="flex items-center justify-between">
-                <div>
-                  <div className="text-xs font-bold text-gray-900 dark:text-gray-100 flex items-center gap-1.5">
-                    <Send className="w-3.5 h-3.5 text-[#8c9276]" />
-                    Probar estas credenciales antes de ir a Vercel
-                  </div>
-                  <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-0.5">
-                    Envía un correo de prueba en tiempo real para verificar el handshake TLS con Google.
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex flex-col sm:flex-row gap-2">
-                <input 
-                  type="email" 
-                  value={testEmail}
-                  onChange={e => setTestEmail(e.target.value)}
-                  placeholder="Tu correo para recibir la prueba"
-                  className="flex-1 px-4 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-xs bg-white dark:bg-[#202022] text-gray-900 dark:text-gray-100 outline-none focus:ring-2 focus:ring-[#8c9276]/30 font-medium"
-                />
-                <button
-                  type="button"
-                  onClick={() => handleTestConnection(true)}
-                  disabled={isTesting}
-                  className="px-5 py-2.5 bg-gray-900 dark:bg-gray-100 hover:bg-gray-800 dark:hover:bg-white text-white dark:text-gray-900 rounded-xl text-xs font-bold transition-all cursor-pointer shrink-0 disabled:opacity-50 shadow-sm flex items-center justify-center gap-1.5"
-                >
-                  {isTesting ? (
-                    <>
-                      <RefreshCw className="w-3.5 h-3.5 animate-spin" /> Verificando...
-                    </>
+                  {copied ? (
+                    <Check className="w-3.5 h-3.5 text-[#8c9276]" />
                   ) : (
-                    <>
-                      <Send className="w-3.5 h-3.5" /> Probar Credenciales
-                    </>
+                    <Copy className="w-3.5 h-3.5 text-[#8c9276]" />
                   )}
+                  <span>{copied ? "SMTP Copiado" : "Solo SMTP_*"}</span>
                 </button>
-              </div>
-
-              {testResult && (
-                <div className={`p-3 rounded-xl text-xs flex items-start gap-2 ${testResult.success ? 'bg-emerald-50 text-emerald-800 border border-emerald-200 dark:bg-emerald-950/30 dark:text-emerald-300 dark:border-emerald-800/40' : 'bg-red-50 text-red-800 border border-red-200 dark:bg-red-950/30 dark:text-red-300 dark:border-red-800/40'}`}>
-                  {testResult.success ? <Check className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" /> : <AlertTriangle className="w-4 h-4 text-red-600 shrink-0 mt-0.5" />}
-                  <span className="leading-tight font-medium">{testResult.message}</span>
-                </div>
-              )}
-            </div>
-
-            {/* Privacy & Security microcopy badge */}
-            <p className="text-[10px] text-gray-400 dark:text-gray-500 leading-normal pt-2 border-t border-gray-100 dark:border-white/5 flex items-center gap-1.5">
-              🔒 <strong>100% Seguro:</strong> Las credenciales SMTP nunca se almacenan en el cliente ni en tablas públicas. Se procesan de forma aislada a través de tus variables de entorno en Vercel.
-            </p>
-
-          </div>
-
-        </div>
-
-        {/* RIGHT COLUMN: PAYPHONE OFFICIAL CONFIGURATION (5 Cols) */}
-        <div className="lg:col-span-5 space-y-6 font-sans">
-
-          {/* Module 1: Gateway Protocol & Settlement Settings */}
-          <div className="bg-white/95 dark:bg-[#15171b]/95 backdrop-blur-2xl p-6 md:p-8 rounded-[2rem] border border-slate-200/80 dark:border-slate-800/80 shadow-xs space-y-6 text-left">
-            <div>
-              <div className="flex items-center justify-between gap-2 mb-2">
-                <div className="flex items-center gap-2.5">
-                  <div className="w-8 h-8 rounded-xl bg-slate-900 text-white dark:bg-white dark:text-slate-900 flex items-center justify-center font-bold shadow-2xs">
-                    <ShieldCheck className="w-4.5 h-4.5" />
-                  </div>
-                  <div>
-                    <h3 className="font-sans font-bold text-sm sm:text-base text-slate-900 dark:text-slate-100 tracking-tight">
-                      PayPhone Ecuador · Plataforma de Liquidación
-                    </h3>
-                    <p className="text-[11px] font-sans text-slate-500 dark:text-slate-400">
-                      Gateway Bancario Oficial · República del Ecuador
-                    </p>
-                  </div>
-                </div>
-                <button
-                  type="button"
-                  onClick={fetchPayphoneSettings}
-                  disabled={isLoadingPayphone}
-                  className="p-2 rounded-lg text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800"
-                  title="Sincronizar estado de pasarela"
-                >
-                  <RefreshCw className={`w-3.5 h-3.5 ${isLoadingPayphone ? 'animate-spin' : ''}`} />
-                </button>
-              </div>
-
-              <div className="flex flex-wrap items-center gap-2 mt-3">
-                <span className="px-2.5 py-1 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-[10px] font-mono font-semibold uppercase rounded-md tracking-wider border border-slate-200 dark:border-slate-700 flex items-center gap-1.5">
-                  <Lock className="w-3 h-3 text-slate-500 dark:text-slate-400" />
-                  PCI-DSS NIVEL 1 · COMPLIANT
-                </span>
-                <span className={`px-2.5 py-1 rounded-md text-[10px] font-mono font-semibold uppercase tracking-wider border ${
-                  payphoneMode === 'box' 
-                    ? 'bg-slate-900 text-white dark:bg-white dark:text-slate-900 border-slate-900 dark:border-white' 
-                    : 'bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 border-slate-200 dark:border-slate-700'
-                }`}>
-                  {payphoneMode === 'box' ? 'SDK EMBEBIDO ACTIVO' : 'REDIRECCIÓN BANCARIA ACTIVA'}
-                </span>
-              </div>
-
-              <p className="text-xs text-slate-600 dark:text-slate-400 mt-3 leading-relaxed font-sans">
-                Arquitectura de procesamiento transaccional para cobro de tarjetas de crédito, débito y saldo PayPhone. Selecciona la directiva transaccional activa para el checkout de la tienda.
-              </p>
-            </div>
-
-            {/* Mode Selection Cards */}
-            <div className="space-y-3">
-              
-              {/* Option 1: Checkout Embebido */}
-              <div 
-                onClick={() => {
-                  setPayphoneMode("box");
-                  handleSavePayphoneMode("box");
-                }}
-                className={`p-4 sm:p-5 rounded-2xl border transition-all cursor-pointer relative ${
-                  payphoneMode === "box" 
-                    ? "border-slate-900 dark:border-white bg-slate-50/80 dark:bg-white/[0.04] shadow-xs ring-1 ring-slate-900/10 dark:ring-white/10" 
-                    : "border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 bg-white dark:bg-[#181a1f]"
-                }`}
-              >
-                <div className="flex items-start justify-between gap-3">
-                  <div className="flex items-start gap-3.5 min-w-0">
-                    <div className={`w-9 h-9 rounded-xl flex items-center justify-center font-bold text-sm shrink-0 transition-colors ${
-                      payphoneMode === "box" 
-                        ? "bg-slate-900 text-white dark:bg-white dark:text-slate-900" 
-                        : "bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400"
-                    }`}>
-                      <CreditCard className="w-4.5 h-4.5" />
-                    </div>
-                    <div className="min-w-0">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <h4 className="text-xs sm:text-sm font-bold text-slate-900 dark:text-slate-100 font-sans">
-                          Checkout Embebido (Tokenización en Página)
-                        </h4>
-                        <span className="text-[9px] font-mono font-semibold px-2 py-0.5 rounded bg-slate-200/80 dark:bg-slate-800 text-slate-800 dark:text-slate-200 border border-slate-300 dark:border-slate-700 uppercase">
-                          PCI SAQ A
-                        </span>
-                      </div>
-                      <p className="text-[11.5px] text-slate-600 dark:text-slate-400 mt-1 leading-relaxed font-sans">
-                        Procesa tarjetas y transacciones directamente dentro del flujo del carrito mediante el SDK oficial. El usuario completa el pago sin abandonar el dominio web, maximizando la conversión y reduciendo la fricción.
-                      </p>
-                      <div className="text-[10px] text-slate-400 dark:text-slate-500 mt-2.5 font-mono">
-                        PAYPHONE_PAYMENT_MODE = &quot;box&quot; · SDK v2.0
-                      </div>
-                    </div>
-                  </div>
-                  <div className={`w-4 h-4 rounded-full border flex items-center justify-center shrink-0 mt-1 ${
-                    payphoneMode === "box" 
-                      ? "border-slate-900 dark:border-white bg-slate-900 dark:bg-white" 
-                      : "border-slate-300 dark:border-slate-700"
-                  }`}>
-                    {payphoneMode === "box" && <div className="w-1.5 h-1.5 rounded-full bg-white dark:bg-slate-900" />}
-                  </div>
-                </div>
-              </div>
-
-              {/* Option 2: Pasarela Externa Alojada */}
-              <div 
-                onClick={() => {
-                  setPayphoneMode("redirect");
-                  handleSavePayphoneMode("redirect");
-                }}
-                className={`p-4 sm:p-5 rounded-2xl border transition-all cursor-pointer relative ${
-                  payphoneMode === "redirect" 
-                    ? "border-slate-900 dark:border-white bg-slate-50/80 dark:bg-white/[0.04] shadow-xs ring-1 ring-slate-900/10 dark:ring-white/10" 
-                    : "border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 bg-white dark:bg-[#181a1f]"
-                }`}
-              >
-                <div className="flex items-start justify-between gap-3">
-                  <div className="flex items-start gap-3.5 min-w-0">
-                    <div className={`w-9 h-9 rounded-xl flex items-center justify-center font-bold text-sm shrink-0 transition-colors ${
-                      payphoneMode === "redirect" 
-                        ? "bg-slate-900 text-white dark:bg-white dark:text-slate-900" 
-                        : "bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400"
-                    }`}>
-                      <ExternalLink className="w-4.5 h-4.5" />
-                    </div>
-                    <div className="min-w-0">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <h4 className="text-xs sm:text-sm font-bold text-slate-900 dark:text-slate-100 font-sans">
-                          Pasarela Externa Alojada (Redirección Bancaria)
-                        </h4>
-                        <span className="text-[9px] font-mono font-semibold px-2 py-0.5 rounded bg-slate-200/80 dark:bg-slate-800 text-slate-800 dark:text-slate-200 border border-slate-300 dark:border-slate-700 uppercase">
-                          3D Secure 2.0
-                        </span>
-                      </div>
-                      <p className="text-[11.5px] text-slate-600 dark:text-slate-400 mt-1 leading-relaxed font-sans">
-                        Transfiere temporalmente el procesamiento a la infraestructura bancaria certificada de PayPhone Ecuador. Tras autorizar la transacción en el portal oficial, el cliente es retornado automáticamente a la confirmación de la tienda.
-                      </p>
-                      <div className="text-[10px] text-slate-400 dark:text-slate-500 mt-2.5 font-mono">
-                        PAYPHONE_PAYMENT_MODE = &quot;redirect&quot; · Endpoint v3
-                      </div>
-                    </div>
-                  </div>
-                  <div className={`w-4 h-4 rounded-full border flex items-center justify-center shrink-0 mt-1 ${
-                    payphoneMode === "redirect" 
-                      ? "border-slate-900 dark:border-white bg-slate-900 dark:bg-white" 
-                      : "border-slate-300 dark:border-slate-700"
-                  }`}>
-                    {payphoneMode === "redirect" && <div className="w-1.5 h-1.5 rounded-full bg-white dark:bg-slate-900" />}
-                  </div>
-                </div>
-              </div>
-
-            </div>
-
-            {/* Action Button & Status Message */}
-            <div className="pt-1 space-y-3 font-sans">
-              <button
-                type="button"
-                onClick={() => handleSavePayphoneMode(payphoneMode)}
-                disabled={isSavingPayphone || isLoadingPayphone}
-                className="w-full py-3 bg-slate-900 hover:bg-slate-800 dark:bg-white dark:hover:bg-slate-100 text-white dark:text-slate-900 rounded-xl text-xs font-bold transition-all cursor-pointer disabled:opacity-50 flex items-center justify-center gap-2 shadow-2xs font-sans"
-              >
-                {isSavingPayphone ? (
-                  <>
-                    <RefreshCw className="w-3.5 h-3.5 animate-spin" /> Sincronizando directiva en base de datos...
-                  </>
-                ) : (
-                  <>
-                    <CheckCircle2 className="w-4 h-4 text-emerald-400 dark:text-emerald-600" /> Modalidad en Producción: {payphoneMode === 'box' ? 'Checkout Embebido' : 'Redirección Bancaria'} (Sincronizado)
-                  </>
-                )}
-              </button>
-
-              {payphoneMsg && (
-                <div className={`p-3 rounded-xl text-xs flex items-start gap-2 ${
-                  payphoneMsg.success 
-                    ? 'bg-emerald-50 text-emerald-800 border border-emerald-200 dark:bg-emerald-950/30 dark:text-emerald-300 dark:border-emerald-800/40' 
-                    : 'bg-red-50 text-red-800 border border-red-200 dark:bg-red-950/30 dark:text-red-300 dark:border-red-800/40'
-                }`}>
-                  {payphoneMsg.success ? <Check className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" /> : <AlertTriangle className="w-4 h-4 text-red-600 shrink-0 mt-0.5" />}
-                  <span className="leading-tight font-sans">{payphoneMsg.text}</span>
-                </div>
-              )}
-            </div>
-
-            {/* Credential Status Box */}
-            <div className="p-4 sm:p-5 bg-slate-50 dark:bg-[#181a1f] border border-slate-200/80 dark:border-slate-800/80 rounded-2xl space-y-3 text-xs font-sans">
-              <div className="flex items-center justify-between text-[11px] font-semibold text-slate-500 dark:text-slate-400">
-                <span>Estado del Entorno API:</span>
-                <span className={`px-2.5 py-0.5 rounded font-mono font-semibold text-[10px] tracking-wider uppercase border ${
-                  payphoneIsConfigured 
-                    ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/20' 
-                    : 'bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/20'
-                }`}>
-                  {payphoneIsConfigured ? 'Producción (Live API Bancaria)' : 'Sandbox de Homologación (Modo Pruebas / SRI)'}
-                </span>
-              </div>
-              <div className="flex items-center justify-between text-[11px] text-slate-700 dark:text-slate-300">
-                <span className="text-slate-500 dark:text-slate-400">Terminal de Comercio (Store ID):</span>
-                <span className="font-mono text-slate-900 dark:text-slate-100 font-semibold">{payphoneStoreId || 'Modo Simulación Activo (Sin credenciales en vivo)'}</span>
-              </div>
-              <p className="text-[10.5px] text-slate-500 dark:text-slate-400 leading-relaxed pt-2 border-t border-slate-200 dark:border-slate-800 flex items-start gap-1.5">
-                <Lock className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400 shrink-0 mt-0.5" />
-                <span><strong>Cifrado Criptográfico:</strong> Protocolo SSL/TLS 1.3 con tokenización bancaria directa. Lumina nunca almacena claves secretas ni numeración primaria de tarjetas (PAN) en bases de datos locales.</span>
-              </p>
-            </div>
-
-          </div>
-
-          {/* Module 2: PayPhone Vercel Variable Generator */}
-          <div className="bg-white/95 dark:bg-[#15171b]/95 backdrop-blur-2xl p-6 md:p-8 rounded-[2rem] border border-slate-200/80 dark:border-slate-800/80 shadow-xs space-y-6 text-left font-sans">
-            <div className="pb-4 border-b border-slate-100 dark:border-slate-800">
-              <div className="flex items-center gap-2 mb-1.5">
-                <span className="font-mono text-[9px] font-semibold px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 uppercase tracking-wider">
-                  VERCEL ENVIRONMENT VARIABLES
-                </span>
-                <span className="font-mono text-[9px] font-semibold px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 uppercase tracking-wider">
-                  SERVER-SIDE RUNTIME
-                </span>
-              </div>
-              <h3 className="font-sans font-bold text-sm sm:text-base text-slate-900 dark:text-slate-100 tracking-tight mt-1">
-                Credenciales de Producción y Autenticación de API
-              </h3>
-              <p className="text-xs text-slate-600 dark:text-slate-400 mt-1 leading-relaxed font-sans">
-                Parámetros criptográficos requeridos para la autenticación server-to-server en los endpoints <code className="text-slate-900 dark:text-slate-200 font-mono text-[11px]">/api/payphone/prepare</code> y <code className="text-slate-900 dark:text-slate-200 font-mono text-[11px]">/api/payphone/confirm</code>. Estas llaves operan exclusivamente en el entorno seguro de Node.js en Vercel, impidiendo la exposición de secretos en el navegador.
-              </p>
-            </div>
-
-            {/* Inputs */}
-            <div className="space-y-4">
-              <div>
-                <div className="flex items-center justify-between mb-1">
-                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 font-sans">
-                    Token Privado de API (PAYPHONE_TOKEN)
-                  </label>
-                  <button
-                    type="button"
-                    onClick={() => setShowPayphoneToken(!showPayphoneToken)}
-                    className="text-[11px] text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white font-semibold flex items-center gap-1 cursor-pointer transition-colors"
-                  >
-                    {showPayphoneToken ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
-                    {showPayphoneToken ? "Ocultar" : "Mostrar"}
-                  </button>
-                </div>
-                <input
-                  type={showPayphoneToken ? "text" : "password"}
-                  value={payphoneToken}
-                  onChange={e => setPayphoneToken(e.target.value)}
-                  placeholder="ej: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
-                  className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 text-xs bg-white dark:bg-[#181a1f] text-slate-900 dark:text-slate-100 outline-none focus:ring-2 focus:ring-slate-400 dark:focus:ring-slate-600 font-mono transition-all"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1 font-sans">
-                  Identificador de Sucursal / Terminal (PAYPHONE_STORE_ID)
-                </label>
-                <input
-                  type="text"
-                  value={payphoneStoreIdInput}
-                  onChange={e => setPayphoneStoreIdInput(e.target.value)}
-                  placeholder={payphoneStoreId && !payphoneStoreId.includes("••••") ? payphoneStoreId : "ej: 5c0a1b2c-3d4e-5f6a-7b8c-9d0e1f2a3b4c"}
-                  className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 text-xs bg-white dark:bg-[#181a1f] text-slate-900 dark:text-slate-100 outline-none focus:ring-2 focus:ring-slate-400 dark:focus:ring-slate-600 font-mono transition-all"
-                />
-              </div>
-            </div>
-
-            {/* Generated Snippet Box */}
-            <div className="space-y-2 font-sans">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-slate-900 dark:text-slate-100 font-sans">
-                  Bloque para Vercel Environment Variables:
-                </span>
                 <button
                   type="button"
                   onClick={handleCopyPayphoneSnippet}
-                  className="text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700"
+                  className="py-2.5 px-3 rounded-xl bg-white dark:bg-[#202022] hover:bg-gray-100 border border-gray-200/80 dark:border-white/10 text-xs font-semibold text-gray-800 dark:text-gray-200 flex items-center justify-center gap-1.5 cursor-pointer"
                 >
-                  {copiedPayphone ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
-                  {copiedPayphone ? "Copiado al Portapapeles" : "Copiar Variables"}
+                  {copiedPayphone ? (
+                    <Check className="w-3.5 h-3.5 text-[#8c9276]" />
+                  ) : (
+                    <Copy className="w-3.5 h-3.5 text-[#8c9276]" />
+                  )}
+                  <span>{copiedPayphone ? "PayPhone Copiado" : "Solo PAYPHONE_*"}</span>
                 </button>
               </div>
 
-              <div className="relative">
-                <pre className="p-4 bg-slate-950 text-slate-200 rounded-xl text-[11px] font-mono overflow-x-auto border border-slate-800 leading-relaxed shadow-inner">
-                  {vercelPayphoneEnvSnippet}
-                </pre>
+              {/* Security & Local Compilation Note */}
+              <div className="p-3.5 rounded-2xl bg-white dark:bg-[#202022] border border-gray-100 dark:border-white/5 flex items-start gap-2.5">
+                <Lock className="w-4 h-4 text-[#8c9276] shrink-0 mt-0.5" />
+                <div className="text-xs text-gray-500 dark:text-gray-400 leading-relaxed">
+                  <strong className="font-semibold text-gray-900 dark:text-white">
+                    Seguridad de secretos:
+                  </strong>{" "}
+                  El bloque <code>.env</code> se genera localmente en tu navegador. Pega estas variables en{" "}
+                  <strong>Vercel &gt; Settings &gt; Environment Variables</strong>.
+                </div>
               </div>
-            </div>
-
-            {/* Instructions */}
-            <div className="p-4 sm:p-5 bg-slate-50 dark:bg-slate-900/50 rounded-2xl border border-slate-200/80 dark:border-slate-800 text-xs space-y-2 font-sans">
-              <div className="font-bold text-slate-900 dark:text-slate-200 flex items-center gap-1.5 font-sans">
-                <ExternalLink className="w-3.5 h-3.5" />
-                Procedimiento de Despliegue en Vercel
-              </div>
-              <ol className="list-decimal list-inside space-y-1.5 text-slate-600 dark:text-slate-400 text-[11px] leading-relaxed font-sans">
-                <li>Haga clic en <strong>&quot;Copiar Variables&quot;</strong> para capturar el bloque íntegro en su portapapeles.</li>
-                <li>Acceda a la consola de Vercel e ingrese a <strong>Settings &gt; Environment Variables</strong> de su proyecto.</li>
-                <li>Pegue el contenido en la primera casilla de variable; Vercel parseará automáticamente cada par clave-valor.</li>
-                <li>Presione <strong>Save</strong> y ejecute una nueva implementación de producción para aplicar las credenciales.</li>
-              </ol>
             </div>
           </div>
-
         </div>
-
       </div>
-
     </div>
   );
 }
