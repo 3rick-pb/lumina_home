@@ -12,32 +12,32 @@ import {
   Download,
   Sliders,
   Users,
-  Gift,
   Smartphone,
-  ShieldCheck,
   Search,
   ArrowUpRight,
   Coins,
   Crown,
   Trash2,
   Eye,
-  Cpu,
   Activity,
   Lock,
   Upload,
   RotateCcw,
+  Layers,
 } from "lucide-react";
 import { useUserStore } from "@/lib/userStore";
+import { useBrand } from "@/core/hooks/useBrand";
+import { LuminaBrandEmblem } from "@/components/ui/LuminaBrandEmblem";
 
 const toast = {
   success: (msg: string, _opts?: { description?: string }) => {
     if (typeof window !== "undefined") {
-      console.info("[MicroSaaS-PassStudio]", msg);
+      console.info("[Lumina-PassStudio]", msg);
     }
   },
   error: (msg: string) => {
     if (typeof window !== "undefined") {
-      console.warn("[MicroSaaS-PassStudio]", msg);
+      console.warn("[Lumina-PassStudio]", msg);
     }
   },
 };
@@ -84,55 +84,63 @@ export interface LoyaltyMemberCard {
 }
 
 const DEFAULT_PROGRAM_CONFIG: LoyaltyProgramConfig = {
-  programName: "Lumina Privé Ledger",
-  issuerName: "Lumina Home Studio",
-  tagline: "PassKit & Google Wallet Loyalty Studio",
+  programName: "Lumina Atelier Privé",
+  issuerName: "Lumina Home • Diseño de Autor",
+  tagline: "Espacios con Alma y Diseño de Autor",
   pointsPerDollar: 10,
   welcomeBonusPoints: 200,
   rewardThreshold: 1500,
-  rewardDescription: "$25 USD de crédito directo en checkout + Despacho White-Glove",
-  bgColor: "#111614",
-  accentColor: "#ccff00",
-  textColor: "#ffffff",
-  qrFgColor: "#111614",
-  qrBgColor: "#ffffff",
+  rewardDescription: "$25 USD de crédito en piezas de autor + Entrega White-Glove sin costo",
+  bgColor: "#303825",
+  accentColor: "#d2b48c",
+  textColor: "#f4f5f0",
+  qrFgColor: "#303825",
+  qrBgColor: "#f4f5f0",
   qrCornerStyle: "rounded",
   customLogoDataUrl: "",
   tierSilverMin: 0,
   tierGoldMin: 1200,
   tierBlackMin: 3000,
-  pushMessage: "Tu saldo Lumina Privé se ha actualizado automáticamente tras tu compra.",
+  pushMessage: "Tu certificado de puntos Lumina Atelier Privé ha sido actualizado tras tu adquisición.",
   autoSyncPurchases: true,
   appleTeamId: "LUMINA99EC",
   applePassTypeId: "pass.ec.luminahome.prive",
   googleIssuerId: "3388000000022194812",
-  googleClassId: "lumina_prive_ledger_v2",
+  googleClassId: "lumina_atelier_prive_v2",
 };
 
 const COLOR_PRESETS = [
   {
-    name: "Obsidian Telemetry",
-    bgColor: "#111614",
-    accentColor: "#ccff00",
-    textColor: "#ffffff",
+    name: "Olivo Botánico (Alma Lumina)",
+    bgColor: "#303825",
+    accentColor: "#d2b48c",
+    textColor: "#f4f5f0",
+    qrFgColor: "#303825",
+    qrBgColor: "#f4f5f0",
   },
   {
-    name: "Sovereign Gold",
-    bgColor: "#171411",
-    accentColor: "#e5b869",
-    textColor: "#ffffff",
+    name: "Piedra de Autor (Editorial)",
+    bgColor: "#f4f5f0",
+    accentColor: "#526437",
+    textColor: "#1e1e20",
+    qrFgColor: "#1e1e20",
+    qrBgColor: "#ffffff",
   },
   {
-    name: "Emerald Reserve",
-    bgColor: "#0c211b",
-    accentColor: "#34d399",
-    textColor: "#f8fafc",
+    name: "Obsidiana & Salvia (Atelier)",
+    bgColor: "#1e1e20",
+    accentColor: "#8c9276",
+    textColor: "#f4f5f0",
+    qrFgColor: "#1e1e20",
+    qrBgColor: "#f4f5f0",
   },
   {
-    name: "Architectural Stone",
-    bgColor: "#f5f3ef",
-    accentColor: "#5c6449",
-    textColor: "#18181b",
+    name: "Terracota Artesanal",
+    bgColor: "#431c15",
+    accentColor: "#e89d8c",
+    textColor: "#fbf4f1",
+    qrFgColor: "#431c15",
+    qrBgColor: "#fbf4f1",
   },
 ];
 
@@ -204,9 +212,9 @@ function buildDeterministicQRMatrix(value: string, gridSize = 25): boolean[][] {
 function CrispQRMatrixSVG({
   value,
   size = 176,
-  fgColor = "#111614",
-  bgColor = "#ffffff",
-  accentColor = "#ccff00",
+  fgColor = "#303825",
+  bgColor = "#f4f5f0",
+  accentColor = "#d2b48c",
   cornerStyle = "rounded",
   logoUrl,
   svgRef,
@@ -235,7 +243,7 @@ function CrispQRMatrixSVG({
       width={size}
       height={size}
       viewBox={`0 0 ${size} ${size}`}
-      className="rounded-2xl shadow-sm select-none"
+      className="rounded-2xl shadow-xs select-none"
       xmlns="http://www.w3.org/2000/svg"
     >
       <rect width={size} height={size} rx={16} fill={bgColor} />
@@ -255,7 +263,7 @@ function CrispQRMatrixSVG({
           );
         })
       )}
-      {/* Center Brand Emblem / Custom Uploaded Logo */}
+      {/* Center Lumina Atelier Seal / Custom Uploaded Logo */}
       <rect
         x={pad + 10.1 * cellSize}
         y={pad + 10.1 * cellSize}
@@ -274,17 +282,43 @@ function CrispQRMatrixSVG({
           preserveAspectRatio="xMidYMid slice"
         />
       ) : (
-        <circle cx={size / 2} cy={size / 2} r={cellSize * 1.2} fill={accentColor} />
+        <g>
+          <circle
+            cx={size / 2}
+            cy={size / 2}
+            r={cellSize * 1.6}
+            fill="none"
+            stroke={accentColor}
+            strokeWidth={cellSize * 0.22}
+            opacity={0.85}
+          />
+          <text
+            x={size / 2}
+            y={size / 2 + cellSize * 0.55}
+            textAnchor="middle"
+            fill={accentColor}
+            fontSize={cellSize * 1.65}
+            fontFamily="Georgia, serif"
+            fontWeight="bold"
+          >
+            L
+          </text>
+        </g>
       )}
     </svg>
   );
 }
 
 export function LoyaltyCardsTab() {
+  const brand = useBrand();
   const currentUser = useUserStore((state) => state.user);
   const orders = useUserStore((state) => state.orders);
 
-  const [config, setConfig] = useState<LoyaltyProgramConfig>(DEFAULT_PROGRAM_CONFIG);
+  const [config, setConfig] = useState<LoyaltyProgramConfig>(() => ({
+    ...DEFAULT_PROGRAM_CONFIG,
+    issuerName: `${brand.name} • ${brand.tagline}`,
+    tagline: brand.slogan,
+  }));
   const [members, setMembers] = useState<LoyaltyMemberCard[]>([]);
   const [previewPlatform, setPreviewPlatform] = useState<"apple" | "google">("apple");
   const [activeSubTab, setActiveSubTab] = useState<"designer" | "qr" | "members">("designer");
@@ -307,7 +341,26 @@ export function LoyaltyCardsTab() {
       const savedConfig = localStorage.getItem("lumina_loyalty_program_v1");
       if (savedConfig) {
         const parsed = JSON.parse(savedConfig);
-        setConfig((prev) => ({ ...prev, ...parsed }));
+        // Migrate legacy neon #ccff00 / #111614 to Lumina Home's Botanical Olive & Warm Sand soul
+        const migratedBg =
+          parsed.bgColor === "#111614" ? DEFAULT_PROGRAM_CONFIG.bgColor : parsed.bgColor;
+        const migratedAccent =
+          parsed.accentColor === "#ccff00" ? DEFAULT_PROGRAM_CONFIG.accentColor : parsed.accentColor;
+        const migratedQrFg =
+          parsed.qrFgColor === "#111614" ? DEFAULT_PROGRAM_CONFIG.qrFgColor : parsed.qrFgColor;
+        const migratedProgramName =
+          parsed.programName === "Lumina Privé Ledger"
+            ? DEFAULT_PROGRAM_CONFIG.programName
+            : parsed.programName;
+
+        setConfig((prev) => ({
+          ...prev,
+          ...parsed,
+          bgColor: migratedBg || prev.bgColor,
+          accentColor: migratedAccent || prev.accentColor,
+          qrFgColor: migratedQrFg || prev.qrFgColor,
+          programName: migratedProgramName || prev.programName,
+        }));
       }
     } catch {
       // ignore
@@ -392,7 +445,7 @@ export function LoyaltyCardsTab() {
         setToolState("done");
         setTimeout(() => setToolState("idle"), 2200);
       }, 220);
-      toast.success("Configuración del estudio guardada localmente");
+      toast.success("Configuración del Atelier guardada localmente");
     } catch {
       setToolState("idle");
     }
@@ -410,22 +463,25 @@ export function LoyaltyCardsTab() {
   const resolveTier = (points: number) => {
     if (points >= config.tierBlackMin) {
       return {
-        name: "BLACK RESERVE",
-        badgeBg: "bg-zinc-900 text-[#ccff00] border-[#ccff00]/40",
-        discount: "12% Preferencial + White-Glove",
+        name: "ATELIER RESERVE",
+        badgeBg:
+          "bg-[#303825] text-[#d2b48c] border-[#d2b48c]/40 dark:bg-[#303825] dark:text-[#d2b48c]",
+        discount: "12% Curaduría + White-Glove",
       };
     }
     if (points >= config.tierGoldMin) {
       return {
-        name: "GOLD ATELIER",
-        badgeBg: "bg-amber-500/20 text-amber-300 border-amber-400/40",
-        discount: "5% Preferencial Permanente",
+        name: "DORADO ARENA",
+        badgeBg:
+          "bg-[#d2b48c]/20 text-[#664b24] dark:text-[#d2b48c] border-[#d2b48c]/40",
+        discount: "5% Beneficio de Autor Permanente",
       };
     }
     return {
-      name: "CORE MEMBER",
-      badgeBg: "bg-slate-500/20 text-slate-300 border-slate-400/30",
-      discount: "Devengo Base Activo",
+      name: "MIEMBRO SALVIA",
+      badgeBg:
+        "bg-[#f4f5f0] dark:bg-white/10 text-[#526437] dark:text-[#b6bfa2] border-[#8c9276]/30",
+      discount: "Acumulación Base Activa",
     };
   };
 
@@ -440,7 +496,7 @@ export function LoyaltyCardsTab() {
       bg: config.bgColor,
       accent: config.accentColor,
       code: targetMember?.memberCode || "LUM-NEW-PASS",
-      name: targetMember?.customerName || "Titular Privé",
+      name: targetMember?.customerName || "Titular Lumina",
       pts: String(targetMember?.pointsBalance ?? config.welcomeBonusPoints),
     });
     return `${origin}/loyalty/pass?${params.toString()}`;
@@ -482,7 +538,7 @@ export function LoyaltyCardsTab() {
       canvas.height = 1024;
       const ctx = canvas.getContext("2d");
       if (ctx) {
-        ctx.fillStyle = config.qrBgColor || "#ffffff";
+        ctx.fillStyle = config.qrBgColor || "#f4f5f0";
         ctx.fillRect(0, 0, 1024, 1024);
         ctx.drawImage(img, 0, 0, 1024, 1024);
         canvas.toBlob((pngBlob) => {
@@ -546,7 +602,7 @@ export function LoyaltyCardsTab() {
           {
             key: "member",
             label: "TITULAR ACREDITADO",
-            value: target?.customerName || "Titular Privé",
+            value: target?.customerName || "Titular Lumina",
           },
         ],
         secondaryFields: [
@@ -671,140 +727,149 @@ export function LoyaltyCardsTab() {
   const previewTier = resolveTier(activePreviewMember.pointsBalance);
 
   return (
-    <div className="space-y-6 animate-fade-in" data-state={toolState}>
-      {/* Executive Micro-SaaS Studio Header */}
-      <div className="relative rounded-[2rem] overflow-hidden bg-gradient-to-br from-[#111715] via-[#161e1b] to-[#0c100f] border border-white/10 p-6 sm:p-8 text-white shadow-2xl">
-        <div className="absolute -top-28 -right-24 w-80 h-80 rounded-full bg-[#ccff00]/8 blur-3xl pointer-events-none" />
+    <div className="space-y-6 animate-fade-in font-sans" data-state={toolState}>
+      {/* LUMINA HOME EDITORIAL HERO BANNER (Matches Store Soul: Botanical Olive, Warm Sand & Lora Display Serif) */}
+      <div className="relative rounded-3xl overflow-hidden bg-gradient-to-br from-[#303825] via-[#262d1d] to-[#1c2116] border border-[#8c9276]/25 p-6 sm:p-8 text-[#f4f5f0] shadow-[0_14px_40px_rgba(30,36,23,0.18)]">
+        <div className="absolute -top-28 -right-24 w-80 h-80 rounded-full bg-[#d2b48c]/12 blur-3xl pointer-events-none" />
+        <div className="absolute -bottom-24 -left-24 w-72 h-72 rounded-full bg-[#8c9276]/15 blur-3xl pointer-events-none" />
+
         <div className="relative z-10 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
-          <div className="space-y-2.5 max-w-2xl">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#ccff00]/10 border border-[#ccff00]/25 text-[#ccff00] text-[10.5px] font-mono uppercase tracking-[0.14em]">
-              <Cpu className="w-3.5 h-3.5" />
-              <span>MICRO-SAAS STUDIO // PASSKIT & GOOGLE WALLET ENGINE</span>
+          <div className="flex items-start gap-4 max-w-2xl">
+            <div className="hidden sm:flex shrink-0 p-2 rounded-2xl bg-white/[0.06] border border-[#d2b48c]/25 shadow-inner">
+              <LuminaBrandEmblem size={52} withGlow />
             </div>
-            <h2 className="text-2xl sm:text-3xl font-serif font-medium tracking-tight text-white">
-              Orquestación de Pases Digitales & Fidelización Omnicanal
-            </h2>
-            <p className="text-xs sm:text-sm text-white/70 leading-relaxed">
-              Estudio de aprovisionamiento 100% en navegador para{" "}
-              <strong className="text-white">Apple Wallet (.pkpass)</strong> y{" "}
-              <strong className="text-white">Google Wallet (JWT Loyalty)</strong>. Genera códigos QR vectoriales de alta
-              densidad y liquida automáticamente{" "}
-              <span className="text-[#ccff00] font-semibold">
-                {config.pointsPerDollar} pts por cada $1 USD facturado
-              </span>{" "}
-              en el checkout de la tienda.
-            </p>
+            <div className="space-y-2">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#d2b48c]/15 border border-[#d2b48c]/35 text-[#d2b48c] text-[10px] font-semibold uppercase tracking-[0.18em]">
+                <Layers className="w-3 h-3" />
+                <span>{brand.name} • Estudio de Fidelización & PassKit</span>
+              </div>
+              <h2 className="text-2xl sm:text-3xl font-display font-normal tracking-tight text-[#f4f5f0]">
+                Atelier de Tarjetas de Lealtad & Billetera Digital
+              </h2>
+              <p className="text-xs sm:text-sm text-[#e5e8da]/80 leading-relaxed">
+                Arquitectura de pases nominativos inspirada en{" "}
+                <span className="italic font-display text-[#d2b48c]">“{brand.tagline}”</span>. Diseña,
+                personaliza y exporta credenciales para{" "}
+                <strong className="text-white font-medium">Apple Wallet (.pkpass)</strong> y{" "}
+                <strong className="text-white font-medium">Google Wallet</strong> con códigos QR
+                vectoriales y acreditación automática de{" "}
+                <span className="text-[#d2b48c] font-semibold">
+                  {config.pointsPerDollar} pts por cada $1 USD
+                </span>{" "}
+                en la tienda.
+              </p>
+            </div>
           </div>
 
           <div className="flex flex-wrap items-center gap-3 shrink-0">
             <button
               type="button"
               onClick={() => setIsNewMemberOpen(true)}
-              className="px-4 py-2.5 rounded-xl bg-[#ccff00] hover:bg-[#d8ff33] text-gray-950 font-semibold text-xs flex items-center gap-2 shadow-lg shadow-[#ccff00]/20 transition-all cursor-pointer"
+              className="px-4 py-2.5 rounded-2xl bg-[#d2b48c] hover:bg-[#dfc49f] text-[#22281a] font-semibold text-xs flex items-center gap-2 shadow-md transition-all cursor-pointer"
             >
               <Plus className="w-4 h-4" />
-              <span>Emitir Credencial Nominativa</span>
+              <span>Emitir Tarjeta de Miembro</span>
             </button>
             <button
               type="button"
               onClick={saveConfiguration}
-              className="px-4 py-2.5 rounded-xl bg-white/8 hover:bg-white/14 border border-white/15 text-white font-medium text-xs flex items-center gap-2 transition-all cursor-pointer"
+              className="px-4 py-2.5 rounded-2xl bg-white/10 hover:bg-white/15 border border-[#d2b48c]/30 text-[#f4f5f0] font-medium text-xs flex items-center gap-2 transition-all cursor-pointer"
             >
-              <Check className="w-4 h-4 text-[#ccff00]" />
-              <span>{toolState === "done" ? "✓ Parámetros Desplegados" : "Desplegar Parámetros"}</span>
+              <Check className="w-4 h-4 text-[#d2b48c]" />
+              <span>{toolState === "done" ? "✓ Cambios Guardados" : "Guardar Diseño del Atelier"}</span>
             </button>
           </div>
         </div>
 
-        {/* Micro-SaaS Telemetry Strip */}
+        {/* Editorial KPI Strip */}
         <div className="relative z-10 grid grid-cols-2 sm:grid-cols-4 gap-3.5 mt-6 pt-5 border-t border-white/10">
-          <div className="p-3.5 rounded-2xl bg-white/[0.03] border border-white/10">
-            <span className="text-[10px] font-mono uppercase tracking-widest text-white/45 block">
-              Credenciales Emitidas
+          <div className="p-3.5 rounded-2xl bg-white/[0.05] border border-white/10 backdrop-blur-md">
+            <span className="text-[10px] uppercase tracking-[0.14em] text-[#e5e8da]/65 block">
+              Miembros Acreditados
             </span>
             <div className="flex items-baseline justify-between mt-1.5">
-              <span className="text-xl font-bold font-mono text-white">{members.length}</span>
-              <span className="text-[10px] text-emerald-400 font-mono flex items-center gap-1">
-                <Activity className="w-3 h-3" /> Webhook Activo
+              <span className="text-2xl font-display font-medium text-white">{members.length}</span>
+              <span className="text-[10px] text-[#d2b48c] font-medium flex items-center gap-1">
+                <Activity className="w-3 h-3" /> Sincronizado
               </span>
             </div>
           </div>
-          <div className="p-3.5 rounded-2xl bg-white/[0.03] border border-white/10">
-            <span className="text-[10px] font-mono uppercase tracking-widest text-white/45 block">
-              Pasivo de Puntos Activo
+          <div className="p-3.5 rounded-2xl bg-white/[0.05] border border-white/10 backdrop-blur-md">
+            <span className="text-[10px] uppercase tracking-[0.14em] text-[#e5e8da]/65 block">
+              Reserva de Puntos Activa
             </span>
             <div className="flex items-baseline justify-between mt-1.5">
-              <span className="text-xl font-bold font-mono text-[#ccff00]">
+              <span className="text-2xl font-display font-medium text-[#d2b48c]">
                 {totalPointsIssued.toLocaleString()} pts
               </span>
-              <span className="text-[10px] text-white/55 font-mono">En Billeteras</span>
+              <span className="text-[10px] text-[#e5e8da]/60">En Billeteras</span>
             </div>
           </div>
-          <div className="p-3.5 rounded-2xl bg-white/[0.03] border border-white/10">
-            <span className="text-[10px] font-mono uppercase tracking-widest text-white/45 block">
-              Factor de Conversión
+          <div className="p-3.5 rounded-2xl bg-white/[0.05] border border-white/10 backdrop-blur-md">
+            <span className="text-[10px] uppercase tracking-[0.14em] text-[#e5e8da]/65 block">
+              Tasa de Acreditación
             </span>
             <div className="flex items-baseline justify-between mt-1.5">
-              <span className="text-xl font-bold font-mono text-white">
+              <span className="text-2xl font-display font-medium text-white">
                 {config.pointsPerDollar} pts/$1
               </span>
-              <span className="text-[10px] text-amber-300 font-mono">+{config.welcomeBonusPoints} activación</span>
+              <span className="text-[10px] text-[#d2b48c]">+{config.welcomeBonusPoints} bienvenida</span>
             </div>
           </div>
-          <div className="p-3.5 rounded-2xl bg-white/[0.03] border border-white/10">
-            <span className="text-[10px] font-mono uppercase tracking-widest text-white/45 block">
-              Motor de Renderizado
+          <div className="p-3.5 rounded-2xl bg-white/[0.05] border border-white/10 backdrop-blur-md">
+            <span className="text-[10px] uppercase tracking-[0.14em] text-[#e5e8da]/65 block">
+              Exportación Gráfica
             </span>
-            <div className="flex items-center gap-2 mt-1.5">
-              <span className="px-2 py-0.5 rounded-md bg-white/10 text-[10px] font-mono font-semibold text-white">
-                SVG / PNG 1024px
+            <div className="flex items-center gap-2 mt-2">
+              <span className="px-2.5 py-0.5 rounded-lg bg-[#d2b48c]/20 border border-[#d2b48c]/35 text-[10px] font-semibold text-[#d2b48c]">
+                SVG Vectorial
               </span>
-              <span className="px-2 py-0.5 rounded-md bg-emerald-500/20 text-[10px] font-mono font-semibold text-emerald-300">
-                100% Client-Side
+              <span className="px-2.5 py-0.5 rounded-lg bg-white/10 text-[10px] font-semibold text-[#f4f5f0]">
+                PNG 1024px
               </span>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Sub-navigation Switcher */}
-      <div className="flex flex-wrap items-center justify-between gap-3 bg-white dark:bg-[#141917] p-2 rounded-2xl border border-gray-200/80 dark:border-white/10 shadow-sm">
+      {/* Sub-navigation Switcher — Uses exact Mi Perfil Bento Architecture */}
+      <div className="flex flex-wrap items-center justify-between gap-3 bg-white/80 dark:bg-[#202022]/80 backdrop-blur-2xl p-2 rounded-3xl border border-gray-200/80 dark:border-white/10 shadow-[0_4px_20px_rgba(0,0,0,0.02)]">
         <div className="flex flex-wrap items-center gap-1.5">
           <button
             type="button"
             onClick={() => setActiveSubTab("designer")}
-            className={`px-4 py-2 rounded-xl text-xs font-semibold flex items-center gap-2 transition-all cursor-pointer ${
+            className={`px-4 py-2.5 rounded-2xl text-xs font-semibold flex items-center gap-2 transition-all cursor-pointer ${
               activeSubTab === "designer"
-                ? "bg-gray-900 dark:bg-[#ccff00] text-white dark:text-gray-950 shadow-sm"
-                : "text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/5"
+                ? "bg-[#526437] text-white shadow-sm"
+                : "text-gray-600 dark:text-gray-300 hover:bg-[#f4f5f0] dark:hover:bg-white/5"
             }`}
           >
             <Sliders className="w-3.5 h-3.5" />
-            <span>1. Estudio Visual & Reglas de Puntos</span>
+            <span>1. Curaduría Visual & Reglas de Puntos</span>
           </button>
           <button
             type="button"
             onClick={() => setActiveSubTab("qr")}
-            className={`px-4 py-2 rounded-xl text-xs font-semibold flex items-center gap-2 transition-all cursor-pointer ${
+            className={`px-4 py-2.5 rounded-2xl text-xs font-semibold flex items-center gap-2 transition-all cursor-pointer ${
               activeSubTab === "qr"
-                ? "bg-gray-900 dark:bg-[#ccff00] text-white dark:text-gray-950 shadow-sm"
-                : "text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/5"
+                ? "bg-[#526437] text-white shadow-sm"
+                : "text-gray-600 dark:text-gray-300 hover:bg-[#f4f5f0] dark:hover:bg-white/5"
             }`}
           >
             <QrCode className="w-3.5 h-3.5" />
-            <span>2. Generador QR Vectorial & Exportación (.SVG / .PNG)</span>
+            <span>2. Estudio QR de Alta Precisión (.SVG / .PNG)</span>
           </button>
           <button
             type="button"
             onClick={() => setActiveSubTab("members")}
-            className={`px-4 py-2 rounded-xl text-xs font-semibold flex items-center gap-2 transition-all cursor-pointer ${
+            className={`px-4 py-2.5 rounded-2xl text-xs font-semibold flex items-center gap-2 transition-all cursor-pointer ${
               activeSubTab === "members"
-                ? "bg-gray-900 dark:bg-[#ccff00] text-white dark:text-gray-950 shadow-sm"
-                : "text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/5"
+                ? "bg-[#526437] text-white shadow-sm"
+                : "text-gray-600 dark:text-gray-300 hover:bg-[#f4f5f0] dark:hover:bg-white/5"
             }`}
           >
             <Users className="w-3.5 h-3.5" />
-            <span>3. Libro Mayor de Titulares ({members.length})</span>
+            <span>3. Libro de Miembros ({members.length})</span>
           </button>
         </div>
 
@@ -812,37 +877,37 @@ export function LoyaltyCardsTab() {
           href={enrollmentQrUrl}
           target="_blank"
           rel="noopener noreferrer"
-          className="px-3.5 py-2 rounded-xl bg-gray-100 dark:bg-white/10 hover:bg-gray-200 dark:hover:bg-white/15 text-gray-900 dark:text-white text-xs font-semibold flex items-center gap-1.5 transition-all"
+          className="px-4 py-2.5 rounded-2xl bg-[#f4f5f0] dark:bg-white/10 hover:bg-[#e5e8da] dark:hover:bg-white/15 text-[#303825] dark:text-[#d2b48c] text-xs font-semibold flex items-center gap-1.5 transition-all"
         >
-          <Eye className="w-3.5 h-3.5 text-[#7a8262] dark:text-[#ccff00]" />
-          <span>Abrir Pase Público de Instalación</span>
+          <Eye className="w-3.5 h-3.5 text-[#526437] dark:text-[#d2b48c]" />
+          <span>Ver Pase Público de Instalación</span>
           <ArrowUpRight className="w-3.5 h-3.5" />
         </a>
       </div>
 
-      {/* MAIN TOOL CARD WORKSPACE */}
+      {/* MAIN BENTO WORKSPACE */}
       <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 items-start">
         <div className="xl:col-span-7 space-y-6">
           {activeSubTab === "designer" && (
-            <div className="bg-white dark:bg-[#141917] rounded-[2rem] border border-gray-200/80 dark:border-white/10 p-6 shadow-sm space-y-6">
+            <div className="bg-white/80 dark:bg-[#202022]/80 backdrop-blur-2xl rounded-3xl border border-gray-200/80 dark:border-white/10 p-6 sm:p-7 shadow-[0_4px_20px_rgba(0,0,0,0.02)] space-y-6">
               <div className="flex items-center justify-between border-b border-gray-100 dark:border-white/10 pb-4">
                 <div>
-                  <h3 className="text-base font-bold text-gray-900 dark:text-white flex items-center gap-2">
-                    <Sparkles className="w-4 h-4 text-[#8c9276] dark:text-[#ccff00]" />
-                    <span>Especificación Visual & Motor de Liquidación Transaccional</span>
+                  <h3 className="text-lg font-display font-medium text-gray-900 dark:text-white flex items-center gap-2">
+                    <Sparkles className="w-4 h-4 text-[#526437] dark:text-[#d2b48c]" />
+                    <span>Identidad Editorial & Reglas de Fidelización</span>
                   </h3>
                   <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-                    Configura la paleta cromática del pase, el estilo geométrico del QR y las reglas de devengo por compra.
+                    Personaliza la atmósfera cromática de la tarjeta, la geometría del sello QR y los beneficios para clientes de {brand.name}.
                   </p>
                 </div>
               </div>
 
-              {/* Color Palette Presets + Custom Pickers */}
+              {/* Lumina Home Signature Color Palette Presets */}
               <div className="space-y-3">
-                <label className="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 block">
-                  Esquema Cromático de la Credencial
+                <label className="text-[11px] font-bold uppercase tracking-[0.12em] text-gray-500 dark:text-gray-400 block">
+                  Paletas Arquitectónicas de {brand.name}
                 </label>
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   {COLOR_PRESETS.map((preset) => {
                     const isSelected =
                       config.bgColor.toLowerCase() === preset.bgColor.toLowerCase() &&
@@ -857,68 +922,75 @@ export function LoyaltyCardsTab() {
                             bgColor: preset.bgColor,
                             accentColor: preset.accentColor,
                             textColor: preset.textColor,
+                            qrFgColor: preset.qrFgColor,
+                            qrBgColor: preset.qrBgColor,
                           }))
                         }
-                        className={`p-3 rounded-2xl border text-left transition-all cursor-pointer flex items-center gap-2.5 ${
+                        className={`p-3.5 rounded-2xl border text-left transition-all cursor-pointer flex items-center gap-3 ${
                           isSelected
-                            ? "border-gray-900 dark:border-[#ccff00] ring-2 ring-[#ccff00]/30 bg-gray-50 dark:bg-white/5"
-                            : "border-gray-200 dark:border-white/10 hover:border-gray-300 dark:hover:border-white/20"
+                            ? "border-[#526437] dark:border-[#d2b48c] ring-2 ring-[#526437]/20 dark:ring-[#d2b48c]/25 bg-[#f4f5f0]/70 dark:bg-white/5"
+                            : "border-gray-200/80 dark:border-white/10 hover:border-[#8c9276] dark:hover:border-white/20"
                         }`}
                       >
                         <span
-                          className="w-6 h-6 rounded-full border border-black/20 shrink-0 flex items-center justify-center"
+                          className="w-8 h-8 rounded-xl border border-black/15 shrink-0 flex items-center justify-center shadow-xs"
                           style={{ backgroundColor: preset.bgColor }}
                         >
                           <span
-                            className="w-2.5 h-2.5 rounded-full"
+                            className="w-3 h-3 rounded-full"
                             style={{ backgroundColor: preset.accentColor }}
                           />
                         </span>
-                        <span className="text-xs font-semibold text-gray-800 dark:text-gray-200 truncate">
-                          {preset.name}
-                        </span>
+                        <div className="min-w-0">
+                          <span className="text-xs font-semibold text-gray-900 dark:text-gray-100 block truncate">
+                            {preset.name}
+                          </span>
+                          <span className="text-[10px] font-mono text-gray-500 dark:text-gray-400">
+                            {preset.bgColor} • {preset.accentColor}
+                          </span>
+                        </div>
                       </button>
                     );
                   })}
                 </div>
 
                 {/* Custom Color Inputs + QR Module Geometry */}
-                <div className="grid grid-cols-3 gap-3 pt-2">
-                  <label className="flex items-center gap-2 p-2.5 rounded-xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-black/30 cursor-pointer">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2">
+                  <label className="flex items-center gap-2.5 p-2.5 rounded-2xl border border-gray-200/80 dark:border-white/10 bg-[#f4f5f0]/60 dark:bg-black/25 cursor-pointer">
                     <input
                       type="color"
                       value={config.bgColor}
                       onChange={(e) => setConfig({ ...config, bgColor: e.target.value })}
-                      className="w-6 h-6 rounded border-0 bg-transparent cursor-pointer"
+                      className="w-6 h-6 rounded-lg border-0 bg-transparent cursor-pointer"
                     />
-                    <span className="text-[11px] font-semibold text-gray-700 dark:text-gray-300">
-                      Fondo ({config.bgColor})
+                    <span className="text-[11px] font-medium text-gray-700 dark:text-gray-300">
+                      Superficie ({config.bgColor})
                     </span>
                   </label>
-                  <label className="flex items-center gap-2 p-2.5 rounded-xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-black/30 cursor-pointer">
+                  <label className="flex items-center gap-2.5 p-2.5 rounded-2xl border border-gray-200/80 dark:border-white/10 bg-[#f4f5f0]/60 dark:bg-black/25 cursor-pointer">
                     <input
                       type="color"
                       value={config.accentColor}
                       onChange={(e) => setConfig({ ...config, accentColor: e.target.value })}
-                      className="w-6 h-6 rounded border-0 bg-transparent cursor-pointer"
+                      className="w-6 h-6 rounded-lg border-0 bg-transparent cursor-pointer"
                     />
-                    <span className="text-[11px] font-semibold text-gray-700 dark:text-gray-300">
+                    <span className="text-[11px] font-medium text-gray-700 dark:text-gray-300">
                       Acento ({config.accentColor})
                     </span>
                   </label>
-                  <div className="flex items-center gap-1 p-1.5 rounded-xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-black/30">
+                  <div className="flex items-center gap-1 p-1.5 rounded-2xl border border-gray-200/80 dark:border-white/10 bg-[#f4f5f0]/60 dark:bg-black/25">
                     {(["rounded", "dots", "sharp"] as const).map((style) => (
                       <button
                         key={style}
                         type="button"
                         onClick={() => setConfig({ ...config, qrCornerStyle: style })}
-                        className={`flex-1 py-1 rounded-lg text-[10px] font-mono font-bold uppercase transition-all cursor-pointer ${
+                        className={`flex-1 py-1.5 rounded-xl text-[10px] font-semibold uppercase transition-all cursor-pointer ${
                           config.qrCornerStyle === style
-                            ? "bg-gray-900 dark:bg-[#ccff00] text-white dark:text-gray-950"
-                            : "text-gray-500 dark:text-gray-400"
+                            ? "bg-[#526437] text-white shadow-xs"
+                            : "text-gray-600 dark:text-gray-400"
                         }`}
                       >
-                        {style === "rounded" ? "Suave" : style === "dots" ? "Puntos" : "Recto"}
+                        {style === "rounded" ? "Orgánico" : style === "dots" ? "Puntos" : "Editorial"}
                       </button>
                     ))}
                   </div>
@@ -929,38 +1001,38 @@ export function LoyaltyCardsTab() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5">
-                    Identificador del Programa (Display Header)
+                    Título de la Credencial (Cabecera Editorial)
                   </label>
                   <input
                     type="text"
                     value={config.programName}
                     onChange={(e) => setConfig({ ...config, programName: e.target.value })}
-                    className="w-full h-11 px-3.5 rounded-xl border border-gray-200 dark:border-white/15 bg-gray-50 dark:bg-black/30 text-sm text-gray-900 dark:text-white focus:outline-none focus:border-[#ccff00]"
+                    className="w-full h-11 px-3.5 rounded-2xl border border-gray-200/90 dark:border-white/15 bg-[#f4f5f0]/50 dark:bg-black/30 text-sm font-display text-gray-900 dark:text-white focus:outline-none focus:border-[#526437]"
                   />
                 </div>
                 <div>
                   <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5">
-                    Entidad Emisora Certificada (Issuer Name)
+                    Firma de la Casa Emisora
                   </label>
                   <input
                     type="text"
                     value={config.issuerName}
                     onChange={(e) => setConfig({ ...config, issuerName: e.target.value })}
-                    className="w-full h-11 px-3.5 rounded-xl border border-gray-200 dark:border-white/15 bg-gray-50 dark:bg-black/30 text-sm text-gray-900 dark:text-white focus:outline-none focus:border-[#ccff00]"
+                    className="w-full h-11 px-3.5 rounded-2xl border border-gray-200/90 dark:border-white/15 bg-[#f4f5f0]/50 dark:bg-black/30 text-sm text-gray-900 dark:text-white focus:outline-none focus:border-[#526437]"
                   />
                 </div>
               </div>
 
               {/* Points Rules */}
-              <div className="p-4 rounded-2xl bg-gray-50 dark:bg-white/[0.03] border border-gray-200/70 dark:border-white/10 space-y-4">
-                <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-gray-800 dark:text-[#ccff00]">
+              <div className="p-5 rounded-3xl bg-[#f4f5f0]/75 dark:bg-white/[0.03] border border-[#8c9276]/25 dark:border-white/10 space-y-4">
+                <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-[0.12em] text-[#526437] dark:text-[#d2b48c]">
                   <Coins className="w-4 h-4" />
-                  <span>Parámetros de Acumulación & Umbrales de Redención</span>
+                  <span>Conversión de Puntos & Beneficio de Curaduría</span>
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                   <div>
                     <label className="block text-[11px] font-semibold text-gray-600 dark:text-gray-300 mb-1">
-                      Ratio de Devengo (Pts / $1 USD)
+                      Puntos por cada $1 USD
                     </label>
                     <input
                       type="number"
@@ -970,12 +1042,12 @@ export function LoyaltyCardsTab() {
                       onChange={(e) =>
                         setConfig({ ...config, pointsPerDollar: Math.max(1, Number(e.target.value) || 1) })
                       }
-                      className="w-full h-10 px-3 rounded-xl border border-gray-200 dark:border-white/15 bg-white dark:bg-black/40 font-mono font-bold text-sm text-gray-900 dark:text-white"
+                      className="w-full h-10 px-3.5 rounded-xl border border-gray-200 dark:border-white/15 bg-white dark:bg-black/40 font-display font-semibold text-sm text-gray-900 dark:text-white"
                     />
                   </div>
                   <div>
                     <label className="block text-[11px] font-semibold text-gray-600 dark:text-gray-300 mb-1">
-                      Incentivo de Activación (Onboarding)
+                      Cortesía de Bienvenida (Pts)
                     </label>
                     <input
                       type="number"
@@ -988,12 +1060,12 @@ export function LoyaltyCardsTab() {
                           welcomeBonusPoints: Math.max(0, Number(e.target.value) || 0),
                         })
                       }
-                      className="w-full h-10 px-3 rounded-xl border border-gray-200 dark:border-white/15 bg-white dark:bg-black/40 font-mono font-bold text-sm text-gray-900 dark:text-white"
+                      className="w-full h-10 px-3.5 rounded-xl border border-gray-200 dark:border-white/15 bg-white dark:bg-black/40 font-display font-semibold text-sm text-gray-900 dark:text-white"
                     />
                   </div>
                   <div>
                     <label className="block text-[11px] font-semibold text-gray-600 dark:text-gray-300 mb-1">
-                      Umbral de Liquidación (Pts)
+                      Meta para Recompensa (Pts)
                     </label>
                     <input
                       type="number"
@@ -1005,14 +1077,14 @@ export function LoyaltyCardsTab() {
                           rewardThreshold: Math.max(100, Number(e.target.value) || 1000),
                         })
                       }
-                      className="w-full h-10 px-3 rounded-xl border border-gray-200 dark:border-white/15 bg-white dark:bg-black/40 font-mono font-bold text-sm text-gray-900 dark:text-white"
+                      className="w-full h-10 px-3.5 rounded-xl border border-gray-200 dark:border-white/15 bg-white dark:bg-black/40 font-display font-semibold text-sm text-gray-900 dark:text-white"
                     />
                   </div>
                 </div>
 
                 <div>
                   <label className="block text-[11px] font-semibold text-gray-600 dark:text-gray-300 mb-1">
-                    Beneficio Patrimonial Desbloqueado al Liquidar Umbral
+                    Privilegio de Autor al Alcanzar la Meta
                   </label>
                   <input
                     type="text"
@@ -1026,15 +1098,15 @@ export function LoyaltyCardsTab() {
           )}
 
           {activeSubTab === "qr" && (
-            <div className="bg-white dark:bg-[#141917] rounded-[2rem] border border-gray-200/80 dark:border-white/10 p-6 shadow-sm space-y-6">
+            <div className="bg-white/80 dark:bg-[#202022]/80 backdrop-blur-2xl rounded-3xl border border-gray-200/80 dark:border-white/10 p-6 sm:p-7 shadow-[0_4px_20px_rgba(0,0,0,0.02)] space-y-6">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-gray-100 dark:border-white/10 pb-4">
                 <div>
-                  <h3 className="text-base font-bold text-gray-900 dark:text-white flex items-center gap-2">
-                    <QrCode className="w-4 h-4 text-[#8c9276] dark:text-[#ccff00]" />
-                    <span>Estudio Generador QR Vectorial (Apple PassKit & Google Wallet)</span>
+                  <h3 className="text-lg font-display font-medium text-gray-900 dark:text-white flex items-center gap-2">
+                    <QrCode className="w-4 h-4 text-[#526437] dark:text-[#d2b48c]" />
+                    <span>Estudio QR Vectorial de {brand.name}</span>
                   </h3>
                   <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-                    Renderizado 100% en navegador con exportación vectorial (.SVG) y mapa de bits de alta densidad (.PNG 1024×1024px).
+                    Generación instantánea en navegador con descarga en formato vectorial (.SVG) y alta resolución (.PNG 1024×1024px).
                   </p>
                 </div>
 
@@ -1044,7 +1116,7 @@ export function LoyaltyCardsTab() {
                     const found = members.find((m) => m.id === e.target.value) || null;
                     setSelectedMemberForQR(found);
                   }}
-                  className="h-10 px-3 rounded-xl border border-gray-200 dark:border-white/15 bg-gray-50 dark:bg-black/40 text-xs font-semibold text-gray-900 dark:text-white"
+                  className="h-10 px-3.5 rounded-2xl border border-gray-200 dark:border-white/15 bg-[#f4f5f0]/70 dark:bg-black/40 text-xs font-semibold text-gray-900 dark:text-white"
                 >
                   {members.map((m) => (
                     <option key={m.id} value={m.id}>
@@ -1056,20 +1128,20 @@ export function LoyaltyCardsTab() {
 
               <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-center">
                 {/* High-Contrast Client-Side Vector QR Studio Card */}
-                <div className="md:col-span-5 flex flex-col items-center justify-center p-5 rounded-3xl bg-gradient-to-b from-gray-50 to-gray-100 dark:from-[#1b221f] dark:to-[#111614] border border-gray-200 dark:border-white/10">
-                  <div className="p-3 bg-white rounded-2xl shadow-lg border border-gray-200">
+                <div className="md:col-span-5 flex flex-col items-center justify-center p-5 rounded-3xl bg-[#f4f5f0] dark:bg-[#18181a] border border-[#8c9276]/25 dark:border-white/10">
+                  <div className="p-3 bg-white rounded-2xl shadow-md border border-[#8c9276]/20">
                     <CrispQRMatrixSVG
                       svgRef={qrSvgRef}
                       value={enrollmentQrUrl}
                       size={184}
-                      fgColor={config.qrFgColor || "#111614"}
-                      bgColor={config.qrBgColor || "#ffffff"}
+                      fgColor={config.qrFgColor || "#303825"}
+                      bgColor={config.qrBgColor || "#f4f5f0"}
                       accentColor={config.accentColor}
                       cornerStyle={config.qrCornerStyle}
                       logoUrl={config.customLogoDataUrl}
                     />
                   </div>
-                  <span className="mt-3 text-[11px] font-mono font-bold text-gray-800 dark:text-[#ccff00]">
+                  <span className="mt-3 text-[11px] font-mono font-bold text-[#303825] dark:text-[#d2b48c]">
                     {selectedMemberForQR?.memberCode || "LUM-PRV-PASS"}
                   </span>
                   <div className="flex items-center gap-2 mt-2">
@@ -1083,17 +1155,17 @@ export function LoyaltyCardsTab() {
                     <button
                       type="button"
                       onClick={() => logoInputRef.current?.click()}
-                      className="px-2.5 py-1 rounded-lg bg-gray-200/80 dark:bg-white/10 hover:bg-gray-300 dark:hover:bg-white/15 text-[10px] font-semibold text-gray-800 dark:text-white flex items-center gap-1 cursor-pointer"
+                      className="px-3 py-1.5 rounded-xl bg-white dark:bg-white/10 hover:bg-[#e5e8da] dark:hover:bg-white/15 border border-gray-200 dark:border-white/10 text-[10px] font-semibold text-[#303825] dark:text-white flex items-center gap-1.5 cursor-pointer shadow-2xs"
                     >
-                      <Upload className="w-3 h-3" />
-                      <span>Logo Central</span>
+                      <Upload className="w-3 h-3 text-[#526437] dark:text-[#d2b48c]" />
+                      <span>Personalizar Sello Central</span>
                     </button>
                     {config.customLogoDataUrl && (
                       <button
                         type="button"
                         onClick={() => setConfig((prev) => ({ ...prev, customLogoDataUrl: "" }))}
-                        className="p-1 rounded-lg bg-rose-500/15 text-rose-400 hover:bg-rose-500/25 cursor-pointer"
-                        title="Restaurar emblema Lumina"
+                        className="p-1.5 rounded-xl bg-[#c24b33]/15 text-[#c24b33] hover:bg-[#c24b33]/25 cursor-pointer"
+                        title="Restaurar monograma Lumina"
                       >
                         <RotateCcw className="w-3 h-3" />
                       </button>
@@ -1101,18 +1173,19 @@ export function LoyaltyCardsTab() {
                   </div>
                 </div>
 
-                {/* Primary Download & Provisioning Controls (Tool Card Result Zone) */}
+                {/* Primary Download & Provisioning Controls */}
                 <div className="md:col-span-7 space-y-3.5">
-                  {/* Direct Export Buttons (Naming format & resolution per crear-web-micro-saas spec) */}
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                     <button
                       type="button"
                       onClick={handleDownloadQRHighResPNG}
-                      className="h-12 px-4 rounded-xl bg-[#ccff00] hover:bg-[#d8ff33] text-gray-950 flex items-center justify-center gap-2.5 text-xs font-bold shadow-md transition-all cursor-pointer"
+                      className="h-12 px-4 rounded-2xl bg-[#526437] hover:bg-[#42502e] text-white flex items-center justify-center gap-2.5 text-xs font-semibold shadow-sm transition-all cursor-pointer"
                     >
-                      <Download className="w-4 h-4 shrink-0" />
+                      <Download className="w-4 h-4 text-[#d2b48c] shrink-0" />
                       <div className="text-left leading-tight">
-                        <span className="block text-[9px] uppercase opacity-75">Mapa de Bits HD</span>
+                        <span className="block text-[9px] uppercase tracking-wider text-[#e5e8da]/80">
+                          Alta Resolución
+                        </span>
                         <span>Descargar PNG — 1024px</span>
                       </div>
                     </button>
@@ -1120,11 +1193,13 @@ export function LoyaltyCardsTab() {
                     <button
                       type="button"
                       onClick={handleDownloadQRVectorSVG}
-                      className="h-12 px-4 rounded-xl bg-gray-900 dark:bg-white/10 hover:bg-gray-800 dark:hover:bg-white/15 text-white border border-white/10 flex items-center justify-center gap-2.5 text-xs font-bold shadow-md transition-all cursor-pointer"
+                      className="h-12 px-4 rounded-2xl bg-[#303825] hover:bg-[#22281a] text-[#f4f5f0] border border-[#8c9276]/30 flex items-center justify-center gap-2.5 text-xs font-semibold shadow-sm transition-all cursor-pointer"
                     >
-                      <Download className="w-4 h-4 text-[#ccff00] shrink-0" />
+                      <Download className="w-4 h-4 text-[#d2b48c] shrink-0" />
                       <div className="text-left leading-tight">
-                        <span className="block text-[9px] text-white/65 uppercase">Vector Escalable</span>
+                        <span className="block text-[9px] text-[#d2b48c] uppercase tracking-wider">
+                          Vector Editorial
+                        </span>
                         <span>Descargar SVG — ~4 KB</span>
                       </div>
                     </button>
@@ -1134,9 +1209,9 @@ export function LoyaltyCardsTab() {
                     <button
                       type="button"
                       onClick={() => handleDownloadApplePassManifest(selectedMemberForQR)}
-                      className="h-11 px-4 rounded-xl bg-black hover:bg-zinc-900 text-white border border-white/15 flex items-center justify-center gap-2 text-xs font-semibold transition-all cursor-pointer"
+                      className="h-11 px-4 rounded-2xl bg-[#1e1e20] hover:bg-black text-white border border-white/10 flex items-center justify-center gap-2 text-xs font-semibold transition-all cursor-pointer"
                     >
-                      <Wallet className="w-4 h-4 text-white" />
+                      <Wallet className="w-4 h-4 text-[#d2b48c]" />
                       <span>Exportar Apple Pass (.pkpass)</span>
                     </button>
 
@@ -1144,29 +1219,29 @@ export function LoyaltyCardsTab() {
                       href={enrollmentQrUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="h-11 px-4 rounded-xl bg-[#1a73e8] hover:bg-[#1557b0] text-white flex items-center justify-center gap-2 text-xs font-semibold transition-all"
+                      className="h-11 px-4 rounded-2xl bg-[#f4f5f0] hover:bg-[#e5e8da] text-[#303825] border border-[#8c9276]/30 flex items-center justify-center gap-2 text-xs font-semibold transition-all"
                     >
-                      <Smartphone className="w-4 h-4 text-white" />
-                      <span>Aprovisionar Google Wallet</span>
+                      <Smartphone className="w-4 h-4 text-[#526437]" />
+                      <span>Sincronizar Google Wallet</span>
                     </a>
                   </div>
 
                   {/* Copyable URI */}
-                  <div className="p-3.5 rounded-2xl bg-gray-50 dark:bg-white/[0.04] border border-gray-200/60 dark:border-white/10 space-y-1.5">
-                    <span className="text-[10px] font-mono uppercase tracking-wider text-gray-400 block">
-                      Payload de Aprovisionamiento Directo (URI)
+                  <div className="p-3.5 rounded-2xl bg-[#f4f5f0]/75 dark:bg-white/[0.04] border border-gray-200/70 dark:border-white/10 space-y-1.5">
+                    <span className="text-[10px] uppercase tracking-[0.12em] text-gray-500 dark:text-gray-400 block font-semibold">
+                      Enlace Directo de Instalación para el Cliente
                     </span>
                     <div className="flex items-center gap-2">
                       <input
                         type="text"
                         readOnly
                         value={enrollmentQrUrl}
-                        className="w-full h-8 px-2.5 rounded-lg bg-white dark:bg-black/40 border border-gray-200 dark:border-white/10 text-[11px] font-mono text-gray-700 dark:text-gray-300"
+                        className="w-full h-9 px-3 rounded-xl bg-white dark:bg-black/40 border border-gray-200 dark:border-white/10 text-[11px] font-mono text-gray-700 dark:text-gray-300"
                       />
                       <button
                         type="button"
                         onClick={handleCopyEnrollmentLink}
-                        className="h-8 px-3 rounded-lg bg-gray-900 dark:bg-[#ccff00] text-white dark:text-gray-950 text-xs font-semibold flex items-center gap-1 shrink-0 cursor-pointer"
+                        className="h-9 px-3.5 rounded-xl bg-[#526437] hover:bg-[#42502e] text-white text-xs font-semibold flex items-center gap-1.5 shrink-0 cursor-pointer transition-colors"
                       >
                         {copiedLink ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
                         <span>{copiedLink ? "✓ Copiado" : "Copiar"}</span>
@@ -1174,12 +1249,13 @@ export function LoyaltyCardsTab() {
                     </div>
                   </div>
 
-                  {/* Privacy & Local Processing Microcopy (from crear-web-micro-saas 03-tool-page-design.md) */}
-                  <div className="px-3 py-2 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-[11px] text-emerald-700 dark:text-emerald-300 flex items-center gap-2">
-                    <Lock className="w-3.5 h-3.5 shrink-0" />
+                  {/* Privacy & Local Processing Microcopy */}
+                  <div className="px-3.5 py-2.5 rounded-2xl bg-[#f4f5f0] dark:bg-[#303825]/40 border border-[#8c9276]/30 text-[11px] text-[#303825] dark:text-[#e5e8da] flex items-center gap-2.5">
+                    <Lock className="w-3.5 h-3.5 text-[#526437] dark:text-[#d2b48c] shrink-0" />
                     <span>
-                      <strong>100 % procesado en tu dispositivo:</strong> la matriz QR, el logotipo y el paquete{" "}
-                      <code>.pkpass</code> se compilan localmente en el navegador sin subir archivos a terceros.
+                      <strong>Privacidad artesanal 100 % en tu navegador:</strong> el sello QR, el
+                      monograma y el archivo <code>.pkpass</code> se generan localmente sin enviar datos a
+                      servidores externos.
                     </span>
                   </div>
                 </div>
@@ -1188,15 +1264,15 @@ export function LoyaltyCardsTab() {
           )}
 
           {activeSubTab === "members" && (
-            <div className="bg-white dark:bg-[#141917] rounded-[2rem] border border-gray-200/80 dark:border-white/10 p-6 shadow-sm space-y-4">
+            <div className="bg-white/80 dark:bg-[#202022]/80 backdrop-blur-2xl rounded-3xl border border-gray-200/80 dark:border-white/10 p-6 sm:p-7 shadow-[0_4px_20px_rgba(0,0,0,0.02)] space-y-4">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div>
-                  <h3 className="text-base font-bold text-gray-900 dark:text-white flex items-center gap-2">
-                    <Crown className="w-4 h-4 text-amber-400" />
-                    <span>Libro Mayor de Titulares & Auditoría de Saldos</span>
+                  <h3 className="text-lg font-display font-medium text-gray-900 dark:text-white flex items-center gap-2">
+                    <Crown className="w-4 h-4 text-[#d2b48c]" />
+                    <span>Libro de Miembros de {brand.name}</span>
                   </h3>
                   <p className="text-xs text-gray-500 dark:text-gray-400">
-                    Control contable de puntos devengados, escalafón patrimonial y credenciales vinculadas por cliente.
+                    Gestión de saldos de puntos, niveles de curaduría y tarjetas vinculadas en Apple y Google Wallet.
                   </p>
                 </div>
 
@@ -1204,10 +1280,10 @@ export function LoyaltyCardsTab() {
                   <Search className="w-3.5 h-3.5 text-gray-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
                   <input
                     type="text"
-                    placeholder="Filtrar por titular o serial LUM..."
+                    placeholder="Buscar miembro o código LUM..."
                     value={searchMember}
                     onChange={(e) => setSearchMember(e.target.value)}
-                    className="w-full h-9 pl-9 pr-3 rounded-xl border border-gray-200 dark:border-white/15 bg-gray-50 dark:bg-black/30 text-xs text-gray-900 dark:text-white"
+                    className="w-full h-9 pl-9 pr-3 rounded-2xl border border-gray-200 dark:border-white/15 bg-[#f4f5f0]/60 dark:bg-black/30 text-xs text-gray-900 dark:text-white focus:outline-none focus:border-[#526437]"
                   />
                 </div>
               </div>
@@ -1221,45 +1297,47 @@ export function LoyaltyCardsTab() {
                       key={member.id}
                       className={`p-4 rounded-2xl border transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-4 ${
                         isCurrentQR
-                          ? "border-gray-900 dark:border-[#ccff00]/60 bg-gray-50/80 dark:bg-white/[0.05]"
-                          : "border-gray-200/70 dark:border-white/10 hover:border-gray-300 dark:hover:border-white/20"
+                          ? "border-[#526437] dark:border-[#d2b48c]/60 bg-[#f4f5f0]/65 dark:bg-white/[0.05]"
+                          : "border-gray-200/70 dark:border-white/10 hover:border-[#8c9276] dark:hover:border-white/20"
                       }`}
                     >
                       <div className="space-y-1">
                         <div className="flex flex-wrap items-center gap-2">
-                          <span className="font-bold text-sm text-gray-900 dark:text-white">
+                          <span className="font-display font-medium text-sm text-gray-900 dark:text-white">
                             {member.customerName}
                           </span>
-                          <span className="text-[10px] font-mono px-2 py-0.5 rounded-md bg-gray-900 text-[#ccff00] font-bold">
+                          <span className="text-[10px] font-mono px-2 py-0.5 rounded-lg bg-[#303825] text-[#d2b48c] font-semibold">
                             {member.memberCode}
                           </span>
-                          <span className={`text-[10px] font-mono px-2 py-0.5 rounded-md border font-bold ${tier.badgeBg}`}>
+                          <span
+                            className={`text-[10px] px-2.5 py-0.5 rounded-lg border font-semibold ${tier.badgeBg}`}
+                          >
                             {tier.name}
                           </span>
                         </div>
                         <p className="text-xs text-gray-500 dark:text-gray-400">
-                          {member.customerEmail} • {member.purchasesCount} órdenes liquidadas (${member.totalSpent} USD)
+                          {member.customerEmail} • {member.purchasesCount} adquisiciones (${member.totalSpent} USD)
                         </p>
                       </div>
 
                       <div className="flex flex-wrap items-center gap-2">
                         <div className="text-right mr-2">
-                          <span className="text-sm font-mono font-extrabold text-gray-900 dark:text-[#ccff00] block">
+                          <span className="text-sm font-display font-semibold text-[#303825] dark:text-[#d2b48c] block">
                             {member.pointsBalance.toLocaleString()} pts
                           </span>
                           <span className="text-[10px] text-gray-400 block">
                             {member.walletPlatform === "apple"
-                              ? "Apple PassKit"
+                              ? "Apple Wallet"
                               : member.walletPlatform === "google"
-                              ? "Google Pay"
-                              : "Dual PassKit / GPay"}
+                              ? "Google Wallet"
+                              : "Apple & Google Wallet"}
                           </span>
                         </div>
 
                         <button
                           type="button"
                           onClick={() => handleAdjustPoints(member.id, 100)}
-                          className="px-2.5 py-1.5 rounded-lg bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-600 dark:text-emerald-300 text-xs font-mono font-bold cursor-pointer"
+                          className="px-2.5 py-1.5 rounded-xl bg-[#526437]/15 hover:bg-[#526437]/25 text-[#526437] dark:text-[#b6bfa2] text-xs font-semibold cursor-pointer"
                           title="Acreditar +100 pts"
                         >
                           +100
@@ -1267,8 +1345,8 @@ export function LoyaltyCardsTab() {
                         <button
                           type="button"
                           onClick={() => handleAdjustPoints(member.id, -200)}
-                          className="px-2.5 py-1.5 rounded-lg bg-amber-500/15 hover:bg-amber-500/25 text-amber-600 dark:text-amber-300 text-xs font-mono font-bold cursor-pointer"
-                          title="Liquidar 200 pts"
+                          className="px-2.5 py-1.5 rounded-xl bg-[#d2b48c]/20 hover:bg-[#d2b48c]/30 text-[#664b24] dark:text-[#d2b48c] text-xs font-semibold cursor-pointer"
+                          title="Canjear 200 pts"
                         >
                           -200
                         </button>
@@ -1278,16 +1356,16 @@ export function LoyaltyCardsTab() {
                             setSelectedMemberForQR(member);
                             setActiveSubTab("qr");
                           }}
-                          className="px-3 py-1.5 rounded-lg bg-gray-900 dark:bg-white/10 hover:bg-gray-800 text-white text-xs font-semibold flex items-center gap-1 cursor-pointer"
+                          className="px-3 py-1.5 rounded-xl bg-[#303825] hover:bg-[#22281a] text-[#f4f5f0] text-xs font-semibold flex items-center gap-1.5 cursor-pointer"
                         >
-                          <QrCode className="w-3.5 h-3.5 text-[#ccff00]" />
-                          <span>Exportar QR</span>
+                          <QrCode className="w-3.5 h-3.5 text-[#d2b48c]" />
+                          <span>Sello QR</span>
                         </button>
                         <button
                           type="button"
                           onClick={() => handleDeleteMemberCard(member.id)}
-                          className="p-1.5 rounded-lg text-gray-400 hover:text-rose-500 hover:bg-rose-500/10 transition-colors cursor-pointer"
-                          title="Revocar credencial"
+                          className="p-1.5 rounded-xl text-gray-400 hover:text-[#c24b33] hover:bg-[#c24b33]/10 transition-colors cursor-pointer"
+                          title="Revocar tarjeta"
                         >
                           <Trash2 className="w-4 h-4" />
                         </button>
@@ -1300,31 +1378,36 @@ export function LoyaltyCardsTab() {
           )}
         </div>
 
-        {/* RIGHT COLUMN: NATIVE DEVICE SIMULATOR (1:1 PASSKIT / GOOGLE PAY RENDER) */}
+        {/* RIGHT COLUMN: NATIVE WALLET CARD PREVIEW (WITH LUMINA BRAND EMBLEM & LORA TYPOGRAPHY) */}
         <div className="xl:col-span-5 space-y-4">
-          <div className="bg-white dark:bg-[#141917] rounded-[2rem] border border-gray-200/80 dark:border-white/10 p-5 shadow-sm space-y-4">
+          <div className="bg-white/80 dark:bg-[#202022]/80 backdrop-blur-2xl rounded-3xl border border-gray-200/80 dark:border-white/10 p-5 sm:p-6 shadow-[0_4px_20px_rgba(0,0,0,0.02)] space-y-4">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">
-                Simulador de Dispositivo Nativo (1:1)
-              </span>
-              <div className="inline-flex rounded-xl p-1 bg-gray-100 dark:bg-black/40 border border-gray-200 dark:border-white/10">
+              <div>
+                <span className="text-xs font-display font-medium text-gray-900 dark:text-white block">
+                  Vista Previa de Billetera Digital
+                </span>
+                <span className="text-[11px] text-gray-500 dark:text-gray-400">
+                  Renderizado en tiempo real para el cliente
+                </span>
+              </div>
+              <div className="inline-flex rounded-2xl p-1 bg-[#f4f5f0] dark:bg-black/40 border border-gray-200/80 dark:border-white/10">
                 <button
                   type="button"
                   onClick={() => setPreviewPlatform("apple")}
-                  className={`px-3 py-1 rounded-lg text-[11px] font-bold transition-all cursor-pointer ${
+                  className={`px-3 py-1.5 rounded-xl text-[11px] font-semibold transition-all cursor-pointer ${
                     previewPlatform === "apple"
-                      ? "bg-black text-white shadow-xs"
+                      ? "bg-[#303825] text-[#f4f5f0] shadow-xs"
                       : "text-gray-600 dark:text-gray-400"
                   }`}
                 >
-                  Apple PassKit
+                  Apple Wallet
                 </button>
                 <button
                   type="button"
                   onClick={() => setPreviewPlatform("google")}
-                  className={`px-3 py-1 rounded-lg text-[11px] font-bold transition-all cursor-pointer ${
+                  className={`px-3 py-1.5 rounded-xl text-[11px] font-semibold transition-all cursor-pointer ${
                     previewPlatform === "google"
-                      ? "bg-[#1a73e8] text-white shadow-xs"
+                      ? "bg-[#526437] text-white shadow-xs"
                       : "text-gray-600 dark:text-gray-400"
                   }`}
                 >
@@ -1333,45 +1416,43 @@ export function LoyaltyCardsTab() {
               </div>
             </div>
 
-            {/* Wallet Pass Card Mockup */}
+            {/* Wallet Pass Card Mockup — Authentic Lumina Home Quiet Luxury Aesthetics */}
             <div
-              className="relative rounded-[1.85rem] overflow-hidden shadow-2xl border border-white/15 transition-all duration-300 mx-auto max-w-[360px]"
+              className="relative rounded-[2rem] overflow-hidden shadow-[0_20px_50px_rgba(30,36,23,0.28)] border border-white/15 transition-all duration-300 mx-auto max-w-[360px]"
               style={{
                 backgroundColor: config.bgColor,
                 color: config.textColor,
               }}
             >
               <div className="p-5 pb-4 flex items-center justify-between border-b border-white/10">
-                <div className="flex items-center gap-2.5">
-                  <div
-                    className="w-9 h-9 rounded-xl flex items-center justify-center font-serif font-bold text-base shadow-md overflow-hidden"
-                    style={{
-                      backgroundColor: config.accentColor,
-                      color: "#111614",
-                    }}
-                  >
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-2xl flex items-center justify-center overflow-hidden bg-black/20 border border-white/15 shrink-0">
                     {config.customLogoDataUrl ? (
-                      <img src={config.customLogoDataUrl} alt="Logo" className="w-full h-full object-cover" />
+                      <img
+                        src={config.customLogoDataUrl}
+                        alt={brand.name}
+                        className="w-full h-full object-cover"
+                      />
                     ) : (
-                      "L"
+                      <LuminaBrandEmblem size={36} withGlow={false} />
                     )}
                   </div>
                   <div>
-                    <span className="text-xs font-bold tracking-wide block leading-tight">
+                    <span className="text-sm font-display font-medium tracking-wide block leading-tight">
                       {config.programName}
                     </span>
-                    <span className="text-[10px] opacity-70 block">{config.issuerName}</span>
+                    <span className="text-[10px] opacity-75 block">{config.issuerName}</span>
                   </div>
                 </div>
 
                 <div className="text-right">
                   <span
-                    className="text-[9px] font-mono uppercase tracking-widest block font-bold"
+                    className="text-[9px] uppercase tracking-[0.16em] block font-bold"
                     style={{ color: config.accentColor }}
                   >
-                    BALANCE DISPONIBLE
+                    PUNTOS LUMINA
                   </span>
-                  <span className="text-xl font-mono font-extrabold tracking-tight">
+                  <span className="text-2xl font-display font-semibold tracking-tight">
                     {activePreviewMember.pointsBalance.toLocaleString()}
                   </span>
                 </div>
@@ -1380,19 +1461,19 @@ export function LoyaltyCardsTab() {
               <div className="px-5 py-4 bg-gradient-to-r from-white/[0.06] to-transparent space-y-3">
                 <div className="flex items-center justify-between">
                   <div>
-                    <span className="text-[9px] uppercase tracking-widest opacity-60 block">
-                      TITULAR ACREDITADO
+                    <span className="text-[9px] uppercase tracking-[0.15em] opacity-65 block">
+                      MIEMBRO ACREDITADO
                     </span>
-                    <span className="text-sm font-bold tracking-wide">
+                    <span className="text-sm font-display font-medium tracking-wide">
                       {activePreviewMember.customerName}
                     </span>
                   </div>
                   <div className="text-right">
-                    <span className="text-[9px] uppercase tracking-widest opacity-60 block">
+                    <span className="text-[9px] uppercase tracking-[0.15em] opacity-65 block">
                       CATEGORÍA
                     </span>
                     <span
-                      className="text-xs font-mono font-bold"
+                      className="text-xs font-semibold tracking-wider"
                       style={{ color: config.accentColor }}
                     >
                       {previewTier.name}
@@ -1400,13 +1481,17 @@ export function LoyaltyCardsTab() {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-2 pt-2 border-t border-white/10 text-[10px]">
+                <div className="grid grid-cols-2 gap-2 pt-2.5 border-t border-white/10 text-[10px]">
                   <div>
-                    <span className="opacity-60 block">TASA DE DEVENGO</span>
+                    <span className="opacity-65 block uppercase tracking-wider text-[9px]">
+                      ACUMULACIÓN
+                    </span>
                     <span className="font-semibold">{config.pointsPerDollar} pts / $1 USD</span>
                   </div>
                   <div className="text-right">
-                    <span className="opacity-60 block">PRIVILEGIO ACTIVO</span>
+                    <span className="opacity-65 block uppercase tracking-wider text-[9px]">
+                      BENEFICIO DE AUTOR
+                    </span>
                     <span className="font-semibold">{previewTier.discount}</span>
                   </div>
                 </div>
@@ -1417,20 +1502,20 @@ export function LoyaltyCardsTab() {
                   <CrispQRMatrixSVG
                     value={enrollmentQrUrl}
                     size={148}
-                    fgColor={config.qrFgColor || "#111614"}
-                    bgColor={config.qrBgColor || "#ffffff"}
+                    fgColor={config.qrFgColor || "#303825"}
+                    bgColor={config.qrBgColor || "#f4f5f0"}
                     accentColor={config.accentColor}
                     cornerStyle={config.qrCornerStyle}
                     logoUrl={config.customLogoDataUrl}
                   />
                 </div>
-                <span className="mt-2 text-[10px] font-mono tracking-widest opacity-80">
+                <span className="mt-2.5 text-[10px] font-mono tracking-[0.2em] opacity-85">
                   {activePreviewMember.memberCode}
                 </span>
-                <span className="text-[9px] opacity-55 mt-0.5">
+                <span className="text-[9px] opacity-60 mt-0.5 italic font-display">
                   {previewPlatform === "apple"
-                    ? "Apple PassKit • Payload PKBarcodeFormatQR"
-                    : "Google Wallet • Smart Tap & QR Object"}
+                    ? `${brand.name} • Apple Wallet PassKit`
+                    : `${brand.name} • Google Wallet Pass`}
                 </span>
               </div>
             </div>
@@ -1438,14 +1523,14 @@ export function LoyaltyCardsTab() {
         </div>
       </div>
 
-      {/* Modal to Issue New Credential */}
+      {/* Modal to Issue New Credential — Matches Lumina Home Bento Modal Aesthetics */}
       {isNewMemberOpen && (
-        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-md flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-[#141917] border border-gray-200 dark:border-white/15 rounded-3xl max-w-md w-full p-6 shadow-2xl space-y-4 animate-fade-in">
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-md flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-[#202022] border border-gray-200 dark:border-white/15 rounded-3xl max-w-md w-full p-6 shadow-2xl space-y-4 animate-fade-in">
             <div className="flex items-center justify-between border-b border-gray-100 dark:border-white/10 pb-3">
-              <h4 className="text-base font-bold text-gray-900 dark:text-white flex items-center gap-2">
-                <Award className="w-4 h-4 text-[#ccff00]" />
-                <span>Emitir Credencial Nominativa</span>
+              <h4 className="text-base font-display font-medium text-gray-900 dark:text-white flex items-center gap-2">
+                <Award className="w-4 h-4 text-[#526437] dark:text-[#d2b48c]" />
+                <span>Emitir Nueva Tarjeta de Miembro</span>
               </h4>
               <button
                 type="button"
@@ -1459,7 +1544,7 @@ export function LoyaltyCardsTab() {
             <form onSubmit={handleCreateMemberCard} className="space-y-3.5">
               <div>
                 <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
-                  Identidad del Titular
+                  Nombre del Cliente
                 </label>
                 <input
                   type="text"
@@ -1467,50 +1552,50 @@ export function LoyaltyCardsTab() {
                   placeholder="Ej. Martín Chiriboga"
                   value={newCustomerName}
                   onChange={(e) => setNewCustomerName(e.target.value)}
-                  className="w-full h-10 px-3.5 rounded-xl border border-gray-200 dark:border-white/15 bg-gray-50 dark:bg-black/40 text-xs text-gray-900 dark:text-white"
+                  className="w-full h-10 px-3.5 rounded-xl border border-gray-200 dark:border-white/15 bg-[#f4f5f0]/60 dark:bg-black/40 text-xs text-gray-900 dark:text-white"
                 />
               </div>
 
               <div>
                 <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
-                  Correo Electrónico de Vinculación
+                  Correo Electrónico
                 </label>
                 <input
                   type="email"
                   required
-                  placeholder="titular@dominio.com"
+                  placeholder="cliente@dominio.com"
                   value={newCustomerEmail}
                   onChange={(e) => setNewCustomerEmail(e.target.value)}
-                  className="w-full h-10 px-3.5 rounded-xl border border-gray-200 dark:border-white/15 bg-gray-50 dark:bg-black/40 text-xs text-gray-900 dark:text-white"
+                  className="w-full h-10 px-3.5 rounded-xl border border-gray-200 dark:border-white/15 bg-[#f4f5f0]/60 dark:bg-black/40 text-xs text-gray-900 dark:text-white"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
-                    Balance de Apertura (Pts)
+                    Puntos de Apertura
                   </label>
                   <input
                     type="number"
                     min={0}
                     value={newInitialPoints}
                     onChange={(e) => setNewInitialPoints(Number(e.target.value) || 0)}
-                    className="w-full h-10 px-3 rounded-xl border border-gray-200 dark:border-white/15 bg-gray-50 dark:bg-black/40 text-xs font-mono font-bold text-gray-900 dark:text-white"
+                    className="w-full h-10 px-3 rounded-xl border border-gray-200 dark:border-white/15 bg-[#f4f5f0]/60 dark:bg-black/40 text-xs font-display font-semibold text-gray-900 dark:text-white"
                   />
                 </div>
 
                 <div>
                   <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
-                    Protocolo Destino
+                    Billetera Destino
                   </label>
                   <select
                     value={newPlatform}
                     onChange={(e) => setNewPlatform(e.target.value as "apple" | "google" | "both")}
-                    className="w-full h-10 px-3 rounded-xl border border-gray-200 dark:border-white/15 bg-gray-50 dark:bg-black/40 text-xs text-gray-900 dark:text-white"
+                    className="w-full h-10 px-3 rounded-xl border border-gray-200 dark:border-white/15 bg-[#f4f5f0]/60 dark:bg-black/40 text-xs text-gray-900 dark:text-white"
                   >
-                    <option value="both">Dual (Apple PassKit & Google Pay)</option>
-                    <option value="apple">Apple Wallet (iOS PassKit)</option>
-                    <option value="google">Google Wallet (Android JWT)</option>
+                    <option value="both">Apple & Google Wallet</option>
+                    <option value="apple">Apple Wallet (iOS)</option>
+                    <option value="google">Google Wallet (Android)</option>
                   </select>
                 </div>
               </div>
@@ -1525,9 +1610,9 @@ export function LoyaltyCardsTab() {
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 rounded-xl bg-[#ccff00] text-gray-950 text-xs font-bold cursor-pointer"
+                  className="px-4 py-2 rounded-xl bg-[#526437] hover:bg-[#42502e] text-white text-xs font-semibold cursor-pointer"
                 >
-                  Firmar Credencial & Generar Token QR
+                  Emitir Tarjeta & Sello QR
                 </button>
               </div>
             </form>
