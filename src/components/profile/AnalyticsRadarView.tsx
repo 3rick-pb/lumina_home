@@ -302,6 +302,7 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
     yPct: number;
     zoomLevel: number;
     cityName?: string;
+    exactLngLat?: [number, number];
     seq: number;
   } | null>(null);
   const [resetCommandSeq, setResetCommandSeq] = useState<number>(0);
@@ -399,10 +400,80 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
 
   const isAdmin = (currentUser?.role === 'ADMIN') || (props.user?.role === 'ADMIN');
 
-  // Authoritative location of the active viewer directly from the user store
-  const currentUserCity = useMemo(() => {
-    return userAddress?.city || props.addresses?.[0]?.city || userAddresses?.[0]?.city || "";
+  // Authoritative location and exact street/sector of the active viewer directly from the user store
+  const primaryAddressObj = useMemo(() => {
+    return userAddress || props.addresses?.[0] || userAddresses?.[0] || null;
   }, [userAddress, props.addresses, userAddresses]);
+
+  const currentUserCity = useMemo(() => {
+    return primaryAddressObj?.city || "";
+  }, [primaryAddressObj]);
+
+  const currentUserExactAddress = useMemo(() => {
+    if (!primaryAddressObj) return "";
+    return [primaryAddressObj.street, primaryAddressObj.reference, primaryAddressObj.city]
+      .filter(Boolean)
+      .join(", ");
+  }, [primaryAddressObj]);
+
+  const [selfExactLngLat, setSelfExactLngLat] = useState<[number, number] | undefined>(undefined);
+
+  useEffect(() => {
+    let active = true;
+    const resolveSelfCoords = async () => {
+      if (currentUserExactAddress && (primaryAddressObj?.street || primaryAddressObj?.reference)) {
+        const cacheKey = `lumina_geo_v2_${currentUserExactAddress.toLowerCase().trim()}`;
+        try {
+          const cached = localStorage.getItem(cacheKey);
+          if (cached) {
+            const parsed = JSON.parse(cached);
+            if (typeof parsed.lng === "number" && typeof parsed.lat === "number") {
+              if (active) setSelfExactLngLat([parsed.lng, parsed.lat]);
+              return;
+            }
+          }
+          const q = encodeURIComponent(`${currentUserExactAddress}, Ecuador`);
+          const res = await fetch(
+            `https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${q}`,
+            { headers: { "Accept-Language": "es" } }
+          );
+          if (res.ok) {
+            const data = await res.json();
+            if (Array.isArray(data) && data.length > 0) {
+              const lat = parseFloat(data[0].lat);
+              const lng = parseFloat(data[0].lon);
+              if (Number.isFinite(lat) && Number.isFinite(lng)) {
+                localStorage.setItem(cacheKey, JSON.stringify({ lat, lng }));
+                if (active) setSelfExactLngLat([lng, lat]);
+                return;
+              }
+            }
+          }
+        } catch {
+          // Fallback to calibrated sector dictionary or browser GPS
+        }
+      }
+      if (typeof navigator !== "undefined" && "geolocation" in navigator) {
+        navigator.geolocation.getCurrentPosition(
+          (pos) => {
+            if (
+              active &&
+              Number.isFinite(pos.coords.latitude) &&
+              Number.isFinite(pos.coords.longitude)
+            ) {
+              setSelfExactLngLat([pos.coords.longitude, pos.coords.latitude]);
+            }
+          },
+          () => {},
+          { enableHighAccuracy: true, timeout: 6000, maximumAge: 300000 }
+        );
+      }
+    };
+    resolveSelfCoords();
+    return () => {
+      active = false;
+    };
+  }, [currentUserExactAddress, primaryAddressObj]);
 
   // Determine if a client is the current logged in viewer ("Tú")
   const isUserSelf = useCallback((c?: { id?: string; email?: string } | null) => {
@@ -868,17 +939,27 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
     setResetCommandSeq((s) => s + 1);
   };
 
-  // Smooth camera fly-to function for cities and coordinates on Mapbox Canvas
-  const focusOnLocation = useCallback((xPct: number, yPct: number, zoomLevel: number = 1.6, cityName?: string) => {
-    setZoom(zoomLevel);
-    setFocusTarget((prev) => ({
-      xPct,
-      yPct,
-      zoomLevel,
-      cityName,
-      seq: (prev?.seq || 0) + 1,
-    }));
-  }, []);
+  // Smooth camera fly-to function for cities, neighborhoods, and exact street coordinates on Mapbox Canvas
+  const focusOnLocation = useCallback(
+    (
+      xPct: number,
+      yPct: number,
+      zoomLevel: number = 1.6,
+      cityName?: string,
+      exactLngLat?: [number, number]
+    ) => {
+      setZoom(zoomLevel);
+      setFocusTarget((prev) => ({
+        xPct,
+        yPct,
+        zoomLevel,
+        cityName,
+        exactLngLat,
+        seq: (prev?.seq || 0) + 1,
+      }));
+    },
+    []
+  );
 
   const activeHUDClient = hoveredClient || selectedClient;
 
@@ -905,7 +986,8 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
       baseX: number,
       baseY: number,
       dispX?: number,
-      dispY?: number
+      dispY?: number,
+      exactLngLat?: [number, number]
     ) => { x: number; y: number; visible: boolean; isMoving: boolean }
   ) => {
     if (isPreparingRadar) return null;
@@ -1039,19 +1121,47 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
           })}
         </AnimatePresence>
 
-        {/* 2. DISPERSED INDIVIDUAL BEACONS (Radial bloom from city center + Sept 19 1 PM hover/scale/stem animations) */}
+        {/* 2. DISPERSED INDIVIDUAL BEACONS (Exact street/sector coordinates + radial bloom from city center) */}
         <AnimatePresence initial={false}>
           {dispersedPins.map((beacon) => {
-            const pos = projectPin(beacon.cityName, beacon.baseX, beacon.baseY, beacon.dispX, beacon.dispY);
-            const basePos = projectPin(beacon.cityName, beacon.baseX, beacon.baseY);
+            const client = beacon.client;
+            const isSelf = beacon.isSelf;
+            const pinAddressQuery =
+              client.exactAddress ||
+              (isSelf && currentUserExactAddress ? currentUserExactAddress : undefined) ||
+              beacon.cityName;
+            const pinExactLngLat: [number, number] | undefined =
+              isSelf && selfExactLngLat
+                ? selfExactLngLat
+                : typeof client.lng === "number" &&
+                  typeof client.lat === "number" &&
+                  Number.isFinite(client.lng) &&
+                  Number.isFinite(client.lat)
+                ? [client.lng, client.lat]
+                : undefined;
+
+            const pos = projectPin(
+              pinAddressQuery,
+              beacon.baseX,
+              beacon.baseY,
+              beacon.dispX,
+              beacon.dispY,
+              pinExactLngLat
+            );
+            const basePos = projectPin(
+              pinAddressQuery,
+              beacon.baseX,
+              beacon.baseY,
+              undefined,
+              undefined,
+              pinExactLngLat
+            );
 
             if (!pos.visible) return null;
 
-            const client = beacon.client;
             const isHovered = hoveredClient?.id === client.id;
             const isSelected = selectedClient?.id === client.id;
             const isActive = isHovered || isSelected;
-            const isSelf = beacon.isSelf;
 
             const isStageMatch =
               activeStage === "all" ? true :
@@ -1061,9 +1171,18 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
             const isDimmed = !isSelf && !isActive && !isStageMatch;
 
             const clientFirstName = cleanClientName(client.name).split(' ')[0] || '';
+            const exactLabelPart =
+              isSelf && primaryAddressObj?.reference
+                ? `${primaryAddressObj.reference}, ${beacon.cityName}`
+                : isSelf && primaryAddressObj?.street
+                ? `${primaryAddressObj.street}, ${beacon.cityName}`
+                : client.exactAddress && client.exactAddress.includes(",")
+                ? client.exactAddress
+                : beacon.cityName;
+
             const beaconLabel = beacon.clusterTotal > 1 && clientFirstName
-              ? `${clientFirstName} • ${beacon.cityName}`
-              : beacon.cityName;
+              ? `${clientFirstName} • ${exactLabelPart}`
+              : exactLabelPart;
 
             const openDownward = pos.y < 220;
 
@@ -1093,7 +1212,13 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
                       const next = prev === client.id ? null : client.id;
                       if (next) {
                         setIsMobilePanelOpen(true);
-                        focusOnLocation(beacon.dispX, beacon.dispY, Math.max(zoom, 1.75), beacon.cityName);
+                        focusOnLocation(
+                          beacon.dispX,
+                          beacon.dispY,
+                          Math.max(zoom, 2.35),
+                          pinAddressQuery,
+                          pinExactLngLat
+                        );
                       }
                       return next;
                     });

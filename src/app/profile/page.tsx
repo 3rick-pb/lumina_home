@@ -29,6 +29,8 @@ import {
   Server
 } from "lucide-react";
 import { IntegrationsTab } from "@/components/profile/tabs/IntegrationsTab";
+import { LoyaltyCardsTab } from "@/components/profile/tabs/LoyaltyCardsTab";
+import { QrCode } from "lucide-react";
 import { useUserStore, Order, formatCleanName } from "@/lib/userStore";
 import { useThemeStore, getResolvedTheme } from "@/lib/themeStore";
 import { useCatalogStore, normalizeCategory, CatalogProduct, ProductCombo, EmbeddedCarouselConfig } from "@/lib/catalogStore";
@@ -93,7 +95,7 @@ export default function ProfilePage() {
 
   const pendingOrdersCount = orders.filter((o) => o.status !== "Entregado").length;
 
-  type ProfileTab = "overview" | "orders" | "cards" | "favorites" | "catalog" | "niches" | "analytics" | "cart_alerts" | "integrations" | "settings";
+  type ProfileTab = "overview" | "orders" | "cards" | "favorites" | "catalog" | "niches" | "analytics" | "cart_alerts" | "integrations" | "loyalty" | "settings";
   const [activeTab, setActiveTab] = useState<ProfileTab>("overview");
   const [searchQuery, setSearchQuery] = useState("");
   const [isMounted, setIsMounted] = useState(false);
@@ -109,7 +111,7 @@ export default function ProfilePage() {
 
     try {
       const urlTab = new URLSearchParams(window.location.search).get('tab');
-      const validTabs: ProfileTab[] = ["overview", "orders", "cards", "favorites", "catalog", "niches", "analytics", "cart_alerts", "integrations", "settings"];
+      const validTabs: ProfileTab[] = ["overview", "orders", "cards", "favorites", "catalog", "niches", "analytics", "cart_alerts", "integrations", "loyalty", "settings"];
       if (urlTab && validTabs.includes(urlTab as ProfileTab)) {
         setActiveTab(urlTab as ProfileTab);
       }
@@ -864,6 +866,21 @@ const handleConfirmDeleteNiche = async () => {
         )}
         <Server className="w-5 h-5 transition-all duration-300 group-hover:scale-115 group-hover:rotate-3 group-hover:-translate-y-0.5" />
       </button>
+
+      <button 
+        onClick={() => setActiveTab("loyalty")} 
+        className={`sidebar-dock-btn relative w-11 h-11 md:w-12 md:h-12 rounded-2xl flex items-center justify-center transition-all duration-[600ms] cursor-pointer group ${
+          activeTab === "loyalty" 
+            ? "bg-gray-950 dark:bg-white text-white dark:text-gray-950 shadow-lg shadow-gray-950/20 dark:shadow-white/15 scale-105" 
+            : "text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100/80 dark:hover:bg-white/5 hover:scale-105 active:scale-95"
+        }`}
+        title="Tarjetas de Lealtad (Apple Wallet & Google Wallet)"
+      >
+        {activeTab === "loyalty" && (
+          <span className="absolute -left-2 w-1 h-5 bg-[#8c9276] dark:bg-[#ccff00] rounded-r-full transition-all duration-[600ms]" />
+        )}
+        <QrCode className="w-5 h-5 transition-all duration-300 group-hover:scale-115 group-hover:rotate-6 group-hover:-translate-y-0.5" />
+      </button>
    </>
  )}
 
@@ -984,6 +1001,12 @@ const handleConfirmDeleteNiche = async () => {
   className={`px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all cursor-pointer ${activeTab === "integrations" ? "bg-white dark:bg-[#202022] text-gray-900 dark:text-gray-100 shadow-sm dark:shadow-none" : "text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100"}`}
   >
   SMTP & Pasarelas
+  </button>
+  <button 
+  onClick={() => setActiveTab("loyalty")} 
+  className={`px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all cursor-pointer ${activeTab === "loyalty" ? "bg-white dark:bg-[#202022] text-gray-900 dark:text-gray-100 shadow-sm dark:shadow-none" : "text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100"}`}
+  >
+  Tarjetas de Lealtad
   </button>
   </>
   )}
@@ -1215,6 +1238,13 @@ const handleConfirmDeleteNiche = async () => {
         {/* ========================================================================= */}
         {activeTab === "integrations" && isAdmin && (
           <IntegrationsTab />
+        )}
+
+        {/* ========================================================================= */}
+        {/* VIEW 8C: ADMIN LOYALTY CARDS TAB (APPLE WALLET & GOOGLE WALLET QR) */}
+        {/* ========================================================================= */}
+        {activeTab === "loyalty" && isAdmin && (
+          <LoyaltyCardsTab />
         )}
 
         {/* ========================================================================= */}
@@ -2814,6 +2844,13 @@ const handleConfirmDeleteNiche = async () => {
                   icon: <Server className="w-4 h-4" />,
                   active: activeTab === "integrations",
                   onClick: () => setActiveTab("integrations"),
+                },
+                {
+                  id: "loyalty",
+                  label: "Lealtad QR",
+                  icon: <QrCode className="w-4 h-4" />,
+                  active: activeTab === "loyalty",
+                  onClick: () => setActiveTab("loyalty"),
                 },
               ]
             : []),

@@ -86,17 +86,10 @@ export function executeCircleBlurThemeTransition(
     flushSync(() => {
       setMode(nextMode, userId);
     });
-    const isProfileSection =
-      typeof window !== "undefined" &&
-      (window.location.pathname.startsWith("/profile") ||
-        window.location.pathname.startsWith("/admin"));
-    if (nextResolved === "dark" && isProfileSection) {
-      html.classList.add("dark");
-      html.style.colorScheme = "dark";
-    } else {
-      html.classList.remove("dark");
-      html.style.colorScheme = "light";
-    }
+    // Never apply .dark to <html> so storefront routes (/shop, /, Header, Footer) never flash dark.
+    // Dark Mode is strictly scoped via wrapper <div className="dark"> inside Mi Perfil and CartDrawer.
+    html.classList.remove("dark");
+    html.style.colorScheme = "light";
   };
 
   type DocumentWithVT = Document & {

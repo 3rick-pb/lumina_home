@@ -55,24 +55,140 @@ function ActivityTracker() {
   const products = useCatalogStore((state) => state.products);
   const themeMode = useThemeStore((state) => state.mode);
 
-  // Strictly scope document-level Dark Mode ONLY to Mi Perfil (/profile)
-  // while CartDrawer scopes Dark Mode internally via its own .dark wrapper.
-  // All storefront & auth routes remain strictly in Light Mode.
+  // Never apply .dark to <html> so storefront routes (/shop, /, Header, Footer) never flash black.
+  // Dark Mode is strictly scoped inside Mi Perfil (/profile) and CartDrawer via their own .dark root containers.
   useEffect(() => {
     if (typeof document === "undefined") return;
     const html = document.documentElement;
-    const isProfileSection = Boolean(
-      pathname?.startsWith("/profile") || pathname?.startsWith("/admin")
-    );
-    const isDark = getResolvedTheme(themeMode) === "dark";
-    if (isProfileSection && isDark) {
-      html.classList.add("dark");
-      html.style.colorScheme = "dark";
-    } else {
-      html.classList.remove("dark");
-      html.style.colorScheme = "light";
-    }
+    html.classList.remove("dark");
+    html.style.colorScheme = "light";
   }, [pathname, themeMode]);
+
+  const exactGeoRef = useRef<{ lat?: number; lng?: number; exactAddress?: string; city?: string }>({});
+
+  // Resolve real street-level or GPS coordinates inside Quito / Ecuador (cached in localStorage)
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    let cancelled = false;
+
+    const resolvePreciseLocation = async () => {
+      const currentAddress = useUserStore.getState().address || useUserStore.getState().addresses?.[0];
+      const streetPart = currentAddress?.street?.trim() || "";
+      const refPart = currentAddress?.reference?.trim() || "";
+      const cityPart = currentAddress?.city?.trim() || "";
+      const statePart = currentAddress?.state?.trim() || "";
+      const fullAddressQuery = [streetPart, refPart, cityPart, statePart, "Ecuador"]
+        .filter(Boolean)
+        .join(", ");
+
+      // 1. If user has a street/sector address, geocode it via OpenStreetMap Nominatim (cached)
+      if (streetPart || refPart || cityPart) {
+        const cacheKey = `lumina_geo_v2_${fullAddressQuery.toLowerCase()}`;
+        try {
+          const cached = localStorage.getItem(cacheKey);
+          if (cached) {
+            const parsed = JSON.parse(cached);
+            if (typeof parsed.lat === "number" && typeof parsed.lng === "number") {
+              exactGeoRef.current = {
+                lat: parsed.lat,
+                lng: parsed.lng,
+                exactAddress: [streetPart, refPart, cityPart].filter(Boolean).join(", ") || cityPart,
+                city: cityPart || parsed.city,
+              };
+              return;
+            }
+          }
+        } catch {}
+
+        try {
+          const q = encodeURIComponent(fullAddressQuery);
+          const res = await fetch(
+            `https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=ec,co,ar,pe,mx,cl&q=${q}`,
+            { headers: { "Accept-Language": "es" } }
+          );
+          if (res.ok) {
+            const data = await res.json();
+            if (!cancelled && Array.isArray(data) && data[0]?.lat && data[0]?.lon) {
+              const lat = parseFloat(data[0].lat);
+              const lng = parseFloat(data[0].lon);
+              if (!isNaN(lat) && !isNaN(lng)) {
+                const displayAddr = [streetPart, refPart, cityPart].filter(Boolean).join(", ") || cityPart;
+                exactGeoRef.current = {
+                  lat,
+                  lng,
+                  exactAddress: displayAddr,
+                  city: cityPart || "Quito",
+                };
+                try {
+                  localStorage.setItem(
+                    cacheKey,
+                    JSON.stringify({ lat, lng, city: cityPart || "Quito" })
+                  );
+                } catch {}
+                return;
+              }
+            }
+          }
+        } catch {}
+      }
+
+      // 2. Check cached browser GPS / IP precise coordinates
+      try {
+        const cachedGps = localStorage.getItem("lumina_precise_browser_gps_v1");
+        if (cachedGps) {
+          const parsed = JSON.parse(cachedGps);
+          if (typeof parsed.lat === "number" && typeof parsed.lng === "number") {
+            exactGeoRef.current = {
+              lat: parsed.lat,
+              lng: parsed.lng,
+              exactAddress: parsed.exactAddress || cityPart || parsed.city || "Quito",
+              city: cityPart || parsed.city || "Quito",
+            };
+          }
+        }
+      } catch {}
+
+      // 3. Request high-accuracy browser geolocation if permission already granted
+      if (navigator.permissions && navigator.geolocation) {
+        try {
+          const perm = await navigator.permissions.query({ name: "geolocation" as PermissionName });
+          if (perm.state === "granted") {
+            navigator.geolocation.getCurrentPosition(
+              (pos) => {
+                if (cancelled) return;
+                const lat = pos.coords.latitude;
+                const lng = pos.coords.longitude;
+                exactGeoRef.current = {
+                  ...exactGeoRef.current,
+                  lat,
+                  lng,
+                  exactAddress: exactGeoRef.current.exactAddress || cityPart || "Ubicación GPS Exacta",
+                };
+                try {
+                  localStorage.setItem(
+                    "lumina_precise_browser_gps_v1",
+                    JSON.stringify({
+                      lat,
+                      lng,
+                      city: cityPart || exactGeoRef.current.city || "Quito",
+                      exactAddress: exactGeoRef.current.exactAddress,
+                    })
+                  );
+                } catch {}
+              },
+              () => {},
+              { enableHighAccuracy: true, timeout: 6000, maximumAge: 60000 }
+            );
+          }
+        } catch {}
+      }
+    };
+
+    resolvePreciseLocation();
+    return () => {
+      cancelled = true;
+    };
+  }, [user?.id, pathname]);
 
   // Compute readable user location/activity
   let currentSection = "Explorando Tienda";
@@ -140,7 +256,15 @@ function ActivityTracker() {
       const currentAddresses = useUserStore.getState().addresses;
       const purchasesCount = currentOrders?.length || 0;
       const totalSpent = currentOrders?.reduce((acc, order) => acc + (order.total || 0), 0) || 0;
-      const userCity = currentAddress?.city || currentAddresses?.[0]?.city || "";
+      const activeAddr = currentAddress || currentAddresses?.[0];
+      const userCity = activeAddr?.city || exactGeoRef.current.city || "";
+      const fullExactAddress = [
+        activeAddr?.street?.trim(),
+        activeAddr?.reference?.trim(),
+        userCity,
+      ]
+        .filter(Boolean)
+        .join(", ");
 
       useRadarStore.getState().trackActivity(
         currentUser,
@@ -152,13 +276,18 @@ function ActivityTracker() {
         cartItemsCount,
         true,
         sId,
-        false
+        false,
+        {
+          lat: exactGeoRef.current.lat,
+          lng: exactGeoRef.current.lng,
+          exactAddress: fullExactAddress || exactGeoRef.current.exactAddress || userCity,
+        }
       );
     } else {
       // Anonymous Visitor
       useRadarStore.getState().trackActivity(
         null,
-        "",
+        exactGeoRef.current.city || "",
         0,
         0,
         targetSection,
@@ -166,7 +295,12 @@ function ActivityTracker() {
         cartItemsCount,
         true,
         sId,
-        false
+        false,
+        {
+          lat: exactGeoRef.current.lat,
+          lng: exactGeoRef.current.lng,
+          exactAddress: exactGeoRef.current.exactAddress,
+        }
       );
     }
   }, [pathname, currentSection]);

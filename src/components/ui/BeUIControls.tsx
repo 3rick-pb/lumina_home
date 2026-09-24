@@ -1056,13 +1056,7 @@ export function BeUIActionSwapLabel({
  * Official SVG Metaballs Gooey Loader for Login & Action States
  * ============================================================================ */
 
-const METABALL_ORBIT_MS = 1600;
-const METABALL_NODES = [
-  { x: 50, y: 20, phase: 0 },
-  { x: 80, y: 50, phase: 0.25 },
-  { x: 50, y: 80, phase: 0.5 },
-  { x: 20, y: 50, phase: 0.75 },
-];
+const METABALL_SPLIT_MS = 1350;
 
 export interface BeUILoaderMetaballsProps {
   size?: number;
@@ -1073,26 +1067,35 @@ export interface BeUILoaderMetaballsProps {
 export function BeUILoaderMetaballs({ size = 24, className, color = "currentColor" }: BeUILoaderMetaballsProps) {
   const rawId = useId();
   const filterId = `beui-metaball-goo-${rawId.replace(/[^a-zA-Z0-9_-]/g, "")}`;
-  const moverRef = useRef<SVGCircleElement>(null);
-  const nodeRefs = useRef<(SVGCircleElement | null)[]>([]);
+  const leftBallRef = useRef<SVGCircleElement>(null);
+  const rightBallRef = useRef<SVGCircleElement>(null);
+  const bridgeBallRef = useRef<SVGEllipseElement>(null);
 
   useEffect(() => {
     let raf: number;
     const t0 = performance.now();
 
     const frame = (now: number) => {
-      const progress = ((now - t0) % METABALL_ORBIT_MS) / METABALL_ORBIT_MS;
-      const angle = progress * Math.PI * 2 - Math.PI / 2;
+      const progress = ((now - t0) % METABALL_SPLIT_MS) / METABALL_SPLIT_MS;
+      // Smooth 0 -> 1 -> 0 wave: 0 = 1 merged center circle (●), 1 = 2 separated side-by-side circles (● ●)
+      const wave = Math.sin(progress * Math.PI);
+      const easeSplit = Math.pow(wave, 1.25);
 
-      moverRef.current?.setAttribute("cx", String(50 + 30 * Math.cos(angle)));
-      moverRef.current?.setAttribute("cy", String(50 + 30 * Math.sin(angle)));
+      // Horizontal distance from center (0 = merged at cx=50, 23.5 = separated at cx=26.5 & cx=73.5)
+      const offset = easeSplit * 23.5;
+      // Radius contracts slightly as 1 circle splits into 2 equal circles (conservation of area)
+      const r = 15.8 - easeSplit * 2.6;
 
-      for (let i = 0; i < METABALL_NODES.length; i++) {
-        let dist = Math.abs(progress - METABALL_NODES[i].phase);
-        if (dist > 0.5) dist = 1 - dist;
-        const scale = dist < 0.15 ? 1 + 0.3 * Math.cos((dist / 0.15) * (Math.PI / 2)) : 1;
-        nodeRefs.current[i]?.setAttribute("r", String(10 * scale));
-      }
+      leftBallRef.current?.setAttribute("cx", (50 - offset).toFixed(2));
+      leftBallRef.current?.setAttribute("r", r.toFixed(2));
+
+      rightBallRef.current?.setAttribute("cx", (50 + offset).toFixed(2));
+      rightBallRef.current?.setAttribute("r", r.toFixed(2));
+
+      // Liquid stretching tendon during separation/re-entry before snapping into 2 clean spheres
+      const tendonStrength = Math.max(0, Math.sin(easeSplit * Math.PI) * (1 - Math.max(0, (easeSplit - 0.68) * 3.1)));
+      bridgeBallRef.current?.setAttribute("rx", (tendonStrength * 14.5).toFixed(2));
+      bridgeBallRef.current?.setAttribute("ry", (tendonStrength * 7.2).toFixed(2));
 
       raf = requestAnimationFrame(frame);
     };
@@ -1111,29 +1114,20 @@ export function BeUILoaderMetaballs({ size = 24, className, color = "currentColo
     >
       <defs>
         <filter id={filterId} x="-50%" y="-50%" width="200%" height="200%" colorInterpolationFilters="sRGB">
-          <feGaussianBlur in="SourceGraphic" stdDeviation="6.5" result="blur" />
+          <feGaussianBlur in="SourceGraphic" stdDeviation="5.8" result="blur" />
           <feColorMatrix
             in="blur"
             mode="matrix"
-            values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 22 -9"
+            values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 24 -10"
             result="goo"
           />
           <feComposite in="SourceGraphic" in2="goo" operator="atop" />
         </filter>
       </defs>
       <g filter={`url(#${filterId})`} fill={color}>
-        {METABALL_NODES.map((c, i) => (
-          <circle
-            key={i}
-            ref={(el) => {
-              nodeRefs.current[i] = el;
-            }}
-            cx={c.x}
-            cy={c.y}
-            r={10}
-          />
-        ))}
-        <circle ref={moverRef} cx={50} cy={20} r={11} />
+        <circle ref={leftBallRef} cx="50" cy="50" r="15.8" />
+        <ellipse ref={bridgeBallRef} cx="50" cy="50" rx="0" ry="0" />
+        <circle ref={rightBallRef} cx="50" cy="50" r="15.8" />
       </g>
     </svg>
   );

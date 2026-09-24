@@ -86,167 +86,293 @@ function normalizeGeoKey(str: string): string {
     .trim();
 }
 
-// Calibrated GPS [lng, lat] coordinates for all 24 Ecuadorian provinces, cantons & Latin American cities
-const EXACT_CITY_LNG_LAT: Record<string, [number, number]> = {
-  // Ecuador — Sierra (Capitals & Provinces)
-  quito: [-78.4678, -0.1807],
-  pichincha: [-78.4678, -0.1807],
-  cumbaya: [-78.4301, -0.2015],
-  tumbaco: [-78.4005, -0.2131],
-  sangolqui: [-78.4475, -0.3341],
-  rumiahui: [-78.4475, -0.3341],
-  cayambe: [-78.1453, 0.0408],
-  machachi: [-78.5671, -0.5101],
-  cuenca: [-79.0045, -2.9001],
-  azuay: [-79.0045, -2.9001],
-  gualaceo: [-78.7781, -2.8926],
-  ambato: [-78.6197, -1.2491],
-  tungurahua: [-78.6197, -1.2491],
-  banos: [-78.4229, -1.3964],
-  loja: [-79.2042, -3.9931],
-  catamayo: [-79.3592, -3.9866],
-  ibarra: [-78.1223, 0.3517],
-  imbabura: [-78.1223, 0.3517],
-  otavalo: [-78.2611, 0.2343],
-  cotacachi: [-78.2642, 0.3011],
-  riobamba: [-78.6471, -1.6635],
-  chimborazo: [-78.6471, -1.6635],
-  latacunga: [-78.6155, -0.9352],
-  cotopaxi: [-78.6155, -0.9352],
-  salcedo: [-78.5906, -1.0455],
-  tulcan: [-77.7173, 0.8119],
-  carchi: [-77.7173, 0.8119],
-  azogues: [-78.8486, -2.7397],
-  canar: [-78.8486, -2.7397],
-  guaranda: [-79.001, -1.5926],
-  bolivar: [-79.001, -1.5926],
+// Calibrated GPS [lng, lat] coordinates for Quito neighborhoods/parishes/avenues, all 24 Ecuadorian provinces & Latin American cities
+export const EXACT_CITY_LNG_LAT: Record<string, [number, number]> = {
+  // Quito — Exact Urban & Rural Parishes, Neighborhoods, Valleys & Main Avenues
+  "inaquito": [-78.4832, -0.1825],
+  "la carolina": [-78.4847, -0.1856],
+  "parque la carolina": [-78.4847, -0.1856],
+  "republica del salvador": [-78.4802, -0.1818],
+  "av republica del salvador": [-78.4802, -0.1818],
+  "naciones unidas": [-78.4825, -0.1768],
+  "av naciones unidas": [-78.4825, -0.1768],
+  "av amazonas": [-78.4865, -0.1892],
+  "amazonas": [-78.4865, -0.1892],
+  "av shyris": [-78.4798, -0.1795],
+  "los shyris": [-78.4798, -0.1795],
+  "av 6 de diciembre": [-78.4782, -0.1755],
+  "6 de diciembre": [-78.4782, -0.1755],
+  "av 10 de agosto": [-78.4915, -0.1742],
+  "10 de agosto": [-78.4915, -0.1742],
+  "av patria": [-78.4952, -0.2092],
+  "av colon": [-78.4895, -0.1985],
+  "av orellana": [-78.4838, -0.1942],
+  "av gonzalez suarez": [-78.4785, -0.1972],
+  "gonzalez suarez": [-78.4785, -0.1972],
+  "bellavista": [-78.4742, -0.1848],
+  "batan alto": [-78.4695, -0.1752],
+  "el batan": [-78.4755, -0.1765],
+  "quicentro": [-78.4805, -0.1762],
+  "el inca": [-78.4682, -0.1565],
+  "jipijapa": [-78.4789, -0.1654],
+  "rumipamba": [-78.4962, -0.1785],
+  "mariana de jesus": [-78.4935, -0.1885],
+  "san gabriel": [-78.4982, -0.1912],
+  "universidad central": [-78.5055, -0.2005],
+  "miraflores": [-78.5015, -0.1995],
+  "san juan": [-78.5095, -0.2135],
+  "la mariscal": [-78.4912, -0.2031],
+  "mariscal sucre": [-78.4912, -0.2031],
+  "plaza foch": [-78.4918, -0.2036],
+  "la floresta": [-78.4819, -0.2094],
+  "guapulo": [-78.4731, -0.1995],
+  "centro historico": [-78.5121, -0.2202],
+  "plaza grande": [-78.5121, -0.2202],
+  "san francisco": [-78.5152, -0.2208],
+  "la basilica": [-78.5075, -0.2152],
+  "san blas": [-78.5062, -0.2178],
+  "san roque": [-78.5198, -0.2215],
+  "el tejar": [-78.5175, -0.2165],
+  "el panecillo": [-78.5186, -0.2289],
+  "la tola": [-78.5042, -0.2235],
+  "itchimbia": [-78.4992, -0.2212],
+  "la vicentina": [-78.4895, -0.2165],
+  "monjas": [-78.4882, -0.2345],
+  "kennedy quito": [-78.4775, -0.1452],
+  "la concepcion": [-78.4882, -0.1462],
+  "bicentenario": [-78.4875, -0.1415],
+  "la prensa": [-78.4945, -0.1365],
+  "av la prensa": [-78.4945, -0.1365],
+  "cotocollao": [-78.4965, -0.1185],
+  "ponceano": [-78.4845, -0.1062],
+  "el condado": [-78.5042, -0.0985],
+  "carcelen": [-78.4712, -0.0895],
+  "comite del pueblo": [-78.4625, -0.1315],
+  "la bota": [-78.4585, -0.1215],
+  "monteserrin": [-78.4615, -0.1625],
+  "el bosque": [-78.4985, -0.1615],
+  "pomasqui": [-78.4562, -0.0532],
+  "san antonio de pichincha": [-78.4558, -0.0022],
+  "mitad del mundo": [-78.4558, -0.0022],
+  "calderon": [-78.4225, -0.0968],
+  "carapungo": [-78.4365, -0.0992],
+  "marianitas": [-78.4195, -0.1052],
+  "llano chico": [-78.4385, -0.1265],
+  "zambiza": [-78.4342, -0.1485],
+  "nayon": [-78.4392, -0.1615],
+  "miravalle": [-78.4525, -0.2045],
+  "cumbaya": [-78.4301, -0.2015],
+  "tumbaco": [-78.4005, -0.2131],
+  "puembo": [-78.3582, -0.1775],
+  "pifo": [-78.3345, -0.2285],
+  "tababela": [-78.3512, -0.1265],
+  "yaruqui": [-78.3185, -0.1625],
+  "el quinche": [-78.2945, -0.1085],
+  "conocoto": [-78.4752, -0.2935],
+  "valle de los chillos": [-78.4562, -0.3125],
+  "los chillos": [-78.4562, -0.3125],
+  "san rafael": [-78.4612, -0.3085],
+  "sangolqui": [-78.4475, -0.3341],
+  "rumiahui": [-78.4475, -0.3341],
+  "amaguana": [-78.5032, -0.3752],
+  "alangasi": [-78.4145, -0.3065],
+  "chimbacalle": [-78.5112, -0.2445],
+  "villaflora": [-78.5185, -0.2492],
+  "el recreo": [-78.5225, -0.2585],
+  "la magdalena": [-78.5265, -0.2395],
+  "la ferroviaria": [-78.5045, -0.2565],
+  "chilibulo": [-78.5365, -0.2485],
+  "san bartolo": [-78.5325, -0.2695],
+  "solanda": [-78.5385, -0.2725],
+  "quitumbe": [-78.5512, -0.2965],
+  "chillogallo": [-78.5585, -0.2815],
+  "turubamba": [-78.5465, -0.3125],
+  "guamani": [-78.5542, -0.3315],
+  "la ecuatoriana": [-78.5685, -0.3015],
+  "quito": [-78.4832, -0.1825], // Modern commercial center (Iñaquito / La Carolina)
+  "pichincha": [-78.4832, -0.1825],
+  "cayambe": [-78.1453, 0.0408],
+  "machachi": [-78.5671, -0.5101],
 
-  // Ecuador — Costa (Capitals, Cantons & Provinces)
-  guayaquil: [-79.8891, -2.1894],
-  guayas: [-79.8891, -2.1894],
-  samborondon: [-79.865, -2.085],
-  duran: [-79.831, -2.171],
-  daule: [-79.978, -1.862],
-  milagro: [-79.5942, -2.134],
-  playas: [-80.388, -2.632],
-  manta: [-80.7089, -0.9677],
-  portoviejo: [-80.4545, -1.0546],
-  manabi: [-80.4545, -1.0546],
-  chone: [-80.0936, -0.6982],
-  montecristi: [-80.6589, -1.0458],
-  jipijapa: [-80.5786, -1.3486],
+  // Cuenca — Exact Sectors
+  "el ejido": [-79.0085, -2.9052],
+  "yanuncay": [-79.0195, -2.9125],
+  "totoracocha": [-78.9865, -2.8952],
+  "challuabamba": [-78.9215, -2.8585],
+  "puertas del sol": [-79.0245, -2.9015],
+  "cuenca": [-79.0045, -2.9001],
+  "azuay": [-79.0045, -2.9001],
+  "gualaceo": [-78.7781, -2.8926],
+  "ambato": [-78.6197, -1.2491],
+  "tungurahua": [-78.6197, -1.2491],
+  "banos": [-78.4229, -1.3964],
+  "loja": [-79.2042, -3.9931],
+  "catamayo": [-79.3592, -3.9866],
+  "ibarra": [-78.1223, 0.3517],
+  "imbabura": [-78.1223, 0.3517],
+  "otavalo": [-78.2611, 0.2343],
+  "cotacachi": [-78.2642, 0.3011],
+  "riobamba": [-78.6471, -1.6635],
+  "chimborazo": [-78.6471, -1.6635],
+  "latacunga": [-78.6155, -0.9352],
+  "cotopaxi": [-78.6155, -0.9352],
+  "salcedo": [-78.5906, -1.0455],
+  "tulcan": [-77.7173, 0.8119],
+  "carchi": [-77.7173, 0.8119],
+  "azogues": [-78.8486, -2.7397],
+  "canar": [-78.8486, -2.7397],
+  "guaranda": [-79.001, -1.5926],
+  "bolivar": [-79.001, -1.5926],
+
+  // Guayaquil — Exact Sectors & Cantons
+  "urdesa": [-79.9085, -2.1685],
+  "kennedy": [-79.8995, -2.1695],
+  "los ceibos": [-79.9425, -2.1625],
+  "ceibos": [-79.9425, -2.1625],
+  "alborada": [-79.9025, -2.1365],
+  "la garzota": [-79.8895, -2.1452],
+  "garzota": [-79.8895, -2.1452],
+  "sauces": [-79.8945, -2.1285],
+  "samanes": [-79.9045, -2.1125],
+  "via a la costa": [-79.9825, -2.1852],
+  "puerto santa ana": [-79.8765, -2.1815],
+  "las penas": [-79.8758, -2.1832],
+  "centenario": [-79.8925, -2.2145],
+  "la puntilla": [-79.865, -2.1385],
+  "guayaquil": [-79.8891, -2.1894],
+  "guayas": [-79.8891, -2.1894],
+  "samborondon": [-79.865, -2.085],
+  "duran": [-79.831, -2.171],
+  "daule": [-79.978, -1.862],
+  "milagro": [-79.5942, -2.134],
+  "playas": [-80.388, -2.632],
+  "manta": [-80.7089, -0.9677],
+  "portoviejo": [-80.4545, -1.0546],
+  "manabi": [-80.4545, -1.0546],
+  "chone": [-80.0936, -0.6982],
+  "montecristi": [-80.6589, -1.0458],
   "bahia de caraquez": [-80.4236, -0.5979],
   "santo domingo": [-79.1754, -0.253],
-  tsachilas: [-79.1754, -0.253],
-  machala: [-79.9554, -3.2581],
+  "tsachilas": [-79.1754, -0.253],
+  "machala": [-79.9554, -3.2581],
   "el oro": [-79.9554, -3.2581],
-  pasaje: [-79.807, -3.3256],
+  "pasaje": [-79.807, -3.3256],
   "santa rosa": [-79.9595, -3.4488],
-  huaquillas: [-80.2308, -3.4752],
-  esmeraldas: [-79.654, 0.9592],
-  atacames: [-79.845, 0.869],
-  quininde: [-79.469, 0.327],
-  babahoyo: [-79.5346, -1.8019],
-  quevedo: [-79.4628, -1.0286],
+  "huaquillas": [-80.2308, -3.4752],
+  "esmeraldas": [-79.654, 0.9592],
+  "atacames": [-79.845, 0.869],
+  "quininde": [-79.469, 0.327],
+  "babahoyo": [-79.5346, -1.8019],
+  "quevedo": [-79.4628, -1.0286],
   "los rios": [-79.5346, -1.8019],
-  ventanas: [-79.459, -1.441],
-  salinas: [-80.9515, -2.2145],
+  "ventanas": [-79.459, -1.441],
+  "salinas": [-80.9515, -2.2145],
   "santa elena": [-80.8587, -2.2262],
-  libertad: [-80.9103, -2.233],
-  montanita: [-80.7528, -1.8267],
+  "libertad": [-80.9103, -2.233],
+  "montanita": [-80.7528, -1.8267],
 
   // Ecuador — Amazonía / Oriente
-  tena: [-77.8129, -0.9938],
-  napo: [-77.8129, -0.9938],
-  puyo: [-78.0026, -1.4924],
-  pastaza: [-78.0026, -1.4924],
-  macas: [-78.1114, -2.3087],
+  "tena": [-77.8129, -0.9938],
+  "napo": [-77.8129, -0.9938],
+  "puyo": [-78.0026, -1.4924],
+  "pastaza": [-78.0026, -1.4924],
+  "macas": [-78.1114, -2.3087],
   "morona santiago": [-78.1114, -2.3087],
-  zamora: [-78.9549, -4.0692],
+  "zamora": [-78.9549, -4.0692],
   "zamora chinchipe": [-78.9549, -4.0692],
   "nueva loja": [-76.8885, 0.0847],
   "lago agrio": [-76.8885, 0.0847],
-  sucumbios: [-76.8885, 0.0847],
-  coca: [-76.9871, -0.4665],
+  "sucumbios": [-76.8885, 0.0847],
+  "coca": [-76.9871, -0.4665],
   "el coca": [-76.9871, -0.4665],
-  orellana: [-76.9871, -0.4665],
+  "orellana": [-76.9871, -0.4665],
 
   // Ecuador — Galápagos
-  galapagos: [-90.3138, -0.7443],
+  "galapagos": [-90.3138, -0.7443],
   "puerto ayora": [-90.3138, -0.7443],
   "santa cruz": [-90.3138, -0.7443],
   "san cristobal": [-89.6103, -0.9022],
   "baquerizo moreno": [-89.6103, -0.9022],
 
   // Colombia
-  bogota: [-74.0721, 4.711],
-  cundinamarca: [-74.0721, 4.711],
-  medellin: [-75.5636, 6.2442],
-  antioquia: [-75.5636, 6.2442],
-  cali: [-76.532, 3.4516],
+  "bogota": [-74.0721, 4.711],
+  "cundinamarca": [-74.0721, 4.711],
+  "medellin": [-75.5636, 6.2442],
+  "antioquia": [-75.5636, 6.2442],
+  "cali": [-76.532, 3.4516],
   "valle del cauca": [-76.532, 3.4516],
-  barranquilla: [-74.7964, 10.9685],
-  atlantico: [-74.7964, 10.9685],
-  cartagena: [-75.4794, 10.391],
-  bucaramanga: [-73.1198, 7.1254],
-  santander: [-73.1198, 7.1254],
-  pereira: [-75.6961, 4.8133],
+  "barranquilla": [-74.7964, 10.9685],
+  "atlantico": [-74.7964, 10.9685],
+  "cartagena": [-75.4794, 10.391],
+  "bucaramanga": [-73.1198, 7.1254],
+  "santander": [-73.1198, 7.1254],
+  "pereira": [-75.6961, 4.8133],
   "santa marta": [-74.199, 11.2408],
 
   // Argentina
   "buenos aires": [-58.3816, -34.6037],
-  caba: [-58.3816, -34.6037],
-  cordoba: [-64.1888, -31.4201],
-  rosario: [-60.6393, -32.9468],
+  "caba": [-58.3816, -34.6037],
+  "cordoba": [-64.1888, -31.4201],
+  "rosario": [-60.6393, -32.9468],
   "santa fe": [-60.7, -31.6333],
-  mendoza: [-68.8458, -32.8895],
+  "mendoza": [-68.8458, -32.8895],
   "la plata": [-57.9545, -34.9215],
-  tucuman: [-65.2176, -26.8083],
+  "tucuman": [-65.2176, -26.8083],
   "mar del plata": [-57.5426, -38.0055],
-  salta: [-65.4117, -24.7859],
+  "salta": [-65.4117, -24.7859],
 
   // Perú
-  lima: [-77.0428, -12.0464],
-  callao: [-77.1181, -12.0566],
-  arequipa: [-71.5375, -16.409],
-  trujillo: [-79.029, -8.116],
+  "lima": [-77.0428, -12.0464],
+  "callao": [-77.1181, -12.0566],
+  "arequipa": [-71.5375, -16.409],
+  "trujillo": [-79.029, -8.116],
   "la libertad": [-79.029, -8.116],
-  cusco: [-71.9675, -13.532],
-  cuzco: [-71.9675, -13.532],
-  chiclayo: [-79.8409, -6.7714],
-  lambayeque: [-79.8409, -6.7714],
-  piura: [-80.6328, -5.1945],
-  iquitos: [-73.2516, -3.7437],
-  huancayo: [-75.2049, -12.0651],
+  "cusco": [-71.9675, -13.532],
+  "cuzco": [-71.9675, -13.532],
+  "chiclayo": [-79.8409, -6.7714],
+  "lambayeque": [-79.8409, -6.7714],
+  "piura": [-80.6328, -5.1945],
+  "iquitos": [-73.2516, -3.7437],
+  "huancayo": [-75.2049, -12.0651],
 
   // México
   "ciudad de mexico": [-99.1332, 19.4326],
-  cdmx: [-99.1332, 19.4326],
-  guadalajara: [-103.3496, 20.6597],
-  jalisco: [-103.3496, 20.6597],
-  monterrey: [-100.3161, 25.6866],
+  "cdmx": [-99.1332, 19.4326],
+  "guadalajara": [-103.3496, 20.6597],
+  "jalisco": [-103.3496, 20.6597],
+  "monterrey": [-100.3161, 25.6866],
   "nuevo leon": [-100.3161, 25.6866],
-  puebla: [-98.2063, 19.0414],
-  cancun: [-86.8515, 21.1619],
+  "puebla": [-98.2063, 19.0414],
+  "cancun": [-86.8515, 21.1619],
   "quintana roo": [-86.8515, 21.1619],
-  queretaro: [-100.3899, 20.5888],
-  merida: [-89.5926, 20.9674],
-  yucatan: [-89.5926, 20.9674],
-  tijuana: [-117.0382, 32.5149],
+  "queretaro": [-100.3899, 20.5888],
+  "merida": [-89.5926, 20.9674],
+  "yucatan": [-89.5926, 20.9674],
+  "tijuana": [-117.0382, 32.5149],
 
   // Chile
-  santiago: [-70.6693, -33.4489],
+  "santiago": [-70.6693, -33.4489],
   "region metropolitana": [-70.6693, -33.4489],
-  valparaiso: [-71.6127, -33.0472],
+  "valparaiso": [-71.6127, -33.0472],
   "vina del mar": [-71.5518, -33.0245],
-  concepcion: [-73.0444, -36.8201],
-  biobio: [-73.0444, -36.8201],
+  "concepcion": [-73.0444, -36.8201],
+  "biobio": [-73.0444, -36.8201],
   "la serena": [-71.252, -29.9027],
-  antofagasta: [-70.3975, -23.6509],
-  temuco: [-72.5904, -38.7359],
-  iquique: [-70.1357, -20.2307],
+  "antofagasta": [-70.3975, -23.6509],
+  "temuco": [-72.5904, -38.7359],
+  "iquique": [-70.1357, -20.2307],
   "puerto montt": [-72.9429, -41.4693],
 };
+
+// Priority-sorted keys so specific neighborhoods ("la carolina", "el condado", "cumbaya", "inaquito")
+// match BEFORE general city names ("quito", "guayaquil", "cuenca") when a full address is provided!
+const SORTED_GEO_KEYS = Object.keys(EXACT_CITY_LNG_LAT).sort((a, b) => {
+  const genericCities = new Set(["quito", "pichincha", "guayaquil", "guayas", "cuenca", "azuay", "bogota", "lima", "santiago", "buenos aires"]);
+  const aGeneric = genericCities.has(a) ? 1 : 0;
+  const bGeneric = genericCities.has(b) ? 1 : 0;
+  if (aGeneric !== bGeneric) return aGeneric - bGeneric;
+  return b.length - a.length;
+});
 
 export function resolveGeoLngLat(
   cityName: string | undefined,
@@ -254,33 +380,47 @@ export function resolveGeoLngLat(
   yPct: number,
   countryCode: RadarCountryCode,
   offsetXPct: number = 0,
-  offsetYPct: number = 0
+  offsetYPct: number = 0,
+  exactLngLat?: [number, number]
 ): [number, number] {
-  const bounds = COUNTRY_GEO_CONFIG[countryCode] || COUNTRY_GEO_CONFIG.EC;
-  const cleanCity = normalizeGeoKey(cityName || "");
-
   let baseLng: number | null = null;
   let baseLat: number | null = null;
 
-  if (cleanCity && EXACT_CITY_LNG_LAT[cleanCity]) {
-    [baseLng, baseLat] = EXACT_CITY_LNG_LAT[cleanCity];
-  } else if (cleanCity) {
-    // Sort keys by length descending so multi-word names ("santo domingo", "santa elena") match before shorter substrings
-    const matchedKey = Object.keys(EXACT_CITY_LNG_LAT)
-      .sort((a, b) => b.length - a.length)
-      .find((k) => cleanCity.includes(k));
-    if (matchedKey) {
-      [baseLng, baseLat] = EXACT_CITY_LNG_LAT[matchedKey];
+  if (
+    exactLngLat &&
+    typeof exactLngLat[0] === "number" &&
+    typeof exactLngLat[1] === "number" &&
+    !isNaN(exactLngLat[0]) &&
+    !isNaN(exactLngLat[1]) &&
+    Math.abs(exactLngLat[0]) > 0.01
+  ) {
+    baseLng = exactLngLat[0];
+    baseLat = exactLngLat[1];
+  } else {
+    const bounds = COUNTRY_GEO_CONFIG[countryCode] || COUNTRY_GEO_CONFIG.EC;
+    const cleanCity = normalizeGeoKey(cityName || "");
+
+    if (cleanCity && EXACT_CITY_LNG_LAT[cleanCity]) {
+      [baseLng, baseLat] = EXACT_CITY_LNG_LAT[cleanCity];
+    } else if (cleanCity) {
+      const matchedKey = SORTED_GEO_KEYS.find((k) => cleanCity.includes(k));
+      if (matchedKey) {
+        [baseLng, baseLat] = EXACT_CITY_LNG_LAT[matchedKey];
+      }
+    }
+
+    if (baseLng === null || baseLat === null) {
+      baseLng = bounds.center[0];
+      baseLat = bounds.center[1];
     }
   }
 
-  if (baseLng === null || baseLat === null) {
-    // Default to country capital if generic country name ("ecuador", "colombia", etc.)
-    baseLng = bounds.center[0];
-    baseLat = bounds.center[1];
-  }
+  // Convert radial dispersion offset into real geographic degrees (~0.0022° per unit = ~240m street blocks)
+  // so pins remain 100% locked to their exact physical neighborhood/street on the map at every zoom level!
+  const geoLng = baseLng + offsetXPct * 0.0022;
+  const geoLat = baseLat - offsetYPct * 0.0022;
 
-  return [baseLng, baseLat];
+  return [geoLng, geoLat];
 }
 
 // ============================================================================
@@ -315,7 +455,7 @@ function mercatorYToLat(wy: number, zoom: number): number {
 const tileImageCache = new Map<string, HTMLImageElement>();
 const tileLoadingSet = new Set<string>();
 
-type TileProvider = "satellite" | "dark-base" | "boundaries-labels" | "street-topo";
+type TileProvider = "satellite" | "dark-base" | "boundaries-labels" | "street-topo" | "osm-streets";
 
 function getTileCacheKey(provider: TileProvider, z: number, x: number, y: number): string {
   const maxIndex = Math.pow(2, z);
@@ -326,6 +466,11 @@ function getTileCacheKey(provider: TileProvider, z: number, x: number, y: number
 function getTileUrl(provider: TileProvider, z: number, x: number, y: number, useAltHost = false): string {
   const maxIndex = Math.pow(2, z);
   const wrappedX = ((x % maxIndex) + maxIndex) % maxIndex;
+  if (provider === "osm-streets") {
+    const subdomains = ["a", "b", "c"];
+    const sub = subdomains[(wrappedX + y + (useAltHost ? 1 : 0)) % subdomains.length];
+    return `https://${sub}.tile.openstreetmap.org/${z}/${wrappedX}/${y}.png`;
+  }
   // Load-balance across both official Esri ArcGIS CDN hosts to double concurrent tile throughput
   const host =
     useAltHost
@@ -358,7 +503,14 @@ export interface ProjectedPinPosition {
 interface RadarMapboxCanvasProps {
   selectedCountry: RadarCountryCode;
   zoomCommand: number;
-  focusTarget: { xPct: number; yPct: number; zoomLevel: number; cityName?: string; seq: number } | null;
+  focusTarget: {
+    xPct: number;
+    yPct: number;
+    zoomLevel: number;
+    cityName?: string;
+    exactLngLat?: [number, number];
+    seq: number;
+  } | null;
   resetCommandSeq: number;
   onMapReady?: () => void;
   onCanvasClick?: () => void;
@@ -368,7 +520,8 @@ interface RadarMapboxCanvasProps {
       baseX: number,
       baseY: number,
       dispX?: number,
-      dispY?: number
+      dispY?: number,
+      exactLngLat?: [number, number]
     ) => ProjectedPinPosition
   ) => React.ReactNode;
 }
@@ -756,17 +909,29 @@ export function RadarMapboxCanvas({
             if (mapStyleMode === "tactical") {
               // Layer A: Esri Dark Gray Base at Retina z+1 resolution
               drawTileLayer(ctx, "dark-base", cam.lng, cam.lat, cam.zoom, w, h, 1.0, 1);
-              // Layer B: Esri Satellite Relief Blend (standard z to save 75% bandwidth while preserving terrain texture)
+              // Layer B: Esri Satellite Relief Blend
               drawTileLayer(ctx, "satellite", cam.lng, cam.lat, cam.zoom, w, h, 0.34, 0);
+              // Layer B2: When zoomed into a city/neighborhood (zoom >= 11.0), blend OpenStreetMap street/avenue geometry
+              if (cam.zoom >= 11.0) {
+                const streetAlpha = Math.min(0.42, (cam.zoom - 10.8) * 0.14);
+                drawTileLayer(ctx, "osm-streets", cam.lng, cam.lat, cam.zoom, w, h, streetAlpha, 0);
+              }
               // Layer C: Esri World Boundaries & Places Reference at Retina z+1 resolution for razor-sharp labels
               drawTileLayer(ctx, "boundaries-labels", cam.lng, cam.lat, cam.zoom, w, h, 1.0, 1);
             } else if (mapStyleMode === "satellite") {
               // Full HD Esri Satellite Imagery + Retina z+1 Boundaries & Places Reference
               drawTileLayer(ctx, "satellite", cam.lng, cam.lat, cam.zoom, w, h, 1.0, 1);
+              if (cam.zoom >= 12.0) {
+                drawTileLayer(ctx, "osm-streets", cam.lng, cam.lat, cam.zoom, w, h, 0.28, 0);
+              }
               drawTileLayer(ctx, "boundaries-labels", cam.lng, cam.lat, cam.zoom, w, h, 1.0, 1);
             } else {
-              // Esri World Topographic / Street Map at Retina z+1 resolution
-              drawTileLayer(ctx, "street-topo", cam.lng, cam.lat, cam.zoom, w, h, 1.0, 1);
+              // High-precision OpenStreetMap Street/Neighborhood Map when zoomed in, Esri Topo at macro zoom
+              if (cam.zoom >= 10.5) {
+                drawTileLayer(ctx, "osm-streets", cam.lng, cam.lat, cam.zoom, w, h, 1.0, 0);
+              } else {
+                drawTileLayer(ctx, "street-topo", cam.lng, cam.lat, cam.zoom, w, h, 1.0, 1);
+              }
             }
 
             // Subtle Tactical Radar Coordinate Grid Lines
@@ -845,7 +1010,7 @@ export function RadarMapboxCanvas({
     prevZoomCommandRef.current = zoomCommand;
 
     const delta = Math.log2(ratio);
-    camRef.current.targetZoom = Math.max(3.2, Math.min(14.5, camRef.current.targetZoom + delta * 1.25));
+    camRef.current.targetZoom = Math.max(3.2, Math.min(17.5, camRef.current.targetZoom + delta * 1.35));
     camRef.current.animating = true;
     requestRepaint();
   }, [zoomCommand, requestRepaint]);
@@ -861,7 +1026,7 @@ export function RadarMapboxCanvas({
     requestRepaint();
   }, [resetCommandSeq, selectedCountry, requestRepaint]);
 
-  // Respond to focusOnLocation (search bar city selection or cluster click)
+  // Respond to focusOnLocation (search bar city/street selection or anchor/cluster click)
   useEffect(() => {
     if (!focusTarget) return;
     const geo = COUNTRY_GEO_CONFIG[selectedCountry] || COUNTRY_GEO_CONFIG.EC;
@@ -869,9 +1034,21 @@ export function RadarMapboxCanvas({
       focusTarget.cityName,
       focusTarget.xPct,
       focusTarget.yPct,
-      selectedCountry
+      selectedCountry,
+      0,
+      0,
+      focusTarget.exactLngLat
     );
-    const targetMapZoom = Math.min(12.5, geo.zoom + Math.max(1.6, (focusTarget.zoomLevel - 1) * 2.2));
+    // Zoom deeply to street/neighborhood level (13.8 - 16.2) when focusing on an exact address or pin
+    const hasExactCoordsOrStreet =
+      Boolean(focusTarget.exactLngLat) ||
+      Boolean(focusTarget.cityName && (focusTarget.cityName.includes(",") || focusTarget.cityName.length > 10));
+    const targetMapZoom = Math.min(
+      16.8,
+      hasExactCoordsOrStreet
+        ? Math.max(14.4, geo.zoom + (focusTarget.zoomLevel - 1) * 2.8)
+        : Math.max(12.8, geo.zoom + Math.max(2.0, (focusTarget.zoomLevel - 1) * 2.5))
+    );
     camRef.current.targetLng = lng;
     camRef.current.targetLat = lat;
     camRef.current.targetZoom = targetMapZoom;
@@ -887,15 +1064,17 @@ export function RadarMapboxCanvas({
     vy: 0,
   });
 
-  // Exact Web Mercator projection helper — continuous subpixel fluidity during camera motion,
-  // snapping to exact integer pixels at rest so anchor avatars are never subpixel-blurred.
+  // Exact Web Mercator projection helper — locks every pin to its exact geographic [lng, lat] coordinate
+  // (exact GPS/Nominatim street coordinate or calibrated neighborhood/sector inside Quito/Guayaquil/etc.)
+  // with zero screen-pixel floating drift.
   const projectPin = useCallback(
     (
       cityName: string | undefined,
       baseX: number,
       baseY: number,
       dispX?: number,
-      dispY?: number
+      dispY?: number,
+      exactLngLat?: [number, number]
     ): ProjectedPinPosition => {
       const cam = camRef.current;
       const liveW = containerRef.current?.clientWidth || cam.width || 960;
@@ -903,15 +1082,23 @@ export function RadarMapboxCanvas({
 
       const offsetX = dispX !== undefined ? dispX - baseX : 0;
       const offsetY = dispY !== undefined ? dispY - baseY : 0;
-      const [lng, lat] = resolveGeoLngLat(cityName, baseX, baseY, selectedCountry);
+      const [lng, lat] = resolveGeoLngLat(
+        cityName,
+        baseX,
+        baseY,
+        selectedCountry,
+        offsetX,
+        offsetY,
+        exactLngLat
+      );
 
       const centerWx = lngToMercatorX(cam.lng, cam.zoom);
       const centerWy = latToMercatorY(cam.lat, cam.zoom);
       const pinWx = lngToMercatorX(lng, cam.zoom);
       const pinWy = latToMercatorY(lat, cam.zoom);
 
-      const rawX = pinWx - centerWx + liveW / 2 + offsetX * 7.5;
-      const rawY = pinWy - centerWy + liveH / 2 + offsetY * 7.5;
+      const rawX = pinWx - centerWx + liveW / 2;
+      const rawY = pinWy - centerWy + liveH / 2;
       const isMoving = isDraggingRef.current || cam.animating;
       const x = isMoving ? Number(rawX.toFixed(2)) : Math.round(rawX);
       const y = isMoving ? Number(rawY.toFixed(2)) : Math.round(rawY);
@@ -1009,8 +1196,8 @@ export function RadarMapboxCanvas({
 
   const handleWheel = (e: React.WheelEvent<HTMLDivElement>) => {
     e.preventDefault();
-    const zoomDelta = -e.deltaY * 0.0022;
-    const nextTargetZoom = Math.max(3.2, Math.min(14.5, camRef.current.targetZoom + zoomDelta));
+    const zoomDelta = -e.deltaY * 0.0024;
+    const nextTargetZoom = Math.max(3.2, Math.min(17.5, camRef.current.targetZoom + zoomDelta));
     camRef.current.targetZoom = nextTargetZoom;
     camRef.current.animating = true;
     requestRepaint();

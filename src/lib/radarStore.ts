@@ -13,6 +13,9 @@ export interface ConnectedClient {
   name: string;
   email: string;
   city: string;
+  exactAddress?: string;
+  lat?: number;
+  lng?: number;
   country: string;
   countryCode?: RadarCountryCode;
   x: number;
@@ -132,12 +135,18 @@ export function parsePresenceState(state: Record<string, unknown>): ConnectedCli
         const clientKey = isAnon ? (p.sessionId || p.id) : p.id;
         const existing = map.get(clientKey);
 
+        const parsedLat = p.lat !== null && p.lat !== undefined ? Number(p.lat) : undefined;
+        const parsedLng = p.lng !== null && p.lng !== undefined ? Number(p.lng) : undefined;
+
         const clientObj: ConnectedClient = {
           id: p.id,
           sessionId: p.sessionId,
           name: isAnon ? 'Visitante Anónimo' : cleanClientName(p.name),
           email: isAnon ? '' : (p.email || ''),
           city: cleanCity || 'Ecuador',
+          exactAddress: p.exactAddress || cleanCity || undefined,
+          lat: !isNaN(parsedLat as number) ? parsedLat : undefined,
+          lng: !isNaN(parsedLng as number) ? parsedLng : undefined,
           country: p.country || 'Ecuador',
           x: finalX,
           y: finalY,
@@ -194,7 +203,8 @@ interface RadarStore {
     cartItemsCount?: number,
     isOnline?: boolean,
     sessionId?: string,
-    allSessions?: boolean
+    allSessions?: boolean,
+    exactLocation?: { lat?: number; lng?: number; exactAddress?: string }
   ) => Promise<void>;
   fetchActiveClients: () => Promise<void>;
   cleanup: () => void;
@@ -238,7 +248,8 @@ export const useRadarStore = create<RadarStore>((set, get) => ({
     cartItemsCount = 0,
     isOnline = true,
     sessionId,
-    allSessions = false
+    allSessions = false,
+    exactLocation
   ) => {
     void allSessions;
     let activeChannel = get().channel;
@@ -274,7 +285,7 @@ export const useRadarStore = create<RadarStore>((set, get) => ({
       const charCodeSum = String(sessionId || clientId).split('').reduce((acc, ch) => acc + ch.charCodeAt(0), 0);
       cleanCity = DEFAULT_ECUADOR_CITIES[charCodeSum % DEFAULT_ECUADOR_CITIES.length];
     }
-    const coords = resolveCoordinates(cleanCity);
+    const coords = resolveCoordinates(exactLocation?.exactAddress || cleanCity);
     const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
     const isTablet = typeof window !== 'undefined' && window.innerWidth >= 768 && window.innerWidth < 1024;
     const device: ConnectedClient['device'] = isMobile ? 'Celular' : isTablet ? 'Tablet' : 'Computador';
@@ -290,6 +301,9 @@ export const useRadarStore = create<RadarStore>((set, get) => ({
       name: isAnon ? 'Visitante Anónimo' : cleanClientName(user?.name || user?.email?.split('@')[0] || 'Cliente Lumina'),
       email: isAnon ? '' : (user?.email || ''),
       city: cleanCity || 'Ecuador',
+      exactAddress: exactLocation?.exactAddress || cleanCity || 'Ecuador',
+      lat: exactLocation?.lat,
+      lng: exactLocation?.lng,
       country: 'Ecuador',
       x: coords.x >= 0 ? coords.x : 48.8,
       y: coords.y >= 0 ? coords.y : 26.5,

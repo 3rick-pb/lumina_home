@@ -51,6 +51,7 @@ export interface ShippingAddress {
   phone?: string;
   email?: string;
   street: string;
+  reference?: string;
   city: string;
   state: string;
   postalCode: string;
