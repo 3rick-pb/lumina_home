@@ -90,26 +90,93 @@ export async function GET(request: Request) {
       return NextResponse.json({ success: false, error: error.message, orders: [] }, { status: 500 });
     }
 
-    const formattedOrders: ApiOrder[] = (data || [])
+    // Resolve authentic customer avatar settings & user_id from user_avatar_settings and user_profiles
+    const avatarByUserId = new Map<string, { seed: string; shape: 'squircle' | 'circle' }>();
+    const avatarByEmail = new Map<string, { userId: string; seed: string; shape: 'squircle' | 'circle' }>();
+    const userIdByEmail = new Map<string, string>();
+    const adminEmailsSet = new Set<string>(['admin@lumina.com', 'arteagae796@gmail.com']);
+
+    try {
+      const [avatarRes, profileRes, invRes] = await Promise.all([
+        client.from('user_avatar_settings').select('user_id, user_email, custom_seed, background_shape'),
+        client.from('user_profiles').select('user_id, email'),
+        client.from('admin_invitations').select('email').eq('is_active', true),
+      ]);
+
+      if (Array.isArray(profileRes.data)) {
+        for (const p of profileRes.data) {
+          if (p.user_id && p.email) {
+            userIdByEmail.set(String(p.email).toLowerCase().trim(), String(p.user_id));
+          }
+        }
+      }
+
+      if (Array.isArray(avatarRes.data)) {
+        for (const row of avatarRes.data) {
+          const uid = row.user_id ? String(row.user_id) : '';
+          const em = row.user_email ? String(row.user_email).toLowerCase().trim() : '';
+          const seed = row.custom_seed ? String(row.custom_seed).trim() : uid;
+          const shape: 'squircle' | 'circle' = row.background_shape === 'circle' ? 'circle' : 'squircle';
+          if (uid) {
+            avatarByUserId.set(uid, { seed: seed || uid, shape });
+          }
+          if (em) {
+            if (uid && !userIdByEmail.has(em)) userIdByEmail.set(em, uid);
+            avatarByEmail.set(em, { userId: uid, seed: seed || uid || em, shape });
+          }
+        }
+      }
+
+      if (Array.isArray(invRes.data)) {
+        for (const inv of invRes.data) {
+          if (inv.email) adminEmailsSet.add(String(inv.email).toLowerCase().trim());
+        }
+      }
+    } catch {}
+
+    const formattedOrders = (data || [])
       .filter((o: Record<string, unknown>) => !String(o.id || '').startsWith('SYS_'))
-      .map((o: Record<string, unknown>) => ({
-        id: String(o.id || ''),
-        userId: o.user_id ? String(o.user_id) : undefined,
-        customerName: String(o.customer_name || 'Cliente Lumina'),
-        customerEmail: String(o.customer_email || 'cliente@lumina.com'),
-        recipient: String(o.recipient || o.customer_name || 'Cliente'),
-        customerIdNumber: o.customer_id_number ? String(o.customer_id_number) : undefined,
-        customerPhone: o.customer_phone ? String(o.customer_phone) : undefined,
-        shippingAddress: (o.shipping_address as ApiOrder['shippingAddress']) || undefined,
-        paymentMethod: String(o.payment_method || 'Tarjeta de Crédito'),
-        date: o.created_at ? new Date(String(o.created_at)).toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: 'numeric' }) : 'Reciente',
-        time: o.created_at ? new Date(String(o.created_at)).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }) : '12:00',
-        createdAt: String(o.created_at || new Date().toISOString()),
-        status: (o.status as ApiOrder['status']) || 'Procesando',
-        trackingNumber: o.tracking_number ? String(o.tracking_number) : undefined,
-        total: Number(o.total) || 0,
-        items: Array.isArray(o.items) ? (o.items as ApiOrder['items']) : []
-      }));
+      .map((o: Record<string, unknown>) => {
+        const rawEmail = String(o.customer_email || (o.shipping_address as Record<string, unknown>)?.email || 'cliente@lumina.com');
+        const normEmail = rawEmail.toLowerCase().trim();
+        const rawUserId = o.user_id ? String(o.user_id).trim() : '';
+        const resolvedUserId = rawUserId || userIdByEmail.get(normEmail) || avatarByEmail.get(normEmail)?.userId || undefined;
+
+        const byId = resolvedUserId ? avatarByUserId.get(resolvedUserId) : undefined;
+        const byEmail = avatarByEmail.get(normEmail);
+        const resolvedAvatarSeed =
+          byId?.seed ||
+          byEmail?.seed ||
+          resolvedUserId ||
+          normEmail ||
+          String(o.customer_name || 'Cliente Lumina');
+        const resolvedAvatarShape: 'squircle' | 'circle' =
+          byId?.shape || byEmail?.shape || 'squircle';
+        const resolvedCustomerRole: 'USER' | 'ADMIN' =
+          adminEmailsSet.has(normEmail) ? 'ADMIN' : 'USER';
+
+        return {
+          id: String(o.id || ''),
+          userId: resolvedUserId,
+          customerName: String(o.customer_name || 'Cliente Lumina'),
+          customerEmail: rawEmail,
+          customerAvatarSeed: resolvedAvatarSeed,
+          customerAvatarShape: resolvedAvatarShape,
+          customerRole: resolvedCustomerRole,
+          recipient: String(o.recipient || o.customer_name || 'Cliente'),
+          customerIdNumber: o.customer_id_number ? String(o.customer_id_number) : undefined,
+          customerPhone: o.customer_phone ? String(o.customer_phone) : undefined,
+          shippingAddress: (o.shipping_address as ApiOrder['shippingAddress']) || undefined,
+          paymentMethod: String(o.payment_method || 'Tarjeta de Crédito'),
+          date: o.created_at ? new Date(String(o.created_at)).toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: 'numeric' }) : 'Reciente',
+          time: o.created_at ? new Date(String(o.created_at)).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }) : '12:00',
+          createdAt: String(o.created_at || new Date().toISOString()),
+          status: (o.status as ApiOrder['status']) || 'Procesando',
+          trackingNumber: o.tracking_number ? String(o.tracking_number) : undefined,
+          total: Number(o.total) || 0,
+          items: Array.isArray(o.items) ? (o.items as ApiOrder['items']) : []
+        };
+      });
 
     return NextResponse.json({ success: true, orders: formattedOrders, count: formattedOrders.length });
   } catch (error) {

@@ -1425,6 +1425,7 @@ export function BeUICenterMorphModal({
     document.body.style.overflow = "hidden";
     document.documentElement.style.overflow = "hidden";
     document.body.style.overscrollBehavior = "none";
+    document.documentElement.classList.add("lumina-modal-lock-scroll");
 
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") onOpenChange(false);
@@ -1434,6 +1435,7 @@ export function BeUICenterMorphModal({
       document.body.style.overflow = prevBodyOverflow;
       document.documentElement.style.overflow = prevHtmlOverflow;
       document.body.style.overscrollBehavior = prevBodyOverscroll;
+      document.documentElement.classList.remove("lumina-modal-lock-scroll");
       document.removeEventListener("keydown", handleKeyDown);
     };
   }, [open, onOpenChange]);
@@ -1441,7 +1443,22 @@ export function BeUICenterMorphModal({
   return (
     <AnimatePresence>
       {open && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 overflow-y-auto">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 overflow-hidden">
+          <style>{`
+            html.lumina-modal-lock-scroll,
+            html.lumina-modal-lock-scroll body {
+              overflow: hidden !important;
+              overscroll-behavior: none !important;
+              scrollbar-width: none !important;
+              -ms-overflow-style: none !important;
+            }
+            html.lumina-modal-lock-scroll::-webkit-scrollbar,
+            html.lumina-modal-lock-scroll body::-webkit-scrollbar {
+              display: none !important;
+              width: 0 !important;
+              height: 0 !important;
+            }
+          `}</style>
           <motion.div
             variants={CENTER_MORPH_BACKDROP_VARIANTS}
             initial="closed"
@@ -2538,13 +2555,10 @@ export function BeUIOrderStatusSelector({
         </div>
       }
     >
-      <div className="w-[215px] space-y-1">
+      <div className="w-[200px] space-y-1">
         <div className="px-2.5 py-1.5 border-b border-gray-100 dark:border-white/10 flex items-center justify-between">
           <span className="text-[9.5px] font-mono uppercase tracking-widest text-gray-400 font-bold">
             Estado de Envío
-          </span>
-          <span className="text-[9px] font-mono text-[#8c9276] dark:text-[#ccff00] font-semibold">
-            beUI // Popover
           </span>
         </div>
         {(["Procesando", "Enviado", "Entregado"] as const).map((opt) => {

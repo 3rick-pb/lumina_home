@@ -33,6 +33,9 @@ export interface Order {
   shippingAddress?: ShippingAddress;
   paymentMethod?: string;
   userId?: string;
+  customerAvatarSeed?: string;
+  customerAvatarShape?: 'squircle' | 'circle';
+  customerRole?: 'USER' | 'ADMIN';
 }
 
 export interface PaymentCard {

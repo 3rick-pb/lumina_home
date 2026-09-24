@@ -1,10 +1,13 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { ShoppingBag, Eye, Layers, Clock, Truck, CheckCircle2 } from "lucide-react";
 import { useUserStore, Order } from "@/lib/userStore";
+import { useAvatarSettingsStore } from "@/lib/avatarSettingsStore";
+import { useRadarStore } from "@/lib/radarStore";
+import { supabase } from "@/lib/supabase";
 import { normalizeSearchText } from "@/lib/utils";
 import { CloudSyncStatus } from "../CloudSyncStatus";
 import { BlobatarAvatar } from "@/components/ui/BlobatarAvatar";
@@ -56,10 +59,123 @@ export function OrdersTab({
   searchQuery = "",
   setSelectedOrder
 }: OrdersTabProps) {
-  const { orders, updateOrderStatus, refreshOrders } = useUserStore();
+  const { user, orders, updateOrderStatus, refreshOrders } = useUserStore();
+  const { customSeed: selfCustomSeed, backgroundShape: selfBackgroundShape } = useAvatarSettingsStore();
+  const radarClients = useRadarStore((state) => state.clients);
+
   const [orderStatusFilter, setOrderStatusFilter] = useState<string>("all");
   const [isSyncing, setIsSyncing] = useState(false);
   const [syncError, setSyncError] = useState<string | null>(null);
+  const [avatarDirectory, setAvatarDirectory] = useState<{
+    byUserId: Record<string, { seed: string; shape: "squircle" | "circle" }>;
+    byEmail: Record<string, { userId?: string; seed: string; shape: "squircle" | "circle" }>;
+  }>({ byUserId: {}, byEmail: {} });
+
+  useEffect(() => {
+    let active = true;
+    const loadCustomerAvatars = async () => {
+      try {
+        const [avatarRes, profileRes] = await Promise.all([
+          supabase.from("user_avatar_settings").select("user_id, user_email, custom_seed, background_shape"),
+          supabase.from("user_profiles").select("user_id, email"),
+        ]);
+        if (!active) return;
+
+        const nextByUserId: Record<string, { seed: string; shape: "squircle" | "circle" }> = {};
+        const nextByEmail: Record<string, { userId?: string; seed: string; shape: "squircle" | "circle" }> = {};
+
+        if (Array.isArray(profileRes.data)) {
+          for (const p of profileRes.data) {
+            const uid = p.user_id ? String(p.user_id).trim() : "";
+            const em = p.email ? String(p.email).toLowerCase().trim() : "";
+            if (uid && em) {
+              nextByEmail[em] = { userId: uid, seed: uid, shape: "squircle" };
+            }
+          }
+        }
+
+        if (Array.isArray(avatarRes.data)) {
+          for (const row of avatarRes.data) {
+            const uid = row.user_id ? String(row.user_id).trim() : "";
+            const em = row.user_email ? String(row.user_email).toLowerCase().trim() : "";
+            const seed = row.custom_seed ? String(row.custom_seed).trim() : uid;
+            const shape: "squircle" | "circle" = row.background_shape === "circle" ? "circle" : "squircle";
+            if (uid) {
+              nextByUserId[uid] = { seed: seed || uid, shape };
+            }
+            if (em) {
+              nextByEmail[em] = { userId: uid || nextByEmail[em]?.userId, seed: seed || uid || em, shape };
+            }
+          }
+        }
+
+        setAvatarDirectory({ byUserId: nextByUserId, byEmail: nextByEmail });
+      } catch {}
+    };
+
+    loadCustomerAvatars();
+    return () => {
+      active = false;
+    };
+  }, [orders.length]);
+
+  const resolveCustomerAvatar = useCallback(
+    (ord: Order) => {
+      const normEmail = (ord.customerEmail || ord.shippingAddress?.email || "").toLowerCase().trim();
+      const ordUserId = (ord.userId || avatarDirectory.byEmail[normEmail]?.userId || "").trim();
+
+      // 1. Check if this order belongs to the currently logged-in user
+      const isCurrentSelf =
+        (user?.id && ordUserId && ordUserId === user.id) ||
+        (user?.email && normEmail && normEmail === user.email.toLowerCase().trim());
+
+      if (isCurrentSelf && user) {
+        return {
+          name: selfCustomSeed || user.id || user.email || user.name,
+          background: selfBackgroundShape || "squircle",
+          role: user.role,
+        };
+      }
+
+      // 2. Check live user_avatar_settings directory by userId or email
+      if (ordUserId && avatarDirectory.byUserId[ordUserId]) {
+        return {
+          name: avatarDirectory.byUserId[ordUserId].seed,
+          background: avatarDirectory.byUserId[ordUserId].shape,
+          role: ord.customerRole || "USER",
+        };
+      }
+      if (normEmail && avatarDirectory.byEmail[normEmail]) {
+        return {
+          name: avatarDirectory.byEmail[normEmail].seed,
+          background: avatarDirectory.byEmail[normEmail].shape,
+          role: ord.customerRole || "USER",
+        };
+      }
+
+      // 3. Check live connected clients in radarStore
+      const radarMatch = radarClients.find(
+        (c) =>
+          (ordUserId && c.id === ordUserId) ||
+          (normEmail && (c.email || "").toLowerCase().trim() === normEmail)
+      );
+      if (radarMatch) {
+        return {
+          name: radarMatch.customSeed || radarMatch.avatarSeed || radarMatch.id || normEmail || ord.customerName,
+          background: "squircle" as const,
+          role: radarMatch.role || ord.customerRole || "USER",
+        };
+      }
+
+      // 4. Fallback to server-enriched customerAvatarSeed on the Order object
+      return {
+        name: ord.customerAvatarSeed || ordUserId || normEmail || ord.customerName || "lumina-client",
+        background: ord.customerAvatarShape || "squircle",
+        role: ord.customerRole || "USER",
+      };
+    },
+    [user, selfCustomSeed, selfBackgroundShape, avatarDirectory, radarClients]
+  );
 
   const handleSyncOrders = async () => {
     setIsSyncing(true);
@@ -187,11 +303,11 @@ export function OrdersTab({
         </div>
       ) : (
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs min-w-[620px]">
+          <table className="w-full text-left text-xs min-w-[640px]">
             <thead>
               <tr className="border-b border-gray-200 dark:border-white/10 text-gray-400 uppercase tracking-wider font-semibold">
                 <th className="pb-3 px-3">ID Pedido</th>
-                {isAdmin && <th className="pb-3 px-3">Cliente</th>}
+                <th className="pb-3 px-3">Cliente</th>
                 <th className="pb-3 px-3">Código Rastreo</th>
                 <th className="pb-3 px-3">Artículos</th>
                 <th className="pb-3 px-3">Total</th>
@@ -201,55 +317,62 @@ export function OrdersTab({
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100 dark:divide-white/5">
-              {filteredOrders.map((ord) => (
-                <tr key={ord.id} className="hover:bg-gray-50/70 dark:hover:bg-[#2c2c2e]/70 transition-colors">
-                  <td className="py-4 px-3 font-mono font-bold text-gray-900 dark:text-gray-100">{ord.id}</td>
-                  {isAdmin && (
+              {filteredOrders.map((ord) => {
+                const avatarProps = resolveCustomerAvatar(ord);
+                return (
+                  <tr key={ord.id} className="hover:bg-gray-50/70 dark:hover:bg-[#2c2c2e]/70 transition-colors">
+                    <td className="py-4 px-3 font-mono font-bold text-gray-900 dark:text-gray-100">{ord.id}</td>
                     <td className="py-4 px-3">
                       <div className="flex items-center gap-2.5">
                         <BlobatarAvatar
-                          name={ord.userId || ord.customerEmail || ord.customerName}
-                          size={30}
+                          name={avatarProps.name}
+                          background={avatarProps.background}
+                          role={avatarProps.role}
+                          size={32}
                           animate="hover"
-                          background="circle"
+                          title={`Avatar de ${ord.customerName || "Cliente Lumina"}`}
                         />
-                        <div>
-                          <p className="font-semibold text-gray-900 dark:text-gray-100">{ord.customerName || "Cliente Lumina"}</p>
-                          <p className="text-[10px] text-gray-400">{ord.customerEmail || "cliente@lumina.com"}</p>
+                        <div className="min-w-0">
+                          <p className="font-semibold text-gray-900 dark:text-gray-100 truncate max-w-[160px]">
+                            {ord.customerName || "Cliente Lumina"}
+                          </p>
+                          <p className="text-[10px] text-gray-400 truncate max-w-[180px]">
+                            {ord.customerEmail || "cliente@lumina.com"}
+                          </p>
                         </div>
                       </div>
                     </td>
-                  )}
-                  <td className="py-4 px-3 font-mono text-gray-500 dark:text-gray-400">{ord.trackingNumber || "TRK-PENDIENTE"}</td>
-                  <td className="py-4 px-3 text-gray-700 dark:text-gray-300">
-                    {ord.items.length > 0 ? `${ord.items.length} producto(s)` : "1 producto"}
-                  </td>
-                  <td className="py-4 px-3 font-bold text-gray-900 dark:text-gray-100">${ord.total.toFixed(2)}</td>
-                  <td className="py-4 px-3" onClick={(e) => e.stopPropagation()}>
-                    <BeUIOrderStatusSelector
-                      status={ord.status}
-                      isAdmin={isAdmin}
-                      onUpdateStatus={(nextSt) => updateOrderStatus(ord.id, nextSt)}
-                      size="sm"
-                      align="center"
-                    />
-                  </td>
-                  <td className="py-4 px-3 text-gray-500 dark:text-gray-400">
-                    <span className="block font-medium text-gray-800 dark:text-gray-200">{ord.date}</span>
-                    {ord.time && <span className="block text-[10px] text-gray-400">{ord.time}</span>}
-                  </td>
-                  <td className="py-4 pr-2 pl-3 text-right whitespace-nowrap">
-                    <div className="inline-flex items-center justify-end gap-2 ml-auto">
-                      <button 
-                        onClick={() => setSelectedOrder(ord)} 
-                        className="px-3.5 py-1.5 bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 rounded-xl text-xs font-semibold hover:bg-gray-800 dark:hover:bg-white transition-all hover:scale-[1.03] active:scale-95 flex items-center gap-1.5 shrink-0 cursor-pointer shadow-xs"
-                      >
-                        <Eye className="w-3.5 h-3.5" /> Detalle
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
+                    <td className="py-4 px-3 font-mono text-gray-500 dark:text-gray-400">{ord.trackingNumber || "TRK-PENDIENTE"}</td>
+                    <td className="py-4 px-3 text-gray-700 dark:text-gray-300">
+                      {ord.items.length > 0 ? `${ord.items.length} producto(s)` : "1 producto"}
+                    </td>
+                    <td className="py-4 px-3 font-bold text-gray-900 dark:text-gray-100">${ord.total.toFixed(2)}</td>
+                    <td className="py-4 px-3" onClick={(e) => e.stopPropagation()}>
+                      <BeUIOrderStatusSelector
+                        status={ord.status}
+                        isAdmin={isAdmin}
+                        onUpdateStatus={(nextSt) => updateOrderStatus(ord.id, nextSt)}
+                        size="sm"
+                        align="center"
+                      />
+                    </td>
+                    <td className="py-4 px-3 text-gray-500 dark:text-gray-400">
+                      <span className="block font-medium text-gray-800 dark:text-gray-200">{ord.date}</span>
+                      {ord.time && <span className="block text-[10px] text-gray-400">{ord.time}</span>}
+                    </td>
+                    <td className="py-4 pr-2 pl-3 text-right whitespace-nowrap">
+                      <div className="inline-flex items-center justify-end gap-2 ml-auto">
+                        <button 
+                          onClick={() => setSelectedOrder(ord)} 
+                          className="px-3.5 py-1.5 bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 rounded-xl text-xs font-semibold hover:bg-gray-800 dark:hover:bg-white transition-all hover:scale-[1.03] active:scale-95 flex items-center gap-1.5 shrink-0 cursor-pointer shadow-xs"
+                        >
+                          <Eye className="w-3.5 h-3.5" /> Detalle
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>

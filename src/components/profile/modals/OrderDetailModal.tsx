@@ -202,6 +202,12 @@ export function OrderDetailModal({
             width: 0 !important;
             height: 0 !important;
           }
+          .lumina-bag-close-btn,
+          .lumina-bag-close-btn * {
+            transition-property: all !important;
+            transition-duration: 150ms !important;
+            transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1) !important;
+          }
         `}</style>
         <div 
           ref={scrollContainerRef}
@@ -217,7 +223,7 @@ export function OrderDetailModal({
             <button
               type="button"
               onClick={onClose}
-              className="w-10 h-10 rounded-full bg-white/80 dark:bg-white/10 backdrop-blur-xl border border-black/[0.06] dark:border-white/15 shadow-[0_2px_8px_rgba(0,0,0,0.04)] text-gray-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50/90 dark:hover:bg-rose-950/40 hover:border-rose-200 dark:hover:border-rose-900/40 flex items-center justify-center hover:scale-105 active:scale-95 transition-all cursor-pointer shrink-0"
+              className="lumina-bag-close-btn w-10 h-10 rounded-full bg-white/80 dark:bg-white/10 backdrop-blur-xl border border-black/[0.06] dark:border-white/15 shadow-[0_2px_8px_rgba(0,0,0,0.04)] text-gray-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50/90 dark:hover:bg-rose-950/40 hover:border-rose-200 dark:hover:border-rose-900/40 flex items-center justify-center hover:scale-105 active:scale-95 transition-all cursor-pointer shrink-0"
               title="Cerrar detalle del pedido"
             >
               <X className="w-4 h-4" />
@@ -263,10 +269,11 @@ export function OrderDetailModal({
             <p className="text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-1.5">Cliente / Comprador</p>
             <div className="flex items-center gap-2.5 mb-1">
               <BlobatarAvatar
-                name={activeOrder.userId || activeOrder.customerEmail || activeOrder.customerName}
+                name={activeOrder.customerAvatarSeed || activeOrder.userId || activeOrder.customerEmail || activeOrder.customerName}
+                background={activeOrder.customerAvatarShape || "squircle"}
+                role={activeOrder.customerRole || "USER"}
                 size={34}
                 animate="always"
-                background="squircle"
               />
               <div className="min-w-0">
                 <p className="text-xs font-bold text-gray-900 dark:text-gray-100 truncate">{activeOrder.customerName || "Cliente Lumina"}</p>

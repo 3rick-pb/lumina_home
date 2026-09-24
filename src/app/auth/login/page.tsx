@@ -361,7 +361,7 @@ export default function LoginPage() {
                 >
                   <KeyRound className="w-3.5 h-3.5 text-[#8c9276] group-hover:rotate-12 transition-transform" />
                   <span className="underline decoration-[#8c9276]/50 underline-offset-4 group-hover:decoration-gray-900">
-                    ¿Olvidaste o deseas cambiar tu contraseña?
+                    ¿Olvidaste tu contraseña?
                   </span>
                 </button>
               </div>

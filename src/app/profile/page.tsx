@@ -750,7 +750,7 @@ const handleConfirmDeleteNiche = async () => {
        className={`absolute flex items-center justify-center select-none pointer-events-none transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] ${
          activeTab === "orders"
            ? "top-1 right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-[#8c9276] text-white dark:text-gray-950 text-[10px] font-extrabold ring-2 ring-gray-950 dark:ring-white shadow-sm scale-100"
-           : "top-[9px] right-[8px] md:top-[10px] md:right-[9px] min-w-0 h-auto p-0 rounded-none bg-transparent text-[#8c9276] dark:text-[#a3a98d] text-xs font-black ring-0 shadow-none scale-105"
+           : "top-[23px] right-[4px] md:top-[25px] md:right-[5px] min-w-[17px] h-[17px] px-1 rounded-full bg-rose-500/15 dark:bg-rose-500/25 border border-rose-500/40 text-rose-600 dark:text-rose-400 text-[10.5px] font-black shadow-[0_2px_6px_rgba(244,63,94,0.25)] scale-100"
        }`}
        title={`${pendingOrdersCount} pedido(s) en curso`}
      >
