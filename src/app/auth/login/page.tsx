@@ -11,6 +11,7 @@ import { ArrowRight, Mail, Lock, Sparkles, ShieldCheck, Search, X, Eye, Compass 
 import { normalizeSearchText } from "@/lib/utils";
 import { useBrand } from "@/core";
 import { BeUILoaderMetaballs } from "@/components/ui/BeUIControls";
+import { LuminaLoginWordmark } from "@/components/ui/LuminaLoginWordmark";
 
 export default function LoginPage() {
   const brand = useBrand();
@@ -114,10 +115,8 @@ export default function LoginPage() {
           </span>
         </div>
 
-        <div className="block select-none cursor-default">
-          <h1 className="font-display text-5xl sm:text-6xl font-bold tracking-tight text-gray-900">
-            {brand.logo.text}<span className="text-[#8c9276]">{brand.logo.accentDot}</span>
-          </h1>
+        <div className="flex justify-center select-none cursor-default my-1">
+          <LuminaLoginWordmark />
         </div>
         <p className="mt-2 text-xs sm:text-sm text-gray-600 font-light leading-relaxed">
           Espacios diseñados para perdurar. Inicia sesión con tus credenciales para acceder a la boutique y gestionar tus pedidos.

@@ -492,22 +492,27 @@ export function OverviewTab({
             </button>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-5 py-1 place-items-center">
-            {cards.map((c, index) => (
-              <LuminaCardFolderItem
-                key={c.id}
-                id={c.id}
-                holder={c.holder}
-                number={c.number}
-                exp={c.exp}
-                type={c.type}
-                isDefault={c.isDefault}
-                index={index}
-                compact
-                onSetDefault={setDefaultCard}
-                onRemove={removeCard}
-              />
-            ))}
+          <div className="flex flex-col items-center justify-center py-1">
+            {(() => {
+              const primaryIndex = Math.max(0, cards.findIndex((c) => c.isDefault));
+              const primaryCard = cards[primaryIndex] || cards[0];
+              if (!primaryCard) return null;
+              return (
+                <LuminaCardFolderItem
+                  key={primaryCard.id}
+                  id={primaryCard.id}
+                  holder={primaryCard.holder}
+                  number={primaryCard.number}
+                  exp={primaryCard.exp}
+                  type={primaryCard.type}
+                  isDefault={true}
+                  index={primaryIndex}
+                  compact
+                  onSetDefault={setDefaultCard}
+                  onRemove={removeCard}
+                />
+              );
+            })()}
           </div>
         )}
 
