@@ -229,7 +229,9 @@ function CrispQRMatrixSVG({
 
   return (
     <svg
-      ref={svgRef}
+      ref={(el) => {
+        if (svgRef) svgRef.current = el;
+      }}
       width={size}
       height={size}
       viewBox={`0 0 ${size} ${size}`}
