@@ -132,7 +132,7 @@ function ActivityTracker() {
         } catch {}
       }
 
-      // 2. Check cached browser GPS / IP precise coordinates
+      // 2. Check cached coordinates if previously saved by address form
       try {
         const cachedGps = localStorage.getItem("lumina_precise_browser_gps_v1");
         if (cachedGps) {
@@ -147,41 +147,6 @@ function ActivityTracker() {
           }
         }
       } catch {}
-
-      // 3. Request high-accuracy browser geolocation if permission already granted
-      if (navigator.permissions && navigator.geolocation) {
-        try {
-          const perm = await navigator.permissions.query({ name: "geolocation" as PermissionName });
-          if (perm.state === "granted") {
-            navigator.geolocation.getCurrentPosition(
-              (pos) => {
-                if (cancelled) return;
-                const lat = pos.coords.latitude;
-                const lng = pos.coords.longitude;
-                exactGeoRef.current = {
-                  ...exactGeoRef.current,
-                  lat,
-                  lng,
-                  exactAddress: exactGeoRef.current.exactAddress || cityPart || "Ubicación GPS Exacta",
-                };
-                try {
-                  localStorage.setItem(
-                    "lumina_precise_browser_gps_v1",
-                    JSON.stringify({
-                      lat,
-                      lng,
-                      city: cityPart || exactGeoRef.current.city || "Quito",
-                      exactAddress: exactGeoRef.current.exactAddress,
-                    })
-                  );
-                } catch {}
-              },
-              () => {},
-              { enableHighAccuracy: true, timeout: 6000, maximumAge: 60000 }
-            );
-          }
-        } catch {}
-      }
     };
 
     resolvePreciseLocation();

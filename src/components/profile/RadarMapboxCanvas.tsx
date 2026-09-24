@@ -381,7 +381,8 @@ export function resolveGeoLngLat(
   countryCode: RadarCountryCode,
   offsetXPct: number = 0,
   offsetYPct: number = 0,
-  exactLngLat?: [number, number]
+  exactLngLat?: [number, number],
+  camZoom: number = 6.45
 ): [number, number] {
   let baseLng: number | null = null;
   let baseLat: number | null = null;
@@ -415,10 +416,13 @@ export function resolveGeoLngLat(
     }
   }
 
-  // Convert radial dispersion offset into real geographic degrees (~0.0022° per unit = ~240m street blocks)
-  // so pins remain 100% locked to their exact physical neighborhood/street on the map at every zoom level!
-  const geoLng = baseLng + offsetXPct * 0.0022;
-  const geoLat = baseLat - offsetYPct * 0.0022;
+  // Adaptive zoom-aware dispersion:
+  // At country overview (zoom ~6.45), degPerUnit is ~0.038° (~26px separation on screen so pins never pile up).
+  // As you zoom into a city/street (zoom 11 -> 15), degPerUnit smoothly tightens down to 0.0018° (~180m street block).
+  const zoomFactor = Math.pow(1.65, Math.max(0, 11.2 - camZoom));
+  const degPerUnit = Math.min(0.038, Math.max(0.0018, 0.0018 * zoomFactor));
+  const geoLng = baseLng + offsetXPct * degPerUnit;
+  const geoLat = baseLat - offsetYPct * degPerUnit;
 
   return [geoLng, geoLat];
 }
@@ -795,7 +799,7 @@ export function RadarMapboxCanvas({
           }
 
           // 1. MULTI-LEVEL ANCESTOR FALLBACK (walk from zTile - 1 all the way down to z = 2)
-          // Also triggers fetch on immediate parent (zTile - 1) so overview tiles stream in immediately.
+          let drewAncestor = false;
           if (zTile > 2) {
             fetchTile(provider, zTile - 1, Math.floor(tx / 2), Math.floor(ty / 2));
             for (let dz = 1; dz <= zTile - 2; dz++) {
@@ -820,15 +824,14 @@ export function RadarMapboxCanvas({
                   drawnTileSize + 0.5,
                   drawnTileSize + 0.5
                 );
+                drewAncestor = true;
                 break;
               }
             }
           }
+          if (drewAncestor) continue;
 
           // 2. CHILD-TILE QUADRANT COMPOSITE FALLBACK (zTile + 1 and zTile + 2)
-          // When zooming OUT from a country, the higher-zoom tiles (zTile + 1 / zTile + 2) are ALREADY
-          // in `tileImageCache`! Drawing them into their 2x2 or 4x4 sub-quadrants keeps the country
-          // 100% crisp with zero flicker while the lower-zoom tile finishes loading.
           if (zTile < 18) {
             const halfSize = drawnTileSize / 2;
             for (let cy = 0; cy < 2; cy++) {
@@ -937,24 +940,20 @@ export function RadarMapboxCanvas({
             ctx.fillRect(0, 0, w, h);
 
             if (mapStyleMode === "tactical") {
-              if (cam.zoom < 10.6) {
-                // Macro / Continental view: Esri Dark Gray Base + Satellite Relief + Boundaries
+              if (cam.zoom < 9.8) {
+                // Country / Continental view: Esri Dark Gray Base + Satellite Relief + Boundaries
                 drawTileLayer(ctx, "dark-base", cam.lng, cam.lat, cam.zoom, w, h, 1.0, 1);
-                drawTileLayer(ctx, "satellite", cam.lng, cam.lat, cam.zoom, w, h, 0.34, 0);
+                drawTileLayer(ctx, "satellite", cam.lng, cam.lat, cam.zoom, w, h, 0.32, 0);
                 drawTileLayer(ctx, "boundaries-labels", cam.lng, cam.lat, cam.zoom, w, h, 1.0, 1);
-              }
-              if (cam.zoom >= 9.4) {
-                // City / Neighborhood / Street view (up to z=18): CartoDB @2x Dark Matter + subtle Satellite texture
-                // 100% immune to Esri "Map Data Not Available" tiles at high zoom!
-                const cityFade = Math.min(1.0, (cam.zoom - 9.4) / 1.2);
-                drawTileLayer(ctx, "carto-dark-all", cam.lng, cam.lat, cam.zoom, w, h, cityFade, 0);
-                drawTileLayer(ctx, "satellite", cam.lng, cam.lat, cam.zoom, w, h, cityFade * 0.22, 0);
-                drawTileLayer(ctx, "carto-dark-labels", cam.lng, cam.lat, cam.zoom, w, h, cityFade, 0);
+              } else {
+                // City / Neighborhood / Street view (up to z=18): Single clean CartoDB @2x Dark All layer
+                // (already includes high-DPI street & sector labels, preventing any double-label overlap)
+                drawTileLayer(ctx, "carto-dark-all", cam.lng, cam.lat, cam.zoom, w, h, 1.0, 0);
               }
             } else if (mapStyleMode === "satellite") {
-              // Full HD Esri Satellite Imagery (clamped at native z=13 and smoothly overzoomed) + @2x Labels
+              // Full HD Esri Satellite Imagery + clean labels
               drawTileLayer(ctx, "satellite", cam.lng, cam.lat, cam.zoom, w, h, 1.0, 1);
-              if (cam.zoom < 10.5) {
+              if (cam.zoom < 10.2) {
                 drawTileLayer(ctx, "boundaries-labels", cam.lng, cam.lat, cam.zoom, w, h, 1.0, 1);
               } else {
                 drawTileLayer(ctx, "carto-dark-labels", cam.lng, cam.lat, cam.zoom, w, h, 1.0, 0);
@@ -1119,7 +1118,8 @@ export function RadarMapboxCanvas({
         selectedCountry,
         offsetX,
         offsetY,
-        exactLngLat
+        exactLngLat,
+        cam.zoom
       );
 
       const centerWx = lngToMercatorX(cam.lng, cam.zoom);

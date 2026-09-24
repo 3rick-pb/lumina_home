@@ -450,23 +450,8 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
             }
           }
         } catch {
-          // Fallback to calibrated sector dictionary or browser GPS
+          // Fallback to calibrated sector dictionary
         }
-      }
-      if (typeof navigator !== "undefined" && "geolocation" in navigator) {
-        navigator.geolocation.getCurrentPosition(
-          (pos) => {
-            if (
-              active &&
-              Number.isFinite(pos.coords.latitude) &&
-              Number.isFinite(pos.coords.longitude)
-            ) {
-              setSelfExactLngLat([pos.coords.longitude, pos.coords.latitude]);
-            }
-          },
-          () => {},
-          { enableHighAccuracy: true, timeout: 6000, maximumAge: 300000 }
-        );
       }
     };
     resolveSelfCoords();
@@ -1171,18 +1156,14 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
             const isDimmed = !isSelf && !isActive && !isStageMatch;
 
             const clientFirstName = cleanClientName(client.name).split(' ')[0] || '';
-            const exactLabelPart =
-              isSelf && primaryAddressObj?.reference
-                ? `${primaryAddressObj.reference}, ${beacon.cityName}`
-                : isSelf && primaryAddressObj?.street
-                ? `${primaryAddressObj.street}, ${beacon.cityName}`
-                : client.exactAddress && client.exactAddress.includes(",")
-                ? client.exactAddress
+            const shortCityOrSector =
+              isSelf && primaryAddressObj?.reference && primaryAddressObj.reference.length <= 18
+                ? primaryAddressObj.reference
                 : beacon.cityName;
 
             const beaconLabel = beacon.clusterTotal > 1 && clientFirstName
-              ? `${clientFirstName} • ${exactLabelPart}`
-              : exactLabelPart;
+              ? `${clientFirstName} • ${shortCityOrSector}`
+              : shortCityOrSector;
 
             const openDownward = pos.y < 220;
 
