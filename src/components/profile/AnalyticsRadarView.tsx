@@ -39,6 +39,8 @@ import {
   RadarMapboxCanvas,
   resolveEcuadorExactAddressLngLat,
   lookupLocalStreetOrSectorLngLat,
+  lookupPostalCodeLngLat,
+  isGenericCityFallbackLngLat,
   cleanEcuadorStreetForGeocoding,
 } from "./RadarMapboxCanvas";
 
@@ -154,6 +156,7 @@ export interface ClusterMapBeacon {
   cityName: string;
   baseX: number;
   baseY: number;
+  exactLngLat?: [number, number];
   clients: ConnectedClient[];
   hasCart: boolean;
   hasFrequent: boolean;
@@ -286,6 +289,7 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
 
   // Zoom state
   const [zoom, setZoom] = useState<number>(1);
+  const [zoomStepSeq, setZoomStepSeq] = useState<{ dir: "in" | "out"; seq: number } | null>(null);
   
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const clientsListRef = useRef<HTMLDivElement>(null);
@@ -416,41 +420,63 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
 
   const currentUserExactAddress = useMemo(() => {
     if (!primaryAddressObj) return "";
-    return [primaryAddressObj.street, primaryAddressObj.reference, primaryAddressObj.city]
+    return [
+      primaryAddressObj.street,
+      primaryAddressObj.reference,
+      primaryAddressObj.postalCode,
+      primaryAddressObj.city,
+    ]
       .filter(Boolean)
       .join(", ");
   }, [primaryAddressObj]);
 
   const [selfExactLngLat, setSelfExactLngLat] = useState<[number, number] | undefined>(() => {
     if (!primaryAddressObj) return undefined;
+    const hasSpecific = Boolean(
+      primaryAddressObj.street?.trim() ||
+        primaryAddressObj.reference?.trim() ||
+        primaryAddressObj.postalCode?.trim()
+    );
     if (
       typeof primaryAddressObj.lng === "number" &&
       typeof primaryAddressObj.lat === "number" &&
       Number.isFinite(primaryAddressObj.lng) &&
       Number.isFinite(primaryAddressObj.lat) &&
-      Math.abs(primaryAddressObj.lng) > 0.01
+      Math.abs(primaryAddressObj.lng) > 0.01 &&
+      (!hasSpecific || !isGenericCityFallbackLngLat(primaryAddressObj.lng, primaryAddressObj.lat))
     ) {
       return [primaryAddressObj.lng, primaryAddressObj.lat];
     }
-    return (
-      lookupLocalStreetOrSectorLngLat(
-        primaryAddressObj.street,
-        primaryAddressObj.reference,
-        undefined
-      ) || undefined
+    const localStreetMatch = lookupLocalStreetOrSectorLngLat(
+      primaryAddressObj.street,
+      primaryAddressObj.reference,
+      undefined
     );
+    if (localStreetMatch) return localStreetMatch;
+    const postalMatch = lookupPostalCodeLngLat(
+      primaryAddressObj.postalCode,
+      `${primaryAddressObj.street || ""}_${primaryAddressObj.reference || ""}`
+    );
+    if (postalMatch) return postalMatch;
+    return undefined;
   });
 
   useEffect(() => {
     let active = true;
     const resolveSelfCoords = async () => {
       if (!primaryAddressObj) return;
+      const hasSpecific = Boolean(
+        primaryAddressObj.street?.trim() ||
+          primaryAddressObj.reference?.trim() ||
+          primaryAddressObj.postalCode?.trim()
+      );
       if (
         typeof primaryAddressObj.lng === "number" &&
         typeof primaryAddressObj.lat === "number" &&
         Number.isFinite(primaryAddressObj.lng) &&
         Number.isFinite(primaryAddressObj.lat) &&
-        Math.abs(primaryAddressObj.lng) > 0.01
+        Math.abs(primaryAddressObj.lng) > 0.01 &&
+        (!hasSpecific || !isGenericCityFallbackLngLat(primaryAddressObj.lng, primaryAddressObj.lat))
       ) {
         if (active) setSelfExactLngLat([primaryAddressObj.lng, primaryAddressObj.lat]);
         return;
@@ -459,6 +485,7 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
       const resolved = await resolveEcuadorExactAddressLngLat({
         street: primaryAddressObj.street,
         reference: primaryAddressObj.reference,
+        postalCode: primaryAddressObj.postalCode,
         city: primaryAddressObj.city,
         state: primaryAddressObj.state,
         country: primaryAddressObj.country,
@@ -468,14 +495,16 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
 
       if (resolved && active) {
         setSelfExactLngLat(resolved);
-        // Automatically upgrade saved ShippingAddress with resolved lat/lng so future sessions are 0ms
-        try {
-          useUserStore.getState().setAddress({
-            ...primaryAddressObj,
-            lng: resolved[0],
-            lat: resolved[1],
-          });
-        } catch {}
+        // Only persist resolved lat/lng into ShippingAddress if it is a specific street/postal coordinate
+        if (!isGenericCityFallbackLngLat(resolved[0], resolved[1])) {
+          try {
+            useUserStore.getState().setAddress({
+              ...primaryAddressObj,
+              lng: resolved[0],
+              lat: resolved[1],
+            });
+          } catch {}
+        }
       }
     };
     resolveSelfCoords();
@@ -831,6 +860,7 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
       cityName: string;
       baseX: number;
       baseY: number;
+      exactLngLat?: [number, number];
       clients: Array<{ client: ConnectedClient; isSelf: boolean }>;
     }>();
 
@@ -846,14 +876,32 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
       }
 
       const cityName = formatBeaconCity(city || "Ecuador");
-      const key = `${cityName.toLowerCase().trim()}_${Math.round(x * 10)}_${Math.round(y * 10)}`;
+      const exactCoord: [number, number] | undefined =
+        isSelf && selfExactLngLat
+          ? selfExactLngLat
+          : typeof c.lng === "number" &&
+            typeof c.lat === "number" &&
+            Number.isFinite(c.lng) &&
+            Number.isFinite(c.lat)
+          ? [c.lng, c.lat]
+          : undefined;
+
+      // Keep the active user's personal anchor (`isSelf`) or any client with an exact postal/street coordinate
+      // in its own exact coordinate group so its anchor is NEVER swallowed into a generic city centroid.
+      const key = exactCoord
+        ? `${cityName.toLowerCase().trim()}_exact_${exactCoord[0].toFixed(4)}_${exactCoord[1].toFixed(4)}`
+        : `${cityName.toLowerCase().trim()}_${Math.round(x * 10)}_${Math.round(y * 10)}`;
 
       const current = groups.get(key) || {
         cityName,
         baseX: x,
         baseY: y,
+        exactLngLat: exactCoord,
         clients: [],
       };
+      if (exactCoord && !current.exactLngLat) {
+        current.exactLngLat = exactCoord;
+      }
       current.clients.push({ client: c, isSelf });
       groups.set(key, current);
     });
@@ -863,8 +911,13 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
 
     groups.forEach((grp, cityKey) => {
       const total = grp.clients.length;
-      // In clustered mode, groups with > 1 client become a Cluster Beacon unless explicitly expanded
-      const isClustered = clusterMode === "clustered" && total > 1 && expandedClusterCity !== cityKey;
+      const hasSelfWithExact = grp.clients.some(g => g.isSelf) && Boolean(selfExactLngLat);
+      // In clustered mode, groups with > 1 client become a Cluster Beacon unless explicitly expanded or it is the user's exact anchor
+      const isClustered =
+        clusterMode === "clustered" &&
+        total > 1 &&
+        expandedClusterCity !== cityKey &&
+        !hasSelfWithExact;
 
       if (isClustered) {
         clusters.push({
@@ -872,6 +925,7 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
           cityName: grp.cityName,
           baseX: grp.baseX,
           baseY: grp.baseY,
+          exactLngLat: grp.exactLngLat,
           clients: grp.clients.map(g => g.client),
           hasCart: grp.clients.some(g => g.client.hasCart),
           hasFrequent: grp.clients.some(g => (g.client.purchasesCount || 0) >= 3 || (g.client.frequency && g.client.frequency !== "1ª Vez")),
@@ -889,7 +943,7 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
           let dispX = grp.baseX;
           let dispY = grp.baseY;
 
-          if (total > 1) {
+          if (total > 1 && !(item.isSelf && selfExactLngLat)) {
             const ringIndex = Math.floor(idx / 6);
             const ringOffset = idx % 6;
             const ringTotal = Math.min(6, total - ringIndex * 6);
@@ -920,7 +974,7 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
     });
 
     return { dispersedPins: dispersed, clusterPins: clusters };
-  }, [rawMapClients, isUserSelf, currentUserCity, clusterMode, scatterRadius, expandedClusterCity]);
+  }, [rawMapClients, isUserSelf, currentUserCity, selfExactLngLat, clusterMode, scatterRadius, expandedClusterCity]);
 
   // Scroll handler for the clients list to update the luminous green vertical bar
   const handleClientsScroll = () => {
@@ -936,11 +990,13 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
   };
 
   const handleZoomIn = () => {
-    setZoom(prev => Math.min(Number((prev * 1.25).toFixed(2)), 4.5));
+    setZoomStepSeq((prev) => ({ dir: "in", seq: (prev?.seq || 0) + 1 }));
+    setZoom((prev) => Math.min(Number((prev * 1.42).toFixed(2)), 64));
   };
 
   const handleZoomOut = () => {
-    setZoom(prev => Math.max(Number((prev * 0.8).toFixed(2)), 0.75));
+    setZoomStepSeq((prev) => ({ dir: "out", seq: (prev?.seq || 0) + 1 }));
+    setZoom((prev) => Math.max(Number((prev / 1.42).toFixed(2)), 0.3));
   };
 
   const handleResetView = () => {
@@ -1006,7 +1062,14 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
         {/* 1. CLUSTER BEACONS (Animated entry/exit & smooth hover elevation) */}
         <AnimatePresence initial={false}>
           {clusterPins.map((cluster) => {
-            const pos = projectPin(cluster.cityName, cluster.baseX, cluster.baseY);
+            const pos = projectPin(
+              cluster.cityName,
+              cluster.baseX,
+              cluster.baseY,
+              undefined,
+              undefined,
+              cluster.exactLngLat
+            );
             if (!pos.visible) return null;
 
             const isHovered = hoveredClusterKey === cluster.cityKey;
@@ -1035,7 +1098,7 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
                 onMouseLeave={() => setHoveredClusterKey(null)}
                 onClick={(e) => {
                   e.stopPropagation();
-                  focusOnLocation(cluster.baseX, cluster.baseY, 2.0, cluster.cityName);
+                  focusOnLocation(cluster.baseX, cluster.baseY, 2.4, cluster.cityName, cluster.exactLngLat);
                   setExpandedClusterCity(cluster.cityKey);
                 }}
               >
@@ -1180,6 +1243,7 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
             const isDimmed = !isSelf && !isActive && !isStageMatch;
 
             const clientFirstName = cleanClientName(client.name).split(' ')[0] || '';
+            const selfPostal = isSelf && primaryAddressObj?.postalCode ? primaryAddressObj.postalCode.trim() : "";
             const selfStreetOrSector =
               isSelf && primaryAddressObj
                 ? (primaryAddressObj.reference && primaryAddressObj.reference.trim()) ||
@@ -1189,7 +1253,9 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
                 : "";
             const shortCityOrSector =
               selfStreetOrSector
-                ? `${selfStreetOrSector} • ${beacon.cityName}`
+                ? `${selfStreetOrSector}${selfPostal ? ` (${selfPostal})` : ""} • ${beacon.cityName}`
+                : selfPostal
+                ? `CP ${selfPostal} • ${beacon.cityName}`
                 : beacon.cityName;
 
             const beaconLabel = beacon.clusterTotal > 1 && clientFirstName
@@ -1484,13 +1550,13 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
         WebkitUserSelect: "none",
         overscrollBehavior: "contain",
       }}
-      className="relative w-full h-[660px] lg:h-[720px] rounded-[2.5rem] overflow-hidden bg-[#181d1b] text-white shadow-xl shadow-black/20 dark:shadow-none border border-white/10 select-none overscroll-none animate-fade-in font-sans"
+      className="relative isolate w-full h-[660px] lg:h-[720px] rounded-[2.5rem] overflow-hidden bg-[#e8ecef] dark:bg-[#181d1b] text-white shadow-xl shadow-black/20 dark:shadow-none border border-white/10 select-none overscroll-none animate-fade-in font-sans"
     >
       
       {/* ========================================================================= */}
       {/* 1. SCENIC BACKGROUND & ATMOSPHERE                                         */}
       {/* ========================================================================= */}
-      <div className="absolute inset-0 bg-gradient-to-b from-[#232a27] via-[#1a201e] to-[#131715] pointer-events-none" />
+      <div className="absolute inset-0 bg-[#e8ecef] dark:bg-[#181d1b] pointer-events-none" />
       <div className="absolute -top-32 left-1/2 -translate-x-1/2 w-[700px] h-80 bg-[#ccff00]/5 rounded-full blur-3xl pointer-events-none" />
 
       {/* ========================================================================= */}
@@ -1541,7 +1607,7 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
               <span>SYS.RADAR // EPSG:3857 HD</span>
             </div>
             <div className="absolute top-5 right-6 pointer-events-none text-[9.5px] font-mono tracking-widest text-white/35 uppercase">
-              <span>{activeCountry.code} • {activeCountry.capital}</span>
+              <span>GEO</span>
             </div>
             <div className="absolute bottom-5 left-6 pointer-events-none text-[9.5px] font-mono tracking-widest text-white/35 uppercase">
               <span>RES: 512PX @2X RETINA</span>
@@ -1572,9 +1638,9 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
               ? `translate3d(${-flightVector.x * 0.7}px, ${-flightVector.y * 0.7}px, 0) scale(0.88) rotate(${-flightRotation * 0.5}deg)`
               : flightPhase === "approach"
               ? `translate3d(${flightVector.x * 0.5}px, ${flightVector.y * 0.5}px, 0) scale(0.90) rotate(${flightRotation}deg)`
-              : "translate3d(0px, 0px, 0) scale(1) rotate(0deg)",
+              : "none",
           transformOrigin: "center center",
-          willChange: "transform, opacity",
+          willChange: flightPhase === "idle" ? "auto" : "transform, opacity",
           opacity: isPreparingRadar
             ? 0.45
             : flightPhase === "takeoff"
@@ -1589,7 +1655,7 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
               ? "none"
               : flightPhase === "landing"
               ? "transform 2.2s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.6s ease-out"
-              : "transform 0.55s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.35s ease",
+              : "opacity 0.35s ease",
         }}
         className={`absolute inset-0 z-10 overflow-hidden ${
           isPreparingRadar ? "pointer-events-none" : ""
@@ -1598,6 +1664,9 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
         <RadarMapboxCanvas
           selectedCountry={selectedCountry}
           zoomCommand={zoom}
+          zoomStepSeq={zoomStepSeq}
+          primaryTargetLngLat={selfExactLngLat}
+          onZoomChange={(uiZoom) => setZoom(uiZoom)}
           focusTarget={focusTarget}
           resetCommandSeq={resetCommandSeq}
           onMapReady={() => setIsMapLoaded(true)}

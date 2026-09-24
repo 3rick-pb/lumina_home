@@ -377,6 +377,7 @@ export function SettingsTab({
       const geocoded = await resolveEcuadorExactAddressLngLat({
         street: street.trim(),
         reference: reference.trim() || undefined,
+        postalCode: postalCode.trim(),
         city: city.trim(),
         state: stateProv.trim(),
         country: country.trim(),

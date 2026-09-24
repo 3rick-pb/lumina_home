@@ -20,10 +20,10 @@ export function LuminaLoginWordmark({ className = "" }: LuminaLoginWordmarkProps
       <Image
         src="/brand/lumina-wordmark.png"
         alt="Lumina"
-        width={956}
-        height={234}
+        width={1058}
+        height={272}
         priority
-        className="w-[210px] sm:w-[250px] h-auto object-contain dark:invert"
+        className="w-[215px] sm:w-[255px] h-auto object-contain dark:invert"
       />
     </div>
   );

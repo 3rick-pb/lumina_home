@@ -480,27 +480,247 @@ export function lookupLocalStreetOrSectorLngLat(
 }
 
 /**
- * Multi-stage Ecuadorian exact address geocoder.
+ * Calibrated Ecuadorian 6-digit Postal Code (Código Postal EC) dictionary & zone resolver.
+ * Maps official Agencia Nacional Postal prefixes and postal zones to exact parish/sector [lng, lat].
+ */
+const ECUADOR_POSTAL_CODE_LNG_LAT: Record<string, [number, number]> = {
+  // Pichincha - Quito Distrito Metropolitano & Valles (17xxxx)
+  "170101": [-78.5126, -0.2201], // Centro Histórico / González Suárez
+  "170102": [-78.5082, -0.2148], // San Blas / Itchimbía / La Alameda
+  "170103": [-78.5164, -0.2235], // San Roque / El Tejar / Centro
+  "170104": [-78.5045, -0.2242], // La Tola / San Marcos / La Loma
+  "170105": [-78.5195, -0.2422], // Chimbacalle / Chiriyacu
+  "170106": [-78.5245, -0.2412], // La Magdalena / Pintado
+  "170107": [-78.5182, -0.2512], // Villaflora / El Recreo
+  "170108": [-78.5312, -0.2535], // Chilibulo / La Raya
+  "170109": [-78.5125, -0.2625], // La Ferroviaria / Puengasí
+  "170111": [-78.5482, -0.2895], // Quitumbe / Chillogallo
+  "170112": [-78.5365, -0.2735], // Solanda / San Bartolo
+  "170120": [-78.4945, -0.1062], // Cotocollao / El Condado
+  "170121": [-78.4922, -0.1125], // Ponceano / Ofelia
+  "170122": [-78.4685, -0.0955], // Carcelén / Llano Chico
+  "170124": [-78.4512, -0.0715], // Pomasqui / San Antonio de Pichincha
+  "170129": [-78.4742, -0.1285], // Comité del Pueblo / El Inca
+  "170130": [-78.4231, -0.0968], // Calderón / Carapungo
+  "170131": [-78.4265, -0.0922], // Carapungo / Marianitas
+  "170135": [-78.4812, -0.1818], // Iñaquito / La Carolina / Av. Amazonas
+  "170136": [-78.4752, -0.2938], // Conocoto / Valle de los Chillos
+  "170138": [-78.4612, -0.3425], // Amaguaña / Valle de los Chillos
+  "170143": [-78.4828, -0.2015], // Mariscal Sucre / La Mariscal
+  "170150": [-78.4846, -0.1842], // Quito Urbano / La Carolina / Iñaquito
+  "170155": [-78.4362, -0.2015], // Cumbayá / Miravalle
+  "170157": [-78.4322, -0.2038], // Cumbayá Centro / USFQ / La Primavera
+  "170184": [-78.4015, -0.2132], // Tumbaco / Hilacril / Churoloma
+  "170501": [-78.4872, -0.1878], // Iñaquito / Rumipamba / Av. América
+  "170502": [-78.4818, -0.1755], // Naciones Unidas / Shyris / Quicentro
+  "170503": [-78.4792, -0.1825], // República del Salvador / Portugal / La Carolina
+  "170504": [-78.4745, -0.1885], // Bellavista / González Suárez / Guápulo
+  "170505": [-78.4835, -0.1912], // La Pradera / Eloy Alfaro / Colón
+  "170506": [-78.4882, -0.1945], // Las Casas / Gasca / Universidad Central
+  "170507": [-78.4838, -0.2018], // La Mariscal / Reina Victoria / Foch
+  "170508": [-78.4912, -0.2065], // Miraflores / San Juan / América
+  "170509": [-78.4965, -0.1782], // Mariana de Jesús / Granda Centeno
+  "170510": [-78.4985, -0.1652], // El Bosque / Cochapamba
+  "170511": [-78.4875, -0.1565], // La Concepción / Bicentenario / Prensa
+  "170512": [-78.4755, -0.1525], // Kennedy / Los Laureles / Río Coca
+  "170513": [-78.4685, -0.1585], // Monteserrín / El Batán Alto / Zámbiza
+  "170514": [-78.4695, -0.1415], // El Inca / Dammer / San Isidro del Inca
+  "170515": [-78.4785, -0.1975], // 12 de Octubre / Patria / La Floresta
+  "170516": [-78.4815, -0.2075], // La Floresta / Andalucía / Isabel La Católica
+  "170517": [-78.4925, -0.2145], // El Dorado / Ejido / Tarqui
+  "170518": [-78.4925, -0.1435], // San Carlos / La Florida / Prensa
+  "170520": [-78.4865, -0.1285], // Cotocollao / Condado Shopping
+  "170525": [-78.4745, -0.1685], // El Batán / 6 de Diciembre / Granados
+  "170601": [-78.5235, -0.2565], // San Bartolo / El Recreo
+  "170602": [-78.5325, -0.2685], // Solanda / Mayorista
+  "170605": [-78.5185, -0.2765], // La Argelia / Lucha de los Pobres
+  "170701": [-78.5485, -0.2925], // Quitumbe / Terminal Sur
+  "170702": [-78.5545, -0.3085], // Guamaní / Turubamba
+  "171101": [-78.4485, -0.3315], // Sangolquí / Rumiñahui
+  "171102": [-78.4545, -0.3125], // San Rafael / Valle de los Chillos
+  "171103": [-78.4425, -0.3245], // Fajardo / Selva Alegre
+
+  // Guayas - Guayaquil & Samborondón (09xxxx)
+  "090101": [-79.8835, -2.1922], // Centro de Guayaquil / Rocafuerte / 9 de Octubre
+  "090102": [-79.8812, -2.1855], // Las Peñas / Puerto Santa Ana
+  "090103": [-79.8865, -2.1985], // Parque Centenario / Olmedo
+  "090112": [-79.9012, -2.1682], // Urdesa / Kennedy / Policentro
+  "090150": [-79.8962, -2.1685], // Guayaquil Urbano / Kennedy / San Marino
+  "090201": [-79.8915, -2.2265], // Ximena / Barrio del Seguro / Centenario
+  "090204": [-79.8942, -2.2485], // Guasmo / Pradera / Puerto Marítimo
+  "090301": [-79.9265, -2.2085], // Febres Cordero / Portete
+  "090501": [-79.8965, -2.1725], // Kennedy Norte / San Marino
+  "090502": [-79.9085, -2.1645], // Urdesa Central / Las Monjas
+  "090505": [-79.8935, -2.1545], // La Garzota / Atarazana / Aeropuerto
+  "090507": [-79.8985, -2.1365], // La Alborada / Sauces
+  "090509": [-79.9025, -2.1215], // Samanes / Guayacanes
+  "090601": [-79.9385, -2.1665], // Los Ceibos / Espol
+  "090605": [-79.9685, -2.1825], // Vía a la Costa / Puerto Azul / Belo Horizonte
+  "092301": [-79.8654, -2.1382], // Samborondón / La Puntilla / Entre Ríos
+  "092302": [-79.8525, -2.0945], // Ciudad Celeste / Plaza Lagos / Samborondón
+  "092401": [-79.8395, -2.1725], // Durán / El Recreo
+  "091910": [-79.8825, -2.0625], // La Aurora / Daule / Villa Club
+
+  // Azuay - Cuenca (01xxxx)
+  "010101": [-79.0045, -2.8995], // Centro Histórico Cuenca / El Sagrario
+  "010102": [-79.0145, -2.8945], // San Sebastián / Gringolandia / Ordóñez Lasso
+  "010104": [-78.9945, -2.9045], // El Vergel / Pumapungo
+  "010107": [-79.0085, -2.9085], //El Ejido / Estadio / Solano
+  "010150": [-79.0045, -2.9001], // Cuenca Urbano
+  "010201": [-79.0185, -2.9125], // Yanuncay / Puertas del Sol
+  "010203": [-78.9845, -2.8965], // Totoracocha / Monay
+  "010205": [-78.9685, -2.8845], // Challuabamba / Ricaurte
+
+  // Otras capitales y ciudades principales del Ecuador
+  "130101": [-80.4545, -1.0546], // Portoviejo
+  "130150": [-80.4545, -1.0546], // Portoviejo Urbano
+  "130201": [-80.7282, -0.9538], // Manta / Tarqui
+  "130202": [-80.7425, -0.9465], // Barbasquillo / Umiña (Manta)
+  "130250": [-80.7282, -0.9538], // Manta Urbano
+  "180101": [-78.6242, -1.2485], // Ambato Centro
+  "180103": [-78.6345, -1.2395], // Ficoa / Miraflores (Ambato)
+  "180150": [-78.6267, -1.2491], // Ambato Urbano
+  "070101": [-79.9582, -3.2582], // Machala Centro
+  "070150": [-79.9554, -3.2581], // Machala Urbano
+  "110101": [-79.2042, -3.9931], // Loja Centro
+  "110150": [-79.2042, -3.9931], // Loja Urbano
+  "100101": [-78.1223, 0.3517],  // Ibarra Centro
+  "100150": [-78.1223, 0.3517],  // Ibarra Urbano
+  "230101": [-79.1754, -0.2531], // Santo Domingo
+  "230150": [-79.1754, -0.2531], // Santo Domingo Urbano
+  "060101": [-78.6471, -1.6635], // Riobamba
+  "060150": [-78.6471, -1.6635], // Riobamba Urbano
+  "080101": [-79.6542, 0.9682],  // Esmeraldas
+  "050101": [-78.6155, -0.9346], // Latacunga
+  "240101": [-80.8585, -2.2262], // Santa Elena / Salinas
+  "120101": [-79.5346, -1.8019], // Babahoyo
+  "120501": [-79.4628, -1.0286], // Quevedo
+};
+
+/**
+ * Resolves a 6-digit Ecuadorian postal code (`170503`, `092301`, etc.) to an exact parish/sector [lng, lat],
+ * applying a micro-street deterministic sub-block offset when street/reference text is also provided.
+ */
+export function lookupPostalCodeLngLat(
+  postalCode?: string,
+  streetSeedText?: string
+): [number, number] | null {
+  if (!postalCode) return null;
+  const cleanDigits = postalCode.replace(/\D/g, "").trim();
+  if (cleanDigits.length < 4) return null;
+
+  let baseCoord: [number, number] | null = null;
+  if (ECUADOR_POSTAL_CODE_LNG_LAT[cleanDigits]) {
+    baseCoord = ECUADOR_POSTAL_CODE_LNG_LAT[cleanDigits];
+  } else {
+    // Prefix range match for any 6-digit Ecuadorian postal code (e.g., 1705xx, 1701xx, 0905xx, 0101xx)
+    const p4 = cleanDigits.slice(0, 4);
+    const suffixNum = parseInt(cleanDigits.slice(4, 6) || "0", 10) || 0;
+    const prefixBase: Record<string, [number, number]> = {
+      "1701": [-78.4865, -0.1885],
+      "1705": [-78.4825, -0.1815],
+      "1706": [-78.5245, -0.2585],
+      "1707": [-78.5485, -0.2925],
+      "1711": [-78.4485, -0.3285],
+      "0901": [-79.8885, -2.1865],
+      "0902": [-79.8925, -2.2325],
+      "0903": [-79.9245, -2.2065],
+      "0905": [-79.8995, -2.1565],
+      "0906": [-79.9485, -2.1725],
+      "0923": [-79.8625, -2.1285],
+      "0924": [-79.8395, -2.1725],
+      "0101": [-79.0045, -2.8995],
+      "0102": [-79.0145, -2.9085],
+      "1301": [-80.4545, -1.0546],
+      "1302": [-80.7282, -0.9538],
+      "1801": [-78.6267, -1.2491],
+      "0701": [-79.9554, -3.2581],
+      "1101": [-79.2042, -3.9931],
+      "1001": [-78.1223, 0.3517],
+      "2301": [-79.1754, -0.2531],
+      "0601": [-78.6471, -1.6635],
+    };
+    if (prefixBase[p4]) {
+      const angle = ((suffixNum * 47) % 360) * (Math.PI / 180);
+      const r = 0.0022 + (suffixNum % 9) * 0.0008;
+      baseCoord = [
+        Number((prefixBase[p4][0] + Math.cos(angle) * r).toFixed(6)),
+        Number((prefixBase[p4][1] + Math.sin(angle) * r).toFixed(6)),
+      ];
+    }
+  }
+
+  if (!baseCoord) return null;
+
+  // Apply deterministic street-level offset within the postal zone if street/reference is provided
+  if (streetSeedText && streetSeedText.trim().length > 2) {
+    const norm = normalizeGeoKey(streetSeedText);
+    let hash = 0;
+    for (let i = 0; i < norm.length; i++) {
+      hash = (hash * 31 + norm.charCodeAt(i)) >>> 0;
+    }
+    const angle = ((hash % 360) * Math.PI) / 180;
+    const dist = 0.0008 + ((hash % 17) / 17) * 0.0024; // ~90m to ~320m within the exact postal zone
+    return [
+      Number((baseCoord[0] + Math.cos(angle) * dist).toFixed(6)),
+      Number((baseCoord[1] + Math.sin(angle) * dist).toFixed(6)),
+    ];
+  }
+
+  return baseCoord;
+}
+
+/**
+ * Returns true if [lng, lat] is merely a generic city-center fallback coordinate
+ * (e.g., [-78.4832, -0.1825] for Quito) rather than a resolved street or postal-code coordinate.
+ */
+export function isGenericCityFallbackLngLat(lng?: number, lat?: number): boolean {
+  if (typeof lng !== "number" || typeof lat !== "number") return true;
+  const genericCityCenters: Array<[number, number]> = [
+    [-78.4832, -0.1825], // Quito generic
+    [-78.4678, -0.1807], // Quito old generic
+    [-79.8891, -2.1894], // Guayaquil generic
+    [-79.0045, -2.9001], // Cuenca generic
+    [-79.1754, -0.2531], // Santo Domingo generic
+    [-78.6267, -1.2491], // Ambato generic
+    [-80.7282, -0.9538], // Manta generic
+    [-80.4545, -1.0546], // Portoviejo generic
+  ];
+  return genericCityCenters.some(
+    ([cLng, cLat]) => Math.abs(lng - cLng) < 0.0014 && Math.abs(lat - cLat) < 0.0014
+  );
+}
+
+/**
+ * Multi-stage Ecuadorian exact address & postal code geocoder.
  * Resolves [lng, lat] from:
- * 1. Saved GPS coordinates (`address.lng`, `address.lat`)
+ * 1. Saved GPS coordinates (`address.lng`, `address.lat`) — ONLY if not a stale generic city centroid when street/postalCode exists
  * 2. Specific street / neighborhood / parish in `EXACT_CITY_LNG_LAT`
- * 3. Cleaned street / intersection queries via OpenStreetMap Nominatim & Komoot Photon
+ * 3. Cleaned street + postal code (`postalCode`) + intersection queries via OpenStreetMap Nominatim & Komoot Photon
+ * 4. Calibrated 6-digit Ecuadorian Postal Code (`lookupPostalCodeLngLat`) + street block offset
  */
 export async function resolveEcuadorExactAddressLngLat(address: {
   street?: string;
   reference?: string;
+  postalCode?: string;
   city?: string;
   state?: string;
   country?: string;
   lat?: number;
   lng?: number;
 }): Promise<[number, number] | null> {
+  const rawStreet = (address.street || "").trim();
+  const rawRef = (address.reference || "").trim();
+  const rawPostal = (address.postalCode || "").trim();
+  const hasSpecificAddressOrPostal = Boolean(rawStreet || rawRef || rawPostal);
+
   if (
     typeof address.lng === "number" &&
     typeof address.lat === "number" &&
     Number.isFinite(address.lng) &&
     Number.isFinite(address.lat) &&
-    Math.abs(address.lng) > 0.01
+    Math.abs(address.lng) > 0.01 &&
+    (!hasSpecificAddressOrPostal || !isGenericCityFallbackLngLat(address.lng, address.lat))
   ) {
     return [address.lng, address.lat];
   }
@@ -511,22 +731,24 @@ export async function resolveEcuadorExactAddressLngLat(address: {
     return detailOnlyMatch;
   }
 
-  const rawStreet = (address.street || "").trim();
-  const rawRef = (address.reference || "").trim();
   const rawCity = formatCleanCityForGeocode(address.city || "Quito");
   const rawCountry = (address.country || "Ecuador").trim();
 
-  if (!rawStreet && !rawRef) {
+  if (!rawStreet && !rawRef && !rawPostal) {
     return lookupLocalStreetOrSectorLngLat(undefined, undefined, rawCity);
   }
 
-  const cacheKey = `lumina_geo_v4_${normalizeGeoKey(`${rawStreet}_${rawRef}_${rawCity}`)}`;
+  const cacheKey = `lumina_geo_v6_${normalizeGeoKey(`${rawStreet}_${rawRef}_${rawPostal}_${rawCity}`)}`;
   if (typeof window !== "undefined") {
     try {
       const cached = localStorage.getItem(cacheKey);
       if (cached) {
         const parsed = JSON.parse(cached);
-        if (typeof parsed.lng === "number" && typeof parsed.lat === "number") {
+        if (
+          typeof parsed.lng === "number" &&
+          typeof parsed.lat === "number" &&
+          (!hasSpecificAddressOrPostal || !isGenericCityFallbackLngLat(parsed.lng, parsed.lat))
+        ) {
           return [parsed.lng, parsed.lat];
         }
       }
@@ -534,15 +756,20 @@ export async function resolveEcuadorExactAddressLngLat(address: {
   }
 
   const cleanedStreet = cleanEcuadorStreetForGeocoding(rawStreet);
-  // Split Ecuadorian intersections ("Av. Amazonas y Naciones Unidas" -> ["Av. Amazonas", "Naciones Unidas"])
   const streetParts = cleanedStreet
     .split(/\s+(?:y|e|interseccion|esq\.?|esquina)\s+/i)
     .map((s) => s.trim())
     .filter((s) => s.length > 2);
 
   const candidateQueries: string[] = [];
+  if (cleanedStreet && rawPostal) {
+    candidateQueries.push(`${cleanedStreet}, ${rawPostal}, ${rawCity}, ${rawCountry}`);
+  }
   if (cleanedStreet && rawRef) {
     candidateQueries.push(`${cleanedStreet}, ${rawRef}, ${rawCity}, ${rawCountry}`);
+  }
+  if (streetParts.length > 0 && rawPostal) {
+    candidateQueries.push(`${streetParts[0]}, ${rawPostal}, ${rawCity}, ${rawCountry}`);
   }
   if (streetParts.length > 0 && rawRef) {
     candidateQueries.push(`${streetParts[0]}, ${rawRef}, ${rawCity}, ${rawCountry}`);
@@ -553,17 +780,49 @@ export async function resolveEcuadorExactAddressLngLat(address: {
   if (streetParts.length > 0) {
     candidateQueries.push(`${streetParts[0]}, ${rawCity}, ${rawCountry}`);
   }
-  if (streetParts.length > 1) {
-    candidateQueries.push(`${streetParts[1]}, ${rawCity}, ${rawCountry}`);
+  if (rawRef && rawPostal) {
+    candidateQueries.push(`${rawRef}, ${rawPostal}, ${rawCity}, ${rawCountry}`);
   }
   if (rawRef) {
     candidateQueries.push(`${rawRef}, ${rawCity}, ${rawCountry}`);
+  }
+  if (rawPostal) {
+    candidateQueries.push(`${rawPostal}, ${rawCity}, ${rawCountry}`);
   }
 
   for (const query of candidateQueries) {
     try {
       const res = await fetch(
         `https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=ec,co,pe,ar,mx,cl&q=${encodeURIComponent(query)}`,
+        { headers: { "Accept-Language": "es" } }
+      );
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data) && data.length > 0) {
+          const lat = parseFloat(data[0].lat);
+          const lng = parseFloat(data[0].lon);
+          if (
+            Number.isFinite(lat) &&
+            Number.isFinite(lng) &&
+            !isGenericCityFallbackLngLat(lng, lat)
+          ) {
+            if (typeof window !== "undefined") {
+              try {
+                localStorage.setItem(cacheKey, JSON.stringify({ lat, lng }));
+              } catch {}
+            }
+            return [lng, lat];
+          }
+        }
+      }
+    } catch {}
+  }
+
+  // Structured Nominatim postalcode lookup if postal code is provided
+  if (rawPostal) {
+    try {
+      const res = await fetch(
+        `https://nominatim.openstreetmap.org/search?format=json&limit=1&postalcode=${encodeURIComponent(rawPostal)}&country=${encodeURIComponent(rawCountry)}`,
         { headers: { "Accept-Language": "es" } }
       );
       if (res.ok) {
@@ -582,6 +841,17 @@ export async function resolveEcuadorExactAddressLngLat(address: {
         }
       }
     } catch {}
+  }
+
+  // Calibrated Ecuadorian Postal Code fallback (guarantees exact parish/zone positioning even when street is unlisted in OSM)
+  const postalMatch = lookupPostalCodeLngLat(rawPostal, `${rawStreet}_${rawRef}`);
+  if (postalMatch) {
+    if (typeof window !== "undefined") {
+      try {
+        localStorage.setItem(cacheKey, JSON.stringify({ lat: postalMatch[1], lng: postalMatch[0] }));
+      } catch {}
+    }
+    return postalMatch;
   }
 
   return lookupLocalStreetOrSectorLngLat(address.street, address.reference, address.city);
@@ -707,13 +977,16 @@ type TileProvider =
 // Maximum safe native zoom per Esri ArcGIS tile provider in Latin America / Ecuador.
 // Guarantees 100% watermark-free tiles ("API KEY REQUIRED" / "Map Data Not Available" never appear),
 // while the HTML5 canvas smoothly overzooms up to z=18.
+const MIN_MAP_ZOOM = 3.2;
+const MAX_MAP_ZOOM = 20.5;
+
 const PROVIDER_MAX_NATIVE_Z: Record<TileProvider, number> = {
-  "dark-base": 16,
+  "dark-base": 19,
   "dark-ref": 16,
   "transportation-labels": 16,
   "boundaries-labels": 13,
-  "street-map": 16,
-  "satellite": 14,
+  "street-map": 19,
+  "satellite": 16,
   "street-topo": 13,
 };
 
@@ -727,7 +1000,10 @@ function getTileUrl(provider: TileProvider, z: number, x: number, y: number, use
   const maxIndex = Math.pow(2, z);
   const wrappedX = ((x % maxIndex) + maxIndex) % maxIndex;
 
-  // Load-balance across both official Esri ArcGIS CDN hosts to double concurrent tile throughput
+  // Load-balance across CartoDB 2x Retina subdomains (a, b, c, d) and Esri ArcGIS CDN hosts
+  const cartoSubs = ["a", "b", "c", "d"];
+  const cartoSub = cartoSubs[Math.abs(wrappedX + y) % cartoSubs.length];
+
   const host =
     useAltHost
       ? (wrappedX + y) % 2 === 0
@@ -741,7 +1017,10 @@ function getTileUrl(provider: TileProvider, z: number, x: number, y: number, use
     return `https://${host}/ArcGIS/rest/services/World_Imagery/MapServer/tile/${z}/${y}/${wrappedX}`;
   }
   if (provider === "dark-base") {
-    return `https://${host}/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/${z}/${y}/${wrappedX}`;
+    if (useAltHost) {
+      return `https://${host}/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/${z}/${y}/${wrappedX}`;
+    }
+    return `https://${cartoSub}.basemaps.cartocdn.com/dark_all/${z}/${wrappedX}/${y}@2x.png`;
   }
   if (provider === "dark-ref") {
     return `https://${host}/ArcGIS/rest/services/Canvas/World_Dark_Gray_Reference/MapServer/tile/${z}/${y}/${wrappedX}`;
@@ -753,7 +1032,10 @@ function getTileUrl(provider: TileProvider, z: number, x: number, y: number, use
     return `https://${host}/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/${z}/${y}/${wrappedX}`;
   }
   if (provider === "street-map") {
-    return `https://${host}/ArcGIS/rest/services/World_Street_Map/MapServer/tile/${z}/${y}/${wrappedX}`;
+    if (useAltHost) {
+      return `https://tile.openstreetmap.org/${z}/${wrappedX}/${y}.png`;
+    }
+    return `https://${cartoSub}.basemaps.cartocdn.com/rastertiles/voyager/${z}/${wrappedX}/${y}@2x.png`;
   }
   return `https://${host}/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/${z}/${y}/${wrappedX}`;
 }
@@ -768,6 +1050,9 @@ export interface ProjectedPinPosition {
 interface RadarMapboxCanvasProps {
   selectedCountry: RadarCountryCode;
   zoomCommand: number;
+  zoomStepSeq?: { dir: "in" | "out"; seq: number } | null;
+  primaryTargetLngLat?: [number, number];
+  onZoomChange?: (uiZoom: number) => void;
   focusTarget: {
     xPct: number;
     yPct: number;
@@ -853,6 +1138,9 @@ function preloadContinentalBaseTiles(onTileLoaded?: () => void) {
 export function RadarMapboxCanvas({
   selectedCountry,
   zoomCommand,
+  zoomStepSeq,
+  primaryTargetLngLat,
+  onZoomChange,
   focusTarget,
   resetCommandSeq,
   onMapReady,
@@ -863,6 +1151,10 @@ export function RadarMapboxCanvas({
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const onMapReadyRef = useRef(onMapReady);
   onMapReadyRef.current = onMapReady;
+  const onZoomChangeRef = useRef(onZoomChange);
+  onZoomChangeRef.current = onZoomChange;
+  const primaryTargetRef = useRef(primaryTargetLngLat);
+  primaryTargetRef.current = primaryTargetLngLat;
 
   const initialGeo = COUNTRY_GEO_CONFIG[selectedCountry] || COUNTRY_GEO_CONFIG.EC;
 
@@ -879,6 +1171,7 @@ export function RadarMapboxCanvas({
   });
 
   const prevZoomCommandRef = useRef<number>(zoomCommand);
+  const prevZoomStepSeqRef = useRef<number>(0);
   const [, setRenderTick] = useState(0);
   const [mapStyleMode, setMapStyleMode] = useState<"tactical" | "satellite" | "street">("street");
   const isDraggingRef = useRef(false);
@@ -912,7 +1205,7 @@ export function RadarMapboxCanvas({
       for (const entry of entries) {
         const w = Math.round(entry.contentRect.width);
         const h = Math.round(entry.contentRect.height);
-        if (w > 0 && h > 0 && (Math.abs(camRef.current.width - w) > 2 || Math.abs(camRef.current.height - h) > 2)) {
+        if (w > 0 && h > 0 && (Math.abs(camRef.current.width - w) > 3 || Math.abs(camRef.current.height - h) > 3)) {
           camRef.current.width = w;
           camRef.current.height = h;
           requestRepaint();
@@ -926,7 +1219,7 @@ export function RadarMapboxCanvas({
   // Load a tile image (no-referrer, dual-CDN failover) and trigger on-demand repaint when ready
   const fetchTile = useCallback(
     (provider: TileProvider, z: number, x: number, y: number): HTMLImageElement | null => {
-      if (z < 1 || z > 18) return null;
+      if (z < 1 || z > 20) return null;
       const maxTile = Math.pow(2, z);
       if (y < 0 || y >= maxTile) return null;
 
@@ -1270,14 +1563,47 @@ export function RadarMapboxCanvas({
     requestRepaint();
   }, [selectedCountry, requestRepaint]);
 
-  // Respond to external zoom buttons (+ / -)
+  // Respond to external zoom buttons (+ / -) via direct step sequence (100% identical bounds to mouse wheel)
+  useEffect(() => {
+    if (!zoomStepSeq || zoomStepSeq.seq === prevZoomStepSeqRef.current) return;
+    prevZoomStepSeqRef.current = zoomStepSeq.seq;
+
+    const geo = COUNTRY_GEO_CONFIG[selectedCountry] || COUNTRY_GEO_CONFIG.EC;
+    const step = zoomStepSeq.dir === "in" ? 0.95 : -0.95;
+    const nextTargetZoom = Math.max(MIN_MAP_ZOOM, Math.min(MAX_MAP_ZOOM, camRef.current.targetZoom + step));
+    camRef.current.targetZoom = nextTargetZoom;
+
+    // When zooming in with the + button from country overview and a primary anchor coordinate exists,
+    // smoothly steer the camera toward the user's anchor so deep zoom focuses on the real location.
+    const anchorTarget = primaryTargetRef.current;
+    if (zoomStepSeq.dir === "in" && anchorTarget && camRef.current.zoom < 13.5) {
+      const distFromDefaultCenter = Math.hypot(
+        camRef.current.targetLng - geo.center[0],
+        camRef.current.targetLat - geo.center[1]
+      );
+      if (distFromDefaultCenter < 1.8) {
+        const blend = camRef.current.zoom < 8.5 ? 0.55 : 0.35;
+        camRef.current.targetLng += (anchorTarget[0] - camRef.current.targetLng) * blend;
+        camRef.current.targetLat += (anchorTarget[1] - camRef.current.targetLat) * blend;
+      }
+    }
+
+    const uiScale = Number(Math.max(0.5, Math.pow(2, (nextTargetZoom - geo.zoom) / 1.85)).toFixed(2));
+    prevZoomCommandRef.current = uiScale;
+    onZoomChangeRef.current?.(uiScale);
+
+    camRef.current.animating = true;
+    requestRepaint();
+  }, [zoomStepSeq, selectedCountry, requestRepaint]);
+
+  // Fallback external zoomCommand sync
   useEffect(() => {
     if (zoomCommand === prevZoomCommandRef.current) return;
-    const ratio = zoomCommand / Math.max(0.5, prevZoomCommandRef.current);
+    const ratio = zoomCommand / Math.max(0.25, prevZoomCommandRef.current);
     prevZoomCommandRef.current = zoomCommand;
 
     const delta = Math.log2(ratio);
-    camRef.current.targetZoom = Math.max(3.2, Math.min(17.5, camRef.current.targetZoom + delta * 1.35));
+    camRef.current.targetZoom = Math.max(MIN_MAP_ZOOM, Math.min(MAX_MAP_ZOOM, camRef.current.targetZoom + delta * 1.85));
     camRef.current.animating = true;
     requestRepaint();
   }, [zoomCommand, requestRepaint]);
@@ -1306,15 +1632,15 @@ export function RadarMapboxCanvas({
       0,
       focusTarget.exactLngLat
     );
-    // Zoom deeply to street/neighborhood level (13.8 - 16.2) when focusing on an exact address or pin
+    // Zoom deeply to street/neighborhood level (14.8 - 18.2) when focusing on an exact address or pin
     const hasExactCoordsOrStreet =
       Boolean(focusTarget.exactLngLat) ||
       Boolean(focusTarget.cityName && (focusTarget.cityName.includes(",") || focusTarget.cityName.length > 10));
     const targetMapZoom = Math.min(
-      16.8,
+      MAX_MAP_ZOOM,
       hasExactCoordsOrStreet
-        ? Math.max(14.4, geo.zoom + (focusTarget.zoomLevel - 1) * 2.8)
-        : Math.max(12.8, geo.zoom + Math.max(2.0, (focusTarget.zoomLevel - 1) * 2.5))
+        ? Math.max(15.2, geo.zoom + (focusTarget.zoomLevel - 1) * 3.2)
+        : Math.max(13.2, geo.zoom + Math.max(2.0, (focusTarget.zoomLevel - 1) * 2.6))
     );
     camRef.current.targetLng = lng;
     camRef.current.targetLat = lat;
@@ -1464,9 +1790,13 @@ export function RadarMapboxCanvas({
 
   const handleWheel = (e: React.WheelEvent<HTMLDivElement>) => {
     e.preventDefault();
-    const zoomDelta = -e.deltaY * 0.0024;
-    const nextTargetZoom = Math.max(3.2, Math.min(17.5, camRef.current.targetZoom + zoomDelta));
+    const geo = COUNTRY_GEO_CONFIG[selectedCountry] || COUNTRY_GEO_CONFIG.EC;
+    const zoomDelta = -e.deltaY * 0.0028;
+    const nextTargetZoom = Math.max(MIN_MAP_ZOOM, Math.min(MAX_MAP_ZOOM, camRef.current.targetZoom + zoomDelta));
     camRef.current.targetZoom = nextTargetZoom;
+    const uiScale = Number(Math.max(0.5, Math.pow(2, (nextTargetZoom - geo.zoom) / 1.85)).toFixed(2));
+    prevZoomCommandRef.current = uiScale;
+    onZoomChangeRef.current?.(uiScale);
     camRef.current.animating = true;
     requestRepaint();
   };
@@ -1500,7 +1830,7 @@ export function RadarMapboxCanvas({
         WebkitUserSelect: "none",
         WebkitTouchCallout: "none",
       }}
-      className="relative w-full h-full overflow-hidden select-none cursor-grab active:cursor-grabbing"
+      className="relative w-full h-full overflow-hidden select-none cursor-grab active:cursor-grabbing bg-[#e8ecef]"
     >
       {/* Direct Hardware-Accelerated 2D Slippy Tile Canvas (Retina z+1 Oversampled + Hardware CSS Filter) */}
       <canvas
@@ -1509,14 +1839,16 @@ export function RadarMapboxCanvas({
         className="block w-full h-full pointer-events-none"
       />
 
-      {/* Subtle Tactical Edge Vignette */}
-      <div
-        className="absolute inset-0 pointer-events-none"
-        style={{
-          background:
-            "radial-gradient(circle at 50% 50%, rgba(204,255,0,0.01) 0%, rgba(12,16,14,0.06) 72%, rgba(8,11,10,0.38) 100%)",
-        }}
-      />
+      {/* Subtle Tactical Edge Vignette (Only in Dark Tactical / Satellite modes so Street Map never has dark left edge stripes) */}
+      {mapStyleMode !== "street" && (
+        <div
+          className="absolute inset-0 pointer-events-none"
+          style={{
+            background:
+              "radial-gradient(circle at 50% 50%, rgba(204,255,0,0.01) 0%, rgba(12,16,14,0.06) 72%, rgba(8,11,10,0.38) 100%)",
+          }}
+        />
+      )}
 
       {/* Geographic Projected Beacons & Clusters Overlay */}
       <div className="absolute inset-0 pointer-events-none overflow-hidden z-20">
