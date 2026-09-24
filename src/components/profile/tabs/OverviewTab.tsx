@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { useCatalogStore, normalizeCategory } from "@/lib/catalogStore";
 import { useUserStore, Order } from "@/lib/userStore";
+import { LuminaCardFolderItem } from "@/components/ui/CardFolder";
 
 interface OverviewTabProps {
   isAdmin: boolean;
@@ -33,7 +34,7 @@ export function OverviewTab({
   setShowCardModal,
   onRequestDeleteNiche
 }: OverviewTabProps) {
-  const { orders, cards, favorites, removeCard, updateOrderStatus } = useUserStore();
+  const { orders, cards, favorites, removeCard, setDefaultCard, updateOrderStatus } = useUserStore();
   const { products, categories } = useCatalogStore();
 
   // Metrics
@@ -491,45 +492,22 @@ export function OverviewTab({
             </button>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-3">
-            {cards.map((c, index) => {
-              const isDark = index % 2 === 0;
-              return (
-                <div 
-                  key={c.id} 
-                  className={`p-5 rounded-2xl relative overflow-hidden transition-all hover:scale-[1.01] ${
-                    isDark 
-                      ? "bg-gradient-to-tr from-neutral-950 via-neutral-900 to-neutral-800 text-white dark:text-gray-900 shadow-md dark:shadow-none shadow-black/10" 
-                      : "bg-gradient-to-tr from-[#d97736] to-[#b8541c] text-white dark:text-gray-900 shadow-md dark:shadow-none shadow-[#d97736]/15"
-                  }`}
-                >
-                  <div className="flex items-center justify-between mb-6">
-                    <span className="text-[10px] font-bold tracking-widest uppercase px-2 py-0.5 rounded-md bg-white/20 dark:bg-[#202022]/20 backdrop-blur-md">
-                      {c.isDefault ? "Predeterminada" : "Activa"}
-                    </span>
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs font-bold tracking-wider">{c.type.toUpperCase()}</span>
-                      <button 
-                        onClick={() => removeCard(c.id)} 
-                        className="text-white/60 dark:text-gray-900/60 hover:text-white dark:hover:text-gray-900 transition-colors p-1"
-                        title="Eliminar tarjeta"
-                      >
-                        <X className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-                  </div>
-
-                  <p className="font-mono text-sm tracking-widest font-semibold mb-3">
-                    {c.number}
-                  </p>
-
-                  <div className="flex items-center justify-between text-[11px] text-white/80 dark:text-gray-900/80">
-                    <span>{c.holder}</span>
-                    <span>EXP {c.exp}</span>
-                  </div>
-                </div>
-              );
-            })}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-5 py-1 place-items-center">
+            {cards.map((c, index) => (
+              <LuminaCardFolderItem
+                key={c.id}
+                id={c.id}
+                holder={c.holder}
+                number={c.number}
+                exp={c.exp}
+                type={c.type}
+                isDefault={c.isDefault}
+                index={index}
+                compact
+                onSetDefault={setDefaultCard}
+                onRemove={removeCard}
+              />
+            ))}
           </div>
         )}
 
