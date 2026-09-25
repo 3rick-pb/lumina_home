@@ -53,8 +53,7 @@ import { CardsTab } from "@/components/profile/tabs/CardsTab";
 import {
   BeUISelectField,
   BeUICenterMorphModal,
-  BeUILateralExpandableSidebar,
-  BeUIMobileExpandableTabs,
+  BeUIPaginatedDock,
 } from "@/components/ui/BeUIControls";
 import { LuminaBrandEmblem } from "@/components/ui/LuminaBrandEmblem";
 import { FavoritesTab } from "@/components/profile/tabs/FavoritesTab";
@@ -948,8 +947,19 @@ const handleConfirmDeleteNiche = async () => {
   
   {/* Brand & Top Navigation Pill Bar */}
   <div className="flex items-center justify-center sm:justify-start gap-3 md:gap-4 min-w-0 flex-1 overflow-hidden">
-  <Link href="/" className="font-display font-bold text-xl sm:text-2xl text-gray-900 dark:text-gray-100 tracking-tight shrink-0 flex items-center hover:opacity-85 transition-opacity mx-auto sm:mx-0" title="Ir a la tienda">
-  {brand.logo.text}<span className="text-[#8c9276]">{brand.logo.accentDot}</span>
+  <Link 
+    href="/" 
+    className="shrink-0 flex items-center hover:opacity-85 transition-opacity mx-auto sm:mx-0 select-none py-0.5" 
+    title="Ir a la tienda"
+  >
+    <Image
+      src="/brand/lumina-wordmark.png"
+      alt={brand.name || "Lumina"}
+      width={1058}
+      height={272}
+      priority
+      className="h-6 sm:h-7 w-auto object-contain dark:invert"
+    />
   </Link>
 
   {/* Top Bar Tabs (Visible on Laptop and Desktop, Hidden on Mobile) */}
@@ -3049,103 +3059,128 @@ const handleConfirmDeleteNiche = async () => {
         </div>
       )}
 
-      {/* Mobile Floating Bottom Expandable Tabs (@beui/expandable-tabs, Hidden on md and up) */}
-      <BeUIMobileExpandableTabs
-        items={[
-          {
-            id: "overview",
-            label: "Resumen",
-            icon: <LayoutDashboard className="w-4 h-4" />,
-            active: activeTab === "overview",
-            onClick: () => setActiveTab("overview"),
-          },
-          {
-            id: "orders",
-            label: "Pedidos",
-            icon: <ShoppingBag className="w-4 h-4" />,
-            active: activeTab === "orders",
-            onClick: () => setActiveTab("orders"),
-            badgeCount: pendingOrdersCount > 0 ? pendingOrdersCount : undefined,
-          },
-          {
-            id: "cards",
-            label: "Tarjetas",
-            icon: <CreditCard className="w-4 h-4" />,
-            active: activeTab === "cards",
-            onClick: () => setActiveTab("cards"),
-          },
-          {
-            id: "favorites",
-            label: "Favoritos",
-            icon: <Heart className="w-4 h-4" />,
-            active: activeTab === "favorites",
-            onClick: () => setActiveTab("favorites"),
-            badgeCount: favorites.length > 0 ? favorites.length : undefined,
-          },
-          ...(isAdmin
-            ? [
-                {
-                  id: "catalog",
-                  label: "Inventario",
-                  icon: <Package className="w-4 h-4" />,
-                  active: activeTab === "catalog",
-                  onClick: () => setActiveTab("catalog"),
-                },
-                {
-                  id: "niches",
-                  label: "Nichos",
-                  icon: <Layers className="w-4 h-4" />,
-                  active: activeTab === "niches",
-                  onClick: () => setActiveTab("niches"),
-                },
-                {
-                  id: "analytics",
-                  label: "Radar",
-                  icon: <Globe className="w-4 h-4" />,
-                  active: activeTab === "analytics",
-                  onClick: () => setActiveTab("analytics"),
-                },
-                {
-                  id: "cart_alerts",
-                  label: "Alertas",
-                  icon: <BellRing className="w-4 h-4" />,
-                  active: activeTab === "cart_alerts",
-                  onClick: () => setActiveTab("cart_alerts"),
-                },
-                {
-                  id: "integrations",
-                  label: "Servidor",
-                  icon: <Server className="w-4 h-4" />,
-                  active: activeTab === "integrations",
-                  onClick: () => setActiveTab("integrations"),
-                },
-                {
-                  id: "loyalty",
-                  label: "Lealtad QR",
-                  icon: <QrCode className="w-4 h-4" />,
-                  active: activeTab === "loyalty",
-                  onClick: () => setActiveTab("loyalty"),
-                },
-              ]
-            : []),
-          {
-            id: "settings",
-            label: "Ajustes",
-            icon: <Settings className="w-4 h-4" />,
-            active: activeTab === "settings",
-            onClick: () => setActiveTab("settings"),
-          },
-        ]}
-        trailingAction={
-          <Link
-            href="/"
-            className="w-9 h-9 rounded-full flex items-center justify-center text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-white/10 transition-colors"
-            title="Volver a la Tienda"
-          >
-            <Store className="w-4 h-4" />
-          </Link>
-        }
-      />
+      {/* Mobile Floating Bottom Dock (beUI Paginated Dock, 3 pages of 4 sections, Hidden on md and up) */}
+      <div className="md:hidden">
+        <BeUIPaginatedDock
+          items={[
+            {
+              id: "overview",
+              label: "Resumen",
+              icon: <LayoutDashboard className="w-5 h-5" />,
+              active: activeTab === "overview",
+              onClick: () => setActiveTab("overview"),
+            },
+            {
+              id: "orders",
+              label: "Pedidos",
+              icon: <ShoppingBag className="w-5 h-5" />,
+              active: activeTab === "orders",
+              onClick: () => setActiveTab("orders"),
+              badgeCount: pendingOrdersCount > 0 ? pendingOrdersCount : undefined,
+            },
+            {
+              id: "cards",
+              label: "Tarjetas",
+              icon: <CreditCard className="w-5 h-5" />,
+              active: activeTab === "cards",
+              onClick: () => setActiveTab("cards"),
+            },
+            {
+              id: "favorites",
+              label: "Favoritos",
+              icon: <Heart className="w-5 h-5" />,
+              active: activeTab === "favorites",
+              onClick: () => setActiveTab("favorites"),
+              badgeCount: favorites.length > 0 ? favorites.length : undefined,
+            },
+            ...(isAdmin
+              ? [
+                  {
+                    id: "catalog",
+                    label: "Inventario",
+                    icon: <Package className="w-5 h-5" />,
+                    active: activeTab === "catalog",
+                    onClick: () => setActiveTab("catalog"),
+                  },
+                  {
+                    id: "niches",
+                    label: "Nichos",
+                    icon: <Layers className="w-5 h-5" />,
+                    active: activeTab === "niches",
+                    onClick: () => setActiveTab("niches"),
+                  },
+                  {
+                    id: "analytics",
+                    label: "Radar",
+                    icon: <Globe className="w-5 h-5" />,
+                    active: activeTab === "analytics",
+                    onClick: () => setActiveTab("analytics"),
+                  },
+                  {
+                    id: "cart_alerts",
+                    label: "Alertas",
+                    icon: <BellRing className="w-5 h-5" />,
+                    active: activeTab === "cart_alerts",
+                    onClick: () => setActiveTab("cart_alerts"),
+                  },
+                  {
+                    id: "integrations",
+                    label: "Servidor",
+                    icon: <Server className="w-5 h-5" />,
+                    active: activeTab === "integrations",
+                    onClick: () => setActiveTab("integrations"),
+                  },
+                  {
+                    id: "loyalty",
+                    label: "Lealtad QR",
+                    icon: <QrCode className="w-5 h-5" />,
+                    active: activeTab === "loyalty",
+                    onClick: () => setActiveTab("loyalty"),
+                  },
+                ]
+              : [
+                  {
+                    id: "loyalty",
+                    label: "Lealtad QR",
+                    icon: <QrCode className="w-5 h-5" />,
+                    active: activeTab === "loyalty",
+                    onClick: () => setActiveTab("loyalty"),
+                  },
+                ]),
+            {
+              id: "settings",
+              label: "Ajustes",
+              icon: <Settings className="w-5 h-5" />,
+              active: activeTab === "settings",
+              onClick: () => setActiveTab("settings"),
+            },
+            {
+              id: "store",
+              label: "Tienda",
+              icon: <Store className="w-5 h-5" />,
+              active: false,
+              onClick: () => router.push("/"),
+              title: "Volver a la Tienda",
+            },
+            ...(!isAdmin
+              ? [
+                  {
+                    id: "logout",
+                    label: "Salir",
+                    icon: <LogOut className="w-5 h-5 text-red-500" />,
+                    active: false,
+                    onClick: () => {
+                      logout();
+                      router.push("/auth/login");
+                    },
+                    title: "Cerrar Sesión",
+                  },
+                ]
+              : []),
+          ]}
+          itemsPerPage={4}
+        />
+      </div>
 
   </div>
   </div>

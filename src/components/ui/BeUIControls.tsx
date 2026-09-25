@@ -3296,6 +3296,8 @@ export function BeUITiltCard({
   );
 }
 
+export { BeUIPaginatedDock, type BeUIDockItem } from "./BeUIPaginatedDock";
+
 
 
 
