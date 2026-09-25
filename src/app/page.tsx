@@ -10,6 +10,7 @@ import { useCatalogStore } from "@/lib/catalogStore";
 import { useAmbientStore } from "@/lib/ambientStore";
 import { supabase } from "@/lib/supabase";
 import { ProximitySidebar } from "@/components/ui/proximity-sidebar";
+import { CatalogScrollToTopButton } from "@/components/ui/CatalogScrollToTopButton";
 
 const HOME_SECTIONS = [
   { id: "hero-section", label: "Inicio", level: 1 as const },
@@ -524,6 +525,9 @@ export default function Home() {
       <div className="hidden lg:block fixed right-3 xl:right-6 top-1/2 -translate-y-1/2 z-40 pointer-events-auto">
         <ProximitySidebar sections={HOME_SECTIONS} side="right" />
       </div>
+
+      {/* Floating Centered Scroll-To-Top Button for Catalog */}
+      <CatalogScrollToTopButton targetId="catalog-categories" threshold={450} className="bottom-6 sm:bottom-8" />
     </>
   );
 }

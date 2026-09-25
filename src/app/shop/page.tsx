@@ -9,6 +9,7 @@ import { EmptyState } from "@/components/ui/EmptyState";
 import { useCatalogStore } from "@/lib/catalogStore";
 import { normalizeSearchText as normalizeText } from "@/lib/utils";
 import { ProximitySidebar } from "@/components/ui/proximity-sidebar";
+import { CatalogScrollToTopButton } from "@/components/ui/CatalogScrollToTopButton";
 import { useBrand } from "@/core";
 
 const SHOP_SECTIONS = [
@@ -129,6 +130,9 @@ export default function ShopPage({ searchParams }: { searchParams: Promise<{ cat
       <div className="hidden lg:block fixed right-3 xl:right-6 top-1/2 -translate-y-1/2 z-40 pointer-events-auto">
         <ProximitySidebar sections={SHOP_SECTIONS} side="right" />
       </div>
+
+      {/* Floating Centered Scroll-To-Top Button for Catalog */}
+      <CatalogScrollToTopButton targetId="shop-header" className="bottom-6 sm:bottom-8" />
     </div>
   );
 }

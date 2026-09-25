@@ -15,7 +15,21 @@ export function MacOSScrollbar() {
   const [isVisible, setIsVisible] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
+  const [isDesktopDevice, setIsDesktopDevice] = useState(false);
   const [hasScrollableContent, setHasScrollableContent] = useState(false);
+
+  // Exclusively detect PC / Laptop (screens >= 1024px and fine mouse/trackpad pointer)
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const checkDevice = () => {
+      const isFinePointer = window.matchMedia("(pointer: fine)").matches;
+      const isWideScreen = window.innerWidth >= 1024;
+      setIsDesktopDevice(isFinePointer && isWideScreen);
+    };
+    checkDevice();
+    window.addEventListener("resize", checkDevice);
+    return () => window.removeEventListener("resize", checkDevice);
+  }, []);
 
   const hideTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -49,7 +63,7 @@ export function MacOSScrollbar() {
   }, [isDragging, isHovered]);
 
   useEffect(() => {
-    if (typeof window === "undefined") return;
+    if (typeof window === "undefined" || !isDesktopDevice) return;
 
     const s = stateRef.current;
 
@@ -217,7 +231,7 @@ export function MacOSScrollbar() {
       if (s.rafId) window.cancelAnimationFrame(s.rafId);
       if (hideTimeoutRef.current) clearTimeout(hideTimeoutRef.current);
     };
-  }, [showTemporarily]);
+  }, [showTemporarily, isDesktopDevice]);
 
   // Pointer dragging on the thumb
   const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
@@ -282,6 +296,8 @@ export function MacOSScrollbar() {
     window.scrollTo({ top: targetScroll, behavior: "smooth" });
   };
 
+  if (!isDesktopDevice) return null;
+
   return (
     <div
       ref={trackRef}
@@ -297,7 +313,7 @@ export function MacOSScrollbar() {
           hideTimeoutRef.current = setTimeout(() => setIsVisible(false), 700);
         }
       }}
-      className="fixed top-0 right-0 bottom-0 w-3.5 z-[9999] pointer-events-auto select-none transition-colors duration-200"
+      className="hidden lg:block fixed top-0 right-0 bottom-0 w-3.5 z-[9999] pointer-events-auto select-none transition-colors duration-200"
       style={{
         opacity: hasScrollableContent && (isVisible || isHovered || isDragging) ? 1 : 0,
         transition: "opacity 240ms cubic-bezier(0.16, 1, 0.3, 1)",

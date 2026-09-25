@@ -55,6 +55,7 @@ import {
   BeUICenterMorphModal,
   BeUIPaginatedDock,
 } from "@/components/ui/BeUIControls";
+import { CatalogScrollToTopButton } from "@/components/ui/CatalogScrollToTopButton";
 import { LuminaBrandEmblem } from "@/components/ui/LuminaBrandEmblem";
 import { FavoritesTab } from "@/components/profile/tabs/FavoritesTab";
 import { CatalogTab } from "@/components/profile/tabs/CatalogTab";
@@ -3138,15 +3139,7 @@ const handleConfirmDeleteNiche = async () => {
                     onClick: () => setActiveTab("loyalty"),
                   },
                 ]
-              : [
-                  {
-                    id: "loyalty",
-                    label: "Lealtad QR",
-                    icon: <QrCode className="w-5 h-5" />,
-                    active: activeTab === "loyalty",
-                    onClick: () => setActiveTab("loyalty"),
-                  },
-                ]),
+              : []),
             {
               id: "settings",
               label: "Ajustes",
@@ -3162,25 +3155,25 @@ const handleConfirmDeleteNiche = async () => {
               onClick: () => router.push("/"),
               title: "Volver a la Tienda",
             },
-            ...(!isAdmin
-              ? [
-                  {
-                    id: "logout",
-                    label: "Salir",
-                    icon: <LogOut className="w-5 h-5 text-red-500" />,
-                    active: false,
-                    onClick: () => {
-                      logout();
-                      router.push("/auth/login");
-                    },
-                    title: "Cerrar Sesión",
-                  },
-                ]
-              : []),
+            {
+              id: "logout",
+              label: "Salir",
+              icon: <LogOut className="w-5 h-5 text-red-500" />,
+              active: false,
+              onClick: () => {
+                logout();
+                router.push("/auth/login");
+              },
+              title: "Cerrar Sesión",
+            },
           ]}
           itemsPerPage={4}
         />
       </div>
+
+      {activeTab === "catalog" && (
+        <CatalogScrollToTopButton className="bottom-24 md:bottom-8" />
+      )}
 
   </div>
   </div>

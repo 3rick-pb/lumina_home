@@ -23,11 +23,11 @@ export interface BeUIPaginatedDockProps {
 /**
  * beUI Paginated Mobile Dock Component
  * - Rock-solid, jitter-free floating frosted glass Dock capsule for mobile viewports.
- * - Divides items into pages (e.g. 3 pages of 4 sections: Menú 1, Menú 2, Menú 3).
- * - Fast, silky 220ms sliding animations between pages.
+ * - Pixel-perfect width containment: eliminates icon peeking from previous/next pages.
+ * - Leaves unused column slots empty without stretching or filling artificially.
+ * - Snappy 220ms spring transitions between pages.
  * - Smooth swipe gestures (left/right) with zero lateral jumping on finger touch.
- * - Distinctive 3-dot page indicator underneath with expanding active pill and direct tap navigation.
- * - Stable state: never blocks or skips Menú 2.
+ * - Distinctive dots page indicator underneath with expanding active pill and direct tap navigation.
  */
 export function BeUIPaginatedDock({
   items,
@@ -35,17 +35,29 @@ export function BeUIPaginatedDock({
   className = "",
 }: BeUIPaginatedDockProps) {
   const [currentPage, setCurrentPage] = useState(0);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [containerWidth, setContainerWidth] = useState(0);
   const touchStartRef = useRef<{ x: number; y: number } | null>(null);
 
   const totalPages = Math.max(1, Math.ceil(items.length / itemsPerPage));
 
-  // Find the currently active item
+  // Measure exact inner container width to ensure ZERO icon peeking between pages
+  useEffect(() => {
+    const updateWidth = () => {
+      if (containerRef.current) {
+        setContainerWidth(containerRef.current.clientWidth);
+      }
+    };
+    updateWidth();
+    window.addEventListener("resize", updateWidth);
+    return () => window.removeEventListener("resize", updateWidth);
+  }, []);
+
+  // Track active item and only sync page when user genuinely clicks/switches to a new tab
   const activeItem = items.find((it) => it.active);
   const activeItemId = activeItem?.id;
   const lastActiveIdRef = useRef<string | undefined>(activeItemId);
 
-  // ONLY automatically switch page when the user actually activates a different tab
-  // (e.g. clicking a tab button), NEVER when the user is manually browsing pages!
   useEffect(() => {
     if (activeItemId && activeItemId !== lastActiveIdRef.current) {
       lastActiveIdRef.current = activeItemId;
@@ -72,7 +84,7 @@ export function BeUIPaginatedDock({
     const diffY = touchStartRef.current.y - touch.clientY;
 
     // Only trigger if primarily a horizontal swipe and exceeds threshold
-    if (Math.abs(diffX) > Math.abs(diffY) && Math.abs(diffX) > 35) {
+    if (Math.abs(diffX) > Math.abs(diffY) && Math.abs(diffX) > 32) {
       if (diffX > 0) {
         // Swiped right-to-left -> Next page
         setCurrentPage((prev) => Math.min(totalPages - 1, prev + 1));
@@ -98,13 +110,16 @@ export function BeUIPaginatedDock({
       <div className="pointer-events-auto flex flex-col items-center gap-1.5 w-full max-w-[340px]">
         {/* Dock Frosted Capsule Container */}
         <div
+          ref={containerRef}
           onTouchStart={handleTouchStart}
           onTouchEnd={handleTouchEnd}
           className="w-full bg-white/90 dark:bg-[#18181b]/90 backdrop-blur-2xl border border-white/80 dark:border-white/10 shadow-[0_12px_36px_rgba(0,0,0,0.12)] dark:shadow-[0_16px_40px_rgba(0,0,0,0.6)] rounded-3xl p-1.5 overflow-hidden relative select-none touch-pan-y"
         >
-          {/* Animated Carousel Track (Fast, Snappy, Rock-Solid) */}
+          {/* Animated Carousel Track with Exact Pixel Translation (Zero Peeking) */}
           <motion.div
-            animate={{ x: `-${currentPage * 100}%` }}
+            animate={{
+              x: containerWidth > 0 ? -currentPage * containerWidth : `-${currentPage * 100}%`,
+            }}
             transition={{
               duration: 0.22,
               ease: [0.16, 1, 0.3, 1],
@@ -114,7 +129,8 @@ export function BeUIPaginatedDock({
             {pages.map((pageItems, pageIdx) => (
               <div
                 key={pageIdx}
-                className="w-full shrink-0 grid grid-cols-4 gap-1 px-0.5 items-center justify-items-center"
+                style={{ width: containerWidth > 0 ? `${containerWidth}px` : "100%" }}
+                className="shrink-0 grid grid-cols-4 gap-1 px-0.5 items-center justify-items-center"
               >
                 {pageItems.map((item) => (
                   <button
@@ -149,12 +165,23 @@ export function BeUIPaginatedDock({
                     </span>
                   </button>
                 ))}
+
+                {/* Leave unused column spaces empty without stretching items */}
+                {Array.from({ length: Math.max(0, itemsPerPage - pageItems.length) }).map(
+                  (_, i) => (
+                    <div
+                      key={`empty-slot-${i}`}
+                      className="w-full h-14 pointer-events-none"
+                      aria-hidden="true"
+                    />
+                  )
+                )}
               </div>
             ))}
           </motion.div>
         </div>
 
-        {/* 3-Dot (or N-dot) Page Indicator underneath the Dock */}
+        {/* N-dot Page Indicator underneath the Dock */}
         <div className="flex items-center justify-center gap-2 pt-0.5 pointer-events-auto">
           {Array.from({ length: totalPages }).map((_, idx) => (
             <button
