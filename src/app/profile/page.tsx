@@ -1298,12 +1298,14 @@ const handleConfirmDeleteNiche = async () => {
         {/* VIEW 7: ANALYTICS RADAR TAB */}
         {/* ========================================================================= */}
         {activeTab === "analytics" && isAdmin && (
-          <AnalyticsTab
-            onNavigateToAddresses={() => {
-              setActiveTab("settings");
-              setShowAddressForm(true);
-            }}
-          />
+          <div className="flex-1 flex flex-col min-h-0 w-full">
+            <AnalyticsTab
+              onNavigateToAddresses={() => {
+                setActiveTab("settings");
+                setShowAddressForm(true);
+              }}
+            />
+          </div>
         )}
 
         {/* ========================================================================= */}

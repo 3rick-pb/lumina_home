@@ -58,15 +58,17 @@ export function AnalyticsTab({ onNavigateToAddresses }: AnalyticsTabProps) {
   if (!user) return null;
 
   return (
-    <RadarErrorBoundary>
-      <AnalyticsRadarView 
-        user={user}
-        addresses={addresses}
-        orders={orders}
-        products={products}
-        categories={categories}
-        onNavigateToAddresses={onNavigateToAddresses}
-      />
-    </RadarErrorBoundary>
+    <div className="flex-1 flex flex-col min-h-0 h-full w-full">
+      <RadarErrorBoundary>
+        <AnalyticsRadarView 
+          user={user}
+          addresses={addresses}
+          orders={orders}
+          products={products}
+          categories={categories}
+          onNavigateToAddresses={onNavigateToAddresses}
+        />
+      </RadarErrorBoundary>
+    </div>
   );
 }

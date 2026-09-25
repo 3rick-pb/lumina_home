@@ -3,7 +3,7 @@
 import React, { useEffect, useRef, useState, useCallback } from "react";
 import mapboxgl from "mapbox-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
-import { Plus, Minus, Crosshair, Search, Loader2, MapPin } from "lucide-react";
+import { Plus, Minus, Crosshair, Search, Loader2, MapPin, ChevronDown, Layers, Check } from "lucide-react";
 
 export interface ResolvedMapAddress {
   street?: string;
@@ -95,6 +95,7 @@ export default function InteractiveAddressMap({
 
   const [useNativeMapbox, setUseNativeMapbox] = useState<boolean>(hasValidMapboxToken);
   const [mapStyle, setMapStyle] = useState<MiniMapStyle>("streets-v12");
+  const [isStyleMenuOpen, setIsStyleMenuOpen] = useState<boolean>(false);
   const [pin, setPin] = useState<{ lat: number; lng: number }>({
     lat: validInitLat,
     lng: validInitLng,
@@ -595,29 +596,60 @@ export default function InteractiveAddressMap({
           </div>
 
           <div
-            className="flex items-center bg-white/95 dark:bg-black/85 backdrop-blur-md p-0.5 rounded-xl border border-black/10 dark:border-white/15 shadow-sm pointer-events-auto"
+            className="relative pointer-events-auto"
             onPointerDown={(e) => e.stopPropagation()}
           >
-            {(
-              [
-                { id: "streets-v12", label: "Streets" },
-                { id: "dark-v11", label: "Dark" },
-                { id: "satellite-streets-v12", label: "Satellite Streets" },
-              ] as const
-            ).map((st) => (
-              <button
-                key={st.id}
-                type="button"
-                onClick={() => setMapStyle(st.id)}
-                className={`px-2 py-1 rounded-lg text-[10px] font-bold transition-all cursor-pointer ${
-                  mapStyle === st.id
-                    ? "bg-gray-900 dark:bg-white text-white dark:text-gray-900 shadow-2xs"
-                    : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
+            <button
+              type="button"
+              onClick={() => setIsStyleMenuOpen((p) => !p)}
+              className="flex items-center gap-1.5 bg-white/95 dark:bg-black/85 backdrop-blur-md px-2.5 py-1.5 rounded-xl border border-black/10 dark:border-white/15 shadow-sm text-[10px] font-bold text-gray-800 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-white/10 transition-all cursor-pointer"
+            >
+              <Layers className="w-3 h-3 text-blue-600 shrink-0" />
+              <span>
+                {mapStyle === "streets-v12"
+                  ? "Streets"
+                  : mapStyle === "dark-v11"
+                  ? "Dark"
+                  : "Satélite"}
+              </span>
+              <ChevronDown
+                className={`w-3 h-3 opacity-60 transition-transform duration-200 ${
+                  isStyleMenuOpen ? "rotate-180" : ""
                 }`}
-              >
-                {st.label}
-              </button>
-            ))}
+              />
+            </button>
+
+            {isStyleMenuOpen && (
+              <div className="absolute right-0 top-full mt-1.5 w-40 p-1 rounded-xl bg-white/98 dark:bg-[#141518]/98 backdrop-blur-xl border border-black/10 dark:border-white/15 shadow-xl space-y-0.5 z-30">
+                {(
+                  [
+                    { id: "streets-v12", label: "Streets (Relieve)" },
+                    { id: "dark-v11", label: "Dark (Uber)" },
+                    { id: "satellite-streets-v12", label: "Satellite Streets" },
+                  ] as const
+                ).map((st) => {
+                  const active = mapStyle === st.id;
+                  return (
+                    <button
+                      key={st.id}
+                      type="button"
+                      onClick={() => {
+                        setMapStyle(st.id);
+                        setIsStyleMenuOpen(false);
+                      }}
+                      className={`w-full px-2.5 py-1.5 rounded-lg text-[10.5px] font-semibold flex items-center justify-between transition-all cursor-pointer ${
+                        active
+                          ? "bg-gray-900 dark:bg-white text-white dark:text-gray-900"
+                          : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/10"
+                      }`}
+                    >
+                      <span>{st.label}</span>
+                      {active && <Check className="w-3 h-3 shrink-0" />}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
           </div>
         </div>
 

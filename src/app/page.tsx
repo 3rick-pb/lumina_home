@@ -262,17 +262,18 @@ export default function Home() {
   return (
     <>
       {/* Hero Section */}
-      <section id="hero-section" ref={heroRef} className="relative min-h-[90vh] flex flex-col justify-end pb-12 overflow-hidden bg-brand-900">
+      <section id="hero-section" ref={heroRef} className="relative min-h-[92vh] flex flex-col justify-end pb-14 sm:pb-16 overflow-hidden bg-brand-900">
         <div className="absolute inset-0 z-0">
           <Image 
             src="https://images.unsplash.com/photo-1600210492486-724fe5c67fb0?q=80&w=2000&auto=format&fit=crop" 
             alt="Interior elegante" 
             fill 
             sizes="100vw"
-            className="object-cover" 
+            className="object-cover scale-[1.01] transition-transform duration-1000" 
             priority
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-brand-900/90 via-brand-900/40 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-t from-brand-900/95 via-brand-900/45 to-black/25" />
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_80%,rgba(210,180,140,0.14),transparent_55%)] pointer-events-none" />
         </div>
 
         <div className="container mx-auto px-4 sm:px-6 md:px-8 relative z-10 pt-36 sm:pt-40">
@@ -287,21 +288,22 @@ export default function Home() {
               initial={{ opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, delay: 0.05, ease: [0.16, 1, 0.3, 1] }}
-              className="relative inline-flex items-center px-4 py-1.5 rounded-full overflow-hidden border border-white/25 text-xs sm:text-sm font-medium text-white mb-6 shadow-sm [isolation:isolate] transform-gpu select-none"
+              className="relative inline-flex items-center gap-2.5 px-4 py-1.5 rounded-full overflow-hidden border border-white/25 text-xs sm:text-sm font-medium text-white mb-6 shadow-sm [isolation:isolate] transform-gpu select-none"
             >
               <div 
                 className="absolute inset-0 bg-white/15 backdrop-blur-xl pointer-events-none transform-gpu"
                 style={{ willChange: "transform, backdrop-filter", WebkitBackdropFilter: "blur(16px)" }}
               />
-              <span className="relative z-10">Artículos premium para tu hogar</span>
+              <span className="relative z-10 w-1.5 h-1.5 rounded-full bg-[#d2b48c] shadow-[0_0_8px_#d2b48c]" />
+              <span className="relative z-10 tracking-wide">Colección Residencial Curada · Edición 2026</span>
             </motion.div>
 
-            <h1 className="text-3xl sm:text-5xl md:text-6xl lg:text-7xl font-sans font-medium text-white leading-[1.15] sm:leading-[1.1] tracking-tight">
+            <h1 className="text-3xl sm:text-5xl md:text-6xl lg:text-7xl font-sans font-medium text-white leading-[1.12] sm:leading-[1.08] tracking-tight">
               Espacios diseñados <br />
               <span className="font-display italic font-bold text-[#d2b48c]">para perdurar</span>
             </h1>
-            <p className="mt-4 sm:mt-6 text-base sm:text-xl text-gray-200 leading-relaxed max-w-lg font-light">
-              Soluciones de estética, comodidad y tecnología pensadas para cada rincón que habitas.
+            <p className="mt-4 sm:mt-6 text-base sm:text-xl text-gray-200/95 leading-relaxed max-w-xl font-light">
+              Soluciones de estética arquitectónica, bienestar sensorial y tecnología silenciosa pensadas para cada rincón que habitas.
             </p>
             <div className="mt-8 sm:mt-10 flex flex-col sm:flex-row gap-3 sm:gap-4">
               <Link 
@@ -314,13 +316,13 @@ export default function Home() {
                   aria-hidden="true"
                 />
                 <span className="relative z-10 flex items-center justify-center gap-2 font-medium text-sm sm:text-base text-white drop-shadow-sm">
-                  Ver catálogo <ArrowRight className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-1" />
+                  Explorar catálogo <ArrowRight className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-1" />
                 </span>
               </Link>
 
               <a 
                 href="#catalog-popular" 
-                className="relative overflow-hidden w-full sm:w-auto rounded-full bg-white/[0.06] hover:bg-white/[0.14] active:bg-white/[0.18] border border-white/25 hover:border-white/50 text-white px-8 py-3.5 sm:py-4 flex items-center justify-center backdrop-blur-md shadow-[0_8px_25px_rgba(0,0,0,0.12),inset_0_1px_1px_rgba(255,255,255,0.35),inset_0_-1px_1px_rgba(0,0,0,0.1)] transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] [isolation:isolate] transform-gpu group cursor-pointer select-none"
+                className="relative overflow-hidden w-full sm:w-auto rounded-full bg-white/[0.08] hover:bg-white/[0.16] active:bg-white/[0.20] border border-white/25 hover:border-white/50 text-white px-8 py-3.5 sm:py-4 flex items-center justify-center backdrop-blur-md shadow-[0_8px_25px_rgba(0,0,0,0.12),inset_0_1px_1px_rgba(255,255,255,0.35),inset_0_-1px_1px_rgba(0,0,0,0.1)] transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] [isolation:isolate] transform-gpu group cursor-pointer select-none"
               >
                 {/* Upper specular reflection meniscus */}
                 <div 
@@ -328,9 +330,25 @@ export default function Home() {
                   aria-hidden="true"
                 />
                 <span className="relative z-10 font-medium text-sm sm:text-base text-white drop-shadow-sm">
-                  Filtrar por categoría
+                  Piezas destacadas
                 </span>
               </a>
+            </div>
+
+            {/* Subtle Editorial Highlights Strip */}
+            <div className="mt-8 pt-6 border-t border-white/15 grid grid-cols-3 gap-4 max-w-lg text-white/85 select-none">
+              <div>
+                <p className="text-sm sm:text-base font-semibold text-white tracking-tight">100% Curado</p>
+                <p className="text-[11px] sm:text-xs text-white/60">Materiales nobles</p>
+              </div>
+              <div>
+                <p className="text-sm sm:text-base font-semibold text-white tracking-tight">Envío Seguro</p>
+                <p className="text-[11px] sm:text-xs text-white/60">Rastreo en tiempo real</p>
+              </div>
+              <div>
+                <p className="text-sm sm:text-base font-semibold text-white tracking-tight">Member Pass</p>
+                <p className="text-[11px] sm:text-xs text-white/60">Recompensas directas</p>
+              </div>
             </div>
           </motion.div>
         </div>

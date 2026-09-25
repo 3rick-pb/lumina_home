@@ -265,6 +265,7 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
   const [activeTab, setActiveTab] = useState<"metrics" | "clients">("metrics");
   const [isMobilePanelOpen, setIsMobilePanelOpen] = useState<boolean>(false);
   const [isCountryMenuOpen, setIsCountryMenuOpen] = useState<boolean>(false);
+  const [isSearchBarHidden, setIsSearchBarHidden] = useState<boolean>(false);
   const scrollTrackRef = useRef<HTMLDivElement>(null);
   const [isMapLoaded, setIsMapLoaded] = useState<boolean>(false);
 
@@ -1603,22 +1604,22 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
         overscrollBehavior: "contain",
         contain: "paint",
       }}
-      className="relative isolate w-full h-[660px] lg:h-[720px] rounded-[2.5rem] overflow-hidden bg-[#e8ecef] dark:bg-[#181d1b] text-white border-[2.5px] border-stone-300/95 dark:border-white/20 ring-1 ring-stone-900/12 dark:ring-white/10 shadow-[0_22px_50px_rgba(15,23,42,0.12)] dark:shadow-[0_22px_50px_rgba(0,0,0,0.45)] select-none overscroll-none animate-fade-in font-sans"
+      className="relative isolate flex-1 w-full min-h-[520px] sm:min-h-[620px] md:min-h-[660px] h-full rounded-[2rem] sm:rounded-[2.5rem] overflow-hidden bg-[#e8ecef] dark:bg-[#181d1b] text-white border-[2.5px] border-stone-300/95 dark:border-white/20 ring-1 ring-stone-900/12 dark:ring-white/10 shadow-[0_22px_50px_rgba(15,23,42,0.12)] dark:shadow-[0_22px_50px_rgba(0,0,0,0.45)] select-none overscroll-none animate-fade-in font-sans"
     >
       {/* Architectural Inner Bezel Frame — clearly delineates the Radar viewport & seals rounded edges */}
       <div
         aria-hidden="true"
-        className="pointer-events-none absolute inset-0 rounded-[2.5rem] z-[45] border-[3px] border-white/85 dark:border-white/15 shadow-[inset_0_0_0_1.5px_rgba(15,23,42,0.14)] dark:shadow-[inset_0_0_0_1.5px_rgba(204,255,0,0.16)]"
+        className="pointer-events-none absolute inset-0 rounded-[2rem] sm:rounded-[2.5rem] z-[45] border-[3px] border-white/85 dark:border-white/15 shadow-[inset_0_0_0_1.5px_rgba(15,23,42,0.14)] dark:shadow-[inset_0_0_0_1.5px_rgba(255,255,255,0.1)]"
       />
       
       {/* ========================================================================= */}
       {/* 1. SCENIC BACKGROUND & ATMOSPHERE                                         */}
       {/* ========================================================================= */}
       <div className="absolute inset-0 bg-[#e8ecef] dark:bg-[#181d1b] pointer-events-none" />
-      <div className="absolute -top-32 left-1/2 -translate-x-1/2 w-[700px] h-80 bg-[#ccff00]/5 rounded-full blur-3xl pointer-events-none" />
+      <div className="absolute -top-32 left-1/2 -translate-x-1/2 w-[700px] h-80 bg-[#8c9276]/10 rounded-full blur-3xl pointer-events-none" />
 
       {/* ========================================================================= */}
-      {/* 0. 5-SECOND TECHNICAL TELEMETRY VIEWPORT (UNIFIED CAD GRID + SOLVING ORB) */}
+      {/* 0. TECHNICAL TELEMETRY VIEWPORT (UNIFIED CAD GRID + SOLVING ORB)          */}
       {/* ========================================================================= */}
       <AnimatePresence>
         {isPreparingRadar && (
@@ -1634,7 +1635,7 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
               className="absolute inset-0 pointer-events-none opacity-80"
               style={{
                 backgroundImage:
-                  "linear-gradient(to right, rgba(204, 255, 0, 0.04) 1px, transparent 1px), linear-gradient(to bottom, rgba(204, 255, 0, 0.04) 1px, transparent 1px)",
+                  "linear-gradient(to right, rgba(255, 255, 255, 0.04) 1px, transparent 1px), linear-gradient(to bottom, rgba(255, 255, 255, 0.04) 1px, transparent 1px)",
                 backgroundSize: "32px 32px",
               }}
             />
@@ -1650,18 +1651,18 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
               viewBox="0 0 740 740"
               fill="none"
             >
-              <line x1="0" y1="370" x2="740" y2="370" stroke="rgba(204,255,0,0.09)" strokeWidth="1" strokeDasharray="3 6" />
-              <line x1="370" y1="0" x2="370" y2="740" stroke="rgba(204,255,0,0.09)" strokeWidth="1" strokeDasharray="3 6" />
+              <line x1="0" y1="370" x2="740" y2="370" stroke="rgba(255,255,255,0.08)" strokeWidth="1" strokeDasharray="3 6" />
+              <line x1="370" y1="0" x2="370" y2="740" stroke="rgba(255,255,255,0.08)" strokeWidth="1" strokeDasharray="3 6" />
               <circle cx="370" cy="370" r="175" stroke="rgba(255,255,255,0.07)" strokeWidth="1" strokeDasharray="2 5" />
-              <circle cx="370" cy="370" r="245" stroke="rgba(204,255,0,0.11)" strokeWidth="1" strokeDasharray="6 8" />
+              <circle cx="370" cy="370" r="245" stroke="rgba(140,146,118,0.22)" strokeWidth="1" strokeDasharray="6 8" />
               <circle cx="370" cy="370" r="320" stroke="rgba(255,255,255,0.05)" strokeWidth="1" />
-              <path d="M 130 160 L 130 130 L 160 130" stroke="rgba(204,255,0,0.3)" strokeWidth="1.5" />
-              <path d="M 610 160 L 610 130 L 580 130" stroke="rgba(204,255,0,0.3)" strokeWidth="1.5" />
-              <path d="M 130 580 L 130 610 L 160 610" stroke="rgba(204,255,0,0.3)" strokeWidth="1.5" />
-              <path d="M 610 580 L 610 610 L 580 610" stroke="rgba(204,255,0,0.3)" strokeWidth="1.5" />
+              <path d="M 130 160 L 130 130 L 160 130" stroke="rgba(255,255,255,0.3)" strokeWidth="1.5" />
+              <path d="M 610 160 L 610 130 L 580 130" stroke="rgba(255,255,255,0.3)" strokeWidth="1.5" />
+              <path d="M 130 580 L 130 610 L 160 610" stroke="rgba(255,255,255,0.3)" strokeWidth="1.5" />
+              <path d="M 610 580 L 610 610 L 580 610" stroke="rgba(255,255,255,0.3)" strokeWidth="1.5" />
             </svg>
-            <div className="absolute top-5 left-6 pointer-events-none flex items-center gap-2 text-[9.5px] font-mono tracking-widest text-[#ccff00]/60 uppercase">
-              <span className="w-1.5 h-1.5 rounded-full bg-[#ccff00] animate-pulse shadow-[0_0_8px_#ccff00]" />
+            <div className="absolute top-5 left-6 pointer-events-none flex items-center gap-2 text-[9.5px] font-mono tracking-widest text-white/60 uppercase">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_8px_#34d399]" />
               <span>SYS.RADAR // EPSG:3857 HD</span>
             </div>
             <div className="absolute top-5 right-6 pointer-events-none text-[9.5px] font-mono tracking-widest text-white/35 uppercase">
@@ -1670,14 +1671,14 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
             <div className="absolute bottom-5 left-6 pointer-events-none text-[9.5px] font-mono tracking-widest text-white/35 uppercase">
               <span>RES: 512PX @2X RETINA</span>
             </div>
-            <div className="absolute bottom-5 right-6 pointer-events-none text-[9.5px] font-mono tracking-widest text-[#ccff00]/55 uppercase">
+            <div className="absolute bottom-5 right-6 pointer-events-none text-[9.5px] font-mono tracking-widest text-white/55 uppercase">
               <span>STATE // SOLVING_TOPOLOGY</span>
             </div>
             <FluidGiantThinkingOrb
               size={430}
               state="solving"
               speed={1.2}
-              className="relative z-10 w-[320px] h-[320px] sm:w-[400px] sm:h-[400px] lg:w-[440px] lg:h-[440px]"
+              className="relative z-10 w-[280px] h-[280px] sm:w-[380px] sm:h-[380px] lg:w-[420px] lg:h-[420px]"
             />
           </motion.div>
         )}
@@ -1728,77 +1729,135 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
           focusTarget={focusTarget}
           resetCommandSeq={resetCommandSeq}
           onMapReady={() => setIsMapLoaded(true)}
-          onCanvasClick={() => setSelectedClientId(null)}
+          onCanvasClick={() => {
+            setSelectedClientId(null);
+            if (isSearchFocused) {
+              setIsSearchFocused(false);
+              setIsSearchBarHidden(true);
+            }
+          }}
           renderOverlayPins={(projectPin) => renderMapBeaconsOverlay(projectPin)}
         />
       </div>
 
-      {/* Hide all HUD panels during the 5-second dark frosted glass Solving animation */}
+      {/* Hide all HUD panels during the dark frosted glass Solving animation */}
       <div
         className={`absolute inset-0 pointer-events-none transition-opacity duration-500 ${
           isPreparingRadar ? "opacity-0 pointer-events-none invisible" : "opacity-100"
         }`}
       >
       {/* ========================================================================= */}
-      {/* 3. TOP FLOATING COMMAND BAR (Branded Search Bar + Disperso/Agrupar Dock)  */}
+      {/* 3. TOP FLOATING COMMAND BAR (Collapsible Search Bar + Disperso/Agrupar)   */}
       {/* ========================================================================= */}
-      <div className={`absolute top-4 sm:top-5 left-3 sm:left-20 lg:left-20 right-3 sm:right-6 lg:right-[22.5rem] ${isSearchFocused ? "z-50" : "z-30"} flex items-center justify-between gap-3 pointer-events-none transition-all`}>
+      <div className={`absolute top-3 sm:top-5 left-3 sm:left-16 lg:left-20 right-3 sm:right-6 lg:right-[22.5rem] ${isSearchFocused ? "z-50" : "z-30"} flex flex-wrap sm:flex-nowrap items-center justify-between gap-2 sm:gap-3 pointer-events-none transition-all`}>
         
-        {/* Left: Branded Search Bar for Cities & Provinces */}
+        {/* Left: Collapsible Branded Search Bar (Disappears on corner/item click) */}
         <div 
           ref={searchContainerRef}
           className="relative max-w-xs sm:max-w-sm flex-1 min-w-0 pointer-events-auto"
         >
-          {/* Main Clean Search Pill (h-10 aligned with Disperso/Agrupar & Right Panel) */}
-          <div className={`flex items-center h-10 bg-black/80 backdrop-blur-2xl border rounded-full px-3.5 shadow-2xl text-xs text-white w-full transition-all duration-300 ${
-            isSearchFocused 
-              ? "border-[#ccff00] ring-2 ring-[#ccff00]/30 shadow-[0_0_24px_rgba(204,255,0,0.25)] bg-black/95" 
-              : "border-white/15 hover:border-white/30"
-          }`}>
-            <Search className={`w-3.5 h-3.5 mr-2 shrink-0 transition-colors duration-200 ${isSearchFocused ? "text-[#ccff00]" : "text-white/50"}`} />
-            
-            <input 
-              type="text"
-              value={searchQuery}
-              onFocus={() => setIsSearchFocused(true)}
-              onChange={e => setSearchQuery(e.target.value)}
-              placeholder={`Buscar ciudad o provincia en ${activeCountry.name}...`}
-              className="bg-transparent border-none outline-none text-xs text-white placeholder:text-white/45 flex-1 min-w-0 font-sans"
-            />
-
-            {searchQuery && (
-              <button 
+          <AnimatePresence mode="wait" initial={false}>
+            {isSearchBarHidden ? (
+              <motion.button
+                key="radar-search-reopen-btn"
+                type="button"
+                initial={{ opacity: 0, scale: 0.88, x: -8 }}
+                animate={{ opacity: 1, scale: 1, x: 0 }}
+                exit={{ opacity: 0, scale: 0.88, x: -8 }}
+                transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
                 onClick={() => {
-                  setSearchQuery("");
-                  handleResetView();
+                  setIsSearchBarHidden(false);
+                  setIsSearchFocused(true);
                 }}
-                className="w-4 h-4 rounded-full bg-white/20 hover:bg-white/40 text-white flex items-center justify-center transition-all cursor-pointer mr-1.5 shrink-0"
-                title="Limpiar búsqueda"
+                className="h-9 sm:h-10 px-3.5 rounded-full bg-black/85 hover:bg-black backdrop-blur-2xl border border-white/15 hover:border-white/30 shadow-2xl text-xs font-semibold text-white flex items-center gap-2 cursor-pointer active:scale-95"
+                title="Abrir buscador de radar"
               >
-                <X className="w-2.5 h-2.5" />
-              </button>
-            )}
+                <Search className="w-3.5 h-3.5 text-white/80" />
+                <span className="text-[11px] sm:text-xs text-white/90 truncate max-w-[120px]">
+                  {searchQuery ? searchQuery : "Buscar"}
+                </span>
+                <span className="w-2 h-2 rounded-full bg-emerald-400 shadow-[0_0_6px_#34d399]" />
+              </motion.button>
+            ) : (
+              <motion.div
+                key="radar-search-bar-full"
+                initial={{ opacity: 0, scale: 0.95, y: -4 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.92, y: -6 }}
+                transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
+                className={`flex items-center h-9 sm:h-10 bg-black/80 backdrop-blur-2xl border rounded-full px-3 sm:px-3.5 shadow-2xl text-xs text-white w-full transition-all duration-300 ${
+                  isSearchFocused 
+                    ? "border-white/40 ring-2 ring-white/15 bg-black/95" 
+                    : "border-white/15 hover:border-white/30"
+                }`}
+              >
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsSearchFocused(false);
+                    setIsSearchBarHidden(true);
+                  }}
+                  title="Ocultar barra de búsqueda"
+                  className="mr-2 shrink-0 text-white/60 hover:text-white transition-colors cursor-pointer"
+                >
+                  <Search className="w-3.5 h-3.5" />
+                </button>
+                
+                <input 
+                  type="text"
+                  value={searchQuery}
+                  onFocus={() => setIsSearchFocused(true)}
+                  onChange={e => setSearchQuery(e.target.value)}
+                  placeholder={`Buscar en ${activeCountry.name}...`}
+                  className="bg-transparent border-none outline-none text-xs text-white placeholder:text-white/45 flex-1 min-w-0 font-sans"
+                />
 
-            <div className="flex items-center gap-1.5 pl-2.5 border-l border-white/10 shrink-0">
-              <span className={`w-2 h-2 rounded-full transition-colors ${
-                searchQuery ? "bg-[#ccff00] shadow-[0_0_8px_#ccff00]" : "bg-[#ccff00] shadow-[0_0_6px_#ccff00]"
-              }`} />
-              <span className="text-[10px] font-mono text-white/80 font-semibold hidden sm:inline">
-                {searchQuery 
-                  ? `${filteredActualClients.length} en radar` 
-                  : `${actualClients.length} ${actualClients.length === 1 ? 'cliente' : 'clientes'}`}
-              </span>
-            </div>
-          </div>
+                {searchQuery && (
+                  <button 
+                    type="button"
+                    onClick={() => {
+                      setSearchQuery("");
+                      handleResetView();
+                      setIsSearchFocused(false);
+                      setIsSearchBarHidden(true);
+                    }}
+                    className="w-4 h-4 rounded-full bg-white/20 hover:bg-white/40 text-white flex items-center justify-center transition-all cursor-pointer mr-1.5 shrink-0"
+                    title="Limpiar y ocultar búsqueda"
+                  >
+                    <X className="w-2.5 h-2.5" />
+                  </button>
+                )}
+
+                {/* Right corner of search bar: clicking this corner hides the search bar cleanly */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsSearchFocused(false);
+                    setIsSearchBarHidden(true);
+                  }}
+                  title="Ocultar barra de búsqueda"
+                  className="flex items-center gap-1.5 pl-2.5 border-l border-white/10 shrink-0 hover:opacity-80 transition-opacity cursor-pointer"
+                >
+                  <span className="w-2 h-2 rounded-full bg-emerald-400 shadow-[0_0_6px_#34d399]" />
+                  <span className="text-[10px] font-mono text-white/80 font-semibold hidden sm:inline">
+                    {searchQuery 
+                      ? `${filteredActualClients.length} en radar` 
+                      : `${actualClients.length} ${actualClients.length === 1 ? 'cliente' : 'clientes'}`}
+                  </span>
+                  <X className="w-3 h-3 text-white/45 hover:text-white ml-0.5" />
+                </button>
+              </motion.div>
+            )}
+          </AnimatePresence>
 
           {/* FLOATING LIVE INTERACTIVE SUGGESTER & REGIONAL TELEPORT POPOVER */}
           <AnimatePresence>
-            {isSearchFocused && (
+            {isSearchFocused && !isSearchBarHidden && (
               <motion.div
                 initial={{ opacity: 0, y: -8, scale: 0.96 }}
                 animate={{ opacity: 1, y: 0, scale: 1 }}
                 exit={{ opacity: 0, y: -6, scale: 0.96 }}
-                transition={{ type: "spring", stiffness: 420, damping: 28 }}
+                transition={{ duration: 0.24, ease: [0.22, 1, 0.36, 1] }}
                 className="absolute top-full left-0 right-0 mt-2 rounded-3xl bg-[#0c0e12]/95 backdrop-blur-3xl border border-white/20 p-4 shadow-[0_25px_60px_rgba(0,0,0,0.9)] z-[70] space-y-3.5 max-h-[min(380px,55vh)] overflow-y-auto origin-top"
               >
               
@@ -1806,14 +1865,18 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
               <div className="space-y-1.5">
                 <div className="flex items-center justify-between text-[10px] font-mono text-white/50 font-bold uppercase tracking-wider">
                   <span>Regiones Naturales ({activeCountry.name})</span>
-                  {searchQuery && (
-                    <button 
-                      onClick={() => { setSearchQuery(""); handleResetView(); }} 
-                      className="text-[#ccff00] hover:underline normal-case font-sans cursor-pointer text-[11px]"
-                    >
-                      Ver todo {activeCountry.name}
-                    </button>
-                  )}
+                  <button 
+                    type="button"
+                    onClick={() => {
+                      setSearchQuery("");
+                      handleResetView();
+                      setIsSearchFocused(false);
+                      setIsSearchBarHidden(true);
+                    }} 
+                    className="text-white/70 hover:text-white hover:underline normal-case font-sans cursor-pointer text-[11px]"
+                  >
+                    Cerrar
+                  </button>
                 </div>
                 <div className="flex items-center gap-1.5 flex-wrap">
                   {(activeCountry.naturalRegions || []).map((reg) => {
@@ -1821,12 +1884,15 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
                     return (
                       <button
                         key={reg.name}
+                        type="button"
                         onClick={() => {
                           setSearchQuery(reg.query);
+                          setIsSearchFocused(false);
+                          setIsSearchBarHidden(true);
                         }}
                         className={`px-2.5 py-1 rounded-full text-[11px] font-semibold transition-all flex items-center gap-1.5 border cursor-pointer ${
                           isActive
-                            ? "bg-[#ccff00] text-gray-950 font-bold border-[#ccff00] shadow-[0_0_12px_rgba(204,255,0,0.4)]"
+                            ? "bg-white text-gray-950 font-bold border-white shadow-sm"
                             : "bg-white/5 hover:bg-white/15 text-white/80 border-white/10 hover:border-white/20 hover:text-white"
                         }`}
                       >
@@ -1842,7 +1908,7 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
               <div className="space-y-1.5 pt-2 border-t border-white/10">
                 <div className="flex items-center justify-between text-[10px] font-mono text-white/50 font-bold uppercase tracking-wider">
                   <span>Explorar Ciudades ({activeCountry.name})</span>
-                  <span className="text-[9.5px] font-mono text-[#ccff00] flex items-center gap-1">
+                  <span className="text-[9.5px] font-mono text-white/70 flex items-center gap-1">
                     <MapPin className="w-2.5 h-2.5" /> Clic para enfocar
                   </span>
                 </div>
@@ -1853,6 +1919,7 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
                     return (
                       <button
                         key={city}
+                        type="button"
                         onClick={() => {
                           setSearchQuery(city);
                           if (coords.x >= 0 && coords.y >= 0) {
@@ -1862,10 +1929,11 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
                             setSelectedClientId(clientMatch.id);
                           }
                           setIsSearchFocused(false);
+                          setIsSearchBarHidden(true);
                         }}
-                        className="px-2.5 py-1 rounded-xl text-[10.5px] bg-white/5 hover:bg-[#ccff00]/15 hover:border-[#ccff00]/40 text-white/85 hover:text-[#ccff00] border border-white/10 transition-all flex items-center gap-1 cursor-pointer group"
+                        className="px-2.5 py-1 rounded-xl text-[10.5px] bg-white/5 hover:bg-white/15 hover:border-white/30 text-white/85 hover:text-white border border-white/10 transition-all flex items-center gap-1 cursor-pointer group"
                       >
-                        <MapPin className="w-2.5 h-2.5 opacity-60 group-hover:opacity-100 group-hover:text-[#ccff00]" />
+                        <MapPin className="w-2.5 h-2.5 opacity-60 group-hover:opacity-100" />
                         <span>{city}</span>
                       </button>
                     );
@@ -1892,8 +1960,9 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
                             setSelectedClientId(client.id);
                             focusOnLocation(client.x, client.y, 1.9, client.city);
                             setIsSearchFocused(false);
+                            setIsSearchBarHidden(true);
                           }}
-                          className="p-2 rounded-xl bg-white/5 hover:bg-white/15 border border-white/10 hover:border-[#ccff00]/40 flex items-center justify-between cursor-pointer transition-all group"
+                          className="p-2 rounded-xl bg-white/5 hover:bg-white/15 border border-white/10 hover:border-white/30 flex items-center justify-between cursor-pointer transition-all group"
                         >
                           <div className="flex items-center gap-2 truncate">
                             <BlobatarAvatar
@@ -1903,7 +1972,7 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
                               className="shrink-0"
                             />
                             <div className="truncate">
-                              <p className="text-xs font-semibold text-white group-hover:text-[#ccff00] transition-colors truncate">
+                              <p className="text-xs font-semibold text-white transition-colors truncate">
                                 {cleanClientName(client.name)}
                               </p>
                               <p className="text-[10px] text-white/50 truncate">
@@ -1911,7 +1980,7 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
                               </p>
                             </div>
                           </div>
-                          <span className="text-[9.5px] font-mono px-2 py-0.5 rounded bg-white/10 text-white/80 group-hover:bg-[#ccff00] group-hover:text-gray-950 font-bold transition-all shrink-0">
+                          <span className="text-[9.5px] font-mono px-2 py-0.5 rounded bg-white/10 text-white/80 group-hover:bg-white group-hover:text-gray-950 font-bold transition-all shrink-0">
                             Enfocar &rarr;
                           </span>
                         </div>
@@ -1927,9 +1996,13 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
         </div>
 
         {/* Right of Search Bar: Symmetrical Disperso (1x/2x) & Agrupar Dock + Admin Location */}
-        <div className="flex items-center gap-2 pointer-events-auto shrink-0">
-          {/* SYMMETRICAL DENSITY MODE DOCK (Disperso [1x | 2x] / Agrupar) */}
-          <div className="flex items-center h-10 bg-black/85 backdrop-blur-2xl border border-white/15 rounded-full p-1 shadow-2xl text-xs font-semibold text-white">
+        <div className="flex items-center gap-1.5 sm:gap-2 pointer-events-auto shrink-0">
+          {/* SYMMETRICAL DENSITY MODE DOCK (Disperso [1x | 2x] / Agrupar) with Silky Spring Animations */}
+          <motion.div
+            layout
+            transition={{ type: "spring", stiffness: 460, damping: 32 }}
+            className="flex items-center h-9 sm:h-10 bg-black/85 backdrop-blur-2xl border border-white/15 rounded-full p-1 shadow-2xl text-[11px] sm:text-xs font-semibold text-white"
+          >
             <div className="relative grid grid-cols-2 items-center h-full">
               <button
                 type="button"
@@ -1937,7 +2010,7 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
                   setClusterMode("dispersed");
                   setExpandedClusterCity(null);
                 }}
-                className={`relative z-10 min-w-[96px] sm:min-w-[104px] h-full px-3 rounded-full transition-colors duration-200 flex items-center justify-center gap-1.5 cursor-pointer ${
+                className={`relative z-10 min-w-[82px] sm:min-w-[102px] h-full px-2.5 sm:px-3 rounded-full transition-colors duration-200 flex items-center justify-center gap-1.5 cursor-pointer ${
                   clusterMode === "dispersed"
                     ? "text-gray-950 font-bold"
                     : "text-white/70 hover:text-white"
@@ -1947,11 +2020,20 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
                 {clusterMode === "dispersed" && (
                   <motion.div
                     layoutId="radarDensityModeIndicator"
-                    transition={{ type: "spring", stiffness: 420, damping: 30 }}
-                    className="absolute inset-0 rounded-full bg-[#ccff00] shadow-[0_0_14px_rgba(204,255,0,0.5)] -z-10"
+                    transition={{ type: "spring", stiffness: 520, damping: 34 }}
+                    className="absolute inset-0 rounded-full bg-white shadow-[0_2px_14px_rgba(255,255,255,0.3)] -z-10"
                   />
                 )}
-                <Sparkles className="w-3.5 h-3.5 shrink-0" />
+                <motion.span
+                  animate={{
+                    rotate: clusterMode === "dispersed" ? [0, 14, 0] : 0,
+                    scale: clusterMode === "dispersed" ? 1.08 : 0.95,
+                  }}
+                  transition={{ duration: 0.32, ease: "easeOut" }}
+                  className="flex items-center"
+                >
+                  <Sparkles className="w-3.5 h-3.5 shrink-0" />
+                </motion.span>
                 <span>Disperso</span>
               </button>
 
@@ -1961,7 +2043,7 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
                   setClusterMode("clustered");
                   setExpandedClusterCity(null);
                 }}
-                className={`relative z-10 min-w-[96px] sm:min-w-[104px] h-full px-3 rounded-full transition-colors duration-200 flex items-center justify-center gap-1.5 cursor-pointer ${
+                className={`relative z-10 min-w-[82px] sm:min-w-[102px] h-full px-2.5 sm:px-3 rounded-full transition-colors duration-200 flex items-center justify-center gap-1.5 cursor-pointer ${
                   clusterMode === "clustered"
                     ? "text-gray-950 font-bold"
                     : "text-white/70 hover:text-white"
@@ -1971,70 +2053,88 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
                 {clusterMode === "clustered" && (
                   <motion.div
                     layoutId="radarDensityModeIndicator"
-                    transition={{ type: "spring", stiffness: 420, damping: 30 }}
-                    className="absolute inset-0 rounded-full bg-[#ccff00] shadow-[0_0_14px_rgba(204,255,0,0.5)] -z-10"
+                    transition={{ type: "spring", stiffness: 520, damping: 34 }}
+                    className="absolute inset-0 rounded-full bg-white shadow-[0_2px_14px_rgba(255,255,255,0.3)] -z-10"
                   />
                 )}
-                <Layers className="w-3.5 h-3.5 shrink-0" />
+                <motion.span
+                  animate={{
+                    scale: clusterMode === "clustered" ? 1.08 : 0.95,
+                  }}
+                  transition={{ duration: 0.28, ease: "easeOut" }}
+                  className="flex items-center"
+                >
+                  <Layers className="w-3.5 h-3.5 shrink-0" />
+                </motion.span>
                 <span>Agrupar{clusterPins.length > 0 ? ` (${clusterPins.length})` : ""}</span>
               </button>
             </div>
 
-            {/* Inline 1x | 2x Scale Multiplier Sub-Pill (Enabled when Disperso is active) */}
+            {/* Inline 1x | 2x Scale Multiplier Sub-Pill with Sliding Spring Indicator */}
             <AnimatePresence initial={false}>
               {clusterMode === "dispersed" && (
                 <motion.div
                   initial={{ width: 0, opacity: 0, marginLeft: 0 }}
                   animate={{ width: "auto", opacity: 1, marginLeft: 6 }}
                   exit={{ width: 0, opacity: 0, marginLeft: 0 }}
-                  transition={{ type: "spring", stiffness: 380, damping: 28 }}
+                  transition={{ type: "spring", stiffness: 460, damping: 30 }}
                   className="overflow-hidden flex items-center pl-1.5 border-l border-white/15 shrink-0"
                 >
-                  <div className="flex items-center bg-white/[0.06] rounded-full p-0.5 gap-0.5">
-                    <button
-                      type="button"
-                      onClick={() => setScatterRadius("normal")}
-                      className={`px-2 py-1 rounded-full font-mono text-[10px] font-bold transition-all cursor-pointer ${
-                        scatterRadius === "normal"
-                          ? "bg-[#ccff00] text-gray-950 shadow-[0_0_10px_rgba(204,255,0,0.4)]"
-                          : "text-white/65 hover:text-white"
-                      }`}
-                      title="Escala 1x: Dispersión compacta de estacas"
-                    >
-                      1x
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setScatterRadius("wide")}
-                      className={`px-2 py-1 rounded-full font-mono text-[10px] font-bold transition-all cursor-pointer ${
-                        scatterRadius === "wide"
-                          ? "bg-[#ccff00] text-gray-950 shadow-[0_0_10px_rgba(204,255,0,0.4)]"
-                          : "text-white/65 hover:text-white"
-                      }`}
-                      title="Escala 2x: Dispersión amplia y estacas aumentadas"
-                    >
-                      2x
-                    </button>
+                  <div className="relative flex items-center bg-white/[0.08] rounded-full p-0.5 gap-0.5">
+                    {(["normal", "wide"] as const).map((mode) => {
+                      const active = scatterRadius === mode;
+                      const label = mode === "normal" ? "1x" : "2x";
+                      return (
+                        <button
+                          key={mode}
+                          type="button"
+                          onClick={() => setScatterRadius(mode)}
+                          className={`relative z-10 px-2.5 py-1 rounded-full font-mono text-[10px] font-bold transition-colors duration-200 cursor-pointer ${
+                            active ? "text-gray-950" : "text-white/65 hover:text-white"
+                          }`}
+                          title={
+                            mode === "normal"
+                              ? "Escala 1x: Dispersión compacta de estacas"
+                              : "Escala 2x: Dispersión amplia y estacas aumentadas"
+                          }
+                        >
+                          {active && (
+                            <motion.div
+                              layoutId="radarScatterScaleIndicator"
+                              transition={{ type: "spring", stiffness: 540, damping: 32 }}
+                              className="absolute inset-0 rounded-full bg-white shadow-xs -z-10"
+                            />
+                          )}
+                          <motion.span
+                            animate={{ scale: active ? 1.06 : 0.96 }}
+                            transition={{ type: "spring", stiffness: 500, damping: 28 }}
+                            className="inline-block"
+                          >
+                            {label}
+                          </motion.span>
+                        </button>
+                      );
+                    })}
                   </div>
                 </motion.div>
               )}
             </AnimatePresence>
-          </div>
+          </motion.div>
 
           {/* Admin Location Prompt */}
           {isAdmin && !hasAdminLocation && (
             <button
               onClick={handleNavigateToAddress}
-              className="group relative flex items-center gap-2 h-10 px-3.5 sm:px-4 rounded-full bg-black/90 hover:bg-black backdrop-blur-2xl border border-[#ccff00]/80 hover:border-[#ccff00] text-white text-xs font-semibold shadow-[0_0_24px_rgba(204,255,0,0.35)] transition-all duration-300 hover:scale-[1.03] active:scale-95 cursor-pointer shrink-0"
+              className="group relative flex items-center gap-2 h-9 sm:h-10 px-3 sm:px-4 rounded-full bg-black/90 hover:bg-black backdrop-blur-2xl border border-white/25 hover:border-white/45 text-white text-xs font-semibold shadow-lg transition-all duration-300 hover:scale-[1.03] active:scale-95 cursor-pointer shrink-0"
               title="Añade tu dirección para mostrar tu ubicación en el mapa"
             >
-              <div className="relative flex items-center justify-center w-5 h-5 rounded-full bg-[#ccff00] text-gray-950 font-black shrink-0 shadow-[0_0_8px_rgba(204,255,0,0.5)]">
+              <div className="relative flex items-center justify-center w-5 h-5 rounded-full bg-white text-gray-950 font-black shrink-0">
                 <MapPin className="w-3 h-3 text-gray-950" />
               </div>
-              <span className="font-semibold text-xs text-white group-hover:text-[#ccff00] transition-colors whitespace-nowrap">
+              <span className="font-semibold text-xs text-white whitespace-nowrap hidden sm:inline">
                 Mi Ubicación
               </span>
-              <ArrowUpRight className="w-3.5 h-3.5 text-[#ccff00] transition-transform duration-300 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 shrink-0" />
+              <ArrowUpRight className="w-3.5 h-3.5 text-white/80 transition-transform duration-300 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 shrink-0" />
             </button>
           )}
         </div>
@@ -2042,36 +2142,24 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
       </div>
 
       {/* ========================================================================= */}
-      {/* 4. LEFT HUD CONTROLS (ShotScape GIS Floating Toolstrip - Zero Widgets)    */}
+      {/* 4. LEFT HUD CONTROLS (ShotScape GIS Floating Toolstrip)                   */}
       {/* ========================================================================= */}
       <div className="absolute left-3 sm:left-6 top-1/2 -translate-y-1/2 z-30 flex flex-col items-center gap-2 pointer-events-auto">
-        <div className="flex flex-col items-center bg-black/60 backdrop-blur-xl border border-white/15 rounded-2xl p-1.5 shadow-2xl space-y-1">
+        <div className="flex flex-col items-center bg-black/70 backdrop-blur-2xl border border-white/15 rounded-2xl p-1.5 shadow-2xl space-y-1">
           
-          {/* Live Traffic Country Quick-Slider Trigger Button (Flag + Active Count Indicator) */}
+          {/* Country Switcher Trigger Button (Refined Stone/Pearl Styling — Zero Neon Green) */}
           <button 
             type="button"
-            onClick={() => {
-              if (activeTrafficCountries.length > 1) {
-                const idx = activeTrafficCountries.findIndex((item) => item.code === selectedCountry);
-                const nextIdx = idx < 0 || idx >= activeTrafficCountries.length - 1 ? 0 : idx + 1;
-                handleSwitchCountry(activeTrafficCountries[nextIdx].code);
-              } else {
-                setIsCountryMenuOpen(prev => !prev);
-              }
-            }}
-            title={
-              activeTrafficCountries.length > 1
-                ? `Deslizar al siguiente país con tráfico en vivo (${activeTrafficCountries.length} activos)`
-                : `País activo en tiempo real: ${activeCountry.name}`
-            }
-            className={`relative w-8 h-8 rounded-xl flex items-center justify-center transition-all duration-200 cursor-pointer group ${
+            onClick={() => setIsCountryMenuOpen(prev => !prev)}
+            title={`Cambiar país (${activeCountry.name})`}
+            className={`relative w-8 h-8 sm:w-9 sm:h-9 rounded-xl flex items-center justify-center transition-all duration-300 cursor-pointer group ${
               isCountryMenuOpen
-                ? "bg-[#ccff00] text-gray-950 font-bold shadow-[0_0_16px_#ccff00] scale-110"
-                : "bg-black/50 border border-white/20 hover:border-[#ccff00]/60 text-white hover:scale-110 active:scale-95 shadow-[0_0_10px_rgba(204,255,0,0.12)]"
+                ? "bg-white text-gray-950 font-bold shadow-[0_4px_16px_rgba(255,255,255,0.25)] scale-105"
+                : "bg-white/10 border border-white/20 hover:border-white/40 text-white hover:scale-105 active:scale-95"
             }`}
           >
             <CountrySvgFlag code={selectedCountry} className="w-5 h-3.5 rounded-[2px] shadow-sm pointer-events-none" />
-            <span className="absolute -bottom-0.5 -right-0.5 w-2 h-2 rounded-full bg-[#ccff00] border border-black shadow-[0_0_4px_#ccff00]" />
+            <span className="absolute -bottom-0.5 -right-0.5 w-2 h-2 rounded-full bg-emerald-400 border border-black" />
           </button>
 
           <div className="w-5 h-[1px] bg-white/15 my-0.5" />
@@ -2080,7 +2168,7 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
           <button 
             onClick={handleZoomIn}
             title="Acercar mapa (+)"
-            className="w-8 h-8 rounded-xl bg-white/10 hover:bg-white/25 flex items-center justify-center text-white transition-all hover:scale-110 active:scale-95 cursor-pointer"
+            className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-white/10 hover:bg-white/25 flex items-center justify-center text-white transition-all hover:scale-105 active:scale-95 cursor-pointer"
           >
             <ZoomIn className="w-4 h-4" />
           </button>
@@ -2089,7 +2177,7 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
           <button 
             onClick={handleResetView}
             title="Orientación Norte & Centrar Mapa"
-            className="w-8 h-8 rounded-xl bg-black/50 border border-white/15 hover:border-[#ccff00] flex items-center justify-center text-[#ccff00] transition-all hover:scale-110 active:scale-95 cursor-pointer shadow-[0_0_10px_rgba(204,255,0,0.15)] group"
+            className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-white/10 border border-white/15 hover:border-white/35 flex items-center justify-center text-white transition-all hover:scale-105 active:scale-95 cursor-pointer group"
           >
             <Compass className="w-4 h-4 group-hover:rotate-45 transition-transform duration-300" />
           </button>
@@ -2098,7 +2186,7 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
           <button 
             onClick={handleZoomOut}
             title="Alejar mapa (-)"
-            className="w-8 h-8 rounded-xl bg-white/10 hover:bg-white/25 flex items-center justify-center text-white transition-all hover:scale-110 active:scale-95 cursor-pointer"
+            className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-white/10 hover:bg-white/25 flex items-center justify-center text-white transition-all hover:scale-105 active:scale-95 cursor-pointer"
           >
             <ZoomOut className="w-4 h-4" />
           </button>
@@ -2112,9 +2200,9 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
               setExpandedClusterCity(null);
             }}
             title={clusterMode === "dispersed" ? "Agrupar pines en clústeres por ciudad" : "Dispersar todos los pines por el mapa"}
-            className={`w-8 h-8 rounded-xl flex items-center justify-center transition-all hover:scale-110 active:scale-95 cursor-pointer ${
+            className={`w-8 h-8 sm:w-9 sm:h-9 rounded-xl flex items-center justify-center transition-all hover:scale-105 active:scale-95 cursor-pointer ${
               clusterMode === "clustered"
-                ? "bg-[#ccff00] text-gray-950 font-bold shadow-[0_0_12px_#ccff00]"
+                ? "bg-white text-gray-950 font-bold shadow-sm"
                 : "bg-white/10 hover:bg-white/25 text-white/80 hover:text-white"
             }`}
           >
@@ -2125,7 +2213,7 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
           <button 
             onClick={handleResetView}
             title="Restablecer vista (100%)"
-            className="w-8 h-8 rounded-xl bg-white/10 hover:bg-white/25 flex items-center justify-center text-white/70 hover:text-white transition-all hover:scale-110 active:scale-95 cursor-pointer"
+            className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-white/10 hover:bg-white/25 flex items-center justify-center text-white/70 hover:text-white transition-all hover:scale-105 active:scale-95 cursor-pointer"
           >
             <RotateCcw className="w-3.5 h-3.5" />
           </button>
@@ -2134,9 +2222,9 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
           <button 
             onClick={() => setIsMobilePanelOpen(prev => !prev)}
             title={isMobilePanelOpen ? "Ocultar panel de métricas" : "Ver métricas y clientes"}
-            className={`lg:hidden w-8 h-8 rounded-xl flex items-center justify-center transition-all hover:scale-110 active:scale-95 cursor-pointer ${
+            className={`lg:hidden w-8 h-8 sm:w-9 sm:h-9 rounded-xl flex items-center justify-center transition-all hover:scale-105 active:scale-95 cursor-pointer ${
               isMobilePanelOpen
-                ? "bg-[#ccff00] text-gray-950 font-bold shadow-[0_0_12px_#ccff00]"
+                ? "bg-white text-gray-950 font-bold shadow-sm"
                 : "bg-white/10 hover:bg-white/25 text-white/80 hover:text-white"
             }`}
           >
@@ -2152,48 +2240,48 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
       </div>
 
       {/* ========================================================================= */}
-      {/* 4.B LIVE TRAFFIC COUNTRIES MODAL (Filtered strictly to active countries)  */}
+      {/* 4.B LIVE TRAFFIC COUNTRIES MODAL (Soft Open/Close & Zero Phosphorescent)  */}
       {/* ========================================================================= */}
       <AnimatePresence>
         {isCountryMenuOpen && (
           <>
-            {/* Cinematic Backdrop Overlay */}
+            {/* Soft Cinematic Backdrop Overlay */}
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              transition={{ duration: 0.22, ease: "easeOut" }}
+              transition={{ duration: 0.34, ease: [0.22, 1, 0.36, 1] }}
               onClick={() => setIsCountryMenuOpen(false)}
-              className="fixed inset-0 z-40 bg-black/60 backdrop-blur-[4px] pointer-events-auto"
+              className="fixed inset-0 z-40 bg-black/50 backdrop-blur-[3px] pointer-events-auto"
               aria-hidden="true"
             />
 
-            {/* Country Selector Menu Card (Only shows countries with connected clients) */}
+            {/* Country Selector Menu Card (Warm Neutral Glass — No Phosphorescent Green) */}
             <motion.div
-              initial={{ opacity: 0, scale: 0.92, x: -16 }}
-              animate={{ opacity: 1, scale: 1, x: 0 }}
-              exit={{ opacity: 0, scale: 0.92, x: -16 }}
-              transition={{ type: "spring", stiffness: 350, damping: 26 }}
-              className="absolute left-4 right-4 sm:right-auto sm:left-20 top-1/2 -translate-y-1/2 z-50 w-auto sm:w-[350px] max-w-[calc(100vw-2rem)] rounded-3xl bg-[#0c0f13]/95 backdrop-blur-2xl border border-white/20 p-4 shadow-[0_25px_70px_rgba(0,0,0,0.85),0_0_40px_rgba(204,255,0,0.15)] pointer-events-auto select-none"
+              initial={{ opacity: 0, scale: 0.95, y: 10, filter: "blur(6px)" }}
+              animate={{ opacity: 1, scale: 1, y: 0, filter: "blur(0px)" }}
+              exit={{ opacity: 0, scale: 0.96, y: 8, filter: "blur(4px)" }}
+              transition={{ duration: 0.34, ease: [0.22, 1, 0.36, 1] }}
+              className="absolute left-3 right-3 sm:right-auto sm:left-20 top-1/2 -translate-y-1/2 z-50 w-auto sm:w-[350px] max-w-[calc(100vw-1.5rem)] rounded-3xl bg-[#111317]/95 backdrop-blur-2xl border border-white/15 p-4 shadow-[0_25px_70px_rgba(0,0,0,0.85)] pointer-events-auto select-none"
             >
-              {/* Ambient Glow */}
-              <div className="pointer-events-none absolute -inset-6 rounded-full bg-[#ccff00]/10 blur-2xl -z-10" />
+              {/* Subtle Warm Ambient Glow */}
+              <div className="pointer-events-none absolute -inset-6 rounded-full bg-white/[0.04] blur-2xl -z-10" />
 
               {/* Menu Header */}
               <div className="flex items-center justify-between pb-3 mb-3 border-b border-white/10">
                 <div className="flex items-center gap-2.5">
-                  <div className="w-8 h-8 rounded-xl bg-[#ccff00]/15 border border-[#ccff00]/30 flex items-center justify-center text-[#ccff00] shrink-0 shadow-[0_0_12px_rgba(204,255,0,0.2)]">
+                  <div className="w-8 h-8 rounded-xl bg-white/10 border border-white/15 flex items-center justify-center text-white shrink-0">
                     <Globe className="w-4 h-4" />
                   </div>
                   <div>
                     <h4 className="text-xs font-bold text-white tracking-tight leading-tight flex items-center gap-1.5">
-                      <span>Países con Tráfico Activo</span>
-                      <span className="text-[9px] font-mono text-[#ccff00] bg-[#ccff00]/10 px-1.5 py-0.2 rounded border border-[#ccff00]/25">
+                      <span>Seleccionar País</span>
+                      <span className="text-[9px] font-mono text-white/80 bg-white/10 px-1.5 py-0.5 rounded border border-white/15">
                         {activeTrafficCountries.length} en vivo
                       </span>
                     </h4>
                     <p className="text-[10px] text-white/50 leading-none mt-0.5">
-                      Solo aparecen países con personas conectadas
+                      Países con clientes activos en tiempo real
                     </p>
                   </div>
                 </div>
@@ -2208,7 +2296,7 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
               </div>
 
               {/* Active Country Cards Grid */}
-              <div className="grid grid-cols-1 gap-2">
+              <div className="grid grid-cols-1 gap-2 max-h-[50vh] overflow-y-auto pr-0.5">
                 {activeTrafficCountries.map(({ code, country: c, count }) => {
                   const isSelected = selectedCountry === code;
                   return (
@@ -2221,10 +2309,10 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
                         }
                         setIsCountryMenuOpen(false);
                       }}
-                      className={`group relative p-3 rounded-2xl border text-left transition-all duration-200 cursor-pointer flex items-center justify-between overflow-hidden active:scale-95 ${
+                      className={`group relative p-3 rounded-2xl border text-left transition-all duration-250 cursor-pointer flex items-center justify-between overflow-hidden active:scale-[0.98] ${
                         isSelected
-                          ? "bg-[#ccff00]/15 border-[#ccff00] shadow-[0_0_20px_rgba(204,255,0,0.25)] ring-1 ring-[#ccff00]/50"
-                          : "bg-white/[0.04] hover:bg-white/[0.08] border-white/10 hover:border-[#ccff00]/40"
+                          ? "bg-white/[0.12] border-white/35 shadow-sm ring-1 ring-white/20"
+                          : "bg-white/[0.04] hover:bg-white/[0.08] border-white/10 hover:border-white/25"
                       }`}
                       title={`Cambiar radar a ${c.name}`}
                     >
@@ -2233,7 +2321,7 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
                           <CountrySvgFlag code={code} className="w-6 h-4 rounded-[2px]" />
                         </div>
                         <div>
-                          <span className={`text-xs font-bold block ${isSelected ? "text-[#ccff00]" : "text-white"}`}>
+                          <span className="text-xs font-bold block text-white">
                             {c.name}
                           </span>
                           <span className="text-[10px] font-mono text-white/55">
@@ -2241,9 +2329,9 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
                           </span>
                         </div>
                       </div>
-                      <span className="px-2 py-0.5 rounded-full bg-[#ccff00]/15 border border-[#ccff00]/30 text-[10px] font-mono font-bold text-[#ccff00] flex items-center gap-1">
-                        <span className="w-1.5 h-1.5 rounded-full bg-[#ccff00] animate-pulse" />
-                        En vivo
+                      <span className="px-2.5 py-0.5 rounded-full bg-white/10 border border-white/15 text-[10px] font-mono font-semibold text-white/90 flex items-center gap-1.5">
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                        Activo
                       </span>
                     </button>
                   );
@@ -2253,8 +2341,8 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
               {/* Footer Micro-Prompt */}
               <div className="mt-3 pt-2.5 border-t border-white/10 flex items-center justify-between text-[9.5px] font-mono text-white/50">
                 <span className="flex items-center gap-1">
-                  <Compass className="w-3 h-3 text-[#ccff00]" />
-                  <span>Detección automática de países</span>
+                  <Compass className="w-3 h-3 text-white/70" />
+                  <span>Sincronización satelital automática</span>
                 </span>
                 <span className="text-white/40">Esc para cerrar</span>
               </div>
@@ -2264,15 +2352,15 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
       </AnimatePresence>
 
       {/* ========================================================================= */}
-      {/* 5. RIGHT FLOATING GLASS PANEL (Concise Metrics & Live Client Dossier)     */}
+      {/* 5. RIGHT FLOATING GLASS PANEL (Responsive Mobile Bottom Sheet + Desktop)  */}
       {/* ========================================================================= */}
       <div 
         onClick={(e) => e.stopPropagation()} 
-        className={`absolute right-3 sm:right-6 top-16 lg:top-5 bottom-20 sm:bottom-24 w-[calc(100%-1.5rem)] sm:w-80 lg:w-84 z-30 flex-col pointer-events-auto transition-all duration-500 ease-out overflow-hidden ${
+        className={`absolute left-3 right-3 sm:left-auto sm:right-6 bottom-16 sm:bottom-5 lg:top-5 lg:bottom-5 w-auto sm:w-80 lg:w-84 max-h-[62vh] lg:max-h-none z-30 flex-col pointer-events-auto transition-all duration-300 ease-out overflow-hidden ${
           isMobilePanelOpen ? "flex" : "hidden lg:flex"
         }`}
       >
-        <div className="flex-1 rounded-[2rem] bg-[#121615]/85 backdrop-blur-2xl border border-white/15 p-4 sm:p-5 shadow-2xl flex flex-col justify-between overflow-hidden transition-all duration-500 ease-out w-full">
+        <div className="flex-1 rounded-[1.75rem] sm:rounded-[2rem] bg-[#121615]/92 backdrop-blur-2xl border border-white/15 p-3.5 sm:p-5 shadow-2xl flex flex-col justify-between overflow-hidden transition-all duration-300 ease-out w-full">
           
           {/* Panel Top Navigation & Scrollable Content Body */}
           <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden touch-pan-y overscroll-x-none w-full pr-0.5 space-y-3.5 select-none" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
