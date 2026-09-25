@@ -116,17 +116,20 @@ export function parsePresenceState(state: Record<string, unknown>): ConnectedCli
 
         const isAnon = Boolean(p.isAnonymous || p.id.startsWith('anon_') || p.id.startsWith('vis_') || p.id.startsWith('guest_') || !p.email);
 
-        let cleanCity = (p.city && typeof p.city === 'string') ? p.city.trim() : '';
-        if (!cleanCity && isAnon) {
-          const charCodeSum = String(p.sessionId || p.id).split('').reduce((acc, ch) => acc + ch.charCodeAt(0), 0);
-          cleanCity = DEFAULT_ECUADOR_CITIES[charCodeSum % DEFAULT_ECUADOR_CITIES.length];
-        }
+        const rawCityStr = (p.city && typeof p.city === 'string') ? p.city.trim() : '';
+        const cleanCity = (rawCityStr.toLowerCase() === 'ecuador' || rawCityStr.toLowerCase() === 'sin ubicación' || rawCityStr.toLowerCase() === 'desconocido')
+          ? ''
+          : rawCityStr;
 
-        const coords = resolveCoordinates(cleanCity);
+        const coords = cleanCity ? resolveCoordinates(cleanCity) : { x: -100, y: -100 };
         const parsedX = p.x !== null && p.x !== undefined ? Number(p.x) : NaN;
         const parsedY = p.y !== null && p.y !== undefined ? Number(p.y) : NaN;
-        const finalX = !isNaN(parsedX) && parsedX >= 0 ? parsedX : (coords.x >= 0 ? coords.x : 48.8);
-        const finalY = !isNaN(parsedY) && parsedY >= 0 ? parsedY : (coords.y >= 0 ? coords.y : 26.5);
+        const finalX = cleanCity
+          ? (!isNaN(parsedX) && parsedX >= 0 ? parsedX : (coords.x >= 0 ? coords.x : -100))
+          : -100;
+        const finalY = cleanCity
+          ? (!isNaN(parsedY) && parsedY >= 0 ? parsedY : (coords.y >= 0 ? coords.y : -100))
+          : -100;
 
         const purchases = Number(p.purchasesCount) || 0;
         const spent = Number(p.totalSpent) || 0;
@@ -143,7 +146,7 @@ export function parsePresenceState(state: Record<string, unknown>): ConnectedCli
           sessionId: p.sessionId,
           name: isAnon ? 'Visitante Anónimo' : cleanClientName(p.name),
           email: isAnon ? '' : (p.email || ''),
-          city: cleanCity || 'Ecuador',
+          city: cleanCity,
           exactAddress: p.exactAddress || cleanCity || undefined,
           lat: !isNaN(parsedLat as number) ? parsedLat : undefined,
           lng: !isNaN(parsedLng as number) ? parsedLng : undefined,
@@ -280,12 +283,12 @@ export const useRadarStore = create<RadarStore>((set, get) => ({
     }
 
     // ── Handle Online Presence ──
-    let cleanCity = (city && typeof city === 'string') ? city.trim() : '';
-    if (!cleanCity && isAnon) {
-      const charCodeSum = String(sessionId || clientId).split('').reduce((acc, ch) => acc + ch.charCodeAt(0), 0);
-      cleanCity = DEFAULT_ECUADOR_CITIES[charCodeSum % DEFAULT_ECUADOR_CITIES.length];
-    }
-    const coords = resolveCoordinates(exactLocation?.exactAddress || cleanCity);
+    const rawCityStr = (city && typeof city === 'string') ? city.trim() : '';
+    const cleanCity = (rawCityStr.toLowerCase() === 'ecuador' || rawCityStr.toLowerCase() === 'sin ubicación' || rawCityStr.toLowerCase() === 'desconocido')
+      ? ''
+      : rawCityStr;
+    const targetQuery = exactLocation?.exactAddress || cleanCity;
+    const coords = targetQuery ? resolveCoordinates(targetQuery) : { x: -100, y: -100 };
     const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
     const isTablet = typeof window !== 'undefined' && window.innerWidth >= 768 && window.innerWidth < 1024;
     const device: ConnectedClient['device'] = isMobile ? 'Celular' : isTablet ? 'Tablet' : 'Computador';
@@ -300,13 +303,13 @@ export const useRadarStore = create<RadarStore>((set, get) => ({
       sessionId,
       name: isAnon ? 'Visitante Anónimo' : cleanClientName(user?.name || user?.email?.split('@')[0] || 'Cliente Lumina'),
       email: isAnon ? '' : (user?.email || ''),
-      city: cleanCity || 'Ecuador',
-      exactAddress: exactLocation?.exactAddress || cleanCity || 'Ecuador',
+      city: cleanCity,
+      exactAddress: exactLocation?.exactAddress || cleanCity || undefined,
       lat: exactLocation?.lat,
       lng: exactLocation?.lng,
       country: 'Ecuador',
-      x: coords.x >= 0 ? coords.x : 48.8,
-      y: coords.y >= 0 ? coords.y : 26.5,
+      x: targetQuery && coords.x >= 0 ? coords.x : -100,
+      y: targetQuery && coords.y >= 0 ? coords.y : -100,
       frequency: isAnon ? '1ª Vez' : resolveFrequency(purchasesCount),
       purchasesCount: isAnon ? 0 : purchasesCount,
       totalSpent: isAnon ? 0 : totalSpent,
@@ -346,9 +349,9 @@ export const useRadarStore = create<RadarStore>((set, get) => ({
             userId: user?.id || null,
             clientName: payload.name,
             countryCode: get().selectedCountry || 'EC',
-            city: cleanCity || 'Quito',
-            coordinateX: coords.x >= 0 ? coords.x : 48.8,
-            coordinateY: coords.y >= 0 ? coords.y : 26.5,
+            city: cleanCity || '',
+            coordinateX: targetQuery && coords.x >= 0 ? coords.x : -100,
+            coordinateY: targetQuery && coords.y >= 0 ? coords.y : -100,
             deviceType: device.toLowerCase(),
             currentSection,
             cartAmount: totalSpent || 0,
@@ -393,13 +396,19 @@ export const useRadarStore = create<RadarStore>((set, get) => ({
 
           set((state) => {
             const now = Date.now();
-            const cleanCity = payload.city || '';
-            const coords = resolveCoordinates(cleanCity);
+            const rawCityStr = (payload.city && typeof payload.city === 'string') ? payload.city.trim() : '';
+            const cleanCity = (rawCityStr.toLowerCase() === 'ecuador' || rawCityStr.toLowerCase() === 'sin ubicación' || rawCityStr.toLowerCase() === 'desconocido')
+              ? ''
+              : rawCityStr;
+            const coords = cleanCity ? resolveCoordinates(cleanCity) : { x: -100, y: -100 };
             const parsedX = payload.x !== null && payload.x !== undefined ? Number(payload.x) : NaN;
             const parsedY = payload.y !== null && payload.y !== undefined ? Number(payload.y) : NaN;
-            const existingClient = state.clients.find((c) => c.id === payload.id);
-            const finalX = !isNaN(parsedX) && parsedX >= 0 ? parsedX : (coords.x >= 0 ? coords.x : (existingClient?.x ?? 48.8));
-            const finalY = !isNaN(parsedY) && parsedY >= 0 ? parsedY : (coords.y >= 0 ? coords.y : (existingClient?.y ?? 26.5));
+            const finalX = cleanCity
+              ? (!isNaN(parsedX) && parsedX >= 0 ? parsedX : (coords.x >= 0 ? coords.x : -100))
+              : -100;
+            const finalY = cleanCity
+              ? (!isNaN(parsedY) && parsedY >= 0 ? parsedY : (coords.y >= 0 ? coords.y : -100))
+              : -100;
             const isAnon = Boolean(payload.isAnonymous || !payload.email || payload.id.startsWith('anon_'));
 
             const updatedClient: ConnectedClient = {
@@ -407,7 +416,7 @@ export const useRadarStore = create<RadarStore>((set, get) => ({
               sessionId: payload.sessionId,
               name: isAnon ? 'Visitante Anónimo' : cleanClientName(payload.name),
               email: isAnon ? '' : (payload.email || ''),
-              city: cleanCity || 'Ecuador',
+              city: cleanCity,
               country: payload.country || 'Ecuador',
               x: finalX,
               y: finalY,

@@ -258,26 +258,29 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [isSearchFocused, setIsSearchFocused] = useState<boolean>(false);
   const searchContainerRef = useRef<HTMLDivElement>(null);
+  const searchInputRef = useRef<HTMLInputElement>(null);
 
-  // Click outside listener to close search dropdown
+  const [activeStage, setActiveStage] = useState<"all" | "cart" | "frequent">("all");
+  const [activeTab, setActiveTab] = useState<"metrics" | "clients">("metrics");
+  const [isMobilePanelOpen, setIsMobilePanelOpen] = useState<boolean>(false);
+  const [isCountryMenuOpen, setIsCountryMenuOpen] = useState<boolean>(false);
+  const [isSearchBarHidden, setIsSearchBarHidden] = useState<boolean>(true);
+  const [mapStyleMode, setMapStyleMode] = useState<MapboxOfficialStyleId>("dark-v11");
+  const [isStyleMenuOpen, setIsStyleMenuOpen] = useState<boolean>(false);
+  const scrollTrackRef = useRef<HTMLDivElement>(null);
+  const [isMapLoaded, setIsMapLoaded] = useState<boolean>(false);
+
+  // Click outside listener to collapse search bar cleanly back to its icon state
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       if (searchContainerRef.current && !searchContainerRef.current.contains(e.target as Node)) {
         setIsSearchFocused(false);
+        setIsSearchBarHidden(true);
       }
     };
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
-  const [activeStage, setActiveStage] = useState<"all" | "cart" | "frequent">("all");
-  const [activeTab, setActiveTab] = useState<"metrics" | "clients">("metrics");
-  const [isMobilePanelOpen, setIsMobilePanelOpen] = useState<boolean>(false);
-  const [isCountryMenuOpen, setIsCountryMenuOpen] = useState<boolean>(false);
-  const [isSearchBarHidden, setIsSearchBarHidden] = useState<boolean>(false);
-  const [mapStyleMode, setMapStyleMode] = useState<MapboxOfficialStyleId>("dark-v11");
-  const [isStyleMenuOpen, setIsStyleMenuOpen] = useState<boolean>(false);
-  const scrollTrackRef = useRef<HTMLDivElement>(null);
-  const [isMapLoaded, setIsMapLoaded] = useState<boolean>(false);
 
   // Map Density & Cluster Mode States
   const [clusterMode, setClusterMode] = useState<"dispersed" | "clustered">("dispersed");
@@ -332,7 +335,7 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
     };
   }, []);
 
-  // Keyboard shortcut: Escape to deselect active client or close expanded cluster / country menu / style menu
+  // Keyboard shortcut: Escape to deselect active client or close expanded cluster / country menu / style menu / search bar
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
@@ -342,6 +345,8 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
         setHoveredClusterKey(null);
         setIsCountryMenuOpen(false);
         setIsStyleMenuOpen(false);
+        setIsSearchFocused(false);
+        setIsSearchBarHidden(true);
       }
     };
     window.addEventListener("keydown", handleKeyDown);
@@ -492,9 +497,12 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
   }, [primaryAddressObj]);
 
   const [selfExactLngLat, setSelfExactLngLat] = useState<[number, number] | undefined>(() => {
+    // Strictly require an existing primaryAddressObj in the user's profile; never simulate or pull orphaned cache if no address exists
+    if (!primaryAddressObj) return undefined;
+
     // Priority 1: Raw unformatted GPS chip coordinates stored in the user's primary address
     if (
-      primaryAddressObj?.rawGps &&
+      primaryAddressObj.rawGps &&
       typeof primaryAddressObj.rawGps.longitude === "number" &&
       typeof primaryAddressObj.rawGps.latitude === "number" &&
       Number.isFinite(primaryAddressObj.rawGps.longitude) &&
@@ -506,7 +514,6 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
 
     // Priority 2: Numeric lat/lng stored in the user's primary address
     if (
-      primaryAddressObj &&
       typeof primaryAddressObj.lng === "number" &&
       typeof primaryAddressObj.lat === "number" &&
       Number.isFinite(primaryAddressObj.lng) &&
@@ -515,21 +522,6 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
     ) {
       return [primaryAddressObj.lng, primaryAddressObj.lat];
     }
-
-    // Priority 3: Locally cached raw GPS hardware reading on this device
-    const storedRawGps = getStoredRawGpsHardwareData();
-    if (
-      storedRawGps &&
-      typeof storedRawGps.longitude === "number" &&
-      typeof storedRawGps.latitude === "number" &&
-      Number.isFinite(storedRawGps.longitude) &&
-      Number.isFinite(storedRawGps.latitude) &&
-      Math.abs(storedRawGps.longitude) > 0.01
-    ) {
-      return [storedRawGps.longitude, storedRawGps.latitude];
-    }
-
-    if (!primaryAddressObj) return undefined;
 
     const localStreetMatch = lookupLocalStreetOrSectorLngLat(
       primaryAddressObj.street,
@@ -556,9 +548,16 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
   useEffect(() => {
     let active = true;
     const resolveSelfCoords = async () => {
+      if (!primaryAddressObj) {
+        if (active) {
+          setSelfExactLngLat(undefined);
+        }
+        return;
+      }
+
       // 1. If the primary address already has rawGps from the GPS chip, apply it immediately
       if (
-        primaryAddressObj?.rawGps &&
+        primaryAddressObj.rawGps &&
         typeof primaryAddressObj.rawGps.longitude === "number" &&
         typeof primaryAddressObj.rawGps.latitude === "number" &&
         Number.isFinite(primaryAddressObj.rawGps.longitude) &&
@@ -569,7 +568,6 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
           setSelfExactLngLat([primaryAddressObj.rawGps.longitude, primaryAddressObj.rawGps.latitude]);
         }
       } else if (
-        primaryAddressObj &&
         typeof primaryAddressObj.lng === "number" &&
         typeof primaryAddressObj.lat === "number" &&
         Number.isFinite(primaryAddressObj.lng) &&
@@ -580,11 +578,6 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
           setSelfExactLngLat([primaryAddressObj.lng, primaryAddressObj.lat]);
         }
       }
-
-      // No request live unformatted GPS directly on map load per user request.
-      // GPS prompt only triggers when adding/editing in settings.
-
-      if (!primaryAddressObj) return;
 
       // 3. Fallback if GPS hardware access was denied and address had no coordinates yet
       const resolved = await resolveEcuadorExactAddressLngLat({
@@ -635,11 +628,19 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
     return false;
   }, [isUserSelf, isAdmin, currentUser]);
 
-  // Verify whether the Admin has a configured shipping/location address
-  const hasAdminLocation = useMemo(() => {
-    if (!isAdmin) return true;
-    return Boolean(currentUserCity.trim());
-  }, [isAdmin, currentUserCity]);
+  // Verify whether the current user (Admin or Client) has an existing saved shipping/location address
+  const hasUserLocation = useMemo(() => {
+    if (!primaryAddressObj) return false;
+    const hasCity = Boolean(primaryAddressObj.city && primaryAddressObj.city.trim().length > 0);
+    const hasStreet = Boolean(primaryAddressObj.street && primaryAddressObj.street.trim().length > 0);
+    const hasCoords = Boolean(
+      (typeof primaryAddressObj.lat === "number" && typeof primaryAddressObj.lng === "number" && Math.abs(primaryAddressObj.lng) > 0.01) ||
+      (primaryAddressObj.rawGps && typeof primaryAddressObj.rawGps.longitude === "number" && Math.abs(primaryAddressObj.rawGps.longitude) > 0.01)
+    );
+    return hasCity || hasStreet || hasCoords;
+  }, [primaryAddressObj]);
+
+  const hasAdminLocation = hasUserLocation;
 
   const customSeed = useAvatarSettingsStore((state) => state.customSeed);
   const backgroundShape = useAvatarSettingsStore((state) => state.backgroundShape);
@@ -712,23 +713,27 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
         })
       : [];
 
-    // Filter strictly real connected clients for the active country (100% Real - Zero fake demo data)
     const list: ConnectedClient[] = realForCountry;
 
     let foundSelf = false;
     const mapped = list.map(c => {
       if (isUserSelf(c)) {
         foundSelf = true;
-        const selfCity = currentUserCity || c.city || activeCountry.capital;
+        // If user has NO existing location, NEVER simulate a city or coordinates
+        const selfCity = hasUserLocation ? (currentUserCity || "") : "";
         const coords = selfCity ? resolveMultiCountryCoordinates(selfCity, selectedCountry) : { x: -100, y: -100 };
-        const exactLng = selfExactLngLat ? selfExactLngLat[0] : (primaryAddressObj?.rawGps?.longitude ?? primaryAddressObj?.lng ?? c.lng);
-        const exactLat = selfExactLngLat ? selfExactLngLat[1] : (primaryAddressObj?.rawGps?.latitude ?? primaryAddressObj?.lat ?? c.lat);
+        const exactLng = hasUserLocation
+          ? (selfExactLngLat ? selfExactLngLat[0] : (primaryAddressObj?.rawGps?.longitude ?? primaryAddressObj?.lng))
+          : undefined;
+        const exactLat = hasUserLocation
+          ? (selfExactLngLat ? selfExactLngLat[1] : (primaryAddressObj?.rawGps?.latitude ?? primaryAddressObj?.lat))
+          : undefined;
         return {
           ...c,
           name: cleanClientName(currentUser?.name || c.name),
           city: selfCity,
-          x: coords.x,
-          y: coords.y,
+          x: hasUserLocation ? coords.x : -100,
+          y: hasUserLocation ? coords.y : -100,
           lat: exactLat,
           lng: exactLng,
           currentSection: isAdmin ? "Mi Perfil / Mapa" : (c.currentSection || "Explorando Tienda"),
@@ -737,18 +742,26 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
           role: isAdmin ? ('ADMIN' as const) : ('USER' as const),
         };
       }
-      const clientCity = c.city || "";
+      const rawClientCity = (c.city || "").trim();
+      const clientCity =
+        rawClientCity.toLowerCase() === "ecuador" ||
+        rawClientCity.toLowerCase() === "sin ubicación" ||
+        rawClientCity.toLowerCase() === "desconocido"
+          ? ""
+          : rawClientCity;
+
       const parsedX = typeof c.x === 'number' ? c.x : Number(c.x);
       const parsedY = typeof c.y === 'number' ? c.y : Number(c.y);
-      let nextX = parsedX;
-      let nextY = parsedY;
-      if (clientCity && (isNaN(parsedX) || parsedX < 0 || isNaN(parsedY) || parsedY < 0)) {
+      let nextX = clientCity ? parsedX : -100;
+      let nextY = clientCity ? parsedY : -100;
+      if (clientCity && (isNaN(nextX) || nextX < 0 || isNaN(nextY) || nextY < 0)) {
         const coords = resolveMultiCountryCoordinates(clientCity, selectedCountry);
-        nextX = coords.x >= 0 ? coords.x : (isNaN(parsedX) ? -100 : parsedX);
-        nextY = coords.y >= 0 ? coords.y : (isNaN(parsedY) ? -100 : parsedY);
+        nextX = coords.x >= 0 ? coords.x : -100;
+        nextY = coords.y >= 0 ? coords.y : -100;
       }
       return {
         ...c,
+        city: clientCity,
         x: nextX,
         y: nextY,
         role: isClientAdmin(c) ? ('ADMIN' as const) : (c.role || ('USER' as const)),
@@ -756,12 +769,16 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
     });
 
     if (!foundSelf && selectedCountry === 'EC' && currentUser?.id && !currentUser.id.startsWith('vis_') && !currentUser.id.startsWith('guest_')) {
-      const selfCity = currentUserCity || "Quito";
-      const coords = resolveMultiCountryCoordinates(selfCity, 'EC');
+      const selfCity = hasUserLocation ? (currentUserCity || "") : "";
+      const coords = selfCity ? resolveMultiCountryCoordinates(selfCity, 'EC') : { x: -100, y: -100 };
       const spent = userOrders?.reduce((acc, o) => acc + (o.total || 0), 0) || 0;
       const purchases = userOrders?.length || 0;
-      const exactLng = selfExactLngLat ? selfExactLngLat[0] : (primaryAddressObj?.rawGps?.longitude ?? primaryAddressObj?.lng);
-      const exactLat = selfExactLngLat ? selfExactLngLat[1] : (primaryAddressObj?.rawGps?.latitude ?? primaryAddressObj?.lat);
+      const exactLng = hasUserLocation
+        ? (selfExactLngLat ? selfExactLngLat[0] : (primaryAddressObj?.rawGps?.longitude ?? primaryAddressObj?.lng))
+        : undefined;
+      const exactLat = hasUserLocation
+        ? (selfExactLngLat ? selfExactLngLat[1] : (primaryAddressObj?.rawGps?.latitude ?? primaryAddressObj?.lat))
+        : undefined;
       mapped.unshift({
         id: currentUser.id,
         name: cleanClientName(currentUser.name || (currentUser.email ? currentUser.email.split('@')[0] : 'Administrador Lumina')),
@@ -769,8 +786,8 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
         city: selfCity,
         country: 'Ecuador',
         countryCode: 'EC',
-        x: coords.x >= 0 ? coords.x : 48.8,
-        y: coords.y >= 0 ? coords.y : 26.5,
+        x: hasUserLocation && coords.x >= 0 ? coords.x : -100,
+        y: hasUserLocation && coords.y >= 0 ? coords.y : -100,
         lat: exactLat,
         lng: exactLng,
         frequency: purchases >= 12 ? 'Semanal' : purchases >= 6 ? 'Quincenal' : purchases >= 3 ? 'Mensual' : purchases >= 1 ? 'Ocasional' : '1ª Vez',
@@ -789,7 +806,7 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
     }
 
     return mapped;
-  }, [rawConnectedClients, isUserSelf, isClientAdmin, currentUserCity, isAdmin, currentUser, userOrders, selectedCountry, activeCountry, customSeed, selfExactLngLat, primaryAddressObj]);
+  }, [rawConnectedClients, isUserSelf, isClientAdmin, currentUserCity, hasUserLocation, isAdmin, currentUser, userOrders, selectedCountry, activeCountry, customSeed, selfExactLngLat, primaryAddressObj]);
 
   // Actual clients and visitors connected (Excludes only administrators from customer lists)
   const actualClients = useMemo(() => {
@@ -869,14 +886,14 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
   // Guarantee the active logged-in user is immediately registered and visible on the radar ("Tú")
   useEffect(() => {
     if (currentUser?.id && !currentUser.id.startsWith('vis_') && !currentUser.id.startsWith('guest_')) {
-      const city = currentUserCity;
+      const city = hasUserLocation ? currentUserCity : "";
       const spent = userOrders?.reduce((acc, o) => acc + (o.total || 0), 0) || 0;
       const purchases = userOrders?.length || 0;
       const section = isAdmin ? "Mi Perfil / Mapa" : "Panel Radar / Métricas";
       useRadarStore.getState().initRadar(currentUser);
       useRadarStore.getState().trackActivity(currentUser, city, spent, purchases, section);
     }
-  }, [currentUser, currentUserCity, userOrders, isAdmin]);
+  }, [currentUser, currentUserCity, hasUserLocation, userOrders, isAdmin]);
 
   // Pure Supabase Realtime synchronization (reads current state on mount, updates reactively via WebSocket)
   useEffect(() => {
@@ -946,24 +963,49 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
     });
   }, [actualClients, activeStage, searchQuery]);
 
-  // Map Beacons: Both actual clients and the Admin are visible on the physical map terrain
+  // Map Beacons: Strictly ONLY show users (admin or client) who have a real, non-simulated location
   const rawMapClients = useMemo(() => {
     return connectedClients.filter(c => {
+      if (!c) return false;
       const isSelf = isUserSelf(c);
-      const city = isSelf ? (currentUserCity || "Quito") : (c.city || "Quito");
-      if (!city || !city.trim()) return false;
+
+      // Rule: If the current logged-in user (admin or client) has NO existing location, NEVER show them on the map
+      if (isSelf && !hasUserLocation) return false;
+
+      // Rule: Never show anonymous visitors with simulated/missing coordinates on the map
+      if (c.isAnonymous && (typeof c.lat !== "number" || typeof c.lng !== "number")) return false;
+
+      const rawCity = (isSelf ? currentUserCity : (c.city || "")).trim();
+      const isPlaceholderCity =
+        !rawCity ||
+        rawCity.toLowerCase() === "ecuador" ||
+        rawCity.toLowerCase() === "sin ubicación" ||
+        rawCity.toLowerCase() === "desconocido";
+
+      const hasExactCoords =
+        typeof c.lat === "number" &&
+        typeof c.lng === "number" &&
+        Number.isFinite(c.lat) &&
+        Number.isFinite(c.lng) &&
+        Math.abs(c.lng) > 0.01;
+
+      if (isPlaceholderCity && !hasExactCoords) {
+        return false;
+      }
 
       let x = typeof c.x === 'number' ? c.x : Number(c.x);
       let y = typeof c.y === 'number' ? c.y : Number(c.y);
-      if (isNaN(x) || x < 0 || isNaN(y) || y < 0) {
-        const coords = resolveCoordinates(city);
-        x = coords.x >= 0 ? coords.x : 48.8;
-        y = coords.y >= 0 ? coords.y : 26.5;
+      if ((isNaN(x) || x < 0 || isNaN(y) || y < 0) && !isPlaceholderCity) {
+        const coords = resolveCoordinates(rawCity);
+        x = coords.x;
+        y = coords.y;
       }
-      if (x < 0 || y < 0) return false;
+      if ((isNaN(x) || x < 0 || isNaN(y) || y < 0) && !hasExactCoords) {
+        return false;
+      }
       return true;
     });
-  }, [connectedClients, isUserSelf, currentUserCity]);
+  }, [connectedClients, isUserSelf, hasUserLocation, currentUserCity]);
 
   // Spatial Organization: Organic Radial Dispersion (anti-overlap) + Smart City Clustering (anti-saturation)
   const { dispersedPins, clusterPins } = useMemo(() => {
@@ -1805,7 +1847,7 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
           selectedCountry={selectedCountry}
           zoomCommand={zoom}
           zoomStepSeq={zoomStepSeq}
-          primaryTargetLngLat={selfExactLngLat}
+          primaryTargetLngLat={hasUserLocation ? selfExactLngLat : undefined}
           onZoomChange={(uiZoom) => setZoom(uiZoom)}
           focusTarget={focusTarget}
           resetCommandSeq={resetCommandSeq}
@@ -1815,7 +1857,7 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
           onCanvasClick={() => {
             setSelectedClientId(null);
             setIsStyleMenuOpen(false);
-            if (isSearchFocused) {
+            if (isSearchFocused || !isSearchBarHidden) {
               setIsSearchFocused(false);
               setIsSearchBarHidden(true);
             }
@@ -1831,456 +1873,527 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
         }`}
       >
       {/* ========================================================================= */}
-      {/* 3. TOP FLOATING COMMAND BAR (Collapsible Search Bar + Disperso/Agrupar)   */}
+      {/* 3. TOP FLOATING COMMAND BAR (Sliding Search Icon/Bar + Right HUD Track)   */}
       {/* ========================================================================= */}
-      <div className={`absolute top-3 sm:top-5 left-3 sm:left-16 lg:left-20 right-3 sm:right-6 lg:right-[22.5rem] ${isSearchFocused ? "z-50" : "z-30"} flex flex-wrap sm:flex-nowrap items-center justify-between gap-2 sm:gap-3 pointer-events-none transition-all`}>
-        
-        {/* Left: Collapsible Branded Search Bar (Disappears on corner/item click) */}
-        <div 
+      <div
+        className={`absolute top-3.5 sm:top-5 left-3 sm:left-16 lg:left-20 right-3 sm:right-6 lg:right-[22.5rem] h-10 ${
+          isSearchFocused || !isSearchBarHidden ? "z-50" : "z-30"
+        } flex items-center gap-2 sm:gap-2.5 pointer-events-none`}
+      >
+        {/* LEFT: Smoothly Expanding Search Icon -> Full Search Bar */}
+        <motion.div
           ref={searchContainerRef}
-          className="relative max-w-xs sm:max-w-md flex-1 min-w-0 pointer-events-auto"
+          initial={false}
+          animate={{
+            width: isSearchBarHidden ? 40 : "100%",
+          }}
+          transition={{
+            type: "spring",
+            stiffness: 260,
+            damping: 28,
+            mass: 0.85,
+          }}
+          className="relative z-40 h-10 shrink-0 pointer-events-auto"
         >
-          <AnimatePresence mode="wait" initial={false}>
-            {isSearchBarHidden ? (
-              <motion.button
-                key="radar-search-reopen-btn"
-                type="button"
-                initial={{ opacity: 0, scale: 0.92, x: -6 }}
-                animate={{ opacity: 1, scale: 1, x: 0 }}
-                exit={{ opacity: 0, scale: 0.92, x: -6 }}
-                transition={{ duration: 0.24, ease: [0.22, 1, 0.36, 1] }}
-                onClick={() => {
+          <div
+            style={{ backgroundColor: "rgba(10, 14, 13, 0.96)" }}
+            className={`relative w-full h-10 rounded-full backdrop-blur-2xl border shadow-[0_14px_34px_rgba(0,0,0,0.78)] flex items-center overflow-hidden transition-colors duration-300 ${
+              !isSearchBarHidden
+                ? "border-[#ccff00]/55 ring-2 ring-[#ccff00]/15 px-3.5"
+                : "border-white/25 hover:border-white/45 justify-center cursor-pointer hover:scale-[1.03] active:scale-95"
+            }`}
+            onClick={() => {
+              if (isSearchBarHidden) {
+                setIsStyleMenuOpen(false);
+                setIsSearchBarHidden(false);
+                setIsSearchFocused(true);
+                setTimeout(() => {
+                  searchInputRef.current?.focus();
+                }, 60);
+              }
+            }}
+            title={isSearchBarHidden ? "Abrir barra de búsqueda" : undefined}
+          >
+            {/* Search Trigger / Left Icon */}
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                if (isSearchBarHidden) {
+                  setIsStyleMenuOpen(false);
                   setIsSearchBarHidden(false);
                   setIsSearchFocused(true);
+                  setTimeout(() => {
+                    searchInputRef.current?.focus();
+                  }, 60);
+                } else {
+                  setIsSearchFocused(false);
+                  setIsSearchBarHidden(true);
+                }
+              }}
+              className={`flex items-center justify-center shrink-0 transition-colors cursor-pointer ${
+                isSearchBarHidden
+                  ? "w-10 h-10 text-[#ccff00]"
+                  : "w-5 h-5 mr-2.5 text-[#ccff00] hover:text-white"
+              }`}
+              title={isSearchBarHidden ? "Buscar en el mapa" : "Contraer barra de búsqueda"}
+            >
+              <Search className="w-4 h-4" />
+              {isSearchBarHidden && searchQuery.trim().length > 0 && (
+                <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-[#ccff00] shadow-[0_0_6px_#ccff00]" />
+              )}
+            </button>
+
+            {/* Expanding Input & Controls (Revealed as bar slides right) */}
+            <motion.div
+              initial={false}
+              animate={{
+                opacity: isSearchBarHidden ? 0 : 1,
+                x: isSearchBarHidden ? -12 : 0,
+              }}
+              transition={{ duration: 0.2, ease: "easeOut" }}
+              className={`flex items-center flex-1 min-w-0 h-full ${
+                isSearchBarHidden ? "pointer-events-none w-0 overflow-hidden" : "pointer-events-auto"
+              }`}
+            >
+              <input
+                ref={searchInputRef}
+                type="text"
+                value={searchQuery}
+                onFocus={() => setIsSearchFocused(true)}
+                onKeyDown={(e) => {
+                  if (e.key === "Escape") {
+                    setIsSearchFocused(false);
+                    setIsSearchBarHidden(true);
+                  }
                 }}
-                style={{ backgroundColor: "rgba(10, 14, 13, 0.96)" }}
-                className="h-10 px-4 rounded-full hover:bg-black backdrop-blur-2xl border border-white/20 hover:border-white/35 shadow-[0_14px_32px_rgba(0,0,0,0.75)] text-xs font-semibold text-white flex items-center gap-2.5 cursor-pointer active:scale-95 transition-all"
-                title="Abrir buscador de radar"
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder={`Buscar ciudad, región o cliente en ${activeCountry.name}...`}
+                className="bg-transparent border-none outline-none text-xs text-white placeholder:text-white/55 flex-1 min-w-0 font-sans pr-2"
+              />
+
+              {searchQuery && (
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setSearchQuery("");
+                    handleResetView();
+                    searchInputRef.current?.focus();
+                  }}
+                  className="w-5 h-5 rounded-full bg-white/15 hover:bg-white/30 text-white flex items-center justify-center transition-all cursor-pointer mr-2 shrink-0"
+                  title="Limpiar texto de búsqueda"
+                >
+                  <X className="w-3 h-3" />
+                </button>
+              )}
+
+              {/* Status Badge + Smooth Close Button */}
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setIsSearchFocused(false);
+                  setIsSearchBarHidden(true);
+                }}
+                title="Cerrar barra de búsqueda"
+                className="flex items-center gap-2 pl-3 border-l border-white/15 shrink-0 hover:opacity-85 transition-opacity cursor-pointer"
               >
-                <Search className="w-3.5 h-3.5 text-[#ccff00]" />
-                <span className="text-xs text-white/95 truncate max-w-[130px]">
-                  {searchQuery ? searchQuery : "Buscar en el radar"}
-                </span>
                 <span className="w-2 h-2 rounded-full bg-emerald-400 shadow-[0_0_6px_#34d399]" />
-              </motion.button>
-            ) : (
-              <motion.div
-                key="radar-search-bar-full"
-                initial={{ opacity: 0, scale: 0.96, y: -4 }}
-                animate={{ opacity: 1, scale: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.94, y: -6 }}
-                transition={{ duration: 0.24, ease: [0.22, 1, 0.36, 1] }}
-                style={{ backgroundColor: "rgba(10, 14, 13, 0.96)" }}
-                className={`flex items-center h-10 backdrop-blur-2xl border rounded-full px-4 shadow-[0_16px_38px_rgba(0,0,0,0.78)] text-xs text-white w-full transition-all duration-300 ${
-                  isSearchFocused 
-                    ? "border-[#ccff00]/50 ring-2 ring-[#ccff00]/15" 
-                    : "border-white/20 hover:border-white/35"
-                }`}
-              >
-                <button
-                  type="button"
-                  onClick={() => {
-                    setIsSearchFocused(false);
-                    setIsSearchBarHidden(true);
-                  }}
-                  title="Ocultar barra de búsqueda"
-                  className="mr-2.5 shrink-0 text-white/70 hover:text-[#ccff00] transition-colors cursor-pointer"
-                >
-                  <Search className="w-4 h-4" />
-                </button>
-                
-                <input 
-                  type="text"
-                  value={searchQuery}
-                  onFocus={() => setIsSearchFocused(true)}
-                  onChange={e => setSearchQuery(e.target.value)}
-                  placeholder={`Buscar ciudad, región o cliente en ${activeCountry.name}...`}
-                  className="bg-transparent border-none outline-none text-xs text-white placeholder:text-white/55 flex-1 min-w-0 font-sans pr-2"
-                />
+                <span className="text-[10.5px] font-mono text-white/90 font-semibold hidden sm:inline">
+                  {searchQuery
+                    ? `${filteredActualClients.length} en radar`
+                    : `${actualClients.length} ${actualClients.length === 1 ? "activo" : "activos"}`}
+                </span>
+                <X className="w-3.5 h-3.5 text-white/65 hover:text-white ml-0.5" />
+              </button>
+            </motion.div>
+          </div>
 
-                {searchQuery && (
-                  <button 
-                    type="button"
-                    onClick={() => {
-                      setSearchQuery("");
-                      handleResetView();
-                      setIsSearchFocused(false);
-                      setIsSearchBarHidden(true);
-                    }}
-                    className="w-5 h-5 rounded-full bg-white/15 hover:bg-white/30 text-white flex items-center justify-center transition-all cursor-pointer mr-2 shrink-0"
-                    title="Limpiar y ocultar búsqueda"
-                  >
-                    <X className="w-3 h-3" />
-                  </button>
-                )}
-
-                {/* Right corner of search bar: clicking this corner hides the search bar cleanly */}
-                <button
-                  type="button"
-                  onClick={() => {
-                    setIsSearchFocused(false);
-                    setIsSearchBarHidden(true);
-                  }}
-                  title="Ocultar barra de búsqueda"
-                  className="flex items-center gap-2 pl-3 border-l border-white/15 shrink-0 hover:opacity-85 transition-opacity cursor-pointer"
-                >
-                  <span className="w-2 h-2 rounded-full bg-emerald-400 shadow-[0_0_6px_#34d399]" />
-                  <span className="text-[10.5px] font-mono text-white/90 font-semibold hidden sm:inline">
-                    {searchQuery 
-                      ? `${filteredActualClients.length} en radar` 
-                      : `${actualClients.length} ${actualClients.length === 1 ? 'activo' : 'activos'}`}
-                  </span>
-                  <X className="w-3.5 h-3.5 text-white/55 hover:text-white ml-0.5" />
-                </button>
-              </motion.div>
-            )}
-          </AnimatePresence>
-
-          {/* FLOATING LIVE INTERACTIVE SUGGESTER & REGIONAL TELEPORT POPOVER (Spacious, Clean & Executive) */}
+          {/* FLOATING LIVE INTERACTIVE SUGGESTER & REGIONAL TELEPORT POPOVER */}
           <AnimatePresence>
             {isSearchFocused && !isSearchBarHidden && (
               <motion.div
-                initial={{ opacity: 0, y: -10, scale: 0.96, filter: "blur(6px)" }}
+                initial={{ opacity: 0, y: -10, scale: 0.97, filter: "blur(6px)" }}
                 animate={{ opacity: 1, y: 0, scale: 1, filter: "blur(0px)" }}
-                exit={{ opacity: 0, y: -8, scale: 0.96, filter: "blur(4px)" }}
-                transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
+                exit={{ opacity: 0, y: -8, scale: 0.97, filter: "blur(4px)" }}
+                transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
                 style={{ backgroundColor: "rgba(10, 14, 13, 0.98)" }}
-                className="absolute top-full left-0 w-full sm:w-[420px] mt-3 rounded-[1.75rem] backdrop-blur-3xl border border-white/20 p-5 shadow-[0_32px_80px_rgba(0,0,0,0.92)] z-[70] space-y-5 max-h-[min(430px,62vh)] overflow-y-auto origin-top"
+                className="absolute top-full left-0 right-0 sm:max-w-[460px] mt-2.5 rounded-[1.6rem] backdrop-blur-3xl border border-white/20 p-4 sm:p-5 shadow-[0_32px_80px_rgba(0,0,0,0.92)] z-[70] space-y-4 max-h-[min(420px,62vh)] overflow-y-auto origin-top"
               >
-              
-              {/* 1. Quick Regional Filters for Active Country */}
-              <div className="space-y-2.5">
-                <div className="flex items-center justify-between text-[10.5px] font-mono text-white/70 font-bold uppercase tracking-wider">
-                  <span>Regiones Naturales • {activeCountry.name}</span>
-                  <button 
-                    type="button"
-                    onClick={() => {
-                      setSearchQuery("");
-                      handleResetView();
-                      setIsSearchFocused(false);
-                      setIsSearchBarHidden(true);
-                    }} 
-                    className="px-2.5 py-0.5 rounded-full bg-white/10 hover:bg-white/20 text-white/90 hover:text-white normal-case font-sans cursor-pointer text-[11px] transition-colors"
-                  >
-                    Cerrar
-                  </button>
-                </div>
-                <div className="flex items-center gap-2.5 flex-wrap">
-                  {(activeCountry.naturalRegions || []).map((reg) => {
-                    const isActive = searchQuery.toLowerCase() === reg.query.toLowerCase() || searchQuery.toLowerCase() === reg.name.toLowerCase();
-                    return (
-                      <button
-                        key={reg.name}
-                        type="button"
-                        onClick={() => {
-                          setSearchQuery(reg.query);
-                          setIsSearchFocused(false);
-                          setIsSearchBarHidden(true);
-                        }}
-                        className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all flex items-center gap-2 border cursor-pointer ${
-                          isActive
-                            ? "bg-white text-gray-950 font-bold border-white shadow-md"
-                            : "bg-[#151c1a] hover:bg-[#1e2724] text-white/90 border-white/15 hover:border-white/30 hover:text-white"
-                        }`}
-                      >
-                        <span className="text-sm leading-none">{reg.icon}</span>
-                        <span>{reg.name}</span>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {/* 2. Key Cities Quick Teleport */}
-              <div className="space-y-2.5 pt-4 border-t border-white/12">
-                <div className="flex items-center justify-between text-[10.5px] font-mono text-white/70 font-bold uppercase tracking-wider">
-                  <span>Ciudades Principales ({activeCountry.name})</span>
-                  <span className="text-[10px] font-mono text-[#ccff00] flex items-center gap-1">
-                    <MapPin className="w-3 h-3" /> Clic para enfocar
-                  </span>
-                </div>
-                <div className="flex items-center gap-2 flex-wrap">
-                  {activeCountry.majorCities.map((city) => {
-                    const coords = resolveMultiCountryCoordinates(city, selectedCountry);
-                    const clientMatch = connectedClients.find(c => c && c.city && c.city.toLowerCase().includes(city.toLowerCase()));
-                    return (
-                      <button
-                        key={city}
-                        type="button"
-                        onClick={() => {
-                          setSearchQuery(city);
-                          if (coords.x >= 0 && coords.y >= 0) {
-                            focusOnLocation(coords.x, coords.y, 1.8, city);
-                          }
-                          if (clientMatch) {
-                            setSelectedClientId(clientMatch.id);
-                          }
-                          setIsSearchFocused(false);
-                          setIsSearchBarHidden(true);
-                        }}
-                        className="px-3 py-1.5 rounded-xl text-[11px] bg-[#151c1a] hover:bg-[#1e2724] hover:border-[#ccff00]/40 text-white/90 hover:text-white border border-white/15 transition-all flex items-center gap-1.5 cursor-pointer group"
-                      >
-                        <MapPin className="w-3 h-3 text-[#ccff00]/80 group-hover:text-[#ccff00] transition-colors" />
-                        <span>{city}</span>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {/* 3. Live Matching Clients List (Well-Spaced Individual Cards) */}
-              {searchQuery.trim().length > 0 && (
-                <div className="space-y-3 pt-4 border-t border-white/12">
+                {/* 1. Quick Regional Filters for Active Country */}
+                <div className="space-y-2.5">
                   <div className="flex items-center justify-between text-[10.5px] font-mono text-white/70 font-bold uppercase tracking-wider">
-                    <span>Resultados Encontrados ({filteredActualClients.length})</span>
+                    <span>Regiones Naturales • {activeCountry.name}</span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSearchQuery("");
+                        handleResetView();
+                        setIsSearchFocused(false);
+                        setIsSearchBarHidden(true);
+                      }}
+                      className="px-2.5 py-0.5 rounded-full bg-white/10 hover:bg-white/20 text-white/90 hover:text-white normal-case font-sans cursor-pointer text-[11px] transition-colors"
+                    >
+                      Cerrar
+                    </button>
                   </div>
-                  {filteredActualClients.length === 0 ? (
-                    <div className="py-5 px-4 rounded-2xl bg-[#151c1a] border border-white/10 text-center text-white/65 text-xs">
-                      No se encontraron clientes conectados en &quot;{searchQuery}&quot;
-                    </div>
-                  ) : (
-                    <div className="max-h-52 overflow-y-auto space-y-2.5 pr-1" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
-                      {filteredActualClients.map((client) => (
-                        <div
-                          key={client.id}
+                  <div className="flex items-center gap-2 flex-wrap">
+                    {(activeCountry.naturalRegions || []).map((reg) => {
+                      const isActive =
+                        searchQuery.toLowerCase() === reg.query.toLowerCase() ||
+                        searchQuery.toLowerCase() === reg.name.toLowerCase();
+                      return (
+                        <button
+                          key={reg.name}
+                          type="button"
                           onClick={() => {
-                            setSelectedClientId(client.id);
-                            focusOnLocation(client.x, client.y, 1.9, client.city);
+                            setSearchQuery(reg.query);
                             setIsSearchFocused(false);
                             setIsSearchBarHidden(true);
                           }}
-                          className="p-3 rounded-2xl bg-[#151c1a] hover:bg-[#1d2623] border border-white/15 hover:border-[#ccff00]/45 flex items-center justify-between gap-3 cursor-pointer transition-all duration-200 group shadow-sm"
+                          className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all flex items-center gap-2 border cursor-pointer ${
+                            isActive
+                              ? "bg-white text-gray-950 font-bold border-white shadow-md"
+                              : "bg-[#151c1a] hover:bg-[#1e2724] text-white/90 border-white/15 hover:border-white/30 hover:text-white"
+                          }`}
                         >
-                          <div className="flex items-center gap-3 min-w-0 flex-1">
-                            <BlobatarAvatar
-                              {...getClientAvatarProps(client)}
-                              size={34}
-                              animate="hover"
-                              className="shrink-0"
-                            />
-                            <div className="min-w-0 flex-1 space-y-0.5">
-                              <p className="text-xs font-bold text-white transition-colors truncate">
-                                {cleanClientName(client.name)}
-                              </p>
-                              <p className="text-[10.5px] text-white/70 truncate flex items-center gap-1.5">
-                                <span>{client.city || activeCountry.name}</span>
-                                <span className="text-white/35">•</span>
-                                <span className="font-mono font-semibold text-[#ccff00]">${client.totalSpent || 0} USD</span>
-                              </p>
-                            </div>
-                          </div>
-                          <span className="text-[10px] font-mono px-3 py-1.5 rounded-xl bg-white/10 text-white group-hover:bg-[#ccff00] group-hover:text-gray-950 font-bold transition-all shrink-0">
-                            Enfocar &rarr;
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-                  )}
+                          <span className="text-sm leading-none">{reg.icon}</span>
+                          <span>{reg.name}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
-              )}
 
+                {/* 2. Key Cities Quick Teleport */}
+                <div className="space-y-2.5 pt-3.5 border-t border-white/12">
+                  <div className="flex items-center justify-between text-[10.5px] font-mono text-white/70 font-bold uppercase tracking-wider">
+                    <span>Ciudades Principales ({activeCountry.name})</span>
+                    <span className="text-[10px] font-mono text-[#ccff00] flex items-center gap-1">
+                      <MapPin className="w-3 h-3" /> Clic para enfocar
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    {activeCountry.majorCities.map((city) => {
+                      const coords = resolveMultiCountryCoordinates(city, selectedCountry);
+                      const clientMatch = connectedClients.find(
+                        (c) => c && c.city && c.city.toLowerCase().includes(city.toLowerCase())
+                      );
+                      return (
+                        <button
+                          key={city}
+                          type="button"
+                          onClick={() => {
+                            setSearchQuery(city);
+                            if (coords.x >= 0 && coords.y >= 0) {
+                              focusOnLocation(coords.x, coords.y, 1.8, city);
+                            }
+                            if (clientMatch) {
+                              setSelectedClientId(clientMatch.id);
+                            }
+                            setIsSearchFocused(false);
+                            setIsSearchBarHidden(true);
+                          }}
+                          className="px-3 py-1.5 rounded-xl text-[11px] bg-[#151c1a] hover:bg-[#1e2724] hover:border-[#ccff00]/40 text-white/90 hover:text-white border border-white/15 transition-all flex items-center gap-1.5 cursor-pointer group"
+                        >
+                          <MapPin className="w-3 h-3 text-[#ccff00]/80 group-hover:text-[#ccff00] transition-colors" />
+                          <span>{city}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* 3. Live Matching Clients List */}
+                {searchQuery.trim().length > 0 && (
+                  <div className="space-y-3 pt-3.5 border-t border-white/12">
+                    <div className="flex items-center justify-between text-[10.5px] font-mono text-white/70 font-bold uppercase tracking-wider">
+                      <span>Resultados Encontrados ({filteredActualClients.length})</span>
+                    </div>
+                    {filteredActualClients.length === 0 ? (
+                      <div className="py-4 px-4 rounded-2xl bg-[#151c1a] border border-white/10 text-center text-white/65 text-xs">
+                        No se encontraron usuarios con ubicación en &quot;{searchQuery}&quot;
+                      </div>
+                    ) : (
+                      <div
+                        className="max-h-48 overflow-y-auto space-y-2 pr-1"
+                        style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
+                      >
+                        {filteredActualClients.map((client) => (
+                          <div
+                            key={client.id}
+                            onClick={() => {
+                              setSelectedClientId(client.id);
+                              focusOnLocation(client.x, client.y, 1.9, client.city);
+                              setIsSearchFocused(false);
+                              setIsSearchBarHidden(true);
+                            }}
+                            className="p-3 rounded-2xl bg-[#151c1a] hover:bg-[#1d2623] border border-white/15 hover:border-[#ccff00]/45 flex items-center justify-between gap-3 cursor-pointer transition-all duration-200 group shadow-sm"
+                          >
+                            <div className="flex items-center gap-3 min-w-0 flex-1">
+                              <BlobatarAvatar
+                                {...getClientAvatarProps(client)}
+                                size={34}
+                                animate="hover"
+                                className="shrink-0"
+                              />
+                              <div className="min-w-0 flex-1 space-y-0.5">
+                                <p className="text-xs font-bold text-white transition-colors truncate">
+                                  {cleanClientName(client.name)}
+                                </p>
+                                <p className="text-[10.5px] text-white/70 truncate flex items-center gap-1.5">
+                                  <span>{client.city || activeCountry.name}</span>
+                                  <span className="text-white/35">•</span>
+                                  <span className="font-mono font-semibold text-[#ccff00]">
+                                    ${client.totalSpent || 0} USD
+                                  </span>
+                                </p>
+                              </div>
+                            </div>
+                            <span className="text-[10px] font-mono px-3 py-1.5 rounded-xl bg-white/10 text-white group-hover:bg-[#ccff00] group-hover:text-gray-950 font-bold transition-all shrink-0">
+                              Enfocar &rarr;
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
               </motion.div>
             )}
           </AnimatePresence>
-        </div>
+        </motion.div>
 
-        {/* Right of Search Bar: Symmetrical Disperso (1x/2x) & Agrupar Dock + Map Style Switcher + Admin Location */}
-        <div className="flex items-center gap-1.5 sm:gap-2 pointer-events-auto shrink-0">
-          
-          {/* MAP STYLE SWITCHER DROPDOWN (Dark · Streets · Satellite Streets) */}
-          <div className="relative pointer-events-auto">
-            <button
-              type="button"
-              onClick={() => setIsStyleMenuOpen((prev) => !prev)}
-              style={{ backgroundColor: "rgba(10, 14, 13, 0.96)" }}
-              className="flex items-center h-9 sm:h-10 px-3.5 rounded-full hover:bg-black backdrop-blur-2xl border border-white/20 hover:border-white/35 text-white text-xs font-semibold gap-2 shadow-[0_14px_32px_rgba(0,0,0,0.75)] transition-all cursor-pointer active:scale-95"
-              title="Cambiar entre los 3 estilos de mapa (Dark, Streets, Satellite Streets)"
-            >
-              <span className="w-5 h-5 rounded-full bg-white/15 flex items-center justify-center text-white shrink-0">
-                {mapStyleMode === "dark-v11" ? (
-                  <Layers className="w-3 h-3" />
-                ) : mapStyleMode === "streets-v12" ? (
-                  <MapIcon className="w-3 h-3" />
-                ) : (
-                  <Satellite className="w-3 h-3" />
+        {/* RIGHT CONTROLS TRACK: Pushed/dragged smoothly to the right and hidden when Search Bar opens */}
+        <div
+          className={`flex items-center justify-end flex-1 min-w-0 h-10 ${
+            !isSearchBarHidden ? "overflow-hidden pointer-events-none" : "overflow-visible"
+          }`}
+        >
+          <motion.div
+            initial={false}
+            animate={{
+              x: isSearchBarHidden ? 0 : 120,
+              opacity: isSearchBarHidden ? 1 : 0,
+              scale: isSearchBarHidden ? 1 : 0.95,
+              filter: isSearchBarHidden ? "blur(0px)" : "blur(4px)",
+            }}
+            transition={{
+              type: "spring",
+              stiffness: 260,
+              damping: 28,
+              mass: 0.85,
+            }}
+            className={`flex items-center gap-1.5 sm:gap-2 shrink-0 ${
+              isSearchBarHidden ? "pointer-events-auto" : "pointer-events-none"
+            }`}
+          >
+            {/* 1. MAP STYLE SWITCHER DROPDOWN (Dark · Streets · Satellite Streets) */}
+            <div className="relative pointer-events-auto">
+              <button
+                type="button"
+                onClick={() => setIsStyleMenuOpen((prev) => !prev)}
+                style={{ backgroundColor: "rgba(10, 14, 13, 0.96)" }}
+                className="flex items-center h-10 px-3 sm:px-3.5 rounded-full hover:bg-black backdrop-blur-2xl border border-white/20 hover:border-white/35 text-white text-xs font-semibold gap-2 shadow-[0_14px_32px_rgba(0,0,0,0.75)] transition-all cursor-pointer active:scale-95"
+                title="Cambiar entre los 3 estilos de mapa (Dark, Streets, Satellite Streets)"
+              >
+                <span className="w-5 h-5 rounded-full bg-white/15 flex items-center justify-center text-white shrink-0">
+                  {mapStyleMode === "dark-v11" ? (
+                    <Layers className="w-3 h-3" />
+                  ) : mapStyleMode === "streets-v12" ? (
+                    <MapIcon className="w-3 h-3" />
+                  ) : (
+                    <Satellite className="w-3 h-3" />
+                  )}
+                </span>
+                <span className="hidden xl:inline font-sans text-xs whitespace-nowrap">
+                  {mapStyleMode === "dark-v11"
+                    ? "Estilo Dark"
+                    : mapStyleMode === "streets-v12"
+                    ? "Estilo Streets"
+                    : "Estilo Satélite"}
+                </span>
+                <ChevronDown
+                  className={`w-3.5 h-3.5 text-white/60 transition-transform duration-200 ${
+                    isStyleMenuOpen ? "rotate-180 text-white" : ""
+                  }`}
+                />
+              </button>
+
+              {/* Top Bar Map Style Dropdown Popover */}
+              <AnimatePresence>
+                {isStyleMenuOpen && isSearchBarHidden && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 6, scale: 0.95 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: 4, scale: 0.95 }}
+                    transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
+                    style={{ backgroundColor: "rgba(10, 14, 13, 0.98)" }}
+                    className="absolute right-0 top-12 w-56 p-2 rounded-2xl backdrop-blur-2xl border border-white/20 shadow-[0_20px_50px_rgba(0,0,0,0.85)] space-y-1 z-50 pointer-events-auto"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <div className="px-2.5 py-1 text-[9.5px] font-mono uppercase tracking-wider text-white/60 font-bold flex items-center justify-between border-b border-white/10 pb-1.5 mb-1">
+                      <span>Estilos de Mapa</span>
+                      <span className="text-emerald-400">Mapbox HD</span>
+                    </div>
+                    {MAPBOX_OFFICIAL_STYLES.map((styleItem) => {
+                      const isActive = mapStyleMode === styleItem.id;
+                      return (
+                        <button
+                          key={styleItem.id}
+                          type="button"
+                          onClick={() => {
+                            setMapStyleMode(styleItem.id);
+                            setIsStyleMenuOpen(false);
+                          }}
+                          className={`w-full px-2.5 py-2 rounded-xl text-xs font-sans flex items-center justify-between gap-2 transition-all cursor-pointer ${
+                            isActive
+                              ? "bg-white text-gray-950 font-bold shadow-sm"
+                              : "text-white/85 hover:text-white hover:bg-white/10 font-medium"
+                          }`}
+                        >
+                          <div className="flex items-center gap-2 min-w-0">
+                            {styleItem.id === "dark-v11" ? (
+                              <Layers className="w-3.5 h-3.5 shrink-0" />
+                            ) : styleItem.id === "streets-v12" ? (
+                              <MapIcon className="w-3.5 h-3.5 shrink-0" />
+                            ) : (
+                              <Satellite className="w-3.5 h-3.5 shrink-0" />
+                            )}
+                            <span className="truncate">{styleItem.name}</span>
+                          </div>
+                          {isActive && <Check className="w-3.5 h-3.5 text-gray-950 shrink-0" />}
+                        </button>
+                      );
+                    })}
+                  </motion.div>
                 )}
-              </span>
-              <span className="hidden sm:inline font-sans text-xs">
-                {mapStyleMode === "dark-v11" ? "Estilo Dark" : mapStyleMode === "streets-v12" ? "Estilo Streets" : "Estilo Satélite"}
-              </span>
-              <ChevronDown className={`w-3.5 h-3.5 text-white/60 transition-transform duration-200 ${isStyleMenuOpen ? "rotate-180 text-white" : ""}`} />
-            </button>
+              </AnimatePresence>
+            </div>
 
-            {/* Top Bar Map Style Dropdown Popover */}
-            <AnimatePresence>
-              {isStyleMenuOpen && (
-                <motion.div
-                  initial={{ opacity: 0, y: 6, scale: 0.95 }}
-                  animate={{ opacity: 1, y: 0, scale: 1 }}
-                  exit={{ opacity: 0, y: 4, scale: 0.95 }}
-                  transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
-                  style={{ backgroundColor: "rgba(10, 14, 13, 0.98)" }}
-                  className="absolute right-0 top-12 w-56 p-2 rounded-2xl backdrop-blur-2xl border border-white/20 shadow-[0_20px_50px_rgba(0,0,0,0.85)] space-y-1 z-50 pointer-events-auto"
-                  onClick={(e) => e.stopPropagation()}
+            {/* 2. FIXED-GEOMETRY DENSITY MODE DOCK (Disperso / Agrupar + 1x/2x) */}
+            <div
+              style={{ backgroundColor: "rgba(10, 14, 13, 0.96)" }}
+              className="flex items-center h-10 backdrop-blur-2xl border border-white/20 rounded-full p-1 shadow-[0_14px_32px_rgba(0,0,0,0.75)] text-[11px] sm:text-xs font-bold text-white shrink-0"
+            >
+              <div className="relative grid grid-cols-2 items-center h-full">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setClusterMode("dispersed");
+                    setExpandedClusterCity(null);
+                  }}
+                  className={`relative z-10 w-[82px] sm:w-[98px] h-full px-2 sm:px-2.5 rounded-full transition-colors duration-300 ease-out flex items-center justify-center gap-1.5 font-bold cursor-pointer ${
+                    clusterMode === "dispersed"
+                      ? "text-gray-950"
+                      : "text-white/75 hover:text-white"
+                  }`}
+                  title="Ver cada cliente con su propia estaca dispersa en la ciudad"
                 >
-                  <div className="px-2.5 py-1 text-[9.5px] font-mono uppercase tracking-wider text-white/60 font-bold flex items-center justify-between border-b border-white/10 pb-1.5 mb-1">
-                    <span>Estilos de Mapa</span>
-                    <span className="text-emerald-400">Mapbox HD</span>
-                  </div>
-                  {MAPBOX_OFFICIAL_STYLES.map((styleItem) => {
-                    const isActive = mapStyleMode === styleItem.id;
+                  {clusterMode === "dispersed" && (
+                    <motion.div
+                      layoutId="radarDensityModeIndicator"
+                      transition={{ type: "spring", stiffness: 360, damping: 32, mass: 0.9 }}
+                      className="absolute inset-0 rounded-full bg-white shadow-[0_2px_14px_rgba(255,255,255,0.3)] -z-10"
+                    />
+                  )}
+                  <Sparkles className="w-3.5 h-3.5 shrink-0" />
+                  <span>Disperso</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setClusterMode("clustered");
+                    setExpandedClusterCity(null);
+                  }}
+                  className={`relative z-10 w-[82px] sm:w-[98px] h-full px-2 sm:px-2.5 rounded-full transition-colors duration-300 ease-out flex items-center justify-center gap-1.5 font-bold cursor-pointer ${
+                    clusterMode === "clustered"
+                      ? "text-gray-950"
+                      : "text-white/75 hover:text-white"
+                  }`}
+                  title="Agrupar ciudades con múltiples clientes en un pin numérico"
+                >
+                  {clusterMode === "clustered" && (
+                    <motion.div
+                      layoutId="radarDensityModeIndicator"
+                      transition={{ type: "spring", stiffness: 360, damping: 32, mass: 0.9 }}
+                      className="absolute inset-0 rounded-full bg-white shadow-[0_2px_14px_rgba(255,255,255,0.3)] -z-10"
+                    />
+                  )}
+                  <Boxes className="w-3.5 h-3.5 shrink-0" />
+                  <span>Agrupar</span>
+                </button>
+              </div>
+
+              {/* Permanently Mounted 1x | 2x Scale Multiplier Sub-Pill */}
+              <div
+                className={`hidden sm:flex items-center pl-1.5 ml-1.5 border-l border-white/15 shrink-0 transition-opacity duration-300 ${
+                  clusterMode === "dispersed" ? "opacity-100" : "opacity-45 hover:opacity-85"
+                }`}
+              >
+                <div className="relative flex items-center bg-white/[0.08] rounded-full p-0.5 gap-0.5">
+                  {(["normal", "wide"] as const).map((mode) => {
+                    const active = scatterRadius === mode;
+                    const label = mode === "normal" ? "1x" : "2x";
                     return (
                       <button
-                        key={styleItem.id}
+                        key={mode}
                         type="button"
                         onClick={() => {
-                          setMapStyleMode(styleItem.id);
-                          setIsStyleMenuOpen(false);
+                          setScatterRadius(mode);
+                          if (clusterMode !== "dispersed") {
+                            setClusterMode("dispersed");
+                            setExpandedClusterCity(null);
+                          }
                         }}
-                        className={`w-full px-2.5 py-2 rounded-xl text-xs font-sans flex items-center justify-between gap-2 transition-all cursor-pointer ${
-                          isActive
-                            ? "bg-white text-gray-950 font-bold shadow-sm"
-                            : "text-white/85 hover:text-white hover:bg-white/10 font-medium"
+                        className={`relative z-10 px-2 py-1 rounded-full font-mono text-[10px] font-bold transition-colors duration-250 cursor-pointer ${
+                          active && clusterMode === "dispersed"
+                            ? "text-gray-950"
+                            : "text-white/70 hover:text-white"
                         }`}
+                        title={
+                          mode === "normal"
+                            ? "Escala 1x: Dispersión compacta de estacas"
+                            : "Escala 2x: Dispersión amplia y estacas aumentadas"
+                        }
                       >
-                        <div className="flex items-center gap-2 min-w-0">
-                          {styleItem.id === "dark-v11" ? (
-                            <Layers className="w-3.5 h-3.5 shrink-0" />
-                          ) : styleItem.id === "streets-v12" ? (
-                            <MapIcon className="w-3.5 h-3.5 shrink-0" />
-                          ) : (
-                            <Satellite className="w-3.5 h-3.5 shrink-0" />
-                          )}
-                          <span className="truncate">{styleItem.name}</span>
-                        </div>
-                        {isActive && <Check className="w-3.5 h-3.5 text-gray-950 shrink-0" />}
+                        {active && clusterMode === "dispersed" && (
+                          <motion.div
+                            layoutId="radarScatterScaleIndicator"
+                            transition={{ type: "spring", stiffness: 400, damping: 30 }}
+                            className="absolute inset-0 rounded-full bg-white shadow-xs -z-10"
+                          />
+                        )}
+                        <span>{label}</span>
                       </button>
                     );
                   })}
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </div>
-
-          {/* FIXED-GEOMETRY DENSITY MODE DOCK (Disperso / Agrupar + 1x/2x) — Zero Layout Shift ("Cero Golpe") */}
-          <div
-            style={{ backgroundColor: "rgba(10, 14, 13, 0.96)" }}
-            className="flex items-center h-9 sm:h-10 backdrop-blur-2xl border border-white/20 rounded-full p-1 shadow-[0_14px_32px_rgba(0,0,0,0.75)] text-[11px] sm:text-xs font-bold text-white"
-          >
-            <div className="relative grid grid-cols-2 items-center h-full">
-              <button
-                type="button"
-                onClick={() => {
-                  setClusterMode("dispersed");
-                  setExpandedClusterCity(null);
-                }}
-                className={`relative z-10 w-[88px] sm:w-[106px] h-full px-2.5 sm:px-3 rounded-full transition-colors duration-300 ease-out flex items-center justify-center gap-1.5 font-bold cursor-pointer ${
-                  clusterMode === "dispersed"
-                    ? "text-gray-950"
-                    : "text-white/75 hover:text-white"
-                }`}
-                title="Ver cada cliente con su propia estaca dispersa en la ciudad"
-              >
-                {clusterMode === "dispersed" && (
-                  <motion.div
-                    layoutId="radarDensityModeIndicator"
-                    transition={{ type: "spring", stiffness: 360, damping: 32, mass: 0.9 }}
-                    className="absolute inset-0 rounded-full bg-white shadow-[0_2px_14px_rgba(255,255,255,0.3)] -z-10"
-                  />
-                )}
-                <Sparkles className="w-3.5 h-3.5 shrink-0" />
-                <span>Disperso</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => {
-                  setClusterMode("clustered");
-                  setExpandedClusterCity(null);
-                }}
-                className={`relative z-10 w-[88px] sm:w-[106px] h-full px-2.5 sm:px-3 rounded-full transition-colors duration-300 ease-out flex items-center justify-center gap-1.5 font-bold cursor-pointer ${
-                  clusterMode === "clustered"
-                    ? "text-gray-950"
-                    : "text-white/75 hover:text-white"
-                }`}
-                title="Agrupar ciudades con múltiples clientes en un pin numérico"
-              >
-                {clusterMode === "clustered" && (
-                  <motion.div
-                    layoutId="radarDensityModeIndicator"
-                    transition={{ type: "spring", stiffness: 360, damping: 32, mass: 0.9 }}
-                    className="absolute inset-0 rounded-full bg-white shadow-[0_2px_14px_rgba(255,255,255,0.3)] -z-10"
-                  />
-                )}
-                <Boxes className="w-3.5 h-3.5 shrink-0" />
-                <span>Agrupar</span>
-              </button>
-            </div>
-
-            {/* Permanently Mounted 1x | 2x Scale Multiplier Sub-Pill (Zero Width Reflow on Mode Switch) */}
-            <div
-              className={`flex items-center pl-1.5 ml-1.5 border-l border-white/15 shrink-0 transition-opacity duration-300 ${
-                clusterMode === "dispersed" ? "opacity-100" : "opacity-45 hover:opacity-85"
-              }`}
-            >
-              <div className="relative flex items-center bg-white/[0.08] rounded-full p-0.5 gap-0.5">
-                {(["normal", "wide"] as const).map((mode) => {
-                  const active = scatterRadius === mode;
-                  const label = mode === "normal" ? "1x" : "2x";
-                  return (
-                    <button
-                      key={mode}
-                      type="button"
-                      onClick={() => {
-                        setScatterRadius(mode);
-                        if (clusterMode !== "dispersed") {
-                          setClusterMode("dispersed");
-                          setExpandedClusterCity(null);
-                        }
-                      }}
-                      className={`relative z-10 px-2.5 py-1 rounded-full font-mono text-[10px] font-bold transition-colors duration-250 cursor-pointer ${
-                        active && clusterMode === "dispersed" ? "text-gray-950" : "text-white/70 hover:text-white"
-                      }`}
-                      title={
-                        mode === "normal"
-                          ? "Escala 1x: Dispersión compacta de estacas"
-                          : "Escala 2x: Dispersión amplia y estacas aumentadas"
-                      }
-                    >
-                      {active && clusterMode === "dispersed" && (
-                        <motion.div
-                          layoutId="radarScatterScaleIndicator"
-                          transition={{ type: "spring", stiffness: 400, damping: 30 }}
-                          className="absolute inset-0 rounded-full bg-white shadow-xs -z-10"
-                        />
-                      )}
-                      <span>{label}</span>
-                    </button>
-                  );
-                })}
+                </div>
               </div>
             </div>
-          </div>
 
-          {/* Admin Location Prompt */}
-          {isAdmin && !hasAdminLocation && (
-            <button
-              onClick={handleNavigateToAddress}
-              style={{ backgroundColor: "rgba(10, 14, 13, 0.96)" }}
-              className="group relative flex items-center gap-2 h-9 sm:h-10 px-3 sm:px-4 rounded-full hover:bg-black backdrop-blur-2xl border border-white/25 hover:border-white/45 text-white text-xs font-semibold shadow-lg transition-all duration-300 hover:scale-[1.03] active:scale-95 cursor-pointer shrink-0"
-              title="Añade tu dirección para mostrar tu ubicación en el mapa"
-            >
-              <div className="relative flex items-center justify-center w-5 h-5 rounded-full bg-white text-gray-950 font-black shrink-0">
-                <MapPin className="w-3 h-3 text-gray-950" />
-              </div>
-              <span className="font-semibold text-xs text-white whitespace-nowrap hidden sm:inline">
-                Mi Ubicación
-              </span>
-              <ArrowUpRight className="w-3.5 h-3.5 text-white/80 transition-transform duration-300 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 shrink-0" />
-            </button>
-          )}
+            {/* 3. MOSTRAR MI UBICACIÓN BUTTON (Enabled whenever user has no existing saved location) */}
+            {!hasUserLocation && (
+              <button
+                type="button"
+                onClick={handleNavigateToAddress}
+                style={{ backgroundColor: "rgba(10, 14, 13, 0.96)" }}
+                className="group relative flex items-center gap-2 h-10 px-3.5 sm:px-4 rounded-full hover:bg-black backdrop-blur-2xl border border-[#ccff00]/45 hover:border-[#ccff00] text-white text-xs font-semibold shadow-[0_14px_32px_rgba(0,0,0,0.78)] transition-all duration-300 hover:scale-[1.02] active:scale-95 cursor-pointer shrink-0"
+                title="No tienes una ubicación registrada. Haz clic para configurar y mostrar tu ubicación en el mapa"
+              >
+                <div className="relative flex items-center justify-center w-5 h-5 rounded-full bg-[#ccff00] text-gray-950 font-black shrink-0 shadow-[0_0_10px_rgba(204,255,0,0.45)]">
+                  <MapPin className="w-3 h-3 text-gray-950" />
+                </div>
+                <span className="font-semibold text-xs text-white whitespace-nowrap">
+                  Mostrar mi ubicación
+                </span>
+                <ArrowUpRight className="w-3.5 h-3.5 text-[#ccff00] transition-transform duration-300 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 shrink-0" />
+              </button>
+            )}
+          </motion.div>
         </div>
-
       </div>
 
       {/* ========================================================================= */}
