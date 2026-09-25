@@ -910,7 +910,7 @@ export function CartDrawer() {
   return (
     <AnimatePresence>
       {isOpen && (
-        <div className={clsx("fixed inset-0 z-[90] flex items-center justify-center p-2 sm:p-4 md:p-6 lg:p-8 overflow-hidden", resolvedTheme === 'dark' ? 'dark' : '')}>
+        <div className={clsx("fixed inset-0 z-[90] flex items-center justify-center p-1.5 sm:p-4 md:p-6 lg:p-8 overflow-hidden", resolvedTheme === 'dark' ? 'dark' : '')}>
           {/* Backdrop with Deep Soft Blur (Lightweight GPU Fill) */}
           <motion.div 
             initial={{ opacity: 0 }}
@@ -1014,9 +1014,9 @@ export function CartDrawer() {
   {/* ========================================================================= */}
   <div className={`flex-1 overflow-y-auto ${
     items.length === 0 && step === "bag"
-      ? "p-3.5 sm:px-6 sm:pb-6 sm:pt-2.5 lg:px-10 lg:pb-10 lg:pt-3"
-      : "p-3.5 sm:p-6 lg:p-10"
-  } hide-scrollbar space-y-6 sm:space-y-10`}>
+      ? "p-2.5 sm:px-6 sm:pb-6 sm:pt-2.5 lg:px-10 lg:pb-10 lg:pt-3"
+      : "p-2.5 sm:p-6 lg:p-10"
+  } hide-scrollbar space-y-5 sm:space-y-10`}>
 
   {/* ======================================================================= */}
   {/* STEP 1: CART PAGE VIEW (Skyrise Decor / Crescendo Spacious Studio) */}
@@ -1104,7 +1104,7 @@ export function CartDrawer() {
  {/* ---------------------------------------------------- */}
  {/* Left Column: Spacious Products Table (7 or 8 cols) */}
  {/* ---------------------------------------------------- */}
- <div className="lg:col-span-8 bg-white dark:bg-[#2a2a2c]/80 backdrop-blur-xl rounded-2xl sm:rounded-[2rem] border border-gray-200 dark:border-white/10/60 p-4 sm:p-8 shadow-sm dark:shadow-none space-y-6">
+  <div className="lg:col-span-8 bg-white dark:bg-[#2a2a2c]/80 backdrop-blur-xl rounded-2xl sm:rounded-[2rem] border border-gray-200 dark:border-white/10 p-3 sm:p-6 lg:p-8 shadow-sm dark:shadow-none space-y-4 sm:space-y-6">
   {/* Clean Toolbar: Count & Vaciar Bolsa */}
   <div className="flex items-center justify-between pb-2 border-b border-gray-100 dark:border-white/5">
     <span className="text-xs font-semibold text-gray-600 dark:text-gray-300">
@@ -1154,7 +1154,7 @@ export function CartDrawer() {
     return (
       <div
         key={item.id}
-        className="p-4 sm:p-5 rounded-2xl border border-emerald-500/30 bg-gradient-to-br from-emerald-50/40 via-white to-emerald-50/20 dark:from-emerald-950/20 dark:via-[#1e1e20] dark:to-[#1a1a1c] shadow-sm space-y-4 transition-all"
+        className="p-3.5 sm:p-5 rounded-2xl border border-emerald-500/30 bg-gradient-to-br from-emerald-50/40 via-white to-emerald-50/20 dark:from-emerald-950/20 dark:via-[#1e1e20] dark:to-[#1a1a1c] shadow-sm space-y-4 transition-all"
       >
         {/* Bundle Header Bar */}
         <div className="flex flex-wrap items-center justify-between gap-2 pb-3 border-b border-emerald-500/15">
@@ -1217,10 +1217,17 @@ export function CartDrawer() {
                       <Eye className="w-3 h-3" />
                     </button>
                   </div>
-                  <div className="flex items-center gap-2 text-[10px] text-gray-500 dark:text-gray-400 mt-0.5 font-medium">
-                    {bp.color && <span>Color: {bp.color}</span>}
-                    {bp.color && bp.size && <span>•</span>}
-                    {bp.size && <span>Talla: {bp.size}</span>}
+                  <div className="flex items-center gap-1.5 flex-wrap text-[10px] text-gray-500 dark:text-gray-400 mt-0.5 font-medium">
+                    {bp.color && (
+                      <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-black/[0.03] dark:bg-white/[0.05] whitespace-nowrap">
+                        Color: {bp.color}
+                      </span>
+                    )}
+                    {bp.size && (
+                      <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-black/[0.03] dark:bg-white/[0.05] whitespace-nowrap">
+                        Talla: {bp.size}
+                      </span>
+                    )}
                   </div>
                 </div>
               </div>
@@ -1295,142 +1302,163 @@ export function CartDrawer() {
   const isMaxStockReached = liveStock !== undefined && item.quantity >= liveStock;
 
   return (
- <div 
- key={item.id} 
- className={`p-3.5 sm:p-4 flex flex-col sm:grid sm:grid-cols-12 gap-3 sm:gap-4 sm:items-center group transition-all rounded-2xl ${
- itemIsAgotado 
- ? "bg-red-50/40 border border-red-200/80 shadow-xs" 
- : "border border-gray-100/80 dark:border-white/5 sm:border-transparent bg-gray-50/40 sm:bg-transparent dark:bg-white/[0.02] sm:dark:bg-transparent hover:bg-gray-50 dark:hover:bg-[#151515]/50 hover:border-gray-100 dark:hover:border-white/5/80"
- }`}
- >
-  {/* Product Info (5 cols) */}
-  <div className="sm:col-span-5 flex items-start sm:items-center gap-3.5 sm:gap-4">
     <div 
-      onClick={() => { setIsOpen(false); router.push(`/product/${item.productId || item.product.id}`); }}
-      className="relative w-20 h-20 sm:w-22 sm:h-22 rounded-2xl overflow-hidden bg-gray-100 dark:bg-[#202022]/5 shrink-0 border border-black/5 dark:border-white/10 shadow-xs cursor-pointer group/thumb"
-      title="Abrir detalles del producto"
+      key={item.id} 
+      className={`p-3 sm:p-4 flex flex-col sm:grid sm:grid-cols-12 gap-3 sm:gap-4 sm:items-center group transition-all rounded-2xl ${
+        itemIsAgotado 
+          ? "bg-red-50/40 border border-red-200/80 shadow-xs" 
+          : "border border-gray-200/70 dark:border-white/10 sm:border-transparent bg-white/80 dark:bg-white/[0.03] sm:bg-transparent sm:dark:bg-transparent hover:bg-gray-50 dark:hover:bg-[#151515]/50 hover:border-gray-200 dark:hover:border-white/10 shadow-xs sm:shadow-none"
+      }`}
     >
-      <Image 
-        src={item.product.imageUrl} 
-        alt={item.product.title} 
-        fill 
-        sizes="(max-width: 640px) 80px, 88px"
-        className="object-cover group-hover/thumb:scale-105 transition-transform duration-500" 
-      />
-      {itemIsAgotado && (
-        <div className="absolute inset-0 bg-black/35 backdrop-blur-[1px] flex items-center justify-center p-1">
-          <span className="bg-red-600 text-white font-bold text-[9px] uppercase tracking-wider px-2 py-0.5 rounded-full shadow-sm text-center">
-            Agotado
-          </span>
-        </div>
-      )}
-    </div>
-
-    <div className="min-w-0 flex-1">
-      <div className="flex items-center gap-1.5 flex-wrap">
-        <span className="text-[10px] font-bold text-blue-600 dark:text-blue-400 uppercase tracking-wider block">
-          {item.product.category}
-        </span>
-        {itemIsAgotado && (
-          <span className="px-2 py-0.5 rounded-full bg-red-50 dark:bg-red-950/40 text-red-600 dark:text-red-400 border border-red-200 dark:border-red-900/50 text-[9px] font-bold tracking-wider uppercase">
-            Agotado
-          </span>
-        )}
-      </div>
-
-      <h4 
-        onClick={() => { setIsOpen(false); router.push(`/product/${item.productId || item.product.id}`); }}
-        className="font-bold text-sm sm:text-base text-gray-900 dark:text-gray-100 line-clamp-1 mt-0.5 hover:text-blue-600 dark:hover:text-blue-400 cursor-pointer transition-colors"
-        title={item.product.title}
-      >
-        {item.product.title}
-      </h4>
-
-      {/* Detalles estilizados y compactos (no bultosos) */}
-      {(item.color || item.size) && (
-        <div className="flex items-center flex-wrap gap-x-2 gap-y-1 mt-1 text-[11px] text-gray-500 dark:text-gray-400">
-          {item.color && (
-            <span className="inline-flex items-center gap-1.5">
-              <span 
-                className="w-2.5 h-2.5 rounded-full border border-black/10 dark:border-white/20 shrink-0" 
-                style={{ backgroundColor: item.product.colors?.find(c => c.name.toLowerCase() === item.color?.toLowerCase())?.hex || '#9ca3af' }} 
-              />
-              <span className="font-medium text-gray-700 dark:text-gray-300">{item.color}</span>
-            </span>
-          )}
-          {item.color && item.size && <span className="text-gray-300 dark:text-gray-600 font-light">•</span>}
-          {item.size && (
-            <span className="inline-flex items-center gap-1 font-medium text-gray-700 dark:text-gray-300">
-              <span className="text-gray-400 dark:text-gray-500 font-normal">Talla:</span>
-              <span className="font-semibold">{item.size}</span>
-            </span>
-          )}
-        </div>
-      )}
-
-      {/* Botón para abrir el producto y precio unitario móvil */}
-      <div className="flex items-center gap-2.5 mt-2">
-        <button
+      {/* Product Info (5 cols on sm+) */}
+      <div className="sm:col-span-5 flex items-start sm:items-center gap-3 sm:gap-4">
+        {/* Thumbnail */}
+        <div 
           onClick={() => { setIsOpen(false); router.push(`/product/${item.productId || item.product.id}`); }}
-          className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-gray-100/80 hover:bg-gray-200/80 dark:bg-white/5 dark:hover:bg-white/10 text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100 border border-black/[0.04] dark:border-white/10 text-[11px] font-semibold transition-all cursor-pointer group/open active:scale-95"
-          title="Abrir y ver ficha del producto"
+          className="relative w-18 h-18 sm:w-22 sm:h-22 rounded-2xl overflow-hidden bg-gray-100 dark:bg-[#202022]/40 shrink-0 border border-black/5 dark:border-white/10 shadow-xs cursor-pointer group/thumb"
+          title="Abrir detalles del producto"
         >
-          <Eye className="w-3 h-3 text-gray-400 group-hover/open:text-blue-600 dark:group-hover/open:text-blue-400 transition-colors" />
-          <span>Ver producto</span>
-        </button>
+          <Image 
+            src={item.product.imageUrl} 
+            alt={item.product.title} 
+            fill 
+            sizes="(max-width: 640px) 72px, 88px"
+            className="object-cover group-hover/thumb:scale-105 transition-transform duration-500" 
+          />
+          {itemIsAgotado && (
+            <div className="absolute inset-0 bg-black/40 backdrop-blur-[1px] flex items-center justify-center p-1">
+              <span className="bg-red-600 text-white font-bold text-[9px] uppercase tracking-wider px-1.5 py-0.5 rounded-full shadow-sm text-center">
+                Agotado
+              </span>
+            </div>
+          )}
+        </div>
 
-        <span className="text-xs font-medium text-gray-500 dark:text-gray-400 sm:hidden">
-          • ${Number(item.product?.price || 0).toFixed(2)} c/u
-        </span>
+        {/* Info Column */}
+        <div className="min-w-0 flex-1">
+          {/* Header Line on Mobile: Category (+ Agotado badge) and Mobile Quick Trash Button */}
+          <div className="flex items-center justify-between gap-1.5">
+            <div className="flex items-center gap-1.5 flex-wrap min-w-0">
+              <span className="text-[10px] font-bold text-blue-600 dark:text-blue-400 uppercase tracking-wider truncate">
+                {item.product.category}
+              </span>
+              {itemIsAgotado && (
+                <span className="px-1.5 py-0.5 rounded-full bg-red-50 dark:bg-red-950/40 text-red-600 dark:text-red-400 border border-red-200 dark:border-red-900/50 text-[9px] font-bold tracking-wider uppercase shrink-0">
+                  Agotado
+                </span>
+              )}
+            </div>
+
+            {/* Mobile-only trash button in top-right corner for perfect symmetry */}
+            <button 
+              onClick={() => removeItem(item.id)}
+              className="sm:hidden w-7 h-7 rounded-full bg-black/[0.03] dark:bg-white/5 hover:bg-rose-50 dark:hover:bg-rose-950/40 text-gray-400 hover:text-rose-600 dark:hover:text-rose-400 border border-black/[0.04] dark:border-white/10 shadow-2xs flex items-center justify-center transition-all active:scale-90 cursor-pointer shrink-0 -mt-0.5"
+              title="Eliminar producto"
+              aria-label="Eliminar producto"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+            </button>
+          </div>
+
+          {/* Product Title */}
+          <h4 
+            onClick={() => { setIsOpen(false); router.push(`/product/${item.productId || item.product.id}`); }}
+            className="font-bold text-sm sm:text-base text-gray-900 dark:text-gray-100 line-clamp-1 mt-0.5 hover:text-blue-600 dark:hover:text-blue-400 cursor-pointer transition-colors"
+            title={item.product.title}
+          >
+            {item.product.title}
+          </h4>
+
+          {/* Symmetrical Attribute Badges (Color & Talla) - No dangling orphan bullets */}
+          {(item.color || item.size) && (
+            <div className="flex items-center flex-wrap gap-1.5 mt-1">
+              {item.color && (
+                <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-black/[0.03] dark:bg-white/[0.05] border border-black/[0.05] dark:border-white/10 text-[10.5px] text-gray-700 dark:text-gray-300 font-medium whitespace-nowrap">
+                  <span 
+                    className="w-2 h-2 rounded-full border border-black/10 dark:border-white/20 shrink-0" 
+                    style={{ backgroundColor: item.product.colors?.find(c => c.name.toLowerCase() === item.color?.toLowerCase())?.hex || '#9ca3af' }} 
+                  />
+                  <span className="truncate max-w-[120px]">{item.color}</span>
+                </span>
+              )}
+              {item.size && (
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-black/[0.03] dark:bg-white/[0.05] border border-black/[0.05] dark:border-white/10 text-[10.5px] text-gray-700 dark:text-gray-300 font-medium whitespace-nowrap">
+                  <span className="text-gray-400 dark:text-gray-500 font-normal">Talla:</span>
+                  <span className="font-semibold truncate max-w-[120px]">{item.size}</span>
+                </span>
+              )}
+            </div>
+          )}
+
+          {/* Unit Price and Quick View Link */}
+          <div className="flex items-center gap-2 mt-1.5">
+            <span className="text-xs font-semibold text-gray-800 dark:text-gray-200 whitespace-nowrap sm:hidden">
+              ${Number(item.product?.price || 0).toFixed(2)} <span className="text-[10px] font-normal text-gray-400 dark:text-gray-500">c/u</span>
+            </span>
+
+            <button
+              onClick={() => { setIsOpen(false); router.push(`/product/${item.productId || item.product.id}`); }}
+              className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-gray-100/90 hover:bg-gray-200 dark:bg-white/5 dark:hover:bg-white/10 text-gray-600 hover:text-gray-950 dark:text-gray-400 dark:hover:text-gray-100 border border-black/[0.05] dark:border-white/10 text-[10.5px] font-semibold transition-all cursor-pointer whitespace-nowrap active:scale-95"
+              title="Abrir y ver ficha del producto"
+            >
+              <Eye className="w-3 h-3 text-gray-400 hover:text-blue-600 transition-colors" />
+              <span>Ver ficha</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Unified Mobile Bottom Controls Row + Desktop Grid Columns (Product 5 cols, Quantity 3 cols, Subtotal 3 cols, Delete 1 col) */}
+      <div className="flex items-center justify-between gap-3 pt-2.5 mt-0.5 border-t border-gray-100 dark:border-white/5 sm:border-t-0 sm:pt-0 sm:mt-0 sm:contents">
+        {/* Quantity Stepper (3 cols on sm+) */}
+        <div className="sm:col-span-3 flex sm:justify-center items-center shrink-0">
+          <div className="flex items-center gap-1.5 sm:block">
+            <span className="text-[10px] uppercase font-bold text-gray-400 dark:text-gray-500 sm:hidden">Cant:</span>
+            <BeUIAdaptiveStepper
+              value={item.quantity}
+              min={1}
+              max={liveStock !== undefined && liveStock > 0 ? liveStock : 10}
+              onDecrement={() => updateQuantity(item.id, item.quantity - 1)}
+              onIncrement={() => updateQuantity(item.id, item.quantity + 1)}
+              disableIncrement={itemIsAgotado || isMaxStockReached}
+              size="sm"
+              decrementTitle="Disminuir"
+              incrementTitle={
+                itemIsAgotado
+                  ? "Producto sin existencias"
+                  : isMaxStockReached
+                  ? `Máximo stock disponible (${liveStock} uds.)`
+                  : "Aumentar"
+              }
+            />
+          </div>
+        </div>
+
+        {/* Subtotal Price (3 cols on sm+) */}
+        <div className="sm:col-span-3 sm:text-right flex items-center sm:block sm:pr-4 ml-auto sm:ml-0 shrink-0">
+          <div className="text-right">
+            <span className="text-[9.5px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider sm:hidden block leading-none mb-0.5">
+              Subtotal
+            </span>
+            <BeUIRollingPrice
+              amount={Number(item.product?.price || 0) * (item.quantity || 1)}
+              className="font-extrabold text-sm sm:text-lg text-gray-900 dark:text-gray-100"
+            />
+          </div>
+        </div>
+
+        {/* Desktop Circular Glass Delete Button (1 col on sm+, hidden on mobile because it's in the top right) */}
+        <div className="hidden sm:flex sm:col-span-1 justify-end items-center sm:text-right shrink-0">
+          <button 
+            onClick={() => removeItem(item.id)}
+            className="w-8 h-8 rounded-full bg-white/80 dark:bg-white/10 hover:bg-rose-50/90 dark:hover:bg-rose-950/30 text-gray-400 hover:text-rose-600 dark:hover:text-rose-400 border border-black/[0.06] dark:border-white/15 shadow-xs flex items-center justify-center transition-all active:scale-90 cursor-pointer sm:ml-auto"
+            title="Eliminar producto"
+          >
+            <Trash2 className="w-3.5 h-3.5" />
+          </button>
+        </div>
       </div>
     </div>
-  </div>
-
-  {/* Unified Mobile Bottom Controls Row + Desktop Grid Columns (Product 5 cols, Quantity 3 cols, Subtotal 3 cols, Delete 1 col) */}
-  <div className="flex items-center justify-between gap-2 pt-2.5 mt-0.5 border-t border-gray-200/60 dark:border-white/10 sm:border-t-0 sm:pt-0 sm:mt-0 sm:contents">
-    {/* Quantity Capsule with beUI Adaptive Stepper (3 cols on sm+) */}
-    <div className="sm:col-span-3 flex sm:justify-center items-center shrink-0">
-      <BeUIAdaptiveStepper
-        value={item.quantity}
-        min={1}
-        max={liveStock !== undefined && liveStock > 0 ? liveStock : 10}
-        onDecrement={() => updateQuantity(item.id, item.quantity - 1)}
-        onIncrement={() => updateQuantity(item.id, item.quantity + 1)}
-        disableIncrement={itemIsAgotado || isMaxStockReached}
-        size="md"
-        decrementTitle="Disminuir"
-        incrementTitle={
-          itemIsAgotado
-            ? "Producto sin existencias"
-            : isMaxStockReached
-            ? `Máximo stock disponible (${liveStock} uds.)`
-            : "Aumentar"
-        }
-      />
-    </div>
-
-    {/* Subtotal Price with beUI Rolling Ticker (3 cols on sm+) */}
-    <div className="sm:col-span-3 sm:text-right flex items-center gap-1.5 sm:block sm:pr-4 ml-auto sm:ml-0">
-      <span className="text-[11px] font-medium text-gray-400 dark:text-gray-400 sm:hidden">Subtotal:</span>
-      <BeUIRollingPrice
-        amount={Number(item.product?.price || 0) * (item.quantity || 1)}
-        className="font-extrabold text-sm sm:text-lg text-gray-900 dark:text-gray-100"
-      />
-    </div>
-
-    {/* 2IXO CIRCULAR GLASS DELETE BUTTON (1 col on sm+) */}
-    <div className="sm:col-span-1 flex justify-end items-center sm:text-right shrink-0">
-      <button 
-        onClick={() => removeItem(item.id)}
-        className="w-8 h-8 rounded-full bg-white/80 dark:bg-white/10 hover:bg-rose-50/90 dark:hover:bg-rose-950/30 text-gray-400 hover:text-rose-600 dark:hover:text-rose-400 border border-black/[0.06] dark:border-white/15 shadow-xs flex items-center justify-center transition-all active:scale-90 cursor-pointer sm:ml-auto"
-        title="Eliminar producto"
-      >
-        <Trash2 className="w-3.5 h-3.5" />
-      </button>
-    </div>
-  </div>
-
-  </div>
   );
   })}
   </div>
@@ -1455,7 +1483,7 @@ export function CartDrawer() {
  {/* ---------------------------------------------------- */}
  {/* Right Column: Order Summary Card (4 cols - Luxury Pearl Card) */}
  {/* ---------------------------------------------------- */}
- <div className="lg:col-span-4 bg-white/80 dark:bg-[#1e1e22]/90 backdrop-blur-2xl rounded-3xl border border-black/[0.06] dark:border-white/10 p-5 sm:p-7 shadow-[0_12px_36px_rgba(0,0,0,0.03)] space-y-6">
+  <div className="lg:col-span-4 bg-white/80 dark:bg-[#1e1e22]/90 backdrop-blur-2xl rounded-3xl border border-black/[0.06] dark:border-white/10 p-4 sm:p-7 shadow-[0_12px_36px_rgba(0,0,0,0.03)] space-y-5 sm:space-y-6">
   
     {/* Header with Item Counter */}
     <div className="flex items-center justify-between pb-3.5 border-b border-black/[0.06] dark:border-white/10">
