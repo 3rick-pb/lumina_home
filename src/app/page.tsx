@@ -527,7 +527,7 @@ export default function Home() {
       </div>
 
       {/* Floating Centered Scroll-To-Top Button for Catalog */}
-      <CatalogScrollToTopButton targetId="catalog-categories" threshold={450} className="bottom-6 sm:bottom-8" />
+      <CatalogScrollToTopButton threshold={450} className="bottom-6 sm:bottom-8" />
     </>
   );
 }

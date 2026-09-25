@@ -3155,17 +3155,6 @@ const handleConfirmDeleteNiche = async () => {
               onClick: () => router.push("/"),
               title: "Volver a la Tienda",
             },
-            {
-              id: "logout",
-              label: "Salir",
-              icon: <LogOut className="w-5 h-5 text-red-500" />,
-              active: false,
-              onClick: () => {
-                logout();
-                router.push("/auth/login");
-              },
-              title: "Cerrar Sesión",
-            },
           ]}
           itemsPerPage={4}
         />

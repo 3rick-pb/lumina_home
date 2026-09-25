@@ -5,7 +5,6 @@ import { ArrowUp } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
 interface CatalogScrollToTopButtonProps {
-  targetId?: string;
   threshold?: number;
   className?: string;
   label?: string;
@@ -16,7 +15,6 @@ interface CatalogScrollToTopButtonProps {
  * a la parte superior del catálogo (celulares, tablets y PC/Laptop).
  */
 export function CatalogScrollToTopButton({
-  targetId,
   threshold = 280,
   className = "",
   label = "Volver arriba",
@@ -35,14 +33,15 @@ export function CatalogScrollToTopButton({
   }, [threshold]);
 
   const scrollToTop = () => {
-    if (targetId) {
-      const el = document.getElementById(targetId);
-      if (el) {
-        el.scrollIntoView({ behavior: "smooth", block: "start" });
-        return;
+    window.scrollTo({ top: 0, left: 0, behavior: "smooth" });
+    if (typeof document !== "undefined") {
+      if (document.documentElement) {
+        document.documentElement.scrollTo({ top: 0, left: 0, behavior: "smooth" });
+      }
+      if (document.body) {
+        document.body.scrollTo({ top: 0, left: 0, behavior: "smooth" });
       }
     }
-    window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
   return (

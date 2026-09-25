@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 
 export interface BeUIDockItem {
   id: string;
@@ -20,40 +20,47 @@ export interface BeUIPaginatedDockProps {
   className?: string;
 }
 
+const pageVariants = {
+  enter: (direction: number) => ({
+    x: direction > 0 ? 45 : -45,
+    opacity: 0,
+    scale: 0.98,
+  }),
+  center: {
+    x: 0,
+    opacity: 1,
+    scale: 1,
+  },
+  exit: (direction: number) => ({
+    x: direction > 0 ? -45 : 50,
+    opacity: 0,
+    scale: 0.98,
+  }),
+};
+
 /**
  * beUI Paginated Mobile Dock Component
- * - Rock-solid, jitter-free floating frosted glass Dock capsule for mobile viewports.
- * - Pixel-perfect width containment: eliminates icon peeking from previous/next pages.
- * - Leaves unused column slots empty without stretching or filling artificially.
- * - Snappy 220ms spring transitions between pages.
- * - Smooth swipe gestures (left/right) with zero lateral jumping on finger touch.
- * - Distinctive dots page indicator underneath with expanding active pill and direct tap navigation.
+ * - 100% Symmetrical layout: 4 equal 25% columns per page.
+ * - Divided into REAL individual pages (isolated views via AnimatePresence) with ZERO icon leakage/peeking.
+ * - Leaves unused column slots completely empty without stretching.
+ * - Fast, crisp 200ms transitions between pages.
+ * - Jitter-free touch swipe gestures.
+ * - Distinctive dots page indicator underneath with active pill expansion.
  */
 export function BeUIPaginatedDock({
   items,
   itemsPerPage = 4,
   className = "",
 }: BeUIPaginatedDockProps) {
-  const [currentPage, setCurrentPage] = useState(0);
-  const containerRef = useRef<HTMLDivElement>(null);
-  const [containerWidth, setContainerWidth] = useState(0);
+  const [[currentPage, direction], setPage] = useState<[number, number]>([0, 0]);
   const touchStartRef = useRef<{ x: number; y: number } | null>(null);
 
   const totalPages = Math.max(1, Math.ceil(items.length / itemsPerPage));
 
-  // Measure exact inner container width to ensure ZERO icon peeking between pages
-  useEffect(() => {
-    const updateWidth = () => {
-      if (containerRef.current) {
-        setContainerWidth(containerRef.current.clientWidth);
-      }
-    };
-    updateWidth();
-    window.addEventListener("resize", updateWidth);
-    return () => window.removeEventListener("resize", updateWidth);
-  }, []);
+  // Ensure currentPage is clamped if items change
+  const safePage = Math.min(totalPages - 1, Math.max(0, currentPage));
 
-  // Track active item and only sync page when user genuinely clicks/switches to a new tab
+  // Track active item and only sync page when user genuinely switches tabs
   const activeItem = items.find((it) => it.active);
   const activeItemId = activeItem?.id;
   const lastActiveIdRef = useRef<string | undefined>(activeItemId);
@@ -64,12 +71,12 @@ export function BeUIPaginatedDock({
       const activeIndex = items.findIndex((it) => it.id === activeItemId);
       if (activeIndex !== -1) {
         const targetPage = Math.floor(activeIndex / itemsPerPage);
-        if (targetPage >= 0 && targetPage < totalPages) {
-          setCurrentPage(targetPage);
+        if (targetPage >= 0 && targetPage < totalPages && targetPage !== safePage) {
+          setPage([targetPage, targetPage > safePage ? 1 : -1]);
         }
       }
     }
-  }, [activeItemId, items, itemsPerPage, totalPages]);
+  }, [activeItemId, items, itemsPerPage, totalPages, safePage]);
 
   // Clean, rock-solid touch swipe detection (No lateral jumping on touch down)
   const handleTouchStart = (e: React.TouchEvent) => {
@@ -83,24 +90,25 @@ export function BeUIPaginatedDock({
     const diffX = touchStartRef.current.x - touch.clientX;
     const diffY = touchStartRef.current.y - touch.clientY;
 
-    // Only trigger if primarily a horizontal swipe and exceeds threshold
-    if (Math.abs(diffX) > Math.abs(diffY) && Math.abs(diffX) > 32) {
-      if (diffX > 0) {
-        // Swiped right-to-left -> Next page
-        setCurrentPage((prev) => Math.min(totalPages - 1, prev + 1));
-      } else {
-        // Swiped left-to-right -> Previous page
-        setCurrentPage((prev) => Math.max(0, prev - 1));
+    if (Math.abs(diffX) > Math.abs(diffY) && Math.abs(diffX) > 28) {
+      if (diffX > 0 && safePage < totalPages - 1) {
+        // Swiped right-to-left -> Advance to Next page
+        setPage([safePage + 1, 1]);
+      } else if (diffX < 0 && safePage > 0) {
+        // Swiped left-to-right -> Return to Previous page
+        setPage([safePage - 1, -1]);
       }
     }
     touchStartRef.current = null;
   };
 
-  // Group items into pages of `itemsPerPage`
+  // Group items into separate real pages
   const pages: BeUIDockItem[][] = [];
   for (let i = 0; i < totalPages; i++) {
     pages.push(items.slice(i * itemsPerPage, (i + 1) * itemsPerPage));
   }
+
+  const currentItems = pages[safePage] || [];
 
   return (
     <aside
@@ -108,31 +116,29 @@ export function BeUIPaginatedDock({
       className={`fixed bottom-3 inset-x-0 z-50 flex flex-col items-center justify-center px-3 pointer-events-none ${className}`}
     >
       <div className="pointer-events-auto flex flex-col items-center gap-1.5 w-full max-w-[340px]">
-        {/* Dock Frosted Capsule Container */}
+        {/* Dock Frosted Capsule Container (Fixed symmetrical padding) */}
         <div
-          ref={containerRef}
           onTouchStart={handleTouchStart}
           onTouchEnd={handleTouchEnd}
-          className="w-full bg-white/90 dark:bg-[#18181b]/90 backdrop-blur-2xl border border-white/80 dark:border-white/10 shadow-[0_12px_36px_rgba(0,0,0,0.12)] dark:shadow-[0_16px_40px_rgba(0,0,0,0.6)] rounded-3xl p-1.5 overflow-hidden relative select-none touch-pan-y"
+          className="w-full bg-white/90 dark:bg-[#18181b]/90 backdrop-blur-2xl border border-white/80 dark:border-white/10 shadow-[0_12px_36px_rgba(0,0,0,0.12)] dark:shadow-[0_16px_40px_rgba(0,0,0,0.6)] rounded-3xl px-2 py-1.5 overflow-hidden relative select-none touch-pan-y"
         >
-          {/* Animated Carousel Track with Exact Pixel Translation (Zero Peeking) */}
-          <motion.div
-            animate={{
-              x: containerWidth > 0 ? -currentPage * containerWidth : `-${currentPage * 100}%`,
-            }}
-            transition={{
-              duration: 0.22,
-              ease: [0.16, 1, 0.3, 1],
-            }}
-            className="flex w-full select-none"
-          >
-            {pages.map((pageItems, pageIdx) => (
-              <div
-                key={pageIdx}
-                style={{ width: containerWidth > 0 ? `${containerWidth}px` : "100%" }}
-                className="shrink-0 grid grid-cols-4 gap-1 px-0.5 items-center justify-items-center"
+          {/* Real Page View (Only the active page renders, zero bleeding between pages) */}
+          <div className="relative w-full overflow-hidden min-h-[58px] flex items-center justify-center">
+            <AnimatePresence mode="popLayout" initial={false} custom={direction}>
+              <motion.div
+                key={safePage}
+                custom={direction}
+                variants={pageVariants}
+                initial="enter"
+                animate="center"
+                exit="exit"
+                transition={{
+                  duration: 0.2,
+                  ease: [0.16, 1, 0.3, 1],
+                }}
+                className="w-full grid grid-cols-4 gap-1 items-center justify-items-center select-none"
               >
-                {pageItems.map((item) => (
+                {currentItems.map((item) => (
                   <button
                     key={item.id}
                     type="button"
@@ -166,8 +172,8 @@ export function BeUIPaginatedDock({
                   </button>
                 ))}
 
-                {/* Leave unused column spaces empty without stretching items */}
-                {Array.from({ length: Math.max(0, itemsPerPage - pageItems.length) }).map(
+                {/* Symmetrical empty placeholders for unused slots (Leaves empty spaces without stretching) */}
+                {Array.from({ length: Math.max(0, itemsPerPage - currentItems.length) }).map(
                   (_, i) => (
                     <div
                       key={`empty-slot-${i}`}
@@ -176,20 +182,24 @@ export function BeUIPaginatedDock({
                     />
                   )
                 )}
-              </div>
-            ))}
-          </motion.div>
+              </motion.div>
+            </AnimatePresence>
+          </div>
         </div>
 
-        {/* N-dot Page Indicator underneath the Dock */}
+        {/* Dots Page Indicator underneath the Dock */}
         <div className="flex items-center justify-center gap-2 pt-0.5 pointer-events-auto">
           {Array.from({ length: totalPages }).map((_, idx) => (
             <button
               key={idx}
               type="button"
-              onClick={() => setCurrentPage(idx)}
+              onClick={() => {
+                if (idx !== safePage) {
+                  setPage([idx, idx > safePage ? 1 : -1]);
+                }
+              }}
               className={`h-1.5 rounded-full transition-all duration-250 cursor-pointer ${
-                currentPage === idx
+                safePage === idx
                   ? "w-6 bg-gray-900 dark:bg-white shadow-[0_1px_4px_rgba(0,0,0,0.25)]"
                   : "w-1.5 bg-gray-400/50 dark:bg-white/25 hover:bg-gray-600 dark:hover:bg-white/50"
               }`}

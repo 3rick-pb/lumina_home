@@ -132,7 +132,7 @@ export default function ShopPage({ searchParams }: { searchParams: Promise<{ cat
       </div>
 
       {/* Floating Centered Scroll-To-Top Button for Catalog */}
-      <CatalogScrollToTopButton targetId="shop-header" className="bottom-6 sm:bottom-8" />
+      <CatalogScrollToTopButton className="bottom-6 sm:bottom-8" />
     </div>
   );
 }
