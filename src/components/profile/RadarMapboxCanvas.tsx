@@ -1244,6 +1244,8 @@ interface RadarMapboxCanvasProps {
   resetCommandSeq: number;
   onMapReady?: () => void;
   onCanvasClick?: () => void;
+  activeMapStyle?: MapboxOfficialStyleId;
+  onMapStyleChange?: (style: MapboxOfficialStyleId) => void;
   renderOverlayPins: (
     projectFn: (
       cityName: string | undefined,
@@ -1323,6 +1325,8 @@ export function RadarMapboxCanvas({
   resetCommandSeq,
   onMapReady,
   onCanvasClick,
+  activeMapStyle,
+  onMapStyleChange,
   renderOverlayPins,
 }: RadarMapboxCanvasProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -1351,7 +1355,14 @@ export function RadarMapboxCanvas({
   const prevZoomCommandRef = useRef<number>(zoomCommand);
   const prevZoomStepSeqRef = useRef<number>(0);
   const [, setRenderTick] = useState(0);
-  const [mapStyleMode, setMapStyleMode] = useState<MapboxOfficialStyleId>("dark-v11");
+  const [internalMapStyleMode, setInternalMapStyleMode] = useState<MapboxOfficialStyleId>("dark-v11");
+  const mapStyleMode = activeMapStyle || internalMapStyleMode;
+
+  const handleSelectMapStyle = useCallback((style: MapboxOfficialStyleId) => {
+    setInternalMapStyleMode(style);
+    onMapStyleChange?.(style);
+  }, [onMapStyleChange]);
+
   const [isStyleMenuOpen, setIsStyleMenuOpen] = useState<boolean>(false);
   const isDraggingRef = useRef(false);
   const dragMovedRef = useRef(false);
@@ -2102,7 +2113,7 @@ export function RadarMapboxCanvas({
                     key={styleItem.id}
                     type="button"
                     onClick={() => {
-                      setMapStyleMode(styleItem.id);
+                      handleSelectMapStyle(styleItem.id);
                       setIsStyleMenuOpen(false);
                     }}
                     title={styleItem.mapboxUri}

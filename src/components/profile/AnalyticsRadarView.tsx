@@ -20,9 +20,13 @@ import {
   Sparkles,
   ChevronLeft,
   ChevronRight,
+  ChevronDown,
   Globe,
   X,
-  Layers
+  Layers,
+  Map as MapIcon,
+  Satellite,
+  Check
 } from "lucide-react";
 import { useUserStore, syncAddressesToCloud, type User, type ShippingAddress, type Order } from "@/lib/userStore";
 import { getImmediateRawGpsPosition, getStoredRawGpsHardwareData } from "@/lib/locationUtils";
@@ -44,6 +48,8 @@ import {
   isGenericCityFallbackLngLat,
   getExpectedCityOrPostalCenter,
   cleanEcuadorStreetForGeocoding,
+  type MapboxOfficialStyleId,
+  MAPBOX_OFFICIAL_STYLES,
 } from "./RadarMapboxCanvas";
 
 export type { ConnectedClient } from "@/lib/radarStore";
@@ -266,6 +272,8 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
   const [isMobilePanelOpen, setIsMobilePanelOpen] = useState<boolean>(false);
   const [isCountryMenuOpen, setIsCountryMenuOpen] = useState<boolean>(false);
   const [isSearchBarHidden, setIsSearchBarHidden] = useState<boolean>(false);
+  const [mapStyleMode, setMapStyleMode] = useState<MapboxOfficialStyleId>("dark-v11");
+  const [isStyleMenuOpen, setIsStyleMenuOpen] = useState<boolean>(false);
   const scrollTrackRef = useRef<HTMLDivElement>(null);
   const [isMapLoaded, setIsMapLoaded] = useState<boolean>(false);
 
@@ -275,7 +283,7 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
   const [expandedClusterCity, setExpandedClusterCity] = useState<string | null>(null);
   const [hoveredClusterKey, setHoveredClusterKey] = useState<string | null>(null);
 
-  // Keyboard shortcut: Escape to deselect active client or close expanded cluster / country menu
+  // Keyboard shortcut: Escape to deselect active client or close expanded cluster / country menu / style menu
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
@@ -284,6 +292,7 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
         setExpandedClusterCity(null);
         setHoveredClusterKey(null);
         setIsCountryMenuOpen(false);
+        setIsStyleMenuOpen(false);
       }
     };
     window.addEventListener("keydown", handleKeyDown);
@@ -1729,8 +1738,11 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
           focusTarget={focusTarget}
           resetCommandSeq={resetCommandSeq}
           onMapReady={() => setIsMapLoaded(true)}
+          activeMapStyle={mapStyleMode}
+          onMapStyleChange={(st) => setMapStyleMode(st)}
           onCanvasClick={() => {
             setSelectedClientId(null);
+            setIsStyleMenuOpen(false);
             if (isSearchFocused) {
               setIsSearchFocused(false);
               setIsSearchBarHidden(true);
@@ -1995,8 +2007,82 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
           </AnimatePresence>
         </div>
 
-        {/* Right of Search Bar: Symmetrical Disperso (1x/2x) & Agrupar Dock + Admin Location */}
+        {/* Right of Search Bar: Symmetrical Disperso (1x/2x) & Agrupar Dock + Map Style Switcher + Admin Location */}
         <div className="flex items-center gap-1.5 sm:gap-2 pointer-events-auto shrink-0">
+          
+          {/* MAP STYLE SWITCHER DROPDOWN (Dark · Streets · Satellite Streets) */}
+          <div className="relative pointer-events-auto">
+            <button
+              type="button"
+              onClick={() => setIsStyleMenuOpen((prev) => !prev)}
+              className="flex items-center h-9 sm:h-10 px-3 rounded-full bg-black/85 hover:bg-black backdrop-blur-2xl border border-white/15 hover:border-white/30 text-white text-xs font-semibold gap-2 shadow-2xl transition-all cursor-pointer active:scale-95"
+              title="Cambiar entre los 3 estilos de mapa (Dark, Streets, Satellite Streets)"
+            >
+              <span className="w-5 h-5 rounded-full bg-white/15 flex items-center justify-center text-white shrink-0">
+                {mapStyleMode === "dark-v11" ? (
+                  <Layers className="w-3 h-3" />
+                ) : mapStyleMode === "streets-v12" ? (
+                  <MapIcon className="w-3 h-3" />
+                ) : (
+                  <Satellite className="w-3 h-3" />
+                )}
+              </span>
+              <span className="hidden sm:inline font-sans text-xs">
+                {mapStyleMode === "dark-v11" ? "Estilo Dark" : mapStyleMode === "streets-v12" ? "Estilo Streets" : "Estilo Satélite"}
+              </span>
+              <ChevronDown className={`w-3.5 h-3.5 text-white/60 transition-transform duration-200 ${isStyleMenuOpen ? "rotate-180 text-white" : ""}`} />
+            </button>
+
+            {/* Top Bar Map Style Dropdown Popover */}
+            <AnimatePresence>
+              {isStyleMenuOpen && (
+                <motion.div
+                  initial={{ opacity: 0, y: 6, scale: 0.95 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: 4, scale: 0.95 }}
+                  transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
+                  className="absolute right-0 top-12 w-56 p-1.5 rounded-2xl bg-[#0e1116]/95 backdrop-blur-2xl border border-white/20 shadow-[0_20px_50px_rgba(0,0,0,0.85)] space-y-1 z-50 pointer-events-auto"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <div className="px-2.5 py-1 text-[9.5px] font-mono uppercase tracking-wider text-white/50 font-bold flex items-center justify-between border-b border-white/10 pb-1.5 mb-1">
+                    <span>Estilos de Mapa</span>
+                    <span className="text-emerald-400">Mapbox HD</span>
+                  </div>
+                  {MAPBOX_OFFICIAL_STYLES.map((styleItem) => {
+                    const isActive = mapStyleMode === styleItem.id;
+                    return (
+                      <button
+                        key={styleItem.id}
+                        type="button"
+                        onClick={() => {
+                          setMapStyleMode(styleItem.id);
+                          setIsStyleMenuOpen(false);
+                        }}
+                        className={`w-full px-2.5 py-2 rounded-xl text-xs font-sans flex items-center justify-between gap-2 transition-all cursor-pointer ${
+                          isActive
+                            ? "bg-white text-gray-950 font-bold shadow-sm"
+                            : "text-white/80 hover:text-white hover:bg-white/10 font-medium"
+                        }`}
+                      >
+                        <div className="flex items-center gap-2 min-w-0">
+                          {styleItem.id === "dark-v11" ? (
+                            <Layers className="w-3.5 h-3.5 shrink-0" />
+                          ) : styleItem.id === "streets-v12" ? (
+                            <MapIcon className="w-3.5 h-3.5 shrink-0" />
+                          ) : (
+                            <Satellite className="w-3.5 h-3.5 shrink-0" />
+                          )}
+                          <span className="truncate">{styleItem.name}</span>
+                        </div>
+                        {isActive && <Check className="w-3.5 h-3.5 text-gray-950 shrink-0" />}
+                      </button>
+                    );
+                  })}
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+
           {/* SYMMETRICAL DENSITY MODE DOCK (Disperso [1x | 2x] / Agrupar) with Silky Spring Animations */}
           <motion.div
             layout
@@ -2160,6 +2246,26 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
           >
             <CountrySvgFlag code={selectedCountry} className="w-5 h-3.5 rounded-[2px] shadow-sm pointer-events-none" />
             <span className="absolute -bottom-0.5 -right-0.5 w-2 h-2 rounded-full bg-emerald-400 border border-black" />
+          </button>
+
+          {/* Map Style Switcher Button on Left Toolstrip */}
+          <button
+            type="button"
+            onClick={() => setIsStyleMenuOpen((prev) => !prev)}
+            title={`Estilo de mapa: ${MAPBOX_OFFICIAL_STYLES.find((s) => s.id === mapStyleMode)?.name || "Dark"} (Clic para cambiar)`}
+            className={`relative w-8 h-8 sm:w-9 sm:h-9 rounded-xl flex items-center justify-center transition-all duration-300 cursor-pointer ${
+              isStyleMenuOpen
+                ? "bg-white text-gray-950 font-bold shadow-[0_4px_16px_rgba(255,255,255,0.25)] scale-105"
+                : "bg-white/10 border border-white/20 hover:border-white/40 text-white hover:scale-105 active:scale-95"
+            }`}
+          >
+            {mapStyleMode === "dark-v11" ? (
+              <Layers className="w-4 h-4" />
+            ) : mapStyleMode === "streets-v12" ? (
+              <MapIcon className="w-4 h-4" />
+            ) : (
+              <Satellite className="w-4 h-4" />
+            )}
           </button>
 
           <div className="w-5 h-[1px] bg-white/15 my-0.5" />
@@ -2941,7 +3047,7 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
       {/* ========================================================================= */}
       <div 
         onClick={(e) => e.stopPropagation()}
-        className="absolute bottom-5 left-6 right-6 lg:right-96 z-30 grid grid-cols-1 sm:grid-cols-3 gap-3 pointer-events-auto"
+        className="absolute bottom-4 sm:bottom-5 left-3 sm:left-16 lg:left-20 right-3 sm:right-6 lg:right-96 z-20 hidden sm:grid sm:grid-cols-3 gap-2.5 sm:gap-3 pointer-events-auto"
       >
         {/* Card 1: Cobertura Territorial */}
         {(() => {
