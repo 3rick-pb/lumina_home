@@ -718,15 +718,15 @@ const handleConfirmDeleteNiche = async () => {
     className="hidden md:flex sidebar-dock-nav w-16 md:w-20 bg-white/95 dark:bg-[#1e1e20]/95 backdrop-blur-2xl rounded-3xl border border-gray-200/80 dark:border-white/10 shadow-[0_8px_16px_rgba(0,0,0,0.04)] dark:shadow-[0_8px_16px_rgba(0,0,0,0.35)] flex-col items-center py-6 gap-6 justify-between shrink-0 mr-4 md:mr-6 self-stretch relative z-30"
   >
  
-  {/* Brand Logo Symbol */}
+  {/* Brand Logo Symbol (Soft Melon in Light Mode, Inverted in Dark Mode) */}
   <div className="flex flex-col items-center gap-5 w-full">
   <Link 
     href="/" 
-    className="sidebar-dock-btn group relative w-11 h-11 md:w-12 md:h-12 rounded-2xl bg-gradient-to-br from-[#1c1b18] via-[#121210] to-[#080808] border border-[#c49a3f]/50 dark:border-[#c49a3f]/60 flex items-center justify-center shadow-lg shadow-[#c49a3f]/15 hover:border-[#e0be70] hover:shadow-[0_0_20px_rgba(218,175,85,0.4)] hover:scale-105 active:scale-95 transition-all duration-300" 
+    className="sidebar-dock-btn group relative w-11 h-11 md:w-12 md:h-12 rounded-2xl bg-[#FFE4D1] dark:bg-[#080C26] text-[#080C26] dark:text-[#FFE4D1] border border-[#F5C2A1]/80 dark:border-[#FFE4D1]/30 flex items-center justify-center shadow-md shadow-[#F5C2A1]/25 dark:shadow-black/50 hover:scale-105 active:scale-95 transition-all duration-300" 
     title={`${brand.name} • Volver a la Tienda`}
   >
-    <LuminaBrandEmblem size={38} />
-    <span className="absolute -bottom-1 w-1.5 h-1.5 rounded-full bg-[#c49a3f] shadow-[0_0_8px_#c49a3f] opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+    <LuminaBrandEmblem size={30} />
+    <span className="absolute -bottom-1 w-1.5 h-1.5 rounded-full bg-[#080C26] dark:bg-[#FFE4D1] opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
   </Link>
 
  {/* Visible section divider */}
