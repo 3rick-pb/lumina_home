@@ -265,6 +265,15 @@ export function CartDrawer() {
   const [addrPhone, setAddrPhone] = useState("");
   const [addrEmail, setAddrEmail] = useState("");
   const [addrStreet, setAddrStreet] = useState("");
+  const [addrExteriorNumber, setAddrExteriorNumber] = useState("");
+  const [addrNeighborhood, setAddrNeighborhood] = useState("");
+  const [addrInteriorNumber, setAddrInteriorNumber] = useState("");
+  const [addrCrossStreets, setAddrCrossStreets] = useState("");
+  const [addrAddressType, setAddrAddressType] = useState<"casa" | "departamento" | "oficina">("casa");
+  const [addrDeliveryInstructions, setAddrDeliveryInstructions] = useState("");
+  const [addrHasElevator, setAddrHasElevator] = useState(false);
+  const [addrFloorLevel, setAddrFloorLevel] = useState("");
+  const [addrLabel, setAddrLabel] = useState("");
   const [addrCity, setAddrCity] = useState("");
   const [addrPostal, setAddrPostal] = useState("");
   const [addrState, setAddrState] = useState("");
@@ -315,6 +324,15 @@ export function CartDrawer() {
       setAddrPhone(activeAddr.phone || "");
       setAddrEmail(activeAddr.email || user?.email || "");
       setAddrStreet(activeAddr.street);
+      setAddrExteriorNumber(activeAddr.exteriorNumber || "");
+      setAddrNeighborhood(activeAddr.neighborhood || "");
+      setAddrInteriorNumber(activeAddr.interiorNumber || "");
+      setAddrCrossStreets(activeAddr.crossStreets || "");
+      setAddrAddressType(activeAddr.addressType || "casa");
+      setAddrDeliveryInstructions(activeAddr.deliveryInstructions || "");
+      setAddrHasElevator(activeAddr.hasElevator || false);
+      setAddrFloorLevel(activeAddr.floorLevel || "");
+      setAddrLabel(activeAddr.label || "");
       setAddrCity(activeAddr.city);
       setAddrPostal(activeAddr.postalCode);
       setAddrState(activeAddr.state || "");
@@ -328,6 +346,15 @@ export function CartDrawer() {
       setAddrPhone("");
       setAddrEmail(user?.email || "");
       setAddrStreet("");
+      setAddrExteriorNumber("");
+      setAddrNeighborhood("");
+      setAddrInteriorNumber("");
+      setAddrCrossStreets("");
+      setAddrAddressType("casa");
+      setAddrDeliveryInstructions("");
+      setAddrHasElevator(false);
+      setAddrFloorLevel("");
+      setAddrLabel("");
       setAddrCity("");
       setAddrPostal("");
       setAddrState("");
@@ -449,10 +476,26 @@ export function CartDrawer() {
       const result = await res.json();
 
       if (result.success && result.data) {
-        const { street: detStreet, city: detCity, state: detState, postalCode: detPostal, country: detCountry } = result.data;
+        const { 
+          street: detStreet, 
+          exteriorNumber: detExterior,
+          interiorNumber: detInterior,
+          crossStreets: detCross,
+          neighborhood: detNeighborhood,
+          suburb: detSuburb,
+          city: detCity, 
+          state: detState, 
+          postalCode: detPostal, 
+          country: detCountry 
+        } = result.data;
 
         // Fills the form strictly once at the end with the 3rd refined reading
         if (detStreet) setAddrStreet(detStreet);
+        if (detExterior) setAddrExteriorNumber(detExterior);
+        if (detInterior) setAddrInteriorNumber(detInterior);
+        if (detCross) setAddrCrossStreets(detCross);
+        const resolvedNeigh = detNeighborhood || detSuburb;
+        if (resolvedNeigh) setAddrNeighborhood(resolvedNeigh);
         if (detCity) setAddrCity(detCity);
         if (detState) setAddrState(detState);
         if (detPostal) setAddrPostal(detPostal);
@@ -498,6 +541,15 @@ export function CartDrawer() {
  phone: addrPhone.trim() || undefined,
  email: addrEmail.trim() || user?.email || undefined,
  street: addrStreet.trim(),
+ exteriorNumber: addrExteriorNumber.trim() || undefined,
+ neighborhood: addrNeighborhood.trim() || undefined,
+ interiorNumber: addrInteriorNumber.trim() || undefined,
+ crossStreets: addrCrossStreets.trim() || undefined,
+ addressType: addrAddressType,
+ deliveryInstructions: addrDeliveryInstructions.trim() || undefined,
+ hasElevator: addrHasElevator,
+ floorLevel: addrFloorLevel.trim() || undefined,
+ label: addrLabel.trim() || undefined,
  city: addrCity.trim(),
  state: addrState.trim(),
  postalCode: addrPostal.trim(),
@@ -513,6 +565,15 @@ export function CartDrawer() {
  setAddrPhone("");
  setAddrEmail(user?.email || "");
  setAddrStreet("");
+ setAddrExteriorNumber("");
+ setAddrNeighborhood("");
+ setAddrInteriorNumber("");
+ setAddrCrossStreets("");
+ setAddrAddressType("casa");
+ setAddrDeliveryInstructions("");
+ setAddrHasElevator(false);
+ setAddrFloorLevel("");
+ setAddrLabel("");
  setAddrCity("");
  setAddrPostal("");
  setAddrState("");
@@ -691,6 +752,15 @@ export function CartDrawer() {
               phone: payphoneSimData.shippingAddr.phone,
               email: payphoneSimData.customerEmail,
               street: payphoneSimData.shippingAddr.street,
+              exteriorNumber: payphoneSimData.shippingAddr.exteriorNumber,
+              neighborhood: payphoneSimData.shippingAddr.neighborhood,
+              interiorNumber: payphoneSimData.shippingAddr.interiorNumber,
+              crossStreets: payphoneSimData.shippingAddr.crossStreets,
+              addressType: payphoneSimData.shippingAddr.addressType,
+              deliveryInstructions: payphoneSimData.shippingAddr.deliveryInstructions,
+              hasElevator: payphoneSimData.shippingAddr.hasElevator,
+              floorLevel: payphoneSimData.shippingAddr.floorLevel,
+              label: payphoneSimData.shippingAddr.label,
               city: payphoneSimData.shippingAddr.city,
               state: payphoneSimData.shippingAddr.state,
               postalCode: payphoneSimData.shippingAddr.postalCode,
@@ -701,6 +771,15 @@ export function CartDrawer() {
               phone: addrPhone.trim() || undefined,
               email: payphoneSimData.customerEmail,
               street: addrStreet,
+              exteriorNumber: addrExteriorNumber.trim() || undefined,
+              neighborhood: addrNeighborhood.trim() || undefined,
+              interiorNumber: addrInteriorNumber.trim() || undefined,
+              crossStreets: addrCrossStreets.trim() || undefined,
+              addressType: addrAddressType,
+              deliveryInstructions: addrDeliveryInstructions.trim() || undefined,
+              hasElevator: addrHasElevator,
+              floorLevel: addrFloorLevel.trim() || undefined,
+              label: addrLabel.trim() || undefined,
               city: addrCity,
               state: addrState,
               postalCode: addrPostal,
@@ -1655,6 +1734,8 @@ export function CartDrawer() {
           <div className="flex-grow border-t border-black/[0.06] dark:border-white/10"></div>
         </div>
 
+        <h4 className="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mt-2">Campos Obligatorios</h4>
+
         <div>
           <label className="block text-[11px] font-semibold text-gray-700 dark:text-gray-300 mb-1">
             ¿Quién recibe? (Nombre y apellidos)
@@ -1663,7 +1744,7 @@ export function CartDrawer() {
             type="text" 
             value={addrRecipient} 
             onChange={e => setAddrRecipient(e.target.value)} 
-            placeholder={user?.name || "Ej: Juan Pérez / Nombre del destinatario"}
+            placeholder={user?.name || "Ej: Juan Pérez"}
             className="w-full px-4 py-2.5 rounded-2xl border border-black/[0.08] dark:border-white/10 text-xs outline-none focus:ring-2 focus:ring-black/10 dark:focus:ring-white/20 bg-black/[0.02] dark:bg-white/[0.03] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 transition-all"
             required
           />
@@ -1675,6 +1756,7 @@ export function CartDrawer() {
             </label>
             <input 
               type="text" 
+              required
               value={addrIdNumber} 
               onChange={e => setAddrIdNumber(e.target.value)} 
               placeholder="Ej: 1712345678"
@@ -1687,6 +1769,7 @@ export function CartDrawer() {
             </label>
             <input 
               type="tel" 
+              required
               value={addrPhone} 
               onChange={e => setAddrPhone(e.target.value)} 
               placeholder="Ej: +593 99 123 4567"
@@ -1694,29 +1777,31 @@ export function CartDrawer() {
             />
           </div>
         </div>
-        <div>
-          <label className="block text-[11px] font-semibold text-gray-700 dark:text-gray-300 mb-1">
-            Correo Electrónico (Facturación & Aviso)
-          </label>
-          <input 
-            type="email" 
-            value={addrEmail} 
-            onChange={e => setAddrEmail(e.target.value)} 
-            placeholder={user?.email || "correo@ejemplo.com"}
-            className="w-full px-4 py-2.5 rounded-2xl border border-black/[0.08] dark:border-white/10 text-xs outline-none focus:ring-2 focus:ring-black/10 dark:focus:ring-white/20 bg-black/[0.02] dark:bg-white/[0.03] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 transition-all"
-          />
+
+        <div className="grid grid-cols-[2fr_1fr] gap-3">
+          <div>
+            <label className="block text-[11px] font-semibold text-gray-700 dark:text-gray-300 mb-1">Calle Principal</label>
+            <input 
+              type="text" 
+              value={addrStreet} 
+              onChange={e => setAddrStreet(e.target.value)} 
+              placeholder="Av. 12 de Octubre"
+              className="w-full px-4 py-2.5 rounded-2xl border border-black/[0.08] dark:border-white/10 text-xs outline-none focus:ring-2 focus:ring-black/10 dark:focus:ring-white/20 bg-black/[0.02] dark:bg-white/[0.03] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 transition-all"
+              required
+            />
+          </div>
+          <div>
+            <label className="block text-[11px] font-semibold text-gray-700 dark:text-gray-300 mb-1">Número Ext.</label>
+            <input 
+              type="text" 
+              value={addrExteriorNumber} 
+              onChange={e => setAddrExteriorNumber(e.target.value)} 
+              placeholder="N34"
+              className="w-full px-4 py-2.5 rounded-2xl border border-black/[0.08] dark:border-white/10 text-xs outline-none focus:ring-2 focus:ring-black/10 dark:focus:ring-white/20 bg-black/[0.02] dark:bg-white/[0.03] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 transition-all"
+            />
+          </div>
         </div>
-        <div>
-          <label className="block text-[11px] font-semibold text-gray-700 dark:text-gray-300 mb-1">Calle y número</label>
-          <input 
-            type="text" 
-            value={addrStreet} 
-            onChange={e => setAddrStreet(e.target.value)} 
-            placeholder="Av. 12 de Octubre y Lincoln"
-            className="w-full px-4 py-2.5 rounded-2xl border border-black/[0.08] dark:border-white/10 text-xs outline-none focus:ring-2 focus:ring-black/10 dark:focus:ring-white/20 bg-black/[0.02] dark:bg-white/[0.03] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 transition-all"
-            required
-          />
-        </div>
+        
         <div className="grid grid-cols-2 gap-3">
           <div>
             <label className="block text-[11px] font-semibold text-gray-700 dark:text-gray-300 mb-1">Ciudad</label>
@@ -1724,11 +1809,25 @@ export function CartDrawer() {
               type="text" 
               value={addrCity} 
               onChange={e => setAddrCity(e.target.value)} 
-              placeholder="Quito / Guayaquil"
+              placeholder="Quito"
               className="w-full px-4 py-2.5 rounded-2xl border border-black/[0.08] dark:border-white/10 text-xs outline-none focus:ring-2 focus:ring-black/10 dark:focus:ring-white/20 bg-black/[0.02] dark:bg-white/[0.03] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 transition-all"
               required
             />
           </div>
+          <div>
+            <label className="block text-[11px] font-semibold text-gray-700 dark:text-gray-300 mb-1">Provincia/Estado</label>
+            <input 
+              type="text" 
+              value={addrState} 
+              onChange={e => setAddrState(e.target.value)} 
+              placeholder="Pichincha"
+              className="w-full px-4 py-2.5 rounded-2xl border border-black/[0.08] dark:border-white/10 text-xs outline-none focus:ring-2 focus:ring-black/10 dark:focus:ring-white/20 bg-black/[0.02] dark:bg-white/[0.03] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 transition-all"
+              required
+            />
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-3">
           <div>
             <label className="block text-[11px] font-semibold text-gray-700 dark:text-gray-300 mb-1">Código Postal</label>
             <input 
@@ -1736,19 +1835,6 @@ export function CartDrawer() {
               value={addrPostal} 
               onChange={e => setAddrPostal(e.target.value)} 
               placeholder="170150"
-              className="w-full px-4 py-2.5 rounded-2xl border border-black/[0.08] dark:border-white/10 text-xs outline-none focus:ring-2 focus:ring-black/10 dark:focus:ring-white/20 bg-black/[0.02] dark:bg-white/[0.03] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 transition-all"
-              required
-            />
-          </div>
-        </div>
-        <div className="grid grid-cols-2 gap-3">
-          <div>
-            <label className="block text-[11px] font-semibold text-gray-700 dark:text-gray-300 mb-1">Provincia/Estado</label>
-            <input 
-              type="text" 
-              value={addrState} 
-              onChange={e => setAddrState(e.target.value)} 
-              placeholder="Pichincha / Guayas"
               className="w-full px-4 py-2.5 rounded-2xl border border-black/[0.08] dark:border-white/10 text-xs outline-none focus:ring-2 focus:ring-black/10 dark:focus:ring-white/20 bg-black/[0.02] dark:bg-white/[0.03] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 transition-all"
               required
             />
@@ -1765,7 +1851,91 @@ export function CartDrawer() {
             />
           </div>
         </div>
-        <div className="flex gap-2.5 pt-2">
+
+        <h4 className="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mt-4 pt-2 border-t border-black/[0.06] dark:border-white/10">Campos Opcionales</h4>
+        
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label className="block text-[11px] font-semibold text-gray-700 dark:text-gray-300 mb-1">Tipo de Propiedad</label>
+            <select
+              value={addrAddressType}
+              onChange={e => setAddrAddressType(e.target.value as any)}
+              className="w-full px-4 py-2.5 rounded-2xl border border-black/[0.08] dark:border-white/10 text-xs outline-none focus:ring-2 focus:ring-black/10 dark:focus:ring-white/20 bg-black/[0.02] dark:bg-white/[0.03] text-gray-900 dark:text-gray-100 transition-all"
+            >
+              <option value="casa">Casa</option>
+              <option value="departamento">Departamento</option>
+              <option value="oficina">Oficina</option>
+            </select>
+          </div>
+          <div>
+            <label className="block text-[11px] font-semibold text-gray-700 dark:text-gray-300 mb-1">Número Interior/Depto</label>
+            <input 
+              type="text"
+              value={addrInteriorNumber} 
+              onChange={e => setAddrInteriorNumber(e.target.value)} 
+              placeholder="Apto 4B"
+              className="w-full px-4 py-2.5 rounded-2xl border border-black/[0.08] dark:border-white/10 text-xs outline-none focus:ring-2 focus:ring-black/10 dark:focus:ring-white/20 bg-black/[0.02] dark:bg-white/[0.03] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 transition-all"
+            />
+          </div>
+        </div>
+
+        <div>
+          <label className="block text-[11px] font-semibold text-gray-700 dark:text-gray-300 mb-1">Calles Intersección</label>
+          <input 
+            type="text"
+            value={addrCrossStreets} 
+            onChange={e => setAddrCrossStreets(e.target.value)} 
+            placeholder="y Lincoln"
+            className="w-full px-4 py-2.5 rounded-2xl border border-black/[0.08] dark:border-white/10 text-xs outline-none focus:ring-2 focus:ring-black/10 dark:focus:ring-white/20 bg-black/[0.02] dark:bg-white/[0.03] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 transition-all"
+          />
+        </div>
+        
+        <div>
+          <label className="block text-[11px] font-semibold text-gray-700 dark:text-gray-300 mb-1">Sector / Barrio</label>
+          <input 
+            type="text"
+            value={addrNeighborhood} 
+            onChange={e => setAddrNeighborhood(e.target.value)} 
+            placeholder="Ej: La Carolina"
+            className="w-full px-4 py-2.5 rounded-2xl border border-black/[0.08] dark:border-white/10 text-xs outline-none focus:ring-2 focus:ring-black/10 dark:focus:ring-white/20 bg-black/[0.02] dark:bg-white/[0.03] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 transition-all"
+          />
+        </div>
+
+        <div>
+          <label className="block text-[11px] font-semibold text-gray-700 dark:text-gray-300 mb-1">Instrucciones de Entrega</label>
+          <input 
+            type="text"
+            value={addrDeliveryInstructions} 
+            onChange={e => setAddrDeliveryInstructions(e.target.value)} 
+            placeholder="Ej: Dejar en portería"
+            className="w-full px-4 py-2.5 rounded-2xl border border-black/[0.08] dark:border-white/10 text-xs outline-none focus:ring-2 focus:ring-black/10 dark:focus:ring-white/20 bg-black/[0.02] dark:bg-white/[0.03] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 transition-all"
+          />
+        </div>
+
+        <div className="flex items-center gap-4 pt-1">
+          <label className="flex items-center gap-2 cursor-pointer text-[11px] font-semibold text-gray-700 dark:text-gray-300">
+            <input 
+              type="checkbox"
+              checked={addrHasElevator}
+              onChange={e => setAddrHasElevator(e.target.checked)}
+              className="rounded border-gray-300 text-gray-900 focus:ring-gray-900"
+            />
+            Tiene ascensor
+          </label>
+          
+          <div className="flex-1">
+            <label className="block text-[11px] font-semibold text-gray-700 dark:text-gray-300 mb-1">Piso</label>
+            <input 
+              type="text" 
+              value={addrFloorLevel} 
+              onChange={e => setAddrFloorLevel(e.target.value)} 
+              placeholder="Ej: 4" 
+              className="w-full px-4 py-2 rounded-2xl border border-black/[0.08] dark:border-white/10 text-xs outline-none focus:ring-2 focus:ring-black/10 dark:focus:ring-white/20 bg-black/[0.02] dark:bg-white/[0.03] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 transition-all"
+            />
+          </div>
+        </div>
+
+        <div className="flex gap-2.5 pt-4">
           <button 
             type="button"
             onClick={() => setIsEditingAddress(false)}

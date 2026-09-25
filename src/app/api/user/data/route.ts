@@ -6,20 +6,36 @@ import type { RawGpsHardwareData } from '@/lib/locationUtils';
 
 export interface ShippingAddress {
   id: string;
-  recipient: string;
+  recipient: string; // Used as full_name
   idNumber?: string;
   phone?: string;
   email?: string;
-  street: string;
-  city: string;
-  state: string;
-  postalCode: string;
+  
+  // Mandatory Location
   country: string;
-  reference?: string;
+  state: string;
+  city: string;
+  postalCode: string;
+  street: string; // Name only
+  exteriorNumber?: string;
+  neighborhood?: string;
+  
+  // Optional Details
+  interiorNumber?: string;
+  crossStreets?: string;
+  reference?: string; // Used as landmark
+  addressType?: 'casa' | 'departamento' | 'oficina';
+  deliveryInstructions?: string;
+  hasElevator?: boolean;
+  floorLevel?: string;
+  label?: string; // e.g. Casa, Trabajo
+  
+  // Geo
   lat?: number;
   lng?: number;
   rawGps?: RawGpsHardwareData;
   rawGpsString?: string;
+  
   isDefault?: boolean;
 }
 
@@ -103,6 +119,15 @@ export async function GET(request: Request) {
               reference?: string;
               rawGps?: unknown;
               rawGpsString?: string;
+              exteriorNumber?: string;
+              neighborhood?: string;
+              interiorNumber?: string;
+              crossStreets?: string;
+              addressType?: 'casa' | 'departamento' | 'oficina';
+              deliveryInstructions?: string;
+              hasElevator?: boolean;
+              floorLevel?: string;
+              label?: string;
             } = {};
             if (cleanCountry.includes('||LUMINA_RAW_GPS||')) {
               const [baseCountry, rawJson] = cleanCountry.split('||LUMINA_RAW_GPS||');
@@ -135,7 +160,16 @@ export async function GET(request: Request) {
               state: a.state || '',
               postalCode: a.postal_code || '',
               country: cleanCountry,
+              exteriorNumber: packedMeta.exteriorNumber,
+              neighborhood: packedMeta.neighborhood,
+              interiorNumber: packedMeta.interiorNumber,
+              crossStreets: packedMeta.crossStreets,
               reference: a.reference || packedMeta.reference || '',
+              addressType: packedMeta.addressType,
+              deliveryInstructions: packedMeta.deliveryInstructions,
+              hasElevator: packedMeta.hasElevator,
+              floorLevel: packedMeta.floorLevel,
+              label: packedMeta.label,
               lat: resolvedLat,
               lng: resolvedLng,
               // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -302,6 +336,15 @@ export async function POST(request: Request) {
                   reference: a.reference || undefined,
                   rawGps: a.rawGps || undefined,
                   rawGpsString: a.rawGpsString || a.rawGps?.rawCoordsString || undefined,
+                  exteriorNumber: a.exteriorNumber,
+                  neighborhood: a.neighborhood,
+                  interiorNumber: a.interiorNumber,
+                  crossStreets: a.crossStreets,
+                  addressType: a.addressType,
+                  deliveryInstructions: a.deliveryInstructions,
+                  hasElevator: a.hasElevator,
+                  floorLevel: a.floorLevel,
+                  label: a.label,
                 })}`;
                 return {
                   id: a.id && UUID_REGEX.test(a.id) ? a.id : crypto.randomUUID(),

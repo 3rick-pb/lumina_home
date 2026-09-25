@@ -97,20 +97,36 @@ export interface PaymentCard {
 
 export interface ShippingAddress {
   id: string;
-  recipient: string;
+  recipient: string; // Used as full_name
   idNumber?: string;
   phone?: string;
   email?: string;
-  street: string;
-  reference?: string;
-  city: string;
-  state: string;
-  postalCode: string;
+  
+  // Mandatory Location
   country: string;
+  state: string;
+  city: string;
+  postalCode: string;
+  street: string; // Name only
+  exteriorNumber?: string;
+  neighborhood?: string;
+  
+  // Optional Details
+  interiorNumber?: string;
+  crossStreets?: string;
+  reference?: string; // Used as landmark
+  addressType?: 'casa' | 'departamento' | 'oficina';
+  deliveryInstructions?: string;
+  hasElevator?: boolean;
+  floorLevel?: string;
+  label?: string; // e.g. Casa, Trabajo
+  
+  // Geo
   lat?: number;
   lng?: number;
   rawGps?: RawGpsHardwareData;
   rawGpsString?: string;
+  
   isDefault?: boolean;
 }
 

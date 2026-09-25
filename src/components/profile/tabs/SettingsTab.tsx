@@ -104,6 +104,15 @@ export function SettingsTab({
   const [phone, setPhone] = useState("");
   const [addrEmail, setAddrEmail] = useState(user?.email || "");
   const [street, setStreet] = useState("");
+  const [exteriorNumber, setExteriorNumber] = useState("");
+  const [neighborhood, setNeighborhood] = useState("");
+  const [interiorNumber, setInteriorNumber] = useState("");
+  const [crossStreets, setCrossStreets] = useState("");
+  const [addressType, setAddressType] = useState<"casa" | "departamento" | "oficina">("casa");
+  const [deliveryInstructions, setDeliveryInstructions] = useState("");
+  const [hasElevator, setHasElevator] = useState(false);
+  const [floorLevel, setFloorLevel] = useState("");
+  const [label, setLabel] = useState("");
   const [reference, setReference] = useState("");
   const [city, setCity] = useState("");
   const [stateProv, setStateProv] = useState("");
@@ -287,7 +296,7 @@ export function SettingsTab({
 
   const applyResolvedLocation = (
     data: {
-      data?: { street?: string; reference?: string; neighborhood?: string; suburb?: string; city?: string; state?: string; postalCode?: string; country?: string };
+      data?: { street?: string; reference?: string; neighborhood?: string; suburb?: string; city?: string; state?: string; postalCode?: string; country?: string; exteriorNumber?: string; interiorNumber?: string; crossStreets?: string };
       street?: string;
       reference?: string;
       neighborhood?: string;
@@ -296,25 +305,29 @@ export function SettingsTab({
       state?: string;
       postalCode?: string;
       country?: string;
+      exteriorNumber?: string;
+      interiorNumber?: string;
+      crossStreets?: string;
       source?: string;
     },
     exactGps?: { lat: number; lng: number }
   ) => {
     const resolvedStreet = data.data?.street || data.street || "";
-    const resolvedRef =
-      data.data?.reference ||
-      data.data?.neighborhood ||
-      data.data?.suburb ||
-      data.reference ||
-      data.neighborhood ||
-      data.suburb ||
-      "";
+    const resolvedExterior = data.data?.exteriorNumber || data.exteriorNumber || "";
+    const resolvedInterior = data.data?.interiorNumber || data.interiorNumber || "";
+    const resolvedCrossStreets = data.data?.crossStreets || data.crossStreets || "";
+    const resolvedNeighborhood = data.data?.neighborhood || data.neighborhood || data.data?.suburb || data.suburb || "";
+    const resolvedRef = data.data?.reference || data.reference || "";
     const resolvedCity = data.data?.city || data.city || "";
     const resolvedState = data.data?.state || data.state || "";
     const resolvedPostal = data.data?.postalCode || data.postalCode || "";
     const resolvedCountry = data.data?.country || data.country || "Ecuador";
 
     if (resolvedStreet) setStreet(resolvedStreet);
+    if (resolvedExterior) setExteriorNumber(resolvedExterior);
+    if (resolvedInterior) setInteriorNumber(resolvedInterior);
+    if (resolvedCrossStreets) setCrossStreets(resolvedCrossStreets);
+    if (resolvedNeighborhood) setNeighborhood(resolvedNeighborhood);
     if (resolvedRef) setReference(resolvedRef);
     if (resolvedCity) setCity(resolvedCity);
     if (resolvedState) setStateProv(resolvedState);
@@ -467,6 +480,15 @@ export function SettingsTab({
       phone: phone.trim() || undefined,
       email: addrEmail.trim() || user?.email || undefined,
       street: street.trim(),
+      exteriorNumber: exteriorNumber.trim() || undefined,
+      neighborhood: neighborhood.trim() || undefined,
+      interiorNumber: interiorNumber.trim() || undefined,
+      crossStreets: crossStreets.trim() || undefined,
+      addressType: addressType,
+      deliveryInstructions: deliveryInstructions.trim() || undefined,
+      hasElevator: hasElevator,
+      floorLevel: floorLevel.trim() || undefined,
+      label: label.trim() || undefined,
       reference: reference.trim() || undefined,
       city: city.trim(),
       state: stateProv.trim(),
@@ -483,6 +505,15 @@ export function SettingsTab({
     setPhone("");
     setAddrEmail(user?.email || "");
     setStreet("");
+    setExteriorNumber("");
+    setNeighborhood("");
+    setInteriorNumber("");
+    setCrossStreets("");
+    setAddressType("casa");
+    setDeliveryInstructions("");
+    setHasElevator(false);
+    setFloorLevel("");
+    setLabel("");
     setReference("");
     setCity("");
     setStateProv("");
@@ -1071,132 +1102,223 @@ export function SettingsTab({
                 <div className="flex-grow border-t border-gray-200 dark:border-white/10"></div>
               </div>
 
-              <div>
-                <label className="block text-[11px] font-semibold text-gray-700 dark:text-gray-300 mb-1">
-                  ¿Quién recibe? (Nombre y apellidos)
-                </label>
-                <input 
-                  type="text" 
-                  required 
-                  value={recipient} 
-                  onChange={e => setRecipient(e.target.value)} 
-                  placeholder={user.name} 
-                  className="w-full px-3 py-2 rounded-xl border border-gray-200 dark:border-white/10 text-xs outline-none focus:ring-1 focus:ring-blue-500 bg-white dark:bg-[#1a1a1c] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500"
-                />
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              <div className="space-y-3">
+                <h4 className="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mt-4">Campos Obligatorios</h4>
                 <div>
                   <label className="block text-[11px] font-semibold text-gray-700 dark:text-gray-300 mb-1">
-                    Cédula / Identificación
+                    ¿Quién recibe? (Nombre y apellidos)
                   </label>
                   <input 
                     type="text" 
-                    value={idNumber} 
-                    onChange={e => setIdNumber(e.target.value)} 
-                    placeholder="Ej: 1712345678" 
-                    className="w-full px-3 py-2 rounded-xl border border-gray-200 dark:border-white/10 text-xs outline-none focus:ring-1 focus:ring-blue-500 bg-white dark:bg-[#1a1a1c] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500"
+                    required 
+                    value={recipient} 
+                    onChange={e => setRecipient(e.target.value)} 
+                    placeholder={user.name} 
+                    className="w-full px-3 py-2 rounded-xl border border-gray-200 dark:border-white/10 text-xs outline-none focus:ring-1 focus:ring-[#8c9276] bg-white dark:bg-[#1a1a1c] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500"
                   />
                 </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  <div>
+                    <label className="block text-[11px] font-semibold text-gray-700 dark:text-gray-300 mb-1">
+                      Cédula / Identificación
+                    </label>
+                    <input 
+                      type="text" 
+                      required
+                      value={idNumber} 
+                      onChange={e => setIdNumber(e.target.value)} 
+                      placeholder="Ej: 1712345678" 
+                      className="w-full px-3 py-2 rounded-xl border border-gray-200 dark:border-white/10 text-xs outline-none focus:ring-1 focus:ring-[#8c9276] bg-white dark:bg-[#1a1a1c] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-semibold text-gray-700 dark:text-gray-300 mb-1">
+                      Número con WhatsApp
+                    </label>
+                    <input 
+                      type="tel"
+                      required
+                      value={phone} 
+                      onChange={e => setPhone(e.target.value)} 
+                      placeholder="+593 99 123 4567" 
+                      className="w-full px-3 py-2 rounded-xl border border-gray-200 dark:border-white/10 text-xs outline-none focus:ring-1 focus:ring-[#8c9276] bg-white dark:bg-[#1a1a1c] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-[2fr_1fr] gap-2">
+                  <div>
+                    <label className="block text-[11px] font-semibold text-gray-700 dark:text-gray-300 mb-1">Calle Principal</label>
+                    <input 
+                      type="text" 
+                      required 
+                      value={street} 
+                      onChange={e => setStreet(e.target.value)} 
+                      placeholder="Ej: Av. República del Salvador" 
+                      className="w-full px-3 py-2 rounded-xl border border-gray-200 dark:border-white/10 text-xs outline-none focus:ring-1 focus:ring-[#8c9276] bg-white dark:bg-[#1a1a1c] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-semibold text-gray-700 dark:text-gray-300 mb-1">Número Exterior</label>
+                    <input 
+                      type="text"
+                      value={exteriorNumber} 
+                      onChange={e => setExteriorNumber(e.target.value)} 
+                      placeholder="Ej: N34-120" 
+                      className="w-full px-3 py-2 rounded-xl border border-gray-200 dark:border-white/10 text-xs outline-none focus:ring-1 focus:ring-[#8c9276] bg-white dark:bg-[#1a1a1c] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className="block text-[11px] font-semibold text-gray-700 dark:text-gray-300 mb-1">Ciudad / Cantón</label>
+                    <input 
+                      type="text" 
+                      required 
+                      value={city} 
+                      onChange={e => setCity(e.target.value)} 
+                      placeholder="Quito" 
+                      className="w-full px-3 py-2 rounded-xl border border-gray-200 dark:border-white/10 text-xs outline-none focus:ring-1 focus:ring-[#8c9276] bg-white dark:bg-[#1a1a1c] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-semibold text-gray-700 dark:text-gray-300 mb-1">Provincia/Estado</label>
+                    <input 
+                      type="text" 
+                      required
+                      value={stateProv} 
+                      onChange={e => setStateProv(e.target.value)} 
+                      placeholder="Pichincha" 
+                      className="w-full px-3 py-2 rounded-xl border border-gray-200 dark:border-white/10 text-xs outline-none focus:ring-1 focus:ring-[#8c9276] bg-white dark:bg-[#1a1a1c] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500"
+                    />
+                  </div>
+                </div>
+                
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className="block text-[11px] font-semibold text-gray-700 dark:text-gray-300 mb-1">Código Postal</label>
+                    <input 
+                      type="text" 
+                      required 
+                      value={postalCode} 
+                      onChange={e => setPostalCode(e.target.value)} 
+                      placeholder="170505" 
+                      className="w-full px-3 py-2 rounded-xl border border-gray-200 dark:border-white/10 text-xs outline-none focus:ring-1 focus:ring-[#8c9276] bg-white dark:bg-[#1a1a1c] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-semibold text-gray-700 dark:text-gray-300 mb-1">País</label>
+                    <input 
+                      type="text" 
+                      required
+                      value={country} 
+                      onChange={e => setCountry(e.target.value)} 
+                      placeholder="Ecuador"
+                      className="w-full px-3 py-2 rounded-xl border border-gray-200 dark:border-white/10 text-xs outline-none focus:ring-1 focus:ring-[#8c9276] bg-white dark:bg-[#1a1a1c] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500"
+                    />
+                  </div>
+                </div>
+
+                <h4 className="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mt-6 pt-2 border-t border-gray-200 dark:border-white/10">Campos Opcionales</h4>
+                
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className="block text-[11px] font-semibold text-gray-700 dark:text-gray-300 mb-1">Tipo de Propiedad</label>
+                    <select
+                      value={addressType}
+                      onChange={e => setAddressType(e.target.value as any)}
+                      className="w-full px-3 py-2 rounded-xl border border-gray-200 dark:border-white/10 text-xs outline-none focus:ring-1 focus:ring-[#8c9276] bg-white dark:bg-[#1a1a1c] text-gray-900 dark:text-gray-100"
+                    >
+                      <option value="casa">Casa</option>
+                      <option value="departamento">Departamento</option>
+                      <option value="oficina">Oficina</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-semibold text-gray-700 dark:text-gray-300 mb-1">Número Interior/Depto</label>
+                    <input 
+                      type="text"
+                      value={interiorNumber} 
+                      onChange={e => setInteriorNumber(e.target.value)} 
+                      placeholder="Ej: Apto 4B" 
+                      className="w-full px-3 py-2 rounded-xl border border-gray-200 dark:border-white/10 text-xs outline-none focus:ring-1 focus:ring-[#8c9276] bg-white dark:bg-[#1a1a1c] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500"
+                    />
+                  </div>
+                </div>
+
                 <div>
-                  <label className="block text-[11px] font-semibold text-gray-700 dark:text-gray-300 mb-1">
-                    Número con WhatsApp
-                  </label>
+                  <label className="block text-[11px] font-semibold text-gray-700 dark:text-gray-300 mb-1">Calles Intersección</label>
                   <input 
-                    type="tel" 
-                    value={phone} 
-                    onChange={e => setPhone(e.target.value)} 
-                    placeholder="+593 99 123 4567" 
-                    className="w-full px-3 py-2 rounded-xl border border-gray-200 dark:border-white/10 text-xs outline-none focus:ring-1 focus:ring-blue-500 bg-white dark:bg-[#1a1a1c] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500"
+                    type="text"
+                    value={crossStreets} 
+                    onChange={e => setCrossStreets(e.target.value)} 
+                    placeholder="Ej: y Naciones Unidas" 
+                    className="w-full px-3 py-2 rounded-xl border border-gray-200 dark:border-white/10 text-xs outline-none focus:ring-1 focus:ring-[#8c9276] bg-white dark:bg-[#1a1a1c] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500"
                   />
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-semibold text-gray-700 dark:text-gray-300 mb-1">Sector / Barrio</label>
+                  <input 
+                    type="text" 
+                    value={neighborhood} 
+                    onChange={e => setNeighborhood(e.target.value)} 
+                    placeholder="Ej: La Carolina, Iñaquito..." 
+                    className="w-full px-3 py-2 rounded-xl border border-gray-200 dark:border-white/10 text-xs outline-none focus:ring-1 focus:ring-[#8c9276] bg-white dark:bg-[#1a1a1c] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-semibold text-gray-700 dark:text-gray-300 mb-1">Referencia o Lugar Cercano</label>
+                  <input 
+                    type="text" 
+                    value={reference} 
+                    onChange={e => setReference(e.target.value)} 
+                    placeholder="Ej: Frente al parque" 
+                    className="w-full px-3 py-2 rounded-xl border border-gray-200 dark:border-white/10 text-xs outline-none focus:ring-1 focus:ring-[#8c9276] bg-white dark:bg-[#1a1a1c] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-semibold text-gray-700 dark:text-gray-300 mb-1">Instrucciones de Entrega</label>
+                  <input 
+                    type="text" 
+                    value={deliveryInstructions} 
+                    onChange={e => setDeliveryInstructions(e.target.value)} 
+                    placeholder="Ej: Dejar en portería" 
+                    className="w-full px-3 py-2 rounded-xl border border-gray-200 dark:border-white/10 text-xs outline-none focus:ring-1 focus:ring-[#8c9276] bg-white dark:bg-[#1a1a1c] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500"
+                  />
+                </div>
+
+                <div className="flex items-center gap-4">
+                  <label className="flex items-center gap-2 cursor-pointer text-[11px] font-semibold text-gray-700 dark:text-gray-300">
+                    <input 
+                      type="checkbox"
+                      checked={hasElevator}
+                      onChange={e => setHasElevator(e.target.checked)}
+                      className="rounded border-gray-300 text-[#8c9276] focus:ring-[#8c9276]"
+                    />
+                    Tiene ascensor
+                  </label>
+                  
+                  <div className="flex-1">
+                    <label className="block text-[11px] font-semibold text-gray-700 dark:text-gray-300 mb-1">Piso</label>
+                    <input 
+                      type="text" 
+                      value={floorLevel} 
+                      onChange={e => setFloorLevel(e.target.value)} 
+                      placeholder="Ej: 4" 
+                      className="w-full px-3 py-2 rounded-xl border border-gray-200 dark:border-white/10 text-xs outline-none focus:ring-1 focus:ring-[#8c9276] bg-white dark:bg-[#1a1a1c] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500"
+                    />
+                  </div>
                 </div>
               </div>
 
-              <div>
-                <label className="block text-[11px] font-semibold text-gray-700 dark:text-gray-300 mb-1 flex items-center justify-between">
-                  <span>Correo Electrónico (Facturación & Entrega)</span>
-                  <span className="text-[10px] text-gray-400 font-normal">Por defecto tu cuenta, modificable</span>
-                </label>
-                <input 
-                  type="email" 
-                  value={addrEmail} 
-                  onChange={e => setAddrEmail(e.target.value)} 
-                  placeholder={user.email} 
-                  className="w-full px-3 py-2 rounded-xl border border-gray-200 dark:border-white/10 text-xs outline-none focus:ring-1 focus:ring-blue-500 bg-white dark:bg-[#1a1a1c] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500"
-                />
-              </div>
-              <div>
-                <label className="block text-[11px] font-semibold text-gray-700 dark:text-gray-300 mb-1">Calle Principal, Número e Intersección</label>
-                <input 
-                  type="text" 
-                  required 
-                  value={street} 
-                  onChange={e => setStreet(e.target.value)} 
-                  placeholder="Ej: Av. República del Salvador N34-120 y Naciones Unidas" 
-                  className="w-full px-3 py-2 rounded-xl border border-gray-200 dark:border-white/10 text-xs outline-none focus:ring-1 focus:ring-blue-500 bg-white dark:bg-[#1a1a1c] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500"
-                />
-              </div>
-              <div>
-                <label className="block text-[11px] font-semibold text-gray-700 dark:text-gray-300 mb-1">Sector / Barrio / Parroquia (Para precisión exacta en Mapa Radar)</label>
-                <input 
-                  type="text" 
-                  value={reference} 
-                  onChange={e => setReference(e.target.value)} 
-                  placeholder="Ej: La Carolina, Iñaquito, Cumbayá, El Condado, Samborondón..." 
-                  className="w-full px-3 py-2 rounded-xl border border-gray-200 dark:border-white/10 text-xs outline-none focus:ring-1 focus:ring-blue-500 bg-white dark:bg-[#1a1a1c] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500"
-                />
-              </div>
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <label className="block text-[11px] font-semibold text-gray-700 dark:text-gray-300 mb-1">Ciudad / Cantón</label>
-                  <input 
-                    type="text" 
-                    required 
-                    value={city} 
-                    onChange={e => setCity(e.target.value)} 
-                    placeholder="Quito" 
-                    className="w-full px-3 py-2 rounded-xl border border-gray-200 dark:border-white/10 text-xs outline-none focus:ring-1 focus:ring-blue-500 bg-white dark:bg-[#1a1a1c] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500"
-                  />
-                </div>
-                <div>
-                  <label className="block text-[11px] font-semibold text-gray-700 dark:text-gray-300 mb-1">Código Postal</label>
-                  <input 
-                    type="text" 
-                    required 
-                    value={postalCode} 
-                    onChange={e => setPostalCode(e.target.value)} 
-                    placeholder="170505" 
-                    className="w-full px-3 py-2 rounded-xl border border-gray-200 dark:border-white/10 text-xs outline-none focus:ring-1 focus:ring-blue-500 bg-white dark:bg-[#1a1a1c] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500"
-                  />
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <label className="block text-[11px] font-semibold text-gray-700 dark:text-gray-300 mb-1">Provincia/Estado</label>
-                  <input 
-                    type="text" 
-                    required
-                    value={stateProv} 
-                    onChange={e => setStateProv(e.target.value)} 
-                    placeholder="Pichincha" 
-                    className="w-full px-3 py-2 rounded-xl border border-gray-200 dark:border-white/10 text-xs outline-none focus:ring-1 focus:ring-blue-500 bg-white dark:bg-[#1a1a1c] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500"
-                  />
-                </div>
-                <div>
-                  <label className="block text-[11px] font-semibold text-gray-700 dark:text-gray-300 mb-1">País</label>
-                  <input 
-                    type="text" 
-                    required
-                    value={country} 
-                    onChange={e => setCountry(e.target.value)} 
-                    placeholder="Ecuador"
-                    className="w-full px-3 py-2 rounded-xl border border-gray-200 dark:border-white/10 text-xs outline-none focus:ring-1 focus:ring-blue-500 bg-white dark:bg-[#1a1a1c] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500"
-                  />
-                </div>
-              </div>
-              <div className="flex justify-end gap-2 pt-2">
+              <div className="flex justify-end gap-2 pt-4 mt-2 border-t border-gray-200 dark:border-white/10">
                 <button type="button" onClick={() => setShowAddressForm(false)} className="px-3 py-1.5 text-xs text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-[#48484a] rounded-xl cursor-pointer">Cancelar</button>
-                <button type="submit" className="px-4 py-1.5 text-xs font-semibold bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 rounded-xl hover:bg-gray-800 cursor-pointer">Guardar Dirección</button>
+                <button type="submit" className="px-4 py-1.5 text-xs font-semibold bg-[#8c9276] text-white rounded-xl hover:bg-[#7b8166] cursor-pointer">Guardar Dirección</button>
               </div>
             </form>
           </div>
