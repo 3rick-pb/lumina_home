@@ -268,7 +268,7 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
   const [mapStyleMode, setMapStyleMode] = useState<MapboxOfficialStyleId>("dark-v11");
   const [isStyleMenuOpen, setIsStyleMenuOpen] = useState<boolean>(false);
   const scrollTrackRef = useRef<HTMLDivElement>(null);
-  const [isMapLoaded, setIsMapLoaded] = useState<boolean>(false);
+  const [isMapLoaded, setIsMapLoaded] = useState<boolean>(true);
 
   // Click outside listener to collapse search bar cleanly back to its icon state
   useEffect(() => {
@@ -365,13 +365,8 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
   const setSelectedCountry = useRadarStore((state) => state.setSelectedCountry);
   const activeCountry = RADAR_COUNTRIES[selectedCountry] || RADAR_COUNTRIES.EC;
 
-  // 5-Second Fluid Giant ThinkingOrb Preparation State — locked once finished so it never flickers back
-  const [isPreparingRadar, setIsPreparingRadar] = useState<boolean>(() => {
-    if (typeof window !== "undefined" && (window as unknown as { __luminaRadarIntroDone?: boolean }).__luminaRadarIntroDone) {
-      return false;
-    }
-    return true;
-  });
+  // Instant Radar Map Entry — zero artificial waiting screen after login
+  const [isPreparingRadar, setIsPreparingRadar] = useState<boolean>(false);
   const [focusTarget, setFocusTarget] = useState<{
     xPct: number;
     yPct: number;
@@ -383,21 +378,11 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
   const [resetCommandSeq, setResetCommandSeq] = useState<number>(0);
 
   useEffect(() => {
-    if (typeof window !== "undefined" && (window as unknown as { __luminaRadarIntroDone?: boolean }).__luminaRadarIntroDone) {
-      setIsPreparingRadar(false);
-      setIsMapLoaded(true);
-      return;
+    if (typeof window !== "undefined") {
+      (window as unknown as { __luminaRadarIntroDone?: boolean }).__luminaRadarIntroDone = true;
     }
-    const t = setTimeout(() => {
-      if (typeof window !== "undefined") {
-        (window as unknown as { __luminaRadarIntroDone?: boolean }).__luminaRadarIntroDone = true;
-      }
-      setIsPreparingRadar(false);
-      setIsMapLoaded(true);
-    }, 5000);
-    return () => {
-      clearTimeout(t);
-    };
+    setIsPreparingRadar(false);
+    setIsMapLoaded(true);
   }, []);
 
   // Cinematic Satellite Flight Transition State

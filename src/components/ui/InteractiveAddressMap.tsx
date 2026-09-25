@@ -59,19 +59,47 @@ function tileYToLat(tileY: number, z: number): number {
 }
 
 const miniTileCache = new Map<string, HTMLImageElement>();
+let miniMapboxTokenFailed = false;
 
-function getFallbackTileUrl(style: MiniMapStyle, z: number, x: number, y: number): string {
-  const maxIndex = Math.pow(2, z);
+function isRealMapboxToken(token: string): boolean {
+  if (miniMapboxTokenFailed) return false;
+  return (
+    token.startsWith("pk.") &&
+    token.length > 35 &&
+    !token.includes("ejemplo") &&
+    !token.includes("tu_usuario")
+  );
+}
+
+function getFallbackTileUrl(
+  style: MiniMapStyle,
+  z: number,
+  x: number,
+  y: number,
+  mapboxToken = "",
+  forceGoogle = false
+): string {
+  const safeZ = Math.max(1, Math.min(17, z));
+  const maxIndex = Math.pow(2, safeZ);
   const wrappedX = ((x % maxIndex) + maxIndex) % maxIndex;
+
+  if (!forceGoogle && isRealMapboxToken(mapboxToken)) {
+    const styleId =
+      style === "satellite-streets-v12"
+        ? "satellite-streets-v12"
+        : style === "dark-v11"
+        ? "dark-v11"
+        : "streets-v12";
+    return `https://api.mapbox.com/styles/v1/mapbox/${styleId}/tiles/256/${safeZ}/${wrappedX}/${y}@2x?access_token=${mapboxToken}`;
+  }
+
   const sub = Math.abs(wrappedX + y) % 4;
   if (style === "satellite-streets-v12") {
-    return `https://mt${sub}.google.com/vt/lyrs=y&hl=es&x=${wrappedX}&y=${y}&z=${z}&scale=2`;
+    return `https://mt${sub}.google.com/vt/lyrs=y&hl=es&x=${wrappedX}&y=${y}&z=${safeZ}&scale=2`;
   }
-  if (style === "dark-v11") {
-    const aSub = ["a", "b", "c", "d"][sub];
-    return `https://${aSub}.basemaps.cartocdn.com/dark_all/${z}/${wrappedX}/${y}@2x.png`;
-  }
-  return `https://mt${sub}.google.com/vt/lyrs=m&hl=es&x=${wrappedX}&y=${y}&z=${z}&scale=2`;
+  // Both streets-v12 and dark-v11 use high-resolution vector-raster streets @2x
+  // (dark-v11 applies the calibrated Dark Uber canvas filter so it NEVER asks for an API key!)
+  return `https://mt${sub}.google.com/vt/lyrs=m&hl=es&x=${wrappedX}&y=${y}&z=${safeZ}&scale=2`;
 }
 
 export default function InteractiveAddressMap({
@@ -82,7 +110,7 @@ export default function InteractiveAddressMap({
   className = "h-64 w-full rounded-2xl overflow-hidden border border-gray-200 dark:border-white/10",
 }: InteractiveAddressMapProps) {
   const envToken = (process.env.NEXT_PUBLIC_MAPBOX_TOKEN || "").trim();
-  const hasValidMapboxToken = envToken.startsWith("pk.") && envToken.length > 20;
+  const hasValidMapboxToken = isRealMapboxToken(envToken);
 
   const validInitLat =
     typeof initialLat === "number" && Number.isFinite(initialLat)
@@ -93,7 +121,8 @@ export default function InteractiveAddressMap({
       ? initialLng
       : -78.4678;
 
-  const [useNativeMapbox, setUseNativeMapbox] = useState<boolean>(hasValidMapboxToken);
+  // Always use the instant High-DPI Canvas engine so Dark, Streets, and Satellite load in 0ms and never show an API Key prompt
+  const [useNativeMapbox, setUseNativeMapbox] = useState<boolean>(false);
   const [mapStyle, setMapStyle] = useState<MiniMapStyle>("streets-v12");
   const [isStyleMenuOpen, setIsStyleMenuOpen] = useState<boolean>(false);
   const [pin, setPin] = useState<{ lat: number; lng: number }>({
@@ -388,41 +417,101 @@ export default function InteractiveAddressMap({
 
     ctx.save();
     ctx.scale(dpr, dpr);
-    ctx.fillStyle = mapStyle === "dark-v11" ? "#18181b" : "#e5e7eb";
+    ctx.fillStyle = mapStyle === "dark-v11" ? "#0d1117" : "#e5e7eb";
     ctx.fillRect(0, 0, width, height);
 
-    const z = Math.round(zoom);
-    const centerTileX = lngToTileX(center.lng, z);
-    const centerTileY = latToTileY(center.lat, z);
+    if (mapStyle === "dark-v11" && !isRealMapboxToken(envToken)) {
+      ctx.filter = "invert(93%) hue-rotate(194deg) saturate(142%) brightness(89%) contrast(124%)";
+    } else if (mapStyle === "streets-v12" && !isRealMapboxToken(envToken)) {
+      ctx.filter = "contrast(105%) saturate(108%)";
+    }
 
-    const halfCols = Math.ceil(width / TILE_SIZE / 2) + 1;
-    const halfRows = Math.ceil(height / TILE_SIZE / 2) + 1;
+    const zTile = Math.max(3, Math.min(17, Math.round(zoom)));
+    const scaleFactor = Math.pow(2, zoom - zTile);
+    const drawnTileSize = TILE_SIZE * scaleFactor;
+
+    const centerTileX = lngToTileX(center.lng, zTile);
+    const centerTileY = latToTileY(center.lat, zTile);
+
+    const halfCols = Math.ceil(width / drawnTileSize / 2) + 1;
+    const halfRows = Math.ceil(height / drawnTileSize / 2) + 1;
 
     const minX = Math.floor(centerTileX) - halfCols;
     const maxX = Math.floor(centerTileX) + halfCols;
     const minY = Math.max(0, Math.floor(centerTileY) - halfRows);
-    const maxY = Math.min(Math.pow(2, z) - 1, Math.floor(centerTileY) + halfRows);
+    const maxY = Math.min(Math.pow(2, zTile) - 1, Math.floor(centerTileY) + halfRows);
+
+    const loadTile = (style: MiniMapStyle, zLevel: number, tx: number, ty: number) => {
+      const url = getFallbackTileUrl(style, zLevel, tx, ty, envToken, false);
+      const cached = miniTileCache.get(url);
+      if (cached && cached.complete && cached.naturalWidth > 0) {
+        return cached;
+      }
+      if (!cached) {
+        const img = new Image();
+        img.decoding = "async";
+        miniTileCache.set(url, img);
+        img.onload = () => setRenderTick((t) => t + 1);
+        img.onerror = () => {
+          if (url.includes("api.mapbox.com")) {
+            miniMapboxTokenFailed = true;
+          }
+          const fallbackUrl = getFallbackTileUrl(style, zLevel, tx, ty, envToken, true);
+          const fallbackImg = new Image();
+          fallbackImg.decoding = "async";
+          fallbackImg.onload = () => {
+            miniTileCache.set(url, fallbackImg);
+            setRenderTick((t) => t + 1);
+          };
+          fallbackImg.src = fallbackUrl;
+        };
+        img.src = url;
+      }
+      return null;
+    };
 
     for (let tx = minX; tx <= maxX; tx++) {
       for (let ty = minY; ty <= maxY; ty++) {
-        const url = getFallbackTileUrl(mapStyle, z, tx, ty);
-        const drawX = width / 2 + (tx - centerTileX) * TILE_SIZE;
-        const drawY = height / 2 + (ty - centerTileY) * TILE_SIZE;
+        const drawX = width / 2 + (tx - centerTileX) * drawnTileSize;
+        const drawY = height / 2 + (ty - centerTileY) * drawnTileSize;
 
-        const cached = miniTileCache.get(url);
-        if (cached && cached.complete && cached.naturalWidth > 0) {
-          ctx.drawImage(cached, drawX, drawY, TILE_SIZE + 0.5, TILE_SIZE + 0.5);
-        } else if (!cached) {
-          const img = new Image();
-          img.crossOrigin = "anonymous";
-          miniTileCache.set(url, img);
-          img.onload = () => setRenderTick((t) => t + 1);
-          img.src = url;
+        const exactImg = loadTile(mapStyle, zTile, tx, ty);
+        if (exactImg) {
+          ctx.drawImage(exactImg, drawX, drawY, drawnTileSize + 0.5, drawnTileSize + 0.5);
+          continue;
+        }
+
+        // Ancestor fallback (zTile - 1, zTile - 2) so zooming never flashes empty squares
+        for (let dz = 1; dz <= 3; dz++) {
+          const ancZ = zTile - dz;
+          if (ancZ < 2) break;
+          const div = 1 << dz;
+          const ax = Math.floor(tx / div);
+          const ay = Math.floor(ty / div);
+          const ancImg = loadTile(mapStyle, ancZ, ax, ay);
+          if (ancImg) {
+            const subX = ((tx % div) + div) % div;
+            const subY = ((ty % div) + div) % div;
+            const srcW = ancImg.width / div;
+            const srcH = ancImg.height / div;
+            ctx.drawImage(
+              ancImg,
+              subX * srcW,
+              subY * srcH,
+              srcW,
+              srcH,
+              drawX,
+              drawY,
+              drawnTileSize + 0.5,
+              drawnTileSize + 0.5
+            );
+            break;
+          }
         }
       }
     }
     ctx.restore();
-  }, [useNativeMapbox, center.lat, center.lng, zoom, mapStyle, renderTick]);
+  }, [useNativeMapbox, center.lat, center.lng, zoom, mapStyle, renderTick, envToken]);
 
   const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
     if (useNativeMapbox) return;

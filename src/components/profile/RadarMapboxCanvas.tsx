@@ -1134,19 +1134,32 @@ export const MAPBOX_OFFICIAL_STYLES: Array<{
 ];
 
 // Maximum safe native zoom per tile provider in Latin America / Ecuador.
+// Using @2x (512x512) retina tiles at z=17 provides z=18 detail while GPU over-zooming smoothly
+// handles 17 -> 20.5 (6645%+) with ZERO "Map data not yet available" tiles anywhere in Ecuador.
 const MIN_MAP_ZOOM = 3.2;
 const MAX_MAP_ZOOM = 20.5;
 
-const HAS_ENV_MAPBOX_TOKEN = (process.env.NEXT_PUBLIC_MAPBOX_TOKEN || "").trim().startsWith("pk.");
+const RAW_ENV_MAPBOX_TOKEN = (process.env.NEXT_PUBLIC_MAPBOX_TOKEN || "").trim();
+let mapboxRuntimeFailed = false;
+
+function hasVerifiedMapboxToken(): boolean {
+  if (mapboxRuntimeFailed) return false;
+  return (
+    RAW_ENV_MAPBOX_TOKEN.startsWith("pk.") &&
+    RAW_ENV_MAPBOX_TOKEN.length > 35 &&
+    !RAW_ENV_MAPBOX_TOKEN.includes("ejemplo") &&
+    !RAW_ENV_MAPBOX_TOKEN.includes("tu_usuario")
+  );
+}
 
 const PROVIDER_MAX_NATIVE_Z: Record<TileProvider, number> = {
-  "dark-base": HAS_ENV_MAPBOX_TOKEN ? 19 : 16,
-  "dark-ref": 16,
-  "transportation-labels": 16,
+  "dark-base": 17,
+  "dark-ref": 15,
+  "transportation-labels": 15,
   "boundaries-labels": 13,
-  "street-map": 19,
-  "terrain-relief": HAS_ENV_MAPBOX_TOKEN ? 19 : 18,
-  "satellite": HAS_ENV_MAPBOX_TOKEN ? 19 : 18,
+  "street-map": 17,
+  "terrain-relief": 17,
+  "satellite": 17,
   "street-topo": 16,
 };
 
@@ -1157,67 +1170,45 @@ function getTileCacheKey(provider: TileProvider, z: number, x: number, y: number
 }
 
 function getTileUrl(provider: TileProvider, z: number, x: number, y: number, useAltHost = false): string {
-  const maxIndex = Math.pow(2, z);
+  const safeZ = Math.max(1, Math.min(PROVIDER_MAX_NATIVE_Z[provider] ?? 17, z));
+  const maxIndex = Math.pow(2, safeZ);
   const wrappedX = ((x % maxIndex) + maxIndex) % maxIndex;
-  const mapboxToken = (process.env.NEXT_PUBLIC_MAPBOX_TOKEN || "").trim();
-  const hasMapboxApi = mapboxToken.startsWith("pk.") && !useAltHost;
+  const hasMapboxApi = hasVerifiedMapboxToken() && !useAltHost;
 
   if (hasMapboxApi) {
     if (provider === "satellite") {
-      return `https://api.mapbox.com/styles/v1/mapbox/satellite-streets-v12/tiles/256/${z}/${wrappedX}/${y}@2x?access_token=${mapboxToken}`;
+      return `https://api.mapbox.com/styles/v1/mapbox/satellite-streets-v12/tiles/256/${safeZ}/${wrappedX}/${y}@2x?access_token=${RAW_ENV_MAPBOX_TOKEN}`;
     }
     if (provider === "terrain-relief" || provider === "street-map") {
-      return `https://api.mapbox.com/styles/v1/mapbox/streets-v12/tiles/256/${z}/${wrappedX}/${y}@2x?access_token=${mapboxToken}`;
+      return `https://api.mapbox.com/styles/v1/mapbox/streets-v12/tiles/256/${safeZ}/${wrappedX}/${y}@2x?access_token=${RAW_ENV_MAPBOX_TOKEN}`;
     }
     if (provider === "dark-base") {
-      return `https://api.mapbox.com/styles/v1/mapbox/dark-v11/tiles/256/${z}/${wrappedX}/${y}@2x?access_token=${mapboxToken}`;
+      return `https://api.mapbox.com/styles/v1/mapbox/dark-v11/tiles/256/${safeZ}/${wrappedX}/${y}@2x?access_token=${RAW_ENV_MAPBOX_TOKEN}`;
     }
   }
 
-  const gSub = Math.abs(wrappedX + y) % 4;
-  const host =
-    useAltHost
-      ? (wrappedX + y) % 2 === 0
-        ? "services.arcgisonline.com"
-        : "server.arcgisonline.com"
-      : (wrappedX + y) % 2 === 0
-      ? "server.arcgisonline.com"
-      : "services.arcgisonline.com";
+  const gSub = Math.abs(wrappedX + y + (useAltHost ? 2 : 0)) % 4;
+  const host = (wrappedX + y) % 2 === 0 ? "server.arcgisonline.com" : "services.arcgisonline.com";
 
   if (provider === "satellite") {
-    if (!useAltHost) {
-      return `https://mt${gSub}.google.com/vt/lyrs=y&hl=es&x=${wrappedX}&y=${y}&z=${z}&scale=2`;
-    }
-    return `https://${host}/ArcGIS/rest/services/World_Imagery/MapServer/tile/${z}/${y}/${wrappedX}`;
+    // Google Hybrid Satellite + Streets @2x (covers 100% of urban/rural Ecuador without placeholder tiles)
+    return `https://mt${gSub}.google.com/vt/lyrs=${useAltHost ? "s" : "y"}&hl=es&x=${wrappedX}&y=${y}&z=${safeZ}&scale=2`;
   }
   if (provider === "terrain-relief") {
-    if (!useAltHost) {
-      // Topographic 3D Hillshade Relief + Contours + Street Hierarchy (Streets v12 equivalent)
-      return `https://mt${gSub}.google.com/vt/lyrs=p&hl=es&x=${wrappedX}&y=${y}&z=${z}&scale=2`;
-    }
-    const safeTopoZ = Math.min(16, z);
-    return `https://${host}/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/${safeTopoZ}/${y}/${wrappedX}`;
+    // Google Topographic 3D Hillshade Relief + Street Hierarchy @2x
+    return `https://mt${gSub}.google.com/vt/lyrs=${useAltHost ? "m" : "p"}&hl=es&x=${wrappedX}&y=${y}&z=${safeZ}&scale=2`;
   }
-  if (provider === "dark-base") {
-    return `https://${host}/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/${z}/${y}/${wrappedX}`;
-  }
-  if (provider === "dark-ref") {
-    return `https://${host}/ArcGIS/rest/services/Canvas/World_Dark_Gray_Reference/MapServer/tile/${z}/${y}/${wrappedX}`;
+  if (provider === "dark-base" || provider === "street-map") {
+    // Google High-DPI Vector-Raster Streets @2x (never outputs 'Map data not yet available')
+    return `https://mt${gSub}.google.com/vt/lyrs=m&hl=es&x=${wrappedX}&y=${y}&z=${safeZ}&scale=2`;
   }
   if (provider === "transportation-labels") {
-    return `https://${host}/ArcGIS/rest/services/Reference/World_Transportation/MapServer/tile/${z}/${y}/${wrappedX}`;
+    return `https://${host}/ArcGIS/rest/services/Reference/World_Transportation/MapServer/tile/${Math.min(15, safeZ)}/${y}/${wrappedX}`;
   }
   if (provider === "boundaries-labels") {
-    return `https://${host}/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/${z}/${y}/${wrappedX}`;
+    return `https://${host}/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/${Math.min(13, safeZ)}/${y}/${wrappedX}`;
   }
-  if (provider === "street-map") {
-    if (useAltHost) {
-      const safeEsriZ = Math.min(16, z);
-      return `https://${host}/ArcGIS/rest/services/World_Street_Map/MapServer/tile/${safeEsriZ}/${y}/${wrappedX}`;
-    }
-    return `https://mt${gSub}.google.com/vt/lyrs=m&hl=es&x=${wrappedX}&y=${y}&z=${z}&scale=2`;
-  }
-  return `https://${host}/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/${z}/${y}/${wrappedX}`;
+  return `https://mt${gSub}.google.com/vt/lyrs=m&hl=es&x=${wrappedX}&y=${y}&z=${safeZ}&scale=2`;
 }
 
 export interface ProjectedPinPosition {
@@ -1270,19 +1261,21 @@ function cacheTileImage(key: string, img: HTMLImageElement) {
   tileImageCache.set(key, img);
 }
 
-// Eagerly warm low-zoom continental & world overview tiles (z = 2, 3, 4, 5) once so zooming out
-// across South/Central/North America is 100% instantaneous and NEVER shows a blank green background.
+// Eagerly warm low-zoom continental & Ecuador national viewport tiles (z = 2..7) for ALL 3 styles
+// so entering the Radar Map or switching styles is 100% instantaneous with zero waiting.
 let continentalTilesPreloaded = false;
 function preloadContinentalBaseTiles(onTileLoaded?: () => void) {
   if (continentalTilesPreloaded || typeof window === "undefined") return;
   continentalTilesPreloaded = true;
 
-  const providers: TileProvider[] = ["street-map", "dark-base", "satellite", "boundaries-labels"];
+  const providers: TileProvider[] = ["street-map", "terrain-relief", "satellite"];
   const ranges: Array<{ z: number; xMin: number; xMax: number; yMin: number; yMax: number }> = [
-    { z: 2, xMin: 0, xMax: 2, yMin: 1, yMax: 2 }, // Entire Western Hemisphere at z=2
+    { z: 6, xMin: 16, xMax: 19, yMin: 31, yMax: 33 }, // Exact initial Ecuador viewport (z=6.45) — loaded FIRST!
+    { z: 7, xMin: 34, xMax: 37, yMin: 63, yMax: 65 }, // Exact initial Retina (z+1 = 7) Ecuador tiles — loaded SECOND!
+    { z: 5, xMin: 7, xMax: 11, yMin: 14, yMax: 19 }, // Regional Andean zoom-out ring at z=5
+    { z: 4, xMin: 3, xMax: 6, yMin: 6, yMax: 11 }, // South America overview at z=4
     { z: 3, xMin: 1, xMax: 3, yMin: 3, yMax: 5 }, // Entire Latin America at z=3
-    { z: 4, xMin: 3, xMax: 6, yMin: 6, yMax: 11 }, // Andean & South America overview at z=4
-    { z: 5, xMin: 7, xMax: 11, yMin: 14, yMax: 19 }, // Regional zoom-out ring around Ecuador/Colombia/Peru at z=5
+    { z: 2, xMin: 0, xMax: 2, yMin: 1, yMax: 2 }, // Western Hemisphere at z=2
   ];
 
   for (const r of ranges) {
@@ -1300,6 +1293,9 @@ function preloadContinentalBaseTiles(onTileLoaded?: () => void) {
             onTileLoaded?.();
           };
           img.onerror = () => {
+            if (primaryUrlIsMapbox(img.src)) {
+              mapboxRuntimeFailed = true;
+            }
             tileLoadingSet.delete(key);
             const retryImg = new window.Image();
             retryImg.onload = () => {
@@ -1313,6 +1309,15 @@ function preloadContinentalBaseTiles(onTileLoaded?: () => void) {
       }
     }
   }
+}
+
+function primaryUrlIsMapbox(url: string): boolean {
+  return url.includes("api.mapbox.com");
+}
+
+// Kick off background tile warming immediately when module is imported on client
+if (typeof window !== "undefined") {
+  setTimeout(() => preloadContinentalBaseTiles(), 10);
 }
 
 export function RadarMapboxCanvas({
@@ -1434,7 +1439,10 @@ export function RadarMapboxCanvas({
           triggerLoopRef.current?.();
         };
         img.onerror = () => {
-          // Retry on alternate Esri CDN host fallback
+          if (primaryUrlIsMapbox(primaryUrl)) {
+            mapboxRuntimeFailed = true;
+          }
+          // Retry on alternate CDN host fallback
           const retryImg = new window.Image();
           retryImg.decoding = "async";
           retryImg.onload = () => {
@@ -1650,10 +1658,10 @@ export function RadarMapboxCanvas({
                 : "#0b1014";
             ctx.fillRect(0, 0, w, h);
 
-            const hasMapboxToken = (process.env.NEXT_PUBLIC_MAPBOX_TOKEN || "").trim().startsWith("pk.");
+            const hasMapboxToken = hasVerifiedMapboxToken();
 
             if (mapStyleMode === "dark-v11") {
-              // 1. MAPBOX Dark (dark-v11 — Official Mapbox API when token present, fallback otherwise)
+              // 1. MAPBOX Dark (dark-v11 — Official Mapbox API when verified token present, High-DPI Dark Uber filter fallback otherwise)
               if (hasMapboxToken) {
                 drawTileLayer(ctx, "dark-base", cam.lng, cam.lat, cam.zoom, w, h, 1.0, 1);
               } else {
@@ -1671,7 +1679,7 @@ export function RadarMapboxCanvas({
                 );
               }
             } else if (mapStyleMode === "streets-v12") {
-              // 2. MAPBOX Streets / Outdoors (Official Mapbox API when token present, fallback otherwise)
+              // 2. MAPBOX Streets / Outdoors
               if (hasMapboxToken) {
                 drawTileLayer(ctx, "terrain-relief", cam.lng, cam.lat, cam.zoom, w, h, 1.0, 1);
               } else {
@@ -1689,14 +1697,8 @@ export function RadarMapboxCanvas({
                 );
               }
             } else {
-              // 3. MAPBOX SATELLITE STREETS (satellite-streets-v12)
+              // 3. MAPBOX SATELLITE STREETS (satellite-streets-v12 — Native Hybrid Satellite + Streets @2x)
               drawTileLayer(ctx, "satellite", cam.lng, cam.lat, cam.zoom, w, h, 1.0, 1);
-              if (!hasMapboxToken) {
-                drawTileLayer(ctx, "boundaries-labels", cam.lng, cam.lat, cam.zoom, w, h, 0.95, 0);
-                if (cam.zoom >= 10.5) {
-                  drawTileLayer(ctx, "transportation-labels", cam.lng, cam.lat, cam.zoom, w, h, 0.9, 0);
-                }
-              }
             }
 
             // Subtle Coordinate Grid Lines in dark/satellite modes

@@ -488,33 +488,80 @@ function WalletOrderPassContent() {
               </a>
             )}
 
+            {/* Direct Root Actions: Apple Wallet (.pkpass) & Google Wallet (JWT Save) */}
+            <div className="grid grid-cols-2 gap-2.5">
+              <a
+                href={`/api/wallet/pass?type=order&platform=apple&orderId=${encodeURIComponent(
+                  liveOrder.id || rawOrderId
+                )}&status=${encodeURIComponent(status)}&total=${encodeURIComponent(
+                  String(liveOrder.total || 0)
+                )}&customer=${encodeURIComponent(
+                  liveOrder.customerName || "Cliente Lumina"
+                )}&date=${encodeURIComponent(
+                  liveOrder.date || "Reciente"
+                )}&tracking=${encodeURIComponent(
+                  liveOrder.trackingNumber || ""
+                )}&carrier=${encodeURIComponent(
+                  liveOrder.carrierName || ""
+                )}&url=${encodeURIComponent(liveOrder.trackingUrl || "")}`}
+                className="h-11 rounded-2xl bg-white text-gray-950 hover:bg-gray-100 font-semibold text-xs flex items-center justify-center gap-2 shadow-md transition-all"
+              >
+                <svg className="w-3.5 h-3.5 shrink-0 fill-current" viewBox="0 0 24 24">
+                  <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M15.97 6.33c.64-.78 1.08-1.86.96-2.94-.93.04-2.06.62-2.72 1.4-.58.68-1.1 1.79-.96 2.84 1.04.08 2.08-.52 2.72-1.3z" />
+                </svg>
+                <span>Apple Wallet</span>
+              </a>
+
+              <a
+                href={`/api/wallet/pass?type=order&platform=google&orderId=${encodeURIComponent(
+                  liveOrder.id || rawOrderId
+                )}&status=${encodeURIComponent(status)}&total=${encodeURIComponent(
+                  String(liveOrder.total || 0)
+                )}&customer=${encodeURIComponent(
+                  liveOrder.customerName || "Cliente Lumina"
+                )}&date=${encodeURIComponent(
+                  liveOrder.date || "Reciente"
+                )}&tracking=${encodeURIComponent(
+                  liveOrder.trackingNumber || ""
+                )}&carrier=${encodeURIComponent(
+                  liveOrder.carrierName || ""
+                )}&url=${encodeURIComponent(liveOrder.trackingUrl || "")}`}
+                className="h-11 rounded-2xl bg-[#1E1E24] hover:bg-[#272730] text-white border border-white/15 font-semibold text-xs flex items-center justify-center gap-2 shadow-md transition-all"
+              >
+                <svg className="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="none">
+                  <path
+                    d="M21 7.5V6a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-1.5"
+                    stroke="#4285F4"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                  />
+                  <rect x="3" y="8" width="18" height="9" rx="2" fill="#34A853" />
+                  <path d="M3 10.5h18" stroke="#FBBC05" strokeWidth="2.5" />
+                  <circle cx="17" cy="13.5" r="1.5" fill="#EA4335" />
+                </svg>
+                <span>Google Wallet</span>
+              </a>
+            </div>
+
             {/* Activate Wallet Push Notifications Button */}
             <button
               type="button"
               onClick={handleEnableNotifications}
-              className={`w-full h-12 rounded-2xl font-bold text-xs sm:text-sm flex items-center justify-center gap-2.5 transition-all cursor-pointer border ${
+              className={`w-full h-11 rounded-2xl font-semibold text-xs flex items-center justify-center gap-2 transition-all cursor-pointer border ${
                 walletSaved
                   ? "bg-emerald-500/15 border-emerald-400/30 text-emerald-300"
-                  : "bg-white text-black hover:bg-gray-100 border-transparent shadow-lg"
+                  : "bg-white/[0.06] text-white/90 hover:bg-white/[0.12] border-white/10"
               }`}
             >
               {walletSaved ? (
                 <>
                   <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-                  <span>
-                    Pase activo en{" "}
-                    {walletMode === "apple" ? "Apple Wallet" : "Google Wallet"} ·
-                    Alertas Encendidas
-                  </span>
+                  <span>Notificaciones en Tiempo Real Activas</span>
                 </>
               ) : (
                 <>
                   <Bell className="w-4 h-4" />
-                  <span>
-                    Guardar en{" "}
-                    {walletMode === "apple" ? "Apple Wallet" : "Google Wallet"} y
-                    Activar Alertas
-                  </span>
+                  <span>Activar Alertas de Envío</span>
                 </>
               )}
             </button>

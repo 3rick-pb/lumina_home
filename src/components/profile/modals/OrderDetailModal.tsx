@@ -236,11 +236,18 @@ export function OrderDetailModal({
                 <button
                   type="button"
                   onClick={() => setShowWalletPopup(true)}
-                  className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-gray-900 dark:bg-white/10 text-white dark:text-[#ccff00] border border-gray-800 dark:border-[#ccff00]/30 hover:scale-105 transition-transform cursor-pointer"
-                  title="Abrir Tarjeta Digital de Seguimiento y QR (Google / Apple Wallet)"
+                  className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10.5px] font-semibold bg-[#141417] dark:bg-white/[0.08] text-white border border-black/15 dark:border-white/[0.12] hover:bg-[#1E1E22] dark:hover:bg-white/[0.14] transition-all cursor-pointer shadow-2xs"
+                  title="Añadir seguimiento a Apple Wallet o Google Wallet"
                 >
-                  <Wallet className="w-3 h-3" />
-                  <span>Pase Wallet</span>
+                  <svg className="w-3 h-3 fill-current shrink-0" viewBox="0 0 24 24">
+                    <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M15.97 6.33c.64-.78 1.08-1.86.96-2.94-.93.04-2.06.62-2.72 1.4-.58.68-1.1 1.79-.96 2.84 1.04.08 2.08-.52 2.72-1.3z" />
+                  </svg>
+                  <svg className="w-3 h-3 shrink-0" viewBox="0 0 24 24" fill="none">
+                    <rect x="3" y="7" width="18" height="10" rx="2" fill="#34A853" />
+                    <path d="M3 10h18" stroke="#FBBC05" strokeWidth="2.5" />
+                    <circle cx="17" cy="13.5" r="1.5" fill="#EA4335" />
+                  </svg>
+                  <span>Wallet</span>
                 </button>
               </div>
               <div className="flex flex-wrap items-center gap-2.5">

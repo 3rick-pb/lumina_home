@@ -21,8 +21,20 @@ const ICON_PNG = Buffer.from(
 
 const LOGO_PNG = ICON_PNG;
 
+export interface OrderPassData {
+  orderId: string;
+  status: string;
+  total: number | string;
+  customerName?: string;
+  date?: string;
+  trackingNumber?: string;
+  carrierName?: string;
+  trackingUrl?: string;
+  livePassUrl: string;
+}
+
 /**
- * Generates a genuine Apple Wallet .pkpass binary zip bundle
+ * Generates a genuine Apple Wallet .pkpass binary zip bundle for Loyalty
  */
 export async function generateAppleLoyaltyPassBuffer(data: LoyaltyPassData): Promise<Buffer> {
   const zip = new JSZip();
@@ -33,18 +45,22 @@ export async function generateAppleLoyaltyPassBuffer(data: LoyaltyPassData): Pro
   const rate = data.ptsPerDollar || 10;
   const memberCode = data.memberCode || "LUM-8842-PRV";
   const memberName = data.memberName || "Cliente Lumina";
+  const passTypeIdentifier =
+    process.env.APPLE_PASS_TYPE_IDENTIFIER || "pass.com.luminahome.loyalty";
+  const teamIdentifier =
+    process.env.APPLE_TEAM_IDENTIFIER || "LUMINAHOME";
 
   const passJson = {
     formatVersion: 1,
-    passTypeIdentifier: "pass.com.luminahome.loyalty",
+    passTypeIdentifier,
     serialNumber: memberCode,
-    teamIdentifier: "LUMINAHOME",
+    teamIdentifier,
     organizationName: issuer,
     description: program,
     logoText: issuer,
-    foregroundColor: "rgb(255, 255, 255)",
-    backgroundColor: "rgb(23, 23, 23)",
-    labelColor: "rgb(140, 146, 118)",
+    foregroundColor: "rgb(244, 244, 246)",
+    backgroundColor: "rgb(17, 17, 19)",
+    labelColor: "rgb(161, 161, 170)",
     barcode: {
       message: memberCode,
       format: "PKBarcodeFormatQR",
@@ -98,16 +114,136 @@ export async function generateAppleLoyaltyPassBuffer(data: LoyaltyPassData): Pro
         {
           key: "website",
           label: "PORTAL DE CLIENTE",
-          value: "https://luminahome.com",
+          value: "https://luminahome.ec",
         },
       ],
     },
   };
 
+  return buildPassZipBuffer(zip, passJson);
+}
+
+/**
+ * Generates a genuine Apple Wallet .pkpass binary zip bundle for Real-Time Order Tracking
+ */
+export async function generateAppleOrderPassBuffer(data: OrderPassData): Promise<Buffer> {
+  const zip = new JSZip();
+
+  const orderId = data.orderId || "LUM-0000";
+  const status = data.status || "Procesando";
+  const totalFormatted = `$${Number(data.total || 0).toFixed(2)} USD`;
+  const customerName = data.customerName || "Cliente Lumina";
+  const dateStr = data.date || "Reciente";
+  const trackingNumber = (data.trackingNumber || "").trim();
+  const carrierName = (data.carrierName || "Servientrega").trim();
+
+  const passTypeIdentifier =
+    process.env.APPLE_ORDER_PASS_TYPE_IDENTIFIER ||
+    process.env.APPLE_PASS_TYPE_IDENTIFIER ||
+    "pass.com.luminahome.order";
+  const teamIdentifier =
+    process.env.APPLE_TEAM_IDENTIFIER || "LUMINAHOME";
+
+  const secondaryFields: Array<Record<string, string>> = [
+    {
+      key: "customer",
+      label: "TITULAR",
+      value: customerName,
+    },
+    {
+      key: "total",
+      label: "TOTAL",
+      value: totalFormatted,
+      textAlignment: "PKTextAlignmentRight",
+    },
+  ];
+
+  if (trackingNumber) {
+    secondaryFields.push({
+      key: "tracking",
+      label: `GUÍA ${carrierName.toUpperCase()}`,
+      value: trackingNumber,
+    });
+  }
+
+  const passJson = {
+    formatVersion: 1,
+    passTypeIdentifier,
+    serialNumber: `ORDER-${orderId.replace(/[^a-zA-Z0-9_-]/g, "")}`,
+    teamIdentifier,
+    organizationName: "Lumina Home",
+    description: `Seguimiento de Pedido ${orderId}`,
+    logoText: "Lumina Home",
+    foregroundColor: "rgb(244, 244, 246)",
+    backgroundColor: "rgb(17, 17, 19)",
+    labelColor: "rgb(161, 161, 170)",
+    barcode: {
+      message: data.livePassUrl,
+      format: "PKBarcodeFormatQR",
+      messageEncoding: "iso-8859-1",
+      altText: `${orderId} · ${status}`,
+    },
+    barcodes: [
+      {
+        message: data.livePassUrl,
+        format: "PKBarcodeFormatQR",
+        messageEncoding: "iso-8859-1",
+        altText: `${orderId} · ${status}`,
+      },
+    ],
+    generic: {
+      headerFields: [
+        {
+          key: "order_id",
+          label: "PEDIDO",
+          value: orderId,
+          textAlignment: "PKTextAlignmentRight",
+        },
+      ],
+      primaryFields: [
+        {
+          key: "status",
+          label: "ESTADO EN TIEMPO REAL",
+          value: status.toUpperCase(),
+        },
+      ],
+      secondaryFields,
+      auxiliaryFields: [
+        {
+          key: "date",
+          label: "FECHA DE EMISIÓN",
+          value: dateStr,
+        },
+      ],
+      backFields: [
+        {
+          key: "live_url",
+          label: "SEGUIMIENTO EN TIEMPO REAL",
+          value: data.livePassUrl,
+        },
+        ...(trackingNumber
+          ? [
+              {
+                key: "carrier_tracking",
+                label: `RASTREO (${carrierName.toUpperCase()})`,
+                value: `${trackingNumber} — ${data.trackingUrl || "https://www.servientrega.com.ec"}`,
+              },
+            ]
+          : []),
+      ],
+    },
+  };
+
+  return buildPassZipBuffer(zip, passJson);
+}
+
+async function buildPassZipBuffer(
+  zip: JSZip,
+  passJson: Record<string, unknown>
+): Promise<Buffer> {
   const passJsonStr = JSON.stringify(passJson, null, 2);
   const passJsonBuf = Buffer.from(passJsonStr, "utf-8");
 
-  // Build manifest with sha1 hashes
   const sha1 = (buf: Buffer) => crypto.createHash("sha1").update(buf).digest("hex");
 
   const manifest: Record<string, string> = {
@@ -120,7 +256,6 @@ export async function generateAppleLoyaltyPassBuffer(data: LoyaltyPassData): Pro
 
   const manifestBuf = Buffer.from(JSON.stringify(manifest, null, 2), "utf-8");
 
-  // Add files to zip
   zip.file("pass.json", passJsonBuf);
   zip.file("icon.png", ICON_PNG);
   zip.file("icon@2x.png", ICON_PNG);
@@ -128,7 +263,23 @@ export async function generateAppleLoyaltyPassBuffer(data: LoyaltyPassData): Pro
   zip.file("logo@2x.png", LOGO_PNG);
   zip.file("manifest.json", manifestBuf);
 
-  // Generate binary buffer
+  // Optional cryptographic signature when APPLE_PASS_KEY_PEM is provided in .env / Vercel
+  const privateKeyPem = process.env.APPLE_PASS_KEY_PEM?.replace(/\\n/g, "\n");
+  const passphrase = process.env.APPLE_PASS_KEY_PASSPHRASE;
+  if (privateKeyPem && privateKeyPem.includes("PRIVATE KEY")) {
+    try {
+      const signer = crypto.createSign("RSA-SHA256");
+      signer.update(manifestBuf);
+      signer.end();
+      const sig = passphrase
+        ? signer.sign({ key: privateKeyPem, passphrase })
+        : signer.sign(privateKeyPem);
+      zip.file("signature", sig);
+    } catch (err) {
+      console.warn("Apple PassKit signature skipped:", err);
+    }
+  }
+
   const arrayBuffer = await zip.generateAsync({ type: "nodebuffer", compression: "DEFLATE" });
   return arrayBuffer;
 }

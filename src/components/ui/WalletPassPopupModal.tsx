@@ -1,18 +1,8 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React from "react";
 import { createPortal } from "react-dom";
-import {
-  X,
-  Check,
-  Copy,
-  ExternalLink,
-  Bell,
-  BellRing,
-  Truck,
-  Download,
-  Smartphone,
-} from "lucide-react";
+import { X, Truck, ExternalLink } from "lucide-react";
 import { BeUICenterMorphModal, BeUITiltCard } from "@/components/ui/BeUIControls";
 import type { Order } from "@/lib/userStore";
 import { useUserStore } from "@/lib/userStore";
@@ -46,23 +36,13 @@ export function WalletPassPopupModal({
   trackingUrl,
   carrierName,
   date,
-  initialPlatform = "google",
 }: WalletPassPopupModalProps) {
   const { orders } = useUserStore();
-  const [platform, setPlatform] = useState<"google" | "apple">(initialPlatform);
-  const [copiedTracking, setCopiedTracking] = useState(false);
-  const [copiedLink, setCopiedLink] = useState(false);
-  const [notificationsActive, setNotificationsActive] = useState(false);
-  const [statusFeedback, setStatusFeedback] = useState<string | null>(null);
 
   const handleOpenChange = (nextOpen: boolean) => {
     if (onOpenChange) onOpenChange(nextOpen);
     if (!nextOpen && onClose) onClose();
   };
-
-  useEffect(() => {
-    if (initialPlatform) setPlatform(initialPlatform);
-  }, [initialPlatform, open]);
 
   const resolvedOrder: Order | null =
     order ||
@@ -82,7 +62,6 @@ export function WalletPassPopupModal({
 
   if (!resolvedOrder) return null;
 
-  // Always resolve the latest live version of this order from store
   const liveOrder =
     orders.find((o) => String(o.id).toLowerCase() === String(resolvedOrder.id).toLowerCase()) ||
     resolvedOrder;
@@ -95,10 +74,9 @@ export function WalletPassPopupModal({
   const origin =
     typeof window !== "undefined" ? window.location.origin : "https://luminahome.ec";
 
-  // Self-contained signed URL so scanning the QR code on ANY external phone immediately displays 100% of the real order data + live polling
-  const livePassUrl = `${origin}/wallet/order/${encodeURIComponent(
+  const queryParams = `orderId=${encodeURIComponent(
     liveOrder.id
-  )}?total=${encodeURIComponent(String(liveOrder.total || 0))}&status=${encodeURIComponent(
+  )}&total=${encodeURIComponent(String(liveOrder.total || 0))}&status=${encodeURIComponent(
     status
   )}&date=${encodeURIComponent(liveOrder.date || "Reciente")}&customer=${encodeURIComponent(
     liveOrder.customerName || "Cliente Lumina"
@@ -106,63 +84,16 @@ export function WalletPassPopupModal({
     liveOrder.trackingNumber || ""
   )}&carrier=${encodeURIComponent(liveOrder.carrierName || "")}&url=${encodeURIComponent(
     liveOrder.trackingUrl || ""
-  )}&wallet=${platform}`;
-
-  const qrImageUrl = `https://api.qrserver.com/v1/create-qr-code/?size=240x240&margin=6&ecc=M&data=${encodeURIComponent(
-    livePassUrl
   )}`;
 
-  const handleActivateRealWalletPass = async () => {
-    if (typeof window !== "undefined" && "Notification" in window) {
-      try {
-        const perm = await Notification.requestPermission();
-        if (perm === "granted") {
-          new Notification(
-            `Pase ${platform === "apple" ? "Apple Wallet" : "Google Wallet"} Activo · ${liveOrder.id}`,
-            {
-              body: `Estado actual: ${status}. Te notificaremos al instante cuando tu pedido cambie a Enviado o Entregado.`,
-            }
-          );
-        }
-      } catch {
-        // Ignore on unsupported browsers
-      }
-    }
+  // Root universal endpoint supporting both Apple Wallet (.pkpass) and Google Wallet (Save JWT)
+  const universalPassEndpoint = `${origin}/api/wallet/pass?type=order&platform=auto&${queryParams}`;
+  const applePassEndpoint = `/api/wallet/pass?type=order&platform=apple&${queryParams}`;
+  const googlePassEndpoint = `/api/wallet/pass?type=order&platform=google&${queryParams}`;
 
-    setNotificationsActive(true);
-    setStatusFeedback(
-      platform === "apple"
-        ? `Pase Apple Wallet vinculado al pedido ${liveOrder.id}. Escanea la Tilt Card con la cámara de tu iPhone o guarda el pase.`
-        : `Pase Google Wallet vinculado al pedido ${liveOrder.id}. Escanea la Tilt Card con tu teléfono Android o guarda el pase.`
-    );
-  };
-
-  const handleDownloadPassCard = () => {
-    // Generate and download a real standalone Digital Wallet Pass HTML/PassKit file for offline/mobile access
-    const passBlob = new Blob(
-      [
-        `<!DOCTYPE html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Pase ${
-          platform === "apple" ? "Apple Wallet" : "Google Wallet"
-        } - ${liveOrder.id}</title></head><body style="margin:0;background:#0B0B0E;color:#fff;font-family:system-ui,sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh;padding:20px;"><script>window.location.href=${JSON.stringify(
-          livePassUrl
-        )};</script><div style="max-width:380px;width:100%;background:#18181c;border:1px solid rgba(255,255,255,0.15);border-radius:28px;padding:28px;text-align:center;"><h2 style="margin:0 0 8px;">Lumina Home · ${
-          liveOrder.id
-        }</h2><p style="color:#a1a1aa;font-size:13px;margin:0 0 18px;">Estado: <strong style="color:#ccff00;">${status}</strong> · Total: <strong>$${Number(
-          liveOrder.total || 0
-        ).toFixed(2)} USD</strong></p><img src="${qrImageUrl}" alt="QR" style="width:200px;height:200px;border-radius:16px;background:#fff;padding:10px;"/><p style="margin-top:16px;"><a href="${livePassUrl}" style="display:inline-block;padding:12px 24px;border-radius:14px;background:#ccff00;color:#000;font-weight:700;text-decoration:none;font-size:13px;">Abrir Seguimiento en Tiempo Real</a></p></div></body></html>`,
-      ],
-      { type: "text/html;charset=utf-8" }
-    );
-    const url = URL.createObjectURL(passBlob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `Lumina-${platform === "apple" ? "AppleWallet" : "GoogleWallet"}-${liveOrder.id.replace(/[^a-zA-Z0-9_-]/g, "")}.html`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-    handleActivateRealWalletPass();
-  };
+  const qrImageUrl = `https://api.qrserver.com/v1/create-qr-code/?size=260x260&margin=6&ecc=M&data=${encodeURIComponent(
+    universalPassEndpoint
+  )}`;
 
   if (typeof document === "undefined") return null;
 
@@ -170,255 +101,161 @@ export function WalletPassPopupModal({
     <BeUICenterMorphModal
       open={open}
       onOpenChange={handleOpenChange}
-      className="max-w-md w-full"
+      className="max-w-[344px] w-full"
     >
+      {/* OUTER COMPACT POPUP WINDOW — Static (NO 3D Tilt here), Micro-SaaS Obsidian Palette */}
       <div
         onClick={(e) => e.stopPropagation()}
-        className="relative w-full rounded-[2.25rem] bg-[#121216]/98 backdrop-blur-2xl border border-white/15 shadow-[0_32px_90px_rgba(0,0,0,0.75)] p-5 sm:p-6 text-white overflow-hidden"
+        className="relative w-full rounded-[2rem] bg-[#111113] border border-white/[0.09] shadow-[0_28px_80px_rgba(0,0,0,0.82)] p-4 text-[#F4F4F6] overflow-hidden select-none"
       >
-        {/* Ambient Glow */}
-        <div
-          className={`pointer-events-none absolute -top-24 -right-24 w-60 h-60 rounded-full blur-3xl transition-colors duration-500 ${
-            platform === "apple" ? "bg-amber-500/20" : "bg-blue-500/20"
-          }`}
-        />
+        {/* Subtle Warm Stone Ambient Highlight (No neon green or blue) */}
+        <div className="pointer-events-none absolute -top-20 left-1/2 -translate-x-1/2 w-52 h-32 rounded-full bg-[#D6D3CD]/[0.06] blur-3xl" />
 
-        {/* Header + Close Button */}
-        <div className="relative z-10 flex items-center justify-between gap-3 pb-4 border-b border-white/10">
-          <div className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-2xl bg-white text-black flex items-center justify-center font-display font-bold text-base shadow-md">
-              L
-            </div>
-            <div className="text-left">
-              <span className="text-[10px] font-mono uppercase tracking-[0.2em] text-[#ccff00] font-bold block">
-                PASE EN TIEMPO REAL · TILT CARD
-              </span>
-              <h3 className="font-display font-bold text-base sm:text-lg text-white leading-tight">
-                Billetera Digital de Pedido
-              </h3>
-            </div>
+        {/* Compact Top Bar: Unified Apple Wallet + Google Wallet Informative Tag & Close */}
+        <div className="relative z-10 flex items-center justify-between gap-2 mb-3.5">
+          {/* Unified Ecosystem Tag with both Official Apple Wallet & Google Wallet Logos */}
+          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#19191D] border border-white/[0.08] shadow-inner">
+            <a
+              href={applePassEndpoint}
+              className="inline-flex items-center gap-1.5 text-[11px] font-medium text-[#F4F4F6] hover:text-white transition-colors"
+              title="Descargar pase nativo Apple Wallet (.pkpass)"
+            >
+              {/* Official Apple Emblem */}
+              <svg className="w-3.5 h-3.5 fill-current shrink-0" viewBox="0 0 24 24">
+                <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M15.97 6.33c.64-.78 1.08-1.86.96-2.94-.93.04-2.06.62-2.72 1.4-.58.68-1.1 1.79-.96 2.84 1.04.08 2.08-.52 2.72-1.3z" />
+              </svg>
+              <span className="tracking-tight">Apple Wallet</span>
+            </a>
+
+            <span className="w-px h-3 bg-white/[0.12]" />
+
+            <a
+              href={googlePassEndpoint}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 text-[11px] font-medium text-[#F4F4F6] hover:text-white transition-colors"
+              title="Guardar pase en Google Wallet"
+            >
+              {/* Official Google Wallet Emblem */}
+              <svg className="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="none">
+                <path
+                  d="M21 7.5V6a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-1.5"
+                  stroke="#4285F4"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                />
+                <rect x="3" y="8" width="18" height="9" rx="2" fill="#34A853" />
+                <path d="M3 10.5h18" stroke="#FBBC05" strokeWidth="2.5" />
+                <circle cx="17" cy="13.5" r="1.5" fill="#EA4335" />
+              </svg>
+              <span className="tracking-tight">Google Wallet</span>
+            </a>
           </div>
 
           <button
             type="button"
             onClick={() => handleOpenChange(false)}
-            className="w-9 h-9 rounded-full bg-white/10 hover:bg-rose-500/20 border border-white/15 hover:border-rose-500/40 text-white/70 hover:text-rose-300 flex items-center justify-center transition-all cursor-pointer shrink-0"
-            title="Cerrar ventana"
+            className="w-7 h-7 rounded-full bg-white/[0.05] hover:bg-white/[0.11] border border-white/[0.08] text-[#A1A1AA] hover:text-white flex items-center justify-center transition-colors cursor-pointer shrink-0"
+            title="Cerrar"
           >
-            <X className="w-4 h-4" />
+            <X className="w-3.5 h-3.5" />
           </button>
         </div>
 
-        {/* Platform Switcher: Google Wallet vs Apple Wallet */}
-        <div className="relative z-10 grid grid-cols-2 gap-2 p-1 rounded-2xl bg-black/40 border border-white/10 mt-4">
-          <button
-            type="button"
-            onClick={() => setPlatform("google")}
-            className={`h-9 rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition-all cursor-pointer ${
-              platform === "google"
-                ? "bg-white text-gray-950 shadow-sm"
-                : "text-white/65 hover:text-white"
-            }`}
+        {/* ===================================================================== */}
+        {/* INNER SCANNABLE QR PASS CARD — ONLY THIS ELEMENT HAS 3D TILT EFFECT   */}
+        {/* ===================================================================== */}
+        <BeUITiltCard
+          maxTilt={14}
+          scaleOnHover={1.02}
+          glareOpacity={0.2}
+          className="rounded-[1.5rem] bg-gradient-to-b from-[#1B1B1F] via-[#161619] to-[#121215] border border-white/[0.1] p-4 shadow-[0_18px_45px_rgba(0,0,0,0.65)] overflow-hidden"
+        >
+          {/* Card Header: Order Reference & Live Status */}
+          <div
+            style={{ transform: "translateZ(16px)" }}
+            className="flex items-center justify-between gap-2 pb-3 border-b border-white/[0.07]"
           >
-            <svg className="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="none">
-              <path
-                d="M21 7.5V6a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-1.5"
-                stroke="#4285F4"
-                strokeWidth="2"
-                strokeLinecap="round"
-              />
-              <rect x="3" y="8" width="18" height="9" rx="2" fill="#34A853" />
-              <path d="M3 10.5h18" stroke="#FBBC05" strokeWidth="2.5" />
-              <circle cx="17" cy="13.5" r="1.5" fill="#EA4335" />
-            </svg>
-            <span>Google Wallet</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setPlatform("apple")}
-            className={`h-9 rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition-all cursor-pointer ${
-              platform === "apple"
-                ? "bg-white text-gray-950 shadow-sm"
-                : "text-white/65 hover:text-white"
-            }`}
-          >
-            <svg className="w-3.5 h-3.5 shrink-0 fill-current" viewBox="0 0 24 24">
-              <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M15.97 6.33c.64-.78 1.08-1.86.96-2.94-.93.04-2.06.62-2.72 1.4-.58.68-1.1 1.79-.96 2.84 1.04.08 2.08-.52 2.72-1.3z" />
-            </svg>
-            <span>Apple Wallet</span>
-          </button>
-        </div>
-
-        {/* =================================================================== */}
-        {/* @beui/tilt-card INTERACTIVE 3D WALLET PASS + QR CODE */}
-        {/* =================================================================== */}
-        <div className="mt-4">
-          <BeUITiltCard
-            maxTilt={15}
-            scaleOnHover={1.02}
-            glareOpacity={0.32}
-            className={`rounded-[1.85rem] p-5 border shadow-[0_24px_60px_rgba(0,0,0,0.6)] overflow-hidden ${
-              platform === "apple"
-                ? "bg-gradient-to-br from-[#1f1d24] via-[#151419] to-[#0d0d10] border-amber-400/30"
-                : "bg-gradient-to-br from-[#172030] via-[#131822] to-[#0e1118] border-blue-400/30"
-            }`}
-          >
-            {/* Pass Top Bar */}
-            <div
-              style={{ transform: "translateZ(18px)" }}
-              className="flex items-center justify-between gap-2 pb-3.5 border-b border-white/10"
-            >
-              <div className="text-left">
-                <span className="text-[9.5px] font-mono uppercase tracking-widest text-white/55 block">
-                  {platform === "apple" ? "APPLE WALLET PASSKIT" : "GOOGLE WALLET PASS"}
-                </span>
-                <p className="font-mono font-extrabold text-base sm:text-lg text-white tracking-wider">
-                  {liveOrder.id}
-                </p>
-              </div>
-
-              <span
-                className={`px-2.5 py-1 rounded-full text-[10.5px] font-extrabold uppercase tracking-wider border ${
-                  status === "Entregado"
-                    ? "bg-emerald-500/20 border-emerald-400/40 text-emerald-300"
-                    : status === "Enviado"
-                      ? "bg-blue-500/20 border-blue-400/40 text-blue-300"
-                      : "bg-amber-500/20 border-amber-400/40 text-amber-300"
-                }`}
-              >
-                {status}
+            <div>
+              <span className="text-[9.5px] font-mono uppercase tracking-[0.16em] text-[#8E8E98] block">
+                PASE DE SEGUIMIENTO
               </span>
+              <p className="font-mono font-bold text-sm text-[#F4F4F6] tracking-wide mt-0.5">
+                {liveOrder.id}
+              </p>
             </div>
 
-            {/* Conditional Carrier Tracking Tag (ONLY when Enviado or Entregado) */}
-            {isShippedOrDelivered && liveOrder.trackingNumber && (
-              <div
-                style={{ transform: "translateZ(24px)" }}
-                className="mt-3 flex items-center justify-between gap-2 p-2.5 rounded-xl bg-white/[0.07] border border-white/15"
-              >
-                <button
-                  type="button"
-                  onClick={() => {
-                    navigator.clipboard?.writeText(liveOrder.trackingNumber || "");
-                    setCopiedTracking(true);
-                    setTimeout(() => setCopiedTracking(false), 2000);
-                    if (liveOrder.trackingUrl) {
-                      window.open(liveOrder.trackingUrl, "_blank", "noopener,noreferrer");
-                    }
-                  }}
-                  className="flex items-center gap-2 text-xs font-mono font-bold text-[#ccff00] hover:underline cursor-pointer"
-                >
-                  <Truck className="w-3.5 h-3.5 shrink-0" />
-                  <span>Guía: {liveOrder.trackingNumber}</span>
-                  {copiedTracking ? (
-                    <Check className="w-3.5 h-3.5 text-emerald-400" />
-                  ) : (
-                    <Copy className="w-3 h-3 opacity-80" />
-                  )}
-                  <ExternalLink className="w-3 h-3 opacity-80" />
-                </button>
-                <span className="text-[10px] text-white/65 font-semibold">
-                  {liveOrder.carrierName || "Transportadora"}
-                </span>
-              </div>
-            )}
-
-            {/* 3D Floating QR Code Centerpiece */}
-            <div
-              style={{ transform: "translateZ(32px)" }}
-              className="my-4 flex flex-col items-center justify-center"
+            <span
+              className={`px-2.5 py-0.5 rounded-full text-[10px] font-semibold tracking-wide border ${
+                status === "Entregado"
+                  ? "bg-emerald-500/15 border-emerald-400/30 text-emerald-300"
+                  : status === "Enviado"
+                    ? "bg-amber-500/15 border-amber-300/30 text-amber-200"
+                    : "bg-white/[0.06] border-white/[0.12] text-[#D4D4D8]"
+              }`}
             >
-              <div className="relative p-3 rounded-2xl bg-white shadow-[0_16px_40px_rgba(0,0,0,0.45)] border-2 border-white/80">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={qrImageUrl}
-                  alt={`QR ${liveOrder.id}`}
-                  className="w-40 h-40 sm:w-44 sm:h-44 object-contain rounded-lg"
-                />
-                <div className="mt-1.5 flex items-center justify-center gap-1 text-[9.5px] font-mono font-bold uppercase tracking-widest text-gray-900">
-                  <Smartphone className="w-3 h-3 text-gray-700" />
-                  <span>Mueve la tarjeta · Escanea en vivo</span>
-                </div>
-              </div>
-            </div>
+              {status}
+            </span>
+          </div>
 
-            {/* 3-Step Live Progress Mini Bar inside Tilt Card */}
+          {/* Scannable High-Contrast QR Code Centerpiece */}
+          <div
+            style={{ transform: "translateZ(26px)" }}
+            className="my-4 flex flex-col items-center"
+          >
+            <div className="p-3 rounded-2xl bg-white shadow-[0_12px_32px_rgba(0,0,0,0.45)] border border-black/5">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={qrImageUrl}
+                alt={`QR Pase ${liveOrder.id}`}
+                className="w-44 h-44 object-contain block rounded-lg"
+              />
+            </div>
+            <p className="mt-2.5 text-[11px] font-medium text-[#A1A1AA] tracking-tight text-center">
+              Escanea con tu cámara para añadir el pase
+            </p>
+          </div>
+
+          {/* Carrier Tracking Pill (Only when Shipped/Delivered) */}
+          {isShippedOrDelivered && liveOrder.trackingNumber && (
             <div
               style={{ transform: "translateZ(18px)" }}
-              className="grid grid-cols-3 gap-1.5 pt-2 border-t border-white/10 text-center"
+              className="mb-3 px-3 py-2 rounded-xl bg-white/[0.04] border border-white/[0.08] flex items-center justify-between gap-2"
             >
-              {(["Procesando", "Enviado", "Entregado"] as const).map((stepName) => {
-                const isCurrent = status === stepName;
-                const isDone =
-                  stepName === "Procesando" ||
-                  (stepName === "Enviado" && (status === "Enviado" || status === "Entregado")) ||
-                  (stepName === "Entregado" && status === "Entregado");
-                return (
-                  <div
-                    key={stepName}
-                    className={`py-1.5 px-2 rounded-xl border text-[10px] font-bold transition-all ${
-                      isCurrent
-                        ? "bg-[#ccff00]/20 border-[#ccff00]/50 text-[#ccff00]"
-                        : isDone
-                          ? "bg-emerald-500/15 border-emerald-500/30 text-emerald-300"
-                          : "bg-white/[0.03] border-white/5 text-white/40"
-                    }`}
-                  >
-                    {stepName}
-                  </div>
-                );
-              })}
-            </div>
-          </BeUITiltCard>
-        </div>
-
-        {/* Status / Notification Feedback */}
-        {statusFeedback && (
-          <div className="mt-3.5 p-3 rounded-2xl bg-emerald-500/15 border border-emerald-400/30 text-emerald-200 text-xs flex items-start gap-2.5 text-left">
-            <BellRing className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5 animate-bounce" />
-            <span className="leading-relaxed">{statusFeedback}</span>
-          </div>
-        )}
-
-        {/* Bottom Action Buttons (100% In-Place Actions, No Broken Links) */}
-        <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-          <button
-            type="button"
-            onClick={handleDownloadPassCard}
-            className="h-11 px-4 rounded-xl bg-[#ccff00] hover:bg-[#b8e600] text-gray-950 font-sans font-extrabold text-xs flex items-center justify-center gap-2 shadow-lg transition-all cursor-pointer"
-          >
-            <Download className="w-4 h-4 shrink-0" />
-            <span>
-              Guardar Pase {platform === "apple" ? "Apple" : "Google"}
-            </span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => {
-              navigator.clipboard?.writeText(livePassUrl);
-              setCopiedLink(true);
-              setTimeout(() => setCopiedLink(false), 2200);
-              handleActivateRealWalletPass();
-            }}
-            className="h-11 px-4 rounded-xl bg-white/10 hover:bg-white/15 border border-white/15 text-white font-sans font-bold text-xs flex items-center justify-center gap-2 transition-all cursor-pointer"
-          >
-            {copiedLink ? (
-              <>
-                <Check className="w-4 h-4 text-emerald-400" />
-                <span>Enlace Copiado + Alertas</span>
-              </>
-            ) : (
-              <>
-                <Bell className="w-4 h-4 text-[#ccff00]" />
-                <span>
-                  {notificationsActive ? "Alertas Push Activas" : "Activar Alertas Push"}
+              <div className="flex items-center gap-2 min-w-0">
+                <Truck className="w-3.5 h-3.5 text-[#D6D3CD] shrink-0" />
+                <span className="text-[11px] font-mono text-[#E4E4E7] truncate">
+                  {liveOrder.carrierName ? `${liveOrder.carrierName}: ` : ""}
+                  {liveOrder.trackingNumber}
                 </span>
-              </>
-            )}
-          </button>
-        </div>
+              </div>
+              {liveOrder.trackingUrl && (
+                <a
+                  href={liveOrder.trackingUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-[#A1A1AA] hover:text-white transition-colors shrink-0"
+                  title="Abrir rastreo"
+                >
+                  <ExternalLink className="w-3.5 h-3.5" />
+                </a>
+              )}
+            </div>
+          )}
+
+          {/* Minimal Pass Footer */}
+          <div
+            style={{ transform: "translateZ(14px)" }}
+            className="pt-2.5 border-t border-white/[0.07] flex items-center justify-between text-[11px]"
+          >
+            <span className="text-[#8E8E98] truncate max-w-[160px]">
+              {liveOrder.customerName || "Cliente Lumina"}
+            </span>
+            <span className="font-mono font-semibold text-[#F4F4F6]">
+              ${Number(liveOrder.total || 0).toFixed(2)} USD
+            </span>
+          </div>
+        </BeUITiltCard>
       </div>
     </BeUICenterMorphModal>,
     document.body
