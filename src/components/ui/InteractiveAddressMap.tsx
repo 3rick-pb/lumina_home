@@ -75,31 +75,24 @@ function getFallbackTileUrl(
   style: MiniMapStyle,
   z: number,
   x: number,
-  y: number,
-  mapboxToken = "",
-  forceGoogle = false
+  y: number
 ): string {
-  const safeZ = Math.max(1, Math.min(17, z));
+  const maxNative = style === "streets-v12" ? 15 : 18;
+  const safeZ = Math.max(1, Math.min(maxNative, z));
   const maxIndex = Math.pow(2, safeZ);
   const wrappedX = ((x % maxIndex) + maxIndex) % maxIndex;
-
-  if (!forceGoogle && isRealMapboxToken(mapboxToken)) {
-    const styleId =
-      style === "satellite-streets-v12"
-        ? "satellite-streets-v12"
-        : style === "dark-v11"
-        ? "dark-v11"
-        : "streets-v12";
-    return `https://api.mapbox.com/styles/v1/mapbox/${styleId}/tiles/256/${safeZ}/${wrappedX}/${y}@2x?access_token=${mapboxToken}`;
-  }
-
   const sub = Math.abs(wrappedX + y) % 4;
+
   if (style === "satellite-streets-v12") {
-    return `https://mt${sub}.google.com/vt/lyrs=y&hl=es&x=${wrappedX}&y=${y}&z=${safeZ}&scale=2`;
+    // 3. Google Maps Satélite Híbrido (lyrs=y)
+    return `https://mt${sub}.google.com/vt/lyrs=y&hl=es&x=${wrappedX}&y=${y}&z=${safeZ}`;
   }
-  // Both streets-v12 and dark-v11 use high-resolution vector-raster streets @2x
-  // (dark-v11 applies the calibrated Dark Uber canvas filter so it NEVER asks for an API key!)
-  return `https://mt${sub}.google.com/vt/lyrs=m&hl=es&x=${wrappedX}&y=${y}&z=${safeZ}&scale=2`;
+  if (style === "streets-v12") {
+    // 2. Google Maps Relieve Topográfico (lyrs=p, maxNative=15)
+    return `https://mt${sub}.google.com/vt/lyrs=p&hl=es&x=${wrappedX}&y=${y}&z=${safeZ}`;
+  }
+  // 1. Google Maps Estándar / Dark (lyrs=m)
+  return `https://mt${sub}.google.com/vt/lyrs=m&hl=es&x=${wrappedX}&y=${y}&z=${safeZ}`;
 }
 
 export default function InteractiveAddressMap({
@@ -420,13 +413,8 @@ export default function InteractiveAddressMap({
     ctx.fillStyle = mapStyle === "dark-v11" ? "#0d1117" : "#e5e7eb";
     ctx.fillRect(0, 0, width, height);
 
-    if (mapStyle === "dark-v11" && !isRealMapboxToken(envToken)) {
-      ctx.filter = "invert(93%) hue-rotate(194deg) saturate(142%) brightness(89%) contrast(124%)";
-    } else if (mapStyle === "streets-v12" && !isRealMapboxToken(envToken)) {
-      ctx.filter = "contrast(105%) saturate(108%)";
-    }
-
-    const zTile = Math.max(3, Math.min(17, Math.round(zoom)));
+    const maxNative = mapStyle === "streets-v12" ? 15 : 18;
+    const zTile = Math.max(3, Math.min(maxNative, Math.round(zoom)));
     const scaleFactor = Math.pow(2, zoom - zTile);
     const drawnTileSize = TILE_SIZE * scaleFactor;
 
@@ -442,7 +430,7 @@ export default function InteractiveAddressMap({
     const maxY = Math.min(Math.pow(2, zTile) - 1, Math.floor(centerTileY) + halfRows);
 
     const loadTile = (style: MiniMapStyle, zLevel: number, tx: number, ty: number) => {
-      const url = getFallbackTileUrl(style, zLevel, tx, ty, envToken, false);
+      const url = getFallbackTileUrl(style, zLevel, tx, ty);
       const cached = miniTileCache.get(url);
       if (cached && cached.complete && cached.naturalWidth > 0) {
         return cached;
@@ -452,19 +440,6 @@ export default function InteractiveAddressMap({
         img.decoding = "async";
         miniTileCache.set(url, img);
         img.onload = () => setRenderTick((t) => t + 1);
-        img.onerror = () => {
-          if (url.includes("api.mapbox.com")) {
-            miniMapboxTokenFailed = true;
-          }
-          const fallbackUrl = getFallbackTileUrl(style, zLevel, tx, ty, envToken, true);
-          const fallbackImg = new Image();
-          fallbackImg.decoding = "async";
-          fallbackImg.onload = () => {
-            miniTileCache.set(url, fallbackImg);
-            setRenderTick((t) => t + 1);
-          };
-          fallbackImg.src = fallbackUrl;
-        };
         img.src = url;
       }
       return null;
@@ -657,7 +632,18 @@ export default function InteractiveAddressMap({
             onPointerUp={handlePointerUp}
             className="w-full h-full touch-none cursor-grab active:cursor-grabbing relative"
           >
-            <canvas ref={canvasRef} className="w-full h-full block" />
+            <canvas
+              ref={canvasRef}
+              style={{
+                filter:
+                  mapStyle === "dark-v11"
+                    ? "invert(92%) hue-rotate(195deg) saturate(132%) brightness(90%) contrast(120%)"
+                    : mapStyle === "streets-v12"
+                    ? "contrast(1.04) saturate(1.08)"
+                    : "contrast(1.06) saturate(1.1)",
+              }}
+              className="w-full h-full block"
+            />
             <div
               style={{
                 transform: `translate3d(${pinScreen.x}px, ${pinScreen.y}px, 0)`,
@@ -680,7 +666,7 @@ export default function InteractiveAddressMap({
           <div className="bg-white/95 dark:bg-black/85 backdrop-blur-md px-2.5 py-1.5 rounded-xl border border-black/10 dark:border-white/15 shadow-sm flex items-center gap-1.5">
             <span className="w-2 h-2 rounded-full bg-blue-600 animate-pulse shrink-0" />
             <span className="text-[10px] font-semibold text-gray-800 dark:text-gray-200 leading-none">
-              {useNativeMapbox ? "Mapbox GL API · Arrastra el pin" : "Arrastra el pin o toca el mapa"}
+              Arrastra el pin o toca el mapa
             </span>
           </div>
 
@@ -696,7 +682,7 @@ export default function InteractiveAddressMap({
               <Layers className="w-3 h-3 text-blue-600 shrink-0" />
               <span>
                 {mapStyle === "streets-v12"
-                  ? "Streets"
+                  ? "Relieve"
                   : mapStyle === "dark-v11"
                   ? "Dark"
                   : "Satélite"}
@@ -709,12 +695,12 @@ export default function InteractiveAddressMap({
             </button>
 
             {isStyleMenuOpen && (
-              <div className="absolute right-0 top-full mt-1.5 w-40 p-1 rounded-xl bg-white/98 dark:bg-[#141518]/98 backdrop-blur-xl border border-black/10 dark:border-white/15 shadow-xl space-y-0.5 z-30">
+              <div className="absolute right-0 top-full mt-1.5 w-44 p-1 rounded-xl bg-white/98 dark:bg-[#141518]/98 backdrop-blur-xl border border-black/10 dark:border-white/15 shadow-xl space-y-0.5 z-30">
                 {(
                   [
-                    { id: "streets-v12", label: "Streets (Relieve)" },
-                    { id: "dark-v11", label: "Dark (Uber)" },
-                    { id: "satellite-streets-v12", label: "Satellite Streets" },
+                    { id: "streets-v12", label: "Relieve (Streets)" },
+                    { id: "dark-v11", label: "Dark (Google)" },
+                    { id: "satellite-streets-v12", label: "Google Satélite" },
                   ] as const
                 ).map((st) => {
                   const active = mapStyle === st.id;

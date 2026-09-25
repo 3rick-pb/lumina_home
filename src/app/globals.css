@@ -45,6 +45,21 @@
   .text-balance {
     text-wrap: balance;
   }
+  /* Global macOS Safari Scrollbar Replacement — Suppress Native Browser Scrollbar Track */
+  html,
+  body,
+  * {
+    -ms-overflow-style: none !important;
+    scrollbar-width: none !important;
+  }
+  html::-webkit-scrollbar,
+  body::-webkit-scrollbar,
+  *::-webkit-scrollbar {
+    display: none !important;
+    width: 0 !important;
+    height: 0 !important;
+  }
+
   .hide-scrollbar::-webkit-scrollbar {
     display: none;
   }

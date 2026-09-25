@@ -10,6 +10,7 @@ import { AuthGuard } from "@/components/auth/AuthGuard";
 import { AppInitializer } from "@/components/AppInitializer";
 import { ScrollToTop } from "@/components/layout/ScrollToTop";
 import { AdminCartNotifier } from "@/components/admin/AdminCartNotifier";
+import { MacOSScrollbar } from "@/components/ui/MacOSScrollbar";
 
 import localFont from "next/font/local";
 
@@ -70,6 +71,7 @@ export default function RootLayout({
         <Suspense fallback={null}>
           <AmbientBackground />
         </Suspense>
+        <MacOSScrollbar />
         <AppInitializer />
         <AdminCartNotifier />
         <Header />

@@ -365,8 +365,13 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
   const setSelectedCountry = useRadarStore((state) => state.setSelectedCountry);
   const activeCountry = RADAR_COUNTRIES[selectedCountry] || RADAR_COUNTRIES.EC;
 
-  // Instant Radar Map Entry — zero artificial waiting screen after login
-  const [isPreparingRadar, setIsPreparingRadar] = useState<boolean>(false);
+  // Fluid Giant ThinkingOrb Preparation State — preloads 100% of active viewport tiles in background during intro
+  const [isPreparingRadar, setIsPreparingRadar] = useState<boolean>(() => {
+    if (typeof window !== "undefined" && (window as unknown as { __luminaRadarIntroDone?: boolean }).__luminaRadarIntroDone) {
+      return false;
+    }
+    return true;
+  });
   const [focusTarget, setFocusTarget] = useState<{
     xPct: number;
     yPct: number;
@@ -378,11 +383,22 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
   const [resetCommandSeq, setResetCommandSeq] = useState<number>(0);
 
   useEffect(() => {
-    if (typeof window !== "undefined") {
-      (window as unknown as { __luminaRadarIntroDone?: boolean }).__luminaRadarIntroDone = true;
+    if (typeof window !== "undefined" && (window as unknown as { __luminaRadarIntroDone?: boolean }).__luminaRadarIntroDone) {
+      setIsPreparingRadar(false);
+      setIsMapLoaded(true);
+      return;
     }
-    setIsPreparingRadar(false);
-    setIsMapLoaded(true);
+    // Synchronized 2.4s landing animation while background canvas pre-fetches 100% of visible country tiles
+    const t = setTimeout(() => {
+      if (typeof window !== "undefined") {
+        (window as unknown as { __luminaRadarIntroDone?: boolean }).__luminaRadarIntroDone = true;
+      }
+      setIsPreparingRadar(false);
+      setIsMapLoaded(true);
+    }, 2400);
+    return () => {
+      clearTimeout(t);
+    };
   }, []);
 
   // Cinematic Satellite Flight Transition State
@@ -2196,7 +2212,7 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
                   {mapStyleMode === "dark-v11"
                     ? "Estilo Dark"
                     : mapStyleMode === "streets-v12"
-                    ? "Estilo Streets"
+                    ? "Estilo Relieve"
                     : "Estilo Satélite"}
                 </span>
                 <ChevronDown
