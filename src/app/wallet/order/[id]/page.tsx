@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState, useRef, Suspense } from "react";
 import { useParams, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
@@ -10,21 +10,15 @@ import {
   ExternalLink,
   Bell,
   BellRing,
-  Package,
   Truck,
   CheckCircle2,
   Clock,
-  Sparkles,
-  ShieldCheck,
-  MapPin,
   ArrowLeft,
-  Smartphone,
-  QrCode,
   RefreshCw,
 } from "lucide-react";
 import { useUserStore, type Order } from "@/lib/userStore";
 
-export default function WalletOrderPassPage() {
+function WalletOrderPassContent() {
   const params = useParams<{ id: string }>();
   const searchParams = useSearchParams();
   const rawOrderId = decodeURIComponent(params?.id || "");
@@ -32,9 +26,7 @@ export default function WalletOrderPassPage() {
 
   const { orders } = useUserStore();
   const [liveOrder, setLiveOrder] = useState<Order | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
   const [copiedTracking, setCopiedTracking] = useState(false);
-  const [pushEnabled, setPushEnabled] = useState(false);
   const [walletSaved, setWalletSaved] = useState(false);
   const [pushBanner, setPushBanner] = useState<{
     title: string;
@@ -55,21 +47,26 @@ export default function WalletOrderPassPage() {
           const data = await res.json();
           if (Array.isArray(data?.orders)) {
             const matched = data.orders.find(
-              (o: any) =>
-                String(o.id).toLowerCase() === rawOrderId.toLowerCase() ||
-                String(o.id).replace(/^#/, "").toLowerCase() ===
+              (o: Record<string, unknown>) =>
+                String(o.id || "").toLowerCase() === rawOrderId.toLowerCase() ||
+                String(o.id || "").replace(/^#/, "").toLowerCase() ===
                   rawOrderId.replace(/^#/, "").toLowerCase()
             );
             if (matched && isMounted) {
+              const rawStatus = String(matched.status || "Procesando");
+              const validStatus: Order["status"] =
+                rawStatus === "Enviado" || rawStatus === "Entregado"
+                  ? rawStatus
+                  : "Procesando";
               const normalized: Order = {
-                id: matched.id,
-                date: matched.date || "Reciente",
+                id: String(matched.id || rawOrderId),
+                date: String(matched.date || "Reciente"),
                 total: Number(matched.total || 0),
-                status: matched.status || "Procesando",
-                trackingNumber: matched.trackingNumber || "",
-                trackingUrl: matched.trackingUrl || "",
-                carrierName: matched.carrierName || "",
-                shippingAddress: matched.shippingAddress || "",
+                status: validStatus,
+                trackingNumber: String(matched.trackingNumber || ""),
+                trackingUrl: String(matched.trackingUrl || ""),
+                carrierName: String(matched.carrierName || ""),
+                shippingAddress: String(matched.shippingAddress || ""),
                 items: Array.isArray(matched.items) ? matched.items : [],
               };
 
@@ -81,7 +78,6 @@ export default function WalletOrderPassPage() {
               }
               prevStatusRef.current = normalized.status;
               setLiveOrder(normalized);
-              setIsLoading(false);
               return;
             }
           }
@@ -106,7 +102,6 @@ export default function WalletOrderPassPage() {
         prevStatusRef.current = storeMatch.status;
         setLiveOrder(storeMatch);
       }
-      if (isMounted) setIsLoading(false);
     };
 
     fetchOrderLive();
@@ -183,7 +178,6 @@ export default function WalletOrderPassPage() {
     if (typeof window !== "undefined" && "Notification" in window) {
       const perm = await Notification.requestPermission();
       if (perm === "granted") {
-        setPushEnabled(true);
         setWalletSaved(true);
         setPushBanner({
           title: "Pase vinculado y notificaciones activas",
@@ -195,7 +189,6 @@ export default function WalletOrderPassPage() {
         return;
       }
     }
-    setPushEnabled(true);
     setWalletSaved(true);
     setPushBanner({
       title: "Pase guardado en tu Billetera Digital",
@@ -537,5 +530,19 @@ export default function WalletOrderPassPage() {
         </div>
       </motion.div>
     </div>
+  );
+}
+
+export default function WalletOrderPassPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-[#0B0B0E] text-white flex items-center justify-center text-xs font-mono uppercase tracking-widest">
+          Cargando Pase Digital Lumina...
+        </div>
+      }
+    >
+      <WalletOrderPassContent />
+    </Suspense>
   );
 }
