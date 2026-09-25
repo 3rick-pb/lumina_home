@@ -20,6 +20,7 @@ import {
   Sparkles 
 } from "lucide-react";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
+import InteractiveAddressMap from "@/components/ui/InteractiveAddressMap";
 import { useUserStore, clearAdminCache, syncAddressesToCloud, validateStrongPassword } from "@/lib/userStore";
 import { supabase } from "@/lib/supabase";
 import { CloudSyncStatus } from "../CloudSyncStatus";
@@ -1094,9 +1095,24 @@ export function SettingsTab({
                     <span>¡Ubicación detectada! Revisa los campos y escribe el nombre de quién recibe.</span>
                   </p>
                 )}
+
+                <div className="mt-4">
+                  <label className="block text-[11px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-2">
+                    Ubicación Exacta en Mapa
+                  </label>
+                  <InteractiveAddressMap
+                    initialLat={detectedCoords?.lat || -0.1807}
+                    initialLng={detectedCoords?.lng || -78.4678}
+                    onLocationSelect={(lat, lng) => setDetectedCoords({ lat, lng })}
+                    className="h-48 w-full rounded-2xl overflow-hidden border border-gray-200 dark:border-white/10 shadow-sm"
+                  />
+                  <p className="text-[10px] text-gray-500 mt-1">
+                    Arrastra el pin para guardar tu ubicación exacta. Esto asegurará la precisión de las entregas.
+                  </p>
+                </div>
               </div>
 
-              <div className="relative flex py-0.5 items-center">
+              <div className="relative flex py-0.5 items-center mt-2">
                 <div className="flex-grow border-t border-gray-200 dark:border-white/10"></div>
                 <span className="flex-shrink mx-2 text-[10px] text-gray-400 font-semibold uppercase tracking-wider">o llena los datos manualmente</span>
                 <div className="flex-grow border-t border-gray-200 dark:border-white/10"></div>
@@ -1228,7 +1244,7 @@ export function SettingsTab({
                     <label className="block text-[11px] font-semibold text-gray-700 dark:text-gray-300 mb-1">Tipo de Propiedad</label>
                     <select
                       value={addressType}
-                      onChange={e => setAddressType(e.target.value as any)}
+                      onChange={e => setAddressType(e.target.value as 'casa' | 'departamento' | 'oficina')}
                       className="w-full px-3 py-2 rounded-xl border border-gray-200 dark:border-white/10 text-xs outline-none focus:ring-1 focus:ring-[#8c9276] bg-white dark:bg-[#1a1a1c] text-gray-900 dark:text-gray-100"
                     >
                       <option value="casa">Casa</option>

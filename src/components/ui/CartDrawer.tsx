@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { motion, AnimatePresence, Variants } from "framer-motion";
 import { BeUIAdaptiveStepper, BeUIRollingPrice, BeUIAnimatedCtaButton, BeUITiltCard } from "./BeUIControls";
 import { WalletPassPopupModal } from "./WalletPassPopupModal";
+import InteractiveAddressMap from "./InteractiveAddressMap";
 import { playStepperTickSound } from "@/lib/soundUtils";
 import { 
  X, 
@@ -278,6 +279,7 @@ export function CartDrawer() {
   const [addrPostal, setAddrPostal] = useState("");
   const [addrState, setAddrState] = useState("");
   const [addrCountry, setAddrCountry] = useState("Ecuador");
+  const [addrDetectedCoords, setAddrDetectedCoords] = useState<{ lat: number; lng: number } | null>(null);
   const [addrDetectedRawGps, setAddrDetectedRawGps] = useState<RawGpsHardwareData | null>(null);
   const [isDetectingLocation, setIsDetectingLocation] = useState(false);
   const [locationError, setLocationError] = useState<string | null>(null);
@@ -511,6 +513,7 @@ export function CartDrawer() {
           }),
         };
         setAddrDetectedRawGps(enrichedRawGps);
+        setAddrDetectedCoords({ lat: coords.latitude, lng: coords.longitude });
 
         if (!addrRecipient.trim() && user?.name) {
           setAddrRecipient(user.name);
@@ -554,8 +557,8 @@ export function CartDrawer() {
  state: addrState.trim(),
  postalCode: addrPostal.trim(),
  country: addrCountry.trim(),
- lat: addrDetectedRawGps?.latitude,
- lng: addrDetectedRawGps?.longitude,
+ lat: addrDetectedCoords?.lat || addrDetectedRawGps?.latitude,
+ lng: addrDetectedCoords?.lng || addrDetectedRawGps?.longitude,
  rawGps: addrDetectedRawGps || undefined,
  rawGpsString: addrDetectedRawGps?.rawPositionJson || undefined,
  isDefault: addresses.length === 0
@@ -579,6 +582,7 @@ export function CartDrawer() {
  setAddrState("");
  setAddrCountry("Ecuador");
  setAddrDetectedRawGps(null);
+ setAddrDetectedCoords(null);
  setLocationError(null);
  setLocationSuccess(false);
  setIsEditingAddress(false);
@@ -1726,9 +1730,24 @@ export function CartDrawer() {
               <span>¡Ubicación detectada! Revisa los campos y escribe quién recibe.</span>
             </p>
           )}
+
+          <div className="mt-4">
+            <label className="block text-[11px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-2">
+              Ubicación Exacta en Mapa
+            </label>
+            <InteractiveAddressMap
+              initialLat={addrDetectedCoords?.lat || -0.1807}
+              initialLng={addrDetectedCoords?.lng || -78.4678}
+              onLocationSelect={(lat, lng) => setAddrDetectedCoords({ lat, lng })}
+              className="h-48 w-full rounded-2xl overflow-hidden border border-black/[0.08] dark:border-white/10 shadow-sm"
+            />
+            <p className="text-[10px] text-gray-500 dark:text-gray-400 mt-1.5">
+              Arrastra el pin azul a tu ubicación exacta. Esto asegurará la precisión de las entregas.
+            </p>
+          </div>
         </div>
 
-        <div className="relative flex py-1 items-center">
+        <div className="relative flex py-1 items-center mt-2">
           <div className="flex-grow border-t border-black/[0.06] dark:border-white/10"></div>
           <span className="flex-shrink mx-3 text-[10px] text-gray-400 dark:text-gray-500 font-semibold uppercase tracking-wider">o ingresa los datos manualmente</span>
           <div className="flex-grow border-t border-black/[0.06] dark:border-white/10"></div>
@@ -1859,7 +1878,7 @@ export function CartDrawer() {
             <label className="block text-[11px] font-semibold text-gray-700 dark:text-gray-300 mb-1">Tipo de Propiedad</label>
             <select
               value={addrAddressType}
-              onChange={e => setAddrAddressType(e.target.value as any)}
+              onChange={e => setAddrAddressType(e.target.value as 'casa' | 'departamento' | 'oficina')}
               className="w-full px-4 py-2.5 rounded-2xl border border-black/[0.08] dark:border-white/10 text-xs outline-none focus:ring-2 focus:ring-black/10 dark:focus:ring-white/20 bg-black/[0.02] dark:bg-white/[0.03] text-gray-900 dark:text-gray-100 transition-all"
             >
               <option value="casa">Casa</option>
