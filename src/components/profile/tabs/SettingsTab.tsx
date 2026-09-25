@@ -457,8 +457,8 @@ export function SettingsTab({
       return;
     }
 
-    let resolvedLat = detectedRawGps?.latitude ?? detectedCoords?.lat;
-    let resolvedLng = detectedRawGps?.longitude ?? detectedCoords?.lng;
+    let resolvedLat = detectedCoords?.lat ?? detectedRawGps?.latitude;
+    let resolvedLng = detectedCoords?.lng ?? detectedRawGps?.longitude;
 
     if (!Number.isFinite(resolvedLat) || !Number.isFinite(resolvedLng)) {
       const geocoded = await resolveEcuadorExactAddressLngLat({
@@ -474,6 +474,24 @@ export function SettingsTab({
         resolvedLat = geocoded[1];
       }
     }
+
+    const finalRawGps: RawGpsHardwareData | undefined =
+      typeof resolvedLat === "number" && typeof resolvedLng === "number"
+        ? {
+            ...(detectedRawGps || {
+              accuracy: 5,
+              altitude: null,
+              altitudeAccuracy: null,
+              heading: null,
+              speed: null,
+              timestamp: Date.now(),
+              rawPositionJson: JSON.stringify({ latitude: resolvedLat, longitude: resolvedLng }),
+            }),
+            latitude: resolvedLat,
+            longitude: resolvedLng,
+            rawCoordsString: `${resolvedLat},${resolvedLng}`,
+          }
+        : detectedRawGps || undefined;
 
     await addAddress({
       recipient: recipient.trim() || user?.name || "Destinatario",
@@ -497,8 +515,8 @@ export function SettingsTab({
       country: country.trim(),
       lat: resolvedLat,
       lng: resolvedLng,
-      rawGps: detectedRawGps || undefined,
-      rawGpsString: detectedRawGps?.rawPositionJson || undefined,
+      rawGps: finalRawGps,
+      rawGpsString: finalRawGps?.rawPositionJson || finalRawGps?.rawCoordsString || undefined,
       isDefault: addresses.length === 0,
     });
     setRecipient(user?.name || "");

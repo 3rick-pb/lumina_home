@@ -557,9 +557,29 @@ export function CartDrawer() {
  state: addrState.trim(),
  postalCode: addrPostal.trim(),
  country: addrCountry.trim(),
- lat: addrDetectedCoords?.lat || addrDetectedRawGps?.latitude,
- lng: addrDetectedCoords?.lng || addrDetectedRawGps?.longitude,
- rawGps: addrDetectedRawGps || undefined,
+ lat: addrDetectedCoords?.lat ?? addrDetectedRawGps?.latitude,
+ lng: addrDetectedCoords?.lng ?? addrDetectedRawGps?.longitude,
+ rawGps:
+   typeof (addrDetectedCoords?.lat ?? addrDetectedRawGps?.latitude) === "number" &&
+   typeof (addrDetectedCoords?.lng ?? addrDetectedRawGps?.longitude) === "number"
+     ? {
+         ...(addrDetectedRawGps || {
+           accuracy: 5,
+           altitude: null,
+           altitudeAccuracy: null,
+           heading: null,
+           speed: null,
+           timestamp: Date.now(),
+           rawPositionJson: JSON.stringify({
+             latitude: addrDetectedCoords?.lat,
+             longitude: addrDetectedCoords?.lng,
+           }),
+         }),
+         latitude: (addrDetectedCoords?.lat ?? addrDetectedRawGps?.latitude) as number,
+         longitude: (addrDetectedCoords?.lng ?? addrDetectedRawGps?.longitude) as number,
+         rawCoordsString: `${addrDetectedCoords?.lat ?? addrDetectedRawGps?.latitude},${addrDetectedCoords?.lng ?? addrDetectedRawGps?.longitude}`,
+       }
+     : addrDetectedRawGps || undefined,
  rawGpsString: addrDetectedRawGps?.rawPositionJson || undefined,
  isDefault: addresses.length === 0
  });
