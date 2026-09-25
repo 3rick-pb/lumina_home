@@ -71,7 +71,7 @@ export function CloudSyncStatus({
       ) : (
         <div className="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1 rounded-full bg-emerald-50/80 dark:bg-emerald-950/30 border border-emerald-200/50 dark:border-emerald-900/30 text-emerald-700 dark:text-emerald-400 text-[10.5px] sm:text-[11px] font-semibold select-none whitespace-nowrap shrink-0">
           <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
-          <span>Autoguardado en tiempo real activo</span>
+          <span>Autoguardado activo</span>
         </div>
       )}
 
