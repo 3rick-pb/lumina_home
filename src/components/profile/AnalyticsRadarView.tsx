@@ -522,31 +522,8 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
         }
       }
 
-      // 2. Request live unformatted GPS directly from the device chip when opening the Map view
-      // (exactly like the first versions of the Radar Map that requested browser location access)
-      const liveGps = await getImmediateRawGpsPosition();
-      if (liveGps && active) {
-        setSelfExactLngLat([liveGps.longitude, liveGps.latitude]);
-
-        // Automatically enrich the user's saved ShippingAddress in Ubicaciones with the raw GPS payload
-        if (primaryAddressObj) {
-          try {
-            const rawGpsString = JSON.stringify(liveGps);
-            const updatedAddr: ShippingAddress = {
-              ...primaryAddressObj,
-              lat: liveGps.latitude,
-              lng: liveGps.longitude,
-              rawGps: liveGps,
-              rawGpsString,
-            };
-            useUserStore.getState().setAddress(updatedAddr);
-            if (currentUser?.id && !currentUser.id.startsWith("guest_") && !currentUser.id.startsWith("vis_")) {
-              syncAddressesToCloud(currentUser.id, useUserStore.getState().addresses, updatedAddr);
-            }
-          } catch {}
-        }
-        return;
-      }
+      // No request live unformatted GPS directly on map load per user request.
+      // GPS prompt only triggers when adding/editing in settings.
 
       if (!primaryAddressObj) return;
 

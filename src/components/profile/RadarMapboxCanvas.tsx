@@ -1102,8 +1102,8 @@ type TileProvider =
   | "street-topo";
 
 export type MapboxOfficialStyleId =
-  | "navigation-night-v1"
-  | "outdoors-v12"
+  | "dark-v11"
+  | "streets-v12"
   | "satellite-streets-v12";
 
 export const MAPBOX_OFFICIAL_STYLES: Array<{
@@ -1113,15 +1113,15 @@ export const MAPBOX_OFFICIAL_STYLES: Array<{
   badge: string;
 }> = [
   {
-    id: "navigation-night-v1",
-    name: "Navigation Night",
-    mapboxUri: "mapbox://styles/mapbox/navigation-night-v1",
+    id: "dark-v11",
+    name: "Dark",
+    mapboxUri: "mapbox://styles/mapbox/dark-v11",
     badge: "v1",
   },
   {
-    id: "outdoors-v12",
-    name: "Outdoors",
-    mapboxUri: "mapbox://styles/mapbox/outdoors-v12",
+    id: "streets-v12",
+    name: "Streets",
+    mapboxUri: "mapbox://styles/mapbox/streets-v12",
     badge: "v12",
   },
   {
@@ -1175,7 +1175,7 @@ function getTileUrl(provider: TileProvider, z: number, x: number, y: number, use
   }
   if (provider === "terrain-relief") {
     if (!useAltHost) {
-      // Topographic 3D Hillshade Relief + Contours + Street Hierarchy (Outdoors v12 equivalent)
+      // Topographic 3D Hillshade Relief + Contours + Street Hierarchy (Streets v12 equivalent)
       return `https://mt${gSub}.google.com/vt/lyrs=p&hl=es&x=${wrappedX}&y=${y}&z=${z}&scale=2`;
     }
     const safeTopoZ = Math.min(16, z);
@@ -1334,7 +1334,7 @@ export function RadarMapboxCanvas({
   const prevZoomCommandRef = useRef<number>(zoomCommand);
   const prevZoomStepSeqRef = useRef<number>(0);
   const [, setRenderTick] = useState(0);
-  const [mapStyleMode, setMapStyleMode] = useState<MapboxOfficialStyleId>("navigation-night-v1");
+  const [mapStyleMode, setMapStyleMode] = useState<MapboxOfficialStyleId>("dark-v11");
   const isDraggingRef = useRef(false);
   const dragMovedRef = useRef(false);
   const dragStartRef = useRef({ x: 0, y: 0, lng: 0, lat: 0 });
@@ -1614,15 +1614,15 @@ export function RadarMapboxCanvas({
             ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
             ctx.fillStyle =
-              mapStyleMode === "navigation-night-v1"
+              mapStyleMode === "dark-v11"
                 ? "#0d1117"
-                : mapStyleMode === "outdoors-v12"
+                : mapStyleMode === "streets-v12"
                 ? "#e6ebe4"
                 : "#0b1014";
             ctx.fillRect(0, 0, w, h);
 
-            if (mapStyleMode === "navigation-night-v1") {
-              // 1. MAPBOX NAVIGATION NIGHT (navigation-night-v1 — Uber-grade dark navigation map)
+            if (mapStyleMode === "dark-v11") {
+              // 1. MAPBOX Dark (dark-v11 — Uber-grade dark navigation map)
               drawTileLayer(
                 ctx,
                 "street-map",
@@ -1635,8 +1635,8 @@ export function RadarMapboxCanvas({
                 1,
                 "invert(93%) hue-rotate(194deg) saturate(142%) brightness(89%) contrast(124%)"
               );
-            } else if (mapStyleMode === "outdoors-v12") {
-              // 2. MAPBOX OUTDOORS (outdoors-v12 — Topographic 3D Hillshade Relief & Elevation Contours)
+            } else if (mapStyleMode === "streets-v12") {
+              // 2. MAPBOX Streets (streets-v12 — Topographic 3D Hillshade Relief & Elevation Contours)
               drawTileLayer(
                 ctx,
                 "terrain-relief",
@@ -1659,10 +1659,10 @@ export function RadarMapboxCanvas({
             }
 
             // Subtle Coordinate Grid Lines in dark/satellite modes
-            if (mapStyleMode !== "outdoors-v12") {
+            if (mapStyleMode !== "streets-v12") {
               ctx.save();
               ctx.strokeStyle =
-                mapStyleMode === "navigation-night-v1"
+                mapStyleMode === "dark-v11"
                   ? "rgba(96, 165, 250, 0.06)"
                   : "rgba(204, 255, 0, 0.065)";
               ctx.lineWidth = 1;
@@ -1993,7 +1993,7 @@ export function RadarMapboxCanvas({
 
   // Hardware-composited CSS filter applied once to the canvas element
   const canvasHardwareFilter =
-    mapStyleMode === "navigation-night-v1"
+    mapStyleMode === "dark-v11"
       ? "contrast(1.06) brightness(1.02)"
       : mapStyleMode === "satellite-streets-v12"
       ? "contrast(1.1) brightness(1.04) saturate(1.15)"
@@ -2029,8 +2029,8 @@ export function RadarMapboxCanvas({
         className="block w-full h-full pointer-events-none"
       />
 
-      {/* Subtle Edge Vignette in Navigation Night & Satellite Streets */}
-      {mapStyleMode !== "outdoors-v12" && (
+      {/* Subtle Edge Vignette in Dark & Satellite Streets */}
+      {mapStyleMode !== "streets-v12" && (
         <div
           className="absolute inset-0 pointer-events-none"
           style={{
@@ -2045,7 +2045,7 @@ export function RadarMapboxCanvas({
         {renderOverlayPins(projectPin)}
       </div>
 
-      {/* Official Mapbox Style Selector Dock (Real Mapbox Style Names: Navigation Night · Outdoors · Satellite Streets) */}
+      {/* Official Mapbox Style Selector Dock (Real Mapbox Style Names: Dark · Streets · Satellite Streets) */}
       <div
         className="absolute bottom-36 sm:bottom-40 left-3 sm:left-4 z-30 flex flex-wrap items-center gap-1.5 p-1 rounded-2xl bg-[#0B0D12]/90 backdrop-blur-2xl border border-white/15 shadow-[0_14px_34px_rgba(0,0,0,0.55)] pointer-events-auto"
         onClick={(e) => e.stopPropagation()}
@@ -2064,9 +2064,9 @@ export function RadarMapboxCanvas({
                   : "text-white/75 hover:text-white hover:bg-white/10 font-semibold"
               }`}
             >
-              {styleItem.id === "navigation-night-v1" ? (
+              {styleItem.id === "dark-v11" ? (
                 <Layers className="w-3.5 h-3.5 shrink-0" />
-              ) : styleItem.id === "outdoors-v12" ? (
+              ) : styleItem.id === "streets-v12" ? (
                 <MapIcon className="w-3.5 h-3.5 shrink-0" />
               ) : (
                 <Satellite className="w-3.5 h-3.5 shrink-0" />
