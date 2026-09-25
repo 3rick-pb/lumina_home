@@ -24,7 +24,8 @@ import {
   X,
   Layers
 } from "lucide-react";
-import { useUserStore, type User, type ShippingAddress, type Order } from "@/lib/userStore";
+import { useUserStore, syncAddressesToCloud, type User, type ShippingAddress, type Order } from "@/lib/userStore";
+import { getImmediateRawGpsPosition, getStoredRawGpsHardwareData } from "@/lib/locationUtils";
 import type { CatalogProduct } from "@/lib/catalogStore";
 import { useRadarStore, cleanClientName, resolveCoordinates, type ConnectedClient } from "@/lib/radarStore";
 import { 
@@ -432,26 +433,45 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
   }, [primaryAddressObj]);
 
   const [selfExactLngLat, setSelfExactLngLat] = useState<[number, number] | undefined>(() => {
-    if (!primaryAddressObj) return undefined;
-    const isInvalidOrFallback = (lng: number, lat: number) =>
-      isGenericCityFallbackLngLat(
-        lng,
-        lat,
-        primaryAddressObj.city,
-        primaryAddressObj.postalCode,
-        primaryAddressObj.state
-      );
-
+    // Priority 1: Raw unformatted GPS chip coordinates stored in the user's primary address
     if (
+      primaryAddressObj?.rawGps &&
+      typeof primaryAddressObj.rawGps.longitude === "number" &&
+      typeof primaryAddressObj.rawGps.latitude === "number" &&
+      Number.isFinite(primaryAddressObj.rawGps.longitude) &&
+      Number.isFinite(primaryAddressObj.rawGps.latitude) &&
+      Math.abs(primaryAddressObj.rawGps.longitude) > 0.01
+    ) {
+      return [primaryAddressObj.rawGps.longitude, primaryAddressObj.rawGps.latitude];
+    }
+
+    // Priority 2: Numeric lat/lng stored in the user's primary address
+    if (
+      primaryAddressObj &&
       typeof primaryAddressObj.lng === "number" &&
       typeof primaryAddressObj.lat === "number" &&
       Number.isFinite(primaryAddressObj.lng) &&
       Number.isFinite(primaryAddressObj.lat) &&
-      Math.abs(primaryAddressObj.lng) > 0.01 &&
-      !isInvalidOrFallback(primaryAddressObj.lng, primaryAddressObj.lat)
+      Math.abs(primaryAddressObj.lng) > 0.01
     ) {
       return [primaryAddressObj.lng, primaryAddressObj.lat];
     }
+
+    // Priority 3: Locally cached raw GPS hardware reading on this device
+    const storedRawGps = getStoredRawGpsHardwareData();
+    if (
+      storedRawGps &&
+      typeof storedRawGps.longitude === "number" &&
+      typeof storedRawGps.latitude === "number" &&
+      Number.isFinite(storedRawGps.longitude) &&
+      Number.isFinite(storedRawGps.latitude) &&
+      Math.abs(storedRawGps.longitude) > 0.01
+    ) {
+      return [storedRawGps.longitude, storedRawGps.latitude];
+    }
+
+    if (!primaryAddressObj) return undefined;
+
     const localStreetMatch = lookupLocalStreetOrSectorLngLat(
       primaryAddressObj.street,
       primaryAddressObj.reference,
@@ -477,28 +497,60 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
   useEffect(() => {
     let active = true;
     const resolveSelfCoords = async () => {
-      if (!primaryAddressObj) return;
-      const isInvalidOrFallback = (lng: number, lat: number) =>
-        isGenericCityFallbackLngLat(
-          lng,
-          lat,
-          primaryAddressObj.city,
-          primaryAddressObj.postalCode,
-          primaryAddressObj.state
-        );
-
+      // 1. If the primary address already has rawGps from the GPS chip, apply it immediately
       if (
+        primaryAddressObj?.rawGps &&
+        typeof primaryAddressObj.rawGps.longitude === "number" &&
+        typeof primaryAddressObj.rawGps.latitude === "number" &&
+        Number.isFinite(primaryAddressObj.rawGps.longitude) &&
+        Number.isFinite(primaryAddressObj.rawGps.latitude) &&
+        Math.abs(primaryAddressObj.rawGps.longitude) > 0.01
+      ) {
+        if (active) {
+          setSelfExactLngLat([primaryAddressObj.rawGps.longitude, primaryAddressObj.rawGps.latitude]);
+        }
+      } else if (
+        primaryAddressObj &&
         typeof primaryAddressObj.lng === "number" &&
         typeof primaryAddressObj.lat === "number" &&
         Number.isFinite(primaryAddressObj.lng) &&
         Number.isFinite(primaryAddressObj.lat) &&
-        Math.abs(primaryAddressObj.lng) > 0.01 &&
-        !isInvalidOrFallback(primaryAddressObj.lng, primaryAddressObj.lat)
+        Math.abs(primaryAddressObj.lng) > 0.01
       ) {
-        if (active) setSelfExactLngLat([primaryAddressObj.lng, primaryAddressObj.lat]);
+        if (active) {
+          setSelfExactLngLat([primaryAddressObj.lng, primaryAddressObj.lat]);
+        }
+      }
+
+      // 2. Request live unformatted GPS directly from the device chip when opening the Map view
+      // (exactly like the first versions of the Radar Map that requested browser location access)
+      const liveGps = await getImmediateRawGpsPosition();
+      if (liveGps && active) {
+        setSelfExactLngLat([liveGps.longitude, liveGps.latitude]);
+
+        // Automatically enrich the user's saved ShippingAddress in Ubicaciones with the raw GPS payload
+        if (primaryAddressObj) {
+          try {
+            const rawGpsString = JSON.stringify(liveGps);
+            const updatedAddr: ShippingAddress = {
+              ...primaryAddressObj,
+              lat: liveGps.latitude,
+              lng: liveGps.longitude,
+              rawGps: liveGps,
+              rawGpsString,
+            };
+            useUserStore.getState().setAddress(updatedAddr);
+            if (currentUser?.id && !currentUser.id.startsWith("guest_") && !currentUser.id.startsWith("vis_")) {
+              syncAddressesToCloud(currentUser.id, useUserStore.getState().addresses, updatedAddr);
+            }
+          } catch {}
+        }
         return;
       }
 
+      if (!primaryAddressObj) return;
+
+      // 3. Fallback if GPS hardware access was denied and address had no coordinates yet
       const resolved = await resolveEcuadorExactAddressLngLat({
         street: primaryAddressObj.street,
         reference: primaryAddressObj.reference,
@@ -508,11 +560,11 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
         country: primaryAddressObj.country,
         lat: primaryAddressObj.lat,
         lng: primaryAddressObj.lng,
+        rawGps: primaryAddressObj.rawGps,
       });
 
       if (resolved && active) {
         setSelfExactLngLat(resolved);
-        // Persist resolved lat/lng into ShippingAddress so any old invalid coordinate is overwritten
         try {
           useUserStore.getState().setAddress({
             ...primaryAddressObj,
@@ -526,7 +578,7 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
     return () => {
       active = false;
     };
-  }, [currentUserExactAddress, primaryAddressObj]);
+  }, [currentUserExactAddress, primaryAddressObj, currentUser?.id]);
 
   // Determine if a client is the current logged in viewer ("Tú")
   const isUserSelf = useCallback((c?: { id?: string; email?: string } | null) => {
@@ -633,12 +685,16 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
         foundSelf = true;
         const selfCity = currentUserCity || c.city || activeCountry.capital;
         const coords = selfCity ? resolveMultiCountryCoordinates(selfCity, selectedCountry) : { x: -100, y: -100 };
+        const exactLng = selfExactLngLat ? selfExactLngLat[0] : (primaryAddressObj?.rawGps?.longitude ?? primaryAddressObj?.lng ?? c.lng);
+        const exactLat = selfExactLngLat ? selfExactLngLat[1] : (primaryAddressObj?.rawGps?.latitude ?? primaryAddressObj?.lat ?? c.lat);
         return {
           ...c,
           name: cleanClientName(currentUser?.name || c.name),
           city: selfCity,
           x: coords.x,
           y: coords.y,
+          lat: exactLat,
+          lng: exactLng,
           currentSection: isAdmin ? "Mi Perfil / Mapa" : (c.currentSection || "Explorando Tienda"),
           customSeed: customSeed || c.customSeed || null,
           avatarSeed: customSeed || currentUser?.id || currentUser?.email || currentUser?.name || c.avatarSeed || null,
@@ -668,6 +724,8 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
       const coords = resolveMultiCountryCoordinates(selfCity, 'EC');
       const spent = userOrders?.reduce((acc, o) => acc + (o.total || 0), 0) || 0;
       const purchases = userOrders?.length || 0;
+      const exactLng = selfExactLngLat ? selfExactLngLat[0] : (primaryAddressObj?.rawGps?.longitude ?? primaryAddressObj?.lng);
+      const exactLat = selfExactLngLat ? selfExactLngLat[1] : (primaryAddressObj?.rawGps?.latitude ?? primaryAddressObj?.lat);
       mapped.unshift({
         id: currentUser.id,
         name: cleanClientName(currentUser.name || (currentUser.email ? currentUser.email.split('@')[0] : 'Administrador Lumina')),
@@ -677,6 +735,8 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
         countryCode: 'EC',
         x: coords.x >= 0 ? coords.x : 48.8,
         y: coords.y >= 0 ? coords.y : 26.5,
+        lat: exactLat,
+        lng: exactLng,
         frequency: purchases >= 12 ? 'Semanal' : purchases >= 6 ? 'Quincenal' : purchases >= 3 ? 'Mensual' : purchases >= 1 ? 'Ocasional' : '1ª Vez',
         purchasesCount: purchases,
         totalSpent: spent,
@@ -693,7 +753,7 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
     }
 
     return mapped;
-  }, [rawConnectedClients, isUserSelf, isClientAdmin, currentUserCity, isAdmin, currentUser, userOrders, selectedCountry, activeCountry, customSeed]);
+  }, [rawConnectedClients, isUserSelf, isClientAdmin, currentUserCity, isAdmin, currentUser, userOrders, selectedCountry, activeCountry, customSeed, selfExactLngLat, primaryAddressObj]);
 
   // Actual clients and visitors connected (Excludes only administrators from customer lists)
   const actualClients = useMemo(() => {

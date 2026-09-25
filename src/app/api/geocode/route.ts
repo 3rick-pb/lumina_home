@@ -72,21 +72,23 @@ function resolveMajorCity(
   stateName?: string,
   countryName?: string
 ): string {
-  const normState = (stateName || '').toLowerCase().trim();
-  const isEcuador = !countryName || countryName.toLowerCase().includes('ecuador');
-
-  // In Ecuador and courier logistics, looking "más desde arriba en el mapa"
-  // always maps provincial / metropolitan areas to their primary metropolis (e.g. Pichincha -> Quito)
-  if (isEcuador && ECUADOR_METROPOLITAN_CITIES[normState]) {
-    return ECUADOR_METROPOLITAN_CITIES[normState];
-  }
-
   const cCity = cleanAdmin(rawCity);
   const cCounty = cleanAdmin(rawCounty);
   const cMun = cleanAdmin(rawMunicipality);
   const cBdc = cleanAdmin(bdcCity);
 
-  return cCity || cCounty || cMun || cBdc || '';
+  // Preserve the exact real city/canton reported by GPS reverse geocoding first!
+  if (cCity || cCounty || cMun || cBdc) {
+    return cCity || cCounty || cMun || cBdc;
+  }
+
+  const normState = (stateName || '').toLowerCase().trim();
+  const isEcuador = !countryName || countryName.toLowerCase().includes('ecuador');
+  if (isEcuador && ECUADOR_METROPOLITAN_CITIES[normState]) {
+    return ECUADOR_METROPOLITAN_CITIES[normState];
+  }
+
+  return '';
 }
 
 // 1. Topological Intersecting Street Discovery via OSM Junction Nodes
@@ -418,17 +420,27 @@ async function resolveGeocode(latRaw: unknown, lonRaw: unknown, clientIp?: strin
     source: isIpFallback ? 'ip' : 'gps',
     data: {
       street: finalStreet,
+      reference: subLocality || undefined,
       city: finalCityResult,
       state: finalState,
       postalCode: finalPostal,
-      country: finalCountry
+      country: finalCountry,
+      rawLat: !isIpFallback && Number.isFinite(nLat) ? nLat : undefined,
+      rawLon: !isIpFallback && Number.isFinite(nLon) ? nLon : undefined,
+      rawDisplayName: (origin as { display_name?: string } | null)?.display_name || undefined,
+      rawNominatim: origin || bdc || undefined,
     },
-    // Direct top-level properties for seamless compatibility
+    // Direct top-level properties for seamless compatibility + Raw unformatted GPS/Geocoder payload
     street: finalStreet,
+    reference: subLocality || undefined,
     city: finalCityResult,
     state: finalState,
     postalCode: finalPostal,
-    country: finalCountry
+    country: finalCountry,
+    rawLat: !isIpFallback && Number.isFinite(nLat) ? nLat : undefined,
+    rawLon: !isIpFallback && Number.isFinite(nLon) ? nLon : undefined,
+    rawDisplayName: (origin as { display_name?: string } | null)?.display_name || undefined,
+    rawNominatim: origin || bdc || undefined,
   });
 }
 

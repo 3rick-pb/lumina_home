@@ -25,7 +25,11 @@ import { supabase } from "@/lib/supabase";
 import { CloudSyncStatus } from "../CloudSyncStatus";
 import { BlobatarAvatar } from "@/components/ui/BlobatarAvatar";
 import { useAvatarSettingsStore } from "@/lib/avatarSettingsStore";
-import { getRefinedCoordinates } from "@/lib/locationUtils";
+import {
+  getRefinedCoordinates,
+  getImmediateRawGpsPosition,
+  type RawGpsHardwareData,
+} from "@/lib/locationUtils";
 import { resolveEcuadorExactAddressLngLat } from "../RadarMapboxCanvas";
 import { StrongPasswordMeter } from "@/components/ui/StrongPasswordMeter";
 
@@ -106,6 +110,8 @@ export function SettingsTab({
   const [postalCode, setPostalCode] = useState("");
   const [country, setCountry] = useState("Ecuador");
   const [detectedCoords, setDetectedCoords] = useState<{ lat: number; lng: number } | null>(null);
+  const [detectedRawGps, setDetectedRawGps] = useState<RawGpsHardwareData | null>(null);
+  const [syncingRawGpsId, setSyncingRawGpsId] = useState<string | null>(null);
   const [isDetectingLocation, setIsDetectingLocation] = useState(false);
   const [locationError, setLocationError] = useState<string | null>(null);
   const [locationSuccess, setLocationSuccess] = useState(false);
@@ -346,15 +352,27 @@ export function SettingsTab({
     }
 
     try {
-      // 3 internal sequential samples, 3rd sample used ("la tercera es la vencida")
+      // 3 internal sequential samples, returning the finest accuracy sample + full raw GPS hardware telemetry
       const coords = await getRefinedCoordinates();
       const gpsPair = { lat: coords.latitude, lng: coords.longitude };
       setDetectedCoords(gpsPair);
+      setDetectedRawGps(coords.rawGps);
+
       const res = await fetch(`/api/geocode?lat=${coords.latitude}&lon=${coords.longitude}`);
       if (!res.ok) throw new Error("Error en resolución");
       const data = await res.json();
       if (data.success) {
-        // Fills the form strictly once at the end with the 3rd sample + exact GPS coordinates
+        // Merge unformatted reverse-geocode JSON (rawDisplayName, rawNominatim) into rawGps without stripping anything
+        const enrichedRawGps: RawGpsHardwareData = {
+          ...coords.rawGps,
+          rawDisplayName: data.rawDisplayName || data.data?.rawDisplayName || coords.rawGps.rawDisplayName,
+          rawNominatim: data.rawNominatim || data.data?.rawNominatim || coords.rawGps.rawNominatim,
+          rawPositionJson: JSON.stringify({
+            gpsChip: coords.rawGps,
+            reverseGeocodeRaw: data.rawNominatim || data.data?.rawNominatim || data,
+          }),
+        };
+        setDetectedRawGps(enrichedRawGps);
         applyResolvedLocation(data, gpsPair);
       } else {
         await fetchIpLocationFallback();
@@ -370,6 +388,53 @@ export function SettingsTab({
     }
   };
 
+  const handleCaptureRawGpsForSavedAddress = async (addrId: string) => {
+    setSyncingRawGpsId(addrId);
+    try {
+      const rawGps = await getImmediateRawGpsPosition();
+      let enrichedRawGps = rawGps;
+      try {
+        const res = await fetch(`/api/geocode?lat=${rawGps.latitude}&lon=${rawGps.longitude}`);
+        if (res.ok) {
+          const geoData = await res.json();
+          enrichedRawGps = {
+            ...rawGps,
+            rawDisplayName: geoData.rawDisplayName || geoData.data?.rawDisplayName,
+            rawNominatim: geoData.rawNominatim || geoData.data?.rawNominatim,
+            rawPositionJson: JSON.stringify({
+              gpsChip: rawGps,
+              reverseGeocodeRaw: geoData.rawNominatim || geoData,
+            }),
+          };
+        }
+      } catch {}
+
+      const updatedAddresses = addresses.map((a) =>
+        a.id === addrId
+          ? {
+              ...a,
+              lat: enrichedRawGps.latitude,
+              lng: enrichedRawGps.longitude,
+              rawGps: enrichedRawGps,
+              rawGpsString: enrichedRawGps.rawPositionJson,
+            }
+          : a
+      );
+      const updatedActive =
+        updatedAddresses.find((a) => a.isDefault) || updatedAddresses[0] || null;
+
+      useUserStore.setState({
+        addresses: updatedAddresses,
+        address: updatedActive,
+      });
+      await syncAddressesToCloud(user?.id, updatedAddresses, updatedActive);
+    } catch (err) {
+      console.warn("No se pudo capturar el GPS crudo:", err);
+    } finally {
+      setSyncingRawGpsId(null);
+    }
+  };
+
   const handleAddressSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!street.trim() || !city.trim() || !postalCode.trim() || !stateProv.trim() || !country.trim()) return;
@@ -378,8 +443,8 @@ export function SettingsTab({
       return;
     }
 
-    let resolvedLat = detectedCoords?.lat;
-    let resolvedLng = detectedCoords?.lng;
+    let resolvedLat = detectedRawGps?.latitude ?? detectedCoords?.lat;
+    let resolvedLng = detectedRawGps?.longitude ?? detectedCoords?.lng;
 
     if (!Number.isFinite(resolvedLat) || !Number.isFinite(resolvedLng)) {
       const geocoded = await resolveEcuadorExactAddressLngLat({
@@ -409,6 +474,8 @@ export function SettingsTab({
       country: country.trim(),
       lat: resolvedLat,
       lng: resolvedLng,
+      rawGps: detectedRawGps || undefined,
+      rawGpsString: detectedRawGps?.rawPositionJson || undefined,
       isDefault: addresses.length === 0,
     });
     setRecipient(user?.name || "");
@@ -422,6 +489,7 @@ export function SettingsTab({
     setPostalCode("");
     setCountry("Ecuador");
     setDetectedCoords(null);
+    setDetectedRawGps(null);
     setLocationError(null);
     setLocationSuccess(false);
     setShowAddressForm(false);
@@ -835,7 +903,44 @@ export function SettingsTab({
                     <p className="text-gray-500 dark:text-gray-400 text-[11px] mt-0.5">
                       {addr.city}{addr.state ? `, ${addr.state}` : ""} {addr.postalCode}
                     </p>
-                    <p className="text-gray-400 text-[10px] font-medium mt-0.5">{addr.country}</p>
+                    <p className="text-gray-400 text-[10px] font-medium mt-0.5">{String(addr.country || "Ecuador").split("||LUMINA_RAW_GPS||")[0]}</p>
+
+                    {/* Raw GPS Chip Telemetry Badge (Ubicación Cruda sin formatear) */}
+                    <div className="mt-2 pt-2 border-t border-gray-100 dark:border-white/5 flex flex-wrap items-center justify-between gap-2">
+                      {addr.rawGps || (typeof addr.lat === "number" && typeof addr.lng === "number") ? (
+                        <div className="flex flex-col gap-0.5 min-w-0">
+                          <span className="inline-flex items-center gap-1 text-[9.5px] font-mono font-bold text-emerald-700 dark:text-[#ccff00]">
+                            <Navigation className="w-2.5 h-2.5 shrink-0" />
+                            GPS Crudo: {(addr.rawGps?.latitude ?? addr.lat)?.toFixed(7)}, {(addr.rawGps?.longitude ?? addr.lng)?.toFixed(7)}
+                            {addr.rawGps?.accuracy ? ` (±${Math.round(addr.rawGps.accuracy)}m)` : ""}
+                          </span>
+                          {addr.rawGps?.rawDisplayName && (
+                            <span className="text-[9px] font-mono text-gray-400 truncate max-w-[260px]" title={addr.rawGps.rawDisplayName}>
+                              {addr.rawGps.rawDisplayName}
+                            </span>
+                          )}
+                        </div>
+                      ) : (
+                        <span className="text-[10px] text-amber-600 dark:text-amber-400 font-medium">
+                          Sin telemetría cruda del chip GPS
+                        </span>
+                      )}
+
+                      <button
+                        type="button"
+                        onClick={() => handleCaptureRawGpsForSavedAddress(addr.id)}
+                        disabled={syncingRawGpsId === addr.id}
+                        className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-gray-900 dark:bg-white/10 hover:bg-gray-800 dark:hover:bg-white/15 text-white dark:text-[#ccff00] text-[9.5px] font-mono font-bold transition-all cursor-pointer shrink-0 disabled:opacity-50"
+                        title="Capturar la ubicación cruda directamente del chip GPS del dispositivo y guardarla en esta dirección"
+                      >
+                        {syncingRawGpsId === addr.id ? (
+                          <Loader2 className="w-2.5 h-2.5 animate-spin" />
+                        ) : (
+                          <Navigation className="w-2.5 h-2.5" />
+                        )}
+                        <span>{addr.rawGps ? "Actualizar GPS Crudo" : "Capturar GPS Crudo"}</span>
+                      </button>
+                    </div>
 
                     {(addr.idNumber || addr.phone || addr.email) && (
                       <div className="flex flex-wrap items-center gap-1.5 mt-2 pt-1.5 border-t border-gray-100 dark:border-white/5">

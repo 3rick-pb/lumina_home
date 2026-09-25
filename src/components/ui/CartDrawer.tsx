@@ -43,7 +43,7 @@ import { useThemeStore, getResolvedTheme } from "@/lib/themeStore";
 import { clsx } from "clsx";
 import { useUserStore, Order, formatCleanName } from "@/lib/userStore";
 import { useCatalogStore, isAgotadoBadge } from "@/lib/catalogStore";
-import { getRefinedCoordinates } from "@/lib/locationUtils";
+import { getRefinedCoordinates, type RawGpsHardwareData } from "@/lib/locationUtils";
 
 // Official Card & Payment Gateway Logos (Authentic Vector Brandmarks from theSVG.org + PayPhone Official)
 function MastercardLogo({ className = "h-4" }: { className?: string }) {
@@ -269,6 +269,7 @@ export function CartDrawer() {
   const [addrPostal, setAddrPostal] = useState("");
   const [addrState, setAddrState] = useState("");
   const [addrCountry, setAddrCountry] = useState("Ecuador");
+  const [addrDetectedRawGps, setAddrDetectedRawGps] = useState<RawGpsHardwareData | null>(null);
   const [isDetectingLocation, setIsDetectingLocation] = useState(false);
   const [locationError, setLocationError] = useState<string | null>(null);
   const [locationSuccess, setLocationSuccess] = useState(false);
@@ -435,8 +436,9 @@ export function CartDrawer() {
     setLocationSuccess(false);
 
     try {
-      // Runs 3 internal sequential samples and returns the 3rd sample ("a la 3ra la vencida")
+      // Runs 3 internal sequential samples and returns the most accurate sample + raw GPS chip telemetry
       const coords = await getRefinedCoordinates();
+      setAddrDetectedRawGps(coords.rawGps);
 
       const res = await fetch("/api/geocode", {
         method: "POST",
@@ -455,6 +457,17 @@ export function CartDrawer() {
         if (detState) setAddrState(detState);
         if (detPostal) setAddrPostal(detPostal);
         if (detCountry) setAddrCountry(detCountry);
+
+        const enrichedRawGps: RawGpsHardwareData = {
+          ...coords.rawGps,
+          rawDisplayName: result.rawDisplayName || result.data?.rawDisplayName,
+          rawNominatim: result.rawNominatim || result.data?.rawNominatim,
+          rawPositionJson: JSON.stringify({
+            gpsChip: coords.rawGps,
+            reverseGeocodeRaw: result.rawNominatim || result.data?.rawNominatim || result,
+          }),
+        };
+        setAddrDetectedRawGps(enrichedRawGps);
 
         if (!addrRecipient.trim() && user?.name) {
           setAddrRecipient(user.name);
@@ -489,6 +502,10 @@ export function CartDrawer() {
  state: addrState.trim(),
  postalCode: addrPostal.trim(),
  country: addrCountry.trim(),
+ lat: addrDetectedRawGps?.latitude,
+ lng: addrDetectedRawGps?.longitude,
+ rawGps: addrDetectedRawGps || undefined,
+ rawGpsString: addrDetectedRawGps?.rawPositionJson || undefined,
  isDefault: addresses.length === 0
  });
  setAddrRecipient(user?.name || "");
@@ -500,6 +517,7 @@ export function CartDrawer() {
  setAddrPostal("");
  setAddrState("");
  setAddrCountry("Ecuador");
+ setAddrDetectedRawGps(null);
  setLocationError(null);
  setLocationSuccess(false);
  setIsEditingAddress(false);

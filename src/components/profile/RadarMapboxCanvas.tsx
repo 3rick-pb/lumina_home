@@ -526,30 +526,24 @@ export function getExpectedCityOrPostalCenter(
 }
 
 /**
- * Verifies that a candidate [lng, lat] coordinate actually lies inside Ecuador AND within ~38km (0.35 deg)
- * of the user's declared city / postal code center. Rejects any poisoned Peru/Colombia/distant coordinates.
+ * Verifies that a candidate [lng, lat] coordinate lies within valid geographic bounds.
+ * Never rejects real hardware GPS coordinates from any canton, parish, or city.
  */
 export function isCoordinateValidForAddress(
   lng?: number,
   lat?: number,
-  city?: string,
-  postalCode?: string,
-  state?: string
+  _city?: string,
+  _postalCode?: string,
+  _state?: string
 ): boolean {
   if (typeof lng !== "number" || typeof lat !== "number" || !Number.isFinite(lng) || !Number.isFinite(lat)) {
     return false;
   }
-  // Strict Ecuador geographic bounding box (including Galápagos [-92..-89] and Continental [-81.5..-75.0, -5.0..1.5])
-  const isGalapagos = lng >= -92.0 && lng <= -89.0 && lat >= -1.8 && lat <= 0.8;
-  const isContinentalEcuador = lng >= -81.5 && lng <= -75.0 && lat >= -5.0 && lat <= 1.55;
-  if (!isGalapagos && !isContinentalEcuador) {
+  if (Math.abs(lng) < 0.01 && Math.abs(lat) < 0.01) {
     return false;
   }
-
-  const expectedCenter = getExpectedCityOrPostalCenter(city, postalCode, state);
-  const distDeg = Math.hypot(lng - expectedCenter[0], lat - expectedCenter[1]);
-  // Must be within 0.36 degrees (~40 km metropolitan radius) of the city/postal center
-  return distDeg <= 0.36;
+  // Valid Western Hemisphere / Latin America / Global GPS bounds
+  return lng >= -130.0 && lng <= -30.0 && lat >= -60.0 && lat <= 40.0;
 }
 
 /**
@@ -838,26 +832,40 @@ export async function resolveEcuadorExactAddressLngLat(address: {
   country?: string;
   lat?: number;
   lng?: number;
+  rawGps?: {
+    latitude?: number;
+    longitude?: number;
+    rawDisplayName?: string;
+  };
 }): Promise<[number, number] | null> {
+  // 0. PRIORITY #1: Unformatted Raw GPS Chip Coordinates (100% exact hardware reading)
+  const rawLat =
+    typeof address.rawGps?.latitude === "number" && Number.isFinite(address.rawGps.latitude)
+      ? address.rawGps.latitude
+      : typeof address.lat === "number" && Number.isFinite(address.lat)
+      ? address.lat
+      : undefined;
+  const rawLng =
+    typeof address.rawGps?.longitude === "number" && Number.isFinite(address.rawGps.longitude)
+      ? address.rawGps.longitude
+      : typeof address.lng === "number" && Number.isFinite(address.lng)
+      ? address.lng
+      : undefined;
+
+  if (
+    typeof rawLng === "number" &&
+    typeof rawLat === "number" &&
+    Math.abs(rawLng) > 0.01 &&
+    isCoordinateValidForAddress(rawLng, rawLat)
+  ) {
+    return [rawLng, rawLat];
+  }
+
   const rawStreet = (address.street || "").trim();
   const rawRef = (address.reference || "").trim();
   const rawPostal = (address.postalCode || "").trim();
   const rawCity = formatCleanCityForGeocode(address.city || "Quito");
   const rawState = (address.state || "").trim();
-  const rawCountry = (address.country || "Ecuador").trim();
-  const hasSpecificAddressOrPostal = Boolean(rawStreet || rawRef || rawPostal);
-
-  if (
-    typeof address.lng === "number" &&
-    typeof address.lat === "number" &&
-    Number.isFinite(address.lng) &&
-    Number.isFinite(address.lat) &&
-    Math.abs(address.lng) > 0.01 &&
-    isCoordinateValidForAddress(address.lng, address.lat, rawCity, rawPostal, rawState) &&
-    (!hasSpecificAddressOrPostal || !isGenericCityFallbackLngLat(address.lng, address.lat, rawCity, rawPostal, rawState))
-  ) {
-    return [address.lng, address.lat];
-  }
 
   // 1. Check calibrated avenue/neighborhood in our local dictionary ONLY if within 35km of expected city/postal center
   const detailOnlyMatch = lookupLocalStreetOrSectorLngLat(
@@ -877,6 +885,12 @@ export async function resolveEcuadorExactAddressLngLat(address: {
   if (!rawStreet && !rawRef && !rawPostal) {
     return getExpectedCityOrPostalCenter(rawCity, rawPostal, rawState);
   }
+
+  const hasSpecificAddressOrPostal = Boolean(
+    (rawStreet && rawStreet.length >= 3) ||
+      (rawRef && rawRef.length >= 3) ||
+      (rawPostal && rawPostal.replace(/\D/g, "").length === 6)
+  );
 
   const cacheKey = `lumina_geo_v8_${normalizeGeoKey(`${rawStreet}_${rawRef}_${rawPostal}_${rawCity}`)}`;
   if (typeof window !== "undefined") {
@@ -1079,6 +1093,7 @@ const tileLoadingSet = new Set<string>();
 
 type TileProvider =
   | "satellite"
+  | "terrain-relief"
   | "dark-base"
   | "dark-ref"
   | "boundaries-labels"
@@ -1086,9 +1101,38 @@ type TileProvider =
   | "street-map"
   | "street-topo";
 
-// Maximum safe native zoom per Esri ArcGIS tile provider in Latin America / Ecuador.
-// Guarantees 100% watermark-free tiles ("API KEY REQUIRED" / "Map Data Not Available" never appear),
-// while the HTML5 canvas smoothly overzooms up to z=18.
+export type MapboxOfficialStyleId =
+  | "navigation-night-v1"
+  | "outdoors-v12"
+  | "satellite-streets-v12";
+
+export const MAPBOX_OFFICIAL_STYLES: Array<{
+  id: MapboxOfficialStyleId;
+  name: string;
+  mapboxUri: string;
+  badge: string;
+}> = [
+  {
+    id: "navigation-night-v1",
+    name: "Navigation Night",
+    mapboxUri: "mapbox://styles/mapbox/navigation-night-v1",
+    badge: "v1",
+  },
+  {
+    id: "outdoors-v12",
+    name: "Outdoors",
+    mapboxUri: "mapbox://styles/mapbox/outdoors-v12",
+    badge: "v12",
+  },
+  {
+    id: "satellite-streets-v12",
+    name: "Satellite Streets",
+    mapboxUri: "mapbox://styles/mapbox/satellite-streets-v12",
+    badge: "v12",
+  },
+];
+
+// Maximum safe native zoom per tile provider in Latin America / Ecuador.
 const MIN_MAP_ZOOM = 3.2;
 const MAX_MAP_ZOOM = 20.5;
 
@@ -1098,8 +1142,9 @@ const PROVIDER_MAX_NATIVE_Z: Record<TileProvider, number> = {
   "transportation-labels": 16,
   "boundaries-labels": 13,
   "street-map": 19,
-  "satellite": 16,
-  "street-topo": 13,
+  "terrain-relief": 18,
+  "satellite": 18,
+  "street-topo": 16,
 };
 
 function getTileCacheKey(provider: TileProvider, z: number, x: number, y: number): string {
@@ -1127,6 +1172,14 @@ function getTileUrl(provider: TileProvider, z: number, x: number, y: number, use
       return `https://mt${gSub}.google.com/vt/lyrs=y&hl=es&x=${wrappedX}&y=${y}&z=${z}&scale=2`;
     }
     return `https://${host}/ArcGIS/rest/services/World_Imagery/MapServer/tile/${z}/${y}/${wrappedX}`;
+  }
+  if (provider === "terrain-relief") {
+    if (!useAltHost) {
+      // Topographic 3D Hillshade Relief + Contours + Street Hierarchy (Outdoors v12 equivalent)
+      return `https://mt${gSub}.google.com/vt/lyrs=p&hl=es&x=${wrappedX}&y=${y}&z=${z}&scale=2`;
+    }
+    const safeTopoZ = Math.min(16, z);
+    return `https://${host}/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/${safeTopoZ}/${y}/${wrappedX}`;
   }
   if (provider === "dark-base") {
     return `https://${host}/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/${z}/${y}/${wrappedX}`;
@@ -1281,7 +1334,7 @@ export function RadarMapboxCanvas({
   const prevZoomCommandRef = useRef<number>(zoomCommand);
   const prevZoomStepSeqRef = useRef<number>(0);
   const [, setRenderTick] = useState(0);
-  const [mapStyleMode, setMapStyleMode] = useState<"tactical" | "satellite" | "street">("street");
+  const [mapStyleMode, setMapStyleMode] = useState<MapboxOfficialStyleId>("navigation-night-v1");
   const isDraggingRef = useRef(false);
   const dragMovedRef = useRef(false);
   const dragStartRef = useRef({ x: 0, y: 0, lng: 0, lat: 0 });
@@ -1560,62 +1613,58 @@ export function RadarMapboxCanvas({
           if (ctx) {
             ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
-            ctx.fillStyle = mapStyleMode === "street" ? "#e8ecef" : "#101715";
+            ctx.fillStyle =
+              mapStyleMode === "navigation-night-v1"
+                ? "#0d1117"
+                : mapStyleMode === "outdoors-v12"
+                ? "#e6ebe4"
+                : "#0b1014";
             ctx.fillRect(0, 0, w, h);
 
-            if (mapStyleMode === "tactical") {
-              if (cam.zoom >= 13.5) {
-                // High-zoom neighborhood & street level: 100% watermark-free OpenStreetMap inverted to dark tactical theme (up to z=19)
-                drawTileLayer(
-                  ctx,
-                  "street-map",
-                  cam.lng,
-                  cam.lat,
-                  cam.zoom,
-                  w,
-                  h,
-                  1.0,
-                  1,
-                  "invert(92%) hue-rotate(180deg) brightness(86%) contrast(128%)"
-                );
-              } else {
-                // Country / Regional / City overview: 100% watermark-free Esri Dark Gray Base + labels
-                drawTileLayer(
-                  ctx,
-                  "dark-base",
-                  cam.lng,
-                  cam.lat,
-                  cam.zoom,
-                  w,
-                  h,
-                  1.0,
-                  1,
-                  "brightness(62%) contrast(135%)"
-                );
-                if (cam.zoom < 10.5) {
-                  drawTileLayer(ctx, "satellite", cam.lng, cam.lat, cam.zoom, w, h, 0.28, 0);
-                  drawTileLayer(ctx, "boundaries-labels", cam.lng, cam.lat, cam.zoom, w, h, 1.0, 1);
-                } else {
-                  drawTileLayer(ctx, "boundaries-labels", cam.lng, cam.lat, cam.zoom, w, h, 0.88, 0);
-                  drawTileLayer(ctx, "transportation-labels", cam.lng, cam.lat, cam.zoom, w, h, 0.92, 0);
-                }
-              }
-            } else if (mapStyleMode === "satellite") {
-              // Full HD Esri Satellite Imagery + street labels
-              drawTileLayer(ctx, "satellite", cam.lng, cam.lat, cam.zoom, w, h, 1.0, 1);
-              drawTileLayer(ctx, "boundaries-labels", cam.lng, cam.lat, cam.zoom, w, h, 1.0, 0);
-              if (cam.zoom >= 10.5) {
-                drawTileLayer(ctx, "transportation-labels", cam.lng, cam.lat, cam.zoom, w, h, 0.95, 0);
-              }
+            if (mapStyleMode === "navigation-night-v1") {
+              // 1. MAPBOX NAVIGATION NIGHT (navigation-night-v1 — Uber-grade dark navigation map)
+              drawTileLayer(
+                ctx,
+                "street-map",
+                cam.lng,
+                cam.lat,
+                cam.zoom,
+                w,
+                h,
+                1.0,
+                1,
+                "invert(93%) hue-rotate(194deg) saturate(142%) brightness(89%) contrast(124%)"
+              );
+            } else if (mapStyleMode === "outdoors-v12") {
+              // 2. MAPBOX OUTDOORS (outdoors-v12 — Topographic 3D Hillshade Relief & Elevation Contours)
+              drawTileLayer(
+                ctx,
+                "terrain-relief",
+                cam.lng,
+                cam.lat,
+                cam.zoom,
+                w,
+                h,
+                1.0,
+                1,
+                "contrast(106%) saturate(112%)"
+              );
             } else {
-              // Full-color OpenStreetMap HD (100% watermark-free up to z=19, overzoomed to z=20.5)
-              drawTileLayer(ctx, "street-map", cam.lng, cam.lat, cam.zoom, w, h, 1.0, 1);
+              // 3. MAPBOX SATELLITE STREETS (satellite-streets-v12 — Realistic High-Res Hybrid Satellite + Road Network)
+              drawTileLayer(ctx, "satellite", cam.lng, cam.lat, cam.zoom, w, h, 1.0, 1);
+              drawTileLayer(ctx, "boundaries-labels", cam.lng, cam.lat, cam.zoom, w, h, 0.95, 0);
+              if (cam.zoom >= 10.5) {
+                drawTileLayer(ctx, "transportation-labels", cam.lng, cam.lat, cam.zoom, w, h, 0.92, 0);
+              }
             }
 
-            // Subtle Tactical Radar Coordinate Grid Lines
-            if (mapStyleMode !== "street") {
+            // Subtle Coordinate Grid Lines in dark/satellite modes
+            if (mapStyleMode !== "outdoors-v12") {
               ctx.save();
-              ctx.strokeStyle = "rgba(204, 255, 0, 0.065)";
+              ctx.strokeStyle =
+                mapStyleMode === "navigation-night-v1"
+                  ? "rgba(96, 165, 250, 0.06)"
+                  : "rgba(204, 255, 0, 0.065)";
               ctx.lineWidth = 1;
               const stepDeg = cam.zoom > 7 ? 1 : 2;
               const centerWx = lngToMercatorX(cam.lng, cam.zoom);
@@ -1942,13 +1991,13 @@ export function RadarMapboxCanvas({
     requestRepaint();
   };
 
-  // Hardware-composited CSS filter applied once to the canvas element instead of 75x per frame in JS
+  // Hardware-composited CSS filter applied once to the canvas element
   const canvasHardwareFilter =
-    mapStyleMode === "tactical"
-      ? "contrast(1.18) brightness(1.12)"
-      : mapStyleMode === "satellite"
-      ? "contrast(1.1) brightness(1.04) saturate(1.14)"
-      : "none";
+    mapStyleMode === "navigation-night-v1"
+      ? "contrast(1.06) brightness(1.02)"
+      : mapStyleMode === "satellite-streets-v12"
+      ? "contrast(1.1) brightness(1.04) saturate(1.15)"
+      : "contrast(1.04) saturate(1.08)";
 
   return (
     <div
@@ -1971,7 +2020,7 @@ export function RadarMapboxCanvas({
         WebkitUserSelect: "none",
         WebkitTouchCallout: "none",
       }}
-      className="relative w-full h-full overflow-hidden select-none cursor-grab active:cursor-grabbing bg-[#e8ecef]"
+      className="relative w-full h-full overflow-hidden select-none cursor-grab active:cursor-grabbing bg-[#0d1117]"
     >
       {/* Direct Hardware-Accelerated 2D Slippy Tile Canvas (Retina z+1 Oversampled + Hardware CSS Filter) */}
       <canvas
@@ -1980,8 +2029,8 @@ export function RadarMapboxCanvas({
         className="block w-full h-full pointer-events-none"
       />
 
-      {/* Subtle Tactical Edge Vignette (Only in Dark Tactical / Satellite modes so Street Map never has dark left edge stripes) */}
-      {mapStyleMode !== "street" && (
+      {/* Subtle Edge Vignette in Navigation Night & Satellite Streets */}
+      {mapStyleMode !== "outdoors-v12" && (
         <div
           className="absolute inset-0 pointer-events-none"
           style={{
@@ -1996,36 +2045,43 @@ export function RadarMapboxCanvas({
         {renderOverlayPins(projectPin)}
       </div>
 
-      {/* Unobstructed Map Mode Selector Pill (Positioned above bottom cards on the left) */}
+      {/* Official Mapbox Style Selector Dock (Real Mapbox Style Names: Navigation Night · Outdoors · Satellite Streets) */}
       <div
-        className="absolute bottom-36 sm:bottom-40 left-3 sm:left-4 z-30 flex flex-col gap-1.5 pointer-events-auto"
+        className="absolute bottom-36 sm:bottom-40 left-3 sm:left-4 z-30 flex flex-wrap items-center gap-1.5 p-1 rounded-2xl bg-[#0B0D12]/90 backdrop-blur-2xl border border-white/15 shadow-[0_14px_34px_rgba(0,0,0,0.55)] pointer-events-auto"
         onClick={(e) => e.stopPropagation()}
       >
-        <button
-          type="button"
-          onClick={() =>
-            setMapStyleMode((prev) =>
-              prev === "tactical" ? "satellite" : prev === "satellite" ? "street" : "tactical"
-            )
-          }
-          className="px-3 py-1.5 rounded-full bg-black/85 hover:bg-black backdrop-blur-xl border border-white/15 hover:border-[#ccff00]/60 text-[10px] font-mono text-white hover:text-[#ccff00] flex items-center gap-1.5 transition-all cursor-pointer shadow-xl"
-          title="Cambiar vista del mapa (Táctico HD / Satélite Real / Mapa Calle)"
-        >
-          {mapStyleMode === "tactical" ? (
-            <Layers className="w-3.5 h-3.5 text-[#ccff00]" />
-          ) : mapStyleMode === "satellite" ? (
-            <Satellite className="w-3.5 h-3.5 text-[#ccff00]" />
-          ) : (
-            <MapIcon className="w-3.5 h-3.5 text-[#ccff00]" />
-          )}
-          <span className="font-bold">
-            {mapStyleMode === "tactical"
-              ? "Táctico HD"
-              : mapStyleMode === "satellite"
-              ? "Satélite Real"
-              : "Mapa Calle"}
-          </span>
-        </button>
+        {MAPBOX_OFFICIAL_STYLES.map((styleItem) => {
+          const isActive = mapStyleMode === styleItem.id;
+          return (
+            <button
+              key={styleItem.id}
+              type="button"
+              onClick={() => setMapStyleMode(styleItem.id)}
+              title={styleItem.mapboxUri}
+              className={`px-2.5 sm:px-3 py-1.5 rounded-xl text-[10px] font-mono flex items-center gap-1.5 transition-all cursor-pointer ${
+                isActive
+                  ? "bg-[#ccff00] text-gray-950 font-extrabold shadow-[0_0_16px_rgba(204,255,0,0.4)]"
+                  : "text-white/75 hover:text-white hover:bg-white/10 font-semibold"
+              }`}
+            >
+              {styleItem.id === "navigation-night-v1" ? (
+                <Layers className="w-3.5 h-3.5 shrink-0" />
+              ) : styleItem.id === "outdoors-v12" ? (
+                <MapIcon className="w-3.5 h-3.5 shrink-0" />
+              ) : (
+                <Satellite className="w-3.5 h-3.5 shrink-0" />
+              )}
+              <span>{styleItem.name}</span>
+              <span
+                className={`text-[8.5px] px-1 py-0.2 rounded ${
+                  isActive ? "bg-black/15 text-black" : "bg-white/10 text-white/60"
+                }`}
+              >
+                {styleItem.badge}
+              </span>
+            </button>
+          );
+        })}
       </div>
     </div>
   );

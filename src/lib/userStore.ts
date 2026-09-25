@@ -7,6 +7,7 @@ import { useRadarStore } from './radarStore';
 import { useAvatarSettingsStore, setupAvatarRealtimeListener, cleanupAvatarRealtimeListener } from './avatarSettingsStore';
 import { useCatalogStore } from './catalogStore';
 import { playFavoriteSound, playStepperTickSound } from './soundUtils';
+import type { RawGpsHardwareData } from './locationUtils';
 
 export interface User {
   id: string;
@@ -108,6 +109,8 @@ export interface ShippingAddress {
   country: string;
   lat?: number;
   lng?: number;
+  rawGps?: RawGpsHardwareData;
+  rawGpsString?: string;
   isDefault?: boolean;
 }
 
