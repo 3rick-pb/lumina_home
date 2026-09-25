@@ -342,7 +342,30 @@ export function OrdersTab({
                         </div>
                       </div>
                     </td>
-                    <td className="py-4 px-3 font-mono text-gray-500 dark:text-gray-400">{ord.trackingNumber || "TRK-PENDIENTE"}</td>
+                    <td className="py-4 px-3 font-mono text-gray-500 dark:text-gray-400">
+                      {(ord.status === "Enviado" || ord.status === "Entregado") && ord.trackingNumber ? (
+                        <a
+                          href={ord.trackingUrl || "https://www.servientrega.com.ec/Tracking"}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            try {
+                              navigator.clipboard?.writeText(ord.trackingNumber || "");
+                            } catch {}
+                          }}
+                          className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-blue-500/10 hover:bg-blue-500/20 text-blue-600 dark:text-blue-400 border border-blue-500/25 text-xs font-mono font-bold transition-all"
+                          title={`Clic para copiar guía ${ord.trackingNumber} e ir a ${ord.carrierName || "transportadora"}`}
+                        >
+                          <Truck className="w-3 h-3 shrink-0" />
+                          <span>{ord.trackingNumber}</span>
+                        </a>
+                      ) : (
+                        <span className="text-[11px] font-sans text-gray-400 dark:text-gray-500 italic">
+                          Se asigna al enviar
+                        </span>
+                      )}
+                    </td>
                     <td className="py-4 px-3 text-gray-700 dark:text-gray-300">
                       {ord.items.length > 0 ? `${ord.items.length} producto(s)` : "1 producto"}
                     </td>
@@ -351,7 +374,13 @@ export function OrdersTab({
                       <BeUIOrderStatusSelector
                         status={ord.status}
                         isAdmin={isAdmin}
-                        onUpdateStatus={(nextSt) => updateOrderStatus(ord.id, nextSt)}
+                        orderId={ord.id}
+                        initialTrackingNumber={ord.trackingNumber}
+                        initialTrackingUrl={ord.trackingUrl}
+                        initialCarrierName={ord.carrierName}
+                        onUpdateStatus={(nextSt, trackingInfo) =>
+                          updateOrderStatus(ord.id, nextSt, trackingInfo)
+                        }
                         size="sm"
                         align="center"
                       />

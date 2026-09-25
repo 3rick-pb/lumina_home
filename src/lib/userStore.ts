@@ -23,6 +23,8 @@ export interface Order {
   createdAt?: string;
   status: 'Procesando' | 'Enviado' | 'Entregado';
   trackingNumber?: string;
+  trackingUrl?: string;
+  carrierName?: string;
   total: number;
   items: CartItem[];
   customerName?: string;
@@ -36,6 +38,51 @@ export interface Order {
   customerAvatarSeed?: string;
   customerAvatarShape?: 'squircle' | 'circle';
   customerRole?: 'USER' | 'ADMIN';
+}
+
+export function serializeTrackingField(
+  trackingNumber?: string,
+  trackingUrl?: string,
+  carrierName?: string
+): string {
+  const cleanCode = (trackingNumber || '').trim();
+  if (!cleanCode) return '';
+  const cleanUrl = (trackingUrl || '').trim();
+  const cleanCarrier = (carrierName || '').trim();
+  if (cleanUrl || cleanCarrier) {
+    return `${cleanCode}||${cleanUrl}||${cleanCarrier}`;
+  }
+  return cleanCode;
+}
+
+export function parseTrackingField(
+  rawTracking?: string | null,
+  status?: string
+): {
+  trackingNumber?: string;
+  trackingUrl?: string;
+  carrierName?: string;
+} {
+  if (!rawTracking || status === 'Procesando') {
+    return { trackingNumber: undefined, trackingUrl: undefined, carrierName: undefined };
+  }
+  const str = String(rawTracking).trim();
+  if (!str) {
+    return { trackingNumber: undefined, trackingUrl: undefined, carrierName: undefined };
+  }
+  if (str.includes('||')) {
+    const [code, url, carrier] = str.split('||');
+    return {
+      trackingNumber: code?.trim() || undefined,
+      trackingUrl: url?.trim() || undefined,
+      carrierName: carrier?.trim() || undefined,
+    };
+  }
+  return {
+    trackingNumber: str,
+    trackingUrl: undefined,
+    carrierName: undefined,
+  };
 }
 
 export interface PaymentCard {
@@ -91,7 +138,11 @@ interface UserState {
   setDefaultCard: (id: string) => void;
   
   addOrder: (order: Order) => void;
-  updateOrderStatus: (orderId: string, status: Order['status']) => void;
+  updateOrderStatus: (
+    orderId: string,
+    status: Order['status'],
+    trackingInfo?: { trackingNumber?: string; trackingUrl?: string; carrierName?: string }
+  ) => void;
   refreshOrders: () => Promise<void>;
 
   addAddress: (address: Omit<ShippingAddress, 'id'>) => Promise<boolean>;
@@ -1522,10 +1573,78 @@ export const useUserStore = create<UserState>((set, get) => ({
     }
   },
 
-  updateOrderStatus: async (orderId, status) => {
+  updateOrderStatus: async (orderId, status, trackingInfo) => {
     const user = get().user;
-    const nextOrders = get().orders.map(order => order.id === orderId ? { ...order, status } : order);
+    const nextOrders = get().orders.map(order => {
+      if (order.id !== orderId) return order;
+      const nextTrackingNumber =
+        status === 'Procesando'
+          ? undefined
+          : trackingInfo?.trackingNumber !== undefined
+            ? trackingInfo.trackingNumber
+            : order.trackingNumber;
+      const nextTrackingUrl =
+        status === 'Procesando'
+          ? undefined
+          : trackingInfo?.trackingUrl !== undefined
+            ? trackingInfo.trackingUrl
+            : order.trackingUrl;
+      const nextCarrierName =
+        status === 'Procesando'
+          ? undefined
+          : trackingInfo?.carrierName !== undefined
+            ? trackingInfo.carrierName
+            : order.carrierName;
+      return {
+        ...order,
+        status,
+        trackingNumber: nextTrackingNumber,
+        trackingUrl: nextTrackingUrl,
+        carrierName: nextCarrierName,
+      };
+    });
     set({ orders: nextOrders });
+
+    const updatedOrder = nextOrders.find(o => o.id === orderId);
+    const serializedTracking =
+      status === 'Procesando'
+        ? ''
+        : serializeTrackingField(
+            updatedOrder?.trackingNumber,
+            updatedOrder?.trackingUrl,
+            updatedOrder?.carrierName
+          );
+
+    // Emit Wallet Pass Push Notification event on client
+    if (typeof window !== 'undefined') {
+      try {
+        window.dispatchEvent(
+          new CustomEvent('lumina:wallet-order-push', {
+            detail: {
+              orderId,
+              status,
+              trackingNumber: updatedOrder?.trackingNumber,
+              trackingUrl: updatedOrder?.trackingUrl,
+              carrierName: updatedOrder?.carrierName,
+              timestamp: new Date().toISOString(),
+            },
+          })
+        );
+        if ('Notification' in window && Notification.permission === 'granted') {
+          const title =
+            status === 'Enviado'
+              ? `📦 Tu pedido #${orderId} ha sido Enviado`
+              : status === 'Entregado'
+                ? `✅ Tu pedido #${orderId} fue Entregado`
+                : `🔄 Actualización de Pedido #${orderId}`;
+          const body =
+            status === 'Enviado' && updatedOrder?.trackingNumber
+              ? `Guía de rastreo: ${updatedOrder.trackingNumber}${updatedOrder.carrierName ? ` (${updatedOrder.carrierName})` : ''}. Toca tu tarjeta Wallet para rastrear.`
+              : `El estado de tu pedido en Wallet se actualizó a: ${status}.`;
+          new Notification(title, { body });
+        }
+      } catch {}
+    }
 
     // 1. Sync status change to /api/orders
     try {
@@ -1536,14 +1655,26 @@ export const useUserStore = create<UserState>((set, get) => ({
       await fetch('/api/orders', {
         method: 'PATCH',
         headers,
-        body: JSON.stringify({ orderId, status })
+        body: JSON.stringify({
+          orderId,
+          status,
+          trackingNumber: updatedOrder?.trackingNumber,
+          trackingUrl: updatedOrder?.trackingUrl,
+          carrierName: updatedOrder?.carrierName,
+        }),
       });
     } catch {}
 
     // 2. Sync to Supabase
     if (user) {
       try {
-        await supabase.from('orders').update({ status }).eq('id', orderId);
+        await supabase
+          .from('orders')
+          .update({
+            status,
+            tracking_number: serializedTracking || null,
+          })
+          .eq('id', orderId);
       } catch {}
     }
   },

@@ -29,6 +29,8 @@ export interface ApiOrder {
   createdAt: string;
   status: 'Procesando' | 'Enviado' | 'Entregado';
   trackingNumber?: string;
+  trackingUrl?: string;
+  carrierName?: string;
   total: number;
   items: Array<{
     product: {
@@ -43,6 +45,40 @@ export interface ApiOrder {
   }>;
 }
 
+function decodeOrderTracking(rawTracking: unknown, status: string) {
+  if (!rawTracking || status === 'Procesando') {
+    return { trackingNumber: undefined, trackingUrl: undefined, carrierName: undefined };
+  }
+  const str = String(rawTracking).trim();
+  if (!str) {
+    return { trackingNumber: undefined, trackingUrl: undefined, carrierName: undefined };
+  }
+  if (str.includes('||')) {
+    const [code, url, carrier] = str.split('||');
+    return {
+      trackingNumber: code?.trim() || undefined,
+      trackingUrl: url?.trim() || undefined,
+      carrierName: carrier?.trim() || undefined,
+    };
+  }
+  return {
+    trackingNumber: str,
+    trackingUrl: undefined,
+    carrierName: undefined,
+  };
+}
+
+function encodeOrderTracking(trackingNumber?: string, trackingUrl?: string, carrierName?: string): string | null {
+  const cleanCode = String(trackingNumber || '').replace(/<[^>]*>?/gm, '').trim().slice(0, 80);
+  if (!cleanCode) return null;
+  const cleanUrl = String(trackingUrl || '').replace(/<[^>]*>?/gm, '').trim().slice(0, 300);
+  const cleanCarrier = String(carrierName || '').replace(/<[^>]*>?/gm, '').trim().slice(0, 60);
+  if (cleanUrl || cleanCarrier) {
+    return `${cleanCode}||${cleanUrl}||${cleanCarrier}`;
+  }
+  return cleanCode;
+}
+
 export async function GET(request: Request) {
   const rateLimit = checkRateLimit(request, {
     keyPrefix: 'orders_get',
@@ -54,6 +90,10 @@ export async function GET(request: Request) {
   }
 
   try {
+    // Allow public lookup of a single order by ID for the Wallet Pass QR page (`?orderId=...`)
+    const { searchParams } = new URL(request.url);
+    const singleOrderId = searchParams.get('orderId')?.trim();
+
     // Verify authenticated user via JWT Bearer
     const authUser = await getAuthenticatedUser(request);
     const isAdmin = authUser?.email ? await verifyIsAdmin(authUser.email) : false;
@@ -65,10 +105,10 @@ export async function GET(request: Request) {
       .not('id', 'like', 'SYS_%')
       .order('created_at', { ascending: false });
 
-    // Non-admins only see their own orders (strict zero-trust: must be authenticated)
-    if (!isAdmin) {
+    if (singleOrderId) {
+      query = query.eq('id', singleOrderId);
+    } else if (!isAdmin) {
       if (!authUser || !authUser.id) {
-        // Unauthenticated callers have no access to private customer orders
         return NextResponse.json({ success: true, orders: [], count: 0 });
       }
 
@@ -155,6 +195,9 @@ export async function GET(request: Request) {
         const resolvedCustomerRole: 'USER' | 'ADMIN' =
           adminEmailsSet.has(normEmail) ? 'ADMIN' : 'USER';
 
+        const resolvedStatus = (o.status as ApiOrder['status']) || 'Procesando';
+        const decodedTracking = decodeOrderTracking(o.tracking_number, resolvedStatus);
+
         return {
           id: String(o.id || ''),
           userId: resolvedUserId,
@@ -171,8 +214,10 @@ export async function GET(request: Request) {
           date: o.created_at ? new Date(String(o.created_at)).toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: 'numeric' }) : 'Reciente',
           time: o.created_at ? new Date(String(o.created_at)).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }) : '12:00',
           createdAt: String(o.created_at || new Date().toISOString()),
-          status: (o.status as ApiOrder['status']) || 'Procesando',
-          trackingNumber: o.tracking_number ? String(o.tracking_number) : undefined,
+          status: resolvedStatus,
+          trackingNumber: decodedTracking.trackingNumber,
+          trackingUrl: decodedTracking.trackingUrl,
+          carrierName: decodedTracking.carrierName,
           total: Number(o.total) || 0,
           items: Array.isArray(o.items) ? (o.items as ApiOrder['items']) : []
         };
@@ -214,6 +259,7 @@ export async function POST(request: Request) {
     const cleanIdNumber = String(order.customerIdNumber || order.shippingAddress?.idNumber || '').replace(/<[^>]*>?/gm, '').trim().slice(0, 40);
     const cleanPhone = String(order.customerPhone || order.shippingAddress?.phone || '').replace(/<[^>]*>?/gm, '').trim().slice(0, 40);
 
+    // Do NOT assign a trackingNumber on initial order creation ("Procesando") — assigned later when shipped ("Enviado")
     const newApiOrder: ApiOrder = {
       id: String(order.id).trim().slice(0, 60),
       userId,
@@ -227,8 +273,10 @@ export async function POST(request: Request) {
       date: order.date || new Date().toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: 'numeric' }),
       time: order.time || new Date().toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }),
       createdAt: order.createdAt || new Date().toISOString(),
-      status: 'Procesando', // Enforce default state on initial creation
-      trackingNumber: order.trackingNumber || `LM-${Math.floor(1000000 + Math.random() * 9000000)}`,
+      status: 'Procesando',
+      trackingNumber: undefined,
+      trackingUrl: undefined,
+      carrierName: undefined,
       total: Math.max(0, Number(order.total) || 0),
       items: Array.isArray(order.items) ? order.items : []
     };
@@ -240,7 +288,7 @@ export async function POST(request: Request) {
       status: newApiOrder.status,
       total: newApiOrder.total,
       items: newApiOrder.items,
-      tracking_number: newApiOrder.trackingNumber,
+      tracking_number: null,
       customer_name: newApiOrder.customerName,
       customer_email: newApiOrder.customerEmail,
       customer_id_number: newApiOrder.customerIdNumber || null,
@@ -292,7 +340,6 @@ export async function POST(request: Request) {
     // 3. Trigger customer invoice and store admin dispatch notice safely
     try {
       const allDispatchRecipients = await getAllDispatchRecipients();
-      // Await email dispatch so serverless lambda does not freeze before completion
       await sendOrderEmails({
         order: newApiOrder,
         adminEmails: allDispatchRecipients
@@ -328,7 +375,7 @@ export async function PATCH(request: Request) {
     }
 
     const body = await request.json();
-    const { orderId, status } = body;
+    const { orderId, status, trackingNumber, trackingUrl, carrierName } = body;
 
     if (!orderId || !status) {
       return NextResponse.json({ success: false, error: 'orderId y status son campos requeridos.' }, { status: 400 });
@@ -342,13 +389,28 @@ export async function PATCH(request: Request) {
 
     const cleanOrderId = String(orderId).trim();
     const client = getScopedSupabaseClient(request);
-    const { error } = await client.from('orders').update({ status }).eq('id', cleanOrderId);
+
+    const updatePayload: Record<string, unknown> = { status };
+    if (status === 'Procesando') {
+      updatePayload.tracking_number = null;
+    } else if (trackingNumber !== undefined) {
+      updatePayload.tracking_number = encodeOrderTracking(trackingNumber, trackingUrl, carrierName);
+    }
+
+    const { error } = await client.from('orders').update(updatePayload).eq('id', cleanOrderId);
 
     if (error) {
       return NextResponse.json({ success: false, error: error.message }, { status: 500 });
     }
 
-    return NextResponse.json({ success: true, orderId: cleanOrderId, status });
+    return NextResponse.json({
+      success: true,
+      orderId: cleanOrderId,
+      status,
+      trackingNumber: trackingNumber || undefined,
+      trackingUrl: trackingUrl || undefined,
+      carrierName: carrierName || undefined,
+    });
   } catch (error) {
     return NextResponse.json({ success: false, error: String(error) }, { status: 500 });
   }

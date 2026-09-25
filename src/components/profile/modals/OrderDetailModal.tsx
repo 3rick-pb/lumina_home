@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import Image from "next/image";
-import { X, CheckCircle2, Mail, Send, RefreshCw, AlertCircle } from "lucide-react";
+import { X, CheckCircle2, Mail, Send, RefreshCw, AlertCircle, Truck, ExternalLink, Copy, Wallet } from "lucide-react";
 import { Order } from "@/lib/userStore";
 import { BlobatarAvatar } from "@/components/ui/BlobatarAvatar";
 import { BeUICenterMorphModal, BeUIOrderStatusSelector } from "@/components/ui/BeUIControls";
@@ -25,7 +25,11 @@ interface OrderDetailModalProps {
   order: Order | null;
   isAdmin: boolean;
   onClose: () => void;
-  onUpdateStatus: (orderId: string, status: "Procesando" | "Enviado" | "Entregado") => void;
+  onUpdateStatus: (
+    orderId: string,
+    status: "Procesando" | "Enviado" | "Entregado",
+    trackingInfo?: { trackingNumber?: string; trackingUrl?: string; carrierName?: string }
+  ) => void;
 }
 
 export function OrderDetailModal({
@@ -38,6 +42,7 @@ export function OrderDetailModal({
   const [isLoadingLogs, setIsLoadingLogs] = useState(false);
   const [isResending, setIsResending] = useState<"invoice" | "dispatch" | null>(null);
   const [feedback, setFeedback] = useState<{ success: boolean; message: string } | null>(null);
+  const [copiedTracking, setCopiedTracking] = useState(false);
 
   // Custom symmetrical slider (scrollbar) state and refs
   const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -183,6 +188,12 @@ export function OrderDetailModal({
   const invoiceLog = emailLogs.find(l => l.email_type === 'customer_invoice');
   const dispatchLog = emailLogs.find(l => l.email_type === 'admin_dispatch_notice');
 
+  const isShippedOrDelivered =
+    (activeOrder.status === "Enviado" || activeOrder.status === "Entregado") &&
+    Boolean(activeOrder.trackingNumber);
+  const resolvedTrackingUrl =
+    activeOrder.trackingUrl || "https://www.servientrega.com.ec/Tracking";
+
   return (
     <BeUICenterMorphModal
       open={Boolean(order)}
@@ -214,11 +225,61 @@ export function OrderDetailModal({
           onScroll={updateScrollMetrics}
           className="w-full overflow-y-auto lumina-order-modal-scroll p-6 md:p-8 flex-1"
         >
-          <div className="flex items-center justify-between pb-4 border-b border-gray-100 dark:border-white/5">
-            <div>
-              <span className="text-[10px] font-bold uppercase tracking-wider text-[#8c9276]">Detalle de Envío</span>
-              <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100 font-mono">{activeOrder.id}</h3>
+          <div className="flex items-start justify-between gap-3 pb-4 border-b border-gray-100 dark:border-white/5">
+            <div className="min-w-0 flex-1">
+              <div className="flex flex-wrap items-center gap-2 mb-1">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-[#8c9276]">
+                  Resumen de Pedido
+                </span>
+                <a
+                  href={`/wallet/order/${encodeURIComponent(activeOrder.id)}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-gray-900 dark:bg-white/10 text-white dark:text-[#ccff00] border border-gray-800 dark:border-[#ccff00]/30 hover:scale-105 transition-transform"
+                  title="Abrir Tarjeta Digital de Seguimiento (Google / Apple Wallet)"
+                >
+                  <Wallet className="w-3 h-3" />
+                  <span>Pase Wallet</span>
+                </a>
+              </div>
+              <div className="flex flex-wrap items-center gap-2.5">
+                <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100 font-mono">
+                  {activeOrder.id}
+                </h3>
+
+                {/* TOP TRACKING CODE TAG: Shown ONLY when status is "Enviado" (or "Entregado" with tracking code) */}
+                {isShippedOrDelivered && activeOrder.trackingNumber && (
+                  <a
+                    href={resolvedTrackingUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={() => {
+                      try {
+                        navigator.clipboard?.writeText(activeOrder.trackingNumber || "");
+                        setCopiedTracking(true);
+                        setTimeout(() => setCopiedTracking(false), 2400);
+                      } catch {}
+                    }}
+                    className="group inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-600 hover:bg-blue-700 text-white text-xs font-mono font-bold shadow-[0_6px_18px_rgba(37,99,235,0.3)] transition-all hover:scale-[1.02] active:scale-95 cursor-pointer"
+                    title={`Clic para copiar el código ${activeOrder.trackingNumber} y abrir ${activeOrder.carrierName || "la transportadora"} (${resolvedTrackingUrl})`}
+                  >
+                    <Truck className="w-3.5 h-3.5 shrink-0" />
+                    <span>
+                      {copiedTracking
+                        ? `¡Copiado! ${activeOrder.trackingNumber}`
+                        : `Guía: ${activeOrder.trackingNumber}`}
+                    </span>
+                    {activeOrder.carrierName && (
+                      <span className="px-1.5 py-0.5 rounded-full bg-white/20 text-[9.5px] font-sans font-extrabold uppercase tracking-wider">
+                        {activeOrder.carrierName}
+                      </span>
+                    )}
+                    <ExternalLink className="w-3 h-3 opacity-85 group-hover:translate-x-0.5 transition-transform shrink-0" />
+                  </a>
+                )}
+              </div>
             </div>
+
             {/* Exact Close Button ("X") from CartDrawer (Bolsa de Compras) */}
             <button
               type="button"
@@ -232,12 +293,46 @@ export function OrderDetailModal({
 
           {/* Tracking Progress Bar */}
           <div className="my-5 p-4 bg-gray-50 dark:bg-[#2a2a2c] rounded-2xl border border-gray-100 dark:border-white/5">
-            <div className="flex items-center justify-between mb-3 text-xs">
-              <span className="font-semibold text-gray-700 dark:text-gray-300">Rastreo: <span className="font-mono">{activeOrder.trackingNumber || "LM-982410"}</span></span>
+            <div className="flex flex-wrap items-center justify-between gap-2 mb-3 text-xs">
+              {isShippedOrDelivered && activeOrder.trackingNumber ? (
+                <a
+                  href={resolvedTrackingUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={() => {
+                    try {
+                      navigator.clipboard?.writeText(activeOrder.trackingNumber || "");
+                      setCopiedTracking(true);
+                      setTimeout(() => setCopiedTracking(false), 2400);
+                    } catch {}
+                  }}
+                  className="inline-flex items-center gap-1.5 font-semibold text-blue-600 dark:text-blue-400 hover:underline"
+                >
+                  <span>Código de Rastreo:</span>
+                  <span className="font-mono font-bold px-2 py-0.5 rounded-md bg-blue-500/10 border border-blue-500/25">
+                    {activeOrder.trackingNumber}
+                  </span>
+                  <Copy className="w-3 h-3 opacity-75" />
+                </a>
+              ) : (
+                <span className="font-medium text-gray-500 dark:text-gray-400">
+                  Estado logístico:{" "}
+                  <span className="font-semibold text-gray-800 dark:text-gray-200">
+                    En preparación (Guía disponible al enviar)
+                  </span>
+                </span>
+              )}
+
               <BeUIOrderStatusSelector
                 status={activeOrder.status}
                 isAdmin={isAdmin}
-                onUpdateStatus={(nextSt) => onUpdateStatus(activeOrder.id, nextSt)}
+                orderId={activeOrder.id}
+                initialTrackingNumber={activeOrder.trackingNumber}
+                initialTrackingUrl={activeOrder.trackingUrl}
+                initialCarrierName={activeOrder.carrierName}
+                onUpdateStatus={(nextSt, trackingInfo) =>
+                  onUpdateStatus(activeOrder.id, nextSt, trackingInfo)
+                }
                 size="sm"
                 align="end"
               />

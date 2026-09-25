@@ -1021,73 +1021,155 @@ const handleConfirmDeleteNiche = async () => {
 
   {/* Right Search Input & Profile Badge */}
   <div className="flex items-center gap-2.5 sm:gap-3 shrink-0">
-  <div className="relative z-50 hidden sm:block">
-  <div className="flex items-center bg-gray-100 dark:bg-[#2a2a2c] px-3 py-1.5 rounded-2xl border border-gray-200/80 dark:border-white/10 text-xs text-gray-600 dark:text-gray-300 focus-within:ring-2 focus-within:ring-gray-400/30 dark:focus-within:ring-white/20 transition-all">
-  <Search className="w-3.5 h-3.5 mr-2 text-gray-400 shrink-0" />
-  <input 
-  type="text" 
-  value={searchQuery}
-  onChange={e => setSearchQuery(e.target.value)}
-  placeholder="Buscar en panel..."
-  className="bg-transparent border-none outline-none text-xs w-24 sm:w-28 lg:w-36 xl:w-44 font-medium text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500"
-  />
-   {searchQuery && (
-     <button onClick={() => setSearchQuery("")} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 ml-1 shrink-0">
-       <X className="w-3 h-3" />
-     </button>
-   )}
-   </div>
+    <div className="relative z-50 hidden sm:block group/search">
+      {/* Ambient glow behind search bar on hover/focus */}
+      <div className="pointer-events-none absolute -inset-0.5 rounded-2xl bg-gradient-to-r from-[#8c9276]/30 via-[#b5bd9b]/20 to-[#8c9276]/30 dark:from-[#ccff00]/25 dark:via-emerald-400/15 dark:to-[#ccff00]/25 opacity-0 group-hover/search:opacity-60 group-focus-within/search:opacity-100 blur-md transition-opacity duration-300" />
 
-            {/* Floating Live Quick Search Results */}
-            {searchQuery.trim().length > 0 && (
-              <div className="absolute -right-2 sm:right-0 top-full mt-2 w-[calc(100vw-2.5rem)] sm:w-96 max-w-sm bg-white/95 dark:bg-[#202022]/95 backdrop-blur-2xl border border-gray-200/80 dark:border-white/10/80 rounded-3xl shadow-[0_24px_70px_rgba(0,0,0,0.22)] p-4 z-[100] space-y-3 animate-fade-in text-xs pointer-events-auto">
- <div className="flex items-center justify-between pb-1 border-b border-gray-100 dark:border-white/5 text-[10px] text-gray-400 uppercase font-bold">
- <span>Resultados de búsqueda</span>
- <button onClick={() => setSearchQuery("")} className="hover:text-gray-700 dark:hover:text-gray-300 font-medium text-xs normal-case">Cerrar</button>
- </div>
- 
- {/* Matching Orders */}
- {filteredOrders.length > 0 && (
- <div className="space-y-1">
- <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Pedidos ({filteredOrders.length})</p>
- {filteredOrders.slice(0, 2).map(ord => (
- <div 
- key={ord.id} 
- onClick={() => { setActiveTab("orders"); setSelectedOrder(ord); setSearchQuery(""); }}
- className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-[#3a3a3c] cursor-pointer flex items-center justify-between transition-colors"
- >
- <span className="font-mono font-bold text-gray-800 dark:text-gray-200">{ord.id}</span>
- <span className="text-[10px] px-1.5 py-0.5 rounded bg-gray-100 dark:bg-[#3a3a3c] text-gray-600 dark:text-gray-400 font-semibold">{ord.status}</span>
- </div>
- ))}
- </div>
- )}
+      <div className="relative flex items-center gap-2.5 bg-white/90 dark:bg-[#1a1a1d]/95 backdrop-blur-xl pl-2 pr-2.5 py-1.5 rounded-2xl border border-gray-200/90 dark:border-white/15 shadow-[0_4px_20px_rgba(0,0,0,0.04)] dark:shadow-[0_4px_20px_rgba(0,0,0,0.35)] group-hover/search:border-[#8c9276]/50 dark:group-hover/search:border-white/25 group-focus-within/search:border-[#8c9276] dark:group-focus-within/search:border-[#ccff00]/60 group-focus-within/search:shadow-[0_10px_30px_rgba(140,146,118,0.18)] dark:group-focus-within/search:shadow-[0_10px_30px_rgba(204,255,0,0.14)] transition-all duration-300">
+        {/* Animated Icon Pill */}
+        <div className="w-7 h-7 rounded-xl bg-gradient-to-br from-[#8c9276]/20 to-[#8c9276]/5 dark:from-[#ccff00]/20 dark:to-[#ccff00]/5 border border-[#8c9276]/25 dark:border-[#ccff00]/30 flex items-center justify-center text-[#8c9276] dark:text-[#ccff00] group-focus-within/search:scale-105 transition-transform shrink-0 shadow-2xs">
+          <Search className="w-3.5 h-3.5 stroke-[2.4]" />
+        </div>
 
- {/* Matching Catalog */}
- {filteredCatalog.length > 0 && (
- <div className="space-y-1">
- <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Catálogo ({filteredCatalog.length})</p>
- {filteredCatalog.slice(0, 3).map(prod => (
- <div 
- key={prod.id} 
- onClick={() => { setActiveTab(isAdmin ? "catalog" : "favorites"); setSearchQuery(""); }}
- className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-[#3a3a3c] cursor-pointer flex items-center justify-between transition-colors"
- >
- <span className="font-medium text-gray-800 dark:text-gray-200 truncate max-w-[150px]">{prod.title}</span>
- <span className="font-bold text-gray-900 dark:text-gray-100">${Number(prod.price || 0).toFixed(2)}</span>
- </div>
- ))}
- </div>
- )}
+        <input
+          id="lumina-profile-search-input"
+          type="text"
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          placeholder={isAdmin ? "Buscar pedidos, clientes, catálogo..." : "Buscar mis pedidos o favoritos..."}
+          className="bg-transparent border-none outline-none text-xs w-32 sm:w-40 lg:w-48 xl:w-56 focus:w-44 sm:focus:w-52 lg:focus:w-64 font-semibold text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 transition-all duration-300"
+        />
 
- {filteredOrders.length === 0 && filteredCatalog.length === 0 && (
- <div className="py-3 text-center text-gray-400">
- Sin coincidencias para &quot;{searchQuery}&quot;
- </div>
- )}
- </div>
- )}
- </div>
+        {searchQuery ? (
+          <div className="flex items-center gap-1.5 shrink-0">
+            <span className="px-1.5 py-0.5 rounded-md bg-[#8c9276]/15 dark:bg-[#ccff00]/15 text-[#8c9276] dark:text-[#ccff00] text-[10px] font-mono font-bold">
+              {filteredOrders.length + filteredCatalog.length}
+            </span>
+            <button
+              type="button"
+              onClick={() => setSearchQuery("")}
+              className="w-6 h-6 rounded-lg bg-gray-100 dark:bg-white/10 hover:bg-rose-50 dark:hover:bg-rose-950/50 text-gray-400 hover:text-rose-500 flex items-center justify-center transition-colors cursor-pointer"
+              title="Limpiar búsqueda"
+            >
+              <X className="w-3 h-3" />
+            </button>
+          </div>
+        ) : (
+          <kbd
+            onClick={() => document.getElementById("lumina-profile-search-input")?.focus()}
+            className="hidden lg:inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-lg bg-gray-100/90 dark:bg-white/[0.06] border border-gray-200/80 dark:border-white/10 text-[10px] font-mono font-semibold text-gray-400 dark:text-gray-500 cursor-pointer select-none shrink-0"
+          >
+            <span>⌘</span>
+            <span>K</span>
+          </kbd>
+        )}
+      </div>
+
+      {/* Floating Live Quick Search Results */}
+      {searchQuery.trim().length > 0 && (
+        <div className="absolute -right-2 sm:right-0 top-full mt-2.5 w-[calc(100vw-2.5rem)] sm:w-[400px] max-w-md bg-white/95 dark:bg-[#1b1b1e]/95 backdrop-blur-2xl border border-gray-200/90 dark:border-white/15 rounded-[1.75rem] shadow-[0_28px_80px_rgba(0,0,0,0.28)] p-4 z-[100] space-y-3.5 animate-fade-in text-xs pointer-events-auto">
+          <div className="flex items-center justify-between pb-2 border-b border-gray-100 dark:border-white/10">
+            <div className="flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-[#8c9276] dark:bg-[#ccff00] animate-pulse" />
+              <span className="text-[10px] text-gray-500 dark:text-gray-400 uppercase tracking-widest font-extrabold">
+                Búsqueda Instantánea ({filteredOrders.length + filteredCatalog.length})
+              </span>
+            </div>
+            <button
+              type="button"
+              onClick={() => setSearchQuery("")}
+              className="px-2 py-0.5 rounded-lg hover:bg-gray-100 dark:hover:bg-white/10 text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 font-semibold text-[11px] transition-colors cursor-pointer"
+            >
+              Cerrar
+            </button>
+          </div>
+
+          {/* Matching Orders */}
+          {filteredOrders.length > 0 && (
+            <div className="space-y-1.5">
+              <p className="text-[10px] font-extrabold text-gray-400 dark:text-gray-500 uppercase tracking-wider px-1">
+                Pedidos Encontrados ({filteredOrders.length})
+              </p>
+              <div className="space-y-1">
+                {filteredOrders.slice(0, 3).map((ord) => (
+                  <div
+                    key={ord.id}
+                    onClick={() => {
+                      setActiveTab("orders");
+                      setSelectedOrder(ord);
+                      setSearchQuery("");
+                    }}
+                    className="p-2.5 rounded-2xl bg-gray-50/70 dark:bg-white/[0.03] hover:bg-gray-100 dark:hover:bg-white/[0.08] border border-gray-100 dark:border-white/5 cursor-pointer flex items-center justify-between gap-2 transition-all group/item"
+                  >
+                    <div className="min-w-0">
+                      <span className="font-mono font-bold text-gray-900 dark:text-white block group-hover/item:text-[#8c9276] dark:group-hover/item:text-[#ccff00] transition-colors">
+                        {ord.id}
+                      </span>
+                      <span className="text-[10px] text-gray-400 truncate block">
+                        {ord.customerName || "Cliente Lumina"} · ${ord.total.toFixed(2)}
+                      </span>
+                    </div>
+                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-white dark:bg-white/10 border border-gray-200/70 dark:border-white/10 text-gray-700 dark:text-gray-300 font-bold shrink-0">
+                      {ord.status}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Matching Catalog */}
+          {filteredCatalog.length > 0 && (
+            <div className="space-y-1.5">
+              <p className="text-[10px] font-extrabold text-gray-400 dark:text-gray-500 uppercase tracking-wider px-1">
+                Piezas del Catálogo ({filteredCatalog.length})
+              </p>
+              <div className="space-y-1">
+                {filteredCatalog.slice(0, 3).map((prod) => (
+                  <div
+                    key={prod.id}
+                    onClick={() => {
+                      setActiveTab(isAdmin ? "catalog" : "favorites");
+                      setSearchQuery("");
+                    }}
+                    className="p-2 rounded-2xl bg-gray-50/70 dark:bg-white/[0.03] hover:bg-gray-100 dark:hover:bg-white/[0.08] border border-gray-100 dark:border-white/5 cursor-pointer flex items-center justify-between gap-2.5 transition-all group/prod"
+                  >
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      {prod.imageUrl && (
+                        <div className="w-8 h-8 rounded-xl overflow-hidden bg-gray-200 dark:bg-white/10 shrink-0 border border-gray-200/60 dark:border-white/10">
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img src={prod.imageUrl} alt={prod.title} className="w-full h-full object-cover" />
+                        </div>
+                      )}
+                      <div className="min-w-0">
+                        <span className="font-semibold text-gray-800 dark:text-gray-100 truncate block max-w-[190px] group-hover/prod:text-[#8c9276] dark:group-hover/prod:text-[#ccff00] transition-colors">
+                          {prod.title}
+                        </span>
+                        <span className="text-[10px] text-gray-400 block">{prod.category}</span>
+                      </div>
+                    </div>
+                    <span className="font-mono font-bold text-gray-900 dark:text-[#ccff00] shrink-0">
+                      ${Number(prod.price || 0).toFixed(2)}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {filteredOrders.length === 0 && filteredCatalog.length === 0 && (
+            <div className="py-6 text-center space-y-1">
+              <p className="text-xs font-bold text-gray-700 dark:text-gray-300">
+                Sin coincidencias para &ldquo;{searchQuery}&rdquo;
+              </p>
+              <p className="text-[11px] text-gray-400">
+                Intenta buscando por ID de pedido, nombre de cliente o producto.
+              </p>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
 
  <Link href="/" className="hidden lg:flex text-xs font-medium text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 px-3 py-1.5 rounded-xl hover:bg-gray-100 dark:hover:bg-[#3a3a3c] transition-colors">
  Ver Tienda &rarr;
@@ -1271,10 +1353,25 @@ const handleConfirmDeleteNiche = async () => {
         order={selectedOrder}
         isAdmin={isAdmin}
         onClose={() => setSelectedOrder(null)}
-        onUpdateStatus={(orderId, nextSt) => {
-          updateOrderStatus(orderId, nextSt);
+        onUpdateStatus={(orderId, nextSt, trackingInfo) => {
+          updateOrderStatus(orderId, nextSt, trackingInfo);
           if (selectedOrder && selectedOrder.id === orderId) {
-            setSelectedOrder({ ...selectedOrder, status: nextSt });
+            setSelectedOrder({
+              ...selectedOrder,
+              status: nextSt,
+              trackingNumber:
+                nextSt === "Procesando"
+                  ? undefined
+                  : trackingInfo?.trackingNumber ?? selectedOrder.trackingNumber,
+              trackingUrl:
+                nextSt === "Procesando"
+                  ? undefined
+                  : trackingInfo?.trackingUrl ?? selectedOrder.trackingUrl,
+              carrierName:
+                nextSt === "Procesando"
+                  ? undefined
+                  : trackingInfo?.carrierName ?? selectedOrder.carrierName,
+            });
           }
         }}
       />

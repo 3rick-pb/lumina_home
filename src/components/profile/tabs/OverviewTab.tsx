@@ -607,7 +607,13 @@ export function OverviewTab({
                       <BeUIOrderStatusSelector
                         status={ord.status}
                         isAdmin={isAdmin}
-                        onUpdateStatus={(nextSt) => updateOrderStatus(ord.id, nextSt)}
+                        orderId={ord.id}
+                        initialTrackingNumber={ord.trackingNumber}
+                        initialTrackingUrl={ord.trackingUrl}
+                        initialCarrierName={ord.carrierName}
+                        onUpdateStatus={(nextSt, trackingInfo) =>
+                          updateOrderStatus(ord.id, nextSt, trackingInfo)
+                        }
                         size="sm"
                         align="center"
                       />

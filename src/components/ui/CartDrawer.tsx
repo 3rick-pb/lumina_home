@@ -4,7 +4,7 @@ import React, { useEffect, useState, useMemo } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence, Variants } from "framer-motion";
-import { BeUIAdaptiveStepper, BeUIRollingPrice } from "./BeUIControls";
+import { BeUIAdaptiveStepper, BeUIRollingPrice, BeUIAnimatedCtaButton } from "./BeUIControls";
 import { playStepperTickSound } from "@/lib/soundUtils";
 import { 
  X, 
@@ -31,7 +31,11 @@ import {
   Eye,
   Calendar,
   User,
-  Phone
+  Phone,
+  Wallet,
+  QrCode,
+  Bell,
+  ExternalLink
 } from "lucide-react";
 import { useCartStore } from "@/lib/store";
 import { useThemeStore, getResolvedTheme } from "@/lib/themeStore";
@@ -80,9 +84,9 @@ function DinersClubLogo({ className = "h-4" }: { className?: string }) {
   );
 }
 
-function DiscoverLogo({ className = "h-4" }: { className?: string }) {
+function DiscoverLogo({ className = "h-4.5" }: { className?: string }) {
   return (
-    <svg className={`shrink-0 ${className}`} viewBox="0 0 24 24" fill="#FF6000" role="img" xmlns="http://www.w3.org/2000/svg">
+    <svg className={`shrink-0 ${className}`} viewBox="0 7.6 24 8.8" fill="#FF6000" role="img" xmlns="http://www.w3.org/2000/svg">
       <title>Discover</title>
       <path d="M14.58 12a2.023 2.023 0 1 1-2.025-2.023h.002c1.118 0 2.023.906 2.023 2.023z" fill="#FF6000"/>
       <path d="M9.38 9.999c-1.124 0-2.025.884-2.025 1.99 0 1.118.878 1.984 2.007 1.984.319 0 .593-.063.93-.221v-.873c-.296.297-.559.416-.895.416-.747 0-1.277-.542-1.277-1.312 0-.73.547-1.306 1.243-1.306.354 0 .622.126.93.428v-.873a1.898 1.898 0 0 0-.913-.233zm-3.352 1.545c-.445-.165-.576-.273-.576-.479 0-.239.233-.422.553-.422.222 0 .405.091.598.308l.388-.508a1.665 1.665 0 0 0-1.117-.422c-.673 0-1.186.467-1.186 1.089 0 .524.239.792.936 1.043.291.103.438.171.513.217a.456.456 0 0 1 .222.394c0 .308-.245.536-.576.536-.354 0-.639-.177-.809-.507l-.479.461c.342.502.752.724 1.317.724.771 0 1.311-.513 1.311-1.249-.002-.603-.252-.876-1.095-1.185zM24 10.3a.29.29 0 0 1-.288.291.29.29 0 0 1-.291-.291v-.003A.29.29 0 1 1 24 10.3zm-.059.001a.235.235 0 0 0-.231-.239.234.234 0 0 0-.232.239c0 .132.104.239.232.239a.235.235 0 0 0 .231-.239zM3.472 13.887h.742v-3.803h-.742v3.803zm12.702-1.248l-1.014-2.554h-.81l1.614 3.9h.399l1.643-3.9h-.804l-1.028 2.554zm2.166 1.248h2.104v-.644h-1.362v-1.027h1.312v-.644h-1.312v-.844h1.362v-.644H18.34v3.803zm5.409-3.557l.11.138h-.097l-.094-.13v.13h-.08v-.334h.107c.081 0 .126.036.126.103.001.046-.025.08-.072.093zm-.006-.092c0-.029-.021-.043-.06-.043h-.014v.087h.014c.039 0 .06-.014.06-.044zm-1.228 2.047l1.197 1.602H22.8l-1.027-1.528h-.097v1.528h-.741v-3.803h1.1c.855 0 1.346.411 1.346 1.123 0 .583-.308.965-.866 1.078zm.103-1.038c0-.37-.251-.563-.713-.563h-.228v1.152h.217c.473-.001.724-.207.724-.589zm-19.487.742a1.91 1.91 0 0 1-.69 1.46c-.365.303-.781.439-1.357.439H.001v-3.803H1.09c1.202 0 2.041.781 2.041 1.904zm-.764-.006c0-.364-.154-.718-.411-.947-.245-.222-.536-.308-1.015-.308H.742v2.515h.199c.479 0 .782-.092 1.015-.302.256-.228.411-.593.411-.958z" className="fill-[#231F20] dark:fill-gray-200"/>
@@ -172,6 +176,7 @@ export function CartDrawer() {
  isAuthenticated, 
  address, 
  addresses,
+ cards,
  setAddress, 
  addAddress,
  addOrder 
@@ -204,11 +209,49 @@ export function CartDrawer() {
 
   // PayPhone Embedded Form Interactive State (Official In-Page Checkout Presentation)
   const [selectedPayMethod, setSelectedPayMethod] = useState<"card" | "app">("card");
+  const [selectedSavedCardId, setSelectedSavedCardId] = useState<string>("new");
   const [cardNumber, setCardNumber] = useState("");
   const [cardExpiry, setCardExpiry] = useState("");
   const [cardCvv, setCardCvv] = useState("");
   const [cardHolder, setCardHolder] = useState(user?.name || "");
   const [payphoneAppPhone, setPayphoneAppPhone] = useState("");
+  const [walletAddedPlatform, setWalletAddedPlatform] = useState<"apple" | "google" | null>(null);
+
+  // Auto-select default saved card if user has saved cards in their account
+  useEffect(() => {
+    if (cards && cards.length > 0 && selectedSavedCardId === "new" && !cardNumber) {
+      const defCard = cards.find((c) => c.isDefault) || cards[0];
+      if (defCard) {
+        const last4 = defCard.number.replace(/\D/g, "").slice(-4) || "4242";
+        const prefix = defCard.type === "mastercard" ? "5412 7500 8899" : "4532 8910 2233";
+        setSelectedSavedCardId(defCard.id);
+        setCardNumber(`${prefix} ${last4}`);
+        setCardExpiry(defCard.exp || "12/29");
+        setCardHolder(defCard.holder || user?.name || "CLIENTE LUMINA");
+        setCardCvv("888");
+      }
+    }
+  }, [cards, selectedSavedCardId, cardNumber, user?.name]);
+
+  const handleSelectSavedCard = (cardId: string) => {
+    setSelectedSavedCardId(cardId);
+    if (cardId === "new") {
+      setCardNumber("");
+      setCardExpiry("");
+      setCardCvv("");
+      setCardHolder(user?.name || "");
+      return;
+    }
+    const found = cards?.find((c) => c.id === cardId);
+    if (found) {
+      const last4 = found.number.replace(/\D/g, "").slice(-4) || "4242";
+      const prefix = found.type === "mastercard" ? "5412 7500 8899" : "4532 8910 2233";
+      setCardNumber(`${prefix} ${last4}`);
+      setCardExpiry(found.exp || "12/29");
+      setCardHolder(found.holder || user?.name || "CLIENTE LUMINA");
+      setCardCvv("888");
+    }
+  };
 
   // Quick Address Inline Form
   const [isEditingAddress, setIsEditingAddress] = useState(false);
@@ -1380,53 +1423,43 @@ export function CartDrawer() {
       </p>
     </div>
 
-    {/* 2IXO CAPSULE DOCK (Perfect Symmetrical Alignment from Reference) */}
+    {/* @beui/animated-cta-button + Capsule Dock */}
     <div className="pt-2 space-y-2">
-      <div className="w-full h-14 sm:h-15 p-1 sm:p-1.5 rounded-full bg-black/[0.04] dark:bg-white/[0.06] border border-black/[0.05] dark:border-white/10 backdrop-blur-xl flex items-center justify-between gap-1.5 sm:gap-2">
+      <div className="w-full flex items-center gap-2">
         {/* Left: Circular Shopping Bag Button */}
-        <button 
-          onClick={() => { setIsOpen(false); router.push("/shop"); }}
-          className="h-full aspect-square rounded-full bg-white dark:bg-[#27272a] hover:bg-gray-50 dark:hover:bg-[#323236] border border-black/[0.06] dark:border-white/15 shadow-sm flex items-center justify-center text-gray-700 dark:text-gray-200 shrink-0 hover:scale-105 active:scale-95 transition-all cursor-pointer"
+        <button
+          onClick={() => {
+            setIsOpen(false);
+            router.push("/shop");
+          }}
+          className="w-[60px] h-[60px] rounded-[22px] bg-white dark:bg-[#27272a] hover:bg-gray-50 dark:hover:bg-[#323236] border border-black/[0.08] dark:border-white/15 shadow-sm flex items-center justify-center text-gray-700 dark:text-gray-200 shrink-0 hover:scale-105 active:scale-95 transition-all cursor-pointer"
           title="Continuar explorando el catálogo"
         >
-          <ShoppingBag className="w-4 h-4 sm:w-4.5 sm:h-4.5" />
+          <ShoppingBag className="w-5 h-5" />
         </button>
-        
-        {/* Right: Black Pill Button with Arrow Circle and Price */}
-        <button 
-          onClick={handleProceedToPayment}
-          disabled={hasAgotadoItems}
-          className={`group relative flex-1 h-full rounded-full font-sans text-xs sm:text-sm font-semibold pl-1.5 sm:pl-2 pr-3 sm:pr-4 flex items-center justify-between transition-all duration-300 shadow-md cursor-pointer active:scale-[0.99] min-w-0 ${
-            hasAgotadoItems
-              ? "bg-rose-600 text-white shadow-rose-500/20 opacity-90 cursor-not-allowed"
-              : "bg-[#18181b] dark:bg-white text-white dark:text-gray-950 hover:bg-black dark:hover:bg-gray-100 shadow-black/15"
-          }`}
-        >
-          <div className="flex items-center gap-2 sm:gap-2.5 min-w-0">
-            <div className={`w-8 h-8 sm:w-9 sm:h-9 rounded-full flex items-center justify-center shrink-0 transition-transform group-hover:scale-105 ${
-              hasAgotadoItems 
-                ? "bg-white/20 text-white" 
-                : "bg-white/15 dark:bg-black/10 text-white dark:text-gray-950"
-            }`}>
-              {hasAgotadoItems ? <AlertTriangle className="w-3.5 h-3.5" /> : <ArrowRight className="w-3.5 h-3.5 sm:w-4 sm:h-4" />}
-            </div>
-            <span className="truncate font-medium">
-              {hasAgotadoItems 
-                ? "Elimina piezas agotadas" 
-                : !isAuthenticated 
-                ? "Iniciar Sesión" 
-                : "Proceder al Pago"}
-            </span>
-          </div>
 
-          <span className={`px-2.5 sm:px-3 py-1 rounded-full text-xs font-bold font-mono shrink-0 ml-1.5 ${
-            hasAgotadoItems 
-              ? "bg-white/20 text-white" 
-              : "bg-white/15 dark:bg-black/10 text-white dark:text-gray-900 border border-white/10 dark:border-black/5"
-          }`}>
-            ${finalTotal.toFixed(2)}
-          </span>
-        </button>
+        {/* Right: BeUI Animated CTA Button ("Animated CTA Buttons" combination) */}
+        <div className="flex-1 min-w-0">
+          <BeUIAnimatedCtaButton
+            onClick={handleProceedToPayment}
+            disabled={hasAgotadoItems}
+            subLabel={
+              hasAgotadoItems
+                ? "Acción Requerida"
+                : !isAuthenticated
+                  ? "Acceso Rápido"
+                  : "Checkout Seguro"
+            }
+            label={
+              hasAgotadoItems
+                ? "Elimina piezas agotadas"
+                : !isAuthenticated
+                  ? "Iniciar Sesión para Pagar"
+                  : "Proceder al Pago"
+            }
+            priceBadge={`$${finalTotal.toFixed(2)}`}
+          />
+        </div>
       </div>
 
       {!isAuthenticated && !hasAgotadoItems && (
@@ -1877,17 +1910,18 @@ export function CartDrawer() {
 
       {/* Method Selector Tabs */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-        {/* Tab 1: Tarjetas (Symmetrical 6-slot equal division across full button width) */}
+        {/* Tab 1: Tarjetas (1st left separator only + enlarged Discover logo) */}
         <button
           type="button"
           onClick={() => setSelectedPayMethod("card")}
-          className={`h-12 sm:h-13 px-1.5 sm:px-2 rounded-xl transition-all cursor-pointer w-full grid grid-cols-6 items-center justify-items-center divide-x divide-gray-200/70 dark:divide-white/10 ${
+          className={`h-12 sm:h-13 px-1.5 sm:px-2 rounded-xl transition-all cursor-pointer w-full grid grid-cols-6 items-center justify-items-center ${
             selectedPayMethod === "card"
               ? "border-2 border-[#FF5900] bg-white dark:bg-[#202022] shadow-xs"
               : "border border-gray-200 dark:border-white/10 hover:border-gray-300 dark:hover:border-white/20 bg-white dark:bg-[#18181b]"
           }`}
         >
-          <div className="w-full h-6 flex items-center justify-center px-1">
+          {/* 1st Slot: Card Icon + ONLY left separator */}
+          <div className="w-full h-6 flex items-center justify-center px-1 border-r border-gray-200/80 dark:border-white/15">
             <svg className={`w-4 sm:w-4.5 h-3.5 shrink-0 ${selectedPayMethod === "card" ? "text-[#FF5900]" : "text-gray-400"}`} viewBox="0 0 20 14" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
               <rect x="1" y="1" width="18" height="12" rx="2" />
               <line x1="1" y1="5" x2="19" y2="5" />
@@ -1903,8 +1937,8 @@ export function CartDrawer() {
           <div className="w-full h-6 flex items-center justify-center px-1">
             <DinersClubLogo className="h-3 sm:h-3.5 w-auto max-w-full object-contain" />
           </div>
-          <div className="w-full h-6 flex items-center justify-center px-1">
-            <DiscoverLogo className="h-3 sm:h-3.5 w-auto max-w-full object-contain" />
+          <div className="w-full h-6 flex items-center justify-center px-0.5">
+            <DiscoverLogo className="h-4 sm:h-4.5 w-auto max-w-full object-contain scale-115" />
           </div>
           <div className="w-full h-6 flex items-center justify-center px-1">
             <AmexLogo className="h-3 sm:h-3.5 w-auto max-w-full object-contain" />
@@ -1932,10 +1966,99 @@ export function CartDrawer() {
 
     {/* 4. CARD OR APP INPUT FORM */}
     {selectedPayMethod === "card" ? (
-      <div className="pt-2 space-y-2.5">
-        <h4 className="font-sans font-bold text-xs sm:text-sm text-gray-900 dark:text-white">
-          Información de tarjeta
-        </h4>
+      <div className="pt-2 space-y-3">
+        {/* Saved Cards Selector (if user has saved cards in account) */}
+        {cards && cards.length > 0 && (
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 flex items-center gap-1.5">
+                <CreditCard className="w-3.5 h-3.5 text-[#FF5900]" />
+                Mis tarjetas guardadas
+              </span>
+              {selectedSavedCardId !== "new" && (
+                <button
+                  type="button"
+                  onClick={() => handleSelectSavedCard("new")}
+                  className="text-[11px] font-semibold text-[#FF5900] hover:underline cursor-pointer"
+                >
+                  + Usar otra tarjeta
+                </button>
+              )}
+            </div>
+
+            <div className="grid grid-cols-1 gap-2">
+              {cards.map((savedCard) => {
+                const isSelected = selectedSavedCardId === savedCard.id;
+                const brandLower = (savedCard.type || "visa").toLowerCase();
+                const cardLast4 = savedCard.number.replace(/\D/g, "").slice(-4) || "4242";
+                return (
+                  <button
+                    key={savedCard.id}
+                    type="button"
+                    onClick={() => handleSelectSavedCard(savedCard.id)}
+                    className={`w-full px-3.5 py-2.5 rounded-xl border text-left transition-all flex items-center justify-between gap-3 cursor-pointer ${
+                      isSelected
+                        ? "border-[#FF5900] bg-[#FF5900]/[0.06] dark:bg-[#FF5900]/[0.12] shadow-2xs"
+                        : "border-gray-200 dark:border-white/10 bg-white dark:bg-[#141416] hover:border-gray-300 dark:hover:border-white/20"
+                    }`}
+                  >
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className="w-10 h-7 rounded-lg bg-gray-100 dark:bg-white/10 border border-black/[0.06] dark:border-white/10 flex items-center justify-center px-1.5 shrink-0">
+                        {brandLower.includes("master") ? (
+                          <MastercardLogo className="h-4 w-auto object-contain" />
+                        ) : brandLower.includes("amex") || brandLower.includes("american") ? (
+                          <AmexLogo className="h-3.5 w-auto object-contain" />
+                        ) : brandLower.includes("diners") ? (
+                          <DinersClubLogo className="h-3.5 w-auto object-contain" />
+                        ) : brandLower.includes("discover") ? (
+                          <DiscoverLogo className="h-4 w-auto object-contain" />
+                        ) : (
+                          <VisaLogo className="h-3 w-auto object-contain" fill="#1A1F71" />
+                        )}
+                      </div>
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-2">
+                          <span className="font-mono font-bold text-xs text-gray-900 dark:text-white">
+                            •••• {cardLast4}
+                          </span>
+                          {savedCard.isDefault && (
+                            <span className="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-md bg-amber-500/15 text-amber-700 dark:text-amber-300">
+                              Principal
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-[10.5px] text-gray-500 dark:text-gray-400 truncate">
+                          {savedCard.holder} · Vence {savedCard.exp}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div
+                      className={`w-4.5 h-4.5 rounded-full border flex items-center justify-center shrink-0 transition-colors ${
+                        isSelected
+                          ? "border-[#FF5900] bg-[#FF5900] text-white"
+                          : "border-gray-300 dark:border-white/20"
+                      }`}
+                    >
+                      {isSelected && <Check className="w-2.5 h-2.5 stroke-[3]" />}
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        <div className="flex items-center justify-between">
+          <h4 className="font-sans font-bold text-xs sm:text-sm text-gray-900 dark:text-white">
+            Información de tarjeta
+          </h4>
+          {selectedSavedCardId !== "new" && (
+            <span className="text-[10.5px] font-medium text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
+              <CheckCircle2 className="w-3 h-3" /> Tarjeta vinculada seleccionada
+            </span>
+          )}
+        </div>
 
         {/* Grouped 3-Row Input Container */}
         <div className="rounded-xl border border-gray-300 dark:border-white/15 bg-white dark:bg-[#141416] overflow-hidden divide-y divide-gray-300 dark:divide-white/15 shadow-2xs">
@@ -1944,8 +2067,10 @@ export function CartDrawer() {
             <input 
               type="text"
               inputMode="numeric"
+              autoComplete="cc-number"
               value={cardNumber}
               onChange={(e) => {
+                setSelectedSavedCardId("new");
                 const val = e.target.value.replace(/\D/g, "").slice(0, 16);
                 const formatted = val.match(/.{1,4}/g)?.join(" ") || val;
                 setCardNumber(formatted);
@@ -1962,6 +2087,7 @@ export function CartDrawer() {
               <input 
                 type="text"
                 inputMode="numeric"
+                autoComplete="cc-exp"
                 value={cardExpiry}
                 onChange={(e) => {
                   let val = e.target.value.replace(/\D/g, "").slice(0, 4);
@@ -1978,6 +2104,7 @@ export function CartDrawer() {
               <input 
                 type="password"
                 inputMode="numeric"
+                autoComplete="cc-csc"
                 value={cardCvv}
                 onChange={(e) => setCardCvv(e.target.value.replace(/\D/g, "").slice(0, 4))}
                 placeholder="CVV"
@@ -1992,6 +2119,7 @@ export function CartDrawer() {
             <User className="w-4 h-4 text-gray-400 shrink-0" />
             <input 
               type="text"
+              autoComplete="cc-name"
               value={cardHolder}
               onChange={(e) => setCardHolder(e.target.value)}
               placeholder="Ingresa titular de tarjeta"
@@ -2089,13 +2217,13 @@ export function CartDrawer() {
   )}
 
   {/* ======================================================================= */}
-  {/* STEP 3: ORDER CONFIRMED CELEBRATION (Receipt View) */}
+  {/* STEP 3: ORDER CONFIRMED CELEBRATION + WALLET PASS & QR CODE */}
   {/* ======================================================================= */}
   {step === "success" && lastPlacedOrder && (
-  <div className="max-w-xl mx-auto py-12 flex flex-col items-center justify-center text-center space-y-6 animate-fade-in">
+  <div className="max-w-xl mx-auto py-8 sm:py-10 flex flex-col items-center justify-center text-center space-y-6 animate-fade-in">
   
   <div className="relative w-20 h-20 rounded-full bg-[#FAF8F5] dark:bg-white/5 border border-black/[0.08] dark:border-white/10 text-gray-900 dark:text-white flex items-center justify-center shadow-md">
-    <CheckCircle2 className="w-10 h-10" />
+    <CheckCircle2 className="w-10 h-10 text-emerald-600 dark:text-emerald-400" />
     <div className="absolute -top-1 -right-1 w-6 h-6 rounded-full bg-[#18181b] dark:bg-white text-white dark:text-[#18181b] flex items-center justify-center shadow-md">
       <Sparkles className="w-3.5 h-3.5" />
     </div>
@@ -2103,30 +2231,107 @@ export function CartDrawer() {
 
   <div>
     <h3 className="font-display font-bold text-3xl sm:text-4xl text-gray-900 dark:text-white tracking-tight">¡Pedido Confirmado!</h3>
-    <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-2 max-w-sm leading-relaxed">
-      Tu compra ha sido procesada con éxito. Ya estamos preparando cada pieza con el máximo cuidado artesanal.
+    <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-2 max-w-md leading-relaxed">
+      Tu compra ha sido procesada con éxito. Recibirás tu guía de rastreo apenas el pedido sea despachado con la transportadora.
     </p>
   </div>
 
-  {/* Receipt Card */}
-  <div className="w-full p-6 sm:p-8 rounded-[2rem] bg-white/90 dark:bg-[#18181b]/90 backdrop-blur-xl border border-black/[0.06] dark:border-white/10 shadow-sm text-left space-y-4">
+  {/* Receipt Summary Card */}
+  <div className="w-full p-6 sm:p-7 rounded-[2rem] bg-white/90 dark:bg-[#18181b]/90 backdrop-blur-xl border border-black/[0.06] dark:border-white/10 shadow-sm text-left space-y-3.5">
     <div className="flex items-center justify-between pb-3 border-b border-black/[0.06] dark:border-white/5 text-xs sm:text-sm">
-      <span className="text-gray-400 font-medium">Identificador</span>
+      <span className="text-gray-400 font-medium">Orden de Compra</span>
       <span className="font-mono font-bold text-gray-900 dark:text-gray-100">{lastPlacedOrder.id}</span>
     </div>
     <div className="flex items-center justify-between pb-3 border-b border-black/[0.06] dark:border-white/5 text-xs sm:text-sm">
-      <span className="text-gray-400 font-medium">Nº de Seguimiento</span>
-      <span className="font-mono font-bold text-gray-900 dark:text-gray-100">{lastPlacedOrder.trackingNumber}</span>
+      <span className="text-gray-400 font-medium">Estado Actual</span>
+      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-500/12 text-amber-700 dark:text-amber-300 text-xs font-bold">
+        <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
+        Procesando en Atelier
+      </span>
     </div>
     <div className="flex items-center justify-between pb-3 border-b border-black/[0.06] dark:border-white/5 text-xs sm:text-sm">
-      <span className="text-gray-400 font-medium">Entrega Estimada</span>
-      <span className="font-semibold text-gray-800 dark:text-gray-200">3-5 días laborables</span>
+      <span className="text-gray-400 font-medium">Guía de Transportadora</span>
+      <span className="text-xs font-medium text-gray-500 dark:text-gray-400">Se asignará al despachar</span>
     </div>
-    <div className="flex items-center justify-between pt-2 text-xs sm:text-sm">
+    <div className="flex items-center justify-between pt-1 text-xs sm:text-sm">
       <span className="font-bold text-gray-700 dark:text-gray-300">Total Pagado</span>
       <span className="font-sans font-extrabold text-2xl text-gray-950 dark:text-white">
         ${Number(lastPlacedOrder?.total || 0).toFixed(2)} USD
       </span>
+    </div>
+  </div>
+
+  {/* ======================================================================= */}
+  {/* QR CODE & GOOGLE WALLET / APPLE WALLET LIVE TRACKING PASS CARD */}
+  {/* ======================================================================= */}
+  <div className="w-full rounded-[2rem] p-6 sm:p-7 bg-gradient-to-br from-[#141417] via-[#1c1b20] to-[#111114] text-white border border-white/15 shadow-[0_20px_50px_rgba(0,0,0,0.3)] text-left relative overflow-hidden">
+    <div className="absolute -top-24 -right-24 w-56 h-56 rounded-full bg-amber-500/15 blur-3xl pointer-events-none" />
+    <div className="relative z-10 flex flex-col sm:flex-row items-center gap-5 sm:gap-6">
+      {/* Scannable QR Code container linking to /wallet/order/[id] */}
+      <a
+        href={`/wallet/order/${encodeURIComponent(lastPlacedOrder.id)}`}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="group/qr shrink-0 p-3.5 rounded-2xl bg-white shadow-lg border border-white/20 flex flex-col items-center gap-1.5 hover:scale-[1.02] transition-transform"
+        title="Abrir pase digital de seguimiento en vivo"
+      >
+        <img
+          src={`https://api.qrserver.com/v1/create-qr-code/?size=180x180&margin=4&data=${encodeURIComponent(
+            `${typeof window !== "undefined" ? window.location.origin : "https://luminahome.ec"}/wallet/order/${encodeURIComponent(lastPlacedOrder.id)}`
+          )}`}
+          alt={`QR Pase de Pedido ${lastPlacedOrder.id}`}
+          className="w-28 h-28 sm:w-32 sm:h-32 rounded-lg object-contain"
+        />
+        <span className="text-[9.5px] font-mono font-bold uppercase tracking-wider text-gray-900">
+          Escanear con celular
+        </span>
+      </a>
+
+      {/* Wallet Pass Info & Action Buttons */}
+      <div className="flex-1 space-y-3.5 text-center sm:text-left">
+        <div>
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-400/15 border border-amber-400/30 text-amber-300 text-[10px] font-bold uppercase tracking-widest">
+            Pase Digital en Tiempo Real
+          </span>
+          <h4 className="font-display font-bold text-lg sm:text-xl text-white mt-1.5">
+            Guarda tu Pedido en tu Billetera
+          </h4>
+          <p className="text-xs text-white/70 leading-relaxed mt-1">
+            Escanea el código QR o añade esta tarjeta a <strong className="text-white">Google Wallet</strong> o <strong className="text-white">Apple Wallet</strong>. Recibirás notificaciones push automáticas cuando tu pedido pase a <span className="text-amber-300 font-semibold">Enviado</span> y <span className="text-emerald-300 font-semibold">Entregado</span>.
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1">
+          {/* Google Wallet Button */}
+          <a
+            href={`/wallet/order/${encodeURIComponent(lastPlacedOrder.id)}?wallet=google`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="h-11 px-4 rounded-xl bg-white hover:bg-gray-100 text-gray-950 font-sans font-bold text-xs flex items-center justify-center gap-2.5 shadow-sm transition-all cursor-pointer"
+          >
+            <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="none">
+              <path d="M21 7.5V6a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-1.5" stroke="#4285F4" strokeWidth="2" strokeLinecap="round" />
+              <rect x="3" y="8" width="18" height="9" rx="2" fill="#34A853" />
+              <path d="M3 10.5h18" stroke="#FBBC05" strokeWidth="2.5" />
+              <circle cx="17" cy="13.5" r="1.5" fill="#EA4335" />
+            </svg>
+            <span>Añadir a Google Wallet</span>
+          </a>
+
+          {/* Apple Wallet Button */}
+          <a
+            href={`/wallet/order/${encodeURIComponent(lastPlacedOrder.id)}?wallet=apple`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="h-11 px-4 rounded-xl bg-white/12 hover:bg-white/20 border border-white/20 text-white font-sans font-bold text-xs flex items-center justify-center gap-2.5 transition-all cursor-pointer"
+          >
+            <svg className="w-4 h-4 shrink-0 fill-current" viewBox="0 0 24 24">
+              <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M15.97 6.33c.64-.78 1.08-1.86.96-2.94-.93.04-2.06.62-2.72 1.4-.58.68-1.1 1.79-.96 2.84 1.04.08 2.08-.52 2.72-1.3z" />
+            </svg>
+            <span>Añadir a Apple Wallet</span>
+          </a>
+        </div>
+      </div>
     </div>
   </div>
 

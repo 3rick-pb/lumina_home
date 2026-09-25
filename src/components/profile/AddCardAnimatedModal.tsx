@@ -48,9 +48,9 @@ const BRAND_CONFIGS: Record<DetectedBrand, BrandVisualConfig> = {
   neutral: {
     id: "neutral",
     storageType: "visa",
-    name: "Bóveda Lumina",
-    tierLabel: "BOUTIQUE CARD",
-    subLabel: "DETECCIÓN AUTOMÁTICA",
+    name: "Tarjeta de Pago",
+    tierLabel: "LUMINA MEMBER",
+    subLabel: "CRÉDITO / DÉBITO",
     frontGradient: "linear-gradient(135deg, #23221f 0%, #171715 52%, #0d0d0c 100%)",
     backGradient: "linear-gradient(135deg, #1b1a18 0%, #121210 55%, #090908 100%)",
     accentRing: "rgba(196, 154, 63, 0.45)",
@@ -62,8 +62,8 @@ const BRAND_CONFIGS: Record<DetectedBrand, BrandVisualConfig> = {
     id: "visa",
     storageType: "visa",
     name: "Visa",
-    tierLabel: "VISA INFINITE",
-    subLabel: "RED VISA VERIFICADA",
+    tierLabel: "VISA SIGNATURE",
+    subLabel: "CRÉDITO / DÉBITO",
     frontGradient: "linear-gradient(135deg, #0f2547 0%, #163768 48%, #091529 100%)",
     backGradient: "linear-gradient(135deg, #0c1d38 0%, #10294f 50%, #071020 100%)",
     accentRing: "rgba(56, 189, 248, 0.55)",
@@ -76,7 +76,7 @@ const BRAND_CONFIGS: Record<DetectedBrand, BrandVisualConfig> = {
     storageType: "mastercard",
     name: "Mastercard",
     tierLabel: "WORLD ELITE",
-    subLabel: "RED MASTERCARD VERIFICADA",
+    subLabel: "CRÉDITO / DÉBITO",
     frontGradient: "linear-gradient(135deg, #1f1916 0%, #2b211b 48%, #110e0c 100%)",
     backGradient: "linear-gradient(135deg, #181311 0%, #221a15 50%, #0c0a09 100%)",
     accentRing: "rgba(247, 158, 27, 0.55)",
@@ -89,7 +89,7 @@ const BRAND_CONFIGS: Record<DetectedBrand, BrandVisualConfig> = {
     storageType: "visa",
     name: "American Express",
     tierLabel: "CENTURION PLATINUM",
-    subLabel: "RED AMEX DETECTADA",
+    subLabel: "CRÉDITO / CORPORATIVO",
     frontGradient: "linear-gradient(135deg, #13332e 0%, #1b4942 48%, #0a1f1c 100%)",
     backGradient: "linear-gradient(135deg, #0f2925 0%, #153a35 50%, #071714 100%)",
     accentRing: "rgba(45, 212, 191, 0.5)",
@@ -101,7 +101,7 @@ const BRAND_CONFIGS: Record<DetectedBrand, BrandVisualConfig> = {
     storageType: "mastercard",
     name: "Discover",
     tierLabel: "GLOBAL NETWORK",
-    subLabel: "RED DISCOVER DETECTADA",
+    subLabel: "CRÉDITO / DÉBITO",
     frontGradient: "linear-gradient(135deg, #2d1e14 0%, #3d281a 48%, #170f0a 100%)",
     backGradient: "linear-gradient(135deg, #241810 0%, #302015 50%, #120c08 100%)",
     accentRing: "rgba(251, 146, 60, 0.5)",
@@ -256,23 +256,26 @@ export function AddCardAnimatedModal({
   const [step, setStep] = useState<"form" | "processing" | "success">("form");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  // Lock background scroll & completely remove right browser scrollbar while open
+  // Ensure scroll is always cleanly restored when modal closes or unmounts
   useEffect(() => {
-    if (!isOpen || typeof document === "undefined") return;
-    const prevBodyOverflow = document.body.style.overflow;
-    const prevHtmlOverflow = document.documentElement.style.overflow;
-    const prevOverscroll = document.body.style.overscrollBehavior;
-
-    document.body.style.overflow = "hidden";
-    document.documentElement.style.overflow = "hidden";
-    document.body.style.overscrollBehavior = "none";
-    document.documentElement.classList.add("lumina-add-card-scroll-lock");
-
+    if (typeof document === "undefined") return;
+    if (!isOpen) {
+      document.body.style.removeProperty("overflow");
+      document.documentElement.style.removeProperty("overflow");
+      document.body.style.removeProperty("overscroll-behavior");
+      document.documentElement.classList.remove(
+        "lumina-add-card-scroll-lock",
+        "lumina-modal-lock-scroll"
+      );
+    }
     return () => {
-      document.body.style.overflow = prevBodyOverflow;
-      document.documentElement.style.overflow = prevHtmlOverflow;
-      document.body.style.overscrollBehavior = prevOverscroll;
-      document.documentElement.classList.remove("lumina-add-card-scroll-lock");
+      document.body.style.removeProperty("overflow");
+      document.documentElement.style.removeProperty("overflow");
+      document.body.style.removeProperty("overscroll-behavior");
+      document.documentElement.classList.remove(
+        "lumina-add-card-scroll-lock",
+        "lumina-modal-lock-scroll"
+      );
     };
   }, [isOpen]);
 
@@ -320,6 +323,15 @@ export function AddCardAnimatedModal({
 
   const handleResetAndClose = () => {
     if (step === "processing") return;
+    if (typeof document !== "undefined") {
+      document.body.style.removeProperty("overflow");
+      document.documentElement.style.removeProperty("overflow");
+      document.body.style.removeProperty("overscroll-behavior");
+      document.documentElement.classList.remove(
+        "lumina-add-card-scroll-lock",
+        "lumina-modal-lock-scroll"
+      );
+    }
     setStep("form");
     setIsFlipped(false);
     setFocusedField(null);
@@ -360,6 +372,15 @@ export function AddCardAnimatedModal({
         setStep("success");
 
         setTimeout(() => {
+          if (typeof document !== "undefined") {
+            document.body.style.removeProperty("overflow");
+            document.documentElement.style.removeProperty("overflow");
+            document.body.style.removeProperty("overscroll-behavior");
+            document.documentElement.classList.remove(
+              "lumina-add-card-scroll-lock",
+              "lumina-modal-lock-scroll"
+            );
+          }
           setStep("form");
           setIsFlipped(false);
           setCardNumber("");
@@ -389,19 +410,6 @@ export function AddCardAnimatedModal({
       className="max-w-3xl"
     >
       <style>{`
-        html.lumina-add-card-scroll-lock,
-        html.lumina-add-card-scroll-lock body {
-          overflow: hidden !important;
-          overscroll-behavior: none !important;
-          scrollbar-width: none !important;
-          -ms-overflow-style: none !important;
-        }
-        html.lumina-add-card-scroll-lock::-webkit-scrollbar,
-        html.lumina-add-card-scroll-lock body::-webkit-scrollbar {
-          display: none !important;
-          width: 0 !important;
-          height: 0 !important;
-        }
         .lumina-bag-close-btn,
         .lumina-bag-close-btn * {
           transition-property: all !important;
@@ -430,15 +438,15 @@ export function AddCardAnimatedModal({
             <div>
               <div className="flex items-center gap-2">
                 <h2 className="text-base sm:text-lg font-bold text-gray-950 dark:text-white tracking-tight">
-                  Vincular Nueva Tarjeta
+                  Nueva Tarjeta de Pago
                 </h2>
                 <span className="hidden sm:inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9.5px] font-bold uppercase tracking-wider bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border border-emerald-500/25">
                   <ShieldCheck className="w-3 h-3 text-emerald-500" />
-                  Bóveda Cifrada
+                  PCI-DSS Seguro
                 </span>
               </div>
               <p className="text-[11px] text-gray-500 dark:text-gray-400">
-                Detección inteligente de red bancaria en tiempo real y autocompletado con Billetera
+                Asocia un método de pago a tu cuenta para agilizar tus próximas compras.
               </p>
             </div>
           </div>
@@ -469,11 +477,11 @@ export function AddCardAnimatedModal({
               >
                 {/* LEFT COLUMN: LIVE 3D INTERACTIVE MORPHING CARD */}
                 <div className="lg:col-span-6 flex flex-col items-center justify-center">
-                  {/* Live Auto-Detected Network Pill above the card */}
+                  {/* Live Network Pill above the card */}
                   <div className="mb-3 flex items-center justify-between w-full max-w-[350px] px-1">
                     <span className="text-[10px] font-bold uppercase tracking-widest text-gray-400 dark:text-gray-500 flex items-center gap-1.5">
-                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                      Red Detectada
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                      Entidad Emisora
                     </span>
                     <motion.span
                       key={detectedBrand}
@@ -643,7 +651,7 @@ export function AddCardAnimatedModal({
 
                         <div className="px-5 flex items-center justify-between text-[8.5px] text-white/45">
                           <span className="max-w-[200px] leading-tight">
-                            Protección criptográfica tokenizada de extremo a extremo.
+                            Información protegida bajo estándares de seguridad financiera.
                           </span>
                           <BrandNetworkVector brand={detectedBrand} size="sm" />
                         </div>
@@ -651,28 +659,21 @@ export function AddCardAnimatedModal({
                     </motion.div>
                   </div>
 
-                  {/* Wallet Autofill & Security Footnote */}
-                  <div className="flex items-center justify-center gap-3 mt-4 text-[11px] text-gray-500 dark:text-gray-400">
-                    <div className="flex items-center gap-1">
-                      <Lock className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
-                      <span>SSL 256-Bits</span>
-                    </div>
-                    <span className="text-gray-300 dark:text-white/15">•</span>
-                    <div className="flex items-center gap-1">
-                      <Wallet className="w-3.5 h-3.5 text-[#8c9276]" />
-                      <span>Compatible con Apple Pay / Google Pay Autofill</span>
-                    </div>
+                  {/* Security Footnote */}
+                  <div className="flex items-center justify-center gap-2 mt-4 text-[11px] text-gray-500 dark:text-gray-400">
+                    <Lock className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                    <span>Transacción protegida bajo cifrado bancario SSL de 256 bits</span>
                   </div>
                 </div>
 
-                {/* RIGHT COLUMN: AUTOFILL & NUMERIC MOBILE KEYBOARD FORM */}
+                {/* RIGHT COLUMN: FORM */}
                 <div className="lg:col-span-6">
                   <form
                     onSubmit={handleSubmit}
                     autoComplete="on"
                     className="space-y-4 bg-gray-50/70 dark:bg-white/[0.03] p-5 sm:p-6 rounded-3xl border border-gray-200/70 dark:border-white/10"
                   >
-                    {/* Input 1: Card Number (First for instant BIN detection & Wallet Autofill trigger) */}
+                    {/* Input 1: Card Number */}
                     <div className="space-y-1.5">
                       <div className="flex items-center justify-between">
                         <label
@@ -747,7 +748,7 @@ export function AddCardAnimatedModal({
                       </div>
                     </div>
 
-                    {/* Inputs 3 & 4: Expiry Date & Security Code (Numeric Keypad on Mobile + Wallet Autofill) */}
+                    {/* Inputs 3 & 4: Expiry Date & Security Code */}
                     <div className="grid grid-cols-2 gap-3">
                       <div className="space-y-1.5">
                         <label
@@ -834,7 +835,7 @@ export function AddCardAnimatedModal({
                         className="w-full h-12 rounded-2xl bg-gray-950 hover:bg-black dark:bg-[#ccff00] dark:hover:bg-[#b8e600] text-white dark:text-gray-950 text-xs sm:text-sm font-bold tracking-wide transition-all shadow-lg shadow-gray-950/15 hover:scale-[1.01] active:scale-[0.99] cursor-pointer flex items-center justify-center gap-2"
                       >
                         <Sparkles className="w-4 h-4" />
-                        <span>Guardar en mi Sobre Digital</span>
+                        <span>Guardar nueva Tarjeta</span>
                       </button>
                     </div>
                   </form>
@@ -881,10 +882,10 @@ export function AddCardAnimatedModal({
                 <div className="space-y-1.5 flex flex-col items-center">
                   <div className="flex items-center gap-2.5 text-sm font-bold text-gray-900 dark:text-white">
                     <Loader2 className="w-4 h-4 text-[#8c9276] animate-spin" />
-                    <span>Sincronizando tarjeta {brandVisual.name}...</span>
+                    <span>Registrando tarjeta {brandVisual.name}...</span>
                   </div>
                   <p className="text-xs text-gray-500 dark:text-gray-400">
-                    Resguardando credenciales en tu sobre de billetera cifrado
+                    Verificando credenciales con tu entidad financiera
                   </p>
                 </div>
               </motion.div>
@@ -930,10 +931,10 @@ export function AddCardAnimatedModal({
                     <CheckCircle2 className="w-7 h-7" />
                   </div>
                   <h3 className="text-base font-bold text-gray-950 dark:text-white">
-                    ¡Tarjeta {brandVisual.name} Vinculada!
+                    Tarjeta Registrada Correctamente
                   </h3>
                   <p className="text-xs text-gray-500 dark:text-gray-400 max-w-sm">
-                    Tu tarjeta terminada en •••• {rawDigits.slice(-4) || "8888"} ya está disponible dentro de tu sobre digital.
+                    Tu tarjeta terminada en •••• {rawDigits.slice(-4) || "8888"} ha sido asociada a tu cuenta.
                   </p>
                 </div>
               </motion.div>

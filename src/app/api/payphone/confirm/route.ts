@@ -134,7 +134,6 @@ export async function POST(request: Request) {
     // 4. Build Authoritative Order Record for Database with Deferred Detail
     const now = new Date();
     const finalOrderId = sanitizeString(orderData?.orderId || `INV_${Math.floor(100000 + Math.random() * 900000)}`, 50);
-    const trackingCode = `LM-${Math.floor(1000000 + Math.random() * 9000000)}`;
 
     const deferredText = confirmation.isDeferred && confirmation.deferredMessage
       ? ` (${confirmation.deferredMessage})`
@@ -174,7 +173,7 @@ export async function POST(request: Request) {
       time: now.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }),
       createdAt: now.toISOString(),
       status: 'Procesando',
-      trackingNumber: trackingCode,
+      trackingNumber: undefined,
       total: expectedTotal > 0 ? expectedTotal : (Number(confirmation.amountCents || 0) / 100),
       items: Array.isArray(orderData?.items) ? orderData.items : [],
       deferred: confirmation.isDeferred || false,
@@ -188,7 +187,7 @@ export async function POST(request: Request) {
       status: apiOrder.status,
       total: apiOrder.total,
       items: apiOrder.items,
-      tracking_number: apiOrder.trackingNumber,
+      tracking_number: null,
       customer_name: apiOrder.customerName,
       customer_email: apiOrder.customerEmail,
       customer_id_number: apiOrder.customerIdNumber || null,

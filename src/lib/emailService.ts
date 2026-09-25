@@ -270,7 +270,6 @@ export async function getOrderEmailLogs(orderId: string): Promise<OrderEmailNoti
  */
 export function generateCustomerInvoiceHtml(order: OrderEmailData): string {
   const orderId = order.id || 'N/A';
-  const trackingNumber = order.trackingNumber || 'En asignación';
   const customerName = order.customerName || order.recipient || 'Estimado Cliente';
   const recipient = order.recipient || order.shippingAddress?.recipient || customerName;
   const idNumber = order.customerIdNumber || order.shippingAddress?.idNumber || 'No especificada';
@@ -367,15 +366,15 @@ export function generateCustomerInvoiceHtml(order: OrderEmailData): string {
                 Hemos recibido tu pedido con éxito y ya se encuentra en nuestro centro logístico para ser preparado con el mayor cuidado y excelencia. A continuación tienes el detalle de tu factura.
               </div>
 
-              <!-- Tracking Badge Card -->
+              <!-- Order Status & Issue Date Card (Tracking code is assigned only when shipped) -->
               <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#f1f5f9;border-radius:16px;margin-bottom:32px;">
                 <tr>
                   <td style="padding:18px 24px;">
                     <table width="100%" cellpadding="0" cellspacing="0" border="0">
                       <tr>
                         <td>
-                          <div style="font-size:11px;text-transform:uppercase;letter-spacing:0.8px;color:#64748b;font-weight:600;">Número de Seguimiento</div>
-                          <div style="font-size:16px;font-weight:700;color:#0f172a;margin-top:2px;">${trackingNumber}</div>
+                          <div style="font-size:11px;text-transform:uppercase;letter-spacing:0.8px;color:#64748b;font-weight:600;">Estado Inicial del Pedido</div>
+                          <div style="font-size:15px;font-weight:700;color:#0f172a;margin-top:2px;">Procesando · Guía asignada al despachar</div>
                         </td>
                         <td style="text-align:right;">
                           <div style="font-size:11px;text-transform:uppercase;letter-spacing:0.8px;color:#64748b;font-weight:600;">Fecha de Emisión</div>
@@ -501,7 +500,6 @@ export function generateCustomerInvoiceHtml(order: OrderEmailData): string {
  */
 export function generateAdminDispatchNoticeHtml(order: OrderEmailData): string {
   const orderId = order.id || 'N/A';
-  const trackingNumber = order.trackingNumber || 'LM-ASIGNADO';
   const customerName = order.customerName || order.recipient || 'Cliente';
   const recipient = order.recipient || order.shippingAddress?.recipient || customerName;
   const idNumber = order.customerIdNumber || order.shippingAddress?.idNumber || 'No especificada';
@@ -578,7 +576,7 @@ export function generateAdminDispatchNoticeHtml(order: OrderEmailData): string {
                       Alerta Operativa de Despacho
                     </div>
                     <div style="font-size:13px;color:#94a3b8;margin-top:2px;">
-                      Orden: <strong style="color:#ffffff;">#${orderId}</strong> · Guía: <strong style="color:#ffffff;">${trackingNumber}</strong>
+                      Orden: <strong style="color:#ffffff;">#${orderId}</strong> · Estado: <strong style="color:#ffffff;">Procesando (Asignar Guía al Enviar)</strong>
                     </div>
                   </td>
                   <td style="text-align:right;vertical-align:middle;">
@@ -689,7 +687,7 @@ export function generateAdminDispatchNoticeHtml(order: OrderEmailData): string {
 
               <!-- Next Action Notice -->
               <div style="font-size:12px;color:#64748b;line-height:1.5;background-color:#fffbeb;border:1px solid #fef3c7;border-radius:10px;padding:12px 16px;">
-                ⚠️ <strong>Paso operativo:</strong> Una vez preparado y rotulado el paquete con el número de guía <strong>${trackingNumber}</strong>, ingresar al panel de administración para actualizar el estado a <em>"Enviado"</em>.
+                ⚠️ <strong>Paso operativo:</strong> Una vez preparado y rotulado el paquete con la transportadora, ingresar al panel de administración para registrar el código y enlace de rastreo al cambiar el estado a <em>"Enviado"</em>.
               </div>
 
             </td>

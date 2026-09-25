@@ -1417,28 +1417,46 @@ export function BeUICenterMorphModal({
   children,
   className,
 }: BeUICenterMorphModalProps) {
+  const onOpenChangeRef = useRef(onOpenChange);
   useEffect(() => {
-    if (!open || typeof document === "undefined") return;
-    const prevBodyOverflow = document.body.style.overflow;
-    const prevHtmlOverflow = document.documentElement.style.overflow;
-    const prevBodyOverscroll = document.body.style.overscrollBehavior;
+    onOpenChangeRef.current = onOpenChange;
+  }, [onOpenChange]);
+
+  useEffect(() => {
+    if (typeof document === "undefined") return;
+
+    if (!open) {
+      document.body.style.removeProperty("overflow");
+      document.documentElement.style.removeProperty("overflow");
+      document.body.style.removeProperty("overscroll-behavior");
+      document.documentElement.classList.remove(
+        "lumina-modal-lock-scroll",
+        "lumina-add-card-scroll-lock"
+      );
+      return;
+    }
+
     document.body.style.overflow = "hidden";
     document.documentElement.style.overflow = "hidden";
     document.body.style.overscrollBehavior = "none";
     document.documentElement.classList.add("lumina-modal-lock-scroll");
 
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onOpenChange(false);
+      if (e.key === "Escape") onOpenChangeRef.current(false);
     };
     document.addEventListener("keydown", handleKeyDown);
+
     return () => {
-      document.body.style.overflow = prevBodyOverflow;
-      document.documentElement.style.overflow = prevHtmlOverflow;
-      document.body.style.overscrollBehavior = prevBodyOverscroll;
-      document.documentElement.classList.remove("lumina-modal-lock-scroll");
+      document.body.style.removeProperty("overflow");
+      document.documentElement.style.removeProperty("overflow");
+      document.body.style.removeProperty("overscroll-behavior");
+      document.documentElement.classList.remove(
+        "lumina-modal-lock-scroll",
+        "lumina-add-card-scroll-lock"
+      );
       document.removeEventListener("keydown", handleKeyDown);
     };
-  }, [open, onOpenChange]);
+  }, [open]);
 
   return (
     <AnimatePresence>
@@ -2494,10 +2512,56 @@ const ORDER_STATUS_META: Record<
   },
 };
 
+export interface OrderTrackingDispatchMeta {
+  trackingNumber: string;
+  trackingUrl: string;
+  carrierName?: string;
+}
+
+const CARRIER_PRESETS = [
+  {
+    name: "Servientrega",
+    prefix: "SRV",
+    url: "https://www.servientrega.com.ec/Tracking",
+  },
+  {
+    name: "Urbano Express",
+    prefix: "URB",
+    url: "https://www.urbano.com.ec/",
+  },
+  {
+    name: "LaarCourier",
+    prefix: "LAR",
+    url: "https://www.laarcourier.com/",
+  },
+  {
+    name: "Tramaco Express",
+    prefix: "TRM",
+    url: "https://www.tramaco.com.ec/",
+  },
+  {
+    name: "DHL Express",
+    prefix: "DHL",
+    url: "https://www.dhl.com/ec-es/home/rastreo.html",
+  },
+  {
+    name: "FedEx",
+    prefix: "FDX",
+    url: "https://www.fedex.com/es-ec/tracking.html",
+  },
+];
+
 export interface BeUIOrderStatusSelectorProps {
   status: LuminaOrderStatus;
   isAdmin: boolean;
-  onUpdateStatus?: (nextStatus: LuminaOrderStatus) => void;
+  onUpdateStatus?: (
+    nextStatus: LuminaOrderStatus,
+    trackingInfo?: OrderTrackingDispatchMeta
+  ) => void;
+  initialTrackingNumber?: string;
+  initialTrackingUrl?: string;
+  initialCarrierName?: string;
+  orderId?: string;
   size?: AnimatedBadgeSize;
   align?: "start" | "center" | "end";
 }
@@ -2506,10 +2570,28 @@ export function BeUIOrderStatusSelector({
   status,
   isAdmin,
   onUpdateStatus,
+  initialTrackingNumber = "",
+  initialTrackingUrl = "",
+  initialCarrierName = "",
+  orderId,
   size = "sm",
   align = "center",
 }: BeUIOrderStatusSelectorProps) {
   const [popoverOpen, setPopoverOpen] = useState(false);
+  const [trackingModalOpen, setTrackingModalOpen] = useState(false);
+  const [carrierName, setCarrierName] = useState(initialCarrierName || "Servientrega");
+  const [trackingNumber, setTrackingNumber] = useState(initialTrackingNumber || "");
+  const [trackingUrl, setTrackingUrl] = useState(
+    initialTrackingUrl || "https://www.servientrega.com.ec/Tracking"
+  );
+  const [trackingError, setTrackingError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (initialTrackingNumber) setTrackingNumber(initialTrackingNumber);
+    if (initialTrackingUrl) setTrackingUrl(initialTrackingUrl);
+    if (initialCarrierName) setCarrierName(initialCarrierName);
+  }, [initialTrackingNumber, initialTrackingUrl, initialCarrierName]);
+
   const currentMeta = ORDER_STATUS_META[status] || ORDER_STATUS_META.Procesando;
 
   if (!isAdmin || !onUpdateStatus) {
@@ -2525,90 +2607,451 @@ export function BeUIOrderStatusSelector({
     );
   }
 
-  return (
-    <BeUIPopover
-      open={popoverOpen}
-      onOpenChange={setPopoverOpen}
-      align={align}
-      sideOffset={10}
-      panelRadius={18}
-      gooStrength={7}
-      trigger={
-        <div className="group inline-flex items-center">
-          <BeUIAnimatedBadge
-            status={currentMeta.badgeStatus}
-            size={size}
-            pulse={status === "Procesando"}
-            contentKey={status}
-            className="pr-2.5 cursor-pointer hover:brightness-95 dark:hover:brightness-110 active:scale-95 transition-transform"
-          >
-            <span className="inline-flex items-center gap-1.5">
-              <span>{status}</span>
-              <ChevronDown
-                className={cn(
-                  "w-3 h-3 opacity-70 transition-transform duration-300",
-                  popoverOpen && "rotate-180"
-                )}
-              />
-            </span>
-          </BeUIAnimatedBadge>
-        </div>
+  const handleSelectStatusOption = (opt: LuminaOrderStatus) => {
+    playStepperTickSound("up");
+    setPopoverOpen(false);
+    if (opt === status && opt !== "Enviado") return;
+
+    // When transitioning to "Enviado", require Carrier Tracking Code + Carrier URL
+    if (opt === "Enviado") {
+      setTrackingError(null);
+      if (!trackingNumber) {
+        const preset = CARRIER_PRESETS.find((c) => c.name === carrierName) || CARRIER_PRESETS[0];
+        setCarrierName(preset.name);
+        setTrackingUrl(trackingUrl || preset.url);
       }
-    >
-      <div className="w-[200px] space-y-1">
-        <div className="px-2.5 py-1.5 border-b border-gray-100 dark:border-white/10 flex items-center justify-between">
-          <span className="text-[9.5px] font-mono uppercase tracking-widest text-gray-400 font-bold">
-            Estado de Envío
-          </span>
+      setTrackingModalOpen(true);
+      return;
+    }
+
+    onUpdateStatus(opt);
+  };
+
+  const handleConfirmShippedDispatch = (e: React.FormEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const cleanCode = trackingNumber.trim().toUpperCase();
+    let cleanUrl = trackingUrl.trim();
+
+    if (!cleanCode || cleanCode.length < 4) {
+      setTrackingError("Ingresa el código de rastreo (guía) asignado por la transportadora.");
+      return;
+    }
+    if (!cleanUrl) {
+      setTrackingError("Ingresa el enlace web de la transportadora donde el cliente rastreará su guía.");
+      return;
+    }
+    if (!/^https?:\/\//i.test(cleanUrl)) {
+      cleanUrl = `https://${cleanUrl}`;
+    }
+
+    setTrackingError(null);
+    setTrackingModalOpen(false);
+    onUpdateStatus("Enviado", {
+      trackingNumber: cleanCode,
+      trackingUrl: cleanUrl,
+      carrierName: carrierName.trim() || "Transportadora",
+    });
+  };
+
+  return (
+    <>
+      <BeUIPopover
+        open={popoverOpen}
+        onOpenChange={setPopoverOpen}
+        align={align}
+        sideOffset={10}
+        panelRadius={18}
+        gooStrength={7}
+        trigger={
+          <div className="group inline-flex items-center">
+            <BeUIAnimatedBadge
+              status={currentMeta.badgeStatus}
+              size={size}
+              pulse={status === "Procesando"}
+              contentKey={status}
+              className="pr-2.5 cursor-pointer hover:brightness-95 dark:hover:brightness-110 active:scale-95 transition-transform"
+            >
+              <span className="inline-flex items-center gap-1.5">
+                <span>{status}</span>
+                <ChevronDown
+                  className={cn(
+                    "w-3 h-3 opacity-70 transition-transform duration-300",
+                    popoverOpen && "rotate-180"
+                  )}
+                />
+              </span>
+            </BeUIAnimatedBadge>
+          </div>
+        }
+      >
+        <div className="w-[210px] space-y-1">
+          <div className="px-2.5 py-1.5 border-b border-gray-100 dark:border-white/10 flex items-center justify-between">
+            <span className="text-[9.5px] font-mono uppercase tracking-widest text-gray-400 font-bold">
+              Estado de Envío
+            </span>
+          </div>
+          {(["Procesando", "Enviado", "Entregado"] as const).map((opt) => {
+            const meta = ORDER_STATUS_META[opt];
+            const isSelected = status === opt;
+            return (
+              <button
+                key={opt}
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleSelectStatusOption(opt);
+                }}
+                className={cn(
+                  "w-full flex items-center justify-between gap-2.5 px-2.5 py-2 rounded-xl text-left transition-all cursor-pointer group",
+                  isSelected
+                    ? "bg-gray-900/5 dark:bg-white/10 font-bold"
+                    : "hover:bg-gray-100/80 dark:hover:bg-white/[0.06]"
+                )}
+              >
+                <div className="flex flex-col gap-0.5 min-w-0">
+                  <BeUIAnimatedBadge
+                    status={meta.badgeStatus}
+                    size="sm"
+                    pulse={opt === "Procesando"}
+                    contentKey={opt}
+                  >
+                    {opt}
+                  </BeUIAnimatedBadge>
+                  {opt === "Enviado" && (
+                    <span className="text-[9.5px] text-gray-400 dark:text-gray-500 pl-1">
+                      Solicita guía y enlace
+                    </span>
+                  )}
+                </div>
+                <div className="flex items-center gap-1.5 shrink-0">
+                  {isSelected && (
+                    <motion.span
+                      initial={{ scale: 0.5, opacity: 0 }}
+                      animate={{ scale: 1, opacity: 1 }}
+                      className="w-5 h-5 rounded-full bg-gray-900 dark:bg-[#ccff00] text-white dark:text-gray-950 flex items-center justify-center shadow-xs"
+                    >
+                      <Check className="w-3 h-3 stroke-[2.5]" />
+                    </motion.span>
+                  )}
+                </div>
+              </button>
+            );
+          })}
         </div>
-        {(["Procesando", "Enviado", "Entregado"] as const).map((opt) => {
-          const meta = ORDER_STATUS_META[opt];
-          const isSelected = status === opt;
-          return (
-            <button
-              key={opt}
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                playStepperTickSound("up");
-                if (opt !== status) {
-                  onUpdateStatus(opt);
-                }
-                setPopoverOpen(false);
-              }}
+      </BeUIPopover>
+
+      {/* Admin Carrier Tracking Code & URL Modal when changing status to "Enviado" */}
+      {typeof document !== "undefined" &&
+        createPortal(
+          <BeUICenterMorphModal
+            open={trackingModalOpen}
+            onOpenChange={setTrackingModalOpen}
+            className="max-w-lg"
+          >
+            <div
+              onClick={(e) => e.stopPropagation()}
+              className="relative w-full bg-white/95 dark:bg-[#18181b]/95 backdrop-blur-2xl border border-gray-200/90 dark:border-white/10 rounded-[2rem] shadow-[0_28px_80px_rgba(0,0,0,0.4)] overflow-hidden p-6 sm:p-7 text-left"
+            >
+              <div className="flex items-start justify-between gap-4 pb-4 border-b border-gray-100 dark:border-white/10">
+                <div>
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20 mb-1.5">
+                    Despacho Logístico · Estado Enviado
+                  </span>
+                  <h3 className="text-base sm:text-lg font-bold text-gray-950 dark:text-white tracking-tight">
+                    Asignar Código de Rastreo y Transportadora
+                  </h3>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                    {orderId ? `Orden #${orderId} · ` : ""}Estos datos actualizarán la tarjeta en Google/Apple Wallet del cliente y habilitarán el rastreo directo.
+                  </p>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setTrackingModalOpen(false)}
+                  className="w-9 h-9 rounded-full bg-white/80 dark:bg-white/10 border border-black/[0.06] dark:border-white/15 text-gray-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50/90 dark:hover:bg-rose-950/40 flex items-center justify-center transition-all cursor-pointer shrink-0"
+                  title="Cerrar"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              <form onSubmit={handleConfirmShippedDispatch} className="mt-5 space-y-4">
+                {/* Carrier Presets */}
+                <div>
+                  <label className="block text-[11px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-2">
+                    1. Selecciona o escribe la Transportadora
+                  </label>
+                  <div className="flex flex-wrap gap-1.5 mb-2.5">
+                    {CARRIER_PRESETS.map((preset) => {
+                      const active = carrierName.toLowerCase() === preset.name.toLowerCase();
+                      return (
+                        <button
+                          key={preset.name}
+                          type="button"
+                          onClick={() => {
+                            setCarrierName(preset.name);
+                            setTrackingUrl(preset.url);
+                            if (!trackingNumber) {
+                              setTrackingNumber(
+                                `${preset.prefix}-${Math.floor(1000000 + Math.random() * 9000000)}`
+                              );
+                            }
+                          }}
+                          className={cn(
+                            "px-2.5 py-1.5 rounded-xl text-[11px] font-bold transition-all cursor-pointer border",
+                            active
+                              ? "bg-gray-950 dark:bg-[#ccff00] text-white dark:text-gray-950 border-gray-950 dark:border-[#ccff00] shadow-xs"
+                              : "bg-gray-50 dark:bg-white/5 text-gray-600 dark:text-gray-300 border-gray-200/80 dark:border-white/10 hover:border-gray-400"
+                          )}
+                        >
+                          {preset.name}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  <input
+                    type="text"
+                    value={carrierName}
+                    onChange={(e) => setCarrierName(e.target.value)}
+                    placeholder="Nombre de la transportadora (ej. Servientrega)"
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 dark:border-white/15 bg-gray-50/70 dark:bg-white/[0.04] text-xs sm:text-sm font-semibold text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#8c9276]"
+                  />
+                </div>
+
+                {/* Tracking Number */}
+                <div>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <label className="block text-[11px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                      2. Código de Rastreo (Guía de Envío) *
+                    </label>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const preset =
+                          CARRIER_PRESETS.find(
+                            (c) => c.name.toLowerCase() === carrierName.toLowerCase()
+                          ) || CARRIER_PRESETS[0];
+                        setTrackingNumber(
+                          `${preset.prefix}-${Math.floor(1000000 + Math.random() * 9000000)}`
+                        );
+                      }}
+                      className="text-[10px] font-bold text-[#8c9276] dark:text-[#ccff00] hover:underline cursor-pointer"
+                    >
+                      Autogenerar guía sugerida
+                    </button>
+                  </div>
+                  <input
+                    type="text"
+                    required
+                    value={trackingNumber}
+                    onChange={(e) => setTrackingNumber(e.target.value.toUpperCase())}
+                    placeholder="Ej: SRV-84920143"
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 dark:border-white/15 bg-white dark:bg-[#141417] text-sm font-mono font-bold text-gray-900 dark:text-white uppercase tracking-wider focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+
+                {/* Carrier Tracking URL */}
+                <div>
+                  <label className="block text-[11px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-1.5">
+                    3. Enlace Web de la Transportadora *
+                  </label>
+                  <input
+                    type="url"
+                    required
+                    value={trackingUrl}
+                    onChange={(e) => setTrackingUrl(e.target.value)}
+                    placeholder="https://www.servientrega.com.ec/Tracking"
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 dark:border-white/15 bg-white dark:bg-[#141417] text-xs sm:text-sm text-blue-600 dark:text-blue-400 font-medium focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                  <p className="text-[10.5px] text-gray-400 dark:text-gray-500 mt-1">
+                    Al hacer clic en el Tag del código de rastreo en el Resumen de Pedido o en su tarjeta Wallet, el cliente será redirigido a este enlace.
+                  </p>
+                </div>
+
+                {trackingError && (
+                  <div className="p-2.5 rounded-xl bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800/40 text-xs font-semibold text-red-600 dark:text-red-300">
+                    {trackingError}
+                  </div>
+                )}
+
+                <div className="flex items-center justify-end gap-2.5 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setTrackingModalOpen(false)}
+                    className="px-4 py-2.5 rounded-xl border border-gray-200 dark:border-white/15 text-xs font-bold text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/10 transition-colors cursor-pointer"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold shadow-lg shadow-blue-600/25 transition-all cursor-pointer flex items-center gap-2"
+                  >
+                    <span>Confirmar Envío y Notificar Wallet</span>
+                    <Check className="w-3.5 h-3.5 stroke-[2.5]" />
+                  </button>
+                </div>
+              </form>
+            </div>
+          </BeUICenterMorphModal>,
+          document.body
+        )}
+    </>
+  );
+}
+
+/* ============================================================================
+ * 13. @beui/animated-cta-button (Official Animated CTA Button for Shopping Bag)
+ * Source: https://beui.dev (`Animated CTA Buttons`)
+ * ============================================================================ */
+
+export interface BeUIAnimatedCtaButtonProps {
+  label: string;
+  subLabel?: string;
+  priceBadge?: string;
+  onClick?: () => void;
+  disabled?: boolean;
+  className?: string;
+}
+
+export function BeUIAnimatedCtaButton({
+  label,
+  subLabel,
+  priceBadge,
+  onClick,
+  disabled = false,
+  className,
+}: BeUIAnimatedCtaButtonProps) {
+  const [hovered, setHovered] = useState(false);
+
+  return (
+    <motion.button
+      type="button"
+      disabled={disabled}
+      onClick={onClick}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      whileTap={{ scale: 0.985 }}
+      transition={SPRING_PRESS}
+      className={cn(
+        "group relative w-full h-[60px] rounded-[22px] p-1.5 bg-gray-950 dark:bg-[#16171a] text-white border border-gray-900 dark:border-[#ccff00]/35 shadow-[0_16px_40px_-10px_rgba(0,0,0,0.35)] dark:shadow-[0_16px_44px_-10px_rgba(204,255,0,0.18)] overflow-hidden cursor-pointer select-none flex items-center justify-between",
+        disabled && "opacity-50 pointer-events-none",
+        className
+      )}
+    >
+      {/* Expanding / Morphing Lime/Olive Capsule Background from @beui/animated-cta-button */}
+      <motion.div
+        initial={false}
+        animate={{
+          width: hovered ? "calc(100% - 12px)" : "52px",
+        }}
+        transition={{
+          type: "spring",
+          stiffness: 380,
+          damping: 30,
+          mass: 0.7,
+        }}
+        className="absolute right-1.5 top-1.5 bottom-1.5 rounded-[17px] bg-gradient-to-r from-[#8c9276] via-[#9da485] to-[#b5bd9b] dark:from-[#ccff00] dark:via-[#d8ff33] dark:to-[#b8e600] shadow-[0_4px_20px_rgba(140,146,118,0.45)] dark:shadow-[0_4px_24px_rgba(204,255,0,0.4)] z-0"
+      />
+
+      {/* Ambient Shimmer Sweep */}
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_20%_50%,rgba(255,255,255,0.10),transparent_60%)] z-0" />
+
+      {/* Left / Main Content with Rolling Dual-Layer Typography */}
+      <div className="relative z-10 flex items-center justify-between flex-1 pl-4 pr-14 min-w-0">
+        <div className="flex flex-col items-start text-left min-w-0">
+          {subLabel && (
+            <span
               className={cn(
-                "w-full flex items-center justify-between gap-2.5 px-2.5 py-2 rounded-xl text-left transition-all cursor-pointer group",
-                isSelected
-                  ? "bg-gray-900/5 dark:bg-white/10 font-bold"
-                  : "hover:bg-gray-100/80 dark:hover:bg-white/[0.06]"
+                "text-[9.5px] font-extrabold uppercase tracking-[0.2em] transition-colors duration-300",
+                hovered
+                  ? "text-white/90 dark:text-gray-950/75"
+                  : "text-[#b5bd9b] dark:text-[#ccff00]"
               )}
             >
-              <div className="flex items-center gap-2.5 min-w-0">
-                <BeUIAnimatedBadge
-                  status={meta.badgeStatus}
-                  size="sm"
-                  pulse={opt === "Procesando"}
-                  contentKey={opt}
-                >
-                  {opt}
-                </BeUIAnimatedBadge>
-              </div>
-              <div className="flex items-center gap-1.5 shrink-0">
-                {isSelected && (
-                  <motion.span
-                    initial={{ scale: 0.5, opacity: 0 }}
-                    animate={{ scale: 1, opacity: 1 }}
-                    className="w-5 h-5 rounded-full bg-gray-900 dark:bg-[#ccff00] text-white dark:text-gray-950 flex items-center justify-center shadow-xs"
-                  >
-                    <Check className="w-3 h-3 stroke-[2.5]" />
-                  </motion.span>
-                )}
-              </div>
-            </button>
-          );
-        })}
+              {subLabel}
+            </span>
+          )}
+          <div className="relative h-5 overflow-hidden flex items-center">
+            <motion.span
+              animate={{ y: hovered ? "-100%" : "0%", opacity: hovered ? 0 : 1 }}
+              transition={{ type: "spring", stiffness: 400, damping: 30 }}
+              className="block text-sm sm:text-[15px] font-extrabold tracking-tight text-white"
+            >
+              {label}
+            </motion.span>
+            <motion.span
+              animate={{ y: hovered ? "0%" : "100%", opacity: hovered ? 1 : 0 }}
+              transition={{ type: "spring", stiffness: 400, damping: 30 }}
+              className="absolute inset-0 flex items-center text-sm sm:text-[15px] font-extrabold tracking-tight text-white dark:text-gray-950"
+            >
+              {label}
+            </motion.span>
+          </div>
+        </div>
+
+        {priceBadge && (
+          <motion.span
+            animate={{
+              scale: hovered ? 1.03 : 1,
+            }}
+            transition={SPRING_SWAP}
+            className={cn(
+              "ml-3 px-3 py-1 rounded-xl text-xs sm:text-sm font-black tracking-tight border transition-colors duration-300 shrink-0",
+              hovered
+                ? "bg-black/20 dark:bg-gray-950/15 text-white dark:text-gray-950 border-white/25 dark:border-gray-950/20"
+                : "bg-white/10 dark:bg-white/[0.07] text-white dark:text-[#ccff00] border-white/10"
+            )}
+          >
+            {priceBadge}
+          </motion.span>
+        )}
       </div>
-    </BeUIPopover>
+
+      {/* Right Sliding Arrow Capsule */}
+      <div className="relative z-10 w-[48px] h-[48px] rounded-[16px] flex items-center justify-center shrink-0 text-white dark:text-gray-950">
+        <div className="relative w-5 h-5 overflow-hidden flex items-center justify-center">
+          <motion.svg
+            animate={{
+              x: hovered ? 24 : 0,
+              opacity: hovered ? 0 : 1,
+            }}
+            transition={{ type: "spring", stiffness: 420, damping: 28 }}
+            width="18"
+            height="18"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2.6"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            className="absolute"
+          >
+            <path d="M5 12h14" />
+            <path d="m12 5 7 7-7 7" />
+          </motion.svg>
+          <motion.svg
+            animate={{
+              x: hovered ? 0 : -24,
+              opacity: hovered ? 1 : 0,
+            }}
+            transition={{ type: "spring", stiffness: 420, damping: 28 }}
+            width="18"
+            height="18"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2.6"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            className="absolute"
+          >
+            <path d="M5 12h14" />
+            <path d="m12 5 7 7-7 7" />
+          </motion.svg>
+        </div>
+      </div>
+    </motion.button>
   );
 }
 
