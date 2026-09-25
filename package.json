@@ -41,6 +41,10 @@
     "tailwindcss": "^3.4.1",
     "typescript": "^5"
   },
+  "allowScripts": {
+    "unrs-resolver": true,
+    "fsevents": true
+  },
   "pnpm": {
     "onlyBuiltDependencies": [
       "unrs-resolver"
