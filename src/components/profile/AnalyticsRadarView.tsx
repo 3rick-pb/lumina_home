@@ -2248,25 +2248,7 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
             <span className="absolute -bottom-0.5 -right-0.5 w-2 h-2 rounded-full bg-emerald-400 border border-black" />
           </button>
 
-          {/* Map Style Switcher Button on Left Toolstrip */}
-          <button
-            type="button"
-            onClick={() => setIsStyleMenuOpen((prev) => !prev)}
-            title={`Estilo de mapa: ${MAPBOX_OFFICIAL_STYLES.find((s) => s.id === mapStyleMode)?.name || "Dark"} (Clic para cambiar)`}
-            className={`relative w-8 h-8 sm:w-9 sm:h-9 rounded-xl flex items-center justify-center transition-all duration-300 cursor-pointer ${
-              isStyleMenuOpen
-                ? "bg-white text-gray-950 font-bold shadow-[0_4px_16px_rgba(255,255,255,0.25)] scale-105"
-                : "bg-white/10 border border-white/20 hover:border-white/40 text-white hover:scale-105 active:scale-95"
-            }`}
-          >
-            {mapStyleMode === "dark-v11" ? (
-              <Layers className="w-4 h-4" />
-            ) : mapStyleMode === "streets-v12" ? (
-              <MapIcon className="w-4 h-4" />
-            ) : (
-              <Satellite className="w-4 h-4" />
-            )}
-          </button>
+
 
           <div className="w-5 h-[1px] bg-white/15 my-0.5" />
 
@@ -2466,7 +2448,7 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
           isMobilePanelOpen ? "flex" : "hidden lg:flex"
         }`}
       >
-        <div className="flex-1 rounded-[1.75rem] sm:rounded-[2rem] bg-[#121615]/92 backdrop-blur-2xl border border-white/15 p-3.5 sm:p-5 shadow-2xl flex flex-col justify-between overflow-hidden transition-all duration-300 ease-out w-full">
+        <div className="flex-1 rounded-[1.75rem] sm:rounded-[2rem] bg-[#0c0f0e]/98 backdrop-blur-3xl border border-white/15 p-3.5 sm:p-5 shadow-2xl flex flex-col justify-between overflow-hidden transition-all duration-300 ease-out w-full">
           
           {/* Panel Top Navigation & Scrollable Content Body */}
           <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden touch-pan-y overscroll-x-none w-full pr-0.5 space-y-3.5 select-none" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>

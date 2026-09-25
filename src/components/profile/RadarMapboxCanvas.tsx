@@ -3,7 +3,7 @@
 import React, { useEffect, useRef, useState, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { RadarCountryCode } from "@/lib/radarCountries";
-import { Layers, Satellite, Map as MapIcon, ChevronUp, Check } from "lucide-react";
+
 
 export interface CountryGeoBounds {
   center: [number, number]; // [lng, lat]
@@ -2087,103 +2087,7 @@ export function RadarMapboxCanvas({
         {renderOverlayPins(projectPin)}
       </div>
 
-      {/* Official Mapbox Style Selector Dropdown Menu (Dark · Streets · Satellite Streets) */}
-      <div
-        className="absolute bottom-4 sm:bottom-5 left-3 sm:left-6 z-30 pointer-events-auto"
-        onClick={(e) => e.stopPropagation()}
-        onPointerDown={(e) => e.stopPropagation()}
-      >
-        <AnimatePresence>
-          {isStyleMenuOpen && (
-            <motion.div
-              initial={{ opacity: 0, y: 8, scale: 0.96 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: 6, scale: 0.96 }}
-              transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
-              className="mb-2 w-52 p-1.5 rounded-2xl bg-[#0e1116]/95 backdrop-blur-2xl border border-white/15 shadow-[0_18px_45px_rgba(0,0,0,0.75)] space-y-1 origin-bottom-left"
-            >
-              <div className="px-2.5 py-1 text-[9.5px] font-mono uppercase tracking-wider text-white/45 font-bold flex items-center justify-between">
-                <span>Estilos Mapbox</span>
-                <span>API</span>
-              </div>
-              {MAPBOX_OFFICIAL_STYLES.map((styleItem) => {
-                const isActive = mapStyleMode === styleItem.id;
-                return (
-                  <button
-                    key={styleItem.id}
-                    type="button"
-                    onClick={() => {
-                      handleSelectMapStyle(styleItem.id);
-                      setIsStyleMenuOpen(false);
-                    }}
-                    title={styleItem.mapboxUri}
-                    className={`w-full px-2.5 py-2 rounded-xl text-xs font-sans flex items-center justify-between gap-2 transition-all cursor-pointer ${
-                      isActive
-                        ? "bg-white text-gray-950 font-bold shadow-sm"
-                        : "text-white/80 hover:text-white hover:bg-white/10 font-medium"
-                    }`}
-                  >
-                    <div className="flex items-center gap-2 min-w-0">
-                      {styleItem.id === "dark-v11" ? (
-                        <Layers className="w-3.5 h-3.5 shrink-0" />
-                      ) : styleItem.id === "streets-v12" ? (
-                        <MapIcon className="w-3.5 h-3.5 shrink-0" />
-                      ) : (
-                        <Satellite className="w-3.5 h-3.5 shrink-0" />
-                      )}
-                      <span className="truncate">{styleItem.name}</span>
-                    </div>
-                    <div className="flex items-center gap-1.5 shrink-0">
-                      <span
-                        className={`text-[8.5px] font-mono px-1.5 py-0.5 rounded ${
-                          isActive ? "bg-black/10 text-gray-900 font-bold" : "bg-white/10 text-white/55"
-                        }`}
-                      >
-                        {styleItem.badge}
-                      </span>
-                      {isActive && <Check className="w-3.5 h-3.5 text-gray-950" />}
-                    </div>
-                  </button>
-                );
-              })}
-            </motion.div>
-          )}
-        </AnimatePresence>
 
-        {(() => {
-          const activeStyleObj =
-            MAPBOX_OFFICIAL_STYLES.find((s) => s.id === mapStyleMode) || MAPBOX_OFFICIAL_STYLES[0];
-          return (
-            <button
-              type="button"
-              onClick={() => setIsStyleMenuOpen((prev) => !prev)}
-              className="h-9 sm:h-10 px-3 sm:px-3.5 rounded-2xl bg-[#0e1116]/90 hover:bg-[#0e1116] backdrop-blur-2xl border border-white/15 hover:border-white/30 shadow-[0_12px_28px_rgba(0,0,0,0.5)] text-white text-xs font-semibold flex items-center gap-2 transition-all duration-200 cursor-pointer active:scale-95"
-              title="Cambiar estilo de mapa (Mapbox)"
-            >
-              <span className="w-6 h-6 rounded-lg bg-white/10 flex items-center justify-center text-white shrink-0">
-                {activeStyleObj.id === "dark-v11" ? (
-                  <Layers className="w-3.5 h-3.5" />
-                ) : activeStyleObj.id === "streets-v12" ? (
-                  <MapIcon className="w-3.5 h-3.5" />
-                ) : (
-                  <Satellite className="w-3.5 h-3.5" />
-                )}
-              </span>
-              <span className="font-sans text-[11px] sm:text-xs font-semibold tracking-tight">
-                {activeStyleObj.name}
-              </span>
-              <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-white/10 text-white/70 hidden sm:inline">
-                {activeStyleObj.badge}
-              </span>
-              <ChevronUp
-                className={`w-3.5 h-3.5 text-white/60 transition-transform duration-200 ${
-                  isStyleMenuOpen ? "rotate-180 text-white" : ""
-                }`}
-              />
-            </button>
-          );
-        })()}
-      </div>
     </div>
   );
 }
