@@ -2241,28 +2241,17 @@ export function CartDrawer() {
               </div>
             </div>
 
-            <div className="flex items-center gap-2">
-              {cards && cards.length > 0 && selectedSavedCardId !== "new" && (
-                <button
-                  type="button"
-                  onClick={() => handleSelectSavedCard("new")}
-                  className="text-[10.5px] font-bold text-[#FF5900] hover:underline cursor-pointer px-1.5"
-                >
-                  + Digitar otra
-                </button>
-              )}
-              <button
-                type="button"
-                onClick={() => {
-                  setIsOpen(false);
-                  router.push("/profile?tab=cards&addCard=true");
-                }}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white dark:bg-[#2a2a2c] hover:bg-gray-50 dark:hover:bg-[#151515] text-gray-800 dark:text-gray-200 text-[11px] font-semibold transition-all border border-gray-200 dark:border-white/10 shadow-2xs hover:shadow-xs hover:border-gray-300 cursor-pointer"
-              >
-                <Plus className="w-3 h-3 text-gray-700 dark:text-gray-300" />
-                <span>Nueva tarjeta</span>
-              </button>
-            </div>
+            <button
+              type="button"
+              onClick={() => {
+                setIsOpen(false);
+                router.push("/profile?tab=cards&addCard=true");
+              }}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white dark:bg-[#2a2a2c] hover:bg-gray-50 dark:hover:bg-[#151515] text-gray-800 dark:text-gray-200 text-[11px] font-semibold transition-all border border-gray-200 dark:border-white/10 shadow-2xs hover:shadow-xs hover:border-gray-300 cursor-pointer"
+            >
+              <Plus className="w-3 h-3 text-gray-700 dark:text-gray-300" />
+              <span>Nueva tarjeta</span>
+            </button>
           </div>
 
           {!cards || cards.length === 0 ? (

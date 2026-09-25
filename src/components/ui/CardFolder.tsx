@@ -2,7 +2,7 @@
 // Adaptación oficial de beui.dev/components/blocks/card-folder + @beui/text-animation para Lumina Home
 
 import React, { type ReactNode, useCallback, useEffect, useRef, useState } from "react";
-import { EllipsisVertical, Eye, EyeOff, CheckCircle2, Trash2, Wifi, ShieldCheck } from "lucide-react";
+import { EllipsisVertical, Eye, EyeOff, CheckCircle2, Trash2, Wifi } from "lucide-react";
 import {
   AnimatePresence,
   animate,
@@ -13,10 +13,18 @@ import {
 } from "framer-motion";
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
+import { playCardEnvelopeSound } from "@/lib/soundUtils";
 
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
+
+// Export alias so any external caller (e.g. CartDrawer) continues working seamlessly
+export const playEnvelopeSound = (mode: "open" | "close" | "reveal") => {
+  if (mode === "open" || mode === "close") {
+    playCardEnvelopeSound(mode);
+  }
+};
 
 // Constantes de física y curvas de animación beUI
 export const EASE_IN_OUT = [0.65, 0, 0.35, 1] as const;
@@ -42,282 +50,96 @@ const PURSE_REDUCED_TRANSITION = {
   ease: EASE_OUT,
 } as const;
 
-// ============================================================================
-// MOTOR DE AUDIO TÁCTIL DE BAJA FRECUENCIA (Cero sonidos agudos / Cero fatiga)
-// ============================================================================
-let sharedEnvelopeAudioCtx: AudioContext | null = null;
+const SCRAMBLE_CHARSET = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ$?#%&";
 
-function getEnvelopeAudioContext(): AudioContext | null {
-  if (typeof window === "undefined") return null;
-  try {
-    if (!sharedEnvelopeAudioCtx) {
-      const AudioCtx =
-        window.AudioContext ||
-        (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
-      if (AudioCtx) {
-        sharedEnvelopeAudioCtx = new AudioCtx();
-      }
-    }
-    if (sharedEnvelopeAudioCtx && sharedEnvelopeAudioCtx.state === "suspended") {
-      sharedEnvelopeAudioCtx.resume().catch(() => {});
-    }
-    return sharedEnvelopeAudioCtx;
-  } catch {
-    return null;
-  }
-}
-
-/**
- * Reproduce un sonido orgánico, grave, cálido y aterciopelado (sin frecuencias agudas)
- * al abrir o cerrar el sobre de la tarjeta.
- */
-export function playEnvelopeSound(mode: "open" | "close" | "reveal") {
-  const ctx = getEnvelopeAudioContext();
-  if (!ctx) return;
-
-  try {
-    const now = ctx.currentTime;
-
-    if (mode === "open") {
-      // Sonido de apertura de sobre de cuero/papel grueso: grave, suave y cálido (105 Hz -> 148 Hz, filtro pasa-bajos a 260 Hz)
-      const osc = ctx.createOscillator();
-      const subOsc = ctx.createOscillator();
-      const filter = ctx.createBiquadFilter();
-      const gain = ctx.createGain();
-
-      osc.type = "sine";
-      osc.frequency.setValueAtTime(102, now);
-      osc.frequency.exponentialRampToValueAtTime(146, now + 0.14);
-
-      subOsc.type = "triangle";
-      subOsc.frequency.setValueAtTime(68, now);
-      subOsc.frequency.exponentialRampToValueAtTime(96, now + 0.15);
-
-      // Filtro pasa-bajos estricto para eliminar cualquier frecuencia aguda
-      filter.type = "lowpass";
-      filter.frequency.setValueAtTime(240, now);
-      filter.Q.setValueAtTime(0.7, now);
-
-      gain.gain.setValueAtTime(0.0001, now);
-      gain.gain.linearRampToValueAtTime(0.065, now + 0.025);
-      gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.165);
-
-      osc.connect(filter);
-      subOsc.connect(filter);
-      filter.connect(gain);
-      gain.connect(ctx.destination);
-
-      osc.start(now);
-      subOsc.start(now);
-      osc.stop(now + 0.17);
-      subOsc.stop(now + 0.17);
-
-      // Textura muy sutil de deslizamiento de sobre (filtrada en graves a 190 Hz)
-      const bufferSize = Math.floor(ctx.sampleRate * 0.11);
-      const noiseBuffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
-      const data = noiseBuffer.getChannelData(0);
-      for (let i = 0; i < bufferSize; i++) {
-        data[i] = (Math.random() * 2 - 1) * Math.sin((i / bufferSize) * Math.PI);
-      }
-      const noise = ctx.createBufferSource();
-      noise.buffer = noiseBuffer;
-
-      const noiseFilter = ctx.createBiquadFilter();
-      noiseFilter.type = "bandpass";
-      noiseFilter.frequency.setValueAtTime(185, now);
-      noiseFilter.Q.setValueAtTime(1.4, now);
-
-      const noiseGain = ctx.createGain();
-      noiseGain.gain.setValueAtTime(0.028, now);
-      noiseGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.11);
-
-      noise.connect(noiseFilter);
-      noiseFilter.connect(noiseGain);
-      noiseGain.connect(ctx.destination);
-      noise.start(now);
-    } else if (mode === "close") {
-      // Sonido corto y grave al cerrar el sobre (128 Hz -> 78 Hz en 80ms, pasa-bajos a 210 Hz)
-      const osc = ctx.createOscillator();
-      const filter = ctx.createBiquadFilter();
-      const gain = ctx.createGain();
-
-      osc.type = "sine";
-      osc.frequency.setValueAtTime(128, now);
-      osc.frequency.exponentialRampToValueAtTime(76, now + 0.078);
-
-      filter.type = "lowpass";
-      filter.frequency.setValueAtTime(205, now);
-      filter.Q.setValueAtTime(0.6, now);
-
-      gain.gain.setValueAtTime(0.0001, now);
-      gain.gain.linearRampToValueAtTime(0.058, now + 0.012);
-      gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.082);
-
-      osc.connect(filter);
-      filter.connect(gain);
-      gain.connect(ctx.destination);
-
-      osc.start(now);
-      osc.stop(now + 0.085);
-    } else if (mode === "reveal") {
-      // Pulso grave aterciopelado muy corto al revelar/ocultar con el ojito (115 Hz -> 132 Hz en 65ms)
-      const osc = ctx.createOscillator();
-      const filter = ctx.createBiquadFilter();
-      const gain = ctx.createGain();
-
-      osc.type = "sine";
-      osc.frequency.setValueAtTime(115, now);
-      osc.frequency.exponentialRampToValueAtTime(132, now + 0.06);
-
-      filter.type = "lowpass";
-      filter.frequency.setValueAtTime(220, now);
-
-      gain.gain.setValueAtTime(0.0001, now);
-      gain.gain.linearRampToValueAtTime(0.04, now + 0.01);
-      gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.065);
-
-      osc.connect(filter);
-      filter.connect(gain);
-      gain.connect(ctx.destination);
-
-      osc.start(now);
-      osc.stop(now + 0.07);
-    }
-  } catch {
-    // Ignorar si el navegador bloquea audio antes de interacción
-  }
-}
-
-// ============================================================================
-// COMPONENTE OFICIAL @beui/text-animation ("Text Animation" de beUI)
-// ============================================================================
-export interface BeUITextAnimationProps {
-  text: string;
+export interface DigitSwapProps {
+  value: string;
   animationKey: string;
   direction?: "up" | "down";
-  staggerMs?: number;
   suffixLength?: number;
   glyphClassName?: string;
   suffixClassName?: string;
   className?: string;
-  highlightOnReveal?: boolean;
 }
 
 /**
- * Componente "Text Animation" de beUI (@beui/text-animation):
- * Anima carácter por carácter en cascada con desenfoque cinemático (blur-to-crisp),
- * rotación 3D suave en el eje X y desplazamiento elástico por glifo al revelar u ocultar datos.
+ * Componente "Text Animation" de beUI (referencia efect.mp4: "Runnin6 J?2 6UUX0T" / "PreR9SG5C $QU 1MDJ$Z"):
+ * Resuelve los caracteres progresivamente de izquierda a derecha pasando por glifos alfanuméricos
+ * y símbolos ($ ? #) al revelar u ocultar el número de tarjeta, CVV y fecha de expiración.
  */
-export function BeUITextAnimation({
-  text,
+export function DigitSwap({
+  value,
   animationKey,
-  direction = "up",
-  staggerMs = 18,
   suffixLength = 0,
   glyphClassName,
   suffixClassName,
   className,
-  highlightOnReveal = false,
-}: BeUITextAnimationProps) {
+}: DigitSwapProps) {
   const reduce = useReducedMotion();
-  const yEnter = direction === "up" ? 11 : -11;
-  const yExit = direction === "up" ? -11 : 11;
-  const rotEnter = direction === "up" ? -48 : 48;
-  const rotExit = direction === "up" ? 48 : -48;
+  const [displayValue, setDisplayValue] = useState(value);
+  const triggerSignature = `${animationKey}::${value}`;
+  const prevTriggerRef = useRef(triggerSignature);
 
-  const splitIndex = suffixLength > 0 ? Math.max(0, text.length - suffixLength) : text.length;
-  const chars = Array.from(text);
+  useEffect(() => {
+    if (prevTriggerRef.current === triggerSignature) {
+      return;
+    }
+    prevTriggerRef.current = triggerSignature;
+
+    if (reduce) {
+      setDisplayValue(value);
+      return;
+    }
+
+    const targetChars = Array.from(value);
+    const totalSteps = 14;
+    const intervalMs = 28;
+    let step = 0;
+
+    const buildScrambledFrame = (currentStep: number) => {
+      const progress = currentStep / totalSteps;
+      const resolvedCount = Math.floor(progress * targetChars.length);
+
+      return targetChars
+        .map((ch, idx) => {
+          if (ch === " ") return " ";
+          if (idx < resolvedCount) return ch;
+          const randIdx = Math.floor(Math.random() * SCRAMBLE_CHARSET.length);
+          return SCRAMBLE_CHARSET[randIdx];
+        })
+        .join("");
+    };
+
+    // Primer frame inmediato al hacer clic en el ojito
+    setDisplayValue(buildScrambledFrame(1));
+
+    const timer = setInterval(() => {
+      step += 1;
+      if (step >= totalSteps) {
+        clearInterval(timer);
+        setDisplayValue(value);
+      } else {
+        setDisplayValue(buildScrambledFrame(step));
+      }
+    }, intervalMs);
+
+    return () => clearInterval(timer);
+  }, [triggerSignature, value, reduce]);
+
+  const splitIndex =
+    suffixLength > 0 ? Math.max(0, displayValue.length - suffixLength) : displayValue.length;
+  const prefixPart = displayValue.slice(0, splitIndex);
+  const suffixPart = displayValue.slice(splitIndex);
 
   return (
-    <span
-      className={cn(
-        "relative inline-flex items-center overflow-hidden [perspective:600px]",
-        className,
-      )}
-    >
-      <AnimatePresence mode="popLayout" initial={false}>
-        <motion.span
-          key={`${animationKey}-${text}`}
-          initial="initial"
-          animate="animate"
-          exit="exit"
-          className="inline-flex items-center whitespace-pre"
-        >
-          {chars.map((char, idx) => {
-            const isSuffix = idx >= splitIndex;
-            const isSpace = char === " ";
-            const delaySec = reduce ? 0 : (idx * staggerMs) / 1000;
-
-            return (
-              <motion.span
-                key={`${idx}-${char}`}
-                variants={
-                  reduce
-                    ? {
-                        initial: { opacity: 0 },
-                        animate: { opacity: 1 },
-                        exit: { opacity: 0 },
-                      }
-                    : {
-                        initial: {
-                          opacity: 0,
-                          y: yEnter,
-                          scale: 0.68,
-                          rotateX: rotEnter,
-                          filter: "blur(5px)",
-                        },
-                        animate: {
-                          opacity: 1,
-                          y: 0,
-                          scale: 1,
-                          rotateX: 0,
-                          filter: "blur(0px)",
-                        },
-                        exit: {
-                          opacity: 0,
-                          y: yExit,
-                          scale: 0.68,
-                          rotateX: rotExit,
-                          filter: "blur(4px)",
-                        },
-                      }
-                }
-                transition={
-                  reduce
-                    ? { duration: 0.1 }
-                    : {
-                        type: "spring",
-                        stiffness: 470,
-                        damping: 28,
-                        mass: 0.62,
-                        delay: delaySec,
-                      }
-                }
-                style={{
-                  display: "inline-block",
-                  transformOrigin: "center center",
-                  minWidth: isSpace ? "0.32em" : undefined,
-                }}
-                className={cn(
-                  isSuffix ? suffixClassName : glyphClassName,
-                  highlightOnReveal &&
-                    animationKey === "revealed" &&
-                    !isSpace &&
-                    "drop-shadow-[0_0_8px_rgba(140,146,118,0.35)] dark:drop-shadow-[0_0_8px_rgba(204,255,0,0.28)]",
-                )}
-              >
-                {char}
-              </motion.span>
-            );
-          })}
-        </motion.span>
-      </AnimatePresence>
+    <span className={cn("relative inline-flex items-center overflow-hidden", className)}>
+      <span className="inline-flex items-center whitespace-pre">
+        <span className={glyphClassName}>{prefixPart}</span>
+        {suffixPart ? <span className={suffixClassName}>{suffixPart}</span> : null}
+      </span>
     </span>
   );
 }
-
-// Alias de compatibilidad con DigitSwap usando BeUITextAnimation
-export const DigitSwap = BeUITextAnimation;
 
 export interface CardFolderProps {
   title: string;
@@ -343,7 +165,7 @@ export interface CardFolderProps {
 /**
  * A landscape card tucked into an animated folder sleeve. Pressing the folder
  * lifts the card forward while the purse compresses into its bottom seam; a
- * separate privacy control reveals its number and CVV using @beui/text-animation.
+ * separate privacy control reveals its number, expiry and CVV.
  */
 export function CardFolder({
   title,
@@ -374,8 +196,6 @@ export function CardFolder({
   const detailsControlled = detailsVisible !== undefined;
   const isOpen = open ?? internalOpen;
   const areDetailsVisible = detailsVisible ?? internalDetailsVisible;
-  const isFirstRender = useRef(true);
-
   const transition = reduce ? { duration: 0 } : SPRING_LAYOUT;
   const normalizedCardNumber = cardNumber.replace(/\D/g, "");
   const visibleLastFour = normalizedCardNumber.slice(-4).padStart(4, "•");
@@ -404,13 +224,6 @@ export function CardFolder({
   const purseOpacity = useTransform(progress, [0, 0.76, 1], [1, 1, 0]);
 
   useEffect(() => {
-    if (isFirstRender.current) {
-      isFirstRender.current = false;
-    } else {
-      // Reproduce sonido grave/suave al abrir y sonido corto al cerrar el sobre
-      playEnvelopeSound(isOpen ? "open" : "close");
-    }
-
     const controls = animate(
       progress,
       isOpen ? 1 : 0,
@@ -422,6 +235,7 @@ export function CardFolder({
   const setOpen = useCallback(
     (nextOpen: boolean) => {
       if (disabled) return;
+      playCardEnvelopeSound(nextOpen ? "open" : "close");
       if (!openControlled) setInternalOpen(nextOpen);
       onOpenChange?.(nextOpen);
     },
@@ -437,7 +251,6 @@ export function CardFolder({
     e.stopPropagation();
     if (disabled) return;
     const nextVisible = !areDetailsVisible;
-    playEnvelopeSound("reveal");
     if (!detailsControlled) setInternalDetailsVisible(nextVisible);
     onDetailsVisibleChange?.(nextVisible);
   };
@@ -530,7 +343,6 @@ export function CardFolder({
 
         <span className="absolute inset-x-[5%] inset-y-0 z-10 flex min-w-0 flex-col justify-between py-3.5 sm:py-4">
           <span className="flex items-start justify-between pr-2">
-            {/* Botón Ojito Mejorado con estado visual interactivo */}
             <motion.button
               key="card-details-visibility"
               type="button"
@@ -543,16 +355,12 @@ export function CardFolder({
               }
               aria-pressed={areDetailsVisible}
               onClick={toggleDetails}
-              whileTap={reduce || disabled ? undefined : { scale: 0.92 }}
+              whileTap={reduce || disabled ? undefined : { scale: 0.94 }}
               transition={reduce ? { duration: 0.12 } : SPRING_PRESS}
               className={cn(
-                "z-30 flex items-center gap-1.5 h-8 sm:h-9 px-2.5 sm:px-3 shrink-0 rounded-full outline-none transition-all duration-300 border cursor-pointer",
-                areDetailsVisible
-                  ? "bg-neutral-900 text-white border-neutral-800 shadow-[0_4px_12px_rgba(0,0,0,0.18)] dark:bg-[#FFE4D1] dark:text-[#080C26] dark:border-[#FFE4D1]"
-                  : "bg-black/[0.04] dark:bg-white/[0.06] text-neutral-600 dark:text-neutral-300 border-black/10 dark:border-white/10 hover:bg-black/10 dark:hover:bg-white/15 hover:text-neutral-950 dark:hover:text-white",
+                "z-30 flex size-9 sm:size-10 shrink-0 items-center justify-center rounded-full text-neutral-500 dark:text-neutral-400 outline-none transition-colors hover:bg-black/5 dark:hover:bg-white/10 hover:text-neutral-900 dark:hover:text-white focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#8c9276] disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer",
                 isOpen ? "pointer-events-none" : "pointer-events-auto",
               )}
-              title={areDetailsVisible ? "Ocultar datos sensibles" : "Revelar numeración y CVV"}
             >
               <AnimatePresence initial={false} mode="popLayout">
                 <motion.span
@@ -560,67 +368,51 @@ export function CardFolder({
                   initial={
                     reduce
                       ? { opacity: 0 }
-                      : { opacity: 0, scale: 0.3, rotate: -25, filter: "blur(4px)" }
+                      : { opacity: 0, scale: 0.25, filter: "blur(4px)" }
                   }
-                  animate={{ opacity: 1, scale: 1, rotate: 0, filter: "blur(0px)" }}
+                  animate={{ opacity: 1, scale: 1, filter: "blur(0px)" }}
                   exit={
                     reduce
                       ? { opacity: 0 }
-                      : { opacity: 0, scale: 0.3, rotate: 25, filter: "blur(4px)" }
+                      : { opacity: 0, scale: 0.25, filter: "blur(4px)" }
                   }
                   transition={
                     reduce
                       ? { duration: 0.12 }
-                      : { type: "spring", stiffness: 420, damping: 26 }
+                      : { type: "spring", duration: 0.3, bounce: 0 }
                   }
                   className="flex items-center justify-center"
                 >
                   {areDetailsVisible ? (
-                    <EyeOff className="size-3.5 sm:size-4" aria-hidden="true" />
+                    <EyeOff className="size-4" aria-hidden="true" />
                   ) : (
-                    <Eye className="size-3.5 sm:size-4" aria-hidden="true" />
+                    <Eye className="size-4" aria-hidden="true" />
                   )}
                 </motion.span>
               </AnimatePresence>
-
-              <BeUITextAnimation
-                text={areDetailsVisible ? "Ocultar" : "Revelar"}
-                animationKey={areDetailsVisible ? "lbl-hide" : "lbl-show"}
-                direction={areDetailsVisible ? "up" : "down"}
-                staggerMs={14}
-                className="text-[10px] font-bold tracking-wide uppercase"
-              />
             </motion.button>
 
-            <span className="flex shrink-0 items-end gap-3.5 pt-1">
-              <span className="flex flex-col gap-0.5 text-right">
-                <span className="text-[8.5px] font-bold uppercase tracking-[0.14em] text-neutral-500/85 dark:text-neutral-400/80">
+            <span className="flex shrink-0 items-end gap-3.5 pt-1.5">
+              <span className="flex flex-col gap-0.5">
+                <span className="text-[9px] font-semibold uppercase tracking-[0.12em] text-neutral-500/80 dark:text-neutral-400/75">
                   Expira
                 </span>
-                <BeUITextAnimation
-                  text={expiry}
-                  animationKey={areDetailsVisible ? "exp-open" : "exp-closed"}
-                  direction={areDetailsVisible ? "up" : "down"}
-                  staggerMs={16}
-                  className="text-xs font-bold text-neutral-900 dark:text-neutral-100 tabular-nums"
-                />
-              </span>
-              <span className="flex flex-col gap-0.5 text-right min-w-[34px]">
-                <span className="text-[8.5px] font-bold uppercase tracking-[0.14em] text-neutral-500/85 dark:text-neutral-400/80">
-                  CVV
-                </span>
-                <BeUITextAnimation
-                  text={areDetailsVisible ? cvv : maskedCvv}
+                <DigitSwap
+                  value={expiry}
                   animationKey={areDetailsVisible ? "revealed" : "masked"}
                   direction={areDetailsVisible ? "up" : "down"}
-                  staggerMs={26}
-                  highlightOnReveal
-                  glyphClassName={
-                    areDetailsVisible
-                      ? "text-emerald-700 dark:text-[#FFE4D1] font-extrabold"
-                      : "text-neutral-600 dark:text-neutral-400"
-                  }
-                  className="text-xs font-bold tabular-nums justify-end"
+                  className="text-xs font-semibold text-neutral-900 dark:text-neutral-100 tabular-nums"
+                />
+              </span>
+              <span className="flex flex-col gap-0.5">
+                <span className="text-[9px] font-semibold uppercase tracking-[0.12em] text-neutral-500/80 dark:text-neutral-400/75">
+                  CVV
+                </span>
+                <DigitSwap
+                  value={areDetailsVisible ? cvv : maskedCvv}
+                  animationKey={areDetailsVisible ? "revealed" : "masked"}
+                  direction={areDetailsVisible ? "up" : "down"}
+                  className="text-xs font-semibold text-neutral-900 dark:text-neutral-100 tabular-nums"
                 />
               </span>
             </span>
@@ -630,24 +422,22 @@ export function CardFolder({
             <span className="truncate text-sm sm:text-base font-bold leading-tight text-neutral-900 dark:text-neutral-100">
               {title}
             </span>
-            <BeUITextAnimation
-              text={
+            <DigitSwap
+              value={
                 areDetailsVisible
                   ? revealedCardNumber
                   : `•••• •••• •••• ${visibleLastFour}`
               }
               animationKey={areDetailsVisible ? "revealed" : "masked"}
               direction={areDetailsVisible ? "up" : "down"}
-              staggerMs={16}
               suffixLength={4}
-              highlightOnReveal
               glyphClassName={
                 areDetailsVisible
-                  ? "text-neutral-950 dark:text-white font-bold"
+                  ? "text-neutral-900 dark:text-neutral-100"
                   : "text-neutral-500 dark:text-neutral-400"
               }
-              suffixClassName="text-neutral-950 dark:text-white font-extrabold"
-              className="truncate font-mono text-[11px] sm:text-xs tracking-[0.07em] tabular-nums"
+              suffixClassName="text-neutral-900 dark:text-neutral-100 font-bold"
+              className="truncate font-mono text-[11px] sm:text-xs tracking-[0.06em] tabular-nums"
             />
           </span>
         </span>
@@ -660,6 +450,7 @@ export function CardFolder({
           aria-label={actionLabel ?? `Opciones para ${title}`}
           onClick={(e) => {
             e.stopPropagation();
+            playCardEnvelopeSound(!isOpen ? "open" : "close");
             onAction();
           }}
           animate={{ y: isOpen && !reduce ? -14 : 0 }}
@@ -708,10 +499,6 @@ export function LuminaCardFolderItem({
   const isObsidian = index % 2 === 0;
   const digitsOnly = number.replace(/\D/g, "");
   const lastFour = digitsOnly.slice(-4).padStart(4, "4");
-  const fullFormattedNumber =
-    digitsOnly.length >= 12
-      ? digitsOnly.match(/.{1,4}/g)?.join(" ") ?? `4532 8891 2041 ${lastFour}`
-      : `4532 8891 2041 ${lastFour}`;
   const deterministicCvv = String(100 + ((parseInt(lastFour, 10) || 424) * 7) % 899);
 
   const cardSurface = (
@@ -766,46 +553,21 @@ export function LuminaCardFolderItem({
         </div>
       </div>
 
-      {/* Cuerpo central de la tarjeta con animación carácter por carácter @beui/text-animation */}
-      <div className="relative z-10 my-auto pt-2 flex items-center justify-between gap-2">
-        <BeUITextAnimation
-          text={detailsVisible ? fullFormattedNumber : `•••• •••• •••• ${lastFour}`}
-          animationKey={detailsVisible ? "revealed" : "masked"}
-          direction={detailsVisible ? "up" : "down"}
-          staggerMs={15}
-          suffixLength={4}
-          highlightOnReveal
-          glyphClassName="text-white/95 font-semibold"
-          suffixClassName="text-[#FFE4D1] font-bold"
-          className="font-mono text-xs sm:text-sm tracking-[0.2em] drop-shadow-sm"
-        />
-
-        {/* Botón rápido de privacidad también en la tarjeta extraída */}
-        <button
-          type="button"
-          onClick={(e) => {
-            e.stopPropagation();
-            playEnvelopeSound("reveal");
-            setDetailsVisible((v) => !v);
-          }}
-          className="px-2 py-1 rounded-lg bg-white/10 hover:bg-white/20 border border-white/15 text-[10px] font-mono text-white/90 flex items-center gap-1 cursor-pointer transition-colors shrink-0"
-          title={detailsVisible ? "Ocultar CVV y número" : "Revelar CVV y número"}
-        >
-          <ShieldCheck className="w-3 h-3 text-[#FFE4D1]" />
-          <BeUITextAnimation
-            text={detailsVisible ? `CVV ${deterministicCvv}` : "CVV •••"}
-            animationKey={detailsVisible ? "cvv-in-open" : "cvv-in-closed"}
-            direction={detailsVisible ? "up" : "down"}
-            staggerMs={18}
+      {/* Cuerpo central de la tarjeta (se descubre al abrir el sobre CardFolder) */}
+      <div className="relative z-10 my-auto pt-2">
+        <p className="font-mono text-xs sm:text-sm tracking-[0.22em] text-white/95 font-semibold drop-shadow-sm">
+          <DigitSwap
+            value={detailsVisible ? `4532 8891 2041 ${lastFour}` : `•••• •••• •••• ${lastFour}`}
+            animationKey={detailsVisible ? "revealed" : "masked"}
           />
-        </button>
+        </p>
       </div>
 
       {/* Pie de la tarjeta con acciones rápidas al estar abierta */}
       <div className="relative z-10 flex items-center justify-between pt-2 border-t border-white/15 text-[10px]">
         <div className="truncate pr-2">
           <span className="text-white/55 uppercase tracking-wider text-[8px] block">
-            Titular Verificado · EXP {exp}
+            Titular Verificado
           </span>
           <span className="font-semibold text-white/95 truncate block">
             {holder}

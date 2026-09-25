@@ -375,3 +375,115 @@ export function playStepperTickSound(direction: "up" | "down" = "up"): void {
     }
   } catch {}
 }
+
+/**
+ * Warm, low-mid frequency tactile sound for opening and closing the card envelope (CardFolder).
+ * Uses frequencies between 180 Hz and 360 Hz with a 520 Hz low-pass filter so it is clearly audible
+ * on all speakers while remaining 100% free of high-pitched/piercing tones.
+ */
+export function playCardEnvelopeSound(mode: "open" | "close"): void {
+  if (typeof window === "undefined") return;
+  try {
+    const ctx = getOrCreateContext();
+    if (!ctx) return;
+    ensureHardwareKeepAlive(ctx);
+
+    const executeSound = () => {
+      const now = ctx.currentTime + 0.006;
+
+      const filter = ctx.createBiquadFilter();
+      filter.type = "lowpass";
+      filter.frequency.setValueAtTime(520, now);
+      filter.Q.setValueAtTime(0.85, now);
+      filter.connect(ctx.destination);
+
+      if (mode === "open") {
+        // Warm ascending two-note velvet/leather slide (185 Hz -> 275 Hz + soft 220 Hz body, ~210ms)
+        const osc1 = ctx.createOscillator();
+        const osc2 = ctx.createOscillator();
+        const gain1 = ctx.createGain();
+        const gain2 = ctx.createGain();
+
+        osc1.type = "sine";
+        osc1.frequency.setValueAtTime(185, now);
+        osc1.frequency.exponentialRampToValueAtTime(293.66, now + 0.16); // F#3 -> D4 (warm low-mid)
+
+        gain1.gain.setValueAtTime(0.0001, now);
+        gain1.gain.linearRampToValueAtTime(0.22, now + 0.022);
+        gain1.gain.exponentialRampToValueAtTime(0.0001, now + 0.22);
+
+        osc2.type = "triangle";
+        osc2.frequency.setValueAtTime(146.83, now + 0.02); // D3 warm foundation
+        osc2.frequency.exponentialRampToValueAtTime(220, now + 0.18); // A3
+
+        gain2.gain.setValueAtTime(0.0001, now + 0.02);
+        gain2.gain.linearRampToValueAtTime(0.14, now + 0.045);
+        gain2.gain.exponentialRampToValueAtTime(0.0001, now + 0.23);
+
+        // Soft paper/leather envelope friction swish (bandpass 310 Hz)
+        const bufLen = Math.floor(ctx.sampleRate * 0.14);
+        const noiseBuf = ctx.createBuffer(1, bufLen, ctx.sampleRate);
+        const data = noiseBuf.getChannelData(0);
+        for (let i = 0; i < bufLen; i++) {
+          data[i] = (Math.random() * 2 - 1) * Math.sin((i / bufLen) * Math.PI);
+        }
+        const noise = ctx.createBufferSource();
+        noise.buffer = noiseBuf;
+        const band = ctx.createBiquadFilter();
+        band.type = "bandpass";
+        band.frequency.setValueAtTime(310, now);
+        band.Q.setValueAtTime(1.5, now);
+        const noiseGain = ctx.createGain();
+        noiseGain.gain.setValueAtTime(0.08, now);
+        noiseGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.14);
+
+        osc1.connect(gain1);
+        gain1.connect(filter);
+        osc2.connect(gain2);
+        gain2.connect(filter);
+        noise.connect(band);
+        band.connect(noiseGain);
+        noiseGain.connect(filter);
+
+        osc1.start(now);
+        osc1.stop(now + 0.23);
+        osc2.start(now + 0.02);
+        osc2.stop(now + 0.24);
+        noise.start(now);
+      } else {
+        // Short, soft low-mid pocket close sound (260 Hz -> 155 Hz in 95ms)
+        const osc = ctx.createOscillator();
+        const sub = ctx.createOscillator();
+        const gain = ctx.createGain();
+
+        osc.type = "sine";
+        osc.frequency.setValueAtTime(260, now);
+        osc.frequency.exponentialRampToValueAtTime(155, now + 0.085);
+
+        sub.type = "triangle";
+        sub.frequency.setValueAtTime(165, now);
+        sub.frequency.exponentialRampToValueAtTime(110, now + 0.085);
+
+        gain.gain.setValueAtTime(0.0001, now);
+        gain.gain.linearRampToValueAtTime(0.20, now + 0.012);
+        gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.095);
+
+        osc.connect(gain);
+        sub.connect(gain);
+        gain.connect(filter);
+
+        osc.start(now);
+        sub.start(now);
+        osc.stop(now + 0.10);
+        sub.stop(now + 0.10);
+      }
+    };
+
+    if (ctx.state === "suspended") {
+      ctx.resume().then(executeSound).catch(() => {});
+    } else {
+      executeSound();
+    }
+  } catch {}
+}
+
