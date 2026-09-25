@@ -66,8 +66,11 @@ function WalletOrderPassContent() {
                 trackingNumber: String(matched.trackingNumber || ""),
                 trackingUrl: String(matched.trackingUrl || ""),
                 carrierName: String(matched.carrierName || ""),
-                shippingAddress: String(matched.shippingAddress || ""),
-                items: Array.isArray(matched.items) ? matched.items : [],
+                shippingAddress:
+                  matched.shippingAddress && typeof matched.shippingAddress === "object"
+                    ? (matched.shippingAddress as Order["shippingAddress"])
+                    : undefined,
+                items: Array.isArray(matched.items) ? (matched.items as Order["items"]) : [],
               };
 
               if (
