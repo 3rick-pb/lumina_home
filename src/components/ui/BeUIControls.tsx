@@ -19,10 +19,10 @@ import { createPortal } from "react-dom";
 import { Check, ChevronDown, Minus, Plus, X } from "lucide-react";
 import {
   AnimatePresence,
-  LayoutGroup,
   motion,
-  useIsPresent,
-  type Transition,
+  useMotionValue,
+  useSpring,
+  useTransform,
   type Variants,
 } from "framer-motion";
 import {
@@ -2592,6 +2592,11 @@ export function BeUIOrderStatusSelector({
     if (initialCarrierName) setCarrierName(initialCarrierName);
   }, [initialTrackingNumber, initialTrackingUrl, initialCarrierName]);
 
+  const [deliveryModalOpen, setDeliveryModalOpen] = useState(false);
+  const [deliveryConfirmedCheck, setDeliveryConfirmedCheck] = useState(false);
+  const [deliveryNotes, setDeliveryNotes] = useState("");
+  const [deliveryError, setDeliveryError] = useState<string | null>(null);
+
   const currentMeta = ORDER_STATUS_META[status] || ORDER_STATUS_META.Procesando;
 
   if (!isAdmin || !onUpdateStatus) {
@@ -2612,7 +2617,21 @@ export function BeUIOrderStatusSelector({
     setPopoverOpen(false);
     if (opt === status && opt !== "Enviado") return;
 
-    // When transitioning to "Enviado", require Carrier Tracking Code + Carrier URL
+    // 1. Block skipping from "Procesando" directly to "Entregado"
+    if (status === "Procesando" && opt === "Entregado") {
+      setTrackingError(
+        "El pedido primero debe ser despachado en estado 'Enviado' con su guía de rastreo antes de marcarse como 'Entregado'."
+      );
+      if (!trackingNumber) {
+        const preset = CARRIER_PRESETS.find((c) => c.name === carrierName) || CARRIER_PRESETS[0];
+        setCarrierName(preset.name);
+        setTrackingUrl(trackingUrl || preset.url);
+      }
+      setTrackingModalOpen(true);
+      return;
+    }
+
+    // 2. When transitioning to "Enviado", require Carrier Tracking Code + Carrier URL
     if (opt === "Enviado") {
       setTrackingError(null);
       if (!trackingNumber) {
@@ -2624,7 +2643,36 @@ export function BeUIOrderStatusSelector({
       return;
     }
 
+    // 3. Do NOT allow passing from "Enviado" to "Entregado" directly without the Delivery Verification Control Modal
+    if (opt === "Entregado") {
+      setDeliveryError(null);
+      setDeliveryConfirmedCheck(false);
+      setDeliveryNotes("");
+      setDeliveryModalOpen(true);
+      return;
+    }
+
     onUpdateStatus(opt);
+  };
+
+  const handleConfirmDeliveryVerification = (e: React.FormEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!trackingNumber || trackingNumber.trim().length < 3) {
+      setDeliveryError("Este pedido no cuenta con una guía de envío registrada. Registra primero el envío.");
+      return;
+    }
+    if (!deliveryConfirmedCheck) {
+      setDeliveryError("Debes marcar la casilla verificando que la transportadora o el cliente confirmó la recepción.");
+      return;
+    }
+    setDeliveryError(null);
+    setDeliveryModalOpen(false);
+    onUpdateStatus("Entregado", {
+      trackingNumber: trackingNumber.trim().toUpperCase(),
+      trackingUrl: trackingUrl.trim(),
+      carrierName: carrierName.trim() || "Transportadora",
+    });
   };
 
   const handleConfirmShippedDispatch = (e: React.FormEvent) => {
@@ -2685,28 +2733,38 @@ export function BeUIOrderStatusSelector({
           </div>
         }
       >
-        <div className="w-[210px] space-y-1">
+        <div className="w-[225px] space-y-1">
           <div className="px-2.5 py-1.5 border-b border-gray-100 dark:border-white/10 flex items-center justify-between">
             <span className="text-[9.5px] font-mono uppercase tracking-widest text-gray-400 font-bold">
-              Estado de Envío
+              Flujo de Envío Controlado
             </span>
           </div>
           {(["Procesando", "Enviado", "Entregado"] as const).map((opt) => {
             const meta = ORDER_STATUS_META[opt];
             const isSelected = status === opt;
+            const isBlockedSkip = status === "Procesando" && opt === "Entregado";
+            const isBackwardsBlocked =
+              (status === "Enviado" && opt === "Procesando") ||
+              (status === "Entregado" && opt !== "Entregado");
+            const isDisabledOpt = isBlockedSkip || isBackwardsBlocked;
+
             return (
               <button
                 key={opt}
                 type="button"
+                disabled={isDisabledOpt}
                 onClick={(e) => {
                   e.stopPropagation();
+                  if (isDisabledOpt) return;
                   handleSelectStatusOption(opt);
                 }}
                 className={cn(
-                  "w-full flex items-center justify-between gap-2.5 px-2.5 py-2 rounded-xl text-left transition-all cursor-pointer group",
-                  isSelected
-                    ? "bg-gray-900/5 dark:bg-white/10 font-bold"
-                    : "hover:bg-gray-100/80 dark:hover:bg-white/[0.06]"
+                  "w-full flex items-center justify-between gap-2.5 px-2.5 py-2 rounded-xl text-left transition-all group",
+                  isDisabledOpt
+                    ? "opacity-40 cursor-not-allowed"
+                    : isSelected
+                      ? "bg-gray-900/5 dark:bg-white/10 font-bold cursor-pointer"
+                      : "hover:bg-gray-100/80 dark:hover:bg-white/[0.06] cursor-pointer"
                 )}
               >
                 <div className="flex flex-col gap-0.5 min-w-0">
@@ -2721,6 +2779,13 @@ export function BeUIOrderStatusSelector({
                   {opt === "Enviado" && (
                     <span className="text-[9.5px] text-gray-400 dark:text-gray-500 pl-1">
                       Solicita guía y enlace
+                    </span>
+                  )}
+                  {opt === "Entregado" && (
+                    <span className="text-[9.5px] text-gray-400 dark:text-gray-500 pl-1">
+                      {isBlockedSkip
+                        ? "Requiere estado Enviado primero"
+                        : "Requiere verificación de entrega"}
                     </span>
                   )}
                 </div>
@@ -2896,17 +2961,121 @@ export function BeUIOrderStatusSelector({
           </BeUICenterMorphModal>,
           document.body
         )}
+
+      {/* Admin Delivery Verification Control Modal when transitioning from "Enviado" -> "Entregado" */}
+      {typeof document !== "undefined" &&
+        createPortal(
+          <BeUICenterMorphModal
+            open={deliveryModalOpen}
+            onOpenChange={setDeliveryModalOpen}
+            className="max-w-md"
+          >
+            <div
+              onClick={(e) => e.stopPropagation()}
+              className="relative w-full bg-white/95 dark:bg-[#18181b]/95 backdrop-blur-2xl border border-gray-200/90 dark:border-white/10 rounded-[2rem] shadow-[0_28px_80px_rgba(0,0,0,0.45)] overflow-hidden p-6 sm:p-7 text-left"
+            >
+              <div className="flex items-start justify-between gap-4 pb-4 border-b border-gray-100 dark:border-white/10">
+                <div>
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 mb-1.5">
+                    Control de Recepción Final
+                  </span>
+                  <h3 className="text-base sm:text-lg font-bold text-gray-950 dark:text-white tracking-tight">
+                    Confirmar Entrega del Pedido
+                  </h3>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                    Un pedido en ruta no puede cerrarse como <strong>Entregado</strong> sin confirmar el acta de recepción de la guía activa.
+                  </p>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setDeliveryModalOpen(false)}
+                  className="w-9 h-9 rounded-full bg-white/80 dark:bg-white/10 border border-black/[0.06] dark:border-white/15 text-gray-400 hover:text-rose-600 flex items-center justify-center transition-all cursor-pointer shrink-0"
+                  title="Cerrar"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              <form onSubmit={handleConfirmDeliveryVerification} className="mt-5 space-y-4">
+                <div className="p-3.5 rounded-2xl bg-gray-50 dark:bg-white/[0.04] border border-gray-200/80 dark:border-white/10 space-y-1.5">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="text-gray-500 dark:text-gray-400 font-medium">Orden:</span>
+                    <span className="font-mono font-bold text-gray-900 dark:text-white">{orderId || "Activa"}</span>
+                  </div>
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="text-gray-500 dark:text-gray-400 font-medium">Guía de Transporte:</span>
+                    <span className="font-mono font-bold text-blue-600 dark:text-blue-400">
+                      {trackingNumber || "Sin guía"} ({carrierName || "Transportadora"})
+                    </span>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-1.5">
+                    Observación o Receptor (Opcional)
+                  </label>
+                  <input
+                    type="text"
+                    value={deliveryNotes}
+                    onChange={(e) => setDeliveryNotes(e.target.value)}
+                    placeholder="Ej: Recibido en portería / Firmado por titular"
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 dark:border-white/15 bg-white dark:bg-[#141417] text-xs sm:text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  />
+                </div>
+
+                <label className="flex items-start gap-3 p-3 rounded-2xl bg-emerald-500/[0.06] dark:bg-emerald-500/10 border border-emerald-500/20 cursor-pointer select-none">
+                  <input
+                    type="checkbox"
+                    checked={deliveryConfirmedCheck}
+                    onChange={(e) => setDeliveryConfirmedCheck(e.target.checked)}
+                    className="mt-0.5 w-4 h-4 rounded accent-emerald-600 cursor-pointer"
+                  />
+                  <span className="text-xs text-gray-700 dark:text-gray-200 leading-relaxed font-medium">
+                    He verificado con la guía <strong>{trackingNumber || "asignada"}</strong> que el paquete fue entregado satisfactoriamente en destino.
+                  </span>
+                </label>
+
+                {deliveryError && (
+                  <div className="p-2.5 rounded-xl bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800/40 text-xs font-semibold text-red-600 dark:text-red-300">
+                    {deliveryError}
+                  </div>
+                )}
+
+                <div className="flex items-center justify-end gap-2.5 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setDeliveryModalOpen(false)}
+                    className="px-4 py-2.5 rounded-xl border border-gray-200 dark:border-white/15 text-xs font-bold text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/10 transition-colors cursor-pointer"
+                  >
+                    Mantener en Enviado
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-lg shadow-emerald-600/25 transition-all cursor-pointer flex items-center gap-2"
+                  >
+                    <span>Confirmar Entrega Final</span>
+                    <Check className="w-3.5 h-3.5 stroke-[2.5]" />
+                  </button>
+                </div>
+              </form>
+            </div>
+          </BeUICenterMorphModal>,
+          document.body
+        )}
     </>
   );
 }
 
 /* ============================================================================
  * 13. @beui/animated-cta-button (Official Animated CTA Button for Shopping Bag)
- * Source: https://beui.dev (`Animated CTA Buttons`)
+ * Idle state displays the total amount to pay; on hover activates the beUI
+ * Animated CTA capsule and rolls text to "Proceder al pago"
  * ============================================================================ */
 
 export interface BeUIAnimatedCtaButtonProps {
   label: string;
+  hoverLabel?: string;
   subLabel?: string;
   priceBadge?: string;
   onClick?: () => void;
@@ -2916,8 +3085,7 @@ export interface BeUIAnimatedCtaButtonProps {
 
 export function BeUIAnimatedCtaButton({
   label,
-  subLabel,
-  priceBadge,
+  hoverLabel = "Proceder al pago",
   onClick,
   disabled = false,
   className,
@@ -2939,7 +3107,7 @@ export function BeUIAnimatedCtaButton({
         className
       )}
     >
-      {/* Expanding / Morphing Lime/Olive Capsule Background from @beui/animated-cta-button */}
+      {/* Expanding / Morphing Capsule Background from @beui/animated-cta-button */}
       <motion.div
         initial={false}
         animate={{
@@ -2957,55 +3125,34 @@ export function BeUIAnimatedCtaButton({
       {/* Ambient Shimmer Sweep */}
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_20%_50%,rgba(255,255,255,0.10),transparent_60%)] z-0" />
 
-      {/* Left / Main Content with Rolling Dual-Layer Typography */}
-      <div className="relative z-10 flex items-center justify-between flex-1 pl-4 pr-14 min-w-0">
-        <div className="flex flex-col items-start text-left min-w-0">
-          {subLabel && (
-            <span
-              className={cn(
-                "text-[9.5px] font-extrabold uppercase tracking-[0.2em] transition-colors duration-300",
-                hovered
-                  ? "text-white/90 dark:text-gray-950/75"
-                  : "text-[#b5bd9b] dark:text-[#ccff00]"
-              )}
-            >
-              {subLabel}
-            </span>
-          )}
-          <div className="relative h-5 overflow-hidden flex items-center">
-            <motion.span
-              animate={{ y: hovered ? "-100%" : "0%", opacity: hovered ? 0 : 1 }}
-              transition={{ type: "spring", stiffness: 400, damping: 30 }}
-              className="block text-sm sm:text-[15px] font-extrabold tracking-tight text-white"
-            >
-              {label}
-            </motion.span>
-            <motion.span
-              animate={{ y: hovered ? "0%" : "100%", opacity: hovered ? 1 : 0 }}
-              transition={{ type: "spring", stiffness: 400, damping: 30 }}
-              className="absolute inset-0 flex items-center text-sm sm:text-[15px] font-extrabold tracking-tight text-white dark:text-gray-950"
-            >
-              {label}
-            </motion.span>
-          </div>
-        </div>
-
-        {priceBadge && (
+      {/* Center / Main Content: Idle = Total Price (`label`), Hover = `hoverLabel` ("Proceder al pago") */}
+      <div className="relative z-10 flex items-center justify-center flex-1 pl-5 pr-14 min-w-0">
+        <div className="relative h-7 w-full overflow-hidden flex items-center justify-center">
           <motion.span
+            initial={false}
             animate={{
-              scale: hovered ? 1.03 : 1,
+              y: hovered ? "-115%" : "0%",
+              opacity: hovered ? 0 : 1,
+              scale: hovered ? 0.94 : 1,
             }}
-            transition={SPRING_SWAP}
-            className={cn(
-              "ml-3 px-3 py-1 rounded-xl text-xs sm:text-sm font-black tracking-tight border transition-colors duration-300 shrink-0",
-              hovered
-                ? "bg-black/20 dark:bg-gray-950/15 text-white dark:text-gray-950 border-white/25 dark:border-gray-950/20"
-                : "bg-white/10 dark:bg-white/[0.07] text-white dark:text-[#ccff00] border-white/10"
-            )}
+            transition={{ type: "spring", stiffness: 420, damping: 30 }}
+            className="block text-base sm:text-lg font-mono font-extrabold tracking-wide text-white"
           >
-            {priceBadge}
+            {label}
           </motion.span>
-        )}
+          <motion.span
+            initial={false}
+            animate={{
+              y: hovered ? "0%" : "115%",
+              opacity: hovered ? 1 : 0,
+              scale: hovered ? 1 : 0.94,
+            }}
+            transition={{ type: "spring", stiffness: 420, damping: 30 }}
+            className="absolute inset-0 flex items-center justify-center text-sm sm:text-base font-sans font-extrabold tracking-tight text-white dark:text-gray-950"
+          >
+            {hoverLabel}
+          </motion.span>
+        </div>
       </div>
 
       {/* Right Sliding Arrow Capsule */}
@@ -3054,6 +3201,101 @@ export function BeUIAnimatedCtaButton({
     </motion.button>
   );
 }
+
+/* ============================================================================
+ * 14. @beui/tilt-card (Official 3D Interactive Perspective Tilt Card with Glare)
+ * Source: https://beui.dev (`Tilt Card`)
+ * ============================================================================ */
+
+export interface BeUITiltCardProps {
+  children: React.ReactNode;
+  className?: string;
+  maxTilt?: number;
+  scaleOnHover?: number;
+  glareOpacity?: number;
+}
+
+export function BeUITiltCard({
+  children,
+  className,
+  maxTilt = 14,
+  scaleOnHover = 1.025,
+  glareOpacity = 0.28,
+}: BeUITiltCardProps) {
+  const cardRef = useRef<HTMLDivElement>(null);
+  const rotateX = useMotionValue(0);
+  const rotateY = useMotionValue(0);
+  const scale = useMotionValue(1);
+  const glareX = useMotionValue(50);
+  const glareY = useMotionValue(50);
+  const glareAlpha = useMotionValue(0);
+
+  const springConfig = { stiffness: 300, damping: 26, mass: 0.6 };
+  const smoothRotateX = useSpring(rotateX, springConfig);
+  const smoothRotateY = useSpring(rotateY, springConfig);
+  const smoothScale = useSpring(scale, springConfig);
+  const smoothGlareAlpha = useSpring(glareAlpha, { stiffness: 260, damping: 28 });
+
+  const glareBackground = useTransform(
+    [glareX, glareY],
+    ([gx, gy]: number[]) =>
+      `radial-gradient(circle at ${gx}% ${gy}%, rgba(255,255,255,${glareOpacity}), rgba(255,255,255,0.06) 38%, transparent 68%)`
+  );
+
+  const handlePointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
+    const el = cardRef.current;
+    if (!el) return;
+    const rect = el.getBoundingClientRect();
+    const px = (e.clientX - rect.left) / rect.width;
+    const py = (e.clientY - rect.top) / rect.height;
+
+    const tiltX = (0.5 - py) * (maxTilt * 2);
+    const tiltY = (px - 0.5) * (maxTilt * 2);
+
+    rotateX.set(tiltX);
+    rotateY.set(tiltY);
+    scale.set(scaleOnHover);
+    glareX.set(px * 100);
+    glareY.set(py * 100);
+    glareAlpha.set(1);
+  };
+
+  const handlePointerLeave = () => {
+    rotateX.set(0);
+    rotateY.set(0);
+    scale.set(1);
+    glareAlpha.set(0);
+  };
+
+  return (
+    <div className="[perspective:1100px] select-none">
+      <motion.div
+        ref={cardRef}
+        onPointerMove={handlePointerMove}
+        onPointerLeave={handlePointerLeave}
+        style={{
+          rotateX: smoothRotateX,
+          rotateY: smoothRotateY,
+          scale: smoothScale,
+          transformStyle: "preserve-3d",
+        }}
+        className={cn("relative transition-shadow duration-300 will-change-transform", className)}
+      >
+        {children}
+        {/* Specular Glare Overlay */}
+        <motion.div
+          aria-hidden="true"
+          style={{
+            background: glareBackground,
+            opacity: smoothGlareAlpha,
+          }}
+          className="pointer-events-none absolute inset-0 rounded-[inherit] z-30 mix-blend-overlay"
+        />
+      </motion.div>
+    </div>
+  );
+}
+
 
 
 

@@ -35,8 +35,23 @@ export function OverviewTab({
   setShowCardModal,
   onRequestDeleteNiche
 }: OverviewTabProps) {
-  const { orders, cards, favorites, removeCard, setDefaultCard, updateOrderStatus } = useUserStore();
+  const { user, orders: rawOrders, cards, favorites, removeCard, setDefaultCard, updateOrderStatus } = useUserStore();
   const { products, categories } = useCatalogStore();
+
+  // Strictly scope orders: Admins see store-wide orders; Clients ONLY see their own orders
+  const orders = useMemo(() => {
+    if (isAdmin) return rawOrders;
+    if (!user) return [];
+    const uId = (user.id || "").trim();
+    const uEmail = (user.email || "").toLowerCase().trim();
+    return rawOrders.filter((ord) => {
+      const oUserId = (ord.userId || "").trim();
+      const oEmail = (ord.customerEmail || ord.shippingAddress?.email || "").toLowerCase().trim();
+      if (uId && oUserId && uId === oUserId) return true;
+      if (uEmail && oEmail && uEmail === oEmail) return true;
+      return false;
+    });
+  }, [rawOrders, isAdmin, user]);
 
   // Metrics
   const totalUserSpend = useMemo(() => {
@@ -459,8 +474,8 @@ export function OverviewTab({
         </div>
       </div>
 
-      {/* BENTO CARD 4: MY CARDS (Tarjetas Guardadas - 4 cols) */}
-      <div className="md:col-span-2 lg:col-span-4 bg-white/90 dark:bg-[#202022]/90 backdrop-blur-xl p-5 sm:p-6 rounded-3xl sm:rounded-[2rem] border border-white/80 dark:border-white/10 shadow-[0_4px_24px_rgba(0,0,0,0.02)] flex flex-col justify-between">
+      {/* BENTO CARD 4: MY CARDS (Tarjetas Guardadas - 4 cols - Fixed Height, Never Stretches Downward) */}
+      <div className="md:col-span-2 lg:col-span-4 self-start h-fit bg-white/90 dark:bg-[#202022]/90 backdrop-blur-xl p-5 sm:p-6 rounded-3xl sm:rounded-[2rem] border border-white/80 dark:border-white/10 shadow-[0_4px_24px_rgba(0,0,0,0.02)] flex flex-col justify-between">
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-sm font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
             <CreditCard className="w-4 h-4 text-[#8c9276]" /> Mis Tarjetas ({cards.length})

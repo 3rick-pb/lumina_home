@@ -4,7 +4,8 @@ import React, { useEffect, useState, useMemo } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence, Variants } from "framer-motion";
-import { BeUIAdaptiveStepper, BeUIRollingPrice, BeUIAnimatedCtaButton } from "./BeUIControls";
+import { BeUIAdaptiveStepper, BeUIRollingPrice, BeUIAnimatedCtaButton, BeUITiltCard } from "./BeUIControls";
+import { WalletPassPopupModal } from "./WalletPassPopupModal";
 import { playStepperTickSound } from "@/lib/soundUtils";
 import { 
  X, 
@@ -233,8 +234,12 @@ export function CartDrawer() {
     }
   }, [cards, selectedSavedCardId, cardNumber, user?.name]);
 
+  const [isMiniWalletOpen, setIsMiniWalletOpen] = useState(false);
+  const [walletPopupPlatform, setWalletPopupPlatform] = useState<"apple" | "google" | null>(null);
+
   const handleSelectSavedCard = (cardId: string) => {
     setSelectedSavedCardId(cardId);
+    setIsMiniWalletOpen(false);
     if (cardId === "new") {
       setCardNumber("");
       setCardExpiry("");
@@ -1415,51 +1420,32 @@ export function CartDrawer() {
       </div>
     </div>
 
-    {/* Warranty Note */}
-    <div className="p-3.5 rounded-2xl bg-black/[0.02] dark:bg-white/[0.03] border border-black/[0.05] dark:border-white/5 flex items-start gap-3 text-xs text-gray-600 dark:text-gray-400">
-      <ShieldCheck className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
-      <p className="text-[11px] leading-relaxed">
-        <strong className="text-gray-900 dark:text-gray-200">Garantía Oficial Lumina de 2 años.</strong> Devolución íntegra sin compromiso durante los primeros 30 días.
-      </p>
-    </div>
-
-    {/* @beui/animated-cta-button + Capsule Dock */}
+    {/* @beui/animated-cta-button Full-Width Price -> "Proceder al pago" on Hover */}
     <div className="pt-2 space-y-2">
-      <div className="w-full flex items-center gap-2">
-        {/* Left: Circular Shopping Bag Button */}
-        <button
-          onClick={() => {
-            setIsOpen(false);
-            router.push("/shop");
-          }}
-          className="w-[60px] h-[60px] rounded-[22px] bg-white dark:bg-[#27272a] hover:bg-gray-50 dark:hover:bg-[#323236] border border-black/[0.08] dark:border-white/15 shadow-sm flex items-center justify-center text-gray-700 dark:text-gray-200 shrink-0 hover:scale-105 active:scale-95 transition-all cursor-pointer"
-          title="Continuar explorando el catálogo"
-        >
-          <ShoppingBag className="w-5 h-5" />
-        </button>
-
-        {/* Right: BeUI Animated CTA Button ("Animated CTA Buttons" combination) */}
-        <div className="flex-1 min-w-0">
-          <BeUIAnimatedCtaButton
-            onClick={handleProceedToPayment}
-            disabled={hasAgotadoItems}
-            subLabel={
-              hasAgotadoItems
-                ? "Acción Requerida"
-                : !isAuthenticated
-                  ? "Acceso Rápido"
-                  : "Checkout Seguro"
-            }
-            label={
-              hasAgotadoItems
-                ? "Elimina piezas agotadas"
-                : !isAuthenticated
-                  ? "Iniciar Sesión para Pagar"
-                  : "Proceder al Pago"
-            }
-            priceBadge={`$${finalTotal.toFixed(2)}`}
-          />
-        </div>
+      <div className="w-full">
+        <BeUIAnimatedCtaButton
+          onClick={handleProceedToPayment}
+          disabled={hasAgotadoItems}
+          subLabel={
+            hasAgotadoItems
+              ? "Acción Requerida"
+              : !isAuthenticated
+                ? "Total a Pagar"
+                : "Total a Pagar"
+          }
+          label={
+            hasAgotadoItems
+              ? "Elimina piezas agotadas"
+              : `$${finalTotal.toFixed(2)} USD`
+          }
+          hoverLabel={
+            hasAgotadoItems
+              ? "Revisa tu bolsa"
+              : !isAuthenticated
+                ? "Iniciar Sesión para Pagar"
+                : "Proceder al pago"
+          }
+        />
       </div>
 
       {!isAuthenticated && !hasAgotadoItems && (
@@ -1914,15 +1900,15 @@ export function CartDrawer() {
         <button
           type="button"
           onClick={() => setSelectedPayMethod("card")}
-          className={`h-12 sm:h-13 px-1.5 sm:px-2 rounded-xl transition-all cursor-pointer w-full grid grid-cols-6 items-center justify-items-center ${
+          className={`h-12 sm:h-[52px] px-1.5 sm:px-2 rounded-xl transition-all cursor-pointer w-full grid grid-cols-6 items-center justify-items-center ${
             selectedPayMethod === "card"
-              ? "border-2 border-[#FF5900] bg-white dark:bg-[#202022] shadow-xs"
+              ? "border-2 border-[#FF5900] bg-white dark:bg-[#202022] shadow-sm"
               : "border border-gray-200 dark:border-white/10 hover:border-gray-300 dark:hover:border-white/20 bg-white dark:bg-[#18181b]"
           }`}
         >
           {/* 1st Slot: Card Icon + ONLY left separator */}
           <div className="w-full h-6 flex items-center justify-center px-1 border-r border-gray-200/80 dark:border-white/15">
-            <svg className={`w-4 sm:w-4.5 h-3.5 shrink-0 ${selectedPayMethod === "card" ? "text-[#FF5900]" : "text-gray-400"}`} viewBox="0 0 20 14" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+            <svg className={`w-4 sm:w-[18px] h-3.5 shrink-0 ${selectedPayMethod === "card" ? "text-[#FF5900]" : "text-gray-400"}`} viewBox="0 0 20 14" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
               <rect x="1" y="1" width="18" height="12" rx="2" />
               <line x1="1" y1="5" x2="19" y2="5" />
               <circle cx="5" cy="9.5" r="0.8" fill="currentColor" />
@@ -1938,7 +1924,7 @@ export function CartDrawer() {
             <DinersClubLogo className="h-3 sm:h-3.5 w-auto max-w-full object-contain" />
           </div>
           <div className="w-full h-6 flex items-center justify-center px-0.5">
-            <DiscoverLogo className="h-4 sm:h-4.5 w-auto max-w-full object-contain scale-115" />
+            <DiscoverLogo className="h-4 sm:h-[18px] w-auto max-w-full object-contain scale-110" />
           </div>
           <div className="w-full h-6 flex items-center justify-center px-1">
             <AmexLogo className="h-3 sm:h-3.5 w-auto max-w-full object-contain" />
@@ -1949,13 +1935,13 @@ export function CartDrawer() {
         <button
           type="button"
           onClick={() => setSelectedPayMethod("app")}
-          className={`h-12 sm:h-13 px-3 rounded-xl transition-all cursor-pointer flex items-center justify-center gap-2 ${
+          className={`h-12 sm:h-[52px] px-3 rounded-xl transition-all cursor-pointer flex items-center justify-center gap-2 ${
             selectedPayMethod === "app"
-              ? "border-2 border-[#FF5900] bg-white dark:bg-[#202022] shadow-xs"
+              ? "border-2 border-[#FF5900] bg-white dark:bg-[#202022] shadow-sm"
               : "border border-gray-200 dark:border-white/10 hover:border-gray-300 dark:hover:border-white/20 bg-white dark:bg-[#18181b]"
           }`}
         >
-          <PayPhoneIcon className="w-5 h-5 sm:w-5.5 sm:h-5.5" />
+          <PayPhoneIcon className="w-5 h-5 sm:w-[22px] sm:h-[22px]" />
           <div className="flex items-center gap-1.5">
             <span className="font-sans font-bold text-xs sm:text-sm text-[#FF5900] tracking-tight">PayPhone</span>
             <span className="text-[10px] font-sans font-semibold px-1.5 py-0.5 rounded-md bg-[#FF5900]/10 text-[#FF5900]">App</span>
@@ -1966,86 +1952,178 @@ export function CartDrawer() {
 
     {/* 4. CARD OR APP INPUT FORM */}
     {selectedPayMethod === "card" ? (
-      <div className="pt-2 space-y-3">
-        {/* Saved Cards Selector (if user has saved cards in account) */}
+      <div className="pt-2 space-y-3.5">
+        {/* Interactive Pocket Wallet (Mini Billetera Desplegable) */}
         {cards && cards.length > 0 && (
-          <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <span className="text-[11px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 flex items-center gap-1.5">
-                <CreditCard className="w-3.5 h-3.5 text-[#FF5900]" />
-                Mis tarjetas guardadas
-              </span>
-              {selectedSavedCardId !== "new" && (
-                <button
-                  type="button"
-                  onClick={() => handleSelectSavedCard("new")}
-                  className="text-[11px] font-semibold text-[#FF5900] hover:underline cursor-pointer"
-                >
-                  + Usar otra tarjeta
-                </button>
-              )}
-            </div>
+          <div className="relative">
+            {(() => {
+              const activeSavedCard = cards.find((c) => c.id === selectedSavedCardId) || null;
+              const activeLast4 = activeSavedCard
+                ? activeSavedCard.number.replace(/\D/g, "").slice(-4) || "4242"
+                : null;
+              const activeBrand = (activeSavedCard?.type || "visa").toLowerCase();
 
-            <div className="grid grid-cols-1 gap-2">
-              {cards.map((savedCard) => {
-                const isSelected = selectedSavedCardId === savedCard.id;
-                const brandLower = (savedCard.type || "visa").toLowerCase();
-                const cardLast4 = savedCard.number.replace(/\D/g, "").slice(-4) || "4242";
-                return (
+              return (
+                <div className="rounded-2xl border border-gray-200/90 dark:border-white/15 bg-gradient-to-b from-[#FAF8F5] to-white dark:from-[#1c1c20] dark:to-[#141417] p-3 shadow-sm transition-all">
+                  {/* Closed/Header Pocket Wallet Trigger */}
                   <button
-                    key={savedCard.id}
                     type="button"
-                    onClick={() => handleSelectSavedCard(savedCard.id)}
-                    className={`w-full px-3.5 py-2.5 rounded-xl border text-left transition-all flex items-center justify-between gap-3 cursor-pointer ${
-                      isSelected
-                        ? "border-[#FF5900] bg-[#FF5900]/[0.06] dark:bg-[#FF5900]/[0.12] shadow-2xs"
-                        : "border-gray-200 dark:border-white/10 bg-white dark:bg-[#141416] hover:border-gray-300 dark:hover:border-white/20"
-                    }`}
+                    onClick={() => setIsMiniWalletOpen((prev) => !prev)}
+                    className="w-full flex items-center justify-between gap-3 text-left group cursor-pointer"
                   >
                     <div className="flex items-center gap-3 min-w-0">
-                      <div className="w-10 h-7 rounded-lg bg-gray-100 dark:bg-white/10 border border-black/[0.06] dark:border-white/10 flex items-center justify-center px-1.5 shrink-0">
-                        {brandLower.includes("master") ? (
-                          <MastercardLogo className="h-4 w-auto object-contain" />
-                        ) : brandLower.includes("amex") || brandLower.includes("american") ? (
-                          <AmexLogo className="h-3.5 w-auto object-contain" />
-                        ) : brandLower.includes("diners") ? (
-                          <DinersClubLogo className="h-3.5 w-auto object-contain" />
-                        ) : brandLower.includes("discover") ? (
-                          <DiscoverLogo className="h-4 w-auto object-contain" />
-                        ) : (
-                          <VisaLogo className="h-3 w-auto object-contain" fill="#1A1F71" />
-                        )}
-                      </div>
-                      <div className="min-w-0">
-                        <div className="flex items-center gap-2">
-                          <span className="font-mono font-bold text-xs text-gray-900 dark:text-white">
-                            •••• {cardLast4}
-                          </span>
-                          {savedCard.isDefault && (
-                            <span className="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-md bg-amber-500/15 text-amber-700 dark:text-amber-300">
-                              Principal
-                            </span>
-                          )}
+                      {/* Mini Leather/Metallic Pocket Wallet Illustration with stacked peeking cards */}
+                      <div className="relative w-12 h-9 shrink-0 flex items-end justify-center">
+                        {/* Peeking card 1 */}
+                        <div
+                          className={`absolute top-0.5 w-9 h-5 rounded-t-md bg-gradient-to-r from-amber-500 to-orange-500 border border-white/30 shadow-xs transition-transform duration-300 ${
+                            isMiniWalletOpen ? "-translate-y-1.5 -rotate-6" : "group-hover:-translate-y-0.5"
+                          }`}
+                        />
+                        {/* Peeking card 2 */}
+                        <div
+                          className={`absolute top-1.5 w-10 h-5 rounded-t-md bg-gradient-to-r from-indigo-600 to-blue-500 border border-white/30 shadow-xs transition-transform duration-300 ${
+                            isMiniWalletOpen ? "-translate-y-1 rotate-3" : "group-hover:-translate-y-0.5"
+                          }`}
+                        />
+                        {/* Front Wallet Pocket */}
+                        <div className="relative z-10 w-12 h-6 rounded-lg bg-gradient-to-br from-[#232329] to-[#121215] dark:from-[#2d2d35] dark:to-[#18181c] border border-white/15 shadow-md flex items-center justify-center">
+                          <div className="w-2.5 h-1.5 rounded-full bg-[#ccff00] shadow-[0_0_6px_rgba(204,255,0,0.8)]" />
                         </div>
-                        <p className="text-[10.5px] text-gray-500 dark:text-gray-400 truncate">
-                          {savedCard.holder} · Vence {savedCard.exp}
-                        </p>
+                      </div>
+
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-[10px] font-extrabold uppercase tracking-wider text-[#8c9276] dark:text-[#ccff00]">
+                            Mi Billetera Digital
+                          </span>
+                          <span className="px-1.5 py-0.2 rounded-full bg-black/[0.06] dark:bg-white/10 text-[9.5px] font-bold text-gray-700 dark:text-gray-200">
+                            {cards.length} {cards.length === 1 ? "tarjeta" : "tarjetas"}
+                          </span>
+                        </div>
+                        {activeSavedCard ? (
+                          <div className="flex items-center gap-2 mt-0.5">
+                            <span className="font-['OCR_A_Std','OCR-A','Share_Tech_Mono','Courier_New',monospace] tracking-[0.14em] font-bold text-xs text-gray-900 dark:text-white">
+                              •••• {activeLast4}
+                            </span>
+                            <span className="text-[10.5px] text-gray-500 dark:text-gray-400 truncate">
+                              · {activeSavedCard.holder} ({activeBrand.toUpperCase()})
+                            </span>
+                          </div>
+                        ) : (
+                          <p className="text-xs font-semibold text-gray-700 dark:text-gray-300 mt-0.5">
+                            Toca para abrir tu billetera y elegir una tarjeta
+                          </p>
+                        )}
                       </div>
                     </div>
 
-                    <div
-                      className={`w-4.5 h-4.5 rounded-full border flex items-center justify-center shrink-0 transition-colors ${
-                        isSelected
-                          ? "border-[#FF5900] bg-[#FF5900] text-white"
-                          : "border-gray-300 dark:border-white/20"
-                      }`}
-                    >
-                      {isSelected && <Check className="w-2.5 h-2.5 stroke-[3]" />}
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      <span className="px-2.5 py-1 rounded-full bg-gray-900 dark:bg-white/10 text-white dark:text-[#ccff00] text-[10px] font-bold tracking-wide group-hover:scale-105 transition-transform">
+                        {isMiniWalletOpen ? "Cerrar" : "Abrir Billetera"}
+                      </span>
                     </div>
                   </button>
-                );
-              })}
-            </div>
+
+                  {/* Unfolded Fanned Cards Stack when Pocket Wallet is Open */}
+                  <AnimatePresence initial={false}>
+                    {isMiniWalletOpen && (
+                      <motion.div
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: "auto", opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        transition={{ duration: 0.24, ease: [0.22, 1, 0.36, 1] }}
+                        className="overflow-hidden"
+                      >
+                        <div className="pt-3 mt-2.5 border-t border-black/[0.06] dark:border-white/10 space-y-2">
+                          <div className="flex items-center justify-between px-0.5">
+                            <span className="text-[10px] font-bold uppercase tracking-wider text-gray-400">
+                              Selecciona una tarjeta de tu billetera
+                            </span>
+                            {selectedSavedCardId !== "new" && (
+                              <button
+                                type="button"
+                                onClick={() => handleSelectSavedCard("new")}
+                                className="text-[10.5px] font-bold text-[#FF5900] hover:underline cursor-pointer"
+                              >
+                                + Digitar otra tarjeta
+                              </button>
+                            )}
+                          </div>
+
+                          <div className="grid grid-cols-1 gap-2">
+                            {cards.map((savedCard, idx) => {
+                              const isSelected = selectedSavedCardId === savedCard.id;
+                              const brandLower = (savedCard.type || "visa").toLowerCase();
+                              const cardLast4 = savedCard.number.replace(/\D/g, "").slice(-4) || "4242";
+
+                              return (
+                                <motion.button
+                                  key={savedCard.id}
+                                  type="button"
+                                  initial={{ opacity: 0, y: 8 }}
+                                  animate={{ opacity: 1, y: 0 }}
+                                  transition={{ delay: idx * 0.04 }}
+                                  onClick={() => handleSelectSavedCard(savedCard.id)}
+                                  className={`w-full p-3 rounded-xl border text-left transition-all flex items-center justify-between gap-3 cursor-pointer relative overflow-hidden ${
+                                    isSelected
+                                      ? "border-[#FF5900] bg-gradient-to-r from-[#1c1c21] via-[#25252c] to-[#18181c] text-white shadow-md"
+                                      : "border-gray-200/90 dark:border-white/10 bg-white dark:bg-[#1a1a1e] hover:border-gray-300 dark:hover:border-white/25 text-gray-900 dark:text-white"
+                                  }`}
+                                >
+                                  <div className="flex items-center gap-3 min-w-0">
+                                    {/* Mini Metallic EMV Chip + Brand Badge */}
+                                    <div className="w-11 h-7 rounded-md bg-gray-100 dark:bg-white/10 border border-black/[0.08] dark:border-white/15 flex items-center justify-center px-1.5 shrink-0">
+                                      {brandLower.includes("master") ? (
+                                        <MastercardLogo className="h-4 w-auto object-contain" />
+                                      ) : brandLower.includes("amex") || brandLower.includes("american") ? (
+                                        <AmexLogo className="h-3.5 w-auto object-contain" />
+                                      ) : brandLower.includes("diners") ? (
+                                        <DinersClubLogo className="h-3.5 w-auto object-contain" />
+                                      ) : brandLower.includes("discover") ? (
+                                        <DiscoverLogo className="h-4 w-auto object-contain" />
+                                      ) : (
+                                        <VisaLogo className="h-3 w-auto object-contain" fill={isSelected ? "#FFFFFF" : "#1A1F71"} />
+                                      )}
+                                    </div>
+
+                                    <div className="min-w-0">
+                                      <div className="flex items-center gap-2">
+                                        <span className="font-['OCR_A_Std','OCR-A','Share_Tech_Mono','Courier_New',monospace] tracking-[0.18em] font-bold text-xs">
+                                          •••• •••• •••• {cardLast4}
+                                        </span>
+                                        {savedCard.isDefault && (
+                                          <span className="text-[8.5px] font-extrabold uppercase tracking-wider px-1.5 py-0.5 rounded bg-[#ccff00]/20 text-[#6c7800] dark:text-[#ccff00]">
+                                            Principal
+                                          </span>
+                                        )}
+                                      </div>
+                                      <p className={`text-[10px] font-['OCR_A_Std','OCR-A','Share_Tech_Mono','Courier_New',monospace] tracking-[0.12em] uppercase truncate mt-0.5 ${isSelected ? "text-white/75" : "text-gray-500 dark:text-gray-400"}`}>
+                                        {savedCard.holder} · EXP {savedCard.exp}
+                                      </p>
+                                    </div>
+                                  </div>
+
+                                  <div
+                                    className={`w-[18px] h-[18px] rounded-full border flex items-center justify-center shrink-0 transition-colors ${
+                                      isSelected
+                                        ? "border-[#FF5900] bg-[#FF5900] text-white"
+                                        : "border-gray-300 dark:border-white/20"
+                                    }`}
+                                  >
+                                    {isSelected && <Check className="w-2.5 h-2.5 stroke-[3]" />}
+                                  </div>
+                                </motion.button>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+              );
+            })()}
           </div>
         )}
 
@@ -2060,10 +2138,11 @@ export function CartDrawer() {
           )}
         </div>
 
-        {/* Grouped 3-Row Input Container */}
-        <div className="rounded-xl border border-gray-300 dark:border-white/15 bg-white dark:bg-[#141416] overflow-hidden divide-y divide-gray-300 dark:divide-white/15 shadow-2xs">
+        {/* Grouped 3-Row Input Container with Physical Credit Card Embossed Typography */}
+        <div className="rounded-xl border border-gray-300 dark:border-white/15 bg-white dark:bg-[#141416] overflow-hidden divide-y divide-gray-300 dark:divide-white/15 shadow-xs">
           {/* Row 1: Card Number */}
-          <div className="px-3.5 py-3">
+          <div className="px-3.5 py-3 flex items-center gap-2.5">
+            <CreditCard className="w-4 h-4 text-[#FF5900] shrink-0" />
             <input 
               type="text"
               inputMode="numeric"
@@ -2075,8 +2154,8 @@ export function CartDrawer() {
                 const formatted = val.match(/.{1,4}/g)?.join(" ") || val;
                 setCardNumber(formatted);
               }}
-              placeholder="Ingresa número de tarjeta"
-              className="w-full text-xs sm:text-sm bg-transparent outline-none text-gray-900 dark:text-white placeholder-gray-400 font-sans tracking-wide"
+              placeholder="0000 0000 0000 0000"
+              className="w-full text-xs sm:text-sm bg-transparent outline-none text-gray-900 dark:text-white placeholder:text-gray-400/80 font-['OCR_A_Std','OCR-A','Share_Tech_Mono','Courier_New',monospace] tracking-[0.2em] font-bold uppercase tabular-nums [text-shadow:0_1px_0_rgba(255,255,255,0.7)] dark:[text-shadow:0_1px_2px_rgba(0,0,0,0.85)]"
             />
           </div>
 
@@ -2096,11 +2175,11 @@ export function CartDrawer() {
                 }}
                 placeholder="MM/AA"
                 maxLength={5}
-                className="w-full text-xs sm:text-sm bg-transparent outline-none text-gray-900 dark:text-white placeholder-gray-400 font-sans"
+                className="w-full text-xs sm:text-sm bg-transparent outline-none text-gray-900 dark:text-white placeholder:text-gray-400/80 font-['OCR_A_Std','OCR-A','Share_Tech_Mono','Courier_New',monospace] tracking-[0.18em] font-bold uppercase tabular-nums [text-shadow:0_1px_0_rgba(255,255,255,0.7)] dark:[text-shadow:0_1px_2px_rgba(0,0,0,0.85)]"
               />
             </div>
             <div className="flex items-center px-3.5 py-3 gap-2">
-              <CreditCard className="w-4 h-4 text-gray-400 shrink-0" />
+              <ShieldCheck className="w-4 h-4 text-gray-400 shrink-0" />
               <input 
                 type="password"
                 inputMode="numeric"
@@ -2109,7 +2188,7 @@ export function CartDrawer() {
                 onChange={(e) => setCardCvv(e.target.value.replace(/\D/g, "").slice(0, 4))}
                 placeholder="CVV"
                 maxLength={4}
-                className="w-full text-xs sm:text-sm bg-transparent outline-none text-gray-900 dark:text-white placeholder-gray-400 font-sans tracking-widest"
+                className="w-full text-xs sm:text-sm bg-transparent outline-none text-gray-900 dark:text-white placeholder:text-gray-400/80 font-['OCR_A_Std','OCR-A','Share_Tech_Mono','Courier_New',monospace] tracking-[0.22em] font-bold uppercase tabular-nums [text-shadow:0_1px_0_rgba(255,255,255,0.7)] dark:[text-shadow:0_1px_2px_rgba(0,0,0,0.85)]"
               />
             </div>
           </div>
@@ -2121,9 +2200,9 @@ export function CartDrawer() {
               type="text"
               autoComplete="cc-name"
               value={cardHolder}
-              onChange={(e) => setCardHolder(e.target.value)}
-              placeholder="Ingresa titular de tarjeta"
-              className="w-full text-xs sm:text-sm bg-transparent outline-none text-gray-900 dark:text-white placeholder-gray-400 font-sans"
+              onChange={(e) => setCardHolder(e.target.value.toUpperCase())}
+              placeholder="NOMBRE DEL TITULAR"
+              className="w-full text-xs sm:text-sm bg-transparent outline-none text-gray-900 dark:text-white placeholder:text-gray-400/80 font-['OCR_A_Std','OCR-A','Share_Tech_Mono','Courier_New',monospace] tracking-[0.16em] font-bold uppercase [text-shadow:0_1px_0_rgba(255,255,255,0.7)] dark:[text-shadow:0_1px_2px_rgba(0,0,0,0.85)]"
             />
           </div>
         </div>
@@ -2262,52 +2341,53 @@ export function CartDrawer() {
   </div>
 
   {/* ======================================================================= */}
-  {/* QR CODE & GOOGLE WALLET / APPLE WALLET LIVE TRACKING PASS CARD */}
+  {/* QR CODE (@beui/tilt-card) & GOOGLE / APPLE WALLET IN-PAGE POPUP */}
   {/* ======================================================================= */}
   <div className="w-full rounded-[2rem] p-6 sm:p-7 bg-gradient-to-br from-[#141417] via-[#1c1b20] to-[#111114] text-white border border-white/15 shadow-[0_20px_50px_rgba(0,0,0,0.3)] text-left relative overflow-hidden">
     <div className="absolute -top-24 -right-24 w-56 h-56 rounded-full bg-amber-500/15 blur-3xl pointer-events-none" />
     <div className="relative z-10 flex flex-col sm:flex-row items-center gap-5 sm:gap-6">
-      {/* Scannable QR Code container linking to /wallet/order/[id] */}
-      <a
-        href={`/wallet/order/${encodeURIComponent(lastPlacedOrder.id)}`}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="group/qr shrink-0 p-3.5 rounded-2xl bg-white shadow-lg border border-white/20 flex flex-col items-center gap-1.5 hover:scale-[1.02] transition-transform"
-        title="Abrir pase digital de seguimiento en vivo"
-      >
-        <img
-          src={`https://api.qrserver.com/v1/create-qr-code/?size=180x180&margin=4&data=${encodeURIComponent(
-            `${typeof window !== "undefined" ? window.location.origin : "https://luminahome.ec"}/wallet/order/${encodeURIComponent(lastPlacedOrder.id)}`
-          )}`}
-          alt={`QR Pase de Pedido ${lastPlacedOrder.id}`}
-          className="w-28 h-28 sm:w-32 sm:h-32 rounded-lg object-contain"
-        />
-        <span className="text-[9.5px] font-mono font-bold uppercase tracking-wider text-gray-900">
-          Escanear con celular
-        </span>
-      </a>
+      {/* Scannable 3D Tilt Card QR Code (@beui/tilt-card) */}
+      <BeUITiltCard maxTilt={15} scaleOnHover={1.04} glareOpacity={0.32} className="shrink-0 rounded-2xl">
+        <button
+          type="button"
+          onClick={() => setWalletPopupPlatform("apple")}
+          className="group/qr p-3.5 rounded-2xl bg-white shadow-[0_14px_34px_rgba(0,0,0,0.35)] border border-white/30 flex flex-col items-center gap-1.5 cursor-pointer"
+          title="Abrir Pase Digital y Código QR en ventana interactiva"
+        >
+          <img
+            src={`https://api.qrserver.com/v1/create-qr-code/?size=220x220&ecc=M&margin=6&data=${encodeURIComponent(
+              `${typeof window !== "undefined" ? window.location.origin : "https://luminahome.ec"}/wallet/order/${encodeURIComponent(lastPlacedOrder.id)}?total=${encodeURIComponent(String(lastPlacedOrder.total || 0))}&status=${encodeURIComponent(lastPlacedOrder.status || "Procesando")}&customer=${encodeURIComponent(lastPlacedOrder.customerName || user?.name || "Cliente Lumina")}`
+            )}`}
+            alt={`QR Pase de Pedido ${lastPlacedOrder.id}`}
+            className="w-28 h-28 sm:w-32 sm:h-32 rounded-lg object-contain select-none"
+          />
+          <span className="text-[9.5px] font-mono font-extrabold uppercase tracking-wider text-gray-900 flex items-center gap-1">
+            <QrCode className="w-3 h-3 text-[#8c9276]" />
+            Escanear o Ampliar
+          </span>
+        </button>
+      </BeUITiltCard>
 
-      {/* Wallet Pass Info & Action Buttons */}
+      {/* Wallet Pass Info & In-Page Popup Action Buttons */}
       <div className="flex-1 space-y-3.5 text-center sm:text-left">
         <div>
           <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-400/15 border border-amber-400/30 text-amber-300 text-[10px] font-bold uppercase tracking-widest">
-            Pase Digital en Tiempo Real
+            Pase Digital en Tiempo Real · Tilt Card 3D
           </span>
           <h4 className="font-display font-bold text-lg sm:text-xl text-white mt-1.5">
             Guarda tu Pedido en tu Billetera
           </h4>
           <p className="text-xs text-white/70 leading-relaxed mt-1">
-            Escanea el código QR o añade esta tarjeta a <strong className="text-white">Google Wallet</strong> o <strong className="text-white">Apple Wallet</strong>. Recibirás notificaciones push automáticas cuando tu pedido pase a <span className="text-amber-300 font-semibold">Enviado</span> y <span className="text-emerald-300 font-semibold">Entregado</span>.
+            Escanea el código QR 3D o añade esta tarjeta a <strong className="text-white">Google Wallet</strong> o <strong className="text-white">Apple Wallet</strong> aquí mismo. Recibirás actualizaciones automáticas cuando tu pedido pase a <span className="text-amber-300 font-semibold">Enviado</span> y <span className="text-emerald-300 font-semibold">Entregado</span>.
           </p>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1">
-          {/* Google Wallet Button */}
-          <a
-            href={`/wallet/order/${encodeURIComponent(lastPlacedOrder.id)}?wallet=google`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="h-11 px-4 rounded-xl bg-white hover:bg-gray-100 text-gray-950 font-sans font-bold text-xs flex items-center justify-center gap-2.5 shadow-sm transition-all cursor-pointer"
+          {/* Google Wallet Button (Opens In-Page Popup Modal) */}
+          <button
+            type="button"
+            onClick={() => setWalletPopupPlatform("google")}
+            className="h-11 px-4 rounded-xl bg-white hover:bg-gray-100 text-gray-950 font-sans font-bold text-xs flex items-center justify-center gap-2.5 shadow-sm transition-all hover:scale-[1.01] active:scale-95 cursor-pointer"
           >
             <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="none">
               <path d="M21 7.5V6a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-1.5" stroke="#4285F4" strokeWidth="2" strokeLinecap="round" />
@@ -2316,24 +2396,38 @@ export function CartDrawer() {
               <circle cx="17" cy="13.5" r="1.5" fill="#EA4335" />
             </svg>
             <span>Añadir a Google Wallet</span>
-          </a>
+          </button>
 
-          {/* Apple Wallet Button */}
-          <a
-            href={`/wallet/order/${encodeURIComponent(lastPlacedOrder.id)}?wallet=apple`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="h-11 px-4 rounded-xl bg-white/12 hover:bg-white/20 border border-white/20 text-white font-sans font-bold text-xs flex items-center justify-center gap-2.5 transition-all cursor-pointer"
+          {/* Apple Wallet Button (Opens In-Page Popup Modal) */}
+          <button
+            type="button"
+            onClick={() => setWalletPopupPlatform("apple")}
+            className="h-11 px-4 rounded-xl bg-white/12 hover:bg-white/20 border border-white/20 text-white font-sans font-bold text-xs flex items-center justify-center gap-2.5 transition-all hover:scale-[1.01] active:scale-95 cursor-pointer"
           >
             <svg className="w-4 h-4 shrink-0 fill-current" viewBox="0 0 24 24">
               <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M15.97 6.33c.64-.78 1.08-1.86.96-2.94-.93.04-2.06.62-2.72 1.4-.58.68-1.1 1.79-.96 2.84 1.04.08 2.08-.52 2.72-1.3z" />
             </svg>
             <span>Añadir a Apple Wallet</span>
-          </a>
+          </button>
         </div>
       </div>
     </div>
   </div>
+
+  {/* In-Page Wallet Pass Popup Modal (No external tab!) */}
+  <WalletPassPopupModal
+    open={walletPopupPlatform !== null}
+    onClose={() => setWalletPopupPlatform(null)}
+    orderId={lastPlacedOrder.id}
+    total={lastPlacedOrder.total}
+    status={lastPlacedOrder.status}
+    customerName={lastPlacedOrder.customerName || user?.name || "Cliente Lumina"}
+    trackingNumber={lastPlacedOrder.trackingNumber}
+    trackingUrl={lastPlacedOrder.trackingUrl}
+    carrierName={lastPlacedOrder.carrierName}
+    date={lastPlacedOrder.date}
+    initialPlatform={walletPopupPlatform || "apple"}
+  />
 
   {/* Action Buttons with 2IXO Capsule Design */}
   <div className="w-full space-y-3 pt-2">

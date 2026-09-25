@@ -189,9 +189,23 @@ export function OrdersTab({
     }
   };
 
+  const scopedOrders = useMemo(() => {
+    if (isAdmin) return orders;
+    if (!user) return [];
+    const uId = (user.id || "").trim();
+    const uEmail = (user.email || "").toLowerCase().trim();
+    return orders.filter((ord) => {
+      const oUserId = (ord.userId || "").trim();
+      const oEmail = (ord.customerEmail || ord.shippingAddress?.email || "").toLowerCase().trim();
+      if (uId && oUserId && uId === oUserId) return true;
+      if (uEmail && oEmail && uEmail === oEmail) return true;
+      return false;
+    });
+  }, [orders, isAdmin, user]);
+
   const filteredOrders = useMemo(() => {
     const q = normalizeSearchText(searchQuery);
-    return orders.filter(ord => {
+    return scopedOrders.filter(ord => {
       const matchStatus = orderStatusFilter === "all" || ord.status.toLowerCase() === orderStatusFilter.toLowerCase();
       const matchQuery = !q || 
         normalizeSearchText(ord.id).includes(q) ||
@@ -200,7 +214,7 @@ export function OrdersTab({
         normalizeSearchText(ord.trackingNumber || "").includes(q);
       return matchStatus && matchQuery;
     });
-  }, [orders, orderStatusFilter, searchQuery]);
+  }, [scopedOrders, orderStatusFilter, searchQuery]);
 
   return (
     <div className="bg-white/90 dark:bg-[#202022]/90 backdrop-blur-xl p-4 sm:p-6 md:p-8 rounded-3xl sm:rounded-[2.5rem] border border-white/80 dark:border-white/10 shadow-[0_4px_24px_rgba(0,0,0,0.02)] space-y-6 animate-fade-in">
@@ -237,8 +251,8 @@ export function OrdersTab({
               const isActive = orderStatusFilter === item.id;
               const count =
                 item.id === "all"
-                  ? orders.length
-                  : orders.filter((o) => o.status === item.id).length;
+                  ? scopedOrders.length
+                  : scopedOrders.filter((o) => o.status === item.id).length;
 
               return (
                 <button

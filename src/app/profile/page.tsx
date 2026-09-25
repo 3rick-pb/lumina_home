@@ -93,7 +93,23 @@ export default function ProfilePage() {
     }
   }, [user?.id, loadSettingsFromDatabase]);
 
-  const pendingOrdersCount = orders.filter((o) => o.status !== "Entregado").length;
+  const isAdminUser = user?.role === "ADMIN";
+
+  const scopedOrders = useMemo(() => {
+    if (isAdminUser) return orders;
+    if (!user) return [];
+    const uId = (user.id || "").trim();
+    const uEmail = (user.email || "").toLowerCase().trim();
+    return orders.filter((ord) => {
+      const oUserId = (ord.userId || "").trim();
+      const oEmail = (ord.customerEmail || ord.shippingAddress?.email || "").toLowerCase().trim();
+      if (uId && oUserId && uId === oUserId) return true;
+      if (uEmail && oEmail && uEmail === oEmail) return true;
+      return false;
+    });
+  }, [orders, isAdminUser, user]);
+
+  const pendingOrdersCount = scopedOrders.filter((o) => o.status !== "Entregado").length;
 
   type ProfileTab = "overview" | "orders" | "cards" | "favorites" | "catalog" | "niches" | "analytics" | "cart_alerts" | "integrations" | "loyalty" | "settings";
   const [activeTab, setActiveTab] = useState<ProfileTab>("overview");
@@ -323,18 +339,19 @@ export default function ProfilePage() {
 
 
 
- // 5. Filtered Lists (accent/diacritic insensitive)
- const filteredOrders = useMemo(() => {
- const q = normalizeSearchText(searchQuery);
- return orders.filter(ord => {
- const matchQuery = !q || 
- normalizeSearchText(ord.id).includes(q) ||
- normalizeSearchText(ord.customerName || "").includes(q) ||
- normalizeSearchText(ord.customerEmail || "").includes(q) ||
- normalizeSearchText(ord.trackingNumber || "").includes(q);
-    return matchQuery;
- });
-  }, [orders, searchQuery]);
+  // 5. Filtered Lists (accent/diacritic insensitive)
+  const filteredOrders = useMemo(() => {
+    const q = normalizeSearchText(searchQuery);
+    return scopedOrders.filter((ord) => {
+      const matchQuery =
+        !q ||
+        normalizeSearchText(ord.id).includes(q) ||
+        normalizeSearchText(ord.customerName || "").includes(q) ||
+        normalizeSearchText(ord.customerEmail || "").includes(q) ||
+        normalizeSearchText(ord.trackingNumber || "").includes(q);
+      return matchQuery;
+    });
+  }, [scopedOrders, searchQuery]);
 
   const filteredCatalog = useMemo(() => {
     const q = normalizeSearchText(searchQuery);
@@ -956,7 +973,7 @@ const handleConfirmDeleteNiche = async () => {
   onClick={() => setActiveTab("orders")} 
   className={`px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all cursor-pointer ${activeTab === "orders" ? "bg-white dark:bg-[#202022] text-gray-900 dark:text-gray-100 shadow-sm dark:shadow-none" : "text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100"}`}
   >
-  Actividad ({orders.length})
+  Actividad ({scopedOrders.length})
   </button>
   <button 
   onClick={() => setActiveTab("cards")} 
@@ -1019,151 +1036,132 @@ const handleConfirmDeleteNiche = async () => {
   </div>
   </div>
 
-  {/* Right Search Input & Profile Badge */}
+  {/* Right Search Input & Profile Badge (Smooth, Stable Width, Zero Layout Jump) */}
   <div className="flex items-center gap-2.5 sm:gap-3 shrink-0">
     <div className="relative z-50 hidden sm:block group/search">
-      {/* Ambient glow behind search bar on hover/focus */}
-      <div className="pointer-events-none absolute -inset-0.5 rounded-2xl bg-gradient-to-r from-[#8c9276]/30 via-[#b5bd9b]/20 to-[#8c9276]/30 dark:from-[#ccff00]/25 dark:via-emerald-400/15 dark:to-[#ccff00]/25 opacity-0 group-hover/search:opacity-60 group-focus-within/search:opacity-100 blur-md transition-opacity duration-300" />
-
-      <div className="relative flex items-center gap-2.5 bg-white/90 dark:bg-[#1a1a1d]/95 backdrop-blur-xl pl-2 pr-2.5 py-1.5 rounded-2xl border border-gray-200/90 dark:border-white/15 shadow-[0_4px_20px_rgba(0,0,0,0.04)] dark:shadow-[0_4px_20px_rgba(0,0,0,0.35)] group-hover/search:border-[#8c9276]/50 dark:group-hover/search:border-white/25 group-focus-within/search:border-[#8c9276] dark:group-focus-within/search:border-[#ccff00]/60 group-focus-within/search:shadow-[0_10px_30px_rgba(140,146,118,0.18)] dark:group-focus-within/search:shadow-[0_10px_30px_rgba(204,255,0,0.14)] transition-all duration-300">
-        {/* Animated Icon Pill */}
-        <div className="w-7 h-7 rounded-xl bg-gradient-to-br from-[#8c9276]/20 to-[#8c9276]/5 dark:from-[#ccff00]/20 dark:to-[#ccff00]/5 border border-[#8c9276]/25 dark:border-[#ccff00]/30 flex items-center justify-center text-[#8c9276] dark:text-[#ccff00] group-focus-within/search:scale-105 transition-transform shrink-0 shadow-2xs">
-          <Search className="w-3.5 h-3.5 stroke-[2.4]" />
-        </div>
+      <div className="relative flex items-center gap-2 bg-stone-100/85 dark:bg-white/[0.06] hover:bg-white dark:hover:bg-white/[0.09] focus-within:bg-white dark:focus-within:bg-[#222226] backdrop-blur-xl pl-3 pr-2.5 h-9 rounded-full border border-stone-200/80 dark:border-white/10 focus-within:border-[#8c9276]/60 dark:focus-within:border-white/25 shadow-[0_2px_10px_rgba(0,0,0,0.02)] focus-within:shadow-[0_6px_20px_rgba(0,0,0,0.06)] transition-all duration-300 ease-out">
+        <Search className="w-3.5 h-3.5 text-gray-400 group-focus-within/search:text-[#8c9276] dark:group-focus-within/search:text-[#ccff00] transition-colors duration-300 shrink-0" />
 
         <input
           id="lumina-profile-search-input"
           type="text"
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          placeholder={isAdmin ? "Buscar pedidos, clientes, catálogo..." : "Buscar mis pedidos o favoritos..."}
-          className="bg-transparent border-none outline-none text-xs w-32 sm:w-40 lg:w-48 xl:w-56 focus:w-44 sm:focus:w-52 lg:focus:w-64 font-semibold text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 transition-all duration-300"
+          placeholder={isAdmin ? "Buscar pedidos o catálogo..." : "Buscar mis pedidos..."}
+          className="bg-transparent border-none outline-none text-xs w-44 lg:w-52 font-medium text-gray-800 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500"
         />
 
         {searchQuery ? (
-          <div className="flex items-center gap-1.5 shrink-0">
-            <span className="px-1.5 py-0.5 rounded-md bg-[#8c9276]/15 dark:bg-[#ccff00]/15 text-[#8c9276] dark:text-[#ccff00] text-[10px] font-mono font-bold">
+          <div className="flex items-center gap-1 shrink-0">
+            <span className="px-1.5 py-0.5 rounded-full bg-stone-200/80 dark:bg-white/10 text-gray-700 dark:text-gray-300 text-[10px] font-mono font-semibold">
               {filteredOrders.length + filteredCatalog.length}
             </span>
             <button
               type="button"
               onClick={() => setSearchQuery("")}
-              className="w-6 h-6 rounded-lg bg-gray-100 dark:bg-white/10 hover:bg-rose-50 dark:hover:bg-rose-950/50 text-gray-400 hover:text-rose-500 flex items-center justify-center transition-colors cursor-pointer"
+              className="w-5 h-5 rounded-full hover:bg-stone-200/80 dark:hover:bg-white/15 text-gray-400 hover:text-gray-700 dark:hover:text-white flex items-center justify-center transition-colors cursor-pointer"
               title="Limpiar búsqueda"
             >
               <X className="w-3 h-3" />
             </button>
           </div>
         ) : (
-          <kbd
+          <span
             onClick={() => document.getElementById("lumina-profile-search-input")?.focus()}
-            className="hidden lg:inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-lg bg-gray-100/90 dark:bg-white/[0.06] border border-gray-200/80 dark:border-white/10 text-[10px] font-mono font-semibold text-gray-400 dark:text-gray-500 cursor-pointer select-none shrink-0"
+            className="hidden lg:inline-flex items-center px-1.5 py-0.5 rounded-md bg-white/70 dark:bg-white/[0.06] border border-stone-200/70 dark:border-white/10 text-[9.5px] font-mono text-gray-400 dark:text-gray-500 cursor-pointer select-none shrink-0"
           >
-            <span>⌘</span>
-            <span>K</span>
-          </kbd>
+            ⌘K
+          </span>
         )}
       </div>
 
-      {/* Floating Live Quick Search Results */}
+      {/* Smooth Floating Results Dropdown */}
       {searchQuery.trim().length > 0 && (
-        <div className="absolute -right-2 sm:right-0 top-full mt-2.5 w-[calc(100vw-2.5rem)] sm:w-[400px] max-w-md bg-white/95 dark:bg-[#1b1b1e]/95 backdrop-blur-2xl border border-gray-200/90 dark:border-white/15 rounded-[1.75rem] shadow-[0_28px_80px_rgba(0,0,0,0.28)] p-4 z-[100] space-y-3.5 animate-fade-in text-xs pointer-events-auto">
-          <div className="flex items-center justify-between pb-2 border-b border-gray-100 dark:border-white/10">
-            <div className="flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-[#8c9276] dark:bg-[#ccff00] animate-pulse" />
-              <span className="text-[10px] text-gray-500 dark:text-gray-400 uppercase tracking-widest font-extrabold">
-                Búsqueda Instantánea ({filteredOrders.length + filteredCatalog.length})
-              </span>
-            </div>
+        <div className="absolute right-0 top-full mt-2 w-[360px] max-w-[calc(100vw-2rem)] bg-white/95 dark:bg-[#1e1e22]/95 backdrop-blur-2xl border border-stone-200/90 dark:border-white/10 rounded-3xl shadow-[0_20px_50px_rgba(0,0,0,0.16)] dark:shadow-[0_20px_50px_rgba(0,0,0,0.55)] p-3.5 z-[100] space-y-3 text-xs pointer-events-auto transition-all duration-200 ease-out">
+          <div className="flex items-center justify-between px-1 pb-2 border-b border-gray-100 dark:border-white/10">
+            <span className="text-[10px] text-gray-400 dark:text-gray-500 uppercase tracking-wider font-bold">
+              Resultados ({filteredOrders.length + filteredCatalog.length})
+            </span>
             <button
               type="button"
               onClick={() => setSearchQuery("")}
-              className="px-2 py-0.5 rounded-lg hover:bg-gray-100 dark:hover:bg-white/10 text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 font-semibold text-[11px] transition-colors cursor-pointer"
+              className="text-[11px] text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 font-medium transition-colors cursor-pointer"
             >
               Cerrar
             </button>
           </div>
 
-          {/* Matching Orders */}
           {filteredOrders.length > 0 && (
-            <div className="space-y-1.5">
-              <p className="text-[10px] font-extrabold text-gray-400 dark:text-gray-500 uppercase tracking-wider px-1">
-                Pedidos Encontrados ({filteredOrders.length})
+            <div className="space-y-1">
+              <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider px-1">
+                Pedidos ({filteredOrders.length})
               </p>
-              <div className="space-y-1">
-                {filteredOrders.slice(0, 3).map((ord) => (
-                  <div
-                    key={ord.id}
-                    onClick={() => {
-                      setActiveTab("orders");
-                      setSelectedOrder(ord);
-                      setSearchQuery("");
-                    }}
-                    className="p-2.5 rounded-2xl bg-gray-50/70 dark:bg-white/[0.03] hover:bg-gray-100 dark:hover:bg-white/[0.08] border border-gray-100 dark:border-white/5 cursor-pointer flex items-center justify-between gap-2 transition-all group/item"
-                  >
-                    <div className="min-w-0">
-                      <span className="font-mono font-bold text-gray-900 dark:text-white block group-hover/item:text-[#8c9276] dark:group-hover/item:text-[#ccff00] transition-colors">
-                        {ord.id}
-                      </span>
-                      <span className="text-[10px] text-gray-400 truncate block">
-                        {ord.customerName || "Cliente Lumina"} · ${ord.total.toFixed(2)}
-                      </span>
-                    </div>
-                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-white dark:bg-white/10 border border-gray-200/70 dark:border-white/10 text-gray-700 dark:text-gray-300 font-bold shrink-0">
-                      {ord.status}
+              {filteredOrders.slice(0, 3).map((ord) => (
+                <div
+                  key={ord.id}
+                  onClick={() => {
+                    setActiveTab("orders");
+                    setSelectedOrder(ord);
+                    setSearchQuery("");
+                  }}
+                  className="p-2.5 rounded-2xl hover:bg-stone-100/80 dark:hover:bg-white/[0.06] cursor-pointer flex items-center justify-between gap-2 transition-colors"
+                >
+                  <div className="min-w-0">
+                    <span className="font-mono font-bold text-gray-900 dark:text-white block">
+                      {ord.id}
+                    </span>
+                    <span className="text-[10.5px] text-gray-400 truncate block">
+                      {ord.customerName || "Cliente Lumina"} · ${ord.total.toFixed(2)}
                     </span>
                   </div>
-                ))}
-              </div>
+                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-stone-100 dark:bg-white/10 text-gray-700 dark:text-gray-300 font-semibold shrink-0">
+                    {ord.status}
+                  </span>
+                </div>
+              ))}
             </div>
           )}
 
-          {/* Matching Catalog */}
           {filteredCatalog.length > 0 && (
-            <div className="space-y-1.5">
-              <p className="text-[10px] font-extrabold text-gray-400 dark:text-gray-500 uppercase tracking-wider px-1">
-                Piezas del Catálogo ({filteredCatalog.length})
+            <div className="space-y-1">
+              <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider px-1">
+                Catálogo ({filteredCatalog.length})
               </p>
-              <div className="space-y-1">
-                {filteredCatalog.slice(0, 3).map((prod) => (
-                  <div
-                    key={prod.id}
-                    onClick={() => {
-                      setActiveTab(isAdmin ? "catalog" : "favorites");
-                      setSearchQuery("");
-                    }}
-                    className="p-2 rounded-2xl bg-gray-50/70 dark:bg-white/[0.03] hover:bg-gray-100 dark:hover:bg-white/[0.08] border border-gray-100 dark:border-white/5 cursor-pointer flex items-center justify-between gap-2.5 transition-all group/prod"
-                  >
-                    <div className="flex items-center gap-2.5 min-w-0">
-                      {prod.imageUrl && (
-                        <div className="w-8 h-8 rounded-xl overflow-hidden bg-gray-200 dark:bg-white/10 shrink-0 border border-gray-200/60 dark:border-white/10">
-                          {/* eslint-disable-next-line @next/next/no-img-element */}
-                          <img src={prod.imageUrl} alt={prod.title} className="w-full h-full object-cover" />
-                        </div>
-                      )}
-                      <div className="min-w-0">
-                        <span className="font-semibold text-gray-800 dark:text-gray-100 truncate block max-w-[190px] group-hover/prod:text-[#8c9276] dark:group-hover/prod:text-[#ccff00] transition-colors">
-                          {prod.title}
-                        </span>
-                        <span className="text-[10px] text-gray-400 block">{prod.category}</span>
+              {filteredCatalog.slice(0, 3).map((prod) => (
+                <div
+                  key={prod.id}
+                  onClick={() => {
+                    setActiveTab(isAdmin ? "catalog" : "favorites");
+                    setSearchQuery("");
+                  }}
+                  className="p-2 rounded-2xl hover:bg-stone-100/80 dark:hover:bg-white/[0.06] cursor-pointer flex items-center justify-between gap-2.5 transition-colors"
+                >
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    {prod.imageUrl && (
+                      <div className="w-8 h-8 rounded-xl overflow-hidden bg-gray-100 dark:bg-white/10 shrink-0">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src={prod.imageUrl} alt={prod.title} className="w-full h-full object-cover" />
                       </div>
+                    )}
+                    <div className="min-w-0">
+                      <span className="font-semibold text-gray-800 dark:text-gray-100 truncate block max-w-[180px]">
+                        {prod.title}
+                      </span>
+                      <span className="text-[10px] text-gray-400 block">{prod.category}</span>
                     </div>
-                    <span className="font-mono font-bold text-gray-900 dark:text-[#ccff00] shrink-0">
-                      ${Number(prod.price || 0).toFixed(2)}
-                    </span>
                   </div>
-                ))}
-              </div>
+                  <span className="font-mono font-bold text-gray-900 dark:text-gray-200 shrink-0">
+                    ${Number(prod.price || 0).toFixed(2)}
+                  </span>
+                </div>
+              ))}
             </div>
           )}
 
           {filteredOrders.length === 0 && filteredCatalog.length === 0 && (
-            <div className="py-6 text-center space-y-1">
-              <p className="text-xs font-bold text-gray-700 dark:text-gray-300">
-                Sin coincidencias para &ldquo;{searchQuery}&rdquo;
-              </p>
-              <p className="text-[11px] text-gray-400">
-                Intenta buscando por ID de pedido, nombre de cliente o producto.
+            <div className="py-5 text-center">
+              <p className="text-xs font-medium text-gray-500 dark:text-gray-400">
+                Sin resultados para &ldquo;{searchQuery}&rdquo;
               </p>
             </div>
           )}

@@ -6,6 +6,7 @@ import { X, CheckCircle2, Mail, Send, RefreshCw, AlertCircle, Truck, ExternalLin
 import { Order } from "@/lib/userStore";
 import { BlobatarAvatar } from "@/components/ui/BlobatarAvatar";
 import { BeUICenterMorphModal, BeUIOrderStatusSelector } from "@/components/ui/BeUIControls";
+import { WalletPassPopupModal } from "@/components/ui/WalletPassPopupModal";
 import { supabase } from "@/lib/supabase";
 
 interface EmailNotificationLog {
@@ -43,6 +44,7 @@ export function OrderDetailModal({
   const [isResending, setIsResending] = useState<"invoice" | "dispatch" | null>(null);
   const [feedback, setFeedback] = useState<{ success: boolean; message: string } | null>(null);
   const [copiedTracking, setCopiedTracking] = useState(false);
+  const [showWalletPopup, setShowWalletPopup] = useState(false);
 
   // Custom symmetrical slider (scrollbar) state and refs
   const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -231,16 +233,15 @@ export function OrderDetailModal({
                 <span className="text-[10px] font-bold uppercase tracking-wider text-[#8c9276]">
                   Resumen de Pedido
                 </span>
-                <a
-                  href={`/wallet/order/${encodeURIComponent(activeOrder.id)}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-gray-900 dark:bg-white/10 text-white dark:text-[#ccff00] border border-gray-800 dark:border-[#ccff00]/30 hover:scale-105 transition-transform"
-                  title="Abrir Tarjeta Digital de Seguimiento (Google / Apple Wallet)"
+                <button
+                  type="button"
+                  onClick={() => setShowWalletPopup(true)}
+                  className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-gray-900 dark:bg-white/10 text-white dark:text-[#ccff00] border border-gray-800 dark:border-[#ccff00]/30 hover:scale-105 transition-transform cursor-pointer"
+                  title="Abrir Tarjeta Digital de Seguimiento y QR (Google / Apple Wallet)"
                 >
                   <Wallet className="w-3 h-3" />
                   <span>Pase Wallet</span>
-                </a>
+                </button>
               </div>
               <div className="flex flex-wrap items-center gap-2.5">
                 <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100 font-mono">
@@ -468,7 +469,7 @@ export function OrderDetailModal({
                     ? "bg-red-100 text-red-800"
                     : "bg-gray-100 text-gray-600"
                 }`}>
-                  {invoiceLog?.status === 'sent' ? "Enviado Real" : invoiceLog?.status === 'simulated_dev' ? "Simulado (Dev)" : invoiceLog?.status === 'failed' ? "Error Envío" : "Sin Registro"}
+                  {invoiceLog?.status === 'sent' ? "Enviado" : invoiceLog?.status === 'simulated_dev' ? "Simulado (Dev)" : invoiceLog?.status === 'failed' ? "Error Envío" : "Sin Registro"}
                 </span>
               </div>
               <p className="text-[10px] text-gray-400 truncate">{activeOrder.customerEmail || "Sin correo"}</p>
@@ -501,7 +502,7 @@ export function OrderDetailModal({
                     ? "bg-red-100 text-red-800"
                     : "bg-gray-100 text-gray-600"
                 }`}>
-                  {dispatchLog?.status === 'sent' ? "Enviado Real" : dispatchLog?.status === 'simulated_dev' ? "Simulado (Dev)" : dispatchLog?.status === 'failed' ? "Error Envío" : "Sin Registro"}
+                  {dispatchLog?.status === 'sent' ? "Enviado" : dispatchLog?.status === 'simulated_dev' ? "Simulado (Dev)" : dispatchLog?.status === 'failed' ? "Error Envío" : "Sin Registro"}
                 </span>
               </div>
               <p className="text-[10px] text-gray-400 truncate">Bodega & Administradores</p>
@@ -565,7 +566,13 @@ export function OrderDetailModal({
             <BeUIOrderStatusSelector
               status={activeOrder.status}
               isAdmin={true}
-              onUpdateStatus={(nextSt) => onUpdateStatus(activeOrder.id, nextSt)}
+              orderId={activeOrder.id}
+              initialTrackingNumber={activeOrder.trackingNumber}
+              initialTrackingUrl={activeOrder.trackingUrl}
+              initialCarrierName={activeOrder.carrierName}
+              onUpdateStatus={(nextSt, trackingInfo) =>
+                onUpdateStatus(activeOrder.id, nextSt, trackingInfo)
+              }
               size="md"
               align="end"
             />
@@ -594,6 +601,20 @@ export function OrderDetailModal({
           </div>
         )}
       </div>
+
+      {/* In-Page Wallet Pass Popup Modal with @beui/tilt-card */}
+      <WalletPassPopupModal
+        open={showWalletPopup}
+        onClose={() => setShowWalletPopup(false)}
+        orderId={activeOrder.id}
+        total={activeOrder.total}
+        status={activeOrder.status}
+        customerName={activeOrder.customerName}
+        trackingNumber={activeOrder.trackingNumber}
+        trackingUrl={activeOrder.trackingUrl}
+        carrierName={activeOrder.carrierName}
+        date={activeOrder.date}
+      />
     </BeUICenterMorphModal>
   );
 }

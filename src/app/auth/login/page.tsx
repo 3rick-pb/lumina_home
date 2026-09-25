@@ -479,32 +479,32 @@ export default function LoginPage() {
         onOpenChange={setShowChangePasswordModal}
         className="w-full max-w-md"
       >
-        <div className="p-6 sm:p-8 relative">
+        <div className="p-6 sm:p-8 relative bg-white dark:bg-[#18181b] rounded-[2rem] border border-gray-200 dark:border-white/15 shadow-[0_28px_80px_rgba(0,0,0,0.5)] text-gray-900 dark:text-white">
           {/* Exact Cart Close Button */}
           <button
             type="button"
             onClick={() => setShowChangePasswordModal(false)}
-            className="absolute top-4 right-4 z-30 w-10 h-10 rounded-full bg-white/95 dark:bg-[#2a2a2d]/95 backdrop-blur-xl border border-black/[0.08] dark:border-white/15 shadow-[0_4px_16px_rgba(0,0,0,0.12)] text-gray-500 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50/90 dark:hover:bg-rose-950/40 hover:border-rose-200 dark:hover:border-rose-900/40 flex items-center justify-center hover:scale-105 active:scale-95 transition-all cursor-pointer"
+            className="absolute top-4 right-4 z-30 w-10 h-10 rounded-full bg-gray-100/95 dark:bg-[#2a2a2d]/95 backdrop-blur-xl border border-black/[0.08] dark:border-white/15 shadow-[0_4px_16px_rgba(0,0,0,0.12)] text-gray-600 dark:text-gray-300 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50/90 dark:hover:bg-rose-950/40 hover:border-rose-200 dark:hover:border-rose-900/40 flex items-center justify-center hover:scale-105 active:scale-95 transition-all cursor-pointer"
             title="Cerrar ventana"
           >
             <X className="w-4 h-4 stroke-[2.5]" />
           </button>
 
           <div className="flex items-center gap-3 mb-4 pr-10">
-            <div className="w-11 h-11 rounded-2xl bg-[#8c9276]/15 border border-[#8c9276]/30 flex items-center justify-center text-[#8c9276] shrink-0">
+            <div className="w-11 h-11 rounded-2xl bg-[#8c9276]/15 border border-[#8c9276]/30 flex items-center justify-center text-[#8c9276] dark:text-[#ccff00] shrink-0">
               <KeyRound className="w-5 h-5" />
             </div>
             <div>
-              <span className="text-[10px] font-extrabold uppercase tracking-widest text-[#8c9276]">
+              <span className="text-[10px] font-extrabold uppercase tracking-widest text-[#767c60] dark:text-[#ccff00]">
                 Seguridad de Cuenta
               </span>
-              <h3 className="text-xl font-display italic font-bold text-gray-900 dark:text-white leading-tight">
+              <h3 className="text-xl font-display italic font-bold text-gray-950 dark:text-white leading-tight">
                 Cambiar Contraseña
               </h3>
             </div>
           </div>
 
-          <p className="text-xs text-gray-500 dark:text-gray-400 leading-relaxed mb-5">
+          <p className="text-xs font-medium text-gray-600 dark:text-gray-300 leading-relaxed mb-5">
             Ingresa el correo electrónico de tu cuenta y establece una nueva contraseña fuerte y segura para recuperar o actualizar tu acceso.
           </p>
 
@@ -523,11 +523,11 @@ export default function LoginPage() {
             )}
 
             <div>
-              <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5 ml-1">
+              <label className="block text-xs font-bold text-gray-800 dark:text-gray-200 mb-1.5 ml-1">
                 Correo Electrónico de tu Cuenta
               </label>
               <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-400">
+                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-500 dark:text-gray-400">
                   <Mail className="w-4 h-4" />
                 </div>
                 <input
@@ -536,17 +536,17 @@ export default function LoginPage() {
                   onChange={(e) => setCpEmail(e.target.value)}
                   placeholder="ejemplo@correo.com"
                   required
-                  className="w-full pl-11 pr-4 py-3 bg-gray-50/90 dark:bg-[#141416] border border-gray-200/90 dark:border-white/10 rounded-2xl text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#8c9276]/40 focus:border-[#8c9276] transition-all"
+                  className="w-full pl-11 pr-4 py-3 bg-gray-50 dark:bg-[#121214] border border-gray-300 dark:border-white/15 rounded-2xl text-sm font-medium text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-[#8c9276]/40 focus:border-[#8c9276] transition-all"
                 />
               </div>
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5 ml-1">
+              <label className="block text-xs font-bold text-gray-800 dark:text-gray-200 mb-1.5 ml-1">
                 Nueva Contraseña Segura
               </label>
               <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-400">
+                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-500 dark:text-gray-400">
                   <Lock className="w-4 h-4" />
                 </div>
                 <input
@@ -555,12 +555,12 @@ export default function LoginPage() {
                   onChange={(e) => setCpNewPassword(e.target.value)}
                   placeholder="Mín. 8 caracteres, mayúscula, número y símbolo"
                   required
-                  className="w-full pl-11 pr-11 py-3 bg-gray-50/90 dark:bg-[#141416] border border-gray-200/90 dark:border-white/10 rounded-2xl text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#8c9276]/40 focus:border-[#8c9276] transition-all"
+                  className="w-full pl-11 pr-11 py-3 bg-gray-50 dark:bg-[#121214] border border-gray-300 dark:border-white/15 rounded-2xl text-sm font-medium text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-[#8c9276]/40 focus:border-[#8c9276] transition-all"
                 />
                 <button
                   type="button"
                   onClick={() => setShowCpPassword((prev) => !prev)}
-                  className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-colors cursor-pointer"
+                  className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200 transition-colors cursor-pointer"
                   tabIndex={-1}
                 >
                   {showCpPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
@@ -572,11 +572,11 @@ export default function LoginPage() {
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5 ml-1">
+              <label className="block text-xs font-bold text-gray-800 dark:text-gray-200 mb-1.5 ml-1">
                 Confirmar Nueva Contraseña
               </label>
               <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-400">
+                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-500 dark:text-gray-400">
                   <Lock className="w-4 h-4" />
                 </div>
                 <input
@@ -585,7 +585,7 @@ export default function LoginPage() {
                   onChange={(e) => setCpConfirmPassword(e.target.value)}
                   placeholder="Repite la nueva contraseña"
                   required
-                  className="w-full pl-11 pr-4 py-3 bg-gray-50/90 dark:bg-[#141416] border border-gray-200/90 dark:border-white/10 rounded-2xl text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#8c9276]/40 focus:border-[#8c9276] transition-all"
+                  className="w-full pl-11 pr-4 py-3 bg-gray-50 dark:bg-[#121214] border border-gray-300 dark:border-white/15 rounded-2xl text-sm font-medium text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-[#8c9276]/40 focus:border-[#8c9276] transition-all"
                 />
               </div>
             </div>
