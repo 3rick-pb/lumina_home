@@ -59,10 +59,8 @@ function tileYToLat(tileY: number, z: number): number {
 }
 
 const miniTileCache = new Map<string, HTMLImageElement>();
-let miniMapboxTokenFailed = false;
 
 function isRealMapboxToken(token: string): boolean {
-  if (miniMapboxTokenFailed) return false;
   return (
     token.startsWith("pk.") &&
     token.length > 35 &&
