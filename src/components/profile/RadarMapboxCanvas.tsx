@@ -1136,14 +1136,16 @@ export const MAPBOX_OFFICIAL_STYLES: Array<{
 const MIN_MAP_ZOOM = 3.2;
 const MAX_MAP_ZOOM = 20.5;
 
+const HAS_ENV_MAPBOX_TOKEN = (process.env.NEXT_PUBLIC_MAPBOX_TOKEN || "").trim().startsWith("pk.");
+
 const PROVIDER_MAX_NATIVE_Z: Record<TileProvider, number> = {
-  "dark-base": 16,
+  "dark-base": HAS_ENV_MAPBOX_TOKEN ? 19 : 16,
   "dark-ref": 16,
   "transportation-labels": 16,
   "boundaries-labels": 13,
   "street-map": 19,
-  "terrain-relief": 18,
-  "satellite": 18,
+  "terrain-relief": HAS_ENV_MAPBOX_TOKEN ? 19 : 18,
+  "satellite": HAS_ENV_MAPBOX_TOKEN ? 19 : 18,
   "street-topo": 16,
 };
 
@@ -1156,6 +1158,20 @@ function getTileCacheKey(provider: TileProvider, z: number, x: number, y: number
 function getTileUrl(provider: TileProvider, z: number, x: number, y: number, useAltHost = false): string {
   const maxIndex = Math.pow(2, z);
   const wrappedX = ((x % maxIndex) + maxIndex) % maxIndex;
+  const mapboxToken = (process.env.NEXT_PUBLIC_MAPBOX_TOKEN || "").trim();
+  const hasMapboxApi = mapboxToken.startsWith("pk.") && !useAltHost;
+
+  if (hasMapboxApi) {
+    if (provider === "satellite") {
+      return `https://api.mapbox.com/styles/v1/mapbox/satellite-streets-v12/tiles/256/${z}/${wrappedX}/${y}@2x?access_token=${mapboxToken}`;
+    }
+    if (provider === "terrain-relief" || provider === "street-map") {
+      return `https://api.mapbox.com/styles/v1/mapbox/streets-v12/tiles/256/${z}/${wrappedX}/${y}@2x?access_token=${mapboxToken}`;
+    }
+    if (provider === "dark-base") {
+      return `https://api.mapbox.com/styles/v1/mapbox/dark-v11/tiles/256/${z}/${wrappedX}/${y}@2x?access_token=${mapboxToken}`;
+    }
+  }
 
   const gSub = Math.abs(wrappedX + y) % 4;
   const host =
@@ -1621,40 +1637,52 @@ export function RadarMapboxCanvas({
                 : "#0b1014";
             ctx.fillRect(0, 0, w, h);
 
+            const hasMapboxToken = (process.env.NEXT_PUBLIC_MAPBOX_TOKEN || "").trim().startsWith("pk.");
+
             if (mapStyleMode === "dark-v11") {
-              // 1. MAPBOX Dark (dark-v11 — Uber-grade dark navigation map)
-              drawTileLayer(
-                ctx,
-                "street-map",
-                cam.lng,
-                cam.lat,
-                cam.zoom,
-                w,
-                h,
-                1.0,
-                1,
-                "invert(93%) hue-rotate(194deg) saturate(142%) brightness(89%) contrast(124%)"
-              );
+              // 1. MAPBOX Dark (dark-v11 — Official Mapbox API when token present, fallback otherwise)
+              if (hasMapboxToken) {
+                drawTileLayer(ctx, "dark-base", cam.lng, cam.lat, cam.zoom, w, h, 1.0, 1);
+              } else {
+                drawTileLayer(
+                  ctx,
+                  "street-map",
+                  cam.lng,
+                  cam.lat,
+                  cam.zoom,
+                  w,
+                  h,
+                  1.0,
+                  1,
+                  "invert(93%) hue-rotate(194deg) saturate(142%) brightness(89%) contrast(124%)"
+                );
+              }
             } else if (mapStyleMode === "streets-v12") {
-              // 2. MAPBOX Streets (streets-v12 — Topographic 3D Hillshade Relief & Elevation Contours)
-              drawTileLayer(
-                ctx,
-                "terrain-relief",
-                cam.lng,
-                cam.lat,
-                cam.zoom,
-                w,
-                h,
-                1.0,
-                1,
-                "contrast(106%) saturate(112%)"
-              );
+              // 2. MAPBOX Streets / Outdoors (Official Mapbox API when token present, fallback otherwise)
+              if (hasMapboxToken) {
+                drawTileLayer(ctx, "terrain-relief", cam.lng, cam.lat, cam.zoom, w, h, 1.0, 1);
+              } else {
+                drawTileLayer(
+                  ctx,
+                  "terrain-relief",
+                  cam.lng,
+                  cam.lat,
+                  cam.zoom,
+                  w,
+                  h,
+                  1.0,
+                  1,
+                  "contrast(106%) saturate(112%)"
+                );
+              }
             } else {
-              // 3. MAPBOX SATELLITE STREETS (satellite-streets-v12 — Realistic High-Res Hybrid Satellite + Road Network)
+              // 3. MAPBOX SATELLITE STREETS (satellite-streets-v12)
               drawTileLayer(ctx, "satellite", cam.lng, cam.lat, cam.zoom, w, h, 1.0, 1);
-              drawTileLayer(ctx, "boundaries-labels", cam.lng, cam.lat, cam.zoom, w, h, 0.95, 0);
-              if (cam.zoom >= 10.5) {
-                drawTileLayer(ctx, "transportation-labels", cam.lng, cam.lat, cam.zoom, w, h, 0.92, 0);
+              if (!hasMapboxToken) {
+                drawTileLayer(ctx, "boundaries-labels", cam.lng, cam.lat, cam.zoom, w, h, 0.95, 0);
+                if (cam.zoom >= 10.5) {
+                  drawTileLayer(ctx, "transportation-labels", cam.lng, cam.lat, cam.zoom, w, h, 0.9, 0);
+                }
               }
             }
 

@@ -292,19 +292,57 @@ async function resolveGeocode(latRaw: unknown, lonRaw: unknown, clientIp?: strin
     nLon = Number(lonRaw);
   }
 
-  // Run parallel queries: Origin + 2 tight offsets (~22m) + BigDataCloud fallback
+  // Run parallel queries: Mapbox Geocoding API (when token present) + Origin + 2 tight offsets (~22m) + BigDataCloud fallback
   const tightOffset = 0.00020;
-  const [originRes, off1Res, off2Res, bdcRes] = await Promise.allSettled([
+  const mapboxToken = (process.env.NEXT_PUBLIC_MAPBOX_TOKEN || process.env.MAPBOX_TOKEN || '').trim();
+  const hasMapbox = mapboxToken.startsWith('pk.');
+
+  const [mapboxRes, originRes, off1Res, off2Res, bdcRes] = await Promise.allSettled([
+    hasMapbox
+      ? fetch(
+          `https://api.mapbox.com/geocoding/v5/mapbox.places/${nLon},${nLat}.json?access_token=${mapboxToken}&language=es&types=address,poi,neighborhood,locality,place,postcode,region,country`
+        ).then(r => r.json())
+      : Promise.resolve(null),
     fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${nLat}&lon=${nLon}&addressdetails=1&zoom=18`, { headers }).then(r => r.json()),
     fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${nLat + tightOffset}&lon=${nLon}&addressdetails=1&zoom=18`, { headers }).then(r => r.json()),
     fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${nLat}&lon=${nLon - tightOffset}&addressdetails=1&zoom=18`, { headers }).then(r => r.json()),
     fetch(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${nLat}&longitude=${nLon}&localityLanguage=es`).then(r => r.json())
   ]);
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const mbData: any = mapboxRes.status === 'fulfilled' ? mapboxRes.value : null;
   const origin = originRes.status === 'fulfilled' ? originRes.value : null;
   const off1 = off1Res.status === 'fulfilled' ? off1Res.value : null;
   const off2 = off2Res.status === 'fulfilled' ? off2Res.value : null;
   const bdc = bdcRes.status === 'fulfilled' ? bdcRes.value : null;
+
+  let mbStreet = '';
+  let mbNumber = '';
+  let mbNeighborhood = '';
+  let mbCity = '';
+  let mbState = '';
+  let mbPostcode = '';
+  let mbCountry = '';
+  if (mbData && Array.isArray(mbData.features)) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    for (const feat of mbData.features as any[]) {
+      const types: string[] = Array.isArray(feat.place_type) ? feat.place_type : [];
+      if (types.includes('address') && !mbStreet) {
+        mbStreet = feat.text_es || feat.text || '';
+        mbNumber = feat.address || '';
+      } else if ((types.includes('neighborhood') || types.includes('locality')) && !mbNeighborhood) {
+        mbNeighborhood = feat.text_es || feat.text || '';
+      } else if (types.includes('place') && !mbCity) {
+        mbCity = feat.text_es || feat.text || '';
+      } else if (types.includes('region') && !mbState) {
+        mbState = feat.text_es || feat.text || '';
+      } else if (types.includes('postcode') && !mbPostcode) {
+        mbPostcode = feat.text || '';
+      } else if (types.includes('country') && !mbCountry) {
+        mbCountry = feat.text_es || feat.text || '';
+      }
+    }
+  }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const addr = (origin && (origin as any).address) || {};
@@ -314,14 +352,14 @@ async function resolveGeocode(latRaw: unknown, lonRaw: unknown, clientIp?: strin
   const off2Addr = (off2 && (off2 as any).address) || {};
 
   // State / Province & Country
-  const state = addr.state || addr.province || addr.region || (bdc && bdc.principalSubdivision) || '';
-  const postalCode = addr.postcode || (bdc && bdc.postcode) || '';
-  const country = addr.country || (bdc && bdc.countryName) || 'Ecuador';
+  const state = mbState || addr.state || addr.province || addr.region || (bdc && bdc.principalSubdivision) || '';
+  const postalCode = mbPostcode || addr.postcode || (bdc && bdc.postcode) || '';
+  const country = mbCountry || addr.country || (bdc && bdc.countryName) || 'Ecuador';
 
   // 1. Primary Road & House Number
-  const rawPrimary = addr.road || addr.pedestrian || addr.footway || addr.path || addr.street || (bdc && bdc.locality) || '';
+  const rawPrimary = mbStreet || addr.road || addr.pedestrian || addr.footway || addr.path || addr.street || (bdc && bdc.locality) || '';
   const primaryRoad = polishRoadName(rawPrimary);
-  const houseNum = addr.house_number || '';
+  const houseNum = mbNumber || addr.house_number || '';
 
   // 2. Discover Real Intersecting Street (Topological Junction Nodes) & Landmark Place (~6 blocks) in parallel
   const [topologicalCross, landmarkPlace] = await Promise.all([
@@ -356,28 +394,15 @@ async function resolveGeocode(latRaw: unknown, lonRaw: unknown, clientIp?: strin
     }
   }
 
-  // Build enhanced street description (e.g. "San Isidro y San Cristóbal")
-  let street = primaryRoad;
-  if (!street) {
-    street = addr.suburb || addr.neighbourhood || addr.village || 'Dirección por coordenadas';
-  }
+  // Keep street name strictly separate from exteriorNumber and crossStreets
+  const streetNameOnly = primaryRoad || addr.suburb || addr.neighbourhood || addr.village || 'Dirección por coordenadas';
 
-  if (houseNum) {
-    street += ` #${houseNum}`;
-  }
-
-  if (crossRoad) {
-    street += ` y ${crossRoad}`;
-  }
-
-  // 3. Hierarchical City and Sub-locality / Parish (e.g. "Quito - Uyumbicho" or "Quito - Guayllabamba")
+  // 3. Hierarchical City and Sub-locality / Parish
   const bdcCity = cleanAdmin(bdc && (bdc.city || bdc.principalSubdivision));
+  const mainCity = resolveMajorCity(mbCity || addr.city, addr.county, addr.municipality, bdcCity, state, country);
 
-  // Determine principal city/canton looking "más desde arriba en el mapa"
-  const mainCity = resolveMajorCity(addr.city, addr.county, addr.municipality, bdcCity, state, country);
-
-  // Determine sub-locality, parish, sector or neighbourhood
   let subLocality = (
+    mbNeighborhood ||
     landmarkPlace ||
     addr.village ||
     (addr.town && cleanAdmin(addr.town).toLowerCase() !== mainCity.toLowerCase() ? cleanAdmin(addr.town) : '') ||
@@ -389,38 +414,27 @@ async function resolveGeocode(latRaw: unknown, lonRaw: unknown, clientIp?: strin
     ''
   ).trim();
 
-  // If landmark place was detected with high confidence and is distinct from mainCity, prioritize it
-  if (landmarkPlace && landmarkPlace.toLowerCase() !== mainCity.toLowerCase()) {
+  if (landmarkPlace && landmarkPlace.toLowerCase() !== mainCity.toLowerCase() && !subLocality) {
     subLocality = landmarkPlace;
-  }
-
-  // Format hierarchical city name: e.g. "Quito - Uyumbicho"
-  let finalCity = mainCity;
-  if (
-    mainCity &&
-    subLocality &&
-    mainCity.toLowerCase() !== subLocality.toLowerCase() &&
-    !mainCity.toLowerCase().includes(subLocality.toLowerCase()) &&
-    !subLocality.toLowerCase().includes(mainCity.toLowerCase())
-  ) {
-    finalCity = `${mainCity} - ${subLocality}`;
-  } else if (!mainCity && subLocality) {
-    finalCity = subLocality;
   }
 
   // Fallback defaults from IP metadata if available
   const finalState = state || ipMeta?.state || '';
   const finalPostal = postalCode || ipMeta?.postalCode || '';
   const finalCountry = country || ipMeta?.country || 'Ecuador';
-  const finalCityResult = finalCity || ipMeta?.city || 'Quito';
-  const finalStreet = isIpFallback ? '' : street;
+  const finalCityResult = mainCity || subLocality || ipMeta?.city || 'Quito';
+  const finalStreet = isIpFallback ? '' : streetNameOnly;
 
   return NextResponse.json({
     success: true,
-    source: isIpFallback ? 'ip' : 'gps',
+    source: isIpFallback ? 'ip' : hasMapbox ? 'mapbox+gps' : 'gps',
     data: {
       street: finalStreet,
-      reference: subLocality || undefined,
+      exteriorNumber: houseNum || undefined,
+      neighborhood: subLocality || undefined,
+      crossStreets: crossRoad ? `Entre ${crossRoad}` : undefined,
+      landmark: landmarkPlace || undefined,
+      reference: landmarkPlace || subLocality || undefined,
       city: finalCityResult,
       state: finalState,
       postalCode: finalPostal,
@@ -428,11 +442,15 @@ async function resolveGeocode(latRaw: unknown, lonRaw: unknown, clientIp?: strin
       rawLat: !isIpFallback && Number.isFinite(nLat) ? nLat : undefined,
       rawLon: !isIpFallback && Number.isFinite(nLon) ? nLon : undefined,
       rawDisplayName: (origin as { display_name?: string } | null)?.display_name || undefined,
-      rawNominatim: origin || bdc || undefined,
+      rawNominatim: origin || mbData || bdc || undefined,
     },
     // Direct top-level properties for seamless compatibility + Raw unformatted GPS/Geocoder payload
     street: finalStreet,
-    reference: subLocality || undefined,
+    exteriorNumber: houseNum || undefined,
+    neighborhood: subLocality || undefined,
+    crossStreets: crossRoad ? `Entre ${crossRoad}` : undefined,
+    landmark: landmarkPlace || undefined,
+    reference: landmarkPlace || subLocality || undefined,
     city: finalCityResult,
     state: finalState,
     postalCode: finalPostal,
@@ -440,7 +458,7 @@ async function resolveGeocode(latRaw: unknown, lonRaw: unknown, clientIp?: strin
     rawLat: !isIpFallback && Number.isFinite(nLat) ? nLat : undefined,
     rawLon: !isIpFallback && Number.isFinite(nLon) ? nLon : undefined,
     rawDisplayName: (origin as { display_name?: string } | null)?.display_name || undefined,
-    rawNominatim: origin || bdc || undefined,
+    rawNominatim: origin || mbData || bdc || undefined,
   });
 }
 

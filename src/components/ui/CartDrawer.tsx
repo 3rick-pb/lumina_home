@@ -1759,7 +1759,17 @@ export function CartDrawer() {
               initialLat={addrDetectedCoords?.lat || -0.1807}
               initialLng={addrDetectedCoords?.lng || -78.4678}
               onLocationSelect={(lat, lng) => setAddrDetectedCoords({ lat, lng })}
-              className="h-48 w-full rounded-2xl overflow-hidden border border-black/[0.08] dark:border-white/10 shadow-sm"
+              onAddressResolved={(addr) => {
+                if (addr.street) setAddrStreet(addr.street);
+                if (addr.exteriorNumber) setAddrExteriorNumber(addr.exteriorNumber);
+                if (addr.neighborhood) setAddrNeighborhood(addr.neighborhood);
+                if (addr.crossStreets) setAddrCrossStreets(addr.crossStreets);
+                if (addr.city) setAddrCity(addr.city);
+                if (addr.state) setAddrState(addr.state);
+                if (addr.postalCode) setAddrPostal(addr.postalCode);
+                if (addr.country) setAddrCountry(addr.country);
+              }}
+              className="h-56 w-full rounded-2xl overflow-hidden border border-black/[0.08] dark:border-white/10 shadow-sm"
             />
             <p className="text-[10px] text-gray-500 dark:text-gray-400 mt-1.5">
               Arrastra el pin azul a tu ubicación exacta. Esto asegurará la precisión de las entregas.

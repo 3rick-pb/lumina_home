@@ -1122,7 +1122,18 @@ export function SettingsTab({
                     initialLat={detectedCoords?.lat || -0.1807}
                     initialLng={detectedCoords?.lng || -78.4678}
                     onLocationSelect={(lat, lng) => setDetectedCoords({ lat, lng })}
-                    className="h-48 w-full rounded-2xl overflow-hidden border border-gray-200 dark:border-white/10 shadow-sm"
+                    onAddressResolved={(addr) => {
+                      if (addr.street) setStreet(addr.street);
+                      if (addr.exteriorNumber) setExteriorNumber(addr.exteriorNumber);
+                      if (addr.neighborhood) setNeighborhood(addr.neighborhood);
+                      if (addr.crossStreets) setCrossStreets(addr.crossStreets);
+                      if (addr.landmark || addr.neighborhood) setReference(addr.landmark || addr.neighborhood || "");
+                      if (addr.city) setCity(addr.city);
+                      if (addr.state) setStateProv(addr.state);
+                      if (addr.postalCode) setPostalCode(addr.postalCode);
+                      if (addr.country) setCountry(addr.country);
+                    }}
+                    className="h-56 w-full rounded-2xl overflow-hidden border border-gray-200 dark:border-white/10 shadow-sm"
                   />
                   <p className="text-[10px] text-gray-500 mt-1">
                     Arrastra el pin para guardar tu ubicación exacta. Esto asegurará la precisión de las entregas.
