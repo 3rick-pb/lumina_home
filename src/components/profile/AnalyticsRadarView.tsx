@@ -24,6 +24,8 @@ import {
   Globe,
   X,
   Layers,
+  Network,
+  Boxes,
   Map as MapIcon,
   Satellite,
   Check
@@ -282,6 +284,53 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
   const [scatterRadius, setScatterRadius] = useState<"normal" | "wide">("normal");
   const [expandedClusterCity, setExpandedClusterCity] = useState<string | null>(null);
   const [hoveredClusterKey, setHoveredClusterKey] = useState<string | null>(null);
+
+  // Silky grace-period hover timers to eliminate abrupt popup/dossier appearance and disappearance
+  const pinHoverLeaveTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const clusterHoverLeaveTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  const handlePinMouseEnter = useCallback((clientId: string) => {
+    if (pinHoverLeaveTimerRef.current) {
+      clearTimeout(pinHoverLeaveTimerRef.current);
+      pinHoverLeaveTimerRef.current = null;
+    }
+    setHoveredClientId(clientId);
+  }, []);
+
+  const handlePinMouseLeave = useCallback(() => {
+    if (pinHoverLeaveTimerRef.current) {
+      clearTimeout(pinHoverLeaveTimerRef.current);
+    }
+    pinHoverLeaveTimerRef.current = setTimeout(() => {
+      setHoveredClientId(null);
+      pinHoverLeaveTimerRef.current = null;
+    }, 210);
+  }, []);
+
+  const handleClusterMouseEnter = useCallback((cityKey: string) => {
+    if (clusterHoverLeaveTimerRef.current) {
+      clearTimeout(clusterHoverLeaveTimerRef.current);
+      clusterHoverLeaveTimerRef.current = null;
+    }
+    setHoveredClusterKey(cityKey);
+  }, []);
+
+  const handleClusterMouseLeave = useCallback(() => {
+    if (clusterHoverLeaveTimerRef.current) {
+      clearTimeout(clusterHoverLeaveTimerRef.current);
+    }
+    clusterHoverLeaveTimerRef.current = setTimeout(() => {
+      setHoveredClusterKey(null);
+      clusterHoverLeaveTimerRef.current = null;
+    }, 190);
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (pinHoverLeaveTimerRef.current) clearTimeout(pinHoverLeaveTimerRef.current);
+      if (clusterHoverLeaveTimerRef.current) clearTimeout(clusterHoverLeaveTimerRef.current);
+    };
+  }, []);
 
   // Keyboard shortcut: Escape to deselect active client or close expanded cluster / country menu / style menu
   useEffect(() => {
@@ -1099,12 +1148,11 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
   useEffect(() => {
     if (activeHUDClient && isTargetClientOnline) {
       setLastActiveClient(activeHUDClient);
-    } else if (!isTargetClientOnline) {
-      setLastActiveClient(null);
     }
   }, [activeHUDClient, isTargetClientOnline]);
 
   const displayedDossierClient = isTargetClientOnline ? activeHUDClient : null;
+  const retainedDossierClient = displayedDossierClient || lastActiveClient;
 
   // Render Cluster Beacons & Dispersed Beacons on RadarMapboxCanvas with full Sept 19 1 PM animations + radial bloom
   const renderMapBeaconsOverlay = (
@@ -1156,8 +1204,8 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
                 className={`absolute -translate-x-1/2 -translate-y-full cursor-pointer group pointer-events-auto ${
                   isHovered ? "z-50" : "z-30"
                 }`}
-                onMouseEnter={() => setHoveredClusterKey(cluster.cityKey)}
-                onMouseLeave={() => setHoveredClusterKey(null)}
+                onMouseEnter={() => handleClusterMouseEnter(cluster.cityKey)}
+                onMouseLeave={handleClusterMouseLeave}
                 onClick={(e) => {
                   e.stopPropagation();
                   focusOnLocation(cluster.baseX, cluster.baseY, 2.4, cluster.cityName, cluster.exactLngLat);
@@ -1168,11 +1216,11 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
                   initial={{ opacity: 0, scale: 0.35, y: 10 }}
                   animate={{
                     opacity: isDimmed ? 0.3 : 1,
-                    scale: isHovered ? 1.12 : isDimmed ? 0.9 : 1,
+                    scale: isHovered ? 1.08 : isDimmed ? 0.9 : 1,
                     y: 0,
                   }}
                   exit={{ opacity: 0, scale: 0.35, y: 8 }}
-                  transition={{ type: "spring", stiffness: 380, damping: 26 }}
+                  transition={{ type: "spring", stiffness: 260, damping: 26 }}
                   className="relative flex flex-col items-center"
                 >
                   {/* Ground Halo */}
@@ -1182,7 +1230,7 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
 
                   {/* Cluster Head & Stem */}
                   <div className="flex flex-col items-center">
-                    <div className="relative transition-all duration-300 flex items-center justify-center rounded-full border border-white bg-gray-950 text-white shadow-2xl px-2.5 py-0.5 min-w-[32px] h-7 gap-1 shadow-[0_0_18px_rgba(204,255,0,0.6)] group-hover:bg-[#ccff00] group-hover:text-gray-950 group-hover:border-[#ccff00]">
+                    <div className="relative transition-all duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] flex items-center justify-center rounded-full border border-white bg-gray-950 text-white shadow-2xl px-2.5 py-0.5 min-w-[32px] h-7 gap-1 shadow-[0_0_18px_rgba(204,255,0,0.6)] group-hover:bg-[#ccff00] group-hover:text-gray-950 group-hover:border-[#ccff00]">
                       <Users className="w-3.5 h-3.5 shrink-0" />
                       <span className="font-mono text-xs font-black">{count}</span>
                       {cluster.hasCart && (
@@ -1190,13 +1238,13 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
                       )}
                     </div>
 
-                    {/* Vertical Pin Line */}
-                    <div className={`w-[2px] transition-all duration-300 ${isHovered ? "h-9" : "h-8"} bg-gradient-to-t from-[#ccff00] to-white shadow-[0_0_10px_#ccff00]`} />
+                    {/* Vertical Pin Line (Stable height so tooltip never jumps) */}
+                    <div className="w-[2px] h-8 transition-colors duration-500 bg-gradient-to-t from-[#ccff00] to-white shadow-[0_0_10px_#ccff00]" />
                     <div className="w-1.5 h-1.5 rotate-45 bg-[#ccff00] shadow-[0_0_6px_#ccff00]" />
                   </div>
 
                   {/* Tag Label */}
-                  <div className="absolute top-full mt-1 left-1/2 -translate-x-1/2 whitespace-nowrap px-2.5 py-0.5 rounded-full text-[9px] font-bold font-mono tracking-wider transition-all duration-300 pointer-events-none bg-black/90 text-white border border-[#ccff00]/40 backdrop-blur-md shadow-md flex items-center gap-1 group-hover:scale-105">
+                  <div className="absolute top-full mt-1 left-1/2 -translate-x-1/2 whitespace-nowrap px-2.5 py-0.5 rounded-full text-[9px] font-bold font-mono tracking-wider transition-all duration-500 ease-out pointer-events-none bg-black/90 text-white border border-[#ccff00]/40 backdrop-blur-md shadow-md flex items-center gap-1 group-hover:scale-105">
                     <span>{cluster.cityName}</span>
                     <span className="text-[#ccff00] font-black">({count})</span>
                   </div>
@@ -1209,15 +1257,23 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
                       return (
                         <motion.div
                           key={`cluster-tip-${cluster.cityKey}`}
-                          initial={{ opacity: 0, y: openDownward ? -8 : 8, scale: 0.93 }}
-                          animate={{ opacity: 1, y: 0, scale: 1 }}
-                          exit={{ opacity: 0, y: openDownward ? -6 : 6, scale: 0.95 }}
-                          transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
-                          className={`absolute left-1/2 -translate-x-1/2 w-56 p-3 rounded-2xl bg-[#111614]/95 backdrop-blur-2xl border border-[#ccff00]/50 shadow-[0_15px_35px_rgba(0,0,0,0.8)] z-50 pointer-events-none space-y-2 ${
-                            openDownward ? "top-full mt-7" : "bottom-full mb-2.5"
+                          onMouseEnter={() => handleClusterMouseEnter(cluster.cityKey)}
+                          onMouseLeave={handleClusterMouseLeave}
+                          initial={{ opacity: 0, y: openDownward ? -10 : 10, scale: 0.92, filter: "blur(5px)" }}
+                          animate={{ opacity: 1, y: 0, scale: 1, filter: "blur(0px)" }}
+                          exit={{ opacity: 0, y: openDownward ? -8 : 8, scale: 0.94, filter: "blur(4px)" }}
+                          transition={{
+                            opacity: { duration: 0.32, ease: [0.22, 1, 0.36, 1] },
+                            y: { type: "spring", stiffness: 230, damping: 25, mass: 0.85 },
+                            scale: { type: "spring", stiffness: 240, damping: 25, mass: 0.85 },
+                            filter: { duration: 0.28 },
+                          }}
+                          style={{ backgroundColor: "rgba(11, 15, 14, 0.97)" }}
+                          className={`absolute left-1/2 -translate-x-1/2 w-56 p-3.5 rounded-2xl backdrop-blur-2xl border border-[#ccff00]/50 shadow-[0_18px_42px_rgba(0,0,0,0.85)] z-50 pointer-events-auto space-y-2 ${
+                            openDownward ? "top-full mt-7" : "bottom-full mb-3"
                           }`}
                         >
-                          <div className="flex items-center justify-between text-[10px] font-mono border-b border-white/10 pb-1.5">
+                          <div className="flex items-center justify-between text-[10px] font-mono border-b border-white/15 pb-1.5">
                             <span className="text-white font-bold">{cluster.cityName}</span>
                             <span className="text-[#ccff00] font-bold">
                               {regCount > 0 ? `${regCount} reg.` : ''}
@@ -1225,10 +1281,10 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
                               {anonCount > 0 ? `${anonCount} anon.` : ''}
                             </span>
                           </div>
-                          <div className="space-y-1">
+                          <div className="space-y-1.5">
                             {cluster.clients.slice(0, 4).map(c => (
-                              <div key={c.id} className="flex items-center justify-between text-[9.5px]">
-                                <span className={`truncate max-w-[120px] ${c.isAnonymous ? "text-sky-300 font-medium" : "text-white/85"}`}>
+                              <div key={c.id} className="flex items-center justify-between text-[10px]">
+                                <span className={`truncate max-w-[120px] ${c.isAnonymous ? "text-sky-300 font-medium" : "text-white/90"}`}>
                                   {c.isAnonymous ? "Visitante Anónimo" : cleanClientName(c.name)}
                                 </span>
                                 <span className={`font-mono font-semibold ${c.isAnonymous ? "text-sky-400" : "text-[#ccff00]"}`}>
@@ -1237,12 +1293,12 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
                               </div>
                             ))}
                             {count > 4 && (
-                              <div className="text-[8.5px] text-white/50 text-center font-mono">
+                              <div className="text-[9px] text-white/65 text-center font-mono">
                                 +{count - 4} clientes adicionales
                               </div>
                             )}
                           </div>
-                          <div className="text-[8.5px] text-center text-[#ccff00] font-mono pt-1 border-t border-white/10 flex items-center justify-center gap-1">
+                          <div className="text-[9px] text-center text-[#ccff00] font-mono pt-1 border-t border-white/15 flex items-center justify-center gap-1">
                             <span>Clic para acercar y desplegar</span> &rarr;
                           </div>
                         </motion.div>
@@ -1343,8 +1399,8 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
                 className={`absolute -translate-x-1/2 -translate-y-full cursor-pointer group pointer-events-auto ${
                   isActive ? "z-50" : "z-30"
                 }`}
-                onMouseEnter={() => setHoveredClientId(client.id)}
-                onMouseLeave={() => setHoveredClientId(null)}
+                onMouseEnter={() => handlePinMouseEnter(client.id)}
+                onMouseLeave={handlePinMouseLeave}
                 onClick={(e) => {
                   e.stopPropagation();
                   if (!client.isAnonymous) {
@@ -1384,12 +1440,12 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
                     x: bloomOffsetX,
                     y: bloomOffsetY,
                   }}
-                  transition={{ type: "spring", stiffness: 360, damping: 26 }}
+                  transition={{ type: "spring", stiffness: 300, damping: 26 }}
                   className="relative flex flex-col items-center"
                 >
                   {/* Ground Halo */}
                   <div className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2 pointer-events-none">
-                    <span className={`block rounded-full blur-[2px] transition-all duration-300 ${
+                    <span className={`block rounded-full blur-[2px] transition-all duration-500 ease-out ${
                       isSelf 
                         ? "w-4 h-4 bg-emerald-400/40 shadow-[0_0_12px_#34d399]" 
                         : client.isAnonymous
@@ -1402,13 +1458,13 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
                     }`} />
                   </div>
 
-                  {/* Beacon Head & Stem (Restored Sept 19 1 PM scale-125 & stem growth + Crisp 30px SVG Avatar) */}
+                  {/* Beacon Head & Stem (Silky smooth scale without stem height jumps) */}
                   <div className="flex flex-col items-center">
-                    <div className={`relative transition-all duration-300 flex items-center justify-center rounded-full border shadow-xl ${
+                    <div className={`relative transition-all duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] flex items-center justify-center rounded-full border shadow-xl ${
                       isActive 
                         ? client.isAnonymous
-                          ? "scale-125 z-50 bg-sky-400 text-gray-950 border-white shadow-[0_0_24px_#38bdf8]"
-                          : "scale-125 z-50 bg-white text-gray-950 border-[#ccff00] shadow-[0_0_24px_#ccff00]" 
+                          ? "scale-115 z-50 bg-sky-400 text-gray-950 border-white shadow-[0_0_24px_#38bdf8]"
+                          : "scale-115 z-50 bg-white text-gray-950 border-[#ccff00] shadow-[0_0_24px_#ccff00]" 
                         : isSelf 
                         ? "bg-emerald-400 text-gray-950 border-white shadow-[0_0_16px_#34d399]" 
                         : client.isAnonymous
@@ -1440,21 +1496,21 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
                       )}
                     </div>
 
-                    {/* Vertical Pin Line */}
-                    <div className={`w-[2px] transition-all duration-300 ${
+                    {/* Vertical Pin Line (Stable height so floating tooltip above never jolts) */}
+                    <div className={`w-[2px] h-7 transition-colors duration-500 ${
                       isActive 
                         ? client.isAnonymous
-                          ? "h-9 bg-gradient-to-t from-sky-400 to-white shadow-[0_0_12px_#38bdf8]"
-                          : "h-9 bg-gradient-to-t from-[#ccff00] to-white shadow-[0_0_12px_#ccff00]" 
+                          ? "bg-gradient-to-t from-sky-400 to-white shadow-[0_0_12px_#38bdf8]"
+                          : "bg-gradient-to-t from-[#ccff00] to-white shadow-[0_0_12px_#ccff00]" 
                         : isSelf
-                        ? "h-7 bg-gradient-to-t from-emerald-400 to-white shadow-[0_0_8px_#34d399]"
+                        ? "bg-gradient-to-t from-emerald-400 to-white shadow-[0_0_8px_#34d399]"
                         : client.isAnonymous
-                        ? "h-7 bg-gradient-to-t from-sky-400 to-sky-100 shadow-[0_0_8px_#38bdf8]"
+                        ? "bg-gradient-to-t from-sky-400 to-sky-100 shadow-[0_0_8px_#38bdf8]"
                         : activeStage === "cart" && client.hasCart
-                        ? "h-8 bg-gradient-to-t from-rose-500 to-white shadow-[0_0_10px_#f43f5e]"
+                        ? "bg-gradient-to-t from-rose-500 to-white shadow-[0_0_10px_#f43f5e]"
                         : activeStage === "frequent" && isStageMatch
-                        ? "h-8 bg-gradient-to-t from-amber-400 to-yellow-100 shadow-[0_0_10px_#f59e0b]"
-                        : "h-7 bg-gradient-to-t from-[#ccff00] to-yellow-200 shadow-[0_0_8px_#ccff00]"
+                        ? "bg-gradient-to-t from-amber-400 to-yellow-100 shadow-[0_0_10px_#f59e0b]"
+                        : "bg-gradient-to-t from-[#ccff00] to-yellow-200 shadow-[0_0_8px_#ccff00]"
                     }`} />
                     <div className={`w-1 h-1 rotate-45 ${
                       client.isAnonymous ? "bg-sky-400 shadow-[0_0_6px_#38bdf8]" :
@@ -1465,7 +1521,7 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
                   </div>
 
                   {/* City & Client Tag Label */}
-                  <div className={`absolute top-full mt-1 left-1/2 -translate-x-1/2 whitespace-nowrap px-2 py-0.5 rounded text-[9px] font-bold font-mono tracking-wider transition-all duration-300 pointer-events-none ${
+                  <div className={`absolute top-full mt-1 left-1/2 -translate-x-1/2 whitespace-nowrap px-2 py-0.5 rounded text-[9px] font-bold font-mono tracking-wider transition-all duration-500 ease-out pointer-events-none ${
                     isActive 
                       ? client.isAnonymous
                         ? "bg-sky-400 text-gray-950 shadow-md scale-105 z-50"
@@ -1473,8 +1529,8 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
                       : isDimmed
                       ? "bg-black/40 text-white/50 border border-white/5"
                       : client.isAnonymous
-                      ? "bg-black/85 text-sky-300 border border-sky-400/30 backdrop-blur-md"
-                      : "bg-black/85 text-white/90 border border-white/10 backdrop-blur-md"
+                      ? "bg-black/90 text-sky-300 border border-sky-400/30 backdrop-blur-md"
+                      : "bg-black/90 text-white border border-white/15 backdrop-blur-md"
                   }`}>
                     {client.isAnonymous ? `Visitante • ${beacon.cityName}` : beaconLabel}
                   </div>
@@ -1484,15 +1540,23 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
                     {isHovered && !client.isAnonymous && (
                       <motion.div
                         key={`client-tip-${client.id}`}
-                        initial={{ opacity: 0, y: openDownward ? -8 : 8, scale: 0.93 }}
-                        animate={{ opacity: 1, y: 0, scale: 1 }}
-                        exit={{ opacity: 0, y: openDownward ? -6 : 6, scale: 0.95 }}
-                        transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
-                        className={`absolute left-1/2 -translate-x-1/2 w-54 p-3 rounded-2xl bg-[#0e1311]/95 backdrop-blur-2xl border border-[#ccff00]/40 shadow-[0_14px_36px_rgba(0,0,0,0.7)] z-50 pointer-events-none space-y-2 text-left ${
-                          openDownward ? "top-full mt-7" : "bottom-full mb-3"
+                        onMouseEnter={() => handlePinMouseEnter(client.id)}
+                        onMouseLeave={handlePinMouseLeave}
+                        initial={{ opacity: 0, y: openDownward ? -10 : 10, scale: 0.92, filter: "blur(5px)" }}
+                        animate={{ opacity: 1, y: 0, scale: 1, filter: "blur(0px)" }}
+                        exit={{ opacity: 0, y: openDownward ? -8 : 8, scale: 0.94, filter: "blur(4px)" }}
+                        transition={{
+                          opacity: { duration: 0.32, ease: [0.22, 1, 0.36, 1] },
+                          y: { type: "spring", stiffness: 230, damping: 25, mass: 0.85 },
+                          scale: { type: "spring", stiffness: 240, damping: 25, mass: 0.85 },
+                          filter: { duration: 0.28 },
+                        }}
+                        style={{ backgroundColor: "rgba(11, 16, 15, 0.97)" }}
+                        className={`absolute left-1/2 -translate-x-1/2 w-56 p-3.5 rounded-2xl backdrop-blur-2xl border border-[#ccff00]/50 shadow-[0_18px_42px_rgba(0,0,0,0.85)] z-50 pointer-events-auto space-y-2 text-left ${
+                          openDownward ? "top-full mt-7" : "bottom-full mb-3.5"
                         }`}
                       >
-                        <div className="flex items-center gap-2.5 border-b border-white/10 pb-2">
+                        <div className="flex items-center gap-2.5 border-b border-white/15 pb-2">
                           <BlobatarAvatar
                             {...getClientAvatarProps(client)}
                             size={30}
@@ -1512,22 +1576,22 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
                             </span>
                           </div>
                         </div>
-                        <div className="space-y-1 text-[10px] text-white/80">
+                        <div className="space-y-1 text-[10px] text-white/90">
                           <div className="flex items-center justify-between">
-                            <span className="text-white/50">Ubicación:</span>
+                            <span className="text-white/65">Ubicación:</span>
                             <span className="font-semibold text-white truncate max-w-[110px]">
                               {beacon.cityName}
                             </span>
                           </div>
                           <div className="flex items-center justify-between">
-                            <span className="text-white/50">Actividad:</span>
+                            <span className="text-white/65">Actividad:</span>
                             <span className="font-medium text-[#ccff00] truncate max-w-[110px]">
                               {client.currentSection || "En Línea"}
                             </span>
                           </div>
                           {!isClientAdmin(client) && (
-                            <div className="flex items-center justify-between pt-0.5 border-t border-white/10 text-[9.5px]">
-                              <span className="text-white/50">Compras:</span>
+                            <div className="flex items-center justify-between pt-1 border-t border-white/15 text-[9.5px]">
+                              <span className="text-white/65">Compras:</span>
                               <span className="font-mono font-bold text-white">
                                 {client.purchasesCount || 0} pedidos • ${Number(client.totalSpent || 0).toFixed(0)}
                               </span>
@@ -1543,15 +1607,23 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
                     {isHovered && client.isAnonymous && (
                       <motion.div
                         key={`anon-tip-${client.id}`}
-                        initial={{ opacity: 0, y: openDownward ? -8 : 8, scale: 0.93 }}
-                        animate={{ opacity: 1, y: 0, scale: 1 }}
-                        exit={{ opacity: 0, y: openDownward ? -6 : 6, scale: 0.95 }}
-                        transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
-                        className={`absolute left-1/2 -translate-x-1/2 w-48 p-2.5 rounded-2xl bg-[#0b131b]/95 backdrop-blur-xl border border-sky-400/50 shadow-[0_10px_30px_rgba(56,189,248,0.25)] z-50 pointer-events-none space-y-1.5 text-left ${
-                          openDownward ? "top-full mt-7" : "bottom-full mb-3"
+                        onMouseEnter={() => handlePinMouseEnter(client.id)}
+                        onMouseLeave={handlePinMouseLeave}
+                        initial={{ opacity: 0, y: openDownward ? -10 : 10, scale: 0.92, filter: "blur(5px)" }}
+                        animate={{ opacity: 1, y: 0, scale: 1, filter: "blur(0px)" }}
+                        exit={{ opacity: 0, y: openDownward ? -8 : 8, scale: 0.94, filter: "blur(4px)" }}
+                        transition={{
+                          opacity: { duration: 0.32, ease: [0.22, 1, 0.36, 1] },
+                          y: { type: "spring", stiffness: 230, damping: 25, mass: 0.85 },
+                          scale: { type: "spring", stiffness: 240, damping: 25, mass: 0.85 },
+                          filter: { duration: 0.28 },
+                        }}
+                        style={{ backgroundColor: "rgba(11, 19, 27, 0.97)" }}
+                        className={`absolute left-1/2 -translate-x-1/2 w-52 p-3 rounded-2xl backdrop-blur-xl border border-sky-400/50 shadow-[0_15px_36px_rgba(0,0,0,0.85)] z-50 pointer-events-auto space-y-1.5 text-left ${
+                          openDownward ? "top-full mt-7" : "bottom-full mb-3.5"
                         }`}
                       >
-                        <div className="flex items-center justify-between border-b border-white/10 pb-1">
+                        <div className="flex items-center justify-between border-b border-white/15 pb-1.5">
                           <div className="flex items-center gap-1.5">
                             <span className="w-2 h-2 rounded-full bg-sky-400 shadow-[0_0_6px_#38bdf8]" />
                             <span className="text-[11px] font-bold text-white font-sans">Visitante Anónimo</span>
@@ -1560,23 +1632,23 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
                             En Vivo
                           </span>
                         </div>
-                        <div className="space-y-1 text-[10px] text-white/80">
+                        <div className="space-y-1 text-[10px] text-white/90">
                           <div className="flex items-center justify-between">
-                            <span className="text-white/50">Ubicación:</span>
+                            <span className="text-white/65">Ubicación:</span>
                             <span className="font-semibold text-white">{beacon.cityName}</span>
                           </div>
                           <div className="flex items-center justify-between">
-                            <span className="text-white/50">Dispositivo:</span>
-                            <span className="font-mono text-white/90">{client.device || "Computador"}</span>
+                            <span className="text-white/65">Dispositivo:</span>
+                            <span className="font-mono text-white">{client.device || "Computador"}</span>
                           </div>
                           <div className="flex items-center justify-between">
-                            <span className="text-white/50">Sección:</span>
+                            <span className="text-white/65">Sección:</span>
                             <span className="font-medium text-sky-300 truncate max-w-[105px]" title={client.currentSection}>
                               {client.currentSection || "Explorando"}
                             </span>
                           </div>
                           {client.hasCart && (
-                            <div className="flex items-center justify-between text-rose-300 pt-0.5 border-t border-white/10 text-[9.5px]">
+                            <div className="flex items-center justify-between text-rose-300 pt-1 border-t border-white/15 text-[9.5px]">
                               <span className="flex items-center gap-1">
                                 <ShoppingBag className="w-2.5 h-2.5" /> En bolsa:
                               </span>
@@ -1766,41 +1838,43 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
         {/* Left: Collapsible Branded Search Bar (Disappears on corner/item click) */}
         <div 
           ref={searchContainerRef}
-          className="relative max-w-xs sm:max-w-sm flex-1 min-w-0 pointer-events-auto"
+          className="relative max-w-xs sm:max-w-md flex-1 min-w-0 pointer-events-auto"
         >
           <AnimatePresence mode="wait" initial={false}>
             {isSearchBarHidden ? (
               <motion.button
                 key="radar-search-reopen-btn"
                 type="button"
-                initial={{ opacity: 0, scale: 0.88, x: -8 }}
+                initial={{ opacity: 0, scale: 0.92, x: -6 }}
                 animate={{ opacity: 1, scale: 1, x: 0 }}
-                exit={{ opacity: 0, scale: 0.88, x: -8 }}
-                transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
+                exit={{ opacity: 0, scale: 0.92, x: -6 }}
+                transition={{ duration: 0.24, ease: [0.22, 1, 0.36, 1] }}
                 onClick={() => {
                   setIsSearchBarHidden(false);
                   setIsSearchFocused(true);
                 }}
-                className="h-9 sm:h-10 px-3.5 rounded-full bg-black/85 hover:bg-black backdrop-blur-2xl border border-white/15 hover:border-white/30 shadow-2xl text-xs font-semibold text-white flex items-center gap-2 cursor-pointer active:scale-95"
+                style={{ backgroundColor: "rgba(10, 14, 13, 0.96)" }}
+                className="h-10 px-4 rounded-full hover:bg-black backdrop-blur-2xl border border-white/20 hover:border-white/35 shadow-[0_14px_32px_rgba(0,0,0,0.75)] text-xs font-semibold text-white flex items-center gap-2.5 cursor-pointer active:scale-95 transition-all"
                 title="Abrir buscador de radar"
               >
-                <Search className="w-3.5 h-3.5 text-white/80" />
-                <span className="text-[11px] sm:text-xs text-white/90 truncate max-w-[120px]">
-                  {searchQuery ? searchQuery : "Buscar"}
+                <Search className="w-3.5 h-3.5 text-[#ccff00]" />
+                <span className="text-xs text-white/95 truncate max-w-[130px]">
+                  {searchQuery ? searchQuery : "Buscar en el radar"}
                 </span>
                 <span className="w-2 h-2 rounded-full bg-emerald-400 shadow-[0_0_6px_#34d399]" />
               </motion.button>
             ) : (
               <motion.div
                 key="radar-search-bar-full"
-                initial={{ opacity: 0, scale: 0.95, y: -4 }}
+                initial={{ opacity: 0, scale: 0.96, y: -4 }}
                 animate={{ opacity: 1, scale: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.92, y: -6 }}
-                transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
-                className={`flex items-center h-9 sm:h-10 bg-black/80 backdrop-blur-2xl border rounded-full px-3 sm:px-3.5 shadow-2xl text-xs text-white w-full transition-all duration-300 ${
+                exit={{ opacity: 0, scale: 0.94, y: -6 }}
+                transition={{ duration: 0.24, ease: [0.22, 1, 0.36, 1] }}
+                style={{ backgroundColor: "rgba(10, 14, 13, 0.96)" }}
+                className={`flex items-center h-10 backdrop-blur-2xl border rounded-full px-4 shadow-[0_16px_38px_rgba(0,0,0,0.78)] text-xs text-white w-full transition-all duration-300 ${
                   isSearchFocused 
-                    ? "border-white/40 ring-2 ring-white/15 bg-black/95" 
-                    : "border-white/15 hover:border-white/30"
+                    ? "border-[#ccff00]/50 ring-2 ring-[#ccff00]/15" 
+                    : "border-white/20 hover:border-white/35"
                 }`}
               >
                 <button
@@ -1810,9 +1884,9 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
                     setIsSearchBarHidden(true);
                   }}
                   title="Ocultar barra de búsqueda"
-                  className="mr-2 shrink-0 text-white/60 hover:text-white transition-colors cursor-pointer"
+                  className="mr-2.5 shrink-0 text-white/70 hover:text-[#ccff00] transition-colors cursor-pointer"
                 >
-                  <Search className="w-3.5 h-3.5" />
+                  <Search className="w-4 h-4" />
                 </button>
                 
                 <input 
@@ -1820,8 +1894,8 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
                   value={searchQuery}
                   onFocus={() => setIsSearchFocused(true)}
                   onChange={e => setSearchQuery(e.target.value)}
-                  placeholder={`Buscar en ${activeCountry.name}...`}
-                  className="bg-transparent border-none outline-none text-xs text-white placeholder:text-white/45 flex-1 min-w-0 font-sans"
+                  placeholder={`Buscar ciudad, región o cliente en ${activeCountry.name}...`}
+                  className="bg-transparent border-none outline-none text-xs text-white placeholder:text-white/55 flex-1 min-w-0 font-sans pr-2"
                 />
 
                 {searchQuery && (
@@ -1833,10 +1907,10 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
                       setIsSearchFocused(false);
                       setIsSearchBarHidden(true);
                     }}
-                    className="w-4 h-4 rounded-full bg-white/20 hover:bg-white/40 text-white flex items-center justify-center transition-all cursor-pointer mr-1.5 shrink-0"
+                    className="w-5 h-5 rounded-full bg-white/15 hover:bg-white/30 text-white flex items-center justify-center transition-all cursor-pointer mr-2 shrink-0"
                     title="Limpiar y ocultar búsqueda"
                   >
-                    <X className="w-2.5 h-2.5" />
+                    <X className="w-3 h-3" />
                   </button>
                 )}
 
@@ -1848,35 +1922,36 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
                     setIsSearchBarHidden(true);
                   }}
                   title="Ocultar barra de búsqueda"
-                  className="flex items-center gap-1.5 pl-2.5 border-l border-white/10 shrink-0 hover:opacity-80 transition-opacity cursor-pointer"
+                  className="flex items-center gap-2 pl-3 border-l border-white/15 shrink-0 hover:opacity-85 transition-opacity cursor-pointer"
                 >
                   <span className="w-2 h-2 rounded-full bg-emerald-400 shadow-[0_0_6px_#34d399]" />
-                  <span className="text-[10px] font-mono text-white/80 font-semibold hidden sm:inline">
+                  <span className="text-[10.5px] font-mono text-white/90 font-semibold hidden sm:inline">
                     {searchQuery 
                       ? `${filteredActualClients.length} en radar` 
-                      : `${actualClients.length} ${actualClients.length === 1 ? 'cliente' : 'clientes'}`}
+                      : `${actualClients.length} ${actualClients.length === 1 ? 'activo' : 'activos'}`}
                   </span>
-                  <X className="w-3 h-3 text-white/45 hover:text-white ml-0.5" />
+                  <X className="w-3.5 h-3.5 text-white/55 hover:text-white ml-0.5" />
                 </button>
               </motion.div>
             )}
           </AnimatePresence>
 
-          {/* FLOATING LIVE INTERACTIVE SUGGESTER & REGIONAL TELEPORT POPOVER */}
+          {/* FLOATING LIVE INTERACTIVE SUGGESTER & REGIONAL TELEPORT POPOVER (Spacious, Clean & Executive) */}
           <AnimatePresence>
             {isSearchFocused && !isSearchBarHidden && (
               <motion.div
-                initial={{ opacity: 0, y: -8, scale: 0.96 }}
-                animate={{ opacity: 1, y: 0, scale: 1 }}
-                exit={{ opacity: 0, y: -6, scale: 0.96 }}
-                transition={{ duration: 0.24, ease: [0.22, 1, 0.36, 1] }}
-                className="absolute top-full left-0 right-0 mt-2 rounded-3xl bg-[#0c0e12]/95 backdrop-blur-3xl border border-white/20 p-4 shadow-[0_25px_60px_rgba(0,0,0,0.9)] z-[70] space-y-3.5 max-h-[min(380px,55vh)] overflow-y-auto origin-top"
+                initial={{ opacity: 0, y: -10, scale: 0.96, filter: "blur(6px)" }}
+                animate={{ opacity: 1, y: 0, scale: 1, filter: "blur(0px)" }}
+                exit={{ opacity: 0, y: -8, scale: 0.96, filter: "blur(4px)" }}
+                transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
+                style={{ backgroundColor: "rgba(10, 14, 13, 0.98)" }}
+                className="absolute top-full left-0 w-full sm:w-[420px] mt-3 rounded-[1.75rem] backdrop-blur-3xl border border-white/20 p-5 shadow-[0_32px_80px_rgba(0,0,0,0.92)] z-[70] space-y-5 max-h-[min(430px,62vh)] overflow-y-auto origin-top"
               >
               
               {/* 1. Quick Regional Filters for Active Country */}
-              <div className="space-y-1.5">
-                <div className="flex items-center justify-between text-[10px] font-mono text-white/50 font-bold uppercase tracking-wider">
-                  <span>Regiones Naturales ({activeCountry.name})</span>
+              <div className="space-y-2.5">
+                <div className="flex items-center justify-between text-[10.5px] font-mono text-white/70 font-bold uppercase tracking-wider">
+                  <span>Regiones Naturales • {activeCountry.name}</span>
                   <button 
                     type="button"
                     onClick={() => {
@@ -1885,12 +1960,12 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
                       setIsSearchFocused(false);
                       setIsSearchBarHidden(true);
                     }} 
-                    className="text-white/70 hover:text-white hover:underline normal-case font-sans cursor-pointer text-[11px]"
+                    className="px-2.5 py-0.5 rounded-full bg-white/10 hover:bg-white/20 text-white/90 hover:text-white normal-case font-sans cursor-pointer text-[11px] transition-colors"
                   >
                     Cerrar
                   </button>
                 </div>
-                <div className="flex items-center gap-1.5 flex-wrap">
+                <div className="flex items-center gap-2.5 flex-wrap">
                   {(activeCountry.naturalRegions || []).map((reg) => {
                     const isActive = searchQuery.toLowerCase() === reg.query.toLowerCase() || searchQuery.toLowerCase() === reg.name.toLowerCase();
                     return (
@@ -1902,13 +1977,13 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
                           setIsSearchFocused(false);
                           setIsSearchBarHidden(true);
                         }}
-                        className={`px-2.5 py-1 rounded-full text-[11px] font-semibold transition-all flex items-center gap-1.5 border cursor-pointer ${
+                        className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all flex items-center gap-2 border cursor-pointer ${
                           isActive
-                            ? "bg-white text-gray-950 font-bold border-white shadow-sm"
-                            : "bg-white/5 hover:bg-white/15 text-white/80 border-white/10 hover:border-white/20 hover:text-white"
+                            ? "bg-white text-gray-950 font-bold border-white shadow-md"
+                            : "bg-[#151c1a] hover:bg-[#1e2724] text-white/90 border-white/15 hover:border-white/30 hover:text-white"
                         }`}
                       >
-                        <span>{reg.icon}</span>
+                        <span className="text-sm leading-none">{reg.icon}</span>
                         <span>{reg.name}</span>
                       </button>
                     );
@@ -1916,15 +1991,15 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
                 </div>
               </div>
 
-              {/* 3. Key Cities Quick Teleport */}
-              <div className="space-y-1.5 pt-2 border-t border-white/10">
-                <div className="flex items-center justify-between text-[10px] font-mono text-white/50 font-bold uppercase tracking-wider">
-                  <span>Explorar Ciudades ({activeCountry.name})</span>
-                  <span className="text-[9.5px] font-mono text-white/70 flex items-center gap-1">
-                    <MapPin className="w-2.5 h-2.5" /> Clic para enfocar
+              {/* 2. Key Cities Quick Teleport */}
+              <div className="space-y-2.5 pt-4 border-t border-white/12">
+                <div className="flex items-center justify-between text-[10.5px] font-mono text-white/70 font-bold uppercase tracking-wider">
+                  <span>Ciudades Principales ({activeCountry.name})</span>
+                  <span className="text-[10px] font-mono text-[#ccff00] flex items-center gap-1">
+                    <MapPin className="w-3 h-3" /> Clic para enfocar
                   </span>
                 </div>
-                <div className="flex items-center gap-1.5 flex-wrap">
+                <div className="flex items-center gap-2 flex-wrap">
                   {activeCountry.majorCities.map((city) => {
                     const coords = resolveMultiCountryCoordinates(city, selectedCountry);
                     const clientMatch = connectedClients.find(c => c && c.city && c.city.toLowerCase().includes(city.toLowerCase()));
@@ -1943,9 +2018,9 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
                           setIsSearchFocused(false);
                           setIsSearchBarHidden(true);
                         }}
-                        className="px-2.5 py-1 rounded-xl text-[10.5px] bg-white/5 hover:bg-white/15 hover:border-white/30 text-white/85 hover:text-white border border-white/10 transition-all flex items-center gap-1 cursor-pointer group"
+                        className="px-3 py-1.5 rounded-xl text-[11px] bg-[#151c1a] hover:bg-[#1e2724] hover:border-[#ccff00]/40 text-white/90 hover:text-white border border-white/15 transition-all flex items-center gap-1.5 cursor-pointer group"
                       >
-                        <MapPin className="w-2.5 h-2.5 opacity-60 group-hover:opacity-100" />
+                        <MapPin className="w-3 h-3 text-[#ccff00]/80 group-hover:text-[#ccff00] transition-colors" />
                         <span>{city}</span>
                       </button>
                     );
@@ -1953,18 +2028,18 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
                 </div>
               </div>
 
-              {/* 4. Live Matching Clients List */}
+              {/* 3. Live Matching Clients List (Well-Spaced Individual Cards) */}
               {searchQuery.trim().length > 0 && (
-                <div className="space-y-1.5 pt-2 border-t border-white/10">
-                  <div className="flex items-center justify-between text-[10px] font-mono text-white/50 font-bold uppercase tracking-wider">
-                    <span>Coincidencias en Vivo ({filteredActualClients.length})</span>
+                <div className="space-y-3 pt-4 border-t border-white/12">
+                  <div className="flex items-center justify-between text-[10.5px] font-mono text-white/70 font-bold uppercase tracking-wider">
+                    <span>Resultados Encontrados ({filteredActualClients.length})</span>
                   </div>
                   {filteredActualClients.length === 0 ? (
-                    <div className="py-3 text-center text-white/50 text-[11px]">
-                      No hay clientes conectados en &quot;{searchQuery}&quot;
+                    <div className="py-5 px-4 rounded-2xl bg-[#151c1a] border border-white/10 text-center text-white/65 text-xs">
+                      No se encontraron clientes conectados en &quot;{searchQuery}&quot;
                     </div>
                   ) : (
-                    <div className="max-h-44 overflow-y-auto space-y-1 pr-1" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+                    <div className="max-h-52 overflow-y-auto space-y-2.5 pr-1" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
                       {filteredActualClients.map((client) => (
                         <div
                           key={client.id}
@@ -1974,25 +2049,27 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
                             setIsSearchFocused(false);
                             setIsSearchBarHidden(true);
                           }}
-                          className="p-2 rounded-xl bg-white/5 hover:bg-white/15 border border-white/10 hover:border-white/30 flex items-center justify-between cursor-pointer transition-all group"
+                          className="p-3 rounded-2xl bg-[#151c1a] hover:bg-[#1d2623] border border-white/15 hover:border-[#ccff00]/45 flex items-center justify-between gap-3 cursor-pointer transition-all duration-200 group shadow-sm"
                         >
-                          <div className="flex items-center gap-2 truncate">
+                          <div className="flex items-center gap-3 min-w-0 flex-1">
                             <BlobatarAvatar
                               {...getClientAvatarProps(client)}
-                              size={28}
+                              size={34}
                               animate="hover"
                               className="shrink-0"
                             />
-                            <div className="truncate">
-                              <p className="text-xs font-semibold text-white transition-colors truncate">
+                            <div className="min-w-0 flex-1 space-y-0.5">
+                              <p className="text-xs font-bold text-white transition-colors truncate">
                                 {cleanClientName(client.name)}
                               </p>
-                              <p className="text-[10px] text-white/50 truncate">
-                                {client.city || activeCountry.name} • <span className="font-mono text-white/80">${client.totalSpent || 0}</span>
+                              <p className="text-[10.5px] text-white/70 truncate flex items-center gap-1.5">
+                                <span>{client.city || activeCountry.name}</span>
+                                <span className="text-white/35">•</span>
+                                <span className="font-mono font-semibold text-[#ccff00]">${client.totalSpent || 0} USD</span>
                               </p>
                             </div>
                           </div>
-                          <span className="text-[9.5px] font-mono px-2 py-0.5 rounded bg-white/10 text-white/80 group-hover:bg-white group-hover:text-gray-950 font-bold transition-all shrink-0">
+                          <span className="text-[10px] font-mono px-3 py-1.5 rounded-xl bg-white/10 text-white group-hover:bg-[#ccff00] group-hover:text-gray-950 font-bold transition-all shrink-0">
                             Enfocar &rarr;
                           </span>
                         </div>
@@ -2015,7 +2092,8 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
             <button
               type="button"
               onClick={() => setIsStyleMenuOpen((prev) => !prev)}
-              className="flex items-center h-9 sm:h-10 px-3 rounded-full bg-black/85 hover:bg-black backdrop-blur-2xl border border-white/15 hover:border-white/30 text-white text-xs font-semibold gap-2 shadow-2xl transition-all cursor-pointer active:scale-95"
+              style={{ backgroundColor: "rgba(10, 14, 13, 0.96)" }}
+              className="flex items-center h-9 sm:h-10 px-3.5 rounded-full hover:bg-black backdrop-blur-2xl border border-white/20 hover:border-white/35 text-white text-xs font-semibold gap-2 shadow-[0_14px_32px_rgba(0,0,0,0.75)] transition-all cursor-pointer active:scale-95"
               title="Cambiar entre los 3 estilos de mapa (Dark, Streets, Satellite Streets)"
             >
               <span className="w-5 h-5 rounded-full bg-white/15 flex items-center justify-center text-white shrink-0">
@@ -2041,10 +2119,11 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
                   animate={{ opacity: 1, y: 0, scale: 1 }}
                   exit={{ opacity: 0, y: 4, scale: 0.95 }}
                   transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
-                  className="absolute right-0 top-12 w-56 p-1.5 rounded-2xl bg-[#0e1116]/95 backdrop-blur-2xl border border-white/20 shadow-[0_20px_50px_rgba(0,0,0,0.85)] space-y-1 z-50 pointer-events-auto"
+                  style={{ backgroundColor: "rgba(10, 14, 13, 0.98)" }}
+                  className="absolute right-0 top-12 w-56 p-2 rounded-2xl backdrop-blur-2xl border border-white/20 shadow-[0_20px_50px_rgba(0,0,0,0.85)] space-y-1 z-50 pointer-events-auto"
                   onClick={(e) => e.stopPropagation()}
                 >
-                  <div className="px-2.5 py-1 text-[9.5px] font-mono uppercase tracking-wider text-white/50 font-bold flex items-center justify-between border-b border-white/10 pb-1.5 mb-1">
+                  <div className="px-2.5 py-1 text-[9.5px] font-mono uppercase tracking-wider text-white/60 font-bold flex items-center justify-between border-b border-white/10 pb-1.5 mb-1">
                     <span>Estilos de Mapa</span>
                     <span className="text-emerald-400">Mapbox HD</span>
                   </div>
@@ -2061,7 +2140,7 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
                         className={`w-full px-2.5 py-2 rounded-xl text-xs font-sans flex items-center justify-between gap-2 transition-all cursor-pointer ${
                           isActive
                             ? "bg-white text-gray-950 font-bold shadow-sm"
-                            : "text-white/80 hover:text-white hover:bg-white/10 font-medium"
+                            : "text-white/85 hover:text-white hover:bg-white/10 font-medium"
                         }`}
                       >
                         <div className="flex items-center gap-2 min-w-0">
@@ -2083,11 +2162,10 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
             </AnimatePresence>
           </div>
 
-          {/* SYMMETRICAL DENSITY MODE DOCK (Disperso [1x | 2x] / Agrupar) with Silky Spring Animations */}
-          <motion.div
-            layout
-            transition={{ type: "spring", stiffness: 460, damping: 32 }}
-            className="flex items-center h-9 sm:h-10 bg-black/85 backdrop-blur-2xl border border-white/15 rounded-full p-1 shadow-2xl text-[11px] sm:text-xs font-semibold text-white"
+          {/* FIXED-GEOMETRY DENSITY MODE DOCK (Disperso / Agrupar + 1x/2x) — Zero Layout Shift ("Cero Golpe") */}
+          <div
+            style={{ backgroundColor: "rgba(10, 14, 13, 0.96)" }}
+            className="flex items-center h-9 sm:h-10 backdrop-blur-2xl border border-white/20 rounded-full p-1 shadow-[0_14px_32px_rgba(0,0,0,0.75)] text-[11px] sm:text-xs font-bold text-white"
           >
             <div className="relative grid grid-cols-2 items-center h-full">
               <button
@@ -2096,30 +2174,21 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
                   setClusterMode("dispersed");
                   setExpandedClusterCity(null);
                 }}
-                className={`relative z-10 min-w-[82px] sm:min-w-[102px] h-full px-2.5 sm:px-3 rounded-full transition-colors duration-200 flex items-center justify-center gap-1.5 cursor-pointer ${
+                className={`relative z-10 w-[88px] sm:w-[106px] h-full px-2.5 sm:px-3 rounded-full transition-colors duration-300 ease-out flex items-center justify-center gap-1.5 font-bold cursor-pointer ${
                   clusterMode === "dispersed"
-                    ? "text-gray-950 font-bold"
-                    : "text-white/70 hover:text-white"
+                    ? "text-gray-950"
+                    : "text-white/75 hover:text-white"
                 }`}
                 title="Ver cada cliente con su propia estaca dispersa en la ciudad"
               >
                 {clusterMode === "dispersed" && (
                   <motion.div
                     layoutId="radarDensityModeIndicator"
-                    transition={{ type: "spring", stiffness: 520, damping: 34 }}
+                    transition={{ type: "spring", stiffness: 360, damping: 32, mass: 0.9 }}
                     className="absolute inset-0 rounded-full bg-white shadow-[0_2px_14px_rgba(255,255,255,0.3)] -z-10"
                   />
                 )}
-                <motion.span
-                  animate={{
-                    rotate: clusterMode === "dispersed" ? [0, 14, 0] : 0,
-                    scale: clusterMode === "dispersed" ? 1.08 : 0.95,
-                  }}
-                  transition={{ duration: 0.32, ease: "easeOut" }}
-                  className="flex items-center"
-                >
-                  <Sparkles className="w-3.5 h-3.5 shrink-0" />
-                </motion.span>
+                <Sparkles className="w-3.5 h-3.5 shrink-0" />
                 <span>Disperso</span>
               </button>
 
@@ -2129,89 +2198,76 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
                   setClusterMode("clustered");
                   setExpandedClusterCity(null);
                 }}
-                className={`relative z-10 min-w-[82px] sm:min-w-[102px] h-full px-2.5 sm:px-3 rounded-full transition-colors duration-200 flex items-center justify-center gap-1.5 cursor-pointer ${
+                className={`relative z-10 w-[88px] sm:w-[106px] h-full px-2.5 sm:px-3 rounded-full transition-colors duration-300 ease-out flex items-center justify-center gap-1.5 font-bold cursor-pointer ${
                   clusterMode === "clustered"
-                    ? "text-gray-950 font-bold"
-                    : "text-white/70 hover:text-white"
+                    ? "text-gray-950"
+                    : "text-white/75 hover:text-white"
                 }`}
                 title="Agrupar ciudades con múltiples clientes en un pin numérico"
               >
                 {clusterMode === "clustered" && (
                   <motion.div
                     layoutId="radarDensityModeIndicator"
-                    transition={{ type: "spring", stiffness: 520, damping: 34 }}
+                    transition={{ type: "spring", stiffness: 360, damping: 32, mass: 0.9 }}
                     className="absolute inset-0 rounded-full bg-white shadow-[0_2px_14px_rgba(255,255,255,0.3)] -z-10"
                   />
                 )}
-                <motion.span
-                  animate={{
-                    scale: clusterMode === "clustered" ? 1.08 : 0.95,
-                  }}
-                  transition={{ duration: 0.28, ease: "easeOut" }}
-                  className="flex items-center"
-                >
-                  <Layers className="w-3.5 h-3.5 shrink-0" />
-                </motion.span>
-                <span>Agrupar{clusterPins.length > 0 ? ` (${clusterPins.length})` : ""}</span>
+                <Boxes className="w-3.5 h-3.5 shrink-0" />
+                <span>Agrupar</span>
               </button>
             </div>
 
-            {/* Inline 1x | 2x Scale Multiplier Sub-Pill with Sliding Spring Indicator */}
-            <AnimatePresence initial={false}>
-              {clusterMode === "dispersed" && (
-                <motion.div
-                  initial={{ width: 0, opacity: 0, marginLeft: 0 }}
-                  animate={{ width: "auto", opacity: 1, marginLeft: 6 }}
-                  exit={{ width: 0, opacity: 0, marginLeft: 0 }}
-                  transition={{ type: "spring", stiffness: 460, damping: 30 }}
-                  className="overflow-hidden flex items-center pl-1.5 border-l border-white/15 shrink-0"
-                >
-                  <div className="relative flex items-center bg-white/[0.08] rounded-full p-0.5 gap-0.5">
-                    {(["normal", "wide"] as const).map((mode) => {
-                      const active = scatterRadius === mode;
-                      const label = mode === "normal" ? "1x" : "2x";
-                      return (
-                        <button
-                          key={mode}
-                          type="button"
-                          onClick={() => setScatterRadius(mode)}
-                          className={`relative z-10 px-2.5 py-1 rounded-full font-mono text-[10px] font-bold transition-colors duration-200 cursor-pointer ${
-                            active ? "text-gray-950" : "text-white/65 hover:text-white"
-                          }`}
-                          title={
-                            mode === "normal"
-                              ? "Escala 1x: Dispersión compacta de estacas"
-                              : "Escala 2x: Dispersión amplia y estacas aumentadas"
-                          }
-                        >
-                          {active && (
-                            <motion.div
-                              layoutId="radarScatterScaleIndicator"
-                              transition={{ type: "spring", stiffness: 540, damping: 32 }}
-                              className="absolute inset-0 rounded-full bg-white shadow-xs -z-10"
-                            />
-                          )}
-                          <motion.span
-                            animate={{ scale: active ? 1.06 : 0.96 }}
-                            transition={{ type: "spring", stiffness: 500, damping: 28 }}
-                            className="inline-block"
-                          >
-                            {label}
-                          </motion.span>
-                        </button>
-                      );
-                    })}
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </motion.div>
+            {/* Permanently Mounted 1x | 2x Scale Multiplier Sub-Pill (Zero Width Reflow on Mode Switch) */}
+            <div
+              className={`flex items-center pl-1.5 ml-1.5 border-l border-white/15 shrink-0 transition-opacity duration-300 ${
+                clusterMode === "dispersed" ? "opacity-100" : "opacity-45 hover:opacity-85"
+              }`}
+            >
+              <div className="relative flex items-center bg-white/[0.08] rounded-full p-0.5 gap-0.5">
+                {(["normal", "wide"] as const).map((mode) => {
+                  const active = scatterRadius === mode;
+                  const label = mode === "normal" ? "1x" : "2x";
+                  return (
+                    <button
+                      key={mode}
+                      type="button"
+                      onClick={() => {
+                        setScatterRadius(mode);
+                        if (clusterMode !== "dispersed") {
+                          setClusterMode("dispersed");
+                          setExpandedClusterCity(null);
+                        }
+                      }}
+                      className={`relative z-10 px-2.5 py-1 rounded-full font-mono text-[10px] font-bold transition-colors duration-250 cursor-pointer ${
+                        active && clusterMode === "dispersed" ? "text-gray-950" : "text-white/70 hover:text-white"
+                      }`}
+                      title={
+                        mode === "normal"
+                          ? "Escala 1x: Dispersión compacta de estacas"
+                          : "Escala 2x: Dispersión amplia y estacas aumentadas"
+                      }
+                    >
+                      {active && clusterMode === "dispersed" && (
+                        <motion.div
+                          layoutId="radarScatterScaleIndicator"
+                          transition={{ type: "spring", stiffness: 400, damping: 30 }}
+                          className="absolute inset-0 rounded-full bg-white shadow-xs -z-10"
+                        />
+                      )}
+                      <span>{label}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
 
           {/* Admin Location Prompt */}
           {isAdmin && !hasAdminLocation && (
             <button
               onClick={handleNavigateToAddress}
-              className="group relative flex items-center gap-2 h-9 sm:h-10 px-3 sm:px-4 rounded-full bg-black/90 hover:bg-black backdrop-blur-2xl border border-white/25 hover:border-white/45 text-white text-xs font-semibold shadow-lg transition-all duration-300 hover:scale-[1.03] active:scale-95 cursor-pointer shrink-0"
+              style={{ backgroundColor: "rgba(10, 14, 13, 0.96)" }}
+              className="group relative flex items-center gap-2 h-9 sm:h-10 px-3 sm:px-4 rounded-full hover:bg-black backdrop-blur-2xl border border-white/25 hover:border-white/45 text-white text-xs font-semibold shadow-lg transition-all duration-300 hover:scale-[1.03] active:scale-95 cursor-pointer shrink-0"
               title="Añade tu dirección para mostrar tu ubicación en el mapa"
             >
               <div className="relative flex items-center justify-center w-5 h-5 rounded-full bg-white text-gray-950 font-black shrink-0">
@@ -2231,7 +2287,10 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
       {/* 4. LEFT HUD CONTROLS (ShotScape GIS Floating Toolstrip)                   */}
       {/* ========================================================================= */}
       <div className="absolute left-3 sm:left-6 top-1/2 -translate-y-1/2 z-30 flex flex-col items-center gap-2 pointer-events-auto">
-        <div className="flex flex-col items-center bg-black/70 backdrop-blur-2xl border border-white/15 rounded-2xl p-1.5 shadow-2xl space-y-1">
+        <div
+          style={{ backgroundColor: "rgba(10, 14, 13, 0.95)" }}
+          className="flex flex-col items-center backdrop-blur-2xl border border-white/20 rounded-2xl p-1.5 shadow-[0_18px_40px_rgba(0,0,0,0.8)] space-y-1"
+        >
           
           {/* Country Switcher Trigger Button (Refined Stone/Pearl Styling — Zero Neon Green) */}
           <button 
@@ -2247,8 +2306,6 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
             <CountrySvgFlag code={selectedCountry} className="w-5 h-3.5 rounded-[2px] shadow-sm pointer-events-none" />
             <span className="absolute -bottom-0.5 -right-0.5 w-2 h-2 rounded-full bg-emerald-400 border border-black" />
           </button>
-
-
 
           <div className="w-5 h-[1px] bg-white/15 my-0.5" />
 
@@ -2279,22 +2336,26 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
             <ZoomOut className="w-4 h-4" />
           </button>
 
-          <div className="w-5 h-[1px] bg-white/10 my-0.5" />
+          <div className="w-5 h-[1px] bg-white/15 my-0.5" />
 
-          {/* Quick Density & Cluster Toggle Button */}
+          {/* Quick Density & Cluster Toggle Button (Distinct Network / Boxes Icon — Never duplicates Layers Map Style Icon) */}
           <button 
             onClick={() => {
               setClusterMode(prev => prev === "dispersed" ? "clustered" : "dispersed");
               setExpandedClusterCity(null);
             }}
-            title={clusterMode === "dispersed" ? "Agrupar pines en clústeres por ciudad" : "Dispersar todos los pines por el mapa"}
+            title={clusterMode === "dispersed" ? "Agrupar pines en clústeres por ciudad" : "Dispersar nodos por el mapa"}
             className={`w-8 h-8 sm:w-9 sm:h-9 rounded-xl flex items-center justify-center transition-all hover:scale-105 active:scale-95 cursor-pointer ${
               clusterMode === "clustered"
                 ? "bg-white text-gray-950 font-bold shadow-sm"
-                : "bg-white/10 hover:bg-white/25 text-white/80 hover:text-white"
+                : "bg-white/10 hover:bg-white/25 text-white/90 hover:text-white"
             }`}
           >
-            <Layers className="w-4 h-4" />
+            {clusterMode === "clustered" ? (
+              <Boxes className="w-4 h-4" />
+            ) : (
+              <Network className="w-4 h-4" />
+            )}
           </button>
 
           {/* Reset Zoom & Pan */}
@@ -2440,7 +2501,7 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
       </AnimatePresence>
 
       {/* ========================================================================= */}
-      {/* 5. RIGHT FLOATING GLASS PANEL (Responsive Mobile Bottom Sheet + Desktop)  */}
+      {/* 5. RIGHT FLOATING GLASS PANEL (High-Contrast Adaptive Across All 3 Maps)  */}
       {/* ========================================================================= */}
       <div 
         onClick={(e) => e.stopPropagation()} 
@@ -2448,16 +2509,26 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
           isMobilePanelOpen ? "flex" : "hidden lg:flex"
         }`}
       >
-        <div className="flex-1 rounded-[1.75rem] sm:rounded-[2rem] bg-[#0c0f0e]/98 backdrop-blur-3xl border border-white/15 p-3.5 sm:p-5 shadow-2xl flex flex-col justify-between overflow-hidden transition-all duration-300 ease-out w-full">
+        <div
+          style={{
+            backgroundColor:
+              mapStyleMode === "streets-v12"
+                ? "rgba(8, 12, 15, 0.98)"
+                : mapStyleMode === "satellite-streets-v12"
+                ? "rgba(8, 13, 12, 0.98)"
+                : "rgba(10, 14, 13, 0.96)",
+          }}
+          className="flex-1 rounded-[1.75rem] sm:rounded-[2rem] backdrop-blur-3xl border border-white/25 ring-1 ring-black/60 p-3.5 sm:p-5 shadow-[0_28px_75px_rgba(0,0,0,0.9)] flex flex-col justify-between overflow-hidden transition-colors duration-300 ease-out w-full"
+        >
           
           {/* Panel Top Navigation & Scrollable Content Body */}
           <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden touch-pan-y overscroll-x-none w-full pr-0.5 space-y-3.5 select-none" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
-            <div className="flex items-center justify-between pb-3 border-b border-white/10 gap-2">
-              <div className="flex items-center gap-1 p-0.5 rounded-full bg-black/50 border border-white/10 text-[11px] font-semibold">
+            <div className="flex items-center justify-between pb-3 border-b border-white/15 gap-2">
+              <div className="flex items-center gap-1 p-1 rounded-full bg-[#141b19] border border-white/15 text-[11px] font-semibold">
                 <button 
                   onClick={() => setActiveTab("metrics")}
                   className={`relative z-10 px-3 py-1 rounded-full transition-colors duration-200 cursor-pointer ${
-                    activeTab === "metrics" ? "text-gray-950 font-bold" : "text-white/60 hover:text-white"
+                    activeTab === "metrics" ? "text-gray-950 font-bold" : "text-white/80 hover:text-white"
                   }`}
                 >
                   {activeTab === "metrics" && (
@@ -2472,7 +2543,7 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
                 <button 
                   onClick={() => setActiveTab("clients")}
                   className={`relative z-10 px-3 py-1 rounded-full transition-colors duration-200 cursor-pointer ${
-                    activeTab === "clients" ? "text-gray-950 font-bold" : "text-white/60 hover:text-white"
+                    activeTab === "clients" ? "text-gray-950 font-bold" : "text-white/80 hover:text-white"
                   }`}
                 >
                   {activeTab === "clients" && (
@@ -2487,10 +2558,10 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
               </div>
 
               <div className="flex items-center gap-1.5 shrink-0">
-                <span className={`text-[9px] font-mono px-2 py-0.5 rounded-full border font-bold transition-all duration-500 ease-in-out ${
+                <span className={`text-[9px] font-mono px-2.5 py-0.5 rounded-full border font-bold transition-all duration-300 ease-out ${
                   displayedDossierClient 
-                    ? "bg-[#ccff00]/20 text-[#ccff00] border-[#ccff00]/30 opacity-100 scale-100" 
-                    : "opacity-0 scale-75 pointer-events-none border-transparent"
+                    ? "bg-[#ccff00]/20 text-[#ccff00] border-[#ccff00]/40 opacity-100 scale-100" 
+                    : "opacity-0 scale-90 pointer-events-none border-transparent"
                 }`}>
                   Selección
                 </span>
@@ -2498,7 +2569,7 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
                 {/* Mobile Close Button */}
                 <button
                   onClick={() => setIsMobilePanelOpen(false)}
-                  className="lg:hidden w-6 h-6 rounded-full bg-white/10 hover:bg-white/20 text-white/70 hover:text-white flex items-center justify-center cursor-pointer transition-colors"
+                  className="lg:hidden w-6 h-6 rounded-full bg-white/15 hover:bg-white/25 text-white/85 hover:text-white flex items-center justify-center cursor-pointer transition-colors"
                   title="Cerrar panel"
                 >
                   <X className="w-3.5 h-3.5" />
@@ -2506,106 +2577,118 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
               </div>
             </div>
 
-            {/* TAB CONTENT A: ACTIVE CLIENT DOSSIER (Silky Smooth Collapsible Transition 500ms) */}
-            <div 
-              className={`transition-all duration-500 ease-in-out overflow-hidden transform-gpu ${
-                displayedDossierClient 
-                  ? "max-h-[380px] opacity-100 translate-y-0 scale-100 mb-3.5" 
-                  : "max-h-0 opacity-0 -translate-y-2 scale-98 mb-0 pointer-events-none"
-              }`}
-            >
-              {displayedDossierClient && (
-                <div className="rounded-2xl bg-black/55 border border-[#ccff00]/30 p-3.5 space-y-2.5 shadow-xl backdrop-blur-md transition-all duration-500 ease-out">
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="flex items-start gap-3 min-w-0 flex-1">
-                      <BlobatarAvatar
-                        {...getClientAvatarProps(displayedDossierClient)}
-                        size={40}
-                        animate="always"
-                        className="shrink-0 mt-0.5 shadow-md hover:scale-105"
-                      />
-                      <div className="min-w-0 flex-1">
-                        <div className="flex items-center gap-1.5">
-                          <h4 className="font-sans font-bold text-sm text-white tracking-normal leading-tight truncate">{cleanClientName(displayedDossierClient.name)}</h4>
-                          {isUserSelf(displayedDossierClient) && (
-                            <span className="text-[8px] font-mono px-1.5 py-0.5 rounded bg-emerald-400/20 text-emerald-400 border border-emerald-400/30 font-bold shrink-0">
-                              {isAdmin ? "Tú (Admin)" : "Tú"}
+            {/* TAB CONTENT A: ACTIVE CLIENT DOSSIER (Silky Spring Accordion with Retained Data on Exit) */}
+            <AnimatePresence initial={false}>
+              {displayedDossierClient && retainedDossierClient && (
+                <motion.div
+                  key="radar-active-client-dossier-wrapper"
+                  onMouseEnter={() => handlePinMouseEnter(retainedDossierClient.id)}
+                  onMouseLeave={handlePinMouseLeave}
+                  initial={{ height: 0, opacity: 0, scale: 0.96, filter: "blur(6px)", marginBottom: 0 }}
+                  animate={{ height: "auto", opacity: 1, scale: 1, filter: "blur(0px)", marginBottom: 14 }}
+                  exit={{ height: 0, opacity: 0, scale: 0.96, filter: "blur(5px)", marginBottom: 0 }}
+                  transition={{
+                    height: { type: "spring", stiffness: 220, damping: 28, mass: 0.9 },
+                    opacity: { duration: 0.34, ease: [0.22, 1, 0.36, 1] },
+                    scale: { duration: 0.34, ease: [0.22, 1, 0.36, 1] },
+                    filter: { duration: 0.28 },
+                    marginBottom: { duration: 0.34, ease: [0.22, 1, 0.36, 1] },
+                  }}
+                  className="overflow-hidden transform-gpu"
+                >
+                  <div className="rounded-2xl bg-[#141c1a] border border-[#ccff00]/45 p-3.5 space-y-2.5 shadow-[0_12px_30px_rgba(0,0,0,0.65)] transition-colors duration-300">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex items-start gap-3 min-w-0 flex-1">
+                        <BlobatarAvatar
+                          {...getClientAvatarProps(retainedDossierClient)}
+                          size={40}
+                          animate="always"
+                          className="shrink-0 mt-0.5 shadow-md"
+                        />
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-1.5">
+                            <h4 className="font-sans font-bold text-sm text-white tracking-normal leading-tight truncate">
+                              {cleanClientName(retainedDossierClient.name)}
+                            </h4>
+                            {isUserSelf(retainedDossierClient) && (
+                              <span className="text-[8.5px] font-mono px-1.5 py-0.5 rounded bg-emerald-400/20 text-emerald-300 border border-emerald-400/35 font-bold shrink-0">
+                                {isAdmin ? "Tú (Admin)" : "Tú"}
+                              </span>
+                            )}
+                          </div>
+                          
+                          {/* Ubicación detallada del cliente */}
+                          <p className="text-xs text-white/90 flex items-center gap-1.5 mt-1 font-medium">
+                            <MapPin className="w-3.5 h-3.5 text-[#ccff00] shrink-0" /> 
+                            <span>
+                              {isUserSelf(retainedDossierClient)
+                                ? (currentUserCity || "Sin ubicación registrada")
+                                : (retainedDossierClient.city || "Sin ubicación registrada")}
                             </span>
+                          </p>
+                          
+                          {/* Píldora de Recompra exclusiva para clientes reales */}
+                          {!isClientAdmin(retainedDossierClient) && (
+                            <div className="mt-2">
+                              <span 
+                                className="inline-flex items-center text-[11.5px] font-mono px-3 py-1 rounded-full bg-white/10 text-[#ccff00] border border-[#ccff00]/35 font-bold tracking-tight shadow-sm"
+                                title="Frecuencia estimada de recompra del cliente"
+                              >
+                                Recompra: {retainedDossierClient.frequency || "1ª Vez"}
+                              </span>
+                            </div>
                           )}
                         </div>
-                        
-                        {/* Ubicación detallada del cliente con ancho completo */}
-                        <p className="text-xs text-white/80 flex items-center gap-1.5 mt-1 font-medium">
-                          <MapPin className="w-3.5 h-3.5 text-[#ccff00] shrink-0" /> 
-                          <span>
-                            {isUserSelf(displayedDossierClient)
-                              ? (currentUserCity || "Sin ubicación registrada")
-                              : (displayedDossierClient.city || "Sin ubicación registrada")}
-                          </span>
-                        </p>
-                        
-                        {/* Píldora de Recompra exclusiva para clientes reales (No aplica a cuentas administradoras) */}
-                        {!isClientAdmin(displayedDossierClient) && (
-                          <div className="mt-2">
-                            <span 
-                              className="inline-flex items-center text-[12px] font-mono px-3 py-1 rounded-full bg-white/10 text-[#ccff00] border border-[#ccff00]/30 font-bold tracking-tight shadow-md"
-                              title="Frecuencia estimada de recompra del cliente"
-                            >
-                              Recompra: {displayedDossierClient.frequency || "1ª Vez"}
-                            </span>
-                          </div>
-                        )}
+                      </div>
+
+                      <button 
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedClientId(null);
+                          setHoveredClientId(null);
+                        }}
+                        className="w-7 h-7 rounded-full bg-white/10 hover:bg-white/20 text-white/80 hover:text-white flex items-center justify-center transition-all duration-200 cursor-pointer shrink-0"
+                        title="Cerrar detalle (Esc)"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+
+                    <div className="space-y-1.5 text-[11px] pt-2.5 border-t border-white/15">
+                      <div className="flex items-center justify-between">
+                        <span className="text-white/75">Explorando:</span>
+                        <strong className="text-white font-semibold text-right truncate max-w-[145px]">
+                          {retainedDossierClient.name?.toLowerCase().includes("admin") || (isUserSelf(retainedDossierClient) && isAdmin)
+                            ? "Mi Perfil / Mapa"
+                            : (retainedDossierClient.currentSection || "Tienda")}
+                        </strong>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-white/75">Total Compras:</span>
+                        <strong className="text-[#ccff00] font-mono font-bold">${Number(retainedDossierClient.totalSpent || 0).toFixed(2)} USD</strong>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-white/75">Historial:</span>
+                        <span className="text-white font-medium">{retainedDossierClient.purchasesCount || 0} pedidos realizados</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-white/75">Dispositivo:</span>
+                        <span className="text-white font-medium">{retainedDossierClient.device || "Computador"}</span>
                       </div>
                     </div>
 
-                    <button 
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setSelectedClientId(null);
-                        setHoveredClientId(null);
-                        setLastActiveClient(null);
-                      }}
-                      className="w-7 h-7 rounded-full bg-white/10 hover:bg-white/20 text-white/70 hover:text-white flex items-center justify-center transition-all duration-200 cursor-pointer shrink-0"
-                      title="Cerrar detalle (Esc)"
-                    >
-                      <X className="w-4 h-4" />
-                    </button>
+                    {retainedDossierClient.hasCart && (
+                      <div className="p-2.5 rounded-xl bg-rose-500/20 border border-rose-500/35 flex items-center justify-between text-[10.5px]">
+                        <span className="text-rose-300 font-semibold flex items-center gap-1.5">
+                          <ShoppingBag className="w-3.5 h-3.5" /> Con ítems en el carrito
+                        </span>
+                        <span className="font-mono text-white font-bold">{retainedDossierClient.cartItemsCount || 1} pzs</span>
+                      </div>
+                    )}
                   </div>
-
-                  <div className="space-y-1.5 text-[10.5px] pt-2 border-t border-white/10">
-                    <div className="flex items-center justify-between">
-                      <span className="text-white/60">Explorando:</span>
-                      <strong className="text-white font-medium text-right truncate max-w-[140px]">
-                        {displayedDossierClient.name?.toLowerCase().includes("admin") || (isUserSelf(displayedDossierClient) && isAdmin)
-                          ? "Mi Perfil / Mapa"
-                          : (displayedDossierClient.currentSection || "Tienda")}
-                      </strong>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-white/60">Total Compras:</span>
-                      <strong className="text-[#ccff00] font-mono font-bold">${Number(displayedDossierClient.totalSpent || 0).toFixed(2)} USD</strong>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-white/60">Historial:</span>
-                      <span className="text-white/80">{displayedDossierClient.purchasesCount || 0} pedidos realizados</span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-white/60">Dispositivo:</span>
-                      <span className="text-white/80">{displayedDossierClient.device || "Computador"}</span>
-                    </div>
-                  </div>
-
-                  {displayedDossierClient.hasCart && (
-                    <div className="p-2 rounded-xl bg-rose-500/15 border border-rose-500/30 flex items-center justify-between text-[10px]">
-                      <span className="text-rose-300 font-semibold flex items-center gap-1.5">
-                        <ShoppingBag className="w-3 h-3" /> Con ítems en el carrito
-                      </span>
-                      <span className="font-mono text-white font-bold">{displayedDossierClient.cartItemsCount || 1} pzs</span>
-                    </div>
-                  )}
-                </div>
+                </motion.div>
               )}
-            </div>
+            </AnimatePresence>
 
             {/* TABS CONTAINER: SILKY SMOOTH CROSSFADE & SLIDE ANIMATION (LOCKED HORIZONTALLY) */}
             <div className="relative w-full overflow-hidden">
@@ -2626,18 +2709,18 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
                   return (
                     <div className="space-y-2">
                       <div className="flex items-center justify-between">
-                        <span className="text-xs font-bold text-white/90">Tráfico Activo</span>
-                        <span className="text-[10px] font-mono text-[#ccff00] font-bold">
+                        <span className="text-xs font-bold text-white">Tráfico Activo</span>
+                        <span className="text-[10.5px] font-mono text-[#ccff00] font-bold">
                           {actualClients.length} {actualClients.length === 1 ? 'Cliente' : 'Clientes'} Radar
                         </span>
                       </div>
                       
                       {/* Stage filter pills: Todos | En Carrito | Recurrentes */}
-                      <div className="grid grid-cols-3 gap-1 p-1 rounded-full bg-black/50 border border-white/10 text-[10px] text-center font-bold">
+                      <div className="grid grid-cols-3 gap-1 p-1 rounded-full bg-[#141b19] border border-white/15 text-[10px] text-center font-bold">
                         <button 
                           onClick={() => setActiveStage("all")}
-                          className={`relative z-10 py-1 rounded-full transition-colors duration-200 cursor-pointer ${
-                            activeStage === "all" ? "text-gray-950 font-bold" : "text-white/60 hover:text-white"
+                          className={`relative z-10 py-1.5 rounded-full transition-colors duration-200 cursor-pointer ${
+                            activeStage === "all" ? "text-gray-950 font-bold" : "text-white/80 hover:text-white"
                           }`}
                         >
                           {activeStage === "all" && (
@@ -2651,8 +2734,8 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
                         </button>
                         <button 
                           onClick={() => setActiveStage("cart")}
-                          className={`relative z-10 py-1 rounded-full transition-colors duration-200 cursor-pointer ${
-                            activeStage === "cart" ? "text-white font-bold" : "text-white/60 hover:text-white"
+                          className={`relative z-10 py-1.5 rounded-full transition-colors duration-200 cursor-pointer ${
+                            activeStage === "cart" ? "text-white font-bold" : "text-white/80 hover:text-white"
                           }`}
                         >
                           {activeStage === "cart" && (
@@ -2666,8 +2749,8 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
                         </button>
                         <button 
                           onClick={() => setActiveStage("frequent")}
-                          className={`relative z-10 py-1 rounded-full transition-colors duration-200 cursor-pointer ${
-                            activeStage === "frequent" ? "text-gray-950 font-bold" : "text-white/60 hover:text-white"
+                          className={`relative z-10 py-1.5 rounded-full transition-colors duration-200 cursor-pointer ${
+                            activeStage === "frequent" ? "text-gray-950 font-bold" : "text-white/80 hover:text-white"
                           }`}
                         >
                           {activeStage === "frequent" && (
@@ -2695,7 +2778,6 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
                     : "0.0";
                   const trendText = hasActivity ? `+${trendPct}% al alza` : "0.0% estable";
 
-                  // Dynamic spline path: flat at baseline (y=50) when no purchases, or dynamic curve when purchases exist
                   const points = hasActivity
                     ? [
                         { x: 5, y: Math.max(15, 50 - Math.min(30, totalSpent * 0.02)) },
@@ -2724,15 +2806,15 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
                     : "0 recompras";
 
                   return (
-                    <div className="rounded-2xl bg-black/45 border border-white/10 p-3.5 space-y-2">
+                    <div className="rounded-2xl bg-[#141b19] border border-white/15 p-3.5 space-y-2.5 shadow-inner">
                       <div className="flex items-center justify-between">
                         <div>
-                          <span className="text-[11px] font-bold text-white block">Tendencia de Compra General</span>
-                          <span className={`text-[9.5px] font-mono font-semibold flex items-center gap-1 ${hasActivity ? 'text-[#ccff00]' : 'text-white/50'}`}>
-                            <TrendingUp className="w-2.5 h-2.5" /> {trendText}
+                          <span className="text-xs font-bold text-white block">Tendencia de Compra General</span>
+                          <span className={`text-[10px] font-mono font-semibold flex items-center gap-1 mt-0.5 ${hasActivity ? 'text-[#ccff00]' : 'text-white/75'}`}>
+                            <TrendingUp className="w-3 h-3" /> {trendText}
                           </span>
                         </div>
-                        <ArrowUpRight className="w-3.5 h-3.5 text-white/50" />
+                        <ArrowUpRight className="w-4 h-4 text-white/70" />
                       </div>
 
                       {/* Clean SVG Spline Trend Curve */}
@@ -2740,7 +2822,7 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
                         <svg viewBox="0 0 200 60" className="w-full h-full overflow-visible">
                           <defs>
                             <linearGradient id="miniTrendGrad" x1="0%" y1="0%" x2="0%" y2="100%">
-                              <stop offset="0%" stopColor="#ccff00" stopOpacity={hasActivity ? 0.35 : 0.08} />
+                              <stop offset="0%" stopColor="#ccff00" stopOpacity={hasActivity ? 0.35 : 0.12} />
                               <stop offset="100%" stopColor="#ccff00" stopOpacity="0" />
                             </linearGradient>
                           </defs>
@@ -2748,17 +2830,17 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
                           <path 
                             d={pathD} 
                             fill="none" 
-                            stroke={hasActivity ? "#ccff00" : "rgba(255,255,255,0.25)"} 
+                            stroke={hasActivity ? "#ccff00" : "rgba(255,255,255,0.4)"} 
                             strokeWidth="2" 
                             strokeLinecap="round" 
                           />
-                          <circle cx={lastPoint.x} cy={lastPoint.y} r="3" fill="#ffffff" stroke={hasActivity ? "#ccff00" : "rgba(255,255,255,0.4)"} strokeWidth="2" />
+                          <circle cx={lastPoint.x} cy={lastPoint.y} r="3" fill="#ffffff" stroke={hasActivity ? "#ccff00" : "rgba(255,255,255,0.6)"} strokeWidth="2" />
                         </svg>
                       </div>
 
-                      <div className="flex items-center justify-between text-[9.5px] font-mono text-white/60 pt-1 border-t border-white/10">
-                        <span>Recompra: <strong>{recompraText}</strong></span>
-                        <span className={hasActivity ? "text-[#ccff00] font-bold" : "text-white/50 font-bold"}>
+                      <div className="flex items-center justify-between text-[10px] font-mono text-white/80 pt-1.5 border-t border-white/15">
+                        <span>Recompra: <strong className="text-white">{recompraText}</strong></span>
+                        <span className={hasActivity ? "text-[#ccff00] font-bold" : "text-white/85 font-bold"}>
                           ${totalSpent.toFixed(0)}/vol
                         </span>
                       </div>
@@ -2775,38 +2857,38 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
                     : 0;
 
                   return (
-                    <div className="rounded-2xl bg-black/45 border border-rose-500/30 p-3.5 space-y-2.5 shadow-[0_0_20px_rgba(244,63,94,0.1)]">
+                    <div className="rounded-2xl bg-[#141b19] border border-rose-500/35 p-3.5 space-y-2.5 shadow-[0_0_20px_rgba(244,63,94,0.12)]">
                       <div className="flex items-center justify-between">
                         <div>
-                          <span className="text-[11px] font-bold text-white block">Telemetría de Carritos</span>
-                          <span className="text-[9.5px] font-mono font-semibold flex items-center gap-1 text-rose-400">
-                            <ShoppingBag className="w-2.5 h-2.5" /> {cartClients.length} {cartClients.length === 1 ? "carrito activo" : "carritos activos"}
+                          <span className="text-xs font-bold text-white block">Telemetría de Carritos</span>
+                          <span className="text-[10px] font-mono font-semibold flex items-center gap-1 text-rose-400 mt-0.5">
+                            <ShoppingBag className="w-3 h-3" /> {cartClients.length} {cartClients.length === 1 ? "carrito activo" : "carritos activos"}
                           </span>
                         </div>
-                        <span className="text-[9px] font-mono px-2 py-0.5 rounded-full bg-rose-500/20 text-rose-300 border border-rose-500/30 font-bold">
+                        <span className="text-[9.5px] font-mono px-2.5 py-0.5 rounded-full bg-rose-500/20 text-rose-300 border border-rose-500/35 font-bold">
                           En Vivo
                         </span>
                       </div>
 
                       <div className="grid grid-cols-2 gap-2 pt-1">
-                        <div className="p-2 rounded-xl bg-white/5 border border-white/10">
-                          <span className="text-[9px] text-white/50 block font-mono">Artículos en Curso</span>
-                          <span className="text-base font-bold text-white font-mono">{totalCartPieces} <span className="text-[10px] text-white/60">pzs</span></span>
+                        <div className="p-2.5 rounded-xl bg-[#1c2623] border border-white/15">
+                          <span className="text-[9.5px] text-white/75 block font-mono">Artículos en Curso</span>
+                          <span className="text-base font-bold text-white font-mono">{totalCartPieces} <span className="text-[10px] text-white/75">pzs</span></span>
                         </div>
-                        <div className="p-2 rounded-xl bg-white/5 border border-white/10">
-                          <span className="text-[9px] text-white/50 block font-mono">Tasa de Intención</span>
+                        <div className="p-2.5 rounded-xl bg-[#1c2623] border border-white/15">
+                          <span className="text-[9.5px] text-white/75 block font-mono">Tasa de Intención</span>
                           <span className="text-base font-bold text-rose-400 font-mono">{cartConversionPct}%</span>
                         </div>
                       </div>
 
-                      <div className="space-y-1 pt-1">
-                        <div className="flex items-center justify-between text-[9px] font-mono text-white/60">
+                      <div className="space-y-1.5 pt-1">
+                        <div className="flex items-center justify-between text-[9.5px] font-mono text-white/80">
                           <span>Estado del Embudo</span>
                           <span className="text-rose-300 font-bold">
                             {cartClients.length > 0 ? "Flujo de compra caliente" : "Esperando carritos"}
                           </span>
                         </div>
-                        <div className="w-full h-1.5 rounded-full bg-white/10 overflow-hidden">
+                        <div className="w-full h-1.5 rounded-full bg-white/15 overflow-hidden">
                           <div 
                             className="h-full bg-gradient-to-r from-rose-500 to-pink-400 rounded-full transition-all duration-500" 
                             style={{ width: `${Math.max(cartConversionPct, cartClients.length > 0 ? 15 : 0)}%` }} 
@@ -2826,31 +2908,31 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
                     : 0;
 
                   return (
-                    <div className="rounded-2xl bg-black/45 border border-[#ccff00]/30 p-3.5 space-y-2.5 shadow-[0_0_20px_rgba(204,255,0,0.08)]">
+                    <div className="rounded-2xl bg-[#141b19] border border-[#ccff00]/35 p-3.5 space-y-2.5 shadow-[0_0_20px_rgba(204,255,0,0.1)]">
                       <div className="flex items-center justify-between">
                         <div>
-                          <span className="text-[11px] font-bold text-white block">Fidelización Recurrente</span>
-                          <span className="text-[9.5px] font-mono font-semibold flex items-center gap-1 text-[#ccff00]">
-                            <Sparkles className="w-2.5 h-2.5" /> {frequentClients.length} {frequentClients.length === 1 ? "cliente frecuente" : "clientes frecuentes"}
+                          <span className="text-xs font-bold text-white block">Fidelización Recurrente</span>
+                          <span className="text-[10px] font-mono font-semibold flex items-center gap-1 text-[#ccff00] mt-0.5">
+                            <Sparkles className="w-3 h-3" /> {frequentClients.length} {frequentClients.length === 1 ? "cliente frecuente" : "clientes frecuentes"}
                           </span>
                         </div>
-                        <span className="text-[9px] font-mono px-2 py-0.5 rounded-full bg-[#ccff00]/20 text-[#ccff00] border border-[#ccff00]/30 font-bold">
+                        <span className="text-[9.5px] font-mono px-2.5 py-0.5 rounded-full bg-[#ccff00]/20 text-[#ccff00] border border-[#ccff00]/35 font-bold">
                           Recurrente
                         </span>
                       </div>
 
                       <div className="grid grid-cols-2 gap-2 pt-1">
-                        <div className="p-2 rounded-xl bg-white/5 border border-white/10">
-                          <span className="text-[9px] text-white/50 block font-mono">LTV Acumulado</span>
-                          <span className="text-base font-bold text-[#ccff00] font-mono">${totalFrequentSpent.toFixed(0)} <span className="text-[10px] text-white/60">USD</span></span>
+                        <div className="p-2.5 rounded-xl bg-[#1c2623] border border-white/15">
+                          <span className="text-[9.5px] text-white/75 block font-mono">LTV Acumulado</span>
+                          <span className="text-base font-bold text-[#ccff00] font-mono">${totalFrequentSpent.toFixed(0)} <span className="text-[10px] text-white/75">USD</span></span>
                         </div>
-                        <div className="p-2 rounded-xl bg-white/5 border border-white/10">
-                          <span className="text-[9px] text-white/50 block font-mono">Tasa Retención</span>
+                        <div className="p-2.5 rounded-xl bg-[#1c2623] border border-white/15">
+                          <span className="text-[9.5px] text-white/75 block font-mono">Tasa Retención</span>
                           <span className="text-base font-bold text-white font-mono">{frequentRetentionPct}%</span>
                         </div>
                       </div>
 
-                      <div className="flex items-center justify-between text-[9.5px] font-mono text-white/60 pt-1 border-t border-white/10">
+                      <div className="flex items-center justify-between text-[10px] font-mono text-white/80 pt-1.5 border-t border-white/15">
                         <span>Frecuencia Media:</span>
                         <strong className="text-[#ccff00]">
                           {frequentClients.length > 0 ? "Quincenal / Semanal" : "En acumulación"}
@@ -2860,7 +2942,7 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
                   );
                 })()}
 
-                {/* Metric 3: Distribución Geográfica — Computed dynamically from actual clients */}
+                {/* Metric 3: Distribución Geográfica — High-contrast card container */}
                 {(() => {
                   const total = actualClients.length || 1;
                   const regionCounts: Record<string, number> = {};
@@ -2887,28 +2969,28 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
                     'Costa': 'bg-[#ccff00]',
                     'Oriente': 'bg-emerald-400',
                     'Galápagos': 'bg-amber-400',
-                    'Otro': 'bg-white/50',
+                    'Otro': 'bg-white/60',
                   };
                   const fallbackPalette = ['bg-[#ccff00]', 'bg-white', 'bg-emerald-400', 'bg-cyan-400', 'bg-amber-400', 'bg-purple-400'];
 
                   const sortedRegions = Object.entries(regionCounts).sort((a, b) => b[1] - a[1]);
 
                   return (
-                    <div className="space-y-1.5 text-xs">
-                      <span className="text-[11px] font-bold text-white/80 block">Distribución Geográfica ({activeCountry.name})</span>
+                    <div className="rounded-2xl bg-[#141b19] border border-white/15 p-3.5 space-y-2 text-xs">
+                      <span className="text-xs font-bold text-white block">Distribución Geográfica ({activeCountry.name})</span>
                       {actualClients.length === 0 ? (
-                        <p className="text-[10px] text-white/40 font-mono">Sin clientes conectados</p>
+                        <p className="text-[10.5px] text-white/70 font-mono">Sin clientes conectados</p>
                       ) : (
-                        <div className="space-y-1">
+                        <div className="space-y-2 pt-0.5">
                           {sortedRegions.map(([region, count], idx) => {
                             const pct = Math.round((count / total) * 100);
                             return (
-                              <div key={region}>
-                                <div className="flex items-center justify-between text-[10px]">
-                                  <span className="text-white/70">{region}</span>
+                              <div key={region} className="space-y-1">
+                                <div className="flex items-center justify-between text-[10.5px]">
+                                  <span className="text-white/90 font-medium">{region}</span>
                                   <strong className="font-mono text-white">{pct}% ({count})</strong>
                                 </div>
-                                <div className="w-full h-1 rounded-full bg-white/10 overflow-hidden">
+                                <div className="w-full h-1.5 rounded-full bg-white/15 overflow-hidden">
                                   <div className={`h-full ${regionColors[region] || fallbackPalette[idx % fallbackPalette.length]} rounded-full transition-all duration-500`} style={{ width: `${pct}%` }} />
                                 </div>
                               </div>
@@ -2940,10 +3022,10 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
                   style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
                 >
                   {filteredActualClients.length === 0 ? (
-                    <div className="py-12 text-center text-white/40 text-xs flex flex-col items-center justify-center">
-                      <Users className="w-7 h-7 mx-auto mb-2 opacity-30 text-[#ccff00]" />
-                      <p className="font-semibold text-white/80">Sin clientes conectados</p>
-                      <p className="text-[10px] text-white/40 mt-1">El radar monitorea en vivo: {activeCountry.entityLabel}</p>
+                    <div className="py-12 text-center text-white/65 text-xs flex flex-col items-center justify-center">
+                      <Users className="w-7 h-7 mx-auto mb-2 opacity-50 text-[#ccff00]" />
+                      <p className="font-semibold text-white">Sin clientes conectados</p>
+                      <p className="text-[10.5px] text-white/70 mt-1">El radar monitorea en vivo: {activeCountry.entityLabel}</p>
                     </div>
                   ) : (
                     filteredActualClients.map(c => {
@@ -2960,7 +3042,7 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
                           className={`p-2.5 rounded-2xl flex items-center justify-between text-xs cursor-pointer transition-all duration-300 ease-out border ${
                             isSelected 
                               ? "bg-white text-gray-950 font-bold border-[#ccff00] shadow-[0_0_16px_rgba(204,255,0,0.35)]" 
-                              : "bg-black/40 hover:bg-black/70 text-white/85 border-white/10 hover:border-white/20"
+                              : "bg-[#141b19] hover:bg-[#1d2724] text-white border-white/15 hover:border-white/30"
                           }`}
                         >
                           <div className="flex items-center gap-2.5 truncate pr-2">
@@ -2972,8 +3054,8 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
                             />
                             <div className="truncate">
                               <p className="leading-tight truncate font-semibold">{cleanClientName(c.name)}</p>
-                              <p className={`text-[9.5px] mt-0.5 ${isSelected ? "text-gray-700 font-medium" : "text-white/45"}`}>
-                                {c.city || activeCountry.name} • <span className="font-mono">{activeCountry.currencySymbol}{c.totalSpent || 0}</span>
+                              <p className={`text-[10px] mt-0.5 ${isSelected ? "text-gray-700 font-medium" : "text-white/75"}`}>
+                                {c.city || activeCountry.name} • <span className="font-mono text-[#ccff00]">{activeCountry.currencySymbol}{c.totalSpent || 0}</span>
                               </p>
                             </div>
                           </div>
@@ -2981,7 +3063,7 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
                             {c.hasCart && (
                               <span className="w-2 h-2 rounded-full bg-rose-500 shadow-[0_0_6px_#f43f5e]" title="Con Carrito Activo" />
                             )}
-                            <ChevronRight className="w-3.5 h-3.5 opacity-60" />
+                            <ChevronRight className="w-3.5 h-3.5 opacity-75" />
                           </div>
                         </div>
                       );
@@ -2990,7 +3072,7 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
                 </div>
 
                 {/* Elegant Luminous Neon Green Vertical Slider Track */}
-                <div className="relative w-1.5 bg-white/5 rounded-full overflow-hidden shrink-0 border border-white/10">
+                <div className="relative w-1.5 bg-white/10 rounded-full overflow-hidden shrink-0 border border-white/15">
                   <div 
                     ref={scrollTrackRef}
                     style={{
@@ -3010,11 +3092,11 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
         {(() => {
           const activeProvincesCount = new Set(actualClients.map(c => c.city).filter(Boolean)).size;
           return (
-            <div className="pt-3 border-t border-white/10 flex items-center justify-between text-[10px] text-white/50">
-              <span className="flex items-center gap-1.5">
-                <Activity className="w-3 h-3 text-[#ccff00]" /> Radar {activeCountry.name} Activo
+            <div className="pt-3 border-t border-white/15 flex items-center justify-between text-[10.5px] text-white/80">
+              <span className="flex items-center gap-1.5 font-medium">
+                <Activity className="w-3.5 h-3.5 text-[#ccff00]" /> Radar {activeCountry.name} Activo
               </span>
-              <span className="font-mono text-emerald-400 font-semibold">
+              <span className="font-mono text-emerald-400 font-bold">
                 {activeProvincesCount > 0 ? `${activeProvincesCount}/${activeCountry.totalEntities} Activas` : `${activeCountry.entityLabel} en Espera`}
               </span>
             </div>
@@ -3035,18 +3117,21 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
         {(() => {
           const activeProvincesCount = new Set(actualClients.map(c => c.city).filter(Boolean)).size;
           return (
-            <div className="rounded-2xl bg-black/60 backdrop-blur-xl border border-white/15 p-3.5 shadow-xl flex flex-col justify-between">
+            <div
+              style={{ backgroundColor: "rgba(10, 14, 13, 0.95)" }}
+              className="rounded-2xl backdrop-blur-2xl border border-white/20 p-3.5 shadow-[0_18px_40px_rgba(0,0,0,0.8)] flex flex-col justify-between"
+            >
               <div className="flex items-center justify-between text-[11px] font-bold text-white mb-1">
                 <span className="flex items-center gap-1.5">
                   <CountrySvgFlag code={selectedCountry} className="w-4 h-3 rounded-[2px] shadow-sm shrink-0" />
                   <span className="text-white font-bold">{activeCountry.name}</span>
                 </span>
-                <span className="text-[9px] font-mono text-white/50">{activeCountry.entityLabel}</span>
+                <span className="text-[9.5px] font-mono text-white/75">{activeCountry.entityLabel}</span>
               </div>
-              <p className="text-[10px] text-white/70 truncate">
+              <p className="text-[10.5px] text-white/85 truncate">
                 {activeCountry.capital} • {activeCountry.majorCities.slice(1, 4).join(' • ')}
               </p>
-              <div className="flex items-center gap-1 text-[9.5px] font-mono text-[#ccff00] mt-1">
+              <div className="flex items-center gap-1 text-[10px] font-mono text-[#ccff00] font-semibold mt-1">
                 <span>
                   {activeProvincesCount > 0 
                     ? `${activeProvincesCount} zonas activas en tiempo real` 
@@ -3068,22 +3153,25 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
           const cartPct = total > 0 ? Math.round((cartCount / totalSafe) * 100) : 0;
           const frequentPct = total > 0 ? Math.round((frequentCount / totalSafe) * 100) : 0;
           return (
-            <div className="rounded-2xl bg-black/60 backdrop-blur-xl border border-white/15 p-3.5 shadow-xl flex flex-col justify-between">
+            <div
+              style={{ backgroundColor: "rgba(10, 14, 13, 0.95)" }}
+              className="rounded-2xl backdrop-blur-2xl border border-white/20 p-3.5 shadow-[0_18px_40px_rgba(0,0,0,0.8)] flex flex-col justify-between"
+            >
               <div className="mb-1">
                 <div className="flex items-center gap-1.5 text-[11px] font-bold text-white whitespace-nowrap">
                   <Users className="w-3 h-3 text-emerald-400 shrink-0" />
                   <span>Embudo de Conversión</span>
                 </div>
-                <p className="text-[9.5px] font-mono text-emerald-400 font-bold mt-0.5 pl-4.5">
+                <p className="text-[10px] font-mono text-emerald-400 font-bold mt-0.5 pl-4.5">
                   {total} {total === 1 ? 'cliente activo' : 'clientes activos'}
                 </p>
               </div>
-              <div className="flex items-center justify-between text-[9.5px] text-white/70">
-                <span>Catálogo: <strong>{browsingPct}%</strong></span>
-                <span>Carrito: <strong>{cartPct}%</strong></span>
-                <span>Recurrentes: <strong>{frequentPct}%</strong></span>
+              <div className="flex items-center justify-between text-[10px] text-white/85">
+                <span>Catálogo: <strong className="text-white">{browsingPct}%</strong></span>
+                <span>Carrito: <strong className="text-white">{cartPct}%</strong></span>
+                <span>Recurrentes: <strong className="text-white">{frequentPct}%</strong></span>
               </div>
-              <div className="w-full h-1.5 rounded-full bg-white/10 flex overflow-hidden mt-1.5">
+              <div className="w-full h-1.5 rounded-full bg-white/15 flex overflow-hidden mt-1.5">
                 <div className="h-full bg-white transition-all duration-500" style={{ width: `${browsingPct}%` }} />
                 <div className="h-full bg-amber-400 transition-all duration-500" style={{ width: `${cartPct}%` }} />
                 <div className="h-full bg-[#ccff00] transition-all duration-500" style={{ width: `${frequentPct}%` }} />
@@ -3105,18 +3193,21 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
             : 0;
           const avgIntent = actualClients.length > 0 ? Math.round(actualClients.reduce((sum, c) => sum + (c.intentScore || 0), 0) / actualClients.length) : 0;
           return (
-            <div className="rounded-2xl bg-black/60 backdrop-blur-xl border border-white/15 p-3.5 shadow-xl flex flex-col justify-between">
+            <div
+              style={{ backgroundColor: "rgba(10, 14, 13, 0.95)" }}
+              className="rounded-2xl backdrop-blur-2xl border border-white/20 p-3.5 shadow-[0_18px_40px_rgba(0,0,0,0.8)] flex flex-col justify-between"
+            >
               <div className="flex items-center justify-between text-[11px] font-bold text-white mb-1">
                 <span className="flex items-center gap-1.5">
                   <Sparkles className="w-3 h-3 text-[#ccff00]" /> Resumen Radar
                 </span>
-                <span className="text-[9px] font-mono text-[#ccff00] font-bold">En Vivo</span>
+                <span className="text-[9.5px] font-mono text-[#ccff00] font-bold">En Vivo</span>
               </div>
-              <p className="text-[10px] text-white/70">
+              <p className="text-[10.5px] text-white/85">
                 {actualClients.length} cliente{actualClients.length !== 1 ? 's' : ''}
                 {connectedClients.filter(c => c.isAnonymous).length > 0 ? ` • ${connectedClients.filter(c => c.isAnonymous).length} visitante${connectedClients.filter(c => c.isAnonymous).length !== 1 ? 's' : ''}` : ''} conectado{actualClients.length + connectedClients.filter(c => c.isAnonymous).length !== 1 ? 's' : ''} ahora
               </p>
-              <div className="flex items-center justify-between text-[9px] font-mono text-white/60 mt-1 pt-1 border-t border-white/10">
+              <div className="flex items-center justify-between text-[9.5px] font-mono text-white/80 mt-1 pt-1 border-t border-white/15">
                 <span>Ticket Promedio: <strong className="text-white">${avgTicket.toFixed(0)} USD</strong></span>
                 <span>Intent: <strong className="text-[#ccff00]">{avgIntent}%</strong></span>
               </div>
