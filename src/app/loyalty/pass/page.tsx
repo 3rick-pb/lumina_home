@@ -14,6 +14,8 @@ function LoyaltyPassContent() {
 
   const [loading, setLoading] = useState(false);
   const [saveUrl, setSaveUrl] = useState<string | null>(null);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [isOpening, setIsOpening] = useState(false);
 
   // Fetch or generate Google Wallet JWT save URL
   useEffect(() => {
@@ -21,6 +23,7 @@ function LoyaltyPassContent() {
     const fetchSaveUrl = async () => {
       try {
         setLoading(true);
+        setErrorMsg(null);
         const res = await fetch("/api/wallet/google/create", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -30,11 +33,15 @@ function LoyaltyPassContent() {
           }),
         });
         const data = await res.json();
-        if (isMounted && data.success && data.saveUrl) {
-          setSaveUrl(data.saveUrl);
+        if (isMounted) {
+          if (data.success && data.saveUrl) {
+            setSaveUrl(data.saveUrl);
+          } else if (data.error) {
+            setErrorMsg(data.error);
+          }
         }
-      } catch (err) {
-        console.warn("[LoyaltyPassPage] Error obteniendo URL de Google Wallet:", err);
+      } catch (err: any) {
+        if (isMounted) setErrorMsg(err.message || "Error al conectar con Google Wallet.");
       } finally {
         if (isMounted) setLoading(false);
       }
@@ -47,14 +54,34 @@ function LoyaltyPassContent() {
     };
   }, [code, email]);
 
-  const handleOpenWallet = () => {
+  const handleOpenWallet = async () => {
     if (saveUrl) {
+      setIsOpening(true);
       window.location.href = saveUrl;
       return;
     }
-    // Fallback direct endpoint
-    const directUrl = `/api/wallet/google/create?code=${encodeURIComponent(code)}&name=${encodeURIComponent(name)}&email=${encodeURIComponent(email)}&pts=${encodeURIComponent(pts)}`;
-    window.location.href = directUrl;
+    try {
+      setIsOpening(true);
+      setErrorMsg(null);
+      const res = await fetch("/api/wallet/google/create", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          customerEmail: email,
+          memberCode: code,
+        }),
+      });
+      const data = await res.json();
+      if (data.success && data.saveUrl) {
+        window.location.href = data.saveUrl;
+        return;
+      }
+      setErrorMsg(data.error || "No se pudo generar el pase en Google Wallet.");
+    } catch (err: any) {
+      setErrorMsg(err.message || "Error de red al conectar con Google Wallet.");
+    } finally {
+      setIsOpening(false);
+    }
   };
 
   return (
@@ -130,13 +157,18 @@ function LoyaltyPassContent() {
           <GoogleWalletButton
             onClick={handleOpenWallet}
             topText="Add to"
-            disabled={loading && !saveUrl}
+            disabled={loading || isOpening}
             className="w-full justify-center shadow-lg"
           />
-          {loading && !saveUrl && (
-            <div className="flex items-center gap-1.5 text-[11px] text-white/50 mt-2">
-              <Loader2 className="w-3 h-3 animate-spin" />
-              <span>Conectando con Google Wallet...</span>
+          {(loading || isOpening) && (
+            <div className="flex items-center gap-1.5 text-[11px] text-white/50 mt-2.5">
+              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+              <span>{isOpening ? "Abriendo Google Wallet..." : "Conectando con Google Wallet..."}</span>
+            </div>
+          )}
+          {errorMsg && (
+            <div className="mt-2.5 p-2.5 rounded-xl bg-red-500/10 border border-red-500/20 text-[11px] text-red-300 text-center w-full">
+              {errorMsg}
             </div>
           )}
         </div>

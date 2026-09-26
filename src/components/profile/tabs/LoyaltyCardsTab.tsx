@@ -105,8 +105,8 @@ const DEFAULT_PROGRAM_CONFIG: LoyaltyProgramConfig = {
   autoSyncPurchases: true,
   appleTeamId: "LUMINA99EC",
   applePassTypeId: "pass.ec.luminahome.member",
-  googleIssuerId: "3388000000022194812",
-  googleClassId: "lumina_member_pass_v2",
+  googleIssuerId: "3388000000023209784",
+  googleClassId: "3388000000023209784.LUMINA_HOME",
 };
 
 const COLOR_PRESETS = [
@@ -306,6 +306,7 @@ export function LoyaltyCardsTab() {
   const [copiedLink, setCopiedLink] = useState(false);
   const [toolState, setToolState] = useState<"idle" | "working" | "done">("idle");
   const [isSyncing, setIsSyncing] = useState(false);
+  const [isOpeningGoogleWallet, setIsOpeningGoogleWallet] = useState(false);
 
   const qrSvgRef = useRef<SVGSVGElement | null>(null);
   const logoInputRef = useRef<HTMLInputElement | null>(null);
@@ -511,6 +512,7 @@ export function LoyaltyCardsTab() {
     const target = member || selectedMemberForQR || members[0];
     if (!target) return;
     try {
+      setIsOpeningGoogleWallet(true);
       const res = await fetch("/api/wallet/google/create", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -523,12 +525,16 @@ export function LoyaltyCardsTab() {
       const data = await res.json();
       if (data.success && data.saveUrl) {
         window.open(data.saveUrl, "_blank");
+        toast.success("Enlace oficial de Google Wallet generado correctamente.");
         return;
       }
+      toast.error(data.error || "No se pudo generar la tarjeta de Google Wallet.");
     } catch (err) {
       console.warn("[LoyaltyCardsTab] Error abriendo Google Wallet:", err);
+      toast.error("Error al conectar con el servidor para generar la tarjeta.");
+    } finally {
+      setIsOpeningGoogleWallet(false);
     }
-    window.open(enrollmentQrUrl, "_blank");
   };
 
   const handleDownloadApplePassManifest = (member?: LoyaltyMemberCard | null) => {
@@ -1152,6 +1158,7 @@ export function LoyaltyCardsTab() {
                     <div className="pt-1">
                       <GoogleWalletButton
                         onClick={() => handleOpenGoogleWallet(selectedMemberForQR)}
+                        disabled={isOpeningGoogleWallet}
                         topText="Add to"
                         className="w-full justify-center shadow-md"
                       />

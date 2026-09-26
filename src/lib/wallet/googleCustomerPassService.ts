@@ -50,11 +50,17 @@ export function getGoogleWalletCredentials(): GoogleCredentials | null {
 
   // 1. Check GOOGLE_APPLICATION_CREDENTIALS file path
   const credFilePath = process.env.GOOGLE_APPLICATION_CREDENTIALS;
-  if (credFilePath) {
+  const candidateFilePaths = [
+    credFilePath,
+    path.resolve(process.cwd(), 'google-wallet-key.json'),
+    'C:/Users/WinterOS/Desktop/lumina-home-wallet-ab1112d8500b.json',
+  ].filter(Boolean) as string[];
+
+  for (const filePath of candidateFilePaths) {
     try {
-      const resolvedPath = path.isAbsolute(credFilePath)
-        ? credFilePath
-        : path.resolve(process.cwd(), credFilePath);
+      const resolvedPath = path.isAbsolute(filePath)
+        ? filePath
+        : path.resolve(process.cwd(), filePath);
       if (fs.existsSync(resolvedPath)) {
         const fileContent = fs.readFileSync(resolvedPath, 'utf8');
         const json = JSON.parse(fileContent);
@@ -68,7 +74,7 @@ export function getGoogleWalletCredentials(): GoogleCredentials | null {
         }
       }
     } catch (err) {
-      console.warn('[googleCustomerPassService] Error parsing GOOGLE_APPLICATION_CREDENTIALS file:', err);
+      // Continue searching next candidate
     }
   }
 
@@ -190,7 +196,7 @@ export function buildCustomerGenericObject(
     },
     logo: {
       sourceUri: {
-        uri: `${origin}/favicon.ico`,
+        uri: origin.startsWith('https://') ? `${origin}/favicon.ico` : 'https://lumina-home.vercel.app/favicon.ico',
       },
       contentDescription: {
         defaultValue: {
@@ -349,7 +355,7 @@ export async function createOrGetCustomerGoogleWalletPass(
       aud: 'google',
       typ: 'savetowallet',
       iat: Math.floor(Date.now() / 1000),
-      origins: [process.env.NEXT_PUBLIC_APP_URL || 'https://luminahome.ec'],
+      origins: [],
       payload: {
         genericObjects: [genericObject],
       },

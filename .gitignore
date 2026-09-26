@@ -19,6 +19,8 @@
 # misc
 .DS_Store
 *.pem
+google-wallet-key.json
+*wallet*.json
 
 # debug
 npm-debug.log*
