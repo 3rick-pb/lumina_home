@@ -4,6 +4,7 @@ import React from "react";
 import { createPortal } from "react-dom";
 import { X, Truck, ExternalLink } from "lucide-react";
 import { BeUICenterMorphModal, BeUITiltCard } from "@/components/ui/BeUIControls";
+import { GoogleWalletButton, GoogleWalletIcon } from "@/components/ui/GoogleWalletButton";
 import type { Order } from "@/lib/userStore";
 import { useUserStore } from "@/lib/userStore";
 
@@ -87,13 +88,11 @@ export function WalletPassPopupModal({
     liveOrder.trackingUrl || ""
   )}`;
 
-  // Root universal endpoint supporting both Apple Wallet (.pkpass) and Google Wallet (Save JWT)
-  const universalPassEndpoint = `${origin}/api/wallet/pass?type=order&platform=auto&${queryParams}`;
-  const applePassEndpoint = `/api/wallet/pass?type=order&platform=apple&${queryParams}`;
-  const googlePassEndpoint = `/api/wallet/pass?type=order&platform=google&${queryParams}`;
+  // Google Wallet pass endpoint
+  const googlePassEndpoint = `${origin}/api/wallet/pass?type=order&platform=google&${queryParams}`;
 
   const qrImageUrl = `https://api.qrserver.com/v1/create-qr-code/?size=260x260&margin=6&ecc=M&data=${encodeURIComponent(
-    universalPassEndpoint
+    googlePassEndpoint
   )}`;
 
   if (typeof document === "undefined") return null;
@@ -112,24 +111,10 @@ export function WalletPassPopupModal({
         {/* Subtle Warm Stone Ambient Highlight (No neon green or blue) */}
         <div className="pointer-events-none absolute -top-20 left-1/2 -translate-x-1/2 w-52 h-32 rounded-full bg-[#D6D3CD]/[0.06] blur-3xl" />
 
-        {/* Compact Top Bar: Unified Apple Wallet + Google Wallet Informative Tag & Close */}
+        {/* Compact Top Bar: Google Wallet Badge & Close */}
         <div className="relative z-10 flex items-center justify-between gap-2 mb-3.5">
-          {/* Unified Ecosystem Tag with both Official Apple Wallet & Google Wallet Logos */}
+          {/* Official Google Wallet Informative Badge */}
           <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#19191D] border border-white/[0.08] shadow-inner">
-            <a
-              href={applePassEndpoint}
-              className="inline-flex items-center gap-1.5 text-[11px] font-medium text-[#F4F4F6] hover:text-white transition-colors"
-              title="Descargar pase nativo Apple Wallet (.pkpass)"
-            >
-              {/* Official Apple Emblem */}
-              <svg className="w-3.5 h-3.5 fill-current shrink-0" viewBox="0 0 24 24">
-                <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M15.97 6.33c.64-.78 1.08-1.86.96-2.94-.93.04-2.06.62-2.72 1.4-.58.68-1.1 1.79-.96 2.84 1.04.08 2.08-.52 2.72-1.3z" />
-              </svg>
-              <span className="tracking-tight">Apple Wallet</span>
-            </a>
-
-            <span className="w-px h-3 bg-white/[0.12]" />
-
             <a
               href={googlePassEndpoint}
               target="_blank"
@@ -137,19 +122,8 @@ export function WalletPassPopupModal({
               className="inline-flex items-center gap-1.5 text-[11px] font-medium text-[#F4F4F6] hover:text-white transition-colors"
               title="Guardar pase en Google Wallet"
             >
-              {/* Official Google Wallet Emblem */}
-              <svg className="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="none">
-                <path
-                  d="M21 7.5V6a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-1.5"
-                  stroke="#4285F4"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                />
-                <rect x="3" y="8" width="18" height="9" rx="2" fill="#34A853" />
-                <path d="M3 10.5h18" stroke="#FBBC05" strokeWidth="2.5" />
-                <circle cx="17" cy="13.5" r="1.5" fill="#EA4335" />
-              </svg>
-              <span className="tracking-tight">Google Wallet</span>
+              <GoogleWalletIcon className="w-4 h-4 shrink-0" />
+              <span className="tracking-tight font-medium">Google Wallet Pass</span>
             </a>
           </div>
 
@@ -257,6 +231,16 @@ export function WalletPassPopupModal({
             </span>
           </div>
         </BeUITiltCard>
+
+        {/* Direct One-Tap Button matching official pure code design */}
+        <div className="mt-3.5 flex justify-center">
+          <GoogleWalletButton
+            href={googlePassEndpoint}
+            target="_blank"
+            topText="Add to"
+            className="w-full"
+          />
+        </div>
       </div>
     </BeUICenterMorphModal>,
     document.body

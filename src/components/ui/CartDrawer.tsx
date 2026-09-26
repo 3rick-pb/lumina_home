@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { motion, AnimatePresence, Variants } from "framer-motion";
 import { BeUIAdaptiveStepper, BeUIRollingPrice, BeUIAnimatedCtaButton, BeUITiltCard } from "./BeUIControls";
 import { WalletPassPopupModal } from "./WalletPassPopupModal";
+import { GoogleWalletButton } from "./GoogleWalletButton";
 import InteractiveAddressMap from "./InteractiveAddressMap";
 import { playStepperTickSound } from "@/lib/soundUtils";
 import { 
@@ -2802,7 +2803,7 @@ export function CartDrawer() {
       <BeUITiltCard maxTilt={15} scaleOnHover={1.04} glareOpacity={0.32} className="shrink-0 rounded-2xl">
         <button
           type="button"
-          onClick={() => setWalletPopupPlatform("apple")}
+          onClick={() => setWalletPopupPlatform("google")}
           className="group/qr p-3.5 rounded-2xl bg-white shadow-[0_14px_34px_rgba(0,0,0,0.35)] border border-white/30 flex flex-col items-center gap-1.5 cursor-pointer"
           title="Abrir Pase Digital y Código QR en ventana interactiva"
         >
@@ -2830,37 +2831,16 @@ export function CartDrawer() {
             Guarda tu Pedido en tu Billetera
           </h4>
           <p className="text-xs text-white/70 leading-relaxed mt-1">
-            Escanea el código QR 3D o añade esta tarjeta a <strong className="text-white">Google Wallet</strong> o <strong className="text-white">Apple Wallet</strong> aquí mismo. Recibirás actualizaciones automáticas cuando tu pedido pase a <span className="text-amber-300 font-semibold">Enviado</span> y <span className="text-emerald-300 font-semibold">Entregado</span>.
+            Escanea el código QR 3D o añade esta tarjeta a <strong className="text-white">Google Wallet</strong> aquí mismo. Recibirás actualizaciones automáticas cuando tu pedido pase a <span className="text-amber-300 font-semibold">Enviado</span> y <span className="text-emerald-300 font-semibold">Entregado</span>.
           </p>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1">
-          {/* Google Wallet Button (Opens In-Page Popup Modal) */}
-          <button
-            type="button"
+        <div className="pt-1.5 flex justify-center sm:justify-start">
+          <GoogleWalletButton
             onClick={() => setWalletPopupPlatform("google")}
-            className="h-11 px-4 rounded-xl bg-white hover:bg-gray-100 text-gray-950 font-sans font-bold text-xs flex items-center justify-center gap-2.5 shadow-sm transition-all hover:scale-[1.01] active:scale-95 cursor-pointer"
-          >
-            <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="none">
-              <path d="M21 7.5V6a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-1.5" stroke="#4285F4" strokeWidth="2" strokeLinecap="round" />
-              <rect x="3" y="8" width="18" height="9" rx="2" fill="#34A853" />
-              <path d="M3 10.5h18" stroke="#FBBC05" strokeWidth="2.5" />
-              <circle cx="17" cy="13.5" r="1.5" fill="#EA4335" />
-            </svg>
-            <span>Añadir a Google Wallet</span>
-          </button>
-
-          {/* Apple Wallet Button (Opens In-Page Popup Modal) */}
-          <button
-            type="button"
-            onClick={() => setWalletPopupPlatform("apple")}
-            className="h-11 px-4 rounded-xl bg-white/12 hover:bg-white/20 border border-white/20 text-white font-sans font-bold text-xs flex items-center justify-center gap-2.5 transition-all hover:scale-[1.01] active:scale-95 cursor-pointer"
-          >
-            <svg className="w-4 h-4 shrink-0 fill-current" viewBox="0 0 24 24">
-              <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M15.97 6.33c.64-.78 1.08-1.86.96-2.94-.93.04-2.06.62-2.72 1.4-.58.68-1.1 1.79-.96 2.84 1.04.08 2.08-.52 2.72-1.3z" />
-            </svg>
-            <span>Añadir a Apple Wallet</span>
-          </button>
+            topText="Add to"
+            className="w-full sm:w-auto"
+          />
         </div>
       </div>
     </div>
@@ -2878,7 +2858,7 @@ export function CartDrawer() {
     trackingUrl={lastPlacedOrder.trackingUrl}
     carrierName={lastPlacedOrder.carrierName}
     date={lastPlacedOrder.date}
-    initialPlatform={walletPopupPlatform || "apple"}
+    initialPlatform="google"
   />
 
   {/* Action Buttons with 2IXO Capsule Design */}

@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server';
 import crypto from 'crypto';
-import { generateAppleOrderPassZip } from '@/lib/wallet/appleWalletService';
 import { buildGoogleWalletOrderJwtUrl } from '@/lib/wallet/googleWalletService';
 import {
   generateOrderTrackingToken,
@@ -128,55 +127,18 @@ export async function GET(request: Request) {
     const secureToken = generateOrderTrackingToken(orderData.orderId);
     const liveOrderPassUrl = `${origin}/wallet/order/${secureToken}`;
 
-    const effectivePlatform =
-      rawPlatform === 'apple' || rawPlatform === 'google'
-        ? rawPlatform
-        : isIOS
-        ? 'apple'
-        : isAndroid
-        ? 'google'
-        : 'universal';
+    // Exclusively generate Google Wallet Order Pass
+    const googleRes = buildGoogleWalletOrderJwtUrl({
+      ...orderData,
+      origin,
+    });
 
-    // 1. Apple Wallet (.pkpass)
-    if (effectivePlatform === 'apple') {
-      try {
-        const passResult = await generateAppleOrderPassZip({
-          ...orderData,
-          origin,
-        });
-
-        const safeFileId = orderData.orderId.replace(/[^a-zA-Z0-9_-]/g, '').toLowerCase() || 'orden';
-        return new NextResponse(new Uint8Array(passResult.buffer), {
-          status: 200,
-          headers: {
-            'Content-Type': 'application/vnd.apple.pkpass',
-            'Content-Disposition': `attachment; filename="lumina-pedido-${safeFileId}.pkpass"`,
-            'Cache-Control': 'no-store, max-age=0',
-          },
-        });
-      } catch (err) {
-        console.error('Failed to generate Order .pkpass buffer:', err);
-        return NextResponse.redirect(`${liveOrderPassUrl}?wallet=apple&error=pass_generation_failed`);
-      }
+    if (googleRes.saveUrl) {
+      return NextResponse.redirect(googleRes.saveUrl);
     }
 
-    // 2. Google Wallet (Save JWT)
-    if (effectivePlatform === 'google') {
-      const googleRes = buildGoogleWalletOrderJwtUrl({
-        ...orderData,
-        origin,
-      });
-
-      if (googleRes.saveUrl) {
-        return NextResponse.redirect(googleRes.saveUrl);
-      }
-
-      // If credentials not configured, redirect to web viewer with clear helper param
-      return NextResponse.redirect(`${liveOrderPassUrl}?wallet=google&status=pending_credentials`);
-    }
-
-    // 3. Universal Desktop / Fallback route
-    return NextResponse.redirect(liveOrderPassUrl);
+    // If Google Wallet credentials are not configured yet, redirect to web viewer
+    return NextResponse.redirect(`${liveOrderPassUrl}?wallet=google&status=pending_credentials`);
   }
 
   // ============================================================================

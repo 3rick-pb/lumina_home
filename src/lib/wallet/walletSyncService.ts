@@ -1,6 +1,4 @@
 import { pushGoogleWalletOrderUpdate, GoogleWalletOrderInput, isGoogleWalletConfigured } from './googleWalletService';
-import { notifyRegisteredAppleDevices } from './passDeviceStore';
-import { isAppleSigningConfigured } from './applePassSigner';
 import { supabaseAdmin } from '../supabaseAdmin';
 
 export interface WalletSyncResult {
@@ -41,7 +39,7 @@ async function retryWithBackoff<T>(
 }
 
 /**
- * Central orchestrator for synchronizing order status changes to both Apple Wallet and Google Wallet.
+ * Central orchestrator for synchronizing order status changes to Google Wallet.
  */
 export async function syncOrderToWallets(
   order: GoogleWalletOrderInput
@@ -50,8 +48,8 @@ export async function syncOrderToWallets(
   const errors: string[] = [];
   let googleStatus: 'UPDATED' | 'CREATED' | 'SKIPPED' | 'FAILED' = 'SKIPPED';
   let googleMessage: string | undefined;
-  let appleStatus: 'NOTIFIED' | 'NO_DEVICES' | 'SKIPPED' | 'FAILED' = 'SKIPPED';
-  let appleMessage: string | undefined;
+  const appleStatus: 'NOTIFIED' | 'NO_DEVICES' | 'SKIPPED' | 'FAILED' = 'SKIPPED';
+  const appleMessage = 'Apple Wallet omitido (sistema optimizado para Google Wallet).';
 
   // 1. Synchronize Google Wallet GenericObject via REST API
   if (isGoogleWalletConfigured()) {
@@ -75,47 +73,19 @@ export async function syncOrderToWallets(
     googleMessage = 'Google Wallet no configurado en variables de entorno.';
   }
 
-  // 2. Synchronize Apple Wallet registered devices via APNs
-  const passTypeIdentifier =
-    process.env.APPLE_ORDER_PASS_TYPE_IDENTIFIER ||
-    process.env.APPLE_PASS_TYPE_IDENTIFIER ||
-    'pass.com.luminahome.orders';
-  const cleanId = order.orderId.replace(/[^a-zA-Z0-9_-]/g, '');
-  const serialNumber = `LH-${cleanId}`;
-
-  try {
-    const applePushResult = await notifyRegisteredAppleDevices(passTypeIdentifier, serialNumber);
-    if (applePushResult.dispatchedCount > 0) {
-      appleStatus = 'NOTIFIED';
-      appleMessage = applePushResult.message;
-    } else {
-      appleStatus = 'NO_DEVICES';
-      appleMessage = 'No hay dispositivos Apple registrados actualmente para esta orden.';
-    }
-  } catch (aErr) {
-    appleStatus = 'FAILED';
-    appleMessage = String(aErr);
-    errors.push(`Apple Wallet Push Exception: ${String(aErr)}`);
-  }
-
   // Determine overall status
   let overallStatus: 'SYNCED' | 'PARTIAL' | 'FAILED' | 'SKIPPED' = 'SYNCED';
 
-  const googleOk = googleStatus === 'UPDATED' || googleStatus === 'CREATED';
-  const appleOk = appleStatus === 'NOTIFIED' || appleStatus === 'NO_DEVICES';
-
-  if (!isGoogleWalletConfigured() && !isAppleSigningConfigured()) {
+  if (!isGoogleWalletConfigured()) {
     overallStatus = 'SKIPPED';
-  } else if (googleOk && appleOk) {
+  } else if (googleStatus === 'UPDATED' || googleStatus === 'CREATED') {
     overallStatus = 'SYNCED';
-  } else if (googleOk || appleOk) {
-    overallStatus = 'PARTIAL';
   } else {
     overallStatus = 'FAILED';
   }
 
   const result: WalletSyncResult = {
-    success: overallStatus === 'SYNCED' || overallStatus === 'PARTIAL',
+    success: overallStatus === 'SYNCED',
     status: overallStatus,
     googleStatus,
     appleStatus,
