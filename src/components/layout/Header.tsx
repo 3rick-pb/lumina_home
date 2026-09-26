@@ -139,8 +139,14 @@ export function Header() {
     }
   };
 
-  // Do not render floating navigation pill on auth, profile, or admin dashboard pages
-  if (pathname?.startsWith("/auth") || pathname?.startsWith("/profile") || pathname?.startsWith("/admin")) {
+  // Do not render floating navigation pill on auth, profile, admin, loyalty pass, or wallet pages
+  if (
+    pathname?.startsWith("/auth") ||
+    pathname?.startsWith("/profile") ||
+    pathname?.startsWith("/admin") ||
+    pathname?.startsWith("/loyalty") ||
+    pathname?.startsWith("/wallet")
+  ) {
     return null;
   }
 

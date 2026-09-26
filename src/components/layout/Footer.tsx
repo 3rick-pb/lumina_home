@@ -10,10 +10,14 @@ export function Footer() {
   const brand = useBrand();
   const store = useStoreConfig();
   const pathname = usePathname();
-  const isDashboardPage = pathname?.startsWith("/profile") || pathname?.startsWith("/admin");
+  const isDashboardPage =
+    pathname?.startsWith("/profile") ||
+    pathname?.startsWith("/admin") ||
+    pathname?.startsWith("/loyalty") ||
+    pathname?.startsWith("/wallet");
   const isAuthPage = pathname?.startsWith("/auth");
 
-  // Do not render store footer on standalone dashboard pages (Profile / Admin)
+  // Do not render store footer on standalone dashboard or pass pages
   if (isDashboardPage) {
     return null;
   }

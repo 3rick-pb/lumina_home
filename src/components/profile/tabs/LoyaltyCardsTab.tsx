@@ -26,6 +26,7 @@ import {
 import { useUserStore } from "@/lib/userStore";
 import { useBrand } from "@/core/hooks/useBrand";
 import { CloudSyncStatus } from "../CloudSyncStatus";
+import { GoogleWalletButton } from "@/components/ui/GoogleWalletButton";
 import { supabase } from "@/lib/supabase";
 
 const toast = {
@@ -435,6 +436,7 @@ export function LoyaltyCardsTab() {
       accent: config.accentColor,
       code: targetMember?.memberCode || "LUM-NEW-PASS",
       name: targetMember?.customerName || "Cliente Lumina",
+      email: targetMember?.customerEmail || "",
       pts: String(targetMember?.pointsBalance ?? config.welcomeBonusPoints),
     });
     return `${origin}/loyalty/pass?${params.toString()}`;
@@ -503,6 +505,30 @@ export function LoyaltyCardsTab() {
       }
     };
     reader.readAsDataURL(file);
+  };
+
+  const handleOpenGoogleWallet = async (member?: LoyaltyMemberCard | null) => {
+    const target = member || selectedMemberForQR || members[0];
+    if (!target) return;
+    try {
+      const res = await fetch("/api/wallet/google/create", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          customerEmail: target.customerEmail,
+          memberCode: target.memberCode,
+          customerId: target.id,
+        }),
+      });
+      const data = await res.json();
+      if (data.success && data.saveUrl) {
+        window.open(data.saveUrl, "_blank");
+        return;
+      }
+    } catch (err) {
+      console.warn("[LoyaltyCardsTab] Error abriendo Google Wallet:", err);
+    }
+    window.open(enrollmentQrUrl, "_blank");
   };
 
   const handleDownloadApplePassManifest = (member?: LoyaltyMemberCard | null) => {
@@ -1123,25 +1149,12 @@ export function LoyaltyCardsTab() {
                       </button>
                     </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                      <button
-                        type="button"
-                        onClick={() => handleDownloadApplePassManifest(selectedMemberForQR)}
-                        className="h-11 px-4 rounded-2xl bg-white dark:bg-[#202022] hover:bg-gray-100 text-gray-900 dark:text-white border border-gray-200 dark:border-white/10 flex items-center justify-center gap-2 text-xs font-semibold transition-all cursor-pointer"
-                      >
-                        <Wallet className="w-4 h-4 text-[#8c9276]" />
-                        <span>Exportar Apple Pass (.pkpass)</span>
-                      </button>
-
-                      <a
-                        href={enrollmentQrUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="h-11 px-4 rounded-2xl bg-white dark:bg-[#202022] hover:bg-gray-100 text-gray-900 dark:text-white border border-gray-200 dark:border-white/10 flex items-center justify-center gap-2 text-xs font-semibold transition-all"
-                      >
-                        <Smartphone className="w-4 h-4 text-[#8c9276]" />
-                        <span>Abrir en Google Wallet</span>
-                      </a>
+                    <div className="pt-1">
+                      <GoogleWalletButton
+                        onClick={() => handleOpenGoogleWallet(selectedMemberForQR)}
+                        topText="Add to"
+                        className="w-full justify-center shadow-md"
+                      />
                     </div>
 
                     <div className="p-3.5 rounded-2xl bg-white dark:bg-[#202022] border border-gray-100 dark:border-white/5 space-y-1.5">

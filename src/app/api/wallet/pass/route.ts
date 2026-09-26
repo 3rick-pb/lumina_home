@@ -6,7 +6,7 @@ import {
   verifyOrderTrackingToken,
 } from '@/lib/wallet/orderPassTokens';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
-import { generateAppleLoyaltyPassBuffer } from '@/lib/applePassGenerator';
+import { createOrGetCustomerGoogleWalletPass } from '@/lib/wallet/googleCustomerPassService';
 
 function base64UrlEncode(input: string | Buffer): string {
   return Buffer.from(input)
@@ -142,118 +142,32 @@ export async function GET(request: Request) {
   }
 
   // ============================================================================
-  // B. LOYALTY PASS (type=loyalty) — Preserved Apple & Google Wallet Support
+  // B. LOYALTY PASS (type=loyalty) — Exclusively Google Wallet
   // ============================================================================
-  const platform = rawPlatform === 'auto' ? (isIOS ? 'apple' : 'google') : rawPlatform;
+  const code = searchParams.get('code') || 'LUM-1042-PRV';
+  const name = searchParams.get('name') || 'Cliente Lumina';
+  const pts = parseInt(searchParams.get('pts') || '200', 10);
+  const email = searchParams.get('email') || '';
 
-  if (platform === 'apple') {
-    const program = searchParams.get('program') || 'Lumina Member Pass';
-    const issuer = searchParams.get('issuer') || 'Lumina Home';
-    const code = searchParams.get('code') || 'LUM-8842-PRV';
-    const name = searchParams.get('name') || 'Cliente Lumina';
-    const pts = searchParams.get('pts') || '200';
-    const ptsPerDollar = searchParams.get('ptsPerDollar') || '10';
+  const passResult = await createOrGetCustomerGoogleWalletPass({
+    customerId: code || email,
+    customerName: name,
+    customerEmail: email || 'cliente@luminahome.ec',
+    memberCode: code,
+    pointsBalance: isNaN(pts) ? 200 : pts,
+    tierName: (isNaN(pts) ? 200 : pts) >= 1200 ? 'Nivel Oro' : 'Nivel Plata',
+    status: 'active',
+  });
 
-    try {
-      const passBuffer = await generateAppleLoyaltyPassBuffer({
-        programName: program,
-        issuerName: issuer,
-        memberCode: code,
-        memberName: name,
-        points: pts,
-        ptsPerDollar,
-      });
-
-      return new NextResponse(new Uint8Array(passBuffer), {
-        status: 200,
-        headers: {
-          'Content-Type': 'application/vnd.apple.pkpass',
-          'Content-Disposition': `attachment; filename="lumina-${code.toLowerCase()}.pkpass"`,
-          'Cache-Control': 'no-store, max-age=0',
-        },
-      });
-    } catch (err) {
-      console.error('Failed to generate loyalty .pkpass buffer:', err);
-      return NextResponse.json({ error: 'No se pudo generar el archivo .pkpass' }, { status: 500 });
-    }
+  if (passResult.success && passResult.saveUrl) {
+    return NextResponse.redirect(passResult.saveUrl);
   }
 
-  if (platform === 'google') {
-    const program = searchParams.get('program') || 'Lumina Member Pass';
-    const issuer = searchParams.get('issuer') || 'Lumina Home';
-    const code = searchParams.get('code') || 'LUM-8842-PRV';
-    const name = searchParams.get('name') || 'Cliente Lumina';
-    const pts = searchParams.get('pts') || '200';
-    const bg = searchParams.get('bg') || '#111113';
+  const loyaltyLiveUrl = `${origin}/loyalty/pass?code=${encodeURIComponent(
+    code
+  )}&name=${encodeURIComponent(name)}&email=${encodeURIComponent(email)}&pts=${encodeURIComponent(
+    String(pts)
+  )}`;
 
-    const issuerId = process.env.GOOGLE_WALLET_ISSUER_ID;
-    const clientEmail = process.env.GOOGLE_WALLET_CLIENT_EMAIL;
-    const privateKey = process.env.GOOGLE_WALLET_PRIVATE_KEY?.replace(/\\n/g, '\n');
-
-    if (issuerId && clientEmail && privateKey) {
-      try {
-        const classId = `${issuerId}.lumina_loyalty_class_v1`;
-        const objectId = `${issuerId}.member_${code.replace(/[^a-zA-Z0-9._-]/g, '_')}`;
-
-        const header = { alg: 'RS256', typ: 'JWT' };
-        const payload = {
-          iss: clientEmail,
-          aud: 'google',
-          typ: 'savetowallet',
-          iat: Math.floor(Date.now() / 1000),
-          origins: [],
-          payload: {
-            loyaltyClasses: [
-              {
-                id: classId,
-                issuerName: issuer,
-                programName: program,
-                reviewStatus: 'UNDER_REVIEW',
-                hexBackgroundColor: bg.startsWith('#') ? bg : '#111113',
-              },
-            ],
-            loyaltyObjects: [
-              {
-                id: objectId,
-                classId,
-                state: 'ACTIVE',
-                accountId: code,
-                accountName: name,
-                loyaltyPoints: {
-                  label: 'Puntos Lumina',
-                  balance: {
-                    int: parseInt(pts, 10) || 200,
-                  },
-                },
-              },
-            ],
-          },
-        };
-
-        const encodedHeader = base64UrlEncode(JSON.stringify(header));
-        const encodedPayload = base64UrlEncode(JSON.stringify(payload));
-        const signingInput = `${encodedHeader}.${encodedPayload}`;
-
-        const signer = crypto.createSign('RSA-SHA256');
-        signer.update(signingInput);
-        signer.end();
-        const signature = signer.sign(privateKey);
-        const encodedSignature = base64UrlEncode(signature);
-
-        return NextResponse.redirect(`https://pay.google.com/gp/v/save/${signingInput}.${encodedSignature}`);
-      } catch (err) {
-        console.warn('Google Wallet Loyalty JWT error:', err);
-      }
-    }
-
-    const loyaltyLiveUrl = `${origin}/loyalty/pass?program=${encodeURIComponent(
-      program
-    )}&issuer=${encodeURIComponent(issuer)}&code=${encodeURIComponent(
-      code
-    )}&name=${encodeURIComponent(name)}&pts=${encodeURIComponent(pts)}&installed=google&needsSetup=true`;
-
-    return NextResponse.redirect(loyaltyLiveUrl);
-  }
-
-  return NextResponse.redirect(`${origin}/loyalty/pass`);
+  return NextResponse.redirect(loyaltyLiveUrl);
 }
