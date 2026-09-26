@@ -73,7 +73,7 @@ export function getGoogleWalletCredentials(): GoogleCredentials | null {
           };
         }
       }
-    } catch (err) {
+    } catch {
       // Continue searching next candidate
     }
   }

@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import Image from "next/image";
-import { X, CheckCircle2, Mail, Send, RefreshCw, AlertCircle, Truck, ExternalLink, Copy, Wallet } from "lucide-react";
+import { X, CheckCircle2, Mail, Send, RefreshCw, AlertCircle, Truck, ExternalLink, Copy } from "lucide-react";
 import { Order } from "@/lib/userStore";
 import { BlobatarAvatar } from "@/components/ui/BlobatarAvatar";
 import { BeUICenterMorphModal, BeUIOrderStatusSelector } from "@/components/ui/BeUIControls";

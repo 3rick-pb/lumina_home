@@ -3,7 +3,6 @@
 import React, { useState, useEffect, useMemo, useRef } from "react";
 import {
   QrCode,
-  Wallet,
   Sparkles,
   Award,
   Plus,
@@ -12,7 +11,6 @@ import {
   Download,
   Sliders,
   Users,
-  Smartphone,
   Search,
   ArrowUpRight,
   Coins,
@@ -30,7 +28,7 @@ import { GoogleWalletButton } from "@/components/ui/GoogleWalletButton";
 import { supabase } from "@/lib/supabase";
 
 const toast = {
-  success: (msg: string, _opts?: { description?: string }) => {
+  success: (msg: string) => {
     if (typeof window !== "undefined") {
       console.info("[Lumina-PassStudio]", msg);
     }
@@ -535,74 +533,6 @@ export function LoyaltyCardsTab() {
     } finally {
       setIsOpeningGoogleWallet(false);
     }
-  };
-
-  const handleDownloadApplePassManifest = (member?: LoyaltyMemberCard | null) => {
-    const target = member || selectedMemberForQR || members[0];
-    const tierInfo = resolveTier(target?.pointsBalance || config.welcomeBonusPoints);
-    const pkpassPayload = {
-      formatVersion: 1,
-      passTypeIdentifier: config.applePassTypeId,
-      serialNumber: target?.memberCode || `LUM-${Date.now()}`,
-      teamIdentifier: config.appleTeamId,
-      organizationName: config.issuerName,
-      description: config.programName,
-      logoText: config.programName,
-      foregroundColor: config.textColor,
-      backgroundColor: config.bgColor,
-      labelColor: config.accentColor,
-      barcode: {
-        message: enrollmentQrUrl,
-        format: "PKBarcodeFormatQR",
-        messageEncoding: "iso-8859-1",
-        altText: target?.memberCode || "LUM-PRV-PASS",
-      },
-      storeCard: {
-        headerFields: [
-          {
-            key: "points",
-            label: "PUNTOS",
-            value: target?.pointsBalance ?? config.welcomeBonusPoints,
-          },
-        ],
-        primaryFields: [
-          {
-            key: "member",
-            label: "TITULAR",
-            value: target?.customerName || "Cliente Lumina",
-          },
-        ],
-        secondaryFields: [
-          {
-            key: "tier",
-            label: "NIVEL",
-            value: tierInfo.name,
-          },
-          {
-            key: "rate",
-            label: "ACUMULACIÓN",
-            value: `${config.pointsPerDollar} pts / $1 USD`,
-          },
-        ],
-        auxiliaryFields: [
-          {
-            key: "reward",
-            label: "BENEFICIO",
-            value: config.rewardDescription,
-          },
-        ],
-      },
-    };
-
-    const blob = new Blob([JSON.stringify(pkpassPayload, null, 2)], {
-      type: "application/vnd.apple.pkpass+json",
-    });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `${(target?.memberCode || "lumina-pass").toLowerCase()}.pkpass.json`;
-    a.click();
-    URL.revokeObjectURL(url);
   };
 
   const handleAdjustPoints = async (memberId: string, delta: number) => {

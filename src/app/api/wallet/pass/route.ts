@@ -1,5 +1,4 @@
 import { NextResponse } from 'next/server';
-import crypto from 'crypto';
 import { buildGoogleWalletOrderJwtUrl } from '@/lib/wallet/googleWalletService';
 import {
   generateOrderTrackingToken,
@@ -7,14 +6,6 @@ import {
 } from '@/lib/wallet/orderPassTokens';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
 import { createOrGetCustomerGoogleWalletPass } from '@/lib/wallet/googleCustomerPassService';
-
-function base64UrlEncode(input: string | Buffer): string {
-  return Buffer.from(input)
-    .toString('base64')
-    .replace(/\+/g, '-')
-    .replace(/\//g, '_')
-    .replace(/=+$/g, '');
-}
 
 function decodeOrderTracking(rawTracking: unknown, status: string) {
   if (!rawTracking || status === 'Procesando') {
@@ -42,11 +33,7 @@ function decodeOrderTracking(rawTracking: unknown, status: string) {
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const passType = searchParams.get('type') || 'loyalty';
-  const rawPlatform = searchParams.get('platform') || 'auto';
   const origin = new URL(request.url).origin;
-  const userAgent = request.headers.get('user-agent') || '';
-  const isIOS = /iPhone|iPad|iPod|Macintosh/i.test(userAgent);
-  const isAndroid = /Android/i.test(userAgent);
 
   // ============================================================================
   // A. ORDER TRACKING PASS (type=order) — Apple Wallet (.pkpass) & Google Wallet

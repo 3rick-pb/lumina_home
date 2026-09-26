@@ -40,8 +40,9 @@ function LoyaltyPassContent() {
             setErrorMsg(data.error);
           }
         }
-      } catch (err: any) {
-        if (isMounted) setErrorMsg(err.message || "Error al conectar con Google Wallet.");
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : "Error al conectar con Google Wallet.";
+        if (isMounted) setErrorMsg(msg);
       } finally {
         if (isMounted) setLoading(false);
       }
@@ -77,8 +78,9 @@ function LoyaltyPassContent() {
         return;
       }
       setErrorMsg(data.error || "No se pudo generar el pase en Google Wallet.");
-    } catch (err: any) {
-      setErrorMsg(err.message || "Error de red al conectar con Google Wallet.");
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Error de red al conectar con Google Wallet.";
+      setErrorMsg(msg);
     } finally {
       setIsOpening(false);
     }

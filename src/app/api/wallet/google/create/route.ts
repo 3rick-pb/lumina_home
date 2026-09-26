@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getAuthenticatedUser, verifyIsAdmin, getScopedSupabaseClient, supabaseServer } from '@/lib/serverAuth';
+import { getAuthenticatedUser, verifyIsAdmin, getScopedSupabaseClient } from '@/lib/serverAuth';
 import {
   createOrGetCustomerGoogleWalletPass,
   getGoogleWalletCredentials,

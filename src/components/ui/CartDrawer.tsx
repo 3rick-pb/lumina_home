@@ -35,10 +35,7 @@ import {
   Calendar,
   User,
   Phone,
-  Wallet,
   QrCode,
-  Bell,
-  ExternalLink,
   Lock
 } from "lucide-react";
 import { playEnvelopeSound } from "./CardFolder";
@@ -248,7 +245,6 @@ export function CartDrawer() {
   const [cardCvv, setCardCvv] = useState("");
   const [cardHolder, setCardHolder] = useState(user?.name || "");
   const [payphoneAppPhone, setPayphoneAppPhone] = useState("");
-  const [walletAddedPlatform, setWalletAddedPlatform] = useState<"apple" | "google" | null>(null);
 
   // Auto-select default saved card if user has saved cards in their account
   useEffect(() => {

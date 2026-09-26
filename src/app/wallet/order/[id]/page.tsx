@@ -24,7 +24,6 @@ function WalletOrderPassContent() {
   const params = useParams<{ id: string }>();
   const searchParams = useSearchParams();
   const rawOrderId = decodeURIComponent(params?.id || "");
-  const walletMode = searchParams.get("wallet") || "google";
 
   // Hydrate initial fallback order immediately from signed QR query parameters so scanning on ANY phone works 100% even if unauthenticated
   const initialQueryOrder: Order = {
