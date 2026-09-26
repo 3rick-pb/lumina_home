@@ -1,333 +1,196 @@
-import { NextResponse } from "next/server";
-import crypto from "crypto";
+import { NextResponse } from 'next/server';
+import crypto from 'crypto';
+import { generateAppleOrderPassZip } from '@/lib/wallet/appleWalletService';
+import { buildGoogleWalletOrderJwtUrl } from '@/lib/wallet/googleWalletService';
 import {
-  generateAppleLoyaltyPassBuffer,
-  generateAppleOrderPassBuffer,
-} from "@/lib/applePassGenerator";
+  generateOrderTrackingToken,
+  verifyOrderTrackingToken,
+} from '@/lib/wallet/orderPassTokens';
+import { supabaseAdmin } from '@/lib/supabaseAdmin';
+import { generateAppleLoyaltyPassBuffer } from '@/lib/applePassGenerator';
 
 function base64UrlEncode(input: string | Buffer): string {
   return Buffer.from(input)
-    .toString("base64")
-    .replace(/\+/g, "-")
-    .replace(/\//g, "_")
-    .replace(/=+$/g, "");
+    .toString('base64')
+    .replace(/\+/g, '-')
+    .replace(/\//g, '_')
+    .replace(/=+$/g, '');
 }
 
-/**
- * Generates an official Google Wallet LoyaltyObject Save URL (https://pay.google.com/gp/v/save/<jwt>)
- * using a standard Google Cloud Service Account (RSA-SHA256)
- */
-function buildGoogleWalletLoyaltyJwtUrl(params: {
-  issuerId: string;
-  serviceAccountEmail: string;
-  privateKey: string;
-  programName: string;
-  issuerName: string;
-  memberCode: string;
-  memberName: string;
-  points: string;
-  bgHex: string;
-}): string | null {
-  try {
-    const cleanKey = params.privateKey.replace(/\\n/g, "\n");
-    const classId = `${params.issuerId}.lumina_loyalty_class_v1`;
-    const objectId = `${params.issuerId}.member_${params.memberCode.replace(/[^a-zA-Z0-9._-]/g, "_")}`;
-
-    const header = { alg: "RS256", typ: "JWT" };
-    const payload = {
-      iss: params.serviceAccountEmail,
-      aud: "google",
-      typ: "savetowallet",
-      iat: Math.floor(Date.now() / 1000),
-      origins: [],
-      payload: {
-        loyaltyClasses: [
-          {
-            id: classId,
-            issuerName: params.issuerName,
-            programName: params.programName,
-            reviewStatus: "UNDER_REVIEW",
-            hexBackgroundColor: params.bgHex.startsWith("#") ? params.bgHex : "#111113",
-            programLogo: {
-              sourceUri: {
-                uri: "https://images.unsplash.com/photo-1618221195710-dd6b41faaea6?w=256&auto=format&fit=crop&q=80",
-              },
-            },
-          },
-        ],
-        loyaltyObjects: [
-          {
-            id: objectId,
-            classId,
-            state: "ACTIVE",
-            accountId: params.memberCode,
-            accountName: params.memberName,
-            loyaltyPoints: {
-              label: "Puntos Lumina",
-              balance: {
-                int: parseInt(params.points, 10) || 200,
-              },
-            },
-            barcode: {
-              type: "QR_CODE",
-              value: params.memberCode,
-              alternateText: params.memberCode,
-            },
-          },
-        ],
-      },
-    };
-
-    const encodedHeader = base64UrlEncode(JSON.stringify(header));
-    const encodedPayload = base64UrlEncode(JSON.stringify(payload));
-    const signingInput = `${encodedHeader}.${encodedPayload}`;
-
-    const signer = crypto.createSign("RSA-SHA256");
-    signer.update(signingInput);
-    signer.end();
-    const signature = signer.sign(cleanKey);
-    const encodedSignature = base64UrlEncode(signature);
-
-    return `https://pay.google.com/gp/v/save/${signingInput}.${encodedSignature}`;
-  } catch (err) {
-    console.warn("Google Wallet Loyalty JWT signing error:", err);
-    return null;
+function decodeOrderTracking(rawTracking: unknown, status: string) {
+  if (!rawTracking || status === 'Procesando') {
+    return { trackingNumber: undefined, trackingUrl: undefined, carrierName: undefined };
   }
-}
-
-/**
- * Generates an official Google Wallet GenericObject Save URL (https://pay.google.com/gp/v/save/<jwt>)
- * for Real-Time Order Tracking
- */
-function buildGoogleWalletOrderJwtUrl(params: {
-  issuerId: string;
-  serviceAccountEmail: string;
-  privateKey: string;
-  orderId: string;
-  status: string;
-  total: string;
-  customerName: string;
-  date: string;
-  trackingNumber: string;
-  carrierName: string;
-  livePassUrl: string;
-}): string | null {
-  try {
-    const cleanKey = params.privateKey.replace(/\\n/g, "\n");
-    const classId = `${params.issuerId}.lumina_order_tracking_v1`;
-    const safeOrderId = params.orderId.replace(/[^a-zA-Z0-9._-]/g, "_");
-    const objectId = `${params.issuerId}.order_${safeOrderId}`;
-
-    const textModulesData: Array<{ id: string; header: string; body: string }> = [
-      {
-        id: "status",
-        header: "ESTADO DEL PEDIDO",
-        body: params.status.toUpperCase(),
-      },
-      {
-        id: "customer",
-        header: "TITULAR",
-        body: params.customerName,
-      },
-      {
-        id: "total",
-        header: "IMPORTE",
-        body: `$${Number(params.total || 0).toFixed(2)} USD`,
-      },
-    ];
-
-    if (params.trackingNumber) {
-      textModulesData.push({
-        id: "tracking",
-        header: `GUÍA DE ENVÍO (${(params.carrierName || "TRANSPORTE").toUpperCase()})`,
-        body: params.trackingNumber,
-      });
-    }
-
-    const header = { alg: "RS256", typ: "JWT" };
-    const payload = {
-      iss: params.serviceAccountEmail,
-      aud: "google",
-      typ: "savetowallet",
-      iat: Math.floor(Date.now() / 1000),
-      origins: [],
-      payload: {
-        genericClasses: [
-          {
-            id: classId,
-            issuerName: "Lumina Home",
-            reviewStatus: "UNDER_REVIEW",
-          },
-        ],
-        genericObjects: [
-          {
-            id: objectId,
-            classId,
-            state: "ACTIVE",
-            hexBackgroundColor: "#111113",
-            cardTitle: {
-              defaultValue: {
-                language: "es",
-                value: "Lumina Home · Orden",
-              },
-            },
-            subheader: {
-              defaultValue: {
-                language: "es",
-                value: `Estado: ${params.status}`,
-              },
-            },
-            header: {
-              defaultValue: {
-                language: "es",
-                value: params.orderId,
-              },
-            },
-            barcode: {
-              type: "QR_CODE",
-              value: params.livePassUrl,
-              alternateText: `${params.orderId} · ${params.status}`,
-            },
-            textModulesData,
-          },
-        ],
-      },
-    };
-
-    const encodedHeader = base64UrlEncode(JSON.stringify(header));
-    const encodedPayload = base64UrlEncode(JSON.stringify(payload));
-    const signingInput = `${encodedHeader}.${encodedPayload}`;
-
-    const signer = crypto.createSign("RSA-SHA256");
-    signer.update(signingInput);
-    signer.end();
-    const signature = signer.sign(cleanKey);
-    const encodedSignature = base64UrlEncode(signature);
-
-    return `https://pay.google.com/gp/v/save/${signingInput}.${encodedSignature}`;
-  } catch (err) {
-    console.warn("Google Wallet Order JWT signing error:", err);
-    return null;
+  const str = String(rawTracking).trim();
+  if (!str) {
+    return { trackingNumber: undefined, trackingUrl: undefined, carrierName: undefined };
   }
+  if (str.includes('||')) {
+    const [code, url, carrier] = str.split('||');
+    return {
+      trackingNumber: code?.trim() || undefined,
+      trackingUrl: url?.trim() || undefined,
+      carrierName: carrier?.trim() || undefined,
+    };
+  }
+  return {
+    trackingNumber: str,
+    trackingUrl: undefined,
+    carrierName: undefined,
+  };
 }
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
-  const passType = searchParams.get("type") || "loyalty";
-  const rawPlatform = searchParams.get("platform") || "auto";
+  const passType = searchParams.get('type') || 'loyalty';
+  const rawPlatform = searchParams.get('platform') || 'auto';
   const origin = new URL(request.url).origin;
-  const userAgent = request.headers.get("user-agent") || "";
+  const userAgent = request.headers.get('user-agent') || '';
   const isIOS = /iPhone|iPad|iPod|Macintosh/i.test(userAgent);
   const isAndroid = /Android/i.test(userAgent);
 
   // ============================================================================
   // A. ORDER TRACKING PASS (type=order) — Apple Wallet (.pkpass) & Google Wallet
   // ============================================================================
-  if (passType === "order") {
-    const orderId = searchParams.get("orderId") || "LUM-0000";
-    const status = searchParams.get("status") || "Procesando";
-    const total = searchParams.get("total") || "0";
-    const customer = searchParams.get("customer") || "Cliente Lumina";
-    const date = searchParams.get("date") || "Reciente";
-    const tracking = searchParams.get("tracking") || "";
-    const carrier = searchParams.get("carrier") || "";
-    const trackingUrl = searchParams.get("url") || "";
+  if (passType === 'order') {
+    const rawToken = searchParams.get('token')?.trim();
+    const rawOrderId = searchParams.get('orderId')?.trim();
 
-    const liveOrderPassUrl = `${origin}/wallet/order/${encodeURIComponent(
-      orderId
-    )}?total=${encodeURIComponent(total)}&status=${encodeURIComponent(
-      status
-    )}&date=${encodeURIComponent(date)}&customer=${encodeURIComponent(
-      customer
-    )}&tracking=${encodeURIComponent(tracking)}&carrier=${encodeURIComponent(
-      carrier
-    )}&url=${encodeURIComponent(trackingUrl)}`;
+    let resolvedOrderId = rawOrderId || '';
+
+    // Verify token if provided
+    if (rawToken) {
+      const verification = verifyOrderTrackingToken(rawToken);
+      if (verification.valid && verification.orderId) {
+        resolvedOrderId = verification.orderId;
+      } else if (!rawOrderId) {
+        return NextResponse.json(
+          { error: 'Token de seguimiento inválido o caducado.' },
+          { status: 403 }
+        );
+      }
+    }
+
+    if (!resolvedOrderId) {
+      return NextResponse.json(
+        { error: 'Parámetro de orden o token requerido.' },
+        { status: 400 }
+      );
+    }
+
+    // Single Source of Truth: Fetch from Database
+    let orderData: {
+      orderId: string;
+      status: 'Procesando' | 'Enviado' | 'Entregado';
+      total: number;
+      customerName: string;
+      date: string;
+      trackingNumber?: string;
+      trackingUrl?: string;
+      carrierName?: string;
+    } = {
+      orderId: resolvedOrderId,
+      status: (searchParams.get('status') as 'Procesando' | 'Enviado' | 'Entregado') || 'Procesando',
+      total: Number(searchParams.get('total') || 0),
+      customerName: searchParams.get('customer') || 'Cliente Lumina',
+      date: searchParams.get('date') || 'Reciente',
+      trackingNumber: searchParams.get('tracking') || undefined,
+      carrierName: searchParams.get('carrier') || undefined,
+      trackingUrl: searchParams.get('url') || undefined,
+    };
+
+    try {
+      const { data: dbOrder } = await supabaseAdmin
+        .from('orders')
+        .select('*')
+        .eq('id', resolvedOrderId)
+        .maybeSingle();
+
+      if (dbOrder) {
+        const status = (dbOrder.status || 'Procesando') as 'Procesando' | 'Enviado' | 'Entregado';
+        const tracking = decodeOrderTracking(dbOrder.tracking_number, status);
+        orderData = {
+          orderId: dbOrder.id,
+          status,
+          total: Number(dbOrder.total || 0),
+          customerName: dbOrder.customer_name || 'Cliente Lumina',
+          date: dbOrder.date || new Date(dbOrder.created_at).toLocaleDateString('es-EC'),
+          trackingNumber: tracking.trackingNumber,
+          trackingUrl: tracking.trackingUrl,
+          carrierName: tracking.carrierName,
+        };
+      }
+    } catch (dbErr) {
+      console.warn('[wallet/pass] Supabase lookup error (using params fallback):', dbErr);
+    }
+
+    // Generate canonical anti-enumeration token
+    const secureToken = generateOrderTrackingToken(orderData.orderId);
+    const liveOrderPassUrl = `${origin}/wallet/order/${secureToken}`;
 
     const effectivePlatform =
-      rawPlatform === "apple" || rawPlatform === "google"
+      rawPlatform === 'apple' || rawPlatform === 'google'
         ? rawPlatform
-        : isIOS && process.env.APPLE_PASS_KEY_PEM
-        ? "apple"
-        : isAndroid &&
-          process.env.GOOGLE_WALLET_ISSUER_ID &&
-          process.env.GOOGLE_WALLET_CLIENT_EMAIL &&
-          process.env.GOOGLE_WALLET_PRIVATE_KEY
-        ? "google"
-        : "universal";
+        : isIOS
+        ? 'apple'
+        : isAndroid
+        ? 'google'
+        : 'universal';
 
-    if (effectivePlatform === "apple") {
+    // 1. Apple Wallet (.pkpass)
+    if (effectivePlatform === 'apple') {
       try {
-        const passBuffer = await generateAppleOrderPassBuffer({
-          orderId,
-          status,
-          total,
-          customerName: customer,
-          date,
-          trackingNumber: tracking,
-          carrierName: carrier,
-          trackingUrl,
-          livePassUrl: liveOrderPassUrl,
+        const passResult = await generateAppleOrderPassZip({
+          ...orderData,
+          origin,
         });
 
-        const safeFileId = orderId.replace(/[^a-zA-Z0-9_-]/g, "").toLowerCase() || "orden";
-        return new NextResponse(new Uint8Array(passBuffer), {
+        const safeFileId = orderData.orderId.replace(/[^a-zA-Z0-9_-]/g, '').toLowerCase() || 'orden';
+        return new NextResponse(new Uint8Array(passResult.buffer), {
           status: 200,
           headers: {
-            "Content-Type": "application/vnd.apple.pkpass",
-            "Content-Disposition": `attachment; filename="lumina-pedido-${safeFileId}.pkpass"`,
-            "Cache-Control": "no-store, max-age=0",
+            'Content-Type': 'application/vnd.apple.pkpass',
+            'Content-Disposition': `attachment; filename="lumina-pedido-${safeFileId}.pkpass"`,
+            'Cache-Control': 'no-store, max-age=0',
           },
         });
       } catch (err) {
-        console.error("Failed to generate Order .pkpass buffer:", err);
-        return NextResponse.redirect(`${liveOrderPassUrl}&wallet=apple`);
+        console.error('Failed to generate Order .pkpass buffer:', err);
+        return NextResponse.redirect(`${liveOrderPassUrl}?wallet=apple&error=pass_generation_failed`);
       }
     }
 
-    if (effectivePlatform === "google") {
-      const issuerId = process.env.GOOGLE_WALLET_ISSUER_ID;
-      const clientEmail = process.env.GOOGLE_WALLET_CLIENT_EMAIL;
-      const privateKey = process.env.GOOGLE_WALLET_PRIVATE_KEY;
+    // 2. Google Wallet (Save JWT)
+    if (effectivePlatform === 'google') {
+      const googleRes = buildGoogleWalletOrderJwtUrl({
+        ...orderData,
+        origin,
+      });
 
-      if (issuerId && clientEmail && privateKey) {
-        const googleSaveUrl = buildGoogleWalletOrderJwtUrl({
-          issuerId,
-          serviceAccountEmail: clientEmail,
-          privateKey,
-          orderId,
-          status,
-          total,
-          customerName: customer,
-          date,
-          trackingNumber: tracking,
-          carrierName: carrier,
-          livePassUrl: liveOrderPassUrl,
-        });
-        if (googleSaveUrl) {
-          return NextResponse.redirect(googleSaveUrl);
-        }
+      if (googleRes.saveUrl) {
+        return NextResponse.redirect(googleRes.saveUrl);
       }
-      return NextResponse.redirect(`${liveOrderPassUrl}&wallet=google`);
+
+      // If credentials not configured, redirect to web viewer with clear helper param
+      return NextResponse.redirect(`${liveOrderPassUrl}?wallet=google&status=pending_credentials`);
     }
 
-    // Universal QR scan route: opens the live interactive Order Pass with both Apple & Google Wallet native actions
-    return NextResponse.redirect(
-      `${liveOrderPassUrl}&wallet=${isIOS ? "apple" : "google"}`
-    );
+    // 3. Universal Desktop / Fallback route
+    return NextResponse.redirect(liveOrderPassUrl);
   }
 
   // ============================================================================
-  // B. LOYALTY PASS (type=loyalty) — Apple Wallet (.pkpass) & Google Wallet
+  // B. LOYALTY PASS (type=loyalty) — Preserved Apple & Google Wallet Support
   // ============================================================================
-  const platform = rawPlatform === "auto" ? (isIOS ? "apple" : "google") : rawPlatform;
+  const platform = rawPlatform === 'auto' ? (isIOS ? 'apple' : 'google') : rawPlatform;
 
-  if (platform === "apple") {
-    const program = searchParams.get("program") || "Lumina Member Pass";
-    const issuer = searchParams.get("issuer") || "Lumina Home";
-    const code = searchParams.get("code") || "LUM-8842-PRV";
-    const name = searchParams.get("name") || "Cliente Lumina";
-    const pts = searchParams.get("pts") || "200";
-    const ptsPerDollar = searchParams.get("ptsPerDollar") || "10";
+  if (platform === 'apple') {
+    const program = searchParams.get('program') || 'Lumina Member Pass';
+    const issuer = searchParams.get('issuer') || 'Lumina Home';
+    const code = searchParams.get('code') || 'LUM-8842-PRV';
+    const name = searchParams.get('name') || 'Cliente Lumina';
+    const pts = searchParams.get('pts') || '200';
+    const ptsPerDollar = searchParams.get('ptsPerDollar') || '10';
 
     try {
       const passBuffer = await generateAppleLoyaltyPassBuffer({
@@ -342,43 +205,82 @@ export async function GET(request: Request) {
       return new NextResponse(new Uint8Array(passBuffer), {
         status: 200,
         headers: {
-          "Content-Type": "application/vnd.apple.pkpass",
-          "Content-Disposition": `attachment; filename="lumina-${code.toLowerCase()}.pkpass"`,
-          "Cache-Control": "no-store, max-age=0",
+          'Content-Type': 'application/vnd.apple.pkpass',
+          'Content-Disposition': `attachment; filename="lumina-${code.toLowerCase()}.pkpass"`,
+          'Cache-Control': 'no-store, max-age=0',
         },
       });
     } catch (err) {
-      console.error("Failed to generate .pkpass buffer:", err);
-      return NextResponse.json({ error: "No se pudo generar el archivo .pkpass" }, { status: 500 });
+      console.error('Failed to generate loyalty .pkpass buffer:', err);
+      return NextResponse.json({ error: 'No se pudo generar el archivo .pkpass' }, { status: 500 });
     }
   }
 
-  if (platform === "google") {
-    const program = searchParams.get("program") || "Lumina Member Pass";
-    const issuer = searchParams.get("issuer") || "Lumina Home";
-    const code = searchParams.get("code") || "LUM-8842-PRV";
-    const name = searchParams.get("name") || "Cliente Lumina";
-    const pts = searchParams.get("pts") || "200";
-    const bg = searchParams.get("bg") || "#111113";
+  if (platform === 'google') {
+    const program = searchParams.get('program') || 'Lumina Member Pass';
+    const issuer = searchParams.get('issuer') || 'Lumina Home';
+    const code = searchParams.get('code') || 'LUM-8842-PRV';
+    const name = searchParams.get('name') || 'Cliente Lumina';
+    const pts = searchParams.get('pts') || '200';
+    const bg = searchParams.get('bg') || '#111113';
 
     const issuerId = process.env.GOOGLE_WALLET_ISSUER_ID;
     const clientEmail = process.env.GOOGLE_WALLET_CLIENT_EMAIL;
-    const privateKey = process.env.GOOGLE_WALLET_PRIVATE_KEY;
+    const privateKey = process.env.GOOGLE_WALLET_PRIVATE_KEY?.replace(/\\n/g, '\n');
 
     if (issuerId && clientEmail && privateKey) {
-      const googleSaveUrl = buildGoogleWalletLoyaltyJwtUrl({
-        issuerId,
-        serviceAccountEmail: clientEmail,
-        privateKey,
-        programName: program,
-        issuerName: issuer,
-        memberCode: code,
-        memberName: name,
-        points: pts,
-        bgHex: bg,
-      });
-      if (googleSaveUrl) {
-        return NextResponse.redirect(googleSaveUrl);
+      try {
+        const classId = `${issuerId}.lumina_loyalty_class_v1`;
+        const objectId = `${issuerId}.member_${code.replace(/[^a-zA-Z0-9._-]/g, '_')}`;
+
+        const header = { alg: 'RS256', typ: 'JWT' };
+        const payload = {
+          iss: clientEmail,
+          aud: 'google',
+          typ: 'savetowallet',
+          iat: Math.floor(Date.now() / 1000),
+          origins: [],
+          payload: {
+            loyaltyClasses: [
+              {
+                id: classId,
+                issuerName: issuer,
+                programName: program,
+                reviewStatus: 'UNDER_REVIEW',
+                hexBackgroundColor: bg.startsWith('#') ? bg : '#111113',
+              },
+            ],
+            loyaltyObjects: [
+              {
+                id: objectId,
+                classId,
+                state: 'ACTIVE',
+                accountId: code,
+                accountName: name,
+                loyaltyPoints: {
+                  label: 'Puntos Lumina',
+                  balance: {
+                    int: parseInt(pts, 10) || 200,
+                  },
+                },
+              },
+            ],
+          },
+        };
+
+        const encodedHeader = base64UrlEncode(JSON.stringify(header));
+        const encodedPayload = base64UrlEncode(JSON.stringify(payload));
+        const signingInput = `${encodedHeader}.${encodedPayload}`;
+
+        const signer = crypto.createSign('RSA-SHA256');
+        signer.update(signingInput);
+        signer.end();
+        const signature = signer.sign(privateKey);
+        const encodedSignature = base64UrlEncode(signature);
+
+        return NextResponse.redirect(`https://pay.google.com/gp/v/save/${signingInput}.${encodedSignature}`);
+      } catch (err) {
+        console.warn('Google Wallet Loyalty JWT error:', err);
       }
     }
 

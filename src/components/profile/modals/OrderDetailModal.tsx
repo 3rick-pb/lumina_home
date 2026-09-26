@@ -45,6 +45,49 @@ export function OrderDetailModal({
   const [feedback, setFeedback] = useState<{ success: boolean; message: string } | null>(null);
   const [copiedTracking, setCopiedTracking] = useState(false);
   const [showWalletPopup, setShowWalletPopup] = useState(false);
+  const [isSyncingWallets, setIsSyncingWallets] = useState(false);
+  const [walletFeedback, setWalletFeedback] = useState<{ success: boolean; message: string } | null>(null);
+
+  const handleResyncWallets = async () => {
+    if (!order?.id) return;
+    setIsSyncingWallets(true);
+    setWalletFeedback(null);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const headers: Record<string, string> = { "Content-Type": "application/json" };
+      if (session?.access_token) headers['Authorization'] = `Bearer ${session.access_token}`;
+
+      const res = await fetch('/api/orders', {
+        method: 'PATCH',
+        headers,
+        body: JSON.stringify({
+          orderId: order.id,
+          action: 'resync_wallets',
+        }),
+      });
+      const data = await res.json();
+      if (data.success && data.walletSync) {
+        const g = data.walletSync.googleStatus;
+        const a = data.walletSync.appleStatus;
+        setWalletFeedback({
+          success: true,
+          message: `Sincronización completada — Google Wallet: ${g} | Apple Wallet: ${a}`,
+        });
+      } else {
+        setWalletFeedback({
+          success: false,
+          message: data.error || 'No se pudo sincronizar con las billeteras.',
+        });
+      }
+    } catch (err) {
+      setWalletFeedback({
+        success: false,
+        message: `Fallo de conexión: ${String(err)}`,
+      });
+    } finally {
+      setIsSyncingWallets(false);
+    }
+  };
 
   // Custom symmetrical slider (scrollbar) state and refs
   const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -529,6 +572,105 @@ export function OrderDetailModal({
               )}
             </div>
           </div>
+        </div>
+
+        {/* Wallet Multi-Channel Live Synchronization Section */}
+        <div className="mb-5 p-4 bg-gray-50/90 dark:bg-[#2a2a2c]/90 rounded-2xl border border-gray-100 dark:border-white/5 space-y-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Wallet className="w-4 h-4 text-[#8c9276]" />
+              <h4 className="text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-gray-300">
+                Sincronización de Pases (Apple & Google Wallet)
+              </h4>
+            </div>
+            <button
+              type="button"
+              onClick={() => setShowWalletPopup(true)}
+              className="text-[10px] font-bold text-[#8c9276] hover:underline cursor-pointer flex items-center gap-1"
+            >
+              <span>Ver QR & Pases</span>
+              <ExternalLink className="w-3 h-3" />
+            </button>
+          </div>
+
+          {walletFeedback && (
+            <div
+              className={`p-2.5 rounded-xl text-xs flex items-center gap-2 ${
+                walletFeedback.success
+                  ? "bg-emerald-50 text-emerald-800 border border-emerald-200"
+                  : "bg-red-50 text-red-800 border border-red-200"
+              }`}
+            >
+              {walletFeedback.success ? (
+                <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-600" />
+              ) : (
+                <AlertCircle className="w-4 h-4 shrink-0 text-red-600" />
+              )}
+              <span>{walletFeedback.message}</span>
+            </div>
+          )}
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {/* Apple Wallet status */}
+            <div className="p-3 bg-white dark:bg-[#202022] rounded-xl border border-gray-100 dark:border-white/5 space-y-1.5">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-bold text-gray-800 dark:text-gray-200 flex items-center gap-1.5">
+                  <svg className="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24">
+                    <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M15.97 6.33c.64-.78 1.08-1.86.96-2.94-.93.04-2.06.62-2.72 1.4-.58.68-1.1 1.79-.96 2.84 1.04.08 2.08-.52 2.72-1.3z" />
+                  </svg>
+                  <span>Apple Wallet</span>
+                </span>
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-gray-100 dark:bg-white/10 text-gray-700 dark:text-gray-300">
+                  PassKit Web Service
+                </span>
+              </div>
+              <p className="text-[10px] text-gray-400">
+                Firma PKCS#7 y notificaciones push APNs integradas.
+              </p>
+            </div>
+
+            {/* Google Wallet status */}
+            <div className="p-3 bg-white dark:bg-[#202022] rounded-xl border border-gray-100 dark:border-white/5 space-y-1.5">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-bold text-gray-800 dark:text-gray-200 flex items-center gap-1.5">
+                  <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none">
+                    <path
+                      d="M21 7.5V6a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-1.5"
+                      stroke="#4285F4"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                    />
+                    <rect x="3" y="8" width="18" height="9" rx="2" fill="#34A853" />
+                    <path d="M3 10.5h18" stroke="#FBBC05" strokeWidth="2.5" />
+                    <circle cx="17" cy="13.5" r="1.5" fill="#EA4335" />
+                  </svg>
+                  <span>Google Wallet</span>
+                </span>
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-gray-100 dark:bg-white/10 text-gray-700 dark:text-gray-300">
+                  REST API & JWT
+                </span>
+              </div>
+              <p className="text-[10px] text-gray-400">
+                Actualizaciones automáticas vía Google Service Account.
+              </p>
+            </div>
+          </div>
+
+          {isAdmin && (
+            <button
+              type="button"
+              onClick={handleResyncWallets}
+              disabled={isSyncingWallets}
+              className="w-full mt-2 px-3 py-2 bg-gray-100 dark:bg-white/5 hover:bg-gray-200 dark:hover:bg-white/10 text-gray-700 dark:text-gray-300 rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition cursor-pointer disabled:opacity-50"
+            >
+              {isSyncingWallets ? (
+                <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+              ) : (
+                <RefreshCw className="w-3.5 h-3.5 text-[#8c9276]" />
+              )}
+              <span>Forzar Re-sincronización con Apple & Google Wallet</span>
+            </button>
+          )}
         </div>
 
         {/* Items Purchased */}

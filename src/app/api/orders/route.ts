@@ -3,6 +3,12 @@ import { verifyIsAdmin, getAuthenticatedUser, getScopedSupabaseClient } from '@/
 import { sendOrderEmails, getAllDispatchRecipients } from '@/lib/emailService';
 import { checkRateLimit, createRateLimitResponse } from '@/lib/rateLimit';
 import { appCache } from '@/lib/cache';
+import {
+  generateOrderTrackingToken,
+  verifyOrderTrackingToken,
+  anonymizeCustomerName,
+} from '@/lib/wallet/orderPassTokens';
+import { syncOrderToWallets } from '@/lib/wallet/walletSyncService';
 
 export interface ApiOrder {
   id: string;
@@ -92,12 +98,67 @@ export async function GET(request: Request) {
   try {
     // Allow public lookup of a single order by ID for the Wallet Pass QR page (`?orderId=...`)
     const { searchParams } = new URL(request.url);
+    const token = searchParams.get('token')?.trim();
     const singleOrderId = searchParams.get('orderId')?.trim();
+    const client = getScopedSupabaseClient(request);
+
+    // 1. Cryptographically verified token lookup (Anti-enumeration QR code & Pass integration)
+    if (token) {
+      const verified = verifyOrderTrackingToken(token);
+      if (!verified.valid || !verified.orderId) {
+        return NextResponse.json(
+          { success: false, error: 'Token de seguimiento inválido o caducado.' },
+          { status: 403 }
+        );
+      }
+
+      const { data: matchedOrder, error: tokenError } = await client
+        .from('orders')
+        .select('*')
+        .eq('id', verified.orderId)
+        .maybeSingle();
+
+      if (tokenError || !matchedOrder) {
+        return NextResponse.json({ success: false, error: 'Orden no encontrada.' }, { status: 404 });
+      }
+
+      const st = (matchedOrder.status || 'Procesando') as 'Procesando' | 'Enviado' | 'Entregado';
+      const tr = decodeOrderTracking(matchedOrder.tracking_number, st);
+      const safePublicOrder = {
+        id: matchedOrder.id,
+        status: st,
+        date: matchedOrder.date || new Date(matchedOrder.created_at).toLocaleDateString('es-EC'),
+        total: Number(matchedOrder.total || 0),
+        customerName: anonymizeCustomerName(matchedOrder.customer_name),
+        trackingNumber: tr.trackingNumber,
+        trackingUrl: tr.trackingUrl,
+        carrierName: tr.carrierName,
+        shippingCity: matchedOrder.shipping_address?.city || undefined,
+        shippingCountry: matchedOrder.shipping_address?.country || undefined,
+        items: Array.isArray(matchedOrder.items)
+          ? (matchedOrder.items as Array<Record<string, unknown>>).map((item) => {
+              const product = (item.product && typeof item.product === 'object' ? item.product : {}) as Record<string, unknown>;
+              return {
+                product: {
+                  id: String(product.id || ''),
+                  title: String(product.title || 'Pieza Colección Lumina'),
+                  price: Number(product.price || 0),
+                  imageUrl: String(product.imageUrl || ''),
+                },
+                quantity: Number(item.quantity || 1),
+                color: typeof item.color === 'string' ? item.color : undefined,
+              };
+            })
+          : [],
+        walletToken: token,
+      };
+
+      return NextResponse.json({ success: true, order: safePublicOrder, orders: [safePublicOrder] });
+    }
 
     // Verify authenticated user via JWT Bearer
     const authUser = await getAuthenticatedUser(request);
     const isAdmin = authUser?.email ? await verifyIsAdmin(authUser.email) : false;
-    const client = getScopedSupabaseClient(request);
 
     let query = client
       .from('orders')
@@ -106,7 +167,16 @@ export async function GET(request: Request) {
       .order('created_at', { ascending: false });
 
     if (singleOrderId) {
+      if (!isAdmin && (!authUser || !authUser.id)) {
+        return NextResponse.json(
+          { success: false, error: 'Se requiere token criptográfico de seguimiento o sesión autorizada.' },
+          { status: 401 }
+        );
+      }
       query = query.eq('id', singleOrderId);
+      if (!isAdmin && authUser) {
+        query = query.or(`user_id.eq.${authUser.id},customer_email.eq.${(authUser.email || '').toLowerCase().trim()}`);
+      }
     } else if (!isAdmin) {
       if (!authUser || !authUser.id) {
         return NextResponse.json({ success: true, orders: [], count: 0 });
@@ -348,7 +418,14 @@ export async function POST(request: Request) {
       console.warn('[emailService] Could not trigger email dispatch:', emailInitErr);
     }
 
-    return NextResponse.json({ success: true, order: newApiOrder });
+    const walletToken = generateOrderTrackingToken(newApiOrder.id);
+    return NextResponse.json({
+      success: true,
+      order: {
+        ...newApiOrder,
+        walletToken,
+      },
+    });
   } catch (error) {
     return NextResponse.json({ success: false, error: String(error) }, { status: 500 });
   }
@@ -375,10 +452,52 @@ export async function PATCH(request: Request) {
     }
 
     const body = await request.json();
-    const { orderId, status, trackingNumber, trackingUrl, carrierName } = body;
+    const { orderId, status, trackingNumber, trackingUrl, carrierName, action } = body;
 
-    if (!orderId || !status) {
-      return NextResponse.json({ success: false, error: 'orderId y status son campos requeridos.' }, { status: 400 });
+    if (!orderId) {
+      return NextResponse.json({ success: false, error: 'orderId es un campo requerido.' }, { status: 400 });
+    }
+
+    const cleanOrderId = String(orderId).trim();
+    const client = getScopedSupabaseClient(request);
+    const origin = new URL(request.url).origin;
+
+    // Optional admin action: Manual wallet re-synchronization without status change
+    if (action === 'resync_wallets') {
+      const { data: existingOrder } = await client
+        .from('orders')
+        .select('*')
+        .eq('id', cleanOrderId)
+        .maybeSingle();
+
+      if (!existingOrder) {
+        return NextResponse.json({ success: false, error: 'Orden no encontrada.' }, { status: 404 });
+      }
+
+      const currentStatus = (existingOrder.status || 'Procesando') as 'Procesando' | 'Enviado' | 'Entregado';
+      const tracking = decodeOrderTracking(existingOrder.tracking_number, currentStatus);
+
+      const syncResult = await syncOrderToWallets({
+        orderId: cleanOrderId,
+        status: currentStatus,
+        total: Number(existingOrder.total || 0),
+        customerName: existingOrder.customer_name,
+        date: existingOrder.date,
+        trackingNumber: tracking.trackingNumber,
+        trackingUrl: tracking.trackingUrl,
+        carrierName: tracking.carrierName,
+        origin,
+      });
+
+      return NextResponse.json({
+        success: true,
+        orderId: cleanOrderId,
+        walletSync: syncResult,
+      });
+    }
+
+    if (!status) {
+      return NextResponse.json({ success: false, error: 'status es un campo requerido.' }, { status: 400 });
     }
 
     // Whitelist valid order status transitions
@@ -387,20 +506,83 @@ export async function PATCH(request: Request) {
       return NextResponse.json({ success: false, error: 'Estado de orden no válido.' }, { status: 400 });
     }
 
-    const cleanOrderId = String(orderId).trim();
-    const client = getScopedSupabaseClient(request);
+    // Strict validation for "Enviado": Carrier, Tracking Code, and Valid External URL required!
+    if (status === 'Enviado') {
+      const cleanCode = String(trackingNumber || '').trim();
+      const cleanUrl = String(trackingUrl || '').trim();
+      const cleanCarrier = String(carrierName || '').trim();
 
-    const updatePayload: Record<string, unknown> = { status };
+      if (!cleanCode || cleanCode.length < 3) {
+        return NextResponse.json(
+          {
+            success: false,
+            error: 'Para despachar como "Enviado", debes ingresar una guía de rastreo válida (mínimo 3 caracteres).',
+          },
+          { status: 400 }
+        );
+      }
+      if (!cleanUrl || !/^https?:\/\//i.test(cleanUrl)) {
+        return NextResponse.json(
+          {
+            success: false,
+            error: 'Para despachar como "Enviado", debes ingresar una URL de seguimiento web válida (debe comenzar con http:// o https://).',
+          },
+          { status: 400 }
+        );
+      }
+      if (!cleanCarrier) {
+        return NextResponse.json(
+          {
+            success: false,
+            error: 'Para despachar como "Enviado", debes seleccionar o ingresar el nombre de la transportadora/operador.',
+          },
+          { status: 400 }
+        );
+      }
+    }
+
+    const updatePayload: Record<string, unknown> = {
+      status,
+      updated_at: new Date().toISOString(),
+    };
+
     if (status === 'Procesando') {
       updatePayload.tracking_number = null;
     } else if (trackingNumber !== undefined) {
       updatePayload.tracking_number = encodeOrderTracking(trackingNumber, trackingUrl, carrierName);
     }
 
+    // 1. Database is the single source of truth: Commit DB update first
     const { error } = await client.from('orders').update(updatePayload).eq('id', cleanOrderId);
 
     if (error) {
       return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+    }
+
+    // 2. Trigger resilient wallet push updates to Apple Wallet & Google Wallet
+    let walletSyncResult = null;
+    try {
+      const { data: updatedRecord } = await client
+        .from('orders')
+        .select('*')
+        .eq('id', cleanOrderId)
+        .maybeSingle();
+
+      if (updatedRecord) {
+        walletSyncResult = await syncOrderToWallets({
+          orderId: cleanOrderId,
+          status,
+          total: Number(updatedRecord.total || 0),
+          customerName: updatedRecord.customer_name,
+          date: updatedRecord.date,
+          trackingNumber: trackingNumber || undefined,
+          trackingUrl: trackingUrl || undefined,
+          carrierName: carrierName || undefined,
+          origin,
+        });
+      }
+    } catch (syncErr) {
+      console.warn('[orders/route PATCH] Non-fatal wallet synchronization error:', syncErr);
     }
 
     return NextResponse.json({
@@ -410,6 +592,7 @@ export async function PATCH(request: Request) {
       trackingNumber: trackingNumber || undefined,
       trackingUrl: trackingUrl || undefined,
       carrierName: carrierName || undefined,
+      walletSync: walletSyncResult,
     });
   } catch (error) {
     return NextResponse.json({ success: false, error: String(error) }, { status: 500 });

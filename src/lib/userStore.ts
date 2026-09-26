@@ -39,6 +39,9 @@ export interface Order {
   customerAvatarSeed?: string;
   customerAvatarShape?: 'squircle' | 'circle';
   customerRole?: 'USER' | 'ADMIN';
+  walletToken?: string;
+  walletSyncStatus?: 'SYNCED' | 'PARTIAL' | 'FAILED' | 'SKIPPED';
+  walletLastUpdatedAt?: string;
 }
 
 export function serializeTrackingField(

@@ -51,62 +51,71 @@ function WalletOrderPassContent() {
     status: string;
   } | null>(null);
 
+  const [resolvedToken, setResolvedToken] = useState<string>(
+    rawOrderId.includes('.') ? rawOrderId : searchParams.get('token') || ''
+  );
+
   const prevStatusRef = useRef<string | null>(initialQueryOrder.status);
 
-  // Normalize order lookup from API (?orderId=...) or store
+  // Normalize order lookup from API (?token=... or ?orderId=...) or store
   useEffect(() => {
     let isMounted = true;
 
     const fetchOrderLive = async () => {
       try {
-        const res = await fetch(
-          `/api/orders?orderId=${encodeURIComponent(rawOrderId)}`,
-          { cache: "no-store" }
-        );
+        const queryParam = rawOrderId.includes('.')
+          ? `token=${encodeURIComponent(rawOrderId)}`
+          : searchParams.get('token')
+          ? `token=${encodeURIComponent(searchParams.get('token')!)}`
+          : `orderId=${encodeURIComponent(rawOrderId)}`;
+
+        const res = await fetch(`/api/orders?${queryParam}`, { cache: "no-store" });
         if (res.ok) {
           const data = await res.json();
-          if (Array.isArray(data?.orders) && data.orders.length > 0) {
-            const matched = data.orders[0] as Record<string, unknown>;
-            if (matched && isMounted) {
-              const rawStatus = String(matched.status || "Procesando");
-              const validStatus: Order["status"] =
-                rawStatus === "Enviado" || rawStatus === "Entregado"
-                  ? rawStatus
-                  : "Procesando";
-              const normalized: Order = {
-                id: String(matched.id || rawOrderId),
-                date: String(matched.date || initialQueryOrder.date),
-                total: Number(matched.total ?? initialQueryOrder.total),
-                status: validStatus,
-                trackingNumber: String(
-                  matched.trackingNumber || initialQueryOrder.trackingNumber || ""
-                ),
-                trackingUrl: String(
-                  matched.trackingUrl || initialQueryOrder.trackingUrl || ""
-                ),
-                carrierName: String(
-                  matched.carrierName || initialQueryOrder.carrierName || ""
-                ),
-                shippingAddress:
-                  matched.shippingAddress &&
-                  typeof matched.shippingAddress === "object"
-                    ? (matched.shippingAddress as Order["shippingAddress"])
-                    : undefined,
-                items: Array.isArray(matched.items)
-                  ? (matched.items as Order["items"])
-                  : [],
-              };
+          const matched = data.order || (Array.isArray(data?.orders) && data.orders[0]) || null;
+          if (matched && isMounted) {
+            const rawStatus = String(matched.status || "Procesando");
+            const validStatus: Order["status"] =
+              rawStatus === "Enviado" || rawStatus === "Entregado"
+                ? rawStatus
+                : "Procesando";
+            const normalized: Order = {
+              id: String(matched.id || rawOrderId),
+              date: String(matched.date || initialQueryOrder.date),
+              total: Number(matched.total ?? initialQueryOrder.total),
+              status: validStatus,
+              trackingNumber: String(
+                matched.trackingNumber || initialQueryOrder.trackingNumber || ""
+              ),
+              trackingUrl: String(
+                matched.trackingUrl || initialQueryOrder.trackingUrl || ""
+              ),
+              carrierName: String(
+                matched.carrierName || initialQueryOrder.carrierName || ""
+              ),
+              shippingAddress:
+                matched.shippingAddress &&
+                typeof matched.shippingAddress === "object"
+                  ? (matched.shippingAddress as Order["shippingAddress"])
+                  : undefined,
+              items: Array.isArray(matched.items)
+                ? (matched.items as Order["items"])
+                : [],
+            };
 
-              if (
-                prevStatusRef.current &&
-                prevStatusRef.current !== normalized.status
-              ) {
-                triggerStatusAlert(normalized);
-              }
-              prevStatusRef.current = normalized.status;
-              setLiveOrder(normalized);
-              return;
+            if (matched.walletToken && typeof matched.walletToken === 'string') {
+              setResolvedToken(matched.walletToken);
             }
+
+            if (
+              prevStatusRef.current &&
+              prevStatusRef.current !== normalized.status
+            ) {
+              triggerStatusAlert(normalized);
+            }
+            prevStatusRef.current = normalized.status;
+            setLiveOrder(normalized);
+            return;
           }
         }
       } catch {
@@ -416,13 +425,55 @@ function WalletOrderPassContent() {
 
           {/* Real-Time Progress Stepper */}
           <div className="p-6 space-y-5">
+            {/* Mandatory Lifecycle State Informative Box */}
+            <div
+              className={`p-4 rounded-2xl border transition-all ${
+                status === "Procesando"
+                  ? "bg-amber-500/[0.08] border-amber-400/25 text-amber-200"
+                  : status === "Enviado"
+                  ? "bg-blue-500/[0.08] border-blue-400/25 text-blue-200"
+                  : "bg-emerald-500/[0.08] border-emerald-400/25 text-emerald-200"
+              }`}
+            >
+              <div className="flex items-start gap-3">
+                <div
+                  className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${
+                    status === "Procesando"
+                      ? "bg-amber-400 text-black shadow-sm"
+                      : status === "Enviado"
+                      ? "bg-blue-400 text-black shadow-sm"
+                      : "bg-emerald-400 text-black shadow-sm"
+                  }`}
+                >
+                  {status === "Procesando" && <Clock className="w-4 h-4" />}
+                  {status === "Enviado" && <Truck className="w-4 h-4" />}
+                  {status === "Entregado" && <CheckCircle2 className="w-4 h-4" />}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs font-bold uppercase tracking-wider text-white">
+                    {status === "Procesando" && "Pedido en preparación"}
+                    {status === "Enviado" && "Tu pedido está en camino"}
+                    {status === "Entregado" && "Pedido entregado con éxito"}
+                  </p>
+                  <p className="text-[12px] text-white/80 mt-1 leading-relaxed">
+                    {status === "Procesando" &&
+                      "Tu pedido está siendo preparado. El enlace de seguimiento aparecerá aquí en cuanto el paquete sea entregado al operador logístico."}
+                    {status === "Enviado" &&
+                      "Tu pedido está en camino. Puedes rastrear los movimientos de tu paquete con la guía indicada."}
+                    {status === "Entregado" &&
+                      "Tu pedido ha sido entregado correctamente. Gracias por confiar en Lúmina Home."}
+                  </p>
+                </div>
+              </div>
+            </div>
+
             <div className="flex items-center justify-between">
               <span className="text-[11px] font-mono uppercase tracking-widest text-white/50 font-bold">
-                SEGUIMIENTO EN TIEMPO REAL
+                ETAPAS DE DESPACHO
               </span>
               <span className="text-[11px] text-white/50 flex items-center gap-1">
                 <RefreshCw className="w-3 h-3 animate-spin" />
-                Auto-actualizable
+                Sincronización activa
               </span>
             </div>
 
@@ -471,29 +522,32 @@ function WalletOrderPassContent() {
               })}
             </div>
 
-            {/* Carrier Direct Button when Shipped */}
-            {isShippedOrDelivered && liveOrder.trackingUrl && (
-              <a
-                href={liveOrder.trackingUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="w-full h-12 rounded-2xl bg-amber-400 hover:bg-amber-300 text-black font-bold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-lg transition-all cursor-pointer"
-              >
-                <Truck className="w-4 h-4" />
-                <span>
-                  Rastrear Envío en{" "}
-                  {liveOrder.carrierName || "Sitio de Transportadora"}
-                </span>
-                <ExternalLink className="w-4 h-4" />
-              </a>
-            )}
+            {/* Carrier Direct Button when Shipped or Delivered (ONLY if URL is valid) */}
+            {isShippedOrDelivered &&
+              liveOrder.trackingUrl &&
+              /^https?:\/\//i.test(liveOrder.trackingUrl) && (
+                <a
+                  href={liveOrder.trackingUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-full h-12 rounded-2xl bg-amber-400 hover:bg-amber-300 text-black font-bold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-lg transition-all cursor-pointer"
+                >
+                  <Truck className="w-4 h-4" />
+                  <span>
+                    Rastrear Envío en {liveOrder.carrierName || "Operador Logístico"}
+                  </span>
+                  <ExternalLink className="w-4 h-4" />
+                </a>
+              )}
 
-            {/* Direct Root Actions: Apple Wallet (.pkpass) & Google Wallet (JWT Save) */}
+            {/* Direct Native Actions: Apple Wallet (.pkpass) & Google Wallet (JWT Save) */}
             <div className="grid grid-cols-2 gap-2.5">
               <a
                 href={`/api/wallet/pass?type=order&platform=apple&orderId=${encodeURIComponent(
                   liveOrder.id || rawOrderId
-                )}&status=${encodeURIComponent(status)}&total=${encodeURIComponent(
+                )}${resolvedToken ? `&token=${encodeURIComponent(resolvedToken)}` : ""}&status=${encodeURIComponent(
+                  status
+                )}&total=${encodeURIComponent(
                   String(liveOrder.total || 0)
                 )}&customer=${encodeURIComponent(
                   liveOrder.customerName || "Cliente Lumina"
@@ -504,7 +558,7 @@ function WalletOrderPassContent() {
                 )}&carrier=${encodeURIComponent(
                   liveOrder.carrierName || ""
                 )}&url=${encodeURIComponent(liveOrder.trackingUrl || "")}`}
-                className="h-11 rounded-2xl bg-white text-gray-950 hover:bg-gray-100 font-semibold text-xs flex items-center justify-center gap-2 shadow-md transition-all"
+                className="h-11 rounded-2xl bg-white text-gray-950 hover:bg-gray-100 font-semibold text-xs flex items-center justify-center gap-2 shadow-md transition-all cursor-pointer"
               >
                 <svg className="w-3.5 h-3.5 shrink-0 fill-current" viewBox="0 0 24 24">
                   <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M15.97 6.33c.64-.78 1.08-1.86.96-2.94-.93.04-2.06.62-2.72 1.4-.58.68-1.1 1.79-.96 2.84 1.04.08 2.08-.52 2.72-1.3z" />
@@ -515,7 +569,9 @@ function WalletOrderPassContent() {
               <a
                 href={`/api/wallet/pass?type=order&platform=google&orderId=${encodeURIComponent(
                   liveOrder.id || rawOrderId
-                )}&status=${encodeURIComponent(status)}&total=${encodeURIComponent(
+                )}${resolvedToken ? `&token=${encodeURIComponent(resolvedToken)}` : ""}&status=${encodeURIComponent(
+                  status
+                )}&total=${encodeURIComponent(
                   String(liveOrder.total || 0)
                 )}&customer=${encodeURIComponent(
                   liveOrder.customerName || "Cliente Lumina"
@@ -526,7 +582,7 @@ function WalletOrderPassContent() {
                 )}&carrier=${encodeURIComponent(
                   liveOrder.carrierName || ""
                 )}&url=${encodeURIComponent(liveOrder.trackingUrl || "")}`}
-                className="h-11 rounded-2xl bg-[#1E1E24] hover:bg-[#272730] text-white border border-white/15 font-semibold text-xs flex items-center justify-center gap-2 shadow-md transition-all"
+                className="h-11 rounded-2xl bg-[#1E1E24] hover:bg-[#272730] text-white border border-white/15 font-semibold text-xs flex items-center justify-center gap-2 shadow-md transition-all cursor-pointer"
               >
                 <svg className="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="none">
                   <path
@@ -574,16 +630,18 @@ function WalletOrderPassContent() {
             <div className="w-5 h-5 rounded-full bg-[#0B0B0E] -mr-5 border-l border-white/15" />
           </div>
 
-          {/* Bottom Pass Barcode / QR Verification */}
+          {/* Bottom Pass Barcode / QR Verification (Anti-Enumeration Token) */}
           <div className="p-6 flex flex-col items-center text-center space-y-3 bg-black/20">
             <div className="p-3 rounded-2xl bg-white shadow-md">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={`https://api.qrserver.com/v1/create-qr-code/?size=160x160&margin=4&data=${encodeURIComponent(
                   typeof window !== "undefined"
-                    ? window.location.href
+                    ? `${window.location.origin}/wallet/order/${encodeURIComponent(
+                        resolvedToken || liveOrder.id || rawOrderId
+                      )}`
                     : `https://luminahome.ec/wallet/order/${encodeURIComponent(
-                        liveOrder.id || rawOrderId
+                        resolvedToken || liveOrder.id || rawOrderId
                       )}`
                 )}`}
                 alt="QR Verification"

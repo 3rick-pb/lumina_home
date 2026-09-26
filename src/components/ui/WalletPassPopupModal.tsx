@@ -74,9 +74,10 @@ export function WalletPassPopupModal({
   const origin =
     typeof window !== "undefined" ? window.location.origin : "https://luminahome.ec";
 
+  const tokenParam = liveOrder.walletToken ? `&token=${encodeURIComponent(liveOrder.walletToken)}` : '';
   const queryParams = `orderId=${encodeURIComponent(
     liveOrder.id
-  )}&total=${encodeURIComponent(String(liveOrder.total || 0))}&status=${encodeURIComponent(
+  )}${tokenParam}&total=${encodeURIComponent(String(liveOrder.total || 0))}&status=${encodeURIComponent(
     status
   )}&date=${encodeURIComponent(liveOrder.date || "Reciente")}&customer=${encodeURIComponent(
     liveOrder.customerName || "Cliente Lumina"
