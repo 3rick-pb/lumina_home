@@ -22,19 +22,22 @@ export interface BeUIPaginatedDockProps {
 
 const pageVariants = {
   enter: (direction: number) => ({
-    x: direction > 0 ? 45 : -45,
+    x: direction > 0 ? 50 : -50,
     opacity: 0,
-    scale: 0.98,
+    scale: 0.96,
+    filter: "blur(2px)",
   }),
   center: {
     x: 0,
     opacity: 1,
     scale: 1,
+    filter: "blur(0px)",
   },
   exit: (direction: number) => ({
-    x: direction > 0 ? -45 : 50,
+    x: direction > 0 ? -50 : 50,
     opacity: 0,
-    scale: 0.98,
+    scale: 0.96,
+    filter: "blur(2px)",
   }),
 };
 
@@ -43,8 +46,9 @@ const pageVariants = {
  * - 100% Symmetrical layout: 4 equal 25% columns per page.
  * - Divided into REAL individual pages (isolated views via AnimatePresence) with ZERO icon leakage/peeking.
  * - Leaves unused column slots completely empty without stretching.
- * - Fast, crisp 200ms transitions between pages.
- * - Jitter-free touch swipe gestures.
+ * - Silky smooth spring page transitions with organic inertia in both directions (forward and backward).
+ * - Floating active motion pill (layoutId) for fluid, glitch-free active tab transitions (no white-on-white artifacts).
+ * - Rock-solid touch detection with touch-manipulation to eliminate dropped mobile clicks.
  * - Distinctive dots page indicator underneath with active pill expansion.
  */
 export function BeUIPaginatedDock({
@@ -90,7 +94,7 @@ export function BeUIPaginatedDock({
     const diffX = touchStartRef.current.x - touch.clientX;
     const diffY = touchStartRef.current.y - touch.clientY;
 
-    if (Math.abs(diffX) > Math.abs(diffY) && Math.abs(diffX) > 28) {
+    if (Math.abs(diffX) > Math.abs(diffY) * 1.35 && Math.abs(diffX) > 30) {
       if (diffX > 0 && safePage < totalPages - 1) {
         // Swiped right-to-left -> Advance to Next page
         setPage([safePage + 1, 1]);
@@ -133,8 +137,10 @@ export function BeUIPaginatedDock({
                 animate="center"
                 exit="exit"
                 transition={{
-                  duration: 0.2,
-                  ease: [0.16, 1, 0.3, 1],
+                  x: { type: "spring", stiffness: 340, damping: 32, mass: 0.8 },
+                  opacity: { duration: 0.22, ease: "easeOut" },
+                  scale: { duration: 0.22, ease: "easeOut" },
+                  filter: { duration: 0.22, ease: "easeOut" },
                 }}
                 className="w-full grid grid-cols-4 gap-1 items-center justify-items-center select-none"
               >
@@ -142,33 +148,60 @@ export function BeUIPaginatedDock({
                   <button
                     key={item.id}
                     type="button"
-                    onClick={item.onClick}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      item.onClick();
+                    }}
                     title={item.title || item.label}
-                    className={`relative w-full flex flex-col items-center justify-center h-14 py-1.5 px-0.5 rounded-2xl transition-all duration-200 select-none group cursor-pointer active:scale-90 ${
-                      item.active
-                        ? "bg-gray-950 text-white dark:bg-white dark:text-gray-950 shadow-md shadow-gray-950/20 dark:shadow-white/20 scale-[1.02]"
-                        : "text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/10"
-                    }`}
+                    className="relative w-full flex flex-col items-center justify-center h-14 py-1.5 px-0.5 rounded-2xl select-none group cursor-pointer touch-manipulation focus:outline-none"
                   >
-                    <div className="relative">
-                      <div className="w-5 h-5 flex items-center justify-center transition-transform duration-200 group-hover:scale-110">
-                        {item.icon}
-                      </div>
-                      {typeof item.badgeCount === "number" && item.badgeCount > 0 && (
-                        <span
-                          className={`absolute -top-1 -right-2.5 min-w-[16px] h-[16px] px-1 rounded-full text-[9px] font-black flex items-center justify-center ring-2 ring-white dark:ring-[#18181b] ${
+                    {/* Floating Spring Active Pill (beUI Dock UX) */}
+                    {item.active && (
+                      <motion.div
+                        layoutId="beui-dock-active-pill"
+                        transition={{
+                          type: "spring",
+                          stiffness: 450,
+                          damping: 35,
+                        }}
+                        className="absolute inset-0 bg-gray-950 dark:bg-white rounded-2xl shadow-md shadow-gray-950/20 dark:shadow-white/20 z-0"
+                      />
+                    )}
+
+                    {/* Content positioned above the active pill */}
+                    <div className="relative z-10 flex flex-col items-center justify-center w-full">
+                      <div className="relative">
+                        <div
+                          className={`w-5 h-5 flex items-center justify-center transition-colors duration-200 ${
                             item.active
-                              ? "bg-[#8c9276] text-white dark:bg-[#18181b] dark:text-white"
-                              : "bg-rose-500 text-white shadow-xs"
+                              ? "text-white dark:text-gray-950"
+                              : "text-gray-500 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-white"
                           }`}
                         >
-                          {item.badgeCount > 99 ? "99+" : item.badgeCount}
-                        </span>
-                      )}
+                          {item.icon}
+                        </div>
+                        {typeof item.badgeCount === "number" && item.badgeCount > 0 && (
+                          <span
+                            className={`absolute -top-1 -right-2.5 min-w-[16px] h-[16px] px-1 rounded-full text-[9px] font-black flex items-center justify-center ring-2 ring-white dark:ring-[#18181b] ${
+                              item.active
+                                ? "bg-[#8c9276] text-white dark:bg-[#18181b] dark:text-white"
+                                : "bg-rose-500 text-white shadow-xs"
+                            }`}
+                          >
+                            {item.badgeCount > 99 ? "99+" : item.badgeCount}
+                          </span>
+                        )}
+                      </div>
+                      <span
+                        className={`text-[9.5px] font-medium tracking-tight mt-1 leading-none truncate max-w-[64px] transition-colors duration-200 ${
+                          item.active
+                            ? "text-white dark:text-gray-950 font-semibold"
+                            : "text-gray-500 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-white"
+                        }`}
+                      >
+                        {item.label}
+                      </span>
                     </div>
-                    <span className="text-[9.5px] font-medium tracking-tight mt-1 leading-none truncate max-w-[64px]">
-                      {item.label}
-                    </span>
                   </button>
                 ))}
 
@@ -198,7 +231,7 @@ export function BeUIPaginatedDock({
                   setPage([idx, idx > safePage ? 1 : -1]);
                 }
               }}
-              className={`h-1.5 rounded-full transition-all duration-250 cursor-pointer ${
+              className={`h-1.5 rounded-full transition-all duration-300 cursor-pointer ${
                 safePage === idx
                   ? "w-6 bg-gray-900 dark:bg-white shadow-[0_1px_4px_rgba(0,0,0,0.25)]"
                   : "w-1.5 bg-gray-400/50 dark:bg-white/25 hover:bg-gray-600 dark:hover:bg-white/50"

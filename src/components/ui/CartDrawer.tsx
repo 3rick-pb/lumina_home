@@ -1315,14 +1315,14 @@ export function CartDrawer() {
         {/* Thumbnail */}
         <div 
           onClick={() => { setIsOpen(false); router.push(`/product/${item.productId || item.product.id}`); }}
-          className="relative w-18 h-18 sm:w-22 sm:h-22 rounded-2xl overflow-hidden bg-gray-100 dark:bg-[#202022]/40 shrink-0 border border-black/5 dark:border-white/10 shadow-xs cursor-pointer group/thumb"
+          className="relative w-20 h-20 sm:w-24 sm:h-24 rounded-2xl overflow-hidden bg-gray-100 dark:bg-[#202022]/40 shrink-0 border border-black/5 dark:border-white/10 shadow-xs cursor-pointer group/thumb"
           title="Abrir detalles del producto"
         >
           <Image 
             src={item.product.imageUrl} 
             alt={item.product.title} 
             fill 
-            sizes="(max-width: 640px) 72px, 88px"
+            sizes="(max-width: 640px) 80px, 96px"
             className="object-cover group-hover/thumb:scale-105 transition-transform duration-500" 
           />
           {itemIsAgotado && (
