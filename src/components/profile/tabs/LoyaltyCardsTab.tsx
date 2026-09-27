@@ -435,19 +435,16 @@ export function LoyaltyCardsTab() {
   const enrollmentQrUrl = useMemo(() => {
     const origin = typeof window !== "undefined" ? window.location.origin : "https://lumina-home.ec";
     const targetMember = selectedMemberForQR;
-    const params = new URLSearchParams({
-      program: config.programName,
-      issuer: config.issuerName,
-      ptsPerDollar: String(config.pointsPerDollar),
-      welcome: String(config.welcomeBonusPoints),
-      bg: config.bgColor,
-      accent: config.accentColor,
-      code: targetMember?.memberCode || "LUM-NEW-PASS",
-      name: targetMember?.customerName || "Cliente Lumina",
-      email: targetMember?.customerEmail || "",
-      pts: String(targetMember?.pointsBalance ?? config.welcomeBonusPoints),
-    });
-    return `${origin}/loyalty/pass?${params.toString()}`;
+    const params = new URLSearchParams();
+    params.set("code", targetMember?.memberCode || "LUM-NEW-PASS");
+    params.set("name", targetMember?.customerName || "Cliente Lumina");
+    if (targetMember?.customerEmail) params.set("email", targetMember.customerEmail);
+    const pts = targetMember?.pointsBalance ?? config.welcomeBonusPoints;
+    params.set("pts", String(pts));
+    // Inline tier resolution to keep useMemo deps stable
+    const tierName = pts >= config.tierBlackMin ? "Nivel Oro+" : pts >= config.tierGoldMin ? "Nivel Plata" : "Nivel Base";
+    params.set("tier", tierName);
+    return `${origin}/wallet/add?${params.toString()}`;
   }, [config, selectedMemberForQR]);
 
   const handleCopyEnrollmentLink = () => {
