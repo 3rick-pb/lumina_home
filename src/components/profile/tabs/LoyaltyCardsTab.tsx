@@ -24,7 +24,8 @@ import {
 import { useUserStore } from "@/lib/userStore";
 import { useBrand } from "@/core/hooks/useBrand";
 import { CloudSyncStatus } from "../CloudSyncStatus";
-import { GoogleWalletButton } from "@/components/ui/GoogleWalletButton";
+import { GoogleWalletButton, GoogleWalletIcon } from "@/components/ui/GoogleWalletButton";
+import { GoogleWalletModal, isMobileDevice } from "@/components/profile/modals/GoogleWalletModal";
 import { supabase } from "@/lib/supabase";
 
 const toast = {
@@ -297,7 +298,6 @@ export function LoyaltyCardsTab() {
     tagline: brand.tagline,
   }));
   const [members, setMembers] = useState<LoyaltyMemberCard[]>([]);
-  const [previewPlatform, setPreviewPlatform] = useState<"apple" | "google">("apple");
   const [activeSubTab, setActiveSubTab] = useState<"designer" | "qr" | "members">("designer");
   const [searchMember, setSearchMember] = useState("");
   const [selectedMemberForQR, setSelectedMemberForQR] = useState<LoyaltyMemberCard | null>(null);
@@ -305,6 +305,15 @@ export function LoyaltyCardsTab() {
   const [toolState, setToolState] = useState<"idle" | "working" | "done">("idle");
   const [isSyncing, setIsSyncing] = useState(false);
   const [isOpeningGoogleWallet, setIsOpeningGoogleWallet] = useState(false);
+  const [isWalletModalOpen, setIsWalletModalOpen] = useState(false);
+  const [walletTargetMember, setWalletTargetMember] = useState<{
+    id?: string;
+    customerName?: string;
+    customerEmail?: string;
+    memberCode?: string;
+    pointsBalance?: number;
+    tierName?: string;
+  } | null>(null);
 
   const qrSvgRef = useRef<SVGSVGElement | null>(null);
   const logoInputRef = useRef<HTMLInputElement | null>(null);
@@ -507,32 +516,55 @@ export function LoyaltyCardsTab() {
   };
 
   const handleOpenGoogleWallet = async (member?: LoyaltyMemberCard | null) => {
-    const target = member || selectedMemberForQR || members[0];
-    if (!target) return;
-    try {
-      setIsOpeningGoogleWallet(true);
-      const res = await fetch("/api/wallet/google/create", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          customerEmail: target.customerEmail,
-          memberCode: target.memberCode,
-          customerId: target.id,
-        }),
-      });
-      const data = await res.json();
-      if (data.success && data.saveUrl) {
-        window.open(data.saveUrl, "_blank");
-        toast.success("Enlace oficial de Google Wallet generado correctamente.");
-        return;
+    const target = member || selectedMemberForQR || members[0] || {
+      id: "cliente_lumina",
+      customerName: currentUser?.name || "Cliente Lumina",
+      customerEmail: currentUser?.email || "cliente@luminahome.ec",
+      memberCode: "LUM-1042-PRV",
+      pointsBalance: config.welcomeBonusPoints,
+    };
+
+    // 1. MOBILE FLOW: Call backend and navigate directly to official Google Wallet Save URL
+    if (isMobileDevice()) {
+      try {
+        setIsOpeningGoogleWallet(true);
+        const res = await fetch("/api/wallet/google/create", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            customerId: target.id,
+            customerEmail: target.customerEmail,
+            customerName: target.customerName,
+            memberCode: target.memberCode,
+            pointsBalance: target.pointsBalance,
+            tierName: resolveTier(target.pointsBalance).name,
+          }),
+        });
+        const data = await res.json();
+        if (data.success && data.saveUrl) {
+          window.location.href = data.saveUrl;
+          return;
+        }
+        toast.error(data.error || "No se pudo generar la tarjeta de Google Wallet.");
+      } catch (err) {
+        console.warn("[LoyaltyCardsTab] Error abriendo Google Wallet en móvil:", err);
+        toast.error("Error al conectar con el servidor para generar la tarjeta.");
+      } finally {
+        setIsOpeningGoogleWallet(false);
       }
-      toast.error(data.error || "No se pudo generar la tarjeta de Google Wallet.");
-    } catch (err) {
-      console.warn("[LoyaltyCardsTab] Error abriendo Google Wallet:", err);
-      toast.error("Error al conectar con el servidor para generar la tarjeta.");
-    } finally {
-      setIsOpeningGoogleWallet(false);
+      return;
     }
+
+    // 2. DESKTOP FLOW: Open high-end QR modal immediately (NO intermediate pages)
+    setWalletTargetMember({
+      id: target.id,
+      customerName: target.customerName,
+      customerEmail: target.customerEmail,
+      memberCode: target.memberCode,
+      pointsBalance: target.pointsBalance,
+      tierName: resolveTier(target.pointsBalance).name,
+    });
+    setIsWalletModalOpen(true);
   };
 
   const handleAdjustPoints = async (memberId: string, delta: number) => {
@@ -1225,6 +1257,15 @@ export function LoyaltyCardsTab() {
                           </button>
                           <button
                             type="button"
+                            onClick={() => handleOpenGoogleWallet(member)}
+                            className="px-3 py-1.5 rounded-xl bg-black hover:bg-neutral-800 text-white text-xs font-semibold flex items-center gap-1.5 cursor-pointer border border-neutral-700 shadow-sm transition-all"
+                            title="Agregar a Google Wallet"
+                          >
+                            <GoogleWalletIcon className="w-3.5 h-3.5" />
+                            <span>Wallet</span>
+                          </button>
+                          <button
+                            type="button"
                             onClick={() => handleDeleteMemberCard(member.id)}
                             className="p-1.5 rounded-xl text-gray-400 hover:text-rose-500 hover:bg-rose-500/10 transition-colors cursor-pointer"
                             title="Eliminar tarjeta"
@@ -1252,29 +1293,9 @@ export function LoyaltyCardsTab() {
                     Así se ve en el teléfono del cliente
                   </span>
                 </div>
-                <div className="inline-flex rounded-xl p-1 bg-white dark:bg-[#202022] border border-gray-200/80 dark:border-white/10">
-                  <button
-                    type="button"
-                    onClick={() => setPreviewPlatform("apple")}
-                    className={`px-3 py-1 rounded-lg text-[11px] font-semibold transition-all cursor-pointer ${
-                      previewPlatform === "apple"
-                        ? "bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900"
-                        : "text-gray-500 dark:text-gray-400"
-                    }`}
-                  >
-                    Apple Wallet
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setPreviewPlatform("google")}
-                    className={`px-3 py-1 rounded-lg text-[11px] font-semibold transition-all cursor-pointer ${
-                      previewPlatform === "google"
-                        ? "bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900"
-                        : "text-gray-500 dark:text-gray-400"
-                    }`}
-                  >
-                    Google Wallet
-                  </button>
+                <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-black text-white border border-neutral-700 shadow-sm">
+                  <GoogleWalletIcon className="w-3.5 h-3.5" />
+                  <span className="text-[11px] font-semibold tracking-wide">Google Wallet</span>
                 </div>
               </div>
 
@@ -1377,9 +1398,18 @@ export function LoyaltyCardsTab() {
                     {activePreviewMember.memberCode}
                   </span>
                   <span className="text-[9px] opacity-55 mt-0.5">
-                    {previewPlatform === "apple" ? "Apple Wallet PassKit" : "Google Wallet Pass"}
+                    Google Wallet Pass
                   </span>
                 </div>
+              </div>
+
+              {/* Add to Google Wallet Button */}
+              <div className="pt-2 flex flex-col items-center">
+                <GoogleWalletButton
+                  onClick={() => handleOpenGoogleWallet(activePreviewMember)}
+                  disabled={isOpeningGoogleWallet}
+                  className="w-full max-w-[350px] shadow-md hover:shadow-lg transition-all"
+                />
               </div>
             </div>
           </div>
@@ -1482,6 +1512,13 @@ export function LoyaltyCardsTab() {
           </div>
         </div>
       )}
+
+      {/* High-End Direct Google Wallet Modal (Desktop QR / Save) */}
+      <GoogleWalletModal
+        open={isWalletModalOpen}
+        onClose={() => setIsWalletModalOpen(false)}
+        member={walletTargetMember}
+      />
     </div>
   );
 }
