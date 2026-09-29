@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import Image from "next/image";
-import { X, CheckCircle2, Mail, Send, RefreshCw, AlertCircle, Truck, ExternalLink, Copy } from "lucide-react";
+import { X, CheckCircle2, Mail, Send, RefreshCw, AlertCircle, Truck, ExternalLink } from "lucide-react";
 import { Order } from "@/lib/userStore";
 import { BlobatarAvatar } from "@/components/ui/BlobatarAvatar";
 import { BeUICenterMorphModal, BeUIOrderStatusSelector } from "@/components/ui/BeUIControls";
@@ -46,48 +46,7 @@ export function OrderDetailModal({
   const [feedback, setFeedback] = useState<{ success: boolean; message: string } | null>(null);
   const [copiedTracking, setCopiedTracking] = useState(false);
   const [showWalletPopup, setShowWalletPopup] = useState(false);
-  const [isSyncingWallets, setIsSyncingWallets] = useState(false);
-  const [walletFeedback, setWalletFeedback] = useState<{ success: boolean; message: string } | null>(null);
 
-  const handleResyncWallets = async () => {
-    if (!order?.id) return;
-    setIsSyncingWallets(true);
-    setWalletFeedback(null);
-    try {
-      const { data: { session } } = await supabase.auth.getSession();
-      const headers: Record<string, string> = { "Content-Type": "application/json" };
-      if (session?.access_token) headers['Authorization'] = `Bearer ${session.access_token}`;
-
-      const res = await fetch('/api/orders', {
-        method: 'PATCH',
-        headers,
-        body: JSON.stringify({
-          orderId: order.id,
-          action: 'resync_wallets',
-        }),
-      });
-      const data = await res.json();
-      if (data.success && data.walletSync) {
-        const g = data.walletSync.googleStatus;
-        setWalletFeedback({
-          success: true,
-          message: `Sincronización completada con Google Wallet: ${g}`,
-        });
-      } else {
-        setWalletFeedback({
-          success: false,
-          message: data.error || 'No se pudo sincronizar con las billeteras.',
-        });
-      }
-    } catch (err) {
-      setWalletFeedback({
-        success: false,
-        message: `Fallo de conexión: ${String(err)}`,
-      });
-    } finally {
-      setIsSyncingWallets(false);
-    }
-  };
 
   // Custom symmetrical slider (scrollbar) state and refs
   const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -279,18 +238,11 @@ export function OrderDetailModal({
                 <button
                   type="button"
                   onClick={() => setShowWalletPopup(true)}
-                  className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10.5px] font-semibold bg-[#141417] dark:bg-white/[0.08] text-white border border-black/15 dark:border-white/[0.12] hover:bg-[#1E1E22] dark:hover:bg-white/[0.14] transition-all cursor-pointer shadow-2xs"
-                  title="Añadir seguimiento a Apple Wallet o Google Wallet"
+                  className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10.5px] font-semibold bg-[#1F1F1F] hover:bg-[#2C2C2C] active:bg-[#191919] text-white border border-white/10 transition-all cursor-pointer shadow-sm active:scale-95"
+                  title="Guardar pase en Google Wallet"
                 >
-                  <svg className="w-3 h-3 fill-current shrink-0" viewBox="0 0 24 24">
-                    <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M15.97 6.33c.64-.78 1.08-1.86.96-2.94-.93.04-2.06.62-2.72 1.4-.58.68-1.1 1.79-.96 2.84 1.04.08 2.08-.52 2.72-1.3z" />
-                  </svg>
-                  <svg className="w-3 h-3 shrink-0" viewBox="0 0 24 24" fill="none">
-                    <rect x="3" y="7" width="18" height="10" rx="2" fill="#34A853" />
-                    <path d="M3 10h18" stroke="#FBBC05" strokeWidth="2.5" />
-                    <circle cx="17" cy="13.5" r="1.5" fill="#EA4335" />
-                  </svg>
-                  <span>Wallet</span>
+                  <GoogleWalletIcon className="w-3.5 h-3.5 shrink-0" />
+                  <span>Guardar en Google Wallet</span>
                 </button>
               </div>
               <div className="flex flex-wrap items-center gap-2.5">
@@ -346,25 +298,10 @@ export function OrderDetailModal({
           <div className="my-5 p-4 bg-gray-50 dark:bg-[#2a2a2c] rounded-2xl border border-gray-100 dark:border-white/5">
             <div className="flex flex-wrap items-center justify-between gap-2 mb-3 text-xs">
               {isShippedOrDelivered && activeOrder.trackingNumber ? (
-                <a
-                  href={resolvedTrackingUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  onClick={() => {
-                    try {
-                      navigator.clipboard?.writeText(activeOrder.trackingNumber || "");
-                      setCopiedTracking(true);
-                      setTimeout(() => setCopiedTracking(false), 2400);
-                    } catch {}
-                  }}
-                  className="inline-flex items-center gap-1.5 font-semibold text-blue-600 dark:text-blue-400 hover:underline"
-                >
-                  <span>Código de Rastreo:</span>
-                  <span className="font-mono font-bold px-2 py-0.5 rounded-md bg-blue-500/10 border border-blue-500/25">
-                    {activeOrder.trackingNumber}
-                  </span>
-                  <Copy className="w-3 h-3 opacity-75" />
-                </a>
+                <div className="flex items-center gap-1.5 text-gray-500 dark:text-gray-400 font-medium">
+                  <Truck className="w-3.5 h-3.5 text-[#8c9276] shrink-0" />
+                  <span>Usa tu código de guía para más detalles</span>
+                </div>
               ) : (
                 <span className="font-medium text-gray-500 dark:text-gray-400">
                   Estado logístico:{" "}
@@ -574,76 +511,7 @@ export function OrderDetailModal({
           </div>
         </div>
 
-        {/* Wallet Synchronization Section (Google Wallet) */}
-        <div className="mb-5 p-4 bg-gray-50/90 dark:bg-[#2a2a2c]/90 rounded-2xl border border-gray-100 dark:border-white/5 space-y-3">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <GoogleWalletIcon className="w-4 h-4 shrink-0" />
-              <h4 className="text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-gray-300">
-                Sincronización de Pase (Google Wallet)
-              </h4>
-            </div>
-            <button
-              type="button"
-              onClick={() => setShowWalletPopup(true)}
-              className="text-[10px] font-bold text-[#8c9276] hover:underline cursor-pointer flex items-center gap-1"
-            >
-              <span>Ver QR & Pase</span>
-              <ExternalLink className="w-3 h-3" />
-            </button>
-          </div>
 
-          {walletFeedback && (
-            <div
-              className={`p-2.5 rounded-xl text-xs flex items-center gap-2 ${
-                walletFeedback.success
-                  ? "bg-emerald-50 text-emerald-800 border border-emerald-200"
-                  : "bg-red-50 text-red-800 border border-red-200"
-              }`}
-            >
-              {walletFeedback.success ? (
-                <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-600" />
-              ) : (
-                <AlertCircle className="w-4 h-4 shrink-0 text-red-600" />
-              )}
-              <span>{walletFeedback.message}</span>
-            </div>
-          )}
-
-          {/* Google Wallet status card */}
-          <div className="p-3.5 bg-white dark:bg-[#202022] rounded-xl border border-gray-100 dark:border-white/5 space-y-2">
-            <div className="flex items-center justify-between">
-              <span className="text-[11px] font-bold text-gray-800 dark:text-gray-200 flex items-center gap-2">
-                <GoogleWalletIcon className="w-4 h-4 shrink-0" />
-                <span>Google Wallet</span>
-              </span>
-              <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
-                REST API & JWT
-              </span>
-            </div>
-            <p className="text-[11px] text-gray-400 leading-relaxed">
-              Sincronización automática en tiempo real vía Google Service Account. Notificaciones push al cliente al cambiar a Enviado y Entregado.
-            </p>
-          </div>
-
-          {isAdmin && (
-            <button
-              type="button"
-              onClick={handleResyncWallets}
-              disabled={isSyncingWallets}
-              className="w-full mt-2 px-3 py-2 bg-gray-100 dark:bg-white/5 hover:bg-gray-200 dark:hover:bg-white/10 text-gray-700 dark:text-gray-300 rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition cursor-pointer disabled:opacity-50"
-            >
-              {isSyncingWallets ? (
-                <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-              ) : (
-                <RefreshCw className="w-3.5 h-3.5 text-[#8c9276]" />
-              )}
-              <span>
-                {isSyncingWallets ? "Sincronizando..." : "Resincronizar Pase en Google Wallet"}
-              </span>
-            </button>
-          )}
-        </div>
 
         {/* Items Purchased */}
         <div className="space-y-3 mb-5">
