@@ -2805,7 +2805,7 @@ export function CartDrawer() {
         >
           <img
             src={`https://api.qrserver.com/v1/create-qr-code/?size=220x220&ecc=M&margin=6&data=${encodeURIComponent(
-              `${typeof window !== "undefined" ? window.location.origin : "https://luminahome.ec"}/wallet/order/${encodeURIComponent(lastPlacedOrder.id)}?total=${encodeURIComponent(String(lastPlacedOrder.total || 0))}&status=${encodeURIComponent(lastPlacedOrder.status || "Procesando")}&customer=${encodeURIComponent(lastPlacedOrder.customerName || user?.name || "Cliente Lumina")}`
+              `${typeof window !== "undefined" ? window.location.origin : "https://luminahome.ec"}/api/wallet/pass?type=order&orderId=${encodeURIComponent(lastPlacedOrder.id)}&total=${encodeURIComponent(String(lastPlacedOrder.total || 0))}&status=${encodeURIComponent(lastPlacedOrder.status || "Procesando")}&customer=${encodeURIComponent(lastPlacedOrder.customerName || user?.name || "Cliente Lumina")}&date=${encodeURIComponent(lastPlacedOrder.date || "Reciente")}`
             )}`}
             alt={`QR Pase de Pedido ${lastPlacedOrder.id}`}
             className="w-28 h-28 sm:w-32 sm:h-32 rounded-lg object-contain select-none"
