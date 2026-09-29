@@ -349,68 +349,29 @@ export default function Home() {
       >
         <div className="bg-white dark:bg-[#1e1e20] rounded-2xl md:rounded-[2rem] border border-black/[0.06] dark:border-white/[0.08] shadow-[0_16px_40px_-8px_rgba(0,0,0,0.08),0_4px_16px_rgba(0,0,0,0.03)] overflow-hidden">
 
-          {/* ── Mobile: auto-scrolling marquee ticker ── */}
-          <div className="flex lg:hidden py-3 px-0 relative">
-            {/* Fade edges */}
-            <div className="pointer-events-none absolute left-0 top-0 bottom-0 w-10 z-10 bg-gradient-to-r from-white dark:from-[#1e1e20] to-transparent" />
-            <div className="pointer-events-none absolute right-0 top-0 bottom-0 w-10 z-10 bg-gradient-to-l from-white dark:from-[#1e1e20] to-transparent" />
-
-            {/* Marquee track — duplicated for seamless loop */}
-            <div className="flex w-full overflow-hidden">
+          {/* ── Mobile / tablet: 2-column pill grid ── */}
+          <div className="grid grid-cols-2 lg:hidden divide-x divide-y divide-black/[0.04] dark:divide-white/[0.05]">
+            {trustBadges.map((badge, idx) => (
               <div
-                className="flex shrink-0 animate-trust-marquee"
-                aria-hidden="false"
+                key={idx}
+                className="flex items-center gap-2.5 px-4 py-3.5 select-none"
               >
-                {[...trustBadges, ...trustBadges].map((badge, idx) => (
-                  <div
-                    key={idx}
-                    className="flex items-center gap-2.5 shrink-0 px-5"
-                  >
-                    <div className="w-8 h-8 rounded-xl bg-[#8c9276]/10 dark:bg-[#8c9276]/20 text-[#8c9276] flex items-center justify-center shrink-0">
-                      <badge.icon className="w-[15px] h-[15px]" />
-                    </div>
-                    <div className="select-none">
-                      <p className="text-[11px] font-semibold text-gray-900 dark:text-gray-100 leading-snug whitespace-nowrap">
-                        {badge.title}
-                      </p>
-                      <p className="text-[9px] text-gray-400 leading-tight whitespace-nowrap">
-                        {badge.subtitle}
-                      </p>
-                    </div>
-                    {/* Dot separator */}
-                    <span className="w-1 h-1 rounded-full bg-gray-200 dark:bg-white/20 ml-1 shrink-0" />
-                  </div>
-                ))}
+                <div className="shrink-0 w-7 h-7 rounded-lg bg-[#8c9276]/10 dark:bg-[#8c9276]/15 text-[#8c9276] flex items-center justify-center">
+                  <badge.icon className="w-3.5 h-3.5" />
+                </div>
+                <div className="min-w-0">
+                  <p className="text-[11px] font-semibold text-gray-800 dark:text-gray-100 leading-tight truncate">
+                    {badge.title}
+                  </p>
+                  <p className="text-[10px] text-gray-400 dark:text-gray-500 leading-tight truncate">
+                    {badge.subtitle}
+                  </p>
+                </div>
               </div>
-              {/* Second copy for seamless wrap */}
-              <div
-                className="flex shrink-0 animate-trust-marquee"
-                aria-hidden="true"
-              >
-                {[...trustBadges, ...trustBadges].map((badge, idx) => (
-                  <div
-                    key={idx}
-                    className="flex items-center gap-2.5 shrink-0 px-5"
-                  >
-                    <div className="w-8 h-8 rounded-xl bg-[#8c9276]/10 dark:bg-[#8c9276]/20 text-[#8c9276] flex items-center justify-center shrink-0">
-                      <badge.icon className="w-[15px] h-[15px]" />
-                    </div>
-                    <div className="select-none">
-                      <p className="text-[11px] font-semibold text-gray-900 dark:text-gray-100 leading-snug whitespace-nowrap">
-                        {badge.title}
-                      </p>
-                      <p className="text-[9px] text-gray-400 leading-tight whitespace-nowrap">
-                        {badge.subtitle}
-                      </p>
-                    </div>
-                    <span className="w-1 h-1 rounded-full bg-gray-200 dark:bg-white/20 ml-1 shrink-0" />
-                  </div>
-                ))}
-              </div>
-            </div>
+            ))}
           </div>
 
-          {/* ── Desktop: 5-column grid ── */}
+          {/* ── Desktop: 5-column row ── */}
           <div className="hidden lg:grid lg:grid-cols-5 items-center p-4 md:p-5">
             {trustBadges.map((badge, idx) => (
               <div
