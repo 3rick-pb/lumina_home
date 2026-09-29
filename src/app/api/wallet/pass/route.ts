@@ -1,11 +1,23 @@
 import { NextResponse } from 'next/server';
-import { buildGoogleWalletOrderJwtUrl } from '@/lib/wallet/googleWalletService';
 import {
-  generateOrderTrackingToken,
   verifyOrderTrackingToken,
 } from '@/lib/wallet/orderPassTokens';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
-import { createOrGetCustomerGoogleWalletPass } from '@/lib/wallet/googleCustomerPassService';
+import {
+  createOrGetCustomerGoogleWalletPass,
+  getGoogleWalletCredentials,
+} from '@/lib/wallet/googleCustomerPassService';
+import { buildGoogleGenericObject } from '@/lib/wallet/googleWalletService';
+import crypto from 'crypto';
+
+function base64UrlEncode(input: string | Buffer): string {
+  const buf = typeof input === 'string' ? Buffer.from(input, 'utf-8') : input;
+  return buf
+    .toString('base64')
+    .replace(/\+/g, '-')
+    .replace(/\//g, '_')
+    .replace(/=+$/g, '');
+}
 
 function decodeOrderTracking(rawTracking: unknown, status: string) {
   if (!rawTracking || status === 'Procesando') {
@@ -36,7 +48,7 @@ export async function GET(request: Request) {
   const origin = new URL(request.url).origin;
 
   // ============================================================================
-  // A. ORDER TRACKING PASS (type=order) — Apple Wallet (.pkpass) & Google Wallet
+  // A. ORDER TRACKING PASS (type=order) — Google Wallet direct
   // ============================================================================
   if (passType === 'order') {
     const rawToken = searchParams.get('token')?.trim();
@@ -110,26 +122,57 @@ export async function GET(request: Request) {
       console.warn('[wallet/pass] Supabase lookup error (using params fallback):', dbErr);
     }
 
-    // Generate canonical anti-enumeration token
-    const secureToken = generateOrderTrackingToken(orderData.orderId);
-    const liveOrderPassUrl = `${origin}/wallet/order/${secureToken}`;
-
-    // Exclusively generate Google Wallet Order Pass
-    const googleRes = buildGoogleWalletOrderJwtUrl({
-      ...orderData,
-      origin,
-    });
-
-    if (googleRes.saveUrl) {
-      return NextResponse.redirect(googleRes.saveUrl);
+    // Use robust credential resolution (supports JSON, file, and individual env vars)
+    const credentials = getGoogleWalletCredentials();
+    if (!credentials) {
+      console.error('[wallet/pass] Google Wallet credentials not configured on server.');
+      return NextResponse.json(
+        { error: 'Google Wallet no está configurado en el servidor. Contacta al administrador.' },
+        { status: 503 }
+      );
     }
 
-    // If Google Wallet credentials are not configured yet, redirect to web viewer
-    return NextResponse.redirect(`${liveOrderPassUrl}?wallet=google&status=pending_credentials`);
+    try {
+      const { genericClass, genericObject } = buildGoogleGenericObject(
+        { ...orderData, origin },
+        credentials.issuerId
+      );
+
+      const header = { alg: 'RS256', typ: 'JWT' };
+      const payload = {
+        iss: credentials.clientEmail,
+        aud: 'google',
+        typ: 'savetowallet',
+        iat: Math.floor(Date.now() / 1000),
+        origins: [],
+        payload: {
+          genericClasses: [genericClass],
+          genericObjects: [genericObject],
+        },
+      };
+
+      const encodedHeader = base64UrlEncode(JSON.stringify(header));
+      const encodedPayload = base64UrlEncode(JSON.stringify(payload));
+      const signingInput = `${encodedHeader}.${encodedPayload}`;
+
+      const signer = crypto.createSign('RSA-SHA256');
+      signer.update(signingInput);
+      signer.end();
+      const signature = signer.sign(credentials.privateKey);
+      const saveUrl = `https://pay.google.com/gp/v/save/${signingInput}.${base64UrlEncode(signature)}`;
+
+      return NextResponse.redirect(saveUrl);
+    } catch (err) {
+      console.error('[wallet/pass] JWT signing error for order pass:', err);
+      return NextResponse.json(
+        { error: 'Error al generar el pase de Google Wallet.' },
+        { status: 500 }
+      );
+    }
   }
 
   // ============================================================================
-  // B. LOYALTY PASS (type=loyalty) — Exclusively Google Wallet
+  // B. LOYALTY PASS (type=loyalty) — Exclusively Google Wallet, direct redirect
   // ============================================================================
   const code = searchParams.get('code') || 'LUM-1042-PRV';
   const name = searchParams.get('name') || 'Cliente Lumina';
@@ -150,11 +193,9 @@ export async function GET(request: Request) {
     return NextResponse.redirect(passResult.saveUrl);
   }
 
-  const loyaltyLiveUrl = `${origin}/loyalty/pass?code=${encodeURIComponent(
-    code
-  )}&name=${encodeURIComponent(name)}&email=${encodeURIComponent(email)}&pts=${encodeURIComponent(
-    String(pts)
-  )}`;
-
-  return NextResponse.redirect(loyaltyLiveUrl);
+  console.error('[wallet/pass] Loyalty pass creation failed:', passResult.error);
+  return NextResponse.json(
+    { error: passResult.error || 'No se pudo generar el pase de fidelización.' },
+    { status: 503 }
+  );
 }

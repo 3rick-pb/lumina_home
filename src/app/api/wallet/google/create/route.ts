@@ -199,7 +199,7 @@ export async function GET(request: Request) {
   const origin = new URL(request.url).origin;
 
   if (!code && !email) {
-    return NextResponse.redirect(`${origin}/loyalty/pass`);
+    return NextResponse.json({ error: 'Código o email requerido.' }, { status: 400 });
   }
 
   const customerData: CustomerPassData = {
@@ -217,5 +217,9 @@ export async function GET(request: Request) {
     return NextResponse.redirect(result.saveUrl);
   }
 
-  return NextResponse.redirect(`${origin}/loyalty/pass?code=${encodeURIComponent(customerData.memberCode)}&name=${encodeURIComponent(customerData.customerName)}`);
+  return NextResponse.json(
+    { error: result.error || 'No se pudo generar el pase de Google Wallet.' },
+    { status: 503 }
+  );
 }
+

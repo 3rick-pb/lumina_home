@@ -1,5 +1,5 @@
 import crypto from 'crypto';
-import { generateOrderTrackingToken, anonymizeCustomerName } from './orderPassTokens';
+import { anonymizeCustomerName } from './orderPassTokens';
 
 export interface GoogleWalletOrderInput {
   orderId: string;
@@ -47,8 +47,7 @@ export function isGoogleWalletConfigured(): boolean {
 export function buildGoogleGenericObject(data: GoogleWalletOrderInput, issuerId: string) {
   const origin = data.origin || process.env.NEXT_PUBLIC_APP_URL || 'https://luminahome.ec';
   const cleanId = data.orderId.trim();
-  const secureToken = generateOrderTrackingToken(cleanId);
-  const livePassUrl = `${origin}/wallet/order/${secureToken}`;
+  const livePassUrl = `${origin}/profile`;
 
   const safeOrderId = cleanId.replace(/[^a-zA-Z0-9._-]/g, '_');
   const classId = `${issuerId}.lumina_order_tracking_v1`;
