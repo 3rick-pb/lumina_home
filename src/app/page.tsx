@@ -337,8 +337,8 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Trust Badges Bar - Floating Glassmorphic Pill Banner */}
-      <motion.div 
+      {/* Trust Badges Bar */}
+      <motion.div
         id="trust-badges"
         initial={{ opacity: 0, y: 20 }}
         whileInView={{ opacity: 1, y: 0 }}
@@ -347,32 +347,97 @@ export default function Home() {
         style={{ willChange: "transform, opacity" }}
         className="relative z-30 -mt-7 sm:-mt-9 mb-3 container mx-auto px-4 sm:px-6 md:px-8 transform-gpu scroll-mt-36"
       >
-        <div className="bg-white dark:bg-[#1e1e20] rounded-2xl md:rounded-[2rem] border border-black/[0.06] dark:border-white/[0.08] shadow-[0_16px_40px_-8px_rgba(0,0,0,0.08),0_4px_16px_rgba(0,0,0,0.03)] p-3 sm:p-4 md:p-5">
-          <div className="flex lg:grid lg:grid-cols-5 items-center justify-start lg:justify-items-center gap-6 sm:gap-8 lg:gap-0 overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden py-1 px-2">
+        <div className="bg-white dark:bg-[#1e1e20] rounded-2xl md:rounded-[2rem] border border-black/[0.06] dark:border-white/[0.08] shadow-[0_16px_40px_-8px_rgba(0,0,0,0.08),0_4px_16px_rgba(0,0,0,0.03)] overflow-hidden">
+
+          {/* ── Mobile: auto-scrolling marquee ticker ── */}
+          <div className="flex lg:hidden py-3 px-0 relative">
+            {/* Fade edges */}
+            <div className="pointer-events-none absolute left-0 top-0 bottom-0 w-10 z-10 bg-gradient-to-r from-white dark:from-[#1e1e20] to-transparent" />
+            <div className="pointer-events-none absolute right-0 top-0 bottom-0 w-10 z-10 bg-gradient-to-l from-white dark:from-[#1e1e20] to-transparent" />
+
+            {/* Marquee track — duplicated for seamless loop */}
+            <div className="flex w-full overflow-hidden">
+              <div
+                className="flex shrink-0 animate-trust-marquee"
+                aria-hidden="false"
+              >
+                {[...trustBadges, ...trustBadges].map((badge, idx) => (
+                  <div
+                    key={idx}
+                    className="flex items-center gap-2.5 shrink-0 px-5"
+                  >
+                    <div className="w-8 h-8 rounded-xl bg-[#8c9276]/10 dark:bg-[#8c9276]/20 text-[#8c9276] flex items-center justify-center shrink-0">
+                      <badge.icon className="w-[15px] h-[15px]" />
+                    </div>
+                    <div className="select-none">
+                      <p className="text-[11px] font-semibold text-gray-900 dark:text-gray-100 leading-snug whitespace-nowrap">
+                        {badge.title}
+                      </p>
+                      <p className="text-[9px] text-gray-400 leading-tight whitespace-nowrap">
+                        {badge.subtitle}
+                      </p>
+                    </div>
+                    {/* Dot separator */}
+                    <span className="w-1 h-1 rounded-full bg-gray-200 dark:bg-white/20 ml-1 shrink-0" />
+                  </div>
+                ))}
+              </div>
+              {/* Second copy for seamless wrap */}
+              <div
+                className="flex shrink-0 animate-trust-marquee"
+                aria-hidden="true"
+              >
+                {[...trustBadges, ...trustBadges].map((badge, idx) => (
+                  <div
+                    key={idx}
+                    className="flex items-center gap-2.5 shrink-0 px-5"
+                  >
+                    <div className="w-8 h-8 rounded-xl bg-[#8c9276]/10 dark:bg-[#8c9276]/20 text-[#8c9276] flex items-center justify-center shrink-0">
+                      <badge.icon className="w-[15px] h-[15px]" />
+                    </div>
+                    <div className="select-none">
+                      <p className="text-[11px] font-semibold text-gray-900 dark:text-gray-100 leading-snug whitespace-nowrap">
+                        {badge.title}
+                      </p>
+                      <p className="text-[9px] text-gray-400 leading-tight whitespace-nowrap">
+                        {badge.subtitle}
+                      </p>
+                    </div>
+                    <span className="w-1 h-1 rounded-full bg-gray-200 dark:bg-white/20 ml-1 shrink-0" />
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* ── Desktop: 5-column grid ── */}
+          <div className="hidden lg:grid lg:grid-cols-5 items-center p-4 md:p-5">
             {trustBadges.map((badge, idx) => (
-              <div 
-                key={idx} 
-                className="flex items-center gap-3 shrink-0 lg:w-full lg:justify-center relative group px-2"
+              <div
+                key={idx}
+                className="flex items-center gap-3 justify-center relative group px-3"
               >
                 <div className="w-10 h-10 rounded-2xl bg-[#8c9276]/10 dark:bg-[#8c9276]/20 text-[#8c9276] dark:text-[#a8b092] flex items-center justify-center shrink-0 transition-transform duration-300 group-hover:scale-110 shadow-2xs">
-                  <badge.icon className="w-4 h-4 sm:w-[18px] sm:h-[18px]" />
+                  <badge.icon className="w-[18px] h-[18px]" />
                 </div>
                 <div className="min-w-0 select-none">
-                  <p className="text-xs sm:text-sm font-semibold text-gray-900 dark:text-gray-100 tracking-tight leading-snug whitespace-nowrap">
+                  <p className="text-sm font-semibold text-gray-900 dark:text-gray-100 tracking-tight leading-snug whitespace-nowrap">
                     {badge.title}
                   </p>
-                  <p className="text-[10px] sm:text-[11px] text-gray-400 dark:text-gray-400 font-normal leading-tight whitespace-nowrap">
+                  <p className="text-[11px] text-gray-400 font-normal leading-tight whitespace-nowrap">
                     {badge.subtitle}
                   </p>
                 </div>
                 {idx < trustBadges.length - 1 && (
-                  <div className="hidden lg:block absolute right-0 top-1/2 -translate-y-1/2 h-8 w-px bg-gray-200/80 dark:bg-white/10" />
+                  <div className="absolute right-0 top-1/2 -translate-y-1/2 h-8 w-px bg-gray-200/80 dark:bg-white/10" />
                 )}
               </div>
             ))}
           </div>
+
         </div>
       </motion.div>
+
 
       {/* Immersive Background Wrapper for Catalog Sections */}
       <div className="relative overflow-hidden bg-transparent">

@@ -45,6 +45,15 @@ const config: Config = {
         brandAccent: "var(--brand-signature, #8c9276)",
         heroGold: "var(--hero-gold, #d2b48c)",
       },
+      keyframes: {
+        "trust-marquee": {
+          "0%": { transform: "translateX(0%)" },
+          "100%": { transform: "translateX(-50%)" },
+        },
+      },
+      animation: {
+        "trust-marquee": "trust-marquee 22s linear infinite",
+      },
     },
   },
   plugins: [],
