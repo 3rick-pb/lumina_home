@@ -50,7 +50,7 @@ export function GoogleWalletButton({
   href,
   target,
   rel,
-  topText = "Add to",
+  topText = "Agregar a",
   className = "",
   disabled = false,
 }: GoogleWalletButtonProps) {

@@ -394,8 +394,8 @@ export function OrderDetailModal({
             <div className="absolute top-1/2 left-4 right-4 h-0.5 bg-gray-200 dark:bg-[#48484a] -z-0" />
             {[
               { label: "Pagado", done: true },
-              { label: "En Taller", done: true },
-              { label: "En Reparto", done: activeOrder.status === "Enviado" || activeOrder.status === "Entregado" },
+              { label: "Procesando", done: activeOrder.status === "Procesando" || activeOrder.status === "Enviado" || activeOrder.status === "Entregado" },
+              { label: "Enviado", done: activeOrder.status === "Enviado" || activeOrder.status === "Entregado" },
               { label: "Entregado", done: activeOrder.status === "Entregado" },
             ].map((st, i) => (
               <div key={i} className="flex flex-col items-center gap-1 relative z-10">

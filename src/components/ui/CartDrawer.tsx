@@ -2790,7 +2790,7 @@ export function CartDrawer() {
   </div>
 
   {/* ======================================================================= */}
-  {/* QR CODE (@beui/tilt-card) & GOOGLE / APPLE WALLET IN-PAGE POPUP */}
+  {/* QR CODE (@beui/tilt-card) & GOOGLE WALLET IN-PAGE POPUP */}
   {/* ======================================================================= */}
   <div className="w-full rounded-[2rem] p-6 sm:p-7 bg-gradient-to-br from-[#141417] via-[#1c1b20] to-[#111114] text-white border border-white/15 shadow-[0_20px_50px_rgba(0,0,0,0.3)] text-left relative overflow-hidden">
     <div className="absolute -top-24 -right-24 w-56 h-56 rounded-full bg-amber-500/15 blur-3xl pointer-events-none" />
@@ -2834,7 +2834,7 @@ export function CartDrawer() {
         <div className="pt-1.5 flex justify-center sm:justify-start">
           <GoogleWalletButton
             onClick={() => setWalletPopupPlatform("google")}
-            topText="Add to"
+            topText="Agregar a"
             className="w-full sm:w-auto"
           />
         </div>

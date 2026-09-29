@@ -706,7 +706,7 @@ export function LoyaltyCardsTab() {
               />
             </div>
             <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
-              <QrCode className="w-5 h-5 text-[#8c9276]" /> Tarjetas de Lealtad & Pases Digitales (Apple / Google Wallet)
+              <QrCode className="w-5 h-5 text-[#8c9276]" /> Tarjetas de Lealtad & Pases Digitales (Google Wallet)
             </h2>
             <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
               Configura las reglas de puntos de {brand.name}, exporta códigos QR vectoriales y administra los pases de tus clientes.
@@ -1118,7 +1118,7 @@ export function LoyaltyCardsTab() {
                       <GoogleWalletButton
                         onClick={() => handleOpenGoogleWallet(selectedMemberForQR)}
                         disabled={isOpeningGoogleWallet}
-                        topText="Add to"
+                        topText="Agregar a"
                         className="w-full justify-center shadow-md"
                       />
                     </div>
@@ -1219,11 +1219,7 @@ export function LoyaltyCardsTab() {
                               {member.pointsBalance.toLocaleString()} pts
                             </span>
                             <span className="text-[10px] text-gray-400 block">
-                              {member.walletPlatform === "apple"
-                                ? "Apple Wallet"
-                                : member.walletPlatform === "google"
-                                ? "Google Wallet"
-                                : "Apple & Google"}
+                              {"Google Wallet"}
                             </span>
                           </div>
 
@@ -1483,8 +1479,6 @@ export function LoyaltyCardsTab() {
                     onChange={(e) => setNewPlatform(e.target.value as "apple" | "google" | "both")}
                     className="w-full h-10 px-3 rounded-xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-[#2a2a2c] text-xs text-gray-900 dark:text-white"
                   >
-                    <option value="both">Apple & Google Wallet</option>
-                    <option value="apple">Apple Wallet</option>
                     <option value="google">Google Wallet</option>
                   </select>
                 </div>

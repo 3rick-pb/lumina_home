@@ -237,7 +237,7 @@ export function WalletPassPopupModal({
           <GoogleWalletButton
             href={googlePassEndpoint}
             target="_blank"
-            topText="Add to"
+            topText="Agregar a"
             className="w-full"
           />
         </div>
