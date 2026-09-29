@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useMemo, useState, useRef } from "react";
+import React, { useMemo, useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import { 
   ShoppingBag, 
@@ -130,6 +130,22 @@ export function OverviewTab({
   const [hoveredMonthIdx, setHoveredMonthIdx] = useState<number | null>(null);
   const nicheHoverTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const monthHoverTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Ref for non-passive wheel listener on the niche chart scroll container
+  const nicheChartRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const el = nicheChartRef.current;
+    if (!el) return;
+    const handleWheel = (e: WheelEvent) => {
+      if (el.scrollWidth > el.clientWidth) {
+        e.preventDefault();
+        el.scrollLeft += e.deltaY || e.deltaX;
+      }
+    };
+    el.addEventListener("wheel", handleWheel, { passive: false });
+    return () => el.removeEventListener("wheel", handleWheel);
+  }, []);
 
   const handleNicheMouseEnter = (idx: number) => {
     if (nicheHoverTimeoutRef.current) {
@@ -335,6 +351,7 @@ export function OverviewTab({
         {/* Visual Dynamic Bar Chart */}
         <div className="relative w-full my-auto">
           <div 
+            ref={nicheChartRef}
             onMouseLeave={isAdmin ? handleNicheContainerLeave : handleMonthContainerLeave}
             className={`flex items-end h-40 pt-7 pb-1 px-1 overflow-x-auto overflow-y-hidden select-none cursor-grab active:cursor-grabbing ${
               categoryDistributionData.length <= 4 
@@ -346,11 +363,6 @@ export function OverviewTab({
             style={{
               scrollbarWidth: "thin",
               scrollbarColor: "rgba(156, 163, 175, 0.4) transparent"
-            }}
-            onWheel={(e) => {
-              if (e.deltaY !== 0 && categoryDistributionData.length > 4) {
-                e.currentTarget.scrollLeft += e.deltaY;
-              }
             }}
           >
             {isAdmin ? (
