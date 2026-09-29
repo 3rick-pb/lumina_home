@@ -279,7 +279,33 @@ async function getGoogleWalletAccessToken(): Promise<string | null> {
 }
 
 /**
- * Pushes live updates directly to Google Wallet via REST API (PATCH genericObject)
+ * Builds a human-readable notification message for a status change.
+ */
+function buildStatusNotification(data: GoogleWalletOrderInput): { header: string; body: string } {
+  const shortId = data.orderId.slice(-8).toUpperCase();
+  switch (data.status) {
+    case 'Enviado':
+      return {
+        header: '📦 Tu pedido está en camino',
+        body: `El pedido #${shortId} ha sido despachado${data.carrierName ? ` con ${data.carrierName}` : ''}. Guía: ${data.trackingNumber || 'Ver en tu pase'}.`,
+      };
+    case 'Entregado':
+      return {
+        header: '✅ Pedido entregado',
+        body: `El pedido #${shortId} fue entregado correctamente. ¡Gracias por confiar en Lúmina Home!`,
+      };
+    default:
+      return {
+        header: '🔄 Pedido en preparación',
+        body: `El pedido #${shortId} está siendo procesado. Te notificaremos cuando sea despachado.`,
+      };
+  }
+}
+
+/**
+ * Pushes live updates directly to Google Wallet via REST API:
+ *   1. PATCH the genericObject (updates data on the pass)
+ *   2. addMessage with TEXT_AND_NOTIFY (triggers push notification to user's device)
  */
 export async function pushGoogleWalletOrderUpdate(data: GoogleWalletOrderInput): Promise<{
   success: boolean;
@@ -307,28 +333,28 @@ export async function pushGoogleWalletOrderUpdate(data: GoogleWalletOrderInput):
     }
 
     const { genericObject, objectId } = buildGoogleGenericObject(data, issuerId);
+    const objectUrl = `https://walletobjects.googleapis.com/walletobjects/v1/genericObject/${encodeURIComponent(objectId)}`;
 
-    // Try PATCH first
-    const patchRes = await fetch(
-      `https://walletobjects.googleapis.com/walletobjects/v1/genericObject/${encodeURIComponent(objectId)}`,
-      {
-        method: 'PATCH',
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(genericObject),
-      }
-    );
+    // ── 1. PATCH: update pass data ───────────────────────────────────────────
+    const patchRes = await fetch(objectUrl, {
+      method: 'PATCH',
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(genericObject),
+    });
+
+    let resultStatus: 'UPDATED' | 'CREATED' | 'SKIPPED' | 'FAILED' = 'FAILED';
+    let resultMessage = '';
 
     if (patchRes.ok) {
-      return { success: true, status: 'UPDATED', message: 'Google Wallet pass actualizado exitosamente.' };
-    }
-
-    // If 404, insert class & object
-    if (patchRes.status === 404) {
+      resultStatus = 'UPDATED';
+      resultMessage = 'Google Wallet pass actualizado.';
+    } else if (patchRes.status === 404) {
+      // Object doesn't exist yet — create class + object
       const { genericClass } = buildGoogleGenericObject(data, issuerId);
-      // Ensure class exists
+
       await fetch('https://walletobjects.googleapis.com/walletobjects/v1/genericClass', {
         method: 'POST',
         headers: {
@@ -338,7 +364,6 @@ export async function pushGoogleWalletOrderUpdate(data: GoogleWalletOrderInput):
         body: JSON.stringify(genericClass),
       });
 
-      // Insert object
       const insertRes = await fetch(
         'https://walletobjects.googleapis.com/walletobjects/v1/genericObject',
         {
@@ -352,16 +377,61 @@ export async function pushGoogleWalletOrderUpdate(data: GoogleWalletOrderInput):
       );
 
       if (insertRes.ok) {
-        return { success: true, status: 'CREATED', message: 'Google Wallet pass creado exitosamente.' };
+        resultStatus = 'CREATED';
+        resultMessage = 'Google Wallet pass creado (el usuario deberá abrirlo para recibir notificaciones futuras).';
+      } else {
+        const errBody = await insertRes.text();
+        return {
+          success: false,
+          status: 'FAILED',
+          message: `Google Wallet insert error ${insertRes.status}: ${errBody}`,
+        };
+      }
+    } else {
+      const errBody = await patchRes.text();
+      return {
+        success: false,
+        status: 'FAILED',
+        message: `Google Wallet PATCH error ${patchRes.status}: ${errBody}`,
+      };
+    }
+
+    // ── 2. addMessage: push notification to user's device (TEXT_AND_NOTIFY) ──
+    // Only send for UPDATED (object already existed and is saved in a device's wallet)
+    if (resultStatus === 'UPDATED') {
+      try {
+        const { header, body } = buildStatusNotification(data);
+        const notifRes = await fetch(`${objectUrl}/addMessage`, {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            message: {
+              id: `status_${data.status.toLowerCase()}_${Date.now()}`,
+              header,
+              body,
+              messageType: 'TEXT_AND_NOTIFY',
+            },
+          }),
+        });
+
+        if (notifRes.ok) {
+          resultMessage += ' Notificación push enviada al dispositivo del usuario.';
+        } else {
+          const notifErr = await notifRes.text();
+          // Non-fatal: the pass was updated, notification is best-effort
+          console.warn(`[googleWalletService] addMessage falló (${notifRes.status}): ${notifErr}`);
+          resultMessage += ' (Notificación push no pudo enviarse, pero el pase fue actualizado.)';
+        }
+      } catch (notifErr) {
+        console.warn('[googleWalletService] addMessage exception (non-fatal):', notifErr);
+        resultMessage += ' (Excepción en notificación push, pase actualizado correctamente.)';
       }
     }
 
-    const errBody = await patchRes.text();
-    return {
-      success: false,
-      status: 'FAILED',
-      message: `Google Wallet API error: ${patchRes.status} ${errBody}`,
-    };
+    return { success: true, status: resultStatus, message: resultMessage };
   } catch (err) {
     console.error('[googleWalletService] Live Push Update Exception:', err);
     return {
