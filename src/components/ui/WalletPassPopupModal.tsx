@@ -1,10 +1,11 @@
 "use client";
 
-import React from "react";
+import React, { useEffect } from "react";
 import { createPortal } from "react-dom";
+import { motion, AnimatePresence } from "framer-motion";
 import { X, Truck, ExternalLink } from "lucide-react";
-import { BeUICenterMorphModal, BeUITiltCard } from "@/components/ui/BeUIControls";
-import { GoogleWalletButton, GoogleWalletIcon } from "@/components/ui/GoogleWalletButton";
+import { BeUITiltCard } from "@/components/ui/BeUIControls";
+import { GoogleWalletButton } from "@/components/ui/GoogleWalletButton";
 import type { Order } from "@/lib/userStore";
 import { useUserStore } from "@/lib/userStore";
 
@@ -45,6 +46,16 @@ export function WalletPassPopupModal({
     if (!nextOpen && onClose) onClose();
   };
 
+  // Keyboard navigation & body scroll lock
+  useEffect(() => {
+    if (!open) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") handleOpenChange(false);
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [open]);
+
   const resolvedOrder: Order | null =
     order ||
     (orderId
@@ -75,7 +86,7 @@ export function WalletPassPopupModal({
   const origin =
     typeof window !== "undefined" ? window.location.origin : "https://luminahome.ec";
 
-  const tokenParam = liveOrder.walletToken ? `&token=${encodeURIComponent(liveOrder.walletToken)}` : '';
+  const tokenParam = liveOrder.walletToken ? `&token=${encodeURIComponent(liveOrder.walletToken)}` : "";
   const queryParams = `orderId=${encodeURIComponent(
     liveOrder.id
   )}${tokenParam}&total=${encodeURIComponent(String(liveOrder.total || 0))}&status=${encodeURIComponent(
@@ -98,151 +109,166 @@ export function WalletPassPopupModal({
   if (typeof document === "undefined") return null;
 
   return createPortal(
-    <BeUICenterMorphModal
-      open={open}
-      onOpenChange={handleOpenChange}
-      className="max-w-[344px] w-full"
-    >
-      {/* OUTER COMPACT POPUP WINDOW — Static (NO 3D Tilt here), Micro-SaaS Obsidian Palette */}
-      <div
-        onClick={(e) => e.stopPropagation()}
-        className="relative w-full rounded-[2rem] bg-[#111113] border border-white/[0.09] shadow-[0_28px_80px_rgba(0,0,0,0.82)] p-4 text-[#F4F4F6] overflow-hidden select-none"
-      >
-        {/* Subtle Warm Stone Ambient Highlight (No neon green or blue) */}
-        <div className="pointer-events-none absolute -top-20 left-1/2 -translate-x-1/2 w-52 h-32 rounded-full bg-[#D6D3CD]/[0.06] blur-3xl" />
-
-        {/* Compact Top Bar: Google Wallet Badge & Close */}
-        <div className="relative z-10 flex items-center justify-between gap-2 mb-3.5">
-          {/* Official Google Wallet Informative Badge */}
-          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#19191D] border border-white/[0.08] shadow-inner">
-            <a
-              href={googlePassEndpoint}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-1.5 text-[11px] font-medium text-[#F4F4F6] hover:text-white transition-colors"
-              title="Guardar pase en Google Wallet"
-            >
-              <GoogleWalletIcon className="w-4 h-4 shrink-0" />
-              <span className="tracking-tight font-medium">Google Wallet Pass</span>
-            </a>
-          </div>
-
-          <button
-            type="button"
+    <AnimatePresence>
+      {open && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
+          {/* Backdrop with subtle blur */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.22, ease: "easeOut" }}
             onClick={() => handleOpenChange(false)}
-            className="w-7 h-7 rounded-full bg-white/[0.05] hover:bg-white/[0.11] border border-white/[0.08] text-[#A1A1AA] hover:text-white flex items-center justify-center transition-colors cursor-pointer shrink-0"
-            title="Cerrar"
-          >
-            <X className="w-3.5 h-3.5" />
-          </button>
-        </div>
+            className="fixed inset-0 bg-black/60 dark:bg-black/80 backdrop-blur-md"
+          />
 
-        {/* ===================================================================== */}
-        {/* INNER SCANNABLE QR PASS CARD — ONLY THIS ELEMENT HAS 3D TILT EFFECT   */}
-        {/* ===================================================================== */}
-        <BeUITiltCard
-          maxTilt={14}
-          scaleOnHover={1.02}
-          glareOpacity={0.2}
-          className="rounded-[1.5rem] bg-gradient-to-b from-[#1B1B1F] via-[#161619] to-[#121215] border border-white/[0.1] p-4 shadow-[0_18px_45px_rgba(0,0,0,0.65)] overflow-hidden"
-        >
-          {/* Card Header: Order Reference & Live Status */}
-          <div
-            style={{ transform: "translateZ(16px)" }}
-            className="flex items-center justify-between gap-2 pb-3 border-b border-white/[0.07]"
+          {/* Modal Container: Spring morphing opening animation matching beUI popover/modal */}
+          <motion.div
+            role="dialog"
+            aria-modal="true"
+            initial={{ opacity: 0, scale: 0.88, y: 16 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.92, y: 10 }}
+            transition={{
+              type: "spring",
+              damping: 24,
+              stiffness: 320,
+              mass: 0.8,
+            }}
+            className="relative z-10 w-full max-w-[360px] sm:max-w-[380px] my-auto select-none"
           >
-            <div>
-              <span className="text-[9.5px] font-mono uppercase tracking-[0.16em] text-[#8E8E98] block">
-                PASE DE SEGUIMIENTO
-              </span>
-              <p className="font-mono font-bold text-sm text-[#F4F4F6] tracking-wide mt-0.5">
-                {liveOrder.id}
+            {/* 3D TILT CARD: Styled matching the exact beUI Tilt Card from video (colors, border, typography, glare) */}
+            <BeUITiltCard
+              maxTilt={12}
+              scaleOnHover={1.02}
+              glareOpacity={0.28}
+              className="relative rounded-[28px] sm:rounded-[32px] bg-gradient-to-b from-[#FBFBFC] via-[#F4F5F7] to-[#E9EBEF] dark:from-[#232327] dark:via-[#1B1B1E] dark:to-[#141416] p-5 sm:p-6 text-gray-900 dark:text-white border border-black/[0.08] dark:border-white/[0.12] shadow-[0_25px_60px_rgba(0,0,0,0.18)] dark:shadow-[0_30px_70px_rgba(0,0,0,0.7)] overflow-hidden"
+            >
+              {/* Card Header matching 'PREMIUM / Tilt me' architecture */}
+              <div
+                style={{ transform: "translateZ(14px)" }}
+                className="flex items-start justify-between gap-2 pb-2"
+              >
+                <div>
+                  <span className="text-[10px] sm:text-[11px] font-mono uppercase tracking-[0.2em] text-[#71717A] dark:text-[#A1A1AA] font-bold block">
+                    GOOGLE WALLET PASS
+                  </span>
+                  <h3 className="font-bold text-xl sm:text-2xl text-gray-900 dark:text-white tracking-tight mt-0.5">
+                    {liveOrder.id}
+                  </h3>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => handleOpenChange(false)}
+                  className="w-8 h-8 rounded-full bg-black/5 dark:bg-white/10 hover:bg-black/10 dark:hover:bg-white/20 text-gray-500 dark:text-gray-300 flex items-center justify-center transition-colors cursor-pointer shrink-0"
+                  title="Cerrar"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              {/* Subtitle / Description matching 'Move your cursor across the card...' */}
+              <p
+                style={{ transform: "translateZ(12px)" }}
+                className="text-xs text-gray-600 dark:text-gray-400 leading-relaxed mb-3"
+              >
+                Escanea el código QR con tu cámara para guardar tu tarjeta en Google Wallet.
               </p>
-            </div>
 
-            <span
-              className={`px-2.5 py-0.5 rounded-full text-[10px] font-semibold tracking-wide border ${
-                status === "Entregado"
-                  ? "bg-emerald-500/15 border-emerald-400/30 text-emerald-300"
-                  : status === "Enviado"
-                    ? "bg-amber-500/15 border-amber-300/30 text-amber-200"
-                    : "bg-white/[0.06] border-white/[0.12] text-[#D4D4D8]"
-              }`}
-            >
-              {status}
-            </span>
-          </div>
+              {/* Centerpiece: Scannable QR Code */}
+              <div
+                style={{ transform: "translateZ(26px)" }}
+                className="flex flex-col items-center my-3"
+              >
+                <div className="p-3.5 rounded-2xl bg-white shadow-[0_12px_32px_rgba(0,0,0,0.12)] border border-black/[0.06]">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={qrImageUrl}
+                    alt={`QR Pase ${liveOrder.id}`}
+                    className="w-44 h-44 sm:w-48 sm:h-48 object-contain block rounded-lg select-none"
+                  />
+                </div>
 
-          {/* Scannable High-Contrast QR Code Centerpiece */}
-          <div
-            style={{ transform: "translateZ(26px)" }}
-            className="my-4 flex flex-col items-center"
-          >
-            <div className="p-3 rounded-2xl bg-white shadow-[0_12px_32px_rgba(0,0,0,0.45)] border border-black/5">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={qrImageUrl}
-                alt={`QR Pase ${liveOrder.id}`}
-                className="w-44 h-44 object-contain block rounded-lg"
-              />
-            </div>
-            <p className="mt-2.5 text-[11px] font-medium text-[#A1A1AA] tracking-tight text-center">
-              Escanea con tu cámara para añadir el pase
-            </p>
-          </div>
-
-          {/* Carrier Tracking Pill (Only when Shipped/Delivered) */}
-          {isShippedOrDelivered && liveOrder.trackingNumber && (
-            <div
-              style={{ transform: "translateZ(18px)" }}
-              className="mb-3 px-3 py-2 rounded-xl bg-white/[0.04] border border-white/[0.08] flex items-center justify-between gap-2"
-            >
-              <div className="flex items-center gap-2 min-w-0">
-                <Truck className="w-3.5 h-3.5 text-[#D6D3CD] shrink-0" />
-                <span className="text-[11px] font-mono text-[#E4E4E7] truncate">
-                  {liveOrder.carrierName ? `${liveOrder.carrierName}: ` : ""}
-                  {liveOrder.trackingNumber}
+                <span
+                  className={`mt-3 inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10.5px] font-semibold border ${
+                    status === "Entregado"
+                      ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-700 dark:text-emerald-300"
+                      : status === "Enviado"
+                        ? "bg-amber-500/10 border-amber-500/30 text-amber-700 dark:text-amber-300"
+                        : "bg-blue-500/10 border-blue-500/30 text-blue-700 dark:text-blue-300"
+                  }`}
+                >
+                  <span
+                    className={`w-1.5 h-1.5 rounded-full ${
+                      status === "Entregado"
+                        ? "bg-emerald-500"
+                        : status === "Enviado"
+                          ? "bg-amber-500"
+                          : "bg-blue-500"
+                    }`}
+                  />
+                  {status}
                 </span>
               </div>
-              {liveOrder.trackingUrl && (
-                <a
-                  href={liveOrder.trackingUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-[#A1A1AA] hover:text-white transition-colors shrink-0"
-                  title="Abrir rastreo"
+
+              {/* Carrier Tracking Pill (Only when Shipped/Delivered) */}
+              {isShippedOrDelivered && liveOrder.trackingNumber && (
+                <div
+                  style={{ transform: "translateZ(16px)" }}
+                  className="mb-3 px-3 py-2 rounded-xl bg-black/[0.03] dark:bg-white/[0.05] border border-black/[0.06] dark:border-white/[0.08] flex items-center justify-between gap-2 text-xs"
                 >
-                  <ExternalLink className="w-3.5 h-3.5" />
-                </a>
+                  <div className="flex items-center gap-2 min-w-0">
+                    <Truck className="w-3.5 h-3.5 text-gray-500 dark:text-gray-400 shrink-0" />
+                    <span className="font-mono text-gray-700 dark:text-gray-300 truncate text-[11px]">
+                      {liveOrder.carrierName ? `${liveOrder.carrierName}: ` : ""}
+                      {liveOrder.trackingNumber}
+                    </span>
+                  </div>
+                  {liveOrder.trackingUrl && (
+                    <a
+                      href={liveOrder.trackingUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-gray-500 hover:text-gray-900 dark:hover:text-white transition-colors shrink-0"
+                      title="Abrir rastreo"
+                    >
+                      <ExternalLink className="w-3.5 h-3.5" />
+                    </a>
+                  )}
+                </div>
               )}
-            </div>
-          )}
 
-          {/* Minimal Pass Footer */}
-          <div
-            style={{ transform: "translateZ(14px)" }}
-            className="pt-2.5 border-t border-white/[0.07] flex items-center justify-between text-[11px]"
-          >
-            <span className="text-[#8E8E98] truncate max-w-[160px]">
-              {liveOrder.customerName || "Cliente Lumina"}
-            </span>
-            <span className="font-mono font-semibold text-[#F4F4F6]">
-              ${Number(liveOrder.total || 0).toFixed(2)} USD
-            </span>
-          </div>
-        </BeUITiltCard>
+              {/* Minimal Pass Footer */}
+              <div
+                style={{ transform: "translateZ(14px)" }}
+                className="pt-2.5 pb-3 border-t border-black/[0.06] dark:border-white/[0.08] flex items-center justify-between text-xs"
+              >
+                <span className="text-gray-500 dark:text-gray-400 truncate max-w-[170px] font-medium">
+                  {liveOrder.customerName || "Cliente Lumina"}
+                </span>
+                <span className="font-mono font-bold text-gray-900 dark:text-white">
+                  ${Number(liveOrder.total || 0).toFixed(2)} USD
+                </span>
+              </div>
 
-        {/* Direct One-Tap Button matching official pure code design */}
-        <div className="mt-3.5 flex justify-center">
-          <GoogleWalletButton
-            href={googlePassEndpoint}
-            target="_blank"
-            topText="Agregar a"
-            className="w-full"
-          />
+              {/* One-Tap Action Button */}
+              <div
+                style={{ transform: "translateZ(18px)" }}
+                className="pt-1 flex justify-center"
+              >
+                <GoogleWalletButton
+                  href={googlePassEndpoint}
+                  target="_blank"
+                  topText="Agregar a"
+                  className="w-full justify-center shadow-md"
+                />
+              </div>
+            </BeUITiltCard>
+          </motion.div>
         </div>
-      </div>
-    </BeUICenterMorphModal>,
+      )}
+    </AnimatePresence>,
     document.body
   );
 }

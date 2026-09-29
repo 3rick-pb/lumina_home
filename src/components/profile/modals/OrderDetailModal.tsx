@@ -204,9 +204,9 @@ export function OrderDetailModal({
       onOpenChange={(isOpen) => {
         if (!isOpen) onClose();
       }}
-      className="max-w-xl"
+      className="max-w-xl w-full mx-auto"
     >
-      <div className="bg-white dark:bg-[#202022] rounded-[2.5rem] w-full shadow-2xl dark:shadow-[0_20px_60px_rgba(0,0,0,0.5)] border border-gray-100 dark:border-white/10 overflow-hidden relative max-h-[90vh] flex flex-col">
+      <div className="bg-white dark:bg-[#202022] rounded-[2rem] sm:rounded-[2.5rem] w-full shadow-2xl dark:shadow-[0_20px_60px_rgba(0,0,0,0.5)] border border-gray-100 dark:border-white/10 overflow-hidden relative max-h-[92vh] sm:max-h-[90vh] flex flex-col">
         <style>{`
           .lumina-order-modal-scroll {
             -ms-overflow-style: none !important;
@@ -227,26 +227,26 @@ export function OrderDetailModal({
         <div 
           ref={scrollContainerRef}
           onScroll={updateScrollMetrics}
-          className="w-full overflow-y-auto lumina-order-modal-scroll p-6 md:p-8 flex-1"
+          className="w-full overflow-y-auto lumina-order-modal-scroll p-4 sm:p-6 md:p-8 flex-1"
         >
-          <div className="flex items-start justify-between gap-3 pb-4 border-b border-gray-100 dark:border-white/5">
+          <div className="flex items-start justify-between gap-2.5 sm:gap-3 pb-3 sm:pb-4 border-b border-gray-100 dark:border-white/5">
             <div className="min-w-0 flex-1">
-              <div className="flex flex-wrap items-center gap-2 mb-1">
+              <div className="flex flex-wrap items-center gap-2 mb-1.5">
                 <span className="text-[10px] font-bold uppercase tracking-wider text-[#8c9276]">
                   Resumen de Pedido
                 </span>
                 <button
                   type="button"
                   onClick={() => setShowWalletPopup(true)}
-                  className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10.5px] font-semibold bg-[#1F1F1F] hover:bg-[#2C2C2C] active:bg-[#191919] text-white border border-white/10 transition-all cursor-pointer shadow-sm active:scale-95"
+                  className="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1 rounded-full text-[10px] sm:text-[10.5px] font-semibold bg-[#1F1F1F] hover:bg-[#2C2C2C] active:bg-[#191919] text-white border border-white/10 transition-all cursor-pointer shadow-sm active:scale-95 shrink-0"
                   title="Guardar pase en Google Wallet"
                 >
                   <GoogleWalletIcon className="w-3.5 h-3.5 shrink-0" />
                   <span>Guardar en Google Wallet</span>
                 </button>
               </div>
-              <div className="flex flex-wrap items-center gap-2.5">
-                <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100 font-mono">
+              <div className="flex flex-wrap items-center gap-2 sm:gap-2.5">
+                <h3 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-gray-100 font-mono break-all">
                   {activeOrder.id}
                 </h3>
 
@@ -263,17 +263,17 @@ export function OrderDetailModal({
                         setTimeout(() => setCopiedTracking(false), 2400);
                       } catch {}
                     }}
-                    className="group inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-600 hover:bg-blue-700 text-white text-xs font-mono font-bold shadow-[0_6px_18px_rgba(37,99,235,0.3)] transition-all hover:scale-[1.02] active:scale-95 cursor-pointer"
+                    className="group inline-flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-0.5 sm:py-1 rounded-full bg-blue-600 hover:bg-blue-700 text-white text-[11px] sm:text-xs font-mono font-bold shadow-[0_6px_18px_rgba(37,99,235,0.3)] transition-all hover:scale-[1.02] active:scale-95 cursor-pointer max-w-full"
                     title={`Clic para copiar el código ${activeOrder.trackingNumber} y abrir ${activeOrder.carrierName || "la transportadora"} (${resolvedTrackingUrl})`}
                   >
-                    <Truck className="w-3.5 h-3.5 shrink-0" />
-                    <span>
+                    <Truck className="w-3 h-3 sm:w-3.5 sm:h-3.5 shrink-0" />
+                    <span className="truncate">
                       {copiedTracking
                         ? `¡Copiado! ${activeOrder.trackingNumber}`
                         : `Guía: ${activeOrder.trackingNumber}`}
                     </span>
                     {activeOrder.carrierName && (
-                      <span className="px-1.5 py-0.5 rounded-full bg-white/20 text-[9.5px] font-sans font-extrabold uppercase tracking-wider">
+                      <span className="px-1.5 py-0.5 rounded-full bg-white/20 text-[9px] sm:text-[9.5px] font-sans font-extrabold uppercase tracking-wider shrink-0">
                         {activeOrder.carrierName}
                       </span>
                     )}
@@ -283,11 +283,11 @@ export function OrderDetailModal({
               </div>
             </div>
 
-            {/* Exact Close Button ("X") from CartDrawer (Bolsa de Compras) */}
+            {/* Exact Close Button ("X") */}
             <button
               type="button"
               onClick={onClose}
-              className="lumina-bag-close-btn w-10 h-10 rounded-full bg-white/80 dark:bg-white/10 backdrop-blur-xl border border-black/[0.06] dark:border-white/15 shadow-[0_2px_8px_rgba(0,0,0,0.04)] text-gray-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50/90 dark:hover:bg-rose-950/40 hover:border-rose-200 dark:hover:border-rose-900/40 flex items-center justify-center hover:scale-105 active:scale-95 transition-all cursor-pointer shrink-0"
+              className="lumina-bag-close-btn w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-white/80 dark:bg-white/10 backdrop-blur-xl border border-black/[0.06] dark:border-white/15 shadow-[0_2px_8px_rgba(0,0,0,0.04)] text-gray-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50/90 dark:hover:bg-rose-950/40 hover:border-rose-200 dark:hover:border-rose-900/40 flex items-center justify-center hover:scale-105 active:scale-95 transition-all cursor-pointer shrink-0"
               title="Cerrar detalle del pedido"
             >
               <X className="w-4 h-4" />
@@ -295,15 +295,15 @@ export function OrderDetailModal({
           </div>
 
           {/* Tracking Progress Bar */}
-          <div className="my-5 p-4 bg-gray-50 dark:bg-[#2a2a2c] rounded-2xl border border-gray-100 dark:border-white/5">
-            <div className="flex flex-wrap items-center justify-between gap-2 mb-3 text-xs">
+          <div className="my-4 sm:my-5 p-3.5 sm:p-4 bg-gray-50 dark:bg-[#2a2a2c] rounded-2xl border border-gray-100 dark:border-white/5">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 mb-3 text-xs">
               {isShippedOrDelivered && activeOrder.trackingNumber ? (
-                <div className="flex items-center gap-1.5 text-gray-500 dark:text-gray-400 font-medium">
+                <div className="flex items-center gap-1.5 text-gray-500 dark:text-gray-400 font-medium text-[11px] sm:text-xs">
                   <Truck className="w-3.5 h-3.5 text-[#8c9276] shrink-0" />
                   <span>Usa tu código de guía para más detalles</span>
                 </div>
               ) : (
-                <span className="font-medium text-gray-500 dark:text-gray-400">
+                <span className="font-medium text-gray-500 dark:text-gray-400 text-[11px] sm:text-xs">
                   Estado logístico:{" "}
                   <span className="font-semibold text-gray-800 dark:text-gray-200">
                     En preparación (Guía disponible al enviar)
@@ -311,44 +311,48 @@ export function OrderDetailModal({
                 </span>
               )}
 
-              <BeUIOrderStatusSelector
-                status={activeOrder.status}
-                isAdmin={isAdmin}
-                orderId={activeOrder.id}
-                initialTrackingNumber={activeOrder.trackingNumber}
-                initialTrackingUrl={activeOrder.trackingUrl}
-                initialCarrierName={activeOrder.carrierName}
-                onUpdateStatus={(nextSt, trackingInfo) =>
-                  onUpdateStatus(activeOrder.id, nextSt, trackingInfo)
-                }
-                size="sm"
-                align="end"
-              />
+              <div className="self-end sm:self-auto">
+                <BeUIOrderStatusSelector
+                  status={activeOrder.status}
+                  isAdmin={isAdmin}
+                  orderId={activeOrder.id}
+                  initialTrackingNumber={activeOrder.trackingNumber}
+                  initialTrackingUrl={activeOrder.trackingUrl}
+                  initialCarrierName={activeOrder.carrierName}
+                  onUpdateStatus={(nextSt, trackingInfo) =>
+                    onUpdateStatus(activeOrder.id, nextSt, trackingInfo)
+                  }
+                  size="sm"
+                  align="end"
+                />
+              </div>
             </div>
 
-          {/* Steps timeline */}
-          <div className="flex items-center justify-between relative pt-2">
-            <div className="absolute top-1/2 left-4 right-4 h-0.5 bg-gray-200 dark:bg-[#48484a] -z-0" />
-            {[
-              { label: "Pagado", done: true },
-              { label: "Procesando", done: activeOrder.status === "Procesando" || activeOrder.status === "Enviado" || activeOrder.status === "Entregado" },
-              { label: "Enviado", done: activeOrder.status === "Enviado" || activeOrder.status === "Entregado" },
-              { label: "Entregado", done: activeOrder.status === "Entregado" },
-            ].map((st, i) => (
-              <div key={i} className="flex flex-col items-center gap-1 relative z-10">
-                <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold ${st.done ? "bg-[#8c9276] text-white dark:text-gray-900" : "bg-gray-200 dark:bg-[#48484a] text-gray-500 dark:text-gray-400"}`}>
-                  {st.done ? <CheckCircle2 className="w-4 h-4" /> : i + 1}
+            {/* Steps timeline */}
+            <div className="flex items-center justify-between relative pt-2 px-1">
+              <div className="absolute top-[18px] sm:top-1/2 left-3 right-3 h-0.5 bg-gray-200 dark:bg-[#48484a] -z-0" />
+              {[
+                { label: "Pagado", done: true },
+                { label: "Procesando", done: activeOrder.status === "Procesando" || activeOrder.status === "Enviado" || activeOrder.status === "Entregado" },
+                { label: "Enviado", done: activeOrder.status === "Enviado" || activeOrder.status === "Entregado" },
+                { label: "Entregado", done: activeOrder.status === "Entregado" },
+              ].map((st, i) => (
+                <div key={i} className="flex flex-col items-center gap-1 relative z-10 min-w-[50px] sm:min-w-[64px]">
+                  <div className={`w-6 h-6 sm:w-7 sm:h-7 rounded-full flex items-center justify-center text-[10px] sm:text-xs font-bold transition-colors ${st.done ? "bg-[#8c9276] text-white dark:text-gray-900 shadow-xs" : "bg-gray-200 dark:bg-[#48484a] text-gray-500 dark:text-gray-400"}`}>
+                    {st.done ? <CheckCircle2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> : i + 1}
+                  </div>
+                  <span className="text-[9px] sm:text-[10px] font-medium text-gray-600 dark:text-gray-400 text-center leading-tight">
+                    {st.label}
+                  </span>
                 </div>
-                <span className="text-[10px] font-medium text-gray-600 dark:text-gray-400">{st.label}</span>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
-        </div>
 
         {/* Customer & Order Metadata Card */}
-        <div className="mb-5 grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div className="mb-4 sm:mb-5 grid grid-cols-1 sm:grid-cols-2 gap-2.5 sm:gap-3">
           {/* Comprador & Fecha */}
-          <div className="p-3.5 bg-gray-50/80 dark:bg-[#2a2a2c]/80 rounded-2xl border border-gray-100 dark:border-white/5">
+          <div className="p-3 sm:p-3.5 bg-gray-50/80 dark:bg-[#2a2a2c]/80 rounded-2xl border border-gray-100 dark:border-white/5">
             <p className="text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-1.5">Cliente / Comprador</p>
             <div className="flex items-center gap-2.5 mb-1">
               <BlobatarAvatar
@@ -378,7 +382,7 @@ export function OrderDetailModal({
           </div>
 
           {/* Entrega & Pago */}
-          <div className="p-3.5 bg-gray-50/80 dark:bg-[#2a2a2c]/80 rounded-2xl border border-gray-100 dark:border-white/5">
+          <div className="p-3 sm:p-3.5 bg-gray-50/80 dark:bg-[#2a2a2c]/80 rounded-2xl border border-gray-100 dark:border-white/5">
             <p className="text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-1">Dirección de Entrega</p>
             {activeOrder.shippingAddress ? (
               <>
@@ -399,11 +403,11 @@ export function OrderDetailModal({
                         href={`https://wa.me/${(activeOrder.customerPhone || activeOrder.shippingAddress.phone || '').replace(/[^0-9]/g, '')}`}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="text-[10px] font-mono px-2 py-0.5 rounded-md bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200/50 dark:border-emerald-800/40 font-semibold hover:underline flex items-center gap-1"
+                        className="text-[10px] font-mono px-2 py-0.5 rounded-md bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200/50 dark:border-emerald-800/40 font-semibold hover:underline flex items-center gap-1 max-w-full"
                         title="Abrir chat en WhatsApp"
                       >
                         <span>WhatsApp:</span>
-                        <span>{activeOrder.customerPhone || activeOrder.shippingAddress.phone}</span>
+                        <span className="truncate">{activeOrder.customerPhone || activeOrder.shippingAddress.phone}</span>
                       </a>
                     )}
                   </div>
@@ -414,13 +418,13 @@ export function OrderDetailModal({
             )}
             <div className="mt-2 pt-2 border-t border-gray-200/60 dark:border-white/10/60 text-[11px] text-gray-600 dark:text-gray-400 flex items-center justify-between">
               <span className="text-[10px] text-gray-400">Método de Pago:</span>
-              <span className="font-semibold text-gray-800 dark:text-gray-200">{activeOrder.paymentMethod || "Tarjeta de Crédito"}</span>
+              <span className="font-semibold text-gray-800 dark:text-gray-200 truncate ml-1">{activeOrder.paymentMethod || "Tarjeta de Crédito"}</span>
             </div>
           </div>
         </div>
 
         {/* Email Automated Notifications Section */}
-        <div className="mb-5 p-4 bg-gray-50/90 dark:bg-[#2a2a2c]/90 rounded-2xl border border-gray-100 dark:border-white/5 space-y-3">
+        <div className="mb-4 sm:mb-5 p-3.5 sm:p-4 bg-gray-50/90 dark:bg-[#2a2a2c]/90 rounded-2xl border border-gray-100 dark:border-white/5 space-y-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Mail className="w-4 h-4 text-[#8c9276]" />
@@ -442,7 +446,7 @@ export function OrderDetailModal({
             </div>
           )}
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 sm:gap-3">
             {/* Factura al Cliente */}
             <div className="p-3 bg-white dark:bg-[#202022] rounded-xl border border-gray-100 dark:border-white/5 space-y-2">
               <div className="flex items-center justify-between">
