@@ -1,5 +1,6 @@
 import crypto from 'crypto';
 import { anonymizeCustomerName } from './orderPassTokens';
+import { getGoogleWalletCredentials } from './googleCustomerPassService';
 
 export interface GoogleWalletOrderInput {
   orderId: string;
@@ -35,10 +36,7 @@ function cleanPrivateKey(rawKey?: string): string {
 }
 
 export function isGoogleWalletConfigured(): boolean {
-  const issuerId = process.env.GOOGLE_WALLET_ISSUER_ID;
-  const clientEmail = process.env.GOOGLE_WALLET_CLIENT_EMAIL;
-  const privateKey = cleanPrivateKey(process.env.GOOGLE_WALLET_PRIVATE_KEY);
-  return Boolean(issuerId && clientEmail && privateKey && privateKey.includes('PRIVATE KEY'));
+  return getGoogleWalletCredentials() !== null;
 }
 
 /**
@@ -184,16 +182,14 @@ export function buildGoogleWalletOrderJwtUrl(data: GoogleWalletOrderInput): {
   saveUrl: string | null;
   error?: string;
 } {
-  const issuerId = process.env.GOOGLE_WALLET_ISSUER_ID;
-  const clientEmail = process.env.GOOGLE_WALLET_CLIENT_EMAIL;
-  const privateKey = cleanPrivateKey(process.env.GOOGLE_WALLET_PRIVATE_KEY);
-
-  if (!issuerId || !clientEmail || !privateKey) {
+  const credentials = getGoogleWalletCredentials();
+  if (!credentials) {
     return {
       saveUrl: null,
-      error: 'Credenciales de Google Wallet no configuradas (GOOGLE_WALLET_ISSUER_ID, GOOGLE_WALLET_CLIENT_EMAIL, GOOGLE_WALLET_PRIVATE_KEY).',
+      error: 'Credenciales de Google Wallet no configuradas.',
     };
   }
+  const { issuerId, clientEmail, privateKey } = credentials;
 
   try {
     const { genericClass, genericObject } = buildGoogleGenericObject(data, issuerId);
@@ -233,10 +229,10 @@ export function buildGoogleWalletOrderJwtUrl(data: GoogleWalletOrderInput): {
  * Obtains a Google Cloud OAuth2 Access Token for REST API calls
  */
 async function getGoogleWalletAccessToken(): Promise<string | null> {
-  const clientEmail = process.env.GOOGLE_WALLET_CLIENT_EMAIL;
-  const privateKey = cleanPrivateKey(process.env.GOOGLE_WALLET_PRIVATE_KEY);
+  const credentials = getGoogleWalletCredentials();
+  if (!credentials) return null;
 
-  if (!clientEmail || !privateKey) return null;
+  const { clientEmail, privateKey } = credentials;
 
   try {
     const now = Math.floor(Date.now() / 1000);
@@ -290,14 +286,15 @@ export async function pushGoogleWalletOrderUpdate(data: GoogleWalletOrderInput):
   status: 'UPDATED' | 'CREATED' | 'SKIPPED' | 'FAILED';
   message?: string;
 }> {
-  const issuerId = process.env.GOOGLE_WALLET_ISSUER_ID;
-  if (!isGoogleWalletConfigured() || !issuerId) {
+  const credentials = getGoogleWalletCredentials();
+  if (!credentials) {
     return {
       success: false,
       status: 'SKIPPED',
       message: 'Credenciales de Google Wallet no configuradas en el entorno.',
     };
   }
+  const issuerId = credentials.issuerId;
 
   try {
     const accessToken = await getGoogleWalletAccessToken();
