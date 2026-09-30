@@ -270,8 +270,12 @@ export default function Home() {
 
   return (
     <>
-      {/* Hero Section */}
-      <section id="hero-section" ref={heroRef} className="relative min-h-[68vh] sm:min-h-[72vh] lg:min-h-[76vh] flex flex-col justify-center pb-6 sm:pb-10 overflow-hidden bg-brand-900">
+      {/* Hero Section: Unified Full Viewport Fold (100dvh) */}
+      <section 
+        id="hero-section" 
+        ref={heroRef} 
+        className="relative min-h-[100dvh] flex flex-col justify-between overflow-hidden bg-brand-900 pt-16 sm:pt-20 lg:pt-24 pb-3 sm:pb-5"
+      >
         <div className="absolute inset-0 z-0">
           <Image 
             src="https://images.unsplash.com/photo-1600210492486-724fe5c67fb0?q=80&w=2000&auto=format&fit=crop" 
@@ -281,22 +285,23 @@ export default function Home() {
             className="object-cover" 
             priority
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-brand-900/90 via-brand-900/40 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-t from-brand-900/95 via-brand-900/40 to-transparent" />
         </div>
 
-        <div className="container mx-auto px-4 sm:px-6 md:px-8 relative z-10 pt-20 sm:pt-24 lg:pt-28">
+        {/* Hero Content (Centered vertically between top navbar and bottom badges) */}
+        <div className="container mx-auto px-4 sm:px-6 md:px-8 relative z-10 flex-1 flex flex-col justify-center max-w-7xl">
           <motion.div 
-            initial={{ opacity: 0, y: 20 }}
+            initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
-            className="max-w-3xl transform-gpu"
+            className="max-w-2xl lg:max-w-3xl transform-gpu"
           >
             {/* Tag Pill with Instant Hardware-Accelerated Glass Blur */}
             <motion.div 
-              initial={{ opacity: 0, y: 10 }}
+              initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, delay: 0.05, ease: [0.16, 1, 0.3, 1] }}
-              className="relative inline-flex items-center px-3.5 py-1 sm:px-4 sm:py-1.5 rounded-full overflow-hidden border border-white/25 text-xs sm:text-sm font-medium text-white mb-2.5 sm:mb-3.5 shadow-sm [isolation:isolate] transform-gpu select-none"
+              className="relative inline-flex items-center px-3.5 py-1 sm:px-4 sm:py-1.5 rounded-full overflow-hidden border border-white/25 text-xs sm:text-sm font-medium text-white mb-2 sm:mb-3 shadow-sm [isolation:isolate] transform-gpu select-none"
             >
               <div 
                 className="absolute inset-0 bg-white/15 backdrop-blur-xl pointer-events-none transform-gpu"
@@ -306,13 +311,13 @@ export default function Home() {
             </motion.div>
 
             <HandwrittenHeroTitle />
-            <p className="mt-2.5 sm:mt-3.5 text-sm sm:text-base md:text-lg text-gray-200/90 leading-relaxed max-w-lg font-light">
+            <p className="mt-2 sm:mt-3 text-xs sm:text-sm md:text-base text-gray-200/90 leading-relaxed max-w-lg font-light">
               Soluciones de estética, comodidad y tecnología pensadas para cada rincón que habitas.
             </p>
-            <div className="mt-4 sm:mt-6 flex flex-col sm:flex-row gap-2.5 sm:gap-3.5">
+            <div className="mt-3.5 sm:mt-5 flex flex-col sm:flex-row gap-2.5 sm:gap-3.5">
               <Link 
                 href="/shop" 
-                className="relative overflow-hidden w-full sm:w-auto rounded-full bg-white/40 hover:bg-white/50 active:bg-white/60 border border-white/60 hover:border-white/80 text-white px-6 sm:px-7 py-2.5 sm:py-3 flex items-center justify-center gap-2 backdrop-blur-xl shadow-[0_8px_30px_rgba(0,0,0,0.2)] transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] transform-gpu group cursor-pointer select-none"
+                className="relative overflow-hidden w-full sm:w-auto rounded-full bg-white/40 hover:bg-white/50 active:bg-white/60 border border-white/60 hover:border-white/80 text-white px-6 sm:px-7 py-2 sm:py-2.5 flex items-center justify-center gap-2 backdrop-blur-xl shadow-[0_8px_30px_rgba(0,0,0,0.2)] transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] transform-gpu group cursor-pointer select-none"
               >
                 <span className="relative z-10 flex items-center justify-center gap-2 font-medium text-xs sm:text-sm md:text-base text-white drop-shadow-sm">
                   Ver catálogo <ArrowRight className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-1" />
@@ -321,7 +326,7 @@ export default function Home() {
 
               <a 
                 href="#catalog-popular" 
-                className="relative overflow-hidden w-full sm:w-auto rounded-full bg-white/[0.08] hover:bg-white/[0.14] active:bg-white/[0.18] border border-white/30 hover:border-white/50 text-white px-6 sm:px-7 py-2.5 sm:py-3 flex items-center justify-center backdrop-blur-md shadow-[0_8px_25px_rgba(0,0,0,0.12)] transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] transform-gpu group cursor-pointer select-none"
+                className="relative overflow-hidden w-full sm:w-auto rounded-full bg-white/[0.08] hover:bg-white/[0.14] active:bg-white/[0.18] border border-white/30 hover:border-white/50 text-white px-6 sm:px-7 py-2 sm:py-2.5 flex items-center justify-center backdrop-blur-md shadow-[0_8px_25px_rgba(0,0,0,0.12)] transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] transform-gpu group cursor-pointer select-none"
               >
                 <span className="relative z-10 font-medium text-xs sm:text-sm md:text-base text-white drop-shadow-sm">
                   Filtrar por categoría
@@ -330,72 +335,70 @@ export default function Home() {
             </div>
           </motion.div>
         </div>
+
+        {/* Trust Badges Bar (Docked at the bottom of the 100dvh Hero Fold) */}
+        <motion.div
+          id="envios-garantias"
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.1, ease: [0.22, 1, 0.36, 1] }}
+          className="relative z-20 container mx-auto px-4 sm:px-6 md:px-8 max-w-7xl transform-gpu scroll-mt-36"
+        >
+          <div className="bg-white/95 dark:bg-[#1e1e20]/95 backdrop-blur-xl rounded-xl sm:rounded-2xl md:rounded-[1.75rem] border border-black/[0.06] dark:border-white/[0.08] shadow-[0_12px_32px_-8px_rgba(0,0,0,0.14),0_2px_8px_rgba(0,0,0,0.04)] p-2 sm:p-3 md:p-3.5">
+
+            {/* ── Mobile / Pantallas pequeñas (< lg): Solo 2 badges compactos en una sola fila ── */}
+            <div className="grid grid-cols-2 lg:hidden items-center">
+              {mobileTrustBadges.map((badge, idx) => (
+                <div
+                  key={idx}
+                  className="flex items-center justify-center gap-2 sm:gap-2.5 px-2 relative select-none"
+                >
+                  <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-lg bg-[#8c9276]/10 dark:bg-[#8c9276]/20 text-[#8c9276] dark:text-[#a8b092] flex items-center justify-center shrink-0">
+                    <badge.icon className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-[11px] sm:text-xs font-semibold text-gray-900 dark:text-gray-100 tracking-tight leading-tight truncate">
+                      {badge.title}
+                    </p>
+                    <p className="text-[9px] sm:text-[10px] text-gray-400 font-normal leading-tight truncate">
+                      {badge.subtitle}
+                    </p>
+                  </div>
+                  {idx === 0 && (
+                    <div className="absolute right-0 top-1/2 -translate-y-1/2 h-5 w-px bg-gray-200/70 dark:bg-white/10" />
+                  )}
+                </div>
+              ))}
+            </div>
+
+            {/* ── Desktop / Pantallas normales (≥ lg): Todas las 5 garantías de la manera normal ── */}
+            <div className="hidden lg:grid lg:grid-cols-5 items-center">
+              {trustBadges.map((badge, idx) => (
+                <div
+                  key={idx}
+                  className="flex items-center gap-2.5 xl:gap-3 justify-center relative group px-2 select-none"
+                >
+                  <div className="w-9 h-9 rounded-xl bg-[#8c9276]/10 dark:bg-[#8c9276]/20 text-[#8c9276] dark:text-[#a8b092] flex items-center justify-center shrink-0 transition-transform duration-300 group-hover:scale-110 shadow-2xs">
+                    <badge.icon className="w-4 h-4" />
+                  </div>
+                  <div className="min-w-0 select-none">
+                    <p className="text-xs xl:text-sm font-semibold text-gray-900 dark:text-gray-100 tracking-tight leading-snug whitespace-nowrap">
+                      {badge.title}
+                    </p>
+                    <p className="text-[10px] xl:text-[11px] text-gray-400 font-normal leading-tight whitespace-nowrap">
+                      {badge.subtitle}
+                    </p>
+                  </div>
+                  {idx < trustBadges.length - 1 && (
+                    <div className="absolute right-0 top-1/2 -translate-y-1/2 h-7 w-px bg-gray-200/80 dark:bg-white/10" />
+                  )}
+                </div>
+              ))}
+            </div>
+
+          </div>
+        </motion.div>
       </section>
-
-      {/* Trust Badges Bar */}
-      <motion.div
-        id="trust-badges"
-        initial={{ opacity: 0, y: 16 }}
-        whileInView={{ opacity: 1, y: 0 }}
-        viewport={{ once: false, amount: 0.1 }}
-        transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-        style={{ willChange: "transform, opacity" }}
-        className="relative z-30 -mt-8 sm:-mt-11 mb-3 container mx-auto px-4 sm:px-6 md:px-8 transform-gpu scroll-mt-36"
-      >
-        <div className="bg-white dark:bg-[#1e1e20] rounded-xl sm:rounded-2xl md:rounded-[2rem] border border-black/[0.06] dark:border-white/[0.08] shadow-[0_12px_32px_-8px_rgba(0,0,0,0.06),0_2px_8px_rgba(0,0,0,0.02)] p-2.5 sm:p-3.5 md:p-4">
-
-          {/* ── Mobile / Pantallas pequeñas (< lg): Solo 2 badges compactos en una sola fila ── */}
-          <div className="grid grid-cols-2 lg:hidden items-center">
-            {mobileTrustBadges.map((badge, idx) => (
-              <div
-                key={idx}
-                className="flex items-center justify-center gap-2 sm:gap-2.5 px-2 relative select-none"
-              >
-                <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-lg bg-[#8c9276]/10 dark:bg-[#8c9276]/20 text-[#8c9276] dark:text-[#a8b092] flex items-center justify-center shrink-0">
-                  <badge.icon className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
-                </div>
-                <div className="min-w-0">
-                  <p className="text-[11px] sm:text-xs font-semibold text-gray-900 dark:text-gray-100 tracking-tight leading-tight truncate">
-                    {badge.title}
-                  </p>
-                  <p className="text-[9px] sm:text-[10px] text-gray-400 font-normal leading-tight truncate">
-                    {badge.subtitle}
-                  </p>
-                </div>
-                {idx === 0 && (
-                  <div className="absolute right-0 top-1/2 -translate-y-1/2 h-5 w-px bg-gray-200/70 dark:bg-white/10" />
-                )}
-              </div>
-            ))}
-          </div>
-
-          {/* ── Desktop / Pantallas normales (≥ lg): Todas las 5 garantías de la manera normal ── */}
-          <div className="hidden lg:grid lg:grid-cols-5 items-center">
-            {trustBadges.map((badge, idx) => (
-              <div
-                key={idx}
-                className="flex items-center gap-3 justify-center relative group px-3 select-none"
-              >
-                <div className="w-10 h-10 rounded-2xl bg-[#8c9276]/10 dark:bg-[#8c9276]/20 text-[#8c9276] dark:text-[#a8b092] flex items-center justify-center shrink-0 transition-transform duration-300 group-hover:scale-110 shadow-2xs">
-                  <badge.icon className="w-[18px] h-[18px]" />
-                </div>
-                <div className="min-w-0 select-none">
-                  <p className="text-sm font-semibold text-gray-900 dark:text-gray-100 tracking-tight leading-snug whitespace-nowrap">
-                    {badge.title}
-                  </p>
-                  <p className="text-[11px] text-gray-400 font-normal leading-tight whitespace-nowrap">
-                    {badge.subtitle}
-                  </p>
-                </div>
-                {idx < trustBadges.length - 1 && (
-                  <div className="absolute right-0 top-1/2 -translate-y-1/2 h-8 w-px bg-gray-200/80 dark:bg-white/10" />
-                )}
-              </div>
-            ))}
-          </div>
-
-        </div>
-      </motion.div>
 
 
       {/* Immersive Background Wrapper for Catalog Sections */}
