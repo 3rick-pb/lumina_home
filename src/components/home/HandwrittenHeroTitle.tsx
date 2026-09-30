@@ -37,7 +37,7 @@ export const HandwrittenHeroTitle = memo(function HandwrittenHeroTitle() {
         </h1>
 
         <div
-          className="w-full max-w-[320px] sm:max-w-[440px] md:max-w-[500px] [@media(min-height:760px)]:md:max-w-[560px] [@media(min-height:760px)]:lg:max-w-[620px] [@media(min-height:860px)]:xl:max-w-[660px] opacity-0 pointer-events-none"
+          className="w-full max-w-[375px] sm:max-w-[440px] md:max-w-[500px] [@media(min-height:760px)]:md:max-w-[560px] [@media(min-height:760px)]:lg:max-w-[620px] [@media(min-height:860px)]:xl:max-w-[660px] opacity-0 pointer-events-none"
           aria-hidden="true"
         >
           <div
@@ -45,7 +45,7 @@ export const HandwrittenHeroTitle = memo(function HandwrittenHeroTitle() {
             dangerouslySetInnerHTML={{ __html: HERO_SVG_LINE1_STATIC }}
           />
           <div
-            className="w-[79.5%] -mt-1 sm:-mt-2 md:-mt-2.5 leading-none [&>svg]:w-full [&>svg]:h-auto [&>svg]:max-w-full [&>svg]:overflow-visible [&>svg]:block"
+            className="w-[79.5%] -mt-1.5 sm:-mt-2 md:-mt-2.5 leading-none [&>svg]:w-full [&>svg]:h-auto [&>svg]:max-w-full [&>svg]:overflow-visible [&>svg]:block"
             dangerouslySetInnerHTML={{ __html: HERO_SVG_LINE2_STATIC }}
           />
         </div>
@@ -65,7 +65,7 @@ export const HandwrittenHeroTitle = memo(function HandwrittenHeroTitle() {
       <div
         key={replayKey}
         onClick={handleReplay}
-        className="cursor-pointer w-full max-w-[320px] sm:max-w-[440px] md:max-w-[500px] [@media(min-height:760px)]:md:max-w-[560px] [@media(min-height:760px)]:lg:max-w-[620px] [@media(min-height:860px)]:xl:max-w-[660px]"
+        className="cursor-pointer w-full max-w-[375px] sm:max-w-[440px] md:max-w-[500px] [@media(min-height:760px)]:md:max-w-[560px] [@media(min-height:760px)]:lg:max-w-[620px] [@media(min-height:860px)]:xl:max-w-[660px]"
         title="Haz clic para volver a ver la animación de escritura"
       >
         {/* Línea 1: "Espacios diseñados" (Blanco) */}
