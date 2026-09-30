@@ -61,19 +61,64 @@
   .text-balance {
     text-wrap: balance;
   }
-  /* Global macOS Safari Scrollbar Replacement — Suppress Native Browser Scrollbar Track */
-  html,
-  body,
-  * {
-    -ms-overflow-style: none !important;
-    scrollbar-width: none !important;
+  /* Sleek, Modern Minimalist Native Scrollbar (Never bugs, fully draggable and responsive) */
+  html {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(156, 163, 175, 0.5) transparent;
   }
-  html::-webkit-scrollbar,
-  body::-webkit-scrollbar,
-  *::-webkit-scrollbar {
-    display: none !important;
-    width: 0 !important;
-    height: 0 !important;
+
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: rgba(156, 163, 175, 0.45);
+    border-radius: 9999px;
+    border: 2px solid transparent;
+    background-clip: padding-box;
+    transition: background-color 0.2s ease;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: rgba(107, 114, 128, 0.75);
+    border: 2px solid transparent;
+    background-clip: padding-box;
+  }
+
+  ::-webkit-scrollbar-thumb:active {
+    background: rgba(75, 85, 99, 0.9);
+    border: 2px solid transparent;
+    background-clip: padding-box;
+  }
+
+  /* Dark mode scrollbar support */
+  .dark html,
+  html.dark,
+  :root[data-theme='dark'] {
+    scrollbar-color: rgba(255, 255, 255, 0.25) transparent;
+  }
+
+  .dark ::-webkit-scrollbar-thumb,
+  html.dark ::-webkit-scrollbar-thumb,
+  :root[data-theme='dark'] ::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.25);
+  }
+
+  .dark ::-webkit-scrollbar-thumb:hover,
+  html.dark ::-webkit-scrollbar-thumb:hover,
+  :root[data-theme='dark'] ::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.45);
+  }
+
+  .dark ::-webkit-scrollbar-thumb:active,
+  html.dark ::-webkit-scrollbar-thumb:active,
+  :root[data-theme='dark'] ::-webkit-scrollbar-thumb:active {
+    background: rgba(255, 255, 255, 0.65);
   }
 
   .hide-scrollbar::-webkit-scrollbar {

@@ -1009,7 +1009,7 @@ export function CartDrawer() {
   {/* ========================================================================= */}
   {/* MAIN CANVAS SCROLLABLE AREA */}
   {/* ========================================================================= */}
-  <div className={`flex-1 overflow-y-auto ${
+  <div data-lenis-prevent className={`flex-1 overflow-y-auto ${
     items.length === 0 && step === "bag"
       ? "p-2.5 sm:px-6 sm:pb-6 sm:pt-2.5 lg:px-10 lg:pb-10 lg:pt-3"
       : "p-2.5 sm:p-6 lg:p-10"

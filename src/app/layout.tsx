@@ -10,7 +10,8 @@ import { AuthGuard } from "@/components/auth/AuthGuard";
 import { AppInitializer } from "@/components/AppInitializer";
 import { ScrollToTop } from "@/components/layout/ScrollToTop";
 import { AdminCartNotifier } from "@/components/admin/AdminCartNotifier";
-import { MacOSScrollbar } from "@/components/ui/MacOSScrollbar";
+import "lenis/dist/lenis.css";
+import { SmoothScrollProvider } from "@/components/providers/SmoothScrollProvider";
 
 import localFont from "next/font/local";
 
@@ -65,22 +66,23 @@ export default function RootLayout({
         } as React.CSSProperties}
         className={`${inter.variable} ${lora.variable} ${moonwalk.variable} font-sans antialiased text-gray-900 bg-transparent flex flex-col min-h-screen relative`}
       >
-        <Suspense fallback={null}>
-          <ScrollToTop />
-        </Suspense>
-        <Suspense fallback={null}>
-          <AmbientBackground />
-        </Suspense>
-        <MacOSScrollbar />
-        <AppInitializer />
-        <AdminCartNotifier />
-        <Header />
-        <main className="flex-1">
-          <AuthGuard>
-            {children}
-          </AuthGuard>
-        </main>
-        <Footer />
+        <SmoothScrollProvider>
+          <Suspense fallback={null}>
+            <ScrollToTop />
+          </Suspense>
+          <Suspense fallback={null}>
+            <AmbientBackground />
+          </Suspense>
+          <AppInitializer />
+          <AdminCartNotifier />
+          <Header />
+          <main className="flex-1">
+            <AuthGuard>
+              {children}
+            </AuthGuard>
+          </main>
+          <Footer />
+        </SmoothScrollProvider>
       </body>
     </html>
   );
