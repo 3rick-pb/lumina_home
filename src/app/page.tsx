@@ -271,7 +271,7 @@ export default function Home() {
   return (
     <>
       {/* Hero Section */}
-      <section id="hero-section" ref={heroRef} className="relative min-h-[90vh] flex flex-col justify-end pb-12 overflow-hidden bg-brand-900">
+      <section id="hero-section" ref={heroRef} className="relative min-h-[68vh] sm:min-h-[72vh] lg:min-h-[76vh] flex flex-col justify-center pb-6 sm:pb-10 overflow-hidden bg-brand-900">
         <div className="absolute inset-0 z-0">
           <Image 
             src="https://images.unsplash.com/photo-1600210492486-724fe5c67fb0?q=80&w=2000&auto=format&fit=crop" 
@@ -284,19 +284,19 @@ export default function Home() {
           <div className="absolute inset-0 bg-gradient-to-t from-brand-900/90 via-brand-900/40 to-transparent" />
         </div>
 
-        <div className="container mx-auto px-4 sm:px-6 md:px-8 relative z-10 pt-36 sm:pt-40">
+        <div className="container mx-auto px-4 sm:px-6 md:px-8 relative z-10 pt-20 sm:pt-24 lg:pt-28">
           <motion.div 
-            initial={{ opacity: 0, y: 24 }}
+            initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
+            transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
             className="max-w-3xl transform-gpu"
           >
             {/* Tag Pill with Instant Hardware-Accelerated Glass Blur */}
             <motion.div 
-              initial={{ opacity: 0, y: 12 }}
+              initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, delay: 0.05, ease: [0.16, 1, 0.3, 1] }}
-              className="relative inline-flex items-center px-4 py-1.5 rounded-full overflow-hidden border border-white/25 text-xs sm:text-sm font-medium text-white mb-6 shadow-sm [isolation:isolate] transform-gpu select-none"
+              className="relative inline-flex items-center px-3.5 py-1 sm:px-4 sm:py-1.5 rounded-full overflow-hidden border border-white/25 text-xs sm:text-sm font-medium text-white mb-2.5 sm:mb-3.5 shadow-sm [isolation:isolate] transform-gpu select-none"
             >
               <div 
                 className="absolute inset-0 bg-white/15 backdrop-blur-xl pointer-events-none transform-gpu"
@@ -306,24 +306,24 @@ export default function Home() {
             </motion.div>
 
             <HandwrittenHeroTitle />
-            <p className="mt-4 sm:mt-6 text-base sm:text-xl text-gray-200 leading-relaxed max-w-lg font-light">
+            <p className="mt-2.5 sm:mt-3.5 text-sm sm:text-base md:text-lg text-gray-200/90 leading-relaxed max-w-lg font-light">
               Soluciones de estética, comodidad y tecnología pensadas para cada rincón que habitas.
             </p>
-            <div className="mt-8 sm:mt-10 flex flex-col sm:flex-row gap-3 sm:gap-4">
+            <div className="mt-4 sm:mt-6 flex flex-col sm:flex-row gap-2.5 sm:gap-3.5">
               <Link 
                 href="/shop" 
-                className="relative overflow-hidden w-full sm:w-auto rounded-full bg-white/40 hover:bg-white/50 active:bg-white/60 border border-white/60 hover:border-white/80 text-white px-8 py-3.5 sm:py-4 flex items-center justify-center gap-2.5 backdrop-blur-xl shadow-[0_8px_30px_rgba(0,0,0,0.2)] transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] transform-gpu group cursor-pointer select-none"
+                className="relative overflow-hidden w-full sm:w-auto rounded-full bg-white/40 hover:bg-white/50 active:bg-white/60 border border-white/60 hover:border-white/80 text-white px-6 sm:px-7 py-2.5 sm:py-3 flex items-center justify-center gap-2 backdrop-blur-xl shadow-[0_8px_30px_rgba(0,0,0,0.2)] transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] transform-gpu group cursor-pointer select-none"
               >
-                <span className="relative z-10 flex items-center justify-center gap-2 font-medium text-sm sm:text-base text-white drop-shadow-sm">
+                <span className="relative z-10 flex items-center justify-center gap-2 font-medium text-xs sm:text-sm md:text-base text-white drop-shadow-sm">
                   Ver catálogo <ArrowRight className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-1" />
                 </span>
               </Link>
 
               <a 
                 href="#catalog-popular" 
-                className="relative overflow-hidden w-full sm:w-auto rounded-full bg-white/[0.08] hover:bg-white/[0.14] active:bg-white/[0.18] border border-white/30 hover:border-white/50 text-white px-8 py-3.5 sm:py-4 flex items-center justify-center backdrop-blur-md shadow-[0_8px_25px_rgba(0,0,0,0.12)] transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] transform-gpu group cursor-pointer select-none"
+                className="relative overflow-hidden w-full sm:w-auto rounded-full bg-white/[0.08] hover:bg-white/[0.14] active:bg-white/[0.18] border border-white/30 hover:border-white/50 text-white px-6 sm:px-7 py-2.5 sm:py-3 flex items-center justify-center backdrop-blur-md shadow-[0_8px_25px_rgba(0,0,0,0.12)] transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] transform-gpu group cursor-pointer select-none"
               >
-                <span className="relative z-10 font-medium text-sm sm:text-base text-white drop-shadow-sm">
+                <span className="relative z-10 font-medium text-xs sm:text-sm md:text-base text-white drop-shadow-sm">
                   Filtrar por categoría
                 </span>
               </a>
@@ -340,9 +340,9 @@ export default function Home() {
         viewport={{ once: false, amount: 0.1 }}
         transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
         style={{ willChange: "transform, opacity" }}
-        className="relative z-30 -mt-6 sm:-mt-9 mb-3 container mx-auto px-4 sm:px-6 md:px-8 transform-gpu scroll-mt-36"
+        className="relative z-30 -mt-8 sm:-mt-11 mb-3 container mx-auto px-4 sm:px-6 md:px-8 transform-gpu scroll-mt-36"
       >
-        <div className="bg-white dark:bg-[#1e1e20] rounded-xl sm:rounded-2xl md:rounded-[2rem] border border-black/[0.06] dark:border-white/[0.08] shadow-[0_12px_32px_-8px_rgba(0,0,0,0.06),0_2px_8px_rgba(0,0,0,0.02)] p-2.5 sm:p-4 md:p-5">
+        <div className="bg-white dark:bg-[#1e1e20] rounded-xl sm:rounded-2xl md:rounded-[2rem] border border-black/[0.06] dark:border-white/[0.08] shadow-[0_12px_32px_-8px_rgba(0,0,0,0.06),0_2px_8px_rgba(0,0,0,0.02)] p-2.5 sm:p-3.5 md:p-4">
 
           {/* ── Mobile / Pantallas pequeñas (< lg): Solo 2 badges compactos en una sola fila ── */}
           <div className="grid grid-cols-2 lg:hidden items-center">
