@@ -29,8 +29,8 @@ import {
   Server
 } from "lucide-react";
 import { IntegrationsTab } from "@/components/profile/tabs/IntegrationsTab";
-import { LoyaltyCardsTab } from "@/components/profile/tabs/LoyaltyCardsTab";
-import { QrCode } from "lucide-react";
+import { DiscountCouponsTab } from "@/components/profile/tabs/DiscountCouponsTab";
+import { Tag } from "lucide-react";
 import { useUserStore, Order, formatCleanName } from "@/lib/userStore";
 import { useThemeStore, getResolvedTheme } from "@/lib/themeStore";
 import { useCatalogStore, normalizeCategory, CatalogProduct, ProductCombo, EmbeddedCarouselConfig } from "@/lib/catalogStore";
@@ -894,12 +894,12 @@ const handleConfirmDeleteNiche = async () => {
             ? "bg-gray-950 dark:bg-white text-white dark:text-gray-950 shadow-lg shadow-gray-950/20 dark:shadow-white/15 scale-105" 
             : "text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100/80 dark:hover:bg-white/5 hover:scale-105 active:scale-95"
         }`}
-        title="Orquestación PassKit & Google Wallet (Pases QR)"
+        title="Generador de Cupones & Códigos de Descuento"
       >
         {activeTab === "loyalty" && (
           <span className="absolute -left-2 w-1 h-5 bg-[#8c9276] dark:bg-[#ccff00] rounded-r-full transition-all duration-[600ms]" />
         )}
-        <QrCode className="w-5 h-5 transition-all duration-300 group-hover:scale-115 group-hover:rotate-6 group-hover:-translate-y-0.5" />
+        <Tag className="w-5 h-5 transition-all duration-300 group-hover:scale-115 group-hover:rotate-6 group-hover:-translate-y-0.5" />
       </button>
    </>
  )}
@@ -1034,7 +1034,7 @@ const handleConfirmDeleteNiche = async () => {
   onClick={() => setActiveTab("loyalty")} 
   className={`px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all cursor-pointer ${activeTab === "loyalty" ? "bg-white dark:bg-[#202022] text-gray-900 dark:text-gray-100 shadow-sm dark:shadow-none" : "text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100"}`}
   >
-  Tarjetas de Lealtad
+  Códigos de Descuento
   </button>
   </>
   )}
@@ -1334,10 +1334,10 @@ const handleConfirmDeleteNiche = async () => {
         )}
 
         {/* ========================================================================= */}
-        {/* VIEW 8C: ADMIN LOYALTY CARDS TAB (APPLE WALLET & GOOGLE WALLET QR) */}
+        {/* VIEW 8C: ADMIN DISCOUNT COUPONS GENERATOR & MANAGER                       */}
         {/* ========================================================================= */}
         {activeTab === "loyalty" && isAdmin && (
-          <LoyaltyCardsTab />
+          <DiscountCouponsTab />
         )}
 
         {/* ========================================================================= */}
@@ -3133,8 +3133,8 @@ const handleConfirmDeleteNiche = async () => {
                   },
                   {
                     id: "loyalty",
-                    label: "Lealtad QR",
-                    icon: <QrCode className="w-5 h-5" />,
+                    label: "Cupones",
+                    icon: <Tag className="w-5 h-5" />,
                     active: activeTab === "loyalty",
                     onClick: () => setActiveTab("loyalty"),
                   },

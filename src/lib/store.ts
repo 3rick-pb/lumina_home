@@ -531,7 +531,29 @@ export const useCartStore = create<CartState>((set, get) => ({
       console.warn("Could not query coupons from Supabase:", e);
     }
 
-    // 2. Fallback to predefined store config coupons if offline or table not yet migrated
+    // 2. Check dynamic coupons from couponStore (generated or custom coupons)
+    if (!codeName) {
+      try {
+        const { useCouponStore } = await import('./couponStore');
+        const dynamicCoupon = useCouponStore.getState().getCouponByCode(clean);
+        if (dynamicCoupon) {
+          if (dynamicCoupon.minOrderAmount > 0 && subtotal < dynamicCoupon.minOrderAmount) {
+            return {
+              success: false,
+              message: `Este cupón requiere un pedido mínimo de $${dynamicCoupon.minOrderAmount.toFixed(2)}.`
+            };
+          }
+          codeName = dynamicCoupon.code;
+          discount = dynamicCoupon.discountPercent;
+          freeShipping = dynamicCoupon.discountType === 'free_shipping';
+          message = discount > 0 
+            ? `¡Cupón ${dynamicCoupon.code} aplicado! ${discount}% de descuento.`
+            : `¡Cupón ${dynamicCoupon.code} aplicado con éxito!`;
+        }
+      } catch {}
+    }
+
+    // 3. Fallback to predefined store config coupons if offline or table not yet migrated
     if (!codeName) {
       const fallback = storeConfig.defaultCoupons.find(c => c.code === clean);
       if (fallback) {

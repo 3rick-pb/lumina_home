@@ -1041,7 +1041,7 @@ export function CartDrawer() {
   )}
 
   {items.length === 0 ? (
-  <div className="relative overflow-hidden my-2 sm:my-2.5 sm:mt-1 rounded-[2.5rem] p-8 sm:p-10 lg:p-12 border border-black/[0.04] dark:border-white/10 bg-gradient-to-b from-white/95 via-[#faf8f4] to-[#f2eee7] dark:from-[#222226] dark:via-[#1c1c1f] dark:to-[#161619] shadow-[0_20px_50px_rgba(0,0,0,0.04)] backdrop-blur-2xl text-center flex flex-col items-center justify-center">
+  <div className="relative overflow-hidden my-2 sm:my-2.5 sm:mt-1 rounded-[2.5rem] p-8 sm:p-12 lg:p-16 min-h-[460px] sm:min-h-[580px] md:min-h-[640px] lg:min-h-[700px] border-2 border-black/15 dark:border-white/20 shadow-[0_20px_50px_rgba(0,0,0,0.08)] dark:shadow-[0_20px_50px_rgba(0,0,0,0.45)] bg-gradient-to-b from-white/95 via-[#faf8f4] to-[#f2eee7] dark:from-[#222226] dark:via-[#1c1c1f] dark:to-[#161619] backdrop-blur-2xl text-center flex flex-col items-center justify-center">
     {/* 3D Radial Champagne Aura */}
     <div className="absolute w-80 h-80 rounded-full bg-gradient-to-tr from-amber-500/[0.08] via-[#8c9276]/[0.08] to-amber-400/[0.06] blur-3xl pointer-events-none" />
     <div className="absolute inset-x-12 top-0 h-[1.5px] bg-gradient-to-r from-transparent via-black/[0.04] dark:via-white/15 to-transparent pointer-events-none" />
