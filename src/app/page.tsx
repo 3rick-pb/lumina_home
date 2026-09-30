@@ -11,6 +11,7 @@ import { useAmbientStore } from "@/lib/ambientStore";
 import { supabase } from "@/lib/supabase";
 import { ProximitySidebar } from "@/components/ui/proximity-sidebar";
 import { CatalogScrollToTopButton } from "@/components/ui/CatalogScrollToTopButton";
+import { HandwrittenHeroTitle } from "@/components/home/HandwrittenHeroTitle";
 
 const HOME_SECTIONS = [
   { id: "hero-section", label: "Inicio", level: 1 as const },
@@ -304,23 +305,15 @@ export default function Home() {
               <span className="relative z-10">Artículos premium para tu hogar</span>
             </motion.div>
 
-            <h1 className="text-3xl sm:text-5xl md:text-6xl lg:text-7xl font-sans font-medium text-white leading-[1.15] sm:leading-[1.1] tracking-tight">
-              Espacios diseñados <br />
-              <span className="font-display italic font-bold text-[#d2b48c]">para perdurar</span>
-            </h1>
+            <HandwrittenHeroTitle />
             <p className="mt-4 sm:mt-6 text-base sm:text-xl text-gray-200 leading-relaxed max-w-lg font-light">
               Soluciones de estética, comodidad y tecnología pensadas para cada rincón que habitas.
             </p>
             <div className="mt-8 sm:mt-10 flex flex-col sm:flex-row gap-3 sm:gap-4">
               <Link 
                 href="/shop" 
-                className="relative overflow-hidden w-full sm:w-auto rounded-full bg-white/40 hover:bg-white/50 active:bg-white/60 border border-white/60 hover:border-white/80 text-white px-8 py-3.5 sm:py-4 flex items-center justify-center gap-2.5 backdrop-blur-xl shadow-[0_8px_30px_rgba(0,0,0,0.2),inset_0_1.5px_1.5px_rgba(255,255,255,0.75),inset_0_-1px_1px_rgba(0,0,0,0.15)] transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] [isolation:isolate] transform-gpu group cursor-pointer select-none"
+                className="relative overflow-hidden w-full sm:w-auto rounded-full bg-white/40 hover:bg-white/50 active:bg-white/60 border border-white/60 hover:border-white/80 text-white px-8 py-3.5 sm:py-4 flex items-center justify-center gap-2.5 backdrop-blur-xl shadow-[0_8px_30px_rgba(0,0,0,0.2)] transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] transform-gpu group cursor-pointer select-none"
               >
-                {/* Upper specular reflection meniscus */}
-                <div 
-                  className="absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-white/45 via-white/15 to-transparent pointer-events-none rounded-t-full" 
-                  aria-hidden="true"
-                />
                 <span className="relative z-10 flex items-center justify-center gap-2 font-medium text-sm sm:text-base text-white drop-shadow-sm">
                   Ver catálogo <ArrowRight className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-1" />
                 </span>
@@ -328,13 +321,8 @@ export default function Home() {
 
               <a 
                 href="#catalog-popular" 
-                className="relative overflow-hidden w-full sm:w-auto rounded-full bg-white/[0.06] hover:bg-white/[0.14] active:bg-white/[0.18] border border-white/25 hover:border-white/50 text-white px-8 py-3.5 sm:py-4 flex items-center justify-center backdrop-blur-md shadow-[0_8px_25px_rgba(0,0,0,0.12),inset_0_1px_1px_rgba(255,255,255,0.35),inset_0_-1px_1px_rgba(0,0,0,0.1)] transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] [isolation:isolate] transform-gpu group cursor-pointer select-none"
+                className="relative overflow-hidden w-full sm:w-auto rounded-full bg-white/[0.08] hover:bg-white/[0.14] active:bg-white/[0.18] border border-white/30 hover:border-white/50 text-white px-8 py-3.5 sm:py-4 flex items-center justify-center backdrop-blur-md shadow-[0_8px_25px_rgba(0,0,0,0.12)] transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] transform-gpu group cursor-pointer select-none"
               >
-                {/* Upper specular reflection meniscus */}
-                <div 
-                  className="absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-white/18 via-white/[0.03] to-transparent pointer-events-none rounded-t-full" 
-                  aria-hidden="true"
-                />
                 <span className="relative z-10 font-medium text-sm sm:text-base text-white drop-shadow-sm">
                   Filtrar por categoría
                 </span>
@@ -354,7 +342,7 @@ export default function Home() {
         style={{ willChange: "transform, opacity" }}
         className="relative z-30 -mt-6 sm:-mt-9 mb-3 container mx-auto px-4 sm:px-6 md:px-8 transform-gpu scroll-mt-36"
       >
-        <div className="bg-white/95 dark:bg-[#1e1e20]/95 backdrop-blur-md rounded-xl sm:rounded-2xl md:rounded-[2rem] border border-black/[0.06] dark:border-white/[0.08] shadow-[0_12px_32px_-8px_rgba(0,0,0,0.06),0_2px_8px_rgba(0,0,0,0.02)] p-2.5 sm:p-4 md:p-5">
+        <div className="bg-white dark:bg-[#1e1e20] rounded-xl sm:rounded-2xl md:rounded-[2rem] border border-black/[0.06] dark:border-white/[0.08] shadow-[0_12px_32px_-8px_rgba(0,0,0,0.06),0_2px_8px_rgba(0,0,0,0.02)] p-2.5 sm:p-4 md:p-5">
 
           {/* ── Mobile / Pantallas pequeñas (< lg): Solo 2 badges compactos en una sola fila ── */}
           <div className="grid grid-cols-2 lg:hidden items-center">
