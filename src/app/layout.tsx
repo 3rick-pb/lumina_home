@@ -12,6 +12,7 @@ import { ScrollToTop } from "@/components/layout/ScrollToTop";
 import { AdminCartNotifier } from "@/components/admin/AdminCartNotifier";
 import "lenis/dist/lenis.css";
 import { SmoothScrollProvider } from "@/components/providers/SmoothScrollProvider";
+import { MacOSScrollbar } from "@/components/ui/MacOSScrollbar";
 
 import localFont from "next/font/local";
 
@@ -73,6 +74,7 @@ export default function RootLayout({
           <Suspense fallback={null}>
             <AmbientBackground />
           </Suspense>
+          <MacOSScrollbar />
           <AppInitializer />
           <AdminCartNotifier />
           <Header />
