@@ -38,18 +38,18 @@ export function HandwrittenHeroTitle() {
       <div
         key={replayKey}
         onClick={handleReplay}
-        className="cursor-pointer"
+        className="cursor-pointer w-full max-w-[340px] sm:max-w-[500px] md:max-w-[600px] lg:max-w-[680px] xl:max-w-[740px]"
         title="Haz clic para volver a ver la animación de escritura"
       >
         {/* Línea 1: "Espacios diseñados" (Blanco) */}
         <div
-          className="w-full max-w-[310px] sm:max-w-[460px] md:max-w-[580px] lg:max-w-[660px] xl:max-w-[720px] leading-none"
+          className="w-full leading-none [&>svg]:w-full [&>svg]:h-auto [&>svg]:max-w-full [&>svg]:overflow-visible [&>svg]:block"
           dangerouslySetInnerHTML={{ __html: line1Svg }}
         />
 
         {/* Línea 2: "para perdurar" (Tono dorado cálido #d2b48c) */}
         <div
-          className="w-full max-w-[230px] sm:max-w-[340px] md:max-w-[440px] lg:max-w-[500px] xl:max-w-[550px] -mt-1 sm:-mt-2 md:-mt-3 leading-none"
+          className="w-[79.1%] -mt-1 sm:-mt-2 md:-mt-3 leading-none [&>svg]:w-full [&>svg]:h-auto [&>svg]:max-w-full [&>svg]:overflow-visible [&>svg]:block"
           dangerouslySetInnerHTML={{ __html: line2Svg }}
         />
       </div>
