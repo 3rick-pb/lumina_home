@@ -129,6 +129,30 @@ export default function Home() {
   const heroRef = useRef<HTMLDivElement>(null);
   const categoriesRef = useRef<HTMLDivElement>(null);
   const popularRef = useRef<HTMLDivElement>(null);
+  const mobileTrustScrollRef = useRef<HTMLDivElement>(null);
+  const [activeTrustIndex, setActiveTrustIndex] = useState(0);
+
+  const handleTrustScroll = (e: React.UIEvent<HTMLDivElement>) => {
+    const el = e.currentTarget;
+    if (!el || el.scrollWidth <= el.clientWidth) return;
+    const maxScroll = el.scrollWidth - el.clientWidth;
+    const ratio = el.scrollLeft / maxScroll;
+    const idx = Math.min(
+      trustBadges.length - 1,
+      Math.max(0, Math.round(ratio * (trustBadges.length - 1)))
+    );
+    setActiveTrustIndex(idx);
+  };
+
+  const scrollToTrustBadge = (index: number) => {
+    if (mobileTrustScrollRef.current) {
+      const el = mobileTrustScrollRef.current;
+      const maxScroll = el.scrollWidth - el.clientWidth;
+      const targetScroll = (maxScroll / Math.max(1, trustBadges.length - 1)) * index;
+      el.scrollTo({ left: targetScroll, behavior: "smooth" });
+      setActiveTrustIndex(index);
+    }
+  };
 
   // Derive dynamic category cards strictly from active categories in store
   const dynamicCategories = useMemo(() => {
@@ -349,26 +373,57 @@ export default function Home() {
       >
         <div className="bg-white dark:bg-[#1e1e20] rounded-2xl md:rounded-[2rem] border border-black/[0.06] dark:border-white/[0.08] shadow-[0_16px_40px_-8px_rgba(0,0,0,0.08),0_4px_16px_rgba(0,0,0,0.03)] overflow-hidden">
 
-          {/* ── Mobile / tablet: 2-column pill grid ── */}
-          <div className="grid grid-cols-2 lg:hidden divide-x divide-y divide-black/[0.04] dark:divide-white/[0.05]">
-            {trustBadges.map((badge, idx) => (
-              <div
-                key={idx}
-                className="flex items-center gap-2.5 px-4 py-3.5 select-none"
-              >
-                <div className="shrink-0 w-7 h-7 rounded-lg bg-[#8c9276]/10 dark:bg-[#8c9276]/15 text-[#8c9276] flex items-center justify-center">
-                  <badge.icon className="w-3.5 h-3.5" />
+          {/* ── Mobile / Tablet: Unified Continuous Ribbon (No grid, No divided boxes) ── */}
+          <div className="lg:hidden flex flex-col py-3.5 relative">
+            {/* Left & Right edge fade gradients for seamless visual overflow */}
+            <div className="pointer-events-none absolute left-0 top-0 bottom-0 w-8 z-10 bg-gradient-to-r from-white dark:from-[#1e1e20] to-transparent" />
+            <div className="pointer-events-none absolute right-0 top-0 bottom-0 w-8 z-10 bg-gradient-to-l from-white dark:from-[#1e1e20] to-transparent" />
+
+            {/* Unified horizontal track */}
+            <div
+              ref={mobileTrustScrollRef}
+              onScroll={handleTrustScroll}
+              className="flex items-center gap-5 overflow-x-auto snap-x snap-mandatory scroll-smooth px-6 py-1 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
+            >
+              {trustBadges.map((badge, idx) => (
+                <div
+                  key={idx}
+                  className="flex items-center gap-2.5 shrink-0 snap-center select-none"
+                >
+                  <div className="w-8 h-8 rounded-xl bg-[#8c9276]/10 dark:bg-[#8c9276]/20 text-[#8c9276] dark:text-[#a8b092] flex items-center justify-center shrink-0">
+                    <badge.icon className="w-4 h-4" />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-xs font-semibold text-gray-900 dark:text-gray-100 tracking-tight leading-snug whitespace-nowrap">
+                      {badge.title}
+                    </p>
+                    <p className="text-[10px] text-gray-400 dark:text-gray-500 font-normal leading-tight whitespace-nowrap">
+                      {badge.subtitle}
+                    </p>
+                  </div>
+                  {idx < trustBadges.length - 1 && (
+                    <span className="w-1 h-1 rounded-full bg-gray-300 dark:bg-white/20 ml-2.5 shrink-0" />
+                  )}
                 </div>
-                <div className="min-w-0">
-                  <p className="text-[11px] font-semibold text-gray-800 dark:text-gray-100 leading-tight truncate">
-                    {badge.title}
-                  </p>
-                  <p className="text-[10px] text-gray-400 dark:text-gray-500 leading-tight truncate">
-                    {badge.subtitle}
-                  </p>
-                </div>
-              </div>
-            ))}
+              ))}
+            </div>
+
+            {/* Minimalist interactive indicator dots */}
+            <div className="flex items-center justify-center gap-1.5 pt-2.5">
+              {trustBadges.map((_, i) => (
+                <button
+                  key={i}
+                  type="button"
+                  onClick={() => scrollToTrustBadge(i)}
+                  aria-label={`Ver garantía ${i + 1}`}
+                  className={`h-1 rounded-full transition-all duration-300 ${
+                    activeTrustIndex === i
+                      ? "w-4 bg-[#8c9276]"
+                      : "w-1 bg-gray-200 dark:bg-white/10 hover:bg-gray-300 dark:hover:bg-white/20"
+                  }`}
+                />
+              ))}
+            </div>
           </div>
 
           {/* ── Desktop: 5-column row ── */}
