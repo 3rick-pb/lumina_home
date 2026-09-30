@@ -288,7 +288,7 @@ export default function Home() {
           <div className="absolute inset-0 bg-gradient-to-t from-brand-900/90 via-brand-900/40 to-transparent" />
         </div>
 
-        <div className="container mx-auto px-4 sm:px-6 md:px-8 relative z-10 pt-16 pb-8 sm:pt-20 sm:pb-10 [@media(min-height:760px)]:pt-28 [@media(min-height:760px)]:pb-14 [@media(min-height:860px)]:pt-36 [@media(min-height:860px)]:pb-16 flex flex-col justify-center">
+        <div className="container mx-auto px-4 sm:px-6 md:px-8 relative z-10 pt-20 pb-8 sm:pt-20 sm:pb-10 [@media(min-height:760px)]:pt-28 [@media(min-height:760px)]:pb-14 [@media(min-height:860px)]:pt-36 [@media(min-height:860px)]:pb-16 flex flex-col justify-center">
           <motion.div 
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -300,7 +300,7 @@ export default function Home() {
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, delay: 0.05, ease: [0.16, 1, 0.3, 1] }}
-              className="relative inline-flex items-center px-3.5 py-1 sm:px-4 sm:py-1.5 rounded-full overflow-hidden border border-white/25 text-xs sm:text-sm font-medium text-white mb-2 sm:mb-2.5 [@media(min-height:760px)]:mb-4 [@media(min-height:860px)]:mb-6 shadow-sm [isolation:isolate] transform-gpu select-none"
+              className="relative inline-flex items-center px-3.5 py-1 sm:px-4 sm:py-1.5 rounded-full overflow-hidden border border-white/25 text-xs sm:text-sm font-medium text-white mb-2.5 sm:mb-2.5 [@media(min-height:760px)]:mb-4 [@media(min-height:860px)]:mb-6 shadow-sm [isolation:isolate] transform-gpu select-none"
             >
               <div 
                 className="absolute inset-0 bg-white/15 backdrop-blur-xl pointer-events-none transform-gpu"
@@ -311,25 +311,25 @@ export default function Home() {
 
             <HandwrittenHeroTitle />
             
-            <p className="mt-2 sm:mt-2.5 [@media(min-height:760px)]:mt-4 [@media(min-height:860px)]:mt-6 text-xs sm:text-sm md:text-base [@media(min-height:760px)]:md:text-lg text-gray-200/90 leading-relaxed max-w-lg font-light">
+            <p className="mt-3 sm:mt-2.5 [@media(min-height:760px)]:mt-4 [@media(min-height:860px)]:mt-6 text-sm sm:text-xs md:text-base [@media(min-height:760px)]:md:text-lg text-gray-200/90 leading-relaxed max-w-lg font-light">
               Soluciones de estética, comodidad y tecnología pensadas para cada rincón que habitas.
             </p>
             
-            <div className="mt-3 sm:mt-4 [@media(min-height:760px)]:mt-6 [@media(min-height:860px)]:mt-8 flex flex-col sm:flex-row gap-2.5 sm:gap-3.5">
+            <div className="mt-6 sm:mt-4 [@media(min-height:760px)]:mt-6 [@media(min-height:860px)]:mt-8 flex flex-col sm:flex-row gap-3 sm:gap-2.5 sm:gap-3.5">
               <Link 
                 href="/shop" 
-                className="relative overflow-hidden w-full sm:w-auto rounded-full bg-white/40 hover:bg-white/50 active:bg-white/60 border border-white/60 hover:border-white/80 text-white px-5 sm:px-6 [@media(min-height:760px)]:px-7 py-2 sm:py-2.5 [@media(min-height:760px)]:py-3 flex items-center justify-center gap-2 backdrop-blur-xl shadow-[0_8px_30px_rgba(0,0,0,0.2)] transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] transform-gpu group cursor-pointer select-none"
+                className="relative overflow-hidden w-full sm:w-auto rounded-full bg-white/40 hover:bg-white/50 active:bg-white/60 border border-white/60 hover:border-white/80 text-white px-6 sm:px-5 [@media(min-height:760px)]:px-7 py-3.5 sm:py-2.5 [@media(min-height:760px)]:py-3 flex items-center justify-center gap-2 backdrop-blur-xl shadow-[0_8px_30px_rgba(0,0,0,0.2)] transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] transform-gpu group cursor-pointer select-none"
               >
-                <span className="relative z-10 flex items-center justify-center gap-2 font-medium text-xs sm:text-sm md:text-base text-white drop-shadow-sm">
+                <span className="relative z-10 flex items-center justify-center gap-2 font-medium text-sm sm:text-xs md:text-base text-white drop-shadow-sm">
                   Ver catálogo <ArrowRight className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-1" />
                 </span>
               </Link>
 
               <a 
                 href="#catalog-popular" 
-                className="relative overflow-hidden w-full sm:w-auto rounded-full bg-white/[0.08] hover:bg-white/[0.14] active:bg-white/[0.18] border border-white/30 hover:border-white/50 text-white px-5 sm:px-6 [@media(min-height:760px)]:px-7 py-2 sm:py-2.5 [@media(min-height:760px)]:py-3 flex items-center justify-center backdrop-blur-md shadow-[0_8px_25px_rgba(0,0,0,0.12)] transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] transform-gpu group cursor-pointer select-none"
+                className="relative overflow-hidden w-full sm:w-auto rounded-full bg-white/[0.08] hover:bg-white/[0.14] active:bg-white/[0.18] border border-white/30 hover:border-white/50 text-white px-6 sm:px-5 [@media(min-height:760px)]:px-7 py-3.5 sm:py-2.5 [@media(min-height:760px)]:py-3 flex items-center justify-center backdrop-blur-md shadow-[0_8px_25px_rgba(0,0,0,0.12)] transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] transform-gpu group cursor-pointer select-none"
               >
-                <span className="relative z-10 font-medium text-xs sm:text-sm md:text-base text-white drop-shadow-sm">
+                <span className="relative z-10 font-medium text-sm sm:text-xs md:text-base text-white drop-shadow-sm">
                   Filtrar por categoría
                 </span>
               </a>
