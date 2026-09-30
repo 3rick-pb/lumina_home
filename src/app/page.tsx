@@ -97,14 +97,24 @@ const DEFAULT_TRUST_BADGES: TrustBadgeItem[] = [
     subtitle: "A todo el país",
   },
   {
-    icon: Lock,
-    title: "Pagos seguros",
-    subtitle: "100% cifrado SSL",
+    icon: ShieldCheck,
+    title: "2 años de garantía",
+    subtitle: "Calidad certificada",
+  },
+  {
+    icon: RotateCcw,
+    title: "Devoluciones 30 días",
+    subtitle: "Sin complicaciones",
   },
   {
     icon: Percent,
     title: "Financiación 0%",
     subtitle: "Hasta 12 cuotas",
+  },
+  {
+    icon: Lock,
+    title: "Pagos seguros",
+    subtitle: "100% cifrado SSL",
   },
 ];
 
@@ -119,6 +129,13 @@ export default function Home() {
   const heroRef = useRef<HTMLDivElement>(null);
   const categoriesRef = useRef<HTMLDivElement>(null);
   const popularRef = useRef<HTMLDivElement>(null);
+
+  // Derive the 2 mobile-priority trust badges for small screens
+  const mobileTrustBadges = useMemo(() => {
+    const envios = trustBadges.find(b => b.title.toLowerCase().includes("env")) || trustBadges[0];
+    const pagos = trustBadges.find(b => b.title.toLowerCase().includes("pago") || b.title.toLowerCase().includes("segur")) || trustBadges[trustBadges.length - 1];
+    return [envios, pagos].filter(Boolean);
+  }, [trustBadges]);
 
   // Derive dynamic category cards strictly from active categories in store
   const dynamicCategories = useMemo(() => {
@@ -162,18 +179,11 @@ export default function Home() {
           .order('display_order', { ascending: true });
 
         if (!error && data && data.length > 0) {
-          const mapped = data.map(item => ({
+          setTrustBadges(data.map(item => ({
             title: item.title,
             subtitle: item.subtitle,
             icon: TRUST_ICON_MAP[item.icon_name] || ShieldCheck,
-          }));
-          const filtered = mapped.filter(b => {
-            const t = b.title.toLowerCase();
-            return t.includes("env") || t.includes("pago") || t.includes("financ");
-          });
-          if (filtered.length >= 3) {
-            setTrustBadges(filtered.slice(0, 3));
-          }
+          })));
         }
       } catch (err) {
         console.warn("Could not load store_trust_badges from Supabase:", err);
@@ -334,7 +344,7 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Trust Badges Bar — Compact 3-Badge Unified Banner */}
+      {/* Trust Badges Bar */}
       <motion.div
         id="trust-badges"
         initial={{ opacity: 0, y: 16 }}
@@ -342,32 +352,60 @@ export default function Home() {
         viewport={{ once: false, amount: 0.1 }}
         transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
         style={{ willChange: "transform, opacity" }}
-        className="relative z-30 -mt-6 sm:-mt-8 mb-3 container max-w-4xl mx-auto px-4 sm:px-6 transform-gpu scroll-mt-36"
+        className="relative z-30 -mt-6 sm:-mt-9 mb-3 container mx-auto px-4 sm:px-6 md:px-8 transform-gpu scroll-mt-36"
       >
-        <div className="bg-white/95 dark:bg-[#1e1e20]/95 backdrop-blur-md rounded-xl sm:rounded-2xl border border-black/[0.06] dark:border-white/[0.08] shadow-[0_12px_32px_-8px_rgba(0,0,0,0.06),0_2px_8px_rgba(0,0,0,0.02)] p-2.5 sm:p-3.5 md:p-4">
-          <div className="grid grid-cols-3 items-center">
-            {trustBadges.slice(0, 3).map((badge, idx) => (
+        <div className="bg-white/95 dark:bg-[#1e1e20]/95 backdrop-blur-md rounded-xl sm:rounded-2xl md:rounded-[2rem] border border-black/[0.06] dark:border-white/[0.08] shadow-[0_12px_32px_-8px_rgba(0,0,0,0.06),0_2px_8px_rgba(0,0,0,0.02)] p-2.5 sm:p-4 md:p-5">
+
+          {/* ── Mobile / Pantallas pequeñas (< lg): Solo 2 badges compactos en una sola fila ── */}
+          <div className="grid grid-cols-2 lg:hidden items-center">
+            {mobileTrustBadges.map((badge, idx) => (
               <div
                 key={idx}
-                className="flex items-center justify-center gap-1.5 sm:gap-2.5 md:gap-3 px-1 sm:px-3 relative select-none"
+                className="flex items-center justify-center gap-2 sm:gap-2.5 px-2 relative select-none"
               >
-                <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-lg sm:rounded-xl bg-[#8c9276]/10 dark:bg-[#8c9276]/20 text-[#8c9276] dark:text-[#a8b092] flex items-center justify-center shrink-0">
-                  <badge.icon className="w-3 h-3 sm:w-4 sm:h-4" />
+                <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-lg bg-[#8c9276]/10 dark:bg-[#8c9276]/20 text-[#8c9276] dark:text-[#a8b092] flex items-center justify-center shrink-0">
+                  <badge.icon className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
                 </div>
                 <div className="min-w-0">
-                  <p className="text-[10px] sm:text-xs md:text-sm font-semibold text-gray-900 dark:text-gray-100 tracking-tight leading-tight truncate">
+                  <p className="text-[11px] sm:text-xs font-semibold text-gray-900 dark:text-gray-100 tracking-tight leading-tight truncate">
                     {badge.title}
                   </p>
-                  <p className="text-[8px] sm:text-[10px] md:text-[11px] text-gray-400 font-normal leading-tight truncate">
+                  <p className="text-[9px] sm:text-[10px] text-gray-400 font-normal leading-tight truncate">
                     {badge.subtitle}
                   </p>
                 </div>
-                {idx < 2 && (
-                  <div className="absolute right-0 top-1/2 -translate-y-1/2 h-4 sm:h-6 w-px bg-gray-200/70 dark:bg-white/10" />
+                {idx === 0 && (
+                  <div className="absolute right-0 top-1/2 -translate-y-1/2 h-5 w-px bg-gray-200/70 dark:bg-white/10" />
                 )}
               </div>
             ))}
           </div>
+
+          {/* ── Desktop / Pantallas normales (≥ lg): Todas las 5 garantías de la manera normal ── */}
+          <div className="hidden lg:grid lg:grid-cols-5 items-center">
+            {trustBadges.map((badge, idx) => (
+              <div
+                key={idx}
+                className="flex items-center gap-3 justify-center relative group px-3 select-none"
+              >
+                <div className="w-10 h-10 rounded-2xl bg-[#8c9276]/10 dark:bg-[#8c9276]/20 text-[#8c9276] dark:text-[#a8b092] flex items-center justify-center shrink-0 transition-transform duration-300 group-hover:scale-110 shadow-2xs">
+                  <badge.icon className="w-[18px] h-[18px]" />
+                </div>
+                <div className="min-w-0 select-none">
+                  <p className="text-sm font-semibold text-gray-900 dark:text-gray-100 tracking-tight leading-snug whitespace-nowrap">
+                    {badge.title}
+                  </p>
+                  <p className="text-[11px] text-gray-400 font-normal leading-tight whitespace-nowrap">
+                    {badge.subtitle}
+                  </p>
+                </div>
+                {idx < trustBadges.length - 1 && (
+                  <div className="absolute right-0 top-1/2 -translate-y-1/2 h-8 w-px bg-gray-200/80 dark:bg-white/10" />
+                )}
+              </div>
+            ))}
+          </div>
+
         </div>
       </motion.div>
 
