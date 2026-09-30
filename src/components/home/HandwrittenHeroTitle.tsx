@@ -37,7 +37,7 @@ export const HandwrittenHeroTitle = memo(function HandwrittenHeroTitle() {
         </h1>
 
         <div
-          className="w-full max-w-[330px] sm:max-w-[460px] md:max-w-[540px] lg:max-w-[620px] xl:max-w-[660px] opacity-0 pointer-events-none"
+          className="w-full max-w-[320px] sm:max-w-[440px] md:max-w-[500px] [@media(min-height:760px)]:md:max-w-[560px] [@media(min-height:760px)]:lg:max-w-[620px] [@media(min-height:860px)]:xl:max-w-[660px] opacity-0 pointer-events-none"
           aria-hidden="true"
         >
           <div
@@ -65,7 +65,7 @@ export const HandwrittenHeroTitle = memo(function HandwrittenHeroTitle() {
       <div
         key={replayKey}
         onClick={handleReplay}
-        className="cursor-pointer w-full max-w-[330px] sm:max-w-[460px] md:max-w-[540px] lg:max-w-[620px] xl:max-w-[660px]"
+        className="cursor-pointer w-full max-w-[320px] sm:max-w-[440px] md:max-w-[500px] [@media(min-height:760px)]:md:max-w-[560px] [@media(min-height:760px)]:lg:max-w-[620px] [@media(min-height:860px)]:xl:max-w-[660px]"
         title="Haz clic para volver a ver la animación de escritura"
       >
         {/* Línea 1: "Espacios diseñados" (Blanco) */}
