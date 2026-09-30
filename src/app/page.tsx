@@ -274,18 +274,18 @@ export default function Home() {
       <section 
         id="hero-section" 
         ref={heroRef} 
-        className="relative min-h-[calc(100dvh-2.5rem)] sm:min-h-[calc(100dvh-4rem)] flex flex-col justify-between sm:justify-center overflow-hidden bg-brand-900"
+        className="relative min-h-[calc(100svh-2.5rem)] sm:min-h-[calc(100dvh-4rem)] flex flex-col justify-between sm:justify-center overflow-hidden bg-brand-900"
       >
-        <div className="absolute inset-0 z-0">
+        <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none select-none [contain:paint]">
           <Image 
             src="https://images.unsplash.com/photo-1600210492486-724fe5c67fb0?q=80&w=2000&auto=format&fit=crop" 
             alt="Interior elegante" 
             fill 
             sizes="100vw" 
-            className="object-cover" 
+            className="object-cover pointer-events-none select-none" 
             priority
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-brand-900/90 via-brand-900/40 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-t from-brand-900/90 via-brand-900/40 to-transparent pointer-events-none" />
         </div>
 
         <div className="container mx-auto px-4 sm:px-6 md:px-8 relative z-10 pt-20 pb-4 sm:pt-20 sm:pb-10 [@media(min-height:760px)]:pt-28 [@media(min-height:760px)]:pb-14 [@media(min-height:860px)]:pt-36 [@media(min-height:860px)]:pb-16 flex-1 flex flex-col justify-between sm:justify-center">
@@ -342,17 +342,19 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Trust Badges Bar (Overlapping the exact division between hero and catalog, centered, unified border-radius) */}
-      <motion.div
+      {/* Trust Badges Bar (Centered exactly at 50% across the division seam on all devices) */}
+      <div
         id="envios-garantias"
-        initial={{ opacity: 0, y: 16 }}
-        whileInView={{ opacity: 1, y: 0 }}
-        viewport={{ once: false, amount: 0.1 }}
-        transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-        style={{ willChange: "transform, opacity" }}
-        className="relative z-30 -translate-y-1/2 -mb-6 sm:-mb-7 lg:-mb-8 container mx-auto px-4 sm:px-6 md:px-8 transform-gpu scroll-mt-36"
+        className="relative z-30 -translate-y-1/2 -mb-7 sm:-mb-9 lg:-mb-10 container mx-auto px-4 sm:px-6 md:px-8 scroll-mt-36"
+        style={{ transform: "translateY(-50%)" }}
       >
-        <div className="bg-white dark:bg-[#1e1e20] rounded-2xl border border-black/[0.06] dark:border-white/[0.08] shadow-[0_12px_32px_-8px_rgba(0,0,0,0.06),0_2px_8px_rgba(0,0,0,0.02)] p-2.5 sm:p-3.5 md:p-4">
+        <motion.div
+          initial={{ opacity: 0, scale: 0.98 }}
+          whileInView={{ opacity: 1, scale: 1 }}
+          viewport={{ once: false, amount: 0.1 }}
+          transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
+          className="bg-white dark:bg-[#1e1e20] rounded-2xl border border-black/[0.06] dark:border-white/[0.08] shadow-[0_12px_32px_-8px_rgba(0,0,0,0.06),0_2px_8px_rgba(0,0,0,0.02)] p-2.5 sm:p-3.5 md:p-4"
+        >
 
           {/* ── Mobile / Pantallas pequeñas (< lg): Solo 2 badges compactos en una sola fila ── */}
           <div className="grid grid-cols-2 lg:hidden items-center">
@@ -403,9 +405,8 @@ export default function Home() {
               </div>
             ))}
           </div>
-
-        </div>
-      </motion.div>
+        </motion.div>
+      </div>
 
 
       {/* Immersive Background Wrapper for Catalog Sections */}
