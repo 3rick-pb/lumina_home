@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState, useCallback, memo } from "react";
 import {
   HERO_SVG_LINE1_ANIMATED,
   HERO_SVG_LINE2_ANIMATED,
@@ -8,7 +8,8 @@ import {
   HERO_SVG_LINE2_STATIC,
 } from "./heroTitleData";
 
-export function HandwrittenHeroTitle() {
+export const HandwrittenHeroTitle = memo(function HandwrittenHeroTitle() {
+  const [mounted, setMounted] = useState(false);
   const [replayKey, setReplayKey] = useState(0);
   const [prefersReduced, setPrefersReduced] = useState(false);
 
@@ -18,6 +19,7 @@ export function HandwrittenHeroTitle() {
       setPrefersReduced(mediaQuery.matches);
       const listener = (e: MediaQueryListEvent) => setPrefersReduced(e.matches);
       mediaQuery.addEventListener("change", listener);
+      setMounted(true);
       return () => mediaQuery.removeEventListener("change", listener);
     }
   }, []);
@@ -25,6 +27,31 @@ export function HandwrittenHeroTitle() {
   const handleReplay = useCallback(() => {
     setReplayKey((k) => k + 1);
   }, []);
+
+  // Durante SSR y antes del montaje: renderiza el SVG estático invisible para reservar el espacio exacto (CLS=0) sin iniciar animaciones prematuras que se corten en la hidratación
+  if (!mounted) {
+    return (
+      <div className="relative group/title select-none">
+        <h1 className="sr-only">
+          Espacios diseñados para perdurar
+        </h1>
+
+        <div
+          className="w-full max-w-[340px] sm:max-w-[500px] md:max-w-[600px] lg:max-w-[680px] xl:max-w-[740px] opacity-0 pointer-events-none"
+          aria-hidden="true"
+        >
+          <div
+            className="w-full leading-none [&>svg]:w-full [&>svg]:h-auto [&>svg]:max-w-full [&>svg]:overflow-visible [&>svg]:block"
+            dangerouslySetInnerHTML={{ __html: HERO_SVG_LINE1_STATIC }}
+          />
+          <div
+            className="w-[79.1%] -mt-1 sm:-mt-2 md:-mt-3 leading-none [&>svg]:w-full [&>svg]:h-auto [&>svg]:max-w-full [&>svg]:overflow-visible [&>svg]:block"
+            dangerouslySetInnerHTML={{ __html: HERO_SVG_LINE2_STATIC }}
+          />
+        </div>
+      </div>
+    );
+  }
 
   const line1Svg = prefersReduced ? HERO_SVG_LINE1_STATIC : HERO_SVG_LINE1_ANIMATED;
   const line2Svg = prefersReduced ? HERO_SVG_LINE2_STATIC : HERO_SVG_LINE2_ANIMATED;
@@ -55,4 +82,5 @@ export function HandwrittenHeroTitle() {
       </div>
     </div>
   );
-}
+});
+
