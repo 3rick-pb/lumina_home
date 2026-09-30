@@ -274,7 +274,7 @@ export default function Home() {
       <section 
         id="hero-section" 
         ref={heroRef} 
-        className="relative min-h-[calc(100dvh-3.5rem)] sm:min-h-[calc(100dvh-4rem)] flex flex-col justify-center overflow-hidden bg-brand-900"
+        className="relative min-h-[calc(100dvh-2.5rem)] sm:min-h-[calc(100dvh-4rem)] flex flex-col justify-between sm:justify-center overflow-hidden bg-brand-900"
       >
         <div className="absolute inset-0 z-0">
           <Image 
@@ -288,37 +288,41 @@ export default function Home() {
           <div className="absolute inset-0 bg-gradient-to-t from-brand-900/90 via-brand-900/40 to-transparent" />
         </div>
 
-        <div className="container mx-auto px-4 sm:px-6 md:px-8 relative z-10 pt-20 pb-8 sm:pt-20 sm:pb-10 [@media(min-height:760px)]:pt-28 [@media(min-height:760px)]:pb-14 [@media(min-height:860px)]:pt-36 [@media(min-height:860px)]:pb-16 flex flex-col justify-center">
+        <div className="container mx-auto px-4 sm:px-6 md:px-8 relative z-10 pt-20 pb-4 sm:pt-20 sm:pb-10 [@media(min-height:760px)]:pt-28 [@media(min-height:760px)]:pb-14 [@media(min-height:860px)]:pt-36 [@media(min-height:860px)]:pb-16 flex-1 flex flex-col justify-between sm:justify-center">
           <motion.div 
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
-            className="max-w-3xl transform-gpu"
+            className="max-w-3xl transform-gpu flex-1 flex flex-col justify-between sm:justify-center"
           >
-            {/* Tag Pill with Instant Hardware-Accelerated Glass Blur */}
-            <motion.div 
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.05, ease: [0.16, 1, 0.3, 1] }}
-              className="relative inline-flex items-center px-3.5 py-1 sm:px-4 sm:py-1.5 rounded-full overflow-hidden border border-white/25 text-xs sm:text-sm font-medium text-white mb-2.5 sm:mb-2.5 [@media(min-height:760px)]:mb-4 [@media(min-height:860px)]:mb-6 shadow-sm [isolation:isolate] transform-gpu select-none"
-            >
-              <div 
-                className="absolute inset-0 bg-white/15 backdrop-blur-xl pointer-events-none transform-gpu"
-                style={{ willChange: "transform, backdrop-filter", WebkitBackdropFilter: "blur(16px)" }}
-              />
-              <span className="relative z-10">Artículos premium para tu hogar</span>
-            </motion.div>
+            {/* Bloque superior (Píldora, Título, Subtítulo): Centrado y ordenado en la zona superior */}
+            <div className="flex flex-col justify-center my-auto sm:my-0">
+              {/* Tag Pill with Instant Hardware-Accelerated Glass Blur */}
+              <motion.div 
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, delay: 0.05, ease: [0.16, 1, 0.3, 1] }}
+                className="relative inline-flex self-start items-center px-3.5 py-1 sm:px-4 sm:py-1.5 rounded-full overflow-hidden border border-white/25 text-xs sm:text-sm font-medium text-white mb-2.5 sm:mb-2.5 [@media(min-height:760px)]:mb-4 [@media(min-height:860px)]:mb-6 shadow-sm [isolation:isolate] transform-gpu select-none"
+              >
+                <div 
+                  className="absolute inset-0 bg-white/15 backdrop-blur-xl pointer-events-none transform-gpu"
+                  style={{ willChange: "transform, backdrop-filter", WebkitBackdropFilter: "blur(16px)" }}
+                />
+                <span className="relative z-10">Artículos premium para tu hogar</span>
+              </motion.div>
 
-            <HandwrittenHeroTitle />
+              <HandwrittenHeroTitle />
+              
+              <p className="mt-3 sm:mt-2.5 [@media(min-height:760px)]:mt-4 [@media(min-height:860px)]:mt-6 text-sm sm:text-xs md:text-base [@media(min-height:760px)]:md:text-lg text-gray-200/90 leading-relaxed max-w-lg font-light">
+                Soluciones de estética, comodidad y tecnología pensadas para cada rincón que habitas.
+              </p>
+            </div>
             
-            <p className="mt-3 sm:mt-2.5 [@media(min-height:760px)]:mt-4 [@media(min-height:860px)]:mt-6 text-sm sm:text-xs md:text-base [@media(min-height:760px)]:md:text-lg text-gray-200/90 leading-relaxed max-w-lg font-light">
-              Soluciones de estética, comodidad y tecnología pensadas para cada rincón que habitas.
-            </p>
-            
-            <div className="mt-6 sm:mt-4 [@media(min-height:760px)]:mt-6 [@media(min-height:860px)]:mt-8 flex flex-col sm:flex-row gap-3 sm:gap-2.5 sm:gap-3.5">
+            {/* Bloque inferior de botones: Más abajo, apegados a la barra de garantías, gruesos como antes */}
+            <div className="mt-auto sm:mt-4 [@media(min-height:760px)]:mt-6 [@media(min-height:860px)]:mt-8 pb-3 sm:pb-0 flex flex-col sm:flex-row gap-2.5 sm:gap-2.5 sm:gap-3.5">
               <Link 
                 href="/shop" 
-                className="relative overflow-hidden w-full sm:w-auto rounded-full bg-white/40 hover:bg-white/50 active:bg-white/60 border border-white/60 hover:border-white/80 text-white px-6 sm:px-5 [@media(min-height:760px)]:px-7 py-3.5 sm:py-2.5 [@media(min-height:760px)]:py-3 flex items-center justify-center gap-2 backdrop-blur-xl shadow-[0_8px_30px_rgba(0,0,0,0.2)] transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] transform-gpu group cursor-pointer select-none"
+                className="relative overflow-hidden w-full sm:w-auto rounded-full bg-white/40 hover:bg-white/50 active:bg-white/60 border border-white/60 hover:border-white/80 text-white px-6 sm:px-5 [@media(min-height:760px)]:px-7 py-4 sm:py-2.5 [@media(min-height:760px)]:py-3 flex items-center justify-center gap-2 backdrop-blur-xl shadow-[0_8px_30px_rgba(0,0,0,0.2)] transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] transform-gpu group cursor-pointer select-none min-h-[50px] sm:min-h-0"
               >
                 <span className="relative z-10 flex items-center justify-center gap-2 font-medium text-sm sm:text-xs md:text-base text-white drop-shadow-sm">
                   Ver catálogo <ArrowRight className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-1" />
@@ -327,7 +331,7 @@ export default function Home() {
 
               <a 
                 href="#catalog-popular" 
-                className="relative overflow-hidden w-full sm:w-auto rounded-full bg-white/[0.08] hover:bg-white/[0.14] active:bg-white/[0.18] border border-white/30 hover:border-white/50 text-white px-6 sm:px-5 [@media(min-height:760px)]:px-7 py-3.5 sm:py-2.5 [@media(min-height:760px)]:py-3 flex items-center justify-center backdrop-blur-md shadow-[0_8px_25px_rgba(0,0,0,0.12)] transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] transform-gpu group cursor-pointer select-none"
+                className="relative overflow-hidden w-full sm:w-auto rounded-full bg-white/[0.08] hover:bg-white/[0.14] active:bg-white/[0.18] border border-white/30 hover:border-white/50 text-white px-6 sm:px-5 [@media(min-height:760px)]:px-7 py-4 sm:py-2.5 [@media(min-height:760px)]:py-3 flex items-center justify-center backdrop-blur-md shadow-[0_8px_25px_rgba(0,0,0,0.12)] transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] transform-gpu group cursor-pointer select-none min-h-[50px] sm:min-h-0"
               >
                 <span className="relative z-10 font-medium text-sm sm:text-xs md:text-base text-white drop-shadow-sm">
                   Filtrar por categoría
@@ -338,7 +342,7 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Trust Badges Bar (Overlapping the exact division between hero and catalog) */}
+      {/* Trust Badges Bar (Overlapping the exact division between hero and catalog, centered, unified border-radius) */}
       <motion.div
         id="envios-garantias"
         initial={{ opacity: 0, y: 16 }}
@@ -346,9 +350,9 @@ export default function Home() {
         viewport={{ once: false, amount: 0.1 }}
         transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
         style={{ willChange: "transform, opacity" }}
-        className="relative z-30 -mt-8 sm:-mt-10 lg:-mt-11 mb-2 sm:mb-3 container mx-auto px-4 sm:px-6 md:px-8 transform-gpu scroll-mt-36"
+        className="relative z-30 -translate-y-1/2 -mb-6 sm:-mb-7 lg:-mb-8 container mx-auto px-4 sm:px-6 md:px-8 transform-gpu scroll-mt-36"
       >
-        <div className="bg-white dark:bg-[#1e1e20] rounded-xl sm:rounded-2xl md:rounded-[2rem] border border-black/[0.06] dark:border-white/[0.08] shadow-[0_12px_32px_-8px_rgba(0,0,0,0.06),0_2px_8px_rgba(0,0,0,0.02)] p-2.5 sm:p-3.5 md:p-4">
+        <div className="bg-white dark:bg-[#1e1e20] rounded-2xl border border-black/[0.06] dark:border-white/[0.08] shadow-[0_12px_32px_-8px_rgba(0,0,0,0.06),0_2px_8px_rgba(0,0,0,0.02)] p-2.5 sm:p-3.5 md:p-4">
 
           {/* ── Mobile / Pantallas pequeñas (< lg): Solo 2 badges compactos en una sola fila ── */}
           <div className="grid grid-cols-2 lg:hidden items-center">
