@@ -12,6 +12,7 @@ const config: Config = {
         sans: ["var(--font-inter)", "sans-serif"],
         display: ["var(--font-lora)", "serif"],
         moonwalk: ["var(--font-moonwalk)", "'Moonwalk'", "sans-serif"],
+        caveat: ["'Caveat'", "cursive", "sans-serif"],
       },
       colors: {
         background: "var(--background)",

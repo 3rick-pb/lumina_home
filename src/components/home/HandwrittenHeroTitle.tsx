@@ -1,85 +1,58 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
-import { TegakiRenderer } from "tegaki/react";
-import caveatRaw from "tegaki/fonts/caveat";
-
-// Synthesize 'ñ' in Caveat font bundle so Spanish text renders seamlessly
-const caveatWithSpanish = (() => {
-  if (!caveatRaw || !caveatRaw.glyphData) return caveatRaw;
-  const nGlyph = caveatRaw.glyphData["n"];
-  if (!nGlyph) return caveatRaw;
-  
-  // Create a natural curved tilde stroke positioned above 'n'
-  const tildeStroke = {
-    p: [
-      [nGlyph.w * 0.22, 690, 14],
-      [nGlyph.w * 0.44, 730, 16],
-      [nGlyph.w * 0.66, 690, 16],
-      [nGlyph.w * 0.88, 720, 14],
-    ],
-    d: nGlyph.t,
-    a: 0.22,
-  };
-
-  return {
-    ...caveatRaw,
-    glyphData: {
-      ...caveatRaw.glyphData,
-      "ñ": {
-        w: nGlyph.w,
-        t: nGlyph.t + 0.22,
-        s: [...nGlyph.s, tildeStroke],
-      },
-    },
-  };
-})();
+import React, { useEffect, useState, useCallback } from "react";
+import {
+  HERO_SVG_LINE1_ANIMATED,
+  HERO_SVG_LINE2_ANIMATED,
+  HERO_SVG_LINE1_STATIC,
+  HERO_SVG_LINE2_STATIC,
+} from "./heroTitleData";
 
 export function HandwrittenHeroTitle() {
-  const [mounted, setMounted] = useState(false);
-  const [startSecondLine, setStartSecondLine] = useState(false);
+  const [replayKey, setReplayKey] = useState(0);
+  const [prefersReduced, setPrefersReduced] = useState(false);
 
   useEffect(() => {
-    setMounted(true);
-    const timer = setTimeout(() => {
-      setStartSecondLine(true);
-    }, 1400);
-    return () => clearTimeout(timer);
+    if (typeof window !== "undefined") {
+      const mediaQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
+      setPrefersReduced(mediaQuery.matches);
+      const listener = (e: MediaQueryListEvent) => setPrefersReduced(e.matches);
+      mediaQuery.addEventListener("change", listener);
+      return () => mediaQuery.removeEventListener("change", listener);
+    }
   }, []);
 
-  if (!mounted) {
-    return (
-      <h1 className="text-3xl sm:text-5xl md:text-6xl lg:text-7xl font-sans font-medium text-white leading-[1.15] sm:leading-[1.1] tracking-tight">
-        Espacios diseñados <br />
-        <span className="font-display italic font-bold text-[#d2b48c]">para perdurar</span>
-      </h1>
-    );
-  }
+  const handleReplay = useCallback(() => {
+    setReplayKey((k) => k + 1);
+  }, []);
+
+  const line1Svg = prefersReduced ? HERO_SVG_LINE1_STATIC : HERO_SVG_LINE1_ANIMATED;
+  const line2Svg = prefersReduced ? HERO_SVG_LINE2_STATIC : HERO_SVG_LINE2_ANIMATED;
 
   return (
-    <h1 className="text-3xl sm:text-5xl md:text-6xl lg:text-7xl font-sans font-medium text-white leading-[1.15] sm:leading-[1.1] tracking-tight">
-      <span className="block text-white">
-        <TegakiRenderer
-          font={caveatWithSpanish}
-          as="span"
-          time={{ mode: "uncontrolled", speed: 1.1 }}
-        >
-          Espacios diseñados
-        </TegakiRenderer>
-      </span>
-      <span className="font-display italic font-bold text-[#d2b48c] block mt-0.5 sm:mt-1 min-h-[1.2em]">
-        {startSecondLine ? (
-          <TegakiRenderer
-            font={caveatWithSpanish}
-            as="span"
-            time={{ mode: "uncontrolled", speed: 1.2 }}
-          >
-            para perdurar
-          </TegakiRenderer>
-        ) : (
-          <span className="opacity-0 select-none">para perdurar</span>
-        )}
-      </span>
-    </h1>
+    <div className="relative group/title select-none">
+      <h1 className="sr-only">
+        Espacios diseñados para perdurar
+      </h1>
+
+      <div
+        key={replayKey}
+        onClick={handleReplay}
+        className="cursor-pointer"
+        title="Haz clic para volver a ver la animación de escritura"
+      >
+        {/* Línea 1: "Espacios diseñados" (Blanco) */}
+        <div
+          className="w-full max-w-[310px] sm:max-w-[460px] md:max-w-[580px] lg:max-w-[660px] xl:max-w-[720px] leading-none"
+          dangerouslySetInnerHTML={{ __html: line1Svg }}
+        />
+
+        {/* Línea 2: "para perdurar" (Tono dorado cálido #d2b48c) */}
+        <div
+          className="w-full max-w-[230px] sm:max-w-[340px] md:max-w-[440px] lg:max-w-[500px] xl:max-w-[550px] -mt-1 sm:-mt-2 md:-mt-3 leading-none"
+          dangerouslySetInnerHTML={{ __html: line2Svg }}
+        />
+      </div>
+    </div>
   );
 }
