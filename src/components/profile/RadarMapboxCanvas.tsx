@@ -1312,7 +1312,7 @@ export function RadarMapboxCanvas({
   const prevZoomCommandRef = useRef<number>(zoomCommand);
   const prevZoomStepSeqRef = useRef<number>(0);
   const [, setRenderTick] = useState(0);
-  const [internalMapStyleMode, setInternalMapStyleMode] = useState<MapboxOfficialStyleId>("dark-v11");
+  const [internalMapStyleMode, setInternalMapStyleMode] = useState<MapboxOfficialStyleId>("satellite-streets-v12");
   const mapStyleMode = activeMapStyle || internalMapStyleMode;
 
   const handleSelectMapStyle = useCallback((style: MapboxOfficialStyleId) => {

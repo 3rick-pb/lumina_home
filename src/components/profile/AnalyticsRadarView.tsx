@@ -51,7 +51,6 @@ import {
   getExpectedCityOrPostalCenter,
   cleanEcuadorStreetForGeocoding,
   type MapboxOfficialStyleId,
-  MAPBOX_OFFICIAL_STYLES,
 } from "./RadarMapboxCanvas";
 
 export type { ConnectedClient } from "@/lib/radarStore";
@@ -265,8 +264,7 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
   const [isMobilePanelOpen, setIsMobilePanelOpen] = useState<boolean>(false);
   const [isCountryMenuOpen, setIsCountryMenuOpen] = useState<boolean>(false);
   const [isSearchBarHidden, setIsSearchBarHidden] = useState<boolean>(true);
-  const [mapStyleMode, setMapStyleMode] = useState<MapboxOfficialStyleId>("dark-v11");
-  const [isStyleMenuOpen, setIsStyleMenuOpen] = useState<boolean>(false);
+  const [mapStyleMode, setMapStyleMode] = useState<MapboxOfficialStyleId>("satellite-streets-v12");
   const scrollTrackRef = useRef<HTMLDivElement>(null);
   const [isMapLoaded, setIsMapLoaded] = useState<boolean>(true);
 
@@ -344,7 +342,6 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
         setExpandedClusterCity(null);
         setHoveredClusterKey(null);
         setIsCountryMenuOpen(false);
-        setIsStyleMenuOpen(false);
         setIsSearchFocused(false);
         setIsSearchBarHidden(true);
       }
@@ -1857,7 +1854,6 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
           onMapStyleChange={(st) => setMapStyleMode(st)}
           onCanvasClick={() => {
             setSelectedClientId(null);
-            setIsStyleMenuOpen(false);
             if (isSearchFocused || !isSearchBarHidden) {
               setIsSearchFocused(false);
               setIsSearchBarHidden(true);
@@ -1905,7 +1901,6 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
             }`}
             onClick={() => {
               if (isSearchBarHidden) {
-                setIsStyleMenuOpen(false);
                 setIsSearchBarHidden(false);
                 setIsSearchFocused(true);
                 setTimeout(() => {
@@ -1921,7 +1916,6 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
               onClick={(e) => {
                 e.stopPropagation();
                 if (isSearchBarHidden) {
-                  setIsStyleMenuOpen(false);
                   setIsSearchBarHidden(false);
                   setIsSearchFocused(true);
                   setTimeout(() => {
@@ -2190,87 +2184,18 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
               isSearchBarHidden ? "pointer-events-auto" : "pointer-events-none"
             }`}
           >
-            {/* 1. MAP STYLE SWITCHER DROPDOWN (Dark · Streets · Satellite Streets) */}
-            <div className="relative pointer-events-auto">
-              <button
-                type="button"
-                onClick={() => setIsStyleMenuOpen((prev) => !prev)}
-                style={{ backgroundColor: "rgba(10, 14, 13, 0.96)" }}
-                className="flex items-center h-10 px-3 sm:px-3.5 rounded-full hover:bg-black backdrop-blur-2xl border border-white/20 hover:border-white/35 text-white text-xs font-semibold gap-2 shadow-[0_14px_32px_rgba(0,0,0,0.75)] transition-all cursor-pointer active:scale-95"
-                title="Cambiar entre los 3 estilos de mapa (Dark, Streets, Satellite Streets)"
-              >
-                <span className="w-5 h-5 rounded-full bg-white/15 flex items-center justify-center text-white shrink-0">
-                  {mapStyleMode === "dark-v11" ? (
-                    <Layers className="w-3 h-3" />
-                  ) : mapStyleMode === "streets-v12" ? (
-                    <MapIcon className="w-3 h-3" />
-                  ) : (
-                    <Satellite className="w-3 h-3" />
-                  )}
-                </span>
-                <span className="hidden xl:inline font-sans text-xs whitespace-nowrap">
-                  {mapStyleMode === "dark-v11"
-                    ? "Estilo Dark"
-                    : mapStyleMode === "streets-v12"
-                    ? "Estilo Relieve"
-                    : "Estilo Satélite"}
-                </span>
-                <ChevronDown
-                  className={`w-3.5 h-3.5 text-white/60 transition-transform duration-200 ${
-                    isStyleMenuOpen ? "rotate-180 text-white" : ""
-                  }`}
-                />
-              </button>
-
-              {/* Top Bar Map Style Dropdown Popover */}
-              <AnimatePresence>
-                {isStyleMenuOpen && isSearchBarHidden && (
-                  <motion.div
-                    initial={{ opacity: 0, y: 6, scale: 0.95 }}
-                    animate={{ opacity: 1, y: 0, scale: 1 }}
-                    exit={{ opacity: 0, y: 4, scale: 0.95 }}
-                    transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
-                    style={{ backgroundColor: "rgba(10, 14, 13, 0.98)" }}
-                    className="absolute right-0 top-12 w-56 p-2 rounded-2xl backdrop-blur-2xl border border-white/20 shadow-[0_20px_50px_rgba(0,0,0,0.85)] space-y-1 z-50 pointer-events-auto"
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    <div className="px-2.5 py-1 text-[9.5px] font-mono uppercase tracking-wider text-white/60 font-bold flex items-center justify-between border-b border-white/10 pb-1.5 mb-1">
-                      <span>Estilos de Mapa</span>
-                      <span className="text-emerald-400">Mapbox HD</span>
-                    </div>
-                    {MAPBOX_OFFICIAL_STYLES.map((styleItem) => {
-                      const isActive = mapStyleMode === styleItem.id;
-                      return (
-                        <button
-                          key={styleItem.id}
-                          type="button"
-                          onClick={() => {
-                            setMapStyleMode(styleItem.id);
-                            setIsStyleMenuOpen(false);
-                          }}
-                          className={`w-full px-2.5 py-2 rounded-xl text-xs font-sans flex items-center justify-between gap-2 transition-all cursor-pointer ${
-                            isActive
-                              ? "bg-white text-gray-950 font-bold shadow-sm"
-                              : "text-white/85 hover:text-white hover:bg-white/10 font-medium"
-                          }`}
-                        >
-                          <div className="flex items-center gap-2 min-w-0">
-                            {styleItem.id === "dark-v11" ? (
-                              <Layers className="w-3.5 h-3.5 shrink-0" />
-                            ) : styleItem.id === "streets-v12" ? (
-                              <MapIcon className="w-3.5 h-3.5 shrink-0" />
-                            ) : (
-                              <Satellite className="w-3.5 h-3.5 shrink-0" />
-                            )}
-                            <span className="truncate">{styleItem.name}</span>
-                          </div>
-                          {isActive && <Check className="w-3.5 h-3.5 text-gray-950 shrink-0" />}
-                        </button>
-                      );
-                    })}
-                  </motion.div>
-                )}
-              </AnimatePresence>
+            {/* 1. MAP STYLE BADGE (Locked to Unique Satellite Streets Style) */}
+            <div
+              style={{ backgroundColor: "rgba(10, 14, 13, 0.96)" }}
+              className="flex items-center h-10 px-3 sm:px-3.5 rounded-full backdrop-blur-2xl border border-white/20 text-white text-xs font-semibold gap-2 shadow-[0_14px_32px_rgba(0,0,0,0.75)] select-none pointer-events-auto"
+              title="Estilo satélite con calles de alta resolución (Satellite Streets)"
+            >
+              <span className="w-5 h-5 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0">
+                <Satellite className="w-3 h-3" />
+              </span>
+              <span className="hidden xl:inline font-sans text-xs whitespace-nowrap">
+                Satellite Streets
+              </span>
             </div>
 
             {/* 2. FIXED-GEOMETRY DENSITY MODE DOCK (Disperso / Agrupar + 1x/2x) */}

@@ -3,7 +3,7 @@
 import React, { useEffect, useRef, useState, useCallback } from "react";
 import mapboxgl from "mapbox-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
-import { Plus, Minus, Crosshair, Search, Loader2, MapPin, ChevronDown, Layers, Check } from "lucide-react";
+import { Plus, Minus, Crosshair, Search, Loader2, MapPin, Satellite } from "lucide-react";
 
 export interface ResolvedMapAddress {
   street?: string;
@@ -70,27 +70,18 @@ function isRealMapboxToken(token: string): boolean {
 }
 
 function getFallbackTileUrl(
-  style: MiniMapStyle,
+  _style: MiniMapStyle,
   z: number,
   x: number,
   y: number
 ): string {
-  const maxNative = style === "streets-v12" ? 15 : 18;
-  const safeZ = Math.max(1, Math.min(maxNative, z));
+  // Google Maps Satélite Híbrido con Calles (Satellite Streets - lyrs=y)
+  const safeZ = Math.max(1, Math.min(18, z));
   const maxIndex = Math.pow(2, safeZ);
   const wrappedX = ((x % maxIndex) + maxIndex) % maxIndex;
   const sub = Math.abs(wrappedX + y) % 4;
 
-  if (style === "satellite-streets-v12") {
-    // 3. Google Maps Satélite Híbrido (lyrs=y)
-    return `https://mt${sub}.google.com/vt/lyrs=y&hl=es&x=${wrappedX}&y=${y}&z=${safeZ}`;
-  }
-  if (style === "streets-v12") {
-    // 2. Google Maps Relieve Topográfico (lyrs=p, maxNative=15)
-    return `https://mt${sub}.google.com/vt/lyrs=p&hl=es&x=${wrappedX}&y=${y}&z=${safeZ}`;
-  }
-  // 1. Google Maps Estándar / Dark (lyrs=m)
-  return `https://mt${sub}.google.com/vt/lyrs=m&hl=es&x=${wrappedX}&y=${y}&z=${safeZ}`;
+  return `https://mt${sub}.google.com/vt/lyrs=y&hl=es&x=${wrappedX}&y=${y}&z=${safeZ}`;
 }
 
 export default function InteractiveAddressMap({
@@ -112,10 +103,9 @@ export default function InteractiveAddressMap({
       ? initialLng
       : -78.4678;
 
-  // Always use the instant High-DPI Canvas engine so Dark, Streets, and Satellite load in 0ms and never show an API Key prompt
+  // Always use the instant High-DPI Canvas engine so Satellite Streets loads in 0ms and never shows an API Key prompt
   const [useNativeMapbox, setUseNativeMapbox] = useState<boolean>(false);
-  const [mapStyle, setMapStyle] = useState<MiniMapStyle>("streets-v12");
-  const [isStyleMenuOpen, setIsStyleMenuOpen] = useState<boolean>(false);
+  const [mapStyle] = useState<MiniMapStyle>("satellite-streets-v12");
   const [pin, setPin] = useState<{ lat: number; lng: number }>({
     lat: validInitLat,
     lng: validInitLng,
@@ -669,60 +659,11 @@ export default function InteractiveAddressMap({
           </div>
 
           <div
-            className="relative pointer-events-auto"
-            onPointerDown={(e) => e.stopPropagation()}
+            className="flex items-center gap-1.5 bg-white/95 dark:bg-black/85 backdrop-blur-md px-2.5 py-1.5 rounded-xl border border-black/10 dark:border-white/15 shadow-sm text-[10px] font-bold text-gray-800 dark:text-gray-200 pointer-events-auto select-none"
+            title="Estilo satélite con calles de alta resolución"
           >
-            <button
-              type="button"
-              onClick={() => setIsStyleMenuOpen((p) => !p)}
-              className="flex items-center gap-1.5 bg-white/95 dark:bg-black/85 backdrop-blur-md px-2.5 py-1.5 rounded-xl border border-black/10 dark:border-white/15 shadow-sm text-[10px] font-bold text-gray-800 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-white/10 transition-all cursor-pointer"
-            >
-              <Layers className="w-3 h-3 text-blue-600 shrink-0" />
-              <span>
-                {mapStyle === "streets-v12"
-                  ? "Relieve"
-                  : mapStyle === "dark-v11"
-                  ? "Dark"
-                  : "Satélite"}
-              </span>
-              <ChevronDown
-                className={`w-3 h-3 opacity-60 transition-transform duration-200 ${
-                  isStyleMenuOpen ? "rotate-180" : ""
-                }`}
-              />
-            </button>
-
-            {isStyleMenuOpen && (
-              <div className="absolute right-0 top-full mt-1.5 w-44 p-1 rounded-xl bg-white/98 dark:bg-[#141518]/98 backdrop-blur-xl border border-black/10 dark:border-white/15 shadow-xl space-y-0.5 z-30">
-                {(
-                  [
-                    { id: "streets-v12", label: "Relieve (Streets)" },
-                    { id: "dark-v11", label: "Dark (Google)" },
-                    { id: "satellite-streets-v12", label: "Google Satélite" },
-                  ] as const
-                ).map((st) => {
-                  const active = mapStyle === st.id;
-                  return (
-                    <button
-                      key={st.id}
-                      type="button"
-                      onClick={() => {
-                        setMapStyle(st.id);
-                        setIsStyleMenuOpen(false);
-                      }}
-                      className={`w-full px-2.5 py-1.5 rounded-lg text-[10.5px] font-semibold flex items-center justify-between transition-all cursor-pointer ${
-                        active
-                          ? "bg-gray-900 dark:bg-white text-white dark:text-gray-900"
-                          : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/10"
-                      }`}
-                    >
-                      <span>{st.label}</span>
-                      {active && <Check className="w-3 h-3 shrink-0" />}
-                    </button>
-                  );
-                })}
-              </div>
-            )}
+            <Satellite className="w-3 h-3 text-emerald-500 shrink-0" />
+            <span>Satellite Streets</span>
           </div>
         </div>
 
