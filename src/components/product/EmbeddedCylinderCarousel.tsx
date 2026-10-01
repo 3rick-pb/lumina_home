@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useCallback, useMemo } from "react";
+import React, { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
@@ -110,6 +110,8 @@ export function EmbeddedCylinderCarousel({
   }, [config?.slides, productImages, productTitle, category]);
 
   const N = slides.length;
+  const sectionRef = useRef<HTMLElement>(null);
+  const [isVisible, setIsVisible] = useState(true);
   const [activeIndex, setActiveIndex] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
   const [isPlaying, setIsPlaying] = useState(true);
@@ -124,16 +126,31 @@ export function EmbeddedCylinderCarousel({
     setActiveIndex((prev) => (prev - 1 + N) % N);
   }, [N]);
 
+  // Pause off-screen 3D rotation
+  useEffect(() => {
+    const el = sectionRef.current;
+    if (!el || typeof IntersectionObserver === "undefined") return;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        setIsVisible(entry.isIntersecting);
+      },
+      { threshold: 0.1 }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
   // Autoplay Continuous Loop: Reliable, uninterrupted rotation
   useEffect(() => {
-    if (!isPlaying || isDragging || lightboxIndex !== null) return;
+    if (!isPlaying || isDragging || lightboxIndex !== null || !isVisible) return;
 
     const interval = setInterval(() => {
       setActiveIndex((prev) => (prev + 1) % N);
     }, Math.max(1800, autoplaySpeed * 1000));
 
     return () => clearInterval(interval);
-  }, [isPlaying, isDragging, lightboxIndex, autoplaySpeed, N]);
+  }, [isPlaying, isDragging, lightboxIndex, isVisible, autoplaySpeed, N]);
 
   // Cylinder radius and angle step for 3D curved horizontal arc
   const RADIUS = 620; // Radius in px of the 3D cylinder
@@ -144,6 +161,7 @@ export function EmbeddedCylinderCarousel({
 
   return (
     <section 
+      ref={sectionRef}
       className={cn("relative w-full py-16 sm:py-24 overflow-hidden select-none", className)}
     >
       {/* Background Ambience / Subtle Lighting Glow */}

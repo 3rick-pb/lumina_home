@@ -179,7 +179,7 @@ export function Isometric3DGallery({
   const [isLightboxOpen, setIsLightboxOpen] = useState(false);
   const [isPlaying, setIsPlaying] = useState(autoplay);
   const [isHovered, setIsHovered] = useState(false);
-  const [progress, setProgress] = useState(0);
+  const [isVisible, setIsVisible] = useState(true);
   const [dragStartX, setDragStartX] = useState(0);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -211,34 +211,38 @@ export function Isometric3DGallery({
 
   const handleNext = useCallback(() => {
     setActiveIndex((prev) => (prev + 1) % N);
-    setProgress(0);
   }, [N]);
 
   const handlePrev = useCallback(() => {
     setActiveIndex((prev) => (prev - 1 + N) % N);
-    setProgress(0);
   }, [N]);
 
-  // Autoplay Continuous Loop Timer
+  // Pause off-screen rendering/animation
   useEffect(() => {
-    if (!isPlaying || isHovered || isLightboxOpen) return;
+    const el = containerRef.current;
+    if (!el || typeof IntersectionObserver === "undefined") return;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        setIsVisible(entry.isIntersecting);
+      },
+      { threshold: 0.1 }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
+  // Autoplay Continuous Loop Timer (0 re-renders between slides)
+  useEffect(() => {
+    if (!isPlaying || isHovered || isLightboxOpen || !isVisible) return;
 
     const intervalMs = Math.max(2000, autoplaySpeed * 1000);
-    const tickMs = 100;
-    let elapsed = 0;
-
     const timer = setInterval(() => {
-      elapsed += tickMs;
-      setProgress(Math.min(100, (elapsed / intervalMs) * 100));
-      if (elapsed >= intervalMs) {
-        elapsed = 0;
-        setProgress(0);
-        setActiveIndex((prev) => (prev + 1) % N);
-      }
-    }, tickMs);
+      setActiveIndex((prev) => (prev + 1) % N);
+    }, intervalMs);
 
     return () => clearInterval(timer);
-  }, [isPlaying, isHovered, isLightboxOpen, autoplaySpeed, N, activeIndex]);
+  }, [isPlaying, isHovered, isLightboxOpen, isVisible, autoplaySpeed, N]);
 
   return (
     <div className={cn("relative w-full select-none", className)}>
@@ -360,7 +364,6 @@ export function Isometric3DGallery({
                   }
                   onClick={() => {
                     setActiveIndex(i);
-                    setProgress(0);
                   }}
                   style={{
                     zIndex: pos.zIndex,
@@ -424,11 +427,14 @@ export function Isometric3DGallery({
         {/* Bottom Interactive Navigation Dock */}
         <div className="relative z-20 flex items-center justify-between pt-3 border-t border-white/10">
           {/* Autoplay Progress Line Indicator on Dock */}
-          {isPlaying && (
+          {isPlaying && !isHovered && isVisible && (
             <div className="absolute top-0 left-0 right-0 h-[2px] bg-white/10 overflow-hidden">
               <div 
-                className="h-full bg-[#8c9276] transition-all duration-100 ease-linear"
-                style={{ width: `${progress}%` }}
+                key={activeIndex}
+                className="h-full bg-[#8c9276] origin-left"
+                style={{
+                  animation: `galleryLinearProgress ${Math.max(2000, autoplaySpeed * 1000)}ms linear forwards`
+                }}
               />
             </div>
           )}
@@ -440,7 +446,6 @@ export function Isometric3DGallery({
                 key={idx}
                 onClick={() => {
                   setActiveIndex(idx);
-                  setProgress(0);
                 }}
                 className={cn(
                   "h-1.5 rounded-full transition-all duration-300 cursor-pointer",
@@ -515,7 +520,6 @@ export function Isometric3DGallery({
                   key={idx}
                   onClick={() => {
                     setActiveIndex(idx);
-                    setProgress(0);
                   }}
                   className={cn(
                     "relative w-14 h-14 rounded-xl overflow-hidden border-2 transition-all shrink-0 cursor-pointer",
