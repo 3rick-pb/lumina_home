@@ -87,7 +87,7 @@ function ProductDetailContent({ product, products }: { product: CatalogProduct; 
       });
     }
     return () => resetProductAmbient();
-  }, [product, activeColor, setProductAmbient, resetProductAmbient]);
+  }, [product?.id, product?.category, activeColor, product?.colors, setProductAmbient, resetProductAmbient]);
 
   const effectivePrice = React.useMemo(() => {
     if (!selectedCombo) return product.price;

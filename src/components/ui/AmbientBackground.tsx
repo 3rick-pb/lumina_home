@@ -7,21 +7,21 @@ import { useAmbientStore, CATEGORY_THEMES } from "@/lib/ambientStore";
 export function AmbientBackground() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const { theme, setCategoryTheme, setTheme } = useAmbientStore();
+  const { theme, isProductView, setCategoryTheme, setTheme } = useAmbientStore();
 
   const isAuthPage = pathname?.startsWith("/auth");
 
-  // Sync category query param if present
+  // Sync category query param if present and not in product view
   useEffect(() => {
     if (isAuthPage) {
       setTheme(CATEGORY_THEMES.auth);
       return;
     }
     const cat = searchParams?.get("category");
-    if (cat) {
+    if (cat && !isProductView) {
       setCategoryTheme(cat);
     }
-  }, [pathname, searchParams, isAuthPage, setCategoryTheme, setTheme]);
+  }, [pathname, searchParams, isAuthPage, isProductView, setCategoryTheme, setTheme]);
 
   // Auth pages have multi-axis, continuous screensaver-style drifting fluid matte aura
   if (isAuthPage) {
@@ -53,6 +53,40 @@ export function AmbientBackground() {
     );
   }
 
+  // 1. In Product Detail View: The ENTIRE background matches the browser toolbar color exactly!
+  // This creates a 100% unified, seamless canvas ("toda la pantalla sea una sola al momento de entrar a un producto")
+  if (isProductView) {
+    const unifiedColor = theme.browserColor || theme.c1 || "#8c9276";
+    return (
+      <div 
+        className="fixed inset-0 pointer-events-none -z-10 overflow-hidden [contain:strict] [transform:translateZ(0)]"
+        style={{
+          backgroundColor: unifiedColor,
+          transition: "background-color 0.8s cubic-bezier(0.16, 1, 0.3, 1)",
+          willChange: "background-color"
+        }}
+      >
+        {/* Soft atmospheric gradient highlights to give depth to the matte canvas */}
+        <div 
+          className="absolute -top-[15%] left-1/2 -translate-x-1/2 w-[120vw] h-[70vh] rounded-full opacity-35 pointer-events-none transform-gpu"
+          style={{
+            background: `radial-gradient(ellipse at center, rgba(255,255,255,0.45) 0%, rgba(255,255,255,0) 75%)`
+          }}
+        />
+        {/* Subtle bottom vignette for tactile warmth */}
+        <div 
+          className="absolute -bottom-[10%] -right-[10%] w-[60vw] h-[60vw] rounded-full opacity-15 pointer-events-none transform-gpu"
+          style={{
+            background: `radial-gradient(circle at center, rgba(0,0,0,0.06) 0%, rgba(0,0,0,0) 70%)`
+          }}
+        />
+        {/* Fine velvety matte veil */}
+        <div className="absolute inset-0 bg-white/[0.03] pointer-events-none" />
+      </div>
+    );
+  }
+
+  // 2. In Catalog / Home / Shop View: Neutral editorial canvas with gentle scroll-driven ambient orbs
   return (
     <div className="fixed inset-0 pointer-events-none -z-10 overflow-hidden bg-[#faf9f6] [contain:strict] [transform:translateZ(0)]">
       {/* Primary Atmospheric Glow (Top Left) */}

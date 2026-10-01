@@ -34,86 +34,86 @@ export function syncBrowserThemeColor(color: string) {
 
 export const CATEGORY_THEMES: Record<string, AmbientTheme> = {
   iluminacion: {
-    c1: "#fef08a", // Cálido ámbar suave
-    c2: "#fde047", // Luz dorada suave
-    c3: "#fef9c3", // Crema iluminada
+    c1: "#fef08a",
+    c2: "#fde047",
+    c3: "#fef9c3",
     mood: "iluminacion",
-    browserColor: "#c89e3a",
+    browserColor: "#edd387", // Cálido ámbar mate visible
   },
   aromaterapia: {
-    c1: "#fed7aa", // Melocotón terracota suave
-    c2: "#fbcfe8", // Rosa arcilla sutil
-    c3: "#ffedd5", // Arena cálida
+    c1: "#fed7aa",
+    c2: "#fbcfe8",
+    c3: "#ffedd5",
     mood: "aromaterapia",
-    browserColor: "#c28562",
+    browserColor: "#dfb79c", // Terracota melocotón mate visible
   },
   textiles: {
-    c1: "#e9d5ff", // Lavanda suave
-    c2: "#ddd6fe", // Lino violeta tenue
-    c3: "#f3e8ff", // Algodón nube
+    c1: "#e9d5ff",
+    c2: "#ddd6fe",
+    c3: "#f3e8ff",
     mood: "textiles",
-    browserColor: "#857099",
+    browserColor: "#ccbde3", // Lavanda artesanal mate visible
   },
   "home office": {
-    c1: "#bbf7d0", // Salvia / eucalipto fresco
-    c2: "#bae6fd", // Cielo pizarra suave
-    c3: "#e0f2fe", // Niebla matutina
+    c1: "#bbf7d0",
+    c2: "#bae6fd",
+    c3: "#e0f2fe",
     mood: "home office",
-    browserColor: "#588373",
+    browserColor: "#b5d3c3", // Eucalipto fresco mate visible
   },
   almacenamiento: {
-    c1: "#c7d2fe", // Hielo cristalino
-    c2: "#e0e7ff", // Acrílico limpio
-    c3: "#f1f5f9", // Blanco escarcha
+    c1: "#c7d2fe",
+    c2: "#e0e7ff",
+    c3: "#f1f5f9",
     mood: "almacenamiento",
-    browserColor: "#5e7794",
+    browserColor: "#bccfe3", // Pizarra cristal mate visible
   },
   gadgets: {
-    c1: "#cbd5e1", // Titanio suave
-    c2: "#94a3b8", // Pizarra plateada
-    c3: "#e2e8f0", // Perla mate
+    c1: "#cbd5e1",
+    c2: "#94a3b8",
+    c3: "#e2e8f0",
     mood: "gadgets",
-    browserColor: "#5f6a75",
+    browserColor: "#c3ccd6", // Titanio plateado mate visible
   },
   ceramica: {
-    c1: "#fed7aa", // Arcilla cocida suave
-    c2: "#f5d0b0", // Terracota fina
-    c3: "#fbf3ea", // Caolín suave
+    c1: "#fed7aa",
+    c2: "#f5d0b0",
+    c3: "#fbf3ea",
     mood: "ceramica",
-    browserColor: "#b0775a",
+    browserColor: "#dec0a8", // Arcilla gres mate visible
   },
   decoracion: {
-    c1: "#e2e8f0", // Piedra caliza
-    c2: "#cbd5e1", // Travertino
-    c3: "#f8fafc", // Mármol cálido
+    c1: "#e2e8f0",
+    c2: "#cbd5e1",
+    c3: "#f8fafc",
     mood: "decoracion",
-    browserColor: "#70757a",
+    browserColor: "#c9ced4", // Travertino piedra mate visible
   },
   cocina: {
-    c1: "#fed7aa", // Roble y café tostado
-    c2: "#fde68a", // Canela sutil
-    c3: "#fef3c7", // Vainilla
+    c1: "#fed7aa",
+    c2: "#fde68a",
+    c3: "#fef3c7",
     mood: "cocina",
-    browserColor: "#9c6d48",
+    browserColor: "#d8ba9e", // Roble tostado café mate visible
   },
   bienestar: {
-    c1: "#dcfce7", // Salvia fresca
-    c2: "#d1fae5", // Menta suave
-    c3: "#f0fdf4", // Nube verde
+    c1: "#dcfce7",
+    c2: "#d1fae5",
+    c3: "#f0fdf4",
     mood: "bienestar",
-    browserColor: "#56876c",
+    browserColor: "#b6d6c1", // Menta y salvia mate visible
   },
   auth: {
-    c1: "#eedec7", // Cachemira suave
-    c2: "#dce4dc", // Salvia niebla
-    c3: "#e7dfd5", // Lino orgánico
+    c1: "#eedec7",
+    c2: "#dce4dc",
+    c3: "#e7dfd5",
     mood: "auth",
     browserColor: "#8c9276",
   },
   default: {
-    c1: "#eae3d9", // Lino natural Lumina
-    c2: "#dce4dc", // Salvia tenue
-    c3: "#f2e9dc", // Crema cálida
+    c1: "#eae3d9",
+    c2: "#dce4dc",
+    c3: "#f2e9dc",
     mood: "default",
     browserColor: "#8c9276",
   }
@@ -180,21 +180,16 @@ export function createProductAmbientTheme(hex?: string, category?: string): Ambi
   }
 
   const [h, s] = hexToHsl(hex);
-  // Ensure soft, pastel, airy matte background tones (91-96% lightness)
-  const effectiveSat = Math.max(20, Math.min(s, 60));
-  const c1 = hslToHex(h, effectiveSat, 92);
-  const c2 = hslToHex((h + 18) % 360, Math.max(15, effectiveSat - 5), 94);
-  const c3 = hslToHex((h - 15 + 360) % 360, Math.max(12, effectiveSat - 10), 96);
-  
-  // Browser toolbar color requires good contrast for Chrome Android (lightness 38-46%, saturation 45-75%)
-  const browserColor = catTheme.browserColor || hslToHex(h, Math.max(45, Math.min(s, 75)), 42);
+  // Ensure a rich, visible matte tone that matches both browser bar and page background
+  const effectiveSat = Math.max(22, Math.min(s, 42));
+  const unifiedColor = hslToHex(h, effectiveSat, 71);
 
   return {
-    c1,
-    c2,
-    c3,
+    c1: unifiedColor,
+    c2: hslToHex((h + 15) % 360, Math.max(18, effectiveSat - 5), 74),
+    c3: hslToHex((h - 12 + 360) % 360, Math.max(15, effectiveSat - 8), 76),
     mood: `product-${hex}`,
-    browserColor,
+    browserColor: unifiedColor,
   };
 }
 
