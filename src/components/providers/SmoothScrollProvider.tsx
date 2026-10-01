@@ -33,19 +33,12 @@ export function SmoothScrollProvider({ children }: SmoothScrollProviderProps) {
       syncTouch: false, // Keeps native 120Hz touch physics on mobile/tablets
       wheelMultiplier: 1,
       touchMultiplier: 1,
-      autoRaf: false, // We control the RAF loop cleanly
+      autoRaf: true, // Native Lenis ticker automatically sleeps when idle and wakes on scroll
     });
 
     lenisRef.current = lenis;
     globalLenisInstance = lenis;
     (window as unknown as { __luminaLenis?: Lenis }).__luminaLenis = lenis;
-
-    let rafId: number;
-    function raf(time: number) {
-      lenis.raf(time);
-      rafId = requestAnimationFrame(raf);
-    }
-    rafId = requestAnimationFrame(raf);
 
     // Watch for modal scroll locks (overflow: hidden on body)
     const observer = new MutationObserver(() => {
@@ -62,7 +55,6 @@ export function SmoothScrollProvider({ children }: SmoothScrollProviderProps) {
     observer.observe(document.body, { attributes: true, attributeFilter: ["style", "class"] });
 
     return () => {
-      cancelAnimationFrame(rafId);
       observer.disconnect();
       lenis.destroy();
       lenisRef.current = null;
