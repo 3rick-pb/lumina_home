@@ -7,6 +7,8 @@ import { motion } from "framer-motion";
 import { ProductCard } from "@/components/ui/ProductCard";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { useCatalogStore } from "@/lib/catalogStore";
+import { useAmbientStore } from "@/lib/ambientStore";
+import { useScrollAmbient } from "@/lib/useScrollAmbient";
 import { normalizeSearchText as normalizeText } from "@/lib/utils";
 import { ProximitySidebar } from "@/components/ui/proximity-sidebar";
 import { CatalogScrollToTopButton } from "@/components/ui/CatalogScrollToTopButton";
@@ -23,6 +25,7 @@ export default function ShopPage({ searchParams }: { searchParams: Promise<{ cat
   const categoryFilter = resolvedSearchParams.category;
   const searchQuery = resolvedSearchParams.search;
   const { products, categories } = useCatalogStore();
+  const { setCategoryTheme, resetTheme } = useAmbientStore();
 
   useEffect(() => {
     window.scrollTo({ top: 0, left: 0, behavior: "instant" });
@@ -31,6 +34,29 @@ export default function ShopPage({ searchParams }: { searchParams: Promise<{ cat
   useEffect(() => {
     window.scrollTo({ top: 0, left: 0, behavior: "instant" });
   }, [categoryFilter, searchQuery]);
+
+  useEffect(() => {
+    if (categoryFilter) {
+      setCategoryTheme(categoryFilter);
+    } else {
+      resetTheme();
+    }
+    return () => resetTheme();
+  }, [categoryFilter, setCategoryTheme, resetTheme]);
+
+  // Desktop pointer hover handlers (strictly bypassed on mobile/touch screens to prevent lag & confusion)
+  const handlePointerEnterCategory = (catName: string) => {
+    if (typeof window !== "undefined" && window.matchMedia("(hover: hover) and (pointer: fine)").matches) {
+      setCategoryTheme(catName);
+    }
+  };
+
+  const handlePointerLeaveCategory = () => {
+    if (typeof window !== "undefined" && window.matchMedia("(hover: hover) and (pointer: fine)").matches) {
+      if (categoryFilter) setCategoryTheme(categoryFilter);
+      else resetTheme();
+    }
+  };
 
   const filteredProducts = React.useMemo(() => {
     let list = products;
@@ -49,11 +75,15 @@ export default function ShopPage({ searchParams }: { searchParams: Promise<{ cat
     return list;
   }, [products, categoryFilter, searchQuery]);
 
+  // Mobile/touch scroll-driven ambient theme transition
+  useScrollAmbient("[data-ambient-category]", [categoryFilter, searchQuery, filteredProducts]);
+
   return (
     <div className="min-h-screen pt-32 pb-24 bg-transparent relative">
       <div className="container mx-auto px-4 md:px-8 relative z-10">
         <motion.div 
           id="shop-header"
+          data-ambient-category={categoryFilter ? categoryFilter.toLowerCase() : "default"}
           initial={{ opacity: 0, y: 24 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
@@ -113,12 +143,15 @@ export default function ShopPage({ searchParams }: { searchParams: Promise<{ cat
               {filteredProducts.map((product, idx) => (
                 <motion.div
                   key={product.id}
+                  data-ambient-category={product.category.toLowerCase()}
                   initial={{ opacity: 0, y: 28 }}
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true, amount: 0.05, margin: "0px 0px -20px 0px" }}
                   transition={{ duration: 0.5, delay: (idx % 4) * 0.07, ease: [0.22, 1, 0.36, 1] }}
                   style={{ willChange: "transform, opacity" }}
                   className="transform-gpu"
+                  onMouseEnter={() => handlePointerEnterCategory(product.category)}
+                  onMouseLeave={handlePointerLeaveCategory}
                 >
                   <ProductCard {...product} />
                 </motion.div>

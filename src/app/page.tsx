@@ -8,6 +8,7 @@ import { Percent, Truck, ShieldCheck, ArrowRight, RotateCcw, Lock } from "lucide
 import Link from "next/link";
 import { useCatalogStore } from "@/lib/catalogStore";
 import { useAmbientStore } from "@/lib/ambientStore";
+import { useScrollAmbient } from "@/lib/useScrollAmbient";
 import { supabase } from "@/lib/supabase";
 import { ProximitySidebar } from "@/components/ui/proximity-sidebar";
 import { CatalogScrollToTopButton } from "@/components/ui/CatalogScrollToTopButton";
@@ -214,64 +215,19 @@ export default function Home() {
     fetchCategoriesMeta();
   }, []);
 
-  // Continuous bidirectional scroll position tracking to smoothly shift ambient matte glow both down and up
-  useEffect(() => {
-    if (!isMounted) return;
+  // Desktop pointer hover handlers (strictly bypassed on mobile/touch screens to prevent lag & confusion)
+  const handlePointerEnterCategory = (catName: string) => {
+    if (typeof window !== "undefined" && window.matchMedia("(hover: hover) and (pointer: fine)").matches) {
+      setCategoryTheme(catName);
+    }
+  };
 
-    let popTop = 0;
-    let catTop = 0;
-
-    const measureTops = () => {
-      if (popularRef.current) {
-        popTop = popularRef.current.offsetTop;
-      }
-      if (categoriesRef.current) {
-        catTop = categoriesRef.current.offsetTop;
-      }
-    };
-
-    measureTops();
-    window.addEventListener("resize", measureTops, { passive: true });
-
-    let rafId: number | null = null;
-
-    const updateThemeOnScroll = () => {
-      rafId = null;
-      const scrollY = window.scrollY;
-
-      // 1. Top of page / Hero section (scrolled back up)
-      if (scrollY < 180) {
-        resetTheme();
-        return;
-      }
-
-      // 2. Check section positions relative to viewport focal trigger
-      const focalScroll = scrollY + window.innerHeight * 0.45;
-
-      if (popTop > 0 && focalScroll >= popTop) {
-        setCategoryTheme(activeFilter === "Todos" ? "iluminacion" : activeFilter);
-      } else if (catTop > 0 && focalScroll >= catTop) {
-        setCategoryTheme("aromaterapia");
-      } else {
-        resetTheme();
-      }
-    };
-
-    const handleScroll = () => {
-      if (rafId === null) {
-        rafId = requestAnimationFrame(updateThemeOnScroll);
-      }
-    };
-
-    window.addEventListener("scroll", handleScroll, { passive: true });
-    updateThemeOnScroll();
-
-    return () => {
-      window.removeEventListener("scroll", handleScroll);
-      window.removeEventListener("resize", measureTops);
-      if (rafId !== null) cancelAnimationFrame(rafId);
-    };
-  }, [isMounted, activeFilter, setCategoryTheme, resetTheme]);
+  const handlePointerLeaveCategory = (fallback = "default") => {
+    if (typeof window !== "undefined" && window.matchMedia("(hover: hover) and (pointer: fine)").matches) {
+      if (fallback === "default") resetTheme();
+      else setCategoryTheme(fallback);
+    }
+  };
 
   const displayProducts = isMounted ? products : [];
   
@@ -279,12 +235,16 @@ export default function Home() {
     ? displayProducts
     : displayProducts.filter(p => normalizeText(p.category) === normalizeText(activeFilter));
 
+  // Native mobile/touch scroll-driven ambient theme transition (IntersectionObserver + rAF off-main-thread)
+  useScrollAmbient("[data-ambient-category]", [isMounted, dynamicCategories, filteredProducts]);
+
   return (
     <>
       {/* Hero Section */}
       <section 
         id="hero-section" 
         ref={heroRef} 
+        data-ambient-category="default"
         className="relative min-h-[calc(100svh-2.5rem)] sm:min-h-[calc(100dvh-4rem)] flex flex-col justify-between sm:justify-center overflow-hidden bg-brand-900"
       >
         <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none select-none [contain:paint]">
@@ -454,6 +414,7 @@ export default function Home() {
               {dynamicCategories.map((cat, idx) => (
                 <motion.div
                   key={idx}
+                  data-ambient-category={cat.name.toLowerCase()}
                   initial={{ opacity: 0, y: 24 }}
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: false, amount: 0.1 }}
@@ -467,8 +428,8 @@ export default function Home() {
                     onClick={() => {
                       window.scrollTo({ top: 0, left: 0, behavior: "instant" });
                     }}
-                    onMouseEnter={() => setCategoryTheme(cat.name)}
-                    onMouseLeave={() => setCategoryTheme("aromaterapia")}
+                    onMouseEnter={() => handlePointerEnterCategory(cat.name)}
+                    onMouseLeave={() => handlePointerLeaveCategory("default")}
                     className="group relative h-[240px] sm:h-[300px] md:h-[320px] rounded-2xl overflow-hidden block shadow-sm border border-black/5 transition-all duration-300 hover:-translate-y-1.5 hover:shadow-lg"
                   >
                     <Image src={cat.img} fill sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 20vw" className="object-cover transition-transform duration-700 group-hover:scale-105" alt={cat.name} />
@@ -525,7 +486,7 @@ export default function Home() {
                         else setCategoryTheme(filter);
                       }}
                       onMouseEnter={() => {
-                        if (filter !== "Todos") setCategoryTheme(filter);
+                        if (filter !== "Todos") handlePointerEnterCategory(filter);
                       }}
                       className={`px-4 sm:px-5 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-medium whitespace-nowrap transition-all cursor-pointer ${
                         isActive 
@@ -549,14 +510,15 @@ export default function Home() {
                 {filteredProducts.slice(0, 8).map((product, idx) => (
                   <motion.div 
                     key={product.id}
+                    data-ambient-category={product.category.toLowerCase()}
                     initial={{ opacity: 0, y: 28 }}
                     whileInView={{ opacity: 1, y: 0 }}
                     viewport={{ once: false, amount: 0.1 }}
                     transition={{ duration: 0.5, delay: (idx % 4) * 0.08, ease: [0.22, 1, 0.36, 1] }}
                     style={{ willChange: "transform, opacity" }}
                     className="transform-gpu"
-                    onMouseEnter={() => setCategoryTheme(product.category)}
-                    onMouseLeave={() => setCategoryTheme(activeFilter === "Todos" ? "iluminacion" : activeFilter)}
+                    onMouseEnter={() => handlePointerEnterCategory(product.category)}
+                    onMouseLeave={() => handlePointerLeaveCategory(activeFilter === "Todos" ? "default" : activeFilter)}
                   >
                     <ProductCard {...product} />
                   </motion.div>
