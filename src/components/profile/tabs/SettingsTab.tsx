@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import { 
   Settings, 
   User as UserIcon, 
@@ -120,6 +121,7 @@ export function SettingsTab({
   const [postalCode, setPostalCode] = useState("");
   const [country, setCountry] = useState("Ecuador");
   const [detectedCoords, setDetectedCoords] = useState<{ lat: number; lng: number } | null>(null);
+  const [showMiniMap, setShowMiniMap] = useState(false);
   const [detectedRawGps, setDetectedRawGps] = useState<RawGpsHardwareData | null>(null);
   const [syncingRawGpsId, setSyncingRawGpsId] = useState<string | null>(null);
   const [isDetectingLocation, setIsDetectingLocation] = useState(false);
@@ -336,6 +338,7 @@ export function SettingsTab({
     if (resolvedCountry) setCountry(resolvedCountry);
     if (exactGps && Number.isFinite(exactGps.lat) && Number.isFinite(exactGps.lng)) {
       setDetectedCoords(exactGps);
+      setShowMiniMap(true);
     }
     setLocationSuccess(true);
     setLocationError(null);
@@ -370,6 +373,7 @@ export function SettingsTab({
       const coords = await getRefinedCoordinates();
       const gpsPair = { lat: coords.latitude, lng: coords.longitude };
       setDetectedCoords(gpsPair);
+      setShowMiniMap(true);
       setDetectedRawGps(coords.rawGps);
 
       const res = await fetch(`/api/geocode?lat=${coords.latitude}&lon=${coords.longitude}`);
@@ -539,6 +543,7 @@ export function SettingsTab({
     setPostalCode("");
     setCountry("Ecuador");
     setDetectedCoords(null);
+    setShowMiniMap(false);
     setDetectedRawGps(null);
     setLocationError(null);
     setLocationSuccess(false);
@@ -906,468 +911,553 @@ export function SettingsTab({
               </span>
             </div>
             {addresses.length < 4 && !showAddressForm && (
-              <button 
-                onClick={() => setShowAddressForm(true)}
-                className="text-xs font-semibold text-blue-600 hover:underline cursor-pointer flex items-center gap-1"
+              <motion.button 
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.96 }}
+                onClick={() => {
+                  setShowMiniMap(false);
+                  setShowAddressForm(true);
+                }}
+                className="text-xs font-semibold text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 hover:underline cursor-pointer flex items-center gap-1 transition-colors"
               >
                 + Añadir
-              </button>
+              </motion.button>
             )}
           </div>
 
           {addresses.length > 0 ? (
-            <div className="flex flex-col gap-3">
-              {addresses.map((addr) => (
-                <div 
-                  key={addr.id}
-                  className={`p-4 rounded-2xl border transition-all flex flex-col justify-between ${
-                    addr.isDefault 
-                      ? "bg-white dark:bg-[#202022] border-emerald-500/60 shadow-sm dark:shadow-none ring-1 ring-emerald-500/20" 
-                      : "bg-gray-50/80 dark:bg-[#2a2a2c]/80 border-gray-100 dark:border-white/5 hover:border-gray-200 dark:hover:border-white/10"
-                  }`}
-                >
-                  <div>
-                    <div className="flex items-center justify-between gap-2 mb-1.5">
-                      <div className="flex items-center gap-1.5 min-w-0 flex-1">
-                        <UserIcon className="w-3.5 h-3.5 text-gray-400 shrink-0" />
-                        <span className="font-bold text-gray-900 dark:text-gray-100 text-xs truncate">
-                          {addr.recipient || user.name}
-                        </span>
-                      </div>
-                      {addr.isDefault ? (
-                        <span className="inline-flex items-center gap-1 text-[9.5px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200 shrink-0">
-                          <Check className="w-2.5 h-2.5 text-emerald-700" /> Predeterminada
-                        </span>
-                      ) : (
-                        <button 
-                          onClick={() => setDefaultAddress(addr.id)}
-                          className="inline-flex items-center gap-1 text-[9.5px] font-semibold px-2 py-0.5 rounded-full bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white dark:hover:text-gray-900 border border-blue-200 hover:border-blue-600 transition-all cursor-pointer shadow-2xs shrink-0 group"
-                          title="Establecer como dirección predeterminada"
-                        >
-                          <Star className="w-2.5 h-2.5 text-blue-500 group-hover:text-white dark:hover:text-gray-900 transition-colors" />
-                          <span>Hacer predeterminada</span>
-                        </button>
-                      )}
-                    </div>
-                    <p className="text-gray-800 dark:text-gray-200 text-xs font-medium">{addr.street}</p>
-                    <p className="text-gray-500 dark:text-gray-400 text-[11px] mt-0.5">
-                      {addr.city}{addr.state ? `, ${addr.state}` : ""} {addr.postalCode}
-                    </p>
-                    <p className="text-gray-400 text-[10px] font-medium mt-0.5">{String(addr.country || "Ecuador").split("||LUMINA_RAW_GPS||")[0]}</p>
-
-                    {/* Raw GPS Chip Telemetry Badge (Ubicación Cruda sin formatear) */}
-                    <div className="mt-2 pt-2 border-t border-gray-100 dark:border-white/5 flex flex-wrap items-center justify-between gap-2">
-                      {addr.rawGps || (typeof addr.lat === "number" && typeof addr.lng === "number") ? (
-                        <div className="flex flex-col gap-0.5 min-w-0">
-                          <span className="inline-flex items-center gap-1 text-[9.5px] font-mono font-bold text-emerald-700 dark:text-[#ccff00]">
-                            <Navigation className="w-2.5 h-2.5 shrink-0" />
-                            GPS Crudo: {(addr.rawGps?.latitude ?? addr.lat)?.toFixed(7)}, {(addr.rawGps?.longitude ?? addr.lng)?.toFixed(7)}
-                            {addr.rawGps?.accuracy ? ` (±${Math.round(addr.rawGps.accuracy)}m)` : ""}
+            <motion.div layout className="flex flex-col gap-3">
+              <AnimatePresence mode="popLayout">
+                {addresses.map((addr) => (
+                  <motion.div 
+                    key={addr.id}
+                    layout
+                    initial={{ opacity: 0, y: 16, scale: 0.98 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.94, y: -12 }}
+                    transition={{ type: "spring", stiffness: 420, damping: 32 }}
+                    whileHover={{ y: -2 }}
+                    className={`p-4 rounded-2xl border transition-shadow duration-200 flex flex-col justify-between ${
+                      addr.isDefault 
+                        ? "bg-white dark:bg-[#202022] border-emerald-500/60 shadow-md dark:shadow-none ring-1 ring-emerald-500/20" 
+                        : "bg-gray-50/80 dark:bg-[#2a2a2c]/80 border-gray-100 dark:border-white/5 hover:border-gray-200 dark:hover:border-white/10 hover:shadow-sm"
+                    }`}
+                  >
+                    <div>
+                      <div className="flex items-center justify-between gap-2 mb-1.5">
+                        <div className="flex items-center gap-1.5 min-w-0 flex-1">
+                          <UserIcon className="w-3.5 h-3.5 text-gray-400 shrink-0" />
+                          <span className="font-bold text-gray-900 dark:text-gray-100 text-xs truncate">
+                            {addr.recipient || user.name}
                           </span>
-                          {addr.rawGps?.rawDisplayName && (
-                            <span className="text-[9px] font-mono text-gray-400 truncate max-w-[260px]" title={addr.rawGps.rawDisplayName}>
-                              {addr.rawGps.rawDisplayName}
+                        </div>
+                        {addr.isDefault ? (
+                          <span className="inline-flex items-center gap-1 text-[9.5px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/40 shrink-0">
+                            <Check className="w-2.5 h-2.5 text-emerald-700 dark:text-emerald-400" /> Predeterminada
+                          </span>
+                        ) : (
+                          <button 
+                            onClick={() => setDefaultAddress(addr.id)}
+                            className="inline-flex items-center gap-1 text-[9.5px] font-semibold px-2 py-0.5 rounded-full bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-300 hover:bg-blue-600 hover:text-white dark:hover:bg-blue-600 dark:hover:text-white border border-blue-200 dark:border-blue-800/40 hover:border-blue-600 transition-all cursor-pointer shadow-2xs shrink-0 group active:scale-95"
+                            title="Establecer como dirección predeterminada"
+                          >
+                            <Star className="w-2.5 h-2.5 text-blue-500 group-hover:text-white transition-colors" />
+                            <span>Hacer predeterminada</span>
+                          </button>
+                        )}
+                      </div>
+                      <p className="text-gray-800 dark:text-gray-200 text-xs font-medium">{addr.street}</p>
+                      <p className="text-gray-500 dark:text-gray-400 text-[11px] mt-0.5">
+                        {addr.city}{addr.state ? `, ${addr.state}` : ""} {addr.postalCode}
+                      </p>
+                      <p className="text-gray-400 text-[10px] font-medium mt-0.5">{String(addr.country || "Ecuador").split("||LUMINA_RAW_GPS||")[0]}</p>
+
+                      {/* Raw GPS Chip Telemetry Badge (Ubicación Cruda sin formatear) */}
+                      <div className="mt-2 pt-2 border-t border-gray-100 dark:border-white/5 flex flex-wrap items-center justify-between gap-2">
+                        {addr.rawGps || (typeof addr.lat === "number" && typeof addr.lng === "number") ? (
+                          <div className="flex flex-col gap-0.5 min-w-0">
+                            <span className="inline-flex items-center gap-1 text-[9.5px] font-mono font-bold text-emerald-700 dark:text-[#ccff00]">
+                              <Navigation className="w-2.5 h-2.5 shrink-0" />
+                              GPS Crudo: {(addr.rawGps?.latitude ?? addr.lat)?.toFixed(7)}, {(addr.rawGps?.longitude ?? addr.lng)?.toFixed(7)}
+                              {addr.rawGps?.accuracy ? ` (±${Math.round(addr.rawGps.accuracy)}m)` : ""}
+                            </span>
+                            {addr.rawGps?.rawDisplayName && (
+                              <span className="text-[9px] font-mono text-gray-400 truncate max-w-[260px]" title={addr.rawGps.rawDisplayName}>
+                                {addr.rawGps.rawDisplayName}
+                              </span>
+                            )}
+                          </div>
+                        ) : (
+                          <span className="text-[10px] text-amber-600 dark:text-amber-400 font-medium">
+                            Sin telemetría cruda del chip GPS
+                          </span>
+                        )}
+
+                        <button
+                          type="button"
+                          onClick={() => handleCaptureRawGpsForSavedAddress(addr.id)}
+                          disabled={syncingRawGpsId === addr.id}
+                          className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-gray-900 dark:bg-white/10 hover:bg-gray-800 dark:hover:bg-white/15 text-white dark:text-[#ccff00] text-[9.5px] font-mono font-bold transition-all cursor-pointer shrink-0 disabled:opacity-50 active:scale-95"
+                          title="Capturar la ubicación cruda directamente del chip GPS del dispositivo y guardarla en esta dirección"
+                        >
+                          {syncingRawGpsId === addr.id ? (
+                            <Loader2 className="w-2.5 h-2.5 animate-spin" />
+                          ) : (
+                            <Navigation className="w-2.5 h-2.5" />
+                          )}
+                          <span>{addr.rawGps ? "Actualizar GPS Crudo" : "Capturar GPS Crudo"}</span>
+                        </button>
+                      </div>
+
+                      {(addr.idNumber || addr.phone || addr.email) && (
+                        <div className="flex flex-wrap items-center gap-1.5 mt-2 pt-1.5 border-t border-gray-100 dark:border-white/5">
+                          {addr.idNumber && (
+                            <span className="text-[10px] px-2 py-0.5 rounded-md bg-gray-100 dark:bg-[#3a3a3c] text-gray-700 dark:text-gray-300 font-mono font-medium">
+                              C.I.: {addr.idNumber}
+                            </span>
+                          )}
+                          {addr.phone && (
+                            <a 
+                              href={`https://wa.me/${addr.phone.replace(/[^0-9]/g, '')}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-[10px] px-2 py-0.5 rounded-md bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200/50 dark:border-emerald-800/40 font-mono font-medium hover:underline flex items-center gap-1 transition-colors"
+                              title="Contactar vía WhatsApp"
+                            >
+                              <span>WhatsApp:</span>
+                              <span>{addr.phone}</span>
+                            </a>
+                          )}
+                          {addr.email && (
+                            <span className="text-[10px] px-2 py-0.5 rounded-md bg-sky-50 dark:bg-sky-950/40 text-sky-700 dark:text-sky-300 border border-sky-200/50 dark:border-sky-800/40 truncate max-w-[180px]" title={addr.email}>
+                              {addr.email}
                             </span>
                           )}
                         </div>
-                      ) : (
-                        <span className="text-[10px] text-amber-600 dark:text-amber-400 font-medium">
-                          Sin telemetría cruda del chip GPS
-                        </span>
                       )}
-
-                      <button
-                        type="button"
-                        onClick={() => handleCaptureRawGpsForSavedAddress(addr.id)}
-                        disabled={syncingRawGpsId === addr.id}
-                        className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-gray-900 dark:bg-white/10 hover:bg-gray-800 dark:hover:bg-white/15 text-white dark:text-[#ccff00] text-[9.5px] font-mono font-bold transition-all cursor-pointer shrink-0 disabled:opacity-50"
-                        title="Capturar la ubicación cruda directamente del chip GPS del dispositivo y guardarla en esta dirección"
-                      >
-                        {syncingRawGpsId === addr.id ? (
-                          <Loader2 className="w-2.5 h-2.5 animate-spin" />
-                        ) : (
-                          <Navigation className="w-2.5 h-2.5" />
-                        )}
-                        <span>{addr.rawGps ? "Actualizar GPS Crudo" : "Capturar GPS Crudo"}</span>
-                      </button>
                     </div>
 
-                    {(addr.idNumber || addr.phone || addr.email) && (
-                      <div className="flex flex-wrap items-center gap-1.5 mt-2 pt-1.5 border-t border-gray-100 dark:border-white/5">
-                        {addr.idNumber && (
-                          <span className="text-[10px] px-2 py-0.5 rounded-md bg-gray-100 dark:bg-[#3a3a3c] text-gray-700 dark:text-gray-300 font-mono font-medium">
-                            C.I.: {addr.idNumber}
-                          </span>
-                        )}
-                        {addr.phone && (
-                          <a 
-                            href={`https://wa.me/${addr.phone.replace(/[^0-9]/g, '')}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-[10px] px-2 py-0.5 rounded-md bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200/50 dark:border-emerald-800/40 font-mono font-medium hover:underline flex items-center gap-1"
-                            title="Contactar vía WhatsApp"
-                          >
-                            <span>WhatsApp:</span>
-                            <span>{addr.phone}</span>
-                          </a>
-                        )}
-                        {addr.email && (
-                          <span className="text-[10px] px-2 py-0.5 rounded-md bg-sky-50 dark:bg-sky-950/40 text-sky-700 dark:text-sky-300 border border-sky-200/50 dark:border-sky-800/40 truncate max-w-[180px]" title={addr.email}>
-                            {addr.email}
-                          </span>
-                        )}
-                      </div>
-                    )}
-                  </div>
-
-                  <div className={`pt-2.5 mt-2.5 border-t border-gray-100 dark:border-white/5 flex items-center ${addr.isDefault ? 'justify-end' : 'justify-between'}`}>
-                    {!addr.isDefault && (
-                      <span className="text-[10px] text-gray-400 font-medium">
-                        Dirección secundaria
-                      </span>
-                    )}
-                    <button 
-                      onClick={() => removeAddress(addr.id)}
-                      className="text-[11px] text-red-500 hover:text-red-700 hover:underline flex items-center gap-1 cursor-pointer"
-                    >
-                      <Trash2 className="w-3 h-3" />
-                      <span>Eliminar</span>
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
+                    <div className={`pt-2.5 mt-2.5 border-t border-gray-100 dark:border-white/5 flex items-center ${addr.isDefault ? 'justify-end' : 'justify-between'}`}>
+                      {!addr.isDefault && (
+                        <span className="text-[10px] text-gray-400 font-medium">
+                          Dirección secundaria
+                        </span>
+                      )}
+                      <button 
+                        onClick={() => removeAddress(addr.id)}
+                        className="text-[11px] text-red-500 hover:text-red-700 hover:underline flex items-center gap-1 cursor-pointer transition-colors active:scale-95"
+                      >
+                        <Trash2 className="w-3 h-3" />
+                        <span>Eliminar</span>
+                      </button>
+                    </div>
+                  </motion.div>
+                ))}
+              </AnimatePresence>
+            </motion.div>
           ) : (
-            <div className="border-2 border-dashed border-gray-200 dark:border-white/10 rounded-2xl p-6 text-center space-y-2 bg-gray-50/40 dark:bg-[#2a2a2c]/40">
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.98 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.3 }}
+              className="border-2 border-dashed border-gray-200 dark:border-white/10 rounded-2xl p-6 text-center space-y-2 bg-gray-50/40 dark:bg-[#2a2a2c]/40"
+            >
               <MapPin className="w-6 h-6 text-gray-400 mx-auto" />
               <p className="text-xs font-bold text-gray-800 dark:text-gray-200">Sin direcciones registradas</p>
               <p className="text-[11px] text-gray-500 dark:text-gray-400">
                 Puedes guardar hasta 4 direcciones para agilizar el proceso de compra.
               </p>
               {!showAddressForm && (
-                <button 
+                <motion.button 
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.97 }}
                   onClick={() => {
                     setRecipient(user.name);
+                    setShowMiniMap(false);
                     setShowAddressForm(true);
                   }}
-                  className="px-4 py-2 bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 rounded-xl text-xs font-semibold hover:bg-gray-800 transition-colors cursor-pointer"
+                  className="px-4 py-2 bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 rounded-xl text-xs font-semibold hover:bg-gray-800 transition-colors cursor-pointer shadow-sm"
                 >
                   + Agregar Primera Dirección
-                </button>
+                </motion.button>
               )}
-            </div>
+            </motion.div>
           )}
         </div>
 
-        {showAddressForm && (
-          <div className="pt-4 border-t border-gray-100 dark:border-white/5">
-            <form onSubmit={handleAddressSubmit} className="space-y-3 bg-gray-50/70 dark:bg-[#2a2a2c]/70 p-4 rounded-2xl border border-gray-100 dark:border-white/5">
-              <div className="flex items-center justify-between pb-1 border-b border-gray-200 dark:border-white/10">
-                <span className="text-xs font-bold text-gray-900 dark:text-gray-100">
-                  Nueva Dirección de Entrega
-                </span>
-                <button 
-                  type="button" 
-                  onClick={() => {
-                    setLocationError(null);
-                    setLocationSuccess(false);
-                    setShowAddressForm(false);
-                  }} 
-                  className="text-xs text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 cursor-pointer"
-                >
-                  Cerrar
-                </button>
-              </div>
-
-              {/* Geolocation Auto-fill Button */}
-              <div className="pt-1">
-                <button
-                  type="button"
-                  onClick={handleDetectLocation}
-                  disabled={isDetectingLocation}
-                  className="w-full py-2.5 px-3.5 rounded-xl text-xs font-semibold flex items-center justify-center gap-2 border transition-all cursor-pointer shadow-xs disabled:opacity-60 disabled:cursor-not-allowed
-                  bg-gradient-to-r from-blue-50 via-indigo-50/60 to-blue-50 text-blue-700 border-blue-200/90 hover:bg-blue-100 hover:border-blue-300 active:scale-[0.99]"
-                >
-                  {isDetectingLocation ? (
-                    <>
-                      <Loader2 className="w-3.5 h-3.5 animate-spin text-blue-600" />
-                      <span>Detectando ubicación real del dispositivo...</span>
-                    </>
-                  ) : (
-                    <>
-                      <Navigation className="w-3.5 h-3.5 text-blue-600" />
-                      <span>Autocompletar con mi ubicación actual</span>
-                    </>
-                  )}
-                </button>
-
-                {locationError && (
-                  <p className="text-[11px] text-amber-800 bg-amber-50 border border-amber-200 rounded-xl p-2.5 mt-2 leading-tight">
-                    {locationError}
-                  </p>
-                )}
-
-                {locationSuccess && (
-                  <p className="text-[11px] text-emerald-800 bg-emerald-50 border border-emerald-200 rounded-xl p-2.5 mt-2 leading-tight flex items-center gap-1.5">
-                    <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                    <span>¡Ubicación detectada! Revisa los campos y escribe el nombre de quién recibe.</span>
-                  </p>
-                )}
-
-                <div className="mt-4">
-                  <label className="block text-[11px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-2">
-                    Ubicación Exacta en Mapa
-                  </label>
-                  <InteractiveAddressMap
-                    initialLat={detectedCoords?.lat || -0.1807}
-                    initialLng={detectedCoords?.lng || -78.4678}
-                    onLocationSelect={(lat, lng) => setDetectedCoords({ lat, lng })}
-                    onAddressResolved={(addr) => {
-                      if (addr.street) setStreet(addr.street);
-                      if (addr.exteriorNumber) setExteriorNumber(addr.exteriorNumber);
-                      if (addr.neighborhood) setNeighborhood(addr.neighborhood);
-                      if (addr.crossStreets) setCrossStreets(addr.crossStreets);
-                      if (addr.landmark || addr.neighborhood) setReference(addr.landmark || addr.neighborhood || "");
-                      if (addr.city) setCity(addr.city);
-                      if (addr.state) setStateProv(addr.state);
-                      if (addr.postalCode) setPostalCode(addr.postalCode);
-                      if (addr.country) setCountry(addr.country);
-                    }}
-                    className="h-56 w-full rounded-2xl overflow-hidden border border-gray-200 dark:border-white/10 shadow-sm"
-                  />
-                  <p className="text-[10px] text-gray-500 mt-1">
-                    Arrastra el pin para guardar tu ubicación exacta. Esto asegurará la precisión de las entregas.
-                  </p>
-                </div>
-              </div>
-
-              <div className="relative flex py-0.5 items-center mt-2">
-                <div className="flex-grow border-t border-gray-200 dark:border-white/10"></div>
-                <span className="flex-shrink mx-2 text-[10px] text-gray-400 font-semibold uppercase tracking-wider">o llena los datos manualmente</span>
-                <div className="flex-grow border-t border-gray-200 dark:border-white/10"></div>
-              </div>
-
-              <div className="space-y-3">
-                <h4 className="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mt-4">Campos Obligatorios</h4>
-                <div>
-                  <label className="block text-[11px] font-semibold text-gray-700 dark:text-gray-300 mb-1">
-                    ¿Quién recibe? (Nombre y apellidos)
-                  </label>
-                  <input 
-                    type="text" 
-                    required 
-                    value={recipient} 
-                    onChange={e => setRecipient(e.target.value)} 
-                    placeholder={user.name} 
-                    className="w-full px-3 py-2 rounded-xl border border-gray-200 dark:border-white/10 text-xs outline-none focus:ring-1 focus:ring-[#8c9276] bg-white dark:bg-[#1a1a1c] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500"
-                  />
+        <AnimatePresence>
+          {showAddressForm && (
+            <motion.div
+              key="address-form-panel"
+              initial={{ opacity: 0, height: 0, y: 15 }}
+              animate={{ opacity: 1, height: "auto", y: 0 }}
+              exit={{ opacity: 0, height: 0, y: 15 }}
+              transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
+              className="overflow-hidden pt-4 border-t border-gray-100 dark:border-white/5"
+            >
+              <form onSubmit={handleAddressSubmit} className="space-y-4 bg-gray-50/70 dark:bg-[#2a2a2c]/70 p-4 sm:p-5 rounded-2xl border border-gray-100 dark:border-white/5 shadow-xs">
+                <div className="flex items-center justify-between pb-2 border-b border-gray-200 dark:border-white/10">
+                  <span className="text-xs font-bold text-gray-900 dark:text-gray-100 flex items-center gap-1.5">
+                    <MapPin className="w-3.5 h-3.5 text-[#8c9276]" />
+                    Nueva Dirección de Entrega
+                  </span>
+                  <button 
+                    type="button" 
+                    onClick={() => {
+                      setLocationError(null);
+                      setLocationSuccess(false);
+                      setShowMiniMap(false);
+                      setShowAddressForm(false);
+                    }} 
+                    className="text-xs text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 cursor-pointer transition-colors"
+                  >
+                    Cerrar
+                  </button>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                {/* Geolocation Auto-fill Button */}
+                <div className="pt-1">
+                  <motion.button
+                    whileHover={{ scale: 1.01 }}
+                    whileTap={{ scale: 0.99 }}
+                    type="button"
+                    onClick={handleDetectLocation}
+                    disabled={isDetectingLocation}
+                    className="w-full py-2.5 px-3.5 rounded-xl text-xs font-semibold flex items-center justify-center gap-2 border transition-all cursor-pointer shadow-xs disabled:opacity-60 disabled:cursor-not-allowed
+                    bg-gradient-to-r from-blue-50 via-indigo-50/60 to-blue-50 text-blue-700 dark:from-blue-950/40 dark:via-indigo-950/30 dark:to-blue-950/40 dark:text-blue-300 border-blue-200/90 dark:border-blue-800/40 hover:bg-blue-100 dark:hover:bg-blue-900/40 hover:border-blue-300 active:scale-[0.99]"
+                  >
+                    {isDetectingLocation ? (
+                      <>
+                        <Loader2 className="w-3.5 h-3.5 animate-spin text-blue-600 dark:text-blue-400" />
+                        <span>Detectando ubicación real del dispositivo...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Navigation className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
+                        <span>Autocompletar con mi ubicación actual</span>
+                      </>
+                    )}
+                  </motion.button>
+
+                  <AnimatePresence>
+                    {locationError && (
+                      <motion.p
+                        initial={{ opacity: 0, y: -6 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -6 }}
+                        className="text-[11px] text-amber-800 bg-amber-50 dark:bg-amber-950/40 dark:text-amber-300 border border-amber-200 dark:border-amber-800/40 rounded-xl p-2.5 mt-2 leading-tight"
+                      >
+                        {locationError}
+                      </motion.p>
+                    )}
+
+                    {locationSuccess && (
+                      <motion.p
+                        initial={{ opacity: 0, y: -6 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -6 }}
+                        className="text-[11px] text-emerald-800 bg-emerald-50 dark:bg-emerald-950/40 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/40 rounded-xl p-2.5 mt-2 leading-tight flex items-center gap-1.5"
+                      >
+                        <Check className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                        <span>¡Ubicación detectada! Revisa los campos y escribe el nombre de quién recibe.</span>
+                      </motion.p>
+                    )}
+                  </AnimatePresence>
+
+                  {/* Mini-map: ONLY appears after clicking "Autocompletar con mi ubicación actual" */}
+                  <AnimatePresence>
+                    {showMiniMap && (
+                      <motion.div
+                        initial={{ opacity: 0, height: 0, scale: 0.98 }}
+                        animate={{ opacity: 1, height: "auto", scale: 1 }}
+                        exit={{ opacity: 0, height: 0, scale: 0.98 }}
+                        transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
+                        className="overflow-hidden mt-3"
+                      >
+                        <div className="flex items-center justify-between mb-2">
+                          <label className="text-[11px] font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider flex items-center gap-1.5">
+                            <MapPin className="w-3.5 h-3.5 text-[#8c9276]" />
+                            <span>Ubicación Exacta en Mapa</span>
+                          </label>
+                          <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-medium bg-emerald-50 dark:bg-emerald-950/40 px-2 py-0.5 rounded-full border border-emerald-200 dark:border-emerald-800/40">
+                            Pin activo
+                          </span>
+                        </div>
+                        <InteractiveAddressMap
+                          initialLat={detectedCoords?.lat || -0.1807}
+                          initialLng={detectedCoords?.lng || -78.4678}
+                          onLocationSelect={(lat, lng) => setDetectedCoords({ lat, lng })}
+                          onAddressResolved={(addr) => {
+                            if (addr.street) setStreet(addr.street);
+                            if (addr.exteriorNumber) setExteriorNumber(addr.exteriorNumber);
+                            if (addr.neighborhood) setNeighborhood(addr.neighborhood);
+                            if (addr.crossStreets) setCrossStreets(addr.crossStreets);
+                            if (addr.landmark || addr.neighborhood) setReference(addr.landmark || addr.neighborhood || "");
+                            if (addr.city) setCity(addr.city);
+                            if (addr.state) setStateProv(addr.state);
+                            if (addr.postalCode) setPostalCode(addr.postalCode);
+                            if (addr.country) setCountry(addr.country);
+                          }}
+                          className="h-56 w-full rounded-2xl overflow-hidden border border-gray-200 dark:border-white/10 shadow-sm"
+                        />
+                        <p className="text-[10px] text-gray-500 dark:text-gray-400 mt-1.5 flex items-center gap-1">
+                          <span>💡</span>
+                          <span>Arrastra el pin para guardar tu ubicación exacta con máxima precisión de entrega.</span>
+                        </p>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+
+                <div className="relative flex py-0.5 items-center mt-2">
+                  <div className="flex-grow border-t border-gray-200 dark:border-white/10"></div>
+                  <span className="flex-shrink mx-2 text-[10px] text-gray-400 dark:text-gray-500 font-semibold uppercase tracking-wider">o llena los datos manualmente</span>
+                  <div className="flex-grow border-t border-gray-200 dark:border-white/10"></div>
+                </div>
+
+                {/* Symmetrical & Responsive Input Fields */}
+                <div className="space-y-3">
+                  <h4 className="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mt-2">Campos Obligatorios</h4>
                   <div>
                     <label className="block text-[11px] font-semibold text-gray-700 dark:text-gray-300 mb-1">
-                      Cédula / Identificación
+                      ¿Quién recibe? (Nombre y apellidos)
                     </label>
                     <input 
                       type="text" 
-                      required
-                      value={idNumber} 
-                      onChange={e => setIdNumber(e.target.value)} 
-                      placeholder="Ej: 1712345678" 
-                      className="w-full px-3 py-2 rounded-xl border border-gray-200 dark:border-white/10 text-xs outline-none focus:ring-1 focus:ring-[#8c9276] bg-white dark:bg-[#1a1a1c] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-[11px] font-semibold text-gray-700 dark:text-gray-300 mb-1">
-                      Número con WhatsApp
-                    </label>
-                    <input 
-                      type="tel"
-                      required
-                      value={phone} 
-                      onChange={e => setPhone(e.target.value)} 
-                      placeholder="+593 99 123 4567" 
-                      className="w-full px-3 py-2 rounded-xl border border-gray-200 dark:border-white/10 text-xs outline-none focus:ring-1 focus:ring-[#8c9276] bg-white dark:bg-[#1a1a1c] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500"
-                    />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-[2fr_1fr] gap-2">
-                  <div>
-                    <label className="block text-[11px] font-semibold text-gray-700 dark:text-gray-300 mb-1">Calle Principal</label>
-                    <input 
-                      type="text" 
                       required 
-                      value={street} 
-                      onChange={e => setStreet(e.target.value)} 
-                      placeholder="Ej: Av. República del Salvador" 
-                      className="w-full px-3 py-2 rounded-xl border border-gray-200 dark:border-white/10 text-xs outline-none focus:ring-1 focus:ring-[#8c9276] bg-white dark:bg-[#1a1a1c] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500"
+                      value={recipient} 
+                      onChange={e => setRecipient(e.target.value)} 
+                      placeholder={user.name} 
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-xs outline-none focus:ring-2 focus:ring-[#8c9276]/30 focus:border-[#8c9276] bg-white dark:bg-[#1a1a1c] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 transition-all"
                     />
                   </div>
-                  <div>
-                    <label className="block text-[11px] font-semibold text-gray-700 dark:text-gray-300 mb-1">Número Exterior</label>
-                    <input 
-                      type="text"
-                      value={exteriorNumber} 
-                      onChange={e => setExteriorNumber(e.target.value)} 
-                      placeholder="Ej: N34-120" 
-                      className="w-full px-3 py-2 rounded-xl border border-gray-200 dark:border-white/10 text-xs outline-none focus:ring-1 focus:ring-[#8c9276] bg-white dark:bg-[#1a1a1c] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500"
-                    />
-                  </div>
-                </div>
 
-                <div className="grid grid-cols-2 gap-2">
-                  <div>
-                    <label className="block text-[11px] font-semibold text-gray-700 dark:text-gray-300 mb-1">Ciudad / Cantón</label>
-                    <input 
-                      type="text" 
-                      required 
-                      value={city} 
-                      onChange={e => setCity(e.target.value)} 
-                      placeholder="Quito" 
-                      className="w-full px-3 py-2 rounded-xl border border-gray-200 dark:border-white/10 text-xs outline-none focus:ring-1 focus:ring-[#8c9276] bg-white dark:bg-[#1a1a1c] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500"
-                    />
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-[11px] font-semibold text-gray-700 dark:text-gray-300 mb-1">
+                        Cédula / Identificación
+                      </label>
+                      <input 
+                        type="text" 
+                        required
+                        value={idNumber} 
+                        onChange={e => setIdNumber(e.target.value)} 
+                        placeholder="Ej: 1712345678" 
+                        className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-xs outline-none focus:ring-2 focus:ring-[#8c9276]/30 focus:border-[#8c9276] bg-white dark:bg-[#1a1a1c] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 transition-all"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[11px] font-semibold text-gray-700 dark:text-gray-300 mb-1">
+                        Número con WhatsApp
+                      </label>
+                      <input 
+                        type="tel"
+                        required
+                        value={phone} 
+                        onChange={e => setPhone(e.target.value)} 
+                        placeholder="+593 99 123 4567" 
+                        className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-xs outline-none focus:ring-2 focus:ring-[#8c9276]/30 focus:border-[#8c9276] bg-white dark:bg-[#1a1a1c] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 transition-all"
+                      />
+                    </div>
                   </div>
-                  <div>
-                    <label className="block text-[11px] font-semibold text-gray-700 dark:text-gray-300 mb-1">Provincia/Estado</label>
-                    <input 
-                      type="text" 
-                      required
-                      value={stateProv} 
-                      onChange={e => setStateProv(e.target.value)} 
-                      placeholder="Pichincha" 
-                      className="w-full px-3 py-2 rounded-xl border border-gray-200 dark:border-white/10 text-xs outline-none focus:ring-1 focus:ring-[#8c9276] bg-white dark:bg-[#1a1a1c] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500"
-                    />
+
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <div className="sm:col-span-2">
+                      <label className="block text-[11px] font-semibold text-gray-700 dark:text-gray-300 mb-1">Calle Principal</label>
+                      <input 
+                        type="text" 
+                        required 
+                        value={street} 
+                        onChange={e => setStreet(e.target.value)} 
+                        placeholder="Ej: Av. República del Salvador" 
+                        className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-xs outline-none focus:ring-2 focus:ring-[#8c9276]/30 focus:border-[#8c9276] bg-white dark:bg-[#1a1a1c] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 transition-all"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[11px] font-semibold text-gray-700 dark:text-gray-300 mb-1">Número Exterior</label>
+                      <input 
+                        type="text"
+                        value={exteriorNumber} 
+                        onChange={e => setExteriorNumber(e.target.value)} 
+                        placeholder="Ej: N34-120" 
+                        className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-xs outline-none focus:ring-2 focus:ring-[#8c9276]/30 focus:border-[#8c9276] bg-white dark:bg-[#1a1a1c] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 transition-all"
+                      />
+                    </div>
                   </div>
-                </div>
-                
-                <div className="grid grid-cols-2 gap-2">
-                  <div>
-                    <label className="block text-[11px] font-semibold text-gray-700 dark:text-gray-300 mb-1">Código Postal</label>
-                    <input 
-                      type="text" 
-                      required 
-                      value={postalCode} 
-                      onChange={e => setPostalCode(e.target.value)} 
-                      placeholder="170505" 
-                      className="w-full px-3 py-2 rounded-xl border border-gray-200 dark:border-white/10 text-xs outline-none focus:ring-1 focus:ring-[#8c9276] bg-white dark:bg-[#1a1a1c] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500"
-                    />
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-[11px] font-semibold text-gray-700 dark:text-gray-300 mb-1">Ciudad / Cantón</label>
+                      <input 
+                        type="text" 
+                        required 
+                        value={city} 
+                        onChange={e => setCity(e.target.value)} 
+                        placeholder="Quito" 
+                        className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-xs outline-none focus:ring-2 focus:ring-[#8c9276]/30 focus:border-[#8c9276] bg-white dark:bg-[#1a1a1c] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 transition-all"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[11px] font-semibold text-gray-700 dark:text-gray-300 mb-1">Provincia/Estado</label>
+                      <input 
+                        type="text" 
+                        required
+                        value={stateProv} 
+                        onChange={e => setStateProv(e.target.value)} 
+                        placeholder="Pichincha" 
+                        className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-xs outline-none focus:ring-2 focus:ring-[#8c9276]/30 focus:border-[#8c9276] bg-white dark:bg-[#1a1a1c] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 transition-all"
+                      />
+                    </div>
                   </div>
-                  <div>
-                    <label className="block text-[11px] font-semibold text-gray-700 dark:text-gray-300 mb-1">País</label>
-                    <input 
-                      type="text" 
-                      required
-                      value={country} 
-                      onChange={e => setCountry(e.target.value)} 
-                      placeholder="Ecuador"
-                      className="w-full px-3 py-2 rounded-xl border border-gray-200 dark:border-white/10 text-xs outline-none focus:ring-1 focus:ring-[#8c9276] bg-white dark:bg-[#1a1a1c] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500"
-                    />
-                  </div>
-                </div>
-
-                <h4 className="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mt-6 pt-2 border-t border-gray-200 dark:border-white/10">Campos Opcionales</h4>
-                
-                <div className="grid grid-cols-2 gap-2">
-                  <div>
-                    <label className="block text-[11px] font-semibold text-gray-700 dark:text-gray-300 mb-1">Tipo de Propiedad</label>
-                    <select
-                      value={addressType}
-                      onChange={e => setAddressType(e.target.value as 'casa' | 'departamento' | 'oficina')}
-                      className="w-full px-3 py-2 rounded-xl border border-gray-200 dark:border-white/10 text-xs outline-none focus:ring-1 focus:ring-[#8c9276] bg-white dark:bg-[#1a1a1c] text-gray-900 dark:text-gray-100"
-                    >
-                      <option value="casa">Casa</option>
-                      <option value="departamento">Departamento</option>
-                      <option value="oficina">Oficina</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-[11px] font-semibold text-gray-700 dark:text-gray-300 mb-1">Número Interior/Depto</label>
-                    <input 
-                      type="text"
-                      value={interiorNumber} 
-                      onChange={e => setInteriorNumber(e.target.value)} 
-                      placeholder="Ej: Apto 4B" 
-                      className="w-full px-3 py-2 rounded-xl border border-gray-200 dark:border-white/10 text-xs outline-none focus:ring-1 focus:ring-[#8c9276] bg-white dark:bg-[#1a1a1c] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-[11px] font-semibold text-gray-700 dark:text-gray-300 mb-1">Calles Intersección</label>
-                  <input 
-                    type="text"
-                    value={crossStreets} 
-                    onChange={e => setCrossStreets(e.target.value)} 
-                    placeholder="Ej: y Naciones Unidas" 
-                    className="w-full px-3 py-2 rounded-xl border border-gray-200 dark:border-white/10 text-xs outline-none focus:ring-1 focus:ring-[#8c9276] bg-white dark:bg-[#1a1a1c] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-[11px] font-semibold text-gray-700 dark:text-gray-300 mb-1">Sector / Barrio</label>
-                  <input 
-                    type="text" 
-                    value={neighborhood} 
-                    onChange={e => setNeighborhood(e.target.value)} 
-                    placeholder="Ej: La Carolina, Iñaquito..." 
-                    className="w-full px-3 py-2 rounded-xl border border-gray-200 dark:border-white/10 text-xs outline-none focus:ring-1 focus:ring-[#8c9276] bg-white dark:bg-[#1a1a1c] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-[11px] font-semibold text-gray-700 dark:text-gray-300 mb-1">Referencia o Lugar Cercano</label>
-                  <input 
-                    type="text" 
-                    value={reference} 
-                    onChange={e => setReference(e.target.value)} 
-                    placeholder="Ej: Frente al parque" 
-                    className="w-full px-3 py-2 rounded-xl border border-gray-200 dark:border-white/10 text-xs outline-none focus:ring-1 focus:ring-[#8c9276] bg-white dark:bg-[#1a1a1c] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-[11px] font-semibold text-gray-700 dark:text-gray-300 mb-1">Instrucciones de Entrega</label>
-                  <input 
-                    type="text" 
-                    value={deliveryInstructions} 
-                    onChange={e => setDeliveryInstructions(e.target.value)} 
-                    placeholder="Ej: Dejar en portería" 
-                    className="w-full px-3 py-2 rounded-xl border border-gray-200 dark:border-white/10 text-xs outline-none focus:ring-1 focus:ring-[#8c9276] bg-white dark:bg-[#1a1a1c] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500"
-                  />
-                </div>
-
-                <div className="flex items-center gap-4">
-                  <label className="flex items-center gap-2 cursor-pointer text-[11px] font-semibold text-gray-700 dark:text-gray-300">
-                    <input 
-                      type="checkbox"
-                      checked={hasElevator}
-                      onChange={e => setHasElevator(e.target.checked)}
-                      className="rounded border-gray-300 text-[#8c9276] focus:ring-[#8c9276]"
-                    />
-                    Tiene ascensor
-                  </label>
                   
-                  <div className="flex-1">
-                    <label className="block text-[11px] font-semibold text-gray-700 dark:text-gray-300 mb-1">Piso</label>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-[11px] font-semibold text-gray-700 dark:text-gray-300 mb-1">Código Postal</label>
+                      <input 
+                        type="text" 
+                        required 
+                        value={postalCode} 
+                        onChange={e => setPostalCode(e.target.value)} 
+                        placeholder="170505" 
+                        className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-xs outline-none focus:ring-2 focus:ring-[#8c9276]/30 focus:border-[#8c9276] bg-white dark:bg-[#1a1a1c] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 transition-all"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[11px] font-semibold text-gray-700 dark:text-gray-300 mb-1">País</label>
+                      <input 
+                        type="text" 
+                        required
+                        value={country} 
+                        onChange={e => setCountry(e.target.value)} 
+                        placeholder="Ecuador"
+                        className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-xs outline-none focus:ring-2 focus:ring-[#8c9276]/30 focus:border-[#8c9276] bg-white dark:bg-[#1a1a1c] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 transition-all"
+                      />
+                    </div>
+                  </div>
+
+                  <h4 className="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mt-5 pt-3 border-t border-gray-200 dark:border-white/10">Campos Opcionales</h4>
+                  
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-[11px] font-semibold text-gray-700 dark:text-gray-300 mb-1">Tipo de Propiedad</label>
+                      <select
+                        value={addressType}
+                        onChange={e => setAddressType(e.target.value as 'casa' | 'departamento' | 'oficina')}
+                        className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-xs outline-none focus:ring-2 focus:ring-[#8c9276]/30 focus:border-[#8c9276] bg-white dark:bg-[#1a1a1c] text-gray-900 dark:text-gray-100 cursor-pointer"
+                      >
+                        <option value="casa">Casa</option>
+                        <option value="departamento">Departamento</option>
+                        <option value="oficina">Oficina</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-[11px] font-semibold text-gray-700 dark:text-gray-300 mb-1">Número Interior/Depto</label>
+                      <input 
+                        type="text"
+                        value={interiorNumber} 
+                        onChange={e => setInteriorNumber(e.target.value)} 
+                        placeholder="Ej: Apto 4B" 
+                        className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-xs outline-none focus:ring-2 focus:ring-[#8c9276]/30 focus:border-[#8c9276] bg-white dark:bg-[#1a1a1c] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 transition-all"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-[11px] font-semibold text-gray-700 dark:text-gray-300 mb-1">Calles Intersección</label>
                     <input 
-                      type="text" 
-                      value={floorLevel} 
-                      onChange={e => setFloorLevel(e.target.value)} 
-                      placeholder="Ej: 4" 
-                      className="w-full px-3 py-2 rounded-xl border border-gray-200 dark:border-white/10 text-xs outline-none focus:ring-1 focus:ring-[#8c9276] bg-white dark:bg-[#1a1a1c] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500"
+                      type="text"
+                      value={crossStreets} 
+                      onChange={e => setCrossStreets(e.target.value)} 
+                      placeholder="Ej: y Naciones Unidas" 
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-xs outline-none focus:ring-2 focus:ring-[#8c9276]/30 focus:border-[#8c9276] bg-white dark:bg-[#1a1a1c] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 transition-all"
                     />
                   </div>
-                </div>
-              </div>
 
-              <div className="flex justify-end gap-2 pt-4 mt-2 border-t border-gray-200 dark:border-white/10">
-                <button type="button" onClick={() => setShowAddressForm(false)} className="px-3 py-1.5 text-xs text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-[#48484a] rounded-xl cursor-pointer">Cancelar</button>
-                <button type="submit" className="px-4 py-1.5 text-xs font-semibold bg-[#8c9276] text-white rounded-xl hover:bg-[#7b8166] cursor-pointer">Guardar Dirección</button>
-              </div>
-            </form>
-          </div>
-        )}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-[11px] font-semibold text-gray-700 dark:text-gray-300 mb-1">Sector / Barrio</label>
+                      <input 
+                        type="text" 
+                        value={neighborhood} 
+                        onChange={e => setNeighborhood(e.target.value)} 
+                        placeholder="Ej: La Carolina, Iñaquito..." 
+                        className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-xs outline-none focus:ring-2 focus:ring-[#8c9276]/30 focus:border-[#8c9276] bg-white dark:bg-[#1a1a1c] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 transition-all"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[11px] font-semibold text-gray-700 dark:text-gray-300 mb-1">Referencia o Lugar Cercano</label>
+                      <input 
+                        type="text" 
+                        value={reference} 
+                        onChange={e => setReference(e.target.value)} 
+                        placeholder="Ej: Frente al parque" 
+                        className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-xs outline-none focus:ring-2 focus:ring-[#8c9276]/30 focus:border-[#8c9276] bg-white dark:bg-[#1a1a1c] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 transition-all"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-[11px] font-semibold text-gray-700 dark:text-gray-300 mb-1">Instrucciones de Entrega</label>
+                    <input 
+                      type="text" 
+                      value={deliveryInstructions} 
+                      onChange={e => setDeliveryInstructions(e.target.value)} 
+                      placeholder="Ej: Dejar en portería" 
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-xs outline-none focus:ring-2 focus:ring-[#8c9276]/30 focus:border-[#8c9276] bg-white dark:bg-[#1a1a1c] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 transition-all"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 items-center">
+                    <div className="flex items-center h-full pt-2 sm:pt-4">
+                      <label className="flex items-center gap-2 cursor-pointer text-xs font-semibold text-gray-700 dark:text-gray-300 select-none">
+                        <input 
+                          type="checkbox" 
+                          checked={hasElevator} 
+                          onChange={e => setHasElevator(e.target.checked)} 
+                          className="w-4 h-4 rounded border-gray-300 text-[#8c9276] focus:ring-[#8c9276] cursor-pointer" 
+                        />
+                        <span>Tiene ascensor el edificio</span>
+                      </label>
+                    </div>
+                    <div>
+                      <label className="block text-[11px] font-semibold text-gray-700 dark:text-gray-300 mb-1">Piso / Nivel</label>
+                      <input 
+                        type="text" 
+                        value={floorLevel} 
+                        onChange={e => setFloorLevel(e.target.value)} 
+                        placeholder="Ej: 4" 
+                        className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-xs outline-none focus:ring-2 focus:ring-[#8c9276]/30 focus:border-[#8c9276] bg-white dark:bg-[#1a1a1c] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 transition-all"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-end gap-2.5 pt-4 mt-2 border-t border-gray-200 dark:border-white/10">
+                  <motion.button 
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    type="button" 
+                    onClick={() => {
+                      setShowMiniMap(false);
+                      setShowAddressForm(false);
+                    }} 
+                    className="px-4 py-2 text-xs font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-200/80 dark:hover:bg-white/10 rounded-xl cursor-pointer transition-colors"
+                  >
+                    Cancelar
+                  </motion.button>
+                  <motion.button 
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    type="submit" 
+                    className="px-5 py-2 text-xs font-semibold bg-[#8c9276] hover:bg-[#7b8166] text-white rounded-xl shadow-sm cursor-pointer transition-colors"
+                  >
+                    Guardar Dirección
+                  </motion.button>
+                </div>
+              </form>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
     </div>
   );

@@ -292,26 +292,42 @@ async function resolveGeocode(latRaw: unknown, lonRaw: unknown, clientIp?: strin
     nLon = Number(lonRaw);
   }
 
-  // Run parallel queries: Mapbox Geocoding API (when token present) + Origin + 2 tight offsets (~22m) + BigDataCloud fallback
-  const tightOffset = 0.00020;
+function extractExteriorNumber(displayName?: string, rawHouse?: string): string {
+  if (rawHouse && rawHouse.trim()) return rawHouse.trim();
+  if (!displayName) return '';
+  // Match Ecuadorian exterior number patterns (e.g., N34-120, Oe4-20, S12-45, E3-22, #12-34, 12-45)
+  const regex = /(?:^|,\s*)([A-Z]{1,2}\d{1,4}-\d{1,4}|N\d+-\d+|Oe\d+-\d+|S\d+-\d+|E\d+-\d+|#\s*\d+(?:-\d+)?|\b\d{1,5}-\d{1,4}\b)(?:,|$)/i;
+  const match = displayName.match(regex);
+  if (match && match[1]) {
+    return match[1].replace(/^#\s*/, '').trim();
+  }
+  return '';
+}
+
+  // Run parallel queries: Mapbox + Micro (zoom 18) + Macro Road/Sector (zoom 16) + Regional Parish/District (zoom 14) + Offsets + BigDataCloud
+  const tightOffset = 0.00022;
   const mapboxToken = (process.env.NEXT_PUBLIC_MAPBOX_TOKEN || process.env.MAPBOX_TOKEN || '').trim();
   const hasMapbox = mapboxToken.startsWith('pk.');
 
-  const [mapboxRes, originRes, off1Res, off2Res, bdcRes] = await Promise.allSettled([
+  const [mapboxRes, microRes, macroRes, regionalRes, off1Res, off2Res, bdcRes] = await Promise.allSettled([
     hasMapbox
       ? fetch(
           `https://api.mapbox.com/geocoding/v5/mapbox.places/${nLon},${nLat}.json?access_token=${mapboxToken}&language=es&types=address,poi,neighborhood,locality,place,postcode,region,country`
         ).then(r => r.json())
       : Promise.resolve(null),
     fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${nLat}&lon=${nLon}&addressdetails=1&zoom=18`, { headers }).then(r => r.json()),
-    fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${nLat + tightOffset}&lon=${nLon}&addressdetails=1&zoom=18`, { headers }).then(r => r.json()),
-    fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${nLat}&lon=${nLon - tightOffset}&addressdetails=1&zoom=18`, { headers }).then(r => r.json()),
+    fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${nLat}&lon=${nLon}&addressdetails=1&zoom=16`, { headers }).then(r => r.json()),
+    fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${nLat}&lon=${nLon}&addressdetails=1&zoom=14`, { headers }).then(r => r.json()),
+    fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${nLat + tightOffset}&lon=${nLon}&addressdetails=1&zoom=17`, { headers }).then(r => r.json()),
+    fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${nLat}&lon=${nLon - tightOffset}&addressdetails=1&zoom=17`, { headers }).then(r => r.json()),
     fetch(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${nLat}&longitude=${nLon}&localityLanguage=es`).then(r => r.json())
   ]);
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const mbData: any = mapboxRes.status === 'fulfilled' ? mapboxRes.value : null;
-  const origin = originRes.status === 'fulfilled' ? originRes.value : null;
+  const origin = microRes.status === 'fulfilled' ? microRes.value : null;
+  const macro = macroRes.status === 'fulfilled' ? macroRes.value : null;
+  const regional = regionalRes.status === 'fulfilled' ? regionalRes.value : null;
   const off1 = off1Res.status === 'fulfilled' ? off1Res.value : null;
   const off2 = off2Res.status === 'fulfilled' ? off2Res.value : null;
   const bdc = bdcRes.status === 'fulfilled' ? bdcRes.value : null;
@@ -341,27 +357,68 @@ async function resolveGeocode(latRaw: unknown, lonRaw: unknown, clientIp?: strin
       } else if (types.includes('country') && !mbCountry) {
         mbCountry = feat.text_es || feat.text || '';
       }
+
+      // Also inspect context hierarchy if present
+      if (Array.isArray(feat.context)) {
+        for (const ctx of feat.context) {
+          const id: string = ctx.id || '';
+          if (id.startsWith('neighborhood') && !mbNeighborhood) mbNeighborhood = ctx.text || '';
+          if (id.startsWith('place') && !mbCity) mbCity = ctx.text || '';
+          if (id.startsWith('region') && !mbState) mbState = ctx.text || '';
+          if (id.startsWith('postcode') && !mbPostcode) mbPostcode = ctx.text || '';
+          if (id.startsWith('country') && !mbCountry) mbCountry = ctx.text || '';
+        }
+      }
     }
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const addr = (origin && (origin as any).address) || {};
+  const addr18 = (origin && (origin as any).address) || {};
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const addr16 = (macro && (macro as any).address) || {};
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const addr14 = (regional && (regional as any).address) || {};
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const off1Addr = (off1 && (off1 as any).address) || {};
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const off2Addr = (off2 && (off2 as any).address) || {};
 
   // State / Province & Country
-  const state = mbState || addr.state || addr.province || addr.region || (bdc && bdc.principalSubdivision) || '';
-  const postalCode = mbPostcode || addr.postcode || (bdc && bdc.postcode) || '';
-  const country = mbCountry || addr.country || (bdc && bdc.countryName) || 'Ecuador';
+  const state = mbState || addr14.state || addr16.state || addr18.state || (bdc && bdc.principalSubdivision) || '';
+  const postalCode = mbPostcode || addr18.postcode || addr16.postcode || addr14.postcode || (bdc && bdc.postcode) || '';
+  const country = mbCountry || addr18.country || addr16.country || addr14.country || (bdc && bdc.countryName) || 'Ecuador';
 
-  // 1. Primary Road & House Number
-  const rawPrimary = mbStreet || addr.road || addr.pedestrian || addr.footway || addr.path || addr.street || (bdc && bdc.locality) || '';
-  const primaryRoad = polishRoadName(rawPrimary);
-  const houseNum = mbNumber || addr.house_number || '';
+  // 1. Primary Road & House Number (Looking "desde arriba" to prefer real thoroughfares over micro footpaths)
+  const isMicroFootpath = Boolean(
+    addr18.footway ||
+    addr18.path ||
+    addr18.steps ||
+    addr18.pedestrian ||
+    addr18.cycleway ||
+    addr18.service
+  );
+  const microRoad = addr18.road || addr18.street || (isMicroFootpath ? '' : addr18.pedestrian) || '';
+  const macroRoad = addr16.road || addr16.street || '';
 
-  // 2. Discover Real Intersecting Street (Topological Junction Nodes) & Landmark Place (~6 blocks) in parallel
+  const rawPrimary = mbStreet || (!isMicroFootpath && microRoad ? microRoad : macroRoad) || microRoad || macroRoad || (bdc && bdc.locality) || '';
+  let primaryRoad = polishRoadName(rawPrimary);
+
+  // House / Exterior Number resolution
+  let houseNum = mbNumber || extractExteriorNumber(
+    (origin as { display_name?: string } | null)?.display_name,
+    addr18.house_number || addr16.house_number
+  );
+
+  // Check if primary road accidentally had the house number appended
+  const streetNumberMatch = primaryRoad.match(/^(.*?)\s+([A-Z]{1,2}\d{1,4}-\d{1,4}|N\d+-\d+|Oe\d+-\d+|S\d+-\d+|E\d+-\d+|#\s*\d+(?:-\d+)?|\d{1,5}-\d{1,4})$/i);
+  if (streetNumberMatch) {
+    primaryRoad = streetNumberMatch[1].trim();
+    if (!houseNum) {
+      houseNum = streetNumberMatch[2].replace(/^#\s*/, '').trim();
+    }
+  }
+
+  // 2. Discover Real Intersecting Street (Topological Junction Nodes + Macro Divergence + Offsets) & Landmark Place (~6 blocks) in parallel
   const [topologicalCross, landmarkPlace] = await Promise.all([
     origin && origin.osm_type === 'way' && origin.osm_id
       ? getTopologicalCrossStreet(origin.osm_id, nLat, nLon, primaryRoad)
@@ -369,25 +426,30 @@ async function resolveGeocode(latRaw: unknown, lonRaw: unknown, clientIp?: strin
     getLandmarkPlaceName(nLat, nLon)
   ]);
 
-  // If topological junction didn't find a cross street, test tight offset fallback
   let crossRoad = polishRoadName(topologicalCross);
+
+  // If topological didn't detect an intersection, check if macro road (from zoom 16) is a different intersecting avenue
+  if (!crossRoad && macroRoad && primaryRoad) {
+    const normMacro = macroRoad.toLowerCase().trim();
+    const normPrim = primaryRoad.toLowerCase().trim();
+    if (normMacro !== normPrim && !normMacro.includes(normPrim) && !normPrim.includes(normMacro)) {
+      crossRoad = polishRoadName(macroRoad);
+    }
+  }
+
+  // If still no crossRoad, probe offset responses
   if (!crossRoad) {
     const candidateStreets: string[] = [
       off1Addr.road,
       off2Addr.road,
-      off1Addr.pedestrian,
-      off2Addr.pedestrian,
       off1Addr.street,
       off2Addr.street
     ].filter(Boolean);
 
     for (const cand of candidateStreets) {
-      if (
-        primaryRoad &&
-        cand.toLowerCase() !== primaryRoad.toLowerCase() &&
-        !cand.toLowerCase().includes(primaryRoad.toLowerCase()) &&
-        !primaryRoad.toLowerCase().includes(cand.toLowerCase())
-      ) {
+      const normCand = cand.toLowerCase().trim();
+      const normPrim = primaryRoad.toLowerCase().trim();
+      if (normCand !== normPrim && !normCand.includes(normPrim) && !normPrim.includes(normCand)) {
         crossRoad = polishRoadName(cand);
         break;
       }
@@ -395,21 +457,32 @@ async function resolveGeocode(latRaw: unknown, lonRaw: unknown, clientIp?: strin
   }
 
   // Keep street name strictly separate from exteriorNumber and crossStreets
-  const streetNameOnly = primaryRoad || addr.suburb || addr.neighbourhood || addr.village || 'Dirección por coordenadas';
+  const streetNameOnly = primaryRoad || addr16.neighbourhood || addr18.neighbourhood || addr16.suburb || addr18.suburb || addr18.village || 'Dirección por coordenadas';
 
-  // 3. Hierarchical City and Sub-locality / Parish
+  // 3. Hierarchical City and Sub-locality / Parish (Looking "desde arriba" across zoom 14, 16 and 18)
   const bdcCity = cleanAdmin(bdc && (bdc.city || bdc.principalSubdivision));
-  const mainCity = resolveMajorCity(mbCity || addr.city, addr.county, addr.municipality, bdcCity, state, country);
+  const rawCityCandidate = mbCity || addr14.city || addr16.city || addr18.city || addr14.town || addr16.town;
+  const rawCountyCandidate = addr14.county || addr16.county || addr18.county;
+  const rawMunCandidate = addr14.municipality || addr16.municipality || addr18.municipality;
+  const mainCity = resolveMajorCity(rawCityCandidate, rawCountyCandidate, rawMunCandidate, bdcCity, state, country);
 
   let subLocality = (
     mbNeighborhood ||
+    addr16.neighbourhood ||
+    addr18.neighbourhood ||
+    addr16.quarter ||
+    addr18.quarter ||
+    addr16.suburb ||
+    addr18.suburb ||
+    addr14.city_district ||
+    addr14.suburb ||
+    addr18.city_district ||
+    addr16.residential ||
+    addr18.residential ||
     landmarkPlace ||
-    addr.village ||
-    (addr.town && cleanAdmin(addr.town).toLowerCase() !== mainCity.toLowerCase() ? cleanAdmin(addr.town) : '') ||
-    addr.suburb ||
-    addr.neighbourhood ||
-    addr.quarter ||
-    addr.hamlet ||
+    addr18.village ||
+    addr16.village ||
+    (addr18.town && cleanAdmin(addr18.town).toLowerCase() !== mainCity.toLowerCase() ? cleanAdmin(addr18.town) : '') ||
     (bdc && bdc.locality && bdc.locality.toLowerCase() !== mainCity.toLowerCase() ? bdc.locality : '') ||
     ''
   ).trim();
@@ -442,7 +515,7 @@ async function resolveGeocode(latRaw: unknown, lonRaw: unknown, clientIp?: strin
       rawLat: !isIpFallback && Number.isFinite(nLat) ? nLat : undefined,
       rawLon: !isIpFallback && Number.isFinite(nLon) ? nLon : undefined,
       rawDisplayName: (origin as { display_name?: string } | null)?.display_name || undefined,
-      rawNominatim: origin || mbData || bdc || undefined,
+      rawNominatim: origin || macro || mbData || bdc || undefined,
     },
     // Direct top-level properties for seamless compatibility + Raw unformatted GPS/Geocoder payload
     street: finalStreet,
@@ -458,7 +531,7 @@ async function resolveGeocode(latRaw: unknown, lonRaw: unknown, clientIp?: strin
     rawLat: !isIpFallback && Number.isFinite(nLat) ? nLat : undefined,
     rawLon: !isIpFallback && Number.isFinite(nLon) ? nLon : undefined,
     rawDisplayName: (origin as { display_name?: string } | null)?.display_name || undefined,
-    rawNominatim: origin || mbData || bdc || undefined,
+    rawNominatim: origin || macro || mbData || bdc || undefined,
   });
 }
 

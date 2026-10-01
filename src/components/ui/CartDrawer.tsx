@@ -308,6 +308,7 @@ export function CartDrawer() {
   const [addrState, setAddrState] = useState("");
   const [addrCountry, setAddrCountry] = useState("Ecuador");
   const [addrDetectedCoords, setAddrDetectedCoords] = useState<{ lat: number; lng: number } | null>(null);
+  const [showMiniMap, setShowMiniMap] = useState(false);
   const [addrDetectedRawGps, setAddrDetectedRawGps] = useState<RawGpsHardwareData | null>(null);
   const [isDetectingLocation, setIsDetectingLocation] = useState(false);
   const [locationError, setLocationError] = useState<string | null>(null);
@@ -542,6 +543,7 @@ export function CartDrawer() {
         };
         setAddrDetectedRawGps(enrichedRawGps);
         setAddrDetectedCoords({ lat: coords.latitude, lng: coords.longitude });
+        setShowMiniMap(true);
 
         if (!addrRecipient.trim() && user?.name) {
           setAddrRecipient(user.name);
@@ -631,6 +633,7 @@ export function CartDrawer() {
  setAddrCountry("Ecuador");
  setAddrDetectedRawGps(null);
  setAddrDetectedCoords(null);
+ setShowMiniMap(false);
  setLocationError(null);
  setLocationSuccess(false);
  setIsEditingAddress(false);
@@ -1763,6 +1766,7 @@ export function CartDrawer() {
             onClick={() => {
               setLocationError(null);
               setLocationSuccess(false);
+              setShowMiniMap(false);
               setIsEditingAddress(false);
             }}
             className="text-xs text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 cursor-pointer"
@@ -1807,30 +1811,47 @@ export function CartDrawer() {
             </p>
           )}
 
-          <div className="mt-4">
-            <label className="block text-[11px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-2">
-              Ubicación Exacta en Mapa
-            </label>
-            <InteractiveAddressMap
-              initialLat={addrDetectedCoords?.lat || -0.1807}
-              initialLng={addrDetectedCoords?.lng || -78.4678}
-              onLocationSelect={(lat, lng) => setAddrDetectedCoords({ lat, lng })}
-              onAddressResolved={(addr) => {
-                if (addr.street) setAddrStreet(addr.street);
-                if (addr.exteriorNumber) setAddrExteriorNumber(addr.exteriorNumber);
-                if (addr.neighborhood) setAddrNeighborhood(addr.neighborhood);
-                if (addr.crossStreets) setAddrCrossStreets(addr.crossStreets);
-                if (addr.city) setAddrCity(addr.city);
-                if (addr.state) setAddrState(addr.state);
-                if (addr.postalCode) setAddrPostal(addr.postalCode);
-                if (addr.country) setAddrCountry(addr.country);
-              }}
-              className="h-56 w-full rounded-2xl overflow-hidden border border-black/[0.08] dark:border-white/10 shadow-sm"
-            />
-            <p className="text-[10px] text-gray-500 dark:text-gray-400 mt-1.5">
-              Arrastra el pin azul a tu ubicación exacta. Esto asegurará la precisión de las entregas.
-            </p>
-          </div>
+          {/* Mini-map: ONLY appears after clicking "Autocompletar con mi ubicación actual" */}
+          <AnimatePresence>
+            {showMiniMap && (
+              <motion.div
+                initial={{ opacity: 0, height: 0, scale: 0.98 }}
+                animate={{ opacity: 1, height: "auto", scale: 1 }}
+                exit={{ opacity: 0, height: 0, scale: 0.98 }}
+                transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
+                className="overflow-hidden mt-3"
+              >
+                <div className="flex items-center justify-between mb-2">
+                  <label className="text-[11px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest flex items-center gap-1.5">
+                    <MapPin className="w-3.5 h-3.5 text-[#8c9276]" />
+                    <span>Ubicación Exacta en Mapa</span>
+                  </label>
+                  <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-medium bg-emerald-50 dark:bg-emerald-950/40 px-2 py-0.5 rounded-full border border-emerald-200 dark:border-emerald-800/40">
+                    Pin activo
+                  </span>
+                </div>
+                <InteractiveAddressMap
+                  initialLat={addrDetectedCoords?.lat || -0.1807}
+                  initialLng={addrDetectedCoords?.lng || -78.4678}
+                  onLocationSelect={(lat, lng) => setAddrDetectedCoords({ lat, lng })}
+                  onAddressResolved={(addr) => {
+                    if (addr.street) setAddrStreet(addr.street);
+                    if (addr.exteriorNumber) setAddrExteriorNumber(addr.exteriorNumber);
+                    if (addr.neighborhood) setAddrNeighborhood(addr.neighborhood);
+                    if (addr.crossStreets) setAddrCrossStreets(addr.crossStreets);
+                    if (addr.city) setAddrCity(addr.city);
+                    if (addr.state) setAddrState(addr.state);
+                    if (addr.postalCode) setAddrPostal(addr.postalCode);
+                    if (addr.country) setAddrCountry(addr.country);
+                  }}
+                  className="h-56 w-full rounded-2xl overflow-hidden border border-black/[0.08] dark:border-white/10 shadow-sm"
+                />
+                <p className="text-[10px] text-gray-500 dark:text-gray-400 mt-1.5">
+                  Arrastra el pin azul a tu ubicación exacta. Esto asegurará la precisión de las entregas.
+                </p>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
 
         <div className="relative flex py-1 items-center mt-2">

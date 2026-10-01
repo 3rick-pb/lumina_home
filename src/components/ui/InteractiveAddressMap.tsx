@@ -3,7 +3,7 @@
 import React, { useEffect, useRef, useState, useCallback } from "react";
 import mapboxgl from "mapbox-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
-import { Plus, Minus, Crosshair, Search, Loader2, MapPin, Satellite } from "lucide-react";
+import { Plus, Minus, Crosshair } from "lucide-react";
 
 export interface ResolvedMapAddress {
   street?: string;
@@ -26,12 +26,6 @@ interface InteractiveAddressMapProps {
 }
 
 type MiniMapStyle = "streets-v12" | "dark-v11" | "satellite-streets-v12";
-
-interface SearchSuggestion {
-  id: string;
-  place_name: string;
-  center: [number, number]; // [lng, lat]
-}
 
 const TILE_SIZE = 256;
 const MIN_ZOOM = 4;
@@ -117,10 +111,6 @@ export default function InteractiveAddressMap({
   const [zoom, setZoom] = useState<number>(16);
   const [renderTick, setRenderTick] = useState<number>(0);
 
-  // Search / Autocomplete state (Mapbox Places API + fallback)
-  const [searchQuery, setSearchQuery] = useState("");
-  const [suggestions, setSuggestions] = useState<SearchSuggestion[]>([]);
-  const [isSearching, setIsSearching] = useState(false);
 
   // Refs for Native Mapbox GL JS instance
   const mapboxContainerRef = useRef<HTMLDivElement>(null);
@@ -274,81 +264,6 @@ export default function InteractiveAddressMap({
     }
   }, [initialLat, initialLng, useNativeMapbox]);
 
-  // Address Search Autocomplete (Mapbox Geocoding v5 API when token present, Nominatim fallback)
-  useEffect(() => {
-    const q = searchQuery.trim();
-    if (q.length < 3) {
-      setSuggestions([]);
-      return;
-    }
-
-    const timer = setTimeout(async () => {
-      setIsSearching(true);
-      try {
-        if (hasValidMapboxToken) {
-          const url = `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(
-            q
-          )}.json?access_token=${envToken}&language=es&limit=4&country=ec,co,pe,mx,cl,ar`;
-          const res = await fetch(url);
-          const data = await res.json();
-          if (Array.isArray(data?.features)) {
-            setSuggestions(
-              // eslint-disable-next-line @typescript-eslint/no-explicit-any
-              data.features.map((f: any) => ({
-                id: String(f.id),
-                place_name: String(f.place_name_es || f.place_name),
-                center: f.center as [number, number],
-              }))
-            );
-          }
-        } else {
-          const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(
-            q
-          )}&limit=4&accept-language=es`;
-          const res = await fetch(url);
-          const data = await res.json();
-          if (Array.isArray(data)) {
-            setSuggestions(
-              // eslint-disable-next-line @typescript-eslint/no-explicit-any
-              data.map((item: any, idx: number) => ({
-                id: String(item.place_id || idx),
-                place_name: String(item.display_name),
-                center: [Number(item.lon), Number(item.lat)],
-              }))
-            );
-          }
-        }
-      } catch {
-        setSuggestions([]);
-      } finally {
-        setIsSearching(false);
-      }
-    }, 320);
-
-    return () => clearTimeout(timer);
-  }, [searchQuery, hasValidMapboxToken, envToken]);
-
-  const handleSelectSuggestion = (s: SearchSuggestion) => {
-    const [lng, lat] = s.center;
-    setSuggestions([]);
-    setSearchQuery("");
-    setPin({ lat, lng });
-    setCenter({ lat, lng });
-    prevPropsRef.current = { lat, lng };
-    onLocationSelect(lat, lng);
-    triggerReverseGeocode(lat, lng);
-
-    if (useNativeMapbox && mapboxInstanceRef.current && mapboxMarkerRef.current) {
-      try {
-        mapboxMarkerRef.current.setLngLat([lng, lat]);
-        mapboxInstanceRef.current.flyTo({
-          center: [lng, lat],
-          zoom: 16.5,
-          essential: true,
-        });
-      } catch {}
-    }
-  };
 
   // Fallback Canvas Web Mercator helpers (active when NEXT_PUBLIC_MAPBOX_TOKEN is not yet configured)
   const screenToLatLng = useCallback(
@@ -574,40 +489,7 @@ export default function InteractiveAddressMap({
   };
 
   return (
-    <div className="space-y-2">
-      {/* Mapbox Places Search / Autocomplete Bar */}
-      <div className="relative">
-        <div className="flex items-center gap-2 px-3 py-2 rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-[#1a1a1c]">
-          <Search className="w-3.5 h-3.5 text-gray-400 shrink-0" />
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Buscar dirección o sector en el mapa (Mapbox Places)..."
-            className="w-full text-xs bg-transparent outline-none text-gray-900 dark:text-gray-100 placeholder-gray-400"
-          />
-          {isSearching && <Loader2 className="w-3.5 h-3.5 text-blue-600 animate-spin shrink-0" />}
-        </div>
-
-        {suggestions.length > 0 && (
-          <div className="absolute left-0 right-0 top-full mt-1 bg-white dark:bg-[#1a1a1c] border border-gray-200 dark:border-white/15 rounded-xl shadow-lg z-30 overflow-hidden">
-            {suggestions.map((s) => (
-              <button
-                key={s.id}
-                type="button"
-                onClick={() => handleSelectSuggestion(s)}
-                className="w-full text-left px-3 py-2 text-[11px] text-gray-800 dark:text-gray-200 hover:bg-blue-50 dark:hover:bg-white/10 flex items-center gap-2 border-b last:border-b-0 border-gray-100 dark:border-white/5 cursor-pointer"
-              >
-                <MapPin className="w-3.5 h-3.5 text-blue-600 shrink-0" />
-                <span className="truncate">{s.place_name}</span>
-              </button>
-            ))}
-          </div>
-        )}
-      </div>
-
-      {/* Interactive Map Container */}
-      <div className={`relative select-none ${className}`}>
+    <div className={`relative select-none ${className}`}>
         {/* 1. Native Mapbox GL JS Container (Active when NEXT_PUBLIC_MAPBOX_TOKEN is in .env) */}
         {useNativeMapbox ? (
           <div ref={mapboxContainerRef} className="w-full h-full" />
@@ -649,21 +531,13 @@ export default function InteractiveAddressMap({
           </div>
         )}
 
-        {/* Top Bar: Instruction & Mapbox Official Styles Switcher */}
+        {/* Top Bar: Instruction */}
         <div className="absolute top-2.5 left-2.5 right-2.5 flex items-center justify-between gap-2 pointer-events-none z-10">
           <div className="bg-white/95 dark:bg-black/85 backdrop-blur-md px-2.5 py-1.5 rounded-xl border border-black/10 dark:border-white/15 shadow-sm flex items-center gap-1.5">
             <span className="w-2 h-2 rounded-full bg-blue-600 animate-pulse shrink-0" />
             <span className="text-[10px] font-semibold text-gray-800 dark:text-gray-200 leading-none">
               Arrastra el pin o toca el mapa
             </span>
-          </div>
-
-          <div
-            className="flex items-center gap-1.5 bg-white/95 dark:bg-black/85 backdrop-blur-md px-2.5 py-1.5 rounded-xl border border-black/10 dark:border-white/15 shadow-sm text-[10px] font-bold text-gray-800 dark:text-gray-200 pointer-events-auto select-none"
-            title="Estilo satélite con calles de alta resolución"
-          >
-            <Satellite className="w-3 h-3 text-emerald-500 shrink-0" />
-            <span>Satellite Streets</span>
           </div>
         </div>
 
@@ -699,12 +573,11 @@ export default function InteractiveAddressMap({
         </div>
 
         {/* Live Coordinates Badge */}
-        <div className="absolute bottom-2.5 left-2.5 bg-white/95 dark:bg-black/85 backdrop-blur-md px-2.5 py-1 rounded-lg border border-black/10 dark:border-white/15 shadow-sm pointer-events-none z-10">
+        <div className="absolute bottom-2.5 left-2.5 bg-white/95 dark:bg-black/85 backdrop-blur-md px-2.5 py-1.5 rounded-lg border border-black/10 dark:border-white/15 shadow-sm pointer-events-none z-10">
           <span className="text-[10px] font-mono font-semibold text-gray-700 dark:text-gray-300">
             {pin.lat.toFixed(5)}, {pin.lng.toFixed(5)}
           </span>
         </div>
       </div>
-    </div>
   );
 }

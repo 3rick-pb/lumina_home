@@ -1404,26 +1404,6 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
 
             const isDimmed = !isSelf && !isActive && !isStageMatch;
 
-            const clientFirstName = cleanClientName(client.name).split(' ')[0] || '';
-            const selfPostal = isSelf && primaryAddressObj?.postalCode ? primaryAddressObj.postalCode.trim() : "";
-            const selfStreetOrSector =
-              isSelf && primaryAddressObj
-                ? (primaryAddressObj.reference && primaryAddressObj.reference.trim()) ||
-                  (primaryAddressObj.street
-                    ? cleanEcuadorStreetForGeocoding(primaryAddressObj.street).split(",")[0].slice(0, 24).trim()
-                    : "")
-                : "";
-            const shortCityOrSector =
-              selfStreetOrSector
-                ? `${selfStreetOrSector}${selfPostal ? ` (${selfPostal})` : ""} • ${beacon.cityName}`
-                : selfPostal
-                ? `CP ${selfPostal} • ${beacon.cityName}`
-                : beacon.cityName;
-
-            const beaconLabel = beacon.clusterTotal > 1 && clientFirstName
-              ? `${clientFirstName} • ${shortCityOrSector}`
-              : shortCityOrSector;
-
             const openDownward = pos.y < 220;
 
             // Radial bloom offset from city center so toggling Disperso <-> Agrupar physically blooms/converges
@@ -1576,7 +1556,7 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
                       ? "bg-black/90 text-sky-300 border border-sky-400/30 backdrop-blur-md"
                       : "bg-black/90 text-white border border-white/15 backdrop-blur-md"
                   }`}>
-                    {client.isAnonymous ? `Visitante • ${beacon.cityName}` : beaconLabel}
+                    {beacon.cityName || client.city || "Ecuador"}
                   </div>
 
                   {/* Animated Hover Tooltip for Registered Clients & Admins */}

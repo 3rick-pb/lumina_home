@@ -10,7 +10,6 @@ import {
   Sparkles, 
   CreditCard, 
   Plus, 
-  X, 
   Eye, 
   Trash2, 
   AlertTriangle 
@@ -138,10 +137,10 @@ export function OverviewTab({
     const el = nicheChartRef.current;
     if (!el) return;
     const handleWheel = (e: WheelEvent) => {
-      if (el.scrollWidth > el.clientWidth) {
-        e.preventDefault();
-        el.scrollLeft += e.deltaY || e.deltaX;
-      }
+      // Isolate wheel completely: scroll horizontally inside chart and never scroll the page
+      e.preventDefault();
+      e.stopPropagation();
+      el.scrollLeft += (e.deltaY || e.deltaX) * 1.15;
     };
     el.addEventListener("wheel", handleWheel, { passive: false });
     return () => el.removeEventListener("wheel", handleWheel);
@@ -349,11 +348,12 @@ export function OverviewTab({
         </div>
 
         {/* Visual Dynamic Bar Chart */}
-        <div className="relative w-full my-auto">
+        <div className="relative w-full my-auto" data-lenis-prevent="true">
           <div 
             ref={nicheChartRef}
+            data-lenis-prevent="true"
             onMouseLeave={isAdmin ? handleNicheContainerLeave : handleMonthContainerLeave}
-            className={`flex items-end h-40 pt-7 pb-1 px-1 overflow-x-auto overflow-y-hidden select-none cursor-grab active:cursor-grabbing ${
+            className={`flex items-end h-40 pt-7 pb-1 px-1 overflow-x-auto overflow-y-hidden select-none cursor-grab active:cursor-grabbing overscroll-contain ${
               categoryDistributionData.length <= 4 
                 ? "justify-around gap-3" 
                 : categoryDistributionData.length <= 7 
@@ -362,7 +362,8 @@ export function OverviewTab({
             }`}
             style={{
               scrollbarWidth: "thin",
-              scrollbarColor: "rgba(156, 163, 175, 0.4) transparent"
+              scrollbarColor: "rgba(156, 163, 175, 0.4) transparent",
+              overscrollBehavior: "contain"
             }}
           >
             {isAdmin ? (
