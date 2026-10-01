@@ -53,55 +53,67 @@ import {
 } from "@/components/ui/BeUIControls";
 import { CatalogScrollToTopButton } from "@/components/ui/CatalogScrollToTopButton";
 import { LuminaBrandEmblem } from "@/components/ui/LuminaBrandEmblem";
+import {
+  CatalogTabSkeleton,
+  NichesTabSkeleton,
+  AnalyticsTabSkeleton,
+  CartAlertsTabSkeleton,
+  IntegrationsTabSkeleton,
+  DiscountCouponsTabSkeleton,
+  SettingsTabSkeleton,
+  OrdersTabSkeleton,
+  CardsTabSkeleton,
+  FavoritesTabSkeleton,
+} from "@/components/ui/BoneyardSkeletons";
 
-// Dynamic code-split tabs for high performance
+// Dynamic code-split tabs with Boneyard luxury skeletons
 const CatalogTab = dynamic(() => import("@/components/profile/tabs/CatalogTab").then(m => m.CatalogTab), {
-  loading: () => <div className="p-8 text-center text-xs text-gray-400 font-mono animate-pulse">Cargando catálogo...</div>,
+  loading: () => <CatalogTabSkeleton />,
   ssr: false,
 });
 
 const NichesTab = dynamic(() => import("@/components/profile/tabs/NichesTab").then(m => m.NichesTab), {
-  loading: () => <div className="p-8 text-center text-xs text-gray-400 font-mono animate-pulse">Cargando nichos...</div>,
+  loading: () => <NichesTabSkeleton />,
   ssr: false,
 });
 
 const AnalyticsTab = dynamic(() => import("@/components/profile/tabs/AnalyticsTab").then(m => m.AnalyticsTab), {
-  loading: () => <div className="p-8 text-center text-xs text-gray-400 font-mono animate-pulse">Cargando radar analítico...</div>,
+  loading: () => <AnalyticsTabSkeleton />,
   ssr: false,
 });
 
 const CartAlertsTab = dynamic(() => import("@/components/profile/tabs/CartAlertsTab").then(m => m.CartAlertsTab), {
-  loading: () => <div className="p-8 text-center text-xs text-gray-400 font-mono animate-pulse">Cargando alertas...</div>,
+  loading: () => <CartAlertsTabSkeleton />,
   ssr: false,
 });
 
 const IntegrationsTab = dynamic(() => import("@/components/profile/tabs/IntegrationsTab").then(m => m.IntegrationsTab), {
-  loading: () => <div className="p-8 text-center text-xs text-gray-400 font-mono animate-pulse">Cargando integraciones...</div>,
+  loading: () => <IntegrationsTabSkeleton />,
   ssr: false,
 });
 
 const DiscountCouponsTab = dynamic(() => import("@/components/profile/tabs/DiscountCouponsTab").then(m => m.DiscountCouponsTab), {
-  loading: () => <div className="p-8 text-center text-xs text-gray-400 font-mono animate-pulse">Cargando cupones...</div>,
+  loading: () => <DiscountCouponsTabSkeleton />,
   ssr: false,
 });
 
 const SettingsTab = dynamic(() => import("@/components/profile/tabs/SettingsTab").then(m => m.SettingsTab), {
-  loading: () => <div className="p-8 text-center text-xs text-gray-400 font-mono animate-pulse">Cargando configuración...</div>,
+  loading: () => <SettingsTabSkeleton />,
   ssr: false,
 });
 
 const OrdersTab = dynamic(() => import("@/components/profile/tabs/OrdersTab").then(m => m.OrdersTab), {
-  loading: () => <div className="p-8 text-center text-xs text-gray-400 font-mono animate-pulse">Cargando pedidos...</div>,
+  loading: () => <OrdersTabSkeleton />,
   ssr: false,
 });
 
 const CardsTab = dynamic(() => import("@/components/profile/tabs/CardsTab").then(m => m.CardsTab), {
-  loading: () => <div className="p-8 text-center text-xs text-gray-400 font-mono animate-pulse">Cargando billetera...</div>,
+  loading: () => <CardsTabSkeleton />,
   ssr: false,
 });
 
 const FavoritesTab = dynamic(() => import("@/components/profile/tabs/FavoritesTab").then(m => m.FavoritesTab), {
-  loading: () => <div className="p-8 text-center text-xs text-gray-400 font-mono animate-pulse">Cargando favoritos...</div>,
+  loading: () => <FavoritesTabSkeleton />,
   ssr: false,
 });
 

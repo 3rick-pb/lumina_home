@@ -5,12 +5,10 @@ import dynamic from 'next/dynamic';
 import { useUserStore } from "@/lib/userStore";
 import { useCatalogStore } from "@/lib/catalogStore";
 
+import { AnalyticsTabSkeleton } from "@/components/ui/BoneyardSkeletons";
+
 const AnalyticsRadarView = dynamic(() => import('@/components/profile/AnalyticsRadarView'), {
-  loading: () => (
-    <div className="h-[720px] w-full bg-[#181d1b] rounded-[2.5rem] flex items-center justify-center border border-white/10 shadow-2xl dark:shadow-none animate-pulse text-white/50 dark:text-gray-900/50 font-mono text-xs tracking-widest uppercase">
-      Inicializando Radar Lumina...
-    </div>
-  ),
+  loading: () => <AnalyticsTabSkeleton />,
   ssr: false
 });
 

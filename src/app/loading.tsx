@@ -21,12 +21,9 @@ export default function Loading() {
         </div>
 
         {/* Brand Caption & Minimal Progress */}
-        <div className="text-center space-y-1.5">
+        <div className="text-center space-y-1">
           <p className="font-display font-semibold text-sm tracking-widest uppercase text-gray-900 dark:text-gray-100">
             {brandConfig.shortName}
-          </p>
-          <p className="text-[11px] text-gray-500 dark:text-gray-400 font-medium tracking-wide">
-            Cargando experiencia...
           </p>
         </div>
 
