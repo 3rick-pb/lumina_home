@@ -381,34 +381,20 @@ const ProximitySidebar = ({
 
     let frame = 0
 
-    const updateScrollWave = () => {
+    // Cached metrics updated exclusively on resize / DOM change (0 layout thrashing during scroll)
+    const cachedMetrics = {
+      points: [] as { id: string; docTop: number; docBottom: number; dashY: number }[],
+      firstDashY: 0,
+      lastDashY: 0,
+      containerStartY: 0,
+      containerEndY: 0,
+    }
+
+    const recomputeGeometry = () => {
       if (typeof window === "undefined") return
-
       const scrollY = window.scrollY
-      const docHeight = document.documentElement.scrollHeight - window.innerHeight
+      const points: { id: string; docTop: number; docBottom: number; dashY: number }[] = []
 
-      // 1. Top of page: wave settles on first dash
-      if (scrollY < 120 && sections.length > 0) {
-        const firstNode = dashRefs.current.get(sections[0].id)
-        if (firstNode) {
-          const rect = firstNode.getBoundingClientRect()
-          rawWaveY.set(rect.top + rect.height / 2)
-          return
-        }
-      }
-
-      // 2. Bottom of page: wave settles on last dash
-      if (docHeight > 0 && scrollY >= docHeight - 160 && sections.length > 0) {
-        const lastNode = dashRefs.current.get(sections[sections.length - 1].id)
-        if (lastNode) {
-          const rect = lastNode.getBoundingClientRect()
-          rawWaveY.set(rect.top + rect.height / 2)
-          return
-        }
-      }
-
-      // 3. Section-based continuous wave interpolation:
-      const points: { docTop: number; dashY: number }[] = []
       for (const s of sections) {
         const el = getSectionElement(s.id)
         const node = dashRefs.current.get(s.id)
@@ -416,12 +402,56 @@ const ProximitySidebar = ({
           const elRect = el.getBoundingClientRect()
           const nodeRect = node.getBoundingClientRect()
           points.push({
+            id: s.id,
             docTop: elRect.top + scrollY,
+            docBottom: elRect.bottom + scrollY,
             dashY: nodeRect.top + nodeRect.height / 2,
           })
         }
       }
 
+      cachedMetrics.points = points
+
+      if (sections.length > 0) {
+        const firstNode = dashRefs.current.get(sections[0].id)
+        if (firstNode) {
+          const rect = firstNode.getBoundingClientRect()
+          cachedMetrics.firstDashY = rect.top + rect.height / 2
+        }
+        const lastNode = dashRefs.current.get(sections[sections.length - 1].id)
+        if (lastNode) {
+          const rect = lastNode.getBoundingClientRect()
+          cachedMetrics.lastDashY = rect.top + rect.height / 2
+        }
+      }
+
+      if (containerRef.current) {
+        const cRect = containerRef.current.getBoundingClientRect()
+        cachedMetrics.containerStartY = cRect.top + 12
+        cachedMetrics.containerEndY = cRect.bottom - 12
+      }
+    }
+
+    const updateScrollWave = () => {
+      if (typeof window === "undefined") return
+
+      const scrollY = window.scrollY
+      const docHeight = document.documentElement.scrollHeight - window.innerHeight
+
+      // 1. Top of page: wave settles on first dash
+      if (scrollY < 120 && sections.length > 0 && cachedMetrics.firstDashY) {
+        rawWaveY.set(cachedMetrics.firstDashY)
+        return
+      }
+
+      // 2. Bottom of page: wave settles on last dash
+      if (docHeight > 0 && scrollY >= docHeight - 160 && sections.length > 0 && cachedMetrics.lastDashY) {
+        rawWaveY.set(cachedMetrics.lastDashY)
+        return
+      }
+
+      // 3. Section-based continuous wave interpolation from cached points (0 forced reflows):
+      const points = cachedMetrics.points
       if (points.length >= 2) {
         const currentFocalScroll = scrollY + window.innerHeight * (activeOffset || 0.4)
 
@@ -447,12 +477,9 @@ const ProximitySidebar = ({
       }
 
       // 4. Fallback based on sidebar container geometry and global progress
-      if (containerRef.current) {
-        const cRect = containerRef.current.getBoundingClientRect()
+      if (cachedMetrics.containerStartY && cachedMetrics.containerEndY) {
         const progress = docHeight > 0 ? Math.min(1, Math.max(0, scrollY / docHeight)) : 0
-        const startY = cRect.top + 12
-        const endY = cRect.bottom - 12
-        rawWaveY.set(startY + progress * (endY - startY))
+        rawWaveY.set(cachedMetrics.containerStartY + progress * (cachedMetrics.containerEndY - cachedMetrics.containerStartY))
       }
     }
 
@@ -460,41 +487,37 @@ const ProximitySidebar = ({
       // If smooth programmatic scroll is running from clicking a dash, do not override activeId
       if (isProgrammaticScroll.current) return
 
+      const scrollY = window.scrollY
+
       // Special case 1: If scrolled to top, always select the first section (Inicio)
-      if (window.scrollY < 180 && sections.length > 0) {
-        const topId = sections[0].id
-        setActiveId(topId)
+      if (scrollY < 180 && sections.length > 0) {
+        setActiveId(sections[0].id)
         return
       }
 
-      // Special case 2: If scrolled near bottom, select the last section (Envíos & Garantías)
+      // Special case 2: If scrolled near bottom, select the last section
       if (
         typeof document !== "undefined" &&
-        window.innerHeight + window.scrollY >= (document.documentElement.scrollHeight - 240) &&
+        window.innerHeight + scrollY >= (document.documentElement.scrollHeight - 240) &&
         sections.length > 0
       ) {
-        const bottomId = sections[sections.length - 1].id
-        setActiveId(bottomId)
+        setActiveId(sections[sections.length - 1].id)
         return
       }
 
-      const anchorY = window.innerHeight * activeOffset
+      const anchorScroll = scrollY + window.innerHeight * activeOffset
       let nextActiveId = sections[0]?.id
       let shortestDistance = Number.POSITIVE_INFINITY
 
-      for (const section of sections) {
-        const element = getSectionElement(section.id)
-        if (!element) continue
-
-        const rect = element.getBoundingClientRect()
-        const containsAnchor = rect.top <= anchorY && rect.bottom >= anchorY
+      for (const pt of cachedMetrics.points) {
+        const containsAnchor = pt.docTop <= anchorScroll && pt.docBottom >= anchorScroll
         const distance = containsAnchor
           ? 0
-          : Math.min(Math.abs(rect.top - anchorY), Math.abs(rect.bottom - anchorY))
+          : Math.min(Math.abs(pt.docTop - anchorScroll), Math.abs(pt.docBottom - anchorScroll))
 
         if (distance < shortestDistance) {
           shortestDistance = distance
-          nextActiveId = section.id
+          nextActiveId = pt.id
         }
       }
 
@@ -510,6 +533,11 @@ const ProximitySidebar = ({
       })
     }
 
+    const handleResizeOrMutation = () => {
+      recomputeGeometry()
+      scheduleUpdate()
+    }
+
     const scrollParents = new Set<EventTarget>([window])
 
     for (const section of sections) {
@@ -517,25 +545,33 @@ const ProximitySidebar = ({
       if (element) scrollParents.add(getScrollParent(element))
     }
 
-    // Initial positioning
+    // Initial computation & positioning
+    recomputeGeometry()
     scheduleUpdate()
-    const timer = setTimeout(scheduleUpdate, 100)
+    const timer = setTimeout(handleResizeOrMutation, 120)
 
     for (const parent of scrollParents) {
       parent.addEventListener("scroll", scheduleUpdate, { passive: true })
     }
 
-    window.addEventListener("resize", scheduleUpdate)
+    window.addEventListener("resize", handleResizeOrMutation, { passive: true })
+
+    let ro: ResizeObserver | null = null
+    if (typeof ResizeObserver !== "undefined") {
+      ro = new ResizeObserver(handleResizeOrMutation)
+      if (document.body) ro.observe(document.body)
+    }
 
     return () => {
       clearTimeout(timer)
       if (frame) window.cancelAnimationFrame(frame)
+      if (ro) ro.disconnect()
 
       for (const parent of scrollParents) {
         parent.removeEventListener("scroll", scheduleUpdate)
       }
 
-      window.removeEventListener("resize", scheduleUpdate)
+      window.removeEventListener("resize", handleResizeOrMutation)
     }
   }, [activeOffset, rawWaveY, sectionIds, sections])
 
