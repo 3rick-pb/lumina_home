@@ -66,7 +66,7 @@ export default function RootLayout({
           '--bg-light': themeConfig.colors.surface.backgroundLight,
           '--bg-dark': themeConfig.colors.surface.backgroundDark,
         } as React.CSSProperties}
-        className={`${inter.variable} ${lora.variable} ${moonwalk.variable} font-sans antialiased text-gray-900 bg-[#faf9f6] flex flex-col min-h-screen relative`}
+        className={`${inter.variable} ${lora.variable} ${moonwalk.variable} font-sans antialiased text-gray-900 bg-transparent flex flex-col min-h-screen relative`}
       >
         <SmoothScrollProvider>
           <Suspense fallback={null}>

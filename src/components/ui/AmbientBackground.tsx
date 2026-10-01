@@ -3,59 +3,12 @@
 import React, { useEffect } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
 import { useAmbientStore, CATEGORY_THEMES } from "@/lib/ambientStore";
-import { useThemeStore, getResolvedTheme } from "@/lib/themeStore";
-
-function syncBrowserThemeColor(color: string) {
-  if (typeof document === "undefined") return;
-
-  // 1. Direct root background-color styling (vital for Safari 16-18+ live observer)
-  try {
-    document.documentElement.style.backgroundColor = color;
-    if (document.body) {
-      document.body.style.backgroundColor = color;
-    }
-  } catch {}
-
-  // 2. Primary W3C standard: meta[name="theme-color"]
-  // Remove existing media-query restricted tags to avoid getting overridden by OS dark/light mode
-  try {
-    const existingMetas = document.querySelectorAll<HTMLMetaElement>('meta[name="theme-color"]');
-    existingMetas.forEach((meta) => meta.remove());
-
-    const newMeta = document.createElement("meta");
-    newMeta.name = "theme-color";
-    newMeta.content = color;
-    document.head.appendChild(newMeta);
-  } catch {}
-
-  // 3. Apple-specific status bar style
-  try {
-    let appleMeta = document.querySelector<HTMLMetaElement>('meta[name="apple-mobile-web-app-status-bar-style"]');
-    if (!appleMeta) {
-      appleMeta = document.createElement("meta");
-      appleMeta.name = "apple-mobile-web-app-status-bar-style";
-      document.head.appendChild(appleMeta);
-    }
-    appleMeta.setAttribute("content", "default");
-  } catch {}
-
-  // 4. Microsoft Windows / Tile / Navigation button color
-  try {
-    let msMeta = document.querySelector<HTMLMetaElement>('meta[name="msapplication-navbutton-color"]');
-    if (!msMeta) {
-      msMeta = document.createElement("meta");
-      msMeta.name = "msapplication-navbutton-color";
-      document.head.appendChild(msMeta);
-    }
-    msMeta.setAttribute("content", color);
-  } catch {}
-}
 
 export function AmbientBackground() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const { theme, setCategoryTheme, setTheme } = useAmbientStore();
-  const themeMode = useThemeStore((state) => state.mode);
+
   const isAuthPage = pathname?.startsWith("/auth");
 
   // Sync category query param if present
@@ -69,20 +22,6 @@ export function AmbientBackground() {
       setCategoryTheme(cat);
     }
   }, [pathname, searchParams, isAuthPage, setCategoryTheme, setTheme]);
-
-  // Synchronize native browser UI bar with ambient scene color (Android Chrome & iOS/macOS Safari)
-  useEffect(() => {
-    let targetColor = theme.browserColor || "#faf9f6";
-
-    if (isAuthPage) {
-      targetColor = "#faf8f5";
-    } else if (pathname?.startsWith("/profile")) {
-      const resolved = getResolvedTheme(themeMode);
-      targetColor = resolved === "dark" ? "#161618" : "#faf9f6";
-    }
-
-    syncBrowserThemeColor(targetColor);
-  }, [theme, isAuthPage, pathname, themeMode]);
 
   // Auth pages have multi-axis, continuous screensaver-style drifting fluid matte aura
   if (isAuthPage) {

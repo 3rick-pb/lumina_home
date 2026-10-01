@@ -8,7 +8,7 @@ import { ShoppingBag, Heart, ShieldCheck, Truck, RotateCcw, Check, Star, Chevron
 import { ProductCard } from "@/components/ui/ProductCard";
 import { BeUIActionSwapLabel } from "@/components/ui/BeUIControls";
 import { useCartStore } from "@/lib/store";
-import { useCatalogStore, isAgotadoBadge, ProductCombo } from "@/lib/catalogStore";
+import { useCatalogStore, isAgotadoBadge, ProductCombo, CatalogProduct } from "@/lib/catalogStore";
 import { useUserStore } from "@/lib/userStore";
 import { useAmbientStore } from "@/lib/ambientStore";
 import { ProductLandingView } from "@/components/product/ProductLandingView";
@@ -20,14 +20,48 @@ import { motion } from "framer-motion";
 
 export default function ProductDetail({ params }: { params: Promise<{ id: string }> }) {
   const { id } = React.use(params);
-  const { products } = useCatalogStore();
-  const product = products.find(p => p.id === id);
-  const { setCategoryTheme, resetTheme } = useAmbientStore();
-  
+  const { products, isLoading, fetchProducts } = useCatalogStore();
+
+  const decodedId = React.useMemo(() => {
+    try {
+      return decodeURIComponent(id);
+    } catch {
+      return id;
+    }
+  }, [id]);
+
+  const product = React.useMemo(() => {
+    return products.find(p => p.id === id || p.id === decodedId);
+  }, [products, id, decodedId]);
+
+  // Ensure catalog products are fetched on hard page reload or direct URL visits
+  React.useEffect(() => {
+    if (products.length === 0) {
+      fetchProducts();
+    }
+  }, [products.length, fetchProducts]);
+
+  // While store is hydrating or fetching products, show luxury spinner (prevent premature 404)
+  if (isLoading || (products.length === 0 && !product)) {
+    return (
+      <div className="min-h-screen pt-32 pb-24 flex items-center justify-center bg-transparent">
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-8 h-8 rounded-full border-2 border-[#8c9276] border-t-transparent animate-spin" />
+          <p className="text-xs uppercase tracking-wider text-gray-500 font-sans">Cargando artículo...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Only trigger 404 when products have loaded and ID is genuinely not found
   if (!product) {
     notFound();
   }
 
+  return <ProductDetailContent product={product} products={products} />;
+}
+
+function ProductDetailContent({ product, products }: { product: CatalogProduct; products: CatalogProduct[] }) {
   const isAgotado = isAgotadoBadge(product.badge) || (product.stock !== undefined && product.stock <= 0);
   const relatedProducts = products.filter(p => p.id !== product.id).slice(0, 4);
 
@@ -40,6 +74,7 @@ export default function ProductDetail({ params }: { params: Promise<{ id: string
   
   const { addItem, addBundle } = useCartStore();
   const { toggleFavorite, isFavorite, isAuthenticated } = useUserStore();
+  const { setCategoryTheme, resetTheme } = useAmbientStore();
   const [isMounted, setIsMounted] = useState(false);
   
   React.useEffect(() => {
