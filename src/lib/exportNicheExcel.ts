@@ -6,7 +6,7 @@
  *  - Sheet 2: "Dashboard Inventario" — 4 embedded charts as HD images
  */
 
-import ExcelJS from "exceljs";
+import type ExcelJS from "exceljs";
 import { CatalogProduct } from "@/lib/catalogStore";
 import { renderChartToBase64, CHART_COLORS } from "@/lib/excelChartRenderer";
 
@@ -98,6 +98,7 @@ export async function exportNicheToExcel(
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   _brandName?: string
 ) {
+  const ExcelJS = (await import("exceljs")).default;
   const wb = new ExcelJS.Workbook();
   wb.creator = "Sistema de Gestión";
   wb.created = new Date();

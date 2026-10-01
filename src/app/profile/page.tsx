@@ -28,8 +28,7 @@ import {
   BellRing,
   Server
 } from "lucide-react";
-import { IntegrationsTab } from "@/components/profile/tabs/IntegrationsTab";
-import { DiscountCouponsTab } from "@/components/profile/tabs/DiscountCouponsTab";
+import dynamic from "next/dynamic";
 import { Tag } from "lucide-react";
 import { useUserStore, Order, formatCleanName } from "@/lib/userStore";
 import { useThemeStore, getResolvedTheme } from "@/lib/themeStore";
@@ -46,10 +45,7 @@ import {
   ProductStoreSketchPreview,
   type ProductWizardStep,
 } from "@/components/profile/ProductStoreSketchPreview";
-import { AddCardAnimatedModal } from "@/components/profile/AddCardAnimatedModal";
 import { OverviewTab } from "@/components/profile/tabs/OverviewTab";
-import { OrdersTab } from "@/components/profile/tabs/OrdersTab";
-import { CardsTab } from "@/components/profile/tabs/CardsTab";
 import {
   BeUISelectField,
   BeUICenterMorphModal,
@@ -57,17 +53,71 @@ import {
 } from "@/components/ui/BeUIControls";
 import { CatalogScrollToTopButton } from "@/components/ui/CatalogScrollToTopButton";
 import { LuminaBrandEmblem } from "@/components/ui/LuminaBrandEmblem";
-import { FavoritesTab } from "@/components/profile/tabs/FavoritesTab";
-import { CatalogTab } from "@/components/profile/tabs/CatalogTab";
-import { NichesTab } from "@/components/profile/tabs/NichesTab";
-import { AnalyticsTab } from "@/components/profile/tabs/AnalyticsTab";
-import { CartAlertsTab } from "@/components/profile/tabs/CartAlertsTab";
-import { SettingsTab } from "@/components/profile/tabs/SettingsTab";
-import { OrderDetailModal } from "@/components/profile/modals/OrderDetailModal";
-import { ExcelExportRadialMenu } from "@/components/profile/ExcelExportRadialMenu";
+
+// Dynamic code-split tabs for high performance
+const CatalogTab = dynamic(() => import("@/components/profile/tabs/CatalogTab").then(m => m.CatalogTab), {
+  loading: () => <div className="p-8 text-center text-xs text-gray-400 font-mono animate-pulse">Cargando catálogo...</div>,
+  ssr: false,
+});
+
+const NichesTab = dynamic(() => import("@/components/profile/tabs/NichesTab").then(m => m.NichesTab), {
+  loading: () => <div className="p-8 text-center text-xs text-gray-400 font-mono animate-pulse">Cargando nichos...</div>,
+  ssr: false,
+});
+
+const AnalyticsTab = dynamic(() => import("@/components/profile/tabs/AnalyticsTab").then(m => m.AnalyticsTab), {
+  loading: () => <div className="p-8 text-center text-xs text-gray-400 font-mono animate-pulse">Cargando radar analítico...</div>,
+  ssr: false,
+});
+
+const CartAlertsTab = dynamic(() => import("@/components/profile/tabs/CartAlertsTab").then(m => m.CartAlertsTab), {
+  loading: () => <div className="p-8 text-center text-xs text-gray-400 font-mono animate-pulse">Cargando alertas...</div>,
+  ssr: false,
+});
+
+const IntegrationsTab = dynamic(() => import("@/components/profile/tabs/IntegrationsTab").then(m => m.IntegrationsTab), {
+  loading: () => <div className="p-8 text-center text-xs text-gray-400 font-mono animate-pulse">Cargando integraciones...</div>,
+  ssr: false,
+});
+
+const DiscountCouponsTab = dynamic(() => import("@/components/profile/tabs/DiscountCouponsTab").then(m => m.DiscountCouponsTab), {
+  loading: () => <div className="p-8 text-center text-xs text-gray-400 font-mono animate-pulse">Cargando cupones...</div>,
+  ssr: false,
+});
+
+const SettingsTab = dynamic(() => import("@/components/profile/tabs/SettingsTab").then(m => m.SettingsTab), {
+  loading: () => <div className="p-8 text-center text-xs text-gray-400 font-mono animate-pulse">Cargando configuración...</div>,
+  ssr: false,
+});
+
+const OrdersTab = dynamic(() => import("@/components/profile/tabs/OrdersTab").then(m => m.OrdersTab), {
+  loading: () => <div className="p-8 text-center text-xs text-gray-400 font-mono animate-pulse">Cargando pedidos...</div>,
+  ssr: false,
+});
+
+const CardsTab = dynamic(() => import("@/components/profile/tabs/CardsTab").then(m => m.CardsTab), {
+  loading: () => <div className="p-8 text-center text-xs text-gray-400 font-mono animate-pulse">Cargando billetera...</div>,
+  ssr: false,
+});
+
+const FavoritesTab = dynamic(() => import("@/components/profile/tabs/FavoritesTab").then(m => m.FavoritesTab), {
+  loading: () => <div className="p-8 text-center text-xs text-gray-400 font-mono animate-pulse">Cargando favoritos...</div>,
+  ssr: false,
+});
+
+const ExcelExportRadialMenu = dynamic(() => import("@/components/profile/ExcelExportRadialMenu").then(m => m.ExcelExportRadialMenu), {
+  ssr: false,
+});
+
+const OrderDetailModal = dynamic(() => import("@/components/profile/modals/OrderDetailModal").then(m => m.OrderDetailModal), {
+  ssr: false,
+});
+
+const AddCardAnimatedModal = dynamic(() => import("@/components/profile/AddCardAnimatedModal").then(m => m.AddCardAnimatedModal), {
+  ssr: false,
+});
 import { BlobatarAvatar } from "@/components/ui/BlobatarAvatar";
 import { useAvatarSettingsStore } from "@/lib/avatarSettingsStore";
-import { LuminaCombobox } from "@/components/ui/LuminaCombobox";
 import { useBrand } from "@/core";
 
 export default function ProfilePage() {

@@ -14,13 +14,11 @@ import {
   FileSpreadsheet,
   ChevronRight
 } from "lucide-react";
-import * as XLSX from "xlsx";
+import type * as XLSXTypes from "xlsx";
 import { useUserStore, Order } from "@/lib/userStore";
 import { useCatalogStore, CatalogProduct } from "@/lib/catalogStore";
 import { DROPI_HEADERS, DROPI_ECUADOR_REFERENCE } from "@/lib/dropiEcuadorData";
 import { useBrand } from "@/core/hooks/useBrand";
-import { exportCatalogToExcel } from "@/lib/exportCatalogExcel";
-import { exportNicheToExcel } from "@/lib/exportNicheExcel";
 
 export const NORMAL_ORDER_HEADERS = [
   "Nº",
@@ -341,7 +339,8 @@ export function ExcelExportRadialMenu() {
         }
       });
 
-      let wb: XLSX.WorkBook;
+      const XLSX = await import("xlsx");
+      let wb: XLSXTypes.WorkBook;
       try {
         const res = await fetch("/templates/formato-ordenes-masivas-dropiEC.xlsx");
         if (res.ok) {
@@ -417,6 +416,7 @@ export function ExcelExportRadialMenu() {
         };
       });
 
+      const XLSX = await import("xlsx");
       const wb = XLSX.utils.book_new();
       const ws = XLSX.utils.json_to_sheet(rows, { header: NORMAL_ORDER_HEADERS as unknown as string[] });
       const colWidths = NORMAL_ORDER_HEADERS.map(key => ({
@@ -449,6 +449,7 @@ export function ExcelExportRadialMenu() {
         prods = useCatalogStore.getState().products;
       }
 
+      const { exportCatalogToExcel } = await import("@/lib/exportCatalogExcel");
       await exportCatalogToExcel(prods, getDateSlug(), brand.name || "Lumina Home");
 
       setSuccessExport("products");
@@ -470,6 +471,7 @@ export function ExcelExportRadialMenu() {
         prods = useCatalogStore.getState().products;
       }
 
+      const { exportNicheToExcel } = await import("@/lib/exportNicheExcel");
       await exportNicheToExcel(prods, getDateSlug(), brand.name || "Lumina Home");
 
       setSuccessExport("niches");
