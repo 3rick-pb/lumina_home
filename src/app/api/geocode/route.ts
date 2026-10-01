@@ -369,12 +369,23 @@ async function getTopologicalCrossStreets(
   return intersecting;
 }
 
-// 2. Nearby Landmarks Discovery (~6 cuadras / ~600m)
-async function getLandmarkPlaceName(lat: number, lon: number) {
+function getDistanceMeters(lat1: number, lon1: number, lat2: number, lon2: number): number {
+  const R = 6371000;
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLon = (lon2 - lon1) * Math.PI / 180;
+  const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+            Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+            Math.sin(dLon / 2) * Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return Math.round(R * c);
+}
+
+// 2. Nearby Landmarks Discovery (~1km radius: parques, colegios, escuelas, universidades, terminales, salud, iglesias)
+async function getLandmarkPlaceName(lat: number, lon: number): Promise<string | null> {
   try {
-    const delta = 0.0055; // ~600m
+    const delta = 0.010; // ~1.1km
     const viewbox = `${lon - delta},${lat + delta},${lon + delta},${lat - delta}`;
-    const queries = ['parque', 'colegio', 'salud', 'escuela'];
+    const queries = ['parque', 'colegio', 'escuela', 'universidad', 'terminal', 'hospital', 'iglesia', 'mercado', 'policia'];
 
     const searchResults = await Promise.allSettled(
       queries.map(q =>
@@ -383,36 +394,41 @@ async function getLandmarkPlaceName(lat: number, lon: number) {
       )
     );
 
-    const detectedPlaces = new Map<string, number>();
-    const pattern = /(?:parque\s+(?:central\s+)?(?:de\s+)?|unidad\s+educativa\s+|colegio\s+|escuela\s+|centro\s+de\s+salud\s+(?:de\s+)?|subcentro\s+de\s+salud\s+(?:de\s+)?|iglesia\s+(?:de\s+)?)([\wáéíóúñÁÉÍÓÚÑ\s]+)/i;
+    const candidates: Array<{ name: string; dist: number }> = [];
+    const seen = new Set<string>();
 
     for (const res of searchResults) {
       if (res.status === 'fulfilled' && Array.isArray(res.value)) {
         for (const item of res.value) {
-          if (!item.name) continue;
+          if (!item.name || typeof item.name !== 'string') continue;
+          const cleanName = item.name.trim();
+          const normLower = cleanName.toLowerCase();
+          if (normLower.length < 3 || seen.has(normLower)) continue;
+          if (normLower.includes('maceta') || normLower.includes('recreación') || normLower.includes('juegos infantiles')) continue;
 
-          // Check address fields of the landmark
-          const addr = item.address || {};
-          const addrPlace = addr.village || addr.town || addr.suburb || addr.neighbourhood;
-          if (addrPlace && addrPlace.length > 2) {
-            detectedPlaces.set(addrPlace, (detectedPlaces.get(addrPlace) || 0) + 3);
-          }
+          seen.add(normLower);
+          const itemLat = parseFloat(item.lat);
+          const itemLon = parseFloat(item.lon);
+          if (isNaN(itemLat) || isNaN(itemLon)) continue;
 
-          // Check text regex on landmark name
-          const match = item.name.match(pattern);
-          if (match && match[1]) {
-            const raw = match[1].trim();
-            if (raw.length > 2 && !raw.toLowerCase().includes('maceta') && !raw.toLowerCase().includes('recreación')) {
-              detectedPlaces.set(raw, (detectedPlaces.get(raw) || 0) + 2);
-            }
+          const dist = getDistanceMeters(lat, lon, itemLat, itemLon);
+          if (dist <= 1200) {
+            candidates.push({ name: cleanName, dist });
           }
         }
       }
     }
 
-    if (detectedPlaces.size > 0) {
-      const sorted = Array.from(detectedPlaces.entries()).sort((a, b) => b[1] - a[1]);
-      return sorted[0][0];
+    if (candidates.length > 0) {
+      candidates.sort((a, b) => a.dist - b.dist);
+      const closest = candidates[0];
+      if (closest.dist < 50) {
+        return `Frente a ${closest.name}`;
+      } else if (closest.dist < 150) {
+        return `Junto a ${closest.name}`;
+      } else {
+        return `Cerca de ${closest.name}`;
+      }
     }
   } catch {
     // Ignore landmark errors
@@ -717,45 +733,37 @@ function extractExteriorNumber(displayName?: string, rawHouse?: string): string 
   const mainCity = macroResult.city;
   const satelliteParish = macroResult.parishOrSatellite;
 
+  // 3. Hierarchical City and Sub-locality / Parish
+  // Sector o Barrio: look closer ("un poco más cerca"), prioritizing zoom 18 quarter/neighbourhood
   let subLocality = (
-    mbNeighborhood ||
-    addr16.neighbourhood ||
-    addr18.neighbourhood ||
-    addr16.quarter ||
     addr18.quarter ||
-    addr16.suburb ||
-    addr18.suburb ||
-    addr14.city_district ||
-    addr14.suburb ||
-    addr18.city_district ||
-    addr16.residential ||
+    addr18.neighbourhood ||
     addr18.residential ||
-    landmarkPlace ||
+    addr18.suburb ||
+    addr18.allotments ||
+    mbNeighborhood ||
+    addr16.quarter ||
+    addr16.neighbourhood ||
+    addr16.residential ||
+    addr16.suburb ||
+    addr18.city_district ||
+    addr16.city_district ||
     addr18.village ||
     addr16.village ||
-    (addr18.town && cleanAdmin(addr18.town).toLowerCase() !== mainCity.toLowerCase() ? cleanAdmin(addr18.town) : '') ||
-    (bdc && bdc.locality && bdc.locality.toLowerCase() !== mainCity.toLowerCase() ? bdc.locality : '') ||
+    addr18.hamlet ||
     ''
   ).trim();
 
-  // If a satellite parish / canton was detected (e.g., "Machachi", "Mejía", "Sangolquí", "Samborondón")
-  if (satelliteParish && satelliteParish.toLowerCase() !== mainCity.toLowerCase()) {
-    if (!subLocality) {
-      subLocality = satelliteParish;
-    } else if (!subLocality.toLowerCase().includes(satelliteParish.toLowerCase())) {
-      subLocality = `${subLocality}, ${satelliteParish}`;
-    }
-  }
-
-  if (landmarkPlace && landmarkPlace.toLowerCase() !== mainCity.toLowerCase() && !subLocality) {
-    subLocality = landmarkPlace;
+  // If subLocality ended up matching the main city, try to get the village/hamlet
+  if (subLocality.toLowerCase() === mainCity.toLowerCase()) {
+    subLocality = (addr18.quarter || addr18.village || addr16.village || '').trim();
   }
 
   // Fallback defaults from IP metadata if available
   const finalState = state || macroResult.province || ipMeta?.state || '';
   const finalPostal = postalCode || ipMeta?.postalCode || '';
   const finalCountry = country || ipMeta?.country || 'Ecuador';
-  const finalCityResult = mainCity || subLocality || ipMeta?.city || 'Quito';
+  const finalCityResult = mainCity || ipMeta?.city || 'Quito';
   const finalStreet = isIpFallback ? '' : streetNameOnly;
 
   return NextResponse.json({
@@ -767,7 +775,7 @@ function extractExteriorNumber(displayName?: string, rawHouse?: string): string 
       neighborhood: subLocality || undefined,
       crossStreets: crossRoad || undefined,
       landmark: landmarkPlace || undefined,
-      reference: landmarkPlace || subLocality || undefined,
+      reference: landmarkPlace || (crossRoad ? `Cerca de ${crossRoad}` : undefined),
       city: finalCityResult,
       state: finalState,
       postalCode: finalPostal,
@@ -783,7 +791,7 @@ function extractExteriorNumber(displayName?: string, rawHouse?: string): string 
     neighborhood: subLocality || undefined,
     crossStreets: crossRoad || undefined,
     landmark: landmarkPlace || undefined,
-    reference: landmarkPlace || subLocality || undefined,
+    reference: landmarkPlace || (crossRoad ? `Cerca de ${crossRoad}` : undefined),
     city: finalCityResult,
     state: finalState,
     postalCode: finalPostal,

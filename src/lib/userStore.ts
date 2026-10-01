@@ -1725,6 +1725,18 @@ export const useUserStore = create<UserState>((set, get) => ({
     const current = get().addresses;
     if (current.length >= 4) return false;
 
+    // Deduplication check: prevent adding the exact same address if double-clicked
+    const norm = (s?: string) => (s || '').trim().toLowerCase();
+    const isDuplicate = current.some(
+      a => norm(a.street) === norm(addrData.street) &&
+           norm(a.exteriorNumber) === norm(addrData.exteriorNumber) &&
+           norm(a.city) === norm(addrData.city) &&
+           norm(a.postalCode) === norm(addrData.postalCode)
+    );
+    if (isDuplicate) {
+      return true;
+    }
+
     const user = get().user;
     const newId = generateUUID();
     const shouldBeDefault = current.length === 0 || !!addrData.isDefault;

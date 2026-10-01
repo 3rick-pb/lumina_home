@@ -313,6 +313,8 @@ export function CartDrawer() {
   const [isDetectingLocation, setIsDetectingLocation] = useState(false);
   const [locationError, setLocationError] = useState<string | null>(null);
   const [locationSuccess, setLocationSuccess] = useState(false);
+  const [isSavingAddress, setIsSavingAddress] = useState(false);
+  const [addressValidationError, setAddressValidationError] = useState<string | null>(null);
 
   // Checkout Processing
   const [isProcessing, setIsProcessing] = useState(false);
@@ -562,83 +564,116 @@ export function CartDrawer() {
     }
   };
 
- const handleSaveAddress = async (e: React.FormEvent) => {
- e.preventDefault();
- if (!addrStreet.trim() || !addrCity.trim() || !addrPostal.trim() || !addrState.trim() || !addrCountry.trim()) return;
- if (addresses.length >= 4) {
- setIsEditingAddress(false);
- return;
- }
- await addAddress({
- recipient: addrRecipient.trim() || user?.name || "Destinatario",
- idNumber: addrIdNumber.trim() || undefined,
- phone: addrPhone.trim() || undefined,
- email: addrEmail.trim() || user?.email || undefined,
- street: addrStreet.trim(),
- exteriorNumber: addrExteriorNumber.trim() || undefined,
- neighborhood: addrNeighborhood.trim() || undefined,
- interiorNumber: addrInteriorNumber.trim() || undefined,
- crossStreets: addrCrossStreets.trim() || undefined,
- addressType: addrAddressType,
- deliveryInstructions: addrDeliveryInstructions.trim() || undefined,
- hasElevator: addrHasElevator,
- floorLevel: addrFloorLevel.trim() || undefined,
- label: addrLabel.trim() || undefined,
- city: addrCity.trim(),
- state: addrState.trim(),
- postalCode: addrPostal.trim(),
- country: addrCountry.trim(),
- lat: addrDetectedCoords?.lat ?? addrDetectedRawGps?.latitude,
- lng: addrDetectedCoords?.lng ?? addrDetectedRawGps?.longitude,
- rawGps:
-   typeof (addrDetectedCoords?.lat ?? addrDetectedRawGps?.latitude) === "number" &&
-   typeof (addrDetectedCoords?.lng ?? addrDetectedRawGps?.longitude) === "number"
-     ? {
-         ...(addrDetectedRawGps || {
-           accuracy: 5,
-           altitude: null,
-           altitudeAccuracy: null,
-           heading: null,
-           speed: null,
-           timestamp: Date.now(),
-           rawPositionJson: JSON.stringify({
-             latitude: addrDetectedCoords?.lat,
-             longitude: addrDetectedCoords?.lng,
-           }),
-         }),
-         latitude: (addrDetectedCoords?.lat ?? addrDetectedRawGps?.latitude) as number,
-         longitude: (addrDetectedCoords?.lng ?? addrDetectedRawGps?.longitude) as number,
-         rawCoordsString: `${addrDetectedCoords?.lat ?? addrDetectedRawGps?.latitude},${addrDetectedCoords?.lng ?? addrDetectedRawGps?.longitude}`,
-       }
-     : addrDetectedRawGps || undefined,
- rawGpsString: addrDetectedRawGps?.rawPositionJson || undefined,
- isDefault: addresses.length === 0
- });
- setAddrRecipient(user?.name || "");
- setAddrIdNumber("");
- setAddrPhone("");
- setAddrEmail(user?.email || "");
- setAddrStreet("");
- setAddrExteriorNumber("");
- setAddrNeighborhood("");
- setAddrInteriorNumber("");
- setAddrCrossStreets("");
- setAddrAddressType("casa");
- setAddrDeliveryInstructions("");
- setAddrHasElevator(false);
- setAddrFloorLevel("");
- setAddrLabel("");
- setAddrCity("");
- setAddrPostal("");
- setAddrState("");
- setAddrCountry("Ecuador");
- setAddrDetectedRawGps(null);
- setAddrDetectedCoords(null);
- setShowMiniMap(false);
- setLocationError(null);
- setLocationSuccess(false);
- setIsEditingAddress(false);
- };
+  const handleSaveAddress = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (isSavingAddress) return;
+    setAddressValidationError(null);
+
+    // Explicit validation feedback
+    const missing: string[] = [];
+    if (!addrStreet.trim()) missing.push("Calle Principal");
+    if (!addrCity.trim()) missing.push("Ciudad / Cantón");
+
+    if (missing.length > 0) {
+      setAddressValidationError(`Por favor completa: ${missing.join(", ")}.`);
+      return;
+    }
+
+    if (addresses.length >= 4) {
+      setIsEditingAddress(false);
+      return;
+    }
+
+    setIsSavingAddress(true);
+
+    try {
+      const finalStreet = addrStreet.trim();
+      const finalCity = addrCity.trim();
+      const finalState = addrState.trim() || "Pichincha";
+      const finalPostal = addrPostal.trim() || "170150";
+      const finalCountry = addrCountry.trim() || "Ecuador";
+      const finalRecipient = addrRecipient.trim() || user?.name || "Destinatario";
+
+      const newAddrPayload = {
+        recipient: finalRecipient,
+        idNumber: addrIdNumber.trim() || undefined,
+        phone: addrPhone.trim() || undefined,
+        email: addrEmail.trim() || user?.email || undefined,
+        street: finalStreet,
+        exteriorNumber: addrExteriorNumber.trim() || undefined,
+        neighborhood: addrNeighborhood.trim() || undefined,
+        interiorNumber: addrInteriorNumber.trim() || undefined,
+        crossStreets: addrCrossStreets.trim() || undefined,
+        addressType: addrAddressType,
+        deliveryInstructions: addrDeliveryInstructions.trim() || undefined,
+        hasElevator: addrHasElevator,
+        floorLevel: addrFloorLevel.trim() || undefined,
+        label: addrLabel.trim() || undefined,
+        city: finalCity,
+        state: finalState,
+        postalCode: finalPostal,
+        country: finalCountry,
+        lat: addrDetectedCoords?.lat ?? addrDetectedRawGps?.latitude,
+        lng: addrDetectedCoords?.lng ?? addrDetectedRawGps?.longitude,
+        rawGps:
+          typeof (addrDetectedCoords?.lat ?? addrDetectedRawGps?.latitude) === "number" &&
+          typeof (addrDetectedCoords?.lng ?? addrDetectedRawGps?.longitude) === "number"
+            ? {
+                ...(addrDetectedRawGps || {
+                  accuracy: 5,
+                  altitude: null,
+                  altitudeAccuracy: null,
+                  heading: null,
+                  speed: null,
+                  timestamp: Date.now(),
+                  rawPositionJson: JSON.stringify({
+                    latitude: addrDetectedCoords?.lat,
+                    longitude: addrDetectedCoords?.lng,
+                  }),
+                }),
+                latitude: (addrDetectedCoords?.lat ?? addrDetectedRawGps?.latitude) as number,
+                longitude: (addrDetectedCoords?.lng ?? addrDetectedRawGps?.longitude) as number,
+                rawCoordsString: `${addrDetectedCoords?.lat ?? addrDetectedRawGps?.latitude},${addrDetectedCoords?.lng ?? addrDetectedRawGps?.longitude}`,
+              }
+            : addrDetectedRawGps || undefined,
+        rawGpsString: addrDetectedRawGps?.rawPositionJson || undefined,
+        isDefault: addresses.length === 0
+      };
+
+      // 1. Immediately close edit modal and clear inputs so UI is instantly responsive
+      setIsEditingAddress(false);
+      setShowMiniMap(false);
+      setAddrRecipient(user?.name || "");
+      setAddrIdNumber("");
+      setAddrPhone("");
+      setAddrEmail(user?.email || "");
+      setAddrStreet("");
+      setAddrExteriorNumber("");
+      setAddrNeighborhood("");
+      setAddrInteriorNumber("");
+      setAddrCrossStreets("");
+      setAddrAddressType("casa");
+      setAddrDeliveryInstructions("");
+      setAddrHasElevator(false);
+      setAddrFloorLevel("");
+      setAddrLabel("");
+      setAddrCity("");
+      setAddrPostal("");
+      setAddrState("");
+      setAddrCountry("Ecuador");
+      setAddrDetectedRawGps(null);
+      setAddrDetectedCoords(null);
+      setLocationError(null);
+      setLocationSuccess(false);
+
+      // 2. Persist to store (renders immediately) and syncs in background
+      await addAddress(newAddrPayload);
+    } catch (err) {
+      console.error("Error al guardar dirección:", err);
+    } finally {
+      setIsSavingAddress(false);
+    }
+  };
 
  const handleProceedToPayment = () => {
  if (hasAgotadoItems) {
@@ -2063,19 +2098,38 @@ export function CartDrawer() {
           </div>
         </div>
 
+        {addressValidationError && (
+          <div className="p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-600 dark:text-amber-400 text-xs font-medium flex items-center gap-2">
+            <AlertTriangle className="w-4 h-4 shrink-0 text-amber-500" />
+            <span>{addressValidationError}</span>
+          </div>
+        )}
+
         <div className="flex gap-2.5 pt-4">
           <button 
             type="button"
-            onClick={() => setIsEditingAddress(false)}
-            className="w-1/3 py-2.5 px-4 bg-black/[0.04] dark:bg-white/5 text-gray-700 dark:text-gray-300 rounded-full text-xs font-bold hover:bg-black/[0.08] dark:hover:bg-white/10 transition-colors cursor-pointer"
+            disabled={isSavingAddress}
+            onClick={() => {
+              setIsEditingAddress(false);
+              setAddressValidationError(null);
+            }}
+            className="w-1/3 py-2.5 px-4 bg-black/[0.04] dark:bg-white/5 text-gray-700 dark:text-gray-300 rounded-full text-xs font-bold hover:bg-black/[0.08] dark:hover:bg-white/10 transition-colors cursor-pointer disabled:opacity-50"
           >
             Cancelar
           </button>
           <button 
             type="submit"
-            className="w-2/3 py-2.5 px-4 bg-[#18181b] dark:bg-white text-white dark:text-[#18181b] rounded-full text-xs font-bold hover:opacity-90 transition-all shadow-2xs active:scale-[0.99] cursor-pointer"
+            disabled={isSavingAddress}
+            className="w-2/3 py-2.5 px-4 bg-[#18181b] dark:bg-white text-white dark:text-[#18181b] rounded-full text-xs font-bold hover:opacity-90 transition-all shadow-2xs active:scale-[0.99] cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
           >
-            Guardar Dirección
+            {isSavingAddress ? (
+              <>
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                <span>Guardando...</span>
+              </>
+            ) : (
+              <span>Guardar Dirección</span>
+            )}
           </button>
         </div>
       </form>

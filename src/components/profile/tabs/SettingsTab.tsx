@@ -127,6 +127,8 @@ export function SettingsTab({
   const [isDetectingLocation, setIsDetectingLocation] = useState(false);
   const [locationError, setLocationError] = useState<string | null>(null);
   const [locationSuccess, setLocationSuccess] = useState(false);
+  const [isSubmittingAddress, setIsSubmittingAddress] = useState(false);
+  const [addressValidationError, setAddressValidationError] = useState<string | null>(null);
 
   useEffect(() => {
     if (user) {
@@ -456,99 +458,116 @@ export function SettingsTab({
 
   const handleAddressSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!street.trim() || !city.trim() || !postalCode.trim() || !stateProv.trim() || !country.trim()) return;
-    if (addresses.length >= 4) {
-      alert("Has alcanzado el límite máximo de 4 direcciones.");
+    if (isSubmittingAddress) return;
+    setAddressValidationError(null);
+
+    // Explicit validation so user is never confused about what is missing
+    const missing: string[] = [];
+    if (!street.trim()) missing.push("Calle Principal");
+    if (!city.trim()) missing.push("Ciudad / Cantón");
+
+    if (missing.length > 0) {
+      setAddressValidationError(`Por favor completa: ${missing.join(", ")}.`);
       return;
     }
 
-    let resolvedLat = detectedCoords?.lat ?? detectedRawGps?.latitude;
-    let resolvedLng = detectedCoords?.lng ?? detectedRawGps?.longitude;
-
-    if (!Number.isFinite(resolvedLat) || !Number.isFinite(resolvedLng)) {
-      const geocoded = await resolveEcuadorExactAddressLngLat({
-        street: street.trim(),
-        reference: reference.trim() || undefined,
-        postalCode: postalCode.trim(),
-        city: city.trim(),
-        state: stateProv.trim(),
-        country: country.trim(),
-      });
-      if (geocoded) {
-        resolvedLng = geocoded[0];
-        resolvedLat = geocoded[1];
-      }
+    if (addresses.length >= 4) {
+      setAddressValidationError("Has alcanzado el límite máximo de 4 direcciones.");
+      return;
     }
 
-    const finalRawGps: RawGpsHardwareData | undefined =
-      typeof resolvedLat === "number" && typeof resolvedLng === "number"
-        ? {
-            ...(detectedRawGps || {
-              accuracy: 5,
-              altitude: null,
-              altitudeAccuracy: null,
-              heading: null,
-              speed: null,
-              timestamp: Date.now(),
-              rawPositionJson: JSON.stringify({ latitude: resolvedLat, longitude: resolvedLng }),
-            }),
-            latitude: resolvedLat,
-            longitude: resolvedLng,
-            rawCoordsString: `${resolvedLat},${resolvedLng}`,
-          }
-        : detectedRawGps || undefined;
+    setIsSubmittingAddress(true);
 
-    await addAddress({
-      recipient: recipient.trim() || user?.name || "Destinatario",
-      idNumber: idNumber.trim() || undefined,
-      phone: phone.trim() || undefined,
-      email: addrEmail.trim() || user?.email || undefined,
-      street: street.trim(),
-      exteriorNumber: exteriorNumber.trim() || undefined,
-      neighborhood: neighborhood.trim() || undefined,
-      interiorNumber: interiorNumber.trim() || undefined,
-      crossStreets: crossStreets.trim() || undefined,
-      addressType: addressType,
-      deliveryInstructions: deliveryInstructions.trim() || undefined,
-      hasElevator: hasElevator,
-      floorLevel: floorLevel.trim() || undefined,
-      label: label.trim() || undefined,
-      reference: reference.trim() || undefined,
-      city: city.trim(),
-      state: stateProv.trim(),
-      postalCode: postalCode.trim(),
-      country: country.trim(),
-      lat: resolvedLat,
-      lng: resolvedLng,
-      rawGps: finalRawGps,
-      rawGpsString: finalRawGps?.rawPositionJson || finalRawGps?.rawCoordsString || undefined,
-      isDefault: addresses.length === 0,
-    });
-    setRecipient(user?.name || "");
-    setIdNumber("");
-    setPhone("");
-    setAddrEmail(user?.email || "");
-    setStreet("");
-    setExteriorNumber("");
-    setNeighborhood("");
-    setInteriorNumber("");
-    setCrossStreets("");
-    setAddressType("casa");
-    setDeliveryInstructions("");
-    setHasElevator(false);
-    setFloorLevel("");
-    setLabel("");
-    setReference("");
-    setCity("");
-    setStateProv("");
-    setPostalCode("");
-    setCountry("Ecuador");
-    setDetectedCoords(null);
-    setShowMiniMap(false);
-    setDetectedRawGps(null);
-    setLocationError(null);
-    setLocationSuccess(false);
-    setShowAddressForm(false);
+    try {
+      const finalCity = city.trim();
+      const finalState = stateProv.trim() || "Pichincha";
+      const finalPostal = postalCode.trim() || "170150";
+      const finalCountry = country.trim() || "Ecuador";
+      const finalStreet = street.trim();
+      const finalRecipient = recipient.trim() || user?.name || "Destinatario";
+
+      const resolvedLat = detectedCoords?.lat ?? detectedRawGps?.latitude;
+      const resolvedLng = detectedCoords?.lng ?? detectedRawGps?.longitude;
+
+      const finalRawGps: RawGpsHardwareData | undefined =
+        typeof resolvedLat === "number" && typeof resolvedLng === "number"
+          ? {
+              ...(detectedRawGps || {
+                accuracy: 5,
+                altitude: null,
+                altitudeAccuracy: null,
+                heading: null,
+                speed: null,
+                timestamp: Date.now(),
+                rawPositionJson: JSON.stringify({ latitude: resolvedLat, longitude: resolvedLng }),
+              }),
+              latitude: resolvedLat,
+              longitude: resolvedLng,
+              rawCoordsString: `${resolvedLat},${resolvedLng}`,
+            }
+          : detectedRawGps || undefined;
+
+      const newAddressPayload = {
+        recipient: finalRecipient,
+        idNumber: idNumber.trim() || undefined,
+        phone: phone.trim() || undefined,
+        email: addrEmail.trim() || user?.email || undefined,
+        street: finalStreet,
+        exteriorNumber: exteriorNumber.trim() || undefined,
+        neighborhood: neighborhood.trim() || undefined,
+        interiorNumber: interiorNumber.trim() || undefined,
+        crossStreets: crossStreets.trim() || undefined,
+        addressType: addressType,
+        deliveryInstructions: deliveryInstructions.trim() || undefined,
+        hasElevator: hasElevator,
+        floorLevel: floorLevel.trim() || undefined,
+        label: label.trim() || undefined,
+        reference: reference.trim() || undefined,
+        city: finalCity,
+        state: finalState,
+        postalCode: finalPostal,
+        country: finalCountry,
+        lat: resolvedLat,
+        lng: resolvedLng,
+        rawGps: finalRawGps,
+        rawGpsString: finalRawGps?.rawPositionJson || finalRawGps?.rawCoordsString || undefined,
+        isDefault: addresses.length === 0,
+      };
+
+      // 1. Instantly close form and reset fields so UI is responsive and double clicks are impossible
+      setShowAddressForm(false);
+      setShowMiniMap(false);
+      setRecipient(user?.name || "");
+      setIdNumber("");
+      setPhone("");
+      setAddrEmail(user?.email || "");
+      setStreet("");
+      setExteriorNumber("");
+      setNeighborhood("");
+      setInteriorNumber("");
+      setCrossStreets("");
+      setAddressType("casa");
+      setDeliveryInstructions("");
+      setHasElevator(false);
+      setFloorLevel("");
+      setLabel("");
+      setReference("");
+      setCity("");
+      setStateProv("");
+      setPostalCode("");
+      setCountry("Ecuador");
+      setDetectedCoords(null);
+      setDetectedRawGps(null);
+      setLocationError(null);
+      setLocationSuccess(false);
+
+      // 2. Persist to store (renders immediately in address list) and syncs to cloud
+      await addAddress(newAddressPayload);
+    } catch (err) {
+      console.error("Error al guardar dirección:", err);
+    } finally {
+      setIsSubmittingAddress(false);
+    }
   };
 
   if (!user) return null;
@@ -1434,26 +1453,47 @@ export function SettingsTab({
                   </div>
                 </div>
 
+                {addressValidationError && (
+                  <motion.div 
+                    initial={{ opacity: 0, y: -4 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/25 text-amber-700 dark:text-amber-300 text-xs font-semibold flex items-center gap-2 mt-2"
+                  >
+                    <AlertCircle className="w-4 h-4 shrink-0 text-amber-500" />
+                    <span>{addressValidationError}</span>
+                  </motion.div>
+                )}
+
                 <div className="flex items-center justify-end gap-2.5 pt-4 mt-2 border-t border-gray-200 dark:border-white/10">
                   <motion.button 
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
+                    whileHover={{ scale: isSubmittingAddress ? 1 : 1.02 }}
+                    whileTap={{ scale: isSubmittingAddress ? 1 : 0.98 }}
                     type="button" 
+                    disabled={isSubmittingAddress}
                     onClick={() => {
                       setShowMiniMap(false);
                       setShowAddressForm(false);
+                      setAddressValidationError(null);
                     }} 
-                    className="px-4 py-2 text-xs font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-200/80 dark:hover:bg-white/10 rounded-xl cursor-pointer transition-colors"
+                    className="px-4 py-2 text-xs font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-200/80 dark:hover:bg-white/10 rounded-xl cursor-pointer transition-colors disabled:opacity-50"
                   >
                     Cancelar
                   </motion.button>
                   <motion.button 
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
+                    whileHover={{ scale: isSubmittingAddress ? 1 : 1.02 }}
+                    whileTap={{ scale: isSubmittingAddress ? 1 : 0.98 }}
                     type="submit" 
-                    className="px-5 py-2 text-xs font-semibold bg-[#8c9276] hover:bg-[#7b8166] text-white rounded-xl shadow-sm cursor-pointer transition-colors"
+                    disabled={isSubmittingAddress}
+                    className="px-5 py-2 text-xs font-semibold bg-[#8c9276] hover:bg-[#7b8166] text-white rounded-xl shadow-sm cursor-pointer transition-all disabled:opacity-60 disabled:cursor-not-allowed flex items-center gap-2"
                   >
-                    Guardar Dirección
+                    {isSubmittingAddress ? (
+                      <>
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                        <span>Guardando...</span>
+                      </>
+                    ) : (
+                      <span>Guardar Dirección</span>
+                    )}
                   </motion.button>
                 </div>
               </form>
