@@ -8,24 +8,47 @@ import { useThemeStore, getResolvedTheme } from "@/lib/themeStore";
 function syncBrowserThemeColor(color: string) {
   if (typeof document === "undefined") return;
 
-  // 1. Primary W3C standard: meta[name="theme-color"]
-  const metaTags = document.querySelectorAll<HTMLMetaElement>('meta[name="theme-color"]');
-  if (metaTags.length === 0) {
-    const meta = document.createElement("meta");
-    meta.name = "theme-color";
-    meta.content = color;
-    document.head.appendChild(meta);
-  } else {
-    metaTags.forEach((meta) => {
-      meta.setAttribute("content", color);
-    });
-  }
+  // 1. Direct root background-color styling (vital for Safari 16-18+ live observer)
+  try {
+    document.documentElement.style.backgroundColor = color;
+    if (document.body) {
+      document.body.style.backgroundColor = color;
+    }
+  } catch {}
 
-  // 2. Microsoft Windows / Tile / Navigation button color
-  const msMeta = document.querySelector<HTMLMetaElement>('meta[name="msapplication-navbutton-color"]');
-  if (msMeta) {
+  // 2. Primary W3C standard: meta[name="theme-color"]
+  // Remove existing media-query restricted tags to avoid getting overridden by OS dark/light mode
+  try {
+    const existingMetas = document.querySelectorAll<HTMLMetaElement>('meta[name="theme-color"]');
+    existingMetas.forEach((meta) => meta.remove());
+
+    const newMeta = document.createElement("meta");
+    newMeta.name = "theme-color";
+    newMeta.content = color;
+    document.head.appendChild(newMeta);
+  } catch {}
+
+  // 3. Apple-specific status bar style
+  try {
+    let appleMeta = document.querySelector<HTMLMetaElement>('meta[name="apple-mobile-web-app-status-bar-style"]');
+    if (!appleMeta) {
+      appleMeta = document.createElement("meta");
+      appleMeta.name = "apple-mobile-web-app-status-bar-style";
+      document.head.appendChild(appleMeta);
+    }
+    appleMeta.setAttribute("content", "default");
+  } catch {}
+
+  // 4. Microsoft Windows / Tile / Navigation button color
+  try {
+    let msMeta = document.querySelector<HTMLMetaElement>('meta[name="msapplication-navbutton-color"]');
+    if (!msMeta) {
+      msMeta = document.createElement("meta");
+      msMeta.name = "msapplication-navbutton-color";
+      document.head.appendChild(msMeta);
+    }
     msMeta.setAttribute("content", color);
-  }
+  } catch {}
 }
 
 export function AmbientBackground() {

@@ -29,7 +29,7 @@
 
 @layer base {
   :root {
-    --background: #f8f9fa;
+    --background: #faf9f6;
     --foreground: #111827;
     --font-moonwalk: 'Moonwalk', 'MuseoModerno', sans-serif;
   }
@@ -41,7 +41,7 @@
   }
 
   body {
-    @apply bg-[#f8f9fa] text-gray-900;
+    @apply bg-[#faf9f6] text-gray-900;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     text-rendering: optimizeLegibility;
