@@ -40,8 +40,9 @@ import { brandConfig, themeConfig } from "@/config";
 
 export const viewport: Viewport = {
   themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#faf9f6" },
-    { media: "(prefers-color-scheme: dark)", color: "#161618" },
+    { color: "#8c9276" },
+    { media: "(prefers-color-scheme: light)", color: "#8c9276" },
+    { media: "(prefers-color-scheme: dark)", color: "#232b24" },
   ],
   width: "device-width",
   initialScale: 1,
