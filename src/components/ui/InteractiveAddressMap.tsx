@@ -28,8 +28,8 @@ interface InteractiveAddressMapProps {
 type MiniMapStyle = "streets-v12" | "dark-v11" | "satellite-streets-v12";
 
 const TILE_SIZE = 256;
-const MIN_ZOOM = 4;
-const MAX_ZOOM = 19;
+const MIN_ZOOM = 5;
+const MAX_ZOOM = 18;
 
 function lngToTileX(lng: number, z: number): number {
   return ((lng + 180) / 360) * Math.pow(2, z);
@@ -97,7 +97,6 @@ export default function InteractiveAddressMap({
       ? initialLng
       : -78.4678;
 
-  // Always use the instant High-DPI Canvas engine so Satellite Streets loads in 0ms and never shows an API Key prompt
   const [useNativeMapbox, setUseNativeMapbox] = useState<boolean>(false);
   const [mapStyle] = useState<MiniMapStyle>("satellite-streets-v12");
   const [pin, setPin] = useState<{ lat: number; lng: number }>({
@@ -110,30 +109,60 @@ export default function InteractiveAddressMap({
   });
   const [zoom, setZoom] = useState<number>(16);
   const [renderTick, setRenderTick] = useState<number>(0);
-
+  const [isDraggingPin, setIsDraggingPin] = useState<boolean>(false);
+  const [dimensions, setDimensions] = useState<{ width: number; height: number }>({
+    width: 360,
+    height: 220,
+  });
 
   // Refs for Native Mapbox GL JS instance
   const mapboxContainerRef = useRef<HTMLDivElement>(null);
   const mapboxInstanceRef = useRef<mapboxgl.Map | null>(null);
   const mapboxMarkerRef = useRef<mapboxgl.Marker | null>(null);
 
-  // Refs for Fallback Canvas engine (when NEXT_PUBLIC_MAPBOX_TOKEN is not set yet)
+  // Refs for Fallback Canvas engine
   const fallbackContainerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const dragModeRef = useRef<"none" | "pin" | "pan">("none");
-  const dragStartRef = useRef<{
-    clientX: number;
-    clientY: number;
+  const mapDragRef = useRef<{
+    startX: number;
+    startY: number;
     startCenterLat: number;
     startCenterLng: number;
-    moved: boolean;
-  }>({
-    clientX: 0,
-    clientY: 0,
-    startCenterLat: validInitLat,
-    startCenterLng: validInitLng,
-    moved: false,
-  });
+    isPanning: boolean;
+  } | null>(null);
+
+  // Synchronize precise container dimensions using ResizeObserver
+  useEffect(() => {
+    const el = fallbackContainerRef.current;
+    if (!el) return;
+
+    const updateSize = () => {
+      const rect = el.getBoundingClientRect();
+      if (rect.width > 0 && rect.height > 0) {
+        setDimensions({
+          width: Math.floor(rect.width),
+          height: Math.floor(rect.height),
+        });
+      }
+    };
+
+    updateSize();
+
+    const ro = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        const { width, height } = entry.contentRect;
+        if (width > 0 && height > 0) {
+          setDimensions({
+            width: Math.floor(width),
+            height: Math.floor(height),
+          });
+        }
+      }
+    });
+
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
 
   const triggerReverseGeocode = useCallback(
     async (lat: number, lng: number) => {
@@ -172,7 +201,6 @@ export default function InteractiveAddressMap({
       });
 
       map.on("error", (err) => {
-        // If token is invalid/revoked, fall back gracefully without crashing React!
         if (
           err?.error?.message?.toLowerCase().includes("token") ||
           err?.error?.message?.toLowerCase().includes("unauthorized") ||
@@ -192,6 +220,7 @@ export default function InteractiveAddressMap({
       marker.on("dragend", () => {
         const lngLat = marker.getLngLat();
         setPin({ lat: lngLat.lat, lng: lngLat.lng });
+        setCenter({ lat: lngLat.lat, lng: lngLat.lng });
         onLocationSelect(lngLat.lat, lngLat.lng);
         triggerReverseGeocode(lngLat.lat, lngLat.lng);
       });
@@ -200,6 +229,7 @@ export default function InteractiveAddressMap({
         const { lat, lng } = ev.lngLat;
         marker.setLngLat([lng, lat]);
         setPin({ lat, lng });
+        setCenter({ lat, lng });
         onLocationSelect(lat, lng);
         triggerReverseGeocode(lat, lng);
       });
@@ -221,15 +251,6 @@ export default function InteractiveAddressMap({
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hasValidMapboxToken, useNativeMapbox]);
-
-  // Update Mapbox style when user switches between Streets / Dark / Satellite Streets
-  useEffect(() => {
-    if (useNativeMapbox && mapboxInstanceRef.current) {
-      try {
-        mapboxInstanceRef.current.setStyle(`mapbox://styles/mapbox/${mapStyle}`);
-      } catch {}
-    }
-  }, [mapStyle, useNativeMapbox]);
 
   // Sync external coordinates change (e.g. "Autocompletar con mi ubicación actual")
   const prevPropsRef = useRef<{ lat: number; lng: number }>({
@@ -264,8 +285,7 @@ export default function InteractiveAddressMap({
     }
   }, [initialLat, initialLng, useNativeMapbox]);
 
-
-  // Fallback Canvas Web Mercator helpers (active when NEXT_PUBLIC_MAPBOX_TOKEN is not yet configured)
+  // Coordinate projections
   const screenToLatLng = useCallback(
     (px: number, py: number, width: number, height: number) => {
       const centerTileX = lngToTileX(center.lng, zoom);
@@ -292,15 +312,36 @@ export default function InteractiveAddressMap({
     [center.lat, center.lng, zoom]
   );
 
+  // Wheel zoom prevention: Zoom map without scrolling window
+  useEffect(() => {
+    const el = fallbackContainerRef.current;
+    if (!el || useNativeMapbox) return;
+
+    const handleWheel = (e: WheelEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+
+      const delta = -Math.sign(e.deltaY) * 0.5;
+      setZoom((curZ) => {
+        const next = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, curZ + delta));
+        return Number(next.toFixed(2));
+      });
+      // Keep center locked to pin during wheel zoom so anchor never shifts
+      setCenter({ lat: pin.lat, lng: pin.lng });
+    };
+
+    el.addEventListener("wheel", handleWheel, { passive: false });
+    return () => el.removeEventListener("wheel", handleWheel);
+  }, [useNativeMapbox, pin.lat, pin.lng]);
+
+  // Fallback Canvas Rendering
   useEffect(() => {
     if (useNativeMapbox) return;
     const canvas = canvasRef.current;
-    const container = fallbackContainerRef.current;
-    if (!canvas || !container) return;
+    if (!canvas) return;
 
-    const rect = container.getBoundingClientRect();
-    const width = Math.max(280, Math.floor(rect.width));
-    const height = Math.max(180, Math.floor(rect.height));
+    const width = dimensions.width;
+    const height = dimensions.height;
     const dpr = typeof window !== "undefined" ? Math.min(window.devicePixelRatio || 1, 2) : 1;
 
     if (canvas.width !== width * dpr || canvas.height !== height * dpr) {
@@ -313,10 +354,10 @@ export default function InteractiveAddressMap({
 
     ctx.save();
     ctx.scale(dpr, dpr);
-    ctx.fillStyle = mapStyle === "dark-v11" ? "#0d1117" : "#e5e7eb";
+    ctx.fillStyle = "#1e293b";
     ctx.fillRect(0, 0, width, height);
 
-    const maxNative = mapStyle === "streets-v12" ? 15 : 18;
+    const maxNative = 18;
     const zTile = Math.max(3, Math.min(maxNative, Math.round(zoom)));
     const scaleFactor = Math.pow(2, zoom - zTile);
     const drawnTileSize = TILE_SIZE * scaleFactor;
@@ -389,52 +430,38 @@ export default function InteractiveAddressMap({
       }
     }
     ctx.restore();
-  }, [useNativeMapbox, center.lat, center.lng, zoom, mapStyle, renderTick, envToken]);
+  }, [useNativeMapbox, center.lat, center.lng, zoom, mapStyle, renderTick, dimensions]);
 
-  const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
-    if (useNativeMapbox) return;
-    const container = fallbackContainerRef.current;
-    if (!container) return;
-    const rect = container.getBoundingClientRect();
-    const px = e.clientX - rect.left;
-    const py = e.clientY - rect.top;
-
-    const pinPos = latLngToScreen(pin.lat, pin.lng, rect.width, rect.height);
-    const distToPin = Math.hypot(px - pinPos.x, py - (pinPos.y - 16));
-
-    e.currentTarget.setPointerCapture(e.pointerId);
-    dragModeRef.current = distToPin <= 34 ? "pin" : "pan";
-    dragStartRef.current = {
-      clientX: e.clientX,
-      clientY: e.clientY,
+  // Background Map Panning & Tap-To-Place
+  const handleMapPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (useNativeMapbox || isDraggingPin) return;
+    mapDragRef.current = {
+      startX: e.clientX,
+      startY: e.clientY,
       startCenterLat: center.lat,
       startCenterLng: center.lng,
-      moved: false,
+      isPanning: false,
     };
+    try {
+      e.currentTarget.setPointerCapture(e.pointerId);
+    } catch {}
   };
 
-  const handlePointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
-    if (useNativeMapbox || dragModeRef.current === "none") return;
-    const container = fallbackContainerRef.current;
-    if (!container) return;
-    const rect = container.getBoundingClientRect();
+  const handleMapPointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (useNativeMapbox || isDraggingPin) return;
+    const start = mapDragRef.current;
+    if (!start) return;
 
-    const dx = e.clientX - dragStartRef.current.clientX;
-    const dy = e.clientY - dragStartRef.current.clientY;
-    if (Math.hypot(dx, dy) > 3) {
-      dragStartRef.current.moved = true;
+    const dx = e.clientX - start.startX;
+    const dy = e.clientY - start.startY;
+
+    if (!start.isPanning && Math.hypot(dx, dy) > 5) {
+      start.isPanning = true;
     }
 
-    if (dragModeRef.current === "pin") {
-      const px = e.clientX - rect.left;
-      const py = e.clientY - rect.top;
-      const next = screenToLatLng(px, py, rect.width, rect.height);
-      setPin(next);
-      prevPropsRef.current = next;
-      onLocationSelect(next.lat, next.lng);
-    } else if (dragModeRef.current === "pan") {
-      const startTileX = lngToTileX(dragStartRef.current.startCenterLng, zoom);
-      const startTileY = latToTileY(dragStartRef.current.startCenterLat, zoom);
+    if (start.isPanning) {
+      const startTileX = lngToTileX(start.startCenterLng, zoom);
+      const startTileY = latToTileY(start.startCenterLat, zoom);
       const nextLng = tileXToLng(startTileX - dx / TILE_SIZE, zoom);
       const nextLat = tileYToLat(startTileY - dy / TILE_SIZE, zoom);
       setCenter({
@@ -444,37 +471,85 @@ export default function InteractiveAddressMap({
     }
   };
 
-  const handlePointerUp = (e: React.PointerEvent<HTMLDivElement>) => {
-    if (useNativeMapbox || dragModeRef.current === "none") return;
+  const handleMapPointerUp = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (useNativeMapbox || isDraggingPin) return;
+    const start = mapDragRef.current;
+    mapDragRef.current = null;
+    try {
+      e.currentTarget.releasePointerCapture(e.pointerId);
+    } catch {}
+
     const container = fallbackContainerRef.current;
-    if (container && !dragStartRef.current.moved) {
-      const rect = container.getBoundingClientRect();
+    if (!container) return;
+    const rect = container.getBoundingClientRect();
+
+    // If user clicked or tapped anywhere without panning: Teleport pin to that spot!
+    if (!start || !start.isPanning) {
       const px = e.clientX - rect.left;
       const py = e.clientY - rect.top;
       const next = screenToLatLng(px, py, rect.width, rect.height);
       setPin(next);
+      setCenter(next);
       prevPropsRef.current = next;
       onLocationSelect(next.lat, next.lng);
       triggerReverseGeocode(next.lat, next.lng);
-    } else if (dragModeRef.current === "pin") {
-      triggerReverseGeocode(pin.lat, pin.lng);
     }
-    dragModeRef.current = "none";
   };
 
-  const rect = fallbackContainerRef.current?.getBoundingClientRect();
-  const w = rect?.width || 360;
-  const h = rect?.height || 220;
-  const pinScreen = latLngToScreen(pin.lat, pin.lng, w, h);
+  // Dedicated Tactile Pin Dragging
+  const handlePinPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    e.stopPropagation();
+    setIsDraggingPin(true);
+    try {
+      e.currentTarget.setPointerCapture(e.pointerId);
+    } catch {}
+  };
+
+  const handlePinPointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (!isDraggingPin) return;
+    const container = fallbackContainerRef.current;
+    if (!container) return;
+    const rect = container.getBoundingClientRect();
+    const px = Math.max(0, Math.min(rect.width, e.clientX - rect.left));
+    const py = Math.max(0, Math.min(rect.height, e.clientY - rect.top));
+    const next = screenToLatLng(px, py, rect.width, rect.height);
+    setPin(next);
+    prevPropsRef.current = next;
+    onLocationSelect(next.lat, next.lng);
+  };
+
+  const handlePinPointerUp = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (!isDraggingPin) return;
+    setIsDraggingPin(false);
+    try {
+      e.currentTarget.releasePointerCapture(e.pointerId);
+    } catch {}
+
+    // Lock map center to the pin so zooming never drifts
+    setCenter({ lat: pin.lat, lng: pin.lng });
+    onLocationSelect(pin.lat, pin.lng);
+    triggerReverseGeocode(pin.lat, pin.lng);
+  };
+
+  const pinScreen = latLngToScreen(
+    pin.lat,
+    pin.lng,
+    dimensions.width,
+    dimensions.height
+  );
 
   const handleZoomStep = (delta: number) => {
+    const nextZoom = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, zoom + delta));
+    if (nextZoom === zoom) return;
+
     if (useNativeMapbox && mapboxInstanceRef.current) {
       try {
-        const curZ = mapboxInstanceRef.current.getZoom();
-        mapboxInstanceRef.current.zoomTo(Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, curZ + delta)));
+        mapboxInstanceRef.current.zoomTo(nextZoom);
       } catch {}
     } else {
-      setZoom((z) => Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, z + delta)));
+      // Anchoring zoom strictly around the pin prevents any anchor movement or sliding!
+      setCenter({ lat: pin.lat, lng: pin.lng });
+      setZoom(nextZoom);
     }
   };
 
@@ -485,99 +560,137 @@ export default function InteractiveAddressMap({
       } catch {}
     } else {
       setCenter({ lat: pin.lat, lng: pin.lng });
+      setZoom(16);
     }
   };
 
   return (
-    <div className={`relative select-none ${className}`}>
-        {/* 1. Native Mapbox GL JS Container (Active when NEXT_PUBLIC_MAPBOX_TOKEN is in .env) */}
-        {useNativeMapbox ? (
-          <div ref={mapboxContainerRef} className="w-full h-full" />
-        ) : (
-          /* 2. Crash-Proof Fallback Interactive Map (Active if token not yet added) */
+    <div
+      data-lenis-prevent="true"
+      className={`relative select-none ${className}`}
+    >
+      {/* 1. Native Mapbox GL JS Container (Active when valid NEXT_PUBLIC_MAPBOX_TOKEN is present) */}
+      {useNativeMapbox ? (
+        <div ref={mapboxContainerRef} className="w-full h-full" />
+      ) : (
+        /* 2. High-Performance Instant Satellite Hybrid Canvas Map */
+        <div
+          ref={fallbackContainerRef}
+          onPointerDown={handleMapPointerDown}
+          onPointerMove={handleMapPointerMove}
+          onPointerUp={handleMapPointerUp}
+          style={{ touchAction: "none" }}
+          className="w-full h-full cursor-crosshair relative overflow-hidden"
+        >
+          <canvas
+            ref={canvasRef}
+            style={{
+              filter: "contrast(1.06) saturate(1.1)",
+            }}
+            className="w-full h-full block"
+          />
+
+          {/* Dedicated Tactile Draggable Anchor Pin */}
           <div
-            ref={fallbackContainerRef}
-            onPointerDown={handlePointerDown}
-            onPointerMove={handlePointerMove}
-            onPointerUp={handlePointerUp}
-            className="w-full h-full touch-none cursor-grab active:cursor-grabbing relative"
+            style={{
+              transform: `translate3d(${pinScreen.x}px, ${pinScreen.y}px, 0)`,
+            }}
+            onPointerDown={handlePinPointerDown}
+            onPointerMove={handlePinPointerMove}
+            onPointerUp={handlePinPointerUp}
+            className="absolute top-0 left-0 -translate-x-1/2 -translate-y-full z-20 pointer-events-auto touch-none"
           >
-            <canvas
-              ref={canvasRef}
-              style={{
-                filter:
-                  mapStyle === "dark-v11"
-                    ? "invert(92%) hue-rotate(195deg) saturate(132%) brightness(90%) contrast(120%)"
-                    : mapStyle === "streets-v12"
-                    ? "contrast(1.04) saturate(1.08)"
-                    : "contrast(1.06) saturate(1.1)",
-              }}
-              className="w-full h-full block"
-            />
             <div
-              style={{
-                transform: `translate3d(${pinScreen.x}px, ${pinScreen.y}px, 0)`,
-              }}
-              className="absolute top-0 left-0 -translate-x-1/2 -translate-y-full pointer-events-none z-10 transition-transform duration-75"
+              className={`relative flex flex-col items-center select-none cursor-grab active:cursor-grabbing ${
+                isDraggingPin
+                  ? "scale-115 -translate-y-3 transition-none"
+                  : "scale-100 translate-y-0 transition-transform duration-150 ease-out"
+              }`}
             >
-              <div className="relative flex flex-col items-center">
-                <div className="w-8 h-8 rounded-full bg-blue-600 border-2 border-white shadow-lg flex items-center justify-center text-white">
-                  <div className="w-2.5 h-2.5 rounded-full bg-white" />
+              {/* Pulse reticle on ground directly under the needle tip when dragging */}
+              {isDraggingPin && (
+                <div className="absolute top-full left-1/2 -translate-x-1/2 translate-y-1 pointer-events-none">
+                  <div className="w-6 h-6 rounded-full border-2 border-blue-400 bg-blue-500/20 animate-ping -translate-x-1/2 -translate-y-1/2" />
+                  <div className="w-2 h-2 rounded-full bg-blue-500 -translate-x-1/2 -translate-y-1/2 shadow-sm" />
                 </div>
-                <div className="w-1 h-2.5 bg-blue-600 -mt-0.5 rounded-b-full shadow-sm" />
-                <div className="w-3 h-1 rounded-full bg-black/35 blur-[1px] mt-0.5" />
+              )}
+
+              {/* Pin Head */}
+              <div className="w-8 h-8 rounded-full bg-gradient-to-b from-blue-500 to-blue-600 border-2 border-white shadow-[0_4px_12px_rgba(37,99,235,0.45)] flex items-center justify-center text-white">
+                <div className="w-2.5 h-2.5 rounded-full bg-white shadow-inner" />
               </div>
+
+              {/* Needle Tip */}
+              <div className="w-1 h-2.5 bg-blue-600 -mt-0.5 rounded-b-full shadow-sm" />
+
+              {/* Drop Shadow */}
+              <div
+                className={`rounded-full bg-black/40 blur-[1px] mt-0.5 transition-all duration-150 ${
+                  isDraggingPin ? "w-2 h-0.5 opacity-30 blur-[2px]" : "w-3.5 h-1 opacity-70"
+                }`}
+              />
             </div>
           </div>
-        )}
-
-        {/* Top Bar: Instruction */}
-        <div className="absolute top-2.5 left-2.5 right-2.5 flex items-center justify-between gap-2 pointer-events-none z-10">
-          <div className="bg-white/95 dark:bg-black/85 backdrop-blur-md px-2.5 py-1.5 rounded-xl border border-black/10 dark:border-white/15 shadow-sm flex items-center gap-1.5">
-            <span className="w-2 h-2 rounded-full bg-blue-600 animate-pulse shrink-0" />
-            <span className="text-[10px] font-semibold text-gray-800 dark:text-gray-200 leading-none">
-              Arrastra el pin o toca el mapa
-            </span>
-          </div>
         </div>
+      )}
 
-        {/* Zoom & Recenter Controls */}
-        <div
-          className="absolute bottom-2.5 right-2.5 flex flex-col gap-1 pointer-events-auto z-10"
-          onPointerDown={(e) => e.stopPropagation()}
-        >
-          <button
-            type="button"
-            onClick={() => handleZoomStep(1)}
-            title="Acercar"
-            className="w-7 h-7 rounded-lg bg-white/95 dark:bg-black/85 border border-black/10 dark:border-white/15 shadow-sm flex items-center justify-center text-gray-800 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-white/10 cursor-pointer"
-          >
-            <Plus className="w-3.5 h-3.5" />
-          </button>
-          <button
-            type="button"
-            onClick={() => handleZoomStep(-1)}
-            title="Alejar"
-            className="w-7 h-7 rounded-lg bg-white/95 dark:bg-black/85 border border-black/10 dark:border-white/15 shadow-sm flex items-center justify-center text-gray-800 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-white/10 cursor-pointer"
-          >
-            <Minus className="w-3.5 h-3.5" />
-          </button>
-          <button
-            type="button"
-            onClick={handleRecenter}
-            title="Centrar en el pin"
-            className="w-7 h-7 rounded-lg bg-white/95 dark:bg-black/85 border border-black/10 dark:border-white/15 shadow-sm flex items-center justify-center text-blue-600 dark:text-blue-400 hover:bg-gray-100 dark:hover:bg-white/10 cursor-pointer"
-          >
-            <Crosshair className="w-3.5 h-3.5" />
-          </button>
-        </div>
-
-        {/* Live Coordinates Badge */}
-        <div className="absolute bottom-2.5 left-2.5 bg-white/95 dark:bg-black/85 backdrop-blur-md px-2.5 py-1.5 rounded-lg border border-black/10 dark:border-white/15 shadow-sm pointer-events-none z-10">
-          <span className="text-[10px] font-mono font-semibold text-gray-700 dark:text-gray-300">
-            {pin.lat.toFixed(5)}, {pin.lng.toFixed(5)}
+      {/* Top Banner: Guidance */}
+      <div className="absolute top-2.5 left-2.5 right-2.5 flex items-center justify-between gap-2 pointer-events-none z-10">
+        <div className="bg-white/95 dark:bg-black/85 backdrop-blur-md px-2.5 py-1.5 rounded-xl border border-black/10 dark:border-white/15 shadow-sm flex items-center gap-1.5">
+          <span className="w-2 h-2 rounded-full bg-blue-600 animate-pulse shrink-0" />
+          <span className="text-[10px] font-semibold text-gray-800 dark:text-gray-200 leading-none">
+            Toca el mapa o arrastra el pin
           </span>
         </div>
       </div>
+
+      {/* Zoom & Recenter Controls */}
+      <div
+        className="absolute bottom-2.5 right-2.5 flex flex-col gap-1 pointer-events-auto z-10"
+        onPointerDown={(e) => e.stopPropagation()}
+      >
+        <button
+          type="button"
+          disabled={zoom >= MAX_ZOOM}
+          onClick={() => handleZoomStep(1)}
+          title={zoom >= MAX_ZOOM ? "Zoom máximo alcanzado" : "Acercar"}
+          className={`w-7 h-7 rounded-lg bg-white/95 dark:bg-black/85 border border-black/10 dark:border-white/15 shadow-sm flex items-center justify-center transition-all ${
+            zoom >= MAX_ZOOM
+              ? "opacity-35 cursor-not-allowed text-gray-400"
+              : "text-gray-800 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-white/10 cursor-pointer active:scale-95"
+          }`}
+        >
+          <Plus className="w-3.5 h-3.5" />
+        </button>
+        <button
+          type="button"
+          disabled={zoom <= MIN_ZOOM}
+          onClick={() => handleZoomStep(-1)}
+          title={zoom <= MIN_ZOOM ? "Zoom mínimo alcanzado" : "Alejar"}
+          className={`w-7 h-7 rounded-lg bg-white/95 dark:bg-black/85 border border-black/10 dark:border-white/15 shadow-sm flex items-center justify-center transition-all ${
+            zoom <= MIN_ZOOM
+              ? "opacity-35 cursor-not-allowed text-gray-400"
+              : "text-gray-800 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-white/10 cursor-pointer active:scale-95"
+          }`}
+        >
+          <Minus className="w-3.5 h-3.5" />
+        </button>
+        <button
+          type="button"
+          onClick={handleRecenter}
+          title="Centrar en el pin"
+          className="w-7 h-7 rounded-lg bg-white/95 dark:bg-black/85 border border-black/10 dark:border-white/15 shadow-sm flex items-center justify-center text-blue-600 dark:text-blue-400 hover:bg-gray-100 dark:hover:bg-white/10 cursor-pointer active:scale-95 transition-all"
+        >
+          <Crosshair className="w-3.5 h-3.5" />
+        </button>
+      </div>
+
+      {/* Live Coordinates Badge */}
+      <div className="absolute bottom-2.5 left-2.5 bg-white/95 dark:bg-black/85 backdrop-blur-md px-2.5 py-1.5 rounded-lg border border-black/10 dark:border-white/15 shadow-sm pointer-events-none z-10">
+        <span className="text-[10px] font-mono font-semibold text-gray-700 dark:text-gray-300">
+          {pin.lat.toFixed(5)}, {pin.lng.toFixed(5)}
+        </span>
+      </div>
+    </div>
   );
 }

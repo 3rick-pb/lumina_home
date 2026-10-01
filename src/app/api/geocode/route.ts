@@ -64,31 +64,195 @@ const ECUADOR_METROPOLITAN_CITIES: Record<string, string> = {
   'galápagos': 'Galápagos'
 };
 
+interface MacroCityResult {
+  city: string;
+  parishOrSatellite?: string;
+  province?: string;
+}
+
+const PICHINCHA_SATELLITE_AREAS: Record<string, string> = {
+  'machachi': 'Machachi',
+  'mejia': 'Mejía',
+  'mejía': 'Mejía',
+  'rumiñahui': 'Rumiñahui',
+  'sangolqui': 'Sangolquí',
+  'sangolquí': 'Sangolquí',
+  'san rafael': 'San Rafael',
+  'tambillo': 'Tambillo',
+  'aloag': 'Alóag',
+  'alóag': 'Alóag',
+  'aloasi': 'Aloasí',
+  'aloasí': 'Aloasí',
+  'cutuglagua': 'Cutuglagua',
+  'uyumbicho': 'Uyumbicho',
+  'el chaupi': 'El Chaupi',
+  'cumbaya': 'Cumbayá',
+  'cumbayá': 'Cumbayá',
+  'tumbaco': 'Tumbaco',
+  'puembo': 'Puembo',
+  'pifo': 'Pifo',
+  'yaruqui': 'Yaruquí',
+  'yaruquí': 'Yaruquí',
+  'el quinche': 'El Quinche',
+  'checa': 'Checa',
+  'tababela': 'Tababela',
+  'conocoto': 'Conocoto',
+  'amaguaña': 'Amaguaña',
+  'alangasi': 'Alangasí',
+  'alangasí': 'Alangasí',
+  'la merced': 'La Merced',
+  'pintag': 'Píntag',
+  'píntag': 'Píntag',
+  'guangopolo': 'Guangopolo',
+  'calderon': 'Calderón',
+  'calderón': 'Calderón',
+  'pomasqui': 'Pomasqui',
+  'san antonio': 'San Antonio de Pichincha',
+  'san antonio de pichincha': 'San Antonio de Pichincha',
+  'calacali': 'Calacalí',
+  'calacalí': 'Calacalí',
+  'nono': 'Nono',
+  'cayambe': 'Cayambe',
+  'tabacundo': 'Tabacundo',
+  'pedro moncayo': 'Pedro Moncayo',
+  'puerto quito': 'Puerto Quito',
+  'pedro vicente maldonado': 'Pedro Vicente Maldonado',
+  'san miguel de los bancos': 'San Miguel de los Bancos'
+};
+
+const GUAYAS_SATELLITE_AREAS: Record<string, string> = {
+  'samborondon': 'Samborondón',
+  'samborondón': 'Samborondón',
+  'duran': 'Durán',
+  'durán': 'Durán',
+  'daule': 'Daule'
+};
+
 function resolveMajorCity(
   rawCity?: string,
   rawCounty?: string,
   rawMunicipality?: string,
   bdcCity?: string,
   stateName?: string,
-  countryName?: string
-): string {
+  countryName?: string,
+  lat?: number,
+  lon?: number,
+  displayName?: string
+): MacroCityResult {
   const cCity = cleanAdmin(rawCity);
   const cCounty = cleanAdmin(rawCounty);
   const cMun = cleanAdmin(rawMunicipality);
   const cBdc = cleanAdmin(bdcCity);
 
-  // Preserve the exact real city/canton reported by GPS reverse geocoding first!
-  if (cCity || cCounty || cMun || cBdc) {
-    return cCity || cCounty || cMun || cBdc;
-  }
-
   const normState = (stateName || '').toLowerCase().trim();
   const isEcuador = !countryName || countryName.toLowerCase().includes('ecuador');
-  if (isEcuador && ECUADOR_METROPOLITAN_CITIES[normState]) {
-    return ECUADOR_METROPOLITAN_CITIES[normState];
+
+  // Check if coordinates or state or raw candidates are in Pichincha
+  const isCoordInPichincha =
+    typeof lat === 'number' &&
+    typeof lon === 'number' &&
+    lat >= -0.90 &&
+    lat <= 0.35 &&
+    lon >= -79.35 &&
+    lon <= -78.00;
+
+  const allCandidateStrings = [
+    cCity,
+    cCounty,
+    cMun,
+    cBdc,
+    displayName || ''
+  ].join(' ').toLowerCase();
+
+  const isPichinchaSatellite = Object.keys(PICHINCHA_SATELLITE_AREAS).some(key =>
+    allCandidateStrings.includes(key)
+  );
+
+  const isPichincha =
+    normState.includes('pichincha') ||
+    isCoordInPichincha ||
+    isPichinchaSatellite;
+
+  if (isEcuador && isPichincha) {
+    let detectedParish: string | undefined;
+    for (const [key, label] of Object.entries(PICHINCHA_SATELLITE_AREAS)) {
+      if (allCandidateStrings.includes(key)) {
+        detectedParish = label;
+        break;
+      }
+    }
+    if (!detectedParish && (cCounty || cCity || cMun)) {
+      const cand = cCounty || cCity || cMun;
+      if (cand.toLowerCase() !== 'quito') {
+        detectedParish = cand;
+      }
+    }
+
+    return {
+      city: 'Quito',
+      parishOrSatellite: detectedParish,
+      province: 'Pichincha'
+    };
   }
 
-  return '';
+  // Check Guayas
+  const isCoordInGuayas =
+    typeof lat === 'number' &&
+    typeof lon === 'number' &&
+    lat >= -2.55 &&
+    lat <= -1.65 &&
+    lon >= -80.30 &&
+    lon <= -79.60;
+
+  const isGuayasSatellite = Object.keys(GUAYAS_SATELLITE_AREAS).some(key =>
+    allCandidateStrings.includes(key)
+  );
+
+  const isGuayas =
+    normState.includes('guayas') ||
+    isCoordInGuayas ||
+    isGuayasSatellite;
+
+  if (isEcuador && isGuayas) {
+    let detectedParish: string | undefined;
+    for (const [key, label] of Object.entries(GUAYAS_SATELLITE_AREAS)) {
+      if (allCandidateStrings.includes(key)) {
+        detectedParish = label;
+        break;
+      }
+    }
+    if (!detectedParish && (cCounty || cCity || cMun)) {
+      const cand = cCounty || cCity || cMun;
+      if (cand.toLowerCase() !== 'guayaquil') {
+        detectedParish = cand;
+      }
+    }
+
+    return {
+      city: 'Guayaquil',
+      parishOrSatellite: detectedParish,
+      province: 'Guayas'
+    };
+  }
+
+  // General Ecuador provincial capitals (looking "desde arriba")
+  if (isEcuador && ECUADOR_METROPOLITAN_CITIES[normState]) {
+    const macroCity = ECUADOR_METROPOLITAN_CITIES[normState];
+    const candidateLocal = cCity || cCounty || cMun || cBdc;
+    return {
+      city: macroCity,
+      parishOrSatellite: candidateLocal && candidateLocal.toLowerCase() !== macroCity.toLowerCase() ? candidateLocal : undefined,
+      province: stateName
+    };
+  }
+
+  // Fallback to specific candidate if found, or provincial map
+  const fallbackCity = cCity || cCounty || cMun || cBdc || '';
+  return {
+    city: fallbackCity,
+    parishOrSatellite: undefined,
+    province: stateName
+  };
 }
 
 // 1. Topological Intersecting Street Discovery via OSM Junction Nodes
@@ -464,7 +628,19 @@ function extractExteriorNumber(displayName?: string, rawHouse?: string): string 
   const rawCityCandidate = mbCity || addr14.city || addr16.city || addr18.city || addr14.town || addr16.town;
   const rawCountyCandidate = addr14.county || addr16.county || addr18.county;
   const rawMunCandidate = addr14.municipality || addr16.municipality || addr18.municipality;
-  const mainCity = resolveMajorCity(rawCityCandidate, rawCountyCandidate, rawMunCandidate, bdcCity, state, country);
+  const macroResult = resolveMajorCity(
+    rawCityCandidate,
+    rawCountyCandidate,
+    rawMunCandidate,
+    bdcCity,
+    state,
+    country,
+    nLat,
+    nLon,
+    (origin as { display_name?: string } | null)?.display_name
+  );
+  const mainCity = macroResult.city;
+  const satelliteParish = macroResult.parishOrSatellite;
 
   let subLocality = (
     mbNeighborhood ||
@@ -487,12 +663,21 @@ function extractExteriorNumber(displayName?: string, rawHouse?: string): string 
     ''
   ).trim();
 
+  // If a satellite parish / canton was detected (e.g., "Machachi", "Mejía", "Sangolquí", "Samborondón")
+  if (satelliteParish && satelliteParish.toLowerCase() !== mainCity.toLowerCase()) {
+    if (!subLocality) {
+      subLocality = satelliteParish;
+    } else if (!subLocality.toLowerCase().includes(satelliteParish.toLowerCase())) {
+      subLocality = `${subLocality}, ${satelliteParish}`;
+    }
+  }
+
   if (landmarkPlace && landmarkPlace.toLowerCase() !== mainCity.toLowerCase() && !subLocality) {
     subLocality = landmarkPlace;
   }
 
   // Fallback defaults from IP metadata if available
-  const finalState = state || ipMeta?.state || '';
+  const finalState = state || macroResult.province || ipMeta?.state || '';
   const finalPostal = postalCode || ipMeta?.postalCode || '';
   const finalCountry = country || ipMeta?.country || 'Ecuador';
   const finalCityResult = mainCity || subLocality || ipMeta?.city || 'Quito';
