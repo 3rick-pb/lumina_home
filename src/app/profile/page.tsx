@@ -745,22 +745,17 @@ const handleConfirmDeleteNiche = async () => {
 
  return (
  <div className={clsx(resolvedTheme === 'dark' ? 'dark' : '')}>
- <style>{`
- html:not([data-beui-vt]) :where(.theme-transition),
- html:not([data-beui-vt]) :where(.theme-transition *) {
- transition-property: background-color, border-color, color, fill, stroke;
- transition-duration: 1500ms;
- transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
- }
- /* Left Vertical Navigation Dock: Precisely 0.6s (600ms) transition */
- .sidebar-dock-nav,
- .sidebar-dock-nav *,
- .sidebar-dock-btn,
- .sidebar-dock-btn * {
- transition-property: all !important;
- transition-duration: 600ms !important;
- transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1) !important;
- }
+  <style>{`
+  html:not([data-beui-vt]) .theme-transition {
+    transition: background-color 300ms cubic-bezier(0.4, 0, 0.2, 1), color 300ms cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  /* Left Vertical Navigation Dock: clean surface transitions (never animate layout/dimensions) */
+  .sidebar-dock-nav {
+    transition: background-color 300ms ease, border-color 300ms ease, box-shadow 300ms ease;
+  }
+  .sidebar-dock-btn {
+    transition: transform 200ms ease, background-color 200ms ease, color 200ms ease;
+  }
   /* Clean seamless scroll for order details modal (no native bar) */
   .lumina-order-modal-scroll {
     -ms-overflow-style: none !important;
@@ -771,7 +766,7 @@ const handleConfirmDeleteNiche = async () => {
     width: 0 !important;
     height: 0 !important;
   }
- `}</style>
+  `}</style>
   <div className="theme-transition min-h-screen w-full max-w-full overflow-x-hidden bg-[#f3f4f6] dark:bg-[#202022] text-gray-900 dark:text-gray-100 flex flex-col md:flex-row p-2.5 sm:p-4 md:p-6 lg:p-8 selection:bg-[#8c9276]/20">
   
   {/* 1. Left Vertical Icon Sidebar (Desktop Dock) */}
@@ -1278,7 +1273,7 @@ const handleConfirmDeleteNiche = async () => {
  {/* Greeting Banner */}
  <div className="px-1 sm:px-0 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
  <div>
- <h1 className="text-2xl md:text-3xl font-display font-bold text-gray-900 dark:text-gray-100 tracking-normal">
+ <h1 className="text-2xl md:text-3xl font-display font-bold text-gray-900 dark:text-gray-100 tracking-normal relative z-10 antialiased [transform:translateZ(0)]">
  {getGreeting()}, <span className="italic font-normal tracking-wide ml-1.5 inline-block">{formatCleanName(user.name)}</span>
  </h1>
  <p className="text-xs md:text-sm text-gray-500 dark:text-gray-400 mt-0.5">

@@ -353,6 +353,8 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
   // Zoom state
   const [zoom, setZoom] = useState<number>(1);
   const [zoomStepSeq, setZoomStepSeq] = useState<{ dir: "in" | "out"; seq: number } | null>(null);
+  const [isAtMinZoom, setIsAtMinZoom] = useState<boolean>(false);
+  const [isAtMaxZoom, setIsAtMaxZoom] = useState<boolean>(false);
   
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const clientsListRef = useRef<HTMLDivElement>(null);
@@ -1141,17 +1143,19 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
   };
 
   const handleZoomIn = () => {
+    if (isAtMaxZoom) return;
     setZoomStepSeq((prev) => ({ dir: "in", seq: (prev?.seq || 0) + 1 }));
-    setZoom((prev) => Math.min(Number((prev * 1.42).toFixed(2)), 64));
   };
 
   const handleZoomOut = () => {
+    if (isAtMinZoom) return;
     setZoomStepSeq((prev) => ({ dir: "out", seq: (prev?.seq || 0) + 1 }));
-    setZoom((prev) => Math.max(Number((prev / 1.42).toFixed(2)), 0.3));
   };
 
   const handleResetView = () => {
     setZoom(1);
+    setIsAtMinZoom(false);
+    setIsAtMaxZoom(false);
     setResetCommandSeq((s) => s + 1);
   };
 
@@ -1846,7 +1850,11 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
           zoomCommand={zoom}
           zoomStepSeq={zoomStepSeq}
           primaryTargetLngLat={hasUserLocation ? selfExactLngLat : undefined}
-          onZoomChange={(uiZoom) => setZoom(uiZoom)}
+          onZoomChange={(uiZoom, isMin, isMax) => {
+            setZoom(uiZoom);
+            if (typeof isMin === "boolean") setIsAtMinZoom(isMin);
+            if (typeof isMax === "boolean") setIsAtMaxZoom(isMax);
+          }}
           focusTarget={focusTarget}
           resetCommandSeq={resetCommandSeq}
           onMapReady={() => setIsMapLoaded(true)}
@@ -2184,19 +2192,6 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
               isSearchBarHidden ? "pointer-events-auto" : "pointer-events-none"
             }`}
           >
-            {/* 1. MAP STYLE BADGE (Locked to Unique Satellite Streets Style) */}
-            <div
-              style={{ backgroundColor: "rgba(10, 14, 13, 0.96)" }}
-              className="flex items-center h-10 px-3 sm:px-3.5 rounded-full backdrop-blur-2xl border border-white/20 text-white text-xs font-semibold gap-2 shadow-[0_14px_32px_rgba(0,0,0,0.75)] select-none pointer-events-auto"
-              title="Estilo satélite con calles de alta resolución (Satellite Streets)"
-            >
-              <span className="w-5 h-5 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0">
-                <Satellite className="w-3 h-3" />
-              </span>
-              <span className="hidden xl:inline font-sans text-xs whitespace-nowrap">
-                Satellite Streets
-              </span>
-            </div>
 
             {/* 2. FIXED-GEOMETRY DENSITY MODE DOCK (Disperso / Agrupar + 1x/2x) */}
             <div
@@ -2350,15 +2345,22 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
 
           {/* Zoom In Button */}
           <button 
+            type="button"
             onClick={handleZoomIn}
-            title="Acercar mapa (+)"
-            className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-white/10 hover:bg-white/25 flex items-center justify-center text-white transition-all hover:scale-105 active:scale-95 cursor-pointer"
+            disabled={isAtMaxZoom}
+            title={isAtMaxZoom ? "Límite de acercamiento alcanzado" : "Acercar mapa (+)"}
+            className={`w-8 h-8 sm:w-9 sm:h-9 rounded-xl flex items-center justify-center text-white transition-all ${
+              isAtMaxZoom
+                ? "opacity-30 cursor-not-allowed bg-white/5"
+                : "bg-white/10 hover:bg-white/25 hover:scale-105 active:scale-95 cursor-pointer"
+            }`}
           >
             <ZoomIn className="w-4 h-4" />
           </button>
 
           {/* Compass Indicator / Center on Country Button */}
           <button 
+            type="button"
             onClick={handleResetView}
             title="Orientación Norte & Centrar Mapa"
             className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-white/10 border border-white/15 hover:border-white/35 flex items-center justify-center text-white transition-all hover:scale-105 active:scale-95 cursor-pointer group"
@@ -2368,46 +2370,22 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
 
           {/* Zoom Out Button */}
           <button 
+            type="button"
             onClick={handleZoomOut}
-            title="Alejar mapa (-)"
-            className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-white/10 hover:bg-white/25 flex items-center justify-center text-white transition-all hover:scale-105 active:scale-95 cursor-pointer"
+            disabled={isAtMinZoom}
+            title={isAtMinZoom ? "Límite de alejamiento alcanzado" : "Alejar mapa (-)"}
+            className={`w-8 h-8 sm:w-9 sm:h-9 rounded-xl flex items-center justify-center text-white transition-all ${
+              isAtMinZoom
+                ? "opacity-30 cursor-not-allowed bg-white/5"
+                : "bg-white/10 hover:bg-white/25 hover:scale-105 active:scale-95 cursor-pointer"
+            }`}
           >
             <ZoomOut className="w-4 h-4" />
           </button>
 
-          <div className="w-5 h-[1px] bg-white/15 my-0.5" />
-
-          {/* Quick Density & Cluster Toggle Button (Distinct Network / Boxes Icon — Never duplicates Layers Map Style Icon) */}
-          <button 
-            onClick={() => {
-              setClusterMode(prev => prev === "dispersed" ? "clustered" : "dispersed");
-              setExpandedClusterCity(null);
-            }}
-            title={clusterMode === "dispersed" ? "Agrupar pines en clústeres por ciudad" : "Dispersar nodos por el mapa"}
-            className={`w-8 h-8 sm:w-9 sm:h-9 rounded-xl flex items-center justify-center transition-all hover:scale-105 active:scale-95 cursor-pointer ${
-              clusterMode === "clustered"
-                ? "bg-white text-gray-950 font-bold shadow-sm"
-                : "bg-white/10 hover:bg-white/25 text-white/90 hover:text-white"
-            }`}
-          >
-            {clusterMode === "clustered" ? (
-              <Boxes className="w-4 h-4" />
-            ) : (
-              <Network className="w-4 h-4" />
-            )}
-          </button>
-
-          {/* Reset Zoom & Pan */}
-          <button 
-            onClick={handleResetView}
-            title="Restablecer vista (100%)"
-            className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-white/10 hover:bg-white/25 flex items-center justify-center text-white/70 hover:text-white transition-all hover:scale-105 active:scale-95 cursor-pointer"
-          >
-            <RotateCcw className="w-3.5 h-3.5" />
-          </button>
-
           {/* Mobile Dossier Panel Toggle Button */}
           <button 
+            type="button"
             onClick={() => setIsMobilePanelOpen(prev => !prev)}
             title={isMobilePanelOpen ? "Ocultar panel de métricas" : "Ver métricas y clientes"}
             className={`lg:hidden w-8 h-8 sm:w-9 sm:h-9 rounded-xl flex items-center justify-center transition-all hover:scale-105 active:scale-95 cursor-pointer ${
@@ -2749,7 +2727,7 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
                     <div className="space-y-2">
                       <div className="flex items-center justify-between">
                         <span className="text-xs font-bold text-white">Tráfico Activo</span>
-                        <span className="text-[10.5px] font-mono text-[#ccff00] font-bold">
+                        <span className="text-[11px] font-sans font-semibold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">
                           {actualClients.length} {actualClients.length === 1 ? 'Cliente' : 'Clientes'} Radar
                         </span>
                       </div>

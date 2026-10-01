@@ -1138,7 +1138,7 @@ export const MAPBOX_OFFICIAL_STYLES: Array<{
 // - street-map / dark-base (Google lyrs=m): native up to 18
 // - satellite (Google lyrs=y): native up to 18
 const MIN_MAP_ZOOM = 3.2;
-const MAX_MAP_ZOOM = 20.5;
+const MAX_MAP_ZOOM = 18.0;
 
 const PROVIDER_MAX_NATIVE_Z: Record<TileProvider, number> = {
   "dark-base": 18,
@@ -1188,7 +1188,7 @@ interface RadarMapboxCanvasProps {
   zoomCommand: number;
   zoomStepSeq?: { dir: "in" | "out"; seq: number } | null;
   primaryTargetLngLat?: [number, number];
-  onZoomChange?: (uiZoom: number) => void;
+  onZoomChange?: (uiZoom: number, isMin?: boolean, isMax?: boolean) => void;
   focusTarget: {
     xPct: number;
     yPct: number;
@@ -1714,8 +1714,20 @@ export function RadarMapboxCanvas({
     prevZoomStepSeqRef.current = zoomStepSeq.seq;
 
     const geo = COUNTRY_GEO_CONFIG[selectedCountry] || COUNTRY_GEO_CONFIG.EC;
-    const step = zoomStepSeq.dir === "in" ? 0.95 : -0.95;
-    const nextTargetZoom = Math.max(MIN_MAP_ZOOM, Math.min(MAX_MAP_ZOOM, camRef.current.targetZoom + step));
+    const curZoom = camRef.current.targetZoom;
+
+    // Hard boundary check: stop instantly if at boundary to prevent any lag/jitter
+    if (zoomStepSeq.dir === "in" && curZoom >= MAX_MAP_ZOOM - 0.05) {
+      return;
+    }
+    if (zoomStepSeq.dir === "out" && curZoom <= MIN_MAP_ZOOM + 0.05) {
+      return;
+    }
+
+    const step = zoomStepSeq.dir === "in" ? 0.85 : -0.85;
+    const nextTargetZoom = Math.max(MIN_MAP_ZOOM, Math.min(MAX_MAP_ZOOM, curZoom + step));
+    if (Math.abs(nextTargetZoom - curZoom) < 0.001) return;
+
     camRef.current.targetZoom = nextTargetZoom;
 
     // When zooming in with the + button from country overview and a primary anchor coordinate exists,
@@ -1735,7 +1747,9 @@ export function RadarMapboxCanvas({
 
     const uiScale = Number(Math.max(0.5, Math.pow(2, (nextTargetZoom - geo.zoom) / 1.85)).toFixed(2));
     prevZoomCommandRef.current = uiScale;
-    onZoomChangeRef.current?.(uiScale);
+    const isMin = nextTargetZoom <= MIN_MAP_ZOOM + 0.05;
+    const isMax = nextTargetZoom >= MAX_MAP_ZOOM - 0.05;
+    onZoomChangeRef.current?.(uiScale, isMin, isMax);
 
     camRef.current.animating = true;
     requestRepaint();
@@ -1748,7 +1762,8 @@ export function RadarMapboxCanvas({
     prevZoomCommandRef.current = zoomCommand;
 
     const delta = Math.log2(ratio);
-    camRef.current.targetZoom = Math.max(MIN_MAP_ZOOM, Math.min(MAX_MAP_ZOOM, camRef.current.targetZoom + delta * 1.85));
+    const nextTargetZoom = Math.max(MIN_MAP_ZOOM, Math.min(MAX_MAP_ZOOM, camRef.current.targetZoom + delta * 1.85));
+    camRef.current.targetZoom = nextTargetZoom;
     camRef.current.animating = true;
     requestRepaint();
   }, [zoomCommand, requestRepaint]);
@@ -1939,18 +1954,53 @@ export function RadarMapboxCanvas({
     }
   };
 
-  const handleWheel = (e: React.WheelEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    const geo = COUNTRY_GEO_CONFIG[selectedCountry] || COUNTRY_GEO_CONFIG.EC;
-    const zoomDelta = -e.deltaY * 0.0028;
-    const nextTargetZoom = Math.max(MIN_MAP_ZOOM, Math.min(MAX_MAP_ZOOM, camRef.current.targetZoom + zoomDelta));
-    camRef.current.targetZoom = nextTargetZoom;
-    const uiScale = Number(Math.max(0.5, Math.pow(2, (nextTargetZoom - geo.zoom) / 1.85)).toFixed(2));
-    prevZoomCommandRef.current = uiScale;
-    onZoomChangeRef.current?.(uiScale);
-    camRef.current.animating = true;
-    requestRepaint();
-  };
+  // Native non-passive Wheel Zoom: prevents window/Lenis page scrolling while zooming on the map
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    const onNativeWheel = (e: WheelEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+
+      const geo = COUNTRY_GEO_CONFIG[selectedCountry] || COUNTRY_GEO_CONFIG.EC;
+      const zoomDelta = -e.deltaY * 0.0028;
+      const curTarget = camRef.current.targetZoom;
+
+      // Hard boundary check: if user is at max or min limit, stop immediately without lag/jitter
+      if (zoomDelta > 0 && curTarget >= MAX_MAP_ZOOM - 0.02) return;
+      if (zoomDelta < 0 && curTarget <= MIN_MAP_ZOOM + 0.02) return;
+
+      const nextTargetZoom = Math.max(MIN_MAP_ZOOM, Math.min(MAX_MAP_ZOOM, curTarget + zoomDelta));
+      if (Math.abs(nextTargetZoom - curTarget) < 0.001) return;
+
+      camRef.current.targetZoom = nextTargetZoom;
+      const uiScale = Number(Math.max(0.5, Math.pow(2, (nextTargetZoom - geo.zoom) / 1.85)).toFixed(2));
+      prevZoomCommandRef.current = uiScale;
+      const isMin = nextTargetZoom <= MIN_MAP_ZOOM + 0.05;
+      const isMax = nextTargetZoom >= MAX_MAP_ZOOM - 0.05;
+      onZoomChangeRef.current?.(uiScale, isMin, isMax);
+      camRef.current.animating = true;
+      requestRepaint();
+    };
+
+    container.addEventListener("wheel", onNativeWheel, { passive: false });
+    return () => {
+      container.removeEventListener("wheel", onNativeWheel);
+    };
+  }, [selectedCountry, requestRepaint]);
+
+  // Repaint canvas immediately when returning to the tab from background/inactive state
+  useEffect(() => {
+    const handleVisibility = () => {
+      if (typeof document !== "undefined" && document.visibilityState === "visible") {
+        dirtyRef.current = true;
+        triggerLoopRef.current?.();
+      }
+    };
+    document.addEventListener("visibilitychange", handleVisibility);
+    return () => document.removeEventListener("visibilitychange", handleVisibility);
+  }, []);
 
   // 100% GPU-Composited CSS filter applied once on the <canvas> DOM element (0.00ms CPU cost!)
   const canvasHardwareFilter =
@@ -1963,13 +2013,13 @@ export function RadarMapboxCanvas({
   return (
     <div
       ref={containerRef}
+      data-lenis-prevent="true"
       draggable={false}
       onDragStart={(e) => e.preventDefault()}
       onPointerDown={handlePointerDown}
       onPointerMove={handlePointerMove}
       onPointerUp={handlePointerUp}
       onPointerCancel={handlePointerUp}
-      onWheel={handleWheel}
       onClick={() => {
         if (!dragMovedRef.current) {
           setIsStyleMenuOpen(false);
