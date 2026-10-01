@@ -8,6 +8,8 @@ export interface AmbientTheme {
   browserColor?: string;
 }
 
+export const LUMINA_DEFAULT_BROWSER_COLOR = "#8c9276";
+
 export function syncBrowserThemeColor(color: string) {
   if (typeof document === "undefined") return;
   try {
@@ -117,32 +119,130 @@ export const CATEGORY_THEMES: Record<string, AmbientTheme> = {
   }
 };
 
+function hexToHsl(hex: string): [number, number, number] {
+  let c = hex.replace("#", "").trim();
+  if (c.length === 3) c = c.split("").map((x) => x + x).join("");
+  const num = parseInt(c, 16);
+  if (isNaN(num)) return [40, 20, 90];
+  const r = ((num >> 16) & 255) / 255;
+  const g = ((num >> 8) & 255) / 255;
+  const b = (num & 255) / 255;
+
+  const max = Math.max(r, g, b);
+  const min = Math.min(r, g, b);
+  let h = 0;
+  let s = 0;
+  const l = (max + min) / 2;
+
+  if (max !== min) {
+    const d = max - min;
+    s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+    switch (max) {
+      case r:
+        h = (g - b) / d + (g < b ? 6 : 0);
+        break;
+      case g:
+        h = (b - r) / d + 2;
+        break;
+      case b:
+        h = (r - g) / d + 4;
+        break;
+    }
+    h = Math.round(h * 60);
+  }
+
+  return [h, Math.round(s * 100), Math.round(l * 100)];
+}
+
+function hslToHex(h: number, s: number, l: number): string {
+  s = Math.max(0, Math.min(100, s)) / 100;
+  l = Math.max(0, Math.min(100, l)) / 100;
+  const c = (1 - Math.abs(2 * l - 1)) * s;
+  const x = c * (1 - Math.abs(((h / 60) % 2) - 1));
+  const m = l - c / 2;
+  let r = 0, g = 0, b = 0;
+  if (0 <= h && h < 60) { r = c; g = x; b = 0; }
+  else if (60 <= h && h < 120) { r = x; g = c; b = 0; }
+  else if (120 <= h && h < 180) { r = 0; g = c; b = x; }
+  else if (180 <= h && h < 240) { r = 0; g = x; b = c; }
+  else if (240 <= h && h < 300) { r = x; g = 0; b = c; }
+  else if (300 <= h && h < 360) { r = c; g = 0; b = x; }
+  const toHex = (n: number) => Math.round((n + m) * 255).toString(16).padStart(2, "0");
+  return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
+}
+
+export function createProductAmbientTheme(hex?: string, category?: string): AmbientTheme {
+  const normCat = category?.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "") || "default";
+  const catTheme = CATEGORY_THEMES[normCat] || CATEGORY_THEMES.default;
+
+  if (!hex || !hex.startsWith("#")) {
+    return catTheme;
+  }
+
+  const [h, s] = hexToHsl(hex);
+  // Ensure soft, pastel, airy matte background tones (91-96% lightness)
+  const effectiveSat = Math.max(20, Math.min(s, 60));
+  const c1 = hslToHex(h, effectiveSat, 92);
+  const c2 = hslToHex((h + 18) % 360, Math.max(15, effectiveSat - 5), 94);
+  const c3 = hslToHex((h - 15 + 360) % 360, Math.max(12, effectiveSat - 10), 96);
+  
+  // Browser toolbar color requires good contrast for Chrome Android (lightness 38-46%, saturation 45-75%)
+  const browserColor = catTheme.browserColor || hslToHex(h, Math.max(45, Math.min(s, 75)), 42);
+
+  return {
+    c1,
+    c2,
+    c3,
+    mood: `product-${hex}`,
+    browserColor,
+  };
+}
+
 interface AmbientState {
   theme: AmbientTheme;
+  isProductView: boolean;
   setTheme: (theme: AmbientTheme) => void;
+  // Used when exploring catalog (scroll or hover) - updates ONLY the matte background, NEVER the browser color
   setCategoryTheme: (category: string) => void;
   resetTheme: () => void;
+  // Used ONLY when viewing a specific product - updates BOTH the matte background AND the browser toolbar color
+  setProductAmbient: (params: { category: string; colorHex?: string }) => void;
+  resetProductAmbient: () => void;
 }
 
 export const useAmbientStore = create<AmbientState>((set) => ({
   theme: CATEGORY_THEMES.default,
-  setTheme: (theme) => set((state) => {
-    if (state.theme.mood === theme.mood && state.theme.c1 === theme.c1) return state;
-    syncBrowserThemeColor(theme.browserColor || "#8c9276");
-    return { theme };
-  }),
+  isProductView: false,
+  setTheme: (theme) => set({ theme }),
   setCategoryTheme: (category) => {
     const key = category?.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "") || "default";
     const found = CATEGORY_THEMES[key] || CATEGORY_THEMES.default;
     set((state) => {
+      // If currently on a product detail page, do not override with catalog background
+      if (state.isProductView) return state;
       if (state.theme.mood === found.mood) return state;
-      syncBrowserThemeColor(found.browserColor || "#8c9276");
+      // NOTE: During catalog exploration, browser color is conserved! We DO NOT call syncBrowserThemeColor.
       return { theme: found };
     });
   },
   resetTheme: () => set((state) => {
+    if (state.isProductView) return state;
     if (state.theme.mood === CATEGORY_THEMES.default.mood) return state;
-    syncBrowserThemeColor(CATEGORY_THEMES.default.browserColor || "#8c9276");
     return { theme: CATEGORY_THEMES.default };
   }),
+  setProductAmbient: ({ category, colorHex }) => {
+    const theme = createProductAmbientTheme(colorHex, category);
+    set(() => {
+      // In product view, we ALWAYS update both the matte background and the browser toolbar color across all devices!
+      syncBrowserThemeColor(theme.browserColor || LUMINA_DEFAULT_BROWSER_COLOR);
+      return { theme, isProductView: true };
+    });
+  },
+  resetProductAmbient: () => {
+    set(() => {
+      // When leaving product view, reset browser color back to Lumina Olive #8c9276 and theme to default
+      syncBrowserThemeColor(LUMINA_DEFAULT_BROWSER_COLOR);
+      return { theme: CATEGORY_THEMES.default, isProductView: false };
+    });
+  },
 }));

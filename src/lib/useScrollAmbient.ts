@@ -16,12 +16,12 @@ export function useScrollAmbient(selector = "[data-ambient-category]", deps: unk
   useEffect(() => {
     if (typeof window === "undefined") return;
 
-    // Only activate scroll-based ambient detection on touch screens or mobile viewports (< 1024px)
-    const isMobileOrTouch =
+    // Only activate scroll-based ambient detection on touch screens, tablets, or mobile viewports
+    const isMobileOrTouchOrTablet =
       window.innerWidth < 1024 ||
-      window.matchMedia("(hover: none) and (pointer: coarse)").matches;
+      !window.matchMedia("(hover: hover) and (pointer: fine)").matches;
 
-    if (!isMobileOrTouch) return;
+    if (!isMobileOrTouchOrTablet) return;
 
     let rafId: number | null = null;
     let currentCategory = "";

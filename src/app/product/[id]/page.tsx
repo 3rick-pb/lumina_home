@@ -74,16 +74,20 @@ function ProductDetailContent({ product, products }: { product: CatalogProduct; 
   
   const { addItem, addBundle } = useCartStore();
   const { toggleFavorite, isFavorite, isAuthenticated } = useUserStore();
-  const { setCategoryTheme, resetTheme } = useAmbientStore();
+  const { setProductAmbient, resetProductAmbient } = useAmbientStore();
   const [isMounted, setIsMounted] = useState(false);
   
   React.useEffect(() => {
     setIsMounted(true);
-    if (product?.category) {
-      setCategoryTheme(product.category);
+    const activeHex = product?.colors?.[activeColor]?.hex;
+    if (product) {
+      setProductAmbient({
+        category: product.category,
+        colorHex: activeHex,
+      });
     }
-    return () => resetTheme();
-  }, [product?.category, setCategoryTheme, resetTheme]);
+    return () => resetProductAmbient();
+  }, [product, activeColor, setProductAmbient, resetProductAmbient]);
 
   const effectivePrice = React.useMemo(() => {
     if (!selectedCombo) return product.price;
@@ -150,18 +154,6 @@ function ProductDetailContent({ product, products }: { product: CatalogProduct; 
 
   return (
     <div className="relative min-h-screen pt-28 pb-24 bg-transparent">
-      {/* Soft Mate Ambient Aura - Lightweight GPU composition without heavy Gaussian blur */}
-      <div className="fixed inset-0 -z-10 overflow-hidden pointer-events-none transform-gpu [contain:strict]">
-        <div 
-          className="absolute inset-0 opacity-25 transform-gpu"
-          style={{
-            backgroundImage: `radial-gradient(circle at 50% 30%, rgba(140, 146, 118, 0.25) 0%, rgba(210, 180, 140, 0.12) 45%, transparent 75%)`,
-          }}
-        />
-        {/* Soft matte film */}
-        <div className="absolute inset-0 bg-[#fafafa]/80 transform-gpu" />
-      </div>
-
       <div className="container mx-auto px-4 md:px-6 relative z-10">
         {product.layoutType === "landing" ? (
           <ProductLandingView
