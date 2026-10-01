@@ -23,28 +23,56 @@ interface ProductCardProps {
   stock?: number;
 }
 
-export function ProductCard({ id, title, price, oldPrice, discount, badge, imageUrl, colors, stock }: ProductCardProps) {
+export const ProductCard = React.memo(function ProductCard({
+  id,
+  title,
+  price,
+  oldPrice,
+  discount,
+  badge,
+  imageUrl,
+  colors,
+  stock,
+}: ProductCardProps) {
   const addItem = useCartStore((state) => state.addItem);
-  const isInBag = useCartStore((state) =>
-    state.items.some((item) => !item.isBundle && (item.productId === id || item.product?.id === id))
+  const isInBag = useCartStore(
+    React.useCallback(
+      (state) =>
+        state.items.some(
+          (item) =>
+            !item.isBundle &&
+            (item.productId === id || item.product?.id === id)
+        ),
+      [id]
+    )
   );
-  const { toggleFavorite, isFavorite } = useUserStore();
+
+  const toggleFavorite = useUserStore((state) => state.toggleFavorite);
+  const isFavStore = useUserStore(
+    React.useCallback((state) => state.favorites.includes(id), [id])
+  );
+
   const [isMounted, setIsMounted] = React.useState(false);
   const [isAdding, setIsAdding] = React.useState(false);
   const [heartPop, setHeartPop] = React.useState(false);
-  
+
   React.useEffect(() => {
     setIsMounted(true);
   }, []);
-  
-  const initialUrl = normalizeImageUrl(imageUrl) || "https://images.unsplash.com/photo-1507473885765-e6ed057f782c?q=80&w=800&auto=format&fit=crop";
+
+  const initialUrl =
+    normalizeImageUrl(imageUrl) ||
+    "https://images.unsplash.com/photo-1507473885765-e6ed057f782c?q=80&w=800&auto=format&fit=crop";
   const [imgSrc, setImgSrc] = React.useState(initialUrl);
 
   React.useEffect(() => {
-    setImgSrc(normalizeImageUrl(imageUrl) || "https://images.unsplash.com/photo-1507473885765-e6ed057f782c?q=80&w=800&auto=format&fit=crop");
+    setImgSrc(
+      normalizeImageUrl(imageUrl) ||
+        "https://images.unsplash.com/photo-1507473885765-e6ed057f782c?q=80&w=800&auto=format&fit=crop"
+    );
   }, [imageUrl]);
 
-  const isFav = isMounted ? isFavorite(id) : false;
+  const isFav = isMounted ? isFavStore : false;
   const isAgotado = isAgotadoBadge(badge) || (stock !== undefined && stock <= 0);
   const showAddedState = (isMounted && isInBag) || isAdding;
 
@@ -180,4 +208,4 @@ export function ProductCard({ id, title, price, oldPrice, discount, badge, image
       </div>
     </Link>
   );
-}
+});

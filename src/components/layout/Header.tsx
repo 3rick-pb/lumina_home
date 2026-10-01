@@ -35,10 +35,16 @@ export function Header() {
   const [searchVal, setSearchVal] = useState("");
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   
-  const { toggleCart, getTotalItems } = useCartStore();
-  const { isAuthenticated, user } = useUserStore();
-  const { showAvatarInNavbar, customSeed } = useAvatarSettingsStore();
-  const { products, categories } = useCatalogStore();
+  const toggleCart = useCartStore((state) => state.toggleCart);
+  const totalCartItems = useCartStore((state) =>
+    state.items.reduce((acc, i) => acc + (i.quantity || 1), 0)
+  );
+  const isAuthenticated = useUserStore((state) => state.isAuthenticated);
+  const user = useUserStore((state) => state.user);
+  const showAvatarInNavbar = useAvatarSettingsStore((state) => state.showAvatarInNavbar);
+  const customSeed = useAvatarSettingsStore((state) => state.customSeed);
+  const products = useCatalogStore((state) => state.products);
+  const categories = useCatalogStore((state) => state.categories);
   const [isMounted, setIsMounted] = useState(false);
 
   // Close mobile menu on route change
@@ -150,7 +156,7 @@ export function Header() {
     return null;
   }
 
-  const totalItems = isMounted ? getTotalItems() : 0;
+  const totalItems = isMounted ? totalCartItems : 0;
 
   return (
     <>
