@@ -168,7 +168,11 @@ export default function InteractiveAddressMap({
           });
           const data = await res.json();
           if (data?.success && data?.data) {
-            onAddressResolved(data.data);
+            const sanitized = {
+              ...data.data,
+              street: (data.data.street || "").replace(/^(?:calle\s+)?s\/?n$/i, "").trim()
+            };
+            onAddressResolved(sanitized);
           }
         } catch {
           // Ignore reverse geocode network errors silently

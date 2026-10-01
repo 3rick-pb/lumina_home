@@ -315,7 +315,8 @@ export function SettingsTab({
     },
     exactGps?: { lat: number; lng: number }
   ) => {
-    const resolvedStreet = data.data?.street || data.street || "";
+    const rawStreet = data.data?.street || data.street || "";
+    const resolvedStreet = rawStreet.replace(/^(?:calle\s+)?s\/?n$/i, "").trim();
     const resolvedExterior = data.data?.exteriorNumber || data.exteriorNumber || "";
     const resolvedInterior = data.data?.interiorNumber || data.interiorNumber || "";
     const resolvedCrossStreets = data.data?.crossStreets || data.crossStreets || "";
@@ -326,7 +327,7 @@ export function SettingsTab({
     const resolvedPostal = data.data?.postalCode || data.postalCode || "";
     const resolvedCountry = data.data?.country || data.country || "Ecuador";
 
-    if (resolvedStreet) setStreet(resolvedStreet);
+    setStreet(resolvedStreet);
     if (resolvedExterior) setExteriorNumber(resolvedExterior);
     if (resolvedInterior) setInteriorNumber(resolvedInterior);
     if (resolvedCrossStreets) setCrossStreets(resolvedCrossStreets);
@@ -1188,7 +1189,8 @@ export function SettingsTab({
                           initialLng={detectedCoords?.lng || -78.4678}
                           onLocationSelect={(lat, lng) => setDetectedCoords({ lat, lng })}
                           onAddressResolved={(addr) => {
-                            if (addr.street) setStreet(addr.street);
+                            const cleanStreet = (addr.street || "").replace(/^(?:calle\s+)?s\/?n$/i, "").trim();
+                            setStreet(cleanStreet);
                             if (addr.exteriorNumber) setExteriorNumber(addr.exteriorNumber);
                             if (addr.neighborhood) setNeighborhood(addr.neighborhood);
                             if (addr.crossStreets) setCrossStreets(addr.crossStreets);

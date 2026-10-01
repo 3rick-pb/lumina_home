@@ -22,19 +22,59 @@ const cleanAdmin = (str?: string) => {
 const isAdministrativeEntity = (str?: string | null): boolean => {
   if (!str) return false;
   const n = str.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
-  const adminKeywords = [
-    'uyumbicho', 'machachi', 'mejia', 'quito', 'pichincha', 'ruminahui', 'sangolqui',
-    'tambillo', 'aloag', 'cutuglagua', 'cumbaya', 'tumbaco', 'conocoto', 'amaguana',
-    'guayaquil', 'cuenca', 'ambato', 'ecuador', 'canton', 'parroquia', 'provincia',
-    'distrito', 'municipio', 'barrio', 'departamento'
+  
+  // Explicit administrative prefix patterns (e.g., "Cantón Mejía", "Provincia de Pichincha", "Parroquia Uyumbicho")
+  if (
+    /^(?:canton|cantón)\s+/i.test(n) ||
+    /^provincia\s+(?:de\s+)?/i.test(n) ||
+    /^distrito\s+(?:metropolitano\s+)?(?:de\s+)?/i.test(n) ||
+    /^parroquia\s+(?:de\s+)?/i.test(n) ||
+    /^municipio\s+(?:de\s+)?/i.test(n) ||
+    /^comunidad\s+(?:de\s+)?/i.test(n) ||
+    /^departamento\s+(?:de\s+)?/i.test(n)
+  ) {
+    return true;
+  }
+
+  // Pure generic administration labels that are NOT street names
+  const genericAdminTerms = ['ecuador', 'canton', 'parroquia', 'provincia', 'distrito', 'municipio', 'departamento'];
+  if (genericAdminTerms.includes(n)) {
+    return true;
+  }
+
+  return false;
+};
+
+const isUnnamedOrPlaceholderRoad = (str?: string | null): boolean => {
+  if (!str) return true;
+  const n = str.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
+  const placeholderPatterns = [
+    /^s\/?n$/i,
+    /^calle\s+s\/?n$/i,
+    /^pasaje\s+s\/?n$/i,
+    /^avenida\s+s\/?n$/i,
+    /^av\.?\s+s\/?n$/i,
+    /^sin\s+nombre$/i,
+    /^calle\s+sin\s+nombre$/i,
+    /^pasaje\s+sin\s+nombre$/i,
+    /^avenida\s+sin\s+nombre$/i,
+    /^unnamed\s+road$/i,
+    /^unnamed$/i,
+    /^road$/i,
+    /^street$/i,
+    /^n\/a$/i,
+    /^ninguno$/i,
+    /^desconocid[oa]$/i,
   ];
-  return adminKeywords.includes(n);
+  return placeholderPatterns.some((pattern) => pattern.test(n));
 };
 
 const polishRoadName = (name?: string | null) => {
   if (!name) return '';
+  if (isUnnamedOrPlaceholderRoad(name)) return '';
   let n = name.trim();
   n = n.replace(/\bSan Cristobal\b/gi, 'San Cristóbal');
+  n = n.replace(/\bRuminahui\b/gi, 'Rumiñahui');
   n = n.replace(/\bSimon Bolivar\b/gi, 'Simón Bolívar');
   n = n.replace(/\bEloy Alfaro\b/gi, 'Eloy Alfaro');
   n = n.replace(/\bGarcia Moreno\b/gi, 'García Moreno');
@@ -312,11 +352,11 @@ async function getTopologicalCrossStreets(
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         for (const w of nodeWaysData.elements || []) {
           const wName = w.tags?.name;
-          if (wName) {
+          if (wName && !isUnnamedOrPlaceholderRoad(wName)) {
             const wNorm = wName.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
             if (wNorm !== primNorm && !wNorm.includes(primNorm) && !primNorm.includes(wNorm)) {
               const polished = polishRoadName(wName);
-              if (!intersecting.includes(polished)) {
+              if (polished && !intersecting.includes(polished)) {
                 intersecting.push(polished);
               }
             }
@@ -578,19 +618,21 @@ function extractExteriorNumber(displayName?: string, rawHouse?: string): string 
     addr18.cycleway ||
     addr18.service
   );
-  const microRoad = (!isMicroFootpath && (addr18.road || addr18.street)) || '';
+  const microRoad = (!isMicroFootpath && (addr18.road || addr18.street)) || (addr18.pedestrian && !isUnnamedOrPlaceholderRoad(addr18.pedestrian) ? addr18.pedestrian : '') || '';
   const macroRoad = addr16.road || addr16.street || '';
 
-  // Collect candidate vehicular roads from origin and 4-point cardinal offset probes
+  // Collect candidate vehicular roads from origin, macro, origin/macro way names, and 4-point cardinal offset probes
   const candidateRoads: string[] = [
     mbStreet,
     microRoad,
     macroRoad,
+    (origin?.osm_type === 'way' && origin?.name) || '',
+    (macro?.osm_type === 'way' && macro?.name) || '',
     offNAddr.road,
     offSAddr.road,
     offEAddr.road,
     offWAddr.road,
-  ].filter((r): r is string => Boolean(r && !isAdministrativeEntity(r)));
+  ].filter((r): r is string => Boolean(r && !isAdministrativeEntity(r) && !isUnnamedOrPlaceholderRoad(r)));
 
   let rawPrimary = candidateRoads[0] || '';
   let activeWayOsmId = origin?.osm_type === 'way' && origin?.osm_id ? origin.osm_id : null;
@@ -599,7 +641,7 @@ function extractExteriorNumber(displayName?: string, rawHouse?: string): string 
   if (!activeWayOsmId) {
     for (const off of [offN, offS, offE, offW, macro]) {
       if (off?.osm_type === 'way' && off?.osm_id && off?.address?.road) {
-        if (!isAdministrativeEntity(off.address.road)) {
+        if (!isAdministrativeEntity(off.address.road) && !isUnnamedOrPlaceholderRoad(off.address.road)) {
           activeWayOsmId = off.osm_id;
           if (!rawPrimary) rawPrimary = off.address.road;
           break;
@@ -642,6 +684,7 @@ function extractExteriorNumber(displayName?: string, rawHouse?: string): string 
     // If topological didn't discover junction nodes, check distinct offset streets
     const normPrim = primaryRoad.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
     const diffRoads = candidateRoads.filter(r => {
+      if (isUnnamedOrPlaceholderRoad(r)) return false;
       const nr = r.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
       return nr !== normPrim && !nr.includes(normPrim) && !normPrim.includes(nr);
     });
@@ -652,8 +695,8 @@ function extractExteriorNumber(displayName?: string, rawHouse?: string): string 
     }
   }
 
-  // Keep street name strictly separate - NEVER fallback to village or parish name!
-  const streetNameOnly = primaryRoad || 'Calle S/N';
+  // Keep street name strictly separate - NEVER fallback to placeholder 'Calle S/N' or village or parish name!
+  const streetNameOnly = (primaryRoad && !isUnnamedOrPlaceholderRoad(primaryRoad)) ? primaryRoad : '';
 
   // 3. Hierarchical City and Sub-locality / Parish (Looking "desde arriba" across zoom 14, 16 and 18)
   const bdcCity = cleanAdmin(bdc && (bdc.city || bdc.principalSubdivision));

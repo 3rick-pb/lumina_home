@@ -521,7 +521,8 @@ export function CartDrawer() {
         } = result.data;
 
         // Fills the form strictly once at the end with the 3rd refined reading
-        if (detStreet) setAddrStreet(detStreet);
+        const cleanStreet = (detStreet || "").replace(/^(?:calle\s+)?s\/?n$/i, "").trim();
+        setAddrStreet(cleanStreet);
         if (detExterior) setAddrExteriorNumber(detExterior);
         if (detInterior) setAddrInteriorNumber(detInterior);
         if (detCross) setAddrCrossStreets(detCross);
@@ -1835,7 +1836,8 @@ export function CartDrawer() {
                   initialLng={addrDetectedCoords?.lng || -78.4678}
                   onLocationSelect={(lat, lng) => setAddrDetectedCoords({ lat, lng })}
                   onAddressResolved={(addr) => {
-                    if (addr.street) setAddrStreet(addr.street);
+                    const cleanStreet = (addr.street || "").replace(/^(?:calle\s+)?s\/?n$/i, "").trim();
+                    setAddrStreet(cleanStreet);
                     if (addr.exteriorNumber) setAddrExteriorNumber(addr.exteriorNumber);
                     if (addr.neighborhood) setAddrNeighborhood(addr.neighborhood);
                     if (addr.crossStreets) setAddrCrossStreets(addr.crossStreets);
