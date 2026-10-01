@@ -20,6 +20,11 @@ export function buildBrandMetadata(
     },
     description: customBrand.description,
     applicationName: customBrand.name,
+    appleWebApp: {
+      capable: true,
+      statusBarStyle: 'default',
+      title: customBrand.name,
+    },
     keywords: customBrand.meta.keywords,
     authors: [{ name: customBrand.meta.publisher }],
     creator: customBrand.meta.creator,

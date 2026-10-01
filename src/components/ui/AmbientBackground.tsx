@@ -3,12 +3,36 @@
 import React, { useEffect } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
 import { useAmbientStore, CATEGORY_THEMES } from "@/lib/ambientStore";
+import { useThemeStore, getResolvedTheme } from "@/lib/themeStore";
+
+function syncBrowserThemeColor(color: string) {
+  if (typeof document === "undefined") return;
+
+  // 1. Primary W3C standard: meta[name="theme-color"]
+  const metaTags = document.querySelectorAll<HTMLMetaElement>('meta[name="theme-color"]');
+  if (metaTags.length === 0) {
+    const meta = document.createElement("meta");
+    meta.name = "theme-color";
+    meta.content = color;
+    document.head.appendChild(meta);
+  } else {
+    metaTags.forEach((meta) => {
+      meta.setAttribute("content", color);
+    });
+  }
+
+  // 2. Microsoft Windows / Tile / Navigation button color
+  const msMeta = document.querySelector<HTMLMetaElement>('meta[name="msapplication-navbutton-color"]');
+  if (msMeta) {
+    msMeta.setAttribute("content", color);
+  }
+}
 
 export function AmbientBackground() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const { theme, setCategoryTheme, setTheme } = useAmbientStore();
-
+  const themeMode = useThemeStore((state) => state.mode);
   const isAuthPage = pathname?.startsWith("/auth");
 
   // Sync category query param if present
@@ -22,6 +46,20 @@ export function AmbientBackground() {
       setCategoryTheme(cat);
     }
   }, [pathname, searchParams, isAuthPage, setCategoryTheme, setTheme]);
+
+  // Synchronize native browser UI bar with ambient scene color (Android Chrome & iOS/macOS Safari)
+  useEffect(() => {
+    let targetColor = theme.browserColor || "#faf9f6";
+
+    if (isAuthPage) {
+      targetColor = "#faf8f5";
+    } else if (pathname?.startsWith("/profile")) {
+      const resolved = getResolvedTheme(themeMode);
+      targetColor = resolved === "dark" ? "#161618" : "#faf9f6";
+    }
+
+    syncBrowserThemeColor(targetColor);
+  }, [theme, isAuthPage, pathname, themeMode]);
 
   // Auth pages have multi-axis, continuous screensaver-style drifting fluid matte aura
   if (isAuthPage) {

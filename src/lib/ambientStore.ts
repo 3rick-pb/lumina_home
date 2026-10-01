@@ -5,6 +5,7 @@ export interface AmbientTheme {
   c2: string;
   c3: string;
   mood?: string;
+  browserColor?: string; // Exact hex color for browser status bar and header frame
 }
 
 export const CATEGORY_THEMES: Record<string, AmbientTheme> = {
@@ -12,73 +13,85 @@ export const CATEGORY_THEMES: Record<string, AmbientTheme> = {
     c1: "#fef08a", // Cálido ámbar suave
     c2: "#fde047", // Luz dorada suave
     c3: "#fef9c3", // Crema iluminada
-    mood: "iluminacion"
+    mood: "iluminacion",
+    browserColor: "#fef9c3",
   },
   aromaterapia: {
     c1: "#fed7aa", // Melocotón terracota suave
     c2: "#fbcfe8", // Rosa arcilla sutil
     c3: "#ffedd5", // Arena cálida
-    mood: "aromaterapia"
+    mood: "aromaterapia",
+    browserColor: "#ffedd5",
   },
   textiles: {
     c1: "#e9d5ff", // Lavanda suave
     c2: "#ddd6fe", // Lino violeta tenue
     c3: "#f3e8ff", // Algodón nube
-    mood: "textiles"
+    mood: "textiles",
+    browserColor: "#f3e8ff",
   },
   "home office": {
     c1: "#bbf7d0", // Salvia / eucalipto fresco
     c2: "#bae6fd", // Cielo pizarra suave
     c3: "#e0f2fe", // Niebla matutina
-    mood: "home office"
+    mood: "home office",
+    browserColor: "#e0f2fe",
   },
   almacenamiento: {
     c1: "#c7d2fe", // Hielo cristalino
     c2: "#e0e7ff", // Acrílico limpio
     c3: "#f1f5f9", // Blanco escarcha
-    mood: "almacenamiento"
+    mood: "almacenamiento",
+    browserColor: "#f1f5f9",
   },
   gadgets: {
     c1: "#cbd5e1", // Titanio suave
     c2: "#94a3b8", // Pizarra plateada
     c3: "#e2e8f0", // Perla mate
-    mood: "gadgets"
+    mood: "gadgets",
+    browserColor: "#e2e8f0",
   },
   ceramica: {
     c1: "#fed7aa", // Arcilla cocida suave
     c2: "#f5d0b0", // Terracota fina
     c3: "#fbf3ea", // Caolín suave
-    mood: "ceramica"
+    mood: "ceramica",
+    browserColor: "#fbf3ea",
   },
   decoracion: {
     c1: "#e2e8f0", // Piedra caliza
     c2: "#cbd5e1", // Travertino
     c3: "#f8fafc", // Mármol cálido
-    mood: "decoracion"
+    mood: "decoracion",
+    browserColor: "#f8fafc",
   },
   cocina: {
     c1: "#fed7aa", // Roble y café tostado
     c2: "#fde68a", // Canela sutil
     c3: "#fef3c7", // Vainilla
-    mood: "cocina"
+    mood: "cocina",
+    browserColor: "#fef3c7",
   },
   bienestar: {
     c1: "#dcfce7", // Salvia fresca
     c2: "#d1fae5", // Menta suave
     c3: "#f0fdf4", // Nube verde
-    mood: "bienestar"
+    mood: "bienestar",
+    browserColor: "#f0fdf4",
   },
   auth: {
     c1: "#eedec7", // Cachemira suave
     c2: "#dce4dc", // Salvia niebla
     c3: "#e7dfd5", // Lino orgánico
-    mood: "auth"
+    mood: "auth",
+    browserColor: "#faf8f5",
   },
   default: {
     c1: "#eae3d9", // Lino natural Lumina
     c2: "#dce4dc", // Salvia tenue
     c3: "#f2e9dc", // Crema cálida
-    mood: "default"
+    mood: "default",
+    browserColor: "#faf9f6",
   }
 };
 

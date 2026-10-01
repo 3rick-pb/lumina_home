@@ -40,11 +40,12 @@ import { brandConfig, themeConfig } from "@/config";
 
 export const viewport: Viewport = {
   themeColor: [
-    { media: "(prefers-color-scheme: light)", color: themeConfig.colors.surface.backgroundLight },
-    { media: "(prefers-color-scheme: dark)", color: themeConfig.colors.surface.backgroundDark },
+    { media: "(prefers-color-scheme: light)", color: "#faf9f6" },
+    { media: "(prefers-color-scheme: dark)", color: "#161618" },
   ],
   width: "device-width",
   initialScale: 1,
+  viewportFit: "cover",
 };
 
 export const metadata: Metadata = buildBrandMetadata(brandConfig);
