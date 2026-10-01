@@ -5,7 +5,7 @@ const headers = {
   'Accept-Language': 'es'
 };
 
-const cleanAdmin = (str?: string) => {
+const cleanAdmin = (str?: string | null) => {
   if (!str) return '';
   return str
     .replace(/^Distrito Metropolitano de\s+/i, '')
@@ -181,15 +181,15 @@ const GUAYAS_SATELLITE_AREAS: Record<string, string> = {
 };
 
 function resolveMajorCity(
-  rawCity?: string,
-  rawCounty?: string,
-  rawMunicipality?: string,
-  bdcCity?: string,
-  stateName?: string,
-  countryName?: string,
-  lat?: number,
-  lon?: number,
-  displayName?: string
+  rawCity?: string | null,
+  rawCounty?: string | null,
+  rawMunicipality?: string | null,
+  bdcCity?: string | null,
+  stateName?: string | null,
+  countryName?: string | null,
+  lat?: number | null,
+  lon?: number | null,
+  displayName?: string | null
 ): MacroCityResult {
   const cCity = cleanAdmin(rawCity);
   const cCounty = cleanAdmin(rawCounty);
@@ -294,7 +294,7 @@ function resolveMajorCity(
     return {
       city: macroCity,
       parishOrSatellite: candidateLocal && candidateLocal.toLowerCase() !== macroCity.toLowerCase() ? candidateLocal : undefined,
-      province: stateName
+      province: stateName || undefined
     };
   }
 
@@ -303,137 +303,49 @@ function resolveMajorCity(
   return {
     city: fallbackCity,
     parishOrSatellite: undefined,
-    province: stateName
+    province: stateName || undefined
   };
 }
 
-// 1. Topological Intersecting Street Discovery via OSM Junction Nodes (Discovering 2 closest connecting streets)
-async function getTopologicalCrossStreets(
-  osmId: string | number,
-  userLat: number,
-  userLon: number,
-  primaryRoadName: string
-): Promise<string[]> {
-  const intersecting: string[] = [];
+async function safeFetchJson<T = unknown>(url: string, options: RequestInit = {}, timeoutMs = 4500): Promise<T | null> {
   try {
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 4000);
-    const wayUrl = `https://api.openstreetmap.org/api/0.6/way/${osmId}/full.json`;
-    const wayRes = await fetch(wayUrl, { headers, signal: controller.signal });
-    clearTimeout(timeout);
-    if (!wayRes.ok) return [];
-    const wayData = await wayRes.json();
-
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const nodes = (wayData.elements || []).filter((e: any) => e.type === 'node');
-    if (!nodes.length) return [];
-
-    // Sort nodes by distance to user coordinates
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    nodes.sort((a: any, b: any) => {
-      const distA = Math.hypot(a.lat - userLat, a.lon - userLon);
-      const distB = Math.hypot(b.lat - userLat, b.lon - userLon);
-      return distA - distB;
-    });
-
-    const primNorm = (primaryRoadName || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
-
-    // Probe closest junction nodes (up to 4)
-    for (const node of nodes.slice(0, 4)) {
-      try {
-        const c2 = new AbortController();
-        const t2 = setTimeout(() => c2.abort(), 2500);
-        const nodeWaysUrl = `https://api.openstreetmap.org/api/0.6/node/${node.id}/ways.json`;
-        const nodeWaysRes = await fetch(nodeWaysUrl, { headers, signal: c2.signal });
-        clearTimeout(t2);
-        if (!nodeWaysRes.ok) continue;
-        const nodeWaysData = await nodeWaysRes.json();
-
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        for (const w of nodeWaysData.elements || []) {
-          const wName = w.tags?.name;
-          if (wName && !isUnnamedOrPlaceholderRoad(wName)) {
-            const wNorm = wName.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
-            if (wNorm !== primNorm && !wNorm.includes(primNorm) && !primNorm.includes(wNorm)) {
-              const polished = polishRoadName(wName);
-              if (polished && !intersecting.includes(polished)) {
-                intersecting.push(polished);
-              }
-            }
-          }
-        }
-      } catch {}
-      if (intersecting.length >= 2) break;
-    }
-  } catch {}
-  return intersecting;
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
+    const res = await fetch(url, { ...options, signal: controller.signal });
+    clearTimeout(timer);
+    if (!res.ok) return null;
+    const ct = res.headers.get('content-type') || '';
+    if (!ct.includes('json') && !ct.includes('geo+json')) return null;
+    return (await res.json()) as T;
+  } catch {
+    return null;
+  }
 }
 
 function getDistanceMeters(lat1: number, lon1: number, lat2: number, lon2: number): number {
   const R = 6371000;
-  const dLat = (lat2 - lat1) * Math.PI / 180;
-  const dLon = (lon2 - lon1) * Math.PI / 180;
-  const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-            Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
-            Math.sin(dLon / 2) * Math.sin(dLon / 2);
+  const dLat = ((lat2 - lat1) * Math.PI) / 180;
+  const dLon = ((lon2 - lon1) * Math.PI) / 180;
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos((lat1 * Math.PI) / 180) *
+      Math.cos((lat2 * Math.PI) / 180) *
+      Math.sin(dLon / 2) *
+      Math.sin(dLon / 2);
   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
   return Math.round(R * c);
 }
 
-// 2. Nearby Landmarks Discovery (~1km radius: parques, colegios, escuelas, universidades, terminales, salud, iglesias)
-async function getLandmarkPlaceName(lat: number, lon: number): Promise<string | null> {
-  try {
-    const delta = 0.010; // ~1.1km
-    const viewbox = `${lon - delta},${lat + delta},${lon + delta},${lat - delta}`;
-    const queries = ['parque', 'colegio', 'escuela', 'universidad', 'terminal', 'hospital', 'iglesia', 'mercado', 'policia'];
-
-    const searchResults = await Promise.allSettled(
-      queries.map(q =>
-        fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(q)}&format=json&bounded=1&viewbox=${viewbox}&addressdetails=1`, { headers })
-          .then(r => r.json())
-      )
-    );
-
-    const candidates: Array<{ name: string; dist: number }> = [];
-    const seen = new Set<string>();
-
-    for (const res of searchResults) {
-      if (res.status === 'fulfilled' && Array.isArray(res.value)) {
-        for (const item of res.value) {
-          if (!item.name || typeof item.name !== 'string') continue;
-          const cleanName = item.name.trim();
-          const normLower = cleanName.toLowerCase();
-          if (normLower.length < 3 || seen.has(normLower)) continue;
-          if (normLower.includes('maceta') || normLower.includes('recreación') || normLower.includes('juegos infantiles')) continue;
-
-          seen.add(normLower);
-          const itemLat = parseFloat(item.lat);
-          const itemLon = parseFloat(item.lon);
-          if (isNaN(itemLat) || isNaN(itemLon)) continue;
-
-          const dist = getDistanceMeters(lat, lon, itemLat, itemLon);
-          if (dist <= 1200) {
-            candidates.push({ name: cleanName, dist });
-          }
-        }
-      }
-    }
-
-    if (candidates.length > 0) {
-      candidates.sort((a, b) => a.dist - b.dist);
-      const closest = candidates[0];
-      if (closest.dist < 50) {
-        return `Frente a ${closest.name}`;
-      } else if (closest.dist < 150) {
-        return `Junto a ${closest.name}`;
-      } else {
-        return `Cerca de ${closest.name}`;
-      }
-    }
-  } catch {
-    // Ignore landmark errors
+function extractExteriorNumber(displayName?: string, rawHouse?: string): string {
+  if (rawHouse && rawHouse.trim()) return rawHouse.trim();
+  if (!displayName) return '';
+  // Match Ecuadorian exterior number patterns (e.g., N34-120, Oe4-20, S12-45, E3-22, #12-34, 12-45)
+  const regex = /(?:^|,\s*)([A-Z]{1,2}\d{1,4}-\d{1,4}|N\d+-\d+|Oe\d+-\d+|S\d+-\d+|E\d+-\d+|#\s*\d+(?:-\d+)?|\b\d{1,5}-\d{1,4}\b)(?:,|$)/i;
+  const match = displayName.match(regex);
+  if (match && match[1]) {
+    return match[1].replace(/^#\s*/, '').trim();
   }
-  return null;
+  return '';
 }
 
 interface IpLocationResult {
@@ -443,6 +355,72 @@ interface IpLocationResult {
   postalCode: string;
   lat?: number;
   lon?: number;
+}
+
+interface OsmElement {
+  id: number;
+  type: string;
+  lat?: number;
+  lon?: number;
+  nodes?: number[];
+  tags?: Record<string, string>;
+}
+
+interface OsmMapResponse {
+  elements?: OsmElement[];
+}
+
+interface NominatimReverseResponse {
+  osm_type?: string;
+  osm_id?: number;
+  name?: string;
+  display_name?: string;
+  address?: Record<string, string>;
+  class?: string;
+  type?: string;
+}
+
+interface PhotonFeatureProperties {
+  osm_type?: string;
+  osm_id?: number;
+  osm_key?: string;
+  osm_value?: string;
+  type?: string;
+  name?: string;
+  street?: string;
+  locality?: string;
+  district?: string;
+  city?: string;
+  county?: string;
+  state?: string;
+  postcode?: string;
+  country?: string;
+}
+
+interface PhotonResponse {
+  features?: Array<{
+    properties?: PhotonFeatureProperties;
+  }>;
+}
+
+interface BigDataCloudResponse {
+  city?: string;
+  locality?: string;
+  principalSubdivision?: string;
+  postcode?: string;
+  countryName?: string;
+}
+
+interface MapboxFeature {
+  place_type?: string[];
+  text?: string;
+  text_es?: string;
+  address?: string;
+  place_name?: string;
+}
+
+interface MapboxResponse {
+  features?: MapboxFeature[];
 }
 
 async function resolveLocationFromIp(clientIp?: string | null): Promise<IpLocationResult | null> {
@@ -534,49 +512,89 @@ async function resolveGeocode(latRaw: unknown, lonRaw: unknown, clientIp?: strin
     nLon = Number(lonRaw);
   }
 
-function extractExteriorNumber(displayName?: string, rawHouse?: string): string {
-  if (rawHouse && rawHouse.trim()) return rawHouse.trim();
-  if (!displayName) return '';
-  // Match Ecuadorian exterior number patterns (e.g., N34-120, Oe4-20, S12-45, E3-22, #12-34, 12-45)
-  const regex = /(?:^|,\s*)([A-Z]{1,2}\d{1,4}-\d{1,4}|N\d+-\d+|Oe\d+-\d+|S\d+-\d+|E\d+-\d+|#\s*\d+(?:-\d+)?|\b\d{1,5}-\d{1,4}\b)(?:,|$)/i;
-  const match = displayName.match(regex);
-  if (match && match[1]) {
-    return match[1].replace(/^#\s*/, '').trim();
-  }
-  return '';
-}
-
-  // Run parallel queries: Mapbox + Micro with layer=address + 4 Cardinal Offsets (25m) + Macro + BigDataCloud
-  const tightOffset = 0.00025; // ~28m
   const mapboxToken = (process.env.NEXT_PUBLIC_MAPBOX_TOKEN || process.env.MAPBOX_TOKEN || '').trim();
   const hasMapbox = mapboxToken.startsWith('pk.');
 
-  const [mapboxRes, microRes, macroRes, regionalRes, offNRes, offSRes, offERes, offWRes, bdcRes] = await Promise.allSettled([
+  const delta = 0.0020; // ~220m radius for geometric highway line scanning and junction discovery
+  const minLon = nLon - delta;
+  const minLat = nLat - delta;
+  const maxLon = nLon + delta;
+  const maxLat = nLat + delta;
+
+  // Run parallel multi-engine resolution:
+  // 1. Nominatim Reverse (Single high-zoom call)
+  // 2. OpenStreetMap Vector API (Real physical highways, junction nodes, and POIs in bounding box)
+  // 3. Photon Reverse (OSM-based secondary geocoder with zero rate limit)
+  // 4. BigDataCloud Reverse (Administrative boundary fallback)
+  // 5. Mapbox Geocoding (if token configured)
+  const [nominatimRes, osmMapRes, photonRes, bdcRes, mapboxRes] = await Promise.allSettled([
+    safeFetchJson<NominatimReverseResponse>(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${nLat}&lon=${nLon}&addressdetails=1&zoom=18`, { headers }),
+    safeFetchJson<OsmMapResponse>(`https://api.openstreetmap.org/api/0.6/map.json?bbox=${minLon},${minLat},${maxLon},${maxLat}`, { headers }),
+    safeFetchJson<PhotonResponse>(`https://photon.komoot.io/reverse?lat=${nLat}&lon=${nLon}`),
+    safeFetchJson<BigDataCloudResponse>(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${nLat}&longitude=${nLon}&localityLanguage=es`),
     hasMapbox
-      ? fetch(
+      ? safeFetchJson<MapboxResponse>(
           `https://api.mapbox.com/geocoding/v5/mapbox.places/${nLon},${nLat}.json?access_token=${mapboxToken}&language=es&types=address,poi,neighborhood,locality,place,postcode,region,country`
-        ).then(r => r.json())
+        )
       : Promise.resolve(null),
-    fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${nLat}&lon=${nLon}&addressdetails=1&zoom=18&layer=address`, { headers }).then(r => r.json()),
-    fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${nLat}&lon=${nLon}&addressdetails=1&zoom=16&layer=address`, { headers }).then(r => r.json()),
-    fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${nLat}&lon=${nLon}&addressdetails=1&zoom=14`, { headers }).then(r => r.json()),
-    fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${nLat + tightOffset}&lon=${nLon}&addressdetails=1&zoom=18&layer=address`, { headers }).then(r => r.json()),
-    fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${nLat - tightOffset}&lon=${nLon}&addressdetails=1&zoom=18&layer=address`, { headers }).then(r => r.json()),
-    fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${nLat}&lon=${nLon + tightOffset}&addressdetails=1&zoom=18&layer=address`, { headers }).then(r => r.json()),
-    fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${nLat}&lon=${nLon - tightOffset}&addressdetails=1&zoom=18&layer=address`, { headers }).then(r => r.json()),
-    fetch(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${nLat}&longitude=${nLon}&localityLanguage=es`).then(r => r.json())
   ]);
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const mbData: any = mapboxRes.status === 'fulfilled' ? mapboxRes.value : null;
-  const origin = microRes.status === 'fulfilled' ? microRes.value : null;
-  const macro = macroRes.status === 'fulfilled' ? macroRes.value : null;
-  const regional = regionalRes.status === 'fulfilled' ? regionalRes.value : null;
-  const offN = offNRes.status === 'fulfilled' ? offNRes.value : null;
-  const offS = offSRes.status === 'fulfilled' ? offSRes.value : null;
-  const offE = offERes.status === 'fulfilled' ? offERes.value : null;
-  const offW = offWRes.status === 'fulfilled' ? offWRes.value : null;
+  const origin = nominatimRes.status === 'fulfilled' ? nominatimRes.value : null;
+  const osmMapData = osmMapRes.status === 'fulfilled' ? osmMapRes.value : null;
+  const photonData = photonRes.status === 'fulfilled' ? photonRes.value : null;
   const bdc = bdcRes.status === 'fulfilled' ? bdcRes.value : null;
+  const mbData = mapboxRes.status === 'fulfilled' ? mapboxRes.value : null;
+
+  // Process Vector Highways and POIs from OSM API
+  const vectorRoads: Array<{ name: string; dist: number; highway: string }> = [];
+  const vectorPois: Array<{ name: string; dist: number; type: string }> = [];
+
+  if (osmMapData && Array.isArray(osmMapData.elements)) {
+    const nodeMap = new Map<number, { lat: number; lon: number; tags?: Record<string, string> }>();
+    for (const el of osmMapData.elements) {
+      if (el.type === 'node' && typeof el.lat === 'number' && typeof el.lon === 'number') {
+        nodeMap.set(el.id, { lat: el.lat, lon: el.lon, tags: el.tags || {} });
+        if (el.tags && el.tags.name && (el.tags.amenity || el.tags.leisure || el.tags.shop || el.tags.tourism)) {
+          const d = getDistanceMeters(nLat, nLon, el.lat, el.lon);
+          vectorPois.push({ name: el.tags.name, type: el.tags.amenity || el.tags.leisure || el.tags.shop || 'poi', dist: d });
+        }
+      }
+    }
+
+    for (const el of osmMapData.elements) {
+      if (el.type === 'way') {
+        const tags = el.tags || {};
+        if (tags.amenity || tags.leisure) {
+          const nodeCoords: Array<{ lat: number; lon: number }> = [];
+          for (const id of el.nodes || []) {
+            const n = nodeMap.get(id);
+            if (n) nodeCoords.push(n);
+          }
+          if (nodeCoords.length > 0 && tags.name) {
+            const avgLat = nodeCoords.reduce((s, n) => s + n.lat, 0) / nodeCoords.length;
+            const avgLon = nodeCoords.reduce((s, n) => s + n.lon, 0) / nodeCoords.length;
+            const d = getDistanceMeters(nLat, nLon, avgLat, avgLon);
+            vectorPois.push({ name: tags.name, type: tags.amenity || tags.leisure, dist: d });
+          }
+        }
+
+        if (tags.highway && tags.name && !isUnnamedOrPlaceholderRoad(tags.name) && !isAdministrativeEntity(tags.name)) {
+          let minDist = Infinity;
+          for (const nid of el.nodes || []) {
+            const n = nodeMap.get(nid);
+            if (n) {
+              const d = getDistanceMeters(nLat, nLon, n.lat, n.lon);
+              if (d < minDist) minDist = d;
+            }
+          }
+          vectorRoads.push({ name: tags.name, dist: minDist, highway: tags.highway });
+        }
+      }
+    }
+  }
+
+  vectorRoads.sort((a, b) => a.dist - b.dist);
+  vectorPois.sort((a, b) => a.dist - b.dist);
 
   let mbStreet = '';
   let mbNumber = '';
@@ -586,8 +604,7 @@ function extractExteriorNumber(displayName?: string, rawHouse?: string): string 
   let mbPostcode = '';
   let mbCountry = '';
   if (mbData && Array.isArray(mbData.features)) {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    for (const feat of mbData.features as any[]) {
+    for (const feat of mbData.features || []) {
       const types: string[] = Array.isArray(feat.place_type) ? feat.place_type : [];
       if (types.includes('address') && !mbStreet) {
         mbStreet = feat.text_es || feat.text || '';
@@ -606,72 +623,58 @@ function extractExteriorNumber(displayName?: string, rawHouse?: string): string 
     }
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const addr18 = (origin && (origin as any).address) || {};
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const addr16 = (macro && (macro as any).address) || {};
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const addr14 = (regional && (regional as any).address) || {};
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const offNAddr = (offN && (offN as any).address) || {};
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const offSAddr = (offS && (offS as any).address) || {};
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const offEAddr = (offE && (offE as any).address) || {};
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const offWAddr = (offW && (offW as any).address) || {};
+  const addr18 = (origin && origin.address) || {};
+  const photonProp = photonData?.features?.[0]?.properties || {};
 
-  // State / Province & Country
-  const state = mbState || addr14.state || addr16.state || addr18.state || (bdc && bdc.principalSubdivision) || '';
-  const postalCode = mbPostcode || addr18.postcode || addr16.postcode || addr14.postcode || (bdc && bdc.postcode) || '';
-  const country = mbCountry || addr18.country || addr16.country || addr14.country || (bdc && bdc.countryName) || 'Ecuador';
+  // Extract candidate vehicular roads across sources
+  const nominatimRoad = (addr18.road || addr18.street || addr18.pedestrian || '').trim();
+  const closestVectorRoad = vectorRoads[0]?.name || '';
+  const photonRoad = (photonProp.street || (photonProp.type === 'street' || photonProp.osm_key === 'highway' ? photonProp.name : '') || '').trim();
 
-  // 1. High-Precision Primary Road Resolution (Checking addressable highway lines & discarding admin entities)
-  const isMicroFootpath = Boolean(
-    addr18.footway ||
-    addr18.path ||
-    addr18.steps ||
-    addr18.cycleway ||
-    addr18.service
-  );
-  const microRoad = (!isMicroFootpath && (addr18.road || addr18.street)) || (addr18.pedestrian && !isUnnamedOrPlaceholderRoad(addr18.pedestrian) ? addr18.pedestrian : '') || '';
-  const macroRoad = addr16.road || addr16.street || '';
-
-  // Collect candidate vehicular roads from origin, macro, origin/macro way names, and 4-point cardinal offset probes
-  const candidateRoads: string[] = [
+  const rawCandidates: string[] = [
     mbStreet,
-    microRoad,
-    macroRoad,
+    closestVectorRoad,
+    nominatimRoad,
+    photonRoad,
+    ...vectorRoads.map(r => r.name),
     (origin?.osm_type === 'way' && origin?.name) || '',
-    (macro?.osm_type === 'way' && macro?.name) || '',
-    offNAddr.road,
-    offSAddr.road,
-    offEAddr.road,
-    offWAddr.road,
   ].filter((r): r is string => Boolean(r && !isAdministrativeEntity(r) && !isUnnamedOrPlaceholderRoad(r)));
 
-  let rawPrimary = candidateRoads[0] || '';
-  let activeWayOsmId = origin?.osm_type === 'way' && origin?.osm_id ? origin.osm_id : null;
+  const uniqueCandidates: string[] = [];
+  const seenNorm = new Set<string>();
+  for (const c of rawCandidates) {
+    const polished = polishRoadName(c);
+    if (!polished) continue;
+    const norm = polished.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
+    if (!seenNorm.has(norm)) {
+      seenNorm.add(norm);
+      uniqueCandidates.push(polished);
+    }
+  }
 
-  // If origin wasn't a way with an addressable road, adopt the way osm_id from whichever offset probe detected the road
-  if (!activeWayOsmId) {
-    for (const off of [offN, offS, offE, offW, macro]) {
-      if (off?.osm_type === 'way' && off?.osm_id && off?.address?.road) {
-        if (!isAdministrativeEntity(off.address.road) && !isUnnamedOrPlaceholderRoad(off.address.road)) {
-          activeWayOsmId = off.osm_id;
-          if (!rawPrimary) rawPrimary = off.address.road;
-          break;
-        }
+  // Fallback: If still empty, attempt to extract road name from display_name
+  if (uniqueCandidates.length === 0 && origin?.display_name) {
+    const parts = (origin.display_name as string).split(',').map((p: string) => p.trim());
+    for (const part of parts) {
+      if (
+        part &&
+        !isAdministrativeEntity(part) &&
+        !isUnnamedOrPlaceholderRoad(part) &&
+        !/^\d+[-#\dA-Za-z]*$/.test(part) &&
+        part.length > 2
+      ) {
+        uniqueCandidates.push(polishRoadName(part));
+        break;
       }
     }
   }
 
-  let primaryRoad = polishRoadName(rawPrimary);
+  let primaryRoad = uniqueCandidates[0] || '';
 
   // House / Exterior Number resolution
   let houseNum = mbNumber || extractExteriorNumber(
     (origin as { display_name?: string } | null)?.display_name,
-    addr18.house_number || addr16.house_number
+    addr18.house_number
   );
 
   // Check if primary road accidentally had the house number appended
@@ -683,42 +686,60 @@ function extractExteriorNumber(displayName?: string, rawHouse?: string): string 
     }
   }
 
-  // 2. Discover Real Connecting Intersecting Streets (OSM Junction Nodes Discovery)
-  const [topologicalCrosses, landmarkPlace] = await Promise.all([
-    activeWayOsmId && primaryRoad
-      ? getTopologicalCrossStreets(activeWayOsmId, nLat, nLon, primaryRoad)
-      : Promise.resolve([]),
-    getLandmarkPlaceName(nLat, nLon)
-  ]);
-
+  // Intersections / Cross Streets (Discovered from geometric connecting ways)
   let crossRoad = '';
-  if (topologicalCrosses.length >= 2) {
-    crossRoad = `Entre ${topologicalCrosses[0]} y ${topologicalCrosses[1]}`;
-  } else if (topologicalCrosses.length === 1) {
-    crossRoad = `Entre ${topologicalCrosses[0]}`;
-  } else {
-    // If topological didn't discover junction nodes, check distinct offset streets
-    const normPrim = primaryRoad.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
-    const diffRoads = candidateRoads.filter(r => {
-      if (isUnnamedOrPlaceholderRoad(r)) return false;
+  if (primaryRoad) {
+    const primNorm = primaryRoad.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
+    const diffRoads = uniqueCandidates.filter(r => {
       const nr = r.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
-      return nr !== normPrim && !nr.includes(normPrim) && !normPrim.includes(nr);
+      return nr !== primNorm && !nr.includes(primNorm) && !primNorm.includes(nr);
     });
+
     if (diffRoads.length >= 2) {
-      crossRoad = `Entre ${polishRoadName(diffRoads[0])} y ${polishRoadName(diffRoads[1])}`;
+      crossRoad = `Entre ${diffRoads[0]} y ${diffRoads[1]}`;
     } else if (diffRoads.length === 1) {
-      crossRoad = `Entre ${polishRoadName(diffRoads[0])}`;
+      crossRoad = `Entre ${diffRoads[0]}`;
     }
   }
+
+  // Nearby Landmarks (parques, colegios, escuelas, universidades, iglesias, salud, mercados)
+  let landmarkPlace = '';
+  const filteredPois = vectorPois.filter(p => {
+    const n = p.name.toLowerCase();
+    return (
+      !n.includes('parqueadero') &&
+      !n.includes('muebles') &&
+      !n.includes('taller') &&
+      !n.includes('viveres') &&
+      n.length >= 3
+    );
+  });
+  if (filteredPois.length > 0) {
+    const p = filteredPois[0];
+    if (p.dist < 50) {
+      landmarkPlace = `Frente a ${p.name}`;
+    } else if (p.dist < 150) {
+      landmarkPlace = `Junto a ${p.name}`;
+    } else {
+      landmarkPlace = `Cerca de ${p.name}`;
+    }
+  } else if (photonProp.name && photonProp.name !== primaryRoad && (photonProp.osm_key === 'amenity' || photonProp.osm_key === 'leisure')) {
+    landmarkPlace = `Cerca de ${photonProp.name}`;
+  }
+
+  // State / Province & Country
+  const state = mbState || addr18.state || photonProp.state || (bdc && bdc.principalSubdivision) || '';
+  const postalCode = mbPostcode || addr18.postcode || photonProp.postcode || (bdc && bdc.postcode) || '';
+  const country = mbCountry || addr18.country || photonProp.country || (bdc && bdc.countryName) || 'Ecuador';
 
   // Keep street name strictly separate - NEVER fallback to placeholder 'Calle S/N' or village or parish name!
   const streetNameOnly = (primaryRoad && !isUnnamedOrPlaceholderRoad(primaryRoad)) ? primaryRoad : '';
 
   // 3. Hierarchical City and Sub-locality / Parish (Looking "desde arriba" across zoom 14, 16 and 18)
   const bdcCity = cleanAdmin(bdc && (bdc.city || bdc.principalSubdivision));
-  const rawCityCandidate = mbCity || addr14.city || addr16.city || addr18.city || addr14.town || addr16.town;
-  const rawCountyCandidate = addr14.county || addr16.county || addr18.county;
-  const rawMunCandidate = addr14.municipality || addr16.municipality || addr18.municipality;
+  const rawCityCandidate = mbCity || addr18.city || addr18.town || photonProp.city || (bdc && bdc.city);
+  const rawCountyCandidate = addr18.county || photonProp.county;
+  const rawMunCandidate = addr18.municipality || photonProp.district;
   const macroResult = resolveMajorCity(
     rawCityCandidate,
     rawCountyCandidate,
@@ -733,30 +754,24 @@ function extractExteriorNumber(displayName?: string, rawHouse?: string): string 
   const mainCity = macroResult.city;
   const satelliteParish = macroResult.parishOrSatellite;
 
-  // 3. Hierarchical City and Sub-locality / Parish
-  // Sector o Barrio: look closer ("un poco más cerca"), prioritizing zoom 18 quarter/neighbourhood
+  // Sector o Barrio: look closer ("un poco más cerca"), prioritizing micro neighborhood
   let subLocality = (
     addr18.quarter ||
+    photonProp.locality ||
     addr18.neighbourhood ||
     addr18.residential ||
     addr18.suburb ||
-    addr18.allotments ||
-    mbNeighborhood ||
-    addr16.quarter ||
-    addr16.neighbourhood ||
-    addr16.residential ||
-    addr16.suburb ||
+    photonProp.district ||
     addr18.city_district ||
-    addr16.city_district ||
     addr18.village ||
-    addr16.village ||
-    addr18.hamlet ||
+    bdc?.locality ||
+    photonProp.city ||
     ''
   ).trim();
 
-  // If subLocality ended up matching the main city, try to get the village/hamlet
+  // If subLocality ended up matching the main city, try to get the village/hamlet or parish
   if (subLocality.toLowerCase() === mainCity.toLowerCase()) {
-    subLocality = (addr18.quarter || addr18.village || addr16.village || '').trim();
+    subLocality = (addr18.quarter || photonProp.locality || addr18.village || satelliteParish || '').trim();
   }
 
   // Fallback defaults from IP metadata if available
@@ -783,7 +798,7 @@ function extractExteriorNumber(displayName?: string, rawHouse?: string): string 
       rawLat: !isIpFallback && Number.isFinite(nLat) ? nLat : undefined,
       rawLon: !isIpFallback && Number.isFinite(nLon) ? nLon : undefined,
       rawDisplayName: (origin as { display_name?: string } | null)?.display_name || undefined,
-      rawNominatim: origin || macro || mbData || bdc || undefined,
+      rawNominatim: origin || mbData || bdc || osmMapData || undefined,
     },
     // Direct top-level properties for seamless compatibility + Raw unformatted GPS/Geocoder payload
     street: finalStreet,
@@ -799,7 +814,7 @@ function extractExteriorNumber(displayName?: string, rawHouse?: string): string 
     rawLat: !isIpFallback && Number.isFinite(nLat) ? nLat : undefined,
     rawLon: !isIpFallback && Number.isFinite(nLon) ? nLon : undefined,
     rawDisplayName: (origin as { display_name?: string } | null)?.display_name || undefined,
-    rawNominatim: origin || macro || mbData || bdc || undefined,
+    rawNominatim: origin || mbData || bdc || osmMapData || undefined,
   });
 }
 

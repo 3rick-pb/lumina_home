@@ -329,7 +329,7 @@ export function SettingsTab({
     const resolvedPostal = data.data?.postalCode || data.postalCode || "";
     const resolvedCountry = data.data?.country || data.country || "Ecuador";
 
-    setStreet(resolvedStreet);
+    if (resolvedStreet) setStreet(resolvedStreet);
     if (resolvedExterior) setExteriorNumber(resolvedExterior);
     if (resolvedInterior) setInteriorNumber(resolvedInterior);
     if (resolvedCrossStreets) setCrossStreets(resolvedCrossStreets);
@@ -1209,7 +1209,7 @@ export function SettingsTab({
                           onLocationSelect={(lat, lng) => setDetectedCoords({ lat, lng })}
                           onAddressResolved={(addr) => {
                             const cleanStreet = (addr.street || "").replace(/^(?:calle\s+)?s\/?n$/i, "").trim();
-                            setStreet(cleanStreet);
+                            if (cleanStreet) setStreet(cleanStreet);
                             if (addr.exteriorNumber) setExteriorNumber(addr.exteriorNumber);
                             if (addr.neighborhood) setNeighborhood(addr.neighborhood);
                             if (addr.crossStreets) setCrossStreets(addr.crossStreets);
