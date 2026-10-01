@@ -19,6 +19,18 @@ const cleanAdmin = (str?: string) => {
     .trim();
 };
 
+const isAdministrativeEntity = (str?: string | null): boolean => {
+  if (!str) return false;
+  const n = str.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
+  const adminKeywords = [
+    'uyumbicho', 'machachi', 'mejia', 'quito', 'pichincha', 'ruminahui', 'sangolqui',
+    'tambillo', 'aloag', 'cutuglagua', 'cumbaya', 'tumbaco', 'conocoto', 'amaguana',
+    'guayaquil', 'cuenca', 'ambato', 'ecuador', 'canton', 'parroquia', 'provincia',
+    'distrito', 'municipio', 'barrio', 'departamento'
+  ];
+  return adminKeywords.includes(n);
+};
+
 const polishRoadName = (name?: string | null) => {
   if (!name) return '';
   let n = name.trim();
@@ -255,22 +267,28 @@ function resolveMajorCity(
   };
 }
 
-// 1. Topological Intersecting Street Discovery via OSM Junction Nodes
-async function getTopologicalCrossStreet(osmId: string | number, userLat: number, userLon: number, primaryRoadName: string) {
+// 1. Topological Intersecting Street Discovery via OSM Junction Nodes (Discovering 2 closest connecting streets)
+async function getTopologicalCrossStreets(
+  osmId: string | number,
+  userLat: number,
+  userLon: number,
+  primaryRoadName: string
+): Promise<string[]> {
+  const intersecting: string[] = [];
   try {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 4000);
     const wayUrl = `https://api.openstreetmap.org/api/0.6/way/${osmId}/full.json`;
     const wayRes = await fetch(wayUrl, { headers, signal: controller.signal });
     clearTimeout(timeout);
-    if (!wayRes.ok) return null;
+    if (!wayRes.ok) return [];
     const wayData = await wayRes.json();
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const nodes = (wayData.elements || []).filter((e: any) => e.type === 'node');
-    if (!nodes.length) return null;
+    if (!nodes.length) return [];
 
-    // Sort nodes by distance to user
+    // Sort nodes by distance to user coordinates
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     nodes.sort((a: any, b: any) => {
       const distA = Math.hypot(a.lat - userLat, a.lon - userLon);
@@ -278,33 +296,37 @@ async function getTopologicalCrossStreet(osmId: string | number, userLat: number
       return distA - distB;
     });
 
-    const prim = (primaryRoadName || '').toLowerCase().trim();
+    const primNorm = (primaryRoadName || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
 
-    // Probe closest junction nodes (up to 3)
-    for (const node of nodes.slice(0, 3)) {
-      const c2 = new AbortController();
-      const t2 = setTimeout(() => c2.abort(), 3000);
-      const nodeWaysUrl = `https://api.openstreetmap.org/api/0.6/node/${node.id}/ways.json`;
-      const nodeWaysRes = await fetch(nodeWaysUrl, { headers, signal: c2.signal });
-      clearTimeout(t2);
-      if (!nodeWaysRes.ok) continue;
-      const nodeWaysData = await nodeWaysRes.json();
+    // Probe closest junction nodes (up to 4)
+    for (const node of nodes.slice(0, 4)) {
+      try {
+        const c2 = new AbortController();
+        const t2 = setTimeout(() => c2.abort(), 2500);
+        const nodeWaysUrl = `https://api.openstreetmap.org/api/0.6/node/${node.id}/ways.json`;
+        const nodeWaysRes = await fetch(nodeWaysUrl, { headers, signal: c2.signal });
+        clearTimeout(t2);
+        if (!nodeWaysRes.ok) continue;
+        const nodeWaysData = await nodeWaysRes.json();
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const candidateWays = (nodeWaysData.elements || []).filter((w: any) => {
-        if (!w.tags || !w.tags.name) return false;
-        const cand = w.tags.name.toLowerCase().trim();
-        return cand !== prim && !cand.includes(prim) && !prim.includes(cand);
-      });
-
-      if (candidateWays.length > 0) {
-        return candidateWays[0].tags.name.trim();
-      }
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        for (const w of nodeWaysData.elements || []) {
+          const wName = w.tags?.name;
+          if (wName) {
+            const wNorm = wName.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
+            if (wNorm !== primNorm && !wNorm.includes(primNorm) && !primNorm.includes(wNorm)) {
+              const polished = polishRoadName(wName);
+              if (!intersecting.includes(polished)) {
+                intersecting.push(polished);
+              }
+            }
+          }
+        }
+      } catch {}
+      if (intersecting.length >= 2) break;
     }
-  } catch {
-    // Timeout or network error, fallback gracefully
-  }
-  return null;
+  } catch {}
+  return intersecting;
 }
 
 // 2. Nearby Landmarks Discovery (~6 cuadras / ~600m)
@@ -468,22 +490,24 @@ function extractExteriorNumber(displayName?: string, rawHouse?: string): string 
   return '';
 }
 
-  // Run parallel queries: Mapbox + Micro (zoom 18) + Macro Road/Sector (zoom 16) + Regional Parish/District (zoom 14) + Offsets + BigDataCloud
-  const tightOffset = 0.00022;
+  // Run parallel queries: Mapbox + Micro with layer=address + 4 Cardinal Offsets (25m) + Macro + BigDataCloud
+  const tightOffset = 0.00025; // ~28m
   const mapboxToken = (process.env.NEXT_PUBLIC_MAPBOX_TOKEN || process.env.MAPBOX_TOKEN || '').trim();
   const hasMapbox = mapboxToken.startsWith('pk.');
 
-  const [mapboxRes, microRes, macroRes, regionalRes, off1Res, off2Res, bdcRes] = await Promise.allSettled([
+  const [mapboxRes, microRes, macroRes, regionalRes, offNRes, offSRes, offERes, offWRes, bdcRes] = await Promise.allSettled([
     hasMapbox
       ? fetch(
           `https://api.mapbox.com/geocoding/v5/mapbox.places/${nLon},${nLat}.json?access_token=${mapboxToken}&language=es&types=address,poi,neighborhood,locality,place,postcode,region,country`
         ).then(r => r.json())
       : Promise.resolve(null),
-    fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${nLat}&lon=${nLon}&addressdetails=1&zoom=18`, { headers }).then(r => r.json()),
-    fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${nLat}&lon=${nLon}&addressdetails=1&zoom=16`, { headers }).then(r => r.json()),
+    fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${nLat}&lon=${nLon}&addressdetails=1&zoom=18&layer=address`, { headers }).then(r => r.json()),
+    fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${nLat}&lon=${nLon}&addressdetails=1&zoom=16&layer=address`, { headers }).then(r => r.json()),
     fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${nLat}&lon=${nLon}&addressdetails=1&zoom=14`, { headers }).then(r => r.json()),
-    fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${nLat + tightOffset}&lon=${nLon}&addressdetails=1&zoom=17`, { headers }).then(r => r.json()),
-    fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${nLat}&lon=${nLon - tightOffset}&addressdetails=1&zoom=17`, { headers }).then(r => r.json()),
+    fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${nLat + tightOffset}&lon=${nLon}&addressdetails=1&zoom=18&layer=address`, { headers }).then(r => r.json()),
+    fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${nLat - tightOffset}&lon=${nLon}&addressdetails=1&zoom=18&layer=address`, { headers }).then(r => r.json()),
+    fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${nLat}&lon=${nLon + tightOffset}&addressdetails=1&zoom=18&layer=address`, { headers }).then(r => r.json()),
+    fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${nLat}&lon=${nLon - tightOffset}&addressdetails=1&zoom=18&layer=address`, { headers }).then(r => r.json()),
     fetch(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${nLat}&longitude=${nLon}&localityLanguage=es`).then(r => r.json())
   ]);
 
@@ -492,8 +516,10 @@ function extractExteriorNumber(displayName?: string, rawHouse?: string): string 
   const origin = microRes.status === 'fulfilled' ? microRes.value : null;
   const macro = macroRes.status === 'fulfilled' ? macroRes.value : null;
   const regional = regionalRes.status === 'fulfilled' ? regionalRes.value : null;
-  const off1 = off1Res.status === 'fulfilled' ? off1Res.value : null;
-  const off2 = off2Res.status === 'fulfilled' ? off2Res.value : null;
+  const offN = offNRes.status === 'fulfilled' ? offNRes.value : null;
+  const offS = offSRes.status === 'fulfilled' ? offSRes.value : null;
+  const offE = offERes.status === 'fulfilled' ? offERes.value : null;
+  const offW = offWRes.status === 'fulfilled' ? offWRes.value : null;
   const bdc = bdcRes.status === 'fulfilled' ? bdcRes.value : null;
 
   let mbStreet = '';
@@ -521,18 +547,6 @@ function extractExteriorNumber(displayName?: string, rawHouse?: string): string 
       } else if (types.includes('country') && !mbCountry) {
         mbCountry = feat.text_es || feat.text || '';
       }
-
-      // Also inspect context hierarchy if present
-      if (Array.isArray(feat.context)) {
-        for (const ctx of feat.context) {
-          const id: string = ctx.id || '';
-          if (id.startsWith('neighborhood') && !mbNeighborhood) mbNeighborhood = ctx.text || '';
-          if (id.startsWith('place') && !mbCity) mbCity = ctx.text || '';
-          if (id.startsWith('region') && !mbState) mbState = ctx.text || '';
-          if (id.startsWith('postcode') && !mbPostcode) mbPostcode = ctx.text || '';
-          if (id.startsWith('country') && !mbCountry) mbCountry = ctx.text || '';
-        }
-      }
     }
   }
 
@@ -543,28 +557,57 @@ function extractExteriorNumber(displayName?: string, rawHouse?: string): string 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const addr14 = (regional && (regional as any).address) || {};
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const off1Addr = (off1 && (off1 as any).address) || {};
+  const offNAddr = (offN && (offN as any).address) || {};
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const off2Addr = (off2 && (off2 as any).address) || {};
+  const offSAddr = (offS && (offS as any).address) || {};
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const offEAddr = (offE && (offE as any).address) || {};
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const offWAddr = (offW && (offW as any).address) || {};
 
   // State / Province & Country
   const state = mbState || addr14.state || addr16.state || addr18.state || (bdc && bdc.principalSubdivision) || '';
   const postalCode = mbPostcode || addr18.postcode || addr16.postcode || addr14.postcode || (bdc && bdc.postcode) || '';
   const country = mbCountry || addr18.country || addr16.country || addr14.country || (bdc && bdc.countryName) || 'Ecuador';
 
-  // 1. Primary Road & House Number (Looking "desde arriba" to prefer real thoroughfares over micro footpaths)
+  // 1. High-Precision Primary Road Resolution (Checking addressable highway lines & discarding admin entities)
   const isMicroFootpath = Boolean(
     addr18.footway ||
     addr18.path ||
     addr18.steps ||
-    addr18.pedestrian ||
     addr18.cycleway ||
     addr18.service
   );
-  const microRoad = addr18.road || addr18.street || (isMicroFootpath ? '' : addr18.pedestrian) || '';
+  const microRoad = (!isMicroFootpath && (addr18.road || addr18.street)) || '';
   const macroRoad = addr16.road || addr16.street || '';
 
-  const rawPrimary = mbStreet || (!isMicroFootpath && microRoad ? microRoad : macroRoad) || microRoad || macroRoad || (bdc && bdc.locality) || '';
+  // Collect candidate vehicular roads from origin and 4-point cardinal offset probes
+  const candidateRoads: string[] = [
+    mbStreet,
+    microRoad,
+    macroRoad,
+    offNAddr.road,
+    offSAddr.road,
+    offEAddr.road,
+    offWAddr.road,
+  ].filter((r): r is string => Boolean(r && !isAdministrativeEntity(r)));
+
+  let rawPrimary = candidateRoads[0] || '';
+  let activeWayOsmId = origin?.osm_type === 'way' && origin?.osm_id ? origin.osm_id : null;
+
+  // If origin wasn't a way with an addressable road, adopt the way osm_id from whichever offset probe detected the road
+  if (!activeWayOsmId) {
+    for (const off of [offN, offS, offE, offW, macro]) {
+      if (off?.osm_type === 'way' && off?.osm_id && off?.address?.road) {
+        if (!isAdministrativeEntity(off.address.road)) {
+          activeWayOsmId = off.osm_id;
+          if (!rawPrimary) rawPrimary = off.address.road;
+          break;
+        }
+      }
+    }
+  }
+
   let primaryRoad = polishRoadName(rawPrimary);
 
   // House / Exterior Number resolution
@@ -582,46 +625,35 @@ function extractExteriorNumber(displayName?: string, rawHouse?: string): string 
     }
   }
 
-  // 2. Discover Real Intersecting Street (Topological Junction Nodes + Macro Divergence + Offsets) & Landmark Place (~6 blocks) in parallel
-  const [topologicalCross, landmarkPlace] = await Promise.all([
-    origin && origin.osm_type === 'way' && origin.osm_id
-      ? getTopologicalCrossStreet(origin.osm_id, nLat, nLon, primaryRoad)
-      : Promise.resolve(null),
+  // 2. Discover Real Connecting Intersecting Streets (OSM Junction Nodes Discovery)
+  const [topologicalCrosses, landmarkPlace] = await Promise.all([
+    activeWayOsmId && primaryRoad
+      ? getTopologicalCrossStreets(activeWayOsmId, nLat, nLon, primaryRoad)
+      : Promise.resolve([]),
     getLandmarkPlaceName(nLat, nLon)
   ]);
 
-  let crossRoad = polishRoadName(topologicalCross);
-
-  // If topological didn't detect an intersection, check if macro road (from zoom 16) is a different intersecting avenue
-  if (!crossRoad && macroRoad && primaryRoad) {
-    const normMacro = macroRoad.toLowerCase().trim();
-    const normPrim = primaryRoad.toLowerCase().trim();
-    if (normMacro !== normPrim && !normMacro.includes(normPrim) && !normPrim.includes(normMacro)) {
-      crossRoad = polishRoadName(macroRoad);
+  let crossRoad = '';
+  if (topologicalCrosses.length >= 2) {
+    crossRoad = `Entre ${topologicalCrosses[0]} y ${topologicalCrosses[1]}`;
+  } else if (topologicalCrosses.length === 1) {
+    crossRoad = `Entre ${topologicalCrosses[0]}`;
+  } else {
+    // If topological didn't discover junction nodes, check distinct offset streets
+    const normPrim = primaryRoad.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
+    const diffRoads = candidateRoads.filter(r => {
+      const nr = r.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
+      return nr !== normPrim && !nr.includes(normPrim) && !normPrim.includes(nr);
+    });
+    if (diffRoads.length >= 2) {
+      crossRoad = `Entre ${polishRoadName(diffRoads[0])} y ${polishRoadName(diffRoads[1])}`;
+    } else if (diffRoads.length === 1) {
+      crossRoad = `Entre ${polishRoadName(diffRoads[0])}`;
     }
   }
 
-  // If still no crossRoad, probe offset responses
-  if (!crossRoad) {
-    const candidateStreets: string[] = [
-      off1Addr.road,
-      off2Addr.road,
-      off1Addr.street,
-      off2Addr.street
-    ].filter(Boolean);
-
-    for (const cand of candidateStreets) {
-      const normCand = cand.toLowerCase().trim();
-      const normPrim = primaryRoad.toLowerCase().trim();
-      if (normCand !== normPrim && !normCand.includes(normPrim) && !normPrim.includes(normCand)) {
-        crossRoad = polishRoadName(cand);
-        break;
-      }
-    }
-  }
-
-  // Keep street name strictly separate from exteriorNumber and crossStreets
-  const streetNameOnly = primaryRoad || addr16.neighbourhood || addr18.neighbourhood || addr16.suburb || addr18.suburb || addr18.village || 'Dirección por coordenadas';
+  // Keep street name strictly separate - NEVER fallback to village or parish name!
+  const streetNameOnly = primaryRoad || 'Calle S/N';
 
   // 3. Hierarchical City and Sub-locality / Parish (Looking "desde arriba" across zoom 14, 16 and 18)
   const bdcCity = cleanAdmin(bdc && (bdc.city || bdc.principalSubdivision));
@@ -690,7 +722,7 @@ function extractExteriorNumber(displayName?: string, rawHouse?: string): string 
       street: finalStreet,
       exteriorNumber: houseNum || undefined,
       neighborhood: subLocality || undefined,
-      crossStreets: crossRoad ? `Entre ${crossRoad}` : undefined,
+      crossStreets: crossRoad || undefined,
       landmark: landmarkPlace || undefined,
       reference: landmarkPlace || subLocality || undefined,
       city: finalCityResult,
@@ -706,7 +738,7 @@ function extractExteriorNumber(displayName?: string, rawHouse?: string): string 
     street: finalStreet,
     exteriorNumber: houseNum || undefined,
     neighborhood: subLocality || undefined,
-    crossStreets: crossRoad ? `Entre ${crossRoad}` : undefined,
+    crossStreets: crossRoad || undefined,
     landmark: landmarkPlace || undefined,
     reference: landmarkPlace || subLocality || undefined,
     city: finalCityResult,
