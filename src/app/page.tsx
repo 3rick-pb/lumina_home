@@ -218,6 +218,21 @@ export default function Home() {
   useEffect(() => {
     if (!isMounted) return;
 
+    let popTop = 0;
+    let catTop = 0;
+
+    const measureTops = () => {
+      if (popularRef.current) {
+        popTop = popularRef.current.offsetTop;
+      }
+      if (categoriesRef.current) {
+        catTop = categoriesRef.current.offsetTop;
+      }
+    };
+
+    measureTops();
+    window.addEventListener("resize", measureTops, { passive: true });
+
     let rafId: number | null = null;
 
     const updateThemeOnScroll = () => {
@@ -231,18 +246,13 @@ export default function Home() {
       }
 
       // 2. Check section positions relative to viewport focal trigger
-      const popRect = popularRef.current?.getBoundingClientRect();
-      const catRect = categoriesRef.current?.getBoundingClientRect();
-      const focalY = window.innerHeight * 0.45;
+      const focalScroll = scrollY + window.innerHeight * 0.45;
 
-      if (popRect && popRect.top <= focalY) {
-        // Scrolled down into Popular Products or past it to the bottom
+      if (popTop > 0 && focalScroll >= popTop) {
         setCategoryTheme(activeFilter === "Todos" ? "iluminacion" : activeFilter);
-      } else if (catRect && catRect.top <= focalY) {
-        // Inside Categories section
+      } else if (catTop > 0 && focalScroll >= catTop) {
         setCategoryTheme("aromaterapia");
       } else {
-        // Scrolled back up into Hero / Trust badges
         resetTheme();
       }
     };
@@ -258,6 +268,7 @@ export default function Home() {
 
     return () => {
       window.removeEventListener("scroll", handleScroll);
+      window.removeEventListener("resize", measureTops);
       if (rafId !== null) cancelAnimationFrame(rafId);
     };
   }, [isMounted, activeFilter, setCategoryTheme, resetTheme]);

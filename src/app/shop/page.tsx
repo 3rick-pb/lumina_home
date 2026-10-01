@@ -32,20 +32,22 @@ export default function ShopPage({ searchParams }: { searchParams: Promise<{ cat
     window.scrollTo({ top: 0, left: 0, behavior: "instant" });
   }, [categoryFilter, searchQuery]);
 
-  let filteredProducts = products;
-
-  if (categoryFilter) {
-    filteredProducts = filteredProducts.filter(p => normalizeText(p.category) === normalizeText(categoryFilter));
-  }
-
-  if (searchQuery) {
-    const q = normalizeText(searchQuery);
-    filteredProducts = filteredProducts.filter(p => 
-      normalizeText(p.title).includes(q) || 
-      normalizeText(p.category).includes(q) ||
-      (p.description && normalizeText(p.description).includes(q))
-    );
-  }
+  const filteredProducts = React.useMemo(() => {
+    let list = products;
+    if (categoryFilter) {
+      const cat = normalizeText(categoryFilter);
+      list = list.filter(p => normalizeText(p.category) === cat);
+    }
+    if (searchQuery) {
+      const q = normalizeText(searchQuery);
+      list = list.filter(p => 
+        normalizeText(p.title).includes(q) || 
+        normalizeText(p.category).includes(q) ||
+        (p.description && normalizeText(p.description).includes(q))
+      );
+    }
+    return list;
+  }, [products, categoryFilter, searchQuery]);
 
   return (
     <div className="min-h-screen pt-32 pb-24 bg-transparent relative">
