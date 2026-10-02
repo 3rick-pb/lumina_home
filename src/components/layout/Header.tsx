@@ -95,26 +95,53 @@ export function Header() {
     const Icon1 = getNicheIconByName(slot1.iconName);
     const Icon2 = getNicheIconByName(slot2.iconName);
 
+    // Resolve canonical category from store categories (preserving proper accents/tildes)
+    const slot1Raw = slot1.category || slot1.label;
+    const slot2Raw = slot2.category || slot2.label;
+    const canonicalSlot1 = categories.find(c => normalizeSearchText(c) === normalizeSearchText(slot1Raw)) || slot1Raw;
+    const canonicalSlot2 = categories.find(c => normalizeSearchText(c) === normalizeSearchText(slot2Raw)) || slot2Raw;
+
+    const slot1Key = normalizeSearchText(slot1Raw);
+    const slot2Key = normalizeSearchText(slot2Raw);
+
     return [
       { id: "home", label: "Inicio", icon: Home, href: "/" },
       { id: "shop", label: "Todo", icon: Sparkles, href: "/shop" },
-      { id: slot1.category || "niche1", label: slot1.label, icon: Icon1, href: `/shop?category=${encodeURIComponent(slot1.category)}` },
-      { id: slot2.category || "niche2", label: slot2.label, icon: Icon2, href: `/shop?category=${encodeURIComponent(slot2.category)}` },
+      { 
+        id: slot1Key || "niche1", 
+        label: slot1.label, 
+        icon: Icon1, 
+        href: `/shop?category=${encodeURIComponent(canonicalSlot1.toLowerCase())}` 
+      },
+      { 
+        id: slot2Key || "niche2", 
+        label: slot2.label, 
+        icon: Icon2, 
+        href: `/shop?category=${encodeURIComponent(canonicalSlot2.toLowerCase())}` 
+      },
     ];
-  }, [nicheSlots]);
+  }, [nicheSlots, categories]);
 
-  // Sync "Inicio" (home) tab selection with the URL pathname
+  // Sync "Inicio" (home) tab selection with the URL pathname and query params
   useEffect(() => {
     if (pathname === "/") {
       setActiveTab("home");
     } else if (pathname === "/shop") {
       if (typeof window !== "undefined") {
-        const search = window.location.search;
-        const slot1Cat = nicheSlots[0]?.category?.toLowerCase();
-        const slot2Cat = nicheSlots[1]?.category?.toLowerCase();
-        if (slot1Cat && search.includes(`category=${slot1Cat}`)) setActiveTab(slot1Cat);
-        else if (slot2Cat && search.includes(`category=${slot2Cat}`)) setActiveTab(slot2Cat);
-        else setActiveTab("shop");
+        const urlParams = new URLSearchParams(window.location.search);
+        const currentCatNorm = normalizeSearchText(urlParams.get("category"));
+        const slot1CatNorm = normalizeSearchText(nicheSlots[0]?.category || nicheSlots[0]?.label);
+        const slot2CatNorm = normalizeSearchText(nicheSlots[1]?.category || nicheSlots[1]?.label);
+
+        if (currentCatNorm && slot1CatNorm && currentCatNorm === slot1CatNorm) {
+          setActiveTab(slot1CatNorm);
+        } else if (currentCatNorm && slot2CatNorm && currentCatNorm === slot2CatNorm) {
+          setActiveTab(slot2CatNorm);
+        } else if (!currentCatNorm) {
+          setActiveTab("shop");
+        } else {
+          setActiveTab("");
+        }
       }
     }
   }, [pathname, nicheSlots]);

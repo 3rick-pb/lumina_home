@@ -171,7 +171,7 @@ const INITIAL_NICHE_PRODUCTS: CatalogProduct[] = [
     sizes: ["Mediano (24cm)"],
     features: ["Cerámica gres cocida a 1250°C", "Acabado impermeable interior", "Base pulida suave"],
     materials: "Gres cerámico mineral de alta temperatura (1250°C), esmalte interior vitrificado impermeable y base tratada con fieltro protector.",
-    shipping: "Envío express 24-48 horas en caja doble corrugada con esquineras de absorción de impactos. Devolución gratuita durante 30 días.",
+    shipping: "Envío express 24-48 horas en caja doble corrugada con esquineras de absorción de impactos. Devolución gratuita durante 10 días.",
     dimensions: "Alto: 24 cm | Diámetro máximo: 15 cm | Diámetro boca: 7 cm | Peso neto: 1.15 kg",
     warranty: "2 años de garantía artesanal contra fisuras estructurales o porosidad no deseada.",
     careInstructions: "Lavar a mano con agua tibia y jabón neutro. Secar al aire. Evitar frotar con estropajos abrasivos.",

@@ -27,6 +27,14 @@ export default function ShopPage({ searchParams }: { searchParams: Promise<{ cat
   const { products, categories } = useCatalogStore();
   const { setCategoryTheme, resetTheme } = useAmbientStore();
 
+  // Resolve canonical category name from store categories (e.g. "iluminacion" -> "Iluminación")
+  const canonicalCategoryName = React.useMemo(() => {
+    if (!categoryFilter) return null;
+    const norm = normalizeText(categoryFilter);
+    const found = categories.find(c => normalizeText(c) === norm);
+    return found || (categoryFilter.charAt(0).toUpperCase() + categoryFilter.slice(1));
+  }, [categoryFilter, categories]);
+
   useEffect(() => {
     window.scrollTo({ top: 0, left: 0, behavior: "instant" });
   }, []);
@@ -36,13 +44,13 @@ export default function ShopPage({ searchParams }: { searchParams: Promise<{ cat
   }, [categoryFilter, searchQuery]);
 
   useEffect(() => {
-    if (categoryFilter) {
-      setCategoryTheme(categoryFilter);
+    if (canonicalCategoryName) {
+      setCategoryTheme(canonicalCategoryName);
     } else {
       resetTheme();
     }
     return () => resetTheme();
-  }, [categoryFilter, setCategoryTheme, resetTheme]);
+  }, [canonicalCategoryName, setCategoryTheme, resetTheme]);
 
   // Desktop pointer hover handlers (strictly bypassed on mobile/touch screens to prevent lag & confusion)
   const handlePointerEnterCategory = (catName: string) => {
@@ -53,7 +61,7 @@ export default function ShopPage({ searchParams }: { searchParams: Promise<{ cat
 
   const handlePointerLeaveCategory = () => {
     if (typeof window !== "undefined" && window.matchMedia("(hover: hover) and (pointer: fine)").matches) {
-      if (categoryFilter) setCategoryTheme(categoryFilter);
+      if (canonicalCategoryName) setCategoryTheme(canonicalCategoryName);
       else resetTheme();
     }
   };
@@ -83,7 +91,7 @@ export default function ShopPage({ searchParams }: { searchParams: Promise<{ cat
       <div className="container mx-auto px-4 md:px-8 relative z-10">
         <motion.div 
           id="shop-header"
-          data-ambient-category={categoryFilter ? categoryFilter.toLowerCase() : "default"}
+          data-ambient-category={canonicalCategoryName ? canonicalCategoryName.toLowerCase() : "default"}
           initial={{ opacity: 0, y: 24 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
@@ -91,7 +99,7 @@ export default function ShopPage({ searchParams }: { searchParams: Promise<{ cat
           className="mb-8 sm:mb-12 transform-gpu scroll-mt-36"
         >
           <h1 className="text-2xl sm:text-4xl font-display italic font-bold text-gray-900 dark:text-gray-100 mb-3 sm:mb-4">
-            {categoryFilter ? `Colección: ${categoryFilter.charAt(0).toUpperCase() + categoryFilter.slice(1)}` : "Todos los Productos"}
+            {canonicalCategoryName ? `Colección: ${canonicalCategoryName}` : "Todos los Productos"}
           </h1>
           <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400 max-w-2xl">
             Descubre nuestra selección de artículos diseñados para convertir tu hogar en tu refugio ideal. 
@@ -110,15 +118,20 @@ export default function ShopPage({ searchParams }: { searchParams: Promise<{ cat
           <Link href="/shop" className={`px-4 sm:px-5 py-2 rounded-full text-xs sm:text-sm font-medium transition-all whitespace-nowrap shrink-0 ${!categoryFilter ? 'bg-white/40 dark:bg-white/10 backdrop-blur-xl border border-white/60 dark:border-white/15 text-gray-900 dark:text-gray-100 shadow-sm' : 'bg-transparent text-gray-600 dark:text-gray-400 border border-gray-200 dark:border-white/10 hover:bg-white/40 dark:hover:bg-white/10 hover:backdrop-blur-md'}`}>
             Todos
           </Link>
-          {categories.map((cat) => (
-            <Link 
-              key={cat} 
-              href={`/shop?category=${cat.toLowerCase()}`}
-              className={`px-4 sm:px-5 py-2 rounded-full text-xs sm:text-sm font-medium transition-all whitespace-nowrap shrink-0 ${categoryFilter?.toLowerCase() === cat.toLowerCase() ? 'bg-white/40 dark:bg-white/10 backdrop-blur-xl border border-white/60 dark:border-white/15 text-gray-900 dark:text-gray-100 shadow-sm' : 'bg-transparent text-gray-600 dark:text-gray-400 border border-gray-200 dark:border-white/10 hover:bg-white/40 dark:hover:bg-white/10 hover:backdrop-blur-md'}`}
-            >
-              {cat}
-            </Link>
-          ))}
+          {categories.map((cat) => {
+            const isSelected = categoryFilter ? normalizeText(categoryFilter) === normalizeText(cat) : false;
+            return (
+              <Link 
+                key={cat} 
+                href={`/shop?category=${encodeURIComponent(cat.toLowerCase())}`}
+                onMouseEnter={() => handlePointerEnterCategory(cat)}
+                onMouseLeave={handlePointerLeaveCategory}
+                className={`px-4 sm:px-5 py-2 rounded-full text-xs sm:text-sm font-medium transition-all whitespace-nowrap shrink-0 ${isSelected ? 'bg-white/40 dark:bg-white/10 backdrop-blur-xl border border-white/60 dark:border-white/15 text-gray-900 dark:text-gray-100 shadow-sm' : 'bg-transparent text-gray-600 dark:text-gray-400 border border-gray-200 dark:border-white/10 hover:bg-white/40 dark:hover:bg-white/10 hover:backdrop-blur-md'}`}
+              >
+                {cat}
+              </Link>
+            );
+          })}
         </motion.div>
 
         <div id="shop-products" className="scroll-mt-36">

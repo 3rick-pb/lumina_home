@@ -82,8 +82,8 @@ export interface NicheSlotConfig {
 }
 
 export const DEFAULT_NICHE_SLOTS: NicheSlotConfig[] = [
-  { id: "slot1", label: "Iluminación", iconName: "Lamp", category: "iluminacion" },
-  { id: "slot2", label: "Textiles", iconName: "Bed", category: "textiles" },
+  { id: "slot1", label: "Iluminación", iconName: "Lamp", category: "Iluminación" },
+  { id: "slot2", label: "Textiles", iconName: "Bed", category: "Textiles" },
 ];
 
 export const getNicheIconByName = (name: string): LucideIcon => {

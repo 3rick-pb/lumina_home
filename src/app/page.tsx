@@ -106,7 +106,7 @@ const DEFAULT_TRUST_BADGES: TrustBadgeItem[] = [
   },
   {
     icon: RotateCcw,
-    title: "Devoluciones 30 días",
+    title: "Devoluciones 10 días",
     subtitle: "Sin complicaciones",
   },
   {
@@ -193,6 +193,13 @@ export default function Home() {
                 title: "Sigue tu paquete",
                 subtitle: "Paso a paso en tiempo real",
                 icon: PackageSearch,
+              };
+            }
+            if (item.id === 'returns' || lowerTitle.includes('devoluci')) {
+              return {
+                title: "Devoluciones 10 días",
+                subtitle: item.subtitle || "Sin complicaciones",
+                icon: TRUST_ICON_MAP[item.icon_name] || RotateCcw,
               };
             }
             return {
