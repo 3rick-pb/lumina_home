@@ -177,7 +177,7 @@ export function EmbeddedCylinderCarousel({
         <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
           <div>
             <div className="flex items-center gap-2 mb-2">
-              <span className="flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] sm:text-xs font-bold uppercase tracking-wider bg-[#8c9276]/15 text-[#8c9276] dark:text-[#ccff00] border border-[#8c9276]/25">
+              <span className="flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] sm:text-xs font-bold uppercase tracking-wider bg-[#8c9276]/15 text-[#8c9276] dark:text-amber-400 border border-[#8c9276]/25">
                 <Compass className="w-3.5 h-3.5" />
                 {category} • Curaduría
               </span>

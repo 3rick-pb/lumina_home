@@ -24,9 +24,9 @@ const FILTER_ITEMS = [
     id: "all",
     label: "Todos",
     icon: Layers,
-    dotClass: "bg-[#8c9276] dark:bg-[#ccff00]",
+    dotClass: "bg-[#8c9276] dark:bg-amber-400",
     activeText: "text-gray-900 dark:text-white",
-    badgeActive: "bg-gray-900 dark:bg-[#ccff00] text-white dark:text-gray-950",
+    badgeActive: "bg-gray-900 dark:bg-amber-400 text-white dark:text-stone-950",
   },
   {
     id: "Procesando",

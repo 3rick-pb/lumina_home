@@ -491,11 +491,11 @@ export default function LoginPage() {
           </button>
 
           <div className="flex items-center gap-3 mb-4 pr-10">
-            <div className="w-11 h-11 rounded-2xl bg-[#8c9276]/15 border border-[#8c9276]/30 flex items-center justify-center text-[#8c9276] dark:text-[#ccff00] shrink-0">
+            <div className="w-11 h-11 rounded-2xl bg-[#8c9276]/15 border border-[#8c9276]/30 flex items-center justify-center text-[#8c9276] dark:text-amber-400 shrink-0">
               <KeyRound className="w-5 h-5" />
             </div>
             <div>
-              <span className="text-[10px] font-extrabold uppercase tracking-widest text-[#767c60] dark:text-[#ccff00]">
+              <span className="text-[10px] font-extrabold uppercase tracking-widest text-[#767c60] dark:text-amber-400">
                 Seguridad de Cuenta
               </span>
               <h3 className="text-xl font-display italic font-bold text-gray-950 dark:text-white leading-tight">
@@ -601,7 +601,7 @@ export default function LoginPage() {
               <button
                 type="submit"
                 disabled={isUpdatingPassword}
-                className="flex-1 h-12 rounded-2xl bg-gray-900 dark:bg-[#ccff00] text-white dark:text-gray-950 text-xs sm:text-sm font-bold flex items-center justify-center gap-2 hover:bg-gray-800 dark:hover:bg-[#b8e600] transition-all shadow-lg shadow-gray-900/15 disabled:opacity-60 cursor-pointer"
+                className="flex-1 h-12 rounded-2xl bg-gray-900 dark:bg-amber-400 text-white dark:text-stone-950 text-xs sm:text-sm font-bold flex items-center justify-center gap-2 hover:bg-gray-800 dark:hover:bg-amber-300 transition-all shadow-lg shadow-gray-900/15 disabled:opacity-60 cursor-pointer"
               >
                 {isUpdatingPassword ? (
                   <>

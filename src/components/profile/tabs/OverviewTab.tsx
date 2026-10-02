@@ -362,8 +362,6 @@ export function OverviewTab({
                 : "justify-start gap-2"
             }`}
             style={{
-              scrollbarWidth: "thin",
-              scrollbarColor: "rgba(156, 163, 175, 0.4) transparent",
               overscrollBehaviorX: "contain",
               overscrollBehaviorY: "auto",
               touchAction: "pan-x pan-y",

@@ -837,7 +837,7 @@ const handleConfirmDeleteNiche = async () => {
    title="Vista General"
  >
    {activeTab === "overview" && (
-     <span className="absolute -left-2 w-1 h-5 bg-[#8c9276] dark:bg-[#ccff00] rounded-r-full transition-all duration-[600ms]" />
+     <span className="absolute -left-2 w-1 h-5 bg-[#8c9276] dark:bg-amber-400 rounded-r-full transition-all duration-[600ms]" />
    )}
    <LayoutDashboard className="w-5 h-5 transition-all duration-300 group-hover:scale-115 group-hover:rotate-6 group-hover:-translate-y-0.5" />
  </button>
@@ -852,7 +852,7 @@ const handleConfirmDeleteNiche = async () => {
    title="Pedidos & Historial"
  >
    {activeTab === "orders" && (
-     <span className="absolute -left-2 w-1 h-5 bg-[#8c9276] dark:bg-[#ccff00] rounded-r-full transition-all duration-[600ms]" />
+     <span className="absolute -left-2 w-1 h-5 bg-[#8c9276] dark:bg-amber-400 rounded-r-full transition-all duration-[600ms]" />
    )}
    <ShoppingBag className="w-5 h-5 transition-all duration-300 group-hover:scale-115 group-hover:-rotate-12 group-hover:-translate-y-0.5" />
    {pendingOrdersCount > 0 && (
@@ -879,7 +879,7 @@ const handleConfirmDeleteNiche = async () => {
    title="Mis Tarjetas"
  >
    {activeTab === "cards" && (
-     <span className="absolute -left-2 w-1 h-5 bg-[#8c9276] dark:bg-[#ccff00] rounded-r-full transition-all duration-[600ms]" />
+     <span className="absolute -left-2 w-1 h-5 bg-[#8c9276] dark:bg-amber-400 rounded-r-full transition-all duration-[600ms]" />
    )}
    <CreditCard className="w-5 h-5 transition-all duration-300 group-hover:scale-115 group-hover:-rotate-6 group-hover:-translate-y-0.5" />
  </button>
@@ -894,7 +894,7 @@ const handleConfirmDeleteNiche = async () => {
    title="Favoritos Guardados"
  >
    {activeTab === "favorites" && (
-     <span className="absolute -left-2 w-1 h-5 bg-[#8c9276] dark:bg-[#ccff00] rounded-r-full transition-all duration-[600ms]" />
+     <span className="absolute -left-2 w-1 h-5 bg-[#8c9276] dark:bg-amber-400 rounded-r-full transition-all duration-[600ms]" />
    )}
    <Heart className="w-5 h-5 transition-all duration-300 group-hover:scale-125 group-hover:text-rose-500 group-hover:-translate-y-0.5" />
    {favorites.length > 0 && activeTab !== "favorites" && (
@@ -912,7 +912,7 @@ const handleConfirmDeleteNiche = async () => {
    title="Cupones & Códigos de Descuento"
  >
    {activeTab === "loyalty" && (
-     <span className="absolute -left-2 w-1 h-5 bg-[#8c9276] dark:bg-[#ccff00] rounded-r-full transition-all duration-[600ms]" />
+     <span className="absolute -left-2 w-1 h-5 bg-[#8c9276] dark:bg-amber-400 rounded-r-full transition-all duration-[600ms]" />
    )}
    <Tag className="w-5 h-5 transition-all duration-300 group-hover:scale-115 group-hover:rotate-6 group-hover:-translate-y-0.5" />
  </button>
@@ -931,7 +931,7 @@ const handleConfirmDeleteNiche = async () => {
        title="Control de Catálogo"
      >
        {activeTab === "catalog" && (
-         <span className="absolute -left-2 w-1 h-5 bg-[#8c9276] dark:bg-[#ccff00] rounded-r-full transition-all duration-[600ms]" />
+         <span className="absolute -left-2 w-1 h-5 bg-[#8c9276] dark:bg-amber-400 rounded-r-full transition-all duration-[600ms]" />
        )}
        <Package className="w-5 h-5 transition-all duration-300 group-hover:scale-115 group-hover:-translate-y-1" />
      </button>
@@ -946,7 +946,7 @@ const handleConfirmDeleteNiche = async () => {
        title="Gestión de Nichos"
      >
        {activeTab === "niches" && (
-         <span className="absolute -left-2 w-1 h-5 bg-[#8c9276] dark:bg-[#ccff00] rounded-r-full transition-all duration-[600ms]" />
+         <span className="absolute -left-2 w-1 h-5 bg-[#8c9276] dark:bg-amber-400 rounded-r-full transition-all duration-[600ms]" />
        )}
        <Layers className="w-5 h-5 transition-all duration-300 group-hover:scale-115 group-hover:-translate-y-1 group-hover:rotate-3" />
      </button>
@@ -961,7 +961,7 @@ const handleConfirmDeleteNiche = async () => {
        title="Radar de Clientes & Analítica"
      >
        {activeTab === "analytics" && (
-         <span className="absolute -left-2 w-1 h-5 bg-[#8c9276] dark:bg-[#ccff00] rounded-r-full transition-all duration-[600ms]" />
+         <span className="absolute -left-2 w-1 h-5 bg-[#8c9276] dark:bg-amber-400 rounded-r-full transition-all duration-[600ms]" />
        )}
        <Globe className="w-5 h-5 transition-all duration-500 group-hover:scale-115 group-hover:rotate-90 group-hover:text-[#8c9276]" />
      </button>
@@ -976,7 +976,7 @@ const handleConfirmDeleteNiche = async () => {
         title="Alertas de Bolsa (Sileo)"
      >
        {activeTab === "cart_alerts" && (
-         <span className="absolute -left-2 w-1 h-5 bg-[#8c9276] dark:bg-[#ccff00] rounded-r-full transition-all duration-[600ms]" />
+         <span className="absolute -left-2 w-1 h-5 bg-[#8c9276] dark:bg-amber-400 rounded-r-full transition-all duration-[600ms]" />
        )}
        <BellRing className="w-5 h-5 transition-all duration-300 group-hover:scale-115 group-hover:rotate-12 group-hover:-translate-y-0.5" />
      </button>
@@ -990,7 +990,7 @@ const handleConfirmDeleteNiche = async () => {
         title="Servidor SMTP & Pasarelas (Vercel)"
       >
         {activeTab === "integrations" && (
-          <span className="absolute -left-2 w-1 h-5 bg-[#8c9276] dark:bg-[#ccff00] rounded-r-full transition-all duration-[600ms]" />
+          <span className="absolute -left-2 w-1 h-5 bg-[#8c9276] dark:bg-amber-400 rounded-r-full transition-all duration-[600ms]" />
         )}
         <Server className="w-5 h-5 transition-all duration-300 group-hover:scale-115 group-hover:rotate-3 group-hover:-translate-y-0.5" />
       </button>
@@ -1144,7 +1144,7 @@ const handleConfirmDeleteNiche = async () => {
   <div className="flex items-center gap-2.5 sm:gap-3 shrink-0">
     <div className="relative z-50 hidden sm:block group/search">
       <div className="relative flex items-center gap-2 bg-stone-100/85 dark:bg-white/[0.06] hover:bg-white dark:hover:bg-white/[0.09] focus-within:bg-white dark:focus-within:bg-[#222226] backdrop-blur-xl pl-3 pr-2.5 h-9 rounded-full border border-stone-200/80 dark:border-white/10 focus-within:border-[#8c9276]/60 dark:focus-within:border-white/25 shadow-[0_2px_10px_rgba(0,0,0,0.02)] focus-within:shadow-[0_6px_20px_rgba(0,0,0,0.06)] transition-all duration-300 ease-out">
-        <Search className="w-3.5 h-3.5 text-gray-400 group-focus-within/search:text-[#8c9276] dark:group-focus-within/search:text-[#ccff00] transition-colors duration-300 shrink-0" />
+        <Search className="w-3.5 h-3.5 text-gray-400 group-focus-within/search:text-[#8c9276] dark:group-focus-within/search:text-amber-400 transition-colors duration-300 shrink-0" />
 
         <input
           id="lumina-profile-search-input"

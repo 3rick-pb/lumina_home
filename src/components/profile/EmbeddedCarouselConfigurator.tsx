@@ -280,7 +280,7 @@ export function EmbeddedCarouselConfigurator({
               />
             </div>
 
-            <div className="absolute top-2 right-2 px-2 py-0.5 rounded-md bg-white/10 backdrop-blur-md border border-white/15 text-[9px] font-mono font-bold text-[#ccff00]">
+            <div className="absolute top-2 right-2 px-2 py-0.5 rounded-md bg-white/10 backdrop-blur-md border border-white/15 text-[9px] font-mono font-bold text-amber-400">
               CURVATURA 3D CILÍNDRICA
             </div>
           </div>

@@ -431,7 +431,7 @@ export function ProductLandingView({
             
             {/* Category Breadcrumb */}
             <div className="flex items-center gap-2">
-              <span className="text-xs font-bold uppercase tracking-widest text-[#8c9276] dark:text-[#ccff00]">
+              <span className="text-xs font-bold uppercase tracking-widest text-[#8c9276] dark:text-amber-400">
                 {product.category}
               </span>
               <span className="text-gray-300 dark:text-gray-700">•</span>
@@ -451,7 +451,7 @@ export function ProductLandingView({
             <h1 className="text-3xl sm:text-4xl lg:text-5xl text-gray-950 dark:text-white leading-[1.15] tracking-tight font-bold">
               <span>{product.title}</span>{" "}
               {product.titleHighlight && (
-                <span className="font-display italic font-medium text-[#8c9276] dark:text-[#ccff00]">
+                <span className="font-display italic font-medium text-[#8c9276] dark:text-amber-400">
                   {product.titleHighlight}
                 </span>
               )}
@@ -522,7 +522,7 @@ export function ProductLandingView({
               <div className="space-y-2.5 p-3.5 rounded-2xl bg-gray-50/80 dark:bg-white/[0.03] border border-gray-200/80 dark:border-white/10">
                 <div className="flex items-center justify-between">
                   <label className="text-xs font-bold uppercase tracking-wider text-gray-900 dark:text-white flex items-center gap-1.5">
-                    <Sparkles className="w-3.5 h-3.5 text-[#8c9276] dark:text-[#ccff00]" />
+                    <Sparkles className="w-3.5 h-3.5 text-[#8c9276] dark:text-amber-400" />
                     Opciones de Paquete & Combos:
                   </label>
                   <span className="text-[10px] font-bold text-emerald-600">Ahorro Preferencial</span>
@@ -745,7 +745,7 @@ export function ProductLandingView({
           <div className="max-w-5xl mx-auto space-y-8">
             <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
               <div>
-                <span className="text-xs font-bold uppercase tracking-widest text-[#8c9276] dark:text-[#ccff00]">
+                <span className="text-xs font-bold uppercase tracking-widest text-[#8c9276] dark:text-amber-400">
                   Oferta de Ahorro por Volumen
                 </span>
                 <h2 className="text-2xl sm:text-3xl font-bold text-gray-950 dark:text-white tracking-tight mt-1">
@@ -897,7 +897,7 @@ export function ProductLandingView({
           <div className="max-w-5xl mx-auto space-y-8">
             <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
               <div>
-                <span className="text-xs font-bold uppercase tracking-widest text-[#8c9276] dark:text-[#ccff00]">
+                <span className="text-xs font-bold uppercase tracking-widest text-[#8c9276] dark:text-amber-400">
                   Pack Complementario Recomendado
                 </span>
                 <h2 className="text-2xl sm:text-3xl font-bold text-gray-950 dark:text-white tracking-tight mt-1">
@@ -925,7 +925,7 @@ export function ProductLandingView({
                   </div>
                   <p className="text-xs font-bold text-gray-900 dark:text-white line-clamp-1">{product.title}</p>
                   <p className="text-xs font-semibold text-gray-500 dark:text-gray-400">${Number(product.price || 0).toFixed(2)}</p>
-                  <span className="inline-block mt-1 text-[10px] font-bold text-[#8c9276] dark:text-[#ccff00]">Este artículo</span>
+                  <span className="inline-block mt-1 text-[10px] font-bold text-[#8c9276] dark:text-amber-400">Este artículo</span>
                 </div>
 
                 {/* Companions */}
@@ -1017,7 +1017,7 @@ export function ProductLandingView({
         className="relative transform-gpu"
       >
         <div className="text-center max-w-2xl mx-auto mb-16 space-y-3">
-          <span className="text-xs font-bold uppercase tracking-widest text-[#8c9276] dark:text-[#ccff00]">
+          <span className="text-xs font-bold uppercase tracking-widest text-[#8c9276] dark:text-amber-400">
             Ingeniería de Precisión
           </span>
           <h2 className="text-3xl sm:text-4xl font-extrabold text-gray-950 dark:text-white tracking-tight">
@@ -1048,7 +1048,7 @@ export function ProductLandingView({
                 >
                   <div className="flex items-center gap-3 mb-2">
                     <span className={`w-7 h-7 rounded-full text-xs font-black flex items-center justify-center shrink-0 transition-colors ${
-                      isHovered ? 'bg-[#8c9276] dark:bg-[#ccff00] text-gray-950' : 'bg-gray-950 dark:bg-white text-white dark:text-gray-950'
+                      isHovered ? 'bg-[#8c9276] dark:bg-amber-400 text-gray-950' : 'bg-gray-950 dark:bg-white text-white dark:text-gray-950'
                     }`}>
                       {specNumber}
                     </span>
@@ -1066,9 +1066,9 @@ export function ProductLandingView({
 
           {/* Center Product Visual with DYNAMIC POSITIONS PINS */}
           <div className="lg:col-span-4 flex flex-col items-center justify-center order-1 lg:order-2">
-            <div className="relative w-full max-w-[360px] aspect-square sm:aspect-[4/5] rounded-[3rem] overflow-hidden bg-gradient-to-b from-[#8c9276]/10 to-transparent dark:from-[#ccff00]/10 border border-black/5 dark:border-white/10 shadow-2xl p-4 flex items-center justify-center group">
+            <div className="relative w-full max-w-[360px] aspect-square sm:aspect-[4/5] rounded-[3rem] overflow-hidden bg-gradient-to-b from-[#8c9276]/10 to-transparent dark:from-amber-400/10 border border-black/5 dark:border-white/10 shadow-2xl p-4 flex items-center justify-center group">
               
-              <div className="absolute inset-8 rounded-full border border-dashed border-[#8c9276]/30 dark:border-[#ccff00]/30 animate-spin-slow pointer-events-none" />
+              <div className="absolute inset-8 rounded-full border border-dashed border-[#8c9276]/30 dark:border-amber-400/30 animate-spin-slow pointer-events-none" />
 
               <div className="relative w-full h-full rounded-[2.5rem] overflow-hidden">
                 <Image
@@ -1097,11 +1097,11 @@ export function ProductLandingView({
                   >
                     <div className={`relative flex items-center justify-center transition-transform ${isHovered ? 'scale-125' : 'hover:scale-110'}`}>
                       <span className={`animate-ping absolute inline-flex h-7 w-7 rounded-full opacity-75 ${
-                        isHovered ? 'bg-[#8c9276] dark:bg-[#ccff00]' : 'bg-gray-400'
+                        isHovered ? 'bg-[#8c9276] dark:bg-amber-400' : 'bg-gray-400'
                       }`} />
                       <span className={`relative inline-flex rounded-full h-6 w-6 text-[10px] font-black items-center justify-center shadow-2xl border-2 transition-colors ${
                         isHovered
-                          ? 'bg-[#8c9276] dark:bg-[#ccff00] text-gray-950 border-white'
+                          ? 'bg-[#8c9276] dark:bg-amber-400 text-gray-950 border-white'
                           : 'bg-gray-950 dark:bg-white text-white dark:text-gray-950 border-white/80'
                       }`}>
                         {idx + 1}
@@ -1132,7 +1132,7 @@ export function ProductLandingView({
                 >
                   <div className="flex items-center gap-3 mb-2">
                     <span className={`w-7 h-7 rounded-full text-xs font-black flex items-center justify-center shrink-0 transition-colors ${
-                      isHovered ? 'bg-[#8c9276] dark:bg-[#ccff00] text-gray-950' : 'bg-gray-950 dark:bg-white text-white dark:text-gray-950'
+                      isHovered ? 'bg-[#8c9276] dark:bg-amber-400 text-gray-950' : 'bg-gray-950 dark:bg-white text-white dark:text-gray-950'
                     }`}>
                       {specNumber}
                     </span>
@@ -1163,7 +1163,7 @@ export function ProductLandingView({
         className="relative p-8 sm:p-12 rounded-[3rem] bg-white/60 dark:bg-[#1a1a1c]/60 backdrop-blur-xl border border-gray-200/80 dark:border-white/10 shadow-xl space-y-12 transform-gpu"
       >
         <div className="text-center max-w-2xl mx-auto space-y-3">
-          <span className="text-xs font-bold uppercase tracking-widest text-[#8c9276] dark:text-[#ccff00]">
+          <span className="text-xs font-bold uppercase tracking-widest text-[#8c9276] dark:text-amber-400">
             Ficha Técnica Integral
           </span>
           <h2 className="text-3xl sm:text-4xl font-extrabold text-gray-950 dark:text-white tracking-tight">
@@ -1298,7 +1298,7 @@ export function ProductLandingView({
         className="relative transform-gpu"
       >
         <div className="text-center max-w-2xl mx-auto mb-14 space-y-3">
-          <span className="text-xs font-bold uppercase tracking-widest text-[#8c9276] dark:text-[#ccff00]">
+          <span className="text-xs font-bold uppercase tracking-widest text-[#8c9276] dark:text-amber-400">
             Experiencias Reales
           </span>
           <h2 className="text-3xl sm:text-4xl font-extrabold text-gray-950 dark:text-white tracking-tight">
@@ -1333,7 +1333,7 @@ export function ProductLandingView({
               </div>
 
               <div className="flex items-center gap-3 pt-3 border-t border-gray-100 dark:border-white/5">
-                <div className="w-10 h-10 rounded-full bg-[#8c9276]/20 dark:bg-[#ccff00]/20 text-[#8c9276] dark:text-[#ccff00] font-black text-sm flex items-center justify-center">
+                <div className="w-10 h-10 rounded-full bg-[#8c9276]/20 dark:bg-amber-400/20 text-[#8c9276] dark:text-amber-400 font-black text-sm flex items-center justify-center">
                   {rev.author.charAt(0)}
                 </div>
                 <div>
@@ -1363,7 +1363,7 @@ export function ProductLandingView({
         <div className="max-w-5xl mx-auto space-y-12">
           
           <div className="text-center max-w-2xl mx-auto space-y-2">
-            <span className="text-xs font-bold uppercase tracking-widest text-[#8c9276] dark:text-[#ccff00]">
+            <span className="text-xs font-bold uppercase tracking-widest text-[#8c9276] dark:text-amber-400">
               Compromiso Lumina
             </span>
             <h2 className="text-3xl sm:text-4xl font-extrabold text-gray-950 dark:text-white tracking-tight">

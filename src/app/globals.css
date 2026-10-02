@@ -63,7 +63,49 @@
   .text-balance {
     text-wrap: balance;
   }
-  /* macOS Sequoia Jelly Scrollbar Replacement — Suppress Native Browser Track on Desktop */
+  /* ========================================================================= */
+  /* Universal macOS Floating Capsule Scrollbar for all containers & views     */
+  /* Comboboxes, Modals, Details, Product Forms, Niche Inventory, Horiz Tabs  */
+  /* ========================================================================= */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(0, 0, 0, 0.28) transparent;
+  }
+  .dark * {
+    scrollbar-color: rgba(255, 255, 255, 0.35) transparent;
+  }
+
+  *::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+    background: transparent;
+  }
+  *::-webkit-scrollbar-track {
+    background: transparent;
+    border-radius: 9999px;
+    margin: 3px;
+  }
+  *::-webkit-scrollbar-thumb {
+    background-color: rgba(0, 0, 0, 0.28);
+    border-radius: 9999px;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    transition: background-color 0.2s ease;
+  }
+  .dark *::-webkit-scrollbar-thumb {
+    background-color: rgba(255, 255, 255, 0.35);
+    border: 1px solid rgba(0, 0, 0, 0.15);
+  }
+  *::-webkit-scrollbar-thumb:hover {
+    background-color: rgba(0, 0, 0, 0.48);
+  }
+  .dark *::-webkit-scrollbar-thumb:hover {
+    background-color: rgba(255, 255, 255, 0.58);
+  }
+  *::-webkit-scrollbar-corner {
+    background: transparent;
+  }
+
+  /* macOS Sequoia Jelly Scrollbar Replacement — Suppress Native Browser Track on Desktop for html/body only */
   @media (pointer: fine) {
     html,
     body {
@@ -252,17 +294,8 @@
 }
 
 /* ========================================================================= */
-/* Lumina Order Details Modal - Clean Seamless Scroll (No Ugly Native Bar)   */
+/* Lumina Clean Seamless Modal Scroll Uses Universal macOS Capsule Scrollbar */
 /* ========================================================================= */
-.lumina-order-modal-scroll {
-  -ms-overflow-style: none !important;
-  scrollbar-width: none !important;
-}
-.lumina-order-modal-scroll::-webkit-scrollbar {
-  display: none !important;
-  width: 0 !important;
-  height: 0 !important;
-}
 
 @keyframes galleryLinearProgress {
   from {

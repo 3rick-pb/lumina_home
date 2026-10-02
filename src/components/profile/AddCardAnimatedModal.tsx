@@ -432,7 +432,7 @@ export function AddCardAnimatedModal({
         {/* Modal Header */}
         <div className="relative z-10 flex items-center justify-between px-6 sm:px-8 pt-6 pb-4 border-b border-gray-100 dark:border-white/5">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-[#8c9276]/20 to-[#8c9276]/5 border border-[#8c9276]/30 flex items-center justify-center text-[#8c9276] dark:text-[#ccff00] shadow-xs">
+            <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-[#8c9276]/20 to-[#8c9276]/5 border border-[#8c9276]/30 flex items-center justify-center text-[#8c9276] dark:text-amber-400 shadow-xs">
               <Wallet className="w-5 h-5" />
             </div>
             <div>
@@ -640,7 +640,7 @@ export function AddCardAnimatedModal({
                             <div
                               className={`w-16 h-8 bg-white rounded-md border flex items-center justify-center font-mono font-black text-xs text-gray-900 shadow-inner transition-all ${
                                 focusedField === "cvv"
-                                  ? "ring-2 ring-[#ccff00] border-white scale-105"
+                                  ? "ring-2 ring-amber-400 border-white scale-105"
                                   : "border-gray-300"
                               }`}
                             >
@@ -682,7 +682,7 @@ export function AddCardAnimatedModal({
                         >
                           Número de Tarjeta
                         </label>
-                        <span className="text-[10px] font-semibold text-[#8c9276] dark:text-[#ccff00]">
+                        <span className="text-[10px] font-semibold text-[#8c9276] dark:text-amber-400">
                           {rawDigits.length}/16 dígitos
                         </span>
                       </div>
@@ -832,7 +832,7 @@ export function AddCardAnimatedModal({
                     <div className="pt-1">
                       <button
                         type="submit"
-                        className="w-full h-12 rounded-2xl bg-gray-950 hover:bg-black dark:bg-[#ccff00] dark:hover:bg-[#b8e600] text-white dark:text-gray-950 text-xs sm:text-sm font-bold tracking-wide transition-all shadow-lg shadow-gray-950/15 hover:scale-[1.01] active:scale-[0.99] cursor-pointer flex items-center justify-center gap-2"
+                        className="w-full h-12 rounded-2xl bg-gray-950 hover:bg-black dark:bg-amber-400 dark:hover:bg-amber-300 text-white dark:text-stone-950 text-xs sm:text-sm font-bold tracking-wide transition-all shadow-lg shadow-gray-950/15 hover:scale-[1.01] active:scale-[0.99] cursor-pointer flex items-center justify-center gap-2"
                       >
                         <Sparkles className="w-4 h-4" />
                         <span>Guardar nueva Tarjeta</span>

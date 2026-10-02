@@ -1,24 +1,21 @@
 "use client";
 
 import React, { useState, useEffect, useMemo } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   X,
-  Search,
-  Tag,
   DollarSign,
   ShoppingBag,
   Clock,
-  User,
   ShieldCheck,
   TrendingUp,
   Receipt,
   Share2,
   Calendar,
-  CheckCircle2,
-  Percent,
 } from "lucide-react";
 import { BlobatarAvatar } from "@/components/ui/BlobatarAvatar";
 import { BeUICenterMorphModal } from "@/components/ui/BeUIControls";
+import { ExpandableSearchBar } from "@/components/ui/ExpandableSearchBar";
 import { useUserStore } from "@/lib/userStore";
 import type { DiscountCoupon, CouponRedemptionRecord } from "@/lib/couponStore";
 
@@ -207,23 +204,19 @@ export function CouponAnalyticsModal({
               </div>
 
               {/* Search & Records Header */}
-              <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 pt-2">
-                <div className="flex items-center gap-2">
-                  <h4 className="text-sm font-bold text-gray-950 dark:text-white">
+              <div className="flex items-center justify-between gap-3 pt-2">
+                <div className="flex items-center gap-2 min-w-0">
+                  <h4 className="text-sm font-bold text-gray-950 dark:text-white truncate">
                     Historial de Usuarios & Compras ({filteredRedemptions.length})
                   </h4>
                 </div>
 
-                <div className="relative w-full sm:w-64">
-                  <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-                  <input
-                    type="text"
-                    placeholder="Buscar cliente, orden o correo..."
-                    value={searchFilter}
-                    onChange={(e) => setSearchFilter(e.target.value)}
-                    className="w-full pl-8 pr-3 py-1.5 rounded-xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5 text-xs text-gray-900 dark:text-white outline-none focus:border-blue-500 transition-all"
-                  />
-                </div>
+                <ExpandableSearchBar
+                  value={searchFilter}
+                  onChange={setSearchFilter}
+                  placeholder="Buscar cliente, orden o correo..."
+                  expandedWidth="w-full sm:w-64"
+                />
               </div>
 
               {/* Redemption Records List */}
@@ -238,23 +231,29 @@ export function CouponAnalyticsModal({
                   </p>
                 </div>
               ) : (
-                <div className="space-y-3">
-                  {filteredRedemptions.map((record) => {
-                    const formattedDate = new Date(record.usedAt).toLocaleDateString("es-ES", {
-                      day: "numeric",
-                      month: "short",
-                      year: "numeric",
-                    });
-                    const formattedTime = new Date(record.usedAt).toLocaleTimeString("es-ES", {
-                      hour: "2-digit",
-                      minute: "2-digit",
-                    });
+                <motion.div layout className="space-y-3">
+                  <AnimatePresence mode="popLayout">
+                    {filteredRedemptions.map((record) => {
+                      const formattedDate = new Date(record.usedAt).toLocaleDateString("es-ES", {
+                        day: "numeric",
+                        month: "short",
+                        year: "numeric",
+                      });
+                      const formattedTime = new Date(record.usedAt).toLocaleTimeString("es-ES", {
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      });
 
-                    return (
-                      <div
-                        key={record.id}
-                        className="p-4 rounded-2xl bg-gray-50/80 dark:bg-white/[0.02] border border-gray-100 dark:border-white/5 hover:border-black/10 dark:hover:border-white/10 transition-all flex flex-col md:flex-row md:items-center justify-between gap-4"
-                      >
+                      return (
+                        <motion.div
+                          layout
+                          initial={{ opacity: 0, y: 8, scale: 0.98 }}
+                          animate={{ opacity: 1, y: 0, scale: 1 }}
+                          exit={{ opacity: 0, scale: 0.98 }}
+                          transition={{ duration: 0.22, ease: "easeOut" }}
+                          key={record.id}
+                          className="p-4 rounded-2xl bg-gray-50/80 dark:bg-white/[0.02] border border-gray-100 dark:border-white/5 hover:border-black/10 dark:hover:border-white/10 transition-all flex flex-col md:flex-row md:items-center justify-between gap-4"
+                        >
                         {/* 1. QUIÉN LO USÓ: Avatar, Nombre, Correo */}
                         <div className="flex items-center gap-3 min-w-[200px]">
                           <BlobatarAvatar
@@ -333,10 +332,11 @@ export function CouponAnalyticsModal({
                             </p>
                           </div>
                         </div>
-                      </div>
-                    );
-                  })}
-                </div>
+                        </motion.div>
+                      );
+                    })}
+                  </AnimatePresence>
+                </motion.div>
               )}
             </div>
 

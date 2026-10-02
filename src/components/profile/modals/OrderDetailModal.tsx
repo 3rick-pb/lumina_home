@@ -211,15 +211,6 @@ export function OrderDetailModal({
         className="bg-white dark:bg-[#202022] rounded-[2rem] sm:rounded-[2.5rem] w-full shadow-2xl dark:shadow-[0_20px_60px_rgba(0,0,0,0.5)] border border-gray-100 dark:border-white/10 overflow-hidden relative max-h-[92vh] sm:max-h-[90vh] flex flex-col"
       >
         <style>{`
-          .lumina-order-modal-scroll {
-            -ms-overflow-style: none !important;
-            scrollbar-width: none !important;
-          }
-          .lumina-order-modal-scroll::-webkit-scrollbar {
-            display: none !important;
-            width: 0 !important;
-            height: 0 !important;
-          }
           .lumina-bag-close-btn,
           .lumina-bag-close-btn * {
             transition-property: all !important;

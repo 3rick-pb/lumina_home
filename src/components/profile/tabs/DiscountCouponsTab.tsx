@@ -6,23 +6,15 @@ import {
   Tag,
   Sparkles,
   Dices,
-  Plus,
   Copy,
   Check,
-  Share2,
   Trash2,
   ToggleLeft,
   ToggleRight,
-  Search,
-  Percent,
-  MessageCircle,
-  Flame,
   Wallet,
   ShieldCheck,
   Scissors,
-  ExternalLink,
   CheckCircle2,
-  Gift,
   BarChart3,
   SlidersHorizontal,
   X,
@@ -34,11 +26,12 @@ import {
 import { ThinkingOrb } from "thinking-orbs";
 import { useCouponStore, DiscountCoupon } from "@/lib/couponStore";
 import { useUserStore } from "@/lib/userStore";
-import { VectorBarcode, SvgBarcodeGroup } from "@/components/ui/VectorBarcode";
+import { SvgBarcodeGroup } from "@/components/ui/VectorBarcode";
 import { CouponWalletModal } from "@/components/profile/modals/CouponWalletModal";
 import { CouponAnalyticsModal } from "@/components/profile/modals/CouponAnalyticsModal";
 import { generateCouponPng } from "@/lib/couponPngGenerator";
 import { BeUISelectField } from "@/components/ui/BeUIControls";
+import { ExpandableSearchBar } from "@/components/ui/ExpandableSearchBar";
 
 // ---------------------------------------------------------------------------
 // Real WhatsApp SVG Icon Component
@@ -503,7 +496,6 @@ export function DiscountCouponsTab() {
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
   const [justGeneratedCoupon, setJustGeneratedCoupon] = useState<DiscountCoupon | null>(null);
   const [showManualForm, setShowManualForm] = useState(false);
-  const [isFormAnimating, setIsFormAnimating] = useState(false);
 
   // Digital Wallet Modal state (Detail Modal with official GoogleWalletButton)
   const [walletCoupon, setWalletCoupon] = useState<DiscountCoupon | null>(null);
@@ -684,7 +676,7 @@ export function DiscountCouponsTab() {
 
   // Filtered coupons
   const filteredCoupons = useMemo(() => {
-    return coupons.filter((c) => {
+    const list = coupons.filter((c) => {
       if (searchQuery.trim()) {
         const q = searchQuery.toLowerCase();
         const matchesCode = c.code.toLowerCase().includes(q);
@@ -705,6 +697,18 @@ export function DiscountCouponsTab() {
         if (clientFilter === "niche") return c.scope === "niche";
         return true;
       }
+    });
+
+    return list.sort((a, b) => {
+      if (searchQuery.trim()) {
+        const q = searchQuery.toLowerCase().trim();
+        const aExact = a.code.toLowerCase().startsWith(q);
+        const bExact = b.code.toLowerCase().startsWith(q);
+        if (aExact && !bExact) return -1;
+        if (!aExact && bExact) return 1;
+      }
+      if (a.isActive !== b.isActive) return a.isActive ? -1 : 1;
+      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
     });
   }, [coupons, searchQuery, activeFilter, clientFilter, isAdmin, clientRedeemedIds]);
 
@@ -790,11 +794,13 @@ export function DiscountCouponsTab() {
 
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 sm:gap-3 w-full sm:w-auto">
             {/* Strategic Generator Button with smooth calm ThinkingOrb */}
-            <button
+            <motion.button
+              layout
+              transition={{ type: "spring", stiffness: 450, damping: 32 }}
               type="button"
               disabled={isGeneratingStrategic}
               onClick={handleTriggerRandom}
-              className={`relative flex items-center justify-center gap-2.5 px-4 sm:px-5 py-2.5 sm:py-3 rounded-2xl text-xs sm:text-sm font-semibold tracking-tight shadow-sm transition-all duration-300 cursor-pointer select-none active:scale-[0.98] whitespace-nowrap shrink-0 ${
+              className={`relative flex items-center justify-center gap-2.5 w-full sm:w-[245px] h-[46px] sm:h-[48px] px-4 sm:px-5 rounded-2xl text-xs sm:text-sm font-semibold tracking-tight shadow-sm transition-colors duration-200 cursor-pointer select-none active:scale-[0.98] whitespace-nowrap shrink-0 ${
                 isGeneratingStrategic
                   ? "bg-stone-900 text-stone-100 dark:bg-white dark:text-stone-900 cursor-wait opacity-95"
                   : "bg-stone-950 dark:bg-white text-white dark:text-stone-950 hover:bg-stone-800 dark:hover:bg-stone-100"
@@ -805,11 +811,11 @@ export function DiscountCouponsTab() {
                 {isGeneratingStrategic ? (
                   <motion.div
                     key="state-generating"
-                    initial={{ opacity: 0, y: 3 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -3 }}
-                    transition={{ duration: 0.25, ease: "easeOut" }}
-                    className="flex items-center gap-2.5"
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.95 }}
+                    transition={{ duration: 0.2, ease: "easeOut" }}
+                    className="flex items-center gap-2.5 justify-center"
                   >
                     <div className="w-5 h-5 flex items-center justify-center shrink-0">
                       <ThinkingOrb state="shaping" size={20} theme="auto" />
@@ -821,32 +827,45 @@ export function DiscountCouponsTab() {
                 ) : (
                   <motion.div
                     key="state-idle"
-                    initial={{ opacity: 0, y: 3 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -3 }}
-                    transition={{ duration: 0.25, ease: "easeOut" }}
-                    className="flex items-center gap-2"
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.95 }}
+                    transition={{ duration: 0.2, ease: "easeOut" }}
+                    className="flex items-center gap-2 justify-center"
                   >
                     <Dices className="w-4 h-4 text-stone-300 dark:text-stone-700 shrink-0" />
                     <span className="whitespace-nowrap">Generar Cupón Estratégico</span>
                   </motion.div>
                 )}
               </AnimatePresence>
-            </button>
+            </motion.button>
 
-            {/* Configurar Cupón Toggle Button */}
-            <button
+            {/* Configurar Cupón Toggle Button with fixed footprint and smooth crossfade */}
+            <motion.button
+              layout
+              transition={{ type: "spring", stiffness: 450, damping: 32 }}
               type="button"
               onClick={() => setShowManualForm(!showManualForm)}
-              className={`px-4 sm:px-5 py-2.5 sm:py-3 rounded-2xl text-xs sm:text-sm font-semibold border transition-all duration-300 flex items-center justify-center gap-2 cursor-pointer shadow-xs active:scale-[0.98] whitespace-nowrap shrink-0 ${
+              className={`w-full sm:w-[195px] h-[46px] sm:h-[48px] px-4 sm:px-5 rounded-2xl text-xs sm:text-sm font-semibold border transition-colors duration-200 flex items-center justify-center gap-2 cursor-pointer shadow-xs active:scale-[0.98] select-none shrink-0 ${
                 showManualForm
                   ? "bg-stone-900 text-white dark:bg-white dark:text-stone-900 border-transparent shadow-sm"
                   : "border-stone-200/80 dark:border-white/10 bg-white dark:bg-[#1f1f23] hover:bg-stone-50 dark:hover:bg-white/10 text-stone-800 dark:text-stone-200"
               }`}
             >
-              <SlidersHorizontal className="w-4 h-4 shrink-0" />
-              <span className="whitespace-nowrap">{showManualForm ? "Cerrar Configuración" : "Configurar Cupón"}</span>
-            </button>
+              <SlidersHorizontal className={`w-4 h-4 shrink-0 transition-transform duration-300 ${showManualForm ? "rotate-90" : "rotate-0"}`} />
+              <AnimatePresence mode="wait" initial={false}>
+                <motion.span
+                  key={showManualForm ? "cerrar" : "configurar"}
+                  initial={{ opacity: 0, y: 2 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -2 }}
+                  transition={{ duration: 0.18 }}
+                  className="whitespace-nowrap"
+                >
+                  {showManualForm ? "Cerrar Configuración" : "Configurar Cupón"}
+                </motion.span>
+              </AnimatePresence>
+            </motion.button>
           </div>
         </div>
       ) : (
@@ -974,13 +993,19 @@ export function DiscountCouponsTab() {
       <AnimatePresence>
         {isAdmin && showManualForm && (
           <motion.div
-            initial={{ opacity: 0, height: 0, y: -8 }}
-            animate={{ opacity: 1, height: "auto", y: 0 }}
-            exit={{ opacity: 0, height: 0, y: -8 }}
-            transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
-            onAnimationStart={() => setIsFormAnimating(true)}
-            onAnimationComplete={() => setIsFormAnimating(false)}
-            style={{ overflow: isFormAnimating ? "hidden" : "visible" }}
+            initial={{ opacity: 0, height: 0, overflow: "hidden" }}
+            animate={{
+              opacity: 1,
+              height: "auto",
+              transition: { duration: 0.38, ease: [0.16, 1, 0.3, 1] },
+              transitionEnd: { overflow: "visible" },
+            }}
+            exit={{
+              opacity: 0,
+              height: 0,
+              overflow: "hidden",
+              transition: { duration: 0.32, ease: [0.32, 0.72, 0, 1] },
+            }}
           >
             <form
               onSubmit={handleCreateManual}
@@ -1267,116 +1292,79 @@ export function DiscountCouponsTab() {
       {/* 3. SEARCH & FILTER CONTROLS (ADMIN vs CLIENT)                         */}
       {/* ===================================================================== */}
       <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
-        <div className="flex items-center gap-1.5 p-1 rounded-2xl bg-stone-100/90 dark:bg-[#1a1a1c] border border-stone-200/60 dark:border-white/5 overflow-x-auto hide-scrollbar">
-          {isAdmin ? (
-            <>
-              <button
-                onClick={() => setActiveFilter("all")}
-                className={`px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all cursor-pointer ${
-                  activeFilter === "all"
-                    ? "bg-white dark:bg-white/10 text-stone-900 dark:text-white shadow-xs"
-                    : "text-stone-500 hover:text-stone-900 dark:text-stone-400"
-                }`}
-              >
-                Todos ({coupons.length})
-              </button>
-              <button
-                onClick={() => setActiveFilter("storewide")}
-                className={`px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all cursor-pointer ${
-                  activeFilter === "storewide"
-                    ? "bg-white dark:bg-white/10 text-stone-900 dark:text-white shadow-xs"
-                    : "text-stone-500 hover:text-stone-900 dark:text-stone-400"
-                }`}
-              >
-                Toda la Tienda (Global)
-              </button>
-              <button
-                onClick={() => setActiveFilter("niche")}
-                className={`px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all cursor-pointer ${
-                  activeFilter === "niche"
-                    ? "bg-white dark:bg-white/10 text-stone-900 dark:text-white shadow-xs"
-                    : "text-stone-500 hover:text-stone-900 dark:text-stone-400"
-                }`}
-              >
-                Por Colección (Nicho)
-              </button>
-              <button
-                onClick={() => setActiveFilter("active")}
-                className={`px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all cursor-pointer ${
-                  activeFilter === "active"
-                    ? "bg-white dark:bg-white/10 text-stone-900 dark:text-white shadow-xs"
-                    : "text-stone-500 hover:text-stone-900 dark:text-stone-400"
-                }`}
-              >
-                Vigentes ({coupons.filter((c) => c.isActive).length})
-              </button>
-            </>
-          ) : (
-            <>
-              <button
-                onClick={() => setClientFilter("all")}
-                className={`px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all cursor-pointer ${
-                  clientFilter === "all"
-                    ? "bg-white dark:bg-white/10 text-stone-900 dark:text-white shadow-xs"
-                    : "text-stone-500 hover:text-stone-900 dark:text-stone-400"
-                }`}
-              >
-                Todos ({coupons.length})
-              </button>
-              <button
-                onClick={() => setClientFilter("available")}
-                className={`px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all cursor-pointer ${
-                  clientFilter === "available"
-                    ? "bg-white dark:bg-white/10 text-stone-900 dark:text-white shadow-xs"
-                    : "text-stone-500 hover:text-stone-900 dark:text-stone-400"
-                }`}
-              >
-                Disponibles para Canjear ({clientStats.availableCount})
-              </button>
-              <button
-                onClick={() => setClientFilter("used")}
-                className={`px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all cursor-pointer ${
-                  clientFilter === "used"
-                    ? "bg-white dark:bg-white/10 text-stone-900 dark:text-white shadow-xs"
-                    : "text-stone-500 hover:text-stone-900 dark:text-stone-400"
-                }`}
-              >
-                Historial de Canjes ({clientStats.usedCount})
-              </button>
-              <button
-                onClick={() => setClientFilter("storewide")}
-                className={`px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all cursor-pointer ${
-                  clientFilter === "storewide"
-                    ? "bg-white dark:bg-white/10 text-stone-900 dark:text-white shadow-xs"
-                    : "text-stone-500 hover:text-stone-900 dark:text-stone-400"
-                }`}
-              >
-                Descuentos Tienda
-              </button>
-              <button
-                onClick={() => setClientFilter("niche")}
-                className={`px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all cursor-pointer ${
-                  clientFilter === "niche"
-                    ? "bg-white dark:bg-white/10 text-stone-900 dark:text-white shadow-xs"
-                    : "text-stone-500 hover:text-stone-900 dark:text-stone-400"
-                }`}
-              >
-                Nichos de Autor
-              </button>
-            </>
-          )}
+        <div className="relative flex items-center gap-1 p-1 rounded-2xl bg-stone-100/90 dark:bg-[#1a1a1c] border border-stone-200/60 dark:border-white/5 overflow-x-auto hide-scrollbar max-w-full">
+          {isAdmin
+            ? (
+                [
+                  { id: "all", label: `Todos (${coupons.length})` },
+                  { id: "storewide", label: "Toda la Tienda (Global)" },
+                  { id: "niche", label: "Por Colección (Nicho)" },
+                  { id: "active", label: `Vigentes (${coupons.filter((c) => c.isActive).length})` },
+                ] as const
+              ).map((tab) => {
+                const isActive = activeFilter === tab.id;
+                return (
+                  <button
+                    key={tab.id}
+                    type="button"
+                    onClick={() => setActiveFilter(tab.id)}
+                    className={`relative px-3 sm:px-3.5 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-colors duration-200 cursor-pointer select-none active:scale-95 ${
+                      isActive
+                        ? "text-stone-950 dark:text-white"
+                        : "text-stone-500 hover:text-stone-900 dark:text-stone-400 dark:hover:text-stone-200"
+                    }`}
+                  >
+                    {isActive && (
+                      <motion.div
+                        layoutId="activeCouponFilterPill"
+                        transition={{ type: "spring", stiffness: 450, damping: 32 }}
+                        className="absolute inset-0 bg-white dark:bg-stone-800 rounded-xl shadow-xs border border-stone-200/40 dark:border-white/10 -z-0"
+                      />
+                    )}
+                    <span className="relative z-10">{tab.label}</span>
+                  </button>
+                );
+              })
+            : (
+                [
+                  { id: "all", label: `Todos (${coupons.length})` },
+                  { id: "available", label: `Disponibles (${clientStats.availableCount})` },
+                  { id: "used", label: `Historial de Canjes (${clientStats.usedCount})` },
+                  { id: "storewide", label: "Descuentos Tienda" },
+                  { id: "niche", label: "Nichos de Autor" },
+                ] as const
+              ).map((tab) => {
+                const isActive = clientFilter === tab.id;
+                return (
+                  <button
+                    key={tab.id}
+                    type="button"
+                    onClick={() => setClientFilter(tab.id)}
+                    className={`relative px-3 sm:px-3.5 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-colors duration-200 cursor-pointer select-none active:scale-95 ${
+                      isActive
+                        ? "text-stone-950 dark:text-white"
+                        : "text-stone-500 hover:text-stone-900 dark:text-stone-400 dark:hover:text-stone-200"
+                    }`}
+                  >
+                    {isActive && (
+                      <motion.div
+                        layoutId="activeCouponFilterPill"
+                        transition={{ type: "spring", stiffness: 450, damping: 32 }}
+                        className="absolute inset-0 bg-white dark:bg-stone-800 rounded-xl shadow-xs border border-stone-200/40 dark:border-white/10 -z-0"
+                      />
+                    )}
+                    <span className="relative z-10">{tab.label}</span>
+                  </button>
+                );
+              })}
         </div>
 
-        <div className="relative w-full sm:w-64">
-          <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-          <input
-            type="text"
-            placeholder={isAdmin ? "Buscar por código o nicho..." : "Buscar mis cupones..."}
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-8 pr-3 py-1.5 rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-[#202022] text-xs text-gray-900 dark:text-white outline-none focus:border-black dark:focus:border-white transition-all"
-          />
-        </div>
+        <ExpandableSearchBar
+          value={searchQuery}
+          onChange={setSearchQuery}
+          placeholder={isAdmin ? "Buscar por código o nicho..." : "Buscar mis cupones..."}
+          expandedWidth="w-full sm:w-72"
+        />
       </div>
 
       {/* ===================================================================== */}
@@ -1395,20 +1383,30 @@ export function DiscountCouponsTab() {
           </p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 sm:gap-8">
-          {filteredCoupons.map((coupon) => {
-            const isStorewide = coupon.scope === "all";
-            const isCutting = cuttingCouponId === coupon.id;
-            const isClientRedeemed = clientRedeemedIds.includes(coupon.id);
-            const isDimmed = isAdmin ? !coupon.isActive : (isClientRedeemed || !coupon.isActive);
+        <motion.div
+          layout
+          transition={{ type: "spring", stiffness: 350, damping: 28 }}
+          className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 sm:gap-8"
+        >
+          <AnimatePresence mode="popLayout">
+            {filteredCoupons.map((coupon) => {
+              const isStorewide = coupon.scope === "all";
+              const isCutting = cuttingCouponId === coupon.id;
+              const isClientRedeemed = clientRedeemedIds.includes(coupon.id);
+              const isDimmed = isAdmin ? !coupon.isActive : (isClientRedeemed || !coupon.isActive);
 
-            return (
-              <div
-                key={coupon.id}
-                className={`relative flex flex-col justify-between group transition-all duration-300 ${
-                  isDimmed ? "opacity-65 grayscale-[35%]" : "opacity-100"
-                }`}
-              >
+              return (
+                <motion.div
+                  layout
+                  initial={{ opacity: 0, scale: 0.94, y: 10 }}
+                  animate={{ opacity: 1, scale: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.94, y: -10 }}
+                  transition={{ duration: 0.28, ease: "easeOut" }}
+                  key={coupon.id}
+                  className={`relative flex flex-col justify-between group transition-all duration-300 ${
+                    isDimmed ? "opacity-65 grayscale-[35%]" : "opacity-100"
+                  }`}
+                >
                 {/* Physical Ticket Container Stage (Responsive 165px - 190px stage so neither ticket stretches) */}
                 <div
                   onClick={() => {
@@ -1590,10 +1588,11 @@ export function DiscountCouponsTab() {
                     </div>
                   )}
                 </div>
-              </div>
-            );
-          })}
-        </div>
+                </motion.div>
+              );
+            })}
+          </AnimatePresence>
+        </motion.div>
       )}
 
       {/* ===================================================================== */}

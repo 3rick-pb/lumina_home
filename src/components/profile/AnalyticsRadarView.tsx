@@ -1349,12 +1349,12 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
                 >
                   {/* Ground Halo */}
                   <div className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2 pointer-events-none">
-                    <span className="block rounded-full w-4 h-4 bg-[#ccff00]/40 blur-[2px] shadow-[0_0_12px_#ccff00]" />
+                    <span className="block rounded-full w-4 h-4 bg-[#f59e0b]/40 blur-[2px] shadow-[0_0_12px_#f59e0b]" />
                   </div>
 
                   {/* Cluster Head & Stem */}
                   <div className="flex flex-col items-center">
-                    <div className="relative transition-all duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] flex items-center justify-center rounded-full border border-white bg-gray-950 text-white shadow-2xl px-2.5 py-0.5 min-w-[32px] h-7 gap-1 shadow-[0_0_18px_rgba(204,255,0,0.6)] group-hover:bg-[#ccff00] group-hover:text-gray-950 group-hover:border-[#ccff00]">
+                    <div className="relative transition-all duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] flex items-center justify-center rounded-full border border-white bg-gray-950 text-white shadow-2xl px-2.5 py-0.5 min-w-[32px] h-7 gap-1 shadow-[0_0_18px_rgba(245,158,11,0.6)] group-hover:bg-[#f59e0b] group-hover:text-gray-950 group-hover:border-[#f59e0b]">
                       <Users className="w-3.5 h-3.5 shrink-0" />
                       <span className="font-mono text-xs font-black">{count}</span>
                       {cluster.hasCart && (
@@ -1363,14 +1363,14 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
                     </div>
 
                     {/* Vertical Pin Line (Stable height so tooltip never jumps) */}
-                    <div className="w-[2px] h-8 transition-colors duration-500 bg-gradient-to-t from-[#ccff00] to-white shadow-[0_0_10px_#ccff00]" />
-                    <div className="w-1.5 h-1.5 rotate-45 bg-[#ccff00] shadow-[0_0_6px_#ccff00]" />
+                    <div className="w-[2px] h-8 transition-colors duration-500 bg-gradient-to-t from-[#f59e0b] to-white shadow-[0_0_10px_#f59e0b]" />
+                    <div className="w-1.5 h-1.5 rotate-45 bg-[#f59e0b] shadow-[0_0_6px_#f59e0b]" />
                   </div>
 
                   {/* Tag Label */}
-                  <div className="absolute top-full mt-1 left-1/2 -translate-x-1/2 whitespace-nowrap px-2.5 py-0.5 rounded-full text-[9px] font-bold font-mono tracking-wider transition-all duration-500 ease-out pointer-events-none bg-black/90 text-white border border-[#ccff00]/40 backdrop-blur-md shadow-md flex items-center gap-1 group-hover:scale-105">
+                  <div className="absolute top-full mt-1 left-1/2 -translate-x-1/2 whitespace-nowrap px-2.5 py-0.5 rounded-full text-[9px] font-bold font-mono tracking-wider transition-all duration-500 ease-out pointer-events-none bg-black/90 text-white border border-[#f59e0b]/40 backdrop-blur-md shadow-md flex items-center gap-1 group-hover:scale-105">
                     <span>{cluster.cityName}</span>
-                    <span className="text-[#ccff00] font-black">({count})</span>
+                    <span className="text-[#f59e0b] font-black">({count})</span>
                   </div>
 
                   {/* Animated Floating Hover Tooltip */}
@@ -1393,13 +1393,13 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
                             filter: { duration: 0.28 },
                           }}
                           style={{ backgroundColor: "rgba(11, 15, 14, 0.97)" }}
-                          className={`absolute left-1/2 -translate-x-1/2 w-56 p-3.5 rounded-2xl backdrop-blur-2xl border border-[#ccff00]/50 shadow-[0_18px_42px_rgba(0,0,0,0.85)] z-50 pointer-events-auto space-y-2 ${
+                          className={`absolute left-1/2 -translate-x-1/2 w-56 p-3.5 rounded-2xl backdrop-blur-2xl border border-[#f59e0b]/50 shadow-[0_18px_42px_rgba(0,0,0,0.85)] z-50 pointer-events-auto space-y-2 ${
                             openDownward ? "top-full mt-7" : "bottom-full mb-3"
                           }`}
                         >
                           <div className="flex items-center justify-between text-[10px] font-mono border-b border-white/15 pb-1.5">
                             <span className="text-white font-bold">{cluster.cityName}</span>
-                            <span className="text-[#ccff00] font-bold">
+                            <span className="text-[#f59e0b] font-bold">
                               {regCount > 0 ? `${regCount} reg.` : ''}
                               {regCount > 0 && anonCount > 0 ? ' • ' : ''}
                               {anonCount > 0 ? `${anonCount} anon.` : ''}
@@ -1411,7 +1411,7 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
                                 <span className={`truncate max-w-[120px] ${c.isAnonymous ? "text-sky-300 font-medium" : "text-white/90"}`}>
                                   {c.isAnonymous ? "Visitante Anónimo" : cleanClientName(c.name)}
                                 </span>
-                                <span className={`font-mono font-semibold ${c.isAnonymous ? "text-sky-400" : "text-[#ccff00]"}`}>
+                                <span className={`font-mono font-semibold ${c.isAnonymous ? "text-sky-400" : "text-[#f59e0b]"}`}>
                                   {c.isAnonymous ? "Explorando" : `$${c.totalSpent || 0}`}
                                 </span>
                               </div>
@@ -1422,7 +1422,7 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
                               </div>
                             )}
                           </div>
-                          <div className="text-[9px] text-center text-[#ccff00] font-mono pt-1 border-t border-white/15 flex items-center justify-center gap-1">
+                          <div className="text-[9px] text-center text-[#f59e0b] font-mono pt-1 border-t border-white/15 flex items-center justify-center gap-1">
                             <span>Clic para acercar y desplegar</span> &rarr;
                           </div>
                         </motion.div>
@@ -1558,7 +1558,7 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
                         ? "w-4 h-4 bg-rose-500/40 shadow-[0_0_14px_#f43f5e]"
                         : activeStage === "frequent" && isStageMatch
                         ? "w-4 h-4 bg-amber-400/40 shadow-[0_0_14px_#f59e0b]"
-                        : "w-3 h-3 bg-[#ccff00]/40 shadow-[0_0_10px_#ccff00]"
+                        : "w-3 h-3 bg-[#f59e0b]/40 shadow-[0_0_10px_#f59e0b]"
                     }`} />
                   </div>
 
@@ -1568,7 +1568,7 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
                       isActive 
                         ? client.isAnonymous
                           ? "scale-115 z-50 bg-sky-400 text-gray-950 border-white shadow-[0_0_24px_#38bdf8]"
-                          : "scale-115 z-50 bg-white text-gray-950 border-[#ccff00] shadow-[0_0_24px_#ccff00]" 
+                          : "scale-115 z-50 bg-white text-gray-950 border-[#f59e0b] shadow-[0_0_24px_#f59e0b]" 
                         : isSelf 
                         ? "bg-emerald-400 text-gray-950 border-white shadow-[0_0_16px_#34d399]" 
                         : client.isAnonymous
@@ -1577,7 +1577,7 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
                         ? "bg-rose-500 text-white border-white shadow-[0_0_18px_#f43f5e] scale-110"
                         : activeStage === "frequent" && isStageMatch
                         ? "bg-amber-400 text-gray-950 border-white shadow-[0_0_18px_#f59e0b] scale-110"
-                        : "bg-[#ccff00] text-gray-950 border-white/90 shadow-[0_0_14px_#ccff00]"
+                        : "bg-[#f59e0b] text-gray-950 border-white/90 shadow-[0_0_14px_#f59e0b]"
                     } ${!client.isAnonymous ? (scatterRadius === "wide" ? "w-9 h-9 p-[1.5px] overflow-hidden" : "w-8 h-8 p-[1.5px] overflow-hidden") : "w-6 h-6"}`}>
                       {!client.isAnonymous ? (
                         <BlobatarAvatar
@@ -1605,7 +1605,7 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
                       isActive 
                         ? client.isAnonymous
                           ? "bg-gradient-to-t from-sky-400 to-white shadow-[0_0_12px_#38bdf8]"
-                          : "bg-gradient-to-t from-[#ccff00] to-white shadow-[0_0_12px_#ccff00]" 
+                          : "bg-gradient-to-t from-[#f59e0b] to-white shadow-[0_0_12px_#f59e0b]" 
                         : isSelf
                         ? "bg-gradient-to-t from-emerald-400 to-white shadow-[0_0_8px_#34d399]"
                         : client.isAnonymous
@@ -1614,13 +1614,13 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
                         ? "bg-gradient-to-t from-rose-500 to-white shadow-[0_0_10px_#f43f5e]"
                         : activeStage === "frequent" && isStageMatch
                         ? "bg-gradient-to-t from-amber-400 to-yellow-100 shadow-[0_0_10px_#f59e0b]"
-                        : "bg-gradient-to-t from-[#ccff00] to-yellow-200 shadow-[0_0_8px_#ccff00]"
+                        : "bg-gradient-to-t from-[#f59e0b] to-yellow-200 shadow-[0_0_8px_#f59e0b]"
                     }`} />
                     <div className={`w-1 h-1 rotate-45 ${
                       client.isAnonymous ? "bg-sky-400 shadow-[0_0_6px_#38bdf8]" :
                       activeStage === "cart" && client.hasCart ? "bg-rose-500 shadow-[0_0_6px_#f43f5e]" :
                       activeStage === "frequent" && isStageMatch ? "bg-amber-400 shadow-[0_0_6px_#f59e0b]" :
-                      "bg-[#ccff00] shadow-[0_0_6px_#ccff00]"
+                      "bg-[#f59e0b] shadow-[0_0_6px_#f59e0b]"
                     }`} />
                   </div>
 
@@ -1656,7 +1656,7 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
                           filter: { duration: 0.28 },
                         }}
                         style={{ backgroundColor: "rgba(11, 16, 15, 0.97)" }}
-                        className={`absolute left-1/2 -translate-x-1/2 w-56 p-3.5 rounded-2xl backdrop-blur-2xl border border-[#ccff00]/50 shadow-[0_18px_42px_rgba(0,0,0,0.85)] z-50 pointer-events-auto space-y-2 text-left ${
+                        className={`absolute left-1/2 -translate-x-1/2 w-56 p-3.5 rounded-2xl backdrop-blur-2xl border border-[#f59e0b]/50 shadow-[0_18px_42px_rgba(0,0,0,0.85)] z-50 pointer-events-auto space-y-2 text-left ${
                           openDownward ? "top-full mt-7" : "bottom-full mb-3.5"
                         }`}
                       >
@@ -1689,7 +1689,7 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
                           </div>
                           <div className="flex items-center justify-between">
                             <span className="text-white/65">Actividad:</span>
-                            <span className="font-medium text-[#ccff00] truncate max-w-[110px]">
+                            <span className="font-medium text-[#f59e0b] truncate max-w-[110px]">
                               {client.currentSection || "En Línea"}
                             </span>
                           </div>
@@ -1973,7 +1973,7 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
             style={{ backgroundColor: "rgba(10, 14, 13, 0.96)" }}
             className={`relative w-full h-10 rounded-full backdrop-blur-2xl border shadow-[0_14px_34px_rgba(0,0,0,0.78)] flex items-center overflow-hidden transition-colors duration-300 ${
               !isSearchBarHidden
-                ? "border-[#ccff00]/55 ring-2 ring-[#ccff00]/15 px-3.5"
+                ? "border-[#f59e0b]/55 ring-2 ring-[#f59e0b]/15 px-3.5"
                 : "border-white/25 hover:border-white/45 justify-center cursor-pointer hover:scale-[1.03] active:scale-95"
             }`}
             onClick={() => {
@@ -2005,14 +2005,14 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
               }}
               className={`flex items-center justify-center shrink-0 transition-colors cursor-pointer ${
                 isSearchBarHidden
-                  ? "w-10 h-10 text-[#ccff00]"
-                  : "w-5 h-5 mr-2.5 text-[#ccff00] hover:text-white"
+                  ? "w-10 h-10 text-[#f59e0b]"
+                  : "w-5 h-5 mr-2.5 text-[#f59e0b] hover:text-white"
               }`}
               title={isSearchBarHidden ? "Buscar en el mapa" : "Contraer barra de búsqueda"}
             >
               <Search className="w-4 h-4" />
               {isSearchBarHidden && searchQuery.trim().length > 0 && (
-                <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-[#ccff00] shadow-[0_0_6px_#ccff00]" />
+                <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-[#f59e0b] shadow-[0_0_6px_#f59e0b]" />
               )}
             </button>
 
@@ -2142,7 +2142,7 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
                 <div className="space-y-2.5 pt-3.5 border-t border-white/12">
                   <div className="flex items-center justify-between text-[10.5px] font-mono text-white/70 font-bold uppercase tracking-wider">
                     <span>Ciudades Principales ({activeCountry.name})</span>
-                    <span className="text-[10px] font-mono text-[#ccff00] flex items-center gap-1">
+                    <span className="text-[10px] font-mono text-[#f59e0b] flex items-center gap-1">
                       <MapPin className="w-3 h-3" /> Clic para enfocar
                     </span>
                   </div>
@@ -2167,9 +2167,9 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
                             setIsSearchFocused(false);
                             setIsSearchBarHidden(true);
                           }}
-                          className="px-3 py-1.5 rounded-xl text-[11px] bg-[#151c1a] hover:bg-[#1e2724] hover:border-[#ccff00]/40 text-white/90 hover:text-white border border-white/15 transition-all flex items-center gap-1.5 cursor-pointer group"
+                          className="px-3 py-1.5 rounded-xl text-[11px] bg-[#151c1a] hover:bg-[#1e2724] hover:border-[#f59e0b]/40 text-white/90 hover:text-white border border-white/15 transition-all flex items-center gap-1.5 cursor-pointer group"
                         >
-                          <MapPin className="w-3 h-3 text-[#ccff00]/80 group-hover:text-[#ccff00] transition-colors" />
+                          <MapPin className="w-3 h-3 text-[#f59e0b]/80 group-hover:text-[#f59e0b] transition-colors" />
                           <span>{city}</span>
                         </button>
                       );
@@ -2201,7 +2201,7 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
                               setIsSearchFocused(false);
                               setIsSearchBarHidden(true);
                             }}
-                            className="p-3 rounded-2xl bg-[#151c1a] hover:bg-[#1d2623] border border-white/15 hover:border-[#ccff00]/45 flex items-center justify-between gap-3 cursor-pointer transition-all duration-200 group shadow-sm"
+                            className="p-3 rounded-2xl bg-[#151c1a] hover:bg-[#1d2623] border border-white/15 hover:border-[#f59e0b]/45 flex items-center justify-between gap-3 cursor-pointer transition-all duration-200 group shadow-sm"
                           >
                             <div className="flex items-center gap-3 min-w-0 flex-1">
                               <BlobatarAvatar
@@ -2217,13 +2217,13 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
                                 <p className="text-[10.5px] text-white/70 truncate flex items-center gap-1.5">
                                   <span>{client.city || activeCountry.name}</span>
                                   <span className="text-white/35">•</span>
-                                  <span className="font-mono font-semibold text-[#ccff00]">
+                                  <span className="font-mono font-semibold text-[#f59e0b]">
                                     ${client.totalSpent || 0} USD
                                   </span>
                                 </p>
                               </div>
                             </div>
-                            <span className="text-[10px] font-mono px-3 py-1.5 rounded-xl bg-white/10 text-white group-hover:bg-[#ccff00] group-hover:text-gray-950 font-bold transition-all shrink-0">
+                            <span className="text-[10px] font-mono px-3 py-1.5 rounded-xl bg-white/10 text-white group-hover:bg-[#f59e0b] group-hover:text-gray-950 font-bold transition-all shrink-0">
                               Enfocar &rarr;
                             </span>
                           </div>
@@ -2370,16 +2370,16 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
                 type="button"
                 onClick={handleNavigateToAddress}
                 style={{ backgroundColor: "rgba(10, 14, 13, 0.96)" }}
-                className="group relative flex items-center gap-2 h-10 px-3.5 sm:px-4 rounded-full hover:bg-black backdrop-blur-2xl border border-[#ccff00]/45 hover:border-[#ccff00] text-white text-xs font-semibold shadow-[0_14px_32px_rgba(0,0,0,0.78)] transition-all duration-300 hover:scale-[1.02] active:scale-95 cursor-pointer shrink-0"
+                className="group relative flex items-center gap-2 h-10 px-3.5 sm:px-4 rounded-full hover:bg-black backdrop-blur-2xl border border-[#f59e0b]/45 hover:border-[#f59e0b] text-white text-xs font-semibold shadow-[0_14px_32px_rgba(0,0,0,0.78)] transition-all duration-300 hover:scale-[1.02] active:scale-95 cursor-pointer shrink-0"
                 title="No tienes una ubicación registrada. Haz clic para configurar y mostrar tu ubicación en el mapa"
               >
-                <div className="relative flex items-center justify-center w-5 h-5 rounded-full bg-[#ccff00] text-gray-950 font-black shrink-0 shadow-[0_0_10px_rgba(204,255,0,0.45)]">
+                <div className="relative flex items-center justify-center w-5 h-5 rounded-full bg-[#f59e0b] text-gray-950 font-black shrink-0 shadow-[0_0_10px_rgba(245,158,11,0.45)]">
                   <MapPin className="w-3 h-3 text-gray-950" />
                 </div>
                 <span className="font-semibold text-xs text-white whitespace-nowrap">
                   Mostrar mi ubicación
                 </span>
-                <ArrowUpRight className="w-3.5 h-3.5 text-[#ccff00] transition-transform duration-300 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 shrink-0" />
+                <ArrowUpRight className="w-3.5 h-3.5 text-[#f59e0b] transition-transform duration-300 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 shrink-0" />
               </button>
             )}
           </motion.div>
@@ -2664,7 +2664,7 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
               <div className="flex items-center gap-1.5 shrink-0">
                 <span className={`text-[9px] font-mono px-2.5 py-0.5 rounded-full border font-bold transition-all duration-300 ease-out ${
                   displayedDossierClient 
-                    ? "bg-[#ccff00]/20 text-[#ccff00] border-[#ccff00]/40 opacity-100 scale-100" 
+                    ? "bg-[#f59e0b]/20 text-[#f59e0b] border-[#f59e0b]/40 opacity-100 scale-100" 
                     : "opacity-0 scale-90 pointer-events-none border-transparent"
                 }`}>
                   Selección
@@ -2700,7 +2700,7 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
                   }}
                   className="overflow-hidden transform-gpu"
                 >
-                  <div className="rounded-2xl bg-[#141c1a] border border-[#ccff00]/45 p-3.5 space-y-2.5 shadow-[0_12px_30px_rgba(0,0,0,0.65)] transition-colors duration-300">
+                  <div className="rounded-2xl bg-[#141c1a] border border-[#f59e0b]/45 p-3.5 space-y-2.5 shadow-[0_12px_30px_rgba(0,0,0,0.65)] transition-colors duration-300">
                     <div className="flex items-start justify-between gap-3">
                       <div className="flex items-start gap-3 min-w-0 flex-1">
                         <BlobatarAvatar
@@ -2723,7 +2723,7 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
                           
                           {/* Ubicación detallada del cliente */}
                           <p className="text-xs text-white/90 flex items-center gap-1.5 mt-1 font-medium">
-                            <MapPin className="w-3.5 h-3.5 text-[#ccff00] shrink-0" /> 
+                            <MapPin className="w-3.5 h-3.5 text-[#f59e0b] shrink-0" /> 
                             <span>
                               {isUserSelf(retainedDossierClient)
                                 ? (currentUserCity || "Sin ubicación registrada")
@@ -2735,7 +2735,7 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
                           {!isClientAdmin(retainedDossierClient) && (
                             <div className="mt-2">
                               <span 
-                                className="inline-flex items-center text-[11.5px] font-mono px-3 py-1 rounded-full bg-white/10 text-[#ccff00] border border-[#ccff00]/35 font-bold tracking-tight shadow-sm"
+                                className="inline-flex items-center text-[11.5px] font-mono px-3 py-1 rounded-full bg-white/10 text-[#f59e0b] border border-[#f59e0b]/35 font-bold tracking-tight shadow-sm"
                                 title="Frecuencia estimada de recompra del cliente"
                               >
                                 Recompra: {retainedDossierClient.frequency || "1ª Vez"}
@@ -2769,7 +2769,7 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
                       </div>
                       <div className="flex items-center justify-between">
                         <span className="text-white/75">Total Compras:</span>
-                        <strong className="text-[#ccff00] font-mono font-bold">${Number(retainedDossierClient.totalSpent || 0).toFixed(2)} USD</strong>
+                        <strong className="text-[#f59e0b] font-mono font-bold">${Number(retainedDossierClient.totalSpent || 0).toFixed(2)} USD</strong>
                       </div>
                       <div className="flex items-center justify-between">
                         <span className="text-white/75">Historial:</span>
@@ -2861,7 +2861,7 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
                             <motion.div
                               layoutId="radarStageFilterPill"
                               transition={{ type: "spring", stiffness: 420, damping: 30 }}
-                              className="absolute inset-0 rounded-full bg-[#ccff00] shadow-[0_0_10px_#ccff00] -z-10"
+                              className="absolute inset-0 rounded-full bg-[#f59e0b] shadow-[0_0_10px_#f59e0b] -z-10"
                             />
                           )}
                           Recurrentes ({frequentCount})
@@ -2914,7 +2914,7 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
                       <div className="flex items-center justify-between">
                         <div>
                           <span className="text-xs font-bold text-white block">Tendencia de Compra General</span>
-                          <span className={`text-[10px] font-mono font-semibold flex items-center gap-1 mt-0.5 ${hasActivity ? 'text-[#ccff00]' : 'text-white/75'}`}>
+                          <span className={`text-[10px] font-mono font-semibold flex items-center gap-1 mt-0.5 ${hasActivity ? 'text-[#f59e0b]' : 'text-white/75'}`}>
                             <TrendingUp className="w-3 h-3" /> {trendText}
                           </span>
                         </div>
@@ -2926,25 +2926,25 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
                         <svg viewBox="0 0 200 60" className="w-full h-full overflow-visible">
                           <defs>
                             <linearGradient id="miniTrendGrad" x1="0%" y1="0%" x2="0%" y2="100%">
-                              <stop offset="0%" stopColor="#ccff00" stopOpacity={hasActivity ? 0.35 : 0.12} />
-                              <stop offset="100%" stopColor="#ccff00" stopOpacity="0" />
+                              <stop offset="0%" stopColor="#f59e0b" stopOpacity={hasActivity ? 0.35 : 0.12} />
+                              <stop offset="100%" stopColor="#f59e0b" stopOpacity="0" />
                             </linearGradient>
                           </defs>
                           <path d={areaD} fill="url(#miniTrendGrad)" />
                           <path 
                             d={pathD} 
                             fill="none" 
-                            stroke={hasActivity ? "#ccff00" : "rgba(255,255,255,0.4)"} 
+                            stroke={hasActivity ? "#f59e0b" : "rgba(255,255,255,0.4)"} 
                             strokeWidth="2" 
                             strokeLinecap="round" 
                           />
-                          <circle cx={lastPoint.x} cy={lastPoint.y} r="3" fill="#ffffff" stroke={hasActivity ? "#ccff00" : "rgba(255,255,255,0.6)"} strokeWidth="2" />
+                          <circle cx={lastPoint.x} cy={lastPoint.y} r="3" fill="#ffffff" stroke={hasActivity ? "#f59e0b" : "rgba(255,255,255,0.6)"} strokeWidth="2" />
                         </svg>
                       </div>
 
                       <div className="flex items-center justify-between text-[10px] font-mono text-white/80 pt-1.5 border-t border-white/15">
                         <span>Recompra: <strong className="text-white">{recompraText}</strong></span>
-                        <span className={hasActivity ? "text-[#ccff00] font-bold" : "text-white/85 font-bold"}>
+                        <span className={hasActivity ? "text-[#f59e0b] font-bold" : "text-white/85 font-bold"}>
                           ${totalSpent.toFixed(0)}/vol
                         </span>
                       </div>
@@ -3012,15 +3012,15 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
                     : 0;
 
                   return (
-                    <div className="rounded-2xl bg-[#141b19] border border-[#ccff00]/35 p-3.5 space-y-2.5 shadow-[0_0_20px_rgba(204,255,0,0.1)]">
+                    <div className="rounded-2xl bg-[#141b19] border border-[#f59e0b]/35 p-3.5 space-y-2.5 shadow-[0_0_20px_rgba(245,158,11,0.1)]">
                       <div className="flex items-center justify-between">
                         <div>
                           <span className="text-xs font-bold text-white block">Fidelización Recurrente</span>
-                          <span className="text-[10px] font-mono font-semibold flex items-center gap-1 text-[#ccff00] mt-0.5">
+                          <span className="text-[10px] font-mono font-semibold flex items-center gap-1 text-[#f59e0b] mt-0.5">
                             <Sparkles className="w-3 h-3" /> {frequentClients.length} {frequentClients.length === 1 ? "cliente frecuente" : "clientes frecuentes"}
                           </span>
                         </div>
-                        <span className="text-[9.5px] font-mono px-2.5 py-0.5 rounded-full bg-[#ccff00]/20 text-[#ccff00] border border-[#ccff00]/35 font-bold">
+                        <span className="text-[9.5px] font-mono px-2.5 py-0.5 rounded-full bg-[#f59e0b]/20 text-[#f59e0b] border border-[#f59e0b]/35 font-bold">
                           Recurrente
                         </span>
                       </div>
@@ -3028,7 +3028,7 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
                       <div className="grid grid-cols-2 gap-2 pt-1">
                         <div className="p-2.5 rounded-xl bg-[#1c2623] border border-white/15">
                           <span className="text-[9.5px] text-white/75 block font-mono">LTV Acumulado</span>
-                          <span className="text-base font-bold text-[#ccff00] font-mono">${totalFrequentSpent.toFixed(0)} <span className="text-[10px] text-white/75">USD</span></span>
+                          <span className="text-base font-bold text-[#f59e0b] font-mono">${totalFrequentSpent.toFixed(0)} <span className="text-[10px] text-white/75">USD</span></span>
                         </div>
                         <div className="p-2.5 rounded-xl bg-[#1c2623] border border-white/15">
                           <span className="text-[9.5px] text-white/75 block font-mono">Tasa Retención</span>
@@ -3038,7 +3038,7 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
 
                       <div className="flex items-center justify-between text-[10px] font-mono text-white/80 pt-1.5 border-t border-white/15">
                         <span>Frecuencia Media:</span>
-                        <strong className="text-[#ccff00]">
+                        <strong className="text-[#f59e0b]">
                           {frequentClients.length > 0 ? "Quincenal / Semanal" : "En acumulación"}
                         </strong>
                       </div>
@@ -3070,12 +3070,12 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
 
                   const regionColors: Record<string, string> = {
                     'Sierra': 'bg-white',
-                    'Costa': 'bg-[#ccff00]',
+                    'Costa': 'bg-[#f59e0b]',
                     'Oriente': 'bg-emerald-400',
                     'Galápagos': 'bg-amber-400',
                     'Otro': 'bg-white/60',
                   };
-                  const fallbackPalette = ['bg-[#ccff00]', 'bg-white', 'bg-emerald-400', 'bg-cyan-400', 'bg-amber-400', 'bg-purple-400'];
+                  const fallbackPalette = ['bg-[#f59e0b]', 'bg-white', 'bg-emerald-400', 'bg-cyan-400', 'bg-amber-400', 'bg-purple-400'];
 
                   const sortedRegions = Object.entries(regionCounts).sort((a, b) => b[1] - a[1]);
 
@@ -3127,7 +3127,7 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
                 >
                   {filteredActualClients.length === 0 ? (
                     <div className="py-12 text-center text-white/65 text-xs flex flex-col items-center justify-center">
-                      <Users className="w-7 h-7 mx-auto mb-2 opacity-50 text-[#ccff00]" />
+                      <Users className="w-7 h-7 mx-auto mb-2 opacity-50 text-[#f59e0b]" />
                       <p className="font-semibold text-white">Sin clientes conectados</p>
                       <p className="text-[10.5px] text-white/70 mt-1">El radar monitorea en vivo: {activeCountry.entityLabel}</p>
                     </div>
@@ -3145,7 +3145,7 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
                           }}
                           className={`p-2.5 rounded-2xl flex items-center justify-between text-xs cursor-pointer transition-all duration-300 ease-out border ${
                             isSelected 
-                              ? "bg-white text-gray-950 font-bold border-[#ccff00] shadow-[0_0_16px_rgba(204,255,0,0.35)]" 
+                              ? "bg-white text-gray-950 font-bold border-[#f59e0b] shadow-[0_0_16px_rgba(245,158,11,0.35)]" 
                               : "bg-[#141b19] hover:bg-[#1d2724] text-white border-white/15 hover:border-white/30"
                           }`}
                         >
@@ -3159,7 +3159,7 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
                             <div className="truncate">
                               <p className="leading-tight truncate font-semibold">{cleanClientName(c.name)}</p>
                               <p className={`text-[10px] mt-0.5 ${isSelected ? "text-gray-700 font-medium" : "text-white/75"}`}>
-                                {c.city || activeCountry.name} • <span className="font-mono text-[#ccff00]">{activeCountry.currencySymbol}{c.totalSpent || 0}</span>
+                                {c.city || activeCountry.name} • <span className="font-mono text-[#f59e0b]">{activeCountry.currencySymbol}{c.totalSpent || 0}</span>
                               </p>
                             </div>
                           </div>
@@ -3183,7 +3183,7 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
                       height: "32%",
                       top: `0%`
                     }}
-                    className="absolute w-full bg-[#ccff00] rounded-full shadow-[0_0_12px_#ccff00] transition-all duration-300 ease-out"
+                    className="absolute w-full bg-[#f59e0b] rounded-full shadow-[0_0_12px_#f59e0b] transition-all duration-300 ease-out"
                   />
                 </div>
               </div>
@@ -3198,7 +3198,7 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
           return (
             <div className="pt-3 border-t border-white/15 flex items-center justify-between text-[10.5px] text-white/80">
               <span className="flex items-center gap-1.5 font-medium">
-                <Activity className="w-3.5 h-3.5 text-[#ccff00]" /> Radar {activeCountry.name} Activo
+                <Activity className="w-3.5 h-3.5 text-[#f59e0b]" /> Radar {activeCountry.name} Activo
               </span>
               <span className="font-mono text-emerald-400 font-bold">
                 {activeProvincesCount > 0 ? `${activeProvincesCount}/${activeCountry.totalEntities} Activas` : `${activeCountry.entityLabel} en Espera`}
@@ -3235,7 +3235,7 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
               <p className="text-[10.5px] text-white/85 truncate">
                 {activeCountry.capital} • {activeCountry.majorCities.slice(1, 4).join(' • ')}
               </p>
-              <div className="flex items-center gap-1 text-[10px] font-mono text-[#ccff00] font-semibold mt-1">
+              <div className="flex items-center gap-1 text-[10px] font-mono text-[#f59e0b] font-semibold mt-1">
                 <span>
                   {activeProvincesCount > 0 
                     ? `${activeProvincesCount} zonas activas en tiempo real` 
@@ -3278,7 +3278,7 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
               <div className="w-full h-1.5 rounded-full bg-white/15 flex overflow-hidden mt-1.5">
                 <div className="h-full bg-white transition-all duration-500" style={{ width: `${browsingPct}%` }} />
                 <div className="h-full bg-amber-400 transition-all duration-500" style={{ width: `${cartPct}%` }} />
-                <div className="h-full bg-[#ccff00] transition-all duration-500" style={{ width: `${frequentPct}%` }} />
+                <div className="h-full bg-[#f59e0b] transition-all duration-500" style={{ width: `${frequentPct}%` }} />
               </div>
             </div>
           );
@@ -3303,9 +3303,9 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
             >
               <div className="flex items-center justify-between text-[11px] font-bold text-white mb-1">
                 <span className="flex items-center gap-1.5">
-                  <Sparkles className="w-3 h-3 text-[#ccff00]" /> Resumen Radar
+                  <Sparkles className="w-3 h-3 text-[#f59e0b]" /> Resumen Radar
                 </span>
-                <span className="text-[9.5px] font-mono text-[#ccff00] font-bold">En Vivo</span>
+                <span className="text-[9.5px] font-mono text-[#f59e0b] font-bold">En Vivo</span>
               </div>
               <p className="text-[10.5px] text-white/85">
                 {actualClients.length} cliente{actualClients.length !== 1 ? 's' : ''}
@@ -3313,7 +3313,7 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
               </p>
               <div className="flex items-center justify-between text-[9.5px] font-mono text-white/80 mt-1 pt-1 border-t border-white/15">
                 <span>Ticket Promedio: <strong className="text-white">${avgTicket.toFixed(0)} USD</strong></span>
-                <span>Intent: <strong className="text-[#ccff00]">{avgIntent}%</strong></span>
+                <span>Intent: <strong className="text-[#f59e0b]">{avgIntent}%</strong></span>
               </div>
             </div>
           );

@@ -159,7 +159,7 @@ export function BeUIThemeToggleCircleBlur({
       onClick={handleToggle}
       title={isDark ? "Cambiar a modo Claro (Circle Blur)" : "Cambiar a modo Oscuro (Circle Blur)"}
       aria-label={isDark ? "Cambiar a modo claro" : "Cambiar a modo oscuro"}
-      className={`group relative inline-flex items-center justify-center rounded-full border border-gray-200/80 dark:border-white/15 bg-white/90 dark:bg-[#161920]/90 text-gray-900 dark:text-white shadow-sm hover:border-gray-300 dark:hover:border-[#ccff00]/50 hover:shadow-md active:scale-95 transition-all cursor-pointer select-none ${
+      className={`group relative inline-flex items-center justify-center rounded-full border border-gray-200/80 dark:border-white/15 bg-white/90 dark:bg-[#161920]/90 text-gray-900 dark:text-white shadow-sm hover:border-gray-300 dark:hover:border-amber-400/50 hover:shadow-md active:scale-95 transition-all cursor-pointer select-none ${
         showLabel ? "px-3.5 py-2 gap-2.5 h-10" : sizeClasses
       } ${className}`}
     >
@@ -187,9 +187,9 @@ export function BeUIThemeToggleCircleBlur({
             transition:
               "transform 380ms cubic-bezier(0.22, 1.3, 0.36, 1), opacity 240ms ease, filter 240ms ease",
           }}
-          className="col-start-1 row-start-1 flex items-center justify-center text-[#ccff00]"
+          className="col-start-1 row-start-1 flex items-center justify-center text-amber-400"
         >
-          <Moon className="w-4 h-4 fill-[#ccff00]/20" />
+          <Moon className="w-4 h-4 fill-amber-400/20" />
         </span>
       </span>
 
@@ -255,7 +255,7 @@ export function ThemeToggle() {
             <div className="relative z-10 flex items-center gap-2">
               <Icon
                 className={`w-4 h-4 transition-colors duration-300 ${
-                  isActive ? "text-amber-500 dark:text-[#ccff00]" : ""
+                  isActive ? "text-amber-500 dark:text-amber-400" : ""
                 }`}
               />
               <span className="tracking-wide">{option.label}</span>

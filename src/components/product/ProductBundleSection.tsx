@@ -155,7 +155,7 @@ export function ProductBundleSection({
             <div>
               <div className="flex items-center gap-2 mb-1">
                 <TrendingUp className="w-4 h-4 text-blue-600 dark:text-blue-400" />
-                <span className="text-xs font-bold uppercase tracking-widest text-[#8c9276] dark:text-[#ccff00]">
+                <span className="text-xs font-bold uppercase tracking-widest text-[#8c9276] dark:text-amber-400">
                   Oferta de Ahorro por Volumen
                 </span>
               </div>
@@ -317,7 +317,7 @@ export function ProductBundleSection({
             <div>
               <div className="flex items-center gap-2 mb-1">
                 <Package className="w-4 h-4 text-emerald-600" />
-                <span className="text-xs font-bold uppercase tracking-widest text-[#8c9276] dark:text-[#ccff00]">
+                <span className="text-xs font-bold uppercase tracking-widest text-[#8c9276] dark:text-amber-400">
                   Pack Complementario Recomendado
                 </span>
               </div>

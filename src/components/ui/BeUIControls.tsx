@@ -1326,8 +1326,8 @@ export function BeUISelectField({
           borderBottomRightRadius: SELECT_BORDER_RADIUS,
         }}
         className={cn(
-          "flex w-full items-center justify-between gap-2.5 border border-gray-200 dark:border-white/15 bg-white dark:bg-[#161920] px-4 py-2.5 text-xs sm:text-sm font-semibold text-gray-900 dark:text-white shadow-sm transition-colors hover:border-gray-300 dark:hover:border-[#ccff00]/40 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#ccff00]/40 cursor-pointer select-none",
-          open && "border-gray-900/30 dark:border-[#ccff00]/60 ring-2 ring-gray-900/5 dark:ring-[#ccff00]/15",
+          "flex w-full items-center justify-between gap-2.5 border border-gray-200 dark:border-white/15 bg-white dark:bg-[#161920] px-4 py-2.5 text-xs sm:text-sm font-semibold text-gray-900 dark:text-white shadow-sm transition-colors hover:border-gray-300 dark:hover:border-amber-400/40 focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-400/40 cursor-pointer select-none",
+          open && "border-gray-900/30 dark:border-amber-400/60 ring-2 ring-gray-900/5 dark:ring-amber-400/15",
           disabled && "opacity-50 cursor-not-allowed",
           triggerClassName
         )}
@@ -1402,7 +1402,7 @@ export function BeUISelectField({
                     className={cn(
                       "flex w-full cursor-pointer select-none items-center justify-between rounded-xl px-3 py-2 text-xs sm:text-sm font-medium transition-colors",
                       isSelected
-                        ? "bg-gray-900 text-white dark:bg-[#ccff00] dark:text-gray-950 font-bold shadow-sm"
+                        ? "bg-gray-900 text-white dark:bg-amber-400 dark:text-stone-950 font-bold shadow-sm"
                         : "text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-white/10"
                     )}
                   >
@@ -1622,7 +1622,7 @@ export function BeUILateralExpandableSidebar({
 
   const isExpanded = isHovered || isPinned;
 
-  const renderNavButton = (item: BeUISidebarNavItem, isSpecialLime = false) => {
+  const renderNavButton = (item: BeUISidebarNavItem, isSpecialAmber = false) => {
     const isHighlighted = hoveredItemId === item.id;
     return (
       <motion.button
@@ -1634,8 +1634,8 @@ export function BeUILateralExpandableSidebar({
         className={cn(
           "relative w-full h-11 rounded-2xl flex items-center px-3 gap-3.5 transition-colors duration-200 cursor-pointer select-none group overflow-hidden",
           item.active
-            ? isSpecialLime
-              ? "bg-[#ccff00] text-gray-950 font-bold shadow-[0_6px_20px_rgba(204,255,0,0.28)]"
+            ? isSpecialAmber
+              ? "bg-amber-400 text-stone-950 font-bold shadow-[0_6px_20px_rgba(245,158,11,0.28)]"
               : "bg-gray-900 dark:bg-white text-white dark:text-gray-950 font-semibold shadow-md"
             : "text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
         )}
@@ -1650,10 +1650,10 @@ export function BeUILateralExpandableSidebar({
         )}
 
         {/* Active left indicator accent */}
-        {item.active && !isSpecialLime && (
+        {item.active && !isSpecialAmber && (
           <motion.span
             layoutId="beui-sidebar-active-bar"
-            className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-5 rounded-r-full bg-[#ccff00]"
+            className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-5 rounded-r-full bg-amber-400"
             transition={SIDEBAR_EXPAND_SPRING}
           />
         )}
@@ -1673,7 +1673,7 @@ export function BeUILateralExpandableSidebar({
               className={cn(
                 "absolute -top-1 -right-1.5 min-w-[16px] h-4 px-1 rounded-full text-[9px] font-bold flex items-center justify-center shadow-sm",
                 item.active
-                  ? "bg-[#ccff00] text-gray-950"
+                  ? "bg-amber-400 text-stone-950"
                   : "bg-gray-900 dark:bg-white text-white dark:text-gray-900"
               )}
             >
@@ -1701,7 +1701,7 @@ export function BeUILateralExpandableSidebar({
                     className={cn(
                       "block text-[10px] font-normal truncate",
                       item.active
-                        ? isSpecialLime
+                        ? isSpecialAmber
                           ? "text-gray-900/75"
                           : "text-white/70 dark:text-gray-700"
                         : "text-gray-400 dark:text-gray-500"
@@ -1722,9 +1722,9 @@ export function BeUILateralExpandableSidebar({
                   className={cn(
                     "px-2 py-0.5 rounded-full text-[10px] font-bold shrink-0",
                     item.active
-                      ? isSpecialLime
-                        ? "bg-gray-950 text-[#ccff00]"
-                        : "bg-[#ccff00] text-gray-950"
+                      ? isSpecialAmber
+                        ? "bg-stone-950 text-amber-400"
+                        : "bg-amber-400 text-stone-950"
                       : "bg-gray-200/80 dark:bg-white/10 text-gray-700 dark:text-gray-300"
                   )}
                 >
@@ -1758,7 +1758,7 @@ export function BeUILateralExpandableSidebar({
         className={cn(
           "relative min-h-full shrink-0 flex flex-col justify-between py-6 px-3 rounded-3xl bg-white/95 dark:bg-[#1e1e20]/95 backdrop-blur-2xl border border-gray-200/80 dark:border-white/10 transition-shadow duration-300 overflow-hidden",
           isExpanded
-            ? "shadow-[0_24px_60px_rgba(0,0,0,0.18)] dark:shadow-[0_24px_70px_rgba(0,0,0,0.75)] ring-1 ring-black/5 dark:ring-[#ccff00]/20"
+            ? "shadow-[0_24px_60px_rgba(0,0,0,0.18)] dark:shadow-[0_24px_70px_rgba(0,0,0,0.75)] ring-1 ring-black/5 dark:ring-amber-500/20"
             : "shadow-[0_12px_40px_rgba(0,0,0,0.05)] dark:shadow-[0_12px_40px_rgba(0,0,0,0.4)]"
         )}
       >
@@ -1791,7 +1791,7 @@ export function BeUILateralExpandableSidebar({
                     <span className="block font-serif font-bold text-base text-gray-900 dark:text-white tracking-tight truncate">
                       {brandTitle}
                     </span>
-                    <span className="block text-[10px] font-mono uppercase tracking-wider text-gray-400 dark:text-[#ccff00]">
+                    <span className="block text-[10px] font-mono uppercase tracking-wider text-gray-400 dark:text-amber-400">
                       {brandSubtitle || (isAdmin ? "Panel Ejecutivo" : "Mi Espacio")}
                     </span>
                   </motion.div>
@@ -1812,7 +1812,7 @@ export function BeUILateralExpandableSidebar({
                   className={cn(
                     "w-7 h-7 rounded-xl flex items-center justify-center transition-colors cursor-pointer shrink-0",
                     isPinned
-                      ? "bg-[#ccff00] text-gray-950 shadow-sm"
+                      ? "bg-amber-400 text-stone-950 shadow-sm"
                       : "bg-gray-100 dark:bg-white/10 text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
                   )}
                 >
@@ -1940,7 +1940,7 @@ export function BeUIMobileExpandableTabs({
               "relative flex h-9 sm:h-10 items-center justify-center overflow-hidden rounded-full cursor-pointer select-none transition-colors duration-200",
               isActive
                 ? item.isSpecialLime
-                  ? "shrink-0 px-2.5 sm:px-3.5 gap-1.5 bg-[#ccff00] text-gray-950 font-bold shadow-[0_0_14px_rgba(204,255,0,0.35)]"
+                  ? "shrink-0 px-2.5 sm:px-3.5 gap-1.5 bg-amber-400 text-stone-950 font-bold shadow-[0_0_14px_rgba(245,158,11,0.35)]"
                   : "shrink-0 px-2.5 sm:px-3.5 gap-1.5 bg-gray-950 dark:bg-white text-white dark:text-gray-950 font-bold shadow-md"
                 : "flex-1 min-w-[24px] text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
             )}
@@ -1951,7 +1951,7 @@ export function BeUIMobileExpandableTabs({
                 <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-amber-500 ring-1 ring-white dark:ring-[#16171a]" />
               )}
               {!isActive && !item.alertDot && item.badgeCount !== undefined && item.badgeCount > 0 && (
-                <span className="absolute -top-1.5 -right-1.5 min-w-[13px] h-3.5 px-0.5 rounded-full bg-[#8c9276] dark:bg-[#ccff00] text-white dark:text-gray-950 text-[8px] font-black flex items-center justify-center">
+                <span className="absolute -top-1.5 -right-1.5 min-w-[13px] h-3.5 px-0.5 rounded-full bg-[#8c9276] dark:bg-amber-400 text-white dark:text-stone-950 text-[8px] font-black flex items-center justify-center">
                   {item.badgeCount > 99 ? "99+" : item.badgeCount}
                 </span>
               )}
@@ -2852,7 +2852,7 @@ export function BeUIOrderStatusSelector({
                     <motion.span
                       initial={{ scale: 0.5, opacity: 0 }}
                       animate={{ scale: 1, opacity: 1 }}
-                      className="w-5 h-5 rounded-full bg-gray-900 dark:bg-[#ccff00] text-white dark:text-gray-950 flex items-center justify-center shadow-xs"
+                      className="w-5 h-5 rounded-full bg-gray-900 dark:bg-amber-400 text-white dark:text-stone-950 flex items-center justify-center shadow-xs"
                     >
                       <Check className="w-3 h-3 stroke-[2.5]" />
                     </motion.span>
@@ -2924,7 +2924,7 @@ export function BeUIOrderStatusSelector({
                           className={cn(
                             "px-2.5 py-1.5 rounded-xl text-[11px] font-bold transition-all cursor-pointer border",
                             active
-                              ? "bg-gray-950 dark:bg-[#ccff00] text-white dark:text-gray-950 border-gray-950 dark:border-[#ccff00] shadow-xs"
+                              ? "bg-gray-950 dark:bg-amber-400 text-white dark:text-stone-950 border-gray-950 dark:border-amber-400 shadow-xs"
                               : "bg-gray-50 dark:bg-white/5 text-gray-600 dark:text-gray-300 border-gray-200/80 dark:border-white/10 hover:border-gray-400"
                           )}
                         >
@@ -2959,7 +2959,7 @@ export function BeUIOrderStatusSelector({
                           `${preset.prefix}-${Math.floor(1000000 + Math.random() * 9000000)}`
                         );
                       }}
-                      className="text-[10px] font-bold text-[#8c9276] dark:text-[#ccff00] hover:underline cursor-pointer"
+                      className="text-[10px] font-bold text-[#8c9276] dark:text-amber-400 hover:underline cursor-pointer"
                     >
                       Autogenerar guía sugerida
                     </button>
@@ -3160,7 +3160,7 @@ export function BeUIAnimatedCtaButton({
       whileTap={{ scale: 0.985 }}
       transition={SPRING_PRESS}
       className={cn(
-        "group relative w-full h-[60px] rounded-[22px] p-1.5 bg-gray-950 dark:bg-[#16171a] text-white border border-gray-900 dark:border-[#ccff00]/35 shadow-[0_16px_40px_-10px_rgba(0,0,0,0.35)] dark:shadow-[0_16px_44px_-10px_rgba(204,255,0,0.18)] overflow-hidden cursor-pointer select-none flex items-center justify-between",
+        "group relative w-full h-[60px] rounded-[22px] p-1.5 bg-gray-950 dark:bg-[#16171a] text-white border border-gray-900 dark:border-amber-500/35 shadow-[0_16px_40px_-10px_rgba(0,0,0,0.35)] dark:shadow-[0_16px_44px_-10px_rgba(245,158,11,0.18)] overflow-hidden cursor-pointer select-none flex items-center justify-between",
         disabled && "opacity-50 pointer-events-none",
         className
       )}
@@ -3177,7 +3177,7 @@ export function BeUIAnimatedCtaButton({
           damping: 30,
           mass: 0.7,
         }}
-        className="absolute right-1.5 top-1.5 bottom-1.5 rounded-[17px] bg-gradient-to-r from-[#8c9276] via-[#9da485] to-[#b5bd9b] dark:from-[#ccff00] dark:via-[#d8ff33] dark:to-[#b8e600] shadow-[0_4px_20px_rgba(140,146,118,0.45)] dark:shadow-[0_4px_24px_rgba(204,255,0,0.4)] z-0"
+        className="absolute right-1.5 top-1.5 bottom-1.5 rounded-[17px] bg-gradient-to-r from-[#8c9276] via-[#9da485] to-[#b5bd9b] dark:from-[#f59e0b] dark:via-[#fb923c] dark:to-[#ea580c] shadow-[0_4px_20px_rgba(140,146,118,0.45)] dark:shadow-[0_4px_24px_rgba(245,158,11,0.35)] z-0"
       />
 
       {/* Ambient Shimmer Sweep */}

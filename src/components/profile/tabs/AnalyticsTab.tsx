@@ -27,14 +27,14 @@ class RadarErrorBoundary extends React.Component<{ children: React.ReactNode }, 
     if (this.state.hasError) {
       return (
         <div className="w-full h-[660px] rounded-[2.5rem] bg-[#181d1b] border border-white/10 flex flex-col items-center justify-center p-8 text-center text-white">
-          <div className="w-12 h-12 rounded-full border-2 border-[#ccff00]/40 border-t-[#ccff00] animate-spin mb-4" />
+          <div className="w-12 h-12 rounded-full border-2 border-amber-400/40 border-t-amber-400 animate-spin mb-4" />
           <h3 className="text-lg font-bold">Conectando con el Radar en Vivo...</h3>
           <p className="text-xs text-white/60 max-w-sm mt-2">
             Sincronizando coordenadas y telemetría de clientes en tiempo real con Supabase.
           </p>
           <button 
             onClick={() => this.setState({ hasError: false })}
-            className="mt-5 px-6 py-2.5 rounded-full bg-[#ccff00] text-gray-950 font-bold text-xs hover:scale-105 transition-all cursor-pointer shadow-[0_0_15px_rgba(204,255,0,0.3)]"
+            className="mt-5 px-6 py-2.5 rounded-full bg-amber-400 hover:bg-amber-300 text-stone-950 font-bold text-xs hover:scale-105 transition-all cursor-pointer shadow-[0_0_15px_rgba(245,158,11,0.3)]"
           >
             Reconectar Radar
           </button>

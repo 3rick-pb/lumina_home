@@ -617,7 +617,7 @@ export function SettingsTab({
               />
             </div>
             <div className="space-y-1.5 text-center sm:text-left flex-1">
-              <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-[#8c9276]/20 text-[#8c9276] dark:text-[#ccff00] text-[10.5px] font-bold tracking-tight">
+              <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-[#8c9276]/20 text-[#8c9276] dark:text-amber-400 text-[10.5px] font-bold tracking-tight">
                 <Sparkles className="w-3 h-3" />
                 <span>Avatar Automático Blobatar</span>
               </div>
@@ -680,7 +680,7 @@ export function SettingsTab({
               aria-checked={showAvatarInNavbar}
               onClick={() => setShowAvatarInNavbar(!showAvatarInNavbar, user?.id, user?.email)}
               className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-[#8c9276] ${
-                showAvatarInNavbar ? "bg-[#8c9276] dark:bg-[#ccff00]" : "bg-gray-200 dark:bg-gray-700"
+                showAvatarInNavbar ? "bg-[#8c9276] dark:bg-amber-400" : "bg-gray-200 dark:bg-gray-700"
               }`}
             >
               <span
@@ -996,7 +996,7 @@ export function SettingsTab({
                       <div className="mt-2 pt-2 border-t border-gray-100 dark:border-white/5 flex flex-wrap items-center justify-between gap-2">
                         {addr.rawGps || (typeof addr.lat === "number" && typeof addr.lng === "number") ? (
                           <div className="flex flex-col gap-0.5 min-w-0">
-                            <span className="inline-flex items-center gap-1 text-[9.5px] font-mono font-bold text-emerald-700 dark:text-[#ccff00]">
+                            <span className="inline-flex items-center gap-1 text-[9.5px] font-mono font-bold text-amber-700 dark:text-amber-400">
                               <Navigation className="w-2.5 h-2.5 shrink-0" />
                               GPS Crudo: {(addr.rawGps?.latitude ?? addr.lat)?.toFixed(7)}, {(addr.rawGps?.longitude ?? addr.lng)?.toFixed(7)}
                               {addr.rawGps?.accuracy ? ` (±${Math.round(addr.rawGps.accuracy)}m)` : ""}
@@ -1017,7 +1017,7 @@ export function SettingsTab({
                           type="button"
                           onClick={() => handleCaptureRawGpsForSavedAddress(addr.id)}
                           disabled={syncingRawGpsId === addr.id}
-                          className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-gray-900 dark:bg-white/10 hover:bg-gray-800 dark:hover:bg-white/15 text-white dark:text-[#ccff00] text-[9.5px] font-mono font-bold transition-all cursor-pointer shrink-0 disabled:opacity-50 active:scale-95"
+                          className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-gray-900 dark:bg-white/10 hover:bg-gray-800 dark:hover:bg-white/15 text-white dark:text-amber-400 text-[9.5px] font-mono font-bold transition-all cursor-pointer shrink-0 disabled:opacity-50 active:scale-95"
                           title="Capturar la ubicación cruda directamente del chip GPS del dispositivo y guardarla en esta dirección"
                         >
                           {syncingRawGpsId === addr.id ? (

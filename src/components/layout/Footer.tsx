@@ -32,12 +32,12 @@ export function Footer() {
         {!isAuthPage && (
           <div className="mb-14 sm:mb-20 relative overflow-hidden rounded-2xl sm:rounded-[2.5rem] bg-white/70 dark:bg-[#18181b]/70 backdrop-blur-3xl border border-black/[0.07] dark:border-white/[0.08] shadow-[0_20px_50px_rgba(0,0,0,0.03),0_4px_16px_rgba(0,0,0,0.02)] transition-all duration-500">
             {/* Ambient Warm Aurora Glow */}
-            <div className="absolute -top-24 -left-20 w-80 h-80 rounded-full bg-[#8c9276]/10 dark:bg-[#ccff00]/5 blur-3xl pointer-events-none" />
+            <div className="absolute -top-24 -left-20 w-80 h-80 rounded-full bg-[#8c9276]/10 dark:bg-amber-400/5 blur-3xl pointer-events-none" />
             <div className="absolute -bottom-24 -right-20 w-80 h-80 rounded-full bg-emerald-500/10 dark:bg-emerald-500/5 blur-3xl pointer-events-none" />
 
             {/* Header Micro-Pill */}
             <div className="pt-5 sm:pt-6 px-4 sm:px-10 flex items-center justify-between border-b border-black/[0.04] dark:border-white/[0.04] pb-4">
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#8c9276]/10 dark:bg-[#ccff00]/10 text-[#8c9276] dark:text-[#ccff00] text-[10px] sm:text-[11px] font-bold tracking-wider uppercase">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#8c9276]/10 dark:bg-amber-400/10 text-[#8c9276] dark:text-amber-400 text-[10px] sm:text-[11px] font-bold tracking-wider uppercase">
                 <Sparkles className="w-3.5 h-3.5" />
                 <span>Compromiso de Excelencia {brand.shortName}</span>
               </div>
