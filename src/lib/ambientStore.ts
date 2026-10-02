@@ -38,70 +38,70 @@ export const CATEGORY_THEMES: Record<string, AmbientTheme> = {
     c2: "#fde047",
     c3: "#fef9c3",
     mood: "iluminacion",
-    browserColor: "#edd387", // Cálido ámbar mate visible
+    browserColor: "#f4e8c5", // Suave resplandor ámbar lino mate
   },
   aromaterapia: {
     c1: "#fed7aa",
     c2: "#fbcfe8",
     c3: "#ffedd5",
     mood: "aromaterapia",
-    browserColor: "#dfb79c", // Terracota melocotón mate visible
+    browserColor: "#f0ddd0", // Suave melocotón terracota lino mate
   },
   textiles: {
     c1: "#e9d5ff",
     c2: "#ddd6fe",
     c3: "#f3e8ff",
     mood: "textiles",
-    browserColor: "#ccbde3", // Lavanda artesanal mate visible
+    browserColor: "#e7dff2", // Suave lavanda nube lino mate
   },
   "home office": {
     c1: "#bbf7d0",
     c2: "#bae6fd",
     c3: "#e0f2fe",
     mood: "home office",
-    browserColor: "#b5d3c3", // Eucalipto fresco mate visible
+    browserColor: "#dbe8e0", // Suave eucalipto salvia brisa mate
   },
   almacenamiento: {
     c1: "#c7d2fe",
     c2: "#e0e7ff",
     c3: "#f1f5f9",
     mood: "almacenamiento",
-    browserColor: "#bccfe3", // Pizarra cristal mate visible
+    browserColor: "#dce5ef", // Suave pizarra hielo cristal mate
   },
   gadgets: {
     c1: "#cbd5e1",
     c2: "#94a3b8",
     c3: "#e2e8f0",
     mood: "gadgets",
-    browserColor: "#c3ccd6", // Titanio plateado mate visible
+    browserColor: "#e0e4e8", // Suave titanio perla mate
   },
   ceramica: {
     c1: "#fed7aa",
     c2: "#f5d0b0",
     c3: "#fbf3ea",
     mood: "ceramica",
-    browserColor: "#dec0a8", // Arcilla gres mate visible
+    browserColor: "#eedfd3", // Suave arcilla arena mate
   },
   decoracion: {
     c1: "#e2e8f0",
     c2: "#cbd5e1",
     c3: "#f8fafc",
     mood: "decoracion",
-    browserColor: "#c9ced4", // Travertino piedra mate visible
+    browserColor: "#e5e8ea", // Suave travertino piedra caliza mate
   },
   cocina: {
     c1: "#fed7aa",
     c2: "#fde68a",
     c3: "#fef3c7",
     mood: "cocina",
-    browserColor: "#d8ba9e", // Roble tostado café mate visible
+    browserColor: "#ebdcd0", // Suave roble lino café mate
   },
   bienestar: {
     c1: "#dcfce7",
     c2: "#d1fae5",
     c3: "#f0fdf4",
     mood: "bienestar",
-    browserColor: "#b6d6c1", // Menta y salvia mate visible
+    browserColor: "#dbe8df", // Suave menta y salvia spa mate
   },
   auth: {
     c1: "#eedec7",
@@ -180,14 +180,14 @@ export function createProductAmbientTheme(hex?: string, category?: string): Ambi
   }
 
   const [h, s] = hexToHsl(hex);
-  // Ensure a rich, visible matte tone that matches both browser bar and page background
-  const effectiveSat = Math.max(22, Math.min(s, 42));
-  const unifiedColor = hslToHex(h, effectiveSat, 71);
+  // Soft, calming, clearly visible matte tone (lightness ~83%, saturation ~18-24%)
+  const effectiveSat = Math.max(16, Math.min(s, 26));
+  const unifiedColor = hslToHex(h, effectiveSat, 83);
 
   return {
     c1: unifiedColor,
-    c2: hslToHex((h + 15) % 360, Math.max(18, effectiveSat - 5), 74),
-    c3: hslToHex((h - 12 + 360) % 360, Math.max(15, effectiveSat - 8), 76),
+    c2: hslToHex((h + 12) % 360, Math.max(14, effectiveSat - 4), 85),
+    c3: hslToHex((h - 10 + 360) % 360, Math.max(12, effectiveSat - 6), 87),
     mood: `product-${hex}`,
     browserColor: unifiedColor,
   };

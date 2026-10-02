@@ -66,11 +66,11 @@ export function AmbientBackground() {
           willChange: "background-color"
         }}
       >
-        {/* Soft atmospheric gradient highlights to give depth to the matte canvas */}
+        {/* Soft atmospheric depth highlight centered behind product presentation */}
         <div 
-          className="absolute -top-[15%] left-1/2 -translate-x-1/2 w-[120vw] h-[70vh] rounded-full opacity-35 pointer-events-none transform-gpu"
+          className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[100vw] h-[65vh] rounded-full opacity-25 pointer-events-none transform-gpu"
           style={{
-            background: `radial-gradient(ellipse at center, rgba(255,255,255,0.45) 0%, rgba(255,255,255,0) 75%)`
+            background: `radial-gradient(ellipse at center, rgba(255,255,255,0.35) 0%, rgba(255,255,255,0) 70%)`
           }}
         />
         {/* Subtle bottom vignette for tactile warmth */}
