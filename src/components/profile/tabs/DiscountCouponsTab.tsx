@@ -97,7 +97,7 @@ function Style1TicketSvg({
     <div className={`relative w-full max-w-[340px] aspect-[340/215] select-none mx-auto ${className}`}>
       <svg
         viewBox="0 0 340 215"
-        className="w-full h-full overflow-visible drop-shadow-[0_12px_28px_rgba(0,0,0,0.18)] dark:drop-shadow-[0_4px_28px_rgba(255,255,255,0.09)]"
+        className="w-full h-full overflow-visible drop-shadow-[0_12px_28px_rgba(0,0,0,0.18)] dark:drop-shadow-[0_0_24px_rgba(245,158,11,0.22)]"
       >
         <defs>
           <linearGradient id={gradId} x1="0%" y1="0%" x2="100%" y2="100%">
@@ -305,7 +305,7 @@ function Style2TicketSvg({
     <div className={`relative w-full max-w-[460px] aspect-[460/170] select-none mx-auto ${className}`}>
       <svg
         viewBox="0 0 460 170"
-        className="w-full h-full overflow-visible drop-shadow-[0_12px_26px_rgba(0,0,0,0.14)] dark:drop-shadow-[0_4px_28px_rgba(255,255,255,0.09)]"
+        className="w-full h-full overflow-visible drop-shadow-[0_12px_26px_rgba(0,0,0,0.14)] dark:drop-shadow-[0_0_24px_rgba(245,158,11,0.22)]"
       >
         {/* Outer Ticket Outline with Notches */}
         <path
@@ -775,217 +775,218 @@ export function DiscountCouponsTab() {
       </AnimatePresence>
 
       {/* ===================================================================== */}
-      {/* 1. PROFESSIONAL EXECUTIVE HEADER (ADMIN vs CLIENT)                   */}
+      {/* 1. PROFESSIONAL EXECUTIVE HEADER & ACTIONS BLOCK                      */}
       {/* ===================================================================== */}
-      {isAdmin ? (
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-5 bg-white/80 dark:bg-[#202022]/80 backdrop-blur-xl p-6 sm:p-8 rounded-[2rem] border border-black/5 dark:border-white/10 shadow-xs">
-          <div>
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/10 text-amber-800 dark:text-amber-300 text-xs font-semibold mb-2 border border-amber-500/20">
-              <ShieldCheck className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
-              <span>Fidelización & Retención de Clientes</span>
-            </div>
-            <h2 className="text-2xl sm:text-3xl font-black text-gray-950 dark:text-white tracking-tight">
-              Gestión Estratégica de Cupones & Campañas
-            </h2>
-            <p className="text-xs sm:text-sm text-stone-500 dark:text-stone-400 mt-1 max-w-2xl leading-relaxed">
-              Monitorea y administra campañas activas, colecciones de autor y promociones globales para compartir por WhatsApp.
-            </p>
-          </div>
-
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 sm:gap-3 w-full sm:w-auto">
-            {/* Strategic Generator Button with smooth calm ThinkingOrb */}
-            <button
-              type="button"
-              disabled={isGeneratingStrategic}
-              onClick={handleTriggerRandom}
-              className={`relative flex items-center justify-center gap-2.5 w-full sm:w-[245px] h-[46px] sm:h-[48px] px-4 sm:px-5 rounded-2xl text-xs sm:text-sm font-semibold tracking-tight shadow-sm transition-colors duration-200 cursor-pointer select-none active:scale-[0.98] whitespace-nowrap shrink-0 ${
-                isGeneratingStrategic
-                  ? "bg-stone-900 text-stone-100 dark:bg-white dark:text-stone-900 cursor-wait opacity-95"
-                  : "bg-stone-950 dark:bg-white text-white dark:text-stone-950 hover:bg-stone-800 dark:hover:bg-stone-100"
-              }`}
-              title="Generar cupón estratégico comercial"
-            >
-              <AnimatePresence mode="wait">
-                {isGeneratingStrategic ? (
-                  <motion.div
-                    key="state-generating"
-                    initial={{ opacity: 0, scale: 0.95 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    exit={{ opacity: 0, scale: 0.95 }}
-                    transition={{ duration: 0.2, ease: "easeOut" }}
-                    className="flex items-center gap-2.5 justify-center"
-                  >
-                    <div className="w-5 h-5 flex items-center justify-center shrink-0">
-                      <ThinkingOrb state="shaping" size={20} theme="auto" />
-                    </div>
-                    <span className="font-medium text-stone-100 dark:text-stone-900 whitespace-nowrap">
-                      Generando...
-                    </span>
-                  </motion.div>
-                ) : (
-                  <motion.div
-                    key="state-idle"
-                    initial={{ opacity: 0, scale: 0.95 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    exit={{ opacity: 0, scale: 0.95 }}
-                    transition={{ duration: 0.2, ease: "easeOut" }}
-                    className="flex items-center gap-2 justify-center"
-                  >
-                    <Dices className="w-4 h-4 text-stone-300 dark:text-stone-700 shrink-0" />
-                    <span className="whitespace-nowrap">Generar Cupón Estratégico</span>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </button>
-
-            {/* Configurar Cupón Toggle Button with fixed footprint and instant text update */}
-            <button
-              type="button"
-              onClick={() => setShowManualForm(!showManualForm)}
-              className={`w-full sm:w-[195px] h-[46px] sm:h-[48px] px-4 sm:px-5 rounded-2xl text-xs sm:text-sm font-semibold border transition-all duration-200 flex items-center justify-center gap-2 cursor-pointer shadow-xs active:scale-[0.98] select-none shrink-0 ${
-                showManualForm
-                  ? "bg-stone-900 text-white dark:bg-white dark:text-stone-900 border-transparent shadow-sm"
-                  : "border-stone-200/80 dark:border-white/10 bg-white dark:bg-[#1f1f23] hover:bg-stone-50 dark:hover:bg-white/10 text-stone-800 dark:text-stone-200"
-              }`}
-            >
-              <SlidersHorizontal className={`w-4 h-4 shrink-0 transition-transform duration-300 ${showManualForm ? "rotate-90" : "rotate-0"}`} />
-              <span className="whitespace-nowrap transition-colors duration-150">
-                {showManualForm ? "Cerrar Configuración" : "Configurar Cupón"}
-              </span>
-            </button>
-          </div>
-        </div>
-      ) : (
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-5 bg-white/80 dark:bg-[#202022]/80 backdrop-blur-xl p-6 sm:p-8 rounded-[2rem] border border-black/5 dark:border-white/10 shadow-xs">
-          <div>
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/10 text-amber-700 dark:text-amber-300 text-xs font-semibold mb-2 border border-amber-500/20">
-              <Sparkles className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
-              <span>Club Lúmina • Recompensas & Beneficios Exclusivos</span>
-            </div>
-            <h2 className="text-2xl sm:text-3xl font-black text-gray-950 dark:text-white tracking-tight">
-              Mis Cupones & Descuentos Ganados
-            </h2>
-            <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-1 max-w-2xl leading-relaxed">
-              Gestiona los cupones que has acumulado por tus compras y fidelidad en Lúmina Home. Puedes agregarlos a tu <strong>Google Wallet</strong> para tenerlos siempre disponibles en tu teléfono o compartirlos en alta resolución por WhatsApp.
-            </p>
-          </div>
-
-          <div className="flex items-center gap-2.5 px-4 py-3 rounded-2xl bg-amber-500/10 dark:bg-amber-500/15 border border-amber-500/20 text-amber-900 dark:text-amber-200 text-xs font-semibold shrink-0">
-            <Wallet className="w-4 h-4 text-amber-600 dark:text-amber-400" />
-            <span>Pases Google Wallet 1D Lineal</span>
-          </div>
-        </div>
-      )}
-
-      {/* ===================================================================== */}
-      {/* 1.1 JUST GENERATED COUPON BANNER (ADMIN)                              */}
-      {/* ===================================================================== */}
-      <AnimatePresence>
-        {isAdmin && justGeneratedCoupon && (
-          <motion.div
-            initial={{ opacity: 0, y: -12, scale: 0.99 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: -12, scale: 0.99 }}
-            transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
-            className="p-5 sm:p-6 rounded-2xl sm:rounded-3xl bg-white dark:bg-[#1a1a1c] border border-stone-200/80 dark:border-white/10 shadow-xs"
-          >
-            {/* Top row: Status, Scope badge and Close button */}
-            <div className="flex items-center justify-between gap-3 pb-3 mb-3 border-b border-stone-100 dark:border-white/5">
-              <div className="flex flex-wrap items-center gap-2">
-                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-stone-900 text-white dark:bg-white dark:text-stone-900">
-                  <Check className="w-3 h-3 text-amber-400 dark:text-amber-300" />
-                  Cupón Generado con Éxito
-                </span>
-                <span className="px-2.5 py-1 rounded-full text-[11px] font-medium bg-stone-100 dark:bg-white/5 text-stone-600 dark:text-stone-300 border border-stone-200/60 dark:border-white/5">
-                  {justGeneratedCoupon.scope === "all"
-                    ? "Toda la Tienda (Descuento Global)"
-                    : `Colección: ${justGeneratedCoupon.targetNiche}`}
-                </span>
+      <div className="space-y-4 sm:space-y-5">
+        {isAdmin ? (
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-5 bg-white/80 dark:bg-[#202022]/80 backdrop-blur-xl p-6 sm:p-8 rounded-[2rem] border border-black/5 dark:border-white/10 shadow-xs">
+            <div>
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/10 text-amber-800 dark:text-amber-300 text-xs font-semibold mb-2 border border-amber-500/20">
+                <ShieldCheck className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
+                <span>Fidelización & Retención de Clientes</span>
               </div>
+              <h2 className="text-2xl sm:text-3xl font-black text-gray-950 dark:text-white tracking-tight">
+                Gestión Estratégica de Cupones & Campañas
+              </h2>
+              <p className="text-xs sm:text-sm text-stone-500 dark:text-stone-400 mt-1 max-w-2xl leading-relaxed">
+                Monitorea y administra campañas activas, colecciones de autor y promociones globales para compartir por WhatsApp.
+              </p>
+            </div>
 
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 sm:gap-3 w-full sm:w-auto">
+              {/* Strategic Generator Button with glowing ThinkingOrb in dark mode */}
               <button
                 type="button"
-                onClick={() => setJustGeneratedCoupon(null)}
-                className="w-8 h-8 rounded-full bg-stone-100 dark:bg-white/5 hover:bg-stone-200 dark:hover:bg-white/10 text-stone-500 dark:text-stone-400 hover:text-stone-900 dark:hover:text-white flex items-center justify-center transition-colors cursor-pointer shrink-0"
-                title="Cerrar aviso"
+                disabled={isGeneratingStrategic}
+                onClick={handleTriggerRandom}
+                className={`relative flex items-center justify-center gap-2.5 w-full sm:w-[245px] h-[46px] sm:h-[48px] px-4 sm:px-5 rounded-2xl text-xs sm:text-sm font-semibold tracking-tight shadow-sm transition-all duration-300 cursor-pointer select-none active:scale-[0.98] whitespace-nowrap shrink-0 ${
+                  isGeneratingStrategic
+                    ? "bg-stone-950 dark:bg-[#18181b] text-amber-300 dark:text-amber-300 border border-amber-500/40 shadow-[0_0_24px_rgba(245,158,11,0.22)] cursor-wait"
+                    : "bg-stone-950 dark:bg-[#202023] text-white dark:text-stone-100 hover:bg-stone-800 dark:hover:bg-[#2a2a2e] border border-black/10 dark:border-white/10"
+                }`}
+                title="Generar cupón estratégico comercial"
               >
-                <X className="w-4 h-4" />
+                <AnimatePresence mode="wait">
+                  {isGeneratingStrategic ? (
+                    <motion.div
+                      key="state-generating"
+                      initial={{ opacity: 0, scale: 0.95 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      exit={{ opacity: 0, scale: 0.95 }}
+                      transition={{ duration: 0.2, ease: "easeOut" }}
+                      className="flex items-center gap-2.5 justify-center"
+                    >
+                      <div className="w-5 h-5 flex items-center justify-center shrink-0">
+                        <ThinkingOrb state="shaping" size={20} theme="dark" />
+                      </div>
+                      <span className="font-semibold text-amber-300 whitespace-nowrap">
+                        Generando...
+                      </span>
+                    </motion.div>
+                  ) : (
+                    <motion.div
+                      key="state-idle"
+                      initial={{ opacity: 0, scale: 0.95 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      exit={{ opacity: 0, scale: 0.95 }}
+                      transition={{ duration: 0.2, ease: "easeOut" }}
+                      className="flex items-center gap-2 justify-center"
+                    >
+                      <Dices className="w-4 h-4 text-amber-400 shrink-0" />
+                      <span className="whitespace-nowrap">Generar Cupón Estratégico</span>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </button>
+
+              {/* Configurar Cupón Toggle Button with fixed footprint and instant text update */}
+              <button
+                type="button"
+                onClick={() => setShowManualForm(!showManualForm)}
+                className={`w-full sm:w-[195px] h-[46px] sm:h-[48px] px-4 sm:px-5 rounded-2xl text-xs sm:text-sm font-semibold border transition-all duration-200 flex items-center justify-center gap-2 cursor-pointer shadow-xs active:scale-[0.98] select-none shrink-0 ${
+                  showManualForm
+                    ? "bg-stone-900 text-white dark:bg-white dark:text-stone-900 border-transparent shadow-sm"
+                    : "border-stone-200/80 dark:border-white/10 bg-white dark:bg-[#1f1f23] hover:bg-stone-50 dark:hover:bg-white/10 text-stone-800 dark:text-stone-200"
+                }`}
+              >
+                <SlidersHorizontal className={`w-4 h-4 shrink-0 transition-transform duration-300 ${showManualForm ? "rotate-90" : "rotate-0"}`} />
+                <span className="whitespace-nowrap transition-colors duration-150">
+                  {showManualForm ? "Cerrar Configuración" : "Configurar Cupón"}
+                </span>
               </button>
             </div>
+          </div>
+        ) : (
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-5 bg-white/80 dark:bg-[#202022]/80 backdrop-blur-xl p-6 sm:p-8 rounded-[2rem] border border-black/5 dark:border-white/10 shadow-xs">
+            <div>
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/10 text-amber-700 dark:text-amber-300 text-xs font-semibold mb-2 border border-amber-500/20">
+                <Sparkles className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
+                <span>Club Lúmina • Recompensas & Beneficios Exclusivos</span>
+              </div>
+              <h2 className="text-2xl sm:text-3xl font-black text-gray-950 dark:text-white tracking-tight">
+                Mis Cupones & Descuentos Ganados
+              </h2>
+              <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-1 max-w-2xl leading-relaxed">
+                Gestiona los cupones que has acumulado por tus compras y fidelidad en Lúmina Home. Puedes agregarlos a tu <strong>Google Wallet</strong> para tenerlos siempre disponibles en tu teléfono o compartirlos en alta resolución por WhatsApp.
+              </p>
+            </div>
 
-            {/* Middle row: Code, discount and description */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-              <div className="space-y-1">
-                <div className="flex flex-wrap items-baseline gap-3">
-                  <span className="font-mono text-2xl sm:text-3xl font-black text-stone-900 dark:text-white tracking-wider">
-                    {justGeneratedCoupon.code}
+            <div className="flex items-center gap-2.5 px-4 py-3 rounded-2xl bg-amber-500/10 dark:bg-amber-500/15 border border-amber-500/20 text-amber-900 dark:text-amber-200 text-xs font-semibold shrink-0">
+              <Wallet className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+              <span>Pases Google Wallet 1D Lineal</span>
+            </div>
+          </div>
+        )}
+
+        {/* ===================================================================== */}
+        {/* 1.1 JUST GENERATED COUPON BANNER (ADMIN)                              */}
+        {/* ===================================================================== */}
+        <AnimatePresence>
+          {isAdmin && justGeneratedCoupon && (
+            <motion.div
+              initial={{ opacity: 0, y: -12, scale: 0.99 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: -12, scale: 0.99 }}
+              transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
+              className="p-5 sm:p-6 rounded-2xl sm:rounded-3xl bg-white dark:bg-[#1a1a1c] border border-stone-200/80 dark:border-amber-400/25 dark:shadow-[0_0_35px_rgba(245,158,11,0.12)] shadow-xs"
+            >
+              {/* Top row: Status, Scope badge and Close button */}
+              <div className="flex items-center justify-between gap-3 pb-3 mb-3 border-b border-stone-100 dark:border-white/5">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-stone-900 text-white dark:bg-white dark:text-stone-900">
+                    <Check className="w-3 h-3 text-amber-400 dark:text-amber-300" />
+                    Cupón Generado con Éxito
                   </span>
-                  <span className="text-xl sm:text-2xl font-black text-[#8c9276] dark:text-[#a8af92]">
-                    {justGeneratedCoupon.discountType === "free_shipping"
-                      ? "Envío Gratis"
-                      : `-${justGeneratedCoupon.discountPercent}% OFF`}
+                  <span className="px-2.5 py-1 rounded-full text-[11px] font-medium bg-stone-100 dark:bg-white/5 text-stone-600 dark:text-stone-300 border border-stone-200/60 dark:border-white/5">
+                    {justGeneratedCoupon.scope === "all"
+                      ? "Toda la Tienda (Descuento Global)"
+                      : `Colección: ${justGeneratedCoupon.targetNiche}`}
                   </span>
                 </div>
-                <p className="text-xs text-stone-500 dark:text-stone-400 max-w-xl">
-                  {justGeneratedCoupon.description}
-                </p>
-              </div>
-
-              {/* Action buttons: Symmetrical and responsive on mobile/tablet */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 w-full sm:w-auto shrink-0 pt-2 sm:pt-0">
-                <button
-                  type="button"
-                  onClick={() => handleCopyCode(justGeneratedCoupon.code)}
-                  className="px-3.5 py-2.5 rounded-xl bg-stone-100 dark:bg-white/5 hover:bg-stone-200 dark:hover:bg-white/10 text-stone-900 dark:text-white text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors cursor-pointer border border-stone-200/60 dark:border-white/5 shadow-2xs"
-                >
-                  {copiedCode === justGeneratedCoupon.code ? (
-                    <>
-                      <Check className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
-                      <span>Copiado</span>
-                    </>
-                  ) : (
-                    <>
-                      <Copy className="w-3.5 h-3.5" />
-                      <span>Copiar Código</span>
-                    </>
-                  )}
-                </button>
 
                 <button
                   type="button"
-                  onClick={() => handleShareWhatsAppPng(justGeneratedCoupon)}
-                  className="px-3.5 py-2.5 rounded-xl bg-[#25D366] hover:bg-[#20ba59] text-white text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors cursor-pointer shadow-xs"
+                  onClick={() => setJustGeneratedCoupon(null)}
+                  className="w-10 h-10 rounded-full bg-white/80 dark:bg-white/10 backdrop-blur-xl border border-black/[0.06] dark:border-white/15 shadow-[0_2px_8px_rgba(0,0,0,0.04)] text-gray-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50/90 dark:hover:bg-rose-950/40 hover:border-rose-200 dark:hover:border-rose-900/40 flex items-center justify-center hover:scale-105 active:scale-95 transition-all cursor-pointer shrink-0"
+                  title="Cerrar aviso"
                 >
-                  <WhatsAppIcon className="w-3.5 h-3.5 fill-current" />
-                  <span>Compartir</span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => setAnalyticsCoupon(justGeneratedCoupon)}
-                  className="px-3.5 py-2.5 rounded-xl bg-stone-900 dark:bg-white text-white dark:text-stone-900 text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors cursor-pointer shadow-xs"
-                >
-                  <BarChart3 className="w-3.5 h-3.5" />
-                  <span>Ver Métricas</span>
+                  <X className="w-4 h-4" />
                 </button>
               </div>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
 
-      {/* ===================================================================== */}
-      {/* 1.2 MANUAL CUSTOMIZATION SECTION (Unfolds on 'Configurar Cupón')      */}
-      {/* ===================================================================== */}
-      <AnimatePresence>
-        {isAdmin && showManualForm && (
-          <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: "auto" }}
-            exit={{ opacity: 0, height: 0 }}
-            transition={{ duration: 0.32, ease: [0.16, 1, 0.3, 1] }}
-            className="overflow-hidden"
-          >
+              {/* Middle row: Code, discount and description */}
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div className="space-y-1">
+                  <div className="flex flex-wrap items-baseline gap-3">
+                    <span className="font-mono text-2xl sm:text-3xl font-black text-stone-900 dark:text-white tracking-wider">
+                      {justGeneratedCoupon.code}
+                    </span>
+                    <span className="text-xl sm:text-2xl font-black text-[#8c9276] dark:text-[#a8af92]">
+                      {justGeneratedCoupon.discountType === "free_shipping"
+                        ? "Envío Gratis"
+                        : `-${justGeneratedCoupon.discountPercent}% OFF`}
+                    </span>
+                  </div>
+                  <p className="text-xs text-stone-500 dark:text-stone-400 max-w-xl">
+                    {justGeneratedCoupon.description}
+                  </p>
+                </div>
+
+                {/* Action buttons: Symmetrical and responsive on mobile/tablet */}
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 w-full sm:w-auto shrink-0 pt-2 sm:pt-0">
+                  <button
+                    type="button"
+                    onClick={() => handleCopyCode(justGeneratedCoupon.code)}
+                    className="px-3.5 py-2.5 rounded-xl bg-stone-100 dark:bg-white/5 hover:bg-stone-200 dark:hover:bg-white/10 text-stone-900 dark:text-white text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors cursor-pointer border border-stone-200/60 dark:border-white/5 shadow-2xs"
+                  >
+                    {copiedCode === justGeneratedCoupon.code ? (
+                      <>
+                        <Check className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
+                        <span>Copiado</span>
+                      </>
+                    ) : (
+                      <>
+                        <Copy className="w-3.5 h-3.5" />
+                        <span>Copiar Código</span>
+                      </>
+                    )}
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => handleShareWhatsAppPng(justGeneratedCoupon)}
+                    className="px-3.5 py-2.5 rounded-xl bg-[#25D366] hover:bg-[#20ba59] text-white text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors cursor-pointer shadow-xs"
+                  >
+                    <WhatsAppIcon className="w-3.5 h-3.5 fill-current" />
+                    <span>Compartir</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setAnalyticsCoupon(justGeneratedCoupon)}
+                    className="px-3.5 py-2.5 rounded-xl bg-stone-900 dark:bg-white text-white dark:text-stone-900 text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors cursor-pointer shadow-xs"
+                  >
+                    <BarChart3 className="w-3.5 h-3.5" />
+                    <span>Ver Métricas</span>
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* ===================================================================== */}
+        {/* 1.2 MANUAL CUSTOMIZATION SECTION (Unfolds on 'Configurar Cupón')      */}
+        {/* ===================================================================== */}
+        <AnimatePresence initial={false}>
+          {isAdmin && showManualForm && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: "auto" }}
+              exit={{ opacity: 0, height: 0 }}
+              transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
+              className="overflow-hidden"
+            >
             <form
               onSubmit={handleCreateManual}
               className="p-6 sm:p-8 rounded-3xl bg-white dark:bg-[#1a1a1c] border border-stone-200/80 dark:border-white/10 shadow-xs space-y-6"
@@ -1177,6 +1178,7 @@ export function DiscountCouponsTab() {
           </motion.div>
         )}
       </AnimatePresence>
+      </div>
 
       {/* ===================================================================== */}
       {/* 2. STATS KPI BAR (ADMIN vs CLIENT)                                    */}
@@ -1394,13 +1396,13 @@ export function DiscountCouponsTab() {
                   className="relative cursor-pointer transition-transform duration-300 group-hover:-translate-y-1.5 w-full min-h-[160px] h-[175px] sm:h-[190px] flex items-center justify-center p-1"
                   title={isAdmin ? "Clic para copiar código del cupón" : "Clic para ver detalle y agregar a Google Wallet"}
                 >
-                  {/* Dark Mode Elegant Back-Glow / Ambient Luxury Aura */}
+                  {/* Dark Mode Radiant Luxury Backlight / Halo */}
                   <div
-                    className="hidden dark:block absolute inset-2 sm:inset-4 rounded-[2.5rem] bg-gradient-to-r from-amber-300/[0.07] via-white/[0.06] to-amber-300/[0.07] blur-2xl opacity-75 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none -z-0"
+                    className="hidden dark:block absolute -inset-1 sm:-inset-1.5 rounded-[2.5rem] bg-gradient-to-r from-amber-400/25 via-amber-200/35 to-orange-400/25 blur-xl opacity-90 group-hover:opacity-100 group-hover:blur-2xl transition-all duration-500 pointer-events-none z-0"
                     aria-hidden="true"
                   />
                   <div
-                    className="hidden dark:block absolute inset-5 sm:inset-7 rounded-[2rem] bg-white/[0.035] blur-lg pointer-events-none -z-0"
+                    className="hidden dark:block absolute inset-3 sm:inset-4 rounded-[2rem] bg-amber-400/15 blur-md opacity-80 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none z-0"
                     aria-hidden="true"
                   />
 
@@ -1431,25 +1433,27 @@ export function DiscountCouponsTab() {
                     </div>
                   )}
 
-                  {isStorewide ? (
-                    // -------------------------------------------------------------
-                    // STYLE 2: STOREWIDE GENERAL TICKET (Cupones Style 2.jpg)
-                    // -------------------------------------------------------------
-                    <Style2TicketSvg
-                      coupon={coupon}
-                      theme={STYLE2_THEMES[getCouponPaletteIndex(coupon.id, STYLE2_THEMES.length)]}
-                      className="max-h-[165px] sm:max-h-[180px]"
-                    />
-                  ) : (
-                    // -------------------------------------------------------------
-                    // STYLE 1: NICHE SPECIFIC TICKET (Cupones Style.jpg)
-                    // -------------------------------------------------------------
-                    <Style1TicketSvg
-                      coupon={coupon}
-                      palette={STYLE1_GRADIENTS[getCouponPaletteIndex(coupon.id, STYLE1_GRADIENTS.length)]}
-                      className="max-h-[165px] sm:max-h-[180px]"
-                    />
-                  )}
+                  <div className="relative z-10 w-full flex items-center justify-center">
+                    {isStorewide ? (
+                      // -------------------------------------------------------------
+                      // STYLE 2: STOREWIDE GENERAL TICKET (Cupones Style 2.jpg)
+                      // -------------------------------------------------------------
+                      <Style2TicketSvg
+                        coupon={coupon}
+                        theme={STYLE2_THEMES[getCouponPaletteIndex(coupon.id, STYLE2_THEMES.length)]}
+                        className="max-h-[165px] sm:max-h-[180px]"
+                      />
+                    ) : (
+                      // -------------------------------------------------------------
+                      // STYLE 1: NICHE SPECIFIC TICKET (Cupones Style.jpg)
+                      // -------------------------------------------------------------
+                      <Style1TicketSvg
+                        coupon={coupon}
+                        palette={STYLE1_GRADIENTS[getCouponPaletteIndex(coupon.id, STYLE1_GRADIENTS.length)]}
+                        className="max-h-[165px] sm:max-h-[180px]"
+                      />
+                    )}
+                  </div>
                 </div>
 
                 {/* Floating Action Ribbon under ticket (Responsive scrollable ribbon on mobile/tablet) */}
