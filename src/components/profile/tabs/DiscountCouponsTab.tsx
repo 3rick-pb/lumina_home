@@ -24,7 +24,10 @@ import {
   CheckCircle2,
   Gift,
   BarChart3,
+  SlidersHorizontal,
+  X,
 } from "lucide-react";
+import { ThinkingOrb } from "thinking-orbs";
 import { useCouponStore, DiscountCoupon } from "@/lib/couponStore";
 import { useUserStore } from "@/lib/userStore";
 import { VectorBarcode, SvgBarcodeGroup } from "@/components/ui/VectorBarcode";
@@ -624,12 +627,21 @@ export function DiscountCouponsTab() {
     }
   };
 
+  // Strategic Generator Animation State (2.5s Thinking Orb)
+  const [isGeneratingStrategic, setIsGeneratingStrategic] = useState(false);
+
   const handleTriggerRandom = () => {
-    const coupon = generateRandomCoupon({
-      preferredScope: randomScopeChoice === "any" ? undefined : randomScopeChoice,
-      targetNiche: randomScopeChoice === "niche" ? randomTargetNiche : undefined,
-    });
-    setJustGeneratedCoupon(coupon);
+    if (isGeneratingStrategic) return;
+    setIsGeneratingStrategic(true);
+
+    setTimeout(() => {
+      const coupon = generateRandomCoupon({
+        preferredScope: randomScopeChoice === "any" ? undefined : randomScopeChoice,
+        targetNiche: randomScopeChoice === "niche" ? randomTargetNiche : undefined,
+      });
+      setJustGeneratedCoupon(coupon);
+      setIsGeneratingStrategic(false);
+    }, 2500);
   };
 
   const handleCreateManual = (e: React.FormEvent) => {
@@ -760,7 +772,7 @@ export function DiscountCouponsTab() {
           <div>
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 text-xs font-semibold mb-2 border border-emerald-500/20">
               <ShieldCheck className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
-              <span>Sistema Comercial • Fidelización & Retención de Clientes</span>
+              <span>Fidelización & Retención de Clientes</span>
             </div>
             <h2 className="text-2xl sm:text-3xl font-black text-gray-950 dark:text-white tracking-tight">
               Gestión Estratégica de Cupones & Campañas
@@ -770,13 +782,64 @@ export function DiscountCouponsTab() {
             </p>
           </div>
 
-          <div className="flex items-center gap-2 sm:gap-3 shrink-0">
-            <button
-              onClick={() => setShowManualForm(!showManualForm)}
-              className="px-4 py-2.5 rounded-2xl text-xs sm:text-sm font-semibold border border-black/10 dark:border-white/15 bg-white dark:bg-white/5 hover:bg-gray-50 dark:hover:bg-white/10 text-gray-800 dark:text-gray-200 transition-all flex items-center gap-2 cursor-pointer shadow-xs active:scale-95"
+          <div className="flex items-center gap-2.5 sm:gap-3 shrink-0 flex-wrap">
+            {/* Morphing Strategic Generator Button with Thinking Orb Animation */}
+            <motion.div
+              layout
+              className="relative flex items-center bg-gray-950 dark:bg-white text-white dark:text-gray-950 rounded-2xl shadow-md border border-white/10 dark:border-black/10 overflow-hidden"
+              transition={{ type: "spring", stiffness: 500, damping: 35 }}
             >
-              <Plus className="w-4 h-4" />
-              <span>{showManualForm ? "Ocultar Configurador" : "Configurar Cupón"}</span>
+              <button
+                type="button"
+                disabled={isGeneratingStrategic}
+                onClick={handleTriggerRandom}
+                className={`flex items-center gap-2 py-2.5 text-xs sm:text-sm font-bold transition-all cursor-pointer select-none active:scale-95 ${
+                  isGeneratingStrategic
+                    ? "px-3 bg-emerald-500/15 text-emerald-400 dark:text-emerald-700 cursor-wait"
+                    : "px-3.5 sm:px-4 hover:bg-gray-800 dark:hover:bg-gray-100"
+                }`}
+                title="Generar cupón estratégico comercial"
+              >
+                <Dices className={`w-4 h-4 shrink-0 ${isGeneratingStrategic ? "animate-spin text-emerald-400 dark:text-emerald-600" : ""}`} />
+                {!isGeneratingStrategic && (
+                  <span className="whitespace-nowrap">Generar Cupón Estratégico</span>
+                )}
+              </button>
+
+              {/* Revealed Animated Container with Thinking Orb and Agent shaping... */}
+              <AnimatePresence>
+                {isGeneratingStrategic && (
+                  <motion.div
+                    key="shaping-orb-revealed"
+                    initial={{ opacity: 0, width: 0, scale: 0.9 }}
+                    animate={{ opacity: 1, width: "auto", scale: 1 }}
+                    exit={{ opacity: 0, width: 0, scale: 0.9 }}
+                    transition={{ type: "spring", stiffness: 450, damping: 30 }}
+                    className="flex items-center gap-2 px-3 py-1.5 border-l border-white/15 dark:border-black/15 bg-white/5 dark:bg-black/5 shrink-0 overflow-hidden"
+                  >
+                    <div className="w-5 h-5 flex items-center justify-center shrink-0">
+                      <ThinkingOrb state="shaping" size={20} theme="auto" />
+                    </div>
+                    <span className="text-xs font-mono font-bold tracking-tight text-emerald-400 dark:text-emerald-600 whitespace-nowrap animate-pulse pr-1">
+                      Agent shaping…
+                    </span>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </motion.div>
+
+            {/* Configurar Cupón Toggle Button */}
+            <button
+              type="button"
+              onClick={() => setShowManualForm(!showManualForm)}
+              className={`px-4 py-2.5 rounded-2xl text-xs sm:text-sm font-semibold border transition-all flex items-center gap-2 cursor-pointer shadow-xs active:scale-95 ${
+                showManualForm
+                  ? "bg-gray-900 text-white dark:bg-white dark:text-gray-900 border-transparent shadow-sm"
+                  : "border-black/10 dark:border-white/15 bg-white dark:bg-white/5 hover:bg-gray-50 dark:hover:bg-white/10 text-gray-800 dark:text-gray-200"
+              }`}
+            >
+              <SlidersHorizontal className="w-4 h-4" />
+              <span>{showManualForm ? "Cerrar Configuración" : "Configurar Cupón"}</span>
             </button>
           </div>
         </div>
@@ -803,237 +866,106 @@ export function DiscountCouponsTab() {
       )}
 
       {/* ===================================================================== */}
-      {/* 2. STATS KPI BAR (ADMIN vs CLIENT)                                    */}
+      {/* 1.1 JUST GENERATED COUPON BANNER (ADMIN)                              */}
       {/* ===================================================================== */}
-      {isAdmin ? (
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-          <div className="bg-white dark:bg-[#202022] p-4 sm:p-5 rounded-2xl border border-black/5 dark:border-white/10 shadow-xs flex items-center gap-3.5">
-            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
-              <Tag className="w-5 h-5" />
-            </div>
-            <div>
-              <p className="text-[11px] font-semibold text-gray-500 dark:text-gray-400">Campañas Activas</p>
-              <p className="text-lg sm:text-2xl font-black text-gray-950 dark:text-white">{stats.activeCount}</p>
-            </div>
-          </div>
-
-          <div className="bg-white dark:bg-[#202022] p-4 sm:p-5 rounded-2xl border border-black/5 dark:border-white/10 shadow-xs flex items-center gap-3.5">
-            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0">
-              <Percent className="w-5 h-5" />
-            </div>
-            <div>
-              <p className="text-[11px] font-semibold text-gray-500 dark:text-gray-400">Margen Promedio Otorgado</p>
-              <p className="text-lg sm:text-2xl font-black text-gray-950 dark:text-white">{stats.avgDiscount}%</p>
-            </div>
-          </div>
-
-          <div className="bg-white dark:bg-[#202022] p-4 sm:p-5 rounded-2xl border border-black/5 dark:border-white/10 shadow-xs flex items-center gap-3.5">
-            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0">
-              <Share2 className="w-5 h-5" />
-            </div>
-            <div>
-              <p className="text-[11px] font-semibold text-gray-500 dark:text-gray-400">PNGs Compartidos</p>
-              <p className="text-lg sm:text-2xl font-black text-gray-950 dark:text-white">{stats.totalShares}</p>
-            </div>
-          </div>
-
-          <div className="bg-white dark:bg-[#202022] p-4 sm:p-5 rounded-2xl border border-black/5 dark:border-white/10 shadow-xs flex items-center gap-3.5">
-            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-purple-500/10 text-purple-600 dark:text-purple-400 flex items-center justify-center shrink-0">
-              <Flame className="w-5 h-5" />
-            </div>
-            <div>
-              <p className="text-[11px] font-semibold text-gray-500 dark:text-gray-400">Canjes Registrados</p>
-              <p className="text-lg sm:text-2xl font-black text-gray-950 dark:text-white">{stats.totalUses}</p>
-            </div>
-          </div>
-        </div>
-      ) : (
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-          <div className="bg-white dark:bg-[#202022] p-4 sm:p-5 rounded-2xl border border-black/5 dark:border-white/10 shadow-xs flex items-center gap-3.5">
-            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
-              <Tag className="w-5 h-5" />
-            </div>
-            <div>
-              <p className="text-[11px] font-semibold text-gray-500 dark:text-gray-400">Cupones Disponibles</p>
-              <p className="text-lg sm:text-2xl font-black text-gray-950 dark:text-white">{clientStats.availableCount}</p>
-            </div>
-          </div>
-
-          <div className="bg-white dark:bg-[#202022] p-4 sm:p-5 rounded-2xl border border-black/5 dark:border-white/10 shadow-xs flex items-center gap-3.5">
-            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0">
-              <Percent className="w-5 h-5" />
-            </div>
-            <div>
-              <p className="text-[11px] font-semibold text-gray-500 dark:text-gray-400">Mayor Beneficio Activo</p>
-              <p className="text-lg sm:text-2xl font-black text-gray-950 dark:text-white">{clientStats.maxDiscount}% OFF</p>
-            </div>
-          </div>
-
-          <div className="bg-white dark:bg-[#202022] p-4 sm:p-5 rounded-2xl border border-black/5 dark:border-white/10 shadow-xs flex items-center gap-3.5">
-            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0">
-              <CheckCircle2 className="w-5 h-5" />
-            </div>
-            <div>
-              <p className="text-[11px] font-semibold text-gray-500 dark:text-gray-400">Cupones Utilizados</p>
-              <p className="text-lg sm:text-2xl font-black text-gray-950 dark:text-white">{clientStats.usedCount}</p>
-            </div>
-          </div>
-
-          <div className="bg-white dark:bg-[#202022] p-4 sm:p-5 rounded-2xl border border-black/5 dark:border-white/10 shadow-xs flex items-center gap-3.5">
-            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-purple-500/10 text-purple-600 dark:text-purple-400 flex items-center justify-center shrink-0">
-              <Wallet className="w-5 h-5" />
-            </div>
-            <div>
-              <p className="text-[11px] font-semibold text-gray-500 dark:text-gray-400">Google Wallet Pass</p>
-              <p className="text-lg sm:text-2xl font-black text-gray-950 dark:text-white">Código 1D</p>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* ===================================================================== */}
-      {/* 3 & 4. ADMIN GENERATOR ENGINE & MANUAL CREATOR FORM                  */}
-      {/* ===================================================================== */}
-      {isAdmin && (
-        <>
-          {/* HERO GENERATOR: 1-CLICK STRATEGIC COUPON ENGINE */}
-          <div className="relative overflow-hidden rounded-[2rem] p-6 sm:p-8 bg-gradient-to-br from-[#18181b] via-[#202025] to-[#121215] text-white shadow-xl border border-white/10">
-            <div className="absolute top-0 right-0 w-80 h-80 bg-emerald-500/15 rounded-full blur-3xl pointer-events-none" />
-            <div className="absolute bottom-0 left-1/3 w-64 h-64 bg-amber-500/10 rounded-full blur-3xl pointer-events-none" />
-
-            <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
-              <div className="space-y-3 max-w-xl">
-                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 text-amber-300 text-xs font-semibold backdrop-blur-md border border-white/15">
-                  <Dices className="w-3.5 h-3.5" />
-                  <span>Algoritmo Generador en 1-Click</span>
+      <AnimatePresence>
+        {isAdmin && justGeneratedCoupon && (
+          <motion.div
+            initial={{ opacity: 0, y: -12, scale: 0.98 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -12, scale: 0.98 }}
+            transition={{ duration: 0.35, ease: "easeOut" }}
+            className="p-5 sm:p-6 rounded-[2rem] bg-gradient-to-r from-emerald-950/70 via-teal-950/50 to-zinc-900/80 dark:bg-[#1a1a1d] text-white border border-emerald-500/30 shadow-xl backdrop-blur-xl"
+          >
+            <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+              <div className="space-y-1.5">
+                <div className="flex items-center gap-2">
+                  <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-emerald-400 text-gray-950">
+                    ¡Cupón Generado con Éxito!
+                  </span>
+                  <span className="text-xs text-emerald-300 font-semibold">
+                    {justGeneratedCoupon.scope === "all"
+                      ? "🏛️ Toda la Tienda (Descuento Global)"
+                      : `🌿 Colección: ${justGeneratedCoupon.targetNiche}`}
+                  </span>
                 </div>
-                <h3 className="text-2xl sm:text-3xl font-black tracking-tight">
-                  ¿Deseas activar una promoción comercial inmediata?
-                </h3>
-                <p className="text-xs sm:text-sm text-gray-300 leading-relaxed">
-                  El motor sintetiza automáticamente descuentos matemáticamente balanceados, seleccionando el diseño exacto según el alcance.
-                </p>
-
-                {/* Scope Selection Options */}
-                <div className="pt-2 flex flex-wrap items-center gap-2 text-xs">
-                  <span className="text-gray-400 font-medium">Arquitectura de diseño:</span>
-                  <button
-                    type="button"
-                    onClick={() => setRandomScopeChoice("any")}
-                    className={`px-3 py-1.5 rounded-full font-semibold transition-all cursor-pointer ${
-                      randomScopeChoice === "any"
-                        ? "bg-white text-gray-950 shadow-sm"
-                        : "bg-white/10 text-gray-300 hover:bg-white/20"
-                    }`}
-                  >
-                    🎲 Distribución Aleatoria
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setRandomScopeChoice("all")}
-                    className={`px-3 py-1.5 rounded-full font-semibold transition-all cursor-pointer ${
-                      randomScopeChoice === "all"
-                        ? "bg-white text-gray-950 shadow-sm"
-                        : "bg-white/10 text-gray-300 hover:bg-white/20"
-                    }`}
-                  >
-                    🏛️ Descuento Global (Estilo Vintage)
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setRandomScopeChoice("niche")}
-                    className={`px-3 py-1.5 rounded-full font-semibold transition-all cursor-pointer ${
-                      randomScopeChoice === "niche"
-                        ? "bg-white text-gray-950 shadow-sm"
-                        : "bg-white/10 text-gray-300 hover:bg-white/20"
-                    }`}
-                  >
-                    🌿 Nicho de Autor (Estilo Scallop)
-                  </button>
+                <div className="flex items-baseline gap-3">
+                  <span className="font-mono text-2xl sm:text-3xl font-black text-white tracking-wider">
+                    {justGeneratedCoupon.code}
+                  </span>
+                  <span className="text-xl sm:text-2xl font-black text-amber-300">
+                    {justGeneratedCoupon.discountType === "free_shipping"
+                      ? "Envío Gratis"
+                      : `-${justGeneratedCoupon.discountPercent}% OFF`}
+                  </span>
                 </div>
+                <p className="text-xs text-gray-300">{justGeneratedCoupon.description}</p>
               </div>
 
-              <div className="shrink-0 flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+              {/* Fast Action Buttons for Admin */}
+              <div className="flex flex-wrap items-center gap-2 w-full md:w-auto">
                 <button
-                  onClick={handleTriggerRandom}
-                  className="group relative px-6 py-4 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-gray-950 font-black text-sm sm:text-base flex items-center justify-center gap-3 shadow-[0_10px_30px_rgba(16,185,129,0.35)] active:scale-95 transition-all cursor-pointer"
+                  type="button"
+                  onClick={() => handleCopyCode(justGeneratedCoupon.code)}
+                  className="flex-1 md:flex-none px-4 py-2.5 rounded-xl bg-white text-gray-950 text-xs font-bold hover:bg-gray-100 flex items-center justify-center gap-1.5 transition-all active:scale-95 cursor-pointer shadow-sm"
                 >
-                  <Dices className="w-5 h-5 group-hover:rotate-180 transition-transform duration-500 text-gray-950" />
-                  <span>Generar Cupón Estratégico</span>
+                  {copiedCode === justGeneratedCoupon.code ? (
+                    <>
+                      <Check className="w-3.5 h-3.5 text-emerald-600" />
+                      <span>¡Copiado!</span>
+                    </>
+                  ) : (
+                    <>
+                      <Copy className="w-3.5 h-3.5" />
+                      <span>Copiar Código</span>
+                    </>
+                  )}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => handleShareWhatsAppPng(justGeneratedCoupon)}
+                  className="flex-1 md:flex-none px-4 py-2.5 rounded-xl bg-[#25D366] hover:bg-[#20ba59] text-white text-xs font-bold flex items-center justify-center gap-1.5 transition-all active:scale-95 cursor-pointer shadow-sm"
+                >
+                  <WhatsAppIcon className="w-3.5 h-3.5 fill-current" />
+                  <span>Compartir</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setAnalyticsCoupon(justGeneratedCoupon)}
+                  className="flex-1 md:flex-none px-4 py-2.5 rounded-xl bg-purple-500/20 hover:bg-purple-500/30 text-purple-200 text-xs font-bold flex items-center justify-center gap-1.5 transition-all active:scale-95 cursor-pointer shadow-sm border border-purple-500/30"
+                >
+                  <BarChart3 className="w-3.5 h-3.5" />
+                  <span>Ver Métricas</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setJustGeneratedCoupon(null)}
+                  className="p-2 rounded-xl bg-white/10 hover:bg-white/20 text-gray-300 hover:text-white transition-all cursor-pointer"
+                  title="Cerrar aviso"
+                >
+                  <X className="w-4 h-4" />
                 </button>
               </div>
             </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
-            {/* JUST GENERATED BANNER MODAL (ADMIN - No Wallet button) */}
-            {justGeneratedCoupon && (
-              <div className="mt-8 pt-6 border-t border-white/15 animate-in">
-                <div className="p-4 sm:p-6 rounded-2xl bg-white/10 backdrop-blur-2xl border border-white/20 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-                  <div className="space-y-1.5">
-                    <div className="flex items-center gap-2">
-                      <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-emerald-400 text-gray-950">
-                        ¡Cupón Generado con Éxito!
-                      </span>
-                      <span className="text-xs text-emerald-300 font-semibold">
-                        {justGeneratedCoupon.scope === "all"
-                          ? "🏛️ Tienda Completa (Ticket Vintage)"
-                          : `🌿 Colección: ${justGeneratedCoupon.targetNiche} (Ticket Scallop)`}
-                      </span>
-                    </div>
-                    <div className="flex items-baseline gap-3">
-                      <span className="font-mono text-2xl sm:text-3xl font-black text-white tracking-wider">
-                        {justGeneratedCoupon.code}
-                      </span>
-                      <span className="text-xl sm:text-2xl font-black text-amber-300">
-                        {justGeneratedCoupon.discountType === "free_shipping"
-                          ? "Envío Gratis"
-                          : `-${justGeneratedCoupon.discountPercent}% OFF`}
-                      </span>
-                    </div>
-                    <p className="text-xs text-gray-300">{justGeneratedCoupon.description}</p>
-                  </div>
-
-                  {/* Fast Action Buttons for Admin (Copy & Share PNG only, Wallet is client-only) */}
-                  <div className="flex flex-wrap items-center gap-2 w-full md:w-auto">
-                    <button
-                      onClick={() => handleCopyCode(justGeneratedCoupon.code)}
-                      className="flex-1 md:flex-none px-4 py-2.5 rounded-xl bg-white text-gray-950 text-xs font-bold hover:bg-gray-100 flex items-center justify-center gap-1.5 transition-all active:scale-95 cursor-pointer shadow-sm"
-                    >
-                      {copiedCode === justGeneratedCoupon.code ? (
-                        <>
-                          <Check className="w-3.5 h-3.5 text-emerald-600" />
-                          <span>¡Copiado!</span>
-                        </>
-                      ) : (
-                        <>
-                          <Copy className="w-3.5 h-3.5" />
-                          <span>Copiar Código</span>
-                        </>
-                      )}
-                    </button>
-
-                    <button
-                      onClick={() => handleShareWhatsAppPng(justGeneratedCoupon)}
-                      className="flex-1 md:flex-none px-4 py-2.5 rounded-xl bg-[#25D366] hover:bg-[#20ba59] text-white text-xs font-bold flex items-center justify-center gap-1.5 transition-all active:scale-95 cursor-pointer shadow-sm"
-                    >
-                      <WhatsAppIcon className="w-3.5 h-3.5 fill-current" />
-                      <span>Compartir</span>
-                    </button>
-
-                    <button
-                      onClick={() => setAnalyticsCoupon(justGeneratedCoupon)}
-                      className="flex-1 md:flex-none px-4 py-2.5 rounded-xl bg-purple-500/20 hover:bg-purple-500/30 text-purple-200 text-xs font-bold flex items-center justify-center gap-1.5 transition-all active:scale-95 cursor-pointer shadow-sm border border-purple-500/30"
-                    >
-                      <BarChart3 className="w-3.5 h-3.5" />
-                      <span>Ver Métricas</span>
-                    </button>
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* MANUAL CREATOR FORM */}
-          {showManualForm && (
+      {/* ===================================================================== */}
+      {/* 1.2 MANUAL CUSTOMIZATION SECTION (Unfolds on 'Configurar Cupón')      */}
+      {/* ===================================================================== */}
+      <AnimatePresence>
+        {isAdmin && showManualForm && (
+          <motion.div
+            initial={{ opacity: 0, height: 0, y: -10 }}
+            animate={{ opacity: 1, height: "auto", y: 0 }}
+            exit={{ opacity: 0, height: 0, y: -10 }}
+            transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
+            className="overflow-hidden"
+          >
             <form
               onSubmit={handleCreateManual}
               className="p-6 sm:p-8 rounded-[2rem] bg-white dark:bg-[#202022] border border-black/10 dark:border-white/10 shadow-sm space-y-6"
@@ -1041,7 +973,7 @@ export function DiscountCouponsTab() {
               <div className="flex items-center justify-between">
                 <div>
                   <h3 className="text-lg font-bold text-gray-950 dark:text-white">
-                    Creación Manual de Cupón
+                    Personalizar Nuevo Cupón
                   </h3>
                   <p className="text-xs text-gray-500 dark:text-gray-400">
                     Define las reglas comerciales precisas para tu nueva campaña de incentivos.
@@ -1112,15 +1044,15 @@ export function DiscountCouponsTab() {
 
                 <div>
                   <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5">
-                    Alcance & Arquitectura Visual
+                    Alcance del Descuento
                   </label>
                   <select
                     value={formScope}
                     onChange={(e) => setFormScope(e.target.value as "all" | "niche")}
                     className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-[#1a1a1c] text-sm text-gray-900 dark:text-white outline-none focus:border-black dark:focus:border-white transition-all"
                   >
-                    <option value="all">Toda la Tienda (Estilo Ticket Editorial Vintage)</option>
-                    <option value="niche">Nicho Específico (Estilo Ticket Scallop Pastel)</option>
+                    <option value="all">Toda la Tienda (Descuento Global)</option>
+                    <option value="niche">Colección Específica (Por Nicho)</option>
                   </select>
                 </div>
 
@@ -1215,12 +1147,101 @@ export function DiscountCouponsTab() {
                 </button>
               </div>
             </form>
-          )}
-        </>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* ===================================================================== */}
+      {/* 2. STATS KPI BAR (ADMIN vs CLIENT)                                    */}
+      {/* ===================================================================== */}
+      {isAdmin ? (
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+          <div className="bg-white dark:bg-[#202022] p-4 sm:p-5 rounded-2xl border border-black/5 dark:border-white/10 shadow-xs flex items-center gap-3.5">
+            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
+              <Tag className="w-5 h-5" />
+            </div>
+            <div>
+              <p className="text-[11px] font-semibold text-gray-500 dark:text-gray-400">Campañas Activas</p>
+              <p className="text-lg sm:text-2xl font-black text-gray-950 dark:text-white">{stats.activeCount}</p>
+            </div>
+          </div>
+
+          <div className="bg-white dark:bg-[#202022] p-4 sm:p-5 rounded-2xl border border-black/5 dark:border-white/10 shadow-xs flex items-center gap-3.5">
+            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0">
+              <Percent className="w-5 h-5" />
+            </div>
+            <div>
+              <p className="text-[11px] font-semibold text-gray-500 dark:text-gray-400">Margen Promedio Otorgado</p>
+              <p className="text-lg sm:text-2xl font-black text-gray-950 dark:text-white">{stats.avgDiscount}%</p>
+            </div>
+          </div>
+
+          <div className="bg-white dark:bg-[#202022] p-4 sm:p-5 rounded-2xl border border-black/5 dark:border-white/10 shadow-xs flex items-center gap-3.5">
+            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0">
+              <Share2 className="w-5 h-5" />
+            </div>
+            <div>
+              <p className="text-[11px] font-semibold text-gray-500 dark:text-gray-400">PNGs Compartidos</p>
+              <p className="text-lg sm:text-2xl font-black text-gray-950 dark:text-white">{stats.totalShares}</p>
+            </div>
+          </div>
+
+          <div className="bg-white dark:bg-[#202022] p-4 sm:p-5 rounded-2xl border border-black/5 dark:border-white/10 shadow-xs flex items-center gap-3.5">
+            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-purple-500/10 text-purple-600 dark:text-purple-400 flex items-center justify-center shrink-0">
+              <Flame className="w-5 h-5" />
+            </div>
+            <div>
+              <p className="text-[11px] font-semibold text-gray-500 dark:text-gray-400">Canjes Registrados</p>
+              <p className="text-lg sm:text-2xl font-black text-gray-950 dark:text-white">{stats.totalUses}</p>
+            </div>
+          </div>
+        </div>
+      ) : (
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+          <div className="bg-white dark:bg-[#202022] p-4 sm:p-5 rounded-2xl border border-black/5 dark:border-white/10 shadow-xs flex items-center gap-3.5">
+            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
+              <Tag className="w-5 h-5" />
+            </div>
+            <div>
+              <p className="text-[11px] font-semibold text-gray-500 dark:text-gray-400">Cupones Disponibles</p>
+              <p className="text-lg sm:text-2xl font-black text-gray-950 dark:text-white">{clientStats.availableCount}</p>
+            </div>
+          </div>
+
+          <div className="bg-white dark:bg-[#202022] p-4 sm:p-5 rounded-2xl border border-black/5 dark:border-white/10 shadow-xs flex items-center gap-3.5">
+            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0">
+              <Percent className="w-5 h-5" />
+            </div>
+            <div>
+              <p className="text-[11px] font-semibold text-gray-500 dark:text-gray-400">Mayor Beneficio Activo</p>
+              <p className="text-lg sm:text-2xl font-black text-gray-950 dark:text-white">{clientStats.maxDiscount}% OFF</p>
+            </div>
+          </div>
+
+          <div className="bg-white dark:bg-[#202022] p-4 sm:p-5 rounded-2xl border border-black/5 dark:border-white/10 shadow-xs flex items-center gap-3.5">
+            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0">
+              <CheckCircle2 className="w-5 h-5" />
+            </div>
+            <div>
+              <p className="text-[11px] font-semibold text-gray-500 dark:text-gray-400">Cupones Utilizados</p>
+              <p className="text-lg sm:text-2xl font-black text-gray-950 dark:text-white">{clientStats.usedCount}</p>
+            </div>
+          </div>
+
+          <div className="bg-white dark:bg-[#202022] p-4 sm:p-5 rounded-2xl border border-black/5 dark:border-white/10 shadow-xs flex items-center gap-3.5">
+            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-purple-500/10 text-purple-600 dark:text-purple-400 flex items-center justify-center shrink-0">
+              <Wallet className="w-5 h-5" />
+            </div>
+            <div>
+              <p className="text-[11px] font-semibold text-gray-500 dark:text-gray-400">Google Wallet Pass</p>
+              <p className="text-lg sm:text-2xl font-black text-gray-950 dark:text-white">Código 1D</p>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* ===================================================================== */}
-      {/* 5. SEARCH & FILTER CONTROLS (ADMIN vs CLIENT)                         */}
+      {/* 3. SEARCH & FILTER CONTROLS (ADMIN vs CLIENT)                         */}
       {/* ===================================================================== */}
       <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
         <div className="flex items-center gap-1.5 p-1 rounded-2xl bg-gray-100/80 dark:bg-[#202022] overflow-x-auto hide-scrollbar">
@@ -1244,7 +1265,7 @@ export function DiscountCouponsTab() {
                     : "text-gray-500 hover:text-gray-900 dark:text-gray-400"
                 }`}
               >
-                🏛️ Generales Tienda (Estilo 2 Vintage)
+                🏛️ Toda la Tienda (Global)
               </button>
               <button
                 onClick={() => setActiveFilter("niche")}
@@ -1254,7 +1275,7 @@ export function DiscountCouponsTab() {
                     : "text-gray-500 hover:text-gray-900 dark:text-gray-400"
                 }`}
               >
-                🌿 Específicos de Nicho (Estilo 1 Scallop)
+                🌿 Por Colección (Nicho)
               </button>
               <button
                 onClick={() => setActiveFilter("active")}
