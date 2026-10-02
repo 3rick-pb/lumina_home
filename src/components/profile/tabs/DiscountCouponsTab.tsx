@@ -27,7 +27,7 @@ import {
 } from "lucide-react";
 import { useCouponStore, DiscountCoupon } from "@/lib/couponStore";
 import { useUserStore } from "@/lib/userStore";
-import { VectorBarcode } from "@/components/ui/VectorBarcode";
+import { VectorBarcode, SvgBarcodeGroup } from "@/components/ui/VectorBarcode";
 import { CouponWalletModal } from "@/components/profile/modals/CouponWalletModal";
 import { CouponAnalyticsModal } from "@/components/profile/modals/CouponAnalyticsModal";
 import { generateCouponPng } from "@/lib/couponPngGenerator";
@@ -75,6 +75,7 @@ function getCouponPaletteIndex(id: string, count: number): number {
 // SUB-COMPONENT: STYLE 1 TICKET SVG (Cupones Style.jpg)
 // Scalloped cutouts, giant 15% OFF, horizontal 1D barcode on left, CODE box
 // Natural squarish/compact aspect ratio: 340 x 215. Does NOT stretch!
+// Barcode is 100% native vector inside the SVG viewBox to prevent any overflow.
 // ===========================================================================
 function Style1TicketSvg({
   coupon,
@@ -191,6 +192,16 @@ function Style1TicketSvg({
           {offText}
         </text>
 
+        {/* Real Native Vector Barcode strictly locked inside ticket geometry */}
+        <SvgBarcodeGroup
+          code={coupon.code}
+          x={20}
+          y={138}
+          width={105}
+          height={44}
+          color="#000000"
+        />
+
         {/* RIGHT COLUMN: [CODE] Badge + Code + Niche/Condition */}
         <rect
           x="160"
@@ -265,11 +276,6 @@ function Style1TicketSvg({
             : "Vigencia permanente"}
         </text>
       </svg>
-
-      {/* Real SVG Vector Barcode on left side under OFF */}
-      <div className="absolute left-[6%] bottom-[13%] w-[32%] max-w-[110px] h-[22px]">
-        <VectorBarcode code={coupon.code} height={22} color="#000000" className="w-full h-full" />
-      </div>
     </div>
   );
 }
@@ -277,9 +283,9 @@ function Style1TicketSvg({
 // ===========================================================================
 // SUB-COMPONENT: STYLE 2 TICKET SVG (Cupones Style 2.jpg)
 // Vintage editorial ticket, vertical 1D barcode on stub, cursive script title,
-// uppercase display serif, and thin-line oval GET DISCOUNT badge.
+// uppercase display serif, and thin-line oval OBTÉN DESCUENTO badge.
 // Natural rectangular aspect ratio: 460 x 170. Zero collision with oval.
-// Brand spelled strictly "Lumina Home" without tilde.
+// Brand spelled strictly "Lumina Home" without tilde with enhanced readability.
 // ===========================================================================
 function Style2TicketSvg({
   coupon,
@@ -337,26 +343,37 @@ function Style2TicketSvg({
           opacity="0.4"
         />
 
-        {/* RIGHT BODY: Cursive Script "Lumina Home" (Strictly NO ACCENT/TILDE and SAFE DISTANCE FROM OVAL) */}
+        {/* LEFT STUB: Native Vector Barcode strictly locked inside stub geometry */}
+        <SvgBarcodeGroup
+          code={coupon.code}
+          x={20}
+          y={20}
+          width={68}
+          height={130}
+          color={theme.text}
+          vertical={true}
+        />
+
+        {/* RIGHT BODY: Cursive Script "Lumina Home" (Clear & Legible 30px, Safe distance from oval) */}
         <text
           x="126"
-          y="50"
+          y="52"
           fontFamily="'Pinyon Script', 'Alex Brush', 'Caveat', cursive, Georgia, serif"
-          fontSize="21"
+          fontSize="30"
           fontStyle="italic"
           fill={theme.text}
         >
           Lumina Home
         </text>
 
-        {/* Uppercase Serif: "CUPÓN DE TIENDA" */}
+        {/* Uppercase Serif: "CUPÓN DE TIENDA" (Clear 13px) */}
         <text
           x="126"
-          y="72"
+          y="75"
           fontFamily="'Playfair Display', Georgia, 'Times New Roman', serif"
           fontWeight="700"
-          fontSize="11"
-          letterSpacing="1.5px"
+          fontSize="13"
+          letterSpacing="2px"
           fill={theme.text}
         >
           CUPÓN DE TIENDA
@@ -365,69 +382,70 @@ function Style2TicketSvg({
         {/* Horizontal Dashed Line */}
         <line
           x1="126"
-          y1="90"
-          x2="240"
-          y2="90"
+          y1="94"
+          x2="270"
+          y2="94"
           stroke={theme.text}
           strokeDasharray="3 3"
-          strokeWidth="1"
+          strokeWidth="1.2"
           opacity="0.35"
         />
 
-        {/* Store URL */}
+        {/* Store URL: WWW.LUMINAHOME.COM (Bigger 12px bold) */}
         <text
           x="126"
-          y="118"
-          fontFamily="monospace, system-ui"
+          y="122"
+          fontFamily="system-ui, -apple-system, monospace"
           fontWeight="700"
-          fontSize="9"
-          letterSpacing="0.8px"
+          fontSize="12"
+          letterSpacing="1px"
           fill={theme.text}
-          opacity="0.9"
+          opacity="0.92"
         >
-          WWW.LUMINAHOME.EC
+          WWW.LUMINAHOME.COM
         </text>
 
-        {/* RIGHT BODY: Oval Discount Badge (Safe distance at cx=378, perfectly proportioned) */}
+        {/* RIGHT BODY: Oval Discount Badge (Safe distance at cx=378, Spanish copies "OBTÉN DESCUENTO") */}
         <ellipse
           cx="378"
           cy="62"
-          rx="42"
-          ry="30"
+          rx="44"
+          ry="32"
           fill="none"
           stroke={theme.text}
-          strokeWidth="1.2"
+          strokeWidth="1.3"
         />
         <text
           x="378"
-          y="49"
+          y="47"
           textAnchor="middle"
           fontFamily="'Playfair Display', Georgia, serif"
-          fontSize="8.5"
+          fontSize="9"
+          fontWeight="700"
           letterSpacing="2px"
           fill={theme.text}
         >
-          GET
+          OBTÉN
         </text>
         <text
           x="378"
           y="62"
           textAnchor="middle"
           fontFamily="'Playfair Display', Georgia, serif"
-          fontWeight="700"
-          fontSize="10.5"
+          fontWeight="800"
+          fontSize="11"
           letterSpacing="1.5px"
           fill={theme.text}
         >
-          DISCOUNT
+          DESCUENTO
         </text>
         <text
           x="378"
-          y="81"
+          y="82"
           textAnchor="middle"
           fontFamily="'Playfair Display', Georgia, serif"
-          fontWeight="700"
-          fontSize="18"
+          fontWeight="900"
+          fontSize="19"
           fill={theme.text}
         >
           {ovalDisc}
@@ -436,30 +454,20 @@ function Style2TicketSvg({
         {/* Date with Asterisk under oval */}
         <text
           x="378"
-          y="118"
+          y="122"
           textAnchor="middle"
           fontFamily="'Playfair Display', Georgia, serif"
-          fontWeight="600"
-          fontSize="8"
+          fontWeight="700"
+          fontSize="8.5"
           letterSpacing="0.8px"
           fill={theme.text}
-          opacity="0.85"
+          opacity="0.88"
         >
           {coupon.expiresAt
             ? `*VÁLIDO HASTA ${new Date(coupon.expiresAt).toLocaleDateString("es-ES", { day: "numeric", month: "short", year: "numeric" }).toUpperCase()}`
             : "*SIN VENCIMIENTO"}
         </text>
       </svg>
-
-      {/* LEFT STUB: Vertical Barcode */}
-      <div className="absolute left-[3.5%] top-[16%] w-[17%] max-w-[56px] h-[68%] flex items-center justify-center">
-        <VectorBarcode
-          code={coupon.code}
-          vertical
-          color={theme.text}
-          className="w-full h-full"
-        />
-      </div>
     </div>
   );
 }

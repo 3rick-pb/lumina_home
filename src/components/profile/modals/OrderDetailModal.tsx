@@ -206,7 +206,10 @@ export function OrderDetailModal({
       }}
       className="max-w-xl w-full mx-auto"
     >
-      <div className="bg-white dark:bg-[#202022] rounded-[2rem] sm:rounded-[2.5rem] w-full shadow-2xl dark:shadow-[0_20px_60px_rgba(0,0,0,0.5)] border border-gray-100 dark:border-white/10 overflow-hidden relative max-h-[92vh] sm:max-h-[90vh] flex flex-col">
+      <div
+        data-lenis-prevent="true"
+        className="bg-white dark:bg-[#202022] rounded-[2rem] sm:rounded-[2.5rem] w-full shadow-2xl dark:shadow-[0_20px_60px_rgba(0,0,0,0.5)] border border-gray-100 dark:border-white/10 overflow-hidden relative max-h-[92vh] sm:max-h-[90vh] flex flex-col"
+      >
         <style>{`
           .lumina-order-modal-scroll {
             -ms-overflow-style: none !important;
@@ -226,8 +229,15 @@ export function OrderDetailModal({
         `}</style>
         <div 
           ref={scrollContainerRef}
+          data-lenis-prevent="true"
           onScroll={updateScrollMetrics}
-          className="w-full overflow-y-auto lumina-order-modal-scroll p-4 sm:p-6 md:p-8 flex-1"
+          onWheel={(e) => {
+            e.stopPropagation();
+            if (scrollContainerRef.current) {
+              scrollContainerRef.current.scrollTop += e.deltaY;
+            }
+          }}
+          className="w-full overflow-y-auto lumina-order-modal-scroll p-4 sm:p-6 md:p-8 flex-1 overscroll-contain"
         >
           <div className="flex items-start justify-between gap-2.5 sm:gap-3 pb-3 sm:pb-4 border-b border-gray-100 dark:border-white/5">
             <div className="min-w-0 flex-1">

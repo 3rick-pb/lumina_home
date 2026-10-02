@@ -127,8 +127,8 @@ function drawStyle1(
   const offText = coupon.discountType === "free_shipping" ? "GRATIS" : "OFF";
   ctx.fillText(offText, 22, 126);
 
-  // Horizontal Barcode
-  drawHorizontalBarcode(ctx, coupon.code, 22, 146, 120, 26, "#000000");
+  // Horizontal Barcode strictly contained inside ticket geometry
+  drawHorizontalBarcode(ctx, coupon.code, 20, 138, 105, 44, "#000000");
 
   // Right Column Content: [CODE] Badge + Code + Niche/Condition
   const rx = perfX + 22;
@@ -197,9 +197,9 @@ function drawStyle2(
 
   ctx.save();
   ctx.beginPath();
-  const r = 18;
+  const r = 16;
   const notchR = 9;
-  const perfX = 105;
+  const perfX = 110;
   const centerY = h / 2;
 
   // Top edge with notch at perfX
@@ -241,69 +241,69 @@ function drawStyle2(
   ctx.setLineDash([4, 4]);
   ctx.strokeStyle = th.text;
   ctx.lineWidth = 2;
-  ctx.globalAlpha = 0.45;
+  ctx.globalAlpha = 0.4;
   ctx.beginPath();
-  ctx.moveTo(perfX, notchR + 2);
-  ctx.lineTo(perfX, h - notchR - 2);
+  ctx.moveTo(perfX, 10);
+  ctx.lineTo(perfX, h - 10);
   ctx.stroke();
   ctx.restore();
 
   // Left Stub: Vertical 1D Linear Barcode
-  drawVerticalBarcode(ctx, coupon.code, 22, 26, 60, 118, th.text);
+  drawVerticalBarcode(ctx, coupon.code, 20, 20, 68, 130, th.text);
 
   // Right Main Body
   ctx.fillStyle = th.text;
   ctx.strokeStyle = th.text;
 
-  // Cursive title ("Lumina Home", without accent, compact font size 21px with 0 oval touching)
-  ctx.font = "italic 21px 'Pinyon Script', 'Alex Brush', cursive, Georgia, serif";
+  // Cursive title ("Lumina Home", without accent, enhanced 30px font)
+  ctx.font = "italic 30px 'Pinyon Script', 'Alex Brush', 'Caveat', cursive, Georgia, serif";
   ctx.textAlign = "left";
-  ctx.fillText("Lumina Home", perfX + 22, 52);
+  ctx.fillText("Lumina Home", 126, 52);
 
-  // Uppercase Display Serif: "CUPÓN DE TIENDA"
-  ctx.font = "bold 11px 'Playfair Display', Georgia, serif";
-  ctx.fillText("CUPÓN DE TIENDA", perfX + 24, 72);
+  // Uppercase Display Serif: "CUPÓN DE TIENDA" (Clear 13px)
+  ctx.font = "bold 13px 'Playfair Display', Georgia, 'Times New Roman', serif";
+  ctx.fillText("CUPÓN DE TIENDA", 126, 75);
 
   // Horizontal Dashed Line on left sub-area
   ctx.save();
   ctx.setLineDash([3, 3]);
   ctx.globalAlpha = 0.35;
-  ctx.lineWidth = 1;
+  ctx.lineWidth = 1.2;
   ctx.beginPath();
-  ctx.moveTo(perfX + 24, 96);
-  ctx.lineTo(perfX + 160, 96);
+  ctx.moveTo(126, 94);
+  ctx.lineTo(270, 94);
   ctx.stroke();
   ctx.restore();
 
-  // Bottom text on left: "WWW.LUMINAHOME.EC"
-  ctx.font = "bold 9.5px monospace";
-  ctx.globalAlpha = 0.9;
-  ctx.fillText("WWW.LUMINAHOME.EC", perfX + 24, 126);
+  // Bottom text on left: "WWW.LUMINAHOME.COM" (Clear 12px)
+  ctx.font = "bold 12px system-ui, -apple-system, monospace";
+  ctx.globalAlpha = 0.92;
+  ctx.fillText("WWW.LUMINAHOME.COM", 126, 122);
   ctx.globalAlpha = 1;
 
   // Right Sub-Area: Oval / Ellipse Discount Badge
   const ovalX = 378;
   const ovalY = 62;
-  const ovalRx = 46;
+  const ovalRx = 44;
   const ovalRy = 32;
 
   ctx.save();
   ctx.beginPath();
   ctx.ellipse(ovalX, ovalY, ovalRx, ovalRy, 0, 0, Math.PI * 2);
-  ctx.lineWidth = 1.2;
+  ctx.lineWidth = 1.3;
   ctx.stroke();
 
-  // Text inside oval
+  // Text inside oval (Spanish copies: OBTÉN DESCUENTO)
   ctx.textAlign = "center";
-  ctx.font = "9px 'Playfair Display', Georgia, serif";
-  ctx.fillText("GET", ovalX, ovalY - 13);
+  ctx.font = "700 9px 'Playfair Display', Georgia, serif";
+  ctx.fillText("OBTÉN", ovalX, ovalY - 15);
 
-  ctx.font = "bold 11px 'Playfair Display', Georgia, serif";
-  ctx.fillText("DISCOUNT", ovalX, ovalY);
+  ctx.font = "800 11px 'Playfair Display', Georgia, serif";
+  ctx.fillText("DESCUENTO", ovalX, ovalY);
 
-  ctx.font = "bold 18px 'Playfair Display', Georgia, serif";
+  ctx.font = "900 19px 'Playfair Display', Georgia, serif";
   const ovalDisc = coupon.discountType === "free_shipping" ? "100%" : `${coupon.discountPercent}%`;
-  ctx.fillText(ovalDisc, ovalX, ovalY + 19);
+  ctx.fillText(ovalDisc, ovalX, ovalY + 20);
   ctx.restore();
 
   // Date under oval

@@ -156,7 +156,8 @@ export function LuminaCombobox({
               mass: 0.75,
             }}
             style={{ transformOrigin: "top center" }}
-            className="absolute left-0 right-0 z-50 mt-1 min-w-[200px] max-h-64 overflow-y-auto rounded-2xl border border-gray-200 dark:border-white/15 bg-white/95 dark:bg-[#1c1c1f]/95 backdrop-blur-xl shadow-2xl p-1.5 focus:outline-none"
+            data-lenis-prevent="true"
+            className="absolute left-0 right-0 z-50 mt-1 min-w-[200px] max-h-64 overflow-y-auto overscroll-contain rounded-2xl border border-gray-200 dark:border-white/15 bg-white/95 dark:bg-[#1c1c1f]/95 backdrop-blur-xl shadow-2xl p-1.5 focus:outline-none"
           >
             {/* OPTIONAL SEARCH */}
             {searchable && (

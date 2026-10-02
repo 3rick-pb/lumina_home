@@ -1506,7 +1506,10 @@ const handleConfirmDeleteNiche = async () => {
    onOpenChange={setShowProductModal}
    className="max-w-6xl"
  >
- <div className="bg-[#f5f5f3] dark:bg-[#161618] rounded-[32px] w-full shadow-2xl dark:shadow-none overflow-hidden flex flex-col max-h-[92vh] border border-gray-200/90 dark:border-white/[0.12]">
+ <div
+   data-lenis-prevent="true"
+   className="bg-[#f5f5f3] dark:bg-[#161618] rounded-[32px] w-full shadow-2xl dark:shadow-none overflow-hidden flex flex-col max-h-[92vh] border border-gray-200/90 dark:border-white/[0.12]"
+ >
    {/* Top Bar Header (Executive Studio Header + 4-Step Pill Dock) */}
    <div className="px-5 sm:px-7 py-4 border-b border-gray-200/80 dark:border-white/[0.08] flex flex-col lg:flex-row lg:items-center justify-between gap-3.5 bg-white/95 dark:bg-[#202022]/95 backdrop-blur-xl shrink-0">
      <div className="flex items-center justify-between w-full lg:w-auto gap-3">
@@ -1583,7 +1586,8 @@ const handleConfirmDeleteNiche = async () => {
        }
        handleAddProductSubmit(e);
      }}
-     className="flex-1 min-h-0 overflow-y-auto p-5 sm:p-6 space-y-5"
+     data-lenis-prevent="true"
+     className="flex-1 min-h-0 overflow-y-auto overscroll-contain p-5 sm:p-6 space-y-5"
    >
      {/* 4-KPI EXECUTIVE TELEMETRY STRIP (crear-web-micro-saas Above-The-Fold) */}
      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
@@ -2238,7 +2242,10 @@ const handleConfirmDeleteNiche = async () => {
     onOpenChange={setShowEditProductModal}
     className="max-w-6xl"
   >
-  <div className="bg-[#f5f5f3] dark:bg-[#161618] rounded-[32px] w-full shadow-2xl dark:shadow-none overflow-hidden flex flex-col max-h-[92vh] border border-gray-200/90 dark:border-white/[0.12]">
+  <div
+    data-lenis-prevent="true"
+    className="bg-[#f5f5f3] dark:bg-[#161618] rounded-[32px] w-full shadow-2xl dark:shadow-none overflow-hidden flex flex-col max-h-[92vh] border border-gray-200/90 dark:border-white/[0.12]"
+  >
     {/* HEADER + STEP SEPARATOR DOCK */}
     <div className="px-6 pt-5 pb-4 border-b border-gray-200/80 dark:border-white/[0.08] bg-white/95 dark:bg-[#202022]/95 backdrop-blur-xl space-y-3.5 shrink-0">
       <div className="flex items-center justify-between gap-4">
@@ -2281,7 +2288,7 @@ const handleConfirmDeleteNiche = async () => {
       />
     </div>
 
-    <form onSubmit={handleUpdateProductSubmit} className="p-6 overflow-y-auto flex-1">
+    <form onSubmit={handleUpdateProductSubmit} data-lenis-prevent="true" className="p-6 overflow-y-auto overscroll-contain flex-1">
       {editFeedback && (
         <div className={`mb-5 p-3.5 rounded-xl text-xs font-semibold ${editFeedback.success ? "bg-emerald-50 text-emerald-800 border border-emerald-200" : "bg-red-50 text-red-800 border border-red-200"}`}>
           {editFeedback.msg}

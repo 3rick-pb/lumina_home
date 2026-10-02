@@ -1315,6 +1315,7 @@ export function BeUISelectField({
         {open && (
           <motion.div
             role="listbox"
+            data-lenis-prevent="true"
             variants={selectMenuVariants}
             initial="closed"
             animate="open"
@@ -1326,7 +1327,7 @@ export function BeUISelectField({
             }}
             className="absolute left-0 right-0 z-[120] overflow-hidden border border-gray-200/90 dark:border-white/15 bg-white/95 dark:bg-[#12151c]/95 backdrop-blur-2xl p-1.5 text-gray-900 dark:text-white shadow-[0_20px_50px_rgba(0,0,0,0.28)] dark:shadow-[0_24px_60px_rgba(0,0,0,0.75)]"
           >
-            <div className="max-h-60 overflow-y-auto overscroll-contain space-y-0.5 pr-0.5 custom-scrollbar">
+            <div data-lenis-prevent="true" className="max-h-60 overflow-y-auto overscroll-contain space-y-0.5 pr-0.5 custom-scrollbar">
               {normalizedOptions.map((item) => {
                 const isSelected = item.value === value;
                 return (
@@ -1461,20 +1462,15 @@ export function BeUICenterMorphModal({
   return (
     <AnimatePresence>
       {open && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 overflow-hidden">
+        <div
+          data-lenis-prevent="true"
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 overflow-hidden"
+        >
           <style>{`
             html.lumina-modal-lock-scroll,
             html.lumina-modal-lock-scroll body {
               overflow: hidden !important;
               overscroll-behavior: none !important;
-              scrollbar-width: none !important;
-              -ms-overflow-style: none !important;
-            }
-            html.lumina-modal-lock-scroll::-webkit-scrollbar,
-            html.lumina-modal-lock-scroll body::-webkit-scrollbar {
-              display: none !important;
-              width: 0 !important;
-              height: 0 !important;
             }
           `}</style>
           <motion.div
@@ -1489,6 +1485,7 @@ export function BeUICenterMorphModal({
           <motion.div
             role="dialog"
             aria-modal="true"
+            data-lenis-prevent="true"
             variants={CENTER_MORPH_MODAL_VARIANTS}
             initial="closed"
             animate="open"
@@ -2379,6 +2376,7 @@ export function BeUIPopover({
         createPortal(
           <div
             data-beui-popover-portal=""
+            data-lenis-prevent="true"
             onClick={(e) => e.stopPropagation()}
             className="pointer-events-none fixed left-0 top-0 z-[9999] isolate size-0"
             style={{
@@ -2455,6 +2453,7 @@ export function BeUIPopover({
                 <div
                   ref={contentRef}
                   role="dialog"
+                  data-lenis-prevent="true"
                   style={{
                     position: "absolute",
                     left: geo.panel.x,

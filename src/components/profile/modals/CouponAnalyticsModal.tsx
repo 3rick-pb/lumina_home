@@ -54,7 +54,12 @@ export function CouponAnalyticsModal({
       if (e.key === "Escape") onClose();
     };
     window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
+    document.body.style.overflow = "hidden";
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+      document.body.style.removeProperty("overflow");
+      document.documentElement.style.removeProperty("overflow");
+    };
   }, [open, onClose]);
 
   // Combine pre-seeded redemptions with any live store orders that might reference this coupon
@@ -126,7 +131,10 @@ export function CouponAnalyticsModal({
   const modalContent = (
     <AnimatePresence>
       {open && (
-        <div className="fixed inset-0 z-[125] flex items-center justify-center p-3 sm:p-5 overflow-y-auto">
+        <div
+          data-lenis-prevent="true"
+          className="fixed inset-0 z-[125] flex items-center justify-center p-3 sm:p-5 overflow-y-auto"
+        >
           {/* Backdrop */}
           <motion.div
             initial={{ opacity: 0 }}
@@ -138,6 +146,9 @@ export function CouponAnalyticsModal({
 
           {/* Dialog Container */}
           <motion.div
+            role="dialog"
+            aria-modal="true"
+            data-lenis-prevent="true"
             initial={{ opacity: 0, scale: 0.95, y: 16 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 16 }}
@@ -181,7 +192,7 @@ export function CouponAnalyticsModal({
             </div>
 
             {/* Modal Body */}
-            <div className="p-5 sm:p-6 overflow-y-auto space-y-6 flex-1">
+            <div data-lenis-prevent="true" className="p-5 sm:p-6 overflow-y-auto overscroll-contain space-y-6 flex-1">
               {/* KPI Bar for this Coupon */}
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
                 <div className="p-4 rounded-2xl bg-gray-50 dark:bg-white/[0.03] border border-gray-100 dark:border-white/5 space-y-1">
