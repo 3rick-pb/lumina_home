@@ -1796,18 +1796,6 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
           : "rounded-[2rem] sm:rounded-[2.5rem] border-[2.5px] border-stone-300/95 dark:border-white/20 ring-1 ring-stone-900/12 dark:ring-white/10 shadow-[0_22px_50px_rgba(15,23,42,0.12)] dark:shadow-[0_22px_50px_rgba(0,0,0,0.45)]"
       } overflow-hidden bg-[#e8ecef] dark:bg-[#181d1b] text-white select-none overscroll-none animate-fade-in font-sans`}
     >
-      {/* Floating Exit Fullscreen Button in Fullscreen Mode */}
-      {isFullscreen && (
-        <button
-          type="button"
-          onClick={toggleFullscreen}
-          className="absolute top-4 left-4 z-[90] flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-black/80 hover:bg-black/95 backdrop-blur-md border border-white/20 text-white text-xs font-semibold shadow-2xl active:scale-95 transition-all cursor-pointer"
-        >
-          <Minimize2 className="w-3.5 h-3.5 text-emerald-400" />
-          <span>Salir de pantalla completa</span>
-        </button>
-      )}
-
       {/* Architectural Inner Bezel Frame — clearly delineates the Radar viewport & seals rounded edges */}
       <div
         aria-hidden="true"

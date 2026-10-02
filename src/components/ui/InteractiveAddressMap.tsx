@@ -673,18 +673,6 @@ export default function InteractiveAddressMap({
           : className
       }`}
     >
-      {/* Floating Exit Fullscreen Button in Fullscreen Mode */}
-      {isFullscreen && (
-        <button
-          type="button"
-          onClick={toggleFullscreen}
-          className="absolute top-3 left-3 z-30 flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-black/80 hover:bg-black/95 backdrop-blur-md border border-white/20 text-white text-xs font-semibold shadow-2xl active:scale-95 transition-all cursor-pointer"
-        >
-          <Minimize2 className="w-3.5 h-3.5 text-blue-400" />
-          <span>Salir de pantalla completa</span>
-        </button>
-      )}
-
       {/* 1. Native Mapbox GL JS Container (Active when valid NEXT_PUBLIC_MAPBOX_TOKEN is present) */}
       {useNativeMapbox ? (
         <div ref={mapboxContainerRef} className="w-full h-full" />
