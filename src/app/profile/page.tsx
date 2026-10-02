@@ -902,6 +902,21 @@ const handleConfirmDeleteNiche = async () => {
    )}
  </button>
 
+ <button 
+   onClick={() => setActiveTab("loyalty")} 
+   className={`sidebar-dock-btn relative w-11 h-11 md:w-12 md:h-12 rounded-2xl flex items-center justify-center transition-all duration-[600ms] cursor-pointer group ${
+     activeTab === "loyalty" 
+       ? "bg-gray-950 dark:bg-white text-white dark:text-gray-950 shadow-lg shadow-gray-950/20 dark:shadow-white/15 scale-105" 
+       : "text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100/80 dark:hover:bg-white/5 hover:scale-105 active:scale-95"
+   }`}
+   title="Cupones & Códigos de Descuento"
+ >
+   {activeTab === "loyalty" && (
+     <span className="absolute -left-2 w-1 h-5 bg-[#8c9276] dark:bg-[#ccff00] rounded-r-full transition-all duration-[600ms]" />
+   )}
+   <Tag className="w-5 h-5 transition-all duration-300 group-hover:scale-115 group-hover:rotate-6 group-hover:-translate-y-0.5" />
+ </button>
+
  {isAdmin && (
    <>
      <div className="w-9 md:w-10 h-[2px] bg-gray-300/80 dark:bg-white/20 rounded-full my-0.5 transition-colors shrink-0" />
@@ -978,21 +993,6 @@ const handleConfirmDeleteNiche = async () => {
           <span className="absolute -left-2 w-1 h-5 bg-[#8c9276] dark:bg-[#ccff00] rounded-r-full transition-all duration-[600ms]" />
         )}
         <Server className="w-5 h-5 transition-all duration-300 group-hover:scale-115 group-hover:rotate-3 group-hover:-translate-y-0.5" />
-      </button>
-
-      <button 
-        onClick={() => setActiveTab("loyalty")} 
-        className={`sidebar-dock-btn relative w-11 h-11 md:w-12 md:h-12 rounded-2xl flex items-center justify-center transition-all duration-[600ms] cursor-pointer group ${
-          activeTab === "loyalty" 
-            ? "bg-gray-950 dark:bg-white text-white dark:text-gray-950 shadow-lg shadow-gray-950/20 dark:shadow-white/15 scale-105" 
-            : "text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100/80 dark:hover:bg-white/5 hover:scale-105 active:scale-95"
-        }`}
-        title="Generador de Cupones & Códigos de Descuento"
-      >
-        {activeTab === "loyalty" && (
-          <span className="absolute -left-2 w-1 h-5 bg-[#8c9276] dark:bg-[#ccff00] rounded-r-full transition-all duration-[600ms]" />
-        )}
-        <Tag className="w-5 h-5 transition-all duration-300 group-hover:scale-115 group-hover:rotate-6 group-hover:-translate-y-0.5" />
       </button>
    </>
  )}
@@ -1123,14 +1123,14 @@ const handleConfirmDeleteNiche = async () => {
   >
   SMTP & Pasarelas
   </button>
+  </>
+  )}
   <button 
   onClick={() => setActiveTab("loyalty")} 
   className={`px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all cursor-pointer ${activeTab === "loyalty" ? "bg-white dark:bg-[#202022] text-gray-900 dark:text-gray-100 shadow-sm dark:shadow-none" : "text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100"}`}
   >
-  Códigos de Descuento
+  Cupones
   </button>
-  </>
-  )}
   <button 
   onClick={() => setActiveTab("settings")} 
   className={`px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all cursor-pointer ${activeTab === "settings" ? "bg-white dark:bg-[#202022] text-gray-900 dark:text-gray-100 shadow-sm dark:shadow-none" : "text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100"}`}
@@ -1429,7 +1429,7 @@ const handleConfirmDeleteNiche = async () => {
         {/* ========================================================================= */}
         {/* VIEW 8C: ADMIN DISCOUNT COUPONS GENERATOR & MANAGER                       */}
         {/* ========================================================================= */}
-        {activeTab === "loyalty" && isAdmin && (
+        {activeTab === "loyalty" && (
           <DiscountCouponsTab />
         )}
 
@@ -3225,15 +3225,15 @@ const handleConfirmDeleteNiche = async () => {
                     active: activeTab === "integrations",
                     onClick: () => setActiveTab("integrations"),
                   },
-                  {
-                    id: "loyalty",
-                    label: "Cupones",
-                    icon: <Tag className="w-5 h-5" />,
-                    active: activeTab === "loyalty",
-                    onClick: () => setActiveTab("loyalty"),
-                  },
                 ]
               : []),
+            {
+              id: "loyalty",
+              label: "Cupones",
+              icon: <Tag className="w-5 h-5" />,
+              active: activeTab === "loyalty",
+              onClick: () => setActiveTab("loyalty"),
+            },
             {
               id: "settings",
               label: "Ajustes",
