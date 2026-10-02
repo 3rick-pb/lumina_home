@@ -4,7 +4,7 @@ import React, { useEffect, useState, useRef, useMemo } from "react";
 import Image from "next/image";
 import { motion } from "framer-motion";
 import { ProductCard } from "@/components/ui/ProductCard";
-import { Percent, Truck, ShieldCheck, ArrowRight, RotateCcw, Lock } from "lucide-react";
+import { Percent, Truck, ShieldCheck, ArrowRight, RotateCcw, Lock, PackageSearch } from "lucide-react";
 import Link from "next/link";
 import { useCatalogStore } from "@/lib/catalogStore";
 import { useAmbientStore } from "@/lib/ambientStore";
@@ -18,7 +18,7 @@ const HOME_SECTIONS = [
   { id: "hero-section", label: "Inicio", level: 1 as const },
   { id: "catalog-categories", label: "Explora el Catálogo", level: 2 as const },
   { id: "catalog-popular", label: "Productos Populares", level: 2 as const },
-  { id: "envios-garantias", label: "Envíos & Garantías", level: 3 as const },
+  { id: "envios-garantias", label: "Envíos & Rastreo", level: 3 as const },
 ];
 
 const NICHE_METADATA_MAP: Record<string, { subtitle: string; img: string; defaultPrice: string }> = {
@@ -84,6 +84,7 @@ const TRUST_ICON_MAP: Record<string, React.ComponentType<{ className?: string }>
   RotateCcw,
   Percent,
   Lock,
+  PackageSearch,
 };
 
 interface TrustBadgeItem {
@@ -99,9 +100,9 @@ const DEFAULT_TRUST_BADGES: TrustBadgeItem[] = [
     subtitle: "A todo el país",
   },
   {
-    icon: ShieldCheck,
-    title: "2 años de garantía",
-    subtitle: "Calidad certificada",
+    icon: PackageSearch,
+    title: "Sigue tu paquete",
+    subtitle: "Paso a paso en tiempo real",
   },
   {
     icon: RotateCcw,
@@ -132,11 +133,15 @@ export default function Home() {
   const categoriesRef = useRef<HTMLDivElement>(null);
   const popularRef = useRef<HTMLDivElement>(null);
 
-  // Derive the 2 mobile-priority trust badges for small screens
+  // Derive the 2 mobile-priority trust badges for small screens (Envíos + Seguimiento en tiempo real)
   const mobileTrustBadges = useMemo(() => {
     const envios = trustBadges.find(b => b.title.toLowerCase().includes("env")) || trustBadges[0];
-    const pagos = trustBadges.find(b => b.title.toLowerCase().includes("pago") || b.title.toLowerCase().includes("segur")) || trustBadges[trustBadges.length - 1];
-    return [envios, pagos].filter(Boolean);
+    const tracking = trustBadges.find(b => 
+      b.title.toLowerCase().includes("paquete") || 
+      b.title.toLowerCase().includes("sigue") || 
+      b.title.toLowerCase().includes("rastr")
+    ) || trustBadges[1];
+    return [envios, tracking].filter(Boolean);
   }, [trustBadges]);
 
   // Derive dynamic category cards strictly from active categories in store
@@ -176,16 +181,26 @@ export default function Home() {
       try {
         const { data, error } = await supabase
           .from('store_trust_badges')
-          .select('title, subtitle, icon_name')
+          .select('id, title, subtitle, icon_name')
           .eq('is_active', true)
           .order('display_order', { ascending: true });
 
         if (!error && data && data.length > 0) {
-          setTrustBadges(data.map(item => ({
-            title: item.title,
-            subtitle: item.subtitle,
-            icon: TRUST_ICON_MAP[item.icon_name] || ShieldCheck,
-          })));
+          setTrustBadges(data.map(item => {
+            const lowerTitle = (item.title || "").toLowerCase();
+            if (item.id === 'warranty' || lowerTitle.includes('garant')) {
+              return {
+                title: "Sigue tu paquete",
+                subtitle: "Paso a paso en tiempo real",
+                icon: PackageSearch,
+              };
+            }
+            return {
+              title: item.title,
+              subtitle: item.subtitle,
+              icon: TRUST_ICON_MAP[item.icon_name] || ShieldCheck,
+            };
+          }));
         }
       } catch (err) {
         console.warn("Could not load store_trust_badges from Supabase:", err);
@@ -316,7 +331,7 @@ export default function Home() {
       {/* Trust Badges Bar (Centered exactly at 50% across the division seam on all devices) */}
       <div
         id="envios-garantias"
-        className="relative z-30 -translate-y-1/2 -mb-7 sm:-mb-9 lg:-mb-10 container mx-auto px-4 sm:px-6 md:px-8 scroll-mt-36"
+        className="relative z-30 -translate-y-1/2 -mb-8 sm:-mb-10 lg:-mb-10 container mx-auto px-4 sm:px-6 md:px-8 scroll-mt-36"
         style={{ transform: "translateY(-50%)" }}
       >
         <motion.div
@@ -324,29 +339,29 @@ export default function Home() {
           whileInView={{ opacity: 1, scale: 1 }}
           viewport={{ once: false, amount: 0.1 }}
           transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
-          className="bg-white dark:bg-[#1e1e20] rounded-2xl border border-black/[0.06] dark:border-white/[0.08] shadow-[0_12px_32px_-8px_rgba(0,0,0,0.06),0_2px_8px_rgba(0,0,0,0.02)] p-2.5 sm:p-3.5 md:p-4"
+          className="bg-white dark:bg-[#1e1e20] rounded-2xl border border-black/[0.06] dark:border-white/[0.08] shadow-[0_12px_32px_-8px_rgba(0,0,0,0.06),0_2px_8px_rgba(0,0,0,0.02)] py-4 px-3 sm:py-5 sm:px-4 md:py-4.5 md:px-5 lg:py-4 lg:px-4"
         >
 
-          {/* ── Mobile / Pantallas pequeñas (< lg): Solo 2 badges compactos en una sola fila ── */}
+          {/* ── Mobile / Pantallas pequeñas (< lg): 2 badges con mayor presencia y grosor vertical ── */}
           <div className="grid grid-cols-2 lg:hidden items-center">
             {mobileTrustBadges.map((badge, idx) => (
               <div
                 key={idx}
-                className="flex items-center justify-center gap-2 sm:gap-2.5 px-2 relative select-none"
+                className="flex items-center justify-center gap-2.5 sm:gap-3.5 px-2 relative select-none"
               >
-                <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-lg bg-[#8c9276]/10 dark:bg-[#8c9276]/20 text-[#8c9276] dark:text-[#a8b092] flex items-center justify-center shrink-0">
-                  <badge.icon className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+                <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-[#8c9276]/10 dark:bg-[#8c9276]/20 text-[#8c9276] dark:text-[#a8b092] flex items-center justify-center shrink-0 shadow-2xs">
+                  <badge.icon className="w-4.5 h-4.5 sm:w-5 sm:h-5" />
                 </div>
                 <div className="min-w-0">
-                  <p className="text-[11px] sm:text-xs font-semibold text-gray-900 dark:text-gray-100 tracking-tight leading-tight truncate">
+                  <p className="text-xs sm:text-sm font-semibold text-gray-900 dark:text-gray-100 tracking-tight leading-tight truncate">
                     {badge.title}
                   </p>
-                  <p className="text-[9px] sm:text-[10px] text-gray-400 font-normal leading-tight truncate">
+                  <p className="text-[10px] sm:text-[11px] text-gray-400 dark:text-gray-400 font-normal leading-tight mt-0.5 truncate">
                     {badge.subtitle}
                   </p>
                 </div>
                 {idx === 0 && (
-                  <div className="absolute right-0 top-1/2 -translate-y-1/2 h-5 w-px bg-gray-200/70 dark:bg-white/10" />
+                  <div className="absolute right-0 top-1/2 -translate-y-1/2 h-8 sm:h-9 w-px bg-gray-200/80 dark:bg-white/10" />
                 )}
               </div>
             ))}
