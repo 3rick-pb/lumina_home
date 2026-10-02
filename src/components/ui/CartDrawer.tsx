@@ -257,7 +257,7 @@ export function CartDrawer() {
         setCardNumber(`${prefix} ${last4}`);
         setCardExpiry(defCard.exp || "12/29");
         setCardHolder(defCard.holder || user?.name || "CLIENTE LUMINA");
-        setCardCvv("888");
+        setCardCvv("");
       }
     }
   }, [cards, selectedSavedCardId, cardNumber, user?.name]);
@@ -283,7 +283,7 @@ export function CartDrawer() {
       setCardNumber(`${prefix} ${last4}`);
       setCardExpiry(found.exp || "12/29");
       setCardHolder(found.holder || user?.name || "CLIENTE LUMINA");
-      setCardCvv("888");
+      setCardCvv("");
     }
   };
 

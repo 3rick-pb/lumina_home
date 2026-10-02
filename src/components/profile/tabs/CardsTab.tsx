@@ -77,7 +77,7 @@ export function CardsTab({ setShowCardModal }: CardsTabProps) {
           <div className="space-y-5">
             <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#8c9276]/10 dark:bg-white/5 border border-[#8c9276]/20 dark:border-white/10 text-[11px] text-gray-600 dark:text-gray-300">
               <Sparkles className="w-3.5 h-3.5 text-[#8c9276]" />
-              <span>Presiona cualquier sobre para deslizar la tarjeta hacia afuera o usa el control de privacidad para revelar numeración y CVV.</span>
+              <span>Presiona cualquier sobre para deslizar la tarjeta o usa el control de privacidad para revelar numeración (por estándar bancario PCI-DSS, tu CVV no se almacena y se protege como &quot;---&quot;).</span>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8 pt-2 pb-4 place-items-center">

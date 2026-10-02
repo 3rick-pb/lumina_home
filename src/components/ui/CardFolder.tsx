@@ -171,7 +171,7 @@ export function CardFolder({
   title,
   cardNumber,
   expiry,
-  cvv,
+  cvv: _cvv,
   card,
   open,
   defaultOpen = false,
@@ -203,7 +203,8 @@ export function CardFolder({
     normalizedCardNumber.length >= 12
       ? normalizedCardNumber.match(/.{1,4}/g)?.join(" ") ?? cardNumber
       : `4532 8891 2041 ${visibleLastFour}`;
-  const maskedCvv = "•".repeat(Math.max(3, cvv.length));
+  const maskedCvv = "•••";
+  const revealedCvv = "---";
   const defaultAriaLabel = `${isOpen ? "Cerrar" : "Abrir"} ${title}, tarjeta terminada en ${visibleLastFour}, expira ${expiry}`;
   const progress = useMotionValue(isOpen ? 1 : 0);
   const cardTransform = useTransform(progress, (value) => {
@@ -409,7 +410,7 @@ export function CardFolder({
                   CVV
                 </span>
                 <DigitSwap
-                  value={areDetailsVisible ? cvv : maskedCvv}
+                  value={areDetailsVisible ? revealedCvv : maskedCvv}
                   animationKey={areDetailsVisible ? "revealed" : "masked"}
                   direction={areDetailsVisible ? "up" : "down"}
                   className="text-xs font-semibold text-neutral-900 dark:text-neutral-100 tabular-nums"
@@ -499,7 +500,6 @@ export function LuminaCardFolderItem({
   const isObsidian = index % 2 === 0;
   const digitsOnly = number.replace(/\D/g, "");
   const lastFour = digitsOnly.slice(-4).padStart(4, "4");
-  const deterministicCvv = String(100 + ((parseInt(lastFour, 10) || 424) * 7) % 899);
 
   const cardSurface = (
     <div
@@ -612,7 +612,7 @@ export function LuminaCardFolderItem({
         title={holder || "Titular Lumina"}
         cardNumber={number}
         expiry={exp}
-        cvv={deterministicCvv}
+        cvv="---"
         open={isOpen}
         onOpenChange={setIsOpen}
         detailsVisible={detailsVisible}

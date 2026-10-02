@@ -387,7 +387,7 @@ export function AddCardAnimatedModal({
           setCardExp("");
           setCardCvv("");
           onClose();
-        }, 1750);
+        }, 3400);
       } catch {
         setStep("form");
         setErrorMessage("Ocurrió un error al vincular la tarjeta. Intenta nuevamente.");
@@ -926,16 +926,29 @@ export function AddCardAnimatedModal({
                   </div>
                 </div>
 
-                <div className="space-y-1.5 flex flex-col items-center">
-                  <div className="w-12 h-12 rounded-full bg-emerald-100 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shadow-inner">
+                <div className="space-y-3 flex flex-col items-center w-full max-w-md text-center">
+                  <div className="w-12 h-12 rounded-full bg-emerald-100 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shadow-inner ring-4 ring-emerald-500/10">
                     <CheckCircle2 className="w-7 h-7" />
                   </div>
-                  <h3 className="text-base font-bold text-gray-950 dark:text-white">
-                    Tarjeta Registrada Correctamente
-                  </h3>
-                  <p className="text-xs text-gray-500 dark:text-gray-400 max-w-sm">
-                    Tu tarjeta terminada en •••• {rawDigits.slice(-4) || "8888"} ha sido asociada a tu cuenta.
-                  </p>
+                  <div>
+                    <h3 className="text-base font-bold text-gray-950 dark:text-white">
+                      Tarjeta Vinculada con Éxito
+                    </h3>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                      Método asociado a tu billetera terminada en •••• {rawDigits.slice(-4) || "8888"}
+                    </p>
+                  </div>
+
+                  {/* Strategic PCI-DSS Zero-Retention Assurance Banner */}
+                  <div className="w-full p-3 rounded-xl bg-stone-50 dark:bg-stone-900/70 border border-stone-200/80 dark:border-stone-800/80 text-left space-y-1.5 shadow-sm">
+                    <div className="flex items-center gap-1.5 text-[11px] font-semibold text-emerald-700 dark:text-emerald-400">
+                      <ShieldCheck className="w-3.5 h-3.5 shrink-0" />
+                      <span>Protocolo Bancario PCI-DSS • Zero-Retention CVV</span>
+                    </div>
+                    <p className="text-[11px] leading-relaxed text-stone-600 dark:text-stone-300">
+                      Por estrictos estándares globales de seguridad y privacidad financiera, tu código de seguridad (CVV) es verificado en tiempo real y <strong className="font-semibold text-stone-900 dark:text-stone-100">jamás se almacena</strong> en nuestras bases de datos ni servidores. En tu sobre interactivo tus datos estarán siempre protegidos bajo cifrado de alta fidelidad.
+                    </p>
+                  </div>
                 </div>
               </motion.div>
             )}
