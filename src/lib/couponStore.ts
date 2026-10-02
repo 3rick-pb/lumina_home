@@ -1,6 +1,21 @@
 import { create } from 'zustand';
 import { supabase } from './supabase';
 
+export interface CouponRedemptionRecord {
+  id: string;
+  orderId: string;
+  customerName: string;
+  customerEmail: string;
+  customerAvatarSeed?: string;
+  customerAvatarShape?: 'squircle' | 'circle';
+  usedAt: string; // ISO date string e.g. "2026-10-01T18:24:00Z"
+  beforeAmount: number; // Subtotal before discount
+  discountAmount: number; // Monetary discount subtracted
+  afterAmount: number; // Final amount paid
+  itemsSummary: string; // Brief summary of items bought
+  paymentMethod?: string;
+}
+
 export interface DiscountCoupon {
   id: string;
   code: string;
@@ -18,6 +33,7 @@ export interface DiscountCoupon {
   isActive: boolean;
   createdAt: string;
   shareCount: number;
+  redemptions?: CouponRedemptionRecord[];
 }
 
 interface CouponState {
@@ -39,7 +55,7 @@ interface CouponState {
   setSearchQuery: (query: string) => void;
 }
 
-const STORAGE_KEY = 'lumina_discount_coupons_v1';
+const STORAGE_KEY = 'lumina_discount_coupons_v2';
 
 const INITIAL_DEFAULT_COUPONS: DiscountCoupon[] = [
   {
@@ -57,6 +73,50 @@ const INITIAL_DEFAULT_COUPONS: DiscountCoupon[] = [
     isActive: true,
     createdAt: new Date(Date.now() - 30 * 86400000).toISOString(),
     shareCount: 42,
+    redemptions: [
+      {
+        id: 'red-101',
+        orderId: 'ORD-92810',
+        customerName: 'Mateo Cárdenas',
+        customerEmail: 'mateo.cardenas@gmail.com',
+        customerAvatarSeed: 'mateo.cardenas',
+        customerAvatarShape: 'squircle',
+        usedAt: new Date(Date.now() - 1 * 86400000).toISOString(),
+        beforeAmount: 120.00,
+        discountAmount: 12.00,
+        afterAmount: 108.00,
+        itemsSummary: 'Lámpara Japandi Kumo (x1)',
+        paymentMethod: 'PayPhone · Tarjeta Crédito',
+      },
+      {
+        id: 'red-102',
+        orderId: 'ORD-91745',
+        customerName: 'Andrea Morales',
+        customerEmail: 'andrea.morales@outlook.com',
+        customerAvatarSeed: 'andrea.morales',
+        customerAvatarShape: 'circle',
+        usedAt: new Date(Date.now() - 4 * 86400000).toISOString(),
+        beforeAmount: 240.00,
+        discountAmount: 24.00,
+        afterAmount: 216.00,
+        itemsSummary: 'Difusor Cerámico Zen (x1), Esencia Cedro (x2)',
+        paymentMethod: 'PayPhone · Tarjeta Débito',
+      },
+      {
+        id: 'red-103',
+        orderId: 'ORD-90231',
+        customerName: 'Carlos Andrade',
+        customerEmail: 'carlos.andrade@yahoo.es',
+        customerAvatarSeed: 'carlos.andrade',
+        customerAvatarShape: 'squircle',
+        usedAt: new Date(Date.now() - 8 * 86400000).toISOString(),
+        beforeAmount: 85.00,
+        discountAmount: 8.50,
+        afterAmount: 76.50,
+        itemsSummary: 'Vela Aromática Santal (x1)',
+        paymentMethod: 'Transferencia Bancaria',
+      },
+    ],
   },
   {
     id: 'coup-2',
@@ -73,6 +133,36 @@ const INITIAL_DEFAULT_COUPONS: DiscountCoupon[] = [
     isActive: true,
     createdAt: new Date(Date.now() - 5 * 86400000).toISOString(),
     shareCount: 19,
+    redemptions: [
+      {
+        id: 'red-201',
+        orderId: 'ORD-88730',
+        customerName: 'Gabriel Ponce',
+        customerEmail: 'gabriel.ponce@gmail.com',
+        customerAvatarSeed: 'gabriel.ponce',
+        customerAvatarShape: 'squircle',
+        usedAt: new Date(Date.now() - 2 * 86400000).toISOString(),
+        beforeAmount: 150.00,
+        discountAmount: 30.00,
+        afterAmount: 120.00,
+        itemsSummary: 'Manta de Lana Merino (x1)',
+        paymentMethod: 'PayPhone · Tarjeta Crédito',
+      },
+      {
+        id: 'red-202',
+        orderId: 'ORD-87910',
+        customerName: 'Lorena Silva',
+        customerEmail: 'lorena.silva@hotmail.com',
+        customerAvatarSeed: 'lorena.silva',
+        customerAvatarShape: 'circle',
+        usedAt: new Date(Date.now() - 3 * 86400000).toISOString(),
+        beforeAmount: 210.00,
+        discountAmount: 42.00,
+        afterAmount: 168.00,
+        itemsSummary: 'Set Cojines Lino Lavado (x2)',
+        paymentMethod: 'PayPhone · Tarjeta Crédito',
+      },
+    ],
   },
   {
     id: 'coup-3',
@@ -90,6 +180,22 @@ const INITIAL_DEFAULT_COUPONS: DiscountCoupon[] = [
     isActive: true,
     createdAt: new Date(Date.now() - 10 * 86400000).toISOString(),
     shareCount: 8,
+    redemptions: [
+      {
+        id: 'red-301',
+        orderId: 'ORD-89410',
+        customerName: 'Valeria Espinoza',
+        customerEmail: 'valeria.espinoza@hotmail.com',
+        customerAvatarSeed: 'valeria.espinoza',
+        customerAvatarShape: 'circle',
+        usedAt: new Date(Date.now() - 4 * 86400000).toISOString(),
+        beforeAmount: 95.00,
+        discountAmount: 14.25,
+        afterAmount: 80.75,
+        itemsSummary: 'Pack Esencias Botánicas (x3)',
+        paymentMethod: 'PayPhone · Tarjeta Débito',
+      },
+    ],
   },
   {
     id: 'coup-4',
@@ -107,6 +213,36 @@ const INITIAL_DEFAULT_COUPONS: DiscountCoupon[] = [
     isActive: true,
     createdAt: new Date(Date.now() - 2 * 86400000).toISOString(),
     shareCount: 27,
+    redemptions: [
+      {
+        id: 'red-401',
+        orderId: 'ORD-93512',
+        customerName: 'Sofía Benalcázar',
+        customerEmail: 'sofia.benalcazar@gmail.com',
+        customerAvatarSeed: 'sofia.benalcazar',
+        customerAvatarShape: 'squircle',
+        usedAt: new Date(Date.now() - 12 * 3600000).toISOString(),
+        beforeAmount: 320.00,
+        discountAmount: 80.00,
+        afterAmount: 240.00,
+        itemsSummary: 'Lámpara Nórdica Aurora (x1), Luminaria Halo (x1)',
+        paymentMethod: 'PayPhone · Tarjeta Crédito',
+      },
+      {
+        id: 'red-402',
+        orderId: 'ORD-92140',
+        customerName: 'David Viteri',
+        customerEmail: 'david.viteri@gmail.com',
+        customerAvatarSeed: 'david.viteri',
+        customerAvatarShape: 'squircle',
+        usedAt: new Date(Date.now() - 2 * 86400000).toISOString(),
+        beforeAmount: 180.00,
+        discountAmount: 45.00,
+        afterAmount: 135.00,
+        itemsSummary: 'Lámpara de Mesa Eclipse (x1)',
+        paymentMethod: 'PayPhone · Tarjeta Crédito',
+      },
+    ],
   },
   {
     id: 'coup-5',
@@ -123,6 +259,22 @@ const INITIAL_DEFAULT_COUPONS: DiscountCoupon[] = [
     isActive: true,
     createdAt: new Date(Date.now() - 20 * 86400000).toISOString(),
     shareCount: 56,
+    redemptions: [
+      {
+        id: 'red-501',
+        orderId: 'ORD-94110',
+        customerName: 'Lucía Paredes',
+        customerEmail: 'lucia.paredes@gmail.com',
+        customerAvatarSeed: 'lucia.paredes',
+        customerAvatarShape: 'circle',
+        usedAt: new Date(Date.now() - 1 * 86400000).toISOString(),
+        beforeAmount: 65.00,
+        discountAmount: 5.00,
+        afterAmount: 60.00,
+        itemsSummary: 'Jarrón Cerámica Wabi-Sabi (x1)',
+        paymentMethod: 'PayPhone · Tarjeta Débito',
+      },
+    ],
   }
 ];
 

@@ -23,12 +23,30 @@ import {
   ExternalLink,
   CheckCircle2,
   Gift,
+  BarChart3,
 } from "lucide-react";
 import { useCouponStore, DiscountCoupon } from "@/lib/couponStore";
 import { useUserStore } from "@/lib/userStore";
 import { VectorBarcode } from "@/components/ui/VectorBarcode";
 import { CouponWalletModal } from "@/components/profile/modals/CouponWalletModal";
+import { CouponAnalyticsModal } from "@/components/profile/modals/CouponAnalyticsModal";
 import { generateCouponPng } from "@/lib/couponPngGenerator";
+
+// ---------------------------------------------------------------------------
+// Real WhatsApp SVG Icon Component
+// ---------------------------------------------------------------------------
+function WhatsAppIcon({ className = "w-3.5 h-3.5" }: { className?: string }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="currentColor"
+      className={className}
+      aria-hidden="true"
+    >
+      <path d="M12.04 2C6.58 2 2.13 6.45 2.13 11.91C2.13 13.66 2.59 15.36 3.45 16.86L2.05 22L7.3 20.63C8.75 21.41 10.38 21.83 12.04 21.83C17.5 21.83 21.95 17.38 21.95 11.92C21.95 9.27 20.92 6.78 19.05 4.91C17.18 3.04 14.69 2 12.04 2ZM12.04 3.67C14.24 3.67 16.31 4.53 17.87 6.09C19.42 7.64 20.28 9.72 20.28 11.92C20.28 16.46 16.58 20.16 12.04 20.16C10.67 20.16 9.33 19.8 8.15 19.1L7.87 18.93L4.76 19.75L5.59 16.72L5.4 16.42C4.63 15.19 4.22 13.57 4.22 11.91C4.22 7.37 7.92 3.67 12.04 3.67ZM8.78 7.37C8.6 7.37 8.3 7.44 8.05 7.71C7.81 7.98 7.12 8.63 7.12 9.94C7.12 11.26 8.08 12.52 8.21 12.7C8.35 12.87 10.09 15.56 12.77 16.71C13.41 16.99 13.9 17.15 14.29 17.27C14.93 17.48 15.52 17.45 15.98 17.38C16.5 17.3 17.57 16.73 17.8 16.09C18.02 15.44 18.02 14.89 17.95 14.77C17.89 14.66 17.72 14.59 17.46 14.46C17.2 14.33 15.92 13.7 15.68 13.62C15.45 13.53 15.28 13.49 15.11 13.75C14.94 14.01 14.46 14.59 14.31 14.75C14.17 14.92 14.02 14.94 13.76 14.81C13.5 14.68 12.67 14.41 11.68 13.53C10.91 12.84 10.39 12 10.24 11.74C10.09 11.48 10.22 11.34 10.35 11.21C10.47 11.09 10.62 10.89 10.75 10.74C10.88 10.59 10.92 10.48 11.01 10.31C11.1 10.13 11.05 9.98 10.99 9.85C10.92 9.72 10.4 8.44 10.18 7.92C9.97 7.41 9.75 7.48 9.59 7.47C9.44 7.46 9.27 7.46 9.09 7.46L8.78 7.37Z" />
+    </svg>
+  );
+}
 
 // ---------------------------------------------------------------------------
 // Palettes for Style 1: Niche Specific Discounts (from Cupones Style.jpg)
@@ -56,7 +74,7 @@ function getCouponPaletteIndex(id: string, count: number): number {
 // ===========================================================================
 // SUB-COMPONENT: STYLE 1 TICKET SVG (Cupones Style.jpg)
 // Scalloped cutouts, giant 15% OFF, horizontal 1D barcode on left, CODE box
-// Symmetrized to exact unified 420 x 176 dimensions.
+// Natural squarish/compact aspect ratio: 340 x 215. Does NOT stretch!
 // ===========================================================================
 function Style1TicketSvg({
   coupon,
@@ -71,12 +89,12 @@ function Style1TicketSvg({
   const discNum = coupon.discountType === "free_shipping" ? "100%" : `${coupon.discountPercent}%`;
   const offText = coupon.discountType === "free_shipping" ? "GRATIS" : "OFF";
   // Anti-collision dynamic font sizing so long codes never overflow or get cut
-  const codeFontSize = coupon.code.length > 14 ? 15 : coupon.code.length > 11 ? 17 : coupon.code.length > 9 ? 19 : 22;
+  const codeFontSize = coupon.code.length > 14 ? 13 : coupon.code.length > 11 ? 15 : coupon.code.length > 9 ? 17 : 20;
 
   return (
-    <div className={`relative w-full aspect-[420/176] select-none ${className}`}>
+    <div className={`relative w-full max-w-[340px] aspect-[340/215] select-none mx-auto ${className}`}>
       <svg
-        viewBox="0 0 420 176"
+        viewBox="0 0 340 215"
         className="w-full h-full overflow-visible drop-shadow-[0_12px_28px_rgba(0,0,0,0.18)]"
       >
         <defs>
@@ -87,26 +105,26 @@ function Style1TicketSvg({
           </linearGradient>
         </defs>
 
-        {/* Outer Ticket Outline with Notches and Scallops */}
+        {/* Outer Ticket Outline with Notches and Scallops for 340 x 215 */}
         <path
           d="
-            M 16 0
-            L 173 0
-            A 7 7 0 0 0 187 0
-            L 404 0
-            A 16 16 0 0 1 420 16
-            L 420 74
-            A 14 14 0 0 0 420 102
-            L 420 160
-            A 16 16 0 0 1 404 176
-            L 187 176
-            A 7 7 0 0 0 173 176
-            L 16 176
-            A 16 16 0 0 1 0 160
-            L 0 102
-            A 14 14 0 0 0 0 74
-            L 0 16
-            A 16 16 0 0 1 16 0
+            M 14 0
+            L 139 0
+            A 6 6 0 0 0 151 0
+            L 326 0
+            A 14 14 0 0 1 340 14
+            L 340 94
+            A 13.5 13.5 0 0 0 340 121
+            L 340 201
+            A 14 14 0 0 1 326 215
+            L 151 215
+            A 6 6 0 0 0 139 215
+            L 14 215
+            A 14 14 0 0 1 0 201
+            L 0 121
+            A 13.5 13.5 0 0 0 0 94
+            L 0 14
+            A 14 14 0 0 1 14 0
             Z
           "
           fill={`url(#${gradId})`}
@@ -114,31 +132,36 @@ function Style1TicketSvg({
           strokeWidth="1"
         />
 
-        {/* Scalloped teeth on left & right edges (exact ticket scallops) */}
-        <circle cx="0" cy="26" r="3" fill="var(--background, #faf9f6)" />
-        <circle cx="0" cy="40" r="3" fill="var(--background, #faf9f6)" />
-        <circle cx="0" cy="54" r="3" fill="var(--background, #faf9f6)" />
-        <circle cx="0" cy="68" r="3" fill="var(--background, #faf9f6)" />
-        <circle cx="0" cy="108" r="3" fill="var(--background, #faf9f6)" />
-        <circle cx="0" cy="122" r="3" fill="var(--background, #faf9f6)" />
-        <circle cx="0" cy="136" r="3" fill="var(--background, #faf9f6)" />
-        <circle cx="0" cy="150" r="3" fill="var(--background, #faf9f6)" />
+        {/* Scalloped teeth on left edge */}
+        <circle cx="0" cy="24" r="3" fill="var(--background, #faf9f6)" />
+        <circle cx="0" cy="38" r="3" fill="var(--background, #faf9f6)" />
+        <circle cx="0" cy="52" r="3" fill="var(--background, #faf9f6)" />
+        <circle cx="0" cy="66" r="3" fill="var(--background, #faf9f6)" />
+        <circle cx="0" cy="80" r="3" fill="var(--background, #faf9f6)" />
+        <circle cx="0" cy="135" r="3" fill="var(--background, #faf9f6)" />
+        <circle cx="0" cy="149" r="3" fill="var(--background, #faf9f6)" />
+        <circle cx="0" cy="163" r="3" fill="var(--background, #faf9f6)" />
+        <circle cx="0" cy="177" r="3" fill="var(--background, #faf9f6)" />
+        <circle cx="0" cy="191" r="3" fill="var(--background, #faf9f6)" />
 
-        <circle cx="420" cy="26" r="3" fill="var(--background, #faf9f6)" />
-        <circle cx="420" cy="40" r="3" fill="var(--background, #faf9f6)" />
-        <circle cx="420" cy="54" r="3" fill="var(--background, #faf9f6)" />
-        <circle cx="420" cy="68" r="3" fill="var(--background, #faf9f6)" />
-        <circle cx="420" cy="108" r="3" fill="var(--background, #faf9f6)" />
-        <circle cx="420" cy="122" r="3" fill="var(--background, #faf9f6)" />
-        <circle cx="420" cy="136" r="3" fill="var(--background, #faf9f6)" />
-        <circle cx="420" cy="150" r="3" fill="var(--background, #faf9f6)" />
+        {/* Scalloped teeth on right edge */}
+        <circle cx="340" cy="24" r="3" fill="var(--background, #faf9f6)" />
+        <circle cx="340" cy="38" r="3" fill="var(--background, #faf9f6)" />
+        <circle cx="340" cy="52" r="3" fill="var(--background, #faf9f6)" />
+        <circle cx="340" cy="66" r="3" fill="var(--background, #faf9f6)" />
+        <circle cx="340" cy="80" r="3" fill="var(--background, #faf9f6)" />
+        <circle cx="340" cy="135" r="3" fill="var(--background, #faf9f6)" />
+        <circle cx="340" cy="149" r="3" fill="var(--background, #faf9f6)" />
+        <circle cx="340" cy="163" r="3" fill="var(--background, #faf9f6)" />
+        <circle cx="340" cy="177" r="3" fill="var(--background, #faf9f6)" />
+        <circle cx="340" cy="191" r="3" fill="var(--background, #faf9f6)" />
 
         {/* Central Vertical Dashed Line */}
         <line
-          x1="180"
+          x1="145"
           y1="8"
-          x2="180"
-          y2="168"
+          x2="145"
+          y2="207"
           stroke="rgba(0,0,0,0.35)"
           strokeDasharray="4 4"
           strokeWidth="1.5"
@@ -146,22 +169,22 @@ function Style1TicketSvg({
 
         {/* LEFT COLUMN: Stacked Giant Discount Numbers */}
         <text
-          x="26"
-          y="66"
+          x="20"
+          y="70"
           fontFamily="system-ui, -apple-system, sans-serif"
           fontWeight="900"
-          fontSize="48"
+          fontSize="44"
           letterSpacing="-1.5px"
           fill="#000000"
         >
           {discNum}
         </text>
         <text
-          x="26"
-          y="108"
+          x="20"
+          y="112"
           fontFamily="system-ui, -apple-system, sans-serif"
           fontWeight="900"
-          fontSize="38"
+          fontSize="36"
           letterSpacing="-1px"
           fill="#000000"
         >
@@ -170,8 +193,8 @@ function Style1TicketSvg({
 
         {/* RIGHT COLUMN: [CODE] Badge + Code + Niche/Condition */}
         <rect
-          x="200"
-          y="24"
+          x="160"
+          y="22"
           width="42"
           height="18"
           rx="3"
@@ -180,12 +203,12 @@ function Style1TicketSvg({
           strokeWidth="1.2"
         />
         <text
-          x="221"
-          y="37"
+          x="181"
+          y="35"
           textAnchor="middle"
           fontFamily="system-ui, sans-serif"
           fontWeight="800"
-          fontSize="10.5"
+          fontSize="10"
           letterSpacing="0.8px"
           fill="#000000"
         >
@@ -194,7 +217,7 @@ function Style1TicketSvg({
 
         {/* Coupon Code with Dynamic Scaling */}
         <text
-          x="200"
+          x="160"
           y="68"
           fontFamily="system-ui, sans-serif"
           fontWeight="900"
@@ -206,31 +229,31 @@ function Style1TicketSvg({
         </text>
 
         {/* Divider hairline */}
-        <line x1="200" y1="78" x2="396" y2="78" stroke="#000000" strokeWidth="0.8" opacity="0.3" />
+        <line x1="160" y1="78" x2="318" y2="78" stroke="#000000" strokeWidth="0.8" opacity="0.3" />
 
         {/* Condition text */}
         <text
-          x="200"
+          x="160"
           y="98"
           fontFamily="system-ui, sans-serif"
           fontWeight="700"
-          fontSize="12"
+          fontSize="11"
           fill="#111111"
         >
           {coupon.targetNiche ? `Colección: ${coupon.targetNiche}` : "Colección Exclusiva"}
         </text>
         <text
-          x="200"
+          x="160"
           y="117"
           fontFamily="system-ui, sans-serif"
           fontWeight="700"
-          fontSize="11"
+          fontSize="10.5"
           fill="#000000"
         >
           {coupon.minOrderAmount > 0 ? `Spend $${coupon.minOrderAmount}+ USD` : "Sin compra mínima"}
         </text>
         <text
-          x="200"
+          x="160"
           y="136"
           fontFamily="system-ui, sans-serif"
           fontWeight="500"
@@ -244,7 +267,7 @@ function Style1TicketSvg({
       </svg>
 
       {/* Real SVG Vector Barcode on left side under OFF */}
-      <div className="absolute left-[6%] bottom-[13%] w-[31%] max-w-[125px] h-[22px]">
+      <div className="absolute left-[6%] bottom-[13%] w-[32%] max-w-[110px] h-[22px]">
         <VectorBarcode code={coupon.code} height={22} color="#000000" className="w-full h-full" />
       </div>
     </div>
@@ -255,7 +278,8 @@ function Style1TicketSvg({
 // SUB-COMPONENT: STYLE 2 TICKET SVG (Cupones Style 2.jpg)
 // Vintage editorial ticket, vertical 1D barcode on stub, cursive script title,
 // uppercase display serif, and thin-line oval GET DISCOUNT badge.
-// Symmetrized to exact unified 420 x 176 dimensions (zero collision with oval).
+// Natural rectangular aspect ratio: 460 x 170. Zero collision with oval.
+// Brand spelled strictly "Lumina Home" without tilde.
 // ===========================================================================
 function Style2TicketSvg({
   coupon,
@@ -269,31 +293,31 @@ function Style2TicketSvg({
   const ovalDisc = coupon.discountType === "free_shipping" ? "100%" : `${coupon.discountPercent}%`;
 
   return (
-    <div className={`relative w-full aspect-[420/176] select-none ${className}`}>
+    <div className={`relative w-full max-w-[460px] aspect-[460/170] select-none mx-auto ${className}`}>
       <svg
-        viewBox="0 0 420 176"
+        viewBox="0 0 460 170"
         className="w-full h-full overflow-visible drop-shadow-[0_12px_26px_rgba(0,0,0,0.14)]"
       >
         {/* Outer Ticket Outline with Notches */}
         <path
           d="
-            M 18 0
-            L 106 0
-            A 9 9 0 0 0 124 0
-            L 402 0
-            A 18 18 0 0 1 420 18
-            L 420 79
-            A 9 9 0 0 0 420 97
-            L 420 158
-            A 18 18 0 0 1 402 176
-            L 124 176
-            A 9 9 0 0 0 106 176
-            L 18 176
-            A 18 18 0 0 1 0 158
-            L 0 97
-            A 9 9 0 0 0 0 79
-            L 0 18
-            A 18 18 0 0 1 18 0
+            M 16 0
+            L 102 0
+            A 8 8 0 0 0 118 0
+            L 444 0
+            A 16 16 0 0 1 460 16
+            L 460 76
+            A 9 9 0 0 0 460 94
+            L 460 154
+            A 16 16 0 0 1 444 170
+            L 118 170
+            A 8 8 0 0 0 102 170
+            L 16 170
+            A 16 16 0 0 1 0 154
+            L 0 94
+            A 9 9 0 0 0 0 76
+            L 0 16
+            A 16 16 0 0 1 16 0
             Z
           "
           fill={theme.bg}
@@ -303,36 +327,36 @@ function Style2TicketSvg({
 
         {/* Perforation Dashed Vertical Line */}
         <line
-          x1="115"
-          y1="12"
-          x2="115"
-          y2="164"
+          x1="110"
+          y1="10"
+          x2="110"
+          y2="160"
           stroke={theme.text}
           strokeDasharray="4 4"
           strokeWidth="2"
           opacity="0.4"
         />
 
-        {/* RIGHT BODY: Cursive Script "Lúmina Home" (Bounded safely to x=135..260) */}
+        {/* RIGHT BODY: Cursive Script "Lumina Home" (Strictly NO ACCENT/TILDE and SAFE DISTANCE FROM OVAL) */}
         <text
-          x="135"
-          y="52"
+          x="126"
+          y="50"
           fontFamily="'Pinyon Script', 'Alex Brush', 'Caveat', cursive, Georgia, serif"
-          fontSize="30"
+          fontSize="21"
           fontStyle="italic"
           fill={theme.text}
         >
-          Lúmina Home
+          Lumina Home
         </text>
 
         {/* Uppercase Serif: "CUPÓN DE TIENDA" */}
         <text
-          x="137"
-          y="74"
+          x="126"
+          y="72"
           fontFamily="'Playfair Display', Georgia, 'Times New Roman', serif"
           fontWeight="700"
-          fontSize="12"
-          letterSpacing="2px"
+          fontSize="11"
+          letterSpacing="1.5px"
           fill={theme.text}
         >
           CUPÓN DE TIENDA
@@ -340,10 +364,10 @@ function Style2TicketSvg({
 
         {/* Horizontal Dashed Line */}
         <line
-          x1="137"
-          y1="94"
-          x2="260"
-          y2="94"
+          x1="126"
+          y1="90"
+          x2="240"
+          y2="90"
           stroke={theme.text}
           strokeDasharray="3 3"
           strokeWidth="1"
@@ -352,58 +376,58 @@ function Style2TicketSvg({
 
         {/* Store URL */}
         <text
-          x="137"
-          y="122"
+          x="126"
+          y="118"
           fontFamily="monospace, system-ui"
           fontWeight="700"
-          fontSize="9.5"
-          letterSpacing="1px"
+          fontSize="9"
+          letterSpacing="0.8px"
           fill={theme.text}
           opacity="0.9"
         >
           WWW.LUMINAHOME.EC
         </text>
 
-        {/* RIGHT BODY: Oval Discount Badge (Safe distance at cx=338, clear 39px margin) */}
+        {/* RIGHT BODY: Oval Discount Badge (Safe distance at cx=378, perfectly proportioned) */}
         <ellipse
-          cx="338"
-          cy="64"
-          rx="44"
-          ry="31"
+          cx="378"
+          cy="62"
+          rx="42"
+          ry="30"
           fill="none"
           stroke={theme.text}
           strokeWidth="1.2"
         />
         <text
-          x="338"
-          y="51"
+          x="378"
+          y="49"
           textAnchor="middle"
           fontFamily="'Playfair Display', Georgia, serif"
-          fontSize="9"
+          fontSize="8.5"
           letterSpacing="2px"
           fill={theme.text}
         >
           GET
         </text>
         <text
-          x="338"
-          y="64"
+          x="378"
+          y="62"
           textAnchor="middle"
           fontFamily="'Playfair Display', Georgia, serif"
           fontWeight="700"
-          fontSize="11"
+          fontSize="10.5"
           letterSpacing="1.5px"
           fill={theme.text}
         >
           DISCOUNT
         </text>
         <text
-          x="338"
-          y="83"
+          x="378"
+          y="81"
           textAnchor="middle"
           fontFamily="'Playfair Display', Georgia, serif"
           fontWeight="700"
-          fontSize="19"
+          fontSize="18"
           fill={theme.text}
         >
           {ovalDisc}
@@ -411,13 +435,13 @@ function Style2TicketSvg({
 
         {/* Date with Asterisk under oval */}
         <text
-          x="338"
-          y="122"
+          x="378"
+          y="118"
           textAnchor="middle"
           fontFamily="'Playfair Display', Georgia, serif"
           fontWeight="600"
-          fontSize="8.5"
-          letterSpacing="1px"
+          fontSize="8"
+          letterSpacing="0.8px"
           fill={theme.text}
           opacity="0.85"
         >
@@ -428,7 +452,7 @@ function Style2TicketSvg({
       </svg>
 
       {/* LEFT STUB: Vertical Barcode */}
-      <div className="absolute left-[3.5%] top-[16%] w-[19%] max-w-[56px] h-[68%] flex items-center justify-center">
+      <div className="absolute left-[3.5%] top-[16%] w-[17%] max-w-[56px] h-[68%] flex items-center justify-center">
         <VectorBarcode
           code={coupon.code}
           vertical
@@ -465,6 +489,9 @@ export function DiscountCouponsTab() {
   // Digital Wallet Modal state (Detail Modal with official GoogleWalletButton)
   const [walletCoupon, setWalletCoupon] = useState<DiscountCoupon | null>(null);
   const [isWalletOpen, setIsWalletOpen] = useState(false);
+
+  // Forensic Analytics Modal State (Who used it, avatar, orders, amounts before/after)
+  const [analyticsCoupon, setAnalyticsCoupon] = useState<DiscountCoupon | null>(null);
 
   // Falling Leaf Animation State
   const [fallingLeafCoupon, setFallingLeafCoupon] = useState<DiscountCoupon | null>(null);
@@ -558,8 +585,8 @@ export function DiscountCouponsTab() {
       ) {
         await navigator.share({
           files: [pngFile],
-          title: `Cupón ${coupon.code} - Lúmina Home`,
-          text: `¡Te comparto este cupón de descuento para Lúmina Home! Código: ${coupon.code}`,
+          title: `Cupón ${coupon.code} - Lumina Home`,
+          text: `¡Te comparto este cupón de descuento para Lumina Home! Código: ${coupon.code}`,
         });
         recordShare(coupon.id);
         return;
@@ -577,9 +604,9 @@ export function DiscountCouponsTab() {
 
       recordShare(coupon.id);
       const msg = encodeURIComponent(
-        `¡Hola! Te comparto un cupón de descuento en Lúmina Home: *${coupon.code}* (${
+        `¡Hola! Te comparto un cupón de descuento en Lumina Home: *${coupon.code}* (${
           coupon.discountType === "free_shipping" ? "Envío Gratis" : `${coupon.discountPercent}% OFF`
-        }). Te adjunto la imagen del cupón para canjear en la tienda.`
+        }). Te adjunto el cupón para canjear en la tienda.`
       );
       window.open(`https://api.whatsapp.com/send?text=${msg}`, "_blank");
     } catch (err) {
@@ -697,7 +724,7 @@ export function DiscountCouponsTab() {
                 times: [0, 0.1, 0.35, 0.6, 0.82, 1],
                 ease: "easeInOut",
               }}
-              className="w-[340px] sm:w-[420px] drop-shadow-2xl aspect-[420/176]"
+              className="w-[320px] sm:w-[390px] drop-shadow-2xl flex items-center justify-center"
             >
               {fallingLeafCoupon.scope === "all" ? (
                 <Style2TicketSvg
@@ -729,7 +756,7 @@ export function DiscountCouponsTab() {
               Gestión Estratégica de Cupones & Campañas
             </h2>
             <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-1 max-w-2xl leading-relaxed">
-              Genera incentivos comerciales con arquitectura de canje en tiempo real. Monitorea y administra campañas activas, nichos de autor y promociones globales para compartir en PNG por WhatsApp.
+              Genera incentivos comerciales con arquitectura de canje en tiempo real. Monitorea y administra campañas activas, nichos de autor y promociones globales para compartir por WhatsApp.
             </p>
           </div>
 
@@ -978,8 +1005,16 @@ export function DiscountCouponsTab() {
                       onClick={() => handleShareWhatsAppPng(justGeneratedCoupon)}
                       className="flex-1 md:flex-none px-4 py-2.5 rounded-xl bg-[#25D366] hover:bg-[#20ba59] text-white text-xs font-bold flex items-center justify-center gap-1.5 transition-all active:scale-95 cursor-pointer shadow-sm"
                     >
-                      <MessageCircle className="w-3.5 h-3.5" />
-                      <span>Compartir PNG</span>
+                      <WhatsAppIcon className="w-3.5 h-3.5 fill-current" />
+                      <span>Compartir</span>
+                    </button>
+
+                    <button
+                      onClick={() => setAnalyticsCoupon(justGeneratedCoupon)}
+                      className="flex-1 md:flex-none px-4 py-2.5 rounded-xl bg-purple-500/20 hover:bg-purple-500/30 text-purple-200 text-xs font-bold flex items-center justify-center gap-1.5 transition-all active:scale-95 cursor-pointer shadow-sm border border-purple-500/30"
+                    >
+                      <BarChart3 className="w-3.5 h-3.5" />
+                      <span>Ver Métricas</span>
                     </button>
                   </div>
                 </div>
@@ -1320,7 +1355,7 @@ export function DiscountCouponsTab() {
                   isDimmed ? "opacity-65 grayscale-[35%]" : "opacity-100"
                 }`}
               >
-                {/* Physical Ticket Container */}
+                {/* Physical Ticket Container Stage (Fixed 190px stage so neither ticket stretches) */}
                 <div
                   onClick={() => {
                     if (isAdmin) {
@@ -1329,7 +1364,7 @@ export function DiscountCouponsTab() {
                       handleOpenWalletModal(coupon);
                     }
                   }}
-                  className="relative cursor-pointer transition-transform duration-300 group-hover:-translate-y-1.5"
+                  className="relative cursor-pointer transition-transform duration-300 group-hover:-translate-y-1.5 w-full h-[190px] flex items-center justify-center p-1"
                   title={isAdmin ? "Clic para copiar código del cupón" : "Clic para ver detalle y agregar a Google Wallet"}
                 >
                   {/* Scissors Cutting Glint Indicator */}
@@ -1346,7 +1381,7 @@ export function DiscountCouponsTab() {
 
                   {/* Client Status Badge Overlay */}
                   {!isAdmin && (
-                    <div className="absolute top-3 right-4 z-20 pointer-events-none">
+                    <div className="absolute top-2 right-3 z-20 pointer-events-none">
                       {isClientRedeemed ? (
                         <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-black/60 backdrop-blur-md text-amber-300 border border-amber-300/30">
                           Canjeado
@@ -1366,7 +1401,7 @@ export function DiscountCouponsTab() {
                     <Style2TicketSvg
                       coupon={coupon}
                       theme={STYLE2_THEMES[getCouponPaletteIndex(coupon.id, STYLE2_THEMES.length)]}
-                      className="w-full"
+                      className="max-h-[180px]"
                     />
                   ) : (
                     // -------------------------------------------------------------
@@ -1375,79 +1410,94 @@ export function DiscountCouponsTab() {
                     <Style1TicketSvg
                       coupon={coupon}
                       palette={STYLE1_GRADIENTS[getCouponPaletteIndex(coupon.id, STYLE1_GRADIENTS.length)]}
-                      className="w-full"
+                      className="max-h-[180px]"
                     />
                   )}
                 </div>
 
                 {/* Floating Action Ribbon under ticket */}
-                <div className="mt-3 px-3 py-2 rounded-2xl bg-white/70 dark:bg-[#202022]/70 backdrop-blur-md border border-black/5 dark:border-white/10 shadow-sm flex items-center justify-between gap-1.5">
-                  {/* Copy Code */}
-                  <button
-                    type="button"
-                    onClick={() => handleCopyCode(coupon.code)}
-                    className="px-2.5 py-1.5 rounded-xl bg-gray-100 dark:bg-white/10 hover:bg-gray-200 dark:hover:bg-white/20 text-[11px] font-bold text-gray-800 dark:text-gray-200 transition-all flex items-center gap-1.5 cursor-pointer active:scale-95"
-                    title="Copiar código alfanumérico"
-                  >
-                    {copiedCode === coupon.code ? (
-                      <>
-                        <Check className="w-3.5 h-3.5 text-emerald-600" />
-                        <span>Copiado</span>
-                      </>
-                    ) : (
-                      <>
-                        <Copy className="w-3.5 h-3.5" />
-                        <span>Copiar</span>
-                      </>
-                    )}
-                  </button>
-
-                  {/* CLIENT ONLY: Google Wallet Button */}
-                  {!isAdmin && (
+                <div className="mt-3 px-3 py-2 rounded-2xl bg-white/70 dark:bg-[#202022]/70 backdrop-blur-md border border-black/5 dark:border-white/10 shadow-sm flex items-center justify-between gap-1.5 flex-wrap">
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    {/* Copy Code */}
                     <button
                       type="button"
-                      onClick={() => handleOpenWalletModal(coupon)}
-                      className="px-2.5 py-1.5 rounded-xl bg-stone-900 dark:bg-stone-100 hover:bg-black dark:hover:bg-white text-white dark:text-stone-900 text-[11px] font-bold transition-all flex items-center gap-1.5 cursor-pointer active:scale-95 shadow-sm"
-                      title="Añadir pase a Google Wallet con código de barras 1D"
+                      onClick={() => handleCopyCode(coupon.code)}
+                      className="px-2.5 py-1.5 rounded-xl bg-gray-100 dark:bg-white/10 hover:bg-gray-200 dark:hover:bg-white/20 text-[11px] font-bold text-gray-800 dark:text-gray-200 transition-all flex items-center gap-1.5 cursor-pointer active:scale-95"
+                      title="Copiar código alfanumérico"
                     >
-                      <Wallet className="w-3.5 h-3.5 text-amber-400 dark:text-amber-500" />
-                      <span>Google Wallet</span>
-                    </button>
-                  )}
-
-                  {/* Share PNG on WhatsApp with Falling Leaf Animation */}
-                  <button
-                    type="button"
-                    onClick={() => handleShareWhatsAppPng(coupon)}
-                    className="px-2.5 py-1.5 rounded-xl bg-[#25D366] hover:bg-[#20ba59] text-white text-[11px] font-bold transition-all flex items-center gap-1.5 cursor-pointer active:scale-95 shadow-sm"
-                    title="Cortar cupón y compartir imagen PNG por WhatsApp"
-                  >
-                    <MessageCircle className="w-3.5 h-3.5" />
-                    <span>Compartir PNG</span>
-                  </button>
-
-                  {/* CLIENT ONLY: Mark as used / available toggle */}
-                  {!isAdmin && (
-                    <button
-                      type="button"
-                      onClick={() => handleToggleClientRedeemed(coupon.id)}
-                      className={`px-2 py-1.5 rounded-xl text-[10px] font-bold transition-all flex items-center gap-1 cursor-pointer active:scale-95 ${
-                        isClientRedeemed
-                          ? "bg-amber-500/10 text-amber-700 dark:text-amber-300 border border-amber-500/20"
-                          : "bg-gray-100 dark:bg-white/5 hover:bg-gray-200 dark:hover:bg-white/10 text-gray-600 dark:text-gray-400"
-                      }`}
-                      title={isClientRedeemed ? "Marcar nuevamente como disponible" : "Marcar como utilizado en una compra"}
-                    >
-                      {isClientRedeemed ? (
+                      {copiedCode === coupon.code ? (
                         <>
-                          <CheckCircle2 className="w-3 h-3 text-amber-600 dark:text-amber-400" />
-                          <span>Usado</span>
+                          <Check className="w-3.5 h-3.5 text-emerald-600" />
+                          <span>Copiado</span>
                         </>
                       ) : (
-                        <span>Marcar Usado</span>
+                        <>
+                          <Copy className="w-3.5 h-3.5" />
+                          <span>Copiar</span>
+                        </>
                       )}
                     </button>
-                  )}
+
+                    {/* CLIENT ONLY: Google Wallet Button */}
+                    {!isAdmin && (
+                      <button
+                        type="button"
+                        onClick={() => handleOpenWalletModal(coupon)}
+                        className="px-2.5 py-1.5 rounded-xl bg-stone-900 dark:bg-stone-100 hover:bg-black dark:hover:bg-white text-white dark:text-stone-900 text-[11px] font-bold transition-all flex items-center gap-1.5 cursor-pointer active:scale-95 shadow-sm"
+                        title="Añadir pase a Google Wallet con código de barras 1D"
+                      >
+                        <Wallet className="w-3.5 h-3.5 text-amber-400 dark:text-amber-500" />
+                        <span>Google Wallet</span>
+                      </button>
+                    )}
+
+                    {/* Share on WhatsApp with real SVG icon and strictly 'Compartir' */}
+                    <button
+                      type="button"
+                      onClick={() => handleShareWhatsAppPng(coupon)}
+                      className="px-2.5 py-1.5 rounded-xl bg-[#25D366] hover:bg-[#20ba59] text-white text-[11px] font-bold transition-all flex items-center gap-1.5 cursor-pointer active:scale-95 shadow-sm"
+                      title="Compartir cupón por WhatsApp"
+                    >
+                      <WhatsAppIcon className="w-3.5 h-3.5 fill-current" />
+                      <span>Compartir</span>
+                    </button>
+
+                    {/* ADMIN ONLY: Métricas Button */}
+                    {isAdmin && (
+                      <button
+                        type="button"
+                        onClick={() => setAnalyticsCoupon(coupon)}
+                        className="px-2.5 py-1.5 rounded-xl bg-purple-500/10 hover:bg-purple-500/20 text-purple-700 dark:text-purple-300 text-[11px] font-bold transition-all flex items-center gap-1.5 cursor-pointer active:scale-95 shadow-xs border border-purple-500/20"
+                        title="Analizar métricas: quién lo usó, pedidos, avatar y valores antes/después"
+                      >
+                        <BarChart3 className="w-3.5 h-3.5 text-purple-600 dark:text-purple-400" />
+                        <span>Métricas</span>
+                      </button>
+                    )}
+
+                    {/* CLIENT ONLY: Mark as used / available toggle */}
+                    {!isAdmin && (
+                      <button
+                        type="button"
+                        onClick={() => handleToggleClientRedeemed(coupon.id)}
+                        className={`px-2 py-1.5 rounded-xl text-[10px] font-bold transition-all flex items-center gap-1 cursor-pointer active:scale-95 ${
+                          isClientRedeemed
+                            ? "bg-amber-500/10 text-amber-700 dark:text-amber-300 border border-amber-500/20"
+                            : "bg-gray-100 dark:bg-white/5 hover:bg-gray-200 dark:hover:bg-white/10 text-gray-600 dark:text-gray-400"
+                        }`}
+                        title={isClientRedeemed ? "Marcar nuevamente como disponible" : "Marcar como utilizado en una compra"}
+                      >
+                        {isClientRedeemed ? (
+                          <>
+                            <CheckCircle2 className="w-3 h-3 text-amber-600 dark:text-amber-400" />
+                            <span>Usado</span>
+                          </>
+                        ) : (
+                          <span>Marcar Usado</span>
+                        )}
+                      </button>
+                    )}
+                  </div>
 
                   {/* ADMIN ONLY: Toggle Status & Delete */}
                   {isAdmin && (
@@ -1489,6 +1539,15 @@ export function DiscountCouponsTab() {
         open={isWalletOpen}
         onClose={() => setIsWalletOpen(false)}
         coupon={walletCoupon}
+      />
+
+      {/* ===================================================================== */}
+      {/* 8. FORENSIC COUPON ANALYTICS MODAL (CLIENT REDEMPTIONS, AVATARS, ORDER)*/}
+      {/* ===================================================================== */}
+      <CouponAnalyticsModal
+        open={Boolean(analyticsCoupon)}
+        onClose={() => setAnalyticsCoupon(null)}
+        coupon={analyticsCoupon}
       />
     </div>
   );

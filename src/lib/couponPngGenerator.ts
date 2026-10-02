@@ -11,10 +11,11 @@ export async function generateCouponPng(coupon: DiscountCoupon): Promise<File> {
   const isStorewide = coupon.scope === "all";
 
   // Hi-DPI Canvas for razor-sharp rendering (scale 3x)
+  // Preserve authentic natural proportions: Compact ticket for Style 1 (340x215), Rectangular for Style 2 (460x170)
   const canvas = document.createElement("canvas");
   const scale = 3;
-  const w = 420;
-  const h = 176;
+  const w = isStorewide ? 460 : 340;
+  const h = isStorewide ? 170 : 215;
 
   canvas.width = w * scale;
   canvas.height = h * scale;
@@ -62,7 +63,7 @@ function drawStyle1(
   ctx.beginPath();
   const r = 16;
   const notchR = 14;
-  const perfX = 180;
+  const perfX = 162;
   const centerY = h / 2;
 
   // Top edge
@@ -118,54 +119,54 @@ function drawStyle1(
   ctx.fillStyle = "#000000";
   ctx.textAlign = "left";
 
-  ctx.font = "900 48px system-ui, sans-serif";
+  ctx.font = "900 52px system-ui, sans-serif";
   const discNum = coupon.discountType === "free_shipping" ? "100%" : `${coupon.discountPercent}%`;
-  ctx.fillText(discNum, 26, 68);
+  ctx.fillText(discNum, 22, 78);
 
-  ctx.font = "900 40px system-ui, sans-serif";
+  ctx.font = "900 44px system-ui, sans-serif";
   const offText = coupon.discountType === "free_shipping" ? "GRATIS" : "OFF";
-  ctx.fillText(offText, 26, 110);
+  ctx.fillText(offText, 22, 126);
 
   // Horizontal Barcode
-  drawHorizontalBarcode(ctx, coupon.code, 26, 126, 124, 26, "#000000");
+  drawHorizontalBarcode(ctx, coupon.code, 22, 146, 120, 26, "#000000");
 
   // Right Column Content: [CODE] Badge + Code + Niche/Condition
-  const rx = perfX + 18;
+  const rx = perfX + 22;
 
   // CODE Box Badge
   ctx.strokeStyle = "#000000";
   ctx.lineWidth = 1.2;
-  ctx.strokeRect(rx, 26, 42, 18);
-  ctx.font = "800 10px system-ui, sans-serif";
+  ctx.strokeRect(rx, 30, 44, 18);
+  ctx.font = "800 10.5px system-ui, sans-serif";
   ctx.textAlign = "center";
-  ctx.fillText("CODE", rx + 21, 39);
+  ctx.fillText("CODE", rx + 22, 43);
 
   // Coupon Code with dynamic font scaling to avoid clipping
   ctx.textAlign = "left";
   const codeLen = coupon.code.length;
-  const fontSize = codeLen > 14 ? 16 : codeLen > 10 ? 19 : 22;
+  const fontSize = codeLen > 14 ? 14 : codeLen > 10 ? 17 : 20;
   ctx.font = `900 ${fontSize}px system-ui, sans-serif`;
-  ctx.fillText(coupon.code, rx, 68);
+  ctx.fillText(coupon.code, rx, 72);
 
   // Hairline separator
   ctx.strokeStyle = "rgba(0,0,0,0.25)";
   ctx.lineWidth = 0.8;
   ctx.beginPath();
-  ctx.moveTo(rx, 78);
-  ctx.lineTo(w - 24, 78);
+  ctx.moveTo(rx, 82);
+  ctx.lineTo(w - 22, 82);
   ctx.stroke();
 
   // Spend / Niche details
-  ctx.font = "700 12px system-ui, sans-serif";
+  ctx.font = "700 11.5px system-ui, sans-serif";
   ctx.fillStyle = "#111111";
-  ctx.fillText(`Colección: ${coupon.targetNiche || "Exclusiva"}`, rx, 98);
+  ctx.fillText(`Colección: ${coupon.targetNiche || "Exclusiva"}`, rx, 102);
 
   ctx.font = "600 11px system-ui, sans-serif";
   ctx.fillStyle = "#222222";
   if (coupon.minOrderAmount > 0) {
-    ctx.fillText(`Spend $${coupon.minOrderAmount}+ USD`, rx, 116);
+    ctx.fillText(`Spend $${coupon.minOrderAmount}+ USD`, rx, 122);
   } else {
-    ctx.fillText("Sin mínimo de compra", rx, 116);
+    ctx.fillText("Sin mínimo de compra", rx, 122);
   }
 
   // Validity
@@ -174,7 +175,7 @@ function drawStyle1(
   const expStr = coupon.expiresAt
     ? `Vence: ${new Date(coupon.expiresAt).toLocaleDateString("es-ES", { day: "numeric", month: "short" })}`
     : "Vigencia permanente";
-  ctx.fillText(expStr, rx, 134);
+  ctx.fillText(expStr, rx, 142);
 
   ctx.restore();
 }
@@ -198,7 +199,7 @@ function drawStyle2(
   ctx.beginPath();
   const r = 18;
   const notchR = 9;
-  const perfX = 115;
+  const perfX = 105;
   const centerY = h / 2;
 
   // Top edge with notch at perfX
@@ -248,20 +249,20 @@ function drawStyle2(
   ctx.restore();
 
   // Left Stub: Vertical 1D Linear Barcode
-  drawVerticalBarcode(ctx, coupon.code, 25, 28, 62, 120, th.text);
+  drawVerticalBarcode(ctx, coupon.code, 22, 26, 60, 118, th.text);
 
   // Right Main Body
   ctx.fillStyle = th.text;
   ctx.strokeStyle = th.text;
 
-  // Cursive title ("Lúmina Home") with safe width
-  ctx.font = "italic 30px 'Pinyon Script', 'Alex Brush', 'Caveat', serif";
+  // Cursive title ("Lumina Home", without accent, compact font size 21px with 0 oval touching)
+  ctx.font = "italic 21px 'Pinyon Script', 'Alex Brush', cursive, Georgia, serif";
   ctx.textAlign = "left";
-  ctx.fillText("Lúmina Home", perfX + 18, 52);
+  ctx.fillText("Lumina Home", perfX + 22, 52);
 
   // Uppercase Display Serif: "CUPÓN DE TIENDA"
-  ctx.font = "bold 12px 'Playfair Display', Georgia, serif";
-  ctx.fillText("CUPÓN DE TIENDA", perfX + 20, 72);
+  ctx.font = "bold 11px 'Playfair Display', Georgia, serif";
+  ctx.fillText("CUPÓN DE TIENDA", perfX + 24, 72);
 
   // Horizontal Dashed Line on left sub-area
   ctx.save();
@@ -269,22 +270,22 @@ function drawStyle2(
   ctx.globalAlpha = 0.35;
   ctx.lineWidth = 1;
   ctx.beginPath();
-  ctx.moveTo(perfX + 20, 94);
-  ctx.lineTo(perfX + 140, 94);
+  ctx.moveTo(perfX + 24, 96);
+  ctx.lineTo(perfX + 160, 96);
   ctx.stroke();
   ctx.restore();
 
   // Bottom text on left: "WWW.LUMINAHOME.EC"
   ctx.font = "bold 9.5px monospace";
   ctx.globalAlpha = 0.9;
-  ctx.fillText("WWW.LUMINAHOME.EC", perfX + 20, 122);
+  ctx.fillText("WWW.LUMINAHOME.EC", perfX + 24, 126);
   ctx.globalAlpha = 1;
 
   // Right Sub-Area: Oval / Ellipse Discount Badge
-  const ovalX = w - 82;
-  const ovalY = 64;
-  const ovalRx = 44;
-  const ovalRy = 31;
+  const ovalX = 378;
+  const ovalY = 62;
+  const ovalRx = 46;
+  const ovalRy = 32;
 
   ctx.save();
   ctx.beginPath();
@@ -300,7 +301,7 @@ function drawStyle2(
   ctx.font = "bold 11px 'Playfair Display', Georgia, serif";
   ctx.fillText("DISCOUNT", ovalX, ovalY);
 
-  ctx.font = "bold 19px 'Playfair Display', Georgia, serif";
+  ctx.font = "bold 18px 'Playfair Display', Georgia, serif";
   const ovalDisc = coupon.discountType === "free_shipping" ? "100%" : `${coupon.discountPercent}%`;
   ctx.fillText(ovalDisc, ovalX, ovalY + 19);
   ctx.restore();
@@ -312,7 +313,7 @@ function drawStyle2(
   const dateStr = coupon.expiresAt
     ? `*VÁLIDO HASTA ${new Date(coupon.expiresAt).toLocaleDateString("es-ES", { day: "numeric", month: "short", year: "numeric" }).toUpperCase()}`
     : "*SIN VENCIMIENTO";
-  ctx.fillText(dateStr, ovalX, 122);
+  ctx.fillText(dateStr, ovalX, 126);
 
   ctx.restore();
 }
