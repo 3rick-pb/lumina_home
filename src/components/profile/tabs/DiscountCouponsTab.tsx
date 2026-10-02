@@ -242,7 +242,7 @@ function Style1TicketSvg({
         {/* Divider hairline */}
         <line x1="160" y1="78" x2="318" y2="78" stroke="#000000" strokeWidth="0.8" opacity="0.3" />
 
-        {/* Condition text */}
+        {/* Condition text with overflow safety */}
         <text
           x="160"
           y="98"
@@ -251,7 +251,9 @@ function Style1TicketSvg({
           fontSize="11"
           fill="#111111"
         >
-          {coupon.targetNiche ? `Colección: ${coupon.targetNiche}` : "Colección Exclusiva"}
+          {coupon.targetNiche
+            ? `Colección: ${coupon.targetNiche.length > 17 ? coupon.targetNiche.slice(0, 15) + "…" : coupon.targetNiche}`
+            : "Colección Exclusiva"}
         </text>
         <text
           x="160"
@@ -354,36 +356,36 @@ function Style2TicketSvg({
           vertical={true}
         />
 
-        {/* RIGHT BODY: Cursive Script "Lumina Home" (Clear & Legible 30px, Safe distance from oval) */}
+        {/* RIGHT BODY: Cursive Script "Lumina Home" */}
         <text
           x="126"
-          y="52"
+          y="48"
           fontFamily="'Pinyon Script', 'Alex Brush', 'Caveat', cursive, Georgia, serif"
-          fontSize="30"
+          fontSize="28"
           fontStyle="italic"
           fill={theme.text}
         >
           Lumina Home
         </text>
 
-        {/* Uppercase Serif: "CUPÓN DE TIENDA" (Clear 13px) */}
+        {/* Uppercase Serif: "CUPÓN DE TIENDA" */}
         <text
           x="126"
-          y="75"
+          y="70"
           fontFamily="'Playfair Display', Georgia, 'Times New Roman', serif"
           fontWeight="700"
-          fontSize="13"
+          fontSize="12.5"
           letterSpacing="2px"
           fill={theme.text}
         >
           CUPÓN DE TIENDA
         </text>
 
-        {/* Horizontal Dashed Line */}
+        {/* Horizontal Dashed Line across the ticket body */}
         <line
           x1="126"
           y1="94"
-          x2="270"
+          x2="434"
           y2="94"
           stroke={theme.text}
           strokeDasharray="3 3"
@@ -391,36 +393,36 @@ function Style2TicketSvg({
           opacity="0.35"
         />
 
-        {/* Store URL: WWW.LUMINAHOME.COM (Bigger 12px bold) */}
+        {/* Store URL: WWW.LUMINAHOME.COM (Left-aligned under dashed line) */}
         <text
           x="126"
-          y="122"
+          y="124"
           fontFamily="system-ui, -apple-system, monospace"
           fontWeight="700"
-          fontSize="12"
-          letterSpacing="1px"
+          fontSize="10.5"
+          letterSpacing="0.8px"
           fill={theme.text}
           opacity="0.92"
         >
           WWW.LUMINAHOME.COM
         </text>
 
-        {/* RIGHT BODY: Oval Discount Badge (Safe distance at cx=378, Spanish copies "OBTÉN DESCUENTO") */}
+        {/* RIGHT BODY: Oval Discount Badge (Safe distance at cx=380, rx=54, ry=33, ample margin) */}
         <ellipse
-          cx="378"
-          cy="62"
-          rx="44"
-          ry="32"
+          cx="380"
+          cy="56"
+          rx="54"
+          ry="33"
           fill="none"
           stroke={theme.text}
           strokeWidth="1.3"
         />
         <text
-          x="378"
-          y="47"
+          x="380"
+          y="43"
           textAnchor="middle"
           fontFamily="'Playfair Display', Georgia, serif"
-          fontSize="9"
+          fontSize="8.5"
           fontWeight="700"
           letterSpacing="2px"
           fill={theme.text}
@@ -428,38 +430,38 @@ function Style2TicketSvg({
           OBTÉN
         </text>
         <text
-          x="378"
-          y="62"
+          x="380"
+          y="57"
           textAnchor="middle"
           fontFamily="'Playfair Display', Georgia, serif"
           fontWeight="800"
-          fontSize="11"
-          letterSpacing="1.5px"
+          fontSize="9.5"
+          letterSpacing="1px"
           fill={theme.text}
         >
           DESCUENTO
         </text>
         <text
-          x="378"
-          y="82"
+          x="380"
+          y="77"
           textAnchor="middle"
           fontFamily="'Playfair Display', Georgia, serif"
           fontWeight="900"
-          fontSize="19"
+          fontSize="18"
           fill={theme.text}
         >
           {ovalDisc}
         </text>
 
-        {/* Date with Asterisk under oval */}
+        {/* Date: Right-aligned at x=434 under dashed line, guaranteed buffer from WWW.LUMINAHOME.COM */}
         <text
-          x="378"
-          y="122"
-          textAnchor="middle"
+          x="434"
+          y="124"
+          textAnchor="end"
           fontFamily="'Playfair Display', Georgia, serif"
           fontWeight="700"
           fontSize="8.5"
-          letterSpacing="0.8px"
+          letterSpacing="0.5px"
           fill={theme.text}
           opacity="0.88"
         >
@@ -909,7 +911,7 @@ export function DiscountCouponsTab() {
                   ¿Deseas activar una promoción comercial inmediata?
                 </h3>
                 <p className="text-xs sm:text-sm text-gray-300 leading-relaxed">
-                  El motor sintetiza automáticamente descuentos matemáticamente balanceados, seleccionando el diseño exacto según el alcance: Ticket Editorial Vintage para toda la tienda o Ticket Scallop Pastel para nichos específicos.
+                  El motor sintetiza automáticamente descuentos matemáticamente balanceados, seleccionando el diseño exacto según el alcance.
                 </p>
 
                 {/* Scope Selection Options */}
@@ -1349,7 +1351,7 @@ export function DiscountCouponsTab() {
           </p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 sm:gap-8">
           {filteredCoupons.map((coupon) => {
             const isStorewide = coupon.scope === "all";
             const isCutting = cuttingCouponId === coupon.id;
@@ -1363,7 +1365,7 @@ export function DiscountCouponsTab() {
                   isDimmed ? "opacity-65 grayscale-[35%]" : "opacity-100"
                 }`}
               >
-                {/* Physical Ticket Container Stage (Fixed 190px stage so neither ticket stretches) */}
+                {/* Physical Ticket Container Stage (Responsive 165px - 190px stage so neither ticket stretches) */}
                 <div
                   onClick={() => {
                     if (isAdmin) {
@@ -1372,7 +1374,7 @@ export function DiscountCouponsTab() {
                       handleOpenWalletModal(coupon);
                     }
                   }}
-                  className="relative cursor-pointer transition-transform duration-300 group-hover:-translate-y-1.5 w-full h-[190px] flex items-center justify-center p-1"
+                  className="relative cursor-pointer transition-transform duration-300 group-hover:-translate-y-1.5 w-full min-h-[160px] h-[175px] sm:h-[190px] flex items-center justify-center p-1"
                   title={isAdmin ? "Clic para copiar código del cupón" : "Clic para ver detalle y agregar a Google Wallet"}
                 >
                   {/* Scissors Cutting Glint Indicator */}
@@ -1409,7 +1411,7 @@ export function DiscountCouponsTab() {
                     <Style2TicketSvg
                       coupon={coupon}
                       theme={STYLE2_THEMES[getCouponPaletteIndex(coupon.id, STYLE2_THEMES.length)]}
-                      className="max-h-[180px]"
+                      className="max-h-[165px] sm:max-h-[180px]"
                     />
                   ) : (
                     // -------------------------------------------------------------
@@ -1418,19 +1420,19 @@ export function DiscountCouponsTab() {
                     <Style1TicketSvg
                       coupon={coupon}
                       palette={STYLE1_GRADIENTS[getCouponPaletteIndex(coupon.id, STYLE1_GRADIENTS.length)]}
-                      className="max-h-[180px]"
+                      className="max-h-[165px] sm:max-h-[180px]"
                     />
                   )}
                 </div>
 
-                {/* Floating Action Ribbon under ticket */}
-                <div className="mt-3 px-3 py-2 rounded-2xl bg-white/70 dark:bg-[#202022]/70 backdrop-blur-md border border-black/5 dark:border-white/10 shadow-sm flex items-center justify-between gap-1.5 flex-wrap">
-                  <div className="flex items-center gap-1.5 flex-wrap">
+                {/* Floating Action Ribbon under ticket (Responsive scrollable ribbon on mobile/tablet) */}
+                <div className="mt-3 px-2 sm:px-3 py-2 rounded-2xl bg-white/70 dark:bg-[#202022]/70 backdrop-blur-md border border-black/5 dark:border-white/10 shadow-sm flex items-center justify-between gap-1.5">
+                  <div className="flex items-center gap-1.5 flex-1 min-w-0 overflow-x-auto no-scrollbar py-0.5 touch-pan-x">
                     {/* Copy Code */}
                     <button
                       type="button"
                       onClick={() => handleCopyCode(coupon.code)}
-                      className="px-2.5 py-1.5 rounded-xl bg-gray-100 dark:bg-white/10 hover:bg-gray-200 dark:hover:bg-white/20 text-[11px] font-bold text-gray-800 dark:text-gray-200 transition-all flex items-center gap-1.5 cursor-pointer active:scale-95"
+                      className="shrink-0 px-2.5 py-1.5 rounded-xl bg-gray-100 dark:bg-white/10 hover:bg-gray-200 dark:hover:bg-white/20 text-[11px] font-bold text-gray-800 dark:text-gray-200 transition-all flex items-center gap-1.5 cursor-pointer active:scale-95 whitespace-nowrap"
                       title="Copiar código alfanumérico"
                     >
                       {copiedCode === coupon.code ? (
@@ -1451,7 +1453,7 @@ export function DiscountCouponsTab() {
                       <button
                         type="button"
                         onClick={() => handleOpenWalletModal(coupon)}
-                        className="px-2.5 py-1.5 rounded-xl bg-stone-900 dark:bg-stone-100 hover:bg-black dark:hover:bg-white text-white dark:text-stone-900 text-[11px] font-bold transition-all flex items-center gap-1.5 cursor-pointer active:scale-95 shadow-sm"
+                        className="shrink-0 px-2.5 py-1.5 rounded-xl bg-stone-900 dark:bg-stone-100 hover:bg-black dark:hover:bg-white text-white dark:text-stone-900 text-[11px] font-bold transition-all flex items-center gap-1.5 cursor-pointer active:scale-95 shadow-sm whitespace-nowrap"
                         title="Añadir pase a Google Wallet con código de barras 1D"
                       >
                         <Wallet className="w-3.5 h-3.5 text-amber-400 dark:text-amber-500" />
@@ -1463,7 +1465,7 @@ export function DiscountCouponsTab() {
                     <button
                       type="button"
                       onClick={() => handleShareWhatsAppPng(coupon)}
-                      className="px-2.5 py-1.5 rounded-xl bg-[#25D366] hover:bg-[#20ba59] text-white text-[11px] font-bold transition-all flex items-center gap-1.5 cursor-pointer active:scale-95 shadow-sm"
+                      className="shrink-0 px-2.5 py-1.5 rounded-xl bg-[#25D366] hover:bg-[#20ba59] text-white text-[11px] font-bold transition-all flex items-center gap-1.5 cursor-pointer active:scale-95 shadow-sm whitespace-nowrap"
                       title="Compartir cupón por WhatsApp"
                     >
                       <WhatsAppIcon className="w-3.5 h-3.5 fill-current" />
@@ -1475,7 +1477,7 @@ export function DiscountCouponsTab() {
                       <button
                         type="button"
                         onClick={() => setAnalyticsCoupon(coupon)}
-                        className="px-2.5 py-1.5 rounded-xl bg-purple-500/10 hover:bg-purple-500/20 text-purple-700 dark:text-purple-300 text-[11px] font-bold transition-all flex items-center gap-1.5 cursor-pointer active:scale-95 shadow-xs border border-purple-500/20"
+                        className="shrink-0 px-2.5 py-1.5 rounded-xl bg-purple-500/10 hover:bg-purple-500/20 text-purple-700 dark:text-purple-300 text-[11px] font-bold transition-all flex items-center gap-1.5 cursor-pointer active:scale-95 shadow-xs border border-purple-500/20 whitespace-nowrap"
                         title="Analizar métricas: quién lo usó, pedidos, avatar y valores antes/después"
                       >
                         <BarChart3 className="w-3.5 h-3.5 text-purple-600 dark:text-purple-400" />
@@ -1488,7 +1490,7 @@ export function DiscountCouponsTab() {
                       <button
                         type="button"
                         onClick={() => handleToggleClientRedeemed(coupon.id)}
-                        className={`px-2 py-1.5 rounded-xl text-[10px] font-bold transition-all flex items-center gap-1 cursor-pointer active:scale-95 ${
+                        className={`shrink-0 px-2 py-1.5 rounded-xl text-[10px] font-bold transition-all flex items-center gap-1 cursor-pointer active:scale-95 whitespace-nowrap ${
                           isClientRedeemed
                             ? "bg-amber-500/10 text-amber-700 dark:text-amber-300 border border-amber-500/20"
                             : "bg-gray-100 dark:bg-white/5 hover:bg-gray-200 dark:hover:bg-white/10 text-gray-600 dark:text-gray-400"

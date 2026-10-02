@@ -137,10 +137,12 @@ export function OverviewTab({
     const el = nicheChartRef.current;
     if (!el) return;
     const handleWheel = (e: WheelEvent) => {
-      // Isolate wheel completely: scroll horizontally inside chart and never scroll the page
-      e.preventDefault();
-      e.stopPropagation();
-      el.scrollLeft += (e.deltaY || e.deltaX) * 1.15;
+      // Allow vertical page scrolling to pass through naturally.
+      // Only scroll horizontally inside chart when user explicitly scrolls horizontally or uses shiftKey.
+      if (Math.abs(e.deltaX) > Math.abs(e.deltaY) || e.shiftKey) {
+        e.preventDefault();
+        el.scrollLeft += e.deltaX || e.deltaY;
+      }
     };
     el.addEventListener("wheel", handleWheel, { passive: false });
     return () => el.removeEventListener("wheel", handleWheel);
@@ -348,12 +350,11 @@ export function OverviewTab({
         </div>
 
         {/* Visual Dynamic Bar Chart */}
-        <div className="relative w-full my-auto" data-lenis-prevent="true">
+        <div className="relative w-full my-auto">
           <div 
             ref={nicheChartRef}
-            data-lenis-prevent="true"
             onMouseLeave={isAdmin ? handleNicheContainerLeave : handleMonthContainerLeave}
-            className={`flex items-end h-40 pt-7 pb-1 px-1 overflow-x-auto overflow-y-hidden select-none cursor-grab active:cursor-grabbing overscroll-contain ${
+            className={`flex items-end h-40 pt-7 pb-1 px-1 overflow-x-auto overflow-y-hidden select-none cursor-grab active:cursor-grabbing touch-pan-y touch-pan-x ${
               categoryDistributionData.length <= 4 
                 ? "justify-around gap-3" 
                 : categoryDistributionData.length <= 7 
@@ -363,7 +364,9 @@ export function OverviewTab({
             style={{
               scrollbarWidth: "thin",
               scrollbarColor: "rgba(156, 163, 175, 0.4) transparent",
-              overscrollBehavior: "contain"
+              overscrollBehaviorX: "contain",
+              overscrollBehaviorY: "auto",
+              touchAction: "pan-x pan-y",
             }}
           >
             {isAdmin ? (

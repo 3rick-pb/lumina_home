@@ -10,18 +10,31 @@ import type { DiscountCoupon } from "./couponStore";
 export async function generateCouponPng(coupon: DiscountCoupon): Promise<File> {
   const isStorewide = coupon.scope === "all";
 
-  // Hi-DPI Canvas for razor-sharp rendering (scale 3x)
-  // Preserve authentic natural proportions: Compact ticket for Style 1 (340x215), Rectangular for Style 2 (460x170)
-  const canvas = document.createElement("canvas");
-  const scale = 3;
+  // Base ticket geometry (natural proportions)
   const w = isStorewide ? 460 : 340;
   const h = isStorewide ? 170 : 215;
 
-  canvas.width = w * scale;
-  canvas.height = h * scale;
+  // Margin/Padding around ticket so it is NEVER cropped right on the border edge
+  const padX = 28;
+  const padY = 22;
+
+  // Hi-DPI Canvas for razor-sharp rendering (scale 3x)
+  const scale = 3;
+  const totalW = w + padX * 2;
+  const totalH = h + padY * 2;
+
+  const canvas = document.createElement("canvas");
+  canvas.width = totalW * scale;
+  canvas.height = totalH * scale;
+
   const ctx = canvas.getContext("2d");
   if (!ctx) throw new Error("Could not get 2D canvas context");
+
+  // Explicitly clear whole canvas to pure transparent pixels (100% genuine transparent PNG)
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
   ctx.scale(scale, scale);
+  ctx.translate(padX, padY);
 
   if (isStorewide) {
     drawStyle2(ctx, coupon, w, h);
@@ -92,6 +105,11 @@ function drawStyle1(
   ctx.arcTo(0, 0, r, 0, r);
   ctx.closePath();
 
+  // Subtle soft drop-shadow for floating ticket depth on transparent canvas
+  ctx.shadowColor = "rgba(0, 0, 0, 0.16)";
+  ctx.shadowBlur = 14;
+  ctx.shadowOffsetY = 6;
+
   // Gradient fill
   const grad = ctx.createLinearGradient(0, 0, w, h);
   grad.addColorStop(0, pal.start);
@@ -99,6 +117,9 @@ function drawStyle1(
   grad.addColorStop(1, pal.end);
   ctx.fillStyle = grad;
   ctx.fill();
+
+  // Reset shadow for crisp text and lines
+  ctx.shadowColor = "transparent";
 
   ctx.lineWidth = 1;
   ctx.strokeStyle = "rgba(0,0,0,0.15)";
@@ -156,10 +177,15 @@ function drawStyle1(
   ctx.lineTo(w - 22, 82);
   ctx.stroke();
 
-  // Spend / Niche details
+  // Spend / Niche details (with overflow safety)
   ctx.font = "700 11.5px system-ui, sans-serif";
   ctx.fillStyle = "#111111";
-  ctx.fillText(`Colección: ${coupon.targetNiche || "Exclusiva"}`, rx, 102);
+  const nicheLabel = coupon.targetNiche
+    ? coupon.targetNiche.length > 17
+      ? coupon.targetNiche.slice(0, 15) + "…"
+      : coupon.targetNiche
+    : "Exclusiva";
+  ctx.fillText(`Colección: ${nicheLabel}`, rx, 102);
 
   ctx.font = "600 11px system-ui, sans-serif";
   ctx.fillStyle = "#222222";
@@ -228,9 +254,17 @@ function drawStyle2(
   ctx.arcTo(0, 0, r, 0, r);
   ctx.closePath();
 
+  // Subtle soft drop-shadow for floating ticket depth on transparent canvas
+  ctx.shadowColor = "rgba(0, 0, 0, 0.16)";
+  ctx.shadowBlur = 14;
+  ctx.shadowOffsetY = 6;
+
   // Matte fill
   ctx.fillStyle = th.bg;
   ctx.fill();
+
+  // Reset shadow for sharp text and lines
+  ctx.shadowColor = "transparent";
 
   ctx.lineWidth = 1.2;
   ctx.strokeStyle = th.border;
@@ -255,37 +289,38 @@ function drawStyle2(
   ctx.fillStyle = th.text;
   ctx.strokeStyle = th.text;
 
-  // Cursive title ("Lumina Home", without accent, enhanced 30px font)
-  ctx.font = "italic 30px 'Pinyon Script', 'Alex Brush', 'Caveat', cursive, Georgia, serif";
+  // Cursive title ("Lumina Home", without accent)
+  ctx.font = "italic 28px 'Pinyon Script', 'Alex Brush', 'Caveat', cursive, Georgia, serif";
   ctx.textAlign = "left";
-  ctx.fillText("Lumina Home", 126, 52);
+  ctx.fillText("Lumina Home", 126, 48);
 
-  // Uppercase Display Serif: "CUPÓN DE TIENDA" (Clear 13px)
-  ctx.font = "bold 13px 'Playfair Display', Georgia, 'Times New Roman', serif";
-  ctx.fillText("CUPÓN DE TIENDA", 126, 75);
+  // Uppercase Display Serif: "CUPÓN DE TIENDA"
+  ctx.font = "bold 12.5px 'Playfair Display', Georgia, 'Times New Roman', serif";
+  ctx.fillText("CUPÓN DE TIENDA", 126, 70);
 
-  // Horizontal Dashed Line on left sub-area
+  // Horizontal Dashed Line across the ticket body
   ctx.save();
   ctx.setLineDash([3, 3]);
   ctx.globalAlpha = 0.35;
   ctx.lineWidth = 1.2;
   ctx.beginPath();
   ctx.moveTo(126, 94);
-  ctx.lineTo(270, 94);
+  ctx.lineTo(434, 94);
   ctx.stroke();
   ctx.restore();
 
-  // Bottom text on left: "WWW.LUMINAHOME.COM" (Clear 12px)
-  ctx.font = "bold 12px system-ui, -apple-system, monospace";
+  // Store URL: "WWW.LUMINAHOME.COM" (Left-aligned under dashed line)
+  ctx.font = "bold 10.5px system-ui, -apple-system, monospace";
   ctx.globalAlpha = 0.92;
-  ctx.fillText("WWW.LUMINAHOME.COM", 126, 122);
+  ctx.textAlign = "left";
+  ctx.fillText("WWW.LUMINAHOME.COM", 126, 124);
   ctx.globalAlpha = 1;
 
-  // Right Sub-Area: Oval / Ellipse Discount Badge
-  const ovalX = 378;
-  const ovalY = 62;
-  const ovalRx = 44;
-  const ovalRy = 32;
+  // Right Sub-Area: Oval / Ellipse Discount Badge (Safe distance at cx=380, rx=54, ry=33, ample margin)
+  const ovalX = 380;
+  const ovalY = 56;
+  const ovalRx = 54;
+  const ovalRy = 33;
 
   ctx.save();
   ctx.beginPath();
@@ -295,25 +330,25 @@ function drawStyle2(
 
   // Text inside oval (Spanish copies: OBTÉN DESCUENTO)
   ctx.textAlign = "center";
-  ctx.font = "700 9px 'Playfair Display', Georgia, serif";
-  ctx.fillText("OBTÉN", ovalX, ovalY - 15);
+  ctx.font = "700 8.5px 'Playfair Display', Georgia, serif";
+  ctx.fillText("OBTÉN", ovalX, ovalY - 13);
 
-  ctx.font = "800 11px 'Playfair Display', Georgia, serif";
-  ctx.fillText("DESCUENTO", ovalX, ovalY);
+  ctx.font = "800 9.5px 'Playfair Display', Georgia, serif";
+  ctx.fillText("DESCUENTO", ovalX, ovalY + 1);
 
-  ctx.font = "900 19px 'Playfair Display', Georgia, serif";
+  ctx.font = "900 18px 'Playfair Display', Georgia, serif";
   const ovalDisc = coupon.discountType === "free_shipping" ? "100%" : `${coupon.discountPercent}%`;
-  ctx.fillText(ovalDisc, ovalX, ovalY + 20);
+  ctx.fillText(ovalDisc, ovalX, ovalY + 21);
   ctx.restore();
 
-  // Date under oval
-  ctx.font = "bold 8.5px system-ui, sans-serif";
-  ctx.textAlign = "center";
-  ctx.globalAlpha = 0.85;
+  // Date: Right-aligned at x=434 under dashed line, guaranteed buffer from WWW.LUMINAHOME.COM
+  ctx.font = "bold 8.5px 'Playfair Display', Georgia, serif";
+  ctx.textAlign = "right";
+  ctx.globalAlpha = 0.88;
   const dateStr = coupon.expiresAt
     ? `*VÁLIDO HASTA ${new Date(coupon.expiresAt).toLocaleDateString("es-ES", { day: "numeric", month: "short", year: "numeric" }).toUpperCase()}`
     : "*SIN VENCIMIENTO";
-  ctx.fillText(dateStr, ovalX, 126);
+  ctx.fillText(dateStr, 434, 124);
 
   ctx.restore();
 }
