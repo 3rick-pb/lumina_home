@@ -780,8 +780,8 @@ export function DiscountCouponsTab() {
       {isAdmin ? (
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-5 bg-white/80 dark:bg-[#202022]/80 backdrop-blur-xl p-6 sm:p-8 rounded-[2rem] border border-black/5 dark:border-white/10 shadow-xs">
           <div>
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 text-xs font-semibold mb-2 border border-emerald-500/20">
-              <ShieldCheck className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/10 text-amber-800 dark:text-amber-300 text-xs font-semibold mb-2 border border-amber-500/20">
+              <ShieldCheck className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
               <span>Fidelización & Retención de Clientes</span>
             </div>
             <h2 className="text-2xl sm:text-3xl font-black text-gray-950 dark:text-white tracking-tight">
@@ -794,9 +794,7 @@ export function DiscountCouponsTab() {
 
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 sm:gap-3 w-full sm:w-auto">
             {/* Strategic Generator Button with smooth calm ThinkingOrb */}
-            <motion.button
-              layout
-              transition={{ type: "spring", stiffness: 450, damping: 32 }}
+            <button
               type="button"
               disabled={isGeneratingStrategic}
               onClick={handleTriggerRandom}
@@ -838,34 +836,23 @@ export function DiscountCouponsTab() {
                   </motion.div>
                 )}
               </AnimatePresence>
-            </motion.button>
+            </button>
 
-            {/* Configurar Cupón Toggle Button with fixed footprint and smooth crossfade */}
-            <motion.button
-              layout
-              transition={{ type: "spring", stiffness: 450, damping: 32 }}
+            {/* Configurar Cupón Toggle Button with fixed footprint and instant text update */}
+            <button
               type="button"
               onClick={() => setShowManualForm(!showManualForm)}
-              className={`w-full sm:w-[195px] h-[46px] sm:h-[48px] px-4 sm:px-5 rounded-2xl text-xs sm:text-sm font-semibold border transition-colors duration-200 flex items-center justify-center gap-2 cursor-pointer shadow-xs active:scale-[0.98] select-none shrink-0 ${
+              className={`w-full sm:w-[195px] h-[46px] sm:h-[48px] px-4 sm:px-5 rounded-2xl text-xs sm:text-sm font-semibold border transition-all duration-200 flex items-center justify-center gap-2 cursor-pointer shadow-xs active:scale-[0.98] select-none shrink-0 ${
                 showManualForm
                   ? "bg-stone-900 text-white dark:bg-white dark:text-stone-900 border-transparent shadow-sm"
                   : "border-stone-200/80 dark:border-white/10 bg-white dark:bg-[#1f1f23] hover:bg-stone-50 dark:hover:bg-white/10 text-stone-800 dark:text-stone-200"
               }`}
             >
               <SlidersHorizontal className={`w-4 h-4 shrink-0 transition-transform duration-300 ${showManualForm ? "rotate-90" : "rotate-0"}`} />
-              <AnimatePresence mode="wait" initial={false}>
-                <motion.span
-                  key={showManualForm ? "cerrar" : "configurar"}
-                  initial={{ opacity: 0, y: 2 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -2 }}
-                  transition={{ duration: 0.18 }}
-                  className="whitespace-nowrap"
-                >
-                  {showManualForm ? "Cerrar Configuración" : "Configurar Cupón"}
-                </motion.span>
-              </AnimatePresence>
-            </motion.button>
+              <span className="whitespace-nowrap transition-colors duration-150">
+                {showManualForm ? "Cerrar Configuración" : "Configurar Cupón"}
+              </span>
+            </button>
           </div>
         </div>
       ) : (
@@ -906,7 +893,7 @@ export function DiscountCouponsTab() {
             <div className="flex items-center justify-between gap-3 pb-3 mb-3 border-b border-stone-100 dark:border-white/5">
               <div className="flex flex-wrap items-center gap-2">
                 <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-stone-900 text-white dark:bg-white dark:text-stone-900">
-                  <Check className="w-3 h-3 text-emerald-400 dark:text-emerald-600" />
+                  <Check className="w-3 h-3 text-amber-400 dark:text-amber-300" />
                   Cupón Generado con Éxito
                 </span>
                 <span className="px-2.5 py-1 rounded-full text-[11px] font-medium bg-stone-100 dark:bg-white/5 text-stone-600 dark:text-stone-300 border border-stone-200/60 dark:border-white/5">
@@ -953,7 +940,7 @@ export function DiscountCouponsTab() {
                 >
                   {copiedCode === justGeneratedCoupon.code ? (
                     <>
-                      <Check className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                      <Check className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
                       <span>Copiado</span>
                     </>
                   ) : (
@@ -993,19 +980,11 @@ export function DiscountCouponsTab() {
       <AnimatePresence>
         {isAdmin && showManualForm && (
           <motion.div
-            initial={{ opacity: 0, height: 0, overflow: "hidden" }}
-            animate={{
-              opacity: 1,
-              height: "auto",
-              transition: { duration: 0.38, ease: [0.16, 1, 0.3, 1] },
-              transitionEnd: { overflow: "visible" },
-            }}
-            exit={{
-              opacity: 0,
-              height: 0,
-              overflow: "hidden",
-              transition: { duration: 0.32, ease: [0.32, 0.72, 0, 1] },
-            }}
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: "auto" }}
+            exit={{ opacity: 0, height: 0 }}
+            transition={{ duration: 0.32, ease: [0.16, 1, 0.3, 1] }}
+            className="overflow-hidden"
           >
             <form
               onSubmit={handleCreateManual}
@@ -1205,7 +1184,7 @@ export function DiscountCouponsTab() {
       {isAdmin ? (
         <div className="flex flex-col gap-2.5 sm:grid sm:grid-cols-2 lg:grid-cols-4 sm:gap-4">
           <div className="w-full bg-white dark:bg-[#202022] p-4 sm:p-5 rounded-2xl border border-black/5 dark:border-white/10 shadow-xs flex items-center gap-3.5">
-            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
+            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0">
               <Layers className="w-5 h-5" />
             </div>
             <div className="min-w-0">
@@ -1247,7 +1226,7 @@ export function DiscountCouponsTab() {
       ) : (
         <div className="flex flex-col gap-2.5 sm:grid sm:grid-cols-2 lg:grid-cols-4 sm:gap-4">
           <div className="w-full bg-white dark:bg-[#202022] p-4 sm:p-5 rounded-2xl border border-black/5 dark:border-white/10 shadow-xs flex items-center gap-3.5">
-            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
+            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0">
               <Layers className="w-5 h-5" />
             </div>
             <div className="min-w-0">
@@ -1317,8 +1296,8 @@ export function DiscountCouponsTab() {
                     {isActive && (
                       <motion.div
                         layoutId="activeCouponFilterPill"
-                        transition={{ type: "spring", stiffness: 450, damping: 32 }}
-                        className="absolute inset-0 bg-white dark:bg-stone-800 rounded-xl shadow-xs border border-stone-200/40 dark:border-white/10 -z-0"
+                        transition={{ type: "spring", stiffness: 420, damping: 30 }}
+                        className="absolute inset-0 bg-white dark:bg-[#2c2c2e] rounded-xl shadow-sm border border-stone-200/60 dark:border-white/10 z-0"
                       />
                     )}
                     <span className="relative z-10">{tab.label}</span>
@@ -1348,9 +1327,9 @@ export function DiscountCouponsTab() {
                   >
                     {isActive && (
                       <motion.div
-                        layoutId="activeCouponFilterPill"
-                        transition={{ type: "spring", stiffness: 450, damping: 32 }}
-                        className="absolute inset-0 bg-white dark:bg-stone-800 rounded-xl shadow-xs border border-stone-200/40 dark:border-white/10 -z-0"
+                        layoutId="activeCouponFilterPillClient"
+                        transition={{ type: "spring", stiffness: 420, damping: 30 }}
+                        className="absolute inset-0 bg-white dark:bg-[#2c2c2e] rounded-xl shadow-sm border border-stone-200/60 dark:border-white/10 z-0"
                       />
                     )}
                     <span className="relative z-10">{tab.label}</span>
@@ -1384,29 +1363,25 @@ export function DiscountCouponsTab() {
         </div>
       ) : (
         <motion.div
-          layout
-          transition={{ type: "spring", stiffness: 350, damping: 28 }}
+          key={activeFilter + (searchQuery || "")}
+          initial={{ opacity: 0, y: 6 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.24, ease: "easeOut" }}
           className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 sm:gap-8"
         >
-          <AnimatePresence mode="popLayout">
-            {filteredCoupons.map((coupon) => {
-              const isStorewide = coupon.scope === "all";
-              const isCutting = cuttingCouponId === coupon.id;
-              const isClientRedeemed = clientRedeemedIds.includes(coupon.id);
-              const isDimmed = isAdmin ? !coupon.isActive : (isClientRedeemed || !coupon.isActive);
+          {filteredCoupons.map((coupon) => {
+            const isStorewide = coupon.scope === "all";
+            const isCutting = cuttingCouponId === coupon.id;
+            const isClientRedeemed = clientRedeemedIds.includes(coupon.id);
+            const isDimmed = isAdmin ? !coupon.isActive : (isClientRedeemed || !coupon.isActive);
 
-              return (
-                <motion.div
-                  layout
-                  initial={{ opacity: 0, scale: 0.94, y: 10 }}
-                  animate={{ opacity: 1, scale: 1, y: 0 }}
-                  exit={{ opacity: 0, scale: 0.94, y: -10 }}
-                  transition={{ duration: 0.28, ease: "easeOut" }}
-                  key={coupon.id}
-                  className={`relative flex flex-col justify-between group transition-all duration-300 ${
-                    isDimmed ? "opacity-65 grayscale-[35%]" : "opacity-100"
-                  }`}
-                >
+            return (
+              <div
+                key={coupon.id}
+                className={`relative flex flex-col justify-between group transition-all duration-300 ${
+                  isDimmed ? "opacity-65 grayscale-[35%]" : "opacity-100"
+                }`}
+              >
                 {/* Physical Ticket Container Stage (Responsive 165px - 190px stage so neither ticket stretches) */}
                 <div
                   onClick={() => {
@@ -1421,7 +1396,7 @@ export function DiscountCouponsTab() {
                 >
                   {/* Dark Mode Elegant Back-Glow / Ambient Luxury Aura */}
                   <div
-                    className="hidden dark:block absolute inset-2 sm:inset-4 rounded-[2.5rem] bg-gradient-to-r from-amber-300/[0.07] via-white/[0.06] to-emerald-300/[0.07] blur-2xl opacity-75 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none -z-0"
+                    className="hidden dark:block absolute inset-2 sm:inset-4 rounded-[2.5rem] bg-gradient-to-r from-amber-300/[0.07] via-white/[0.06] to-amber-300/[0.07] blur-2xl opacity-75 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none -z-0"
                     aria-hidden="true"
                   />
                   <div
@@ -1449,7 +1424,7 @@ export function DiscountCouponsTab() {
                           Canjeado
                         </span>
                       ) : (
-                        <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-black/60 backdrop-blur-md text-emerald-300 border border-emerald-300/30">
+                        <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-black/60 backdrop-blur-md text-amber-300 border border-amber-300/30">
                           Disponible
                         </span>
                       )}
@@ -1489,7 +1464,7 @@ export function DiscountCouponsTab() {
                     >
                       {copiedCode === coupon.code ? (
                         <>
-                          <Check className="w-3.5 h-3.5 text-emerald-600" />
+                          <Check className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
                           <span>Copiado</span>
                         </>
                       ) : (
@@ -1571,7 +1546,7 @@ export function DiscountCouponsTab() {
                         title={coupon.isActive ? "Pausar cupón" : "Activar cupón"}
                       >
                         {coupon.isActive ? (
-                          <ToggleRight className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+                          <ToggleRight className="w-5 h-5 text-amber-600 dark:text-amber-400" />
                         ) : (
                           <ToggleLeft className="w-5 h-5 text-gray-400" />
                         )}
@@ -1588,10 +1563,9 @@ export function DiscountCouponsTab() {
                     </div>
                   )}
                 </div>
-                </motion.div>
-              );
-            })}
-          </AnimatePresence>
+              </div>
+            );
+          })}
         </motion.div>
       )}
 

@@ -65,44 +65,44 @@
   }
   /* ========================================================================= */
   /* Universal macOS Floating Capsule Scrollbar for all containers & views     */
-  /* Comboboxes, Modals, Details, Product Forms, Niche Inventory, Horiz Tabs  */
+  /* Comboboxes, Modals, Details, Product Forms, Niche Inventory, Horiz Tabs   */
   /* ========================================================================= */
-  * {
-    scrollbar-width: thin;
-    scrollbar-color: rgba(0, 0, 0, 0.28) transparent;
-  }
-  .dark * {
-    scrollbar-color: rgba(255, 255, 255, 0.35) transparent;
-  }
-
-  *::-webkit-scrollbar {
+  ::-webkit-scrollbar {
     width: 6px;
     height: 6px;
     background: transparent;
   }
-  *::-webkit-scrollbar-track {
+  ::-webkit-scrollbar-track {
     background: transparent;
     border-radius: 9999px;
-    margin: 3px;
   }
-  *::-webkit-scrollbar-thumb {
-    background-color: rgba(0, 0, 0, 0.28);
+  ::-webkit-scrollbar-thumb {
+    background-color: rgba(0, 0, 0, 0.24);
     border-radius: 9999px;
-    border: 1px solid rgba(255, 255, 255, 0.15);
     transition: background-color 0.2s ease;
   }
-  .dark *::-webkit-scrollbar-thumb {
-    background-color: rgba(255, 255, 255, 0.35);
-    border: 1px solid rgba(0, 0, 0, 0.15);
+  .dark ::-webkit-scrollbar-thumb {
+    background-color: rgba(255, 255, 255, 0.3);
   }
-  *::-webkit-scrollbar-thumb:hover {
-    background-color: rgba(0, 0, 0, 0.48);
+  ::-webkit-scrollbar-thumb:hover {
+    background-color: rgba(0, 0, 0, 0.44);
   }
-  .dark *::-webkit-scrollbar-thumb:hover {
-    background-color: rgba(255, 255, 255, 0.58);
+  .dark ::-webkit-scrollbar-thumb:hover {
+    background-color: rgba(255, 255, 255, 0.5);
   }
-  *::-webkit-scrollbar-corner {
+  ::-webkit-scrollbar-corner {
     background: transparent;
+  }
+
+  /* Firefox only: apply thin scrollbar when webkit scrollbars are unsupported */
+  @supports not selector(::-webkit-scrollbar) {
+    * {
+      scrollbar-width: thin;
+      scrollbar-color: rgba(0, 0, 0, 0.24) transparent;
+    }
+    .dark * {
+      scrollbar-color: rgba(255, 255, 255, 0.3) transparent;
+    }
   }
 
   /* macOS Sequoia Jelly Scrollbar Replacement — Suppress Native Browser Track on Desktop for html/body only */
@@ -120,12 +120,16 @@
     }
   }
 
-  .hide-scrollbar::-webkit-scrollbar {
-    display: none;
+  .hide-scrollbar::-webkit-scrollbar,
+  .no-scrollbar::-webkit-scrollbar {
+    display: none !important;
+    width: 0 !important;
+    height: 0 !important;
   }
-  .hide-scrollbar {
-    -ms-overflow-style: none;
-    scrollbar-width: none;
+  .hide-scrollbar,
+  .no-scrollbar {
+    -ms-overflow-style: none !important;
+    scrollbar-width: none !important;
   }
 
   /* Product Media Anti-Theft & DRM Protection */

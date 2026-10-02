@@ -174,10 +174,10 @@ export function CouponAnalyticsModal({
 
                 <div className="p-3 sm:p-4 rounded-2xl bg-gray-50 dark:bg-white/[0.03] border border-gray-100 dark:border-white/5 space-y-1">
                   <div className="flex items-center gap-1.5 text-[11px] sm:text-xs font-semibold text-gray-500 dark:text-gray-400 whitespace-nowrap">
-                    <DollarSign className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+                    <DollarSign className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400 shrink-0" />
                     <span className="whitespace-nowrap">Ahorro Concedido</span>
                   </div>
-                  <p className="text-xl sm:text-2xl font-black text-emerald-600 dark:text-emerald-400">
+                  <p className="text-xl sm:text-2xl font-black text-amber-700 dark:text-amber-300">
                     ${totalSaved.toFixed(2)}
                   </p>
                 </div>
@@ -231,8 +231,8 @@ export function CouponAnalyticsModal({
                   </p>
                 </div>
               ) : (
-                <motion.div layout className="space-y-3">
-                  <AnimatePresence mode="popLayout">
+                <div className="space-y-3">
+                  <AnimatePresence>
                     {filteredRedemptions.map((record) => {
                       const formattedDate = new Date(record.usedAt).toLocaleDateString("es-ES", {
                         day: "numeric",
@@ -314,10 +314,10 @@ export function CouponAnalyticsModal({
 
                           {/* Descuento deducido */}
                           <div className="text-right">
-                            <p className="text-[10px] font-semibold uppercase text-emerald-600 dark:text-emerald-400">
+                            <p className="text-[10px] font-semibold uppercase text-amber-600 dark:text-amber-400">
                               Ahorro
                             </p>
-                            <p className="text-xs font-black text-emerald-600 dark:text-emerald-400">
+                            <p className="text-xs font-black text-amber-600 dark:text-amber-400">
                               -${record.discountAmount.toFixed(2)}
                             </p>
                           </div>
@@ -336,14 +336,14 @@ export function CouponAnalyticsModal({
                       );
                     })}
                   </AnimatePresence>
-                </motion.div>
+                </div>
               )}
             </div>
 
             {/* Modal Footer */}
             <div className="p-4 sm:p-5 border-t border-gray-100 dark:border-white/5 bg-gray-50/50 dark:bg-white/[0.01] flex items-center justify-between text-xs text-gray-500">
               <span className="flex items-center gap-1.5 font-medium">
-                <ShieldCheck className="w-4 h-4 text-emerald-500" />
+                <ShieldCheck className="w-4 h-4 text-amber-500" />
                 <span>Registros criptográficamente inmutables vinculados a pedidos</span>
               </span>
               <button

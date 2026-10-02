@@ -1225,12 +1225,11 @@ const selectItemVariants = {
   open: {
     opacity: 1,
     y: 0,
-    transition: { duration: 0.2, ease: "easeOut" as const },
+    transition: { duration: 0.15, ease: "easeOut" as const },
   },
   closed: {
-    opacity: 0,
-    y: -10,
-    transition: { duration: 0.12, ease: "easeIn" as const },
+    opacity: 1,
+    y: 0,
   },
 };
 
@@ -1282,8 +1281,8 @@ export function BeUISelectField({
       const rect = containerRef.current.getBoundingClientRect();
       const spaceBelow = window.innerHeight - rect.bottom;
       const spaceAbove = rect.top;
-      // If less than 240px below and more room above, open upwards
-      if (spaceBelow < 240 && spaceAbove > 200) {
+      // If less than 280px below and more room above, open upwards
+      if (spaceBelow < 280 && spaceAbove > 180) {
         setOpenUpwards(true);
       } else {
         setOpenUpwards(false);
@@ -1311,7 +1310,7 @@ export function BeUISelectField({
   }, [open]);
 
   return (
-    <div ref={containerRef} className={cn("relative inline-block w-full", className)}>
+    <div ref={containerRef} className={cn("relative inline-block w-full", open ? "z-50" : "z-10", className)}>
       <motion.button
         type="button"
         disabled={disabled}
@@ -1477,7 +1476,13 @@ export function BeUICenterMorphModal({
   children,
   className,
 }: BeUICenterMorphModalProps) {
+  const [mounted, setMounted] = useState(false);
   const onOpenChangeRef = useRef(onOpenChange);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   useEffect(() => {
     onOpenChangeRef.current = onOpenChange;
   }, [onOpenChange]);
@@ -1518,12 +1523,12 @@ export function BeUICenterMorphModal({
     };
   }, [open]);
 
-  return (
+  const modalContent = (
     <AnimatePresence>
       {open && (
         <div
           data-lenis-prevent="true"
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 overflow-hidden"
+          className="fixed inset-0 z-[999] flex items-center justify-center p-4 sm:p-6 overflow-hidden"
         >
           <style>{`
             html.lumina-modal-lock-scroll,
@@ -1561,6 +1566,12 @@ export function BeUICenterMorphModal({
       )}
     </AnimatePresence>
   );
+
+  if (!mounted || typeof document === "undefined") {
+    return null;
+  }
+
+  return createPortal(modalContent, document.body);
 }
 
 /* ============================================================================

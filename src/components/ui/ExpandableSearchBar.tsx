@@ -128,21 +128,17 @@ export function ExpandableSearchBar({
                 placeholder={placeholder}
                 className="w-full bg-transparent text-xs text-stone-900 dark:text-stone-100 placeholder:text-stone-400 dark:placeholder:text-stone-500 outline-none font-medium truncate"
               />
-              {value && (
-                <button
-                  type="button"
-                  onClick={handleClear}
-                  className="w-5 h-5 rounded-full hover:bg-stone-100 dark:hover:bg-white/10 text-stone-400 hover:text-stone-700 dark:hover:text-stone-200 flex items-center justify-center transition-colors cursor-pointer shrink-0 ml-1"
-                  title="Limpiar búsqueda"
-                >
-                  <X className="w-3 h-3" />
-                </button>
-              )}
               <button
                 type="button"
-                onClick={handleCollapse}
-                className="w-5 h-5 rounded-full hover:bg-stone-100 dark:hover:bg-white/10 text-stone-400 hover:text-stone-700 dark:hover:text-stone-200 flex items-center justify-center transition-colors cursor-pointer shrink-0 ml-0.5"
-                title="Cerrar búsqueda (Esc)"
+                onClick={() => {
+                  if (value) {
+                    handleClear();
+                  } else {
+                    handleCollapse();
+                  }
+                }}
+                className="w-5 h-5 rounded-full hover:bg-stone-100 dark:hover:bg-white/10 text-stone-400 hover:text-stone-700 dark:hover:text-stone-200 flex items-center justify-center transition-colors cursor-pointer shrink-0 ml-1"
+                title={value ? "Limpiar búsqueda" : "Cerrar búsqueda (Esc)"}
               >
                 <X className="w-3.5 h-3.5" />
               </button>
