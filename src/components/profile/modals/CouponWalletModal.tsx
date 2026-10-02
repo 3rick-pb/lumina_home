@@ -1,8 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { createPortal } from "react-dom";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import {
   X,
   Copy,
@@ -17,6 +16,7 @@ import {
 } from "lucide-react";
 import { VectorBarcode } from "@/components/ui/VectorBarcode";
 import { GoogleWalletButton } from "@/components/ui/GoogleWalletButton";
+import { BeUICenterMorphModal } from "@/components/ui/BeUIControls";
 import type { DiscountCoupon } from "@/lib/couponStore";
 
 export interface CouponWalletModalProps {
@@ -46,15 +46,6 @@ export function CouponWalletModal({
     }
   }, [open]);
 
-  useEffect(() => {
-    if (!open) return;
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
-    };
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [open, onClose]);
-
   if (!mounted || !coupon) return null;
 
   const handleCopyCode = () => {
@@ -74,28 +65,19 @@ export function CouponWalletModal({
     }, 1200);
   };
 
-  const modalContent = (
-    <AnimatePresence>
-      {open && (
-        <div className="fixed inset-0 z-[120] flex items-center justify-center p-4 sm:p-6">
-          {/* Backdrop */}
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            onClick={onClose}
-            className="absolute inset-0 bg-black/60 backdrop-blur-md"
-          />
-
-          {/* Dialog Container */}
-          <motion.div
-            initial={{ opacity: 0, scale: 0.94, y: 16 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.94, y: 16 }}
-            transition={{ type: "spring", duration: 0.35, bounce: 0.15 }}
-            className="relative w-full max-w-md bg-stone-900 text-stone-100 rounded-[2rem] border border-stone-800 shadow-[0_24px_50px_rgba(0,0,0,0.6)] overflow-hidden"
-          >
-            {/* Header bar */}
+  return (
+    <BeUICenterMorphModal
+      open={open}
+      onOpenChange={(isOpen) => {
+        if (!isOpen) onClose();
+      }}
+      className="max-w-md w-full mx-auto"
+    >
+      <div
+        data-lenis-prevent="true"
+        className="relative w-full bg-stone-900 text-stone-100 rounded-[2rem] border border-stone-800 shadow-[0_24px_50px_rgba(0,0,0,0.6)] overflow-hidden"
+      >
+        {/* Header bar */}
             <div className="flex items-center justify-between p-5 border-b border-stone-800/80 bg-stone-950/40">
               <div className="flex items-center gap-2">
                 <div className="w-8 h-8 rounded-xl bg-amber-500/10 text-amber-400 flex items-center justify-center">
@@ -241,11 +223,7 @@ export function CouponWalletModal({
                 El pase almacena el código de barras lineal 1D estandarizado para lectura inmediata sin conexión en cajas registradoras o en el checkout online.
               </p>
             </div>
-          </motion.div>
-        </div>
-      )}
-    </AnimatePresence>
+      </div>
+    </BeUICenterMorphModal>
   );
-
-  return createPortal(modalContent, document.body);
 }

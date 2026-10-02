@@ -1,8 +1,6 @@
 "use client";
 
 import React, { useState, useEffect, useMemo } from "react";
-import { createPortal } from "react-dom";
-import { motion, AnimatePresence } from "framer-motion";
 import {
   X,
   Search,
@@ -20,6 +18,7 @@ import {
   Percent,
 } from "lucide-react";
 import { BlobatarAvatar } from "@/components/ui/BlobatarAvatar";
+import { BeUICenterMorphModal } from "@/components/ui/BeUIControls";
 import { useUserStore } from "@/lib/userStore";
 import type { DiscountCoupon, CouponRedemptionRecord } from "@/lib/couponStore";
 
@@ -47,20 +46,6 @@ export function CouponAnalyticsModal({
       setSearchFilter("");
     }
   }, [open]);
-
-  useEffect(() => {
-    if (!open) return;
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
-    };
-    window.addEventListener("keydown", handleKeyDown);
-    document.body.style.overflow = "hidden";
-    return () => {
-      window.removeEventListener("keydown", handleKeyDown);
-      document.body.style.removeProperty("overflow");
-      document.documentElement.style.removeProperty("overflow");
-    };
-  }, [open, onClose]);
 
   // Combine pre-seeded redemptions with any live store orders that might reference this coupon
   const allRedemptions = useMemo(() => {
@@ -128,33 +113,18 @@ export function CouponAnalyticsModal({
 
   if (!mounted || !coupon) return null;
 
-  const modalContent = (
-    <AnimatePresence>
-      {open && (
-        <div
-          data-lenis-prevent="true"
-          className="fixed inset-0 z-[125] flex items-center justify-center p-3 sm:p-5 overflow-y-auto"
-        >
-          {/* Backdrop */}
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            onClick={onClose}
-            className="fixed inset-0 bg-black/70 backdrop-blur-md"
-          />
-
-          {/* Dialog Container */}
-          <motion.div
-            role="dialog"
-            aria-modal="true"
-            data-lenis-prevent="true"
-            initial={{ opacity: 0, scale: 0.95, y: 16 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.95, y: 16 }}
-            transition={{ type: "spring", duration: 0.35, bounce: 0.15 }}
-            className="relative w-full max-w-3xl bg-white dark:bg-[#1c1c1f] text-gray-900 dark:text-stone-100 rounded-[2.5rem] border border-black/10 dark:border-white/10 shadow-[0_25px_60px_rgba(0,0,0,0.5)] overflow-hidden flex flex-col max-h-[92vh] z-10"
-          >
+  return (
+    <BeUICenterMorphModal
+      open={open}
+      onOpenChange={(isOpen) => {
+        if (!isOpen) onClose();
+      }}
+      className="max-w-3xl w-full mx-auto"
+    >
+      <div
+        data-lenis-prevent="true"
+        className="relative w-full bg-white dark:bg-[#1c1c1f] text-gray-900 dark:text-stone-100 rounded-[2rem] sm:rounded-[2.5rem] border border-black/10 dark:border-white/10 shadow-[0_25px_60px_rgba(0,0,0,0.5)] overflow-hidden flex flex-col max-h-[92vh] sm:max-h-[90vh]"
+      >
             {/* Modal Header */}
             <div className="p-5 sm:p-6 border-b border-gray-100 dark:border-white/5 flex items-center justify-between gap-4 bg-gray-50/70 dark:bg-white/[0.02]">
               <div className="flex items-center gap-3">
@@ -384,11 +354,7 @@ export function CouponAnalyticsModal({
                 Cerrar
               </button>
             </div>
-          </motion.div>
-        </div>
-      )}
-    </AnimatePresence>
+      </div>
+    </BeUICenterMorphModal>
   );
-
-  return createPortal(modalContent, document.body);
 }

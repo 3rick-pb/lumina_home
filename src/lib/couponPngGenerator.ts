@@ -14,27 +14,22 @@ export async function generateCouponPng(coupon: DiscountCoupon): Promise<File> {
   const w = isStorewide ? 460 : 340;
   const h = isStorewide ? 170 : 215;
 
-  // Margin/Padding around ticket so it is NEVER cropped right on the border edge
-  const padX = 28;
-  const padY = 22;
-
   // Hi-DPI Canvas for razor-sharp rendering (scale 3x)
+  // Zero padding and zero shadow ensures a 100% genuine transparent PNG sticker
+  // that never creates an opaque white box or white notches when shared in WhatsApp dark mode
   const scale = 3;
-  const totalW = w + padX * 2;
-  const totalH = h + padY * 2;
 
   const canvas = document.createElement("canvas");
-  canvas.width = totalW * scale;
-  canvas.height = totalH * scale;
+  canvas.width = w * scale;
+  canvas.height = h * scale;
 
   const ctx = canvas.getContext("2d");
   if (!ctx) throw new Error("Could not get 2D canvas context");
 
-  // Explicitly clear whole canvas to pure transparent pixels (100% genuine transparent PNG)
+  // Explicitly clear whole canvas to pure transparent pixels (alpha = 0)
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 
   ctx.scale(scale, scale);
-  ctx.translate(padX, padY);
 
   if (isStorewide) {
     drawStyle2(ctx, coupon, w, h);
@@ -105,21 +100,13 @@ function drawStyle1(
   ctx.arcTo(0, 0, r, 0, r);
   ctx.closePath();
 
-  // Subtle soft drop-shadow for floating ticket depth on transparent canvas
-  ctx.shadowColor = "rgba(0, 0, 0, 0.16)";
-  ctx.shadowBlur = 14;
-  ctx.shadowOffsetY = 6;
-
-  // Gradient fill
+  // Gradient fill (100% clean vector-like ticket, zero artificial drop shadow)
   const grad = ctx.createLinearGradient(0, 0, w, h);
   grad.addColorStop(0, pal.start);
   grad.addColorStop(0.45, pal.mid);
   grad.addColorStop(1, pal.end);
   ctx.fillStyle = grad;
   ctx.fill();
-
-  // Reset shadow for crisp text and lines
-  ctx.shadowColor = "transparent";
 
   ctx.lineWidth = 1;
   ctx.strokeStyle = "rgba(0,0,0,0.15)";
@@ -254,17 +241,9 @@ function drawStyle2(
   ctx.arcTo(0, 0, r, 0, r);
   ctx.closePath();
 
-  // Subtle soft drop-shadow for floating ticket depth on transparent canvas
-  ctx.shadowColor = "rgba(0, 0, 0, 0.16)";
-  ctx.shadowBlur = 14;
-  ctx.shadowOffsetY = 6;
-
-  // Matte fill
+  // Matte fill (100% clean vector-like ticket, zero artificial drop shadow)
   ctx.fillStyle = th.bg;
   ctx.fill();
-
-  // Reset shadow for sharp text and lines
-  ctx.shadowColor = "transparent";
 
   ctx.lineWidth = 1.2;
   ctx.strokeStyle = th.border;

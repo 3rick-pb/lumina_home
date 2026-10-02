@@ -1189,6 +1189,38 @@ const selectMenuVariants = {
   },
 };
 
+const selectMenuUpVariants = {
+  open: {
+    opacity: 1,
+    y: [1, -SELECT_GAP],
+    scale: [0.95, 1],
+    borderBottomLeftRadius: [0, SELECT_BORDER_RADIUS],
+    borderBottomRightRadius: [0, SELECT_BORDER_RADIUS],
+    transition: {
+      duration: SELECT_DURATION,
+      ease: SELECT_EASE,
+      borderBottomLeftRadius: { duration: SELECT_DURATION, ease: SELECT_EASE, times: [0.4, 1] },
+      borderBottomRightRadius: { duration: SELECT_DURATION, ease: SELECT_EASE, times: [0.4, 1] },
+      delayChildren: 0.05,
+      staggerChildren: SELECT_STAGGER,
+    },
+  },
+  closed: {
+    opacity: [1, 1, 0],
+    y: [-SELECT_GAP, 1, 1],
+    scale: [1, 0.95, 0.95],
+    borderBottomLeftRadius: [SELECT_BORDER_RADIUS, 0, SELECT_BORDER_RADIUS],
+    borderBottomRightRadius: [SELECT_BORDER_RADIUS, 0, SELECT_BORDER_RADIUS],
+    transition: {
+      duration: SELECT_DURATION,
+      ease: SELECT_EASE,
+      times: [0, 0.6, 1],
+      staggerChildren: SELECT_STAGGER,
+      staggerDirection: -1,
+    },
+  },
+};
+
 const selectItemVariants = {
   open: {
     opacity: 1,
@@ -1228,6 +1260,7 @@ export function BeUISelectField({
   disabled = false,
 }: BeUISelectFieldProps) {
   const [open, setOpen] = useState(false);
+  const [openUpwards, setOpenUpwards] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
   const normalizedOptions: BeUISelectOption[] = useMemo(
@@ -1242,6 +1275,22 @@ export function BeUISelectField({
     () => normalizedOptions.find((opt) => opt.value === value),
     [normalizedOptions, value]
   );
+
+  const handleToggle = () => {
+    if (disabled) return;
+    if (!open && containerRef.current) {
+      const rect = containerRef.current.getBoundingClientRect();
+      const spaceBelow = window.innerHeight - rect.bottom;
+      const spaceAbove = rect.top;
+      // If less than 240px below and more room above, open upwards
+      if (spaceBelow < 240 && spaceAbove > 200) {
+        setOpenUpwards(true);
+      } else {
+        setOpenUpwards(false);
+      }
+    }
+    setOpen((prev) => !prev);
+  };
 
   useEffect(() => {
     if (!open) return;
@@ -1266,7 +1315,7 @@ export function BeUISelectField({
       <motion.button
         type="button"
         disabled={disabled}
-        onClick={() => !disabled && setOpen((prev) => !prev)}
+        onClick={handleToggle}
         variants={selectTriggerVariants}
         initial={false}
         animate={open ? "open" : "closed"}
@@ -1316,18 +1365,28 @@ export function BeUISelectField({
           <motion.div
             role="listbox"
             data-lenis-prevent="true"
-            variants={selectMenuVariants}
+            variants={openUpwards ? selectMenuUpVariants : selectMenuVariants}
             initial="closed"
             animate="open"
             exit="closed"
             style={{
-              borderBottomLeftRadius: SELECT_BORDER_RADIUS,
-              borderBottomRightRadius: SELECT_BORDER_RADIUS,
-              transformOrigin: "top center",
+              borderTopLeftRadius: openUpwards ? SELECT_BORDER_RADIUS : 0,
+              borderTopRightRadius: openUpwards ? SELECT_BORDER_RADIUS : 0,
+              borderBottomLeftRadius: openUpwards ? 0 : SELECT_BORDER_RADIUS,
+              borderBottomRightRadius: openUpwards ? 0 : SELECT_BORDER_RADIUS,
+              transformOrigin: openUpwards ? "bottom center" : "top center",
             }}
-            className="absolute left-0 right-0 z-[120] overflow-hidden border border-gray-200/90 dark:border-white/15 bg-white/95 dark:bg-[#12151c]/95 backdrop-blur-2xl p-1.5 text-gray-900 dark:text-white shadow-[0_20px_50px_rgba(0,0,0,0.28)] dark:shadow-[0_24px_60px_rgba(0,0,0,0.75)]"
+            className={cn(
+              "absolute left-0 right-0 z-[120] overflow-hidden border border-gray-200/90 dark:border-white/15 bg-white/95 dark:bg-[#12151c]/95 backdrop-blur-2xl p-1.5 text-gray-900 dark:text-white shadow-[0_20px_50px_rgba(0,0,0,0.28)] dark:shadow-[0_24px_60px_rgba(0,0,0,0.75)]",
+              openUpwards ? "bottom-full mb-1.5" : "top-full mt-1.5"
+            )}
           >
-            <div data-lenis-prevent="true" className="max-h-60 overflow-y-auto overscroll-contain space-y-0.5 pr-0.5 custom-scrollbar">
+            <div
+              data-lenis-prevent="true"
+              onWheel={(e) => e.stopPropagation()}
+              onTouchMove={(e) => e.stopPropagation()}
+              className="max-h-52 overflow-y-auto overscroll-contain space-y-0.5 pr-0.5 custom-scrollbar"
+            >
               {normalizedOptions.map((item) => {
                 const isSelected = item.value === value;
                 return (

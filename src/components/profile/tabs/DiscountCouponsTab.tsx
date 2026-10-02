@@ -26,6 +26,10 @@ import {
   BarChart3,
   SlidersHorizontal,
   X,
+  Layers,
+  BadgePercent,
+  QrCode,
+  ShoppingBag,
 } from "lucide-react";
 import { ThinkingOrb } from "thinking-orbs";
 import { useCouponStore, DiscountCoupon } from "@/lib/couponStore";
@@ -100,7 +104,7 @@ function Style1TicketSvg({
     <div className={`relative w-full max-w-[340px] aspect-[340/215] select-none mx-auto ${className}`}>
       <svg
         viewBox="0 0 340 215"
-        className="w-full h-full overflow-visible drop-shadow-[0_12px_28px_rgba(0,0,0,0.18)]"
+        className="w-full h-full overflow-visible drop-shadow-[0_12px_28px_rgba(0,0,0,0.18)] dark:drop-shadow-[0_4px_28px_rgba(255,255,255,0.09)]"
       >
         <defs>
           <linearGradient id={gradId} x1="0%" y1="0%" x2="100%" y2="100%">
@@ -308,7 +312,7 @@ function Style2TicketSvg({
     <div className={`relative w-full max-w-[460px] aspect-[460/170] select-none mx-auto ${className}`}>
       <svg
         viewBox="0 0 460 170"
-        className="w-full h-full overflow-visible drop-shadow-[0_12px_26px_rgba(0,0,0,0.14)]"
+        className="w-full h-full overflow-visible drop-shadow-[0_12px_26px_rgba(0,0,0,0.14)] dark:drop-shadow-[0_4px_28px_rgba(255,255,255,0.09)]"
       >
         {/* Outer Ticket Outline with Notches */}
         <path
@@ -499,6 +503,7 @@ export function DiscountCouponsTab() {
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
   const [justGeneratedCoupon, setJustGeneratedCoupon] = useState<DiscountCoupon | null>(null);
   const [showManualForm, setShowManualForm] = useState(false);
+  const [isFormAnimating, setIsFormAnimating] = useState(false);
 
   // Digital Wallet Modal state (Detail Modal with official GoogleWalletButton)
   const [walletCoupon, setWalletCoupon] = useState<DiscountCoupon | null>(null);
@@ -789,7 +794,7 @@ export function DiscountCouponsTab() {
               type="button"
               disabled={isGeneratingStrategic}
               onClick={handleTriggerRandom}
-              className={`relative flex items-center justify-center gap-2.5 px-4 sm:px-5 py-2.5 sm:py-3 rounded-2xl text-xs sm:text-sm font-semibold tracking-tight shadow-sm transition-all duration-300 cursor-pointer select-none active:scale-[0.98] ${
+              className={`relative flex items-center justify-center gap-2.5 px-4 sm:px-5 py-2.5 sm:py-3 rounded-2xl text-xs sm:text-sm font-semibold tracking-tight shadow-sm transition-all duration-300 cursor-pointer select-none active:scale-[0.98] whitespace-nowrap shrink-0 ${
                 isGeneratingStrategic
                   ? "bg-stone-900 text-stone-100 dark:bg-white dark:text-stone-900 cursor-wait opacity-95"
                   : "bg-stone-950 dark:bg-white text-white dark:text-stone-950 hover:bg-stone-800 dark:hover:bg-stone-100"
@@ -809,7 +814,7 @@ export function DiscountCouponsTab() {
                     <div className="w-5 h-5 flex items-center justify-center shrink-0">
                       <ThinkingOrb state="shaping" size={20} theme="auto" />
                     </div>
-                    <span className="font-medium text-stone-100 dark:text-stone-900">
+                    <span className="font-medium text-stone-100 dark:text-stone-900 whitespace-nowrap">
                       Generando...
                     </span>
                   </motion.div>
@@ -833,14 +838,14 @@ export function DiscountCouponsTab() {
             <button
               type="button"
               onClick={() => setShowManualForm(!showManualForm)}
-              className={`px-4 sm:px-5 py-2.5 sm:py-3 rounded-2xl text-xs sm:text-sm font-semibold border transition-all duration-300 flex items-center justify-center gap-2 cursor-pointer shadow-xs active:scale-[0.98] ${
+              className={`px-4 sm:px-5 py-2.5 sm:py-3 rounded-2xl text-xs sm:text-sm font-semibold border transition-all duration-300 flex items-center justify-center gap-2 cursor-pointer shadow-xs active:scale-[0.98] whitespace-nowrap shrink-0 ${
                 showManualForm
                   ? "bg-stone-900 text-white dark:bg-white dark:text-stone-900 border-transparent shadow-sm"
                   : "border-stone-200/80 dark:border-white/10 bg-white dark:bg-[#1f1f23] hover:bg-stone-50 dark:hover:bg-white/10 text-stone-800 dark:text-stone-200"
               }`}
             >
-              <SlidersHorizontal className="w-4 h-4" />
-              <span>{showManualForm ? "Cerrar Configuración" : "Configurar Cupón"}</span>
+              <SlidersHorizontal className="w-4 h-4 shrink-0" />
+              <span className="whitespace-nowrap">{showManualForm ? "Cerrar Configuración" : "Configurar Cupón"}</span>
             </button>
           </div>
         </div>
@@ -872,10 +877,10 @@ export function DiscountCouponsTab() {
       <AnimatePresence>
         {isAdmin && justGeneratedCoupon && (
           <motion.div
-            initial={{ opacity: 0, y: -8 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -8 }}
-            transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
+            initial={{ opacity: 0, y: -12, scale: 0.99 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -12, scale: 0.99 }}
+            transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
             className="p-5 sm:p-6 rounded-2xl sm:rounded-3xl bg-white dark:bg-[#1a1a1c] border border-stone-200/80 dark:border-white/10 shadow-xs"
           >
             {/* Top row: Status, Scope badge and Close button */}
@@ -969,11 +974,13 @@ export function DiscountCouponsTab() {
       <AnimatePresence>
         {isAdmin && showManualForm && (
           <motion.div
-            initial={{ opacity: 0, height: 0, y: -10 }}
+            initial={{ opacity: 0, height: 0, y: -8 }}
             animate={{ opacity: 1, height: "auto", y: 0 }}
-            exit={{ opacity: 0, height: 0, y: -10 }}
-            transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
-            className="overflow-hidden"
+            exit={{ opacity: 0, height: 0, y: -8 }}
+            transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
+            onAnimationStart={() => setIsFormAnimating(true)}
+            onAnimationComplete={() => setIsFormAnimating(false)}
+            style={{ overflow: isFormAnimating ? "hidden" : "visible" }}
           >
             <form
               onSubmit={handleCreateManual}
@@ -1171,85 +1178,85 @@ export function DiscountCouponsTab() {
       {/* 2. STATS KPI BAR (ADMIN vs CLIENT)                                    */}
       {/* ===================================================================== */}
       {isAdmin ? (
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-          <div className="bg-white dark:bg-[#202022] p-4 sm:p-5 rounded-2xl border border-black/5 dark:border-white/10 shadow-xs flex items-center gap-3.5">
+        <div className="flex flex-col gap-2.5 sm:grid sm:grid-cols-2 lg:grid-cols-4 sm:gap-4">
+          <div className="w-full bg-white dark:bg-[#202022] p-4 sm:p-5 rounded-2xl border border-black/5 dark:border-white/10 shadow-xs flex items-center gap-3.5">
             <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
-              <Tag className="w-5 h-5" />
+              <Layers className="w-5 h-5" />
             </div>
-            <div>
-              <p className="text-[11px] font-semibold text-gray-500 dark:text-gray-400">Campañas Activas</p>
+            <div className="min-w-0">
+              <p className="text-[11px] font-semibold text-gray-500 dark:text-gray-400 truncate">Campañas Activas</p>
               <p className="text-lg sm:text-2xl font-black text-gray-950 dark:text-white">{stats.activeCount}</p>
             </div>
           </div>
 
-          <div className="bg-white dark:bg-[#202022] p-4 sm:p-5 rounded-2xl border border-black/5 dark:border-white/10 shadow-xs flex items-center gap-3.5">
+          <div className="w-full bg-white dark:bg-[#202022] p-4 sm:p-5 rounded-2xl border border-black/5 dark:border-white/10 shadow-xs flex items-center gap-3.5">
             <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0">
-              <Percent className="w-5 h-5" />
+              <BadgePercent className="w-5 h-5" />
             </div>
-            <div>
-              <p className="text-[11px] font-semibold text-gray-500 dark:text-gray-400">Margen Promedio Otorgado</p>
+            <div className="min-w-0">
+              <p className="text-[11px] font-semibold text-gray-500 dark:text-gray-400 truncate">Margen Promedio Otorgado</p>
               <p className="text-lg sm:text-2xl font-black text-gray-950 dark:text-white">{stats.avgDiscount}%</p>
             </div>
           </div>
 
-          <div className="bg-white dark:bg-[#202022] p-4 sm:p-5 rounded-2xl border border-black/5 dark:border-white/10 shadow-xs flex items-center gap-3.5">
+          <div className="w-full bg-white dark:bg-[#202022] p-4 sm:p-5 rounded-2xl border border-black/5 dark:border-white/10 shadow-xs flex items-center gap-3.5">
             <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0">
-              <Share2 className="w-5 h-5" />
+              <QrCode className="w-5 h-5" />
             </div>
-            <div>
-              <p className="text-[11px] font-semibold text-gray-500 dark:text-gray-400">PNGs Compartidos</p>
+            <div className="min-w-0">
+              <p className="text-[11px] font-semibold text-gray-500 dark:text-gray-400 truncate">PNGs Compartidos</p>
               <p className="text-lg sm:text-2xl font-black text-gray-950 dark:text-white">{stats.totalShares}</p>
             </div>
           </div>
 
-          <div className="bg-white dark:bg-[#202022] p-4 sm:p-5 rounded-2xl border border-black/5 dark:border-white/10 shadow-xs flex items-center gap-3.5">
+          <div className="w-full bg-white dark:bg-[#202022] p-4 sm:p-5 rounded-2xl border border-black/5 dark:border-white/10 shadow-xs flex items-center gap-3.5">
             <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-purple-500/10 text-purple-600 dark:text-purple-400 flex items-center justify-center shrink-0">
-              <Flame className="w-5 h-5" />
+              <ShoppingBag className="w-5 h-5" />
             </div>
-            <div>
-              <p className="text-[11px] font-semibold text-gray-500 dark:text-gray-400">Canjes Registrados</p>
+            <div className="min-w-0">
+              <p className="text-[11px] font-semibold text-gray-500 dark:text-gray-400 truncate">Canjes Registrados</p>
               <p className="text-lg sm:text-2xl font-black text-gray-950 dark:text-white">{stats.totalUses}</p>
             </div>
           </div>
         </div>
       ) : (
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-          <div className="bg-white dark:bg-[#202022] p-4 sm:p-5 rounded-2xl border border-black/5 dark:border-white/10 shadow-xs flex items-center gap-3.5">
+        <div className="flex flex-col gap-2.5 sm:grid sm:grid-cols-2 lg:grid-cols-4 sm:gap-4">
+          <div className="w-full bg-white dark:bg-[#202022] p-4 sm:p-5 rounded-2xl border border-black/5 dark:border-white/10 shadow-xs flex items-center gap-3.5">
             <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
-              <Tag className="w-5 h-5" />
+              <Layers className="w-5 h-5" />
             </div>
-            <div>
-              <p className="text-[11px] font-semibold text-gray-500 dark:text-gray-400">Cupones Disponibles</p>
+            <div className="min-w-0">
+              <p className="text-[11px] font-semibold text-gray-500 dark:text-gray-400 truncate">Cupones Disponibles</p>
               <p className="text-lg sm:text-2xl font-black text-gray-950 dark:text-white">{clientStats.availableCount}</p>
             </div>
           </div>
 
-          <div className="bg-white dark:bg-[#202022] p-4 sm:p-5 rounded-2xl border border-black/5 dark:border-white/10 shadow-xs flex items-center gap-3.5">
+          <div className="w-full bg-white dark:bg-[#202022] p-4 sm:p-5 rounded-2xl border border-black/5 dark:border-white/10 shadow-xs flex items-center gap-3.5">
             <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0">
-              <Percent className="w-5 h-5" />
+              <BadgePercent className="w-5 h-5" />
             </div>
-            <div>
-              <p className="text-[11px] font-semibold text-gray-500 dark:text-gray-400">Mayor Beneficio Activo</p>
+            <div className="min-w-0">
+              <p className="text-[11px] font-semibold text-gray-500 dark:text-gray-400 truncate">Mayor Beneficio Activo</p>
               <p className="text-lg sm:text-2xl font-black text-gray-950 dark:text-white">{clientStats.maxDiscount}% OFF</p>
             </div>
           </div>
 
-          <div className="bg-white dark:bg-[#202022] p-4 sm:p-5 rounded-2xl border border-black/5 dark:border-white/10 shadow-xs flex items-center gap-3.5">
+          <div className="w-full bg-white dark:bg-[#202022] p-4 sm:p-5 rounded-2xl border border-black/5 dark:border-white/10 shadow-xs flex items-center gap-3.5">
             <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0">
               <CheckCircle2 className="w-5 h-5" />
             </div>
-            <div>
-              <p className="text-[11px] font-semibold text-gray-500 dark:text-gray-400">Cupones Utilizados</p>
+            <div className="min-w-0">
+              <p className="text-[11px] font-semibold text-gray-500 dark:text-gray-400 truncate">Cupones Utilizados</p>
               <p className="text-lg sm:text-2xl font-black text-gray-950 dark:text-white">{clientStats.usedCount}</p>
             </div>
           </div>
 
-          <div className="bg-white dark:bg-[#202022] p-4 sm:p-5 rounded-2xl border border-black/5 dark:border-white/10 shadow-xs flex items-center gap-3.5">
+          <div className="w-full bg-white dark:bg-[#202022] p-4 sm:p-5 rounded-2xl border border-black/5 dark:border-white/10 shadow-xs flex items-center gap-3.5">
             <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-purple-500/10 text-purple-600 dark:text-purple-400 flex items-center justify-center shrink-0">
               <Wallet className="w-5 h-5" />
             </div>
-            <div>
-              <p className="text-[11px] font-semibold text-gray-500 dark:text-gray-400">Google Wallet Pass</p>
+            <div className="min-w-0">
+              <p className="text-[11px] font-semibold text-gray-500 dark:text-gray-400 truncate">Google Wallet Pass</p>
               <p className="text-lg sm:text-2xl font-black text-gray-950 dark:text-white">Código 1D</p>
             </div>
           </div>
@@ -1414,6 +1421,16 @@ export function DiscountCouponsTab() {
                   className="relative cursor-pointer transition-transform duration-300 group-hover:-translate-y-1.5 w-full min-h-[160px] h-[175px] sm:h-[190px] flex items-center justify-center p-1"
                   title={isAdmin ? "Clic para copiar código del cupón" : "Clic para ver detalle y agregar a Google Wallet"}
                 >
+                  {/* Dark Mode Elegant Back-Glow / Ambient Luxury Aura */}
+                  <div
+                    className="hidden dark:block absolute inset-2 sm:inset-4 rounded-[2.5rem] bg-gradient-to-r from-amber-300/[0.07] via-white/[0.06] to-emerald-300/[0.07] blur-2xl opacity-75 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none -z-0"
+                    aria-hidden="true"
+                  />
+                  <div
+                    className="hidden dark:block absolute inset-5 sm:inset-7 rounded-[2rem] bg-white/[0.035] blur-lg pointer-events-none -z-0"
+                    aria-hidden="true"
+                  />
+
                   {/* Scissors Cutting Glint Indicator */}
                   {isCutting && (
                     <motion.div
