@@ -13,6 +13,7 @@ import {
   ShieldCheck,
   Smartphone,
   ExternalLink,
+  Download,
 } from "lucide-react";
 import { VectorBarcode } from "@/components/ui/VectorBarcode";
 import { GoogleWalletIcon } from "@/components/ui/GoogleWalletButton";
@@ -32,7 +33,6 @@ export function CouponWalletModal({
   const [copied, setCopied] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [isAddingGoogle, setIsAddingGoogle] = useState(false);
-  const [isAddingApple, setIsAddingApple] = useState(false);
   const [walletFeedback, setWalletFeedback] = useState<string | null>(null);
 
   useEffect(() => {
@@ -63,26 +63,13 @@ export function CouponWalletModal({
     setTimeout(() => setCopied(false), 2200);
   };
 
-  const handleAddAppleWallet = () => {
-    setIsAddingApple(true);
-    setWalletFeedback("Generando pase Apple Wallet con Código de Barras 1D (Code 128)...");
-    
-    // Simulate generation / passkit integration
-    setTimeout(() => {
-      setIsAddingApple(false);
-      setWalletFeedback("¡Cupón listo para sincronizar con tu Apple Wallet!");
-      setTimeout(() => setWalletFeedback(null), 3000);
-    }, 1200);
-  };
-
   const handleAddGoogleWallet = () => {
     setIsAddingGoogle(true);
-    setWalletFeedback("Vinculando pase a Google Wallet con Código de Barras 1D...");
+    setWalletFeedback("Sincronizando pase con Google Wallet usando Código de Barras 1D (Code 128)...");
 
-    // Build Google Wallet Save URL with CODE_128 1D barcode format
     setTimeout(() => {
       setIsAddingGoogle(false);
-      setWalletFeedback("¡Cupón preparado para guardar en Google Wallet!");
+      setWalletFeedback("¡Cupón listo y optimizado para guardar en Google Wallet!");
       setTimeout(() => setWalletFeedback(null), 3000);
     }, 1200);
   };
@@ -116,7 +103,7 @@ export function CouponWalletModal({
                 </div>
                 <div>
                   <h3 className="text-sm font-bold text-white tracking-wide">
-                    Guardar Cupón en Wallet
+                    Guardar en Google Wallet
                   </h3>
                   <p className="text-[10px] text-stone-400">
                     Billetera Digital con Código de Barras 1D Lineal
@@ -142,7 +129,7 @@ export function CouponWalletModal({
                 <div className="flex items-start justify-between gap-3">
                   <div>
                     <span className="text-[9px] font-bold uppercase tracking-[0.18em] text-stone-400">
-                      LÚMINA HOME · PASS
+                      LÚMINA HOME · GOOGLE WALLET PASS
                     </span>
                     <h4 className="text-base font-black text-white mt-0.5">
                       {coupon.title}
@@ -221,27 +208,14 @@ export function CouponWalletModal({
 
               {/* Digital Wallet Action Buttons */}
               <div className="space-y-2.5">
-                {/* Apple Wallet Button */}
-                <button
-                  type="button"
-                  onClick={handleAddAppleWallet}
-                  disabled={isAddingApple}
-                  className="w-full py-3 px-4 rounded-xl bg-black hover:bg-stone-950 text-white border border-stone-700/80 font-semibold text-xs flex items-center justify-center gap-2.5 transition-all shadow-md active:scale-98 cursor-pointer disabled:opacity-50"
-                >
-                  <svg className="w-4 h-4 fill-current" viewBox="0 0 170 170">
-                    <path d="M150.37 130.25c-2.45 5.66-5.35 10.87-8.71 15.66-4.58 6.53-8.33 11.05-11.22 13.56-4.48 4.12-9.28 6.23-14.42 6.35-3.69 0-8.14-1.05-13.32-3.18-5.19-2.12-9.97-3.17-14.34-3.17-4.58 0-9.49 1.05-14.75 3.17-5.26 2.13-9.5 3.24-12.74 3.35-4.35.13-9.16-1.9-14.42-6.08-3.69-3.04-7.69-7.85-12-14.42-6-9.16-10.75-19.46-14.24-30.89-3.48-11.44-5.23-22.36-5.23-32.77 0-14.6 3.65-26.47 10.96-35.61 7.31-9.14 16.35-13.78 27.12-13.91 5.3 0 11.04 1.48 17.23 4.43 6.18 2.95 10.15 4.49 11.9 4.62 1.63 0 5.76-1.59 12.39-4.75 6.64-3.17 12.39-4.56 17.26-4.19 12.83.67 22.95 5.25 30.37 13.76-11.09 6.72-16.51 15.93-16.27 27.63.24 9.38 3.96 17.27 11.16 23.68 7.2 6.4 15.68 10.05 25.43 10.93-2.12 6.46-4.76 13.1-7.91 19.92zM119.22 33.64c0-7.38 2.65-14.28 7.96-20.7 5.31-6.42 11.83-10.75 19.57-12.94.94 7.6-1.63 14.7-4.85 21.32-3.22 6.61-7.86 11.39-13.91 14.33-2.6 1.25-5.52 1.93-8.77 2.05v-4.06z" />
-                  </svg>
-                  <span>Añadir a Apple Wallet</span>
-                </button>
-
-                {/* Google Wallet Button */}
+                {/* Google Wallet Button (Primary) */}
                 <button
                   type="button"
                   onClick={handleAddGoogleWallet}
                   disabled={isAddingGoogle}
-                  className="w-full py-3 px-4 rounded-xl bg-white hover:bg-stone-100 text-stone-900 font-semibold text-xs flex items-center justify-center gap-2.5 transition-all shadow-md active:scale-98 cursor-pointer disabled:opacity-50"
+                  className="w-full py-3.5 px-4 rounded-xl bg-white hover:bg-stone-100 text-stone-900 font-bold text-xs sm:text-sm flex items-center justify-center gap-3 transition-all shadow-md active:scale-98 cursor-pointer disabled:opacity-50"
                 >
-                  <GoogleWalletIcon className="w-4 h-4" />
+                  <GoogleWalletIcon className="w-5 h-5" />
                   <span>Añadir a Google Wallet</span>
                 </button>
 
@@ -259,7 +233,7 @@ export function CouponWalletModal({
                   ) : (
                     <>
                       <Copy className="w-3.5 h-3.5 text-stone-400" />
-                      <span>Copiar sólo código ({coupon.code})</span>
+                      <span>Copiar código ({coupon.code})</span>
                     </>
                   )}
                 </button>
@@ -267,7 +241,7 @@ export function CouponWalletModal({
 
               {/* Informative reassurance */}
               <p className="text-[10px] text-stone-400 text-center leading-relaxed">
-                El pase almacena el código de barras lineal 1D estandarizado para lectura inmediata sin conexión en cajas registradoras o en el carrito web.
+                El pase almacena el código de barras lineal 1D estandarizado para lectura inmediata sin conexión en cajas registradoras o en el checkout online.
               </p>
             </div>
           </motion.div>

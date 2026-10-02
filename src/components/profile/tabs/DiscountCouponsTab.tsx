@@ -255,7 +255,7 @@ export function DiscountCouponsTab() {
             Gestión Estratégica de Cupones & Campañas
           </h2>
           <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-1 max-w-2xl leading-relaxed">
-            Genera incentivos comerciales con arquitectura de canje 100% en tiempo real. Exporta pases directos a Apple & Google Wallet con código de barras lineal 1D y comparte promociones de alto impacto con tus clientes.
+            Genera incentivos comerciales con arquitectura de canje 100% en tiempo real. Exporta pases directos a Google Wallet con código de barras lineal 1D y comparte promociones de alto impacto con tus clientes.
           </p>
         </div>
 
@@ -832,7 +832,7 @@ export function DiscountCouponsTab() {
                       type="button"
                       onClick={() => handleOpenWalletModal(coupon)}
                       className="px-2.5 py-1.5 rounded-xl bg-stone-900 dark:bg-stone-100 hover:bg-black dark:hover:bg-white text-white dark:text-stone-900 text-[11px] font-bold transition-all flex items-center gap-1 cursor-pointer active:scale-95 shadow-2xs"
-                      title="Guardar en Apple/Google Wallet con Código de Barras 1D"
+                      title="Guardar en Google Wallet con Código de Barras 1D"
                     >
                       <Wallet className="w-3.5 h-3.5" />
                       <span>Wallet</span>
@@ -997,7 +997,7 @@ export function DiscountCouponsTab() {
                     type="button"
                     onClick={() => handleOpenWalletModal(coupon)}
                     className="px-2.5 py-1.5 rounded-xl bg-stone-900 dark:bg-stone-100 hover:bg-black dark:hover:bg-white text-white dark:text-stone-900 text-[11px] font-bold transition-all flex items-center gap-1 cursor-pointer active:scale-95 shadow-2xs"
-                    title="Guardar en Apple/Google Wallet con Código de Barras 1D"
+                    title="Guardar en Google Wallet con Código de Barras 1D"
                   >
                     <Wallet className="w-3.5 h-3.5" />
                     <span>Wallet</span>
