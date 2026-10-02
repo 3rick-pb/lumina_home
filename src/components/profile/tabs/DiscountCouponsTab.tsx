@@ -34,6 +34,7 @@ import { VectorBarcode, SvgBarcodeGroup } from "@/components/ui/VectorBarcode";
 import { CouponWalletModal } from "@/components/profile/modals/CouponWalletModal";
 import { CouponAnalyticsModal } from "@/components/profile/modals/CouponAnalyticsModal";
 import { generateCouponPng } from "@/lib/couponPngGenerator";
+import { BeUISelectField } from "@/components/ui/BeUIControls";
 
 // ---------------------------------------------------------------------------
 // Real WhatsApp SVG Icon Component
@@ -627,7 +628,7 @@ export function DiscountCouponsTab() {
     }
   };
 
-  // Strategic Generator Animation State (2.5s Thinking Orb)
+  // Strategic Generator Animation State (4.5s Thinking Orb)
   const [isGeneratingStrategic, setIsGeneratingStrategic] = useState(false);
 
   const handleTriggerRandom = () => {
@@ -641,7 +642,7 @@ export function DiscountCouponsTab() {
       });
       setJustGeneratedCoupon(coupon);
       setIsGeneratingStrategic(false);
-    }, 2500);
+    }, 4500);
   };
 
   const handleCreateManual = (e: React.FormEvent) => {
@@ -777,65 +778,65 @@ export function DiscountCouponsTab() {
             <h2 className="text-2xl sm:text-3xl font-black text-gray-950 dark:text-white tracking-tight">
               Gestión Estratégica de Cupones & Campañas
             </h2>
-            <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-1 max-w-2xl leading-relaxed">
-              Genera incentivos comerciales con arquitectura de canje en tiempo real. Monitorea y administra campañas activas, nichos de autor y promociones globales para compartir por WhatsApp.
+            <p className="text-xs sm:text-sm text-stone-500 dark:text-stone-400 mt-1 max-w-2xl leading-relaxed">
+              Monitorea y administra campañas activas, colecciones de autor y promociones globales para compartir por WhatsApp.
             </p>
           </div>
 
-          <div className="flex items-center gap-2.5 sm:gap-3 shrink-0 flex-wrap">
-            {/* Morphing Strategic Generator Button with Thinking Orb Animation */}
-            <motion.div
-              layout
-              className="relative flex items-center bg-gray-950 dark:bg-white text-white dark:text-gray-950 rounded-2xl shadow-md border border-white/10 dark:border-black/10 overflow-hidden"
-              transition={{ type: "spring", stiffness: 500, damping: 35 }}
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 sm:gap-3 w-full sm:w-auto">
+            {/* Strategic Generator Button with smooth calm ThinkingOrb */}
+            <button
+              type="button"
+              disabled={isGeneratingStrategic}
+              onClick={handleTriggerRandom}
+              className={`relative flex items-center justify-center gap-2.5 px-4 sm:px-5 py-2.5 sm:py-3 rounded-2xl text-xs sm:text-sm font-semibold tracking-tight shadow-sm transition-all duration-300 cursor-pointer select-none active:scale-[0.98] ${
+                isGeneratingStrategic
+                  ? "bg-stone-900 text-stone-100 dark:bg-white dark:text-stone-900 cursor-wait opacity-95"
+                  : "bg-stone-950 dark:bg-white text-white dark:text-stone-950 hover:bg-stone-800 dark:hover:bg-stone-100"
+              }`}
+              title="Generar cupón estratégico comercial"
             >
-              <button
-                type="button"
-                disabled={isGeneratingStrategic}
-                onClick={handleTriggerRandom}
-                className={`flex items-center gap-2 py-2.5 text-xs sm:text-sm font-bold transition-all cursor-pointer select-none active:scale-95 ${
-                  isGeneratingStrategic
-                    ? "px-3 bg-emerald-500/15 text-emerald-400 dark:text-emerald-700 cursor-wait"
-                    : "px-3.5 sm:px-4 hover:bg-gray-800 dark:hover:bg-gray-100"
-                }`}
-                title="Generar cupón estratégico comercial"
-              >
-                <Dices className={`w-4 h-4 shrink-0 ${isGeneratingStrategic ? "animate-spin text-emerald-400 dark:text-emerald-600" : ""}`} />
-                {!isGeneratingStrategic && (
-                  <span className="whitespace-nowrap">Generar Cupón Estratégico</span>
-                )}
-              </button>
-
-              {/* Revealed Animated Container with Thinking Orb and Agent shaping... */}
-              <AnimatePresence>
-                {isGeneratingStrategic && (
+              <AnimatePresence mode="wait">
+                {isGeneratingStrategic ? (
                   <motion.div
-                    key="shaping-orb-revealed"
-                    initial={{ opacity: 0, width: 0, scale: 0.9 }}
-                    animate={{ opacity: 1, width: "auto", scale: 1 }}
-                    exit={{ opacity: 0, width: 0, scale: 0.9 }}
-                    transition={{ type: "spring", stiffness: 450, damping: 30 }}
-                    className="flex items-center gap-2 px-3 py-1.5 border-l border-white/15 dark:border-black/15 bg-white/5 dark:bg-black/5 shrink-0 overflow-hidden"
+                    key="state-generating"
+                    initial={{ opacity: 0, y: 3 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -3 }}
+                    transition={{ duration: 0.25, ease: "easeOut" }}
+                    className="flex items-center gap-2.5"
                   >
                     <div className="w-5 h-5 flex items-center justify-center shrink-0">
                       <ThinkingOrb state="shaping" size={20} theme="auto" />
                     </div>
-                    <span className="text-xs font-mono font-bold tracking-tight text-emerald-400 dark:text-emerald-600 whitespace-nowrap animate-pulse pr-1">
-                      Agent shaping…
+                    <span className="font-medium text-stone-100 dark:text-stone-900">
+                      Generando...
                     </span>
+                  </motion.div>
+                ) : (
+                  <motion.div
+                    key="state-idle"
+                    initial={{ opacity: 0, y: 3 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -3 }}
+                    transition={{ duration: 0.25, ease: "easeOut" }}
+                    className="flex items-center gap-2"
+                  >
+                    <Dices className="w-4 h-4 text-stone-300 dark:text-stone-700 shrink-0" />
+                    <span className="whitespace-nowrap">Generar Cupón Estratégico</span>
                   </motion.div>
                 )}
               </AnimatePresence>
-            </motion.div>
+            </button>
 
             {/* Configurar Cupón Toggle Button */}
             <button
               type="button"
               onClick={() => setShowManualForm(!showManualForm)}
-              className={`px-4 py-2.5 rounded-2xl text-xs sm:text-sm font-semibold border transition-all flex items-center gap-2 cursor-pointer shadow-xs active:scale-95 ${
+              className={`px-4 sm:px-5 py-2.5 sm:py-3 rounded-2xl text-xs sm:text-sm font-semibold border transition-all duration-300 flex items-center justify-center gap-2 cursor-pointer shadow-xs active:scale-[0.98] ${
                 showManualForm
-                  ? "bg-gray-900 text-white dark:bg-white dark:text-gray-900 border-transparent shadow-sm"
-                  : "border-black/10 dark:border-white/15 bg-white dark:bg-white/5 hover:bg-gray-50 dark:hover:bg-white/10 text-gray-800 dark:text-gray-200"
+                  ? "bg-stone-900 text-white dark:bg-white dark:text-stone-900 border-transparent shadow-sm"
+                  : "border-stone-200/80 dark:border-white/10 bg-white dark:bg-[#1f1f23] hover:bg-stone-50 dark:hover:bg-white/10 text-stone-800 dark:text-stone-200"
               }`}
             >
               <SlidersHorizontal className="w-4 h-4" />
@@ -871,48 +872,65 @@ export function DiscountCouponsTab() {
       <AnimatePresence>
         {isAdmin && justGeneratedCoupon && (
           <motion.div
-            initial={{ opacity: 0, y: -12, scale: 0.98 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: -12, scale: 0.98 }}
-            transition={{ duration: 0.35, ease: "easeOut" }}
-            className="p-5 sm:p-6 rounded-[2rem] bg-gradient-to-r from-emerald-950/70 via-teal-950/50 to-zinc-900/80 dark:bg-[#1a1a1d] text-white border border-emerald-500/30 shadow-xl backdrop-blur-xl"
+            initial={{ opacity: 0, y: -8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -8 }}
+            transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
+            className="p-5 sm:p-6 rounded-2xl sm:rounded-3xl bg-white dark:bg-[#1a1a1c] border border-stone-200/80 dark:border-white/10 shadow-xs"
           >
-            <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-              <div className="space-y-1.5">
-                <div className="flex items-center gap-2">
-                  <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-emerald-400 text-gray-950">
-                    ¡Cupón Generado con Éxito!
-                  </span>
-                  <span className="text-xs text-emerald-300 font-semibold">
-                    {justGeneratedCoupon.scope === "all"
-                      ? "🏛️ Toda la Tienda (Descuento Global)"
-                      : `🌿 Colección: ${justGeneratedCoupon.targetNiche}`}
-                  </span>
-                </div>
-                <div className="flex items-baseline gap-3">
-                  <span className="font-mono text-2xl sm:text-3xl font-black text-white tracking-wider">
+            {/* Top row: Status, Scope badge and Close button */}
+            <div className="flex items-center justify-between gap-3 pb-3 mb-3 border-b border-stone-100 dark:border-white/5">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-stone-900 text-white dark:bg-white dark:text-stone-900">
+                  <Check className="w-3 h-3 text-emerald-400 dark:text-emerald-600" />
+                  Cupón Generado con Éxito
+                </span>
+                <span className="px-2.5 py-1 rounded-full text-[11px] font-medium bg-stone-100 dark:bg-white/5 text-stone-600 dark:text-stone-300 border border-stone-200/60 dark:border-white/5">
+                  {justGeneratedCoupon.scope === "all"
+                    ? "Toda la Tienda (Descuento Global)"
+                    : `Colección: ${justGeneratedCoupon.targetNiche}`}
+                </span>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setJustGeneratedCoupon(null)}
+                className="w-8 h-8 rounded-full bg-stone-100 dark:bg-white/5 hover:bg-stone-200 dark:hover:bg-white/10 text-stone-500 dark:text-stone-400 hover:text-stone-900 dark:hover:text-white flex items-center justify-center transition-colors cursor-pointer shrink-0"
+                title="Cerrar aviso"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Middle row: Code, discount and description */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div className="space-y-1">
+                <div className="flex flex-wrap items-baseline gap-3">
+                  <span className="font-mono text-2xl sm:text-3xl font-black text-stone-900 dark:text-white tracking-wider">
                     {justGeneratedCoupon.code}
                   </span>
-                  <span className="text-xl sm:text-2xl font-black text-amber-300">
+                  <span className="text-xl sm:text-2xl font-black text-[#8c9276] dark:text-[#a8af92]">
                     {justGeneratedCoupon.discountType === "free_shipping"
                       ? "Envío Gratis"
                       : `-${justGeneratedCoupon.discountPercent}% OFF`}
                   </span>
                 </div>
-                <p className="text-xs text-gray-300">{justGeneratedCoupon.description}</p>
+                <p className="text-xs text-stone-500 dark:text-stone-400 max-w-xl">
+                  {justGeneratedCoupon.description}
+                </p>
               </div>
 
-              {/* Fast Action Buttons for Admin */}
-              <div className="flex flex-wrap items-center gap-2 w-full md:w-auto">
+              {/* Action buttons: Symmetrical and responsive on mobile/tablet */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 w-full sm:w-auto shrink-0 pt-2 sm:pt-0">
                 <button
                   type="button"
                   onClick={() => handleCopyCode(justGeneratedCoupon.code)}
-                  className="flex-1 md:flex-none px-4 py-2.5 rounded-xl bg-white text-gray-950 text-xs font-bold hover:bg-gray-100 flex items-center justify-center gap-1.5 transition-all active:scale-95 cursor-pointer shadow-sm"
+                  className="px-3.5 py-2.5 rounded-xl bg-stone-100 dark:bg-white/5 hover:bg-stone-200 dark:hover:bg-white/10 text-stone-900 dark:text-white text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors cursor-pointer border border-stone-200/60 dark:border-white/5 shadow-2xs"
                 >
                   {copiedCode === justGeneratedCoupon.code ? (
                     <>
-                      <Check className="w-3.5 h-3.5 text-emerald-600" />
-                      <span>¡Copiado!</span>
+                      <Check className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                      <span>Copiado</span>
                     </>
                   ) : (
                     <>
@@ -925,7 +943,7 @@ export function DiscountCouponsTab() {
                 <button
                   type="button"
                   onClick={() => handleShareWhatsAppPng(justGeneratedCoupon)}
-                  className="flex-1 md:flex-none px-4 py-2.5 rounded-xl bg-[#25D366] hover:bg-[#20ba59] text-white text-xs font-bold flex items-center justify-center gap-1.5 transition-all active:scale-95 cursor-pointer shadow-sm"
+                  className="px-3.5 py-2.5 rounded-xl bg-[#25D366] hover:bg-[#20ba59] text-white text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors cursor-pointer shadow-xs"
                 >
                   <WhatsAppIcon className="w-3.5 h-3.5 fill-current" />
                   <span>Compartir</span>
@@ -934,19 +952,10 @@ export function DiscountCouponsTab() {
                 <button
                   type="button"
                   onClick={() => setAnalyticsCoupon(justGeneratedCoupon)}
-                  className="flex-1 md:flex-none px-4 py-2.5 rounded-xl bg-purple-500/20 hover:bg-purple-500/30 text-purple-200 text-xs font-bold flex items-center justify-center gap-1.5 transition-all active:scale-95 cursor-pointer shadow-sm border border-purple-500/30"
+                  className="px-3.5 py-2.5 rounded-xl bg-stone-900 dark:bg-white text-white dark:text-stone-900 text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors cursor-pointer shadow-xs"
                 >
                   <BarChart3 className="w-3.5 h-3.5" />
                   <span>Ver Métricas</span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => setJustGeneratedCoupon(null)}
-                  className="p-2 rounded-xl bg-white/10 hover:bg-white/20 text-gray-300 hover:text-white transition-all cursor-pointer"
-                  title="Cerrar aviso"
-                >
-                  <X className="w-4 h-4" />
                 </button>
               </div>
             </div>
@@ -968,25 +977,25 @@ export function DiscountCouponsTab() {
           >
             <form
               onSubmit={handleCreateManual}
-              className="p-6 sm:p-8 rounded-[2rem] bg-white dark:bg-[#202022] border border-black/10 dark:border-white/10 shadow-sm space-y-6"
+              className="p-6 sm:p-8 rounded-3xl bg-white dark:bg-[#1a1a1c] border border-stone-200/80 dark:border-white/10 shadow-xs space-y-6"
             >
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between pb-3 border-b border-stone-100 dark:border-white/5">
                 <div>
-                  <h3 className="text-lg font-bold text-gray-950 dark:text-white">
+                  <h3 className="text-base sm:text-lg font-bold text-stone-950 dark:text-white">
                     Personalizar Nuevo Cupón
                   </h3>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">
-                    Define las reglas comerciales precisas para tu nueva campaña de incentivos.
+                  <p className="text-xs text-stone-500 dark:text-stone-400">
+                    Define las reglas comerciales y alcances de tu campaña de incentivos.
                   </p>
                 </div>
-                <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-stone-100 dark:bg-stone-800 text-stone-600 dark:text-stone-300">
+                <span className="text-xs font-semibold px-3 py-1 rounded-full bg-stone-100 dark:bg-white/5 text-stone-700 dark:text-stone-300 border border-stone-200/60 dark:border-white/5">
                   Personalizado
                 </span>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
                 <div>
-                  <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5">
+                  <label className="block text-[11px] font-bold uppercase tracking-wider text-stone-600 dark:text-stone-400 mb-1.5">
                     Código del Cupón (Ej: LUMINA-VIP)
                   </label>
                   <input
@@ -995,12 +1004,12 @@ export function DiscountCouponsTab() {
                     placeholder="PROMO2026"
                     value={formCode}
                     onChange={(e) => setFormCode(e.target.value.toUpperCase())}
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 bg-transparent text-sm font-mono text-gray-900 dark:text-white outline-none focus:border-black dark:focus:border-white transition-all uppercase"
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-stone-200/80 dark:border-white/10 bg-stone-50/80 dark:bg-white/[0.04] text-sm font-mono font-semibold text-stone-900 dark:text-white placeholder:text-stone-400 focus:border-stone-900 dark:focus:border-white focus:ring-2 focus:ring-stone-900/10 dark:focus:ring-white/10 transition-all outline-none uppercase shadow-2xs"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5">
+                  <label className="block text-[11px] font-bold uppercase tracking-wider text-stone-600 dark:text-stone-400 mb-1.5">
                     Nombre / Título de Campaña
                   </label>
                   <input
@@ -1008,140 +1017,147 @@ export function DiscountCouponsTab() {
                     placeholder="Descuento Primavera"
                     value={formTitle}
                     onChange={(e) => setFormTitle(e.target.value)}
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 bg-transparent text-sm text-gray-900 dark:text-white outline-none focus:border-black dark:focus:border-white transition-all"
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-stone-200/80 dark:border-white/10 bg-stone-50/80 dark:bg-white/[0.04] text-sm text-stone-900 dark:text-white placeholder:text-stone-400 focus:border-stone-900 dark:focus:border-white focus:ring-2 focus:ring-stone-900/10 dark:focus:ring-white/10 transition-all outline-none shadow-2xs"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5">
+                  <label className="block text-[11px] font-bold uppercase tracking-wider text-stone-600 dark:text-stone-400 mb-1.5">
                     Tipo de Beneficio
                   </label>
-                  <select
+                  <BeUISelectField
                     value={formDiscountType}
-                    onChange={(e) => setFormDiscountType(e.target.value as "percent" | "fixed" | "free_shipping")}
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-[#1a1a1c] text-sm text-gray-900 dark:text-white outline-none focus:border-black dark:focus:border-white transition-all"
-                  >
-                    <option value="percent">Porcentaje de Descuento (%)</option>
-                    <option value="free_shipping">Envío 100% Gratis</option>
-                  </select>
+                    onChange={(val) => setFormDiscountType(val as "percent" | "fixed" | "free_shipping")}
+                    options={[
+                      { value: "percent", label: "Porcentaje de Descuento (%)" },
+                      { value: "free_shipping", label: "Envío 100% Gratis" },
+                    ]}
+                    placeholder="Seleccionar beneficio"
+                  />
                 </div>
 
                 {formDiscountType === "percent" && (
                   <div>
-                    <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5">
+                    <label className="block text-[11px] font-bold uppercase tracking-wider text-stone-600 dark:text-stone-400 mb-1.5">
                       Porcentaje (% de Descuento)
                     </label>
-                    <input
-                      type="number"
-                      min="1"
-                      max="90"
-                      value={formDiscountVal}
-                      onChange={(e) => setFormDiscountVal(Number(e.target.value))}
-                      className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 bg-transparent text-sm text-gray-900 dark:text-white outline-none focus:border-black dark:focus:border-white transition-all"
+                    <div className="relative">
+                      <input
+                        type="number"
+                        min="1"
+                        max="90"
+                        value={formDiscountVal}
+                        onChange={(e) => setFormDiscountVal(Number(e.target.value))}
+                        className="w-full pl-3.5 pr-8 py-2.5 rounded-xl border border-stone-200/80 dark:border-white/10 bg-stone-50/80 dark:bg-white/[0.04] text-sm font-semibold text-stone-900 dark:text-white outline-none focus:border-stone-900 dark:focus:border-white focus:ring-2 focus:ring-stone-900/10 dark:focus:ring-white/10 transition-all shadow-2xs"
+                      />
+                      <span className="absolute right-3.5 top-1/2 -translate-y-1/2 text-xs font-bold text-stone-400">%</span>
+                    </div>
+                  </div>
+                )}
+
+                <div>
+                  <label className="block text-[11px] font-bold uppercase tracking-wider text-stone-600 dark:text-stone-400 mb-1.5">
+                    Alcance Comercial
+                  </label>
+                  <BeUISelectField
+                    value={formScope}
+                    onChange={(val) => setFormScope(val as "all" | "niche")}
+                    options={[
+                      { value: "all", label: "Toda la Tienda (Descuento Global)" },
+                      { value: "niche", label: "Colección Específica (Por Nicho)" },
+                    ]}
+                    placeholder="Seleccionar alcance"
+                  />
+                </div>
+
+                {formScope === "niche" && (
+                  <div>
+                    <label className="block text-[11px] font-bold uppercase tracking-wider text-stone-600 dark:text-stone-400 mb-1.5">
+                      Colección / Nicho Seleccionado
+                    </label>
+                    <BeUISelectField
+                      value={formNiche}
+                      onChange={(val) => setFormNiche(val)}
+                      options={[
+                        { value: "Iluminación", label: "Iluminación de Ambiente" },
+                        { value: "Aromaterapia", label: "Aromaterapia & Esencias" },
+                        { value: "Home Office", label: "Home Office & Ergonomía" },
+                        { value: "Textiles", label: "Textiles & Lana" },
+                        { value: "Cerámica", label: "Cerámica de Autor" },
+                        { value: "Decoración", label: "Decoración & Esculturas" },
+                        { value: "Cocina", label: "Cocina & Barista" },
+                        { value: "Bienestar", label: "Bienestar & Descanso" },
+                      ]}
+                      placeholder="Seleccionar colección"
                     />
                   </div>
                 )}
 
                 <div>
-                  <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5">
-                    Alcance del Descuento
-                  </label>
-                  <select
-                    value={formScope}
-                    onChange={(e) => setFormScope(e.target.value as "all" | "niche")}
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-[#1a1a1c] text-sm text-gray-900 dark:text-white outline-none focus:border-black dark:focus:border-white transition-all"
-                  >
-                    <option value="all">Toda la Tienda (Descuento Global)</option>
-                    <option value="niche">Colección Específica (Por Nicho)</option>
-                  </select>
-                </div>
-
-                {formScope === "niche" && (
-                  <div>
-                    <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5">
-                      Colección / Nicho Seleccionado
-                    </label>
-                    <select
-                      value={formNiche}
-                      onChange={(e) => setFormNiche(e.target.value)}
-                      className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-[#1a1a1c] text-sm text-gray-900 dark:text-white outline-none focus:border-black dark:focus:border-white transition-all"
-                    >
-                      <option value="Iluminación">Iluminación de Ambiente</option>
-                      <option value="Aromaterapia">Aromaterapia & Esencias</option>
-                      <option value="Home Office">Home Office & Ergonomía</option>
-                      <option value="Textiles">Textiles & Lana</option>
-                      <option value="Cerámica">Cerámica de Autor</option>
-                      <option value="Decoración">Decoración & Esculturas</option>
-                      <option value="Cocina">Cocina & Barista</option>
-                      <option value="Bienestar">Bienestar & Descanso</option>
-                    </select>
-                  </div>
-                )}
-
-                <div>
-                  <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5">
+                  <label className="block text-[11px] font-bold uppercase tracking-wider text-stone-600 dark:text-stone-400 mb-1.5">
                     Compra Mínima ($ USD)
                   </label>
-                  <input
-                    type="number"
-                    min="0"
-                    step="5"
-                    placeholder="0 (Sin mínimo)"
-                    value={formMinOrder}
-                    onChange={(e) => setFormMinOrder(Number(e.target.value))}
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 bg-transparent text-sm text-gray-900 dark:text-white outline-none focus:border-black dark:focus:border-white transition-all"
+                  <div className="relative">
+                    <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-xs font-bold text-stone-400">$</span>
+                    <input
+                      type="number"
+                      min="0"
+                      step="5"
+                      placeholder="0 (Sin mínimo)"
+                      value={formMinOrder}
+                      onChange={(e) => setFormMinOrder(Number(e.target.value))}
+                      className="w-full pl-7 pr-3.5 py-2.5 rounded-xl border border-stone-200/80 dark:border-white/10 bg-stone-50/80 dark:bg-white/[0.04] text-sm font-semibold text-stone-900 dark:text-white outline-none focus:border-stone-900 dark:focus:border-white focus:ring-2 focus:ring-stone-900/10 dark:focus:ring-white/10 transition-all shadow-2xs"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-bold uppercase tracking-wider text-stone-600 dark:text-stone-400 mb-1.5">
+                    Vigencia del Cupón
+                  </label>
+                  <BeUISelectField
+                    value={String(formDurationDays)}
+                    onChange={(val) => setFormDurationDays(val === "none" ? "none" : Number(val))}
+                    options={[
+                      { value: "7", label: "7 días" },
+                      { value: "15", label: "15 días" },
+                      { value: "30", label: "30 días" },
+                      { value: "none", label: "Sin fecha de caducidad" },
+                    ]}
+                    placeholder="Seleccionar vigencia"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5">
-                    Vigencia del Cupón
-                  </label>
-                  <select
-                    value={formDurationDays}
-                    onChange={(e) =>
-                      setFormDurationDays(e.target.value === "none" ? "none" : Number(e.target.value))
-                    }
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-[#1a1a1c] text-sm text-gray-900 dark:text-white outline-none focus:border-black dark:focus:border-white transition-all"
-                  >
-                    <option value={7}>7 días</option>
-                    <option value={15}>15 días</option>
-                    <option value={30}>30 días</option>
-                    <option value="none">Sin fecha de caducidad</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5">
+                  <label className="block text-[11px] font-bold uppercase tracking-wider text-stone-600 dark:text-stone-400 mb-1.5">
                     Límite de Canjes
                   </label>
-                  <select
-                    value={formMaxUses}
-                    onChange={(e) =>
-                      setFormMaxUses(e.target.value === "none" ? "none" : Number(e.target.value))
-                    }
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-[#1a1a1c] text-sm text-gray-900 dark:text-white outline-none focus:border-black dark:focus:border-white transition-all"
-                  >
-                    <option value={10}>10 canjes máximos</option>
-                    <option value={30}>30 canjes</option>
-                    <option value={50}>50 canjes</option>
-                    <option value={100}>100 canjes</option>
-                    <option value="none">Ilimitado</option>
-                  </select>
+                  <BeUISelectField
+                    value={String(formMaxUses)}
+                    onChange={(val) => setFormMaxUses(val === "none" ? "none" : Number(val))}
+                    options={[
+                      { value: "10", label: "10 canjes máximos" },
+                      { value: "30", label: "30 canjes" },
+                      { value: "50", label: "50 canjes" },
+                      { value: "100", label: "100 canjes" },
+                      { value: "none", label: "Ilimitado" },
+                    ]}
+                    placeholder="Seleccionar límite"
+                  />
                 </div>
               </div>
 
-              <div className="flex justify-end gap-3 pt-2 border-t border-gray-100 dark:border-white/5">
+              <div className="flex justify-end gap-3 pt-3 border-t border-stone-100 dark:border-white/5">
                 <button
                   type="button"
                   onClick={() => setShowManualForm(false)}
-                  className="px-4 py-2.5 rounded-xl text-xs font-semibold text-gray-500 hover:text-gray-800 dark:hover:text-gray-200 cursor-pointer"
+                  className="px-4 py-2.5 rounded-xl text-xs font-semibold text-stone-500 hover:text-stone-800 dark:hover:text-stone-200 cursor-pointer"
                 >
                   Cancelar
                 </button>
                 <button
                   type="submit"
-                  className="px-6 py-2.5 rounded-xl bg-gray-950 dark:bg-white text-white dark:text-gray-950 text-xs font-bold hover:bg-black dark:hover:bg-gray-100 transition-all shadow-sm active:scale-95 cursor-pointer"
+                  className="px-6 py-2.5 rounded-xl bg-stone-950 dark:bg-white text-white dark:text-stone-950 text-xs font-bold hover:bg-stone-800 dark:hover:bg-stone-100 transition-colors shadow-xs active:scale-95 cursor-pointer"
                 >
                   Guardar y Activar Cupón
                 </button>
@@ -1244,15 +1260,15 @@ export function DiscountCouponsTab() {
       {/* 3. SEARCH & FILTER CONTROLS (ADMIN vs CLIENT)                         */}
       {/* ===================================================================== */}
       <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
-        <div className="flex items-center gap-1.5 p-1 rounded-2xl bg-gray-100/80 dark:bg-[#202022] overflow-x-auto hide-scrollbar">
+        <div className="flex items-center gap-1.5 p-1 rounded-2xl bg-stone-100/90 dark:bg-[#1a1a1c] border border-stone-200/60 dark:border-white/5 overflow-x-auto hide-scrollbar">
           {isAdmin ? (
             <>
               <button
                 onClick={() => setActiveFilter("all")}
                 className={`px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all cursor-pointer ${
                   activeFilter === "all"
-                    ? "bg-white dark:bg-white/10 text-gray-900 dark:text-white shadow-xs"
-                    : "text-gray-500 hover:text-gray-900 dark:text-gray-400"
+                    ? "bg-white dark:bg-white/10 text-stone-900 dark:text-white shadow-xs"
+                    : "text-stone-500 hover:text-stone-900 dark:text-stone-400"
                 }`}
               >
                 Todos ({coupons.length})
@@ -1261,28 +1277,28 @@ export function DiscountCouponsTab() {
                 onClick={() => setActiveFilter("storewide")}
                 className={`px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all cursor-pointer ${
                   activeFilter === "storewide"
-                    ? "bg-white dark:bg-white/10 text-gray-900 dark:text-white shadow-xs"
-                    : "text-gray-500 hover:text-gray-900 dark:text-gray-400"
+                    ? "bg-white dark:bg-white/10 text-stone-900 dark:text-white shadow-xs"
+                    : "text-stone-500 hover:text-stone-900 dark:text-stone-400"
                 }`}
               >
-                🏛️ Toda la Tienda (Global)
+                Toda la Tienda (Global)
               </button>
               <button
                 onClick={() => setActiveFilter("niche")}
                 className={`px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all cursor-pointer ${
                   activeFilter === "niche"
-                    ? "bg-white dark:bg-white/10 text-gray-900 dark:text-white shadow-xs"
-                    : "text-gray-500 hover:text-gray-900 dark:text-gray-400"
+                    ? "bg-white dark:bg-white/10 text-stone-900 dark:text-white shadow-xs"
+                    : "text-stone-500 hover:text-stone-900 dark:text-stone-400"
                 }`}
               >
-                🌿 Por Colección (Nicho)
+                Por Colección (Nicho)
               </button>
               <button
                 onClick={() => setActiveFilter("active")}
                 className={`px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all cursor-pointer ${
                   activeFilter === "active"
-                    ? "bg-white dark:bg-white/10 text-gray-900 dark:text-white shadow-xs"
-                    : "text-gray-500 hover:text-gray-900 dark:text-gray-400"
+                    ? "bg-white dark:bg-white/10 text-stone-900 dark:text-white shadow-xs"
+                    : "text-stone-500 hover:text-stone-900 dark:text-stone-400"
                 }`}
               >
                 Vigentes ({coupons.filter((c) => c.isActive).length})
@@ -1294,8 +1310,8 @@ export function DiscountCouponsTab() {
                 onClick={() => setClientFilter("all")}
                 className={`px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all cursor-pointer ${
                   clientFilter === "all"
-                    ? "bg-white dark:bg-white/10 text-gray-900 dark:text-white shadow-xs"
-                    : "text-gray-500 hover:text-gray-900 dark:text-gray-400"
+                    ? "bg-white dark:bg-white/10 text-stone-900 dark:text-white shadow-xs"
+                    : "text-stone-500 hover:text-stone-900 dark:text-stone-400"
                 }`}
               >
                 Todos ({coupons.length})
@@ -1304,41 +1320,41 @@ export function DiscountCouponsTab() {
                 onClick={() => setClientFilter("available")}
                 className={`px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all cursor-pointer ${
                   clientFilter === "available"
-                    ? "bg-white dark:bg-white/10 text-gray-900 dark:text-white shadow-xs"
-                    : "text-gray-500 hover:text-gray-900 dark:text-gray-400"
+                    ? "bg-white dark:bg-white/10 text-stone-900 dark:text-white shadow-xs"
+                    : "text-stone-500 hover:text-stone-900 dark:text-stone-400"
                 }`}
               >
-                ✨ Disponibles para Canjear ({clientStats.availableCount})
+                Disponibles para Canjear ({clientStats.availableCount})
               </button>
               <button
                 onClick={() => setClientFilter("used")}
                 className={`px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all cursor-pointer ${
                   clientFilter === "used"
-                    ? "bg-white dark:bg-white/10 text-gray-900 dark:text-white shadow-xs"
-                    : "text-gray-500 hover:text-gray-900 dark:text-gray-400"
+                    ? "bg-white dark:bg-white/10 text-stone-900 dark:text-white shadow-xs"
+                    : "text-stone-500 hover:text-stone-900 dark:text-stone-400"
                 }`}
               >
-                🏷️ Ya Utilizados / Historial ({clientStats.usedCount})
+                Historial de Canjes ({clientStats.usedCount})
               </button>
               <button
                 onClick={() => setClientFilter("storewide")}
                 className={`px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all cursor-pointer ${
                   clientFilter === "storewide"
-                    ? "bg-white dark:bg-white/10 text-gray-900 dark:text-white shadow-xs"
-                    : "text-gray-500 hover:text-gray-900 dark:text-gray-400"
+                    ? "bg-white dark:bg-white/10 text-stone-900 dark:text-white shadow-xs"
+                    : "text-stone-500 hover:text-stone-900 dark:text-stone-400"
                 }`}
               >
-                🏛️ Descuentos Tienda
+                Descuentos Tienda
               </button>
               <button
                 onClick={() => setClientFilter("niche")}
                 className={`px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all cursor-pointer ${
                   clientFilter === "niche"
-                    ? "bg-white dark:bg-white/10 text-gray-900 dark:text-white shadow-xs"
-                    : "text-gray-500 hover:text-gray-900 dark:text-gray-400"
+                    ? "bg-white dark:bg-white/10 text-stone-900 dark:text-white shadow-xs"
+                    : "text-stone-500 hover:text-stone-900 dark:text-stone-400"
                 }`}
               >
-                🌿 Nichos de Autor
+                Nichos de Autor
               </button>
             </>
           )}

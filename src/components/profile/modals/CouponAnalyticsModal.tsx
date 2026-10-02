@@ -172,11 +172,11 @@ export function CouponAnalyticsModal({
                         : `${coupon.discountPercent}% OFF`}
                     </span>
                     <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-gray-200 dark:bg-white/10 text-gray-700 dark:text-gray-300">
-                      {coupon.scope === "all" ? "🏛️ Tienda General" : `🌿 ${coupon.targetNiche}`}
+                      {coupon.scope === "all" ? "Tienda General" : coupon.targetNiche}
                     </span>
                   </div>
                   <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-                    Auditoría de Canjes & Métricas de Rendimiento en Tiempo Real
+                    Métricas de Rendimiento en Tiempo Real
                   </p>
                 </div>
               </div>
@@ -192,45 +192,45 @@ export function CouponAnalyticsModal({
             </div>
 
             {/* Modal Body */}
-            <div data-lenis-prevent="true" className="p-5 sm:p-6 overflow-y-auto overscroll-contain space-y-6 flex-1">
+            <div data-lenis-prevent="true" className="p-4 sm:p-6 overflow-y-auto overscroll-contain space-y-5 sm:space-y-6 flex-1">
               {/* KPI Bar for this Coupon */}
-              <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-                <div className="p-4 rounded-2xl bg-gray-50 dark:bg-white/[0.03] border border-gray-100 dark:border-white/5 space-y-1">
-                  <div className="flex items-center gap-2 text-xs font-semibold text-gray-500 dark:text-gray-400">
-                    <ShoppingBag className="w-3.5 h-3.5 text-blue-500" />
-                    <span>Canjes Totales</span>
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-3">
+                <div className="p-3 sm:p-4 rounded-2xl bg-gray-50 dark:bg-white/[0.03] border border-gray-100 dark:border-white/5 space-y-1">
+                  <div className="flex items-center gap-1.5 text-[11px] sm:text-xs font-semibold text-gray-500 dark:text-gray-400 whitespace-nowrap">
+                    <ShoppingBag className="w-3.5 h-3.5 text-blue-500 shrink-0" />
+                    <span className="truncate">Canjes Totales</span>
                   </div>
-                  <p className="text-2xl font-black text-gray-950 dark:text-white">
+                  <p className="text-xl sm:text-2xl font-black text-gray-950 dark:text-white">
                     {allRedemptions.length}
                   </p>
                 </div>
 
-                <div className="p-4 rounded-2xl bg-gray-50 dark:bg-white/[0.03] border border-gray-100 dark:border-white/5 space-y-1">
-                  <div className="flex items-center gap-2 text-xs font-semibold text-gray-500 dark:text-gray-400">
-                    <DollarSign className="w-3.5 h-3.5 text-emerald-500" />
-                    <span>Ahorro Concedido</span>
+                <div className="p-3 sm:p-4 rounded-2xl bg-gray-50 dark:bg-white/[0.03] border border-gray-100 dark:border-white/5 space-y-1">
+                  <div className="flex items-center gap-1.5 text-[11px] sm:text-xs font-semibold text-gray-500 dark:text-gray-400 whitespace-nowrap">
+                    <DollarSign className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+                    <span className="whitespace-nowrap">Ahorro Concedido</span>
                   </div>
-                  <p className="text-2xl font-black text-emerald-600 dark:text-emerald-400">
+                  <p className="text-xl sm:text-2xl font-black text-emerald-600 dark:text-emerald-400">
                     ${totalSaved.toFixed(2)}
                   </p>
                 </div>
 
-                <div className="p-4 rounded-2xl bg-gray-50 dark:bg-white/[0.03] border border-gray-100 dark:border-white/5 space-y-1">
-                  <div className="flex items-center gap-2 text-xs font-semibold text-gray-500 dark:text-gray-400">
-                    <Receipt className="w-3.5 h-3.5 text-purple-500" />
-                    <span>Ticket Promedio</span>
+                <div className="p-3 sm:p-4 rounded-2xl bg-gray-50 dark:bg-white/[0.03] border border-gray-100 dark:border-white/5 space-y-1">
+                  <div className="flex items-center gap-1.5 text-[11px] sm:text-xs font-semibold text-gray-500 dark:text-gray-400 whitespace-nowrap">
+                    <Receipt className="w-3.5 h-3.5 text-purple-500 shrink-0" />
+                    <span className="truncate">Ticket Promedio</span>
                   </div>
-                  <p className="text-2xl font-black text-gray-950 dark:text-white">
+                  <p className="text-xl sm:text-2xl font-black text-gray-950 dark:text-white">
                     ${avgTicket.toFixed(2)}
                   </p>
                 </div>
 
-                <div className="p-4 rounded-2xl bg-gray-50 dark:bg-white/[0.03] border border-gray-100 dark:border-white/5 space-y-1">
-                  <div className="flex items-center gap-2 text-xs font-semibold text-gray-500 dark:text-gray-400">
-                    <Share2 className="w-3.5 h-3.5 text-amber-500" />
-                    <span>Compartido</span>
+                <div className="p-3 sm:p-4 rounded-2xl bg-gray-50 dark:bg-white/[0.03] border border-gray-100 dark:border-white/5 space-y-1">
+                  <div className="flex items-center gap-1.5 text-[11px] sm:text-xs font-semibold text-gray-500 dark:text-gray-400 whitespace-nowrap">
+                    <Share2 className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+                    <span className="truncate">Compartido</span>
                   </div>
-                  <p className="text-2xl font-black text-gray-950 dark:text-white">
+                  <p className="text-xl sm:text-2xl font-black text-gray-950 dark:text-white">
                     {coupon.shareCount || 0} veces
                   </p>
                 </div>
@@ -302,12 +302,8 @@ export function CouponAnalyticsModal({
                               {record.customerEmail}
                             </p>
                             <div className="flex items-center gap-1.5 mt-0.5">
-                              <span className="inline-flex items-center gap-1 text-[9.5px] font-bold text-emerald-600 dark:text-emerald-400">
-                                <CheckCircle2 className="w-3 h-3" />
-                                <span>Verificado</span>
-                              </span>
-                              <span className="text-[9.5px] text-gray-400 font-mono">
-                                • #{record.orderId}
+                              <span className="text-[10px] text-gray-400 font-mono">
+                                Pedido #{record.orderId}
                               </span>
                             </div>
                           </div>
