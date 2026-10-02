@@ -143,7 +143,11 @@ function DropiIsotipo({ className = "w-6 h-6" }: { className?: string }) {
   );
 }
 
-export function ExcelExportRadialMenu() {
+interface ExcelExportRadialMenuProps {
+  onOpenChange?: (open: boolean) => void;
+}
+
+export function ExcelExportRadialMenu({ onOpenChange }: ExcelExportRadialMenuProps = {}) {
   const brand = useBrand();
   const [isOpen, setIsOpen] = useState(false);
   const [ordersSubmenuOpen, setOrdersSubmenuOpen] = useState(false);
@@ -158,6 +162,10 @@ export function ExcelExportRadialMenu() {
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  useEffect(() => {
+    onOpenChange?.(isOpen);
+  }, [isOpen, onOpenChange]);
 
   const handleCloseMenu = () => {
     setIsOpen(false);

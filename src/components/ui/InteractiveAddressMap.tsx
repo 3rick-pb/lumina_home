@@ -3,7 +3,7 @@
 import React, { useEffect, useRef, useState, useCallback } from "react";
 import mapboxgl from "mapbox-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
-import { Plus, Minus, Crosshair } from "lucide-react";
+import { Plus, Minus, Crosshair, Maximize2, Minimize2 } from "lucide-react";
 
 export interface ResolvedMapAddress {
   street?: string;
@@ -102,6 +102,13 @@ export default function InteractiveAddressMap({
     width: 360,
     height: 220,
   });
+
+  // Fullscreen and Multi-touch Gesture refs
+  const mapRootRef = useRef<HTMLDivElement>(null);
+  const [isFullscreen, setIsFullscreen] = useState<boolean>(false);
+  const activePointersRef = useRef<Map<number, { x: number; y: number }>>(new Map());
+  const pinchStartDistRef = useRef<number | null>(null);
+  const pinchStartZoomRef = useRef<number | null>(null);
 
   // Native Mapbox GL JS instance refs
   const mapboxContainerRef = useRef<HTMLDivElement>(null);
@@ -413,9 +420,25 @@ export default function InteractiveAddressMap({
     ctx.restore();
   }, [useNativeMapbox, center.lat, center.lng, zoom, renderTick, dimensions]);
 
-  // Background Map Panning & Tap-To-Center
+  // Background Map Panning, 2-Finger Touch Pinch-to-Zoom & Tap-To-Center
   const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
     if (useNativeMapbox) return;
+    try {
+      e.currentTarget.setPointerCapture(e.pointerId);
+    } catch {}
+
+    activePointersRef.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
+
+    if (activePointersRef.current.size >= 2) {
+      mapDragRef.current = null;
+      setIsPanning(false);
+      const pts = Array.from(activePointersRef.current.values());
+      const dist = Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y);
+      pinchStartDistRef.current = dist > 0 ? dist : 1;
+      pinchStartZoomRef.current = zoom;
+      return;
+    }
+
     mapDragRef.current = {
       startX: e.clientX,
       startY: e.clientY,
@@ -423,13 +446,32 @@ export default function InteractiveAddressMap({
       startCenterLng: center.lng,
       isMoving: false,
     };
-    try {
-      e.currentTarget.setPointerCapture(e.pointerId);
-    } catch {}
   };
 
   const handlePointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
     if (useNativeMapbox) return;
+    if (!activePointersRef.current.has(e.pointerId)) return;
+    activePointersRef.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
+
+    // Handle 2-Finger Touch Pinch Zoom
+    if (activePointersRef.current.size >= 2) {
+      e.preventDefault();
+      e.stopPropagation();
+      const pts = Array.from(activePointersRef.current.values());
+      const curDist = Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y);
+      if (pinchStartDistRef.current && pinchStartDistRef.current > 10) {
+        const ratio = curDist / pinchStartDistRef.current;
+        const zoomDelta = Math.log2(ratio) * 1.5;
+        const baseZ = pinchStartZoomRef.current ?? zoom;
+        // Hard boundary clamp strictly matching zoom buttons and wheel [MIN_ZOOM, MAX_ZOOM]
+        const nextZoom = Number(Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, baseZ + zoomDelta)).toFixed(2));
+        if (nextZoom !== zoom) {
+          setZoom(nextZoom);
+        }
+      }
+      return;
+    }
+
     const start = mapDragRef.current;
     if (!start) return;
 
@@ -458,11 +500,43 @@ export default function InteractiveAddressMap({
 
   const handlePointerUp = (e: React.PointerEvent<HTMLDivElement>) => {
     if (useNativeMapbox) return;
-    const start = mapDragRef.current;
-    mapDragRef.current = null;
+    activePointersRef.current.delete(e.pointerId);
     try {
       e.currentTarget.releasePointerCapture(e.pointerId);
     } catch {}
+
+    if (activePointersRef.current.size >= 2) {
+      const pts = Array.from(activePointersRef.current.values());
+      pinchStartDistRef.current = Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y);
+      pinchStartZoomRef.current = zoom;
+      return;
+    }
+
+    if (activePointersRef.current.size === 1) {
+      pinchStartDistRef.current = null;
+      pinchStartZoomRef.current = null;
+      const remaining = Array.from(activePointersRef.current.values())[0];
+      mapDragRef.current = {
+        startX: remaining.x,
+        startY: remaining.y,
+        startCenterLat: center.lat,
+        startCenterLng: center.lng,
+        isMoving: false,
+      };
+      return;
+    }
+
+    const wasPinching = pinchStartDistRef.current !== null;
+    pinchStartDistRef.current = null;
+    pinchStartZoomRef.current = null;
+
+    if (wasPinching) {
+      triggerReverseGeocode(center.lat, center.lng);
+      return;
+    }
+
+    const start = mapDragRef.current;
+    mapDragRef.current = null;
 
     const container = fallbackContainerRef.current;
     if (!container) return;
@@ -513,11 +587,104 @@ export default function InteractiveAddressMap({
     }
   };
 
+  const toggleFullscreen = useCallback(async () => {
+    try {
+      const container = mapRootRef.current;
+      if (!container) return;
+
+      const isFs = Boolean(
+        document.fullscreenElement ||
+        (document as unknown as { webkitFullscreenElement?: Element }).webkitFullscreenElement
+      );
+
+      if (!isFs) {
+        if (container.requestFullscreen) {
+          await container.requestFullscreen();
+        } else if ((container as unknown as { webkitRequestFullscreen?: () => Promise<void> }).webkitRequestFullscreen) {
+          await (container as unknown as { webkitRequestFullscreen: () => Promise<void> }).webkitRequestFullscreen();
+        }
+        setIsFullscreen(true);
+
+        // Turn horizontal / landscape on mobile/small screens like video player
+        const isMobileScreen =
+          typeof window !== "undefined" &&
+          (window.innerWidth < 768 || window.innerHeight > window.innerWidth);
+
+        if (isMobileScreen) {
+          try {
+            const screenAny = screen as unknown as { orientation?: { lock?: (o: string) => Promise<void> } };
+            if (screenAny?.orientation?.lock) {
+              await screenAny.orientation.lock("landscape");
+            }
+          } catch (orientErr) {
+            console.log("Screen orientation lock info:", orientErr);
+          }
+        }
+      } else {
+        if (document.exitFullscreen) {
+          await document.exitFullscreen();
+        } else if ((document as unknown as { webkitExitFullscreen?: () => Promise<void> }).webkitExitFullscreen) {
+          await (document as unknown as { webkitExitFullscreen: () => Promise<void> }).webkitExitFullscreen();
+        }
+        try {
+          const screenAny = screen as unknown as { orientation?: { unlock?: () => void } };
+          if (screenAny?.orientation?.unlock) {
+            screenAny.orientation.unlock();
+          }
+        } catch {}
+        setIsFullscreen(false);
+      }
+    } catch (err) {
+      console.warn("Fullscreen toggle error:", err);
+    }
+  }, []);
+
+  useEffect(() => {
+    const handleFsChange = () => {
+      const isFs = Boolean(
+        document.fullscreenElement ||
+        (document as unknown as { webkitFullscreenElement?: Element }).webkitFullscreenElement
+      );
+      setIsFullscreen(isFs);
+      if (!isFs) {
+        try {
+          const screenAny = screen as unknown as { orientation?: { unlock?: () => void } };
+          if (screenAny?.orientation?.unlock) {
+            screenAny.orientation.unlock();
+          }
+        } catch {}
+      }
+    };
+    document.addEventListener("fullscreenchange", handleFsChange);
+    document.addEventListener("webkitfullscreenchange", handleFsChange);
+    return () => {
+      document.removeEventListener("fullscreenchange", handleFsChange);
+      document.removeEventListener("webkitfullscreenchange", handleFsChange);
+    };
+  }, []);
+
   return (
     <div
+      ref={mapRootRef}
       data-lenis-prevent="true"
-      className={`relative select-none ${className}`}
+      className={`relative select-none ${
+        isFullscreen
+          ? "fixed inset-0 z-[99999] w-screen h-screen rounded-none border-none bg-black"
+          : className
+      }`}
     >
+      {/* Floating Exit Fullscreen Button in Fullscreen Mode */}
+      {isFullscreen && (
+        <button
+          type="button"
+          onClick={toggleFullscreen}
+          className="absolute top-3 left-3 z-30 flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-black/80 hover:bg-black/95 backdrop-blur-md border border-white/20 text-white text-xs font-semibold shadow-2xl active:scale-95 transition-all cursor-pointer"
+        >
+          <Minimize2 className="w-3.5 h-3.5 text-blue-400" />
+          <span>Salir de pantalla completa</span>
+        </button>
+      )}
+
       {/* 1. Native Mapbox GL JS Container (Active when valid NEXT_PUBLIC_MAPBOX_TOKEN is present) */}
       {useNativeMapbox ? (
         <div ref={mapboxContainerRef} className="w-full h-full" />
@@ -595,11 +762,24 @@ export default function InteractiveAddressMap({
         </div>
       </div>
 
-      {/* Zoom & Recenter Controls */}
+      {/* Zoom, Recenter & Fullscreen Controls */}
       <div
         className="absolute bottom-2.5 right-2.5 flex flex-col gap-1 pointer-events-auto z-10"
         onPointerDown={(e) => e.stopPropagation()}
       >
+        <button
+          type="button"
+          onClick={toggleFullscreen}
+          title={isFullscreen ? "Salir de pantalla completa" : "Pantalla completa (Gira horizontal en móviles)"}
+          className="w-7 h-7 rounded-lg bg-white/95 dark:bg-black/85 border border-black/10 dark:border-white/15 shadow-sm flex items-center justify-center text-gray-800 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-white/10 cursor-pointer active:scale-95 transition-all"
+        >
+          {isFullscreen ? (
+            <Minimize2 className="w-3.5 h-3.5 text-blue-500" />
+          ) : (
+            <Maximize2 className="w-3.5 h-3.5" />
+          )}
+        </button>
+
         <button
           type="button"
           disabled={zoom >= MAX_ZOOM}

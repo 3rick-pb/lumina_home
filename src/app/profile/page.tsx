@@ -218,7 +218,33 @@ export default function ProfilePage() {
   // Address Form State
   const [showAddressForm, setShowAddressForm] = useState(false);
 
- // Admin New Product Modal State
+  // Excel Export Radial Menu State
+  const [isExcelMenuOpen, setIsExcelMenuOpen] = useState(false);
+
+  // Mobile Bottom Dock Scroll Visibility (hides on scroll down, reappears on scroll up)
+  const [isDockScrollVisible, setIsDockScrollVisible] = useState(true);
+  const lastScrollYRef = useRef(0);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      const currentY = window.scrollY;
+      if (Math.abs(currentY - lastScrollYRef.current) < 8) return;
+
+      if (currentY > lastScrollYRef.current && currentY > 60) {
+        // Scrolling down: hide bottom dock
+        setIsDockScrollVisible(false);
+      } else {
+        // Scrolling up or at top: show bottom dock
+        setIsDockScrollVisible(true);
+      }
+      lastScrollYRef.current = currentY;
+    };
+
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
+  // Admin New Product Modal State
  const [showProductModal, setShowProductModal] = useState(false);
  const [isSubmittingProd, setIsSubmittingProd] = useState(false);
  const [prodTitle, setProdTitle] = useState("");
@@ -333,6 +359,16 @@ export default function ProfilePage() {
  useEffect(() => {
    if (showEditProductModal) setEditProductStep(0);
  }, [showEditProductModal]);
+
+  // Computed visibility for mobile bottom dock:
+  const isMobileDockVisible = Boolean(
+    isDockScrollVisible &&
+      !selectedOrder &&
+      !isExcelMenuOpen &&
+      !showProductModal &&
+      !showCardModal &&
+      !showAddressForm
+  );
 
   // Delete Product Confirmation Modal State
   const [productToDelete, setProductToDelete] = useState<CatalogProduct | null>(null);
@@ -1284,7 +1320,7 @@ const handleConfirmDeleteNiche = async () => {
  </div>
  {isAdmin && (
  <div className="flex items-center gap-2.5 w-full sm:w-auto mt-1 sm:mt-0 justify-between sm:justify-start">
- <ExcelExportRadialMenu />
+ <ExcelExportRadialMenu onOpenChange={setIsExcelMenuOpen} />
  <button 
  onClick={() => setShowProductModal(true)}
  className="h-10 sm:h-11 flex-1 sm:flex-initial flex items-center justify-center gap-2 px-4 sm:px-5 bg-gray-900 dark:bg-gray-100 hover:bg-gray-800 text-white dark:text-gray-900 text-xs font-semibold rounded-2xl transition-all shadow-md dark:shadow-none shadow-gray-900/10 cursor-pointer shrink-0 active:scale-95"
@@ -3120,6 +3156,7 @@ const handleConfirmDeleteNiche = async () => {
       {/* Mobile Floating Bottom Dock (beUI Paginated Dock, 3 pages of 4 sections, Hidden on md and up) */}
       <div className="md:hidden">
         <BeUIPaginatedDock
+          isVisible={isMobileDockVisible}
           items={[
             {
               id: "overview",

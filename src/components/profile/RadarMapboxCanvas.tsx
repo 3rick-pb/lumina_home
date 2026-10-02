@@ -1324,6 +1324,9 @@ export function RadarMapboxCanvas({
   const isDraggingRef = useRef(false);
   const dragMovedRef = useRef(false);
   const dragStartRef = useRef({ x: 0, y: 0, lng: 0, lat: 0 });
+  const activePointersRef = useRef<Map<number, { x: number; y: number }>>(new Map());
+  const pinchStartDistRef = useRef<number | null>(null);
+  const pinchStartZoomRef = useRef<number | null>(null);
 
   // Event-driven dirty flag & RAF scheduler — 0% GPU usage when camera is stationary
   const dirtyRef = useRef<boolean>(true);
@@ -1869,7 +1872,7 @@ export function RadarMapboxCanvas({
     [selectedCountry]
   );
 
-  // Interactive Pointer Drag & Wheel Zoom handlers with strict PointerCapture, Selection Lock & Momentum Inertia
+  // Interactive Pointer Drag, 2-Finger Touch Pinch-to-Zoom & Wheel Zoom handlers with strict PointerCapture & Momentum Inertia
   const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
     // Ignore right-clicks or clicks originating from interactive HUD buttons/inputs
     if (e.button !== 0) return;
@@ -1888,6 +1891,19 @@ export function RadarMapboxCanvas({
       // Fallback if pointer capture is unsupported
     }
 
+    activePointersRef.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
+
+    if (activePointersRef.current.size >= 2) {
+      // 2-Finger Touch Pinch detected: stop single-finger drag and save initial distance
+      isDraggingRef.current = false;
+      const pts = Array.from(activePointersRef.current.values());
+      const dist = Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y);
+      pinchStartDistRef.current = dist > 0 ? dist : 1;
+      pinchStartZoomRef.current = camRef.current.targetZoom;
+      camRef.current.animating = false;
+      return;
+    }
+
     isDraggingRef.current = true;
     dragMovedRef.current = false;
     camRef.current.animating = false;
@@ -1901,6 +1917,40 @@ export function RadarMapboxCanvas({
   };
 
   const handlePointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (!activePointersRef.current.has(e.pointerId)) return;
+    activePointersRef.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
+
+    // Handle 2-Finger Touch Pinch Zoom
+    if (activePointersRef.current.size >= 2) {
+      e.preventDefault();
+      e.stopPropagation();
+      const pts = Array.from(activePointersRef.current.values());
+      const currentDist = Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y);
+      if (pinchStartDistRef.current && pinchStartDistRef.current > 10) {
+        const ratio = currentDist / pinchStartDistRef.current;
+        const zoomDelta = Math.log2(ratio) * 1.5;
+        const baseZoom = pinchStartZoomRef.current ?? camRef.current.targetZoom;
+        const rawTargetZoom = baseZoom + zoomDelta;
+
+        // Hard boundary clamp: strictly matches zoom buttons and wheel limits [MIN_MAP_ZOOM, MAX_MAP_ZOOM]
+        const nextTargetZoom = Math.max(MIN_MAP_ZOOM, Math.min(MAX_MAP_ZOOM, rawTargetZoom));
+
+        if (Math.abs(nextTargetZoom - camRef.current.targetZoom) > 0.001) {
+          camRef.current.targetZoom = nextTargetZoom;
+          camRef.current.zoom = nextTargetZoom;
+          const geo = COUNTRY_GEO_CONFIG[selectedCountry] || COUNTRY_GEO_CONFIG.EC;
+          const uiScale = Number(Math.max(0.5, Math.pow(2, (nextTargetZoom - geo.zoom) / 1.85)).toFixed(2));
+          prevZoomCommandRef.current = uiScale;
+          const isMin = nextTargetZoom <= MIN_MAP_ZOOM + 0.05;
+          const isMax = nextTargetZoom >= MAX_MAP_ZOOM - 0.05;
+          onZoomChangeRef.current?.(uiScale, isMin, isMax);
+          camRef.current.animating = true;
+          requestRepaint();
+        }
+      }
+      return;
+    }
+
     if (!isDraggingRef.current) return;
     e.preventDefault();
     const now = performance.now();
@@ -1931,15 +1981,42 @@ export function RadarMapboxCanvas({
   };
 
   const handlePointerUp = (e: React.PointerEvent<HTMLDivElement>) => {
+    activePointersRef.current.delete(e.pointerId);
+    try {
+      if (e.currentTarget.hasPointerCapture(e.pointerId)) {
+        e.currentTarget.releasePointerCapture(e.pointerId);
+      }
+    } catch {
+      // Ignore release errors
+    }
+
+    if (activePointersRef.current.size >= 2) {
+      const pts = Array.from(activePointersRef.current.values());
+      pinchStartDistRef.current = Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y);
+      pinchStartZoomRef.current = camRef.current.targetZoom;
+      return;
+    }
+
+    if (activePointersRef.current.size === 1) {
+      pinchStartDistRef.current = null;
+      pinchStartZoomRef.current = null;
+      const remaining = Array.from(activePointersRef.current.values())[0];
+      dragStartRef.current = {
+        x: remaining.x,
+        y: remaining.y,
+        lng: camRef.current.lng,
+        lat: camRef.current.lat,
+      };
+      dragVelRef.current = { x: remaining.x, y: remaining.y, t: performance.now(), vx: 0, vy: 0 };
+      isDraggingRef.current = true;
+      return;
+    }
+
+    pinchStartDistRef.current = null;
+    pinchStartZoomRef.current = null;
+
     if (isDraggingRef.current) {
       isDraggingRef.current = false;
-      try {
-        if (e.currentTarget.hasPointerCapture(e.pointerId)) {
-          e.currentTarget.releasePointerCapture(e.pointerId);
-        }
-      } catch {
-        // Ignore release errors
-      }
       const { vx, vy, t } = dragVelRef.current;
       const age = performance.now() - t;
       if (age < 80 && Math.hypot(vx, vy) > 0.12) {

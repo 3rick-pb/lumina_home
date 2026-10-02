@@ -28,7 +28,9 @@ import {
   Boxes,
   Map as MapIcon,
   Satellite,
-  Check
+  Check,
+  Maximize2,
+  Minimize2
 } from "lucide-react";
 import { useUserStore, syncAddressesToCloud, type User, type ShippingAddress, type Order } from "@/lib/userStore";
 import { getImmediateRawGpsPosition, getStoredRawGpsHardwareData } from "@/lib/locationUtils";
@@ -357,6 +359,8 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
   const [isAtMaxZoom, setIsAtMaxZoom] = useState<boolean>(false);
   
   const mapContainerRef = useRef<HTMLDivElement>(null);
+  const radarRootRef = useRef<HTMLDivElement>(null);
+  const [isFullscreen, setIsFullscreen] = useState(false);
   const clientsListRef = useRef<HTMLDivElement>(null);
 
   const fetchActiveClients = useRadarStore((state) => state.fetchActiveClients);
@@ -1159,6 +1163,82 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
     setResetCommandSeq((s) => s + 1);
   };
 
+  const toggleFullscreen = useCallback(async () => {
+    try {
+      const container = radarRootRef.current;
+      if (!container) return;
+
+      const isFs = Boolean(
+        document.fullscreenElement ||
+        (document as unknown as { webkitFullscreenElement?: Element }).webkitFullscreenElement
+      );
+
+      if (!isFs) {
+        if (container.requestFullscreen) {
+          await container.requestFullscreen();
+        } else if ((container as unknown as { webkitRequestFullscreen?: () => Promise<void> }).webkitRequestFullscreen) {
+          await (container as unknown as { webkitRequestFullscreen: () => Promise<void> }).webkitRequestFullscreen();
+        }
+        setIsFullscreen(true);
+
+        // Auto-rotate to landscape on small screens / mobile phones like a video player
+        const isMobileScreen =
+          typeof window !== "undefined" &&
+          (window.innerWidth < 768 || window.innerHeight > window.innerWidth);
+
+        if (isMobileScreen) {
+          try {
+            const screenAny = screen as unknown as { orientation?: { lock?: (o: string) => Promise<void> } };
+            if (screenAny?.orientation?.lock) {
+              await screenAny.orientation.lock("landscape");
+            }
+          } catch (orientErr) {
+            console.log("Screen orientation lock info:", orientErr);
+          }
+        }
+      } else {
+        if (document.exitFullscreen) {
+          await document.exitFullscreen();
+        } else if ((document as unknown as { webkitExitFullscreen?: () => Promise<void> }).webkitExitFullscreen) {
+          await (document as unknown as { webkitExitFullscreen: () => Promise<void> }).webkitExitFullscreen();
+        }
+        try {
+          const screenAny = screen as unknown as { orientation?: { unlock?: () => void } };
+          if (screenAny?.orientation?.unlock) {
+            screenAny.orientation.unlock();
+          }
+        } catch {}
+        setIsFullscreen(false);
+      }
+    } catch (err) {
+      console.warn("Fullscreen toggle error:", err);
+    }
+  }, []);
+
+  useEffect(() => {
+    const handleFsChange = () => {
+      const isFs = Boolean(
+        document.fullscreenElement ||
+        (document as unknown as { webkitFullscreenElement?: Element }).webkitFullscreenElement
+      );
+      setIsFullscreen(isFs);
+      if (!isFs) {
+        try {
+          const screenAny = screen as unknown as { orientation?: { unlock?: () => void } };
+          if (screenAny?.orientation?.unlock) {
+            screenAny.orientation.unlock();
+          }
+        } catch {}
+      }
+    };
+    document.addEventListener("fullscreenchange", handleFsChange);
+    document.addEventListener("webkitfullscreenchange", handleFsChange);
+    return () => {
+      document.removeEventListener("fullscreenchange", handleFsChange);
+      document.removeEventListener("webkitfullscreenchange", handleFsChange);
+    };
+  }, []);
+
   // Smooth camera fly-to function for cities, neighborhoods, and exact street coordinates on Mapbox Canvas
   const focusOnLocation = useCallback(
     (
@@ -1695,6 +1775,7 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
   return (
     <MotionConfig reducedMotion="never">
     <div 
+      ref={radarRootRef}
       draggable={false}
       onDragStart={(e) => e.preventDefault()}
       onMouseDown={(e) => {
@@ -1707,14 +1788,34 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
         userSelect: "none",
         WebkitUserSelect: "none",
         overscrollBehavior: "contain",
-        contain: "paint",
+        contain: isFullscreen ? "none" : "paint",
       }}
-      className="relative isolate flex-1 w-full min-h-[520px] sm:min-h-[620px] md:min-h-[660px] h-full rounded-[2rem] sm:rounded-[2.5rem] overflow-hidden bg-[#e8ecef] dark:bg-[#181d1b] text-white border-[2.5px] border-stone-300/95 dark:border-white/20 ring-1 ring-stone-900/12 dark:ring-white/10 shadow-[0_22px_50px_rgba(15,23,42,0.12)] dark:shadow-[0_22px_50px_rgba(0,0,0,0.45)] select-none overscroll-none animate-fade-in font-sans"
+      className={`relative isolate flex-1 w-full min-h-[520px] sm:min-h-[620px] md:min-h-[660px] h-full ${
+        isFullscreen
+          ? "fixed inset-0 z-[99999] w-screen h-screen rounded-none border-none ring-0 shadow-none"
+          : "rounded-[2rem] sm:rounded-[2.5rem] border-[2.5px] border-stone-300/95 dark:border-white/20 ring-1 ring-stone-900/12 dark:ring-white/10 shadow-[0_22px_50px_rgba(15,23,42,0.12)] dark:shadow-[0_22px_50px_rgba(0,0,0,0.45)]"
+      } overflow-hidden bg-[#e8ecef] dark:bg-[#181d1b] text-white select-none overscroll-none animate-fade-in font-sans`}
     >
+      {/* Floating Exit Fullscreen Button in Fullscreen Mode */}
+      {isFullscreen && (
+        <button
+          type="button"
+          onClick={toggleFullscreen}
+          className="absolute top-4 left-4 z-[90] flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-black/80 hover:bg-black/95 backdrop-blur-md border border-white/20 text-white text-xs font-semibold shadow-2xl active:scale-95 transition-all cursor-pointer"
+        >
+          <Minimize2 className="w-3.5 h-3.5 text-emerald-400" />
+          <span>Salir de pantalla completa</span>
+        </button>
+      )}
+
       {/* Architectural Inner Bezel Frame — clearly delineates the Radar viewport & seals rounded edges */}
       <div
         aria-hidden="true"
-        className="pointer-events-none absolute inset-0 rounded-[2rem] sm:rounded-[2.5rem] z-[45] border-[3px] border-white/85 dark:border-white/15 shadow-[inset_0_0_0_1.5px_rgba(15,23,42,0.14)] dark:shadow-[inset_0_0_0_1.5px_rgba(255,255,255,0.1)]"
+        className={`pointer-events-none absolute inset-0 z-[45] ${
+          isFullscreen
+            ? "hidden"
+            : "rounded-[2rem] sm:rounded-[2.5rem] border-[3px] border-white/85 dark:border-white/15 shadow-[inset_0_0_0_1.5px_rgba(15,23,42,0.14)] dark:shadow-[inset_0_0_0_1.5px_rgba(255,255,255,0.1)]"
+        }`}
       />
       
       {/* ========================================================================= */}
@@ -2361,6 +2462,24 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
             }`}
           >
             <ZoomOut className="w-4 h-4" />
+          </button>
+
+          {/* Fullscreen Toggle Button */}
+          <button 
+            type="button"
+            onClick={toggleFullscreen}
+            title={isFullscreen ? "Salir de pantalla completa" : "Pantalla completa (Gira horizontal en móviles)"}
+            className={`w-8 h-8 sm:w-9 sm:h-9 rounded-xl flex items-center justify-center transition-all hover:scale-105 active:scale-95 cursor-pointer ${
+              isFullscreen
+                ? "bg-emerald-500/25 text-emerald-300 border border-emerald-400/40 shadow-sm"
+                : "bg-white/10 hover:bg-white/25 text-white border border-white/15"
+            }`}
+          >
+            {isFullscreen ? (
+              <Minimize2 className="w-4 h-4 text-emerald-400" />
+            ) : (
+              <Maximize2 className="w-4 h-4" />
+            )}
           </button>
 
           {/* Mobile Dossier Panel Toggle Button */}

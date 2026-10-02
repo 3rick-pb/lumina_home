@@ -18,6 +18,7 @@ export interface BeUIPaginatedDockProps {
   items: BeUIDockItem[];
   itemsPerPage?: number;
   className?: string;
+  isVisible?: boolean;
 }
 
 const pageVariants = {
@@ -55,6 +56,7 @@ export function BeUIPaginatedDock({
   items,
   itemsPerPage = 4,
   className = "",
+  isVisible = true,
 }: BeUIPaginatedDockProps) {
   const [[currentPage, direction], setPage] = useState<[number, number]>([0, 0]);
   const touchStartRef = useRef<{ x: number; y: number } | null>(null);
@@ -117,7 +119,9 @@ export function BeUIPaginatedDock({
   return (
     <aside
       aria-label="Navegación móvil"
-      className={`fixed bottom-3 inset-x-0 z-50 flex flex-col items-center justify-center px-3 pointer-events-none ${className}`}
+      className={`fixed bottom-3 inset-x-0 z-50 flex flex-col items-center justify-center px-3 pointer-events-none transition-all duration-300 ease-out ${
+        isVisible ? "translate-y-0 opacity-100" : "translate-y-28 opacity-0 pointer-events-none"
+      } ${className}`}
     >
       <div className="pointer-events-auto flex flex-col items-center gap-1.5 w-full max-w-[340px]">
         {/* Dock Frosted Capsule Container (Fixed symmetrical padding) */}
