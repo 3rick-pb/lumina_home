@@ -866,9 +866,11 @@ export function DiscountCouponsTab() {
               {/* Strategic Generator Button with glowing ThinkingOrb in dark mode */}
               <button
                 type="button"
-                disabled={isGeneratingStrategic}
-                onClick={handleTriggerRandom}
-                className={`relative flex items-center justify-center gap-2.5 w-full sm:w-[245px] h-[46px] sm:h-[48px] px-4 sm:px-5 rounded-2xl text-xs sm:text-sm font-semibold tracking-tight shadow-sm transition-all duration-300 cursor-pointer select-none active:scale-[0.98] whitespace-nowrap shrink-0 ${
+                onClick={(e) => {
+                  if (isGeneratingStrategic) return;
+                  handleTriggerRandom();
+                }}
+                className={`relative flex items-center justify-center gap-2.5 w-full sm:w-[245px] h-[46px] sm:h-[48px] px-4 sm:px-5 rounded-2xl text-xs sm:text-sm font-semibold tracking-tight shadow-sm transition-all duration-300 cursor-pointer !cursor-pointer select-none active:scale-[0.98] whitespace-nowrap shrink-0 ${
                   isGeneratingStrategic
                     ? "bg-stone-950 dark:bg-[#18181b] text-amber-300 dark:text-amber-300 border border-amber-500/40 shadow-[0_0_24px_rgba(245,158,11,0.22)]"
                     : "bg-stone-950 dark:bg-[#202023] text-white dark:text-stone-100 hover:bg-stone-800 dark:hover:bg-[#2a2a2e] border border-black/10 dark:border-white/10"
@@ -954,29 +956,31 @@ export function DiscountCouponsTab() {
           {isAdmin && showManualForm && (
             <motion.div
               key="manual-coupon-inline-liquid-panel"
-              initial={{ opacity: 0, height: 0, scaleY: 0.94, y: -16 }}
+              initial={{ opacity: 0, height: 0, scale: 0.96, y: -20, filter: "blur(8px)" }}
               animate={{
                 opacity: 1,
                 height: "auto",
-                scaleY: 1,
+                scale: 1,
                 y: 0,
+                filter: "blur(0px)",
                 transition: {
-                  height: { duration: 0.45, ease: [0.22, 1.25, 0.36, 1] },
-                  scaleY: { duration: 0.45, ease: [0.22, 1.25, 0.36, 1] },
-                  y: { duration: 0.4, ease: [0.22, 1.25, 0.36, 1] },
-                  opacity: { duration: 0.28, ease: "easeOut" },
+                  type: "spring",
+                  bounce: 0.35,
+                  duration: 0.7,
+                  opacity: { duration: 0.3 },
+                  filter: { duration: 0.4 }
                 },
               }}
               exit={{
                 opacity: 0,
                 height: 0,
-                scaleY: 0.94,
-                y: -16,
+                scale: 0.96,
+                y: -20,
+                filter: "blur(8px)",
                 transition: {
-                  height: { duration: 0.36, ease: [0.32, 0, 0.67, 0] },
-                  scaleY: { duration: 0.32, ease: [0.32, 0, 0.67, 0] },
-                  y: { duration: 0.32, ease: [0.32, 0, 0.67, 0] },
-                  opacity: { duration: 0.2, ease: "easeInOut" },
+                  type: "spring",
+                  bounce: 0,
+                  duration: 0.4
                 },
               }}
               className="overflow-hidden origin-top relative"
