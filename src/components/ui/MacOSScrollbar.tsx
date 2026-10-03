@@ -51,13 +51,14 @@ export function MacOSScrollbar() {
     rafId: 0,
     dragStartY: 0,
     dragStartScrollTop: 0,
+    isDragging: false,
   });
 
   const showTemporarily = useCallback(() => {
     setIsVisible(true);
     if (hideTimeoutRef.current) clearTimeout(hideTimeoutRef.current);
     hideTimeoutRef.current = setTimeout(() => {
-      if (!stateRef.current.rafId && !isDragging && !isHovered) {
+      if (!stateRef.current.rafId && !stateRef.current.isDragging && !isHovered) {
         setIsVisible(false);
       }
     }, 1200);
@@ -156,6 +157,7 @@ export function MacOSScrollbar() {
 
     // Fast scroll handler
     const handleScroll = () => {
+      if (s.isDragging) return;
       const prevTop = s.scrollTop;
       const currentTop = Math.max(0, window.scrollY || document.documentElement.scrollTop || 0);
       s.scrollTop = currentTop;
@@ -240,6 +242,7 @@ export function MacOSScrollbar() {
     e.stopPropagation();
     const s = stateRef.current;
     setIsDragging(true);
+    s.isDragging = true;
     setIsVisible(true);
     s.dragStartY = e.clientY;
     s.dragStartScrollTop = s.scrollTop;
@@ -249,8 +252,8 @@ export function MacOSScrollbar() {
   };
 
   const handlePointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
-    if (!isDragging) return;
     const s = stateRef.current;
+    if (!s.isDragging) return;
     const dy = e.clientY - s.dragStartY;
     const scrollDelta = (dy / s.maxTop) * s.maxScroll;
     const nextScroll = Math.max(0, Math.min(s.maxScroll, s.dragStartScrollTop + scrollDelta));
@@ -282,8 +285,10 @@ export function MacOSScrollbar() {
   };
 
   const handlePointerUp = (e: React.PointerEvent<HTMLDivElement>) => {
-    if (!isDragging) return;
+    const s = stateRef.current;
+    if (!s.isDragging) return;
     setIsDragging(false);
+    s.isDragging = false;
     try {
       e.currentTarget.releasePointerCapture(e.pointerId);
     } catch {}
