@@ -97,32 +97,23 @@
     background: transparent;
     border-radius: 9999px;
   }
+  :root {
+    --scrollbar-thumb: rgba(0, 0, 0, 0.24);
+    --scrollbar-thumb-hover: rgba(0, 0, 0, 0.44);
+  }
+  
+  html.dark, .dark {
+    --scrollbar-thumb: rgba(255, 255, 255, 0.6);
+    --scrollbar-thumb-hover: rgba(255, 255, 255, 0.8);
+  }
+
   ::-webkit-scrollbar-thumb {
-    background-color: rgba(0, 0, 0, 0.24);
+    background-color: var(--scrollbar-thumb) !important;
     border-radius: 9999px;
     transition: background-color 0.2s ease, box-shadow 0.2s ease;
   }
   ::-webkit-scrollbar-thumb:hover {
-    background-color: rgba(0, 0, 0, 0.44);
-  }
-
-  /* DARK MODE: Soft White */
-  html.dark::-webkit-scrollbar-thumb,
-  html.dark ::-webkit-scrollbar-thumb,
-  body.dark::-webkit-scrollbar-thumb,
-  body.dark ::-webkit-scrollbar-thumb,
-  .dark::-webkit-scrollbar-thumb,
-  .dark ::-webkit-scrollbar-thumb {
-    background-color: rgba(255, 255, 255, 0.6) !important;
-    border-radius: 9999px;
-  }
-  html.dark::-webkit-scrollbar-thumb:hover,
-  html.dark ::-webkit-scrollbar-thumb:hover,
-  body.dark::-webkit-scrollbar-thumb:hover,
-  body.dark ::-webkit-scrollbar-thumb:hover,
-  .dark::-webkit-scrollbar-thumb:hover,
-  .dark ::-webkit-scrollbar-thumb:hover {
-    background-color: rgba(255, 255, 255, 0.8) !important;
+    background-color: var(--scrollbar-thumb-hover) !important;
   }
   ::-webkit-scrollbar-corner {
     background: transparent;
@@ -132,13 +123,7 @@
   @supports not selector(::-webkit-scrollbar) {
     * {
       scrollbar-width: thin;
-      scrollbar-color: rgba(0, 0, 0, 0.24) transparent;
-    }
-    html.dark,
-    html.dark *,
-    .dark,
-    .dark * {
-      scrollbar-color: #ffffff transparent !important;
+      scrollbar-color: var(--scrollbar-thumb) transparent;
     }
   }
 
