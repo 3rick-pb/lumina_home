@@ -183,7 +183,20 @@ export default function ProfilePage() {
 
   useEffect(() => {
     setIsMounted(true);
-    const update = () => setResolvedTheme(getResolvedTheme(mode));
+    const update = () => {
+      const theme = getResolvedTheme(mode);
+      setResolvedTheme(theme);
+      
+      if (typeof document !== 'undefined') {
+        if (theme === "dark") {
+          document.documentElement.style.setProperty("--scrollbar-thumb", "rgba(255, 255, 255, 0.6)", "important");
+          document.documentElement.style.setProperty("--scrollbar-thumb-hover", "rgba(255, 255, 255, 0.8)", "important");
+        } else {
+          document.documentElement.style.setProperty("--scrollbar-thumb", "rgba(0, 0, 0, 0.24)", "important");
+          document.documentElement.style.setProperty("--scrollbar-thumb-hover", "rgba(0, 0, 0, 0.44)", "important");
+        }
+      }
+    };
     update();
     const interval = setInterval(update, 60000);
 
@@ -195,7 +208,13 @@ export default function ProfilePage() {
       }
     } catch {}
 
-    return () => clearInterval(interval);
+    return () => {
+      clearInterval(interval);
+      if (typeof document !== 'undefined') {
+        document.documentElement.style.removeProperty("--scrollbar-thumb");
+        document.documentElement.style.removeProperty("--scrollbar-thumb-hover");
+      }
+    };
   }, [mode]);
 
  const getGreeting = () => {
