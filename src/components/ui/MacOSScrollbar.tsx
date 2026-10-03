@@ -255,6 +255,8 @@ export function MacOSScrollbar() {
     const scrollDelta = (dy / s.maxTop) * s.maxScroll;
     const nextScroll = Math.max(0, Math.min(s.maxScroll, s.dragStartScrollTop + scrollDelta));
 
+    s.scrollTop = nextScroll;
+
     const lenis = getLenis();
     if (lenis) {
       lenis.scrollTo(nextScroll, { immediate: true });
@@ -267,6 +269,15 @@ export function MacOSScrollbar() {
       s.bounceY = Math.min(24, Math.abs(dy) * 0.2);
     } else if (s.dragStartScrollTop + scrollDelta > s.maxScroll) {
       s.bounceY = Math.max(-24, -Math.abs(dy) * 0.2);
+    } else {
+      s.bounceY = 0;
+    }
+
+    // Instantly update thumb DOM to stick to cursor without waiting for scroll event loop
+    if (thumbRef.current) {
+      const progress = Math.max(0, Math.min(1, s.scrollTop / Math.max(1, s.maxScroll)));
+      const thumbTop = 6 + progress * s.maxTop + s.bounceY;
+      thumbRef.current.style.transform = `translate3d(0, ${thumbTop.toFixed(1)}px, 0) scaleX(1) scaleY(1)`;
     }
   };
 
