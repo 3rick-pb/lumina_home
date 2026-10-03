@@ -340,12 +340,11 @@ export function MacOSScrollbar() {
         onPointerCancel={handlePointerUp}
         className={`absolute right-[3px] top-0 rounded-full cursor-grab active:cursor-grabbing backdrop-blur-md transition-[width,background-color,box-shadow] duration-200 ${
           isHovered || isDragging
-            ? "w-[9px] bg-black/55 dark:bg-white shadow-[0_2px_8px_rgba(0,0,0,0.25)] dark:shadow-[0_0_14px_rgba(255,255,255,0.85)] dark:border-white/70"
-            : "w-[6px] bg-black/35 dark:bg-[#f8f6f0]/90 dark:shadow-[0_0_8px_rgba(248,246,240,0.45)] dark:border-white/40"
+            ? "w-[9px] bg-black/50 hover:bg-black/60 dark:bg-white shadow-[0_2px_8px_rgba(0,0,0,0.18)] dark:shadow-[0_0_14px_rgba(255,255,255,0.9)]"
+            : "w-[6px] bg-black/30 hover:bg-black/45 dark:bg-white dark:shadow-[0_0_8px_rgba(255,255,255,0.7)]"
         }`}
         style={{
           height: "48px",
-          border: "0.5px solid rgba(255, 255, 255, 0.22)",
           willChange: "transform",
         }}
       />

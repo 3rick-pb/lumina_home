@@ -538,6 +538,12 @@ export function DiscountCouponsTab() {
 
   // Forensic Analytics Modal State (Who used it, avatar, orders, amounts before/after)
   const [analyticsCoupon, setAnalyticsCoupon] = useState<DiscountCoupon | null>(null);
+  const [isAnalyticsOpen, setIsAnalyticsOpen] = useState(false);
+
+  const handleOpenAnalytics = (coupon: DiscountCoupon) => {
+    setAnalyticsCoupon(coupon);
+    setIsAnalyticsOpen(true);
+  };
 
   // Falling Leaf Animation State
   const [fallingLeafCoupon, setFallingLeafCoupon] = useState<DiscountCoupon | null>(null);
@@ -902,312 +908,21 @@ export function DiscountCouponsTab() {
                 </AnimatePresence>
               </button>
 
-              {/* beUI Gooey Popover: Personalizar Cupón Toggle Button & Smooth Liquid Dropdown */}
-              <Popover
-                open={showManualForm}
-                onOpenChange={setShowManualForm}
-                side="bottom"
-                align="end"
-                sideOffset={14}
-                panelRadius={28}
-                gooStrength={8}
+              {/* Personalizar Nuevo Button */}
+              <button
+                type="button"
+                onClick={() => setShowManualForm(!showManualForm)}
+                className={`w-full sm:w-[205px] h-[46px] sm:h-[48px] px-4 sm:px-5 rounded-2xl text-xs sm:text-sm font-semibold border transition-all duration-200 flex items-center justify-center gap-2 cursor-pointer shadow-xs active:scale-[0.98] select-none shrink-0 ${
+                  showManualForm
+                    ? "bg-stone-900 text-white dark:bg-white dark:text-stone-900 border-transparent shadow-sm"
+                    : "border-stone-200/80 dark:border-white/10 bg-white dark:bg-[#1f1f23] hover:bg-stone-50 dark:hover:bg-white/10 text-stone-800 dark:text-stone-200"
+                }`}
               >
-                <PopoverTrigger>
-                  <button
-                    type="button"
-                    className={`w-full sm:w-[195px] h-[46px] sm:h-[48px] px-4 sm:px-5 rounded-2xl text-xs sm:text-sm font-semibold border transition-all duration-200 flex items-center justify-center gap-2 cursor-pointer shadow-xs active:scale-[0.98] select-none shrink-0 ${
-                      showManualForm
-                        ? "bg-stone-900 text-white dark:bg-white dark:text-stone-900 border-transparent shadow-sm"
-                        : "border-stone-200/80 dark:border-white/10 bg-white dark:bg-[#1f1f23] hover:bg-stone-50 dark:hover:bg-white/10 text-stone-800 dark:text-stone-200"
-                    }`}
-                  >
-                    <SlidersHorizontal className={`w-4 h-4 shrink-0 transition-transform duration-300 ${showManualForm ? "rotate-90" : "rotate-0"}`} />
-                    <span className="whitespace-nowrap transition-colors duration-150">
-                      {showManualForm ? "Cerrar Personalización" : "Personalizar"}
-                    </span>
-                  </button>
-                </PopoverTrigger>
-
-                <PopoverContent className="w-[min(94vw,680px)] max-w-[min(94vw,680px)] p-5 sm:p-7 text-stone-900 dark:text-stone-100">
-                  <form
-                    onSubmit={handleCreateManual}
-                    className="space-y-5"
-                  >
-                    <div className="flex items-center justify-between pb-3 border-b border-stone-200/60 dark:border-white/10">
-                      <div>
-                        <h3 className="text-base sm:text-lg font-bold text-stone-950 dark:text-white">
-                          Personalizar Nuevo Cupón
-                        </h3>
-                        <p className="text-xs text-stone-500 dark:text-stone-400">
-                          Define las reglas comerciales y beneficios de tu cupón de descuento.
-                        </p>
-                      </div>
-                      <span className="text-xs font-semibold px-3 py-1 rounded-full bg-stone-100 dark:bg-white/10 text-stone-700 dark:text-stone-300 border border-stone-200/60 dark:border-white/10">
-                        Personalizado
-                      </span>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {/* Código del cupón */}
-                      <div>
-                        <label className="block text-[11px] font-bold uppercase tracking-wider text-stone-600 dark:text-stone-400 mb-1.5">
-                          Código del Cupón (Ej: LUMINA-VIP)
-                        </label>
-                        <input
-                          type="text"
-                          required
-                          placeholder="PROMO2026"
-                          value={formCode}
-                          onChange={(e) => setFormCode(e.target.value.toUpperCase())}
-                          className="w-full px-3.5 py-2.5 rounded-xl border border-stone-200/80 dark:border-white/10 bg-stone-50/80 dark:bg-white/[0.04] text-sm font-mono font-semibold text-stone-900 dark:text-white placeholder:text-stone-400 focus:border-stone-900 dark:focus:border-white focus:ring-2 focus:ring-stone-900/10 dark:focus:ring-white/10 transition-all outline-none uppercase shadow-2xs"
-                        />
-                      </div>
-
-                      {/* Nombre / Título del Cupón */}
-                      <div>
-                        <label className="block text-[11px] font-bold uppercase tracking-wider text-stone-600 dark:text-stone-400 mb-1.5">
-                          Nombre / Título del Cupón
-                        </label>
-                        <input
-                          type="text"
-                          placeholder="Descuento Primavera"
-                          value={formTitle}
-                          onChange={(e) => setFormTitle(e.target.value)}
-                          className="w-full px-3.5 py-2.5 rounded-xl border border-stone-200/80 dark:border-white/10 bg-stone-50/80 dark:bg-white/[0.04] text-sm text-stone-900 dark:text-white placeholder:text-stone-400 focus:border-stone-900 dark:focus:border-white focus:ring-2 focus:ring-stone-900/10 dark:focus:ring-white/10 transition-all outline-none shadow-2xs"
-                        />
-                      </div>
-
-                      {/* Tipo de Beneficio */}
-                      <div>
-                        <label className="block text-[11px] font-bold uppercase tracking-wider text-stone-600 dark:text-stone-400 mb-1.5">
-                          Tipo de Beneficio
-                        </label>
-                        <BeUISelectField
-                          value={formDiscountType}
-                          onChange={(val) => setFormDiscountType(val as "percent" | "fixed" | "free_shipping")}
-                          options={[
-                            { value: "percent", label: "Porcentaje de Descuento (%)" },
-                            { value: "free_shipping", label: "Envío 100% Gratis" },
-                          ]}
-                          placeholder="Seleccionar beneficio"
-                        />
-                      </div>
-
-                      {/* Porcentaje (% de Descuento) */}
-                      {formDiscountType === "percent" ? (
-                        <div>
-                          <label className="block text-[11px] font-bold uppercase tracking-wider text-stone-600 dark:text-stone-400 mb-1.5">
-                            Porcentaje (% de Descuento)
-                          </label>
-                          <div className="relative">
-                            <input
-                              type="number"
-                              min="1"
-                              max="90"
-                              value={formDiscountVal}
-                              onChange={(e) => setFormDiscountVal(Number(e.target.value))}
-                              className="w-full pl-3.5 pr-8 py-2.5 rounded-xl border border-stone-200/80 dark:border-white/10 bg-stone-50/80 dark:bg-white/[0.04] text-sm font-semibold text-stone-900 dark:text-white outline-none focus:border-stone-900 dark:focus:border-white focus:ring-2 focus:ring-stone-900/10 dark:focus:ring-white/10 transition-all shadow-2xs"
-                            />
-                            <span className="absolute right-3.5 top-1/2 -translate-y-1/2 text-xs font-bold text-stone-400">%</span>
-                          </div>
-                        </div>
-                      ) : (
-                        <div>
-                          <label className="block text-[11px] font-bold uppercase tracking-wider text-stone-600 dark:text-stone-400 mb-1.5">
-                            Beneficio Aplicado
-                          </label>
-                          <div className="px-3.5 py-2.5 rounded-xl border border-amber-500/20 bg-amber-500/10 text-amber-800 dark:text-amber-300 text-xs font-semibold flex items-center gap-2">
-                            <span>Envío 100% gratuito a todo el país</span>
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Alcance Comercial */}
-                      <div>
-                        <label className="block text-[11px] font-bold uppercase tracking-wider text-stone-600 dark:text-stone-400 mb-1.5">
-                          Alcance Comercial
-                        </label>
-                        <BeUISelectField
-                          value={formScope}
-                          onChange={(val) => setFormScope(val as "all" | "niche")}
-                          options={[
-                            { value: "all", label: "Toda la Tienda (Descuento Global)" },
-                            { value: "niche", label: "Colección Específica (Por Nicho)" },
-                          ]}
-                          placeholder="Seleccionar alcance"
-                        />
-                      </div>
-
-                      {/* Nicho o Compra Mínima */}
-                      {formScope === "niche" ? (
-                        <div>
-                          <label className="block text-[11px] font-bold uppercase tracking-wider text-stone-600 dark:text-stone-400 mb-1.5">
-                            Colección / Nicho Seleccionado
-                          </label>
-                          <BeUISelectField
-                            value={formNiche}
-                            onChange={(val) => setFormNiche(val)}
-                            options={[
-                              { value: "Iluminación", label: "Iluminación de Ambiente" },
-                              { value: "Aromaterapia", label: "Aromaterapia & Esencias" },
-                              { value: "Home Office", label: "Home Office & Ergonomía" },
-                              { value: "Textiles", label: "Textiles & Lana" },
-                              { value: "Cerámica", label: "Cerámica de Autor" },
-                              { value: "Decoración", label: "Decoración & Esculturas" },
-                              { value: "Cocina", label: "Cocina & Barista" },
-                              { value: "Bienestar", label: "Bienestar & Descanso" },
-                            ]}
-                            placeholder="Seleccionar colección"
-                          />
-                        </div>
-                      ) : (
-                        <div>
-                          <label className="block text-[11px] font-bold uppercase tracking-wider text-stone-600 dark:text-stone-400 mb-1.5">
-                            Compra Mínima ($ USD)
-                          </label>
-                          <div className="relative">
-                            <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-xs font-bold text-stone-400">$</span>
-                            <input
-                              type="number"
-                              min="0"
-                              step="5"
-                              placeholder="0 (Sin mínimo)"
-                              value={formMinOrder}
-                              onChange={(e) => setFormMinOrder(Number(e.target.value))}
-                              className="w-full pl-7 pr-3.5 py-2.5 rounded-xl border border-stone-200/80 dark:border-white/10 bg-stone-50/80 dark:bg-white/[0.04] text-sm font-semibold text-stone-900 dark:text-white outline-none focus:border-stone-900 dark:focus:border-white focus:ring-2 focus:ring-stone-900/10 dark:focus:ring-white/10 transition-all shadow-2xs"
-                            />
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Límite de Canjes */}
-                      <div className="md:col-span-2">
-                        <label className="block text-[11px] font-bold uppercase tracking-wider text-stone-600 dark:text-stone-400 mb-1.5">
-                          Límite de Canjes
-                        </label>
-                        <BeUISelectField
-                          value={String(formMaxUses)}
-                          onChange={(val) => setFormMaxUses(val === "none" ? "none" : Number(val))}
-                          options={[
-                            { value: "10", label: "10 canjes máximos" },
-                            { value: "30", label: "30 canjes" },
-                            { value: "50", label: "50 canjes" },
-                            { value: "100", label: "100 canjes" },
-                            { value: "none", label: "Ilimitado" },
-                          ]}
-                          placeholder="Seleccionar límite"
-                        />
-                      </div>
-                    </div>
-
-                    {/* FECHA DE FINALIZACIÓN CON BEUI WHEEL PICKER */}
-                    <div className="pt-3 border-t border-stone-200/60 dark:border-white/10">
-                      <div className="flex items-center justify-between mb-2.5">
-                        <div className="flex items-center gap-1.5">
-                          <Calendar className="w-3.5 h-3.5 text-amber-500" />
-                          <label className="text-[11px] font-bold uppercase tracking-wider text-stone-700 dark:text-stone-300">
-                            Fecha de Finalización (Vigencia)
-                          </label>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => setHasExpirationDate(!hasExpirationDate)}
-                          className={`text-xs font-semibold px-2.5 py-1 rounded-lg transition-colors cursor-pointer ${
-                            hasExpirationDate
-                              ? "bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-500/20"
-                              : "bg-stone-200/60 dark:bg-white/10 text-stone-700 dark:text-stone-300"
-                          }`}
-                        >
-                          {hasExpirationDate ? "Con fecha de término" : "Permanente (Sin vencimiento)"}
-                        </button>
-                      </div>
-
-                      {hasExpirationDate ? (
-                        <div className="space-y-2">
-                          <div className="grid grid-cols-3 gap-2 p-2 rounded-2xl bg-stone-100/80 dark:bg-black/40 border border-stone-200/60 dark:border-white/5">
-                            <div>
-                              <span className="block text-[10px] font-bold uppercase tracking-wider text-stone-400 text-center mb-1">
-                                Día
-                              </span>
-                              <WheelPicker
-                                options={DAY_OPTIONS}
-                                value={expireDay}
-                                onValueChange={setExpireDay}
-                                sound={true}
-                                visibleCount={3}
-                                itemHeight={32}
-                                className="bg-white dark:bg-[#202023] border-stone-200/80 dark:border-white/10 shadow-xs"
-                              />
-                            </div>
-                            <div>
-                              <span className="block text-[10px] font-bold uppercase tracking-wider text-stone-400 text-center mb-1">
-                                Mes
-                              </span>
-                              <WheelPicker
-                                options={MONTH_OPTIONS}
-                                value={expireMonth}
-                                onValueChange={setExpireMonth}
-                                sound={true}
-                                visibleCount={3}
-                                itemHeight={32}
-                                className="bg-white dark:bg-[#202023] border-stone-200/80 dark:border-white/10 shadow-xs"
-                              />
-                            </div>
-                            <div>
-                              <span className="block text-[10px] font-bold uppercase tracking-wider text-stone-400 text-center mb-1">
-                                Año
-                              </span>
-                              <WheelPicker
-                                options={YEAR_OPTIONS}
-                                value={expireYear}
-                                onValueChange={setExpireYear}
-                                sound={true}
-                                visibleCount={3}
-                                itemHeight={32}
-                                className="bg-white dark:bg-[#202023] border-stone-200/80 dark:border-white/10 shadow-xs"
-                              />
-                            </div>
-                          </div>
-
-                          {/* Live Preview Bar */}
-                          <div className="flex items-center justify-between px-3.5 py-2 rounded-xl bg-amber-500/10 dark:bg-amber-500/15 border border-amber-500/20 text-xs text-amber-900 dark:text-amber-200">
-                            <span>
-                              Disponible hasta: <strong>{resolvedTargetDate?.toLocaleDateString("es-ES", { day: "numeric", month: "long", year: "numeric" })}</strong>
-                            </span>
-                            <span className="font-bold">
-                              {daysRemaining && daysRemaining > 0
-                                ? `(en ${daysRemaining} días)`
-                                : daysRemaining === 0
-                                  ? "(vence hoy)"
-                                  : "(fecha pasada)"}
-                            </span>
-                          </div>
-                        </div>
-                      ) : (
-                        <div className="p-3.5 rounded-2xl bg-stone-100/70 dark:bg-black/30 border border-stone-200/60 dark:border-white/5 flex items-center justify-center text-xs font-semibold text-stone-500 dark:text-stone-400">
-                          <span>Cupón permanente sin fecha límite de caducidad</span>
-                        </div>
-                      )}
-                    </div>
-
-                    <div className="flex justify-end gap-3 pt-3 border-t border-stone-200/60 dark:border-white/10">
-                      <button
-                        type="button"
-                        onClick={() => setShowManualForm(false)}
-                        className="px-4 py-2.5 rounded-xl text-xs font-semibold text-stone-500 hover:text-stone-800 dark:hover:text-stone-200 cursor-pointer"
-                      >
-                        Cancelar
-                      </button>
-                      <button
-                        type="submit"
-                        className="px-6 py-2.5 rounded-xl bg-stone-950 dark:bg-white text-white dark:text-stone-950 text-xs font-bold hover:bg-stone-800 dark:hover:bg-stone-100 transition-colors shadow-xs active:scale-95 cursor-pointer"
-                      >
-                        Guardar y Activar Cupón
-                      </button>
-                    </div>
-                  </form>
-                </PopoverContent>
-              </Popover>
+                <SlidersHorizontal className={`w-4 h-4 shrink-0 transition-transform duration-300 ${showManualForm ? "rotate-90" : "rotate-0"}`} />
+                <span className="whitespace-nowrap transition-colors duration-150">
+                  {showManualForm ? "Cerrar menú..." : "Personalizar Nuevo"}
+                </span>
+              </button>
             </div>
           </div>
         ) : (
@@ -1231,6 +946,323 @@ export function DiscountCouponsTab() {
             </div>
           </div>
         )}
+
+        {/* ===================================================================== */}
+        {/* 1.2 INLINE LIQUID RECUADRO: PERSONALIZAR NUEVO (Directly Below Header)*/}
+        {/* ===================================================================== */}
+        <AnimatePresence>
+          {isAdmin && showManualForm && (
+            <motion.div
+              key="manual-coupon-inline-liquid-panel"
+              initial={{ opacity: 0, height: 0, scaleY: 0.94, y: -16 }}
+              animate={{
+                opacity: 1,
+                height: "auto",
+                scaleY: 1,
+                y: 0,
+                transition: {
+                  height: { duration: 0.45, ease: [0.22, 1.25, 0.36, 1] },
+                  scaleY: { duration: 0.45, ease: [0.22, 1.25, 0.36, 1] },
+                  y: { duration: 0.4, ease: [0.22, 1.25, 0.36, 1] },
+                  opacity: { duration: 0.28, ease: "easeOut" },
+                },
+              }}
+              exit={{
+                opacity: 0,
+                height: 0,
+                scaleY: 0.94,
+                y: -16,
+                transition: {
+                  height: { duration: 0.36, ease: [0.32, 0, 0.67, 0] },
+                  scaleY: { duration: 0.32, ease: [0.32, 0, 0.67, 0] },
+                  y: { duration: 0.32, ease: [0.32, 0, 0.67, 0] },
+                  opacity: { duration: 0.2, ease: "easeInOut" },
+                },
+              }}
+              className="overflow-hidden origin-top relative"
+            >
+              <div className="p-6 sm:p-8 rounded-[2rem] bg-white/95 dark:bg-[#1a1a1c]/95 backdrop-blur-xl border border-stone-200/80 dark:border-white/10 shadow-sm dark:shadow-[0_0_35px_rgba(245,158,11,0.08)]">
+                <form
+                  onSubmit={handleCreateManual}
+                  className="space-y-6"
+                >
+                  <div className="flex items-center justify-between pb-3 border-b border-stone-200/60 dark:border-white/10">
+                    <div>
+                      <h3 className="text-base sm:text-lg font-bold text-stone-950 dark:text-white">
+                        Personalizar Nuevo Cupón
+                      </h3>
+                      <p className="text-xs text-stone-500 dark:text-stone-400">
+                        Define las reglas comerciales y beneficios de tu cupón de descuento.
+                      </p>
+                    </div>
+                    <span className="text-xs font-semibold px-3 py-1 rounded-full bg-stone-100 dark:bg-white/10 text-stone-700 dark:text-stone-300 border border-stone-200/60 dark:border-white/10">
+                      Personalizado
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                    {/* Código del cupón */}
+                    <div>
+                      <label className="block text-[11px] font-bold uppercase tracking-wider text-stone-600 dark:text-stone-400 mb-1.5">
+                        Código del Cupón (Ej: LUMINA-VIP)
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        placeholder="PROMO2026"
+                        value={formCode}
+                        onChange={(e) => setFormCode(e.target.value.toUpperCase())}
+                        className="w-full px-3.5 py-2.5 rounded-xl border border-stone-200/80 dark:border-white/10 bg-stone-50/80 dark:bg-white/[0.04] text-sm font-mono font-semibold text-stone-900 dark:text-white placeholder:text-stone-400 focus:border-stone-900 dark:focus:border-white focus:ring-2 focus:ring-stone-900/10 dark:focus:ring-white/10 transition-all outline-none uppercase shadow-2xs"
+                      />
+                    </div>
+
+                    {/* Nombre / Título del Cupón */}
+                    <div>
+                      <label className="block text-[11px] font-bold uppercase tracking-wider text-stone-600 dark:text-stone-400 mb-1.5">
+                        Nombre / Título del Cupón
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="Descuento Primavera"
+                        value={formTitle}
+                        onChange={(e) => setFormTitle(e.target.value)}
+                        className="w-full px-3.5 py-2.5 rounded-xl border border-stone-200/80 dark:border-white/10 bg-stone-50/80 dark:bg-white/[0.04] text-sm text-stone-900 dark:text-white placeholder:text-stone-400 focus:border-stone-900 dark:focus:border-white focus:ring-2 focus:ring-stone-900/10 dark:focus:ring-white/10 transition-all outline-none shadow-2xs"
+                      />
+                    </div>
+
+                    {/* Tipo de Beneficio */}
+                    <div>
+                      <label className="block text-[11px] font-bold uppercase tracking-wider text-stone-600 dark:text-stone-400 mb-1.5">
+                        Tipo de Beneficio
+                      </label>
+                      <BeUISelectField
+                        value={formDiscountType}
+                        onChange={(val) => setFormDiscountType(val as "percent" | "fixed" | "free_shipping")}
+                        options={[
+                          { value: "percent", label: "Porcentaje de Descuento (%)" },
+                          { value: "free_shipping", label: "Envío 100% Gratis" },
+                        ]}
+                        placeholder="Seleccionar beneficio"
+                      />
+                    </div>
+
+                    {/* Porcentaje (% de Descuento) */}
+                    {formDiscountType === "percent" ? (
+                      <div>
+                        <label className="block text-[11px] font-bold uppercase tracking-wider text-stone-600 dark:text-stone-400 mb-1.5">
+                          Porcentaje (% de Descuento)
+                        </label>
+                        <div className="relative">
+                          <input
+                            type="number"
+                            min="1"
+                            max="90"
+                            value={formDiscountVal}
+                            onChange={(e) => setFormDiscountVal(Number(e.target.value))}
+                            className="w-full pl-3.5 pr-8 py-2.5 rounded-xl border border-stone-200/80 dark:border-white/10 bg-stone-50/80 dark:bg-white/[0.04] text-sm font-semibold text-stone-900 dark:text-white outline-none focus:border-stone-900 dark:focus:border-white focus:ring-2 focus:ring-stone-900/10 dark:focus:ring-white/10 transition-all shadow-2xs"
+                          />
+                          <span className="absolute right-3.5 top-1/2 -translate-y-1/2 text-xs font-bold text-stone-400">%</span>
+                        </div>
+                      </div>
+                    ) : (
+                      <div>
+                        <label className="block text-[11px] font-bold uppercase tracking-wider text-stone-600 dark:text-stone-400 mb-1.5">
+                          Beneficio Aplicado
+                        </label>
+                        <div className="px-3.5 py-2.5 rounded-xl border border-amber-500/20 bg-amber-500/10 text-amber-800 dark:text-amber-300 text-xs font-semibold flex items-center gap-2">
+                          <span>Envío 100% gratuito a todo el país</span>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Alcance Comercial */}
+                    <div>
+                      <label className="block text-[11px] font-bold uppercase tracking-wider text-stone-600 dark:text-stone-400 mb-1.5">
+                        Alcance Comercial
+                      </label>
+                      <BeUISelectField
+                        value={formScope}
+                        onChange={(val) => setFormScope(val as "all" | "niche")}
+                        options={[
+                          { value: "all", label: "Toda la Tienda (Descuento Global)" },
+                          { value: "niche", label: "Colección Específica (Por Nicho)" },
+                        ]}
+                        placeholder="Seleccionar alcance"
+                      />
+                    </div>
+
+                    {/* Nicho o Compra Mínima */}
+                    {formScope === "niche" ? (
+                      <div>
+                        <label className="block text-[11px] font-bold uppercase tracking-wider text-stone-600 dark:text-stone-400 mb-1.5">
+                          Colección / Nicho Seleccionado
+                        </label>
+                        <BeUISelectField
+                          value={formNiche}
+                          onChange={(val) => setFormNiche(val)}
+                          options={[
+                            { value: "Iluminación", label: "Iluminación de Ambiente" },
+                            { value: "Aromaterapia", label: "Aromaterapia & Esencias" },
+                            { value: "Home Office", label: "Home Office & Ergonomía" },
+                            { value: "Textiles", label: "Textiles & Lana" },
+                            { value: "Cerámica", label: "Cerámica de Autor" },
+                            { value: "Decoración", label: "Decoración & Esculturas" },
+                            { value: "Cocina", label: "Cocina & Barista" },
+                            { value: "Bienestar", label: "Bienestar & Descanso" },
+                          ]}
+                          placeholder="Seleccionar colección"
+                        />
+                      </div>
+                    ) : (
+                      <div>
+                        <label className="block text-[11px] font-bold uppercase tracking-wider text-stone-600 dark:text-stone-400 mb-1.5">
+                          Compra Mínima ($ USD)
+                        </label>
+                        <div className="relative">
+                          <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-xs font-bold text-stone-400">$</span>
+                          <input
+                            type="number"
+                            min="0"
+                            step="5"
+                            placeholder="0 (Sin mínimo)"
+                            value={formMinOrder}
+                            onChange={(e) => setFormMinOrder(Number(e.target.value))}
+                            className="w-full pl-7 pr-3.5 py-2.5 rounded-xl border border-stone-200/80 dark:border-white/10 bg-stone-50/80 dark:bg-white/[0.04] text-sm font-semibold text-stone-900 dark:text-white outline-none focus:border-stone-900 dark:focus:border-white focus:ring-2 focus:ring-stone-900/10 dark:focus:ring-white/10 transition-all shadow-2xs"
+                          />
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Límite de Canjes */}
+                    <div className="md:col-span-2 lg:col-span-3">
+                      <label className="block text-[11px] font-bold uppercase tracking-wider text-stone-600 dark:text-stone-400 mb-1.5">
+                        Límite de Canjes
+                      </label>
+                      <BeUISelectField
+                        value={String(formMaxUses)}
+                        onChange={(val) => setFormMaxUses(val === "none" ? "none" : Number(val))}
+                        options={[
+                          { value: "10", label: "10 canjes máximos" },
+                          { value: "30", label: "30 canjes" },
+                          { value: "50", label: "50 canjes" },
+                          { value: "100", label: "100 canjes" },
+                          { value: "none", label: "Ilimitado" },
+                        ]}
+                        placeholder="Seleccionar límite"
+                      />
+                    </div>
+                  </div>
+
+                  {/* FECHA DE FINALIZACIÓN CON BEUI WHEEL PICKER */}
+                  <div className="pt-3 border-t border-stone-200/60 dark:border-white/10">
+                    <div className="flex items-center justify-between mb-2.5">
+                      <div className="flex items-center gap-1.5">
+                        <Calendar className="w-3.5 h-3.5 text-amber-500" />
+                        <label className="text-[11px] font-bold uppercase tracking-wider text-stone-700 dark:text-stone-300">
+                          Fecha de Finalización (Vigencia)
+                        </label>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setHasExpirationDate(!hasExpirationDate)}
+                        className={`text-xs font-semibold px-2.5 py-1 rounded-lg transition-colors cursor-pointer ${
+                          hasExpirationDate
+                            ? "bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-500/20"
+                            : "bg-stone-200/60 dark:bg-white/10 text-stone-700 dark:text-stone-300"
+                        }`}
+                      >
+                        {hasExpirationDate ? "Con fecha de término" : "Permanente (Sin vencimiento)"}
+                      </button>
+                    </div>
+
+                    {hasExpirationDate ? (
+                      <div className="space-y-2.5">
+                        <div className="grid grid-cols-3 gap-2.5 p-3 rounded-2xl bg-stone-100/80 dark:bg-black/40 border border-stone-200/60 dark:border-white/5">
+                          <div>
+                            <span className="block text-[10px] font-bold uppercase tracking-wider text-stone-400 text-center mb-1">
+                              Día
+                            </span>
+                            <WheelPicker
+                              options={DAY_OPTIONS}
+                              value={expireDay}
+                              onValueChange={setExpireDay}
+                              sound={true}
+                              visibleCount={3}
+                              itemHeight={34}
+                              className="bg-white dark:bg-[#202023] border-stone-200/80 dark:border-white/10 shadow-xs"
+                            />
+                          </div>
+                          <div>
+                            <span className="block text-[10px] font-bold uppercase tracking-wider text-stone-400 text-center mb-1">
+                              Mes
+                            </span>
+                            <WheelPicker
+                              options={MONTH_OPTIONS}
+                              value={expireMonth}
+                              onValueChange={setExpireMonth}
+                              sound={true}
+                              visibleCount={3}
+                              itemHeight={34}
+                              className="bg-white dark:bg-[#202023] border-stone-200/80 dark:border-white/10 shadow-xs"
+                            />
+                          </div>
+                          <div>
+                            <span className="block text-[10px] font-bold uppercase tracking-wider text-stone-400 text-center mb-1">
+                              Año
+                            </span>
+                            <WheelPicker
+                              options={YEAR_OPTIONS}
+                              value={expireYear}
+                              onValueChange={setExpireYear}
+                              sound={true}
+                              visibleCount={3}
+                              itemHeight={34}
+                              className="bg-white dark:bg-[#202023] border-stone-200/80 dark:border-white/10 shadow-xs"
+                            />
+                          </div>
+                        </div>
+
+                        {/* Live Preview Bar */}
+                        <div className="flex items-center justify-between px-3.5 py-2 rounded-xl bg-amber-500/10 dark:bg-amber-500/15 border border-amber-500/20 text-xs text-amber-900 dark:text-amber-200">
+                          <span>
+                            Disponible hasta: <strong>{resolvedTargetDate?.toLocaleDateString("es-ES", { day: "numeric", month: "long", year: "numeric" })}</strong>
+                          </span>
+                          <span className="font-bold">
+                            {daysRemaining && daysRemaining > 0
+                              ? `(en ${daysRemaining} días)`
+                              : daysRemaining === 0
+                                ? "(vence hoy)"
+                                : "(fecha pasada)"}
+                          </span>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="p-3.5 rounded-2xl bg-stone-100/70 dark:bg-black/30 border border-stone-200/60 dark:border-white/5 flex items-center justify-center text-xs font-semibold text-stone-500 dark:text-stone-400">
+                        <span>Cupón permanente sin fecha límite de caducidad</span>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="flex justify-end gap-3 pt-3 border-t border-stone-200/60 dark:border-white/10">
+                    <button
+                      type="button"
+                      onClick={() => setShowManualForm(false)}
+                      className="px-4 py-2.5 rounded-xl text-xs font-semibold text-stone-500 hover:text-stone-800 dark:hover:text-stone-200 cursor-pointer"
+                    >
+                      Cancelar
+                    </button>
+                    <button
+                      type="submit"
+                      className="px-6 py-2.5 rounded-xl bg-stone-950 dark:bg-white text-white dark:text-stone-950 text-xs font-bold hover:bg-stone-800 dark:hover:bg-stone-100 transition-colors shadow-xs active:scale-95 cursor-pointer"
+                    >
+                      Guardar y Activar Cupón
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {/* ===================================================================== */}
         {/* 1.1 JUST GENERATED COUPON BANNER (ADMIN)                              */}
@@ -1312,7 +1344,7 @@ export function DiscountCouponsTab() {
 
                   <button
                     type="button"
-                    onClick={() => setAnalyticsCoupon(justGeneratedCoupon)}
+                    onClick={() => justGeneratedCoupon && handleOpenAnalytics(justGeneratedCoupon)}
                     className="px-3.5 py-2.5 rounded-xl bg-stone-900 dark:bg-white text-white dark:text-stone-900 text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors cursor-pointer shadow-xs"
                   >
                     <BarChart3 className="w-3.5 h-3.5" />
@@ -1647,7 +1679,7 @@ export function DiscountCouponsTab() {
                     {isAdmin && (
                       <button
                         type="button"
-                        onClick={() => setAnalyticsCoupon(coupon)}
+                        onClick={() => handleOpenAnalytics(coupon)}
                         className="shrink-0 px-2.5 py-1.5 rounded-xl bg-purple-500/10 hover:bg-purple-500/20 text-purple-700 dark:text-purple-300 text-[11px] font-bold transition-all flex items-center gap-1.5 cursor-pointer active:scale-95 shadow-xs border border-purple-500/20 whitespace-nowrap"
                         title="Analizar métricas: quién lo usó, pedidos, avatar y valores antes/después"
                       >
@@ -1726,8 +1758,8 @@ export function DiscountCouponsTab() {
       {/* 8. FORENSIC COUPON ANALYTICS MODAL (CLIENT REDEMPTIONS, AVATARS, ORDER)*/}
       {/* ===================================================================== */}
       <CouponAnalyticsModal
-        open={Boolean(analyticsCoupon)}
-        onClose={() => setAnalyticsCoupon(null)}
+        open={isAnalyticsOpen}
+        onClose={() => setIsAnalyticsOpen(false)}
         coupon={analyticsCoupon}
       />
     </div>

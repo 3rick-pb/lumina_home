@@ -37,6 +37,13 @@ export function CouponAnalyticsModal({
   const [searchFilter, setSearchFilter] = useState("");
   const { orders } = useUserStore();
 
+  const [cachedCoupon, setCachedCoupon] = useState<DiscountCoupon | null>(coupon);
+  useEffect(() => {
+    if (coupon) setCachedCoupon(coupon);
+  }, [coupon]);
+
+  const activeCoupon = coupon ?? cachedCoupon;
+
   useEffect(() => {
     setMounted(true);
   }, []);
@@ -49,24 +56,24 @@ export function CouponAnalyticsModal({
 
   // Combine pre-seeded redemptions with any live store orders that might reference this coupon
   const allRedemptions = useMemo(() => {
-    if (!coupon) return [];
+    if (!activeCoupon) return [];
 
-    const baseList: CouponRedemptionRecord[] = coupon.redemptions ? [...coupon.redemptions] : [];
+    const baseList: CouponRedemptionRecord[] = activeCoupon.redemptions ? [...activeCoupon.redemptions] : [];
 
     // Find any live orders that used this coupon
     const matchingLiveOrders = (orders || []).filter((ord) => {
       // Check if order tracking or items or metadata references this coupon code
       const jsonStr = JSON.stringify(ord).toLowerCase();
-      return jsonStr.includes(coupon.code.toLowerCase());
+      return jsonStr.includes(activeCoupon.code.toLowerCase());
     });
 
     matchingLiveOrders.forEach((ord) => {
       const alreadyInList = baseList.some((r) => r.orderId === ord.id);
       if (!alreadyInList) {
         const discountVal =
-          coupon.discountType === "free_shipping"
+          activeCoupon.discountType === "free_shipping"
             ? 5.0
-            : Number(((ord.total * (coupon.discountPercent || 15)) / 100).toFixed(2));
+            : Number(((ord.total * (activeCoupon.discountPercent || 15)) / 100).toFixed(2));
         const before = ord.total + discountVal;
         baseList.unshift({
           id: `live-${ord.id}`,
@@ -86,7 +93,7 @@ export function CouponAnalyticsModal({
     });
 
     return baseList;
-  }, [coupon, orders]);
+  }, [activeCoupon, orders]);
 
   // Filtered redemptions by search query
   const filteredRedemptions = useMemo(() => {
@@ -111,7 +118,7 @@ export function CouponAnalyticsModal({
     return allRedemptions.reduce((acc, r) => acc + (r.afterAmount || 0), 0) / allRedemptions.length;
   }, [allRedemptions]);
 
-  if (!mounted || !coupon) return null;
+  if (!mounted || !activeCoupon) return null;
 
   return (
     <CenterMorphModal
@@ -121,13 +128,13 @@ export function CouponAnalyticsModal({
       }}
     >
       <CenterMorphModalContent
-        ariaLabel={`Métricas de rendimiento cupón ${coupon.code}`}
+        ariaLabel={`Métricas de rendimiento cupón ${activeCoupon.code}`}
         showCloseButton={false}
         className="max-w-3xl w-full mx-auto p-0 border-0 bg-transparent shadow-none"
       >
         <div
           data-lenis-prevent="true"
-          className="relative w-full bg-white dark:bg-[#1c1c1f] text-gray-900 dark:text-stone-100 rounded-[2rem] sm:rounded-[2.5rem] border border-black/10 dark:border-white/10 shadow-[0_25px_60px_rgba(0,0,0,0.5)] overflow-hidden flex flex-col max-h-[92vh] sm:max-h-[90vh]"
+          className="relative w-full bg-white dark:bg-[#1c1c1f] text-gray-900 dark:text-stone-100 rounded-[2rem] border border-black/10 dark:border-white/10 overflow-hidden flex flex-col max-h-[92vh] sm:max-h-[90vh]"
         >
             {/* Modal Header */}
             <div className="p-5 sm:p-6 border-b border-gray-100 dark:border-white/5 flex items-center justify-between gap-4 bg-gray-50/70 dark:bg-white/[0.02]">
@@ -138,15 +145,15 @@ export function CouponAnalyticsModal({
                 <div>
                   <div className="flex flex-wrap items-center gap-2">
                     <span className="font-mono text-base sm:text-lg font-black tracking-wider text-gray-950 dark:text-white">
-                      {coupon.code}
+                      {activeCoupon.code}
                     </span>
                     <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-amber-400/20 text-amber-800 dark:text-amber-300 border border-amber-400/30">
-                      {coupon.discountType === "free_shipping"
+                      {activeCoupon.discountType === "free_shipping"
                         ? "Envío Gratis"
-                        : `${coupon.discountPercent}% OFF`}
+                        : `${activeCoupon.discountPercent}% OFF`}
                     </span>
                     <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-gray-200 dark:bg-white/10 text-gray-700 dark:text-gray-300">
-                      {coupon.scope === "all" ? "Tienda General" : coupon.targetNiche}
+                      {activeCoupon.scope === "all" ? "Tienda General" : activeCoupon.targetNiche}
                     </span>
                   </div>
                   <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
@@ -205,7 +212,7 @@ export function CouponAnalyticsModal({
                     <span className="truncate">Compartido</span>
                   </div>
                   <p className="text-xl sm:text-2xl font-black text-gray-950 dark:text-white">
-                    {coupon.shareCount || 0} veces
+                    {activeCoupon.shareCount || 0} veces
                   </p>
                 </div>
               </div>

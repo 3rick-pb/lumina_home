@@ -39,6 +39,13 @@ export function CouponWalletModal({
   const [isAddingGoogle, setIsAddingGoogle] = useState(false);
   const [walletFeedback, setWalletFeedback] = useState<string | null>(null);
 
+  const [cachedCoupon, setCachedCoupon] = useState<DiscountCoupon | null>(coupon);
+  useEffect(() => {
+    if (coupon) setCachedCoupon(coupon);
+  }, [coupon]);
+
+  const activeCoupon = coupon ?? cachedCoupon;
+
   useEffect(() => {
     setMounted(true);
   }, []);
@@ -50,10 +57,10 @@ export function CouponWalletModal({
     }
   }, [open]);
 
-  if (!mounted || !coupon) return null;
+  if (!mounted || !activeCoupon) return null;
 
   const handleCopyCode = () => {
-    navigator.clipboard.writeText(coupon.code);
+    navigator.clipboard.writeText(activeCoupon.code);
     setCopied(true);
     setTimeout(() => setCopied(false), 2200);
   };
@@ -77,13 +84,13 @@ export function CouponWalletModal({
       }}
     >
       <CenterMorphModalContent
-        ariaLabel={`Pase digital cupón ${coupon.code}`}
+        ariaLabel={`Pase digital cupón ${activeCoupon.code}`}
         showCloseButton={false}
         className="max-w-md w-full mx-auto p-0 border-0 bg-transparent shadow-none"
       >
         <div
           data-lenis-prevent="true"
-          className="relative w-full bg-stone-900 text-stone-100 rounded-[2rem] border border-stone-800 shadow-[0_24px_50px_rgba(0,0,0,0.6)] overflow-hidden"
+          className="relative w-full bg-stone-900 text-stone-100 rounded-[2rem] border border-stone-800/80 overflow-hidden"
         >
         {/* Header bar */}
             <div className="flex items-center justify-between p-5 border-b border-stone-800/80 bg-stone-950/40">
@@ -123,24 +130,24 @@ export function CouponWalletModal({
                       LÚMINA HOME · GOOGLE WALLET PASS
                     </span>
                     <h4 className="text-base font-black text-white mt-0.5">
-                      {coupon.title}
+                      {activeCoupon.title}
                     </h4>
                   </div>
                   <div className="px-3 py-1 rounded-full bg-amber-400/15 border border-amber-400/30 text-amber-300 font-black text-xs">
-                    {coupon.discountType === "free_shipping"
+                    {activeCoupon.discountType === "free_shipping"
                       ? "ENVÍO GRATIS"
-                      : `-${coupon.discountPercent}% OFF`}
+                      : `-${activeCoupon.discountPercent}% OFF`}
                   </div>
                 </div>
 
                 {/* Scope & Details */}
                 <div className="mt-3 flex items-center gap-3 text-[11px] text-stone-300">
                   <span className="font-semibold text-stone-200">
-                    {coupon.scope === "all" ? "🏛️ Toda la Tienda" : `🌿 ${coupon.targetNiche}`}
+                    {activeCoupon.scope === "all" ? "🏛️ Toda la Tienda" : `🌿 ${activeCoupon.targetNiche}`}
                   </span>
-                  {coupon.minOrderAmount > 0 && (
+                  {activeCoupon.minOrderAmount > 0 && (
                     <span className="text-stone-400">
-                      • Min. ${coupon.minOrderAmount} USD
+                      • Min. ${activeCoupon.minOrderAmount} USD
                     </span>
                   )}
                 </div>
@@ -155,14 +162,14 @@ export function CouponWalletModal({
                 <div className="flex flex-col items-center justify-center p-3 rounded-xl bg-white text-stone-950 shadow-md">
                   <div className="w-full max-w-[260px] py-1 flex items-center justify-center">
                     <VectorBarcode
-                      code={coupon.code}
+                      code={activeCoupon.code}
                       height={50}
                       color="#0c0d0e"
                       className="w-full"
                     />
                   </div>
                   <span className="font-mono text-xs font-black tracking-[0.25em] text-stone-900 mt-1">
-                    {coupon.code}
+                    {activeCoupon.code}
                   </span>
                   <span className="text-[9px] uppercase tracking-wider text-stone-500 font-medium mt-0.5">
                     Código 128 · Escaneo Lineal 1D
@@ -172,8 +179,8 @@ export function CouponWalletModal({
                 {/* Pass Expiration */}
                 <div className="mt-3 flex items-center justify-between text-[10px] text-stone-400">
                   <span>
-                    {coupon.expiresAt
-                      ? `Vence: ${new Date(coupon.expiresAt).toLocaleDateString("es-ES", {
+                    {activeCoupon.expiresAt
+                      ? `Vence: ${new Date(activeCoupon.expiresAt).toLocaleDateString("es-ES", {
                           day: "numeric",
                           month: "short",
                           year: "numeric",
@@ -212,7 +219,7 @@ export function CouponWalletModal({
                   items={[
                     {
                       id: "copy",
-                      label: `Copiar código (${coupon.code})`,
+                      label: `Copiar código (${activeCoupon.code})`,
                       icon: <Copy className="w-3.5 h-3.5 text-stone-400" />,
                     },
                     {

@@ -106,16 +106,16 @@
     background-color: rgba(0, 0, 0, 0.44);
   }
 
-  /* DARK MODE: Blanco Perla (Pearl White) with Soft Ambient Glow */
+  /* DARK MODE: Blanco Puro (#ffffff) with Soft Ambient Glow */
   html.dark::-webkit-scrollbar-thumb,
   html.dark ::-webkit-scrollbar-thumb,
   body.dark::-webkit-scrollbar-thumb,
   body.dark ::-webkit-scrollbar-thumb,
   .dark::-webkit-scrollbar-thumb,
   .dark ::-webkit-scrollbar-thumb {
-    background-color: rgba(248, 246, 240, 0.82) !important;
+    background-color: #ffffff !important;
     border-radius: 9999px;
-    box-shadow: 0 0 6px rgba(248, 246, 240, 0.35);
+    box-shadow: 0 0 8px rgba(255, 255, 255, 0.6);
   }
   html.dark::-webkit-scrollbar-thumb:hover,
   html.dark ::-webkit-scrollbar-thumb:hover,
@@ -123,8 +123,8 @@
   body.dark ::-webkit-scrollbar-thumb:hover,
   .dark::-webkit-scrollbar-thumb:hover,
   .dark ::-webkit-scrollbar-thumb:hover {
-    background-color: rgba(255, 255, 255, 0.98) !important;
-    box-shadow: 0 0 10px rgba(255, 255, 255, 0.6);
+    background-color: #ffffff !important;
+    box-shadow: 0 0 12px rgba(255, 255, 255, 0.9);
   }
   ::-webkit-scrollbar-corner {
     background: transparent;
@@ -140,7 +140,7 @@
     html.dark *,
     .dark,
     .dark * {
-      scrollbar-color: rgba(248, 246, 240, 0.82) transparent !important;
+      scrollbar-color: #ffffff transparent !important;
     }
   }
 
