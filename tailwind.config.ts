@@ -17,6 +17,19 @@ const config: Config = {
       colors: {
         background: "var(--background)",
         foreground: "var(--foreground)",
+        border: "var(--border, rgba(0, 0, 0, 0.1))",
+        card: {
+          DEFAULT: "var(--card, #ffffff)",
+          foreground: "var(--card-foreground, #09090b)",
+        },
+        popover: {
+          DEFAULT: "var(--popover, #ffffff)",
+          foreground: "var(--popover-foreground, #09090b)",
+        },
+        muted: {
+          DEFAULT: "var(--muted, #f4f4f5)",
+          foreground: "var(--muted-foreground, #71717a)",
+        },
         brand: {
           50: '#f4f5f0',
           100: '#e5e8da',

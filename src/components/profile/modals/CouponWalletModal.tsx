@@ -16,7 +16,11 @@ import {
 } from "lucide-react";
 import { VectorBarcode } from "@/components/ui/VectorBarcode";
 import { GoogleWalletButton } from "@/components/ui/GoogleWalletButton";
-import { BeUICenterMorphModal } from "@/components/ui/BeUIControls";
+import {
+  CenterMorphModal,
+  CenterMorphModalContent,
+} from "@/components/motion/center-morph-modal";
+import { ActionSwapButton } from "@/components/motion/action-swap";
 import type { DiscountCoupon } from "@/lib/couponStore";
 
 export interface CouponWalletModalProps {
@@ -66,17 +70,21 @@ export function CouponWalletModal({
   };
 
   return (
-    <BeUICenterMorphModal
+    <CenterMorphModal
       open={open}
       onOpenChange={(isOpen) => {
         if (!isOpen) onClose();
       }}
-      className="max-w-md w-full mx-auto"
     >
-      <div
-        data-lenis-prevent="true"
-        className="relative w-full bg-stone-900 text-stone-100 rounded-[2rem] border border-stone-800 shadow-[0_24px_50px_rgba(0,0,0,0.6)] overflow-hidden"
+      <CenterMorphModalContent
+        ariaLabel={`Pase digital cupón ${coupon.code}`}
+        showCloseButton={false}
+        className="max-w-md w-full mx-auto p-0 border-0 bg-transparent shadow-none"
       >
+        <div
+          data-lenis-prevent="true"
+          className="relative w-full bg-stone-900 text-stone-100 rounded-[2rem] border border-stone-800 shadow-[0_24px_50px_rgba(0,0,0,0.6)] overflow-hidden"
+        >
         {/* Header bar */}
             <div className="flex items-center justify-between p-5 border-b border-stone-800/80 bg-stone-950/40">
               <div className="flex items-center gap-2">
@@ -199,24 +207,26 @@ export function CouponWalletModal({
                   className="w-full justify-center shadow-md py-2.5"
                 />
 
-                {/* Copy code button */}
-                <button
-                  type="button"
+                {/* beUI Action Swap Button: Copiar -> Copiado */}
+                <ActionSwapButton
+                  items={[
+                    {
+                      id: "copy",
+                      label: `Copiar código (${coupon.code})`,
+                      icon: <Copy className="w-3.5 h-3.5 text-stone-400" />,
+                    },
+                    {
+                      id: "copied",
+                      label: "¡Código copiado al portapapeles!",
+                      icon: <Check className="w-3.5 h-3.5 text-amber-400" />,
+                    },
+                  ]}
+                  value={copied ? "copied" : "copy"}
+                  cycle={false}
+                  animation="cascade"
                   onClick={handleCopyCode}
-                  className="w-full py-2.5 px-4 rounded-xl bg-stone-800/80 hover:bg-stone-700 text-stone-200 text-xs font-medium flex items-center justify-center gap-2 transition-colors cursor-pointer"
-                >
-                  {copied ? (
-                    <>
-                      <Check className="w-3.5 h-3.5 text-emerald-400" />
-                      <span className="text-emerald-400 font-bold">¡Código copiado al portapapeles!</span>
-                    </>
-                  ) : (
-                    <>
-                      <Copy className="w-3.5 h-3.5 text-stone-400" />
-                      <span>Copiar código ({coupon.code})</span>
-                    </>
-                  )}
-                </button>
+                  className="w-full py-2.5 px-4 rounded-xl bg-stone-800/80 hover:bg-stone-700 text-stone-200 text-xs font-semibold flex items-center justify-center gap-2 border border-stone-700/60 transition-colors cursor-pointer"
+                />
               </div>
 
               {/* Informative reassurance */}
@@ -224,7 +234,8 @@ export function CouponWalletModal({
                 El pase almacena el código de barras lineal 1D estandarizado para lectura inmediata sin conexión en cajas registradoras o en el checkout online.
               </p>
             </div>
-      </div>
-    </BeUICenterMorphModal>
+        </div>
+      </CenterMorphModalContent>
+    </CenterMorphModal>
   );
 }

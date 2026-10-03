@@ -14,7 +14,10 @@ import {
   Calendar,
 } from "lucide-react";
 import { BlobatarAvatar } from "@/components/ui/BlobatarAvatar";
-import { BeUICenterMorphModal } from "@/components/ui/BeUIControls";
+import {
+  CenterMorphModal,
+  CenterMorphModalContent,
+} from "@/components/motion/center-morph-modal";
 import { ExpandableSearchBar } from "@/components/ui/ExpandableSearchBar";
 import { useUserStore } from "@/lib/userStore";
 import type { DiscountCoupon, CouponRedemptionRecord } from "@/lib/couponStore";
@@ -111,17 +114,21 @@ export function CouponAnalyticsModal({
   if (!mounted || !coupon) return null;
 
   return (
-    <BeUICenterMorphModal
+    <CenterMorphModal
       open={open}
       onOpenChange={(isOpen) => {
         if (!isOpen) onClose();
       }}
-      className="max-w-3xl w-full mx-auto"
     >
-      <div
-        data-lenis-prevent="true"
-        className="relative w-full bg-white dark:bg-[#1c1c1f] text-gray-900 dark:text-stone-100 rounded-[2rem] sm:rounded-[2.5rem] border border-black/10 dark:border-white/10 shadow-[0_25px_60px_rgba(0,0,0,0.5)] overflow-hidden flex flex-col max-h-[92vh] sm:max-h-[90vh]"
+      <CenterMorphModalContent
+        ariaLabel={`Métricas de rendimiento cupón ${coupon.code}`}
+        showCloseButton={false}
+        className="max-w-3xl w-full mx-auto p-0 border-0 bg-transparent shadow-none"
       >
+        <div
+          data-lenis-prevent="true"
+          className="relative w-full bg-white dark:bg-[#1c1c1f] text-gray-900 dark:text-stone-100 rounded-[2rem] sm:rounded-[2.5rem] border border-black/10 dark:border-white/10 shadow-[0_25px_60px_rgba(0,0,0,0.5)] overflow-hidden flex flex-col max-h-[92vh] sm:max-h-[90vh]"
+        >
             {/* Modal Header */}
             <div className="p-5 sm:p-6 border-b border-gray-100 dark:border-white/5 flex items-center justify-between gap-4 bg-gray-50/70 dark:bg-white/[0.02]">
               <div className="flex items-center gap-3">
@@ -354,7 +361,8 @@ export function CouponAnalyticsModal({
                 Cerrar
               </button>
             </div>
-      </div>
-    </BeUICenterMorphModal>
+        </div>
+      </CenterMorphModalContent>
+    </CenterMorphModal>
   );
 }

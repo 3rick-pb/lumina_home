@@ -33,7 +33,27 @@
   :root {
     --background: #faf9f6;
     --foreground: #111827;
+    --card: #ffffff;
+    --card-foreground: #111827;
+    --popover: #ffffff;
+    --popover-foreground: #111827;
+    --border: rgba(0, 0, 0, 0.08);
+    --muted: #f3f4f6;
+    --muted-foreground: #6b7280;
     --font-moonwalk: 'Moonwalk', 'MuseoModerno', sans-serif;
+  }
+
+  html.dark,
+  .dark {
+    --background: #18181b;
+    --foreground: #f4f4f5;
+    --card: #1a1a1c;
+    --card-foreground: #f4f4f5;
+    --popover: #1a1a1c;
+    --popover-foreground: #f4f4f5;
+    --border: rgba(255, 255, 255, 0.1);
+    --muted: #27272a;
+    --muted-foreground: #a1a1aa;
   }
 
   @media (prefers-reduced-motion: no-preference) {
@@ -121,6 +141,21 @@
     .dark,
     .dark * {
       scrollbar-color: rgba(248, 246, 240, 0.82) transparent !important;
+    }
+  }
+
+  /* macOS Sequoia Jelly Scrollbar Replacement — Suppress Native Browser Track on Desktop for html/body only */
+  @media (pointer: fine) {
+    html,
+    body {
+      -ms-overflow-style: none !important;
+      scrollbar-width: none !important;
+    }
+    html::-webkit-scrollbar,
+    body::-webkit-scrollbar {
+      display: none !important;
+      width: 0 !important;
+      height: 0 !important;
     }
   }
 

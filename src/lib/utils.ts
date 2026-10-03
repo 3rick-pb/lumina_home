@@ -17,4 +17,3 @@ export function normalizeSearchText(text?: string | null): string {
     .toLowerCase()
     .trim();
 }
-
