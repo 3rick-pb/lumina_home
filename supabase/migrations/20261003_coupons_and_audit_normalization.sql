@@ -257,16 +257,22 @@ ALTER TABLE public.store_trust_badges ADD COLUMN IF NOT EXISTS is_active BOOLEAN
 ALTER TABLE public.store_trust_badges ADD COLUMN IF NOT EXISTS display_order INTEGER DEFAULT 0;
 ALTER TABLE public.store_trust_badges ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ DEFAULT now();
 
+-- Limpiar distintivos obsoletos o duplicados (eliminar Soporte VIP y garantía redundante)
+DELETE FROM public.store_trust_badges WHERE id IN ('support', 'warranty') OR lower(title) LIKE '%soporte%';
+
 INSERT INTO public.store_trust_badges (id, title, subtitle, icon_name, is_active, display_order)
 VALUES
-  ('warranty', 'Sigue tu paquete', 'Paso a paso en tiempo real', 'PackageSearch', true, 1),
-  ('returns', 'Devoluciones 10 días', 'Sin complicaciones', 'RotateCcw', true, 2),
-  ('quality', 'Garantía Lumina', 'Materiales nobles certificados', 'ShieldCheck', true, 3),
-  ('support', 'Soporte VIP', 'Atención personalizada 24/7', 'Headphones', true, 4)
+  ('shipping', 'Envíos nacionales', 'A todo el país', 'Truck', true, 1),
+  ('tracking', 'Sigue tu paquete', 'Paso a paso en tiempo real', 'PackageSearch', true, 2),
+  ('returns', 'Devoluciones 10 días', 'Sin complicaciones', 'RotateCcw', true, 3),
+  ('financing', 'Financiación 0%', 'Hasta 12 cuotas', 'Percent', true, 4),
+  ('security', 'Pagos seguros', '100% cifrado SSL', 'Lock', true, 5)
 ON CONFLICT (id) DO UPDATE SET
   title = EXCLUDED.title,
   subtitle = EXCLUDED.subtitle,
-  icon_name = EXCLUDED.icon_name;
+  icon_name = EXCLUDED.icon_name,
+  is_active = EXCLUDED.is_active,
+  display_order = EXCLUDED.display_order;
 
 -- =========================================================================================
 -- 8. TABLA: PREFERENCIAS DE USUARIO Y TEMAS (public.user_settings)

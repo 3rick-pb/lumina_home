@@ -42,6 +42,23 @@ CREATE TABLE IF NOT EXISTS public.store_trust_badges (
   created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
+-- Limpiar distintivos obsoletos o duplicados (eliminar Soporte VIP y garantía redundante)
+DELETE FROM public.store_trust_badges WHERE id IN ('support', 'warranty') OR lower(title) LIKE '%soporte%';
+
+INSERT INTO public.store_trust_badges (id, title, subtitle, icon_name, is_active, display_order)
+VALUES
+  ('shipping', 'Envíos nacionales', 'A todo el país', 'Truck', true, 1),
+  ('tracking', 'Sigue tu paquete', 'Paso a paso en tiempo real', 'PackageSearch', true, 2),
+  ('returns', 'Devoluciones 10 días', 'Sin complicaciones', 'RotateCcw', true, 3),
+  ('financing', 'Financiación 0%', 'Hasta 12 cuotas', 'Percent', true, 4),
+  ('security', 'Pagos seguros', '100% cifrado SSL', 'Lock', true, 5)
+ON CONFLICT (id) DO UPDATE SET
+  title = EXCLUDED.title,
+  subtitle = EXCLUDED.subtitle,
+  icon_name = EXCLUDED.icon_name,
+  is_active = EXCLUDED.is_active,
+  display_order = EXCLUDED.display_order;
+
 CREATE TABLE IF NOT EXISTS public.header_niche_slots (
   id TEXT PRIMARY KEY CHECK (id IN ('slot1', 'slot2')),
   label TEXT NOT NULL,

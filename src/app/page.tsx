@@ -96,7 +96,7 @@ interface TrustBadgeItem {
 const DEFAULT_TRUST_BADGES: TrustBadgeItem[] = [
   {
     icon: Truck,
-    title: "Envíos a todo EC",
+    title: "Envíos nacionales",
     subtitle: "A todo el país",
   },
   {
@@ -186,28 +186,65 @@ export default function Home() {
           .order('display_order', { ascending: true });
 
         if (!error && data && data.length > 0) {
-          setTrustBadges(data.map(item => {
+          const mapped: TrustBadgeItem[] = [];
+          const seenTitles = new Set<string>();
+
+          for (const item of data) {
+            const lowerId = (item.id || "").toLowerCase();
             const lowerTitle = (item.title || "").toLowerCase();
-            if (item.id === 'warranty' || lowerTitle.includes('garant')) {
-              return {
-                title: "Sigue tu paquete",
-                subtitle: "Paso a paso en tiempo real",
-                icon: PackageSearch,
-              };
+
+            // 1. Soporte VIP must NOT exist: completely eliminate
+            if (lowerId === 'support' || lowerTitle.includes('soporte') || lowerTitle.includes('vip')) {
+              continue;
             }
-            if (item.id === 'returns' || lowerTitle.includes('devoluci')) {
-              return {
-                title: "Devoluciones 10 días",
-                subtitle: item.subtitle || "Sin complicaciones",
-                icon: TRUST_ICON_MAP[item.icon_name] || RotateCcw,
-              };
+
+            // 2. Skip legacy warranty badge to prevent duplicating tracking
+            if (lowerId === 'warranty' || lowerTitle.includes('garant')) {
+              continue;
             }
-            return {
-              title: item.title,
-              subtitle: item.subtitle,
-              icon: TRUST_ICON_MAP[item.icon_name] || ShieldCheck,
-            };
-          }));
+
+            // 3. Resolve badge details and icons
+            let title = item.title;
+            let subtitle = item.subtitle || "";
+            let iconComponent = TRUST_ICON_MAP[item.icon_name] || ShieldCheck;
+
+            if (lowerId.includes('shipping') || lowerTitle.includes('envio') || lowerTitle.includes('envío') || lowerTitle.includes('nacion')) {
+              title = "Envíos nacionales";
+              subtitle = subtitle || "A todo el país";
+              iconComponent = Truck;
+            } else if (lowerId.includes('track') || lowerTitle.includes('sigue') || lowerTitle.includes('paquete')) {
+              title = "Sigue tu paquete";
+              subtitle = "Paso a paso en tiempo real";
+              iconComponent = PackageSearch;
+            } else if (lowerId.includes('return') || lowerTitle.includes('devoluc')) {
+              title = "Devoluciones 10 días";
+              subtitle = subtitle || "Sin complicaciones";
+              iconComponent = RotateCcw;
+            } else if (lowerId.includes('financ') || lowerTitle.includes('cuota')) {
+              title = "Financiación 0%";
+              subtitle = subtitle || "Hasta 12 cuotas";
+              iconComponent = Percent;
+            } else if (lowerId.includes('pay') || lowerId.includes('sec') || lowerTitle.includes('pago') || lowerTitle.includes('segur') || lowerTitle.includes('ssl')) {
+              title = "Pagos seguros";
+              subtitle = subtitle || "100% cifrado SSL";
+              iconComponent = Lock;
+            }
+
+            // 4. Deduplicate by title: always preserve ONLY the 1st occurrence
+            const normTitle = normalizeText(title);
+            if (!seenTitles.has(normTitle)) {
+              seenTitles.add(normTitle);
+              mapped.push({
+                title,
+                subtitle,
+                icon: iconComponent,
+              });
+            }
+          }
+
+          if (mapped.length > 0) {
+            setTrustBadges(mapped);
+          }
         }
       } catch (err) {
         console.warn("Could not load store_trust_badges from Supabase:", err);
