@@ -3,6 +3,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ChevronDown, Check } from "lucide-react";
+import { MacOSScrollbar } from "@/components/ui/MacOSScrollbar";
 
 export interface LuminaComboboxOption {
   value: string;
@@ -40,6 +41,7 @@ export function LuminaCombobox({
   const [isOpen, setIsOpen] = useState(false);
   const [search, setSearch] = useState("");
   const containerRef = useRef<HTMLDivElement>(null);
+  const dropdownScrollRef = useRef<HTMLDivElement>(null);
 
   // Normalize options to uniform LuminaComboboxOption objects
   const normalizedOptions: LuminaComboboxOption[] = options.map((opt) => {
@@ -156,9 +158,14 @@ export function LuminaCombobox({
               mass: 0.75,
             }}
             style={{ transformOrigin: "top center" }}
-            data-lenis-prevent="true"
-            className="absolute left-0 right-0 z-50 mt-1 min-w-[200px] max-h-64 overflow-y-auto overscroll-contain rounded-2xl border border-gray-200 dark:border-white/15 bg-white/95 dark:bg-[#1c1c1f]/95 backdrop-blur-xl shadow-2xl p-1.5 focus:outline-none"
+            className="absolute left-0 right-0 z-50 mt-1 min-w-[200px] rounded-2xl border border-gray-200 dark:border-white/15 bg-white/95 dark:bg-[#1c1c1f]/95 backdrop-blur-xl shadow-2xl focus:outline-none overflow-hidden"
           >
+            {/* Inner scrollable area with MacOS jelly scrollbar */}
+            <div
+              ref={dropdownScrollRef}
+              data-lenis-prevent="true"
+              className="relative max-h-64 overflow-y-auto overscroll-contain p-1.5 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
+            >
             {/* OPTIONAL SEARCH */}
             {searchable && (
               <div className="p-1.5 mb-1 border-b border-gray-100 dark:border-white/5">
@@ -224,6 +231,12 @@ export function LuminaCombobox({
                 })}
               </div>
             )}
+            </div>
+            {/* MacOS jelly scrollbar overlaid on dropdown — inset avoids rounded-2xl clip */}
+            <MacOSScrollbar
+              containerRef={dropdownScrollRef}
+              inset={10}
+            />
           </motion.div>
         )}
       </AnimatePresence>

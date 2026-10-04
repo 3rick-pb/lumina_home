@@ -2969,7 +2969,7 @@ export function CartDrawer() {
   </div>
 
   {/* Authentic macOS Sequoia Floating Overlay Scrollbar with Hooke's Law Rebound Physics */}
-  <MacOSScrollbar containerRef={cartScrollRef} />
+  <MacOSScrollbar containerRef={cartScrollRef} insetTop={76} insetBottom={28} />
   </motion.div>
 
   {/* ======================================================================= */}

@@ -502,7 +502,7 @@ export function OrderDetailModal({
         </div>
 
         {/* Authentic macOS Sequoia Floating Overlay Scrollbar with Hooke's Law Rebound Physics */}
-        <MacOSScrollbar containerRef={scrollContainerRef} />
+        <MacOSScrollbar containerRef={scrollContainerRef} insetTop={28} insetBottom={28} />
       </div>
 
       {/* In-Page Wallet Pass Popup Modal with @beui/tilt-card */}

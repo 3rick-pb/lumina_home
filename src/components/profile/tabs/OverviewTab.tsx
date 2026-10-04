@@ -19,6 +19,7 @@ import { useUserStore, Order } from "@/lib/userStore";
 import { LuminaCardFolderItem } from "@/components/ui/CardFolder";
 import { BeUIOrderStatusSelector } from "@/components/ui/BeUIControls";
 import { getLenis } from "@/components/providers/SmoothScrollProvider";
+import { MacOSScrollbar } from "@/components/ui/MacOSScrollbar";
 
 interface OverviewTabProps {
   isAdmin: boolean;
@@ -387,12 +388,20 @@ export function OverviewTab({
 
         {/* Visual Dynamic Bar Chart */}
         <div data-lenis-prevent="true" className="relative w-full my-auto">
+          {/* Horizontal MacOS jelly scrollbar for niche inventory bars */}
+          <MacOSScrollbar
+            containerRef={nicheChartRef}
+            orientation="horizontal"
+            insetLeft={12}
+            insetRight={12}
+            insetBottom={0}
+          />
           <div 
             ref={nicheChartRef}
             data-lenis-prevent="true"
             onMouseEnter={isAdmin ? handleNicheContainerMouseEnter : undefined}
             onMouseLeave={isAdmin ? handleNicheContainerLeave : handleMonthContainerLeave}
-            className={`flex items-end h-40 pt-7 pb-1 px-1 overflow-x-auto overflow-y-hidden select-none cursor-grab active:cursor-grabbing touch-pan-y touch-pan-x ${
+            className={`flex items-end h-40 pt-7 pb-1 px-1 overflow-x-auto overflow-y-hidden select-none cursor-grab active:cursor-grabbing touch-pan-y touch-pan-x [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden ${
               categoryDistributionData.length <= 4 
                 ? "justify-around gap-3" 
                 : categoryDistributionData.length <= 7 

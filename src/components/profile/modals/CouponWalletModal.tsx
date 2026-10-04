@@ -1,7 +1,8 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
+import { MacOSScrollbar } from "@/components/ui/MacOSScrollbar";
 import {
   X,
   Copy,
@@ -38,6 +39,7 @@ export function CouponWalletModal({
   const [mounted, setMounted] = useState(false);
   const [isAddingGoogle, setIsAddingGoogle] = useState(false);
   const [walletFeedback, setWalletFeedback] = useState<string | null>(null);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
 
   const [cachedCoupon, setCachedCoupon] = useState<DiscountCoupon | null>(coupon);
   useEffect(() => {
@@ -89,9 +91,14 @@ export function CouponWalletModal({
         className="max-w-md w-full mx-auto p-0 border-0 bg-transparent shadow-none"
       >
         <div
-          data-lenis-prevent="true"
           className="relative w-full bg-stone-900 text-stone-100 rounded-[2rem] border border-stone-800/80 overflow-hidden"
         >
+          {/* Scrollable body */}
+          <div
+            ref={scrollContainerRef}
+            data-lenis-prevent="true"
+            className="max-h-[85vh] overflow-y-auto overscroll-contain [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
+          >
         {/* Header bar */}
             <div className="flex items-center justify-between p-5 border-b border-stone-800/80 bg-stone-950/40">
               <div className="flex items-center gap-2">
@@ -241,6 +248,9 @@ export function CouponWalletModal({
                 El pase almacena el código de barras lineal 1D estandarizado para lectura inmediata sin conexión en cajas registradoras o en el checkout online.
               </p>
             </div>
+          </div>{/* end scrollable body */}
+          {/* MacOS jelly scrollbar — inset=14 clears the 2rem rounded corners */}
+          <MacOSScrollbar containerRef={scrollContainerRef} inset={14} />
         </div>
       </CenterMorphModalContent>
     </CenterMorphModal>

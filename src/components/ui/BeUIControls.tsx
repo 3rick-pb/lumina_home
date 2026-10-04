@@ -35,6 +35,7 @@ import {
 import { playStepperTickSound } from "@/lib/soundUtils";
 import { cn } from "@/lib/utils";
 import { useThemeStore, getResolvedTheme } from "@/lib/themeStore";
+import { MacOSScrollbar } from "./MacOSScrollbar";
 
 // Ensure OS-level `prefers-reduced-motion: reduce` (e.g. on WinterOS) never freezes
 // `thinking-orbs` or `beUI` motion components.
@@ -1261,6 +1262,7 @@ export function BeUISelectField({
 }: BeUISelectFieldProps) {
   const [open, setOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+  const selectScrollRef = useRef<HTMLDivElement>(null);
 
   const normalizedOptions: BeUISelectOption[] = useMemo(
     () =>
@@ -1369,10 +1371,11 @@ export function BeUISelectField({
             )}
           >
             <div
+              ref={selectScrollRef}
               data-lenis-prevent="true"
               onWheel={(e) => e.stopPropagation()}
               onTouchMove={(e) => e.stopPropagation()}
-              className="max-h-52 overflow-y-auto overscroll-contain space-y-0.5 pr-0.5 custom-scrollbar"
+              className="max-h-52 overflow-y-auto overscroll-contain space-y-0.5 pr-0.5 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
             >
               {normalizedOptions.map((item) => {
                 const isSelected = item.value === value;
@@ -1416,6 +1419,8 @@ export function BeUISelectField({
                 );
               })}
             </div>
+            {/* Authentic macOS Sequoia Floating Overlay Scrollbar */}
+            <MacOSScrollbar containerRef={selectScrollRef} insetTop={6} insetBottom={10} />
           </motion.div>
         )}
       </AnimatePresence>

@@ -1,7 +1,8 @@
 "use client";
 
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { MacOSScrollbar } from "@/components/ui/MacOSScrollbar";
 import {
   X,
   DollarSign,
@@ -36,6 +37,7 @@ export function CouponAnalyticsModal({
   const [mounted, setMounted] = useState(false);
   const [searchFilter, setSearchFilter] = useState("");
   const { orders } = useUserStore();
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
 
   const [cachedCoupon, setCachedCoupon] = useState<DiscountCoupon | null>(coupon);
   useEffect(() => {
@@ -173,7 +175,11 @@ export function CouponAnalyticsModal({
             </div>
 
             {/* Modal Body */}
-            <div data-lenis-prevent="true" className="p-4 sm:p-6 overflow-y-auto overscroll-contain space-y-5 sm:space-y-6 flex-1">
+            <div
+              ref={scrollContainerRef}
+              data-lenis-prevent="true"
+              className="p-4 sm:p-6 overflow-y-auto overscroll-contain space-y-5 sm:space-y-6 flex-1 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
+            >
               {/* KPI Bar for this Coupon */}
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-3">
                 <div className="p-3 sm:p-4 rounded-2xl bg-gray-50 dark:bg-white/[0.03] border border-gray-100 dark:border-white/5 space-y-1">
@@ -368,6 +374,9 @@ export function CouponAnalyticsModal({
                 Cerrar
               </button>
             </div>
+
+            {/* Authentic macOS Sequoia Floating Overlay Scrollbar with Hooke's Law Rebound Physics */}
+            <MacOSScrollbar containerRef={scrollContainerRef} insetTop={80} insetBottom={60} />
         </div>
       </CenterMorphModalContent>
     </CenterMorphModal>
