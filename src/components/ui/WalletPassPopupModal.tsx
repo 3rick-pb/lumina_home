@@ -118,7 +118,7 @@ export function WalletPassPopupModal({
   return createPortal(
     <AnimatePresence>
       {open && (
-        <div ref={scrollContainerRef} className={cn("fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 overflow-y-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden", isDark && "dark")}>
+        <div ref={scrollContainerRef} className={cn("fixed inset-0 z-[1100] flex items-center justify-center p-3 sm:p-4 overflow-y-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden", isDark && "dark")}>
           {/* Backdrop with subtle blur */}
           <motion.div
             initial={{ opacity: 0 }}

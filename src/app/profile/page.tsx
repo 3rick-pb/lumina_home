@@ -40,6 +40,8 @@ import { ProductArchitectureSelector } from "@/components/profile/ProductArchite
 import { ProductGalleryStyleSelector } from "@/components/profile/ProductGalleryStyleSelector";
 import { EmbeddedCarouselConfigurator } from "@/components/profile/EmbeddedCarouselConfigurator";
 import { ProductCombosManager } from "@/components/profile/ProductCombosManager";
+import { GoogleDriveAssetPickerModal } from "@/components/profile/GoogleDriveAssetPickerModal";
+import { GoogleDriveIcon } from "@/components/profile/GoogleDriveSettingsCard";
 import {
   ProductWizardStepHeader,
   ProductStoreSketchPreview,
@@ -302,6 +304,20 @@ export default function ProfilePage() {
  const [prodBadge, setProdBadge] = useState("");
  const [prodImageUrl, setProdImageUrl] = useState("");
  const [prodExtraImages, setProdExtraImages] = useState("");
+ const [showDrivePicker, setShowDrivePicker] = useState(false);
+ const [drivePickerTarget, setDrivePickerTarget] = useState<'create_main' | 'create_gallery' | 'edit_main' | 'edit_gallery'>('create_main');
+
+ const handleDriveImageSelected = (imageUrl: string) => {
+   if (drivePickerTarget === 'create_main') {
+     setProdImageUrl(imageUrl);
+   } else if (drivePickerTarget === 'create_gallery') {
+     setProdExtraImages(prev => prev.trim() ? `${prev.trim()}, ${imageUrl}` : imageUrl);
+   } else if (drivePickerTarget === 'edit_main') {
+     setEditImageUrl(imageUrl);
+   } else if (drivePickerTarget === 'edit_gallery') {
+     setEditExtraImages(prev => prev.trim() ? `${prev.trim()}, ${imageUrl}` : imageUrl);
+   }
+ };
  const [prodDescription, setProdDescription] = useState("");
  const [prodFeatures, setProdFeatures] = useState("");
  const [hasSizes, setHasSizes] = useState(false);
@@ -980,7 +996,7 @@ const handleConfirmDeleteNiche = async () => {
        ? "bg-gray-950 dark:bg-white text-white dark:text-gray-950 shadow-lg shadow-gray-950/20 dark:shadow-white/15 scale-105" 
        : "text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100/80 dark:hover:bg-white/5 hover:scale-105 active:scale-95"
    }`}
-   title="Cupones & Códigos de Descuento"
+   title="Gestión de Cupones"
  >
    {activeTab === "loyalty" && (
      <span className="absolute -left-2 w-1 h-5 bg-amber-500 dark:bg-amber-400 rounded-r-full transition-all duration-[600ms]" />
@@ -1044,7 +1060,7 @@ const handleConfirmDeleteNiche = async () => {
            ? "bg-gray-950 dark:bg-white text-white dark:text-gray-950 shadow-lg shadow-gray-950/20 dark:shadow-white/15 scale-105" 
            : "text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100/80 dark:hover:bg-white/5 hover:scale-105 active:scale-95"
        }`}
-        title="Alertas de Bolsa (Sileo)"
+        title="Notificaciones de Bolsa"
      >
        {activeTab === "cart_alerts" && (
          <span className="absolute -left-2 w-1 h-5 bg-amber-500 dark:bg-amber-400 rounded-r-full transition-all duration-[600ms]" />
@@ -1080,7 +1096,7 @@ const handleConfirmDeleteNiche = async () => {
        ? "bg-gray-950 dark:bg-white text-white dark:text-gray-950 shadow-lg shadow-gray-950/20 dark:shadow-white/15 scale-105" 
        : "text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100/80 dark:hover:bg-white/5 hover:scale-105 active:scale-95"
    }`}
-   title="Configuración & Sistema"
+   title="Configuración"
  >
    {activeTab === "settings" && (
      <span className="absolute -left-2 w-1 h-5 bg-amber-500 dark:bg-white rounded-r-full transition-all duration-[600ms]" />
@@ -1186,7 +1202,7 @@ const handleConfirmDeleteNiche = async () => {
   onClick={() => setActiveTab("cart_alerts")} 
   className={`px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all cursor-pointer ${activeTab === "cart_alerts" ? "bg-white dark:bg-[#202022] text-gray-900 dark:text-gray-100 shadow-sm dark:shadow-none" : "text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100"}`}
   >
-  Alertas de Bolsa
+  Notificaciones de Bolsa
   </button>
   <button 
   onClick={() => setActiveTab("integrations")} 
@@ -1575,11 +1591,12 @@ const handleConfirmDeleteNiche = async () => {
  <BeUICenterMorphModal
    open={showProductModal}
    onOpenChange={setShowProductModal}
+   hyperOSLandscapeOnMobile
    className="max-w-6xl"
  >
  <div
    data-lenis-prevent="true"
-   className="bg-[#f5f5f3] dark:bg-[#161618] rounded-[32px] w-full shadow-2xl dark:shadow-none overflow-hidden flex flex-col max-h-[92vh] border border-gray-200/90 dark:border-white/[0.12]"
+   className="bg-[#f5f5f3] dark:bg-[#161618] sm:rounded-[32px] w-full shadow-2xl dark:shadow-none overflow-hidden flex flex-col h-full sm:max-h-[92vh] border border-gray-200/90 dark:border-white/[0.12]"
  >
    {/* Top Bar Header (Executive Studio Header + 4-Step Pill Dock) */}
    <div className="px-5 sm:px-7 py-4 border-b border-gray-200/80 dark:border-white/[0.08] flex flex-col lg:flex-row lg:items-center justify-between gap-3.5 bg-white/95 dark:bg-[#202022]/95 backdrop-blur-xl shrink-0">
@@ -1961,7 +1978,20 @@ const handleConfirmDeleteNiche = async () => {
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2 pl-1">URL de Imagen Principal *</label>
+              <div className="flex items-center justify-between mb-2 pl-1">
+                <label className="text-xs font-semibold text-gray-700 dark:text-gray-300">URL de Imagen Principal *</label>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setDrivePickerTarget('create_main');
+                    setShowDrivePicker(true);
+                  }}
+                  className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl text-[11px] font-bold bg-blue-500/10 hover:bg-blue-500/20 text-blue-600 dark:text-blue-400 border border-blue-500/20 transition-all cursor-pointer shadow-xs hover:scale-105 active:scale-95"
+                >
+                  <GoogleDriveIcon className="w-3.5 h-3.5" />
+                  <span>Elegir de Google Drive</span>
+                </button>
+              </div>
               <input 
                 type="text" 
                 value={prodImageUrl} 
@@ -1981,7 +2011,20 @@ const handleConfirmDeleteNiche = async () => {
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2 pl-1">Galería de Imágenes Adicionales (Opcional)</label>
+              <div className="flex items-center justify-between mb-2 pl-1">
+                <label className="text-xs font-semibold text-gray-700 dark:text-gray-300">Galería de Imágenes Adicionales (Opcional)</label>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setDrivePickerTarget('create_gallery');
+                    setShowDrivePicker(true);
+                  }}
+                  className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl text-[11px] font-bold bg-blue-500/10 hover:bg-blue-500/20 text-blue-600 dark:text-blue-400 border border-blue-500/20 transition-all cursor-pointer shadow-xs hover:scale-105 active:scale-95"
+                >
+                  <GoogleDriveIcon className="w-3.5 h-3.5" />
+                  <span>+ Añadir de Drive</span>
+                </button>
+              </div>
               <input 
                 type="text" 
                 value={prodExtraImages} 
@@ -2312,11 +2355,12 @@ const handleConfirmDeleteNiche = async () => {
   <BeUICenterMorphModal
     open={showEditProductModal}
     onOpenChange={setShowEditProductModal}
+    hyperOSLandscapeOnMobile
     className="max-w-6xl"
   >
   <div
     data-lenis-prevent="true"
-    className="bg-[#f5f5f3] dark:bg-[#161618] rounded-[32px] w-full shadow-2xl dark:shadow-none overflow-hidden flex flex-col max-h-[92vh] border border-gray-200/90 dark:border-white/[0.12]"
+    className="bg-[#f5f5f3] dark:bg-[#161618] sm:rounded-[32px] w-full shadow-2xl dark:shadow-none overflow-hidden flex flex-col h-full sm:max-h-[92vh] border border-gray-200/90 dark:border-white/[0.12]"
   >
     {/* HEADER + STEP SEPARATOR DOCK */}
     <div className="px-6 pt-5 pb-4 border-b border-gray-200/80 dark:border-white/[0.08] bg-white/95 dark:bg-[#202022]/95 backdrop-blur-xl space-y-3.5 shrink-0">
@@ -2703,7 +2747,20 @@ const handleConfirmDeleteNiche = async () => {
                   </div>
                 )}
                 <div className="flex-1">
-                  <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1 pl-1">URL de Imagen Principal *</label>
+                  <div className="flex items-center justify-between mb-1 pl-1">
+                    <label className="text-xs font-semibold text-gray-700 dark:text-gray-300">URL de Imagen Principal *</label>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setDrivePickerTarget('edit_main');
+                        setShowDrivePicker(true);
+                      }}
+                      className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl text-[11px] font-bold bg-blue-500/10 hover:bg-blue-500/20 text-blue-600 dark:text-blue-400 border border-blue-500/20 transition-all cursor-pointer shadow-xs hover:scale-105 active:scale-95"
+                    >
+                      <GoogleDriveIcon className="w-3.5 h-3.5" />
+                      <span>Elegir de Google Drive</span>
+                    </button>
+                  </div>
                   <input 
                     type="text" 
                     value={editImageUrl} 
@@ -2715,7 +2772,20 @@ const handleConfirmDeleteNiche = async () => {
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2 pl-1">Galería de Fotos Adicionales (separadas por coma o salto de línea)</label>
+                <div className="flex items-center justify-between mb-2 pl-1">
+                  <label className="text-xs font-semibold text-gray-700 dark:text-gray-300">Galería de Fotos Adicionales (separadas por coma o salto de línea)</label>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setDrivePickerTarget('edit_gallery');
+                      setShowDrivePicker(true);
+                    }}
+                    className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl text-[11px] font-bold bg-blue-500/10 hover:bg-blue-500/20 text-blue-600 dark:text-blue-400 border border-blue-500/20 transition-all cursor-pointer shadow-xs hover:scale-105 active:scale-95"
+                  >
+                    <GoogleDriveIcon className="w-3.5 h-3.5" />
+                    <span>+ Añadir de Drive</span>
+                  </button>
+                </div>
                 <textarea 
                   rows={2} 
                   value={editExtraImages} 
@@ -3338,6 +3408,17 @@ const handleConfirmDeleteNiche = async () => {
         <CatalogScrollToTopButton className="bottom-24 md:bottom-8" />
       )}
 
+      {/* Google Drive Asset Picker for Add/Edit Product */}
+      <GoogleDriveAssetPickerModal
+        open={showDrivePicker}
+        onClose={() => setShowDrivePicker(false)}
+        onSelectImage={handleDriveImageSelected}
+        title={
+          drivePickerTarget.includes('main')
+            ? "Seleccionar Imagen Principal de Producto"
+            : "Añadir Fotos de Galería a Producto"
+        }
+      />
   </div>
   </div>
  );

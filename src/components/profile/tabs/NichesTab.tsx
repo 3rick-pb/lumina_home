@@ -135,7 +135,7 @@ export function NichesTab({ onRequestDeleteNiche }: NichesTabProps) {
             />
           </div>
           <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
-            <Layers className="w-5 h-5 text-amber-600 dark:text-amber-400" /> Gestión de Nichos & Colecciones
+            <Layers className="w-5 h-5 text-amber-600 dark:text-amber-400" /> Gestión de Nichos
           </h2>
           <p className="text-xs text-gray-500 dark:text-gray-400">Personaliza el menú flotante interactivo de la tienda, crea nuevos nichos de mercado o elimina aquellos sin existencias.</p>
         </div>
@@ -153,7 +153,7 @@ export function NichesTab({ onRequestDeleteNiche }: NichesTabProps) {
                       <Sparkles className="w-3.5 h-3.5" /> Simulador en Tiempo Real
                     </div>
                     <h3 className="text-xl sm:text-2xl font-bold tracking-tight text-gray-900 dark:text-gray-100">
-                      Menú de Pastilla Liquid Glass (Inicio)
+                      Menú superior del Home
                     </h3>
                     <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-1 max-w-2xl">
                       Previsualiza de forma interactiva el menú flotante que verán tus clientes en la tienda. Modifica los dos nichos destacados, cambia sus nombres y selecciona de entre más de 25 iconos en el slider.
@@ -675,7 +675,7 @@ export function NichesTab({ onRequestDeleteNiche }: NichesTabProps) {
  <div className="pt-8 border-t border-gray-100 dark:border-white/5 space-y-6">
  <div>
  <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
- <Tag className="w-5 h-5 text-amber-600 dark:text-amber-400" /> Badges & Etiquetas de Marketing
+ <Tag className="w-5 h-5 text-amber-600 dark:text-amber-400" /> Badges de Marketing
  </h2>
  <p className="text-xs text-gray-500 dark:text-gray-400">
  Crea o elimina distintivos comerciales para destacar tus piezas (ej: Más Vendido, Bestseller, Edición Limitada).

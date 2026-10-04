@@ -34,6 +34,7 @@ import {
 } from "@/lib/locationUtils";
 import { resolveEcuadorExactAddressLngLat } from "../RadarMapboxCanvas";
 import { StrongPasswordMeter } from "@/components/ui/StrongPasswordMeter";
+import { GoogleDriveSettingsCard } from "../GoogleDriveSettingsCard";
 
 interface SettingsTabProps {
   isAdmin: boolean;
@@ -578,7 +579,7 @@ export function SettingsTab({
       <div className="lg:col-span-7 bg-white/90 dark:bg-[#202022]/5 backdrop-blur-3xl p-8 md:p-10 rounded-[3rem] border border-white/80 dark:border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.04)] space-y-10 relative overflow-hidden">
         <div>
           <h2 className="text-2xl font-display font-bold text-gray-900 dark:text-gray-100 flex items-center gap-3">
-            <Settings className="w-6 h-6 text-amber-600 dark:text-amber-400" /> Configuración & Sistema
+            <Settings className="w-6 h-6 text-amber-600 dark:text-amber-400" /> Configuración
           </h2>
           <p className="text-sm text-gray-500 dark:text-gray-400">Personaliza tu experiencia, apariencia visual y seguridad de acceso.</p>
         </div>
@@ -1501,6 +1502,13 @@ export function SettingsTab({
           )}
         </AnimatePresence>
       </div>
+
+      {/* Shared Google Drive Media Cloud for all Administrators */}
+      {isAdmin && (
+        <div className="col-span-1 lg:col-span-12 pt-4">
+          <GoogleDriveSettingsCard />
+        </div>
+      )}
     </div>
   );
 }

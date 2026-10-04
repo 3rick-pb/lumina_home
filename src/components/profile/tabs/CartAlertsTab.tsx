@@ -242,7 +242,7 @@ export function CartAlertsTab() {
               />
             </div>
             <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
-              <BellRing className="w-5 h-5 text-amber-600 dark:text-amber-400" /> Alertas de Bolsa en Tiempo Real
+              <BellRing className="w-5 h-5 text-amber-600 dark:text-amber-400" /> Notificaciones de Bolsa
             </h2>
             <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 max-w-2xl">
               Estudio de configuración visual, auditoría de contraste WCAG y simulación interactiva de avisos de compra para {brand.name}.

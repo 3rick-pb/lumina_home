@@ -1456,11 +1456,35 @@ const CENTER_MORPH_TRANSITION = {
   ease: [0.2, 0, 0.2, 1] as const,
 };
 
+const HYPEROS_LANDSCAPE_MODAL_VARIANTS = {
+  closed: {
+    opacity: 0,
+    scale: 0.82,
+    rotate: 0,
+    borderRadius: 32,
+    transition: {
+      duration: 0.45,
+      ease: [0.16, 1, 0.3, 1] as const,
+    },
+  },
+  open: {
+    opacity: 1,
+    scale: 1,
+    rotate: 90,
+    borderRadius: 0,
+    transition: {
+      duration: 0.45,
+      ease: [0.16, 1, 0.3, 1] as const,
+    },
+  },
+};
+
 export interface BeUICenterMorphModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   children: React.ReactNode;
   className?: string;
+  hyperOSLandscapeOnMobile?: boolean;
 }
 
 export function BeUICenterMorphModal({
@@ -1468,12 +1492,26 @@ export function BeUICenterMorphModal({
   onOpenChange,
   children,
   className,
+  hyperOSLandscapeOnMobile = false,
 }: BeUICenterMorphModalProps) {
   const [mounted, setMounted] = useState(false);
+  const [isMobilePortrait, setIsMobilePortrait] = useState(false);
   const onOpenChangeRef = useRef(onOpenChange);
 
   useEffect(() => {
     setMounted(true);
+    const checkOrientation = () => {
+      if (typeof window !== "undefined") {
+        setIsMobilePortrait(window.innerWidth < 768 && window.innerHeight > window.innerWidth);
+      }
+    };
+    checkOrientation();
+    window.addEventListener("resize", checkOrientation);
+    window.addEventListener("orientationchange", checkOrientation);
+    return () => {
+      window.removeEventListener("resize", checkOrientation);
+      window.removeEventListener("orientationchange", checkOrientation);
+    };
   }, []);
 
   useEffect(() => {
@@ -1518,13 +1556,18 @@ export function BeUICenterMorphModal({
 
   const { mode } = useThemeStore();
   const isDark = getResolvedTheme(mode) === "dark";
+  const shouldUseHyperOS = Boolean(hyperOSLandscapeOnMobile && isMobilePortrait);
 
   const modalContent = (
     <AnimatePresence>
       {open && (
         <div
           data-lenis-prevent="true"
-          className={cn("fixed inset-0 z-[999] flex items-center justify-center p-4 sm:p-6 overflow-hidden", isDark && "dark")}
+          className={cn(
+            "fixed inset-0 z-[999] flex items-center justify-center overflow-hidden",
+            shouldUseHyperOS ? "p-0" : "p-4 sm:p-6",
+            isDark && "dark"
+          )}
         >
           <style>{`
             html.lumina-modal-lock-scroll,
@@ -1546,13 +1589,24 @@ export function BeUICenterMorphModal({
             role="dialog"
             aria-modal="true"
             data-lenis-prevent="true"
-            variants={CENTER_MORPH_MODAL_VARIANTS}
+            variants={shouldUseHyperOS ? HYPEROS_LANDSCAPE_MODAL_VARIANTS : CENTER_MORPH_MODAL_VARIANTS}
             initial="closed"
             animate="open"
             exit="closed"
-            transition={CENTER_MORPH_TRANSITION}
+            transition={shouldUseHyperOS ? { duration: 0.45, ease: [0.16, 1, 0.3, 1] } : CENTER_MORPH_TRANSITION}
+            style={
+              shouldUseHyperOS
+                ? {
+                    width: "100vh",
+                    height: "100vw",
+                    maxWidth: "none",
+                    maxHeight: "none",
+                  }
+                : undefined
+            }
             className={cn(
               "relative z-10 w-full max-w-2xl rounded-[30px] overflow-hidden shadow-2xl will-change-[clip-path,transform,opacity]",
+              shouldUseHyperOS && "!rounded-none !max-w-none !w-[100vh] !h-[100vw]",
               className
             )}
           >

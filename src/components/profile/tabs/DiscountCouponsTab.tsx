@@ -855,7 +855,7 @@ export function DiscountCouponsTab() {
                 <span>Fidelización & Retención de Clientes</span>
               </div>
               <h2 className="text-2xl sm:text-3xl font-black text-gray-950 dark:text-white tracking-tight">
-                Gestión de Cupones & Beneficios
+                Gestión de Cupones
               </h2>
               <p className="text-xs sm:text-sm text-stone-500 dark:text-stone-400 mt-1 max-w-2xl leading-relaxed">
                 Monitorea y administra cupones activos, colecciones de autor y promociones exclusivas para compartir por WhatsApp.
