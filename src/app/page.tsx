@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState, useRef, useMemo } from "react";
 import Image from "next/image";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { ProductCard } from "@/components/ui/ProductCard";
 import { Percent, Truck, ShieldCheck, ArrowRight, RotateCcw, Lock, PackageSearch } from "lucide-react";
 import Link from "next/link";
@@ -87,6 +87,24 @@ const TRUST_ICON_MAP: Record<string, React.ComponentType<{ className?: string }>
   PackageSearch,
 };
 
+const mobileBadgeVariants = {
+  enter: (direction: number) => ({
+    x: direction > 0 ? 40 : -40,
+    opacity: 0,
+    scale: 0.98,
+  }),
+  center: {
+    x: 0,
+    opacity: 1,
+    scale: 1,
+  },
+  exit: (direction: number) => ({
+    x: direction > 0 ? -40 : 40,
+    opacity: 0,
+    scale: 0.98,
+  }),
+};
+
 interface TrustBadgeItem {
   icon: React.ComponentType<{ className?: string }>;
   title: string;
@@ -133,16 +151,57 @@ export default function Home() {
   const categoriesRef = useRef<HTMLDivElement>(null);
   const popularRef = useRef<HTMLDivElement>(null);
 
-  // Derive the 2 mobile-priority trust badges for small screens (Envíos + Seguimiento en tiempo real)
-  const mobileTrustBadges = useMemo(() => {
+  // Derive the 2 mobile pages of trust badges (2 badges per page)
+  // Página 1: "Envíos nacionales" + "Sigue tu paquete"
+  // Página 2: "Devoluciones 10 días" + "Pagos seguros"
+  const mobileBadgePages = useMemo(() => {
     const envios = trustBadges.find(b => b.title.toLowerCase().includes("env")) || trustBadges[0];
     const tracking = trustBadges.find(b => 
       b.title.toLowerCase().includes("paquete") || 
       b.title.toLowerCase().includes("sigue") || 
       b.title.toLowerCase().includes("rastr")
     ) || trustBadges[1];
-    return [envios, tracking].filter(Boolean);
+    const devolucion = trustBadges.find(b => 
+      b.title.toLowerCase().includes("devoluc") || 
+      b.title.toLowerCase().includes("retur")
+    ) || trustBadges[2];
+    const pagos = trustBadges.find(b => 
+      b.title.toLowerCase().includes("pago") || 
+      b.title.toLowerCase().includes("segur") ||
+      b.title.toLowerCase().includes("ssl")
+    ) || trustBadges[4] || trustBadges[3];
+
+    const page1 = [envios, tracking].filter(Boolean);
+    const page2 = [devolucion, pagos].filter(Boolean);
+
+    return [page1, page2];
   }, [trustBadges]);
+
+  const [[mobileBadgePage, mobileBadgeDirection], setMobileBadgePage] = useState<[number, number]>([0, 0]);
+  const badgeTouchStartRef = useRef<{ x: number; y: number } | null>(null);
+
+  const handleBadgeTouchStart = (e: React.TouchEvent) => {
+    const touch = e.touches[0];
+    badgeTouchStartRef.current = { x: touch.clientX, y: touch.clientY };
+  };
+
+  const handleBadgeTouchEnd = (e: React.TouchEvent) => {
+    if (!badgeTouchStartRef.current) return;
+    const touch = e.changedTouches[0];
+    const diffX = badgeTouchStartRef.current.x - touch.clientX;
+    const diffY = badgeTouchStartRef.current.y - touch.clientY;
+
+    if (Math.abs(diffX) > Math.abs(diffY) * 1.2 && Math.abs(diffX) > 25) {
+      if (diffX > 0 && mobileBadgePage < mobileBadgePages.length - 1) {
+        // Swiped right-to-left -> Next page
+        setMobileBadgePage([mobileBadgePage + 1, 1]);
+      } else if (diffX < 0 && mobileBadgePage > 0) {
+        // Swiped left-to-right -> Previous page
+        setMobileBadgePage([mobileBadgePage - 1, -1]);
+      }
+    }
+    badgeTouchStartRef.current = null;
+  };
 
   // Derive dynamic category cards strictly from active categories in store
   const dynamicCategories = useMemo(() => {
@@ -386,29 +445,72 @@ export default function Home() {
           className="bg-white dark:bg-[#1e1e20] rounded-2xl border border-black/[0.06] dark:border-white/[0.08] shadow-[0_12px_32px_-8px_rgba(0,0,0,0.06),0_2px_8px_rgba(0,0,0,0.02)] py-4 px-3 sm:py-5 sm:px-4 md:py-4.5 md:px-5 lg:py-4 lg:px-4"
         >
 
-          {/* ── Mobile / Pantallas pequeñas (< lg): 2 badges con mayor presencia y grosor vertical ── */}
-          <div className="grid grid-cols-2 lg:hidden items-center">
-            {mobileTrustBadges.map((badge, idx) => (
-              <div
-                key={idx}
-                className="flex items-center justify-center gap-2.5 sm:gap-3.5 px-2 relative select-none"
-              >
-                <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-[#8c9276]/10 dark:bg-[#8c9276]/20 text-[#8c9276] dark:text-[#a8b092] flex items-center justify-center shrink-0 shadow-2xs">
-                  <badge.icon className="w-4.5 h-4.5 sm:w-5 sm:h-5" />
-                </div>
-                <div className="min-w-0">
-                  <p className="text-xs sm:text-sm font-semibold text-gray-900 dark:text-gray-100 tracking-tight leading-tight truncate">
-                    {badge.title}
-                  </p>
-                  <p className="text-[10px] sm:text-[11px] text-gray-400 dark:text-gray-400 font-normal leading-tight mt-0.5 truncate">
-                    {badge.subtitle}
-                  </p>
-                </div>
-                {idx === 0 && (
-                  <div className="absolute right-0 top-1/2 -translate-y-1/2 h-8 sm:h-9 w-px bg-gray-200/80 dark:bg-white/10" />
-                )}
-              </div>
-            ))}
+          {/* ── Mobile / Pantallas pequeñas (< lg): 2 badges por página con paginación manual 100% y separador ── */}
+          <div 
+            className="lg:hidden select-none touch-pan-y"
+            onTouchStart={handleBadgeTouchStart}
+            onTouchEnd={handleBadgeTouchEnd}
+          >
+            <div className="relative overflow-hidden min-h-[46px] sm:min-h-[50px] flex items-center">
+              <AnimatePresence mode="popLayout" initial={false} custom={mobileBadgeDirection}>
+                <motion.div
+                  key={mobileBadgePage}
+                  custom={mobileBadgeDirection}
+                  variants={mobileBadgeVariants}
+                  initial="enter"
+                  animate="center"
+                  exit="exit"
+                  transition={{
+                    x: { type: "spring", stiffness: 360, damping: 32, mass: 0.8 },
+                    opacity: { duration: 0.2, ease: "easeOut" },
+                  }}
+                  className="w-full grid grid-cols-2 items-center"
+                >
+                  {(mobileBadgePages[mobileBadgePage] || []).map((badge, idx) => (
+                    <div
+                      key={idx}
+                      className="flex items-center justify-center gap-2.5 sm:gap-3.5 px-2 relative select-none"
+                    >
+                      <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-[#8c9276]/10 dark:bg-[#8c9276]/20 text-[#8c9276] dark:text-[#a8b092] flex items-center justify-center shrink-0 shadow-2xs">
+                        <badge.icon className="w-4.5 h-4.5 sm:w-5 sm:h-5" />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-xs sm:text-sm font-semibold text-gray-900 dark:text-gray-100 tracking-tight leading-tight truncate">
+                          {badge.title}
+                        </p>
+                        <p className="text-[10px] sm:text-[11px] text-gray-400 dark:text-gray-400 font-normal leading-tight mt-0.5 truncate">
+                          {badge.subtitle}
+                        </p>
+                      </div>
+                      {idx === 0 && (
+                        <div className="absolute right-0 top-1/2 -translate-y-1/2 h-8 sm:h-9 w-px bg-gray-200/80 dark:bg-white/10" />
+                      )}
+                    </div>
+                  ))}
+                </motion.div>
+              </AnimatePresence>
+            </div>
+
+            {/* Separador de página / Dots Indicator (Mismo diseño que la barra de secciones de Mi Perfil) */}
+            <div className="flex items-center justify-center gap-1.5 pt-2.5 pb-0.5 pointer-events-auto">
+              {mobileBadgePages.map((_, idx) => (
+                <button
+                  key={idx}
+                  type="button"
+                  onClick={() => {
+                    if (idx !== mobileBadgePage) {
+                      setMobileBadgePage([idx, idx > mobileBadgePage ? 1 : -1]);
+                    }
+                  }}
+                  className={`h-1.5 rounded-full transition-all duration-300 cursor-pointer ${
+                    mobileBadgePage === idx
+                      ? "w-6 bg-gray-900 dark:bg-white shadow-[0_1px_4px_rgba(0,0,0,0.25)]"
+                      : "w-1.5 bg-gray-400/50 dark:bg-white/25 hover:bg-gray-600 dark:hover:bg-white/50"
+                  }`}
+                  aria-label={`Página ${idx + 1} de garantías`}
+                />
+              ))}
+            </div>
           </div>
 
           {/* ── Desktop / Pantallas normales (≥ lg): Todas las 5 garantías de la manera normal ── */}

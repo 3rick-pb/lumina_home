@@ -118,9 +118,7 @@ const FavoritesTab = dynamic(() => import("@/components/profile/tabs/FavoritesTa
   ssr: false,
 });
 
-const ExcelExportRadialMenu = dynamic(() => import("@/components/profile/ExcelExportRadialMenu").then(m => m.ExcelExportRadialMenu), {
-  ssr: false,
-});
+import { ExcelExportRadialMenu } from "@/components/profile/ExcelExportRadialMenu";
 
 const OrderDetailModal = dynamic(() => import("@/components/profile/modals/OrderDetailModal").then(m => m.OrderDetailModal), {
   ssr: false,
@@ -259,18 +257,30 @@ export default function ProfilePage() {
   const lastScrollYRef = useRef(0);
 
   useEffect(() => {
-    const handleScroll = () => {
-      const currentY = window.scrollY;
-      if (Math.abs(currentY - lastScrollYRef.current) < 8) return;
+    let ticking = false;
 
-      if (currentY > lastScrollYRef.current && currentY > 60) {
-        // Scrolling down: hide bottom dock
-        setIsDockScrollVisible(false);
-      } else {
-        // Scrolling up or at top: show bottom dock
-        setIsDockScrollVisible(true);
+    const handleScroll = () => {
+      if (!ticking) {
+        window.requestAnimationFrame(() => {
+          const currentY = window.scrollY;
+          const delta = currentY - lastScrollYRef.current;
+
+          // Si estamos cerca de la parte superior de la página, mantener visible
+          if (currentY < 30) {
+            setIsDockScrollVisible(true);
+          } else if (delta > 4) {
+            // Scroll hacia abajo: ocultar inmediatamente para dar más espacio
+            setIsDockScrollVisible(false);
+          } else if (delta < -4) {
+            // Scroll hacia arriba: mostrar de inmediato sin demoras
+            setIsDockScrollVisible(true);
+          }
+
+          lastScrollYRef.current = currentY;
+          ticking = false;
+        });
+        ticking = true;
       }
-      lastScrollYRef.current = currentY;
     };
 
     window.addEventListener("scroll", handleScroll, { passive: true });

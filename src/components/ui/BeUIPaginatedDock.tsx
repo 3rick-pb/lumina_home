@@ -119,7 +119,7 @@ export function BeUIPaginatedDock({
   return (
     <aside
       aria-label="Navegación móvil"
-      className={`fixed bottom-3 inset-x-0 z-50 flex flex-col items-center justify-center px-3 pointer-events-none transition-all duration-300 ease-out ${
+      className={`fixed bottom-3 inset-x-0 z-50 flex flex-col items-center justify-center px-3 pointer-events-none transition-[transform,opacity] duration-200 ease-[cubic-bezier(0.16,1,0.3,1)] will-change-transform ${
         isVisible ? "translate-y-0 opacity-100" : "translate-y-28 opacity-0 pointer-events-none"
       } ${className}`}
     >
