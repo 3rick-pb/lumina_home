@@ -896,7 +896,7 @@ export function SettingsTab({
             <button 
               type="submit" 
               disabled={isUpdatingSettings}
-              className="px-8 py-3.5 bg-gray-900 dark:bg-[#202022] text-white dark:text-gray-100 rounded-2xl text-sm font-bold hover:bg-gray-800 dark:hover:bg-gray-100 dark:hover:bg-[#3a3a3c] transition-all shadow-lg dark:shadow-none hover:shadow-xl dark:shadow-none hover:-translate-y-0.5 disabled:opacity-50 disabled:hover:translate-y-0 cursor-pointer"
+              className="px-8 py-3.5 bg-gray-900 dark:bg-white text-white dark:text-gray-950 rounded-2xl text-sm font-bold hover:bg-gray-800 dark:hover:bg-gray-100 transition-all shadow-lg dark:shadow-none hover:shadow-xl hover:-translate-y-0.5 disabled:opacity-50 disabled:hover:translate-y-0 cursor-pointer"
             >
               {isUpdatingSettings ? "Guardando..." : "Guardar Cambios"}
             </button>
@@ -1484,7 +1484,7 @@ export function SettingsTab({
                     whileTap={{ scale: isSubmittingAddress ? 1 : 0.98 }}
                     type="submit" 
                     disabled={isSubmittingAddress}
-                    className="px-5 py-2 text-xs font-semibold bg-[#8c9276] hover:bg-[#7b8166] text-white rounded-xl shadow-sm cursor-pointer transition-all disabled:opacity-60 disabled:cursor-not-allowed flex items-center gap-2"
+                    className="px-5 py-2 text-xs font-bold bg-amber-500 hover:bg-amber-600 text-stone-950 rounded-xl shadow-sm shadow-amber-500/20 cursor-pointer transition-all disabled:opacity-60 disabled:cursor-not-allowed flex items-center gap-2"
                   >
                     {isSubmittingAddress ? (
                       <>

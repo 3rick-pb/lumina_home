@@ -956,39 +956,37 @@ export function DiscountCouponsTab() {
           {isAdmin && showManualForm && (
             <motion.div
               key="manual-coupon-inline-liquid-panel"
-              initial={{ opacity: 0, height: 0, scale: 0.96, y: -20, filter: "blur(8px)" }}
+              initial={{ opacity: 0, height: 0, y: -14, scaleY: 0.94 }}
               animate={{
                 opacity: 1,
                 height: "auto",
-                scale: 1,
                 y: 0,
-                filter: "blur(0px)",
+                scaleY: 1,
                 transition: {
                   type: "spring",
-                  bounce: 0.35,
-                  duration: 0.7,
-                  opacity: { duration: 0.3 },
-                  filter: { duration: 0.4 }
+                  stiffness: 280,
+                  damping: 26,
+                  mass: 0.8,
+                  opacity: { duration: 0.28 },
                 },
               }}
               exit={{
                 opacity: 0,
                 height: 0,
-                scale: 0.96,
-                y: -20,
-                filter: "blur(8px)",
+                y: -12,
+                scaleY: 0.94,
                 transition: {
-                  type: "spring",
-                  bounce: 0,
-                  duration: 0.4
+                  duration: 0.25,
+                  ease: "easeInOut",
                 },
               }}
-              className="overflow-hidden origin-top relative"
+              style={{ transformOrigin: "top center" }}
+              className="origin-top relative overflow-visible"
             >
-              <div className="p-6 sm:p-8 rounded-[2rem] bg-white/95 dark:bg-[#1a1a1c]/95 backdrop-blur-xl border border-stone-200/80 dark:border-white/10 shadow-sm dark:shadow-[0_0_35px_rgba(245,158,11,0.08)]">
+              <div className="p-6 sm:p-8 rounded-[2rem] bg-white/95 dark:bg-[#1a1a1c]/95 backdrop-blur-xl border border-stone-200/80 dark:border-white/10 shadow-sm dark:shadow-[0_0_35px_rgba(245,158,11,0.08)] overflow-visible">
                 <form
                   onSubmit={handleCreateManual}
-                  className="space-y-6"
+                  className="space-y-6 overflow-visible"
                 >
                   <div className="flex items-center justify-between pb-3 border-b border-stone-200/60 dark:border-white/10">
                     <div>
@@ -1004,9 +1002,9 @@ export function DiscountCouponsTab() {
                     </span>
                   </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 relative z-10 overflow-visible">
                     {/* Código del cupón */}
-                    <div>
+                    <div className="relative z-10">
                       <label className="block text-[11px] font-bold uppercase tracking-wider text-stone-600 dark:text-stone-400 mb-1.5">
                         Código del Cupón (Ej: LUMINA-VIP)
                       </label>
@@ -1021,7 +1019,7 @@ export function DiscountCouponsTab() {
                     </div>
 
                     {/* Nombre / Título del Cupón */}
-                    <div>
+                    <div className="relative z-10">
                       <label className="block text-[11px] font-bold uppercase tracking-wider text-stone-600 dark:text-stone-400 mb-1.5">
                         Nombre / Título del Cupón
                       </label>
@@ -1035,7 +1033,7 @@ export function DiscountCouponsTab() {
                     </div>
 
                     {/* Tipo de Beneficio */}
-                    <div>
+                    <div className="relative z-40">
                       <label className="block text-[11px] font-bold uppercase tracking-wider text-stone-600 dark:text-stone-400 mb-1.5">
                         Tipo de Beneficio
                       </label>
@@ -1052,7 +1050,7 @@ export function DiscountCouponsTab() {
 
                     {/* Porcentaje (% de Descuento) */}
                     {formDiscountType === "percent" ? (
-                      <div>
+                      <div className="relative z-20">
                         <label className="block text-[11px] font-bold uppercase tracking-wider text-stone-600 dark:text-stone-400 mb-1.5">
                           Porcentaje (% de Descuento)
                         </label>
@@ -1069,7 +1067,7 @@ export function DiscountCouponsTab() {
                         </div>
                       </div>
                     ) : (
-                      <div>
+                      <div className="relative z-20">
                         <label className="block text-[11px] font-bold uppercase tracking-wider text-stone-600 dark:text-stone-400 mb-1.5">
                           Beneficio Aplicado
                         </label>
@@ -1080,7 +1078,7 @@ export function DiscountCouponsTab() {
                     )}
 
                     {/* Alcance Comercial */}
-                    <div>
+                    <div className="relative z-30">
                       <label className="block text-[11px] font-bold uppercase tracking-wider text-stone-600 dark:text-stone-400 mb-1.5">
                         Alcance Comercial
                       </label>
@@ -1097,7 +1095,7 @@ export function DiscountCouponsTab() {
 
                     {/* Nicho o Compra Mínima */}
                     {formScope === "niche" ? (
-                      <div>
+                      <div className="relative z-30">
                         <label className="block text-[11px] font-bold uppercase tracking-wider text-stone-600 dark:text-stone-400 mb-1.5">
                           Colección / Nicho Seleccionado
                         </label>
@@ -1118,7 +1116,7 @@ export function DiscountCouponsTab() {
                         />
                       </div>
                     ) : (
-                      <div>
+                      <div className="relative z-20">
                         <label className="block text-[11px] font-bold uppercase tracking-wider text-stone-600 dark:text-stone-400 mb-1.5">
                           Compra Mínima ($ USD)
                         </label>
@@ -1138,7 +1136,7 @@ export function DiscountCouponsTab() {
                     )}
 
                     {/* Límite de Canjes */}
-                    <div className="md:col-span-2 lg:col-span-3">
+                    <div className="relative z-20 md:col-span-2 lg:col-span-3">
                       <label className="block text-[11px] font-bold uppercase tracking-wider text-stone-600 dark:text-stone-400 mb-1.5">
                         Límite de Canjes
                       </label>

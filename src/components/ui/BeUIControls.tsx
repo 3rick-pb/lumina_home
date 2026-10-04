@@ -1259,7 +1259,6 @@ export function BeUISelectField({
   disabled = false,
 }: BeUISelectFieldProps) {
   const [open, setOpen] = useState(false);
-  const [openUpwards, setOpenUpwards] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
   const normalizedOptions: BeUISelectOption[] = useMemo(
@@ -1277,17 +1276,6 @@ export function BeUISelectField({
 
   const handleToggle = () => {
     if (disabled) return;
-    if (!open && containerRef.current) {
-      const rect = containerRef.current.getBoundingClientRect();
-      const spaceBelow = window.innerHeight - rect.bottom;
-      const spaceAbove = rect.top;
-      // If less than 280px below and more room above, open upwards
-      if (spaceBelow < 280 && spaceAbove > 180) {
-        setOpenUpwards(true);
-      } else {
-        setOpenUpwards(false);
-      }
-    }
     setOpen((prev) => !prev);
   };
 
@@ -1310,7 +1298,7 @@ export function BeUISelectField({
   }, [open]);
 
   return (
-    <div ref={containerRef} className={cn("relative inline-block w-full", open ? "z-50" : "z-10", className)}>
+    <div ref={containerRef} className={cn("relative inline-block w-full", open ? "z-[150]" : "z-10", className)}>
       <motion.button
         type="button"
         disabled={disabled}
@@ -1364,20 +1352,19 @@ export function BeUISelectField({
           <motion.div
             role="listbox"
             data-lenis-prevent="true"
-            variants={openUpwards ? selectMenuUpVariants : selectMenuVariants}
+            variants={selectMenuVariants}
             initial="closed"
             animate="open"
             exit="closed"
             style={{
-              borderTopLeftRadius: openUpwards ? SELECT_BORDER_RADIUS : 0,
-              borderTopRightRadius: openUpwards ? SELECT_BORDER_RADIUS : 0,
-              borderBottomLeftRadius: openUpwards ? 0 : SELECT_BORDER_RADIUS,
-              borderBottomRightRadius: openUpwards ? 0 : SELECT_BORDER_RADIUS,
-              transformOrigin: openUpwards ? "bottom center" : "top center",
+              borderTopLeftRadius: 0,
+              borderTopRightRadius: 0,
+              borderBottomLeftRadius: SELECT_BORDER_RADIUS,
+              borderBottomRightRadius: SELECT_BORDER_RADIUS,
+              transformOrigin: "top center",
             }}
             className={cn(
-              "absolute left-0 right-0 z-[120] overflow-hidden border border-gray-200/90 dark:border-white/15 bg-white/95 dark:bg-[#12151c]/95 backdrop-blur-2xl p-1.5 text-gray-900 dark:text-white shadow-[0_20px_50px_rgba(0,0,0,0.28)] dark:shadow-[0_24px_60px_rgba(0,0,0,0.75)]",
-              openUpwards ? "bottom-full mb-1.5" : "top-full mt-1.5"
+              "absolute left-0 right-0 top-full mt-1.5 z-[999] overflow-hidden border border-gray-200/90 dark:border-white/15 bg-white/95 dark:bg-[#12151c]/95 backdrop-blur-2xl p-1.5 text-gray-900 dark:text-white shadow-[0_20px_50px_rgba(0,0,0,0.28)] dark:shadow-[0_24px_60px_rgba(0,0,0,0.75)]"
             )}
           >
             <div

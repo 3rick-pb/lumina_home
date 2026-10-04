@@ -237,19 +237,19 @@ export function OverviewTab({
         {/* Box 1 (Orange/Coral Accent) */}
         <button 
           onClick={() => setActiveTab(isAdmin ? "catalog" : "orders")} 
-          className="bg-gradient-to-br from-[#e07a3f] to-[#c75e24] p-4 sm:p-5 rounded-2xl sm:rounded-[2rem] text-white dark:text-gray-900 shadow-md dark:shadow-none shadow-[#e07a3f]/15 flex flex-col justify-between text-left hover:scale-[1.02] transition-transform"
+          className="bg-gradient-to-br from-[#e07a3f] to-[#c75e24] p-4 sm:p-5 rounded-2xl sm:rounded-[2rem] text-white shadow-md shadow-[#e07a3f]/20 flex flex-col justify-between text-left hover:scale-[1.02] transition-transform border border-white/20 dark:border-white/10"
         >
           <div className="flex items-center justify-between">
-            <span className="text-xs font-medium text-white/80 dark:text-gray-900/80">
+            <span className="text-xs font-medium text-white/90">
               {isAdmin ? "Inventario" : "Mis Pedidos"}
             </span>
-            <div className="w-8 h-8 rounded-xl bg-white/20 dark:bg-[#202022]/20 backdrop-blur-md flex items-center justify-center">
-              <Package className="w-4 h-4 text-white dark:text-gray-900" />
+            <div className="w-8 h-8 rounded-xl bg-white/20 backdrop-blur-md flex items-center justify-center">
+              <Package className="w-4 h-4 text-white" />
             </div>
           </div>
           <div>
-            <p className="text-3xl font-display font-bold">{isAdmin ? products.length : orders.length}</p>
-            <p className="text-[10px] text-white/70 dark:text-gray-900/70 mt-1">
+            <p className="text-3xl font-display font-bold text-white">{isAdmin ? products.length : orders.length}</p>
+            <p className="text-[10px] text-white/80 mt-1">
               {isAdmin ? `${discountPercentageOfCatalog}% con descuento` : (orders.length === 0 ? "Sin pedidos activos" : "Pedidos confirmados")}
             </p>
           </div>
@@ -258,7 +258,7 @@ export function OverviewTab({
         {/* Box 2 (Nichos or Favoritos) */}
         <button 
           onClick={() => setActiveTab(isAdmin ? "niches" : "favorites")} 
-          className="bg-white/90 dark:bg-[#202022]/90 backdrop-blur-xl p-4 sm:p-5 rounded-2xl sm:rounded-[2rem] border border-white/80 shadow-[0_4px_24px_rgba(0,0,0,0.02)] flex flex-col justify-between text-left hover:scale-[1.02] transition-transform"
+          className="bg-white/90 dark:bg-[#202022]/90 backdrop-blur-xl p-4 sm:p-5 rounded-2xl sm:rounded-[2rem] border border-stone-200/80 dark:border-white/10 shadow-[0_4px_24px_rgba(0,0,0,0.02)] flex flex-col justify-between text-left hover:scale-[1.02] transition-transform"
         >
           <div className="flex items-center justify-between">
             <span className="text-xs font-medium text-gray-500 dark:text-gray-400">
@@ -281,33 +281,33 @@ export function OverviewTab({
         </button>
 
         {/* Box 3 */}
-        <div className="bg-white/90 dark:bg-[#202022]/90 backdrop-blur-xl p-4 sm:p-5 rounded-2xl sm:rounded-[2rem] border border-white/80 shadow-[0_4px_24px_rgba(0,0,0,0.02)] flex flex-col justify-between">
+        <div className="bg-white/90 dark:bg-[#202022]/90 backdrop-blur-xl p-4 sm:p-5 rounded-2xl sm:rounded-[2rem] border border-stone-200/80 dark:border-white/10 shadow-[0_4px_24px_rgba(0,0,0,0.02)] flex flex-col justify-between">
           <div className="flex items-center justify-between">
             <span className="text-xs font-medium text-gray-500 dark:text-gray-400">
               {isAdmin ? "Rebajas" : "Puntos Lumina"}
             </span>
             <div className="w-8 h-8 rounded-xl bg-gray-100 dark:bg-[#3a3a3c] flex items-center justify-center text-gray-700 dark:text-gray-300">
-              <Sparkles className="w-4 h-4 text-[#8c9276]" />
+              <Sparkles className="w-4 h-4 text-[#8c9276] dark:text-amber-400" />
             </div>
           </div>
           <div>
             <p className="text-3xl font-display font-bold text-gray-900 dark:text-gray-100">
               {isAdmin ? `${discountedCount}` : `${loyaltyPoints} pts`}
             </p>
-            <p className={`text-[10px] font-semibold mt-1 ${isAdmin ? "text-amber-700" : loyaltyTier.color}`}>
+            <p className={`text-[10px] font-semibold mt-1 ${isAdmin ? "text-amber-700 dark:text-amber-400" : loyaltyTier.color}`}>
               {isAdmin ? `${discountPercentageOfCatalog}% del catálogo` : loyaltyTier.name}
             </p>
           </div>
         </div>
 
         {/* Box 4 */}
-        <div className="bg-white/90 dark:bg-[#202022]/90 backdrop-blur-xl p-4 sm:p-5 rounded-2xl sm:rounded-[2rem] border border-white/80 shadow-[0_4px_24px_rgba(0,0,0,0.02)] flex flex-col justify-between">
+        <div className="bg-white/90 dark:bg-[#202022]/90 backdrop-blur-xl p-4 sm:p-5 rounded-2xl sm:rounded-[2rem] border border-stone-200/80 dark:border-white/10 shadow-[0_4px_24px_rgba(0,0,0,0.02)] flex flex-col justify-between">
           <div className="flex items-center justify-between">
             <span className="text-xs font-medium text-gray-500 dark:text-gray-400">
               {isAdmin ? "Ventas Brutas" : "Tarjetas"}
             </span>
             <div className="w-8 h-8 rounded-xl bg-gray-100 dark:bg-[#3a3a3c] flex items-center justify-center text-gray-700 dark:text-gray-300">
-              <CreditCard className="w-4 h-4 text-[#8c9276]" />
+              <CreditCard className="w-4 h-4 text-[#8c9276] dark:text-amber-400" />
             </div>
           </div>
           <div>

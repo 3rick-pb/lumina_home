@@ -64,13 +64,13 @@ export function CloudSyncStatus({
           <span>Error al sincronizar (reintentar)</span>
         </button>
       ) : internalJustSaved ? (
-        <div className="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1 rounded-full bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200/60 dark:border-emerald-900/40 text-emerald-700 dark:text-emerald-400 text-[10.5px] sm:text-[11px] font-semibold select-none whitespace-nowrap shrink-0">
-          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+        <div className="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1 rounded-full bg-amber-500/15 dark:bg-amber-500/20 border border-amber-500/30 text-amber-800 dark:text-amber-200 text-[10.5px] sm:text-[11px] font-bold select-none whitespace-nowrap shrink-0 shadow-xs">
+          <CheckCircle2 className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
           <span>✓ Guardado en base de datos</span>
         </div>
       ) : (
-        <div className="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1 rounded-full bg-emerald-50/80 dark:bg-emerald-950/30 border border-emerald-200/50 dark:border-emerald-900/30 text-emerald-700 dark:text-emerald-400 text-[10.5px] sm:text-[11px] font-semibold select-none whitespace-nowrap shrink-0">
-          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+        <div className="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1 rounded-full bg-amber-500/10 dark:bg-amber-500/15 border border-amber-500/25 text-amber-800 dark:text-amber-300 text-[10.5px] sm:text-[11px] font-semibold select-none whitespace-nowrap shrink-0">
+          <CheckCircle2 className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
           <span>Autoguardado activo</span>
         </div>
       )}
@@ -85,24 +85,24 @@ export function CloudSyncStatus({
             compact ? "px-2.5 sm:px-3 py-1.5 text-[10.5px] sm:text-[11px]" : "px-3 sm:px-4 py-1.5 sm:py-2 text-[11px] sm:text-xs"
           } ${
             internalJustSaved
-              ? "bg-emerald-700 hover:bg-emerald-800 text-white shadow-md shadow-emerald-700/30 border border-emerald-600"
-              : "bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm shadow-emerald-600/30 border border-emerald-500/60 dark:border-emerald-400/40"
+              ? "bg-amber-600 hover:bg-amber-700 text-stone-950 font-extrabold shadow-md shadow-amber-600/30 border border-amber-500"
+              : "bg-amber-500 hover:bg-amber-600 text-stone-950 font-bold shadow-sm shadow-amber-500/25 border border-amber-400/50"
           }`}
           title="Tus cambios se sincronizan automáticamente en tiempo real en la base de datos."
         >
           {effectiveSyncing ? (
             <>
-              <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+              <RefreshCw className="w-3.5 h-3.5 animate-spin text-stone-950" />
               <span>Guardando...</span>
             </>
           ) : internalJustSaved ? (
             <>
-              <Check className="w-3.5 h-3.5 stroke-[3]" />
+              <Check className="w-3.5 h-3.5 stroke-[3] text-stone-950" />
               <span>{savedLabel}</span>
             </>
           ) : (
             <>
-              <Check className="w-3.5 h-3.5" />
+              <Check className="w-3.5 h-3.5 text-stone-950" />
               <span>{saveLabel}</span>
             </>
           )}

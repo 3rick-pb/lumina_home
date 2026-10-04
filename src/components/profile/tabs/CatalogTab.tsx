@@ -111,7 +111,7 @@ export function CatalogTab({
               <th className="pb-3 px-2 text-right">Acciones</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-gray-100">
+          <tbody className="divide-y divide-gray-100 dark:divide-white/5">
             {filteredCatalog.map(p => (
               <tr key={p.id} className="hover:bg-gray-50/70 dark:hover:bg-[#2c2c2e]/70 transition-colors">
                 <td className="py-3 px-2 flex items-center gap-3">
@@ -120,7 +120,7 @@ export function CatalogTab({
                   </div>
                   <div>
                     <p className="font-bold text-gray-900 dark:text-gray-100 line-clamp-1">{p.title}</p>
-                    <p className="text-[11px] text-gray-400 italic">{p.titleHighlight || "Estándar"}</p>
+                    <p className="text-[11px] text-gray-400 dark:text-gray-500 italic">{p.titleHighlight || "Estándar"}</p>
                   </div>
                 </td>
                 <td className="py-3 px-2">
@@ -131,31 +131,31 @@ export function CatalogTab({
                 <td className="py-3 px-2 font-bold text-gray-900 dark:text-gray-100">${p.price.toFixed(2)}</td>
                 <td className="py-3 px-2">
                   {p.discount ? (
-                    <span className="text-red-600 font-bold bg-red-50 px-2 py-0.5 rounded-md border border-red-100">
+                    <span className="text-red-600 dark:text-red-400 font-bold bg-red-50 dark:bg-red-950/40 px-2 py-0.5 rounded-md border border-red-100 dark:border-red-900/40">
                       {p.discount}
                     </span>
                   ) : (
-                    <span className="text-gray-400">-</span>
+                    <span className="text-gray-400 dark:text-gray-500">-</span>
                   )}
                 </td>
                 <td className="py-3 px-2">
                   {p.badge ? (
                     <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
                       isAgotadoBadge(p.badge)
-                        ? "bg-red-50 text-red-600 border border-red-200"
-                        : "bg-amber-50 text-amber-800 border border-amber-200"
+                        ? "bg-red-50 dark:bg-red-950/40 text-red-600 dark:text-red-400 border border-red-200 dark:border-red-900/40"
+                        : "bg-amber-50 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-900/40"
                     }`}>
                       {p.badge}
                     </span>
                   ) : (
-                    <span className="text-gray-400">-</span>
+                    <span className="text-gray-400 dark:text-gray-500">-</span>
                   )}
                 </td>
                 <td className="py-3 px-2 text-right">
                   <div className="flex items-center justify-end gap-2">
                     <button 
                       onClick={() => onOpenEditProduct(p)}
-                      className="p-1.5 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-lg transition-colors"
+                      className="p-1.5 text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 hover:bg-blue-50 dark:hover:bg-blue-950/40 rounded-lg transition-colors cursor-pointer"
                       title="Editar producto"
                     >
                       <Pencil className="w-4 h-4" />
@@ -169,7 +169,7 @@ export function CatalogTab({
                     </Link>
                     <button 
                       onClick={() => onDeleteProduct(p)}
-                      className="p-1.5 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                      className="p-1.5 text-red-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/40 rounded-lg transition-colors cursor-pointer"
                       title="Eliminar producto"
                     >
                       <Trash2 className="w-4 h-4" />
