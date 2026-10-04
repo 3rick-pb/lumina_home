@@ -499,86 +499,79 @@ export const useCartStore = create<CartState>((set, get) => ({
     const clean = code.trim().toUpperCase();
     const currentUserId = get().currentUserId;
     const subtotal = get().getSubtotal();
-    let codeName: string | null = null;
-    let discount = 0;
-    let freeShipping = false;
-    let message = "";
 
-    // 1. Query public.coupons table in Supabase
-    try {
-      const { data, error } = await supabase
-        .from('coupons')
-        .select('code, discount_percent, is_free_shipping, min_order_amount, is_active')
-        .eq('code', clean)
-        .eq('is_active', true)
-        .maybeSingle();
-
-      if (!error && data) {
-        if (data.min_order_amount && subtotal < Number(data.min_order_amount)) {
-          return {
-            success: false,
-            message: `Este cupón requiere un pedido mínimo de $${Number(data.min_order_amount).toFixed(2)}.`
-          };
-        }
-        codeName = data.code;
-        discount = Number(data.discount_percent) || 0;
-        freeShipping = Boolean(data.is_free_shipping);
-        message = discount > 0 
-          ? `¡Cupón ${data.code} aplicado! ${discount}% de descuento.`
-          : `¡Cupón ${data.code} aplicado con éxito!`;
-      }
-    } catch (e) {
-      console.warn("Could not query coupons from Supabase:", e);
+    if (!clean) {
+      return { success: false, message: 'Por favor ingresa un código de cupón válido.' };
     }
 
-    // 2. Check dynamic coupons from couponStore (generated or custom coupons)
-    if (!codeName) {
+    try {
+      // Get current authenticated user's email if available for per-user limits
+      let customerEmail: string | undefined;
       try {
-        const { useCouponStore } = await import('./couponStore');
-        const dynamicCoupon = useCouponStore.getState().getCouponByCode(clean);
-        if (dynamicCoupon) {
-          if (dynamicCoupon.minOrderAmount > 0 && subtotal < dynamicCoupon.minOrderAmount) {
-            return {
-              success: false,
-              message: `Este cupón requiere un pedido mínimo de $${dynamicCoupon.minOrderAmount.toFixed(2)}.`
-            };
-          }
-          codeName = dynamicCoupon.code;
-          discount = dynamicCoupon.discountPercent;
-          freeShipping = dynamicCoupon.discountType === 'free_shipping';
-          message = discount > 0 
-            ? `¡Cupón ${dynamicCoupon.code} aplicado! ${discount}% de descuento.`
-            : `¡Cupón ${dynamicCoupon.code} aplicado con éxito!`;
+        const { useUserStore } = await import('./userStore');
+        const currentUser = useUserStore.getState().user;
+        if (currentUser?.email) {
+          customerEmail = currentUser.email;
         }
       } catch {}
-    }
 
-    // 3. Fallback to predefined store config coupons if offline or table not yet migrated
-    if (!codeName) {
+      // Server-side anti-fraud and validation engine
+      const res = await fetch('/api/coupons/validate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          code: clean,
+          subtotal,
+          items: get().items,
+          customerEmail,
+        }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok || !data.valid) {
+        return {
+          success: false,
+          message: data.message || `El código "${clean}" no es válido o ha expirado.`,
+        };
+      }
+
+      const codeName = data.coupon.code;
+      const discount = Number(data.coupon.discountPercent) || 0;
+      const freeShipping = Boolean(data.isFreeShipping);
+      const message = data.message || `¡Cupón ${codeName} aplicado con éxito!`;
+
+      const payload: CartStoragePayload = {
+        items: get().items,
+        couponCode: codeName,
+        discountPercent: discount,
+        isFreeShippingCoupon: freeShipping,
+      };
+
+      // Sync to Supabase cloud database
+      syncCartToDatabase(currentUserId, payload);
+
+      set({ couponCode: codeName, discountPercent: discount, isFreeShippingCoupon: freeShipping });
+      return { success: true, message };
+    } catch (e) {
+      console.warn('Network issue during coupon validation, checking offline fallback:', e);
+
+      // Offline fallback: check default coupons
       const fallback = storeConfig.defaultCoupons.find(c => c.code === clean);
       if (fallback) {
-        codeName = clean;
-        discount = fallback.discountPercent;
-        freeShipping = fallback.isFreeShipping;
-        message = fallback.message;
-      } else {
-        const primaryCoupon = storeConfig.defaultCoupons[0]?.code || "LUMINA10";
-        return { success: false, message: `Código no válido o expirado. Prueba con ${primaryCoupon}.` };
+        const payload: CartStoragePayload = {
+          items: get().items,
+          couponCode: clean,
+          discountPercent: fallback.discountPercent,
+          isFreeShippingCoupon: fallback.isFreeShipping,
+        };
+        syncCartToDatabase(currentUserId, payload);
+        set({ couponCode: clean, discountPercent: fallback.discountPercent, isFreeShippingCoupon: fallback.isFreeShipping });
+        return { success: true, message: fallback.message };
       }
+
+      return { success: false, message: 'No se pudo validar el cupón en este momento. Inténtalo de nuevo.' };
     }
-
-    const payload: CartStoragePayload = {
-      items: get().items,
-      couponCode: codeName,
-      discountPercent: discount,
-      isFreeShippingCoupon: freeShipping,
-    };
-
-    // Sync to Supabase cloud database
-    syncCartToDatabase(currentUserId, payload);
-
-    set({ couponCode: codeName, discountPercent: discount, isFreeShippingCoupon: freeShipping });
-    return { success: true, message };
   },
 
   removeCoupon: () => {

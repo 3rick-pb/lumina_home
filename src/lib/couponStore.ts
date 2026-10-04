@@ -28,12 +28,20 @@ export interface DiscountCoupon {
   targetNiche?: string;
   minOrderAmount: number;
   maxUses?: number | null;
+  maxUsesPerUser?: number;
   usedCount: number;
   expiresAt: string | null;
   isActive: boolean;
   createdAt: string;
+  updatedAt?: string;
   shareCount: number;
   redemptions?: CouponRedemptionRecord[];
+  metrics?: {
+    totalRedemptions: number;
+    totalSaved: number;
+    averageTicket: number;
+    shareCount: number;
+  };
 }
 
 interface CouponState {
@@ -55,11 +63,11 @@ interface CouponState {
   setSearchQuery: (query: string) => void;
 }
 
-const STORAGE_KEY = 'lumina_discount_coupons_v2';
+const STORAGE_KEY = 'lumina_discount_coupons_v3';
 
 const INITIAL_DEFAULT_COUPONS: DiscountCoupon[] = [
   {
-    id: 'coup-1',
+    id: 'coup-lumina10',
     code: 'LUMINA10',
     title: 'Bienvenida Lumina',
     description: '10% de descuento en tu primera compra en toda la tienda.',
@@ -68,58 +76,21 @@ const INITIAL_DEFAULT_COUPONS: DiscountCoupon[] = [
     scope: 'all',
     minOrderAmount: 0,
     maxUses: null,
-    usedCount: 18,
+    usedCount: 0,
     expiresAt: null,
     isActive: true,
-    createdAt: new Date(Date.now() - 30 * 86400000).toISOString(),
-    shareCount: 42,
-    redemptions: [
-      {
-        id: 'red-101',
-        orderId: 'ORD-92810',
-        customerName: 'Mateo Cárdenas',
-        customerEmail: 'mateo.cardenas@gmail.com',
-        customerAvatarSeed: 'mateo.cardenas',
-        customerAvatarShape: 'squircle',
-        usedAt: new Date(Date.now() - 1 * 86400000).toISOString(),
-        beforeAmount: 120.00,
-        discountAmount: 12.00,
-        afterAmount: 108.00,
-        itemsSummary: 'Lámpara Japandi Kumo (x1)',
-        paymentMethod: 'PayPhone · Tarjeta Crédito',
-      },
-      {
-        id: 'red-102',
-        orderId: 'ORD-91745',
-        customerName: 'Andrea Morales',
-        customerEmail: 'andrea.morales@outlook.com',
-        customerAvatarSeed: 'andrea.morales',
-        customerAvatarShape: 'circle',
-        usedAt: new Date(Date.now() - 4 * 86400000).toISOString(),
-        beforeAmount: 240.00,
-        discountAmount: 24.00,
-        afterAmount: 216.00,
-        itemsSummary: 'Difusor Cerámico Zen (x1), Esencia Cedro (x2)',
-        paymentMethod: 'PayPhone · Tarjeta Débito',
-      },
-      {
-        id: 'red-103',
-        orderId: 'ORD-90231',
-        customerName: 'Carlos Andrade',
-        customerEmail: 'carlos.andrade@yahoo.es',
-        customerAvatarSeed: 'carlos.andrade',
-        customerAvatarShape: 'squircle',
-        usedAt: new Date(Date.now() - 8 * 86400000).toISOString(),
-        beforeAmount: 85.00,
-        discountAmount: 8.50,
-        afterAmount: 76.50,
-        itemsSummary: 'Vela Aromática Santal (x1)',
-        paymentMethod: 'Transferencia Bancaria',
-      },
-    ],
+    createdAt: new Date().toISOString(),
+    shareCount: 0,
+    redemptions: [],
+    metrics: {
+      totalRedemptions: 0,
+      totalSaved: 0,
+      averageTicket: 0,
+      shareCount: 0,
+    },
   },
   {
-    id: 'coup-2',
+    id: 'coup-amigos20',
     code: 'AMIGOS-VIP20',
     title: 'Pase Exclusivo Amigos & Familia',
     description: '20% OFF en toda la tienda para compartir con tus amigos y grupos.',
@@ -128,77 +99,21 @@ const INITIAL_DEFAULT_COUPONS: DiscountCoupon[] = [
     scope: 'all',
     minOrderAmount: 30,
     maxUses: 50,
-    usedCount: 7,
-    expiresAt: new Date(Date.now() + 15 * 86400000).toISOString(),
+    usedCount: 0,
+    expiresAt: new Date(Date.now() + 30 * 86400000).toISOString(),
     isActive: true,
-    createdAt: new Date(Date.now() - 5 * 86400000).toISOString(),
-    shareCount: 19,
-    redemptions: [
-      {
-        id: 'red-201',
-        orderId: 'ORD-88730',
-        customerName: 'Gabriel Ponce',
-        customerEmail: 'gabriel.ponce@gmail.com',
-        customerAvatarSeed: 'gabriel.ponce',
-        customerAvatarShape: 'squircle',
-        usedAt: new Date(Date.now() - 2 * 86400000).toISOString(),
-        beforeAmount: 150.00,
-        discountAmount: 30.00,
-        afterAmount: 120.00,
-        itemsSummary: 'Manta de Lana Merino (x1)',
-        paymentMethod: 'PayPhone · Tarjeta Crédito',
-      },
-      {
-        id: 'red-202',
-        orderId: 'ORD-87910',
-        customerName: 'Lorena Silva',
-        customerEmail: 'lorena.silva@hotmail.com',
-        customerAvatarSeed: 'lorena.silva',
-        customerAvatarShape: 'circle',
-        usedAt: new Date(Date.now() - 3 * 86400000).toISOString(),
-        beforeAmount: 210.00,
-        discountAmount: 42.00,
-        afterAmount: 168.00,
-        itemsSummary: 'Set Cojines Lino Lavado (x2)',
-        paymentMethod: 'PayPhone · Tarjeta Crédito',
-      },
-    ],
+    createdAt: new Date().toISOString(),
+    shareCount: 0,
+    redemptions: [],
+    metrics: {
+      totalRedemptions: 0,
+      totalSaved: 0,
+      averageTicket: 0,
+      shareCount: 0,
+    },
   },
   {
-    id: 'coup-3',
-    code: 'AROMA-ZEN15',
-    title: 'Especial Aromaterapia & Calma',
-    description: '15% OFF en difusores, esencias y ambientadores naturales.',
-    discountPercent: 15,
-    discountType: 'percent',
-    scope: 'niche',
-    targetNiche: 'Aromaterapia',
-    minOrderAmount: 25,
-    maxUses: 100,
-    usedCount: 12,
-    expiresAt: new Date(Date.now() + 20 * 86400000).toISOString(),
-    isActive: true,
-    createdAt: new Date(Date.now() - 10 * 86400000).toISOString(),
-    shareCount: 8,
-    redemptions: [
-      {
-        id: 'red-301',
-        orderId: 'ORD-89410',
-        customerName: 'Valeria Espinoza',
-        customerEmail: 'valeria.espinoza@hotmail.com',
-        customerAvatarSeed: 'valeria.espinoza',
-        customerAvatarShape: 'circle',
-        usedAt: new Date(Date.now() - 4 * 86400000).toISOString(),
-        beforeAmount: 95.00,
-        discountAmount: 14.25,
-        afterAmount: 80.75,
-        itemsSummary: 'Pack Esencias Botánicas (x3)',
-        paymentMethod: 'PayPhone · Tarjeta Débito',
-      },
-    ],
-  },
-  {
-    id: 'coup-4',
+    id: 'coup-luxlights25',
     code: 'LUX-LIGHTS25',
     title: 'Flash Sale Iluminación de Autor',
     description: '25% OFF en lámparas esculturales y luminarias de diseño.',
@@ -208,44 +123,21 @@ const INITIAL_DEFAULT_COUPONS: DiscountCoupon[] = [
     targetNiche: 'Iluminación',
     minOrderAmount: 50,
     maxUses: 30,
-    usedCount: 14,
-    expiresAt: new Date(Date.now() + 7 * 86400000).toISOString(),
+    usedCount: 0,
+    expiresAt: new Date(Date.now() + 15 * 86400000).toISOString(),
     isActive: true,
-    createdAt: new Date(Date.now() - 2 * 86400000).toISOString(),
-    shareCount: 27,
-    redemptions: [
-      {
-        id: 'red-401',
-        orderId: 'ORD-93512',
-        customerName: 'Sofía Benalcázar',
-        customerEmail: 'sofia.benalcazar@gmail.com',
-        customerAvatarSeed: 'sofia.benalcazar',
-        customerAvatarShape: 'squircle',
-        usedAt: new Date(Date.now() - 12 * 3600000).toISOString(),
-        beforeAmount: 320.00,
-        discountAmount: 80.00,
-        afterAmount: 240.00,
-        itemsSummary: 'Lámpara Nórdica Aurora (x1), Luminaria Halo (x1)',
-        paymentMethod: 'PayPhone · Tarjeta Crédito',
-      },
-      {
-        id: 'red-402',
-        orderId: 'ORD-92140',
-        customerName: 'David Viteri',
-        customerEmail: 'david.viteri@gmail.com',
-        customerAvatarSeed: 'david.viteri',
-        customerAvatarShape: 'squircle',
-        usedAt: new Date(Date.now() - 2 * 86400000).toISOString(),
-        beforeAmount: 180.00,
-        discountAmount: 45.00,
-        afterAmount: 135.00,
-        itemsSummary: 'Lámpara de Mesa Eclipse (x1)',
-        paymentMethod: 'PayPhone · Tarjeta Crédito',
-      },
-    ],
+    createdAt: new Date().toISOString(),
+    shareCount: 0,
+    redemptions: [],
+    metrics: {
+      totalRedemptions: 0,
+      totalSaved: 0,
+      averageTicket: 0,
+      shareCount: 0,
+    },
   },
   {
-    id: 'coup-5',
+    id: 'coup-enviogratis',
     code: 'ENVIOGRATIS',
     title: 'Envío Bonificado 100%',
     description: 'Cubre el costo de despacho a cualquier ciudad del país.',
@@ -254,27 +146,18 @@ const INITIAL_DEFAULT_COUPONS: DiscountCoupon[] = [
     scope: 'all',
     minOrderAmount: 40,
     maxUses: null,
-    usedCount: 31,
+    usedCount: 0,
     expiresAt: null,
     isActive: true,
-    createdAt: new Date(Date.now() - 20 * 86400000).toISOString(),
-    shareCount: 56,
-    redemptions: [
-      {
-        id: 'red-501',
-        orderId: 'ORD-94110',
-        customerName: 'Lucía Paredes',
-        customerEmail: 'lucia.paredes@gmail.com',
-        customerAvatarSeed: 'lucia.paredes',
-        customerAvatarShape: 'circle',
-        usedAt: new Date(Date.now() - 1 * 86400000).toISOString(),
-        beforeAmount: 65.00,
-        discountAmount: 5.00,
-        afterAmount: 60.00,
-        itemsSummary: 'Jarrón Cerámica Wabi-Sabi (x1)',
-        paymentMethod: 'PayPhone · Tarjeta Débito',
-      },
-    ],
+    createdAt: new Date().toISOString(),
+    shareCount: 0,
+    redemptions: [],
+    metrics: {
+      totalRedemptions: 0,
+      totalSaved: 0,
+      averageTicket: 0,
+      shareCount: 0,
+    },
   }
 ];
 
@@ -323,6 +206,25 @@ function saveLocalCoupons(coupons: DiscountCoupon[]) {
   } catch {}
 }
 
+let realtimeCouponsSubscribed = false;
+function subscribeToCouponsRealtime(onUpdate: () => void) {
+  if (typeof window === 'undefined' || realtimeCouponsSubscribed) return;
+  realtimeCouponsSubscribed = true;
+  try {
+    supabase
+      .channel('lumina_coupons_realtime')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'coupons' }, () => {
+        onUpdate();
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'coupon_redemptions' }, () => {
+        onUpdate();
+      })
+      .subscribe();
+  } catch (err) {
+    console.warn('Realtime subscription error on coupons:', err);
+  }
+}
+
 export const useCouponStore = create<CouponState>((set, get) => ({
   coupons: typeof window !== 'undefined' ? loadLocalCoupons() : INITIAL_DEFAULT_COUPONS,
   isLoading: false,
@@ -331,6 +233,32 @@ export const useCouponStore = create<CouponState>((set, get) => ({
 
   fetchCoupons: async () => {
     set({ isLoading: true });
+
+    // Enable Supabase Realtime synchronization on first fetch
+    subscribeToCouponsRealtime(() => {
+      get().fetchCoupons();
+    });
+
+    try {
+      const res = await fetch('/api/coupons', {
+        method: 'GET',
+        headers: { 'Cache-Control': 'no-cache' },
+      });
+
+      if (res.ok) {
+        const json = await res.json();
+        if (json.success && Array.isArray(json.coupons) && json.coupons.length > 0) {
+          const apiCoupons: DiscountCoupon[] = json.coupons;
+          saveLocalCoupons(apiCoupons);
+          set({ coupons: apiCoupons, isLoading: false });
+          return;
+        }
+      }
+    } catch (apiErr) {
+      console.warn('Could not fetch coupons via /api/coupons, checking Supabase direct:', apiErr);
+    }
+
+    // Direct Supabase fallback
     try {
       const { data, error } = await supabase
         .from('coupons')
@@ -344,47 +272,54 @@ export const useCouponStore = create<CouponState>((set, get) => ({
           title?: string;
           description?: string;
           discount_percent?: number | string;
+          discount_type?: 'percent' | 'fixed' | 'free_shipping';
+          fixed_amount?: number | string;
+          scope?: 'all' | 'niche';
           is_free_shipping?: boolean;
           target_niche?: string | null;
           min_order_amount?: number | string;
           max_uses?: number | null;
+          max_uses_per_user?: number | null;
           used_count?: number | string;
           expires_at?: string | null;
           is_active?: boolean;
           created_at?: string;
           share_count?: number | string;
         }
+
         const cloudCoupons: DiscountCoupon[] = (data as unknown as CloudCouponRecord[]).map((item) => ({
           id: item.id || `cloud-${item.code}`,
           code: item.code,
           title: item.title || `Cupón ${item.code}`,
           description: item.description || `${item.discount_percent || 0}% de descuento`,
           discountPercent: Number(item.discount_percent) || 0,
-          discountType: item.is_free_shipping ? 'free_shipping' : (Number(item.discount_percent) > 0 ? 'percent' : 'fixed'),
-          scope: item.target_niche ? 'niche' : 'all',
+          discountType: item.discount_type || (item.is_free_shipping ? 'free_shipping' : (Number(item.discount_percent) > 0 ? 'percent' : 'fixed')),
+          fixedAmount: Number(item.fixed_amount) || 0,
+          scope: item.scope || (item.target_niche ? 'niche' : 'all'),
           targetNiche: item.target_niche || undefined,
           minOrderAmount: Number(item.min_order_amount) || 0,
           maxUses: item.max_uses !== undefined ? item.max_uses : null,
+          maxUsesPerUser: Number(item.max_uses_per_user) || 1,
           usedCount: Number(item.used_count) || 0,
           expiresAt: item.expires_at || null,
           isActive: item.is_active !== false,
           createdAt: item.created_at || new Date().toISOString(),
           shareCount: Number(item.share_count) || 0,
+          redemptions: [],
+          metrics: {
+            totalRedemptions: Number(item.used_count) || 0,
+            totalSaved: 0,
+            averageTicket: 0,
+            shareCount: Number(item.share_count) || 0,
+          },
         }));
 
-        // Merge cloud with local, avoiding duplicates
-        const current = get().coupons;
-        const mergedMap = new Map<string, DiscountCoupon>();
-        current.forEach(c => mergedMap.set(c.code.toUpperCase(), c));
-        cloudCoupons.forEach(c => mergedMap.set(c.code.toUpperCase(), c));
-        const merged = Array.from(mergedMap.values());
-
-        saveLocalCoupons(merged);
-        set({ coupons: merged, isLoading: false });
+        saveLocalCoupons(cloudCoupons);
+        set({ coupons: cloudCoupons, isLoading: false });
         return;
       }
     } catch (e) {
-      console.warn('Could not sync coupons with cloud:', e);
+      console.warn('Could not sync coupons directly from cloud:', e);
     }
     set({ isLoading: false });
   },
@@ -440,36 +375,58 @@ export const useCouponStore = create<CouponState>((set, get) => ({
       description,
       discountPercent: discountVal,
       discountType: 'percent',
+      fixedAmount: 0,
       scope: isStorewide ? 'all' : 'niche',
       targetNiche: chosenNiche,
       minOrderAmount: minOrder,
       maxUses,
+      maxUsesPerUser: 1,
       usedCount: 0,
       expiresAt,
       isActive: true,
       createdAt: new Date().toISOString(),
       shareCount: 0,
+      redemptions: [],
+      metrics: {
+        totalRedemptions: 0,
+        totalSaved: 0,
+        averageTicket: 0,
+        shareCount: 0,
+      },
     };
 
     const updated = [newCoupon, ...get().coupons];
     saveLocalCoupons(updated);
     set({ coupons: updated });
 
-    // Sync to Supabase in background
-    try {
-      supabase.from('coupons').insert({
+    // Sync to PostgreSQL via /api/coupons
+    fetch('/api/coupons', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
         code: newCoupon.code,
         title: newCoupon.title,
         description: newCoupon.description,
-        discount_percent: newCoupon.discountPercent,
-        is_free_shipping: false,
-        min_order_amount: newCoupon.minOrderAmount,
-        target_niche: newCoupon.targetNiche || null,
-        max_uses: newCoupon.maxUses,
-        expires_at: newCoupon.expiresAt,
-        is_active: true,
-      }).then(() => {}, () => {});
-    } catch {}
+        discountPercent: newCoupon.discountPercent,
+        discountType: newCoupon.discountType,
+        fixedAmount: 0,
+        scope: newCoupon.scope,
+        targetNiche: newCoupon.targetNiche || null,
+        minOrderAmount: newCoupon.minOrderAmount,
+        maxUses: newCoupon.maxUses,
+        maxUsesPerUser: 1,
+        expiresAt: newCoupon.expiresAt,
+        isActive: true,
+      }),
+    }).then(res => res.json()).then(data => {
+      if (data.coupon) {
+        const refreshed = get().coupons.map(c => c.code === newCoupon.code ? { ...c, id: data.coupon.id } : c);
+        set({ coupons: refreshed });
+        saveLocalCoupons(refreshed);
+      }
+    }).catch(err => {
+      console.warn('Could not post generated coupon to API:', err);
+    });
 
     return newCoupon;
   },
@@ -483,53 +440,85 @@ export const useCouponStore = create<CouponState>((set, get) => ({
       usedCount: 0,
       shareCount: 0,
       createdAt: new Date().toISOString(),
+      redemptions: [],
+      metrics: {
+        totalRedemptions: 0,
+        totalSaved: 0,
+        averageTicket: 0,
+        shareCount: 0,
+      },
     };
 
     const updated = [newCoupon, ...get().coupons.filter(c => c.code !== cleanCode)];
     saveLocalCoupons(updated);
     set({ coupons: updated });
 
-    // Sync to Supabase in background
-    try {
-      supabase.from('coupons').upsert({
+    // Persist via /api/coupons
+    fetch('/api/coupons', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
         code: newCoupon.code,
         title: newCoupon.title,
         description: newCoupon.description,
-        discount_percent: newCoupon.discountPercent,
-        is_free_shipping: newCoupon.discountType === 'free_shipping',
-        min_order_amount: newCoupon.minOrderAmount,
-        target_niche: newCoupon.targetNiche || null,
-        max_uses: newCoupon.maxUses,
-        expires_at: newCoupon.expiresAt,
-        is_active: newCoupon.isActive,
-      }, { onConflict: 'code' }).then(() => {}, () => {});
-    } catch {}
+        discountPercent: newCoupon.discountPercent,
+        discountType: newCoupon.discountType,
+        fixedAmount: newCoupon.fixedAmount || 0,
+        scope: newCoupon.scope,
+        targetNiche: newCoupon.targetNiche || null,
+        minOrderAmount: newCoupon.minOrderAmount,
+        maxUses: newCoupon.maxUses,
+        maxUsesPerUser: newCoupon.maxUsesPerUser || 1,
+        expiresAt: newCoupon.expiresAt,
+        isActive: newCoupon.isActive,
+      }),
+    }).then(res => res.json()).then(data => {
+      if (data.coupon) {
+        const refreshed = get().coupons.map(c => c.code === cleanCode ? { ...c, id: data.coupon.id } : c);
+        set({ coupons: refreshed });
+        saveLocalCoupons(refreshed);
+      }
+    }).catch(err => {
+      console.warn('Could not create coupon via API:', err);
+    });
 
     return newCoupon;
   },
 
   toggleCouponStatus: (id) => {
+    const target = get().coupons.find(c => c.id === id);
+    if (!target) return;
+    const nextState = !target.isActive;
+
     const updated = get().coupons.map(c => {
       if (c.id === id) {
-        const nextState = !c.isActive;
-        // Sync to Supabase in background
-        try {
-          supabase.from('coupons').update({ is_active: nextState }).eq('code', c.code).then(() => {});
-        } catch {}
         return { ...c, isActive: nextState };
       }
       return c;
     });
     saveLocalCoupons(updated);
     set({ coupons: updated });
+
+    fetch('/api/coupons', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        id: target.id,
+        action: 'toggle_status',
+      }),
+    }).catch(err => {
+      console.warn('Could not toggle coupon status via API:', err);
+    });
   },
 
   deleteCoupon: (id) => {
     const target = get().coupons.find(c => c.id === id);
     if (target) {
-      try {
-        supabase.from('coupons').delete().eq('code', target.code).then(() => {});
-      } catch {}
+      fetch(`/api/coupons?id=${encodeURIComponent(target.id)}`, {
+        method: 'DELETE',
+      }).catch(err => {
+        console.warn('Could not delete coupon via API:', err);
+      });
     }
     const updated = get().coupons.filter(c => c.id !== id);
     saveLocalCoupons(updated);
@@ -537,18 +526,29 @@ export const useCouponStore = create<CouponState>((set, get) => ({
   },
 
   recordShare: (id) => {
+    const target = get().coupons.find(c => c.id === id);
+    if (!target) return;
+    const nextCount = (target.shareCount || 0) + 1;
+
     const updated = get().coupons.map(c => {
       if (c.id === id) {
-        const nextCount = (c.shareCount || 0) + 1;
-        try {
-          supabase.from('coupons').update({ share_count: nextCount }).eq('code', c.code).then(() => {});
-        } catch {}
         return { ...c, shareCount: nextCount };
       }
       return c;
     });
     saveLocalCoupons(updated);
     set({ coupons: updated });
+
+    fetch('/api/coupons', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        id: target.id,
+        action: 'record_share',
+      }),
+    }).catch(err => {
+      console.warn('Could not record share via API:', err);
+    });
   },
 
   getCouponByCode: (code) => {

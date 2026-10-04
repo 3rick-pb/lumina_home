@@ -160,16 +160,16 @@ export async function GET(request: Request) {
               state: a.state || '',
               postalCode: a.postal_code || '',
               country: cleanCountry,
-              exteriorNumber: packedMeta.exteriorNumber,
-              neighborhood: packedMeta.neighborhood,
-              interiorNumber: packedMeta.interiorNumber,
-              crossStreets: packedMeta.crossStreets,
+              exteriorNumber: a.exterior_number || packedMeta.exteriorNumber,
+              neighborhood: a.neighborhood || packedMeta.neighborhood,
+              interiorNumber: a.interior_number || packedMeta.interiorNumber,
+              crossStreets: a.cross_streets || packedMeta.crossStreets,
               reference: a.reference || packedMeta.reference || '',
-              addressType: packedMeta.addressType,
-              deliveryInstructions: packedMeta.deliveryInstructions,
-              hasElevator: packedMeta.hasElevator,
-              floorLevel: packedMeta.floorLevel,
-              label: packedMeta.label,
+              addressType: a.address_type || packedMeta.addressType || 'casa',
+              deliveryInstructions: a.delivery_instructions || packedMeta.deliveryInstructions,
+              hasElevator: typeof a.has_elevator === 'boolean' ? a.has_elevator : packedMeta.hasElevator,
+              floorLevel: a.floor_level || packedMeta.floorLevel,
+              label: a.label || packedMeta.label || 'Casa',
               lat: resolvedLat,
               lng: resolvedLng,
               // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -329,23 +329,7 @@ export async function POST(request: Request) {
             await supabase.from('addresses').delete().eq('user_id', targetUserId);
             if (addresses.length > 0) {
               const rowsWithGeo = addresses.map(a => {
-                const baseCountry = String(a.country || 'Ecuador').split('||LUMINA_RAW_GPS||')[0] || 'Ecuador';
-                const packedCountry = `${baseCountry}||LUMINA_RAW_GPS||${JSON.stringify({
-                  lat: typeof a.lat === 'number' ? a.lat : a.rawGps?.latitude,
-                  lng: typeof a.lng === 'number' ? a.lng : a.rawGps?.longitude,
-                  reference: a.reference || undefined,
-                  rawGps: a.rawGps || undefined,
-                  rawGpsString: a.rawGpsString || a.rawGps?.rawCoordsString || undefined,
-                  exteriorNumber: a.exteriorNumber,
-                  neighborhood: a.neighborhood,
-                  interiorNumber: a.interiorNumber,
-                  crossStreets: a.crossStreets,
-                  addressType: a.addressType,
-                  deliveryInstructions: a.deliveryInstructions,
-                  hasElevator: a.hasElevator,
-                  floorLevel: a.floorLevel,
-                  label: a.label,
-                })}`;
+                const cleanCountry = String(a.country || 'Ecuador').split('||LUMINA_RAW_GPS||')[0] || 'Ecuador';
                 return {
                   id: a.id && UUID_REGEX.test(a.id) ? a.id : crypto.randomUUID(),
                   user_id: targetUserId,
@@ -354,19 +338,30 @@ export async function POST(request: Request) {
                   phone: a.phone || null,
                   email: a.email || null,
                   street: a.street || '',
+                  exterior_number: a.exteriorNumber || null,
+                  neighborhood: a.neighborhood || null,
+                  interior_number: a.interiorNumber || null,
+                  cross_streets: a.crossStreets || null,
+                  address_type: a.addressType || 'casa',
+                  delivery_instructions: a.deliveryInstructions || null,
+                  has_elevator: !!a.hasElevator,
+                  floor_level: a.floorLevel || null,
+                  label: a.label || 'Casa',
                   city: a.city || '',
                   state: a.state || '',
                   postal_code: a.postalCode || '',
-                  country: packedCountry,
+                  country: cleanCountry,
                   reference: a.reference || null,
                   lat: typeof a.lat === 'number' ? a.lat : a.rawGps?.latitude ?? null,
                   lng: typeof a.lng === 'number' ? a.lng : a.rawGps?.longitude ?? null,
+                  raw_gps: a.rawGps || null,
                   is_default: !!a.isDefault,
                   updated_at: new Date().toISOString(),
                 };
               });
               const { error: insErr } = await supabase.from('addresses').insert(rowsWithGeo);
               if (insErr) {
+                // If new columns are pending SQL execution, gracefully fallback to base columns
                 const rowsBase = rowsWithGeo.map(row => ({
                   id: row.id,
                   user_id: row.user_id,
@@ -378,7 +373,8 @@ export async function POST(request: Request) {
                   city: row.city,
                   state: row.state,
                   postal_code: row.postal_code,
-                  country: row.country, // Preserves ||LUMINA_RAW_GPS|| envelope 100% intact!
+                  country: row.country,
+                  reference: row.reference,
                   is_default: row.is_default,
                   updated_at: row.updated_at,
                 }));

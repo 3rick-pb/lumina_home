@@ -1,15 +1,15 @@
 -- =========================================================================================
--- LUMINA HOME - ARQUITECTURA DE BASE DE DATOS SUPABASE (100% NORMALIZADA Y TIEMPO REAL)
+-- LUMINA HOME - ARQUITECTURA MAESTRA DE BASE DE DATOS SUPABASE (100% NORMALIZADA Y TIEMPO REAL)
 -- =========================================================================================
--- Regla de Oro de Arquitectura:
--- 1. Cero reutilización de tablas o columnas para propósitos mixtos.
--- 2. Cada dominio funcional tiene su propia tabla dedicada con tipado estricto.
--- 3. Cero datos de demostración, semillas falsas o registros fantasma.
--- 4. Publicación activa en `supabase_realtime` para sincronización WebSocket instantánea.
+-- Reglas de Oro de Arquitectura:
+-- 1. Cero reutilización o empaquetado de datos en columnas de otros propósitos.
+-- 2. Cada dominio funcional cuenta con tablas y columnas dedicadas con tipado estricto.
+-- 3. Cero datos de prueba/mock hardcodeados; todos los canjes y transacciones son reales.
+-- 4. Publicación activa en `supabase_realtime` para sincronización instantánea vía WebSocket.
 -- =========================================================================================
 
 -- -----------------------------------------------------------------------------------------
--- 1. CATÁLOGO Y ESCAPARATE (PRODUCTS, CATEGORIES, STORE_BADGES, HEADER_NICHE_SLOTS)
+-- 1. CATÁLOGO Y ESCAPARATE (CATEGORIES, STORE_BADGES, STORE_TRUST_BADGES, HEADER_NICHE_SLOTS, PRODUCTS)
 -- -----------------------------------------------------------------------------------------
 
 CREATE TABLE IF NOT EXISTS public.categories (
@@ -32,6 +32,25 @@ CREATE TABLE IF NOT EXISTS public.store_badges (
   created_at TIMESTAMPTZ DEFAULT now()
 );
 
+CREATE TABLE IF NOT EXISTS public.store_trust_badges (
+  id TEXT PRIMARY KEY,
+  title TEXT NOT NULL,
+  subtitle TEXT,
+  icon_name TEXT NOT NULL DEFAULT 'ShieldCheck',
+  is_active BOOLEAN NOT NULL DEFAULT true,
+  display_order INTEGER NOT NULL DEFAULT 0,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS public.header_niche_slots (
+  id TEXT PRIMARY KEY CHECK (id IN ('slot1', 'slot2')),
+  label TEXT NOT NULL,
+  subtitle TEXT,
+  image TEXT,
+  price TEXT,
+  updated_at TIMESTAMPTZ DEFAULT now()
+);
+
 CREATE TABLE IF NOT EXISTS public.products (
   id TEXT PRIMARY KEY,
   name TEXT NOT NULL,
@@ -43,7 +62,11 @@ CREATE TABLE IF NOT EXISTS public.products (
   dimensions TEXT,
   weight TEXT,
   material TEXT,
+  materials TEXT,
   care TEXT,
+  care_instructions TEXT,
+  package_contents TEXT,
+  shipping TEXT,
   origin TEXT,
   warranty TEXT,
   badge TEXT DEFAULT 'NONE',
@@ -55,6 +78,8 @@ CREATE TABLE IF NOT EXISTS public.products (
   is_new BOOLEAN DEFAULT false,
   layout_type TEXT DEFAULT 'standard',
   gallery_style TEXT DEFAULT 'standard',
+  gallery_autoplay BOOLEAN DEFAULT false,
+  gallery_autoplay_speed INTEGER DEFAULT 3000,
   lifestyle_layout TEXT DEFAULT 'grid',
   image TEXT,
   images JSONB DEFAULT '[]'::jsonb,
@@ -67,26 +92,42 @@ CREATE TABLE IF NOT EXISTS public.products (
   lifestyle_images JSONB DEFAULT '[]'::jsonb,
   embedded_carousel JSONB,
   landing_specs JSONB DEFAULT '[]'::jsonb,
+  landing_reviews JSONB DEFAULT '[]'::jsonb,
+  landing_benefits JSONB DEFAULT '[]'::jsonb,
+  landing_bundle JSONB,
+  how_to_use JSONB DEFAULT '[]'::jsonb,
+  landing_anatomy_image TEXT,
   created_at TIMESTAMPTZ DEFAULT now()
 );
 
-CREATE TABLE IF NOT EXISTS public.header_niche_slots (
-  id TEXT PRIMARY KEY CHECK (id IN ('slot1', 'slot2')),
-  label TEXT NOT NULL,
-  subtitle TEXT,
-  image TEXT,
-  price TEXT,
-  updated_at TIMESTAMPTZ DEFAULT now()
-);
+-- Garantizar columnas en caso de migraciones sobre tablas preexistentes
+ALTER TABLE public.products ADD COLUMN IF NOT EXISTS materials TEXT;
+ALTER TABLE public.products ADD COLUMN IF NOT EXISTS care_instructions TEXT;
+ALTER TABLE public.products ADD COLUMN IF NOT EXISTS package_contents TEXT;
+ALTER TABLE public.products ADD COLUMN IF NOT EXISTS shipping TEXT;
+ALTER TABLE public.products ADD COLUMN IF NOT EXISTS warranty TEXT;
+ALTER TABLE public.products ADD COLUMN IF NOT EXISTS layout_type TEXT DEFAULT 'standard';
+ALTER TABLE public.products ADD COLUMN IF NOT EXISTS gallery_style TEXT DEFAULT 'standard';
+ALTER TABLE public.products ADD COLUMN IF NOT EXISTS gallery_autoplay BOOLEAN DEFAULT false;
+ALTER TABLE public.products ADD COLUMN IF NOT EXISTS gallery_autoplay_speed INTEGER DEFAULT 3000;
+ALTER TABLE public.products ADD COLUMN IF NOT EXISTS embedded_carousel JSONB;
+ALTER TABLE public.products ADD COLUMN IF NOT EXISTS landing_specs JSONB DEFAULT '[]'::jsonb;
+ALTER TABLE public.products ADD COLUMN IF NOT EXISTS landing_reviews JSONB DEFAULT '[]'::jsonb;
+ALTER TABLE public.products ADD COLUMN IF NOT EXISTS landing_benefits JSONB DEFAULT '[]'::jsonb;
+ALTER TABLE public.products ADD COLUMN IF NOT EXISTS landing_bundle JSONB;
+ALTER TABLE public.products ADD COLUMN IF NOT EXISTS combos JSONB DEFAULT '[]'::jsonb;
+ALTER TABLE public.products ADD COLUMN IF NOT EXISTS how_to_use JSONB DEFAULT '[]'::jsonb;
+ALTER TABLE public.products ADD COLUMN IF NOT EXISTS landing_anatomy_image TEXT;
 
 -- -----------------------------------------------------------------------------------------
--- 2. CLIENTES, PERFILES Y PREFERENCIAS (USER_PROFILES, USER_AVATAR_SETTINGS, FAVORITES)
+-- 2. CLIENTES, PERFILES Y PREFERENCIAS (USER_PROFILES, USER_AVATAR_SETTINGS, USER_SETTINGS, FAVORITES)
 -- -----------------------------------------------------------------------------------------
 
 CREATE TABLE IF NOT EXISTS public.user_profiles (
   id TEXT PRIMARY KEY,
   email TEXT NOT NULL UNIQUE,
   name TEXT NOT NULL,
+  full_name TEXT,
   phone TEXT,
   cedula TEXT,
   role TEXT NOT NULL DEFAULT 'client' CHECK (role IN ('client', 'admin')),
@@ -105,27 +146,25 @@ CREATE TABLE IF NOT EXISTS public.user_avatar_settings (
   updated_at TIMESTAMPTZ DEFAULT now()
 );
 
+CREATE TABLE IF NOT EXISTS public.user_settings (
+  user_id TEXT PRIMARY KEY,
+  theme TEXT NOT NULL DEFAULT 'light' CHECK (theme IN ('light', 'dark', 'auto')),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
 CREATE TABLE IF NOT EXISTS public.favorites (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID,
   user_email TEXT NOT NULL,
   product_id TEXT NOT NULL,
   created_at TIMESTAMPTZ DEFAULT now(),
   UNIQUE (user_email, product_id)
 );
 
--- Garantizar columnas en tablas preexistentes antes de crear índices:
-ALTER TABLE public.user_profiles ADD COLUMN IF NOT EXISTS email TEXT;
-ALTER TABLE public.user_profiles ADD COLUMN IF NOT EXISTS full_name TEXT;
-ALTER TABLE public.user_profiles ADD COLUMN IF NOT EXISTS name TEXT;
-ALTER TABLE public.user_profiles ADD COLUMN IF NOT EXISTS phone TEXT;
-ALTER TABLE public.user_profiles ADD COLUMN IF NOT EXISTS avatar_url TEXT;
-ALTER TABLE public.user_profiles ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ DEFAULT now();
-
-ALTER TABLE public.favorites ADD COLUMN IF NOT EXISTS user_id UUID;
-ALTER TABLE public.favorites ADD COLUMN IF NOT EXISTS user_email TEXT;
+CREATE INDEX IF NOT EXISTS idx_favorites_user_email ON public.favorites(user_email);
 
 -- -----------------------------------------------------------------------------------------
--- 3. DIRECCIONES GEORREFERENCIADAS Y MÉTODOS DE PAGO DE CLIENTES (ADDRESSES, PAYMENT_CARDS)
+-- 3. DIRECCIONES GEORREFERENCIADAS Y TARJETAS DE PAGO (100% NORMALIZADAS)
 -- -----------------------------------------------------------------------------------------
 
 CREATE TABLE IF NOT EXISTS public.addresses (
@@ -135,36 +174,57 @@ CREATE TABLE IF NOT EXISTS public.addresses (
   recipient TEXT,
   recipient_name TEXT,
   id_number TEXT,
-  label TEXT DEFAULT 'Casa',
   phone TEXT,
   email TEXT,
   street TEXT NOT NULL,
-  number TEXT,
-  sector TEXT,
+  exterior_number TEXT,
+  interior_number TEXT,
+  neighborhood TEXT,
+  cross_streets TEXT,
+  address_type TEXT DEFAULT 'casa',
+  delivery_instructions TEXT,
+  has_elevator BOOLEAN DEFAULT false,
+  floor_level TEXT,
+  label TEXT DEFAULT 'Casa',
   city TEXT NOT NULL,
-  state TEXT,
   province TEXT,
+  state TEXT,
+  sector TEXT,
+  number TEXT,
   postal_code TEXT,
   country TEXT DEFAULT 'Ecuador',
   reference TEXT,
   lat DOUBLE PRECISION,
   lng DOUBLE PRECISION,
+  raw_gps TEXT,
   is_default BOOLEAN DEFAULT false,
   created_at TIMESTAMPTZ DEFAULT now(),
   updated_at TIMESTAMPTZ DEFAULT now()
 );
 
--- Garantizar que si la tabla `addresses` ya existía previamente, se agreguen todas las columnas requeridas antes de indexar:
-ALTER TABLE public.addresses ADD COLUMN IF NOT EXISTS user_id UUID;
-ALTER TABLE public.addresses ADD COLUMN IF NOT EXISTS user_email TEXT;
+-- Garantizar columnas en caso de tablas creadas previamente
+ALTER TABLE public.addresses ADD COLUMN IF NOT EXISTS exterior_number TEXT;
+ALTER TABLE public.addresses ADD COLUMN IF NOT EXISTS interior_number TEXT;
+ALTER TABLE public.addresses ADD COLUMN IF NOT EXISTS neighborhood TEXT;
+ALTER TABLE public.addresses ADD COLUMN IF NOT EXISTS cross_streets TEXT;
+ALTER TABLE public.addresses ADD COLUMN IF NOT EXISTS address_type TEXT DEFAULT 'casa';
+ALTER TABLE public.addresses ADD COLUMN IF NOT EXISTS delivery_instructions TEXT;
+ALTER TABLE public.addresses ADD COLUMN IF NOT EXISTS has_elevator BOOLEAN DEFAULT false;
+ALTER TABLE public.addresses ADD COLUMN IF NOT EXISTS floor_level TEXT;
+ALTER TABLE public.addresses ADD COLUMN IF NOT EXISTS label TEXT DEFAULT 'Casa';
+ALTER TABLE public.addresses ADD COLUMN IF NOT EXISTS raw_gps TEXT;
+ALTER TABLE public.addresses ADD COLUMN IF NOT EXISTS recipient_name TEXT;
 ALTER TABLE public.addresses ADD COLUMN IF NOT EXISTS recipient TEXT;
 ALTER TABLE public.addresses ADD COLUMN IF NOT EXISTS id_number TEXT;
+ALTER TABLE public.addresses ADD COLUMN IF NOT EXISTS phone TEXT;
 ALTER TABLE public.addresses ADD COLUMN IF NOT EXISTS email TEXT;
+ALTER TABLE public.addresses ADD COLUMN IF NOT EXISTS province TEXT;
 ALTER TABLE public.addresses ADD COLUMN IF NOT EXISTS state TEXT;
 ALTER TABLE public.addresses ADD COLUMN IF NOT EXISTS country TEXT DEFAULT 'Ecuador';
 ALTER TABLE public.addresses ADD COLUMN IF NOT EXISTS reference TEXT;
 ALTER TABLE public.addresses ADD COLUMN IF NOT EXISTS lat DOUBLE PRECISION;
 ALTER TABLE public.addresses ADD COLUMN IF NOT EXISTS lng DOUBLE PRECISION;
+ALTER TABLE public.addresses ADD COLUMN IF NOT EXISTS is_default BOOLEAN DEFAULT false;
 ALTER TABLE public.addresses ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ DEFAULT now();
 
 CREATE INDEX IF NOT EXISTS idx_addresses_user_id ON public.addresses(user_id);
@@ -176,29 +236,98 @@ CREATE TABLE IF NOT EXISTS public.payment_cards (
   user_email TEXT,
   number TEXT,
   holder TEXT,
+  holder_name TEXT,
   exp TEXT,
+  exp_month TEXT,
+  exp_year TEXT,
   type TEXT DEFAULT 'visa',
   brand TEXT DEFAULT 'visa',
   last4 TEXT,
-  exp_month TEXT,
-  exp_year TEXT,
-  holder_name TEXT,
   is_default BOOLEAN DEFAULT false,
   created_at TIMESTAMPTZ DEFAULT now()
 );
 
-ALTER TABLE public.payment_cards ADD COLUMN IF NOT EXISTS user_id UUID;
-ALTER TABLE public.payment_cards ADD COLUMN IF NOT EXISTS user_email TEXT;
-ALTER TABLE public.payment_cards ADD COLUMN IF NOT EXISTS number TEXT;
-ALTER TABLE public.payment_cards ADD COLUMN IF NOT EXISTS holder TEXT;
-ALTER TABLE public.payment_cards ADD COLUMN IF NOT EXISTS exp TEXT;
-ALTER TABLE public.payment_cards ADD COLUMN IF NOT EXISTS type TEXT DEFAULT 'visa';
-
-CREATE INDEX IF NOT EXISTS idx_payment_cards_user_id ON public.payment_cards(user_id);
 CREATE INDEX IF NOT EXISTS idx_payment_cards_user_email ON public.payment_cards(user_email);
 
 -- -----------------------------------------------------------------------------------------
--- 4. TRANSACCIONES Y ÓRDENES E-COMMERCE (ORDERS)
+-- 4. CARRITOS DE COMPRA PERSISTENTES EN LA NUBE (USER_CARTS)
+-- -----------------------------------------------------------------------------------------
+
+CREATE TABLE IF NOT EXISTS public.user_carts (
+  user_id TEXT PRIMARY KEY,
+  items JSONB NOT NULL DEFAULT '[]'::jsonb,
+  coupon_code TEXT,
+  discount_percent NUMERIC(5, 2) DEFAULT 0,
+  is_free_shipping BOOLEAN DEFAULT false,
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_user_carts_updated ON public.user_carts(updated_at DESC);
+
+-- -----------------------------------------------------------------------------------------
+-- 5. SISTEMA DE CUPONES Y CANJES CRIPTOGRÁFICOS (COUPONS, COUPON_REDEMPTIONS)
+-- -----------------------------------------------------------------------------------------
+
+CREATE TABLE IF NOT EXISTS public.coupons (
+  id TEXT PRIMARY KEY,
+  code TEXT NOT NULL UNIQUE,
+  title TEXT NOT NULL,
+  description TEXT,
+  discount_percent NUMERIC(5, 2) NOT NULL DEFAULT 0,
+  discount_type TEXT NOT NULL DEFAULT 'percent' CHECK (discount_type IN ('percent', 'fixed', 'free_shipping')),
+  fixed_amount NUMERIC(10, 2) NOT NULL DEFAULT 0,
+  scope TEXT NOT NULL DEFAULT 'all' CHECK (scope IN ('all', 'niche')),
+  target_niche TEXT,
+  min_order_amount NUMERIC(10, 2) NOT NULL DEFAULT 0,
+  max_uses INTEGER,
+  max_uses_per_user INTEGER NOT NULL DEFAULT 1,
+  used_count INTEGER NOT NULL DEFAULT 0,
+  share_count INTEGER NOT NULL DEFAULT 0,
+  is_active BOOLEAN NOT NULL DEFAULT true,
+  expires_at TIMESTAMPTZ,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+ALTER TABLE public.coupons ADD COLUMN IF NOT EXISTS discount_percent NUMERIC(5, 2) DEFAULT 0;
+ALTER TABLE public.coupons ADD COLUMN IF NOT EXISTS discount_type TEXT DEFAULT 'percent';
+ALTER TABLE public.coupons ADD COLUMN IF NOT EXISTS fixed_amount NUMERIC(10, 2) DEFAULT 0;
+ALTER TABLE public.coupons ADD COLUMN IF NOT EXISTS scope TEXT DEFAULT 'all';
+ALTER TABLE public.coupons ADD COLUMN IF NOT EXISTS target_niche TEXT;
+ALTER TABLE public.coupons ADD COLUMN IF NOT EXISTS min_order_amount NUMERIC(10, 2) DEFAULT 0;
+ALTER TABLE public.coupons ADD COLUMN IF NOT EXISTS max_uses INTEGER;
+ALTER TABLE public.coupons ADD COLUMN IF NOT EXISTS max_uses_per_user INTEGER DEFAULT 1;
+ALTER TABLE public.coupons ADD COLUMN IF NOT EXISTS used_count INTEGER DEFAULT 0;
+ALTER TABLE public.coupons ADD COLUMN IF NOT EXISTS share_count INTEGER DEFAULT 0;
+ALTER TABLE public.coupons ADD COLUMN IF NOT EXISTS is_active BOOLEAN DEFAULT true;
+ALTER TABLE public.coupons ADD COLUMN IF NOT EXISTS expires_at TIMESTAMPTZ;
+ALTER TABLE public.coupons ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ DEFAULT now();
+
+CREATE INDEX IF NOT EXISTS idx_coupons_code ON public.coupons(code);
+CREATE INDEX IF NOT EXISTS idx_coupons_active ON public.coupons(is_active, expires_at);
+
+CREATE TABLE IF NOT EXISTS public.coupon_redemptions (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  coupon_id TEXT,
+  coupon_code TEXT NOT NULL,
+  order_id TEXT NOT NULL,
+  user_id TEXT,
+  customer_name TEXT NOT NULL,
+  customer_email TEXT NOT NULL,
+  before_amount NUMERIC(12, 2) NOT NULL DEFAULT 0,
+  discount_amount NUMERIC(12, 2) NOT NULL DEFAULT 0,
+  after_amount NUMERIC(12, 2) NOT NULL DEFAULT 0,
+  items_summary TEXT,
+  payment_method TEXT,
+  redeemed_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_coupon_redemptions_code ON public.coupon_redemptions(coupon_code);
+CREATE INDEX IF NOT EXISTS idx_coupon_redemptions_order ON public.coupon_redemptions(order_id);
+CREATE INDEX IF NOT EXISTS idx_coupon_redemptions_email ON public.coupon_redemptions(customer_email);
+
+-- -----------------------------------------------------------------------------------------
+-- 6. TRANSACCIONES Y ÓRDENES E-COMMERCE (ORDERS)
 -- -----------------------------------------------------------------------------------------
 
 CREATE TABLE IF NOT EXISTS public.orders (
@@ -212,30 +341,89 @@ CREATE TABLE IF NOT EXISTS public.orders (
   total NUMERIC(12, 2) NOT NULL DEFAULT 0,
   subtotal NUMERIC(12, 2) DEFAULT 0,
   shipping_cost NUMERIC(12, 2) DEFAULT 0,
+  coupon_code TEXT,
+  coupon_id TEXT,
+  discount_amount NUMERIC(12, 2) DEFAULT 0,
   status TEXT NOT NULL DEFAULT 'processing',
   payment_method TEXT DEFAULT 'card',
   shipping_address JSONB NOT NULL DEFAULT '{}'::jsonb,
   items JSONB NOT NULL DEFAULT '[]'::jsonb,
   notes TEXT,
+  tracking_number TEXT,
+  carrier_name TEXT,
+  tracking_url TEXT,
+  wallet_sync_status TEXT DEFAULT 'SKIPPED',
+  wallet_last_updated_at TIMESTAMPTZ,
+  wallet_sync_error TEXT,
+  estimated_delivery_date TIMESTAMPTZ,
+  delivered_at TIMESTAMPTZ,
+  canceled_at TIMESTAMPTZ,
+  cancel_reason TEXT,
   created_at TIMESTAMPTZ DEFAULT now(),
   updated_at TIMESTAMPTZ DEFAULT now()
 );
 
-ALTER TABLE public.orders ADD COLUMN IF NOT EXISTS user_id TEXT;
-ALTER TABLE public.orders ADD COLUMN IF NOT EXISTS user_email TEXT;
-ALTER TABLE public.orders ADD COLUMN IF NOT EXISTS customer_name TEXT;
-ALTER TABLE public.orders ADD COLUMN IF NOT EXISTS customer_email TEXT;
-ALTER TABLE public.orders ADD COLUMN IF NOT EXISTS customer_phone TEXT;
-ALTER TABLE public.orders ADD COLUMN IF NOT EXISTS shipping_address JSONB DEFAULT '{}'::jsonb;
-ALTER TABLE public.orders ADD COLUMN IF NOT EXISTS items JSONB DEFAULT '[]'::jsonb;
+ALTER TABLE public.orders ADD COLUMN IF NOT EXISTS coupon_code TEXT;
+ALTER TABLE public.orders ADD COLUMN IF NOT EXISTS coupon_id TEXT;
+ALTER TABLE public.orders ADD COLUMN IF NOT EXISTS discount_amount NUMERIC(12, 2) DEFAULT 0;
+ALTER TABLE public.orders ADD COLUMN IF NOT EXISTS subtotal NUMERIC(12, 2) DEFAULT 0;
+ALTER TABLE public.orders ADD COLUMN IF NOT EXISTS shipping_cost NUMERIC(12, 2) DEFAULT 0;
+ALTER TABLE public.orders ADD COLUMN IF NOT EXISTS tracking_number TEXT;
+ALTER TABLE public.orders ADD COLUMN IF NOT EXISTS carrier_name TEXT;
+ALTER TABLE public.orders ADD COLUMN IF NOT EXISTS tracking_url TEXT;
+ALTER TABLE public.orders ADD COLUMN IF NOT EXISTS wallet_sync_status TEXT DEFAULT 'SKIPPED';
+ALTER TABLE public.orders ADD COLUMN IF NOT EXISTS wallet_last_updated_at TIMESTAMPTZ;
+ALTER TABLE public.orders ADD COLUMN IF NOT EXISTS wallet_sync_error TEXT;
+ALTER TABLE public.orders ADD COLUMN IF NOT EXISTS estimated_delivery_date TIMESTAMPTZ;
+ALTER TABLE public.orders ADD COLUMN IF NOT EXISTS delivered_at TIMESTAMPTZ;
+ALTER TABLE public.orders ADD COLUMN IF NOT EXISTS canceled_at TIMESTAMPTZ;
+ALTER TABLE public.orders ADD COLUMN IF NOT EXISTS cancel_reason TEXT;
 ALTER TABLE public.orders ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ DEFAULT now();
 
 CREATE INDEX IF NOT EXISTS idx_orders_user_email ON public.orders(user_email);
+CREATE INDEX IF NOT EXISTS idx_orders_coupon_code ON public.orders(coupon_code);
+CREATE INDEX IF NOT EXISTS idx_orders_tracking_number ON public.orders(tracking_number);
 CREATE INDEX IF NOT EXISTS idx_orders_created_at ON public.orders(created_at DESC);
 
 -- -----------------------------------------------------------------------------------------
--- 5. PROGRAMA DE LEALTAD Y PASES DIGITALES (LOYALTY_PROGRAM_SETTINGS, LOYALTY_MEMBERS, LOYALTY_POINT_LEDGER)
+-- 7. AUDITORÍA DE NOTIFICACIONES POR CORREO ELECTRÓNICO (ORDER_EMAIL_NOTIFICATIONS)
 -- -----------------------------------------------------------------------------------------
+
+CREATE TABLE IF NOT EXISTS public.order_email_notifications (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  order_id TEXT NOT NULL,
+  recipient_email TEXT NOT NULL,
+  recipient_name TEXT,
+  recipient_type TEXT NOT NULL CHECK (recipient_type IN ('customer', 'admin')),
+  email_type TEXT NOT NULL CHECK (email_type IN ('customer_invoice', 'admin_dispatch_notice', 'order_status_update')),
+  subject TEXT NOT NULL,
+  status TEXT NOT NULL CHECK (status IN ('sent', 'failed', 'simulated_dev')),
+  error_message TEXT,
+  metadata JSONB DEFAULT '{}'::jsonb,
+  sent_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_email_logs_order ON public.order_email_notifications(order_id);
+CREATE INDEX IF NOT EXISTS idx_email_logs_recipient ON public.order_email_notifications(recipient_email);
+CREATE INDEX IF NOT EXISTS idx_email_logs_sent ON public.order_email_notifications(sent_at DESC);
+
+-- -----------------------------------------------------------------------------------------
+-- 8. PASES DIGITALES, WALLET Y LEALTAD (PASS_DEVICE_REGISTRATIONS, LOYALTY)
+-- -----------------------------------------------------------------------------------------
+
+CREATE TABLE IF NOT EXISTS public.pass_device_registrations (
+  device_library_identifier TEXT NOT NULL,
+  push_token TEXT NOT NULL,
+  pass_type_identifier TEXT NOT NULL,
+  serial_number TEXT NOT NULL,
+  order_id TEXT,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  PRIMARY KEY (device_library_identifier, pass_type_identifier, serial_number)
+);
+
+CREATE INDEX IF NOT EXISTS idx_pass_reg_serial ON public.pass_device_registrations(pass_type_identifier, serial_number);
+CREATE INDEX IF NOT EXISTS idx_pass_reg_device ON public.pass_device_registrations(device_library_identifier, pass_type_identifier, updated_at);
 
 CREATE TABLE IF NOT EXISTS public.loyalty_program_settings (
   id TEXT PRIMARY KEY DEFAULT 'global' CHECK (id = 'global'),
@@ -293,7 +481,7 @@ CREATE TABLE IF NOT EXISTS public.loyalty_point_ledger (
 );
 
 -- -----------------------------------------------------------------------------------------
--- 6. ADMINISTRACIÓN, ACCESOS, PASARELAS Y COMUNICACIONES SMTP (100% SEPARADAS)
+-- 9. ADMINISTRACIÓN, SEGURIDAD, PASARELAS Y ALERTAS (100% SEPARADAS)
 -- -----------------------------------------------------------------------------------------
 
 CREATE TABLE IF NOT EXISTS public.admin_invitations (
@@ -308,7 +496,7 @@ CREATE TABLE IF NOT EXISTS public.admin_invitations (
   accepted_at TIMESTAMPTZ
 );
 
--- Tabla exclusiva para Alertas de Bolsa y Reglas de Stock (NUNCA mezclar con destinatarios SMTP)
+-- Tabla exclusiva para Alertas de Bolsa y Reglas de Stock (NUNCA mezclar con correos de despacho)
 CREATE TABLE IF NOT EXISTS public.admin_notification_settings (
   id TEXT PRIMARY KEY DEFAULT 'global' CHECK (id = 'global'),
   title TEXT NOT NULL DEFAULT '¡Alta demanda detectada!',
@@ -339,11 +527,6 @@ CREATE TABLE IF NOT EXISTS public.admin_dispatch_recipients (
   updated_at TIMESTAMPTZ DEFAULT now()
 );
 
-ALTER TABLE public.admin_dispatch_recipients ADD COLUMN IF NOT EXISTS label TEXT DEFAULT 'Bodega / Logística';
-ALTER TABLE public.admin_dispatch_recipients ADD COLUMN IF NOT EXISTS is_active BOOLEAN DEFAULT true;
-ALTER TABLE public.admin_dispatch_recipients ADD COLUMN IF NOT EXISTS added_by TEXT;
-ALTER TABLE public.admin_dispatch_recipients ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ DEFAULT now();
-
 -- Tabla exclusiva para Configuración del Servidor SMTP
 CREATE TABLE IF NOT EXISTS public.admin_smtp_settings (
   id TEXT PRIMARY KEY DEFAULT 'global' CHECK (id = 'global'),
@@ -355,9 +538,10 @@ CREATE TABLE IF NOT EXISTS public.admin_smtp_settings (
   updated_at TIMESTAMPTZ DEFAULT now()
 );
 
--- Tabla exclusiva para Configuración de Pasarelas de Pago B2C
+-- Tabla exclusiva para Configuración de Pasarelas de Pago B2C y PayPhone
 CREATE TABLE IF NOT EXISTS public.admin_payment_settings (
   id TEXT PRIMARY KEY DEFAULT 'global' CHECK (id = 'global'),
+  payment_mode TEXT DEFAULT 'box',
   stripe_enabled BOOLEAN DEFAULT true,
   stripe_public_key TEXT,
   paypal_enabled BOOLEAN DEFAULT false,
@@ -368,11 +552,12 @@ CREATE TABLE IF NOT EXISTS public.admin_payment_settings (
   tax_rate NUMERIC(5, 2) DEFAULT 15.00,
   free_shipping_threshold NUMERIC(10, 2) DEFAULT 150.00,
   standard_shipping_cost NUMERIC(10, 2) DEFAULT 8.00,
+  updated_by TEXT,
   updated_at TIMESTAMPTZ DEFAULT now()
 );
 
 -- -----------------------------------------------------------------------------------------
--- 7. TELEMETRÍA Y RADAR GEOGRÁFICO EN TIEMPO REAL (RADAR_TELEMETRY_SESSIONS, CART_ALERT_EVENTS)
+-- 10. TELEMETRÍA Y RADAR GEOGRÁFICO EN TIEMPO REAL (RADAR_TELEMETRY, CART_ALERTS)
 -- -----------------------------------------------------------------------------------------
 
 CREATE TABLE IF NOT EXISTS public.radar_telemetry_sessions (
@@ -408,7 +593,7 @@ CREATE TABLE IF NOT EXISTS public.cart_alert_events (
 );
 
 -- -----------------------------------------------------------------------------------------
--- 8. HABILITACIÓN DE TIEMPO REAL (SUPABASE REALTIME PUBLICATION)
+-- 11. HABILITACIÓN DE TIEMPO REAL (SUPABASE REALTIME PUBLICATION)
 -- -----------------------------------------------------------------------------------------
 
 DO $$
@@ -419,12 +604,18 @@ BEGIN
     'products',
     'categories',
     'store_badges',
+    'store_trust_badges',
     'header_niche_slots',
     'orders',
     'addresses',
     'payment_cards',
     'favorites',
     'user_profiles',
+    'user_settings',
+    'user_carts',
+    'coupons',
+    'coupon_redemptions',
+    'order_email_notifications',
     'loyalty_program_settings',
     'loyalty_members',
     'admin_notification_settings',

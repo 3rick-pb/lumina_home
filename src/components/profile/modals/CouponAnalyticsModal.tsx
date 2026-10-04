@@ -40,6 +40,9 @@ export function CouponAnalyticsModal({
   const scrollContainerRef = useRef<HTMLDivElement>(null);
 
   const [cachedCoupon, setCachedCoupon] = useState<DiscountCoupon | null>(coupon);
+  const [liveRedemptions, setLiveRedemptions] = useState<CouponRedemptionRecord[] | null>(null);
+  const [isLoadingRedemptions, setIsLoadingRedemptions] = useState(false);
+
   useEffect(() => {
     if (coupon) setCachedCoupon(coupon);
   }, [coupon]);
@@ -53,14 +56,39 @@ export function CouponAnalyticsModal({
   useEffect(() => {
     if (!open) {
       setSearchFilter("");
-    }
-  }, [open]);
+      setLiveRedemptions(null);
+    } else if (activeCoupon?.id) {
+      let isMounted = true;
+      setIsLoadingRedemptions(true);
 
-  // Combine pre-seeded redemptions with any live store orders that might reference this coupon
+      fetch(`/api/coupons/${encodeURIComponent(activeCoupon.id)}/redemptions`)
+        .then((res) => (res.ok ? res.json() : null))
+        .then((data) => {
+          if (!isMounted) return;
+          if (data && data.success && Array.isArray(data.redemptions)) {
+            setLiveRedemptions(data.redemptions);
+          }
+        })
+        .catch((err) => {
+          console.warn('Could not fetch coupon redemptions:', err);
+        })
+        .finally(() => {
+          if (isMounted) setIsLoadingRedemptions(false);
+        });
+
+      return () => {
+        isMounted = false;
+      };
+    }
+  }, [open, activeCoupon?.id]);
+
+  // Combine real database redemptions with any live store orders that might reference this coupon
   const allRedemptions = useMemo(() => {
     if (!activeCoupon) return [];
 
-    const baseList: CouponRedemptionRecord[] = activeCoupon.redemptions ? [...activeCoupon.redemptions] : [];
+    const baseList: CouponRedemptionRecord[] = liveRedemptions 
+      ? [...liveRedemptions] 
+      : (activeCoupon.redemptions ? [...activeCoupon.redemptions] : []);
 
     // Find any live orders that used this coupon
     const matchingLiveOrders = (orders || []).filter((ord) => {
@@ -95,7 +123,7 @@ export function CouponAnalyticsModal({
     });
 
     return baseList;
-  }, [activeCoupon, orders]);
+  }, [activeCoupon, liveRedemptions, orders]);
 
   // Filtered redemptions by search query
   const filteredRedemptions = useMemo(() => {
@@ -229,6 +257,9 @@ export function CouponAnalyticsModal({
                   <h4 className="text-sm font-bold text-gray-950 dark:text-white truncate">
                     Historial de Usuarios & Compras ({filteredRedemptions.length})
                   </h4>
+                  {isLoadingRedemptions && (
+                    <div className="w-3.5 h-3.5 border-2 border-blue-500 border-t-transparent rounded-full animate-spin shrink-0" />
+                  )}
                 </div>
 
                 <ExpandableSearchBar

@@ -38,6 +38,10 @@ export interface ApiOrder {
   trackingUrl?: string;
   carrierName?: string;
   total: number;
+  subtotal?: number;
+  shippingCost?: number;
+  discountAmount?: number;
+  couponCode?: string;
   items: Array<{
     product: {
       id: string;
@@ -289,6 +293,10 @@ export async function GET(request: Request) {
           trackingUrl: decodedTracking.trackingUrl,
           carrierName: decodedTracking.carrierName,
           total: Number(o.total) || 0,
+          subtotal: typeof o.subtotal === 'number' ? Number(o.subtotal) : undefined,
+          shippingCost: typeof o.shipping_cost === 'number' ? Number(o.shipping_cost) : undefined,
+          discountAmount: typeof o.discount_amount === 'number' ? Number(o.discount_amount) : undefined,
+          couponCode: o.coupon_code ? String(o.coupon_code) : undefined,
           items: Array.isArray(o.items) ? (o.items as ApiOrder['items']) : []
         };
       });
@@ -329,6 +337,11 @@ export async function POST(request: Request) {
     const cleanIdNumber = String(order.customerIdNumber || order.shippingAddress?.idNumber || '').replace(/<[^>]*>?/gm, '').trim().slice(0, 40);
     const cleanPhone = String(order.customerPhone || order.shippingAddress?.phone || '').replace(/<[^>]*>?/gm, '').trim().slice(0, 40);
 
+    const cleanCouponCode = order.couponCode ? String(order.couponCode).trim().toUpperCase().replace(/[^A-Z0-9_-]/g, '') : undefined;
+    const cleanDiscountAmount = Math.max(0, Number(order.discountAmount) || 0);
+    const cleanSubtotal = Math.max(0, Number(order.subtotal) || 0);
+    const cleanShippingCost = Math.max(0, Number(order.shippingCost) || 0);
+
     // Do NOT assign a trackingNumber on initial order creation ("Procesando") — assigned later when shipped ("Enviado")
     const newApiOrder: ApiOrder = {
       id: String(order.id).trim().slice(0, 60),
@@ -348,6 +361,10 @@ export async function POST(request: Request) {
       trackingUrl: undefined,
       carrierName: undefined,
       total: Math.max(0, Number(order.total) || 0),
+      subtotal: cleanSubtotal,
+      shippingCost: cleanShippingCost,
+      discountAmount: cleanDiscountAmount,
+      couponCode: cleanCouponCode,
       items: Array.isArray(order.items) ? order.items : []
     };
 
@@ -357,6 +374,10 @@ export async function POST(request: Request) {
       user_id: newApiOrder.userId || null,
       status: newApiOrder.status,
       total: newApiOrder.total,
+      subtotal: newApiOrder.subtotal || 0,
+      shipping_cost: newApiOrder.shippingCost || 0,
+      discount_amount: newApiOrder.discountAmount || 0,
+      coupon_code: newApiOrder.couponCode || null,
       items: newApiOrder.items,
       tracking_number: null,
       customer_name: newApiOrder.customerName,
@@ -372,6 +393,52 @@ export async function POST(request: Request) {
     if (error) {
       console.error('Supabase orders save error:', error);
       return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+    }
+
+    // 2. Real Coupon Redemption Recording in public.coupon_redemptions & used_count increment
+    if (newApiOrder.couponCode) {
+      try {
+        const { data: matchedCoupon } = await client
+          .from('coupons')
+          .select('id, code, used_count')
+          .ilike('code', newApiOrder.couponCode)
+          .maybeSingle();
+
+        if (matchedCoupon) {
+          // Increment used_count atomically
+          await client
+            .from('coupons')
+            .update({
+              used_count: (Number(matchedCoupon.used_count) || 0) + 1,
+              updated_at: new Date().toISOString(),
+            })
+            .eq('id', matchedCoupon.id);
+
+          // Summarize purchased items
+          const itemsSummary = newApiOrder.items
+            .map((it) => `${it.product?.title || 'Producto'} (x${it.quantity})`)
+            .join(', ')
+            .slice(0, 300);
+
+          // Insert real cryptographic redemption record
+          await client.from('coupon_redemptions').insert({
+            coupon_id: matchedCoupon.id,
+            coupon_code: matchedCoupon.code,
+            order_id: newApiOrder.id,
+            user_id: newApiOrder.userId || null,
+            customer_name: newApiOrder.customerName,
+            customer_email: newApiOrder.customerEmail,
+            before_amount: newApiOrder.subtotal || (newApiOrder.total + (newApiOrder.discountAmount || 0)),
+            discount_amount: newApiOrder.discountAmount || 0,
+            after_amount: newApiOrder.total,
+            items_summary: itemsSummary || 'Piezas Lumina Home',
+            payment_method: newApiOrder.paymentMethod,
+            redeemed_at: newApiOrder.createdAt,
+          });
+        }
+      } catch (couponRedeemErr) {
+        console.warn('[orders/route] Could not record coupon redemption:', couponRedeemErr);
+      }
     }
 
     // 2. Real inventory deduction in Supabase products table
