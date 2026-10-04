@@ -27,6 +27,7 @@ import { motion } from "framer-motion";
 import { normalizeImageUrl } from "@/lib/imageUtils";
 import { Isometric3DGallery } from "./Isometric3DGallery";
 import { EmbeddedCylinderCarousel } from "./EmbeddedCylinderCarousel";
+import { flyToCart } from "@/components/ui/FlyToCartAnimation";
 
 interface ProductLandingViewProps {
   product: CatalogProduct;
@@ -264,8 +265,9 @@ export function ProductLandingView({
   const finalTierTotal = Number((rawTierTotal * (1 - tierDiscount / 100)).toFixed(2));
   const tierSavings = Number((rawTierTotal - finalTierTotal).toFixed(2));
 
-  const handleAddTierToCart = () => {
+  const handleAddTierToCart = (e?: React.MouseEvent) => {
     if (isAgotado) return;
+    flyToCart(e?.currentTarget, product.images?.[0] || product.imageUrl);
     setIsAddingBundle(true);
 
     if (tierDiscount > 0) {
@@ -310,9 +312,10 @@ export function ProductLandingView({
     return companionSum;
   }, [selectedCombo, product.price, allProducts]);
 
-  const handleBuyBoxAction = () => {
+  const handleBuyBoxAction = (e?: React.MouseEvent) => {
     if (isAgotado) return;
     if (!selectedCombo && isInBag) return;
+    flyToCart(e?.currentTarget, product.images?.[0] || product.imageUrl);
     if (selectedCombo) {
       const companions = allProducts.filter(p => selectedCombo.companionProductIds?.includes(p.id));
       const comboProductsList = [

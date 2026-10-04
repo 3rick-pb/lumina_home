@@ -18,6 +18,7 @@ import { useCatalogStore, normalizeCategory } from "@/lib/catalogStore";
 import { useUserStore, Order } from "@/lib/userStore";
 import { LuminaCardFolderItem } from "@/components/ui/CardFolder";
 import { BeUIOrderStatusSelector } from "@/components/ui/BeUIControls";
+import { getLenis } from "@/components/providers/SmoothScrollProvider";
 
 interface OverviewTabProps {
   isAdmin: boolean;
@@ -129,6 +130,7 @@ export function OverviewTab({
   const [hoveredMonthIdx, setHoveredMonthIdx] = useState<number | null>(null);
   const nicheHoverTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const monthHoverTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const wheelResumeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Ref for non-passive wheel listener on the niche chart scroll container
   const nicheChartRef = useRef<HTMLDivElement>(null);
@@ -140,10 +142,21 @@ export function OverviewTab({
       // If desktop cursor is hovering over the niche inventory chart, translate wheel to horizontal scroll
       const isFinePointer = typeof window !== "undefined" && window.matchMedia("(pointer: fine)").matches;
       if (isFinePointer) {
-        if (el.scrollWidth > el.clientWidth + 2) {
-          e.preventDefault();
-          el.scrollLeft += e.deltaY !== 0 ? e.deltaY : e.deltaX;
+        // Desktop (cursor): block the general web scroll completely while wheeling over niche bars
+        e.preventDefault();
+        e.stopPropagation();
+        e.stopImmediatePropagation();
+
+        const lenis = getLenis();
+        if (lenis) {
+          lenis.stop();
+          if (wheelResumeTimeoutRef.current) clearTimeout(wheelResumeTimeoutRef.current);
+          wheelResumeTimeoutRef.current = setTimeout(() => {
+            lenis.start();
+          }, 400);
         }
+
+        el.scrollLeft += (e.deltaY !== 0 ? e.deltaY : e.deltaX) * 1.15;
       } else {
         // Touch or generic device: allow natural vertical pass-through, capture horizontal
         if (Math.abs(e.deltaX) > Math.abs(e.deltaY) || e.shiftKey) {
@@ -153,7 +166,10 @@ export function OverviewTab({
       }
     };
     el.addEventListener("wheel", handleWheel, { passive: false });
-    return () => el.removeEventListener("wheel", handleWheel);
+    return () => {
+      el.removeEventListener("wheel", handleWheel);
+      if (wheelResumeTimeoutRef.current) clearTimeout(wheelResumeTimeoutRef.current);
+    };
   }, []);
 
   const handleNicheMouseEnter = (idx: number) => {
@@ -171,9 +187,21 @@ export function OverviewTab({
     }, 150);
   };
 
+  const handleNicheContainerMouseEnter = () => {
+    const isFinePointer = typeof window !== "undefined" && window.matchMedia("(pointer: fine)").matches;
+    if (isFinePointer) {
+      getLenis()?.stop();
+    }
+  };
+
   const handleNicheContainerLeave = () => {
     if (nicheHoverTimeoutRef.current) clearTimeout(nicheHoverTimeoutRef.current);
     setHoveredNicheIdx(null);
+    const isFinePointer = typeof window !== "undefined" && window.matchMedia("(pointer: fine)").matches;
+    if (isFinePointer) {
+      if (wheelResumeTimeoutRef.current) clearTimeout(wheelResumeTimeoutRef.current);
+      getLenis()?.start();
+    }
   };
 
   const handleMonthMouseEnter = (idx: number) => {
@@ -358,9 +386,11 @@ export function OverviewTab({
         </div>
 
         {/* Visual Dynamic Bar Chart */}
-        <div className="relative w-full my-auto">
+        <div data-lenis-prevent="true" className="relative w-full my-auto">
           <div 
             ref={nicheChartRef}
+            data-lenis-prevent="true"
+            onMouseEnter={isAdmin ? handleNicheContainerMouseEnter : undefined}
             onMouseLeave={isAdmin ? handleNicheContainerLeave : handleMonthContainerLeave}
             className={`flex items-end h-40 pt-7 pb-1 px-1 overflow-x-auto overflow-y-hidden select-none cursor-grab active:cursor-grabbing touch-pan-y touch-pan-x ${
               categoryDistributionData.length <= 4 

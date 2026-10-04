@@ -17,6 +17,7 @@ import { Isometric3DGallery } from "@/components/product/Isometric3DGallery";
 import { EmbeddedCylinderCarousel } from "@/components/product/EmbeddedCylinderCarousel";
 import { normalizeImageUrl } from "@/lib/imageUtils";
 import { motion } from "framer-motion";
+import { flyToCart } from "@/components/ui/FlyToCartAnimation";
 
 export default function ProductDetail({ params }: { params: Promise<{ id: string }> }) {
   const { id } = React.use(params);
@@ -464,7 +465,10 @@ function ProductDetailContent({ product, products }: { product: CatalogProduct; 
             <div className="flex gap-3 mb-8">
               <button 
                 disabled={isAgotado}
-                onClick={handleAddToCart}
+                onClick={(e) => {
+                  flyToCart(e.currentTarget, currentImage);
+                  handleAddToCart();
+                }}
                 className={`flex-1 h-14 backdrop-blur-xl border shadow-[0_8px_32px_rgba(0,0,0,0.04)] rounded-2xl font-medium flex items-center justify-center gap-2 transition-all duration-300 relative overflow-hidden ${
                   isAgotado 
                     ? "bg-gray-100 border-gray-200 text-gray-400 cursor-not-allowed opacity-75" 

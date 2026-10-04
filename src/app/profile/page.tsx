@@ -53,6 +53,7 @@ import {
 } from "@/components/ui/BeUIControls";
 import { CatalogScrollToTopButton } from "@/components/ui/CatalogScrollToTopButton";
 import { LuminaBrandEmblem } from "@/components/ui/LuminaBrandEmblem";
+import { MacOSScrollbar } from "@/components/ui/MacOSScrollbar";
 import {
   CatalogTabSkeleton,
   NichesTabSkeleton,
@@ -278,6 +279,8 @@ export default function ProfilePage() {
 
   // Admin New Product Modal State
  const [showProductModal, setShowProductModal] = useState(false);
+  const addProductScrollRef = useRef<HTMLFormElement>(null);
+  const editProductScrollRef = useRef<HTMLFormElement>(null);
  const [isSubmittingProd, setIsSubmittingProd] = useState(false);
  const [prodTitle, setProdTitle] = useState("");
  const [prodHighlight, setProdHighlight] = useState("");
@@ -1057,7 +1060,7 @@ const handleConfirmDeleteNiche = async () => {
  </nav>
  </div>
 
- {/* Bottom Actions: Ajustes de Cuenta (arriba de Volver a la Tienda) + Volver a la Tienda + Cerrar Sesión */}
+ {/* Bottom Actions: Configuración & Sistema (arriba de Volver a la Tienda) + Volver a la Tienda + Cerrar Sesión */}
  <div className="flex flex-col items-center gap-3 w-full px-2">
  <div className="w-9 md:w-10 h-[2px] bg-gray-300/80 dark:bg-white/20 rounded-full my-0.5 transition-colors shrink-0" />
  <button 
@@ -1067,7 +1070,7 @@ const handleConfirmDeleteNiche = async () => {
        ? "bg-gray-950 dark:bg-white text-white dark:text-gray-950 shadow-lg shadow-gray-950/20 dark:shadow-white/15 scale-105" 
        : "text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100/80 dark:hover:bg-white/5 hover:scale-105 active:scale-95"
    }`}
-   title="Ajustes de Cuenta"
+   title="Configuración & Sistema"
  >
    {activeTab === "settings" && (
      <span className="absolute -left-2 w-1 h-5 bg-amber-500 dark:bg-white rounded-r-full transition-all duration-[600ms]" />
@@ -1645,7 +1648,7 @@ const handleConfirmDeleteNiche = async () => {
        handleAddProductSubmit(e);
      }}
      data-lenis-prevent="true"
-     className="flex-1 min-h-0 overflow-y-auto overscroll-contain p-5 sm:p-6 space-y-5"
+     ref={addProductScrollRef} className="flex-1 min-h-0 overflow-y-auto overscroll-contain p-5 sm:p-6 space-y-5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
    >
      {/* 4-KPI EXECUTIVE TELEMETRY STRIP (crear-web-micro-saas Above-The-Fold) */}
      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
@@ -2289,6 +2292,7 @@ const handleConfirmDeleteNiche = async () => {
        </div>
      </div>
    </form>
+   <MacOSScrollbar containerRef={addProductScrollRef} />
  </div>
  </BeUICenterMorphModal>
 
@@ -2346,7 +2350,7 @@ const handleConfirmDeleteNiche = async () => {
       />
     </div>
 
-    <form onSubmit={handleUpdateProductSubmit} data-lenis-prevent="true" className="p-6 overflow-y-auto overscroll-contain flex-1">
+    <form ref={editProductScrollRef} onSubmit={handleUpdateProductSubmit} data-lenis-prevent="true" className="p-6 overflow-y-auto overscroll-contain flex-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
       {editFeedback && (
         <div className={`mb-5 p-3.5 rounded-xl text-xs font-semibold ${editFeedback.success ? "bg-emerald-50 text-emerald-800 border border-emerald-200" : "bg-red-50 text-red-800 border border-red-200"}`}>
           {editFeedback.msg}
@@ -3018,6 +3022,7 @@ const handleConfirmDeleteNiche = async () => {
         </div>
       </div>
     </form>
+    <MacOSScrollbar containerRef={editProductScrollRef} />
   </div>
   </BeUICenterMorphModal>
 

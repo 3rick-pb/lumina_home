@@ -9,6 +9,7 @@ import { BeUICenterMorphModal, BeUIOrderStatusSelector } from "@/components/ui/B
 import { WalletPassPopupModal } from "@/components/ui/WalletPassPopupModal";
 import { GoogleWalletIcon } from "@/components/ui/GoogleWalletButton";
 import { supabase } from "@/lib/supabase";
+import { MacOSScrollbar } from "@/components/ui/MacOSScrollbar";
 
 interface EmailNotificationLog {
   id: string;
@@ -48,80 +49,7 @@ export function OrderDetailModal({
   const [showWalletPopup, setShowWalletPopup] = useState(false);
 
 
-  // Custom symmetrical slider (scrollbar) state and refs
   const scrollContainerRef = useRef<HTMLDivElement>(null);
-  const trackRef = useRef<HTMLDivElement>(null);
-  const [scrollProgress, setScrollProgress] = useState(0);
-  const [thumbHeightPct, setThumbHeightPct] = useState(25);
-  const [hasOverflow, setHasOverflow] = useState(false);
-  const isDraggingRef = useRef(false);
-  const dragStartYRef = useRef(0);
-  const dragStartScrollTopRef = useRef(0);
-
-  const updateScrollMetrics = useCallback(() => {
-    const el = scrollContainerRef.current;
-    if (!el) return;
-    const canScroll = el.scrollHeight > el.clientHeight + 4;
-    setHasOverflow(canScroll);
-    if (canScroll) {
-      const maxScroll = el.scrollHeight - el.clientHeight;
-      const progress = Math.min(1, Math.max(0, el.scrollTop / maxScroll));
-      setScrollProgress(progress);
-      const visibleRatio = el.clientHeight / el.scrollHeight;
-      setThumbHeightPct(Math.max(15, Math.min(60, visibleRatio * 100)));
-    }
-  }, []);
-
-  useEffect(() => {
-    updateScrollMetrics();
-    const handleResize = () => updateScrollMetrics();
-    window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
-  }, [updateScrollMetrics, order, emailLogs]);
-
-  const handleThumbMouseDown = (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    isDraggingRef.current = true;
-    dragStartYRef.current = e.clientY;
-    if (scrollContainerRef.current) {
-      dragStartScrollTopRef.current = scrollContainerRef.current.scrollTop;
-    }
-
-    const onMouseMove = (moveEvent: MouseEvent) => {
-      if (!isDraggingRef.current || !scrollContainerRef.current || !trackRef.current) return;
-      const trackRect = trackRef.current.getBoundingClientRect();
-      const trackAvailable = trackRect.height * (1 - thumbHeightPct / 100);
-      if (trackAvailable <= 0) return;
-
-      const deltaY = moveEvent.clientY - dragStartYRef.current;
-      const scrollRatio = deltaY / trackAvailable;
-      const maxScroll = scrollContainerRef.current.scrollHeight - scrollContainerRef.current.clientHeight;
-      scrollContainerRef.current.scrollTop = dragStartScrollTopRef.current + scrollRatio * maxScroll;
-    };
-
-    const onMouseUp = () => {
-      isDraggingRef.current = false;
-      window.removeEventListener("mousemove", onMouseMove);
-      window.removeEventListener("mouseup", onMouseUp);
-    };
-
-    window.addEventListener("mousemove", onMouseMove);
-    window.addEventListener("mouseup", onMouseUp);
-  };
-
-  const handleTrackClick = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (!scrollContainerRef.current || !trackRef.current) return;
-    const trackRect = trackRef.current.getBoundingClientRect();
-    const clickY = e.clientY - trackRect.top;
-    const trackH = trackRect.height;
-    const ratio = Math.min(1, Math.max(0, clickY / trackH));
-    const maxScroll = scrollContainerRef.current.scrollHeight - scrollContainerRef.current.clientHeight;
-    scrollContainerRef.current.scrollTo({
-      top: ratio * maxScroll,
-      behavior: "smooth"
-    });
-  };
 
   const fetchEmailLogs = useCallback(async () => {
     if (!order?.id) return;
@@ -221,14 +149,13 @@ export function OrderDetailModal({
         <div 
           ref={scrollContainerRef}
           data-lenis-prevent="true"
-          onScroll={updateScrollMetrics}
           onWheel={(e) => {
             e.stopPropagation();
             if (scrollContainerRef.current) {
               scrollContainerRef.current.scrollTop += e.deltaY;
             }
           }}
-          className="w-full overflow-y-auto lumina-order-modal-scroll p-4 sm:p-6 md:p-8 flex-1 overscroll-contain"
+          className="w-full overflow-y-auto lumina-order-modal-scroll [scrollbar-width:none] [&::-webkit-scrollbar]:hidden p-4 sm:p-6 md:p-8 flex-1 overscroll-contain relative"
         >
           <div className="flex items-start justify-between gap-2.5 sm:gap-3 pb-3 sm:pb-4 border-b border-gray-100 dark:border-white/5">
             <div className="min-w-0 flex-1">
@@ -574,26 +501,8 @@ export function OrderDetailModal({
         )}
         </div>
 
-        {/* Custom Symmetrical Slider / Scrollbar following modal geometry */}
-        {hasOverflow && (
-          <div className="absolute right-2 sm:right-3 top-12 bottom-12 w-2 z-30 flex items-center justify-center pointer-events-none select-none">
-            <div 
-              ref={trackRef}
-              onClick={handleTrackClick}
-              className="w-1.5 h-full rounded-full bg-gray-200/70 dark:bg-white/10 relative pointer-events-auto cursor-pointer transition-colors hover:bg-gray-300/80 dark:hover:bg-white/15"
-              title="Desplazarse"
-            >
-              <div 
-                style={{
-                  height: `${thumbHeightPct}%`,
-                  top: `${scrollProgress * (100 - thumbHeightPct)}%`,
-                }}
-                onMouseDown={handleThumbMouseDown}
-                className="absolute left-0 right-0 rounded-full bg-amber-500 hover:bg-amber-600 dark:bg-[#a3a98d] dark:hover:bg-[#b8be9f] cursor-grab active:cursor-grabbing transition-colors shadow-sm"
-              />
-            </div>
-          </div>
-        )}
+        {/* Authentic macOS Sequoia Floating Overlay Scrollbar with Hooke's Law Rebound Physics */}
+        <MacOSScrollbar containerRef={scrollContainerRef} />
       </div>
 
       {/* In-Page Wallet Pass Popup Modal with @beui/tilt-card */}

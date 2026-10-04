@@ -146,6 +146,16 @@ export function Header() {
     }
   }, [pathname, nicheSlots]);
 
+  const [isCartBouncing, setIsCartBouncing] = useState(false);
+  useEffect(() => {
+    const handleCartBounce = () => {
+      setIsCartBouncing(true);
+      setTimeout(() => setIsCartBouncing(false), 550);
+    };
+    window.addEventListener("lumina:cart-bounce", handleCartBounce);
+    return () => window.removeEventListener("lumina:cart-bounce", handleCartBounce);
+  }, []);
+
   // Real-time product search matches (accent/diacritic insensitive)
   const matchedProducts = useMemo(() => {
     if (!searchVal.trim()) return [];
@@ -400,8 +410,11 @@ export function Header() {
             </div>
 
             {/* Shopping Cart Button */}
-            <button 
+            <motion.button 
+              id="header-cart-button"
               aria-label="Bolsa de Compras" 
+              animate={isCartBouncing ? { scale: [1, 1.35, 0.88, 1.1, 1], rotate: [0, -8, 8, -4, 0] } : { scale: 1, rotate: 0 }}
+              transition={{ duration: 0.5, ease: "easeOut" }}
               onClick={(e) => {
                 const rect = e.currentTarget.getBoundingClientRect();
                 toggleCart({
@@ -413,11 +426,16 @@ export function Header() {
             >
               <ShoppingBag className="w-4 h-4 sm:w-5 sm:h-5" />
               {totalItems > 0 && (
-                <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 sm:min-w-[20px] sm:h-[20px] sm:px-1.5 flex items-center justify-center rounded-full bg-[#8c9276] text-[10px] sm:text-[11px] font-bold font-mono text-white shadow-xs leading-none pointer-events-none">
+                <motion.span 
+                  key={totalItems}
+                  initial={{ scale: 0.6 }}
+                  animate={{ scale: 1 }}
+                  className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 sm:min-w-[20px] sm:h-[20px] sm:px-1.5 flex items-center justify-center rounded-full bg-[#8c9276] text-[10px] sm:text-[11px] font-bold font-mono text-white shadow-xs leading-none pointer-events-none"
+                >
                   {totalItems}
-                </span>
+                </motion.span>
               )}
-            </button>
+            </motion.button>
             
             {/* Mobile Navigation Toggle Button */}
             <button 

@@ -317,7 +317,7 @@ export const useCartStore = create<CartState>((set, get) => ({
     // Trigger real-time alert for registered customers
     triggerRegisteredUserAlert(product, quantity);
 
-    set({ items: newItems, isOpen: true });
+    set({ items: newItems });
   },
 
   addBundle: (bundle) => {
@@ -381,7 +381,7 @@ export const useCartStore = create<CartState>((set, get) => ({
       triggerRegisteredUserAlert(mainProd, 1);
     }
 
-    set({ items: newItems, isOpen: true });
+    set({ items: newItems });
   },
   
   removeItem: (id) => {

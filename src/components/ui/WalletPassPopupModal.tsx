@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useCallback } from "react";
+import React, { useEffect, useCallback, useRef } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Truck, ExternalLink } from "lucide-react";
@@ -10,6 +10,7 @@ import type { Order } from "@/lib/userStore";
 import { useUserStore } from "@/lib/userStore";
 import { cn } from "@/lib/utils";
 import { useThemeStore, getResolvedTheme } from "@/lib/themeStore";
+import { MacOSScrollbar } from "@/components/ui/MacOSScrollbar";
 
 export interface WalletPassPopupModalProps {
   open: boolean;
@@ -49,6 +50,8 @@ export function WalletPassPopupModal({
     if (onOpenChange) onOpenChange(nextOpen);
     if (!nextOpen && onClose) onClose();
   }, [onOpenChange, onClose]);
+
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
 
   // Keyboard navigation & body scroll lock
   useEffect(() => {
@@ -115,7 +118,7 @@ export function WalletPassPopupModal({
   return createPortal(
     <AnimatePresence>
       {open && (
-        <div className={cn("fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 overflow-y-auto", isDark && "dark")}>
+        <div ref={scrollContainerRef} className={cn("fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 overflow-y-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden", isDark && "dark")}>
           {/* Backdrop with subtle blur */}
           <motion.div
             initial={{ opacity: 0 }}
@@ -270,6 +273,7 @@ export function WalletPassPopupModal({
               </div>
             </BeUITiltCard>
           </motion.div>
+          <MacOSScrollbar containerRef={scrollContainerRef} />
         </div>
       )}
     </AnimatePresence>,

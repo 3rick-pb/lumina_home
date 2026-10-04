@@ -5,6 +5,7 @@ import Image from "next/image";
 import { ShoppingBag, Check, Plus, Sparkles, Package, TrendingUp } from "lucide-react";
 import { CatalogProduct } from "@/lib/catalogStore";
 import { useCartStore } from "@/lib/store";
+import { flyToCart } from "@/components/ui/FlyToCartAnimation";
 
 interface ProductBundleSectionProps {
   product: CatalogProduct;
@@ -74,8 +75,9 @@ export function ProductBundleSection({
     );
   };
 
-  const handleAddCompanionBundle = () => {
+  const handleAddCompanionBundle = (e?: React.MouseEvent) => {
     if (isAgotado) return;
+    flyToCart(e?.currentTarget, product.imageUrl);
     setIsAdding(true);
 
     const bundleItems = [
@@ -113,8 +115,9 @@ export function ProductBundleSection({
   const finalTierTotal = Number((rawTierTotal * (1 - currentTierDiscount / 100)).toFixed(2));
   const tierSavings = Number((rawTierTotal - finalTierTotal).toFixed(2));
 
-  const handleAddVolumeTier = () => {
+  const handleAddVolumeTier = (e?: React.MouseEvent) => {
     if (isAgotado) return;
+    flyToCart(e?.currentTarget, product.imageUrl);
     setIsAdding(true);
 
     if (currentTierDiscount > 0) {

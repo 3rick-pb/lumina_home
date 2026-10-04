@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState, useMemo } from "react";
+import React, { useEffect, useState, useMemo, useRef } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -16,6 +16,7 @@ import { GoogleWalletIcon } from "@/components/ui/GoogleWalletButton";
 import { useBrand } from "@/core/hooks/useBrand";
 import { cn } from "@/lib/utils";
 import { useThemeStore, getResolvedTheme } from "@/lib/themeStore";
+import { MacOSScrollbar } from "@/components/ui/MacOSScrollbar";
 
 /**
  * Robust detection of touch / mobile devices vs desktop computers.
@@ -59,6 +60,7 @@ export function GoogleWalletModal({
   member,
 }: GoogleWalletModalProps) {
   const brand = useBrand();
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [copied, setCopied] = useState(false);
   const [mounted, setMounted] = useState(false);
 
@@ -126,7 +128,7 @@ export function GoogleWalletModal({
   return createPortal(
     <AnimatePresence>
       {open && (
-        <div className={cn("fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 overflow-y-auto", isDark && "dark")}>
+        <div ref={scrollContainerRef} className={cn("fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 overflow-y-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden", isDark && "dark")}>
           {/* Backdrop with elegant blur */}
           <motion.div
             initial={{ opacity: 0 }}
@@ -278,6 +280,7 @@ export function GoogleWalletModal({
               </div>
             </div>
           </motion.div>
+          <MacOSScrollbar containerRef={scrollContainerRef} />
         </div>
       )}
     </AnimatePresence>,

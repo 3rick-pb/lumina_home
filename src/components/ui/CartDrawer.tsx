@@ -8,10 +8,8 @@ import { BeUIAdaptiveStepper, BeUIRollingPrice, BeUIAnimatedCtaButton, BeUITiltC
 import { WalletPassPopupModal } from "./WalletPassPopupModal";
 import { GoogleWalletButton } from "./GoogleWalletButton";
 import InteractiveAddressMap from "./InteractiveAddressMap";
-import { playStepperTickSound } from "@/lib/soundUtils";
 import { 
  X, 
- Minus, 
  Plus, 
  ShoppingBag, 
  ArrowRight, 
@@ -43,6 +41,7 @@ import { useCartStore } from "@/lib/store";
 import { useThemeStore, getResolvedTheme } from "@/lib/themeStore";
 import { clsx } from "clsx";
 import { useUserStore, Order, formatCleanName } from "@/lib/userStore";
+import { MacOSScrollbar } from "./MacOSScrollbar";
 import { useCatalogStore, isAgotadoBadge } from "@/lib/catalogStore";
 import { getRefinedCoordinates, type RawGpsHardwareData } from "@/lib/locationUtils";
 
@@ -182,6 +181,7 @@ function PoweredByPayphoneLogo({ className = "h-6" }: { className?: string }) {
 
 
 export function CartDrawer() {
+  const cartScrollRef = React.useRef<HTMLDivElement>(null);
  const { 
  isOpen, 
  setIsOpen, 
@@ -1048,11 +1048,11 @@ export function CartDrawer() {
   {/* ========================================================================= */}
   {/* MAIN CANVAS SCROLLABLE AREA */}
   {/* ========================================================================= */}
-  <div data-lenis-prevent className={`flex-1 overflow-y-auto ${
+  <div ref={cartScrollRef} data-lenis-prevent className={`flex-1 overflow-y-auto ${
     items.length === 0 && step === "bag"
       ? "p-2.5 sm:px-6 sm:pb-6 sm:pt-2.5 lg:px-10 lg:pb-10 lg:pt-3"
       : "p-2.5 sm:p-6 lg:p-10"
-  } hide-scrollbar space-y-5 sm:space-y-10`}>
+  } [scrollbar-width:none] [&::-webkit-scrollbar]:hidden space-y-5 sm:space-y-10`}>
 
   {/* ======================================================================= */}
   {/* STEP 1: CART PAGE VIEW (Skyrise Decor / Crescendo Spacious Studio) */}
@@ -2968,6 +2968,8 @@ export function CartDrawer() {
 
   </div>
 
+  {/* Authentic macOS Sequoia Floating Overlay Scrollbar with Hooke's Law Rebound Physics */}
+  <MacOSScrollbar containerRef={cartScrollRef} />
   </motion.div>
 
   {/* ======================================================================= */}

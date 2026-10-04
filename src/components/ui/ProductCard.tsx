@@ -8,6 +8,7 @@ import { useCartStore } from "@/lib/store";
 import { useCatalogStore, isAgotadoBadge } from "@/lib/catalogStore";
 import { useUserStore } from "@/lib/userStore";
 import { BeUIActionSwapLabel } from "@/components/ui/BeUIControls";
+import { flyToCart } from "@/components/ui/FlyToCartAnimation";
 
 import { normalizeImageUrl } from "@/lib/imageUtils";
 
@@ -177,6 +178,7 @@ export const ProductCard = React.memo(function ProductCard({
           onClick={(e) => { 
             e.preventDefault(); 
             if (isAgotado || (isMounted && isInBag)) return;
+            flyToCart(e.currentTarget, imageUrl);
             setIsAdding(true);
             setTimeout(() => setIsAdding(false), 750);
             const product = useCatalogStore.getState().products.find(p => p.id === id);

@@ -2,16 +2,23 @@
 
 import React, { useEffect, useRef, useState, useCallback } from "react";
 import { getLenis } from "@/components/providers/SmoothScrollProvider";
+import { cn } from "@/lib/utils";
+
+export interface MacOSScrollbarProps {
+  /** If provided, attaches to this scrollable container element instead of window/document */
+  containerRef?: React.RefObject<HTMLElement | null>;
+  className?: string;
+}
 
 /**
  * macOS Sequoia / Safari Floating Overlay Scrollbar with Authentic "Efecto Gelatina"
  * - Restored from commit 78728db (Sep 29, 2026, 5:19 p.m.) with enhanced stability.
  * - Underdamped Hooke's Law spring oscillation with visible rebound physics.
  * - Authentic elastic rubber-band bounce, squish & constant-volume bulge ("efecto gelatina").
- * - Seamless integration with Lenis Smooth Scroll (Orbix Studio inertia).
+ * - Seamless integration with Lenis Smooth Scroll on root window, or custom containers (modals, drawers, tabs).
  * - Active on any desktop/laptop with fine pointer (fullscreen or windowed).
  */
-export function MacOSScrollbar() {
+export function MacOSScrollbar({ containerRef, className }: MacOSScrollbarProps = {}) {
   const thumbRef = useRef<HTMLDivElement | null>(null);
   const trackRef = useRef<HTMLDivElement | null>(null);
   const [isVisible, setIsVisible] = useState(false);
@@ -19,6 +26,8 @@ export function MacOSScrollbar() {
   const [isDragging, setIsDragging] = useState(false);
   const [isDesktopDevice, setIsDesktopDevice] = useState(false);
   const [hasScrollableContent, setHasScrollableContent] = useState(false);
+
+  const isWindowMode = !containerRef;
 
   // Detect PC / Laptop with fine pointer (mouse / trackpad) across ANY window size
   useEffect(() => {
@@ -32,10 +41,10 @@ export function MacOSScrollbar() {
     return () => window.removeEventListener("resize", checkDevice);
   }, []);
 
-  // Detect when modals or overlays lock body scrolling
+  // Detect when modals or overlays lock body scrolling (only relevant in window mode)
   const [isScrollLocked, setIsScrollLocked] = useState(false);
   useEffect(() => {
-    if (typeof window === "undefined") return;
+    if (typeof window === "undefined" || !isWindowMode) return;
     const checkLocked = () => {
       const doc = document.documentElement;
       const body = document.body;
@@ -57,7 +66,7 @@ export function MacOSScrollbar() {
     observer.observe(document.body, { childList: true, subtree: false });
 
     return () => observer.disconnect();
-  }, []);
+  }, [isWindowMode]);
 
   const hideTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -89,21 +98,42 @@ export function MacOSScrollbar() {
         setIsVisible(false);
       }
     }, 1200);
-  }, [isDragging, isHovered]);
+  }, [isHovered]);
 
   useEffect(() => {
     if (typeof window === "undefined" || !isDesktopDevice) return;
 
     const s = stateRef.current;
+    const targetElement = isWindowMode ? null : containerRef?.current;
+
+    // Suppress native scrollbars on custom container
+    if (targetElement) {
+      targetElement.style.scrollbarWidth = "none";
+      targetElement.classList.add("no-scrollbar");
+    }
 
     // Measure metrics only on mount, resize, and DOM changes
     const measureMetrics = () => {
-      const doc = document.documentElement;
-      const body = document.body;
-      const scrollHeight = Math.max(doc.scrollHeight, body ? body.scrollHeight : 0);
-      const clientHeight = window.innerHeight;
-      const maxScroll = Math.max(0, scrollHeight - clientHeight);
-      const scrollTop = Math.max(0, window.scrollY || doc.scrollTop || 0);
+      let scrollHeight = 0;
+      let clientHeight = 0;
+      let maxScroll = 0;
+      let scrollTop = 0;
+
+      if (isWindowMode) {
+        const doc = document.documentElement;
+        const body = document.body;
+        scrollHeight = Math.max(doc.scrollHeight, body ? body.scrollHeight : 0);
+        clientHeight = window.innerHeight;
+        maxScroll = Math.max(0, scrollHeight - clientHeight);
+        scrollTop = Math.max(0, window.scrollY || doc.scrollTop || 0);
+      } else {
+        const el = containerRef?.current;
+        if (!el) return;
+        scrollHeight = el.scrollHeight;
+        clientHeight = el.clientHeight;
+        maxScroll = Math.max(0, scrollHeight - clientHeight);
+        scrollTop = Math.max(0, el.scrollTop);
+      }
 
       const track = trackRef.current;
       const trackH = track ? track.clientHeight : clientHeight;
@@ -186,7 +216,10 @@ export function MacOSScrollbar() {
     const handleScroll = () => {
       if (s.isDragging) return;
       const prevTop = s.scrollTop;
-      const currentTop = Math.max(0, window.scrollY || document.documentElement.scrollTop || 0);
+      const currentTop = isWindowMode
+        ? Math.max(0, window.scrollY || document.documentElement.scrollTop || 0)
+        : Math.max(0, containerRef?.current?.scrollTop || 0);
+
       s.scrollTop = currentTop;
       const delta = currentTop - prevTop;
 
@@ -238,12 +271,19 @@ export function MacOSScrollbar() {
     measureMetrics();
     updateThumbDOM();
 
-    window.addEventListener("scroll", handleScroll, { passive: true });
-    window.addEventListener("wheel", handleWheel, { passive: true });
-    window.addEventListener("resize", () => {
-      measureMetrics();
-      updateThumbDOM();
-    });
+    const targetEl = containerRef?.current;
+
+    if (isWindowMode) {
+      window.addEventListener("scroll", handleScroll, { passive: true });
+      window.addEventListener("wheel", handleWheel, { passive: true });
+      window.addEventListener("resize", () => {
+        measureMetrics();
+        updateThumbDOM();
+      });
+    } else if (targetEl) {
+      targetEl.addEventListener("scroll", handleScroll, { passive: true });
+      targetEl.addEventListener("wheel", handleWheel, { passive: true });
+    }
 
     let ro: ResizeObserver | null = null;
     if (typeof ResizeObserver !== "undefined") {
@@ -251,17 +291,26 @@ export function MacOSScrollbar() {
         measureMetrics();
         updateThumbDOM();
       });
-      ro.observe(document.documentElement);
+      if (isWindowMode) {
+        ro.observe(document.documentElement);
+      } else if (targetEl) {
+        ro.observe(targetEl);
+      }
     }
 
     return () => {
-      window.removeEventListener("scroll", handleScroll);
-      window.removeEventListener("wheel", handleWheel);
+      if (isWindowMode) {
+        window.removeEventListener("scroll", handleScroll);
+        window.removeEventListener("wheel", handleWheel);
+      } else if (targetEl) {
+        targetEl.removeEventListener("scroll", handleScroll);
+        targetEl.removeEventListener("wheel", handleWheel);
+      }
       if (ro) ro.disconnect();
       if (s.rafId) window.cancelAnimationFrame(s.rafId);
       if (hideTimeoutRef.current) clearTimeout(hideTimeoutRef.current);
     };
-  }, [showTemporarily, isDesktopDevice]);
+  }, [showTemporarily, isDesktopDevice, isWindowMode, containerRef]);
 
   // Pointer dragging on the thumb
   const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
@@ -287,11 +336,18 @@ export function MacOSScrollbar() {
 
     s.scrollTop = nextScroll;
 
-    const lenis = getLenis();
-    if (lenis) {
-      lenis.scrollTo(nextScroll, { immediate: true });
+    if (isWindowMode) {
+      const lenis = getLenis();
+      if (lenis) {
+        lenis.scrollTo(nextScroll, { immediate: true });
+      } else {
+        window.scrollTo({ top: nextScroll, behavior: "auto" });
+      }
     } else {
-      window.scrollTo({ top: nextScroll, behavior: "auto" });
+      const el = containerRef?.current;
+      if (el) {
+        el.scrollTop = nextScroll;
+      }
     }
 
     // Edge elastic resistance while dragging
@@ -342,15 +398,30 @@ export function MacOSScrollbar() {
     const progress = Math.max(0, Math.min(1, (clickY - s.thumbH / 2) / s.maxTop));
     const targetScroll = progress * s.maxScroll;
 
-    const lenis = getLenis();
-    if (lenis) {
-      lenis.scrollTo(targetScroll);
+    if (isWindowMode) {
+      const lenis = getLenis();
+      if (lenis) {
+        lenis.scrollTo(targetScroll);
+      } else {
+        window.scrollTo({ top: targetScroll, behavior: "smooth" });
+      }
     } else {
-      window.scrollTo({ top: targetScroll, behavior: "smooth" });
+      const el = containerRef?.current;
+      if (el) {
+        el.scrollTo({ top: targetScroll, behavior: "smooth" });
+      }
     }
   };
 
   if (!isDesktopDevice) return null;
+
+  const showOverlay = isWindowMode
+    ? !isScrollLocked && hasScrollableContent && (isVisible || isHovered || isDragging)
+    : hasScrollableContent && (isVisible || isHovered || isDragging);
+
+  const canAcceptPointerEvents = isWindowMode
+    ? !isScrollLocked && hasScrollableContent
+    : hasScrollableContent;
 
   return (
     <div
@@ -367,10 +438,16 @@ export function MacOSScrollbar() {
           hideTimeoutRef.current = setTimeout(() => setIsVisible(false), 700);
         }
       }}
-      className="fixed top-0 right-0 bottom-0 w-3.5 z-[9999] select-none transition-colors duration-200"
+      className={cn(
+        isWindowMode
+          ? "fixed top-0 right-0 bottom-0 w-3.5 z-[9999]"
+          : "absolute top-0 right-0 bottom-0 w-3.5 z-50",
+        "select-none transition-colors duration-200",
+        className
+      )}
       style={{
-        opacity: !isScrollLocked && hasScrollableContent && (isVisible || isHovered || isDragging) ? 1 : 0,
-        pointerEvents: !isScrollLocked && hasScrollableContent ? "auto" : "none",
+        opacity: showOverlay ? 1 : 0,
+        pointerEvents: canAcceptPointerEvents ? "auto" : "none",
         transition: "opacity 240ms cubic-bezier(0.16, 1, 0.3, 1)",
       }}
       aria-hidden="true"
@@ -390,9 +467,46 @@ export function MacOSScrollbar() {
         style={{
           height: "48px",
           willChange: "transform",
-          backgroundColor: isHovered || isDragging ? "var(--scrollbar-thumb-hover, rgba(0, 0, 0, 0.44))" : "var(--scrollbar-thumb, rgba(0, 0, 0, 0.24))"
+          backgroundColor:
+            isHovered || isDragging
+              ? "var(--scrollbar-thumb-hover, rgba(0, 0, 0, 0.44))"
+              : "var(--scrollbar-thumb, rgba(0, 0, 0, 0.24))",
         }}
       />
     </div>
   );
 }
+
+export interface MacOSScrollAreaProps extends React.HTMLAttributes<HTMLDivElement> {
+  dataLenisPrevent?: boolean;
+}
+
+/**
+ * Reusable container wrapper that equips any scrollable region with the authentic
+ * MacOS Jelly Scrollbar and Hooke's Law physics.
+ */
+export const MacOSScrollArea = React.forwardRef<HTMLDivElement, MacOSScrollAreaProps>(
+  ({ children, className, style, dataLenisPrevent = true, ...props }, forwardedRef) => {
+    const internalRef = useRef<HTMLDivElement>(null);
+    const scrollRef = (forwardedRef as React.RefObject<HTMLDivElement>) || internalRef;
+
+    return (
+      <div className="relative w-full h-full min-h-0 flex-1 overflow-hidden">
+        <div
+          ref={scrollRef}
+          data-lenis-prevent={dataLenisPrevent ? "true" : undefined}
+          className={cn(
+            "w-full h-full overflow-y-auto overscroll-contain select-text [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden",
+            className
+          )}
+          style={style}
+          {...props}
+        >
+          {children}
+        </div>
+        <MacOSScrollbar containerRef={scrollRef} />
+      </div>
+    );
+  }
+);
+MacOSScrollArea.displayName = "MacOSScrollArea";

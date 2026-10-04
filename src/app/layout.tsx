@@ -13,6 +13,7 @@ import { AdminCartNotifier } from "@/components/admin/AdminCartNotifier";
 import "lenis/dist/lenis.css";
 import { SmoothScrollProvider } from "@/components/providers/SmoothScrollProvider";
 import { MacOSScrollbar } from "@/components/ui/MacOSScrollbar";
+import { FlyToCartContainer } from "@/components/ui/FlyToCartAnimation";
 
 import localFont from "next/font/local";
 
@@ -77,6 +78,7 @@ export default function RootLayout({
             <AmbientBackground />
           </Suspense>
           <MacOSScrollbar />
+          <FlyToCartContainer />
           <AppInitializer />
           <AdminCartNotifier />
           <Header />
