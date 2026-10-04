@@ -289,6 +289,10 @@ CREATE TABLE IF NOT EXISTS public.coupons (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
+ALTER TABLE public.coupons ADD COLUMN IF NOT EXISTS id TEXT;
+ALTER TABLE public.coupons ADD COLUMN IF NOT EXISTS code TEXT;
+ALTER TABLE public.coupons ADD COLUMN IF NOT EXISTS title TEXT;
+ALTER TABLE public.coupons ADD COLUMN IF NOT EXISTS description TEXT;
 ALTER TABLE public.coupons ADD COLUMN IF NOT EXISTS discount_percent NUMERIC(5, 2) DEFAULT 0;
 ALTER TABLE public.coupons ADD COLUMN IF NOT EXISTS discount_type TEXT DEFAULT 'percent';
 ALTER TABLE public.coupons ADD COLUMN IF NOT EXISTS fixed_amount NUMERIC(10, 2) DEFAULT 0;
@@ -301,7 +305,13 @@ ALTER TABLE public.coupons ADD COLUMN IF NOT EXISTS used_count INTEGER DEFAULT 0
 ALTER TABLE public.coupons ADD COLUMN IF NOT EXISTS share_count INTEGER DEFAULT 0;
 ALTER TABLE public.coupons ADD COLUMN IF NOT EXISTS is_active BOOLEAN DEFAULT true;
 ALTER TABLE public.coupons ADD COLUMN IF NOT EXISTS expires_at TIMESTAMPTZ;
+ALTER TABLE public.coupons ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ DEFAULT now();
 ALTER TABLE public.coupons ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ DEFAULT now();
+
+UPDATE public.coupons SET id = 'coup-' || lower(code) WHERE id IS NULL;
+UPDATE public.coupons SET title = 'Cupón ' || code WHERE title IS NULL;
+UPDATE public.coupons SET discount_type = 'percent' WHERE discount_type IS NULL;
+UPDATE public.coupons SET scope = 'all' WHERE scope IS NULL;
 
 CREATE INDEX IF NOT EXISTS idx_coupons_code ON public.coupons(code);
 CREATE INDEX IF NOT EXISTS idx_coupons_active ON public.coupons(is_active, expires_at);
