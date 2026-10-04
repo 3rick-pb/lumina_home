@@ -202,14 +202,14 @@ export function ProductArchitectureSelector({
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
           <div>
             <label className="text-xs font-bold uppercase tracking-wider text-gray-900 dark:text-white flex items-center gap-2">
-              <Sparkles className="w-4 h-4 text-[#8c9276] dark:text-[#a3aa8c]" />
+              <Sparkles className="w-4 h-4 text-amber-600 dark:text-amber-400" />
               Arquitectura Visual del Producto *
             </label>
             <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
               Escoge la estructura en la que tus clientes experimentarán y comprarán esta pieza.
             </p>
           </div>
-          <span className="self-start sm:self-auto text-[11px] font-black px-3 py-1 rounded-full bg-[#8c9276]/15 dark:bg-[#a3aa8c]/15 text-[#8c9276] dark:text-[#a3aa8c] border border-[#8c9276]/20 dark:border-[#a3aa8c]/20">
+          <span className="self-start sm:self-auto text-[11px] font-black px-3 py-1 rounded-full bg-amber-500/15 dark:bg-[#fbbf24]/15 text-amber-600 dark:text-amber-400 border border-amber-500/20 dark:border-[#fbbf24]/20">
             {layoutType === 'landing' ? 'Landing Page (Características)' : 'Product Page Estándar'}
           </span>
         </div>
@@ -327,7 +327,7 @@ export function ProductArchitectureSelector({
                     <div className="w-full h-1 rounded bg-gray-400 dark:bg-white/30" />
                     <div className="w-2/3 h-1 rounded bg-gray-300 dark:bg-white/20" />
                   </div>
-                  <div className="w-6 h-6 rounded-full border border-dashed border-[#8c9276] dark:border-[#a3aa8c] flex items-center justify-center shrink-0">
+                  <div className="w-6 h-6 rounded-full border border-dashed border-amber-500 dark:border-[#fbbf24] flex items-center justify-center shrink-0">
                     <div className="w-2.5 h-2.5 rounded-full bg-gray-400/50 dark:bg-white/40" />
                   </div>
                   <div className="space-y-0.5 w-1/3">
@@ -346,7 +346,7 @@ export function ProductArchitectureSelector({
               {/* Title & Info */}
               <div className="flex items-center justify-between gap-2 mb-1.5">
                 <div className="flex items-center gap-2">
-                  <ShoppingBag className="w-4 h-4 text-[#8c9276] dark:text-[#a3aa8c]" />
+                  <ShoppingBag className="w-4 h-4 text-amber-600 dark:text-amber-400" />
                   <h4 className="text-sm font-bold text-gray-950 dark:text-white">
                     Landing Page (Características)
                   </h4>
@@ -591,7 +591,7 @@ export function ProductArchitectureSelector({
                   <button
                     type="button"
                     onClick={handleAddDefaultSpecs}
-                    className="text-[11px] font-bold text-[#8c9276] hover:underline cursor-pointer"
+                    className="text-[11px] font-bold text-amber-600 dark:text-amber-400 hover:underline cursor-pointer"
                   >
                     + Cargar sugerencias
                   </button>
@@ -628,7 +628,7 @@ export function ProductArchitectureSelector({
             <div className="p-4 rounded-2xl bg-gray-50 dark:bg-black/30 border border-gray-200/70 dark:border-white/10 space-y-3">
               <div className="flex items-center justify-between">
                 <label className="text-xs font-bold text-gray-800 dark:text-gray-200 flex items-center gap-2">
-                  <ImageIcon className="w-4 h-4 text-[#8c9276] dark:text-[#a3aa8c]" />
+                  <ImageIcon className="w-4 h-4 text-amber-600 dark:text-amber-400" />
                   <span>Imagen Dedicada para Anatomía Técnica (/explodedview)</span>
                 </label>
                 {landingAnatomyImage && (
@@ -714,7 +714,7 @@ export function ProductArchitectureSelector({
                   <div
                     ref={canvasRef}
                     onClick={handleCanvasClick}
-                    className="relative w-full max-w-[340px] aspect-square sm:aspect-[4/5] rounded-3xl overflow-hidden border-2 border-dashed border-[#8c9276]/40 dark:border-[#a3aa8c]/40 shadow-xl cursor-crosshair group select-none bg-gray-100 dark:bg-black/40"
+                    className="relative w-full max-w-[340px] aspect-square sm:aspect-[4/5] rounded-3xl overflow-hidden border-2 border-dashed border-amber-500/40 dark:border-[#fbbf24]/40 shadow-xl cursor-crosshair group select-none bg-gray-100 dark:bg-black/40"
                     title="Haz clic para ubicar el pin seleccionado aquí"
                   >
                     <Image
@@ -747,7 +747,7 @@ export function ProductArchitectureSelector({
                         >
                           <div className={`relative flex items-center justify-center transition-transform ${isSelected ? 'scale-125' : 'hover:scale-110'}`}>
                             <span className={`animate-ping absolute inline-flex h-7 w-7 rounded-full opacity-60 ${
-                              isSelected ? 'bg-blue-500' : 'bg-[#8c9276]'
+                              isSelected ? 'bg-blue-500' : 'bg-amber-500'
                             }`} />
                             <span className={`relative inline-flex rounded-full h-6 w-6 text-[10px] font-black items-center justify-center shadow-2xl border-2 ${
                               isSelected 
@@ -848,7 +848,7 @@ export function ProductArchitectureSelector({
                   <button
                     type="button"
                     onClick={handleAddDefaultReviews}
-                    className="text-[11px] font-bold text-[#8c9276] hover:underline cursor-pointer"
+                    className="text-[11px] font-bold text-amber-600 dark:text-amber-400 hover:underline cursor-pointer"
                   >
                     + Cargar sugerencias
                   </button>

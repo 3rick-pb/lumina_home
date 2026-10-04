@@ -1810,7 +1810,7 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
       {/* 1. SCENIC BACKGROUND & ATMOSPHERE                                         */}
       {/* ========================================================================= */}
       <div className="absolute inset-0 bg-[#e8ecef] dark:bg-[#181d1b] pointer-events-none" />
-      <div className="absolute -top-32 left-1/2 -translate-x-1/2 w-[700px] h-80 bg-[#8c9276]/10 rounded-full blur-3xl pointer-events-none" />
+      <div className="absolute -top-32 left-1/2 -translate-x-1/2 w-[700px] h-80 bg-amber-500/10 rounded-full blur-3xl pointer-events-none" />
 
       {/* ========================================================================= */}
       {/* 0. TECHNICAL TELEMETRY VIEWPORT (UNIFIED CAD GRID + SOLVING ORB)          */}

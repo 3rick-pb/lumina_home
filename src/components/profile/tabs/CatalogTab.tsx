@@ -69,7 +69,7 @@ export function CatalogTab({
             />
           </div>
           <h2 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
-            <Package className="w-5 h-5 text-[#8c9276]" /> Control Total del Inventario
+            <Package className="w-5 h-5 text-amber-600 dark:text-amber-400" /> Control Total del Inventario
           </h2>
           <p className="text-xs text-gray-500 dark:text-gray-400">
             {products.length} productos activos • Valor total: ${totalInventoryValue.toFixed(2)}

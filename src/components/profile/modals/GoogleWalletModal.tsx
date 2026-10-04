@@ -14,6 +14,8 @@ import {
 } from "lucide-react";
 import { GoogleWalletIcon } from "@/components/ui/GoogleWalletButton";
 import { useBrand } from "@/core/hooks/useBrand";
+import { cn } from "@/lib/utils";
+import { useThemeStore, getResolvedTheme } from "@/lib/themeStore";
 
 /**
  * Robust detection of touch / mobile devices vs desktop computers.
@@ -116,12 +118,15 @@ export function GoogleWalletModal({
     }
   };
 
+  const { mode } = useThemeStore();
+  const isDark = getResolvedTheme(mode) === "dark";
+
   if (!mounted || typeof document === "undefined") return null;
 
   return createPortal(
     <AnimatePresence>
       {open && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 overflow-y-auto">
+        <div className={cn("fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 overflow-y-auto", isDark && "dark")}>
           {/* Backdrop with elegant blur */}
           <motion.div
             initial={{ opacity: 0 }}
@@ -141,8 +146,8 @@ export function GoogleWalletModal({
             className="relative z-10 w-full max-w-[440px] bg-[#141416] text-white rounded-[2.25rem] border border-white/10 shadow-[0_24px_70px_rgba(0,0,0,0.8)] p-6 sm:p-7 overflow-hidden space-y-5"
           >
             {/* Subtle Brand Auroras */}
-            <div className="absolute -top-24 -right-24 w-56 h-56 bg-[#8c9276]/15 rounded-full blur-3xl pointer-events-none" />
-            <div className="absolute -bottom-24 -left-24 w-56 h-56 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
+            <div className="absolute -top-24 -right-24 w-56 h-56 bg-amber-500/15 rounded-full blur-3xl pointer-events-none" />
+            <div className="absolute -bottom-24 -left-24 w-56 h-56 bg-amber-500/10 rounded-full blur-3xl pointer-events-none" />
 
             {/* Header: Badge & Close Button */}
             <div className="flex items-center justify-between relative z-10">
@@ -187,12 +192,12 @@ export function GoogleWalletModal({
                 {/* Customer Credentials Strip */}
                 <div className="w-full p-2.5 rounded-2xl bg-white/5 border border-white/5 flex items-center justify-between text-[11px] px-3.5">
                   <div className="flex items-center gap-2 truncate">
-                    <Sparkles className="w-3.5 h-3.5 text-[#8c9276] shrink-0" />
+                    <Sparkles className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400 shrink-0" />
                     <span className="font-semibold text-white truncate">
                       {member?.customerName || "Cliente Lumina"}
                     </span>
                   </div>
-                  <span className="font-mono text-[#8c9276] font-bold text-xs shrink-0">
+                  <span className="font-mono text-amber-600 dark:text-amber-400 font-bold text-xs shrink-0">
                     {member?.memberCode || "LUM-1042-PRV"}
                   </span>
                 </div>
@@ -264,7 +269,7 @@ export function GoogleWalletModal({
             {/* Footer Trust Guarantee */}
             <div className="pt-1 border-t border-white/5 flex items-center justify-between text-[10px] text-white/40 relative z-10">
               <div className="flex items-center gap-1.5">
-                <ShieldCheck className="w-3.5 h-3.5 text-[#8c9276]" />
+                <ShieldCheck className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
                 <span>Encriptado de extremo a extremo</span>
               </div>
               <div className="flex items-center gap-1">

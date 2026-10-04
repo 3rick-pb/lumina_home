@@ -34,6 +34,7 @@ import {
 } from "thinking-orbs";
 import { playStepperTickSound } from "@/lib/soundUtils";
 import { cn } from "@/lib/utils";
+import { useThemeStore, getResolvedTheme } from "@/lib/themeStore";
 
 // Ensure OS-level `prefers-reduced-motion: reduce` (e.g. on WinterOS) never freezes
 // `thinking-orbs` or `beUI` motion components.
@@ -1510,12 +1511,15 @@ export function BeUICenterMorphModal({
     };
   }, [open]);
 
+  const { mode } = useThemeStore();
+  const isDark = getResolvedTheme(mode) === "dark";
+
   const modalContent = (
     <AnimatePresence>
       {open && (
         <div
           data-lenis-prevent="true"
-          className="fixed inset-0 z-[999] flex items-center justify-center p-4 sm:p-6 overflow-hidden"
+          className={cn("fixed inset-0 z-[999] flex items-center justify-center p-4 sm:p-6 overflow-hidden", isDark && "dark")}
         >
           <style>{`
             html.lumina-modal-lock-scroll,
@@ -2415,6 +2419,9 @@ export function BeUIPopover({
   };
   const currentClip = popoverInsetFor(currentRect, geo.layerW, geo.layerH);
 
+  const { mode } = useThemeStore();
+  const isDark = getResolvedTheme(mode) === "dark";
+
   return (
     <div
       ref={triggerRef}
@@ -2435,7 +2442,7 @@ export function BeUIPopover({
             data-beui-popover-portal=""
             data-lenis-prevent="true"
             onClick={(e) => e.stopPropagation()}
-            className="pointer-events-none fixed left-0 top-0 z-[9999] isolate size-0"
+            className={cn("pointer-events-none fixed left-0 top-0 z-[9999] isolate size-0", isDark && "dark")}
             style={{
               visibility: layout ? "visible" : "hidden",
               transform: `translate3d(${layout?.trigger.left ?? 0}px, ${layout?.trigger.top ?? 0}px, 0)`,

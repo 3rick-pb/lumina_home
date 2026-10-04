@@ -8,6 +8,8 @@ import { BeUITiltCard } from "@/components/ui/BeUIControls";
 import { GoogleWalletButton } from "@/components/ui/GoogleWalletButton";
 import type { Order } from "@/lib/userStore";
 import { useUserStore } from "@/lib/userStore";
+import { cn } from "@/lib/utils";
+import { useThemeStore, getResolvedTheme } from "@/lib/themeStore";
 
 export interface WalletPassPopupModalProps {
   open: boolean;
@@ -106,12 +108,15 @@ export function WalletPassPopupModal({
     googlePassEndpoint
   )}`;
 
+  const { mode } = useThemeStore();
+  const isDark = getResolvedTheme(mode) === "dark";
+
   if (typeof document === "undefined") return null;
 
   return createPortal(
     <AnimatePresence>
       {open && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
+        <div className={cn("fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 overflow-y-auto", isDark && "dark")}>
           {/* Backdrop with subtle blur */}
           <motion.div
             initial={{ opacity: 0 }}

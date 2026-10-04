@@ -91,7 +91,7 @@ const DEFAULT_PROGRAM_CONFIG: LoyaltyProgramConfig = {
   rewardThreshold: 1500,
   rewardDescription: "$25 USD de saldo a favor en tu próxima orden + Envío Preferencial",
   bgColor: "#171717",
-  accentColor: "#8c9276",
+  accentColor: "#f59e0b",
   textColor: "#ffffff",
   qrFgColor: "#171717",
   qrBgColor: "#ffffff",
@@ -112,14 +112,14 @@ const COLOR_PRESETS = [
   {
     name: "Neutral Obsidiana",
     bgColor: "#171717",
-    accentColor: "#8c9276",
+    accentColor: "#f59e0b",
     textColor: "#ffffff",
     qrFgColor: "#171717",
     qrBgColor: "#ffffff",
   },
   {
     name: "Salvia Editorial",
-    bgColor: "#8c9276",
+    bgColor: "#f59e0b",
     accentColor: "#ffffff",
     textColor: "#ffffff",
     qrFgColor: "#171717",
@@ -136,7 +136,7 @@ const COLOR_PRESETS = [
   {
     name: "Piedra Minimal",
     bgColor: "#f5f5f4",
-    accentColor: "#8c9276",
+    accentColor: "#f59e0b",
     textColor: "#171717",
     qrFgColor: "#171717",
     qrBgColor: "#ffffff",
@@ -213,7 +213,7 @@ function CrispQRMatrixSVG({
   size = 176,
   fgColor = "#171717",
   bgColor = "#ffffff",
-  accentColor = "#8c9276",
+  accentColor = "#f59e0b",
   cornerStyle = "rounded",
   logoUrl,
   svgRef,
@@ -427,7 +427,7 @@ export function LoyaltyCardsTab() {
     return {
       name: "Nivel Base",
       badgeBg:
-        "bg-[#8c9276]/15 text-[#686e54] dark:text-[#b8bfa2] border-[#8c9276]/30",
+        "bg-amber-500/15 text-amber-800 dark:text-amber-200 border-amber-500/30",
       discount: "Acumulación Activa",
     };
   };
@@ -706,7 +706,7 @@ export function LoyaltyCardsTab() {
               />
             </div>
             <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
-              <QrCode className="w-5 h-5 text-[#8c9276]" /> Tarjetas de Lealtad & Pases Digitales (Google Wallet)
+              <QrCode className="w-5 h-5 text-amber-600 dark:text-amber-400" /> Tarjetas de Lealtad & Pases Digitales (Google Wallet)
             </h2>
             <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
               Configura las reglas de puntos de {brand.name}, exporta códigos QR vectoriales y administra los pases de tus clientes.
@@ -720,7 +720,7 @@ export function LoyaltyCardsTab() {
               rel="noopener noreferrer"
               className="flex items-center gap-1.5 px-4 py-2.5 bg-gray-100 dark:bg-[#2a2a2c] hover:bg-gray-200 dark:hover:bg-white/10 text-gray-800 dark:text-gray-200 text-xs font-semibold rounded-2xl transition-all"
             >
-              <Eye className="w-3.5 h-3.5 text-[#8c9276]" />
+              <Eye className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
               <span>Ver Pase Público</span>
               <ArrowUpRight className="w-3.5 h-3.5" />
             </a>
@@ -748,7 +748,7 @@ export function LoyaltyCardsTab() {
             <span className="text-[10px] font-bold uppercase tracking-wider text-gray-400 block">
               Puntos Activos
             </span>
-            <span className="text-2xl font-display font-bold text-[#8c9276] mt-1 block">
+            <span className="text-2xl font-display font-bold text-amber-600 dark:text-amber-400 mt-1 block">
               {totalPointsIssued.toLocaleString()} pts
             </span>
           </div>
@@ -781,7 +781,7 @@ export function LoyaltyCardsTab() {
                 : "text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
             }`}
           >
-            <Sliders className="w-3.5 h-3.5 text-[#8c9276]" />
+            <Sliders className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
             <span>Diseño & Reglas de Puntos</span>
           </button>
           <button
@@ -793,7 +793,7 @@ export function LoyaltyCardsTab() {
                 : "text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
             }`}
           >
-            <QrCode className="w-3.5 h-3.5 text-[#8c9276]" />
+            <QrCode className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
             <span>Generador QR (.SVG / .PNG)</span>
           </button>
           <button
@@ -805,7 +805,7 @@ export function LoyaltyCardsTab() {
                 : "text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
             }`}
           >
-            <Users className="w-3.5 h-3.5 text-[#8c9276]" />
+            <Users className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
             <span>Miembros ({members.length})</span>
           </button>
         </div>
@@ -817,7 +817,7 @@ export function LoyaltyCardsTab() {
               <div className="p-6 rounded-3xl bg-gray-50/50 dark:bg-[#2a2a2c]/40 border border-gray-100 dark:border-white/5 space-y-5">
                 <div>
                   <h3 className="text-sm font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
-                    <Sparkles className="w-4 h-4 text-[#8c9276]" />
+                    <Sparkles className="w-4 h-4 text-amber-600 dark:text-amber-400" />
                     <span>Apariencia de la Tarjeta & Reglas de Acumulación</span>
                   </h3>
                   <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
@@ -925,7 +925,7 @@ export function LoyaltyCardsTab() {
                       type="text"
                       value={config.programName}
                       onChange={(e) => setConfig({ ...config, programName: e.target.value })}
-                      className="w-full h-10 px-3.5 rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-[#202022] text-xs text-gray-900 dark:text-white focus:outline-none focus:border-[#8c9276]"
+                      className="w-full h-10 px-3.5 rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-[#202022] text-xs text-gray-900 dark:text-white focus:outline-none focus:border-amber-500"
                     />
                   </div>
                   <div>
@@ -936,7 +936,7 @@ export function LoyaltyCardsTab() {
                       type="text"
                       value={config.issuerName}
                       onChange={(e) => setConfig({ ...config, issuerName: e.target.value })}
-                      className="w-full h-10 px-3.5 rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-[#202022] text-xs text-gray-900 dark:text-white focus:outline-none focus:border-[#8c9276]"
+                      className="w-full h-10 px-3.5 rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-[#202022] text-xs text-gray-900 dark:text-white focus:outline-none focus:border-amber-500"
                     />
                   </div>
                 </div>
@@ -944,7 +944,7 @@ export function LoyaltyCardsTab() {
                 {/* Points Rules */}
                 <div className="p-4 rounded-2xl bg-white dark:bg-[#202022] border border-gray-100 dark:border-white/5 space-y-4">
                   <div className="flex items-center gap-2 text-xs font-bold text-gray-800 dark:text-gray-200">
-                    <Coins className="w-4 h-4 text-[#8c9276]" />
+                    <Coins className="w-4 h-4 text-amber-600 dark:text-amber-400" />
                     <span>Conversión de Puntos & Recompensa</span>
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -1023,7 +1023,7 @@ export function LoyaltyCardsTab() {
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                   <div>
                     <h3 className="text-sm font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
-                      <QrCode className="w-4 h-4 text-[#8c9276]" />
+                      <QrCode className="w-4 h-4 text-amber-600 dark:text-amber-400" />
                       <span>Generador QR & Exportación Directa</span>
                     </h3>
                     <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
@@ -1077,7 +1077,7 @@ export function LoyaltyCardsTab() {
                         onClick={() => logoInputRef.current?.click()}
                         className="px-3 py-1.5 rounded-xl bg-gray-100 dark:bg-[#2a2a2c] hover:bg-gray-200 text-[11px] font-semibold text-gray-700 dark:text-gray-200 flex items-center gap-1.5 cursor-pointer"
                       >
-                        <Upload className="w-3 h-3 text-[#8c9276]" />
+                        <Upload className="w-3 h-3 text-amber-600 dark:text-amber-400" />
                         <span>Subir Icono Central</span>
                       </button>
                       {config.customLogoDataUrl && (
@@ -1109,7 +1109,7 @@ export function LoyaltyCardsTab() {
                         onClick={handleDownloadQRVectorSVG}
                         className="h-11 px-4 rounded-2xl bg-white dark:bg-[#202022] hover:bg-gray-100 text-gray-900 dark:text-white border border-gray-200 dark:border-white/10 flex items-center justify-center gap-2 text-xs font-semibold transition-all cursor-pointer"
                       >
-                        <Download className="w-4 h-4 text-[#8c9276] shrink-0" />
+                        <Download className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0" />
                         <span>Descargar SVG Vectorial</span>
                       </button>
                     </div>
@@ -1146,7 +1146,7 @@ export function LoyaltyCardsTab() {
                     </div>
 
                     <div className="px-3.5 py-2.5 rounded-2xl bg-gray-100/80 dark:bg-[#202022] text-[11px] text-gray-600 dark:text-gray-400 flex items-center gap-2">
-                      <Lock className="w-3.5 h-3.5 text-[#8c9276] shrink-0" />
+                      <Lock className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400 shrink-0" />
                       <span>
                         Generación 100 % local en tu navegador sin enviar datos a servidores externos.
                       </span>
@@ -1161,7 +1161,7 @@ export function LoyaltyCardsTab() {
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                   <div>
                     <h3 className="text-sm font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
-                      <Crown className="w-4 h-4 text-[#8c9276]" />
+                      <Crown className="w-4 h-4 text-amber-600 dark:text-amber-400" />
                       <span>Directorio de Clientes Afiliados</span>
                     </h3>
                     <p className="text-xs text-gray-500 dark:text-gray-400">
@@ -1415,7 +1415,7 @@ export function LoyaltyCardsTab() {
           <div className="bg-white dark:bg-[#202022] border border-gray-200 dark:border-white/10 rounded-3xl max-w-md w-full p-6 shadow-2xl space-y-4 animate-fade-in">
             <div className="flex items-center justify-between border-b border-gray-100 dark:border-white/10 pb-3">
               <h4 className="text-base font-bold text-gray-900 dark:text-white flex items-center gap-2">
-                <Award className="w-4 h-4 text-[#8c9276]" />
+                <Award className="w-4 h-4 text-amber-600 dark:text-amber-400" />
                 <span>Emitir Tarjeta de Cliente</span>
               </h4>
               <button

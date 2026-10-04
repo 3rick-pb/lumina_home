@@ -432,7 +432,7 @@ export function AddCardAnimatedModal({
         {/* Modal Header */}
         <div className="relative z-10 flex items-center justify-between px-6 sm:px-8 pt-6 pb-4 border-b border-gray-100 dark:border-white/5">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-[#8c9276]/20 to-[#8c9276]/5 border border-[#8c9276]/30 flex items-center justify-center text-[#8c9276] dark:text-amber-400 shadow-xs">
+            <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-[#f59e0b]/20 to-[#f59e0b]/5 border border-amber-500/30 flex items-center justify-center text-amber-600 dark:text-amber-400 shadow-xs">
               <Wallet className="w-5 h-5" />
             </div>
             <div>
@@ -682,7 +682,7 @@ export function AddCardAnimatedModal({
                         >
                           Número de Tarjeta
                         </label>
-                        <span className="text-[10px] font-semibold text-[#8c9276] dark:text-amber-400">
+                        <span className="text-[10px] font-semibold text-amber-600 dark:text-amber-400">
                           {rawDigits.length}/16 dígitos
                         </span>
                       </div>
@@ -707,7 +707,7 @@ export function AddCardAnimatedModal({
                           }}
                           onBlur={() => setFocusedField(null)}
                           placeholder="4532 •••• •••• ••••"
-                          className="w-full pl-12 pr-16 py-3 rounded-2xl border border-gray-200/90 dark:border-white/15 text-sm font-mono font-bold bg-white dark:bg-[#141417] text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#8c9276] transition-all shadow-2xs"
+                          className="w-full pl-12 pr-16 py-3 rounded-2xl border border-gray-200/90 dark:border-white/15 text-sm font-mono font-bold bg-white dark:bg-[#141417] text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-amber-500 transition-all shadow-2xs"
                         />
                         <div className="absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none">
                           <AnimatePresence mode="wait">
@@ -743,7 +743,7 @@ export function AddCardAnimatedModal({
                           }}
                           onBlur={() => setFocusedField(null)}
                           placeholder="NOMBRE COMO APARECE EN LA TARJETA"
-                          className="w-full pl-12 pr-4 py-3 rounded-2xl border border-gray-200/90 dark:border-white/15 text-xs sm:text-sm font-semibold uppercase bg-white dark:bg-[#141417] text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#8c9276] transition-all shadow-2xs"
+                          className="w-full pl-12 pr-4 py-3 rounded-2xl border border-gray-200/90 dark:border-white/15 text-xs sm:text-sm font-semibold uppercase bg-white dark:bg-[#141417] text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-amber-500 transition-all shadow-2xs"
                         />
                       </div>
                     </div>
@@ -778,7 +778,7 @@ export function AddCardAnimatedModal({
                             }}
                             onBlur={() => setFocusedField(null)}
                             placeholder="MM/AA"
-                            className="w-full pl-12 pr-3 py-3 rounded-2xl border border-gray-200/90 dark:border-white/15 text-sm font-mono font-bold bg-white dark:bg-[#141417] text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#8c9276] transition-all shadow-2xs"
+                            className="w-full pl-12 pr-3 py-3 rounded-2xl border border-gray-200/90 dark:border-white/15 text-sm font-mono font-bold bg-white dark:bg-[#141417] text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-amber-500 transition-all shadow-2xs"
                           />
                         </div>
                       </div>
@@ -817,7 +817,7 @@ export function AddCardAnimatedModal({
                               setFocusedField(null);
                             }}
                             placeholder="123"
-                            className="w-full pl-12 pr-3 py-3 rounded-2xl border border-gray-200/90 dark:border-white/15 text-sm font-mono font-bold bg-white dark:bg-[#141417] text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#8c9276] transition-all shadow-2xs"
+                            className="w-full pl-12 pr-3 py-3 rounded-2xl border border-gray-200/90 dark:border-white/15 text-sm font-mono font-bold bg-white dark:bg-[#141417] text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-amber-500 transition-all shadow-2xs"
                           />
                         </div>
                       </div>
@@ -881,7 +881,7 @@ export function AddCardAnimatedModal({
 
                 <div className="space-y-1.5 flex flex-col items-center">
                   <div className="flex items-center gap-2.5 text-sm font-bold text-gray-900 dark:text-white">
-                    <Loader2 className="w-4 h-4 text-[#8c9276] animate-spin" />
+                    <Loader2 className="w-4 h-4 text-amber-600 dark:text-amber-400 animate-spin" />
                     <span>Registrando tarjeta {brandVisual.name}...</span>
                   </div>
                   <p className="text-xs text-gray-500 dark:text-gray-400">

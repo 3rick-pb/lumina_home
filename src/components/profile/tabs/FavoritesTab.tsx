@@ -94,7 +94,7 @@ export function FavoritesTab() {
               </div>
 
               <div>
-                <p className="text-[11px] font-bold text-[#8c9276] uppercase tracking-wider">{prod.category}</p>
+                <p className="text-[11px] font-bold text-amber-600 dark:text-amber-400 uppercase tracking-wider">{prod.category}</p>
                 <h4 className="font-semibold text-gray-900 dark:text-gray-100 text-sm mt-0.5 line-clamp-1">{prod.title}</h4>
                 <p className="font-bold text-gray-900 dark:text-gray-100 text-base mt-1">${prod.price.toFixed(2)}</p>
               </div>

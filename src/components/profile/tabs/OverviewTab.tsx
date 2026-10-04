@@ -137,11 +137,19 @@ export function OverviewTab({
     const el = nicheChartRef.current;
     if (!el) return;
     const handleWheel = (e: WheelEvent) => {
-      // Allow vertical page scrolling to pass through naturally.
-      // Only scroll horizontally inside chart when user explicitly scrolls horizontally or uses shiftKey.
-      if (Math.abs(e.deltaX) > Math.abs(e.deltaY) || e.shiftKey) {
-        e.preventDefault();
-        el.scrollLeft += e.deltaX || e.deltaY;
+      // If desktop cursor is hovering over the niche inventory chart, translate wheel to horizontal scroll
+      const isFinePointer = typeof window !== "undefined" && window.matchMedia("(pointer: fine)").matches;
+      if (isFinePointer) {
+        if (el.scrollWidth > el.clientWidth + 2) {
+          e.preventDefault();
+          el.scrollLeft += e.deltaY !== 0 ? e.deltaY : e.deltaX;
+        }
+      } else {
+        // Touch or generic device: allow natural vertical pass-through, capture horizontal
+        if (Math.abs(e.deltaX) > Math.abs(e.deltaY) || e.shiftKey) {
+          e.preventDefault();
+          el.scrollLeft += e.deltaX || e.deltaY;
+        }
       }
     };
     el.addEventListener("wheel", handleWheel, { passive: false });
@@ -287,7 +295,7 @@ export function OverviewTab({
               {isAdmin ? "Rebajas" : "Puntos Lumina"}
             </span>
             <div className="w-8 h-8 rounded-xl bg-gray-100 dark:bg-[#3a3a3c] flex items-center justify-center text-gray-700 dark:text-gray-300">
-              <Sparkles className="w-4 h-4 text-[#8c9276] dark:text-amber-400" />
+              <Sparkles className="w-4 h-4 text-amber-600 dark:text-amber-400" />
             </div>
           </div>
           <div>
@@ -307,7 +315,7 @@ export function OverviewTab({
               {isAdmin ? "Ventas Brutas" : "Tarjetas"}
             </span>
             <div className="w-8 h-8 rounded-xl bg-gray-100 dark:bg-[#3a3a3c] flex items-center justify-center text-gray-700 dark:text-gray-300">
-              <CreditCard className="w-4 h-4 text-[#8c9276] dark:text-amber-400" />
+              <CreditCard className="w-4 h-4 text-amber-600 dark:text-amber-400" />
             </div>
           </div>
           <div>
@@ -492,11 +500,11 @@ export function OverviewTab({
       <div className="md:col-span-2 lg:col-span-4 self-start h-fit bg-white/90 dark:bg-[#202022]/90 backdrop-blur-xl p-5 sm:p-6 rounded-3xl sm:rounded-[2rem] border border-white/80 dark:border-white/10 shadow-[0_4px_24px_rgba(0,0,0,0.02)] flex flex-col justify-between">
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-sm font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
-            <CreditCard className="w-4 h-4 text-[#8c9276]" /> Mis Tarjetas ({cards.length})
+            <CreditCard className="w-4 h-4 text-amber-600 dark:text-amber-400" /> Mis Tarjetas ({cards.length})
           </h3>
           <button 
             onClick={() => setShowCardModal(true)}
-            className="text-xs font-semibold text-[#8c9276] hover:underline flex items-center gap-1"
+            className="text-xs font-semibold text-amber-600 dark:text-amber-400 hover:underline flex items-center gap-1"
           >
             <Plus className="w-3.5 h-3.5" /> Agregar
           </button>

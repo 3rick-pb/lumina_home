@@ -80,7 +80,7 @@ export function ProductWizardStepHeader({
               <span className="hidden sm:inline">{s.fullLabel}</span>
               <span className="sm:hidden">{s.shortLabel}</span>
               {isDone && !isCurrent && (
-                <span className="w-1.5 h-1.5 rounded-full bg-[#8c9276] shrink-0" />
+                <span className="w-1.5 h-1.5 rounded-full bg-amber-500 shrink-0" />
               )}
             </button>
           );
@@ -250,7 +250,7 @@ export function ProductStoreSketchPreview({
       {/* Top Preview Header + 3-Mode Switcher */}
       <div className="flex flex-wrap items-center justify-between gap-2 pb-3 border-b border-gray-200/80 dark:border-white/10">
         <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-xl bg-[#8c9276]/15 text-[#8c9276] border border-[#8c9276]/25 flex items-center justify-center shrink-0">
+          <div className="w-8 h-8 rounded-xl bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/25 flex items-center justify-center shrink-0">
             <Eye className="w-4 h-4" />
           </div>
           <div>
@@ -258,7 +258,7 @@ export function ProductStoreSketchPreview({
               <h4 className="text-xs font-display font-bold text-gray-900 dark:text-gray-100 leading-tight">
                 Simulador 1:1 en Vivo
               </h4>
-              <span className="text-[9px] font-mono font-bold px-1.5 py-0.5 rounded-md bg-[#8c9276]/15 text-[#8c9276] border border-[#8c9276]/25">
+              <span className="text-[9px] font-mono font-bold px-1.5 py-0.5 rounded-md bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/25">
                 {readinessPct}% LISTO
               </span>
             </div>
@@ -346,7 +346,7 @@ export function ProductStoreSketchPreview({
                 </span>
               )}
               {hasDiscount && calculatedDiscount && (
-                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold bg-[#8c9276] text-white shadow-sm">
+                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold bg-amber-500 text-white shadow-sm">
                   {calculatedDiscount}
                 </span>
               )}
@@ -357,7 +357,7 @@ export function ProductStoreSketchPreview({
               <span className="px-2.5 py-0.5 rounded-full text-[9.5px] font-mono font-bold bg-black/75 text-white backdrop-blur-md border border-white/15 flex items-center gap-1">
                 {layoutType === "landing" ? (
                   <>
-                    <Sparkles className="w-2.5 h-2.5 text-[#8c9276]" />
+                    <Sparkles className="w-2.5 h-2.5 text-amber-600 dark:text-amber-400" />
                     <span>Landing</span>
                   </>
                 ) : (
@@ -381,7 +381,7 @@ export function ProductStoreSketchPreview({
           <div className="p-4 space-y-2.5 flex-1 flex flex-col justify-between">
             <div className="space-y-1">
               <div className="flex items-center justify-between gap-2">
-                <span className="text-[10px] font-bold uppercase tracking-widest text-[#8c9276] truncate">
+                <span className="text-[10px] font-bold uppercase tracking-widest text-amber-600 dark:text-amber-400 truncate">
                   {category || "Colección / Nicho"}
                 </span>
                 {!isNaN(parsedStock) && parsedStock > 0 && (
@@ -476,7 +476,7 @@ export function ProductStoreSketchPreview({
       {previewTab === "detail" && (
         <div className="rounded-2xl bg-white dark:bg-[#202022] border border-gray-200/80 dark:border-white/10 p-4 space-y-3 shadow-xs">
           <div className="flex items-center justify-between pb-2 border-b border-gray-100 dark:border-white/10">
-            <span className="text-[10px] font-mono uppercase tracking-wider font-bold text-[#8c9276] flex items-center gap-1.5">
+            <span className="text-[10px] font-mono uppercase tracking-wider font-bold text-amber-600 dark:text-amber-400 flex items-center gap-1.5">
               <Layers className="w-3.5 h-3.5" />
               <span>
                 Arquitectura:{" "}
@@ -501,7 +501,7 @@ export function ProductStoreSketchPreview({
               )}
             </div>
             <div className="col-span-7 space-y-1.5">
-              <span className="text-[9px] font-bold uppercase tracking-wider text-[#8c9276]">
+              <span className="text-[9px] font-bold uppercase tracking-wider text-amber-600 dark:text-amber-400">
                 {category || "Nicho / Colección"}
               </span>
               <h5 className="text-xs font-display font-bold text-gray-900 dark:text-gray-100 truncate">
@@ -527,7 +527,7 @@ export function ProductStoreSketchPreview({
           <div className="grid grid-cols-2 gap-2 pt-2 border-t border-gray-100 dark:border-white/10 text-[10px]">
             <div className="p-2.5 rounded-xl bg-gray-50 dark:bg-[#2a2a2c]/60 border border-gray-200/60 dark:border-white/5">
               <div className="text-[9px] font-bold text-gray-400 uppercase flex items-center gap-1">
-                <ShieldCheck className="w-3 h-3 text-[#8c9276]" /> Ficha Técnica
+                <ShieldCheck className="w-3 h-3 text-amber-600 dark:text-amber-400" /> Ficha Técnica
               </div>
               <p className="text-gray-700 dark:text-gray-300 font-medium truncate mt-0.5">
                 {materials.trim() || dimensions.trim() || "Pendiente de especificar"}
@@ -535,7 +535,7 @@ export function ProductStoreSketchPreview({
             </div>
             <div className="p-2.5 rounded-xl bg-gray-50 dark:bg-[#2a2a2c]/60 border border-gray-200/60 dark:border-white/5">
               <div className="text-[9px] font-bold text-gray-400 uppercase flex items-center gap-1">
-                <Truck className="w-3 h-3 text-[#8c9276]" /> Logística & Garantía
+                <Truck className="w-3 h-3 text-amber-600 dark:text-amber-400" /> Logística & Garantía
               </div>
               <p className="text-gray-700 dark:text-gray-300 font-medium truncate mt-0.5">
                 {shipping.trim() || warranty.trim() || "Despacho nacional estándar"}
@@ -544,11 +544,11 @@ export function ProductStoreSketchPreview({
           </div>
 
           {combos.length > 0 && (
-            <div className="p-2.5 rounded-xl bg-[#8c9276]/10 border border-[#8c9276]/25 flex items-center justify-between text-[10px] text-gray-900 dark:text-gray-100 font-semibold">
+            <div className="p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/25 flex items-center justify-between text-[10px] text-gray-900 dark:text-gray-100 font-semibold">
               <span className="flex items-center gap-1.5">
-                <Tag className="w-3 h-3 text-[#8c9276]" /> Combos de Venta Cruzada
+                <Tag className="w-3 h-3 text-amber-600 dark:text-amber-400" /> Combos de Venta Cruzada
               </span>
-              <span className="font-mono text-[#8c9276] font-bold">{combos.length} activos</span>
+              <span className="font-mono text-amber-600 dark:text-amber-400 font-bold">{combos.length} activos</span>
             </div>
           )}
         </div>
@@ -558,7 +558,7 @@ export function ProductStoreSketchPreview({
       {previewTab === "json" && (
         <div className="rounded-2xl bg-white dark:bg-[#202022] border border-gray-200/80 dark:border-white/10 p-3.5 space-y-2.5 shadow-xs">
           <div className="flex items-center justify-between">
-            <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-[#8c9276]">
+            <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-amber-600 dark:text-amber-400">
               Esquema JSON Compilado
             </span>
             <div className="flex items-center gap-1.5">
@@ -590,14 +590,14 @@ export function ProductStoreSketchPreview({
       <div className="rounded-2xl bg-white/90 dark:bg-[#202022]/90 border border-gray-200/80 dark:border-white/10 p-3.5 space-y-2.5">
         <div className="flex items-center justify-between text-[10.5px] font-bold text-gray-900 dark:text-gray-100">
           <span>Auditoría de Publicación</span>
-          <span className="font-mono text-[#8c9276]">{completedCount}/4 módulos listos</span>
+          <span className="font-mono text-amber-600 dark:text-amber-400">{completedCount}/4 módulos listos</span>
         </div>
 
         {/* Progress Bar */}
         <div className="w-full h-1.5 rounded-full bg-gray-100 dark:bg-[#2a2a2c] overflow-hidden">
           <div
             style={{ width: `${readinessPct}%` }}
-            className="h-full rounded-full bg-[#8c9276] transition-all duration-300"
+            className="h-full rounded-full bg-amber-500 transition-all duration-300"
           />
         </div>
 
@@ -621,7 +621,7 @@ export function ProductStoreSketchPreview({
                   className={`w-3.5 h-3.5 shrink-0 ${
                     done
                       ? isCurrent
-                        ? "text-[#8c9276]"
+                        ? "text-amber-600 dark:text-amber-400"
                         : "text-emerald-500"
                       : isCurrent
                       ? "text-white/60 dark:text-gray-900/60"
@@ -636,7 +636,7 @@ export function ProductStoreSketchPreview({
         {/* Privacy & Client-Side Invariant Microcopy (from crear-web-micro-saas) */}
         <div className="pt-1.5 border-t border-gray-100 dark:border-white/5 flex items-center justify-between text-[9.5px] text-gray-400 dark:text-gray-500">
           <span className="flex items-center gap-1">
-            <Lock className="w-3 h-3 text-[#8c9276]" />
+            <Lock className="w-3 h-3 text-amber-600 dark:text-amber-400" />
             <span>Validación local instantánea</span>
           </span>
           <span className="font-mono">UTF-8 • 0ms</span>

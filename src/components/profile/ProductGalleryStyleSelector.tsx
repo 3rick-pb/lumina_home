@@ -46,7 +46,7 @@ export function ProductGalleryStyleSelector({
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-gray-200/80 dark:border-white/10">
         <div>
           <label className="text-xs font-bold uppercase tracking-wider text-gray-900 dark:text-white flex items-center gap-2">
-            <Layers className="w-4 h-4 text-[#8c9276]" />
+            <Layers className="w-4 h-4 text-amber-600 dark:text-amber-400" />
             Estilo Visual de la Galería Multimedia
           </label>
           <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
@@ -56,7 +56,7 @@ export function ProductGalleryStyleSelector({
         <span className={cn(
           "self-start sm:self-auto text-[11px] font-bold px-3 py-1 rounded-full border",
           galleryStyle === 'isometric_3d'
-            ? "bg-[#8c9276]/15 text-[#8c9276] border-[#8c9276]/30 font-mono"
+            ? "bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/30 font-mono"
             : "bg-gray-100 dark:bg-white/10 text-gray-700 dark:text-gray-300 border-gray-200 dark:border-white/10"
         )}>
           {galleryStyle === 'isometric_3d' ? '3D Isométrica (Instagram)' : 'Tradicional'}
@@ -114,7 +114,7 @@ export function ProductGalleryStyleSelector({
           className={cn(
             "relative p-4 rounded-2xl cursor-pointer border-2 transition-all flex flex-col justify-between group",
             galleryStyle === 'isometric_3d'
-              ? "border-[#8c9276] bg-white dark:bg-[#202022] shadow-xl ring-2 ring-[#8c9276]/20"
+              ? "border-amber-500 bg-white dark:bg-[#202022] shadow-xl ring-2 ring-amber-500/20"
               : "border-gray-200 dark:border-white/10 bg-white/60 dark:bg-[#1a1a1c]/60 hover:border-gray-300 dark:hover:border-white/20"
           )}
         >
@@ -135,7 +135,7 @@ export function ProductGalleryStyleSelector({
                 <div className="absolute -left-3 top-3 w-16 h-22 rounded-xl bg-[#f4f4ee] border border-black/20 shadow-md" />
 
                 {/* Active middle card */}
-                <div className="absolute left-1 top-0 w-18 h-24 rounded-xl bg-[#8c9276] border-2 border-white/40 shadow-xl flex flex-col items-center justify-center">
+                <div className="absolute left-1 top-0 w-18 h-24 rounded-xl bg-amber-500 border-2 border-white/40 shadow-xl flex flex-col items-center justify-center">
                   <div className="w-12 h-14 rounded-lg bg-black/25 flex items-center justify-center">
                     <Sparkles className="w-4 h-4 text-white" />
                   </div>
@@ -143,7 +143,7 @@ export function ProductGalleryStyleSelector({
 
                 {/* Upcoming diagonal cards */}
                 <div className="absolute left-14 -top-6 w-16 h-22 rounded-xl bg-[#1e201b] border border-white/20 opacity-70 shadow-md" />
-                <div className="absolute left-24 -top-11 w-15 h-20 rounded-xl bg-[#8c9276]/60 border border-white/10 opacity-40 shadow-md" />
+                <div className="absolute left-24 -top-11 w-15 h-20 rounded-xl bg-amber-500/60 border border-white/10 opacity-40 shadow-md" />
               </div>
 
               {/* Badge on wireframe sketch */}
@@ -162,11 +162,11 @@ export function ProductGalleryStyleSelector({
 
             <div className="flex items-center justify-between">
               <h4 className="text-xs sm:text-sm font-bold text-gray-900 dark:text-white flex items-center gap-1.5">
-                <Sparkles className="w-4 h-4 text-[#8c9276]" />
+                <Sparkles className="w-4 h-4 text-amber-600 dark:text-amber-400" />
                 Galería 3D Isométrica
               </h4>
               {galleryStyle === 'isometric_3d' && (
-                <div className="w-4 h-4 rounded-full bg-[#8c9276] flex items-center justify-center">
+                <div className="w-4 h-4 rounded-full bg-amber-500 flex items-center justify-center">
                   <Check className="w-3 h-3 text-white" />
                 </div>
               )}
@@ -180,12 +180,12 @@ export function ProductGalleryStyleSelector({
 
       {/* Configuración de Desplazamiento Continuo & Validación de Fotos */}
       {galleryStyle === 'isometric_3d' && (
-        <div className="mt-4 p-4 sm:p-5 rounded-2xl bg-stone-50 dark:bg-[#18181b] border border-[#8c9276]/30 space-y-4 animate-fade-in">
+        <div className="mt-4 p-4 sm:p-5 rounded-2xl bg-stone-50 dark:bg-[#18181b] border border-amber-500/30 space-y-4 animate-fade-in">
           
           {/* Header de Arquitectura y Estado de Fotos */}
           <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3 pb-3 border-b border-gray-200 dark:border-white/10">
             <div className="flex items-start gap-2.5">
-              <div className="w-8 h-8 rounded-xl bg-[#8c9276]/15 text-[#8c9276] flex items-center justify-center shrink-0 mt-0.5">
+              <div className="w-8 h-8 rounded-xl bg-amber-500/15 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0 mt-0.5">
                 <Layers className="w-4 h-4" />
               </div>
               <div>
@@ -229,7 +229,7 @@ export function ProductGalleryStyleSelector({
           <div className="pt-2 space-y-3.5">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
               <div className="flex items-center gap-2">
-                <Repeat className="w-4 h-4 text-[#8c9276]" />
+                <Repeat className="w-4 h-4 text-amber-600 dark:text-amber-400" />
                 <span className="text-xs font-bold text-gray-900 dark:text-white">
                   Desplazamiento Automático Continuo (Autoplay)
                 </span>
@@ -241,7 +241,7 @@ export function ProductGalleryStyleSelector({
                 onClick={() => onAutoplayChange?.(!autoplay)}
                 className={cn(
                   "relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none",
-                  autoplay ? "bg-[#8c9276]" : "bg-gray-300 dark:bg-gray-700"
+                  autoplay ? "bg-amber-500" : "bg-gray-300 dark:bg-gray-700"
                 )}
                 role="switch"
                 aria-checked={autoplay}
@@ -263,10 +263,10 @@ export function ProductGalleryStyleSelector({
               <div className="p-3.5 rounded-xl bg-white dark:bg-[#202022] border border-gray-200/80 dark:border-white/10 space-y-3">
                 <div className="flex items-center justify-between">
                   <label className="text-xs font-semibold text-gray-800 dark:text-gray-200 flex items-center gap-1.5">
-                    <Clock className="w-3.5 h-3.5 text-[#8c9276]" />
+                    <Clock className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
                     Tiempo de exhibición por foto
                   </label>
-                  <span className="text-xs font-mono font-bold text-[#8c9276] px-2.5 py-0.5 rounded-md bg-[#8c9276]/10 border border-[#8c9276]/20">
+                  <span className="text-xs font-mono font-bold text-amber-600 dark:text-amber-400 px-2.5 py-0.5 rounded-md bg-amber-500/10 border border-amber-500/20">
                     {autoplaySpeed} segundos
                   </span>
                 </div>
@@ -279,7 +279,7 @@ export function ProductGalleryStyleSelector({
                   step="0.5"
                   value={autoplaySpeed}
                   onChange={(e) => onAutoplaySpeedChange?.(parseFloat(e.target.value))}
-                  className="w-full h-1.5 bg-gray-200 dark:bg-white/15 rounded-lg appearance-none cursor-pointer accent-[#8c9276]"
+                  className="w-full h-1.5 bg-gray-200 dark:bg-white/15 rounded-lg appearance-none cursor-pointer accent-amber-500"
                 />
 
                 {/* Preset Chips */}
@@ -292,7 +292,7 @@ export function ProductGalleryStyleSelector({
                       className={cn(
                         "text-[10px] font-mono font-semibold px-2.5 py-1 rounded-lg border transition-all cursor-pointer",
                         autoplaySpeed === preset.val
-                          ? "bg-[#8c9276] text-white border-[#8c9276] shadow-sm"
+                          ? "bg-amber-500 text-white border-amber-500 shadow-sm"
                           : "bg-gray-100 dark:bg-white/5 text-gray-600 dark:text-gray-400 border-gray-200 dark:border-white/10 hover:border-gray-300 dark:hover:border-white/20"
                       )}
                     >

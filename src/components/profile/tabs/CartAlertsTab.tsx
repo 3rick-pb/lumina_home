@@ -242,7 +242,7 @@ export function CartAlertsTab() {
               />
             </div>
             <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
-              <BellRing className="w-5 h-5 text-[#8c9276]" /> Alertas de Bolsa en Tiempo Real
+              <BellRing className="w-5 h-5 text-amber-600 dark:text-amber-400" /> Alertas de Bolsa en Tiempo Real
             </h2>
             <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 max-w-2xl">
               Estudio de configuración visual, auditoría de contraste WCAG y simulación interactiva de avisos de compra para {brand.name}.
@@ -256,7 +256,7 @@ export function CartAlertsTab() {
               className="flex items-center gap-1.5 px-4 py-2.5 bg-gray-100 dark:bg-[#2a2a2c] hover:bg-gray-200 dark:hover:bg-white/10 text-gray-700 dark:text-gray-300 text-xs font-semibold rounded-2xl transition-all cursor-pointer"
               title="Restablecer configuración predeterminada"
             >
-              <RotateCcw className="w-3.5 h-3.5 text-[#8c9276]" />
+              <RotateCcw className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
               <span>Restablecer</span>
             </button>
             <button
@@ -292,7 +292,7 @@ export function CartAlertsTab() {
             <span className="text-[10px] font-bold uppercase tracking-wider text-gray-400 block">
               Contraste WCAG
             </span>
-            <span className="text-lg font-display font-bold text-[#8c9276] mt-1 block">
+            <span className="text-lg font-display font-bold text-amber-600 dark:text-amber-400 mt-1 block">
               {currentAudit.ratio}:1 ({currentAudit.score})
             </span>
           </div>
@@ -318,7 +318,7 @@ export function CartAlertsTab() {
                   : 'text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
               }`}
             >
-              <Sliders className="w-3.5 h-3.5 text-[#8c9276]" />
+              <Sliders className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
               <span>1. Estructura, Posición & Audio</span>
             </button>
             <button
@@ -330,7 +330,7 @@ export function CartAlertsTab() {
                   : 'text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
               }`}
             >
-              <Palette className="w-3.5 h-3.5 text-[#8c9276]" />
+              <Palette className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
               <span>2. Paleta Cromática, Contraste WCAG & Exportación</span>
             </button>
           </div>
@@ -341,7 +341,7 @@ export function CartAlertsTab() {
               onClick={handleCopyThemeJson}
               className="px-3.5 py-2 rounded-xl bg-gray-100 dark:bg-[#2a2a2c] hover:bg-gray-200 text-gray-700 dark:text-gray-200 text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer"
             >
-              {copiedJson ? <Check className="w-3.5 h-3.5 text-[#8c9276]" /> : <Copy className="w-3.5 h-3.5 text-[#8c9276]" />}
+              {copiedJson ? <Check className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" /> : <Copy className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />}
               <span>{copiedJson ? 'JSON Copiado' : 'Copiar JSON'}</span>
             </button>
             <button
@@ -349,7 +349,7 @@ export function CartAlertsTab() {
               onClick={handleDownloadThemeJson}
               className="px-3.5 py-2 rounded-xl bg-gray-100 dark:bg-[#2a2a2c] hover:bg-gray-200 text-gray-700 dark:text-gray-200 text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer"
             >
-              <Download className="w-3.5 h-3.5 text-[#8c9276]" />
+              <Download className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
               <span>Exportar .JSON</span>
             </button>
           </div>
@@ -366,7 +366,7 @@ export function CartAlertsTab() {
                   <div className="flex items-center justify-between">
                     <div>
                       <h3 className="text-sm font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
-                        <Layers className="w-4 h-4 text-[#8c9276]" />
+                        <Layers className="w-4 h-4 text-amber-600 dark:text-amber-400" />
                         <span>Geometría de la Tarjeta de Alerta</span>
                       </h3>
                       <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
@@ -398,7 +398,7 @@ export function CartAlertsTab() {
                                 {lo.badge}
                               </span>
                               {isSelected && (
-                                <CheckCircle2 className="w-4 h-4 text-[#8c9276] shrink-0" />
+                                <CheckCircle2 className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0" />
                               )}
                             </div>
                             <h4 className="text-xs font-bold text-gray-900 dark:text-white mt-1">
@@ -418,7 +418,7 @@ export function CartAlertsTab() {
                 <div className="p-6 rounded-3xl bg-gray-50/50 dark:bg-[#2a2a2c]/40 border border-gray-100 dark:border-white/5 space-y-5">
                   <div>
                     <h3 className="text-sm font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
-                      <Monitor className="w-4 h-4 text-[#8c9276]" />
+                      <Monitor className="w-4 h-4 text-amber-600 dark:text-amber-400" />
                       <span>Posición en Monitor & Tiempo en Pantalla</span>
                     </h3>
                     <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
@@ -443,13 +443,13 @@ export function CartAlertsTab() {
                     <div className="relative h-44 sm:h-48 rounded-xl bg-gray-50/70 dark:bg-[#202022] border border-gray-200/60 dark:border-white/5 overflow-hidden flex">
                       {/* Simulated Left Sidebar Dock */}
                       <div className="w-8 sm:w-10 bg-white dark:bg-[#18181a] border-r border-gray-200/70 dark:border-white/5 p-1.5 flex flex-col items-center gap-2 shrink-0">
-                        <div className="w-5 h-5 rounded-md bg-[#8c9276]/20 text-[#8c9276] flex items-center justify-center text-[9px] font-bold">
+                        <div className="w-5 h-5 rounded-md bg-amber-500/20 text-amber-600 dark:text-amber-400 flex items-center justify-center text-[9px] font-bold">
                           {brand.shortName.charAt(0)}
                         </div>
                         <div className="w-3.5 h-[1px] bg-gray-200 dark:bg-white/10 my-0.5" />
                         <div className="w-4 h-4 rounded bg-gray-200/70 dark:bg-white/10" />
                         <div className="w-4 h-4 rounded bg-gray-200/70 dark:bg-white/10" />
-                        <div className="w-4 h-4 rounded bg-[#8c9276] text-white flex items-center justify-center text-[8px]">
+                        <div className="w-4 h-4 rounded bg-amber-500 text-white flex items-center justify-center text-[8px]">
                           🔔
                         </div>
                       </div>
@@ -502,7 +502,7 @@ export function CartAlertsTab() {
                               color: config.textColor,
                             }}
                           >
-                            <div className="w-5 h-5 rounded-md bg-[#8c9276]/20 text-[#8c9276] flex items-center justify-center text-[10px]">
+                            <div className="w-5 h-5 rounded-md bg-amber-500/20 text-amber-600 dark:text-amber-400 flex items-center justify-center text-[10px]">
                               🛍️
                             </div>
                             <div className="leading-none pr-1">
@@ -516,7 +516,7 @@ export function CartAlertsTab() {
                                 {config.position}
                               </div>
                             </div>
-                            <div className="w-2 h-2 rounded-full bg-[#8c9276] animate-ping shrink-0" />
+                            <div className="w-2 h-2 rounded-full bg-amber-500 animate-ping shrink-0" />
                           </div>
                         </div>
                       </div>
@@ -543,7 +543,7 @@ export function CartAlertsTab() {
                               {pos.label}
                             </span>
                             {isSelected && (
-                              <Check className="w-4 h-4 text-[#8c9276] stroke-[2.5]" />
+                              <Check className="w-4 h-4 text-amber-600 dark:text-amber-400 stroke-[2.5]" />
                             )}
                           </div>
                           <p className="text-[11px] text-gray-500 dark:text-gray-400 leading-relaxed">
@@ -587,7 +587,7 @@ export function CartAlertsTab() {
                           <div
                             className={`w-8 h-8 rounded-xl flex items-center justify-center ${
                               config.soundEnabled
-                                ? 'bg-[#8c9276]/20 text-[#8c9276]'
+                                ? 'bg-amber-500/20 text-amber-600 dark:text-amber-400'
                                 : 'bg-gray-100 text-gray-400 dark:bg-white/10'
                             }`}
                           >
@@ -633,7 +633,7 @@ export function CartAlertsTab() {
               <div className="p-6 rounded-3xl bg-gray-50/50 dark:bg-[#2a2a2c]/40 border border-gray-100 dark:border-white/5 space-y-5">
                 <div>
                   <h3 className="text-sm font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
-                    <Palette className="w-4 h-4 text-[#8c9276]" />
+                    <Palette className="w-4 h-4 text-amber-600 dark:text-amber-400" />
                     <span>Paleta Cromática & Auditoría de Legibilidad WCAG</span>
                   </h3>
                   <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
@@ -824,12 +824,12 @@ export function CartAlertsTab() {
                   ) : (
                     <div className="p-3.5 rounded-2xl bg-white dark:bg-[#202022] border border-gray-200/80 dark:border-white/10 flex items-center justify-between gap-3">
                       <div className="flex items-center gap-2.5">
-                        <CheckCircle2 className="w-4 h-4 text-[#8c9276] shrink-0" />
+                        <CheckCircle2 className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0" />
                         <span className="text-xs font-semibold text-gray-800 dark:text-gray-200">
                           Contraste óptimo verificado ({currentAudit.ratio}:1 • Estándar WCAG {currentAudit.score})
                         </span>
                       </div>
-                      <span className="text-[10px] font-bold text-[#8c9276] bg-[#8c9276]/10 px-2.5 py-0.5 rounded-full">
+                      <span className="text-[10px] font-bold text-amber-600 dark:text-amber-400 bg-amber-500/10 px-2.5 py-0.5 rounded-full">
                         Legible
                       </span>
                     </div>
@@ -845,14 +845,14 @@ export function CartAlertsTab() {
               <div className="flex items-center justify-between">
                 <div>
                   <span className="text-xs font-bold text-gray-900 dark:text-white flex items-center gap-1.5">
-                    <Eye className="w-3.5 h-3.5 text-[#8c9276]" />
+                    <Eye className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
                     <span>Simulador 1:1 en Tiempo Real</span>
                   </span>
                   <span className="text-[11px] text-gray-500 dark:text-gray-400 block">
                     Previsualización exacta antes de publicar
                   </span>
                 </div>
-                <span className="text-[10px] font-semibold text-[#8c9276] bg-[#8c9276]/15 px-2.5 py-1 rounded-full">
+                <span className="text-[10px] font-semibold text-amber-600 dark:text-amber-400 bg-amber-500/15 px-2.5 py-1 rounded-full">
                   En Vivo
                 </span>
               </div>
@@ -877,7 +877,7 @@ export function CartAlertsTab() {
               {/* Multi-notification Stacking Burst Trigger */}
               <div className="p-4 rounded-2xl bg-white dark:bg-[#202022] border border-gray-100 dark:border-white/5 space-y-2.5">
                 <div className="flex items-center gap-2">
-                  <Sparkles className="w-3.5 h-3.5 text-[#8c9276]" />
+                  <Sparkles className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
                   <span className="text-xs font-bold text-gray-900 dark:text-white">
                     Prueba de Apilamiento Múltiple (3 Tarjetas)
                   </span>
@@ -912,7 +912,7 @@ export function CartAlertsTab() {
                       key={sc.userName}
                       type="button"
                       onClick={() => handleFireLiveTest(idx)}
-                      className="p-2.5 rounded-xl border border-gray-200/80 dark:border-white/10 bg-white dark:bg-[#202022] hover:border-[#8c9276] text-left transition-all cursor-pointer"
+                      className="p-2.5 rounded-xl border border-gray-200/80 dark:border-white/10 bg-white dark:bg-[#202022] hover:border-amber-500 text-left transition-all cursor-pointer"
                     >
                       <span className="text-xs font-bold text-gray-900 dark:text-white block truncate">
                         {sc.userName}
@@ -927,7 +927,7 @@ export function CartAlertsTab() {
 
               {/* Privacy Note */}
               <div className="p-3.5 rounded-2xl bg-white dark:bg-[#202022] border border-gray-100 dark:border-white/5 flex items-start gap-2.5">
-                <Info className="w-4 h-4 text-[#8c9276] shrink-0 mt-0.5" />
+                <Info className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
                 <div className="text-xs text-gray-500 dark:text-gray-400 leading-relaxed">
                   <strong className="font-semibold text-gray-900 dark:text-white">
                     Filtro inteligente activo:
@@ -937,8 +937,8 @@ export function CartAlertsTab() {
               </div>
 
               {(testSent || burstSent) && (
-                <div className="p-3 rounded-xl bg-[#8c9276]/15 border border-[#8c9276]/30 text-gray-900 dark:text-white text-xs font-semibold flex items-center justify-center gap-2 animate-fade-in">
-                  <CheckCircle2 className="w-4 h-4 text-[#8c9276]" />
+                <div className="p-3 rounded-xl bg-amber-500/15 border border-amber-500/30 text-gray-900 dark:text-white text-xs font-semibold flex items-center justify-center gap-2 animate-fade-in">
+                  <CheckCircle2 className="w-4 h-4 text-amber-600 dark:text-amber-400" />
                   <span>
                     {burstSent
                       ? 'Ráfaga de 3 alertas enviada a tu pantalla'

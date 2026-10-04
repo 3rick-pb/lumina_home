@@ -578,7 +578,7 @@ export function SettingsTab({
       <div className="lg:col-span-7 bg-white/90 dark:bg-[#202022]/5 backdrop-blur-3xl p-8 md:p-10 rounded-[3rem] border border-white/80 dark:border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.04)] space-y-10 relative overflow-hidden">
         <div>
           <h2 className="text-2xl font-display font-bold text-gray-900 dark:text-gray-100 flex items-center gap-3">
-            <Settings className="w-6 h-6 text-[#8c9276]" /> Ajustes de Cuenta & Sistema
+            <Settings className="w-6 h-6 text-amber-600 dark:text-amber-400" /> Ajustes de Cuenta & Sistema
           </h2>
           <p className="text-sm text-gray-500 dark:text-gray-400">Personaliza tu experiencia, apariencia visual y seguridad de acceso.</p>
         </div>
@@ -603,7 +603,7 @@ export function SettingsTab({
         </div>
 
         {/* Blobatar Avatar Showcase Card con sincronización a tabla dedicada Supabase */}
-        <div className="p-6 rounded-[2rem] bg-gradient-to-br from-[#8c9276]/10 via-gray-50/50 to-white/40 dark:from-[#8c9276]/15 dark:via-black/20 dark:to-transparent border border-[#8c9276]/20 dark:border-white/10 relative z-10 space-y-5">
+        <div className="p-6 rounded-[2rem] bg-gradient-to-br from-[#f59e0b]/10 via-gray-50/50 to-white/40 dark:from-[#f59e0b]/15 dark:via-black/20 dark:to-transparent border border-amber-500/20 dark:border-white/10 relative z-10 space-y-5">
           <div className="flex flex-col sm:flex-row items-center gap-5">
             <div className="relative group shrink-0">
               <BlobatarAvatar
@@ -617,7 +617,7 @@ export function SettingsTab({
               />
             </div>
             <div className="space-y-1.5 text-center sm:text-left flex-1">
-              <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-[#8c9276]/20 text-[#8c9276] dark:text-amber-400 text-[10.5px] font-bold tracking-tight">
+              <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-amber-500/20 text-amber-600 dark:text-amber-400 text-[10.5px] font-bold tracking-tight">
                 <Sparkles className="w-3 h-3" />
                 <span>Avatar Automático Blobatar</span>
               </div>
@@ -679,8 +679,8 @@ export function SettingsTab({
               role="switch"
               aria-checked={showAvatarInNavbar}
               onClick={() => setShowAvatarInNavbar(!showAvatarInNavbar, user?.id, user?.email)}
-              className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-[#8c9276] ${
-                showAvatarInNavbar ? "bg-[#8c9276] dark:bg-amber-400" : "bg-gray-200 dark:bg-gray-700"
+              className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-amber-500 ${
+                showAvatarInNavbar ? "bg-amber-500 dark:bg-amber-400" : "bg-gray-200 dark:bg-gray-700"
               }`}
             >
               <span
@@ -739,7 +739,7 @@ export function SettingsTab({
                 type="text" 
                 value={editName}
                 onChange={e => setEditName(e.target.value)}
-                className="w-full pl-11 pr-4 py-3.5 rounded-2xl border border-gray-200 dark:border-white/10 text-sm focus:outline-none focus:ring-2 focus:ring-[#8c9276] transition-all bg-white dark:bg-[#1a1a1c] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500"
+                className="w-full pl-11 pr-4 py-3.5 rounded-2xl border border-gray-200 dark:border-white/10 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 transition-all bg-white dark:bg-[#1a1a1c] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500"
               />
             </div>
           </div>
@@ -763,7 +763,7 @@ export function SettingsTab({
                 value={newPass}
                 onChange={e => setNewPass(e.target.value)}
                 placeholder="Mín. 8 caracteres, mayúscula, minúscula, número y símbolo"
-                className="w-full pl-11 pr-4 py-3.5 rounded-2xl border border-gray-200 dark:border-white/10 text-sm focus:outline-none focus:ring-2 focus:ring-[#8c9276] transition-all bg-white dark:bg-[#1a1a1c] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500"
+                className="w-full pl-11 pr-4 py-3.5 rounded-2xl border border-gray-200 dark:border-white/10 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 transition-all bg-white dark:bg-[#1a1a1c] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500"
               />
             </div>
             {newPass.length > 0 && <StrongPasswordMeter password={newPass} />}
@@ -824,14 +824,14 @@ export function SettingsTab({
                           }}
                           placeholder="correo1@amigo.com, correo2@amigo.com (separados por coma)"
                           disabled={invitedAdmins.length >= 3 || isSyncingAdmins}
-                          className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-xs bg-white dark:bg-[#1a1a1c] text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#8c9276] disabled:opacity-50"
+                          className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-xs bg-white dark:bg-[#1a1a1c] text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-amber-500 disabled:opacity-50"
                         />
                       </div>
                       <button
                         type="button"
                         onClick={() => handleAddAdminInvite()}
                         disabled={!adminInviteInput.trim() || invitedAdmins.length >= 3 || isSyncingAdmins}
-                        className="px-4 py-2.5 rounded-xl bg-[#8c9276] hover:bg-[#7b8166] text-white text-xs font-bold transition-all disabled:opacity-50 cursor-pointer shrink-0 shadow-sm flex items-center gap-1.5"
+                        className="px-4 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold transition-all disabled:opacity-50 cursor-pointer shrink-0 shadow-sm flex items-center gap-1.5"
                       >
                         {isSyncingAdmins ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Plus className="w-3.5 h-3.5" />}
                         <span>Invitar</span>
@@ -869,7 +869,7 @@ export function SettingsTab({
                             className="flex items-center justify-between p-2.5 px-3 rounded-xl bg-white dark:bg-[#1e1e20] border border-gray-100 dark:border-white/5 text-xs shadow-xs"
                           >
                             <div className="flex items-center gap-2 min-w-0">
-                              <ShieldCheck className="w-4 h-4 text-[#8c9276] shrink-0" />
+                              <ShieldCheck className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0" />
                               <span className="font-semibold text-gray-900 dark:text-gray-100 truncate">{admEmail}</span>
                               <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-amber-100 dark:bg-amber-900/40 text-amber-800 dark:text-amber-300">ADMINISTRADOR</span>
                             </div>
@@ -904,7 +904,7 @@ export function SettingsTab({
         </form>
 
         <div className="pt-6 border-t border-gray-100 dark:border-white/5 flex items-center justify-between text-xs text-gray-400">
-          <span className="flex items-center gap-1.5"><ShieldCheck className="w-4 h-4 text-[#8c9276]" /> Conexión segura a Supabase Auth</span>
+          <span className="flex items-center gap-1.5"><ShieldCheck className="w-4 h-4 text-amber-600 dark:text-amber-400" /> Conexión segura a Supabase Auth</span>
           <span>ID: {user.id.substring(0, 8)}...</span>
         </div>
       </div>
@@ -924,7 +924,7 @@ export function SettingsTab({
           </div>
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
-              <MapPin className="w-4 h-4 text-[#8c9276]" />
+              <MapPin className="w-4 h-4 text-amber-600 dark:text-amber-400" />
               <h3 className="text-base font-bold text-gray-900 dark:text-gray-100">Direcciones de Entrega</h3>
               <span className="text-xs px-2.5 py-0.5 rounded-full bg-gray-100 dark:bg-[#3a3a3c] text-gray-700 dark:text-gray-300 font-mono font-semibold">
                 {addresses.length}/4
@@ -1118,7 +1118,7 @@ export function SettingsTab({
               <form onSubmit={handleAddressSubmit} className="space-y-4 bg-gray-50/70 dark:bg-[#2a2a2c]/70 p-4 sm:p-5 rounded-2xl border border-gray-100 dark:border-white/5 shadow-xs">
                 <div className="flex items-center justify-between pb-2 border-b border-gray-200 dark:border-white/10">
                   <span className="text-xs font-bold text-gray-900 dark:text-gray-100 flex items-center gap-1.5">
-                    <MapPin className="w-3.5 h-3.5 text-[#8c9276]" />
+                    <MapPin className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
                     Nueva Dirección de Entrega
                   </span>
                   <button 
@@ -1196,7 +1196,7 @@ export function SettingsTab({
                       >
                         <div className="flex items-center justify-between mb-2">
                           <label className="text-[11px] font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider flex items-center gap-1.5">
-                            <MapPin className="w-3.5 h-3.5 text-[#8c9276]" />
+                            <MapPin className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
                             <span>Ubicación Exacta en Mapa</span>
                           </label>
                           <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-medium bg-emerald-50 dark:bg-emerald-950/40 px-2 py-0.5 rounded-full border border-emerald-200 dark:border-emerald-800/40">
@@ -1249,7 +1249,7 @@ export function SettingsTab({
                       value={recipient} 
                       onChange={e => setRecipient(e.target.value)} 
                       placeholder={user.name} 
-                      className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-xs outline-none focus:ring-2 focus:ring-[#8c9276]/30 focus:border-[#8c9276] bg-white dark:bg-[#1a1a1c] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 transition-all"
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-xs outline-none focus:ring-2 focus:ring-amber-500/30 focus:border-amber-500 bg-white dark:bg-[#1a1a1c] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 transition-all"
                     />
                   </div>
 
@@ -1264,7 +1264,7 @@ export function SettingsTab({
                         value={idNumber} 
                         onChange={e => setIdNumber(e.target.value)} 
                         placeholder="Ej: 1712345678" 
-                        className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-xs outline-none focus:ring-2 focus:ring-[#8c9276]/30 focus:border-[#8c9276] bg-white dark:bg-[#1a1a1c] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 transition-all"
+                        className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-xs outline-none focus:ring-2 focus:ring-amber-500/30 focus:border-amber-500 bg-white dark:bg-[#1a1a1c] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 transition-all"
                       />
                     </div>
                     <div>
@@ -1277,7 +1277,7 @@ export function SettingsTab({
                         value={phone} 
                         onChange={e => setPhone(e.target.value)} 
                         placeholder="+593 99 123 4567" 
-                        className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-xs outline-none focus:ring-2 focus:ring-[#8c9276]/30 focus:border-[#8c9276] bg-white dark:bg-[#1a1a1c] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 transition-all"
+                        className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-xs outline-none focus:ring-2 focus:ring-amber-500/30 focus:border-amber-500 bg-white dark:bg-[#1a1a1c] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 transition-all"
                       />
                     </div>
                   </div>
@@ -1291,7 +1291,7 @@ export function SettingsTab({
                         value={street} 
                         onChange={e => setStreet(e.target.value)} 
                         placeholder="Ej: Av. República del Salvador" 
-                        className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-xs outline-none focus:ring-2 focus:ring-[#8c9276]/30 focus:border-[#8c9276] bg-white dark:bg-[#1a1a1c] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 transition-all"
+                        className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-xs outline-none focus:ring-2 focus:ring-amber-500/30 focus:border-amber-500 bg-white dark:bg-[#1a1a1c] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 transition-all"
                       />
                     </div>
                     <div>
@@ -1301,7 +1301,7 @@ export function SettingsTab({
                         value={exteriorNumber} 
                         onChange={e => setExteriorNumber(e.target.value)} 
                         placeholder="Ej: N34-120" 
-                        className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-xs outline-none focus:ring-2 focus:ring-[#8c9276]/30 focus:border-[#8c9276] bg-white dark:bg-[#1a1a1c] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 transition-all"
+                        className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-xs outline-none focus:ring-2 focus:ring-amber-500/30 focus:border-amber-500 bg-white dark:bg-[#1a1a1c] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 transition-all"
                       />
                     </div>
                   </div>
@@ -1315,7 +1315,7 @@ export function SettingsTab({
                         value={city} 
                         onChange={e => setCity(e.target.value)} 
                         placeholder="Quito" 
-                        className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-xs outline-none focus:ring-2 focus:ring-[#8c9276]/30 focus:border-[#8c9276] bg-white dark:bg-[#1a1a1c] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 transition-all"
+                        className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-xs outline-none focus:ring-2 focus:ring-amber-500/30 focus:border-amber-500 bg-white dark:bg-[#1a1a1c] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 transition-all"
                       />
                     </div>
                     <div>
@@ -1326,7 +1326,7 @@ export function SettingsTab({
                         value={stateProv} 
                         onChange={e => setStateProv(e.target.value)} 
                         placeholder="Pichincha" 
-                        className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-xs outline-none focus:ring-2 focus:ring-[#8c9276]/30 focus:border-[#8c9276] bg-white dark:bg-[#1a1a1c] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 transition-all"
+                        className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-xs outline-none focus:ring-2 focus:ring-amber-500/30 focus:border-amber-500 bg-white dark:bg-[#1a1a1c] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 transition-all"
                       />
                     </div>
                   </div>
@@ -1340,7 +1340,7 @@ export function SettingsTab({
                         value={postalCode} 
                         onChange={e => setPostalCode(e.target.value)} 
                         placeholder="170505" 
-                        className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-xs outline-none focus:ring-2 focus:ring-[#8c9276]/30 focus:border-[#8c9276] bg-white dark:bg-[#1a1a1c] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 transition-all"
+                        className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-xs outline-none focus:ring-2 focus:ring-amber-500/30 focus:border-amber-500 bg-white dark:bg-[#1a1a1c] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 transition-all"
                       />
                     </div>
                     <div>
@@ -1351,7 +1351,7 @@ export function SettingsTab({
                         value={country} 
                         onChange={e => setCountry(e.target.value)} 
                         placeholder="Ecuador"
-                        className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-xs outline-none focus:ring-2 focus:ring-[#8c9276]/30 focus:border-[#8c9276] bg-white dark:bg-[#1a1a1c] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 transition-all"
+                        className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-xs outline-none focus:ring-2 focus:ring-amber-500/30 focus:border-amber-500 bg-white dark:bg-[#1a1a1c] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 transition-all"
                       />
                     </div>
                   </div>
@@ -1364,7 +1364,7 @@ export function SettingsTab({
                       <select
                         value={addressType}
                         onChange={e => setAddressType(e.target.value as 'casa' | 'departamento' | 'oficina')}
-                        className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-xs outline-none focus:ring-2 focus:ring-[#8c9276]/30 focus:border-[#8c9276] bg-white dark:bg-[#1a1a1c] text-gray-900 dark:text-gray-100 cursor-pointer"
+                        className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-xs outline-none focus:ring-2 focus:ring-amber-500/30 focus:border-amber-500 bg-white dark:bg-[#1a1a1c] text-gray-900 dark:text-gray-100 cursor-pointer"
                       >
                         <option value="casa">Casa</option>
                         <option value="departamento">Departamento</option>
@@ -1378,7 +1378,7 @@ export function SettingsTab({
                         value={interiorNumber} 
                         onChange={e => setInteriorNumber(e.target.value)} 
                         placeholder="Ej: Apto 4B" 
-                        className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-xs outline-none focus:ring-2 focus:ring-[#8c9276]/30 focus:border-[#8c9276] bg-white dark:bg-[#1a1a1c] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 transition-all"
+                        className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-xs outline-none focus:ring-2 focus:ring-amber-500/30 focus:border-amber-500 bg-white dark:bg-[#1a1a1c] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 transition-all"
                       />
                     </div>
                   </div>
@@ -1390,7 +1390,7 @@ export function SettingsTab({
                       value={crossStreets} 
                       onChange={e => setCrossStreets(e.target.value)} 
                       placeholder="Ej: y Naciones Unidas" 
-                      className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-xs outline-none focus:ring-2 focus:ring-[#8c9276]/30 focus:border-[#8c9276] bg-white dark:bg-[#1a1a1c] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 transition-all"
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-xs outline-none focus:ring-2 focus:ring-amber-500/30 focus:border-amber-500 bg-white dark:bg-[#1a1a1c] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 transition-all"
                     />
                   </div>
 
@@ -1402,7 +1402,7 @@ export function SettingsTab({
                         value={neighborhood} 
                         onChange={e => setNeighborhood(e.target.value)} 
                         placeholder="Ej: La Carolina, Iñaquito..." 
-                        className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-xs outline-none focus:ring-2 focus:ring-[#8c9276]/30 focus:border-[#8c9276] bg-white dark:bg-[#1a1a1c] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 transition-all"
+                        className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-xs outline-none focus:ring-2 focus:ring-amber-500/30 focus:border-amber-500 bg-white dark:bg-[#1a1a1c] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 transition-all"
                       />
                     </div>
                     <div>
@@ -1412,7 +1412,7 @@ export function SettingsTab({
                         value={reference} 
                         onChange={e => setReference(e.target.value)} 
                         placeholder="Ej: Frente al parque" 
-                        className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-xs outline-none focus:ring-2 focus:ring-[#8c9276]/30 focus:border-[#8c9276] bg-white dark:bg-[#1a1a1c] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 transition-all"
+                        className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-xs outline-none focus:ring-2 focus:ring-amber-500/30 focus:border-amber-500 bg-white dark:bg-[#1a1a1c] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 transition-all"
                       />
                     </div>
                   </div>
@@ -1424,7 +1424,7 @@ export function SettingsTab({
                       value={deliveryInstructions} 
                       onChange={e => setDeliveryInstructions(e.target.value)} 
                       placeholder="Ej: Dejar en portería" 
-                      className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-xs outline-none focus:ring-2 focus:ring-[#8c9276]/30 focus:border-[#8c9276] bg-white dark:bg-[#1a1a1c] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 transition-all"
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-xs outline-none focus:ring-2 focus:ring-amber-500/30 focus:border-amber-500 bg-white dark:bg-[#1a1a1c] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 transition-all"
                     />
                   </div>
 
@@ -1435,7 +1435,7 @@ export function SettingsTab({
                           type="checkbox" 
                           checked={hasElevator} 
                           onChange={e => setHasElevator(e.target.checked)} 
-                          className="w-4 h-4 rounded border-gray-300 text-[#8c9276] focus:ring-[#8c9276] cursor-pointer" 
+                          className="w-4 h-4 rounded border-gray-300 text-amber-600 dark:text-amber-400 focus:ring-amber-500 cursor-pointer" 
                         />
                         <span>Tiene ascensor el edificio</span>
                       </label>
@@ -1447,7 +1447,7 @@ export function SettingsTab({
                         value={floorLevel} 
                         onChange={e => setFloorLevel(e.target.value)} 
                         placeholder="Ej: 4" 
-                        className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-xs outline-none focus:ring-2 focus:ring-[#8c9276]/30 focus:border-[#8c9276] bg-white dark:bg-[#1a1a1c] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 transition-all"
+                        className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-xs outline-none focus:ring-2 focus:ring-amber-500/30 focus:border-amber-500 bg-white dark:bg-[#1a1a1c] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 transition-all"
                       />
                     </div>
                   </div>

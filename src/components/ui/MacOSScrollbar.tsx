@@ -32,6 +32,33 @@ export function MacOSScrollbar() {
     return () => window.removeEventListener("resize", checkDevice);
   }, []);
 
+  // Detect when modals or overlays lock body scrolling
+  const [isScrollLocked, setIsScrollLocked] = useState(false);
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const checkLocked = () => {
+      const doc = document.documentElement;
+      const body = document.body;
+      const isLocked =
+        body.style.overflow === "hidden" ||
+        doc.style.overflow === "hidden" ||
+        doc.classList.contains("lumina-modal-lock-scroll") ||
+        doc.classList.contains("lumina-add-card-scroll-lock") ||
+        doc.hasAttribute("data-modal-open") ||
+        body.classList.contains("overflow-hidden") ||
+        Boolean(document.querySelector("[data-modal-open='true'], [aria-modal='true']"));
+      setIsScrollLocked(Boolean(isLocked));
+    };
+
+    checkLocked();
+    const observer = new MutationObserver(checkLocked);
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ["style", "class", "data-modal-open"] });
+    observer.observe(document.body, { attributes: true, attributeFilter: ["style", "class"] });
+    observer.observe(document.body, { childList: true, subtree: false });
+
+    return () => observer.disconnect();
+  }, []);
+
   const hideTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Cached metrics & physics state (avoids getBoundingClientRect on scroll)
@@ -340,9 +367,10 @@ export function MacOSScrollbar() {
           hideTimeoutRef.current = setTimeout(() => setIsVisible(false), 700);
         }
       }}
-      className="fixed top-0 right-0 bottom-0 w-3.5 z-[9999] pointer-events-auto select-none transition-colors duration-200"
+      className="fixed top-0 right-0 bottom-0 w-3.5 z-[9999] select-none transition-colors duration-200"
       style={{
-        opacity: hasScrollableContent && (isVisible || isHovered || isDragging) ? 1 : 0,
+        opacity: !isScrollLocked && hasScrollableContent && (isVisible || isHovered || isDragging) ? 1 : 0,
+        pointerEvents: !isScrollLocked && hasScrollableContent ? "auto" : "none",
         transition: "opacity 240ms cubic-bezier(0.16, 1, 0.3, 1)",
       }}
       aria-hidden="true"

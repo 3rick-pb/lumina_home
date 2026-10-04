@@ -21,6 +21,7 @@ import { createPortal } from "react-dom";
 import { EASE_OUT } from "@/lib/ease";
 import { PresenceGate } from "@/lib/presence-gate";
 import { cn } from "@/lib/utils";
+import { useThemeStore, getResolvedTheme } from "@/lib/themeStore";
 
 type CenterMorphModalContextValue = {
   open: boolean;
@@ -248,6 +249,9 @@ export function CenterMorphModalContent({
     };
   }, [context, dismissible]);
 
+  const { mode } = useThemeStore();
+  const isDark = getResolvedTheme(mode) === "dark";
+
   if (!mounted) return null;
 
   return createPortal(
@@ -257,7 +261,7 @@ export function CenterMorphModalContent({
           key="center-morph-portal-root"
           initial={{ opacity: 1 }}
           exit={{ opacity: 1 }}
-          className="fixed inset-0 z-[100] flex items-center justify-center p-3 sm:p-6 overflow-hidden pointer-events-none"
+          className={cn("fixed inset-0 z-[100] flex items-center justify-center p-3 sm:p-6 overflow-hidden pointer-events-none", isDark && "dark")}
         >
           {/* Backdrop */}
           <motion.div

@@ -233,7 +233,7 @@ export function OrderDetailModal({
           <div className="flex items-start justify-between gap-2.5 sm:gap-3 pb-3 sm:pb-4 border-b border-gray-100 dark:border-white/5">
             <div className="min-w-0 flex-1">
               <div className="flex flex-wrap items-center gap-2 mb-1.5">
-                <span className="text-[10px] font-bold uppercase tracking-wider text-[#8c9276]">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-amber-600 dark:text-amber-400">
                   Resumen de Pedido
                 </span>
                 <button
@@ -300,7 +300,7 @@ export function OrderDetailModal({
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 mb-3 text-xs">
               {isShippedOrDelivered && activeOrder.trackingNumber ? (
                 <div className="flex items-center gap-1.5 text-gray-500 dark:text-gray-400 font-medium text-[11px] sm:text-xs">
-                  <Truck className="w-3.5 h-3.5 text-[#8c9276] shrink-0" />
+                  <Truck className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400 shrink-0" />
                   <span>Usa tu código de guía para más detalles</span>
                 </div>
               ) : (
@@ -339,7 +339,7 @@ export function OrderDetailModal({
                 { label: "Entregado", done: activeOrder.status === "Entregado" },
               ].map((st, i) => (
                 <div key={i} className="flex flex-col items-center gap-1 relative z-10 min-w-[50px] sm:min-w-[64px]">
-                  <div className={`w-6 h-6 sm:w-7 sm:h-7 rounded-full flex items-center justify-center text-[10px] sm:text-xs font-bold transition-colors ${st.done ? "bg-[#8c9276] text-white dark:text-gray-900 shadow-xs" : "bg-gray-200 dark:bg-[#48484a] text-gray-500 dark:text-gray-400"}`}>
+                  <div className={`w-6 h-6 sm:w-7 sm:h-7 rounded-full flex items-center justify-center text-[10px] sm:text-xs font-bold transition-colors ${st.done ? "bg-amber-500 text-white dark:text-gray-900 shadow-xs" : "bg-gray-200 dark:bg-[#48484a] text-gray-500 dark:text-gray-400"}`}>
                     {st.done ? <CheckCircle2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> : i + 1}
                   </div>
                   <span className="text-[9px] sm:text-[10px] font-medium text-gray-600 dark:text-gray-400 text-center leading-tight">
@@ -428,7 +428,7 @@ export function OrderDetailModal({
         <div className="mb-4 sm:mb-5 p-3.5 sm:p-4 bg-gray-50/90 dark:bg-[#2a2a2c]/90 rounded-2xl border border-gray-100 dark:border-white/5 space-y-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <Mail className="w-4 h-4 text-[#8c9276]" />
+              <Mail className="w-4 h-4 text-amber-600 dark:text-amber-400" />
               <h4 className="text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-gray-300">
                 Notificaciones Automáticas por Correo
               </h4>
@@ -474,7 +474,7 @@ export function OrderDetailModal({
                   {isResending === 'invoice' ? (
                     <RefreshCw className="w-3 h-3 animate-spin" />
                   ) : (
-                    <Send className="w-3 h-3 text-[#8c9276]" />
+                    <Send className="w-3 h-3 text-amber-600 dark:text-amber-400" />
                   )}
                   Reenviar Factura
                 </button>
@@ -589,7 +589,7 @@ export function OrderDetailModal({
                   top: `${scrollProgress * (100 - thumbHeightPct)}%`,
                 }}
                 onMouseDown={handleThumbMouseDown}
-                className="absolute left-0 right-0 rounded-full bg-[#8c9276] hover:bg-[#787e63] dark:bg-[#a3a98d] dark:hover:bg-[#b8be9f] cursor-grab active:cursor-grabbing transition-colors shadow-sm"
+                className="absolute left-0 right-0 rounded-full bg-amber-500 hover:bg-amber-600 dark:bg-[#a3a98d] dark:hover:bg-[#b8be9f] cursor-grab active:cursor-grabbing transition-colors shadow-sm"
               />
             </div>
           </div>

@@ -1309,7 +1309,7 @@ export function DiscountCouponsTab() {
                     <span className="font-mono text-2xl sm:text-3xl font-black text-stone-900 dark:text-white tracking-wider">
                       {justGeneratedCoupon.code}
                     </span>
-                    <span className="text-xl sm:text-2xl font-black text-[#8c9276] dark:text-[#a8af92]">
+                    <span className="text-xl sm:text-2xl font-black text-amber-500 dark:text-amber-400">
                       {justGeneratedCoupon.discountType === "free_shipping"
                         ? "Envío Gratis"
                         : `-${justGeneratedCoupon.discountPercent}% OFF`}

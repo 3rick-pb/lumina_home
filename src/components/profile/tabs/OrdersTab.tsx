@@ -24,7 +24,7 @@ const FILTER_ITEMS = [
     id: "all",
     label: "Todos",
     icon: Layers,
-    dotClass: "bg-[#8c9276] dark:bg-amber-400",
+    dotClass: "bg-amber-500 dark:bg-amber-400",
     activeText: "text-gray-900 dark:text-white",
     badgeActive: "bg-gray-900 dark:bg-amber-400 text-white dark:text-stone-950",
   },
@@ -223,7 +223,7 @@ export function OrdersTab({
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div>
             <h2 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2.5">
-              <span className="w-8 h-8 rounded-xl bg-[#8c9276]/15 border border-[#8c9276]/30 flex items-center justify-center text-[#8c9276] shrink-0">
+              <span className="w-8 h-8 rounded-xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-600 dark:text-amber-400 shrink-0">
                 <ShoppingBag className="w-4 h-4" />
               </span>
               <span>Historial Completo de Pedidos</span>

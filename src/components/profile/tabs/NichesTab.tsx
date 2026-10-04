@@ -135,7 +135,7 @@ export function NichesTab({ onRequestDeleteNiche }: NichesTabProps) {
             />
           </div>
           <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
-            <Layers className="w-5 h-5 text-[#8c9276]" /> Gestión de Nichos & Colecciones
+            <Layers className="w-5 h-5 text-amber-600 dark:text-amber-400" /> Gestión de Nichos & Colecciones
           </h2>
           <p className="text-xs text-gray-500 dark:text-gray-400">Personaliza el menú flotante interactivo de la tienda, crea nuevos nichos de mercado o elimina aquellos sin existencias.</p>
         </div>
@@ -149,7 +149,7 @@ export function NichesTab({ onRequestDeleteNiche }: NichesTabProps) {
                 {/* Header Info */}
                 <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                   <div>
-                    <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#8c9276]/15 text-[#636852] dark:text-[#b8be9e] text-[11px] font-semibold tracking-wide uppercase mb-2">
+                    <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/15 text-amber-800 dark:text-amber-200 text-[11px] font-semibold tracking-wide uppercase mb-2">
                       <Sparkles className="w-3.5 h-3.5" /> Simulador en Tiempo Real
                     </div>
                     <h3 className="text-xl sm:text-2xl font-bold tracking-tight text-gray-900 dark:text-gray-100">
@@ -295,7 +295,7 @@ export function NichesTab({ onRequestDeleteNiche }: NichesTabProps) {
                               onMouseEnter={() => setPreviewHoveredTab("niche1")}
                               className={`relative flex items-center gap-2 px-4 sm:px-5 py-2.5 rounded-full text-xs sm:text-sm font-medium transition-colors duration-300 ${
                                 isSelectedTab ? "text-gray-900 dark:text-white font-semibold" : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
-                              } ${activeEditingSlot === 1 ? "ring-2 ring-[#8c9276] ring-offset-2 ring-offset-transparent" : ""}`}
+                              } ${activeEditingSlot === 1 ? "ring-2 ring-amber-500 ring-offset-2 ring-offset-transparent" : ""}`}
                               title="Haz clic para editar este nicho"
                             >
                               {isSelectedTab && (
@@ -311,10 +311,10 @@ export function NichesTab({ onRequestDeleteNiche }: NichesTabProps) {
                                   className="absolute inset-0 rounded-full bg-white/40 dark:bg-white/10"
                                 />
                               )}
-                              <IconComponent className="relative z-10 w-4 h-4 text-[#8c9276]" />
+                              <IconComponent className="relative z-10 w-4 h-4 text-amber-600 dark:text-amber-400" />
                               <span className="relative z-10">{slot1.label || "Nicho 1"}</span>
                               {activeEditingSlot === 1 && (
-                                <span className="relative z-10 w-1.5 h-1.5 rounded-full bg-[#8c9276] -ml-1" />
+                                <span className="relative z-10 w-1.5 h-1.5 rounded-full bg-amber-500 -ml-1" />
                               )}
                             </button>
                           );
@@ -337,7 +337,7 @@ export function NichesTab({ onRequestDeleteNiche }: NichesTabProps) {
                               onMouseEnter={() => setPreviewHoveredTab("niche2")}
                               className={`relative flex items-center gap-2 px-4 sm:px-5 py-2.5 rounded-full text-xs sm:text-sm font-medium transition-colors duration-300 ${
                                 isSelectedTab ? "text-gray-900 dark:text-white font-semibold" : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
-                              } ${activeEditingSlot === 2 ? "ring-2 ring-[#8c9276] ring-offset-2 ring-offset-transparent" : ""}`}
+                              } ${activeEditingSlot === 2 ? "ring-2 ring-amber-500 ring-offset-2 ring-offset-transparent" : ""}`}
                               title="Haz clic para editar este nicho"
                             >
                               {isSelectedTab && (
@@ -353,10 +353,10 @@ export function NichesTab({ onRequestDeleteNiche }: NichesTabProps) {
                                   className="absolute inset-0 rounded-full bg-white/40 dark:bg-white/10"
                                 />
                               )}
-                              <IconComponent className="relative z-10 w-4 h-4 text-[#8c9276]" />
+                              <IconComponent className="relative z-10 w-4 h-4 text-amber-600 dark:text-amber-400" />
                               <span className="relative z-10">{slot2.label || "Nicho 2"}</span>
                               {activeEditingSlot === 2 && (
-                                <span className="relative z-10 w-1.5 h-1.5 rounded-full bg-[#8c9276] -ml-1" />
+                                <span className="relative z-10 w-1.5 h-1.5 rounded-full bg-amber-500 -ml-1" />
                               )}
                             </button>
                           );
@@ -393,22 +393,22 @@ export function NichesTab({ onRequestDeleteNiche }: NichesTabProps) {
                         onClick={() => setActiveEditingSlot(1)}
                         className={`p-5 rounded-2xl border transition-all cursor-pointer relative ${
                           isSelected 
-                            ? "bg-white dark:bg-[#202022] border-[#8c9276] shadow-lg ring-2 ring-[#8c9276]/20" 
+                            ? "bg-white dark:bg-[#202022] border-amber-500 shadow-lg ring-2 ring-amber-500/20" 
                             : "bg-white/60 dark:bg-[#1a1a1c]/60 border-gray-200/80 dark:border-white/5 hover:border-gray-300 dark:hover:border-white/20"
                         }`}
                       >
                         {isSelected && (
-                          <div className="absolute -top-2.5 right-4 px-2.5 py-0.5 rounded-full bg-[#8c9276] text-white text-[10px] font-bold uppercase tracking-wider shadow-sm">
+                          <div className="absolute -top-2.5 right-4 px-2.5 py-0.5 rounded-full bg-amber-500 text-white text-[10px] font-bold uppercase tracking-wider shadow-sm">
                             Seleccionado para editar
                           </div>
                         )}
 
                         <div className="flex items-center gap-3 mb-4">
-                          <div className="w-12 h-12 rounded-2xl bg-[#8c9276]/10 dark:bg-[#8c9276]/20 border border-[#8c9276]/30 flex items-center justify-center text-[#8c9276] shrink-0">
+                          <div className="w-12 h-12 rounded-2xl bg-amber-500/10 dark:bg-amber-500/20 border border-amber-500/30 flex items-center justify-center text-amber-600 dark:text-amber-400 shrink-0">
                             <CurrentIcon className="w-6 h-6" />
                           </div>
                           <div className="flex-1 min-w-0">
-                            <span className="text-[11px] font-mono uppercase tracking-wider text-[#8c9276] font-bold">
+                            <span className="text-[11px] font-mono uppercase tracking-wider text-amber-600 dark:text-amber-400 font-bold">
                               Nicho Destacado 1
                             </span>
                             <h4 className="text-base font-bold text-gray-900 dark:text-gray-100 truncate">
@@ -431,7 +431,7 @@ export function NichesTab({ onRequestDeleteNiche }: NichesTabProps) {
                               onClick={(e) => e.stopPropagation()}
                               onChange={(e) => handleUpdateNicheSlot(0, { label: e.target.value })}
                               placeholder="Ej: Iluminación"
-                              className="w-full px-3.5 py-2 rounded-xl text-xs font-medium bg-gray-50 dark:bg-[#151517] border border-gray-200 dark:border-white/10 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-1 focus:ring-[#8c9276]"
+                              className="w-full px-3.5 py-2 rounded-xl text-xs font-medium bg-gray-50 dark:bg-[#151517] border border-gray-200 dark:border-white/10 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-1 focus:ring-amber-500"
                             />
                           </div>
 
@@ -443,7 +443,7 @@ export function NichesTab({ onRequestDeleteNiche }: NichesTabProps) {
                               value={slot.category}
                               onClick={(e) => e.stopPropagation()}
                               onChange={(e) => handleUpdateNicheSlot(0, { category: e.target.value })}
-                              className="w-full px-3.5 py-2 rounded-xl text-xs font-medium bg-gray-50 dark:bg-[#151517] border border-gray-200 dark:border-white/10 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-1 focus:ring-[#8c9276]"
+                              className="w-full px-3.5 py-2 rounded-xl text-xs font-medium bg-gray-50 dark:bg-[#151517] border border-gray-200 dark:border-white/10 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-1 focus:ring-amber-500"
                             >
                               {categories.map((c) => (
                                 <option key={c} value={c}>{c}</option>
@@ -466,22 +466,22 @@ export function NichesTab({ onRequestDeleteNiche }: NichesTabProps) {
                         onClick={() => setActiveEditingSlot(2)}
                         className={`p-5 rounded-2xl border transition-all cursor-pointer relative ${
                           isSelected 
-                            ? "bg-white dark:bg-[#202022] border-[#8c9276] shadow-lg ring-2 ring-[#8c9276]/20" 
+                            ? "bg-white dark:bg-[#202022] border-amber-500 shadow-lg ring-2 ring-amber-500/20" 
                             : "bg-white/60 dark:bg-[#1a1a1c]/60 border-gray-200/80 dark:border-white/5 hover:border-gray-300 dark:hover:border-white/20"
                         }`}
                       >
                         {isSelected && (
-                          <div className="absolute -top-2.5 right-4 px-2.5 py-0.5 rounded-full bg-[#8c9276] text-white text-[10px] font-bold uppercase tracking-wider shadow-sm">
+                          <div className="absolute -top-2.5 right-4 px-2.5 py-0.5 rounded-full bg-amber-500 text-white text-[10px] font-bold uppercase tracking-wider shadow-sm">
                             Seleccionado para editar
                           </div>
                         )}
 
                         <div className="flex items-center gap-3 mb-4">
-                          <div className="w-12 h-12 rounded-2xl bg-[#8c9276]/10 dark:bg-[#8c9276]/20 border border-[#8c9276]/30 flex items-center justify-center text-[#8c9276] shrink-0">
+                          <div className="w-12 h-12 rounded-2xl bg-amber-500/10 dark:bg-amber-500/20 border border-amber-500/30 flex items-center justify-center text-amber-600 dark:text-amber-400 shrink-0">
                             <CurrentIcon className="w-6 h-6" />
                           </div>
                           <div className="flex-1 min-w-0">
-                            <span className="text-[11px] font-mono uppercase tracking-wider text-[#8c9276] font-bold">
+                            <span className="text-[11px] font-mono uppercase tracking-wider text-amber-600 dark:text-amber-400 font-bold">
                               Nicho Destacado 2
                             </span>
                             <h4 className="text-base font-bold text-gray-900 dark:text-gray-100 truncate">
@@ -504,7 +504,7 @@ export function NichesTab({ onRequestDeleteNiche }: NichesTabProps) {
                               onClick={(e) => e.stopPropagation()}
                               onChange={(e) => handleUpdateNicheSlot(1, { label: e.target.value })}
                               placeholder="Ej: Textiles"
-                              className="w-full px-3.5 py-2 rounded-xl text-xs font-medium bg-gray-50 dark:bg-[#151517] border border-gray-200 dark:border-white/10 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-1 focus:ring-[#8c9276]"
+                              className="w-full px-3.5 py-2 rounded-xl text-xs font-medium bg-gray-50 dark:bg-[#151517] border border-gray-200 dark:border-white/10 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-1 focus:ring-amber-500"
                             />
                           </div>
 
@@ -516,7 +516,7 @@ export function NichesTab({ onRequestDeleteNiche }: NichesTabProps) {
                               value={slot.category}
                               onClick={(e) => e.stopPropagation()}
                               onChange={(e) => handleUpdateNicheSlot(1, { category: e.target.value })}
-                              className="w-full px-3.5 py-2 rounded-xl text-xs font-medium bg-gray-50 dark:bg-[#151517] border border-gray-200 dark:border-white/10 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-1 focus:ring-[#8c9276]"
+                              className="w-full px-3.5 py-2 rounded-xl text-xs font-medium bg-gray-50 dark:bg-[#151517] border border-gray-200 dark:border-white/10 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-1 focus:ring-amber-500"
                             >
                               {categories.map((c) => (
                                 <option key={c} value={c}>{c}</option>
@@ -534,7 +534,7 @@ export function NichesTab({ onRequestDeleteNiche }: NichesTabProps) {
                   <div className="flex items-center justify-between">
                     <div>
                       <h4 className="text-sm font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
-                        <Sliders className="w-4 h-4 text-[#8c9276]" />
+                        <Sliders className="w-4 h-4 text-amber-600 dark:text-amber-400" />
                         Catálogo de Iconos para el Nicho {activeEditingSlot} ({activeEditingSlot === 1 ? nicheSlots[0]?.label || "Nicho 1" : nicheSlots[1]?.label || "Nicho 2"})
                       </h4>
                       <p className="text-xs text-gray-500 dark:text-gray-400">
@@ -581,8 +581,8 @@ export function NichesTab({ onRequestDeleteNiche }: NichesTabProps) {
                           onClick={() => handleSelectIconForActiveSlot(item.name)}
                           className={`group flex flex-col items-center justify-center min-w-[94px] max-w-[94px] p-3 rounded-2xl border transition-all shrink-0 select-none ${
                             isIconSelected
-                              ? "bg-[#8c9276] text-white border-[#8c9276] shadow-md scale-105"
-                              : "bg-white dark:bg-[#202022] border-gray-200/80 dark:border-white/10 text-gray-700 dark:text-gray-300 hover:border-[#8c9276]/60 hover:shadow-sm"
+                              ? "bg-amber-500 text-white border-amber-500 shadow-md scale-105"
+                              : "bg-white dark:bg-[#202022] border-gray-200/80 dark:border-white/10 text-gray-700 dark:text-gray-300 hover:border-amber-500/60 hover:shadow-sm"
                           }`}
                         >
                           <div className={`w-9 h-9 rounded-xl flex items-center justify-center mb-1.5 transition-transform group-hover:scale-110 ${
@@ -675,7 +675,7 @@ export function NichesTab({ onRequestDeleteNiche }: NichesTabProps) {
  <div className="pt-8 border-t border-gray-100 dark:border-white/5 space-y-6">
  <div>
  <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
- <Tag className="w-5 h-5 text-[#8c9276]" /> Badges & Etiquetas de Marketing
+ <Tag className="w-5 h-5 text-amber-600 dark:text-amber-400" /> Badges & Etiquetas de Marketing
  </h2>
  <p className="text-xs text-gray-500 dark:text-gray-400">
  Crea o elimina distintivos comerciales para destacar tus piezas (ej: Más Vendido, Bestseller, Edición Limitada).
