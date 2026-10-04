@@ -289,7 +289,6 @@ CREATE TABLE IF NOT EXISTS public.coupons (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
-ALTER TABLE public.coupons ADD COLUMN IF NOT EXISTS id TEXT;
 ALTER TABLE public.coupons ADD COLUMN IF NOT EXISTS code TEXT;
 ALTER TABLE public.coupons ADD COLUMN IF NOT EXISTS title TEXT;
 ALTER TABLE public.coupons ADD COLUMN IF NOT EXISTS description TEXT;
@@ -308,7 +307,14 @@ ALTER TABLE public.coupons ADD COLUMN IF NOT EXISTS expires_at TIMESTAMPTZ;
 ALTER TABLE public.coupons ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ DEFAULT now();
 ALTER TABLE public.coupons ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ DEFAULT now();
 
-UPDATE public.coupons SET id = 'coup-' || lower(code) WHERE id IS NULL;
+-- Garantizar default gen_random_uuid() sobre la columna id (compatible tanto con UUID como con TEXT)
+DO $$
+BEGIN
+  ALTER TABLE public.coupons ALTER COLUMN id SET DEFAULT gen_random_uuid();
+EXCEPTION WHEN OTHERS THEN
+  NULL;
+END $$;
+
 UPDATE public.coupons SET title = 'Cupón ' || code WHERE title IS NULL;
 UPDATE public.coupons SET discount_type = 'percent' WHERE discount_type IS NULL;
 UPDATE public.coupons SET scope = 'all' WHERE scope IS NULL;

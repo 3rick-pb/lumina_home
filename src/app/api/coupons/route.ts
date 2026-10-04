@@ -44,7 +44,6 @@ export interface DbRedemption {
 
 const INITIAL_OFFICIAL_COUPONS = [
   {
-    id: 'coup-lumina10',
     code: 'LUMINA10',
     title: 'Bienvenida Lumina Home',
     description: '10% de descuento directo en tu primera compra en todo el catálogo.',
@@ -62,7 +61,6 @@ const INITIAL_OFFICIAL_COUPONS = [
     expires_at: null,
   },
   {
-    id: 'coup-amigos20',
     code: 'AMIGOS-VIP20',
     title: 'Pase Exclusivo Amigos & Familia',
     description: '20% OFF en toda la tienda para compartir con tus amigos y grupos.',
@@ -80,7 +78,6 @@ const INITIAL_OFFICIAL_COUPONS = [
     expires_at: new Date(Date.now() + 30 * 86400000).toISOString(),
   },
   {
-    id: 'coup-luxlights25',
     code: 'LUX-LIGHTS25',
     title: 'Flash Sale Iluminación de Autor',
     description: '25% OFF en lámparas esculturales y luminarias de diseño.',
@@ -98,7 +95,6 @@ const INITIAL_OFFICIAL_COUPONS = [
     expires_at: new Date(Date.now() + 15 * 86400000).toISOString(),
   },
   {
-    id: 'coup-enviogratis',
     code: 'ENVIOGRATIS',
     title: 'Envío Bonificado 100%',
     description: 'Cubre el costo de despacho garantizado a cualquier ciudad del Ecuador.',
@@ -349,7 +345,7 @@ export async function POST(request: Request) {
       );
     }
 
-    const newId = `coup-${Date.now()}-${Math.floor(100 + Math.random() * 900)}`;
+    const newId = crypto.randomUUID();
 
     const { data: inserted, error: insertErr } = await supabase
       .from('coupons')

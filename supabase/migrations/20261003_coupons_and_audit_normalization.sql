@@ -39,7 +39,6 @@ CREATE TABLE IF NOT EXISTS public.coupons (
 );
 
 -- Migración segura de TODAS las columnas en caso de que la tabla 'coupons' ya existiera previamente
-ALTER TABLE public.coupons ADD COLUMN IF NOT EXISTS id TEXT;
 ALTER TABLE public.coupons ADD COLUMN IF NOT EXISTS code TEXT;
 ALTER TABLE public.coupons ADD COLUMN IF NOT EXISTS title TEXT;
 ALTER TABLE public.coupons ADD COLUMN IF NOT EXISTS description TEXT;
@@ -58,8 +57,15 @@ ALTER TABLE public.coupons ADD COLUMN IF NOT EXISTS expires_at TIMESTAMPTZ;
 ALTER TABLE public.coupons ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ DEFAULT now();
 ALTER TABLE public.coupons ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ DEFAULT now();
 
+-- Garantizar default gen_random_uuid() sobre la columna id (compatible tanto con UUID como con TEXT)
+DO $$
+BEGIN
+  ALTER TABLE public.coupons ALTER COLUMN id SET DEFAULT gen_random_uuid();
+EXCEPTION WHEN OTHERS THEN
+  NULL;
+END $$;
+
 -- Población de valores por defecto para filas preexistentes que pudiesen tener valores nulos
-UPDATE public.coupons SET id = 'coup-' || lower(code) WHERE id IS NULL;
 UPDATE public.coupons SET title = 'Cupón ' || code WHERE title IS NULL;
 UPDATE public.coupons SET discount_type = 'percent' WHERE discount_type IS NULL;
 UPDATE public.coupons SET scope = 'all' WHERE scope IS NULL;
@@ -84,15 +90,15 @@ END $$;
 CREATE INDEX IF NOT EXISTS idx_coupons_code ON public.coupons(code);
 CREATE INDEX IF NOT EXISTS idx_coupons_active ON public.coupons(is_active, expires_at);
 
--- Semillas oficiales de cupones de lanzamiento (si no existen aún)
+-- Semillas oficiales de cupones de lanzamiento (sin forzar id para evitar conflicto de tipo UUID / TEXT)
 INSERT INTO public.coupons (
-  id, code, title, description, discount_percent, discount_type, fixed_amount,
+  code, title, description, discount_percent, discount_type, fixed_amount,
   scope, target_niche, min_order_amount, max_uses, max_uses_per_user, used_count, share_count, is_active, expires_at
 ) VALUES
-  ('coup-lumina10', 'LUMINA10', 'Bienvenida Lumina Home', '10% de descuento directo en tu primera compra en todo el catálogo.', 10, 'percent', 0, 'all', NULL, 0, NULL, 1, 0, 42, true, NULL),
-  ('coup-amigos20', 'AMIGOS-VIP20', 'Pase Exclusivo Amigos & Familia', '20% OFF en toda la tienda para compartir con tus amigos y grupos.', 20, 'percent', 0, 'all', NULL, 30, 50, 1, 0, 19, true, now() + interval '30 days'),
-  ('coup-luxlights25', 'LUX-LIGHTS25', 'Flash Sale Iluminación de Autor', '25% OFF en lámparas esculturales y luminarias de diseño.', 25, 'percent', 0, 'niche', 'Iluminación', 50, 30, 1, 0, 27, true, now() + interval '15 days'),
-  ('coup-enviogratis', 'ENVIOGRATIS', 'Envío Bonificado 100%', 'Cubre el costo de despacho garantizado a cualquier ciudad del Ecuador.', 0, 'free_shipping', 0, 'all', NULL, 40, NULL, 1, 0, 56, true, NULL)
+  ('LUMINA10', 'Bienvenida Lumina Home', '10% de descuento directo en tu primera compra en todo el catálogo.', 10, 'percent', 0, 'all', NULL, 0, NULL, 1, 0, 42, true, NULL),
+  ('AMIGOS-VIP20', 'Pase Exclusivo Amigos & Familia', '20% OFF en toda la tienda para compartir con tus amigos y grupos.', 20, 'percent', 0, 'all', NULL, 30, 50, 1, 0, 19, true, now() + interval '30 days'),
+  ('LUX-LIGHTS25', 'Flash Sale Iluminación de Autor', '25% OFF en lámparas esculturales y luminarias de diseño.', 25, 'percent', 0, 'niche', 'Iluminación', 50, 30, 1, 0, 27, true, now() + interval '15 days'),
+  ('ENVIOGRATIS', 'Envío Bonificado 100%', 'Cubre el costo de despacho garantizado a cualquier ciudad del Ecuador.', 0, 'free_shipping', 0, 'all', NULL, 40, NULL, 1, 0, 56, true, NULL)
 ON CONFLICT (code) DO NOTHING;
 
 -- =========================================================================================
