@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { CreditCard, Plus, Sparkles } from "lucide-react";
+import { CreditCard, Plus } from "lucide-react";
 import { useUserStore, syncCardsToCloud } from "@/lib/userStore";
 import { CloudSyncStatus } from "../CloudSyncStatus";
 import { LuminaCardFolderItem } from "@/components/ui/CardFolder";

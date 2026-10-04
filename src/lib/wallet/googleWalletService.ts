@@ -26,7 +26,7 @@ function base64UrlEncode(input: string | Buffer): string {
 /**
  * Normalizes private key from environment variables.
  */
-function cleanPrivateKey(rawKey?: string): string {
+export function cleanPrivateKey(rawKey?: string): string {
   if (!rawKey) return '';
   let cleaned = rawKey.trim();
   if (cleaned.includes('\\n')) {

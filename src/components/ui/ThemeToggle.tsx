@@ -59,8 +59,6 @@ export function executeCircleBlurThemeTransition(
 ) {
   ensureCircleBlurStyles();
 
-  const nextResolved: "light" | "dark" = getResolvedTheme(nextMode);
-
   if (typeof document === "undefined") {
     setMode(nextMode, userId);
     return;

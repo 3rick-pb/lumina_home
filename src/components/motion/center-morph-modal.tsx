@@ -19,7 +19,6 @@ import {
 } from "react";
 import { createPortal } from "react-dom";
 import { EASE_OUT } from "@/lib/ease";
-import { PresenceGate } from "@/lib/presence-gate";
 import { cn } from "@/lib/utils";
 import { useThemeStore, getResolvedTheme } from "@/lib/themeStore";
 

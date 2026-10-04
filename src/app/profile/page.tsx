@@ -222,9 +222,9 @@ export default function ProfilePage() {
     if (typeof window !== "undefined") {
       window.scrollTo({ top: 0, left: 0, behavior: "instant" });
       try {
-        const lenis = (window as any).lenis;
-        if (lenis && typeof lenis.scrollTo === "function") {
-          lenis.scrollTo(0, { immediate: true });
+        const win = window as unknown as { lenis?: { scrollTo: (target: number, opts?: { immediate?: boolean }) => void } };
+        if (win.lenis && typeof win.lenis.scrollTo === "function") {
+          win.lenis.scrollTo(0, { immediate: true });
         }
       } catch {}
     }

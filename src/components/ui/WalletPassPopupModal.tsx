@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect } from "react";
+import React, { useEffect, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Truck, ExternalLink } from "lucide-react";
@@ -42,11 +42,13 @@ export function WalletPassPopupModal({
   date,
 }: WalletPassPopupModalProps) {
   const { orders } = useUserStore();
+  const { mode } = useThemeStore();
+  const isDark = getResolvedTheme(mode) === "dark";
 
-  const handleOpenChange = (nextOpen: boolean) => {
+  const handleOpenChange = useCallback((nextOpen: boolean) => {
     if (onOpenChange) onOpenChange(nextOpen);
     if (!nextOpen && onClose) onClose();
-  };
+  }, [onOpenChange, onClose]);
 
   // Keyboard navigation & body scroll lock
   useEffect(() => {
@@ -56,7 +58,7 @@ export function WalletPassPopupModal({
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [open]);
+  }, [open, handleOpenChange]);
 
   const resolvedOrder: Order | null =
     order ||
@@ -107,9 +109,6 @@ export function WalletPassPopupModal({
   const qrImageUrl = `https://api.qrserver.com/v1/create-qr-code/?size=260x260&margin=6&ecc=M&data=${encodeURIComponent(
     googlePassEndpoint
   )}`;
-
-  const { mode } = useThemeStore();
-  const isDark = getResolvedTheme(mode) === "dark";
 
   if (typeof document === "undefined") return null;
 

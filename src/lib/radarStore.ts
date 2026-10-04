@@ -96,7 +96,7 @@ export function calculateIntentScore(purchasesCount: number, totalSpent: number,
   return Math.min(score, 98);
 }
 
-const DEFAULT_ECUADOR_CITIES = ['Quito', 'Guayaquil', 'Cuenca', 'Santo Domingo', 'Manta', 'Ambato', 'Loja', 'Puyo'];
+export const DEFAULT_ECUADOR_CITIES = ['Quito', 'Guayaquil', 'Cuenca', 'Santo Domingo', 'Manta', 'Ambato', 'Loja', 'Puyo'];
 
 /**
  * Extracts connected clients from Supabase Realtime presenceState.

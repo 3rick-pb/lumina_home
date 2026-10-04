@@ -154,7 +154,7 @@ export const canonicalCategory = (cat: string, knownCategories: string[]): strin
 };
 
 // Initial pieces for niches to ensure no category is shown empty
-const INITIAL_NICHE_PRODUCTS: CatalogProduct[] = [
+export const INITIAL_NICHE_PRODUCTS: CatalogProduct[] = [
   {
     id: "prod-ceramica-1",
     title: "Jarrón Luna",

@@ -6,7 +6,7 @@ import { useCatalogStore } from "@/lib/catalogStore";
 import { useUserStore, hydrateStoreFromClient } from "@/lib/userStore";
 import { useRadarStore } from "@/lib/radarStore";
 import { useCartStore } from "@/lib/store";
-import { useThemeStore, getResolvedTheme } from "@/lib/themeStore";
+import { useThemeStore } from "@/lib/themeStore";
 import { useBrand } from "@/core/hooks/useBrand";
 import { initSilentAudioEngine } from "@/lib/soundUtils";
 
