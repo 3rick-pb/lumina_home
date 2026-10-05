@@ -97,7 +97,7 @@ export function GoogleDriveAssetPickerModal({
     if (!quickUrl.trim()) return;
 
     const normalized = formatGoogleDriveUrl(quickUrl.trim());
-    const name = quickName.trim() || `LUMINA-FOTO-${Date.now().toString().slice(-4)}.jpg`;
+    const name = quickName.trim() || `IMG-${Date.now().toString().slice(-4)}.jpg`;
 
     await addPhoto({
       name,
@@ -164,47 +164,42 @@ export function GoogleDriveAssetPickerModal({
           className="relative z-10 w-full max-w-4xl max-h-[88vh] flex flex-col rounded-[2.5rem] bg-[#f8f9fa] dark:bg-[#18181b] border border-gray-200 dark:border-white/10 shadow-2xl overflow-hidden select-none"
         >
           {/* Header */}
-          <div className="px-4 py-3 sm:px-6 sm:py-4 border-b border-gray-200/80 dark:border-white/10 bg-white/95 dark:bg-[#202024]/95 backdrop-blur-xl flex items-center justify-between gap-3 shrink-0">
-            <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
-              <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center shrink-0">
-                <GoogleDriveIcon className="w-4 h-4 sm:w-5 sm:h-5" />
+          <div className="px-4 py-3 sm:px-6 sm:py-3.5 border-b border-stone-200 dark:border-stone-800 bg-white/95 dark:bg-stone-900/95 backdrop-blur-xl flex items-center justify-between gap-3 shrink-0">
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="w-8 h-8 rounded-lg bg-stone-100 dark:bg-stone-800 border border-stone-200 dark:border-stone-700 flex items-center justify-center shrink-0">
+                <GoogleDriveIcon className="w-4 h-4" />
               </div>
               <div className="min-w-0">
-                <div className="flex items-center gap-1.5 sm:gap-2">
-                  <span className="text-[9px] sm:text-[10px] font-mono font-bold uppercase tracking-wider px-1.5 sm:px-2 py-0.5 rounded bg-amber-500/15 text-amber-700 dark:text-amber-300">
-                    FOTOPRODUCTOS
-                  </span>
-                  <span className="text-[9px] sm:text-[10px] text-gray-500 font-mono truncate hidden xs:inline">
-                    {isMultiMode ? "Selección Múltiple" : "Selección Simple"}
-                  </span>
-                </div>
-                <h3 className="text-sm sm:text-lg font-bold text-gray-900 dark:text-gray-100 truncate">
-                  {title}
+                <h3 className="text-sm sm:text-base font-semibold text-stone-900 dark:text-stone-100 truncate">
+                  {title || "Seleccionar fotografía"}
                 </h3>
+                <p className="text-[11px] text-stone-400 font-mono">
+                  {isMultiMode ? "Selección múltiple" : "Selección simple"}
+                </p>
               </div>
             </div>
 
-            {/* Drive / Cloud Indicator Pill */}
+            {/* Status & Actions */}
             <div className="flex items-center gap-2">
               {settings.isConnected ? (
-                <div className="hidden xs:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-700 dark:text-emerald-300 text-[10px] font-semibold">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                  <span className="truncate max-w-[140px]">{settings.accountEmail || "Drive Conectado"}</span>
+                <div className="hidden xs:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/60 text-emerald-800 dark:text-emerald-300 text-[10px] font-medium">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-600 dark:bg-emerald-400" />
+                  <span className="truncate max-w-[140px]">{settings.accountEmail || "Conectado"}</span>
                 </div>
               ) : (
-                <div className="hidden xs:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-rose-500/10 border border-rose-500/20 text-rose-600 dark:text-rose-400 text-[10px] font-semibold">
-                  <span className="w-1.5 h-1.5 rounded-full bg-rose-500" />
-                  <span>Conexión Requerida</span>
+                <div className="hidden xs:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-stone-100 dark:bg-stone-800 border border-stone-200 dark:border-stone-700 text-stone-500 text-[10px] font-medium">
+                  <span className="w-1.5 h-1.5 rounded-full bg-stone-400" />
+                  <span>Sin conexión</span>
                 </div>
               )}
 
               <button
                 type="button"
                 onClick={() => setShowQuickAddModal(true)}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold transition-all shadow-xs cursor-pointer active:scale-95"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-stone-900 dark:bg-stone-100 hover:bg-stone-800 dark:hover:bg-white text-white dark:text-stone-900 text-xs font-medium transition-colors cursor-pointer"
               >
                 <Plus className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">Subir Foto al Vuelo</span>
+                <span className="hidden sm:inline">Subir foto</span>
               </button>
 
               <button
@@ -281,49 +276,49 @@ export function GoogleDriveAssetPickerModal({
           {/* Files Grid View */}
           <div className="p-4 sm:p-6 overflow-y-auto flex-1">
             {!settings.isConnected ? (
-              <div className="p-8 sm:p-12 text-center flex flex-col items-center justify-center space-y-4">
-                <div className="w-16 h-16 rounded-3xl bg-amber-500/10 flex items-center justify-center">
-                  <GoogleDriveIcon className="w-8 h-8" />
+              <div className="p-8 sm:p-12 text-center flex flex-col items-center justify-center space-y-5 max-w-sm mx-auto">
+                <div className="w-12 h-12 rounded-xl bg-stone-100 dark:bg-stone-800 border border-stone-200 dark:border-stone-700 flex items-center justify-center">
+                  <GoogleDriveIcon className="w-6 h-6" />
                 </div>
-                <div className="max-w-sm space-y-1">
-                  <h4 className="text-base font-bold text-gray-900 dark:text-gray-100">
-                    Google Drive no conectado
+                <div className="space-y-1.5">
+                  <h4 className="text-sm sm:text-base font-semibold text-stone-900 dark:text-stone-100">
+                    Conexión con Google Drive
                   </h4>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">
-                    Para seleccionar las fotos de tus productos, debes conectar tu cuenta autorizada de Google Drive.
+                  <p className="text-xs text-stone-500 dark:text-stone-400 leading-relaxed">
+                    Vincula tu unidad para explorar y asignar fotografías al producto.
                   </p>
                 </div>
 
                 {error && (
-                  <div className="w-full max-w-sm p-3.5 rounded-2xl bg-rose-500/10 border border-rose-500/30 text-rose-800 dark:text-rose-200 text-xs font-medium flex items-start justify-between gap-2 text-left">
+                  <div className="w-full p-3 rounded-xl bg-stone-100 dark:bg-stone-800 border border-stone-300 dark:border-stone-700 text-stone-800 dark:text-stone-200 text-xs flex items-start justify-between gap-2 text-left">
                     <div className="flex items-start gap-2">
-                      <AlertTriangle className="w-4 h-4 text-rose-600 dark:text-rose-400 shrink-0 mt-0.5" />
+                      <AlertTriangle className="w-4 h-4 text-stone-600 dark:text-stone-400 shrink-0 mt-0.5" />
                       <p className="leading-relaxed">{error}</p>
                     </div>
                     <button
                       type="button"
                       onClick={() => clearError()}
-                      className="text-stone-400 hover:text-stone-700 dark:hover:text-stone-200 p-0.5"
+                      className="text-stone-400 hover:text-stone-700 dark:hover:text-stone-200 p-0.5 cursor-pointer shrink-0"
                     >
                       <X className="w-3.5 h-3.5" />
                     </button>
                   </div>
                 )}
 
-                <div className="w-full max-w-sm space-y-2.5 pt-2">
-                    <button
-                      type="button"
-                      onClick={() => connectGoogleOAuth()}
-                      disabled={isSyncing}
-                      className="w-full py-3.5 px-4 rounded-2xl bg-stone-900 dark:bg-white hover:bg-stone-800 dark:hover:bg-stone-100 text-white dark:text-stone-900 font-bold text-[13px] shadow-md transition-all cursor-pointer flex items-center justify-center gap-3 disabled:opacity-60"
-                    >
-                      <GoogleLogoIcon className="w-5 h-5" />
-                      <span>{isSyncing ? "Conectando con Google..." : "Iniciar sesión con Google Drive"}</span>
-                    </button>
-                    <p className="text-[11px] text-gray-500 text-center pt-1">
-                      Se abrirá una ventana de Google para autorizar el acceso (sin cerrar tu sesión admin).
-                    </p>
-                  </div>
+                <div className="w-full space-y-2 pt-1">
+                  <button
+                    type="button"
+                    onClick={() => connectGoogleOAuth()}
+                    disabled={isSyncing}
+                    className="w-full py-2.5 px-4 rounded-xl bg-stone-900 dark:bg-stone-100 hover:bg-stone-800 dark:hover:bg-white text-white dark:text-stone-900 font-medium text-xs shadow-xs transition-colors cursor-pointer flex items-center justify-center gap-2.5 disabled:opacity-50"
+                  >
+                    <GoogleLogoIcon className="w-4 h-4" />
+                    <span>{isSyncing ? "Conectando..." : "Conectar Google Drive"}</span>
+                  </button>
+                  <p className="text-[11px] text-stone-400 dark:text-stone-500 text-center">
+                    Acceso de solo lectura para selección de imágenes.
+                  </p>
+                </div>
               </div>
             ) : filteredFiles.length === 0 ? (
               <div className="p-10 sm:p-14 text-center flex flex-col items-center justify-center space-y-4 border border-dashed border-gray-200 dark:border-white/10 rounded-3xl">

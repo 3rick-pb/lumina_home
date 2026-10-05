@@ -35,10 +35,10 @@ export interface GoogleDriveSettings {
 }
 
 export const INITIAL_DRIVE_FOLDERS: GoogleDriveFolder[] = [
-  { id: "folder_lumina_catalog_2026", name: "Fotoproductos - Catálogo Lumina", itemCount: 0 },
-  { id: "folder_iluminacion_premium", name: "Iluminación & Lámparas", itemCount: 0 },
-  { id: "folder_textiles_tapiceria", name: "Textiles & Tapicería", itemCount: 0 },
-  { id: "folder_ceramica_decoracion", name: "Cerámica & Decoración", itemCount: 0 },
+  { id: "folder_lumina_catalog_2026", name: "Catálogo General", itemCount: 0 },
+  { id: "folder_iluminacion_premium", name: "Iluminación", itemCount: 0 },
+  { id: "folder_textiles_tapiceria", name: "Textiles", itemCount: 0 },
+  { id: "folder_ceramica_decoracion", name: "Decoración", itemCount: 0 },
 ];
 
 export const INITIAL_DRIVE_FILES: GoogleDriveFile[] = [];
@@ -53,9 +53,8 @@ interface GoogleDriveState {
   clearError: () => void;
   activeView: GoogleDriveActiveTab;
   setActiveView: (view: GoogleDriveActiveTab) => void;
-  setGoogleClientId: (clientId: string) => void;
   loadSettings: () => Promise<void>;
-  connectGoogleOAuth: (customClientId?: string) => Promise<void>;
+  connectGoogleOAuth: () => Promise<void>;
   loadGoogleDriveFiles: (tokenOverride?: string) => Promise<void>;
   handleOAuthReturn: () => Promise<void>;
   disconnectAccount: () => Promise<boolean>;
@@ -100,7 +99,7 @@ function loadFromLocal(): GoogleDriveSettings {
     accountName: "",
     connectedAt: undefined,
     selectedFolderId: "folder_lumina_catalog_2026",
-    selectedFolderName: "Fotoproductos - Catálogo Lumina",
+    selectedFolderName: "Catálogo General",
     availableFolders: INITIAL_DRIVE_FOLDERS,
     files: [],
     backupAt: undefined,
@@ -170,19 +169,6 @@ export const useGoogleDriveStore = create<GoogleDriveState>((set, get) => ({
 
   clearError: () => set({ error: null }),
 
-  setGoogleClientId: (clientId: string) => {
-    const cleanId = clientId.trim();
-    if (typeof window !== "undefined") {
-      localStorage.setItem("lumina_google_client_id", cleanId);
-    }
-    const updated = {
-      ...get().settings,
-      googleClientId: cleanId,
-    };
-    set({ settings: updated, error: null });
-    saveToLocal(updated);
-  },
-
   loadSettings: async () => {
     set({ isLoading: true, error: null });
     try {
@@ -219,18 +205,11 @@ export const useGoogleDriveStore = create<GoogleDriveState>((set, get) => ({
     set({ settings: loadFromLocal(), isLoading: false });
   },
 
-  connectGoogleOAuth: async (customClientId?: string) => {
+  connectGoogleOAuth: async () => {
     set({ isSyncing: true, error: null });
     try {
-      // Resolve Client ID from all potential sources:
-      let clientId = customClientId?.trim() || get().settings.googleClientId?.trim();
-
-      if (!clientId && typeof window !== "undefined") {
-        const stored = localStorage.getItem("lumina_google_client_id");
-        if (stored && stored.trim() && !stored.includes("YOUR_GOOGLE_CLIENT_ID")) {
-          clientId = stored.trim();
-        }
-      }
+      // Resolve Client ID from environment or server settings
+      let clientId = get().settings.googleClientId?.trim();
 
       if (!clientId) {
         const envId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
@@ -239,7 +218,7 @@ export const useGoogleDriveStore = create<GoogleDriveState>((set, get) => ({
         }
       }
 
-      // Check server API runtime env
+      // Check server API runtime env if not yet loaded in client bundle
       if (!clientId) {
         try {
           const res = await fetch("/api/admin/google-drive");
@@ -255,7 +234,7 @@ export const useGoogleDriveStore = create<GoogleDriveState>((set, get) => ({
 
       if (!clientId) {
         set({
-          error: "Google Client ID no detectado. Ingresa tu Google Client ID en el botón '⚙️ Configurar Client ID' abajo para habilitar la conexión.",
+          error: "Configuración de Google no disponible. Verifica que la variable de entorno NEXT_PUBLIC_GOOGLE_CLIENT_ID esté configurada en el servidor.",
           isSyncing: false,
         });
         return;
@@ -339,7 +318,7 @@ export const useGoogleDriveStore = create<GoogleDriveState>((set, get) => ({
       if (!res.ok) {
         if (res.status === 401) {
           set({
-            error: "La sesión de Google Drive expiró. Por favor haz clic en 'Iniciar sesión con Google Drive' para renovar el acceso.",
+            error: "La sesión de Google Drive ha expirado. Haz clic en 'Conectar Google Drive' para renovar el acceso.",
             isSyncing: false,
           });
           return;
@@ -381,7 +360,7 @@ export const useGoogleDriveStore = create<GoogleDriveState>((set, get) => ({
       // 2. Fetch real folders from Google Drive API
       const folderQuery = encodeURIComponent("trashed = false and mimeType = 'application/vnd.google-apps.folder'");
       let realFolders: GoogleDriveFolder[] = [
-        { id: "folder_lumina_catalog_2026", name: "Fotoproductos - Catálogo Lumina", itemCount: driveFiles.length },
+        { id: "folder_lumina_catalog_2026", name: "Catálogo General", itemCount: driveFiles.length },
       ];
 
       try {
@@ -541,7 +520,7 @@ export const useGoogleDriveStore = create<GoogleDriveState>((set, get) => ({
         availableFolders: recalculateFolderCounts(filteredFolders, remappedFiles),
         files: remappedFiles,
         selectedFolderId: "folder_lumina_catalog_2026",
-        selectedFolderName: "Lumina Home - Catálogo Fotográfico 2026",
+        selectedFolderName: "Catálogo General",
       };
 
       try {
@@ -566,11 +545,11 @@ export const useGoogleDriveStore = create<GoogleDriveState>((set, get) => ({
     try {
       const photoId = "id" in photoData && photoData.id 
         ? photoData.id 
-        : `lumina_drive_img_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
+        : `img_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
 
       const newFile: GoogleDriveFile = {
         id: photoId,
-        name: photoData.name || "NUEVA-FOTOGRAFIA-LUMINA.jpg",
+        name: photoData.name || "FOTOGRAFIA.jpg",
         mimeType: photoData.mimeType || "image/jpeg",
         cdnUrl: photoData.cdnUrl,
         thumbnailUrl: photoData.thumbnailUrl || photoData.cdnUrl,
@@ -612,8 +591,8 @@ export const useGoogleDriveStore = create<GoogleDriveState>((set, get) => ({
     set({ isSyncing: true });
     try {
       const formattedItems: GoogleDriveFile[] = photosList.map((p, idx) => ({
-        id: "id" in p && p.id ? p.id : `lumina_drive_img_${Date.now()}_${idx}_${Math.random().toString(36).substring(2, 6)}`,
-        name: p.name || `FOTO-LUMINA-${idx + 1}.jpg`,
+        id: "id" in p && p.id ? p.id : `img_${Date.now()}_${idx}_${Math.random().toString(36).substring(2, 6)}`,
+        name: p.name || `FOTO-${idx + 1}.jpg`,
         mimeType: p.mimeType || "image/jpeg",
         cdnUrl: p.cdnUrl,
         thumbnailUrl: p.thumbnailUrl || p.cdnUrl,
@@ -774,7 +753,7 @@ export const useGoogleDriveStore = create<GoogleDriveState>((set, get) => ({
   exportBackupJson: () => {
     try {
       const payload = {
-        app: "Lumina Home",
+        app: "Fotoproductos",
         type: "MEDIA_BANK_DATABASE_BACKUP",
         exportedAt: new Date().toISOString(),
         settings: get().settings,
@@ -785,7 +764,7 @@ export const useGoogleDriveStore = create<GoogleDriveState>((set, get) => ({
       const a = document.createElement("a");
       const dateStr = new Date().toISOString().slice(0, 10);
       a.href = url;
-      a.download = `lumina_banco_fotos_backup_${dateStr}.json`;
+      a.download = `fotoproductos_backup_${dateStr}.json`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
