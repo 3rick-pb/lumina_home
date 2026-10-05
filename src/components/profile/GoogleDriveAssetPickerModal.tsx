@@ -29,7 +29,7 @@ export function GoogleDriveAssetPickerModal({
   onClose,
   onSelectImage,
   onSelectMultipleImages,
-  title = "Seleccionar Imagen desde el Banco de Fotos",
+  title = "Seleccionar de Fotoproductos",
   allowMultiple = false,
 }: GoogleDriveAssetPickerModalProps) {
   const { 
@@ -168,7 +168,7 @@ export function GoogleDriveAssetPickerModal({
               <div className="min-w-0">
                 <div className="flex items-center gap-1.5 sm:gap-2">
                   <span className="text-[9px] sm:text-[10px] font-mono font-bold uppercase tracking-wider px-1.5 sm:px-2 py-0.5 rounded bg-amber-500/15 text-amber-700 dark:text-amber-300">
-                    BANCO DE MEDIOS
+                    FOTOPRODUCTOS
                   </span>
                   <span className="text-[9px] sm:text-[10px] text-gray-500 font-mono truncate hidden xs:inline">
                     {isMultiMode ? "Selección Múltiple" : "Selección Simple"}

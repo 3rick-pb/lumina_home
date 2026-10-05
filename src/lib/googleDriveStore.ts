@@ -32,146 +32,13 @@ export interface GoogleDriveSettings {
 }
 
 export const INITIAL_DRIVE_FOLDERS: GoogleDriveFolder[] = [
-  { id: "folder_lumina_catalog_2026", name: "Lumina Home - Catálogo Fotográfico 2026", itemCount: 12 },
-  { id: "folder_iluminacion_premium", name: "Iluminación & Lámparas de Autor", itemCount: 6 },
-  { id: "folder_textiles_tapiceria", name: "Textiles Naturales & Lino", itemCount: 4 },
-  { id: "folder_ceramica_decoracion", name: "Cerámica & Accesorios Minimalistas", itemCount: 5 },
+  { id: "folder_lumina_catalog_2026", name: "Fotoproductos - Catálogo Lumina", itemCount: 0 },
+  { id: "folder_iluminacion_premium", name: "Iluminación & Lámparas", itemCount: 0 },
+  { id: "folder_textiles_tapiceria", name: "Textiles & Tapicería", itemCount: 0 },
+  { id: "folder_ceramica_decoracion", name: "Cerámica & Decoración", itemCount: 0 },
 ];
 
-export const INITIAL_DRIVE_FILES: GoogleDriveFile[] = [
-  {
-    id: "lumina_drive_img_01",
-    name: "LUMINA-AURA-PENDANT-01.jpg",
-    mimeType: "image/jpeg",
-    cdnUrl: "https://images.unsplash.com/photo-1507473885765-e6ed057f782c?q=90&w=1200&auto=format&fit=crop",
-    thumbnailUrl: "https://images.unsplash.com/photo-1507473885765-e6ed057f782c?q=80&w=400&auto=format&fit=crop",
-    size: "2.4 MB",
-    dimensions: "2400 x 1800",
-    folderId: "folder_lumina_catalog_2026",
-    source: "google_drive",
-  },
-  {
-    id: "lumina_drive_img_02",
-    name: "LUMINA-NORDIC-FLOOR-LAMP-02.jpg",
-    mimeType: "image/jpeg",
-    cdnUrl: "https://images.unsplash.com/photo-1513506003901-1e6a229e2d15?q=90&w=1200&auto=format&fit=crop",
-    thumbnailUrl: "https://images.unsplash.com/photo-1513506003901-1e6a229e2d15?q=80&w=400&auto=format&fit=crop",
-    size: "3.1 MB",
-    dimensions: "2600 x 1950",
-    folderId: "folder_lumina_catalog_2026",
-    source: "google_drive",
-  },
-  {
-    id: "lumina_drive_img_03",
-    name: "LUMINA-CERAMIC-VASE-MATTE-03.jpg",
-    mimeType: "image/jpeg",
-    cdnUrl: "https://images.unsplash.com/photo-1612196808214-b8e1d6145a8c?q=90&w=1200&auto=format&fit=crop",
-    thumbnailUrl: "https://images.unsplash.com/photo-1612196808214-b8e1d6145a8c?q=80&w=400&auto=format&fit=crop",
-    size: "1.8 MB",
-    dimensions: "2000 x 2000",
-    folderId: "folder_lumina_catalog_2026",
-    source: "google_drive",
-  },
-  {
-    id: "lumina_drive_img_04",
-    name: "LUMINA-LINEN-CUSHIONS-SAND-04.jpg",
-    mimeType: "image/jpeg",
-    cdnUrl: "https://images.unsplash.com/photo-1584100936595-c0654b55a2e2?q=90&w=1200&auto=format&fit=crop",
-    thumbnailUrl: "https://images.unsplash.com/photo-1584100936595-c0654b55a2e2?q=80&w=400&auto=format&fit=crop",
-    size: "2.8 MB",
-    dimensions: "2500 x 1667",
-    folderId: "folder_lumina_catalog_2026",
-    source: "google_drive",
-  },
-  {
-    id: "lumina_drive_img_05",
-    name: "LUMINA-MARBLE-ACCENT-TABLE-05.jpg",
-    mimeType: "image/jpeg",
-    cdnUrl: "https://images.unsplash.com/photo-1538688525198-9b88f6f53126?q=90&w=1200&auto=format&fit=crop",
-    thumbnailUrl: "https://images.unsplash.com/photo-1538688525198-9b88f6f53126?q=80&w=400&auto=format&fit=crop",
-    size: "3.4 MB",
-    dimensions: "2800 x 2100",
-    folderId: "folder_lumina_catalog_2026",
-    source: "google_drive",
-  },
-  {
-    id: "lumina_drive_img_06",
-    name: "LUMINA-BRASS-CHANDELIER-06.jpg",
-    mimeType: "image/jpeg",
-    cdnUrl: "https://images.unsplash.com/photo-1540932239986-30128078f3c5?q=90&w=1200&auto=format&fit=crop",
-    thumbnailUrl: "https://images.unsplash.com/photo-1540932239986-30128078f3c5?q=80&w=400&auto=format&fit=crop",
-    size: "2.1 MB",
-    dimensions: "2200 x 1650",
-    folderId: "folder_lumina_catalog_2026",
-    source: "google_drive",
-  },
-  {
-    id: "lumina_drive_img_07",
-    name: "LUMINA-MINIMALIST-SCONCE-07.jpg",
-    mimeType: "image/jpeg",
-    cdnUrl: "https://images.unsplash.com/photo-1517991104123-1d56a6e81ed9?q=90&w=1200&auto=format&fit=crop",
-    thumbnailUrl: "https://images.unsplash.com/photo-1517991104123-1d56a6e81ed9?q=80&w=400&auto=format&fit=crop",
-    size: "2.7 MB",
-    dimensions: "2400 x 1800",
-    folderId: "folder_lumina_catalog_2026",
-    source: "google_drive",
-  },
-  {
-    id: "lumina_drive_img_08",
-    name: "LUMINA-SCANDINAVIAN-ARMCHAIR-08.jpg",
-    mimeType: "image/jpeg",
-    cdnUrl: "https://images.unsplash.com/photo-1586023492125-27b2c045efd7?q=90&w=1200&auto=format&fit=crop",
-    thumbnailUrl: "https://images.unsplash.com/photo-1586023492125-27b2c045efd7?q=80&w=400&auto=format&fit=crop",
-    size: "3.6 MB",
-    dimensions: "3000 x 2000",
-    folderId: "folder_lumina_catalog_2026",
-    source: "google_drive",
-  },
-  {
-    id: "lumina_drive_img_09",
-    name: "LUMINA-ORGANIC-WOOD-BENCH-09.jpg",
-    mimeType: "image/jpeg",
-    cdnUrl: "https://images.unsplash.com/photo-1555041469-a586c61ea9bc?q=90&w=1200&auto=format&fit=crop",
-    thumbnailUrl: "https://images.unsplash.com/photo-1555041469-a586c61ea9bc?q=80&w=400&auto=format&fit=crop",
-    size: "2.9 MB",
-    dimensions: "2600 x 1733",
-    folderId: "folder_lumina_catalog_2026",
-    source: "google_drive",
-  },
-  {
-    id: "lumina_drive_img_10",
-    name: "LUMINA-WOVEN-RUG-NATURAL-10.jpg",
-    mimeType: "image/jpeg",
-    cdnUrl: "https://images.unsplash.com/photo-1600121848594-d8644e57abab?q=90&w=1200&auto=format&fit=crop",
-    thumbnailUrl: "https://images.unsplash.com/photo-1600121848594-d8644e57abab?q=80&w=400&auto=format&fit=crop",
-    size: "2.5 MB",
-    dimensions: "2400 x 1800",
-    folderId: "folder_lumina_catalog_2026",
-    source: "google_drive",
-  },
-  {
-    id: "lumina_drive_img_11",
-    name: "LUMINA-ARCHITECTURAL-VASE-11.jpg",
-    mimeType: "image/jpeg",
-    cdnUrl: "https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?q=90&w=1200&auto=format&fit=crop",
-    thumbnailUrl: "https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?q=80&w=400&auto=format&fit=crop",
-    size: "1.9 MB",
-    dimensions: "2100 x 2100",
-    folderId: "folder_lumina_catalog_2026",
-    source: "google_drive",
-  },
-  {
-    id: "lumina_drive_img_12",
-    name: "LUMINA-ECLIPSE-DESK-LAMP-12.jpg",
-    mimeType: "image/jpeg",
-    cdnUrl: "https://images.unsplash.com/photo-1507473885765-e6ed057f782c?q=90&w=1200&auto=format&fit=crop",
-    thumbnailUrl: "https://images.unsplash.com/photo-1507473885765-e6ed057f782c?q=80&w=400&auto=format&fit=crop",
-    size: "2.3 MB",
-    dimensions: "2400 x 1800",
-    folderId: "folder_lumina_catalog_2026",
-    source: "google_drive",
-  },
-];
+export const INITIAL_DRIVE_FILES: GoogleDriveFile[] = [];
 
 export type GoogleDriveActiveTab = 'files' | 'folders' | 'upload' | 'backup';
 
@@ -199,7 +66,7 @@ interface GoogleDriveState {
   syncFiles: () => Promise<void>;
 }
 
-const STORAGE_KEY = "lumina_admin_google_drive_v2";
+const STORAGE_KEY = "lumina_fotoproductos_v3";
 
 function recalculateFolderCounts(folders: GoogleDriveFolder[], files: GoogleDriveFile[]): GoogleDriveFolder[] {
   const counts: Record<string, number> = {};
@@ -223,14 +90,14 @@ function loadFromLocal(): GoogleDriveSettings {
   const defaults: GoogleDriveSettings = {
     isConnected: true,
     accountEmail: "multimedia.lumina@gmail.com",
-    accountName: "Lumina Home Media Assets",
+    accountName: "Lumina Home - Fotoproductos",
     connectedAt: new Date().toISOString(),
     selectedFolderId: "folder_lumina_catalog_2026",
-    selectedFolderName: "Lumina Home - Catálogo Fotográfico 2026",
+    selectedFolderName: "Fotoproductos - Catálogo Lumina",
     availableFolders: INITIAL_DRIVE_FOLDERS,
-    files: INITIAL_DRIVE_FILES,
+    files: [],
     backupAt: new Date().toISOString(),
-    backupCount: INITIAL_DRIVE_FILES.length,
+    backupCount: 0,
   };
 
   if (typeof window === "undefined") {

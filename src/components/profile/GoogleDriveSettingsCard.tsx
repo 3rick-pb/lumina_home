@@ -139,7 +139,7 @@ export function GoogleDriveSettingsCard({ onClose, onSelectPhotoForProduct }: Go
 
   const handleSync = async () => {
     await syncFiles();
-    showNotification("Banco de fotos sincronizado con el servidor");
+    showNotification("Fotoproductos sincronizados con el servidor");
   };
 
   const handleSelectFolderClick = async (folder: GoogleDriveFolder) => {
@@ -275,7 +275,7 @@ export function GoogleDriveSettingsCard({ onClose, onSelectPhotoForProduct }: Go
   const handleRestoreNow = async () => {
     const success = await restoreFromDatabase();
     if (success) {
-      showNotification("✓ Banco de fotos restaurado desde la Base de Datos");
+      showNotification("✓ Fotoproductos restaurados desde la Base de Datos");
     } else {
       showNotification("⚠ No se pudo restaurar el respaldo de la Base de Datos");
     }
@@ -314,14 +314,14 @@ export function GoogleDriveSettingsCard({ onClose, onSelectPhotoForProduct }: Go
           <div>
             <div className="flex flex-wrap items-center gap-2 mb-1">
               <span className="inline-flex items-center gap-1.5 text-[9px] sm:text-[10px] font-mono font-bold uppercase tracking-widest px-2.5 py-0.5 rounded-full bg-amber-500/10 text-amber-800 dark:text-amber-300 border border-amber-500/20">
-                <Sparkles className="w-3 h-3 text-amber-500" /> LUMINA · BANCO MULTIMEDIA OFICIAL
+                <Sparkles className="w-3 h-3 text-amber-500" /> LUMINA · FOTOPRODUCTOS
               </span>
             </div>
             <h3 className="text-lg sm:text-xl font-display font-bold tracking-tight text-gray-900 dark:text-gray-100 flex items-center gap-2">
-              Banco de Fotos & Catálogo Digital
+              Fotoproductos
             </h3>
             <p className="text-xs text-stone-500 dark:text-stone-400 mt-0.5">
-              Gestión fotográfica, subida de archivos, respaldo en base de datos y enlaces directos de Google Drive.
+              Gestión fotográfica, subida de fotos reales, selección directa para productos y respaldo seguro en base de datos.
             </p>
           </div>
         </div>
@@ -413,7 +413,7 @@ export function GoogleDriveSettingsCard({ onClose, onSelectPhotoForProduct }: Go
                 type="button"
                 onClick={handleSync}
                 disabled={isSyncing}
-                title="Sincronizar Banco de Fotos"
+                title="Sincronizar Fotoproductos"
                 className="p-2 rounded-xl bg-white dark:bg-white/10 hover:bg-stone-100 dark:hover:bg-white/15 text-stone-600 dark:text-stone-300 border border-stone-200/60 dark:border-white/10 transition-colors cursor-pointer"
               >
                 <RefreshCw className={`w-4 h-4 ${isSyncing ? "animate-spin text-amber-500" : ""}`} />
@@ -443,7 +443,7 @@ export function GoogleDriveSettingsCard({ onClose, onSelectPhotoForProduct }: Go
               }`}
             >
               <ImageIcon className="w-3.5 h-3.5 text-amber-500" />
-              <span>Fotos ({currentFolderFiles.length})</span>
+              <span>Fotoproductos ({currentFolderFiles.length})</span>
             </button>
 
             <button

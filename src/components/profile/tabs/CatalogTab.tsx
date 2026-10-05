@@ -90,11 +90,11 @@ export function CatalogTab({
             type="button"
             onClick={() => setShowDriveModal(true)}
             className="inline-flex items-center gap-2 px-3.5 py-2.5 rounded-xl border border-blue-500/25 bg-blue-50/70 hover:bg-blue-100/80 dark:bg-blue-950/30 dark:hover:bg-blue-900/40 text-blue-700 dark:text-blue-300 text-xs font-bold transition-all shadow-xs hover:scale-[1.02] active:scale-[0.98] cursor-pointer shrink-0"
-            title="Configurar Banco de Fotos de Google Drive"
+            title="Fotoproductos"
           >
             <GoogleDriveIcon className="w-4 h-4" />
-            <span className="hidden sm:inline">Banco de Fotos</span>
-            <span className="sm:hidden">Drive</span>
+            <span className="hidden sm:inline">Fotoproductos</span>
+            <span className="sm:hidden">Fotos</span>
             {driveSettings.isConnected && (
               <span className="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.7)] animate-pulse" />
             )}
@@ -141,8 +141,12 @@ export function CatalogTab({
             {filteredCatalog.map(p => (
               <tr key={p.id} className="hover:bg-gray-50/70 dark:hover:bg-[#2c2c2e]/70 transition-colors">
                 <td className="py-3 px-2 flex items-center gap-3">
-                  <div className="relative w-10 h-10 rounded-xl overflow-hidden bg-gray-100 dark:bg-[#3a3a3c] shrink-0">
-                    <Image src={p.imageUrl} alt={p.title} fill sizes="40px" className="object-cover" />
+                  <div className="relative w-10 h-10 rounded-xl overflow-hidden bg-gray-100 dark:bg-[#3a3a3c] shrink-0 flex items-center justify-center">
+                    {p.imageUrl ? (
+                      <Image src={p.imageUrl} alt={p.title} fill sizes="40px" className="object-cover" />
+                    ) : (
+                      <Package className="w-4 h-4 text-gray-400 opacity-60" />
+                    )}
                   </div>
                   <div>
                     <p className="font-bold text-gray-900 dark:text-gray-100 line-clamp-1">{p.title}</p>
@@ -211,7 +215,7 @@ export function CatalogTab({
         </table>
       </div>
 
-      {/* Modal: Banco de Fotos Google Drive (@beui/center-morph-modal with exact product-detail morph animation) */}
+      {/* Modal: Fotoproductos (@beui/center-morph-modal with exact product-detail morph animation) */}
       <BeUICenterMorphModal
         open={showDriveModal}
         onOpenChange={setShowDriveModal}

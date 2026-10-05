@@ -895,30 +895,30 @@ const handleConfirmDeleteNiche = async () => {
  <nav className="flex flex-col items-center gap-2.5 w-full px-2">
  <button 
    onClick={() => setActiveTab("overview")} 
-   className={`sidebar-dock-btn relative w-11 h-11 md:w-12 md:h-12 rounded-2xl flex items-center justify-center transition-all duration-200 cursor-pointer group ${
+   className={`sidebar-dock-btn relative w-11 h-11 md:w-12 md:h-12 rounded-2xl flex items-center justify-center transition-all duration-[600ms] cursor-pointer group ${
      activeTab === "overview" 
-       ? "bg-gray-950 dark:bg-white text-white dark:text-gray-950 shadow-lg shadow-gray-950/20 dark:shadow-white/15 scale-105 hover:scale-108 active:scale-95" 
-       : "text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100/80 dark:hover:bg-white/5 hover:scale-108 active:scale-95"
+       ? "bg-gray-950 dark:bg-white text-white dark:text-gray-950 shadow-lg shadow-gray-950/20 dark:shadow-white/15 scale-105" 
+       : "text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100/80 dark:hover:bg-white/5 hover:scale-105 active:scale-95"
    }`}
    title="Vista General"
  >
    {activeTab === "overview" && (
-     <span className="absolute -left-2 w-1 h-5 bg-amber-500 dark:bg-amber-400 rounded-r-full transition-all duration-200" />
+     <span className="absolute -left-2 w-1 h-5 bg-amber-500 dark:bg-amber-400 rounded-r-full transition-all duration-[600ms]" />
    )}
    <LayoutDashboard className="w-5 h-5 transition-all duration-300 group-hover:scale-115 group-hover:rotate-6 group-hover:-translate-y-0.5" />
  </button>
 
  <button 
    onClick={() => setActiveTab("orders")} 
-   className={`sidebar-dock-btn relative w-11 h-11 md:w-12 md:h-12 rounded-2xl flex items-center justify-center transition-all duration-200 cursor-pointer group ${
+   className={`sidebar-dock-btn relative w-11 h-11 md:w-12 md:h-12 rounded-2xl flex items-center justify-center transition-all duration-[600ms] cursor-pointer group ${
      activeTab === "orders" 
-       ? "bg-gray-950 dark:bg-white text-white dark:text-gray-950 shadow-lg shadow-gray-950/20 dark:shadow-white/15 scale-105 hover:scale-108 active:scale-95" 
-       : "text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100/80 dark:hover:bg-white/5 hover:scale-108 active:scale-95"
+       ? "bg-gray-950 dark:bg-white text-white dark:text-gray-950 shadow-lg shadow-gray-950/20 dark:shadow-white/15 scale-105" 
+       : "text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100/80 dark:hover:bg-white/5 hover:scale-105 active:scale-95"
    }`}
    title="Pedidos & Historial"
  >
    {activeTab === "orders" && (
-     <span className="absolute -left-2 w-1 h-5 bg-amber-500 dark:bg-amber-400 rounded-r-full transition-all duration-200" />
+     <span className="absolute -left-2 w-1 h-5 bg-amber-500 dark:bg-amber-400 rounded-r-full transition-all duration-[600ms]" />
    )}
    <ShoppingBag className="w-5 h-5 transition-all duration-300 group-hover:scale-115 group-hover:-rotate-12 group-hover:-translate-y-0.5" />
    {pendingOrdersCount > 0 && (
@@ -937,30 +937,30 @@ const handleConfirmDeleteNiche = async () => {
 
  <button 
    onClick={() => setActiveTab("cards")} 
-   className={`sidebar-dock-btn relative w-11 h-11 md:w-12 md:h-12 rounded-2xl flex items-center justify-center transition-all duration-200 cursor-pointer group ${
+   className={`sidebar-dock-btn relative w-11 h-11 md:w-12 md:h-12 rounded-2xl flex items-center justify-center transition-all duration-[600ms] cursor-pointer group ${
      activeTab === "cards" 
-       ? "bg-gray-950 dark:bg-white text-white dark:text-gray-950 shadow-lg shadow-gray-950/20 dark:shadow-white/15 scale-105 hover:scale-108 active:scale-95" 
-       : "text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100/80 dark:hover:bg-white/5 hover:scale-108 active:scale-95"
+       ? "bg-gray-950 dark:bg-white text-white dark:text-gray-950 shadow-lg shadow-gray-950/20 dark:shadow-white/15 scale-105" 
+       : "text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100/80 dark:hover:bg-white/5 hover:scale-105 active:scale-95"
    }`}
    title="Mis Tarjetas"
  >
    {activeTab === "cards" && (
-     <span className="absolute -left-2 w-1 h-5 bg-amber-500 dark:bg-amber-400 rounded-r-full transition-all duration-200" />
+     <span className="absolute -left-2 w-1 h-5 bg-amber-500 dark:bg-amber-400 rounded-r-full transition-all duration-[600ms]" />
    )}
    <CreditCard className="w-5 h-5 transition-all duration-300 group-hover:scale-115 group-hover:-rotate-6 group-hover:-translate-y-0.5" />
  </button>
 
  <button 
    onClick={() => setActiveTab("favorites")} 
-   className={`sidebar-dock-btn relative w-11 h-11 md:w-12 md:h-12 rounded-2xl flex items-center justify-center transition-all duration-200 cursor-pointer group ${
+   className={`sidebar-dock-btn relative w-11 h-11 md:w-12 md:h-12 rounded-2xl flex items-center justify-center transition-all duration-[600ms] cursor-pointer group ${
      activeTab === "favorites" 
-       ? "bg-gray-950 dark:bg-white text-white dark:text-gray-950 shadow-lg shadow-gray-950/20 dark:shadow-white/15 scale-105 hover:scale-108 active:scale-95" 
-       : "text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100/80 dark:hover:bg-white/5 hover:scale-108 active:scale-95"
+       ? "bg-gray-950 dark:bg-white text-white dark:text-gray-950 shadow-lg shadow-gray-950/20 dark:shadow-white/15 scale-105" 
+       : "text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100/80 dark:hover:bg-white/5 hover:scale-105 active:scale-95"
    }`}
    title="Favoritos Guardados"
  >
    {activeTab === "favorites" && (
-     <span className="absolute -left-2 w-1 h-5 bg-amber-500 dark:bg-amber-400 rounded-r-full transition-all duration-200" />
+     <span className="absolute -left-2 w-1 h-5 bg-amber-500 dark:bg-amber-400 rounded-r-full transition-all duration-[600ms]" />
    )}
    <Heart className="w-5 h-5 transition-all duration-300 group-hover:scale-125 group-hover:text-rose-500 group-hover:-translate-y-0.5" />
    {favorites.length > 0 && activeTab !== "favorites" && (
@@ -970,15 +970,15 @@ const handleConfirmDeleteNiche = async () => {
 
  <button 
    onClick={() => setActiveTab("loyalty")} 
-   className={`sidebar-dock-btn relative w-11 h-11 md:w-12 md:h-12 rounded-2xl flex items-center justify-center transition-all duration-200 cursor-pointer group ${
+   className={`sidebar-dock-btn relative w-11 h-11 md:w-12 md:h-12 rounded-2xl flex items-center justify-center transition-all duration-[600ms] cursor-pointer group ${
      activeTab === "loyalty" 
-       ? "bg-gray-950 dark:bg-white text-white dark:text-gray-950 shadow-lg shadow-gray-950/20 dark:shadow-white/15 scale-105 hover:scale-108 active:scale-95" 
-       : "text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100/80 dark:hover:bg-white/5 hover:scale-108 active:scale-95"
+       ? "bg-gray-950 dark:bg-white text-white dark:text-gray-950 shadow-lg shadow-gray-950/20 dark:shadow-white/15 scale-105" 
+       : "text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100/80 dark:hover:bg-white/5 hover:scale-105 active:scale-95"
    }`}
    title="Gestión de Cupones"
  >
    {activeTab === "loyalty" && (
-     <span className="absolute -left-2 w-1 h-5 bg-amber-500 dark:bg-amber-400 rounded-r-full transition-all duration-200" />
+     <span className="absolute -left-2 w-1 h-5 bg-amber-500 dark:bg-amber-400 rounded-r-full transition-all duration-[600ms]" />
    )}
    <Tag className="w-5 h-5 transition-all duration-300 group-hover:scale-115 group-hover:rotate-6 group-hover:-translate-y-0.5" />
  </button>
@@ -989,74 +989,74 @@ const handleConfirmDeleteNiche = async () => {
 
      <button 
        onClick={() => setActiveTab("catalog")} 
-       className={`sidebar-dock-btn relative w-11 h-11 md:w-12 md:h-12 rounded-2xl flex items-center justify-center transition-all duration-200 cursor-pointer group ${
+       className={`sidebar-dock-btn relative w-11 h-11 md:w-12 md:h-12 rounded-2xl flex items-center justify-center transition-all duration-[600ms] cursor-pointer group ${
          activeTab === "catalog" 
-           ? "bg-gray-950 dark:bg-white text-white dark:text-gray-950 shadow-lg shadow-gray-950/20 dark:shadow-white/15 scale-105 hover:scale-108 active:scale-95" 
-           : "text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100/80 dark:hover:bg-white/5 hover:scale-108 active:scale-95"
+           ? "bg-gray-950 dark:bg-white text-white dark:text-gray-950 shadow-lg shadow-gray-950/20 dark:shadow-white/15 scale-105" 
+           : "text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100/80 dark:hover:bg-white/5 hover:scale-105 active:scale-95"
        }`}
        title="Control de Catálogo"
      >
        {activeTab === "catalog" && (
-         <span className="absolute -left-2 w-1 h-5 bg-amber-500 dark:bg-amber-400 rounded-r-full transition-all duration-200" />
+         <span className="absolute -left-2 w-1 h-5 bg-amber-500 dark:bg-amber-400 rounded-r-full transition-all duration-[600ms]" />
        )}
        <Package className="w-5 h-5 transition-all duration-300 group-hover:scale-115 group-hover:-translate-y-1" />
      </button>
 
      <button 
        onClick={() => setActiveTab("niches")} 
-       className={`sidebar-dock-btn relative w-11 h-11 md:w-12 md:h-12 rounded-2xl flex items-center justify-center transition-all duration-200 cursor-pointer group ${
+       className={`sidebar-dock-btn relative w-11 h-11 md:w-12 md:h-12 rounded-2xl flex items-center justify-center transition-all duration-[600ms] cursor-pointer group ${
          activeTab === "niches" 
-           ? "bg-gray-950 dark:bg-white text-white dark:text-gray-950 shadow-lg shadow-gray-950/20 dark:shadow-white/15 scale-105 hover:scale-108 active:scale-95" 
-           : "text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100/80 dark:hover:bg-white/5 hover:scale-108 active:scale-95"
+           ? "bg-gray-950 dark:bg-white text-white dark:text-gray-950 shadow-lg shadow-gray-950/20 dark:shadow-white/15 scale-105" 
+           : "text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100/80 dark:hover:bg-white/5 hover:scale-105 active:scale-95"
        }`}
        title="Gestión de Nichos"
      >
        {activeTab === "niches" && (
-         <span className="absolute -left-2 w-1 h-5 bg-amber-500 dark:bg-amber-400 rounded-r-full transition-all duration-200" />
+         <span className="absolute -left-2 w-1 h-5 bg-amber-500 dark:bg-amber-400 rounded-r-full transition-all duration-[600ms]" />
        )}
        <Layers className="w-5 h-5 transition-all duration-300 group-hover:scale-115 group-hover:-translate-y-1 group-hover:rotate-3" />
      </button>
 
      <button 
        onClick={() => setActiveTab("analytics")} 
-       className={`sidebar-dock-btn relative w-11 h-11 md:w-12 md:h-12 rounded-2xl flex items-center justify-center transition-all duration-200 cursor-pointer group ${
+       className={`sidebar-dock-btn relative w-11 h-11 md:w-12 md:h-12 rounded-2xl flex items-center justify-center transition-all duration-[600ms] cursor-pointer group ${
          activeTab === "analytics" 
-           ? "bg-gray-950 dark:bg-white text-white dark:text-gray-950 shadow-lg shadow-gray-950/20 dark:shadow-white/15 scale-105 hover:scale-108 active:scale-95" 
-           : "text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100/80 dark:hover:bg-white/5 hover:scale-108 active:scale-95"
+           ? "bg-gray-950 dark:bg-white text-white dark:text-gray-950 shadow-lg shadow-gray-950/20 dark:shadow-white/15 scale-105" 
+           : "text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100/80 dark:hover:bg-white/5 hover:scale-105 active:scale-95"
        }`}
        title="Radar de Clientes & Analítica"
      >
        {activeTab === "analytics" && (
-         <span className="absolute -left-2 w-1 h-5 bg-amber-500 dark:bg-amber-400 rounded-r-full transition-all duration-200" />
+         <span className="absolute -left-2 w-1 h-5 bg-amber-500 dark:bg-amber-400 rounded-r-full transition-all duration-[600ms]" />
        )}
        <Globe className="w-5 h-5 transition-all duration-500 group-hover:scale-115 group-hover:rotate-90 group-hover:text-amber-600 dark:text-amber-400" />
      </button>
 
      <button 
        onClick={() => setActiveTab("cart_alerts")} 
-       className={`sidebar-dock-btn relative w-11 h-11 md:w-12 md:h-12 rounded-2xl flex items-center justify-center transition-all duration-200 cursor-pointer group ${
+       className={`sidebar-dock-btn relative w-11 h-11 md:w-12 md:h-12 rounded-2xl flex items-center justify-center transition-all duration-[600ms] cursor-pointer group ${
          activeTab === "cart_alerts" 
-           ? "bg-gray-950 dark:bg-white text-white dark:text-gray-950 shadow-lg shadow-gray-950/20 dark:shadow-white/15 scale-105 hover:scale-108 active:scale-95" 
-           : "text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100/80 dark:hover:bg-white/5 hover:scale-108 active:scale-95"
+           ? "bg-gray-950 dark:bg-white text-white dark:text-gray-950 shadow-lg shadow-gray-950/20 dark:shadow-white/15 scale-105" 
+           : "text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100/80 dark:hover:bg-white/5 hover:scale-105 active:scale-95"
        }`}
         title="Notificaciones de Bolsa"
      >
        {activeTab === "cart_alerts" && (
-         <span className="absolute -left-2 w-1 h-5 bg-amber-500 dark:bg-amber-400 rounded-r-full transition-all duration-200" />
+         <span className="absolute -left-2 w-1 h-5 bg-amber-500 dark:bg-amber-400 rounded-r-full transition-all duration-[600ms]" />
        )}
        <BellRing className="w-5 h-5 transition-all duration-300 group-hover:scale-115 group-hover:rotate-12 group-hover:-translate-y-0.5" />
      </button>
         <button 
         onClick={() => setActiveTab("integrations")} 
-        className={`sidebar-dock-btn relative w-11 h-11 md:w-12 md:h-12 rounded-2xl flex items-center justify-center transition-all duration-200 cursor-pointer group ${
+        className={`sidebar-dock-btn relative w-11 h-11 md:w-12 md:h-12 rounded-2xl flex items-center justify-center transition-all duration-[600ms] cursor-pointer group ${
           activeTab === "integrations" 
-            ? "bg-gray-950 dark:bg-white text-white dark:text-gray-950 shadow-lg shadow-gray-950/20 dark:shadow-white/15 scale-105 hover:scale-108 active:scale-95" 
-            : "text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100/80 dark:hover:bg-white/5 hover:scale-108 active:scale-95"
+            ? "bg-gray-950 dark:bg-white text-white dark:text-gray-950 shadow-lg shadow-gray-950/20 dark:shadow-white/15 scale-105" 
+            : "text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100/80 dark:hover:bg-white/5 hover:scale-105 active:scale-95"
         }`}
         title="Servidor SMTP & Pasarelas (Vercel)"
       >
         {activeTab === "integrations" && (
-          <span className="absolute -left-2 w-1 h-5 bg-amber-500 dark:bg-amber-400 rounded-r-full transition-all duration-200" />
+          <span className="absolute -left-2 w-1 h-5 bg-amber-500 dark:bg-amber-400 rounded-r-full transition-all duration-[600ms]" />
         )}
         <Server className="w-5 h-5 transition-all duration-300 group-hover:scale-115 group-hover:rotate-3 group-hover:-translate-y-0.5" />
       </button>
@@ -1070,28 +1070,28 @@ const handleConfirmDeleteNiche = async () => {
  <div className="w-9 md:w-10 h-[2px] bg-gray-300/80 dark:bg-white/20 rounded-full my-0.5 transition-colors shrink-0" />
  <button 
    onClick={() => setActiveTab("settings")} 
-   className={`sidebar-dock-btn relative w-10 h-10 md:w-11 md:h-11 rounded-2xl flex items-center justify-center transition-all duration-200 cursor-pointer group ${
+   className={`sidebar-dock-btn relative w-10 h-10 md:w-11 md:h-11 rounded-2xl flex items-center justify-center transition-all duration-[600ms] cursor-pointer group ${
      activeTab === "settings" 
-       ? "bg-gray-950 dark:bg-white text-white dark:text-gray-950 shadow-lg shadow-gray-950/20 dark:shadow-white/15 scale-105 hover:scale-108 active:scale-95" 
-       : "text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100/80 dark:hover:bg-white/5 hover:scale-108 active:scale-95"
+       ? "bg-gray-950 dark:bg-white text-white dark:text-gray-950 shadow-lg shadow-gray-950/20 dark:shadow-white/15 scale-105" 
+       : "text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100/80 dark:hover:bg-white/5 hover:scale-105 active:scale-95"
    }`}
    title="Configuración"
  >
    {activeTab === "settings" && (
-     <span className="absolute -left-2 w-1 h-5 bg-amber-500 dark:bg-white rounded-r-full transition-all duration-200" />
+     <span className="absolute -left-2 w-1 h-5 bg-amber-500 dark:bg-white rounded-r-full transition-all duration-[600ms]" />
    )}
    <Settings className="w-5 h-5 transition-all duration-500 group-hover:scale-115 group-hover:rotate-90 group-hover:-translate-y-0.5" />
  </button>
  <Link 
    href="/" 
-   className="sidebar-dock-btn relative w-10 h-10 md:w-11 md:h-11 rounded-2xl flex items-center justify-center text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100/80 dark:hover:bg-white/5 transition-all duration-200 group" 
+   className="sidebar-dock-btn relative w-10 h-10 md:w-11 md:h-11 rounded-2xl flex items-center justify-center text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100/80 dark:hover:bg-white/5 transition-all duration-[600ms] group" 
    title="Volver a la Tienda"
  >
    <Store className="w-5 h-5 transition-all duration-300 group-hover:scale-115 group-hover:-translate-y-1" />
  </Link>
  <button 
    onClick={() => { logout(); router.push("/auth/login"); }} 
-   className="sidebar-dock-btn relative w-10 h-10 md:w-11 md:h-11 rounded-2xl flex items-center justify-center text-red-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/40 transition-all duration-200 group cursor-pointer"
+   className="sidebar-dock-btn relative w-10 h-10 md:w-11 md:h-11 rounded-2xl flex items-center justify-center text-red-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/40 transition-all duration-[600ms] group cursor-pointer"
    title="Cerrar Sesión"
  >
    <LogOut className="w-5 h-5 transition-all duration-300 group-hover:scale-115 group-hover:translate-x-1" />
@@ -2005,7 +2005,7 @@ const handleConfirmDeleteNiche = async () => {
                   className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl text-[11px] font-bold bg-blue-500/10 hover:bg-blue-500/20 text-blue-600 dark:text-blue-400 border border-blue-500/20 transition-all cursor-pointer shadow-xs hover:scale-108 active:scale-95"
                 >
                   <GoogleDriveIcon className="w-3.5 h-3.5" />
-                  <span>Elegir de Google Drive</span>
+                  <span>Elegir de Fotoproductos</span>
                 </button>
               </div>
               <input 
@@ -2013,7 +2013,7 @@ const handleConfirmDeleteNiche = async () => {
                 value={prodImageUrl} 
                 onChange={e => setProdImageUrl(e.target.value)} 
                 className="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-white/15 text-sm outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 bg-white dark:bg-[#202023] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 shadow-sm" 
-                placeholder="https://images.unsplash.com/photo-... o enlace directo .jpg / .webp" 
+                placeholder="https://... o enlace directo de imagen" 
               />
               {isGoogleDriveUrl(prodImageUrl) ? (
                 <p className="text-[11px] text-emerald-800 mt-1.5 font-medium bg-emerald-50 dark:bg-emerald-950/30 p-2 rounded-lg border border-emerald-200 dark:border-emerald-800/50 flex items-center gap-1.5">
@@ -2038,7 +2038,7 @@ const handleConfirmDeleteNiche = async () => {
                   className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl text-[11px] font-bold bg-blue-500/10 hover:bg-blue-500/20 text-blue-600 dark:text-blue-400 border border-blue-500/20 transition-all cursor-pointer shadow-xs hover:scale-108 active:scale-95"
                 >
                   <GoogleDriveIcon className="w-3.5 h-3.5" />
-                  <span>+ Añadir de Drive</span>
+                  <span>+ Añadir de Fotoproductos</span>
                 </button>
               </div>
               <input 
@@ -2758,7 +2758,7 @@ const handleConfirmDeleteNiche = async () => {
                       src={normalizeImageUrl(editImageUrl.trim().split(/[\n,]+/)[0])} 
                       alt="Preview" 
                       className="w-full h-full object-cover" 
-                      onError={(e) => { (e.currentTarget as HTMLImageElement).src = "https://images.unsplash.com/photo-1507473885765-e6ed057f782c?q=80&w=800&auto=format&fit=crop"; }}
+                      onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }}
                     />
                   </div>
                 )}
@@ -2774,7 +2774,7 @@ const handleConfirmDeleteNiche = async () => {
                       className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl text-[11px] font-bold bg-blue-500/10 hover:bg-blue-500/20 text-blue-600 dark:text-blue-400 border border-blue-500/20 transition-all cursor-pointer shadow-xs hover:scale-108 active:scale-95"
                     >
                       <GoogleDriveIcon className="w-3.5 h-3.5" />
-                      <span>Elegir de Google Drive</span>
+                      <span>Elegir de Fotoproductos</span>
                     </button>
                   </div>
                   <input 
@@ -2799,7 +2799,7 @@ const handleConfirmDeleteNiche = async () => {
                     className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl text-[11px] font-bold bg-blue-500/10 hover:bg-blue-500/20 text-blue-600 dark:text-blue-400 border border-blue-500/20 transition-all cursor-pointer shadow-xs hover:scale-108 active:scale-95"
                   >
                     <GoogleDriveIcon className="w-3.5 h-3.5" />
-                    <span>+ Añadir de Drive</span>
+                    <span>+ Añadir de Fotoproductos</span>
                   </button>
                 </div>
                 <textarea 
@@ -3433,8 +3433,8 @@ const handleConfirmDeleteNiche = async () => {
         allowMultiple={drivePickerTarget.includes('gallery')}
         title={
           drivePickerTarget.includes('main')
-            ? "Seleccionar Imagen Principal de Producto"
-            : "Añadir Fotos de Galería a Producto"
+            ? "Seleccionar Imagen Principal • Fotoproductos"
+            : "Añadir Fotos de Galería • Fotoproductos"
         }
       />
   </div>

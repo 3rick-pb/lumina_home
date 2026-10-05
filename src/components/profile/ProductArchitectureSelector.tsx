@@ -188,7 +188,7 @@ export function ProductArchitectureSelector({
     p.category.toLowerCase().includes(companionSearch.toLowerCase())
   );
 
-  const fallbackCanvasImage = productImage || "https://images.unsplash.com/photo-1507473885765-e6ed057f782c?q=80&w=800&auto=format&fit=crop";
+  const fallbackCanvasImage = productImage || "";
   const activeCanvasImage = (landingAnatomyImage && landingAnatomyImage.trim())
     ? normalizeImageUrl(landingAnatomyImage.trim())
     : fallbackCanvasImage;
@@ -717,14 +717,21 @@ export function ProductArchitectureSelector({
                     className="relative w-full max-w-[340px] aspect-square sm:aspect-[4/5] rounded-3xl overflow-hidden border-2 border-dashed border-amber-500/40 dark:border-[#fbbf24]/40 shadow-xl cursor-crosshair group select-none bg-gray-100 dark:bg-black/40"
                     title="Haz clic para ubicar el pin seleccionado aquí"
                   >
-                    <Image
-                      src={activeCanvasImage}
-                      alt="Vista de Colocación de Pines"
-                      fill
-                      sizes="(max-width: 640px) 100vw, 340px"
-                      className="object-cover pointer-events-none"
-                      unoptimized={activeCanvasImage.startsWith("http")}
-                    />
+                    {activeCanvasImage ? (
+                      <Image
+                        src={activeCanvasImage}
+                        alt="Vista de Colocación de Pines"
+                        fill
+                        sizes="(max-width: 640px) 100vw, 340px"
+                        className="object-cover pointer-events-none"
+                        unoptimized={activeCanvasImage.startsWith("http")}
+                      />
+                    ) : (
+                      <div className="w-full h-full flex flex-col items-center justify-center p-6 text-center text-gray-400 dark:text-gray-500 gap-2">
+                        <ImageIcon className="w-8 h-8 opacity-40" />
+                        <span className="text-[11px] font-medium">Asigna una imagen en el producto para ubicar pines interactivos</span>
+                      </div>
+                    )}
 
                     {/* Overlay Grid hint */}
                     <div className="absolute inset-0 bg-black/10 group-hover:bg-black/5 transition-colors pointer-events-none" />

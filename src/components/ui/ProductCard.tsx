@@ -3,7 +3,7 @@
 import React from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { Heart, ShoppingBag, Check, PackageX } from "lucide-react";
+import { Heart, ShoppingBag, Check, PackageX, Package } from "lucide-react";
 import { useCartStore } from "@/lib/store";
 import { useCatalogStore, isAgotadoBadge } from "@/lib/catalogStore";
 import { useUserStore } from "@/lib/userStore";
@@ -61,16 +61,11 @@ export const ProductCard = React.memo(function ProductCard({
     setIsMounted(true);
   }, []);
 
-  const initialUrl =
-    normalizeImageUrl(imageUrl) ||
-    "https://images.unsplash.com/photo-1507473885765-e6ed057f782c?q=80&w=800&auto=format&fit=crop";
+  const initialUrl = normalizeImageUrl(imageUrl) || "";
   const [imgSrc, setImgSrc] = React.useState(initialUrl);
 
   React.useEffect(() => {
-    setImgSrc(
-      normalizeImageUrl(imageUrl) ||
-        "https://images.unsplash.com/photo-1507473885765-e6ed057f782c?q=80&w=800&auto=format&fit=crop"
-    );
+    setImgSrc(normalizeImageUrl(imageUrl) || "");
   }, [imageUrl]);
 
   const isFav = isMounted ? isFavStore : false;
@@ -105,15 +100,22 @@ export const ProductCard = React.memo(function ProductCard({
           <Heart className={`w-3.5 h-3.5 sm:w-4 sm:h-4 transition-transform duration-300 ${isFav ? 'fill-current scale-110' : ''}`} />
         </button>
 
-        <Image
-          src={imgSrc}
-          alt={title}
-          fill
-          sizes="(max-width: 640px) 50vw, (max-width: 1024px) 50vw, 25vw"
-          draggable={false}
-          onError={() => setImgSrc("https://images.unsplash.com/photo-1507473885765-e6ed057f782c?q=80&w=800&auto=format&fit=crop")}
-          className="object-cover transition-transform duration-700 group-hover:scale-105 pointer-events-none select-none transform-gpu"
-        />
+        {imgSrc ? (
+          <Image
+            src={imgSrc}
+            alt={title}
+            fill
+            sizes="(max-width: 640px) 50vw, (max-width: 1024px) 50vw, 25vw"
+            draggable={false}
+            onError={() => setImgSrc("")}
+            className="object-cover transition-transform duration-700 group-hover:scale-105 pointer-events-none select-none transform-gpu"
+          />
+        ) : (
+          <div className="w-full h-full flex flex-col items-center justify-center bg-gray-100 dark:bg-white/[0.04] text-gray-400 dark:text-gray-500 gap-1.5 p-4 text-center">
+            <Package className="w-8 h-8 stroke-1 opacity-50" />
+            <span className="text-[11px] font-medium tracking-wide">Sin imagen</span>
+          </div>
+        )}
       </div>
       
       <div className="flex flex-col flex-1 px-0.5 sm:px-1">

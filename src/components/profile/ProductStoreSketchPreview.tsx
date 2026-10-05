@@ -319,8 +319,7 @@ export function ProductStoreSketchPreview({
                 alt={title || "Vista previa"}
                 className="w-full h-full object-cover transition-transform duration-500 hover:scale-105"
                 onError={(e) => {
-                  (e.currentTarget as HTMLImageElement).src =
-                    "https://images.unsplash.com/photo-1507473885765-e6ed057f782c?q=80&w=800&auto=format&fit=crop";
+                  (e.currentTarget as HTMLImageElement).style.display = 'none';
                 }}
               />
             ) : (
