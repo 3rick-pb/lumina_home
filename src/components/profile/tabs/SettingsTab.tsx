@@ -34,7 +34,6 @@ import {
 } from "@/lib/locationUtils";
 import { resolveEcuadorExactAddressLngLat } from "../RadarMapboxCanvas";
 import { StrongPasswordMeter } from "@/components/ui/StrongPasswordMeter";
-import { GoogleDriveSettingsCard } from "../GoogleDriveSettingsCard";
 
 interface SettingsTabProps {
   isAdmin: boolean;
@@ -1502,13 +1501,6 @@ export function SettingsTab({
           )}
         </AnimatePresence>
       </div>
-
-      {/* Shared Google Drive Media Cloud for all Administrators */}
-      {isAdmin && (
-        <div className="col-span-1 lg:col-span-12 pt-4">
-          <GoogleDriveSettingsCard />
-        </div>
-      )}
     </div>
   );
 }

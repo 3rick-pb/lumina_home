@@ -1,23 +1,19 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import React, { useState } from "react";
 import { 
   Folder, 
   FolderOpen, 
   RefreshCw, 
   Check, 
   Sparkles, 
-  ExternalLink, 
   Plus, 
   Search, 
-  Image as ImageIcon, 
   LogOut, 
-  ShieldCheck, 
-  AlertCircle,
-  HardDrive
+  HardDrive,
+  X
 } from "lucide-react";
-import { useGoogleDriveStore, GoogleDriveFile } from "@/lib/googleDriveStore";
+import { useGoogleDriveStore } from "@/lib/googleDriveStore";
 
 export function GoogleDriveIcon({ className = "w-5 h-5" }: { className?: string }) {
   return (
@@ -32,7 +28,11 @@ export function GoogleDriveIcon({ className = "w-5 h-5" }: { className?: string 
   );
 }
 
-export function GoogleDriveSettingsCard() {
+export interface GoogleDriveSettingsCardProps {
+  onClose?: () => void;
+}
+
+export function GoogleDriveSettingsCard({ onClose }: GoogleDriveSettingsCardProps = {}) {
   const { 
     settings, 
     isSyncing, 
@@ -75,28 +75,28 @@ export function GoogleDriveSettingsCard() {
   };
 
   return (
-    <div className="p-6 sm:p-8 rounded-[2.5rem] bg-gradient-to-br from-blue-50/40 via-white/80 to-amber-50/20 dark:from-[#131b26]/60 dark:via-[#18181b]/80 dark:to-[#1a1917]/50 border border-blue-500/20 dark:border-blue-400/20 shadow-xl dark:shadow-none space-y-6 relative overflow-hidden backdrop-blur-2xl">
+    <div className="p-4 sm:p-7 md:p-8 rounded-[2rem] sm:rounded-[2.5rem] bg-gradient-to-br from-blue-50/50 via-white/95 to-amber-50/30 dark:from-[#131b26]/90 dark:via-[#18181b]/95 dark:to-[#1a1917]/80 border border-blue-500/20 dark:border-blue-400/20 shadow-2xl dark:shadow-none space-y-5 sm:space-y-6 relative overflow-hidden backdrop-blur-2xl max-h-[88vh] overflow-y-auto">
       {/* Background Decorative Ambient Glow */}
       <div className="absolute top-0 right-0 w-72 h-72 bg-blue-500/10 dark:bg-blue-400/10 rounded-full blur-3xl pointer-events-none -mr-20 -mt-20" />
       <div className="absolute bottom-0 left-0 w-72 h-72 bg-amber-500/10 dark:bg-amber-400/5 rounded-full blur-3xl pointer-events-none -ml-20 -mb-20" />
 
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 relative z-10">
-        <div className="flex items-center gap-3.5">
-          <div className="w-12 h-12 rounded-2xl bg-white dark:bg-[#202024] border border-blue-200/80 dark:border-blue-500/30 flex items-center justify-center shadow-md shadow-blue-500/10 shrink-0">
-            <GoogleDriveIcon className="w-7 h-7" />
+        <div className="flex items-start sm:items-center gap-3 sm:gap-3.5">
+          <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-2xl bg-white dark:bg-[#202024] border border-blue-200/80 dark:border-blue-500/30 flex items-center justify-center shadow-md shadow-blue-500/10 shrink-0">
+            <GoogleDriveIcon className="w-6 h-6 sm:w-7 sm:h-7" />
           </div>
           <div>
-            <div className="flex items-center gap-2 mb-1">
-              <span className="inline-flex items-center gap-1 text-[10px] font-mono font-bold uppercase tracking-wider px-2 py-0.5 rounded-md bg-blue-500/15 text-blue-700 dark:text-blue-300 border border-blue-500/25">
-                <Sparkles className="w-3 h-3" /> NUBE CORPORATIVA DE MEDIOS
+            <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 mb-1">
+              <span className="inline-flex items-center gap-1 text-[9px] sm:text-[10px] font-mono font-bold uppercase tracking-wider px-2 py-0.5 rounded-md bg-blue-500/15 text-blue-700 dark:text-blue-300 border border-blue-500/25">
+                <Sparkles className="w-3 h-3" /> NUBE DE MEDIOS
               </span>
-              <span className="text-[10px] font-mono text-gray-500 dark:text-gray-400">
-                1 CUENTA PARA TODOS LOS ADMINS
+              <span className="text-[9px] sm:text-[10px] font-mono text-gray-500 dark:text-gray-400">
+                1 CUENTA ADMINS
               </span>
             </div>
-            <h3 className="text-xl font-bold tracking-tight text-gray-900 dark:text-gray-100 flex items-center gap-2">
-              Conexión con Google Drive
+            <h3 className="text-lg sm:text-xl font-bold tracking-tight text-gray-900 dark:text-gray-100 flex items-center gap-2">
+              Banco de Fotos Google Drive
             </h3>
             <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 max-w-xl">
               Banco fotográfico centralizado para la tienda. Selecciona una carpeta oficial de Google Drive para escoger imágenes directamente al agregar o editar productos.
@@ -105,17 +105,27 @@ export function GoogleDriveSettingsCard() {
         </div>
 
         {/* Status Pill & Actions */}
-        <div className="flex items-center gap-2 shrink-0">
+        <div className="flex items-center gap-2 shrink-0 self-end sm:self-center">
           {settings.isConnected ? (
-            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-700 dark:text-emerald-300 text-xs font-semibold shadow-xs">
+            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-700 dark:text-emerald-300 text-xs font-semibold shadow-xs">
               <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
               <span>Conectado</span>
             </div>
           ) : (
-            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-gray-200/70 dark:bg-white/10 text-gray-600 dark:text-gray-400 text-xs font-semibold">
+            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-gray-200/70 dark:bg-white/10 text-gray-600 dark:text-gray-400 text-xs font-semibold">
               <span className="w-2 h-2 rounded-full bg-gray-400" />
               <span>Desconectado</span>
             </div>
+          )}
+          {onClose && (
+            <button
+              type="button"
+              onClick={onClose}
+              className="p-1.5 sm:p-2 text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 bg-white/80 dark:bg-[#202022] hover:bg-gray-100 dark:hover:bg-white/10 rounded-full transition-colors cursor-pointer border border-gray-200 dark:border-white/10"
+              title="Cerrar ventana"
+            >
+              <X className="w-4 h-4 sm:w-5 sm:h-5" />
+            </button>
           )}
         </div>
       </div>

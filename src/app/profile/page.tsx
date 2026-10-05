@@ -52,6 +52,8 @@ import {
   BeUISelectField,
   BeUICenterMorphModal,
   BeUIPaginatedDock,
+  requestMobileLandscapeFullscreen,
+  exitMobileLandscapeFullscreen,
 } from "@/components/ui/BeUIControls";
 import { CatalogScrollToTopButton } from "@/components/ui/CatalogScrollToTopButton";
 import { LuminaBrandEmblem } from "@/components/ui/LuminaBrandEmblem";
@@ -751,6 +753,7 @@ export default function ProfilePage() {
     setEditLandingAnatomyImage(p.landingAnatomyImage || "");
     setEditFeedback(null);
     setEditProductStep(0);
+    requestMobileLandscapeFullscreen();
     setShowEditProductModal(true);
   };
 
@@ -1409,7 +1412,10 @@ const handleConfirmDeleteNiche = async () => {
  <div className="flex items-center gap-2.5 w-full sm:w-auto mt-1 sm:mt-0 justify-between sm:justify-start">
  <ExcelExportRadialMenu onOpenChange={setIsExcelMenuOpen} />
  <button 
- onClick={() => setShowProductModal(true)}
+ onClick={() => {
+   requestMobileLandscapeFullscreen();
+   setShowProductModal(true);
+ }}
  className="h-10 sm:h-11 flex-1 sm:flex-initial flex items-center justify-center gap-2 px-4 sm:px-5 bg-gray-900 dark:bg-gray-100 hover:bg-gray-800 text-white dark:text-gray-900 text-xs font-semibold rounded-2xl transition-all shadow-md dark:shadow-none shadow-gray-900/10 cursor-pointer shrink-0 active:scale-95"
  >
  <Plus className="w-4 h-4" /> Nuevo Producto
@@ -1467,8 +1473,14 @@ const handleConfirmDeleteNiche = async () => {
         {activeTab === "catalog" && isAdmin && (
           <CatalogTab
             searchQuery={searchQuery}
-            onOpenCreateProduct={() => setShowProductModal(true)}
-            onOpenEditProduct={handleOpenEditProduct}
+            onOpenCreateProduct={() => {
+              requestMobileLandscapeFullscreen();
+              setShowProductModal(true);
+            }}
+            onOpenEditProduct={(p) => {
+              requestMobileLandscapeFullscreen();
+              handleOpenEditProduct(p);
+            }}
             onDeleteProduct={(p) => {
               setDeleteProductError(null);
               setProductToDelete(p);

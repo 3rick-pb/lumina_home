@@ -1479,6 +1479,101 @@ const HYPEROS_LANDSCAPE_MODAL_VARIANTS = {
   },
 };
 
+interface FullscreenDocElement extends HTMLElement {
+  webkitRequestFullscreen?: () => Promise<void> | void;
+  mozRequestFullScreen?: () => Promise<void> | void;
+  msRequestFullscreen?: () => Promise<void> | void;
+}
+
+interface FullscreenDocument extends Document {
+  webkitFullscreenElement?: Element | null;
+  webkitExitFullscreen?: () => Promise<void> | void;
+  mozCancelFullScreen?: () => Promise<void> | void;
+  msExitFullscreen?: () => Promise<void> | void;
+}
+
+interface ScreenOrientationWithLock {
+  lock?: (orientation: string) => Promise<void>;
+  unlock?: () => void;
+}
+
+interface LegacyScreen {
+  lockOrientation?: (orientation: string) => boolean;
+  unlockOrientation?: () => boolean;
+}
+
+export function requestMobileLandscapeFullscreen() {
+  if (typeof window === "undefined") return;
+  const isMobile =
+    window.innerWidth < 768 ||
+    (typeof navigator !== "undefined" &&
+      /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent));
+  if (!isMobile) return;
+
+  const doc = document as FullscreenDocument;
+  const docEl = document.documentElement as FullscreenDocElement;
+  if (!document.fullscreenElement && !doc.webkitFullscreenElement) {
+    try {
+      if (docEl.requestFullscreen) {
+        docEl.requestFullscreen().catch(() => {});
+      } else if (docEl.webkitRequestFullscreen) {
+        void docEl.webkitRequestFullscreen();
+      } else if (docEl.mozRequestFullScreen) {
+        void docEl.mozRequestFullScreen();
+      } else if (docEl.msRequestFullscreen) {
+        void docEl.msRequestFullscreen();
+      }
+    } catch {
+      // Ignore
+    }
+  }
+
+  try {
+    const sOri = screen.orientation as ScreenOrientationWithLock | undefined;
+    const lScreen = screen as unknown as LegacyScreen;
+    if (sOri && typeof sOri.lock === "function") {
+      sOri.lock("landscape").catch(() => {});
+    } else if (typeof lScreen.lockOrientation === "function") {
+      lScreen.lockOrientation("landscape");
+    }
+  } catch {
+    // Ignore
+  }
+}
+
+export function exitMobileLandscapeFullscreen() {
+  if (typeof window === "undefined" || typeof document === "undefined") return;
+
+  const doc = document as FullscreenDocument;
+  try {
+    if (document.fullscreenElement || doc.webkitFullscreenElement) {
+      if (document.exitFullscreen) {
+        document.exitFullscreen().catch(() => {});
+      } else if (doc.webkitExitFullscreen) {
+        void doc.webkitExitFullscreen();
+      } else if (doc.mozCancelFullScreen) {
+        void doc.mozCancelFullScreen();
+      } else if (doc.msExitFullscreen) {
+        void doc.msExitFullscreen();
+      }
+    }
+  } catch {
+    // Ignore
+  }
+
+  try {
+    const sOri = screen.orientation as ScreenOrientationWithLock | undefined;
+    const lScreen = screen as unknown as LegacyScreen;
+    if (sOri && typeof sOri.unlock === "function") {
+      sOri.unlock();
+    } else if (typeof lScreen.unlockOrientation === "function") {
+      lScreen.unlockOrientation();
+    }
+  } catch {
+    // Ignore
+  }
+}
+
 export interface BeUICenterMorphModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -1517,6 +1612,21 @@ export function BeUICenterMorphModal({
   useEffect(() => {
     onOpenChangeRef.current = onOpenChange;
   }, [onOpenChange]);
+
+  useEffect(() => {
+    if (hyperOSLandscapeOnMobile) {
+      if (open) {
+        requestMobileLandscapeFullscreen();
+      } else {
+        exitMobileLandscapeFullscreen();
+      }
+    }
+    return () => {
+      if (hyperOSLandscapeOnMobile) {
+        exitMobileLandscapeFullscreen();
+      }
+    };
+  }, [open, hyperOSLandscapeOnMobile]);
 
   useEffect(() => {
     if (typeof document === "undefined") return;

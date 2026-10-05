@@ -70,21 +70,21 @@ export function GoogleDriveAssetPickerModal({
           className="relative z-10 w-full max-w-4xl max-h-[88vh] flex flex-col rounded-[2.5rem] bg-[#f8f9fa] dark:bg-[#18181b] border border-gray-200 dark:border-white/10 shadow-2xl overflow-hidden select-none"
         >
           {/* Header */}
-          <div className="px-6 py-4 border-b border-gray-200/80 dark:border-white/10 bg-white/95 dark:bg-[#202024]/95 backdrop-blur-xl flex items-center justify-between gap-4 shrink-0">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-2xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center shrink-0">
-                <GoogleDriveIcon className="w-5 h-5" />
+          <div className="px-4 py-3 sm:px-6 sm:py-4 border-b border-gray-200/80 dark:border-white/10 bg-white/95 dark:bg-[#202024]/95 backdrop-blur-xl flex items-center justify-between gap-3 shrink-0">
+            <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
+              <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-2xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center shrink-0">
+                <GoogleDriveIcon className="w-4 h-4 sm:w-5 sm:h-5" />
               </div>
-              <div>
-                <div className="flex items-center gap-2">
-                  <span className="text-[10px] font-mono font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-blue-500/15 text-blue-600 dark:text-blue-400">
+              <div className="min-w-0">
+                <div className="flex items-center gap-1.5 sm:gap-2">
+                  <span className="text-[9px] sm:text-[10px] font-mono font-bold uppercase tracking-wider px-1.5 sm:px-2 py-0.5 rounded bg-blue-500/15 text-blue-600 dark:text-blue-400">
                     BANCO DE MEDIOS
                   </span>
-                  <span className="text-[10px] text-gray-500 font-mono">
+                  <span className="text-[9px] sm:text-[10px] text-gray-500 font-mono truncate hidden xs:inline">
                     {settings.accountEmail || "Google Drive"}
                   </span>
                 </div>
-                <h3 className="text-base sm:text-lg font-bold text-gray-900 dark:text-gray-100">
+                <h3 className="text-sm sm:text-lg font-bold text-gray-900 dark:text-gray-100 truncate">
                   {title}
                 </h3>
               </div>
@@ -93,27 +93,30 @@ export function GoogleDriveAssetPickerModal({
             <button
               type="button"
               onClick={onClose}
-              className="p-2 text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 rounded-full hover:bg-gray-100 dark:hover:bg-white/5 transition-colors cursor-pointer"
+              className="p-1.5 sm:p-2 text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 rounded-full hover:bg-gray-100 dark:hover:bg-white/5 transition-colors cursor-pointer shrink-0"
             >
               <X className="w-5 h-5" />
             </button>
           </div>
 
           {/* Folder & Search Subheader */}
-          <div className="px-6 py-3 border-b border-gray-200/60 dark:border-white/5 bg-gray-50/50 dark:bg-white/[0.02] flex flex-col sm:flex-row sm:items-center justify-between gap-3 shrink-0">
+          <div className="px-4 py-2.5 sm:px-6 sm:py-3 border-b border-gray-200/60 dark:border-white/5 bg-gray-50/50 dark:bg-white/[0.02] flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 sm:gap-3 shrink-0">
             {/* Folder Switcher */}
-            <div className="relative">
+            <div className="relative w-full sm:w-auto">
               <button
                 type="button"
                 onClick={() => setShowFolderDropdown(!showFolderDropdown)}
-                className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white dark:bg-[#28282c] border border-gray-200 dark:border-white/10 text-xs font-semibold text-gray-800 dark:text-gray-200 shadow-xs hover:border-gray-300 dark:hover:border-white/20 transition-all cursor-pointer"
+                className="w-full sm:w-auto inline-flex items-center justify-between sm:justify-start gap-2 px-3 py-1.5 rounded-xl bg-white dark:bg-[#28282c] border border-gray-200 dark:border-white/10 text-xs font-semibold text-gray-800 dark:text-gray-200 shadow-xs hover:border-gray-300 dark:hover:border-white/20 transition-all cursor-pointer"
               >
-                <FolderOpen className="w-4 h-4 text-amber-500" />
-                <span className="truncate max-w-[220px]">{settings.selectedFolderName}</span>
+                <div className="inline-flex items-center gap-2 truncate">
+                  <FolderOpen className="w-4 h-4 text-amber-500 shrink-0" />
+                  <span className="truncate max-w-[200px] sm:max-w-[220px]">{settings.selectedFolderName}</span>
+                </div>
+                <span className="text-[10px] text-gray-400 font-mono sm:hidden">Cambiar</span>
               </button>
 
               {showFolderDropdown && (
-                <div className="absolute left-0 mt-2 w-72 rounded-2xl bg-white dark:bg-[#202024] border border-gray-200 dark:border-white/10 shadow-2xl p-2 z-50 space-y-1">
+                <div className="absolute left-0 mt-2 w-full sm:w-72 rounded-2xl bg-white dark:bg-[#202024] border border-gray-200 dark:border-white/10 shadow-2xl p-2 z-50 space-y-1">
                   <p className="text-[10px] font-mono uppercase tracking-wider text-gray-400 px-3 py-1">
                     Cambiar Carpeta de Drive
                   </p>
@@ -145,13 +148,13 @@ export function GoogleDriveAssetPickerModal({
             </div>
 
             {/* Search Input */}
-            <div className="relative flex-1 max-w-xs">
+            <div className="relative w-full sm:w-auto sm:flex-1 sm:max-w-xs">
               <Search className="w-3.5 h-3.5 absolute left-3 top-2.5 text-gray-400" />
               <input
                 type="text"
                 value={searchFilter}
                 onChange={(e) => setSearchFilter(e.target.value)}
-                placeholder="Buscar imagen por nombre..."
+                placeholder="Buscar imagen..."
                 className="w-full pl-8 pr-3 py-1.5 rounded-xl border border-gray-200 dark:border-white/10 text-xs bg-white dark:bg-[#1a1a1c] text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>

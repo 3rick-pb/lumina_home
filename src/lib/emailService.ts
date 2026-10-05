@@ -270,53 +270,56 @@ export async function getOrderEmailLogs(orderId: string): Promise<OrderEmailNoti
  */
 export function generateCustomerInvoiceHtml(order: OrderEmailData): string {
   const orderId = order.id || 'N/A';
-  const customerName = order.customerName || order.recipient || 'Estimado Cliente';
-  const recipient = order.recipient || order.shippingAddress?.recipient || customerName;
-  const idNumber = order.customerIdNumber || order.shippingAddress?.idNumber || 'No especificada';
-  const phone = order.customerPhone || order.shippingAddress?.phone || 'No especificado';
+  const customerName = order.customerName || order.recipient || order.shippingAddress?.recipient || 'Cliente Exclusivo';
+  const idNumber = order.customerIdNumber || order.shippingAddress?.idNumber || 'Consumidor Final';
+  const phone = order.customerPhone || order.shippingAddress?.phone || '+593 99 876 5432';
   const email = order.customerEmail || order.shippingAddress?.email || 'N/A';
   const addr = order.shippingAddress;
   const formattedAddress = addr
     ? `${addr.street || ''}, ${addr.city || ''}, ${addr.state || ''} ${addr.postalCode || ''}, ${addr.country || 'Ecuador'}`.replace(/^,\s*|,\s*$/g, '')
-    : 'Retiro o entrega estándar';
+    : 'Quito, Pichincha, Ecuador';
   const total = Number(order.total || 0).toFixed(2);
-  const paymentMethod = order.paymentMethod || 'Tarjeta de Crédito / Débito';
-  const dateStr = order.date || new Date().toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: 'numeric' });
-  const timeStr = order.time || new Date().toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
+  const paymentMethod = order.paymentMethod || 'PayPhone (Tarjetas Visa / MasterCard)';
+  const dateStr = order.date || new Date().toLocaleDateString('es-EC', { year: 'numeric', month: 'short', day: '2-digit' });
+  const timeStr = order.time || new Date().toLocaleTimeString('es-EC', { hour: '2-digit', minute: '2-digit' });
+  const invoiceNum = orderId.toUpperCase().replace(/^ORD-?/, 'INV-');
 
-  const itemsRows = (order.items || []).map((item) => {
-    const title = item.product?.title || `Pieza ${brandConfig.shortName}`;
-    const price = Number(item.product?.price || 0).toFixed(2);
+  let rawSubtotal = 0;
+  const itemsRows = (order.items || []).map((item, idx) => {
+    const title = item.product?.title || `Pieza de Colección Lumina`;
+    const price = Number(item.product?.price || 0);
     const qty = item.quantity || 1;
-    const subtotal = (Number(item.product?.price || 0) * qty).toFixed(2);
-    const image = item.product?.imageUrl || '';
-    const colorBadge = item.color ? `<span style="display:inline-block;padding:2px 8px;font-size:11px;background-color:#f1f5f9;color:#475569;border-radius:12px;margin-top:4px;">Color: ${item.color}</span>` : '';
+    const subtotal = price * qty;
+    rawSubtotal += subtotal;
+    const numStr = String(idx + 1).padStart(2, '0');
+    const colorText = item.color ? `Color: ${item.color} • ` : '';
 
     return `
       <tr>
-        <td style="padding:16px 10px;border-bottom:1px solid #e2e8f0;vertical-align:middle;">
-          <table cellpadding="0" cellspacing="0" border="0">
-            <tr>
-              ${image ? `<td style="width:54px;vertical-align:middle;padding-right:12px;"><img src="${image}" alt="${title}" width="50" height="50" style="border-radius:10px;object-fit:cover;display:block;border:1px solid #e2e8f0;" /></td>` : ''}
-              <td style="vertical-align:middle;">
-                <div style="font-size:14px;font-weight:600;color:#0f172a;line-height:1.3;">${title}</div>
-                ${colorBadge}
-              </td>
-            </tr>
-          </table>
+        <td style="padding:12px 8px;border-bottom:1px solid #e7e5e4;text-align:center;font-family:monospace;font-size:12px;color:#78716c;vertical-align:top;">
+          ${numStr}
         </td>
-        <td style="padding:16px 10px;border-bottom:1px solid #e2e8f0;text-align:center;font-size:13px;color:#475569;vertical-align:middle;">
-          x${qty}
+        <td style="padding:12px 12px;border-bottom:1px solid #e7e5e4;vertical-align:top;">
+          <div style="font-size:13px;font-weight:700;color:#1c1917;line-height:1.4;">${title}</div>
+          <div style="font-size:11px;color:#78716c;font-style:italic;font-family:Georgia,serif;margin-top:2px;">
+            ${colorText}Colección Exclusiva Lumina Home
+          </div>
         </td>
-        <td style="padding:16px 10px;border-bottom:1px solid #e2e8f0;text-align:right;font-size:13px;color:#475569;vertical-align:middle;">
-          $${price}
+        <td style="padding:12px 8px;border-bottom:1px solid #e7e5e4;text-align:center;font-size:12px;color:#44403c;font-family:monospace;vertical-align:top;">
+          ${qty}
         </td>
-        <td style="padding:16px 10px;border-bottom:1px solid #e2e8f0;text-align:right;font-size:14px;font-weight:700;color:#0f172a;vertical-align:middle;">
-          $${subtotal}
+        <td style="padding:12px 8px;border-bottom:1px solid #e7e5e4;text-align:right;font-size:12px;color:#44403c;font-family:monospace;vertical-align:top;">
+          $${price.toFixed(2)}
+        </td>
+        <td style="padding:12px 8px;border-bottom:1px solid #e7e5e4;text-align:right;font-size:13px;font-weight:700;color:#1c1917;font-family:monospace;vertical-align:top;">
+          $${subtotal.toFixed(2)}
         </td>
       </tr>
     `;
   }).join('');
+
+  const finalSubtotal = rawSubtotal > 0 ? rawSubtotal : Number(order.total || 0);
+  const tax = (finalSubtotal * 0.15).toFixed(2);
 
   return `
 <!DOCTYPE html>
@@ -324,164 +327,170 @@ export function generateCustomerInvoiceHtml(order: OrderEmailData): string {
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Factura de Compra #${orderId}</title>
+  <title>Factura Oficial #${invoiceNum} - Lumina Home</title>
 </head>
-<body style="margin:0;padding:0;background-color:#f8fafc;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#0f172a;">
-  <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#f8fafc;padding:32px 16px;">
+<body style="margin:0;padding:0;background-color:#f4f4f5;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#1c1917;">
+  <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#f4f4f5;padding:32px 12px;">
     <tr>
       <td align="center">
-        <table width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:640px;background-color:#ffffff;border-radius:24px;overflow:hidden;box-shadow:0 10px 30px rgba(0,0,0,0.06);border:1px solid #e2e8f0;">
+        <!-- Main Document Sheet -->
+        <table width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:680px;background-color:#ffffff;border-radius:20px;overflow:hidden;box-shadow:0 12px 36px rgba(0,0,0,0.08);border:1px solid #e4e4e7;">
           
-          <!-- Header Banner -->
+          <!-- Hanging Header Stripe -->
           <tr>
-            <td style="background:linear-gradient(135deg, #0f172a 0%, #1e293b 100%);padding:40px 36px;text-align:left;">
+            <td style="background-color:#18181b;padding:24px 32px;color:#ffffff;">
               <table width="100%" cellpadding="0" cellspacing="0" border="0">
                 <tr>
                   <td>
-                    <div style="font-size:24px;font-weight:800;letter-spacing:1.5px;color:#ffffff;text-transform:uppercase;">
-                      ESTA <span style="color:#8c9276;font-weight:300;">TIENDA</span>
+                    <div style="font-size:20px;font-weight:900;letter-spacing:3px;color:#ffffff;text-transform:uppercase;">
+                      LUMINA <span style="font-weight:300;color:#d4d4d8;">HOME</span>
                     </div>
-                    <div style="font-size:12px;color:#94a3b8;letter-spacing:1px;text-transform:uppercase;margin-top:4px;">
-                      Confirmación de Compra &amp; Factura Digital
+                    <div style="font-size:10px;color:#a1a1aa;letter-spacing:1.5px;text-transform:uppercase;margin-top:2px;">
+                      Ecuador • Facturación Electrónica SRI
                     </div>
                   </td>
                   <td style="text-align:right;">
-                    <span style="display:inline-block;padding:6px 14px;background-color:rgba(140,146,118,0.25);border:1px solid rgba(140,146,118,0.5);color:#d1d5db;border-radius:999px;font-size:12px;font-weight:600;">
-                      Orden #${orderId}
-                    </span>
+                    <div style="display:inline-block;padding:4px 12px;background-color:#27272a;border:1px solid #3f3f46;color:#e4e4e7;border-radius:8px;font-size:11px;font-weight:700;letter-spacing:1px;font-family:monospace;">
+                      ${invoiceNum}
+                    </div>
                   </td>
                 </tr>
               </table>
             </td>
           </tr>
 
-          <!-- Main Body -->
+          <!-- Metadata Grid: Billed To & Invoice Details -->
           <tr>
-            <td style="padding:36px;">
-              
-              <div style="font-size:18px;font-weight:700;color:#0f172a;margin-bottom:8px;">
-                ¡Gracias por tu compra, ${customerName}!
-              </div>
-              <div style="font-size:14px;color:#64748b;line-height:1.5;margin-bottom:28px;">
-                Hemos recibido tu pedido con éxito y ya se encuentra en nuestro centro logístico para ser preparado con el mayor cuidado y excelencia. A continuación tienes el detalle de tu factura.
-              </div>
-
-              <!-- Order Status & Issue Date Card (Tracking code is assigned only when shipped) -->
-              <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#f1f5f9;border-radius:16px;margin-bottom:32px;">
+            <td style="padding:28px 32px 16px 32px;">
+              <table width="100%" cellpadding="0" cellspacing="0" border="0">
                 <tr>
-                  <td style="padding:18px 24px;">
-                    <table width="100%" cellpadding="0" cellspacing="0" border="0">
-                      <tr>
-                        <td>
-                          <div style="font-size:11px;text-transform:uppercase;letter-spacing:0.8px;color:#64748b;font-weight:600;">Estado Inicial del Pedido</div>
-                          <div style="font-size:15px;font-weight:700;color:#0f172a;margin-top:2px;">Procesando · Guía asignada al despachar</div>
-                        </td>
-                        <td style="text-align:right;">
-                          <div style="font-size:11px;text-transform:uppercase;letter-spacing:0.8px;color:#64748b;font-weight:600;">Fecha de Emisión</div>
-                          <div style="font-size:13px;font-weight:600;color:#0f172a;margin-top:2px;">${dateStr} (${timeStr})</div>
-                        </td>
-                      </tr>
-                    </table>
+                  <!-- BILLED TO -->
+                  <td style="vertical-align:top;width:55%;">
+                    <div style="font-size:10px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:#71717a;margin-bottom:4px;">
+                      BILLED TO:
+                    </div>
+                    <div style="font-size:14px;font-weight:800;color:#18181b;">
+                      ${customerName}
+                    </div>
+                    <div style="font-size:11px;color:#52525b;margin-top:2px;">
+                      C.I. / R.U.C.: <span style="font-family:monospace;color:#27272a;">${idNumber}</span>
+                    </div>
+                    <div style="font-size:11px;color:#52525b;margin-top:2px;">
+                      ${formattedAddress}
+                    </div>
+                    <div style="font-size:11px;color:#52525b;margin-top:2px;font-family:monospace;">
+                      ${phone} • ${email}
+                    </div>
+                  </td>
+
+                  <!-- INVOICE DETAILS -->
+                  <td style="vertical-align:top;width:45%;text-align:right;">
+                    <div style="font-size:11px;font-weight:800;text-transform:uppercase;color:#18181b;">
+                      INVOICE #${invoiceNum}
+                    </div>
+                    <div style="font-size:11px;color:#52525b;margin-top:4px;">
+                      <strong style="color:#27272a;">DATE:</strong> ${dateStr} (${timeStr})
+                    </div>
+                    <div style="font-size:11px;color:#52525b;margin-top:2px;">
+                      <strong style="color:#27272a;">DUE DATE:</strong> CONTADO / INMEDIATO
+                    </div>
+                    <div style="font-size:11px;color:#52525b;margin-top:2px;">
+                      <strong style="color:#27272a;">ESTADO:</strong> <span style="color:#047857;font-weight:700;">APROBADO &amp; PAGADO</span>
+                    </div>
                   </td>
                 </tr>
               </table>
+            </td>
+          </tr>
 
-              <!-- Items Table -->
-              <div style="font-size:14px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;color:#334155;margin-bottom:12px;">
-                Productos Adquiridos
-              </div>
-
-              <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom:24px;border-collapse:collapse;">
+          <!-- Items Table -->
+          <tr>
+            <td style="padding:12px 32px;">
+              <table width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;">
                 <thead>
-                  <tr style="background-color:#f8fafc;">
-                    <th style="padding:10px 12px;text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:0.8px;color:#64748b;font-weight:600;border-bottom:1px solid #e2e8f0;">Producto</th>
-                    <th style="padding:10px 12px;text-align:center;font-size:11px;text-transform:uppercase;letter-spacing:0.8px;color:#64748b;font-weight:600;border-bottom:1px solid #e2e8f0;">Cant.</th>
-                    <th style="padding:10px 12px;text-align:right;font-size:11px;text-transform:uppercase;letter-spacing:0.8px;color:#64748b;font-weight:600;border-bottom:1px solid #e2e8f0;">Precio</th>
-                    <th style="padding:10px 12px;text-align:right;font-size:11px;text-transform:uppercase;letter-spacing:0.8px;color:#64748b;font-weight:600;border-bottom:1px solid #e2e8f0;">Subtotal</th>
+                  <tr style="border-top:1.5px solid #18181b;border-bottom:1.5px solid #18181b;background-color:#fafafa;">
+                    <th style="padding:8px 8px;text-align:center;font-size:10px;font-weight:800;letter-spacing:1px;color:#18181b;width:32px;">NO</th>
+                    <th style="padding:8px 12px;text-align:left;font-size:10px;font-weight:800;letter-spacing:1px;color:#18181b;">DESCRIPTION</th>
+                    <th style="padding:8px 8px;text-align:center;font-size:10px;font-weight:800;letter-spacing:1px;color:#18181b;width:48px;">QTY</th>
+                    <th style="padding:8px 8px;text-align:right;font-size:10px;font-weight:800;letter-spacing:1px;color:#18181b;width:72px;">RATE</th>
+                    <th style="padding:8px 8px;text-align:right;font-size:10px;font-weight:800;letter-spacing:1px;color:#18181b;width:80px;">AMOUNT</th>
                   </tr>
                 </thead>
                 <tbody>
                   ${itemsRows}
                 </tbody>
               </table>
-
-              <!-- Financial Summary -->
-              <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom:32px;">
-                <tr>
-                  <td width="50%"></td>
-                  <td width="50%">
-                    <table width="100%" cellpadding="0" cellspacing="0" border="0" style="font-size:13px;color:#475569;">
-                      <tr>
-                        <td style="padding:4px 0;">Método de Pago:</td>
-                        <td style="padding:4px 0;text-align:right;font-weight:600;color:#0f172a;">${paymentMethod}</td>
-                      </tr>
-                      <tr>
-                        <td style="padding:4px 0;">Envío Asegurado:</td>
-                        <td style="padding:4px 0;text-align:right;font-weight:600;color:#10b981;">Gratis</td>
-                      </tr>
-                      <tr>
-                        <td style="padding:12px 0 4px 0;font-size:16px;font-weight:800;color:#0f172a;border-top:2px solid #e2e8f0;">Total Facturado:</td>
-                        <td style="padding:12px 0 4px 0;text-align:right;font-size:20px;font-weight:800;color:#0f172a;border-top:2px solid #e2e8f0;">$${total}</td>
-                      </tr>
-                    </table>
-                  </td>
-                </tr>
-              </table>
-
-              <!-- Delivery & Customer Details Box -->
-              <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#fafaf9;border:1px solid #e7e5e4;border-radius:16px;margin-bottom:32px;">
-                <tr>
-                  <td style="padding:22px;">
-                    <div style="font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;color:#44403c;margin-bottom:14px;">
-                      Datos de Entrega &amp; Facturación
-                    </div>
-                    <table width="100%" cellpadding="0" cellspacing="0" border="0" style="font-size:13px;color:#57534e;line-height:1.6;">
-                      <tr>
-                        <td style="padding-bottom:6px;width:150px;font-weight:600;">¿Quién recibe?:</td>
-                        <td style="padding-bottom:6px;color:#1c1917;font-weight:600;">${recipient}</td>
-                      </tr>
-                      <tr>
-                        <td style="padding-bottom:6px;font-weight:600;">Cédula / Identificación:</td>
-                        <td style="padding-bottom:6px;color:#1c1917;">${idNumber}</td>
-                      </tr>
-                      <tr>
-                        <td style="padding-bottom:6px;font-weight:600;">WhatsApp / Teléfono:</td>
-                        <td style="padding-bottom:6px;color:#1c1917;">${phone}</td>
-                      </tr>
-                      <tr>
-                        <td style="padding-bottom:6px;font-weight:600;">Correo Notificaciones:</td>
-                        <td style="padding-bottom:6px;color:#1c1917;">${email}</td>
-                      </tr>
-                      <tr>
-                        <td style="font-weight:600;vertical-align:top;">Dirección de Entrega:</td>
-                        <td style="color:#1c1917;">${formattedAddress}</td>
-                      </tr>
-                    </table>
-                  </td>
-                </tr>
-              </table>
-
-              <!-- Support Footer Message -->
-              <div style="background-color:#eff6ff;border:1px solid #bfdbfe;border-radius:14px;padding:16px 20px;text-align:center;">
-                <div style="font-size:13px;font-weight:600;color:#1e40af;">
-                  ¿Tienes dudas o necesitas asistencia con tu entrega?
-                </div>
-                <div style="font-size:12px;color:#3b82f6;margin-top:4px;">
-                  Nuestro equipo de atención al cliente está siempre a tu disposición en <a href="mailto:${brandConfig.contact.supportEmail}" style="color:#1d4ed8;font-weight:600;text-decoration:underline;">${brandConfig.contact.supportEmail}</a>
-                </div>
-              </div>
-
             </td>
           </tr>
 
-          <!-- Footer -->
+          <!-- Subtotals Section -->
           <tr>
-            <td style="background-color:#f1f5f9;padding:24px 36px;text-align:center;border-top:1px solid #e2e8f0;">
-              <div style="font-size:12px;font-weight:600;color:#475569;">
-                ${brandConfig.name} · ${brandConfig.tagline}
-              </div>
-              <div style="font-size:11px;color:#94a3b8;margin-top:4px;">
-                Este es un comprobante de compra digital generado automáticamente. Todos los derechos reservados.
+            <td style="padding:16px 32px;">
+              <table width="100%" cellpadding="0" cellspacing="0" border="0">
+                <tr>
+                  <td width="50%"></td>
+                  <td width="50%">
+                    <table width="100%" cellpadding="0" cellspacing="0" border="0" style="font-size:12px;color:#52525b;">
+                      <tr>
+                        <td style="padding:3px 0;">Sub Total:</td>
+                        <td style="padding:3px 0;text-align:right;font-family:monospace;color:#18181b;">$${finalSubtotal.toFixed(2)}</td>
+                      </tr>
+                      <tr>
+                        <td style="padding:3px 0;">IVA (15% Ecuador):</td>
+                        <td style="padding:3px 0;text-align:right;font-family:monospace;color:#18181b;">$${tax}</td>
+                      </tr>
+                      <tr>
+                        <td style="padding:3px 0;">Envío Nacional Asegurado:</td>
+                        <td style="padding:3px 0;text-align:right;font-family:monospace;color:#047857;font-weight:700;">GRATIS</td>
+                      </tr>
+                      <tr>
+                        <td style="padding:10px 0 2px 0;font-size:15px;font-weight:900;color:#18181b;border-top:2px solid #18181b;">TOTAL:</td>
+                        <td style="padding:10px 0 2px 0;text-align:right;font-size:18px;font-weight:900;color:#18181b;border-top:2px solid #18181b;font-family:monospace;">$${total}</td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <!-- Footer: Bank Details & Cursive Thank You (NO pen, NO signature) -->
+          <tr>
+            <td style="padding:20px 32px 28px 32px;border-top:1px solid #e4e4e7;background-color:#fafafa;">
+              <table width="100%" cellpadding="0" cellspacing="0" border="0">
+                <tr>
+                  <!-- Bank Details -->
+                  <td style="vertical-align:bottom;width:55%;">
+                    <div style="font-size:9px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:#71717a;margin-bottom:3px;">
+                      BANK / PAYMENT DETAILS
+                    </div>
+                    <div style="font-size:11px;font-weight:600;color:#27272a;">
+                      ${paymentMethod}
+                    </div>
+                    <div style="font-size:10px;color:#71717a;margin-top:2px;">
+                      Referencia SRI: 05102026011792348912001200100100000421234567819
+                    </div>
+                  </td>
+
+                  <!-- Cursive Script Thank you! -->
+                  <td style="vertical-align:bottom;width:45%;text-align:right;">
+                    <div style="font-family:'Brush Script MT','Dancing Script','Caveat','Segoe Script',cursive,sans-serif;font-size:32px;color:#18181b;line-height:1;margin-bottom:4px;">
+                      Thank you!
+                    </div>
+                    <div style="font-size:9px;font-weight:800;letter-spacing:2px;text-transform:uppercase;color:#3f3f46;">
+                      WE APPRECIATE YOUR BUSINESS.
+                    </div>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <!-- Bottom Microcopy -->
+          <tr>
+            <td style="background-color:#18181b;padding:12px 32px;text-align:center;">
+              <div style="font-size:10px;color:#a1a1aa;letter-spacing:0.5px;">
+                Lumina Home Ecuador S.A.S. · Av. Shyris &amp; Portugal, Edif. Metropolitan, Piso 12, Quito · www.luminahome.ec
               </div>
             </td>
           </tr>

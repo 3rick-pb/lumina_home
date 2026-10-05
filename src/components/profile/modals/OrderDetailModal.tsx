@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import Image from "next/image";
-import { X, CheckCircle2, Mail, Send, RefreshCw, AlertCircle, Truck, ExternalLink } from "lucide-react";
+import { X, CheckCircle2, Mail, Send, RefreshCw, AlertCircle, Truck, ExternalLink, FileText } from "lucide-react";
 import { Order } from "@/lib/userStore";
 import { BlobatarAvatar } from "@/components/ui/BlobatarAvatar";
 import { BeUICenterMorphModal, BeUIOrderStatusSelector } from "@/components/ui/BeUIControls";
@@ -10,6 +10,7 @@ import { WalletPassPopupModal } from "@/components/ui/WalletPassPopupModal";
 import { GoogleWalletIcon } from "@/components/ui/GoogleWalletButton";
 import { supabase } from "@/lib/supabase";
 import { MacOSScrollbar } from "@/components/ui/MacOSScrollbar";
+import { LuminaOfficialInvoiceModal } from "./LuminaOfficialInvoiceModal";
 
 interface EmailNotificationLog {
   id: string;
@@ -47,6 +48,7 @@ export function OrderDetailModal({
   const [feedback, setFeedback] = useState<{ success: boolean; message: string } | null>(null);
   const [copiedTracking, setCopiedTracking] = useState(false);
   const [showWalletPopup, setShowWalletPopup] = useState(false);
+  const [showOfficialInvoice, setShowOfficialInvoice] = useState(false);
 
 
   const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -471,10 +473,21 @@ export function OrderDetailModal({
           )}
         </div>
 
-        {/* Summary */}
-        <div className="pt-4 border-t border-gray-100 dark:border-white/5 flex items-center justify-between text-sm">
-          <span className="text-gray-500 dark:text-gray-400 font-medium">Total Facturado</span>
-          <span className="text-xl font-bold text-gray-900 dark:text-gray-100">${activeOrder.total.toFixed(2)}</span>
+        {/* Summary & Factura Oficial Button */}
+        <div className="pt-4 border-t border-gray-100 dark:border-white/5 space-y-3">
+          <div className="flex items-center justify-between text-sm">
+            <span className="text-gray-500 dark:text-gray-400 font-medium">Total Facturado</span>
+            <span className="text-xl font-bold text-gray-900 dark:text-gray-100">${activeOrder.total.toFixed(2)}</span>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => setShowOfficialInvoice(true)}
+            className="w-full py-2.5 px-4 rounded-xl bg-stone-900 hover:bg-stone-800 dark:bg-stone-100 dark:hover:bg-white text-white dark:text-stone-950 font-bold text-xs transition-all shadow-sm flex items-center justify-center gap-2 cursor-pointer active:scale-95"
+          >
+            <FileText className="w-4 h-4 text-amber-400 dark:text-amber-600" />
+            <span>Ver Factura Oficial Lumina</span>
+          </button>
         </div>
 
         {/* If Admin: live status changer with BeUIPopover + BeUIAnimatedBadge */}
@@ -517,6 +530,13 @@ export function OrderDetailModal({
         trackingUrl={activeOrder.trackingUrl}
         carrierName={activeOrder.carrierName}
         date={activeOrder.date}
+      />
+
+      {/* Official Editorial Invoice Modal (Factura.jpg Architecture) */}
+      <LuminaOfficialInvoiceModal
+        order={activeOrder}
+        open={showOfficialInvoice}
+        onClose={() => setShowOfficialInvoice(false)}
       />
     </BeUICenterMorphModal>
   );
