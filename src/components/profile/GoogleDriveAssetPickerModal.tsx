@@ -12,8 +12,9 @@ import {
   Upload 
 } from "lucide-react";
 import { useGoogleDriveStore, GoogleDriveFile } from "@/lib/googleDriveStore";
-import { GoogleDriveIcon } from "./GoogleDriveSettingsCard";
+import { GoogleDriveIcon, GoogleLogoIcon } from "./GoogleDriveSettingsCard";
 import { formatGoogleDriveUrl, isGoogleDriveUrl } from "@/lib/imageUtils";
+import { useUserStore } from "@/lib/userStore";
 
 interface GoogleDriveAssetPickerModalProps {
   open: boolean;
@@ -36,9 +37,12 @@ export function GoogleDriveAssetPickerModal({
     settings, 
     selectFolder, 
     addPhoto, 
-    addPhotos 
+    addPhotos,
+    connectAccount 
   } = useGoogleDriveStore();
 
+  const currentUser = useUserStore((s) => s.user);
+  const [connectEmailInput, setConnectEmailInput] = useState("");
   const [searchFilter, setSearchFilter] = useState("");
   const [selectedFileIds, setSelectedFileIds] = useState<string[]>([]);
   const [showFolderDropdown, setShowFolderDropdown] = useState(false);
@@ -184,12 +188,12 @@ export function GoogleDriveAssetPickerModal({
               {settings.isConnected ? (
                 <div className="hidden xs:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-700 dark:text-emerald-300 text-[10px] font-semibold">
                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                  <span className="truncate max-w-[120px]">{settings.accountEmail || "Drive Vinculado"}</span>
+                  <span className="truncate max-w-[140px]">{settings.accountEmail || "Drive Conectado"}</span>
                 </div>
               ) : (
-                <div className="hidden xs:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-stone-100 dark:bg-white/5 border border-stone-200 dark:border-white/10 text-stone-500 text-[10px] font-semibold">
-                  <span className="w-1.5 h-1.5 rounded-full bg-stone-400" />
-                  <span>Catálogo Local / BD</span>
+                <div className="hidden xs:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-rose-500/10 border border-rose-500/20 text-rose-600 dark:text-rose-400 text-[10px] font-semibold">
+                  <span className="w-1.5 h-1.5 rounded-full bg-rose-500" />
+                  <span>Conexión Requerida</span>
                 </div>
               )}
 
@@ -275,17 +279,60 @@ export function GoogleDriveAssetPickerModal({
 
           {/* Files Grid View */}
           <div className="p-4 sm:p-6 overflow-y-auto flex-1">
-            {filteredFiles.length === 0 ? (
+            {!settings.isConnected ? (
+              <div className="p-8 sm:p-12 text-center flex flex-col items-center justify-center space-y-4">
+                <div className="w-16 h-16 rounded-3xl bg-amber-500/10 flex items-center justify-center">
+                  <GoogleDriveIcon className="w-8 h-8" />
+                </div>
+                <div className="max-w-sm space-y-1">
+                  <h4 className="text-base font-bold text-gray-900 dark:text-gray-100">
+                    Google Drive no conectado
+                  </h4>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">
+                    Para seleccionar las fotos de tus productos, debes conectar tu cuenta de Google Drive.
+                  </p>
+                </div>
+                <div className="w-full max-w-sm space-y-2.5 pt-2">
+                  {currentUser?.email ? (
+                    <button
+                      type="button"
+                      onClick={() => connectAccount(currentUser.email, currentUser.name || "Administrador Lumina")}
+                      className="w-full py-3 px-4 rounded-2xl bg-stone-900 dark:bg-white hover:bg-stone-800 dark:hover:bg-stone-100 text-white dark:text-stone-900 font-bold text-xs shadow-md transition-all cursor-pointer flex items-center justify-center gap-2"
+                    >
+                      <GoogleLogoIcon className="w-4 h-4" />
+                      <span>Conectar con {currentUser.email}</span>
+                    </button>
+                  ) : null}
+                  <div className="flex gap-2">
+                    <input
+                      type="email"
+                      value={connectEmailInput}
+                      onChange={(e) => setConnectEmailInput(e.target.value)}
+                      placeholder="tu_cuenta@gmail.com"
+                      className="flex-1 px-3.5 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-xs bg-white dark:bg-[#1a1a1c] text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-amber-500/50"
+                    />
+                    <button
+                      type="button"
+                      disabled={!connectEmailInput.includes("@")}
+                      onClick={() => connectAccount(connectEmailInput.trim().toLowerCase())}
+                      className="px-4 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 disabled:opacity-40 text-white text-xs font-bold transition-all cursor-pointer shadow-xs shrink-0"
+                    >
+                      Conectar
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ) : filteredFiles.length === 0 ? (
               <div className="p-10 sm:p-14 text-center flex flex-col items-center justify-center space-y-4 border border-dashed border-gray-200 dark:border-white/10 rounded-3xl">
                 <div className="w-14 h-14 rounded-2xl bg-amber-500/10 dark:bg-amber-500/15 flex items-center justify-center text-amber-500">
                   <FolderOpen className="w-7 h-7" />
                 </div>
                 <div className="max-w-xs space-y-1">
                   <h4 className="text-sm font-bold text-gray-900 dark:text-gray-100">
-                    No hay fotografías en esta colección
+                    No hay fotografías en esta colección de Drive
                   </h4>
                   <p className="text-xs text-gray-500 dark:text-gray-400">
-                    Sube fotos reales desde tu equipo o añade enlaces directos para usarlas en tus productos.
+                    Sube fotos desde tu equipo o añade enlaces directos de Google Drive para usarlas en tus productos.
                   </p>
                 </div>
                 <button
@@ -294,7 +341,7 @@ export function GoogleDriveAssetPickerModal({
                   className="inline-flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs transition-all cursor-pointer shadow-md active:scale-95"
                 >
                   <Upload className="w-4 h-4" />
-                  <span>+ Subir Fotografías Ahora</span>
+                  <span>+ Subir Foto a Google Drive</span>
                 </button>
               </div>
             ) : (

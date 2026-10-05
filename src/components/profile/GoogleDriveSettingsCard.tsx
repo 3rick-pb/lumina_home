@@ -182,33 +182,47 @@ export function GoogleDriveSettingsCard({ onClose, onSelectPhotoForProduct }: Go
     setPhotoToDelete(null);
   };
 
-  // Procesar subida por enlace / Google Drive
+  // Procesar subida por enlace / Google Drive (soporta enlace único o múltiples enlaces por coma / salto de línea)
   const handleAddPhotoByUrl = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!urlInput.trim()) return;
     setIsAddingUrl(true);
 
     try {
-      const normalizedUrl = formatGoogleDriveUrl(urlInput.trim());
-      const name = urlNameInput.trim() || `LUMINA-ASSET-${Date.now().toString().slice(-4)}.jpg`;
+      const rawUrls = urlInput.split(/[\n,]+/).map((u) => u.trim()).filter(Boolean);
+      const itemsToAdd: Array<Omit<GoogleDriveFile, "id">> = [];
 
-      await addPhoto({
-        name,
-        cdnUrl: normalizedUrl,
-        thumbnailUrl: normalizedUrl,
-        folderId: urlFolderTarget,
-        size: "HD Stream",
-        dimensions: "Resolución Original",
-        mimeType: "image/jpeg",
-        source: isGoogleDriveUrl(urlInput) ? "google_drive" : "url",
-      });
+      for (let i = 0; i < rawUrls.length; i++) {
+        const singleUrl = rawUrls[i];
+        const normalizedUrl = formatGoogleDriveUrl(singleUrl);
+        const baseName = urlNameInput.trim() 
+          ? (rawUrls.length > 1 ? `${urlNameInput.trim()}-${i + 1}` : urlNameInput.trim())
+          : `LUMINA-DRIVE-${Date.now().toString().slice(-4)}-${i + 1}.jpg`;
+
+        itemsToAdd.push({
+          name: baseName,
+          cdnUrl: normalizedUrl,
+          thumbnailUrl: normalizedUrl,
+          folderId: urlFolderTarget,
+          size: "HD Stream",
+          dimensions: "Resolución Google Drive",
+          mimeType: "image/jpeg",
+          source: isGoogleDriveUrl(singleUrl) ? "google_drive" : "url",
+        });
+      }
+
+      if (itemsToAdd.length === 1) {
+        await addPhoto(itemsToAdd[0]);
+      } else if (itemsToAdd.length > 1) {
+        await addPhotos(itemsToAdd);
+      }
 
       setUrlInput("");
       setUrlNameInput("");
-      showNotification("Fotografía agregada a la colección");
+      showNotification(`¡${itemsToAdd.length} fotografía(s) de Google Drive añadidas con éxito!`);
       setActiveView("files");
     } catch {
-      showNotification("Error al procesar el enlace de la imagen");
+      showNotification("Error al procesar el enlace de Google Drive");
     } finally {
       setIsAddingUrl(false);
     }
@@ -334,12 +348,12 @@ export function GoogleDriveSettingsCard({ onClose, onSelectPhotoForProduct }: Go
           {settings.isConnected ? (
             <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/25 text-emerald-700 dark:text-emerald-300 text-xs font-semibold shadow-xs">
               <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-              <span>Drive Vinculado</span>
+              <span>Drive Conectado</span>
             </div>
           ) : (
-            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-stone-100 dark:bg-white/10 text-stone-600 dark:text-stone-400 text-xs font-semibold">
-              <span className="w-2 h-2 rounded-full bg-stone-400" />
-              <span>Almacén Activo (Drive Opcional)</span>
+            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-rose-500/10 border border-rose-500/20 text-rose-600 dark:text-rose-400 text-xs font-semibold">
+              <span className="w-2 h-2 rounded-full bg-rose-500" />
+              <span>Conexión Requerida</span>
             </div>
           )}
           {onClose && (
@@ -362,11 +376,71 @@ export function GoogleDriveSettingsCard({ onClose, onSelectPhotoForProduct }: Go
         </div>
       )}
 
-      {/* WORKSPACE & NAVIGATION TABS (ALWAYS ACCESSIBLE, NEVER GATED) */}
-      <div className="space-y-5 relative z-10">
-        {/* Top Account & Google Drive Status Strip */}
-        <div className="p-3.5 sm:p-4 rounded-2xl bg-stone-50/80 dark:bg-[#202024]/80 border border-stone-200/80 dark:border-white/10 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          {settings.isConnected ? (
+      {/* GOOGLE DRIVE MANDATORY CONNECTION GATE */}
+      {!settings.isConnected ? (
+        <div className="p-8 sm:p-12 rounded-3xl bg-stone-50/70 dark:bg-[#1f1f23]/70 border border-stone-200/80 dark:border-white/10 shadow-sm flex flex-col items-center justify-center text-center space-y-6">
+          <div className="w-20 h-20 rounded-3xl bg-white dark:bg-white/[0.08] border border-stone-200/80 dark:border-white/10 flex items-center justify-center shadow-lg relative">
+            <GoogleDriveIcon className="w-10 h-10" />
+            <div className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-amber-500 text-white flex items-center justify-center shadow-sm">
+              <Sparkles className="w-3.5 h-3.5" />
+            </div>
+          </div>
+
+          <div className="max-w-md space-y-2">
+            <span className="text-[10px] font-mono font-bold uppercase tracking-widest px-3 py-1 rounded-full bg-amber-500/10 text-amber-800 dark:text-amber-300 border border-amber-500/20">
+              CONEXIÓN REQUERIDA
+            </span>
+            <h4 className="text-xl font-display font-bold text-gray-900 dark:text-gray-100">
+              Conectar Cuenta de Google Drive
+            </h4>
+            <p className="text-xs text-stone-500 dark:text-stone-400 leading-relaxed">
+              Para extraer, sincronizar y utilizar las fotografías de tus productos en Lumina, debes vincular tu cuenta autorizada de Google Drive.
+            </p>
+          </div>
+
+          {/* Quick Connect with current admin session or custom input */}
+          <div className="w-full max-w-sm space-y-3">
+            {currentUser?.email ? (
+              <button
+                type="button"
+                onClick={() => handleGoogleLoginSubmit(currentUser.email, currentUser.name || "Administrador Lumina")}
+                disabled={isSyncing}
+                className="w-full p-4 rounded-2xl bg-stone-900 dark:bg-white hover:bg-stone-800 dark:hover:bg-stone-100 text-white dark:text-stone-900 font-bold text-xs shadow-lg hover:shadow-xl transition-all hover:scale-[1.02] active:scale-98 cursor-pointer flex items-center justify-center gap-3"
+              >
+                <GoogleLogoIcon className="w-4 h-4" />
+                <span>Vincular con tu cuenta ({currentUser.email})</span>
+              </button>
+            ) : null}
+
+            <div className="p-4 rounded-2xl bg-white dark:bg-[#151518] border border-stone-200/80 dark:border-white/10 shadow-xs space-y-2.5 text-left">
+              <label className="block text-[11px] font-bold text-stone-700 dark:text-stone-300">
+                {currentUser?.email ? "O escribe otra cuenta de Google / Gmail:" : "Ingresa tu cuenta de Google / Gmail:"}
+              </label>
+              <div className="flex gap-2">
+                <input
+                  type="email"
+                  value={customGoogleEmail}
+                  onChange={(e) => setCustomGoogleEmail(e.target.value)}
+                  placeholder="tu_cuenta@gmail.com"
+                  className="flex-1 px-3.5 py-2.5 rounded-xl border border-stone-200 dark:border-white/10 text-xs bg-stone-50 dark:bg-[#1a1a1c] text-gray-900 dark:text-gray-100 placeholder-stone-400 focus:outline-none focus:ring-2 focus:ring-amber-500/50"
+                />
+                <button
+                  type="button"
+                  disabled={!customGoogleEmail.includes("@") || isSyncing}
+                  onClick={() => handleGoogleLoginSubmit(customGoogleEmail.trim().toLowerCase(), customGoogleEmail.split("@")[0])}
+                  className="px-4 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 disabled:opacity-40 text-white text-xs font-bold cursor-pointer transition-all shadow-sm shrink-0"
+                >
+                  Conectar
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      ) : (
+        /* CONNECTED STATE: NAVIGATION TABS + ACTIONS */
+        <div className="space-y-5 relative z-10">
+          {/* Top Connected Account Strip */}
+          <div className="p-3.5 sm:p-4 rounded-2xl bg-stone-50/80 dark:bg-[#202024]/80 border border-stone-200/80 dark:border-white/10 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div className="flex items-center gap-3">
               <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-white dark:bg-white/10 border border-stone-200/60 dark:border-white/10 text-stone-700 dark:text-stone-200 flex items-center justify-center font-bold text-sm shrink-0 shadow-xs">
                 <GoogleLogoIcon className="w-5 h-5" />
@@ -380,67 +454,34 @@ export function GoogleDriveSettingsCard({ onClose, onSelectPhotoForProduct }: Go
                     Drive Activo
                   </span>
                 </div>
-                <p className="text-xs text-stone-500 dark:text-stone-400 truncate">
+                <p className="text-xs text-stone-500 dark:text-stone-400 truncate font-mono">
                   {settings.accountEmail}
                 </p>
               </div>
             </div>
-          ) : (
-            <div className="flex items-center gap-3">
-              <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-stone-200/60 dark:bg-white/5 border border-stone-200/60 dark:border-white/10 text-stone-400 flex items-center justify-center font-bold text-sm shrink-0 shadow-xs">
-                <GoogleDriveIcon className="w-5 h-5 opacity-60 grayscale" />
-              </div>
-              <div className="min-w-0">
-                <div className="flex items-center gap-2">
-                  <span className="text-xs font-bold text-gray-900 dark:text-gray-100 truncate">
-                    Google Drive: No vinculado
-                  </span>
-                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-stone-200/80 dark:bg-white/10 text-stone-600 dark:text-stone-400 font-semibold shrink-0">
-                    Opcional
-                  </span>
-                </div>
-                <p className="text-xs text-stone-500 dark:text-stone-400 truncate">
-                  Tus fotografías se gestionan y respaldan en el banco local y en la base de datos Supabase.
-                </p>
-              </div>
-            </div>
-          )}
 
-          <div className="flex items-center gap-2 self-end sm:self-center">
-            {settings.isConnected ? (
-              <>
-                <button
-                  type="button"
-                  onClick={handleSync}
-                  disabled={isSyncing}
-                  title="Sincronizar Fotoproductos"
-                  className="p-2 rounded-xl bg-white dark:bg-white/10 hover:bg-stone-100 dark:hover:bg-white/15 text-stone-600 dark:text-stone-300 border border-stone-200/60 dark:border-white/10 transition-colors cursor-pointer"
-                >
-                  <RefreshCw className={`w-4 h-4 ${isSyncing ? "animate-spin text-amber-500" : ""}`} />
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => disconnectAccount()}
-                  title="Cerrar sesión de Google"
-                  className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white dark:bg-white/10 hover:bg-rose-50 dark:hover:bg-rose-950/40 text-stone-500 hover:text-rose-600 dark:hover:text-rose-300 border border-stone-200/60 dark:border-white/10 text-xs font-semibold transition-colors cursor-pointer"
-                >
-                  <LogOut className="w-3.5 h-3.5" />
-                  <span className="hidden sm:inline">Desvincular</span>
-                </button>
-              </>
-            ) : (
+            <div className="flex items-center gap-2 self-end sm:self-center">
               <button
                 type="button"
-                onClick={() => setShowGoogleLoginModal(true)}
-                className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-stone-900 dark:bg-white hover:bg-stone-800 dark:hover:bg-stone-100 text-white dark:text-stone-900 text-xs font-bold transition-all shadow-xs cursor-pointer hover:scale-105 active:scale-95"
+                onClick={handleSync}
+                disabled={isSyncing}
+                title="Sincronizar Fotoproductos con Google Drive"
+                className="p-2 rounded-xl bg-white dark:bg-white/10 hover:bg-stone-100 dark:hover:bg-white/15 text-stone-600 dark:text-stone-300 border border-stone-200/60 dark:border-white/10 transition-colors cursor-pointer"
               >
-                <GoogleLogoIcon className="w-3.5 h-3.5" />
-                <span>Vincular Google Drive</span>
+                <RefreshCw className={`w-4 h-4 ${isSyncing ? "animate-spin text-amber-500" : ""}`} />
               </button>
-            )}
+
+              <button
+                type="button"
+                onClick={() => disconnectAccount()}
+                title="Cambiar cuenta de Google"
+                className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white dark:bg-white/10 hover:bg-rose-50 dark:hover:bg-rose-950/40 text-stone-500 hover:text-rose-600 dark:hover:text-rose-300 border border-stone-200/60 dark:border-white/10 text-xs font-semibold transition-colors cursor-pointer"
+              >
+                <LogOut className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">Cambiar Cuenta</span>
+              </button>
+            </div>
           </div>
-        </div>
 
           {/* Liquid Glass Navigation Tabs */}
           <div className="flex items-center gap-1.5 p-1.5 rounded-2xl bg-stone-100/80 dark:bg-white/[0.05] border border-stone-200/80 dark:border-white/10 overflow-x-auto no-scrollbar">
@@ -851,16 +892,19 @@ export function GoogleDriveSettingsCard({ onClose, onSelectPhotoForProduct }: Go
                   <form onSubmit={handleAddPhotoByUrl} className="space-y-3.5">
                     <div>
                       <label className="block text-xs font-semibold text-stone-700 dark:text-stone-300 mb-1">
-                        URL de la Fotografía o Google Drive
+                        Enlace(s) de Google Drive o URL Web
                       </label>
-                      <input
-                        type="url"
+                      <textarea
                         required
+                        rows={3}
                         value={urlInput}
                         onChange={(e) => setUrlInput(e.target.value)}
-                        placeholder="https://drive.google.com/file/d/... o https://.../foto.jpg"
-                        className="w-full px-3.5 py-2.5 rounded-xl border border-stone-200 dark:border-white/10 text-xs bg-stone-50 dark:bg-[#141416] text-gray-900 dark:text-gray-100 placeholder-stone-400 focus:outline-none focus:ring-2 focus:ring-amber-500/50"
+                        placeholder="Pega enlace de Google Drive (o varios separados por coma o salto de línea):&#10;https://drive.google.com/file/d/1A2B3C.../view"
+                        className="w-full px-3.5 py-2.5 rounded-xl border border-stone-200 dark:border-white/10 text-xs bg-stone-50 dark:bg-[#141416] text-gray-900 dark:text-gray-100 placeholder-stone-400 focus:outline-none focus:ring-2 focus:ring-amber-500/50 resize-none font-mono"
                       />
+                      <p className="text-[10px] text-stone-400 mt-1">
+                        Soporta enlaces compartidos de Google Drive (view, sharing, uc) transformándolos a streaming directo en alta velocidad.
+                      </p>
                     </div>
 
                     <div>
@@ -1027,6 +1071,7 @@ export function GoogleDriveSettingsCard({ onClose, onSelectPhotoForProduct }: Go
             </div>
           )}
         </div>
+      )}
 
       {/* LIGHTBOX / VISOR HD EN PANTALLA COMPLETA */}
       {previewPhoto && (
