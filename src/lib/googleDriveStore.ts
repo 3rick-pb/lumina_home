@@ -208,8 +208,9 @@ export const useGoogleDriveStore = create<GoogleDriveState>((set, get) => ({
         set({ error: error.message || "Error al conectar con Google", isSyncing: false });
       }
       // The browser will redirect to Google's OAuth consent screen
-    } catch (error: any) {
-      set({ error: error.message || "Error al iniciar OAuth", isSyncing: false });
+    } catch (error: unknown) {
+      const msg = error instanceof Error ? error.message : "Error al iniciar OAuth";
+      set({ error: msg, isSyncing: false });
     }
   },
 
