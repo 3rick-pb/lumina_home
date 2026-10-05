@@ -54,6 +54,7 @@ const DEFAULT_GLOBAL_DRIVE_SETTINGS = {
   selected_folder_name: 'Fotoproductos - Catálogo Lumina',
   backup_at: null as string | null,
   backup_count: 0,
+  google_client_id: '',
   folders_list: [
     { id: 'folder_lumina_catalog_2026', name: 'Fotoproductos - Catálogo Lumina', itemCount: 0 },
     { id: 'folder_iluminacion_premium', name: 'Iluminación & Lámparas', itemCount: 0 },
@@ -178,6 +179,7 @@ export async function GET(request: Request) {
         files: resolvedFiles,
         backupAt,
         backupCount: resolvedFiles.length,
+        googleClientId: (process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || process.env.GOOGLE_CLIENT_ID || inMemoryDriveSettings.google_client_id || '').replace('YOUR_GOOGLE_CLIENT_ID_HERE', ''),
       },
     });
   } catch (err) {
@@ -197,7 +199,20 @@ export async function POST(request: Request) {
     const { action } = body || {};
     const supabase = getScopedSupabaseClient(request);
 
-    if (action === 'connect') {
+    if (body.settings) {
+      const s = body.settings;
+      inMemoryDriveSettings.is_connected = Boolean(s.isConnected);
+      inMemoryDriveSettings.connected_email = s.accountEmail || '';
+      inMemoryDriveSettings.connected_account_name = s.accountName || '';
+      inMemoryDriveSettings.connected_at = s.connectedAt || inMemoryDriveSettings.connected_at;
+      if (s.googleClientId) {
+        inMemoryDriveSettings.google_client_id = s.googleClientId;
+      }
+      if (s.selectedFolderId) inMemoryDriveSettings.selected_folder_id = s.selectedFolderId;
+      if (s.selectedFolderName) inMemoryDriveSettings.selected_folder_name = s.selectedFolderName;
+      if (Array.isArray(s.availableFolders)) inMemoryDriveSettings.folders_list = s.availableFolders;
+      if (Array.isArray(s.files)) inMemoryDriveSettings.files_cache = s.files;
+    } else if (action === 'connect') {
       const email = typeof body.email === 'string' ? body.email.trim() : '';
       if (!email || !email.includes('@')) {
         return NextResponse.json({ success: false, error: 'Correo de Google Drive no válido o ausente' }, { status: 400 });

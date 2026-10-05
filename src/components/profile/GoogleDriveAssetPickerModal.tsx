@@ -9,12 +9,12 @@ import {
   Check, 
   Folder, 
   Plus, 
-  Upload 
+  Upload,
+  AlertTriangle 
 } from "lucide-react";
 import { useGoogleDriveStore, GoogleDriveFile } from "@/lib/googleDriveStore";
 import { GoogleDriveIcon, GoogleLogoIcon } from "./GoogleDriveSettingsCard";
 import { formatGoogleDriveUrl, isGoogleDriveUrl } from "@/lib/imageUtils";
-import { useUserStore } from "@/lib/userStore";
 
 interface GoogleDriveAssetPickerModalProps {
   open: boolean;
@@ -38,11 +38,12 @@ export function GoogleDriveAssetPickerModal({
     selectFolder, 
     addPhoto, 
     addPhotos,
+    error,
+    isSyncing,
+    clearError,
     connectGoogleOAuth 
   } = useGoogleDriveStore();
 
-  const currentUser = useUserStore((s) => s.user);
-  const [connectEmailInput, setConnectEmailInput] = useState("");
   const [searchFilter, setSearchFilter] = useState("");
   const [selectedFileIds, setSelectedFileIds] = useState<string[]>([]);
   const [showFolderDropdown, setShowFolderDropdown] = useState(false);
@@ -289,20 +290,38 @@ export function GoogleDriveAssetPickerModal({
                     Google Drive no conectado
                   </h4>
                   <p className="text-xs text-gray-500 dark:text-gray-400">
-                    Para seleccionar las fotos de tus productos, debes conectar tu cuenta de Google Drive.
+                    Para seleccionar las fotos de tus productos, debes conectar tu cuenta autorizada de Google Drive.
                   </p>
                 </div>
+
+                {error && (
+                  <div className="w-full max-w-sm p-3.5 rounded-2xl bg-rose-500/10 border border-rose-500/30 text-rose-800 dark:text-rose-200 text-xs font-medium flex items-start justify-between gap-2 text-left">
+                    <div className="flex items-start gap-2">
+                      <AlertTriangle className="w-4 h-4 text-rose-600 dark:text-rose-400 shrink-0 mt-0.5" />
+                      <p className="leading-relaxed">{error}</p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => clearError()}
+                      className="text-stone-400 hover:text-stone-700 dark:hover:text-stone-200 p-0.5"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                )}
+
                 <div className="w-full max-w-sm space-y-2.5 pt-2">
                     <button
                       type="button"
                       onClick={() => connectGoogleOAuth()}
-                      className="w-full py-3.5 px-4 rounded-2xl bg-stone-900 dark:bg-white hover:bg-stone-800 dark:hover:bg-stone-100 text-white dark:text-stone-900 font-bold text-[13px] shadow-md transition-all cursor-pointer flex items-center justify-center gap-3"
+                      disabled={isSyncing}
+                      className="w-full py-3.5 px-4 rounded-2xl bg-stone-900 dark:bg-white hover:bg-stone-800 dark:hover:bg-stone-100 text-white dark:text-stone-900 font-bold text-[13px] shadow-md transition-all cursor-pointer flex items-center justify-center gap-3 disabled:opacity-60"
                     >
                       <GoogleLogoIcon className="w-5 h-5" />
-                      <span>Iniciar sesión con Google Drive</span>
+                      <span>{isSyncing ? "Conectando con Google..." : "Iniciar sesión con Google Drive"}</span>
                     </button>
-                    <p className="text-[11px] text-gray-500 text-center pt-2">
-                      Serás redirigido a Google de forma segura para autorizar el acceso.
+                    <p className="text-[11px] text-gray-500 text-center pt-1">
+                      Se abrirá una ventana de Google para autorizar el acceso (sin cerrar tu sesión admin).
                     </p>
                   </div>
               </div>

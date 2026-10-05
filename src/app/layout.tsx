@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Inter, Lora } from "next/font/google";
 import { Suspense } from "react";
+import Script from "next/script";
 import "./globals.css";
 import "blobatar/motion.css";
 import { Header } from "@/components/layout/Header";
@@ -89,6 +90,7 @@ export default function RootLayout({
           </main>
           <Footer />
         </SmoothScrollProvider>
+        <Script src="https://accounts.google.com/gsi/client" strategy="afterInteractive" />
       </body>
     </html>
   );

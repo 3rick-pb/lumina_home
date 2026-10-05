@@ -67,10 +67,13 @@ export function GoogleDriveSettingsCard({ onClose, onSelectPhotoForProduct }: Go
   const { 
     settings, 
     isSyncing, 
+    error,
+    clearError,
     activeView, 
     setActiveView, 
+    setGoogleClientId,
     connectGoogleOAuth,
-    handleOAuthReturn,
+    loadGoogleDriveFiles,
     disconnectAccount, 
     selectFolder, 
     createFolder, 
@@ -90,24 +93,25 @@ export function GoogleDriveSettingsCard({ onClose, onSelectPhotoForProduct }: Go
   const [showCreateFolderModal, setShowCreateFolderModal] = useState(false);
   const [newFolderName, setNewFolderName] = useState("");
   const [feedback, setFeedback] = useState<string | null>(null);
+  const [showClientIdConfig, setShowClientIdConfig] = useState(false);
+  const [clientIdInput, setClientIdInput] = useState(settings.googleClientId || "");
 
-  // Detect return from Google OAuth redirect
+  // Preload GIS script on component mount so popups open instantaneously without browser blocking
   useEffect(() => {
-    if (typeof window === 'undefined') return;
-    const params = new URLSearchParams(window.location.search);
-    const driveConnected = params.get('drive_connected');
-    const pending = localStorage.getItem('lumina_drive_oauth_pending');
-    if (driveConnected === '1' || pending === '1') {
-      handleOAuthReturn().then(() => {
-        showNotification("✅ Google Drive conectado correctamente");
-        // Clean up the URL param without reloading
-        const url = new URL(window.location.href);
-        url.searchParams.delete('drive_connected');
-        window.history.replaceState({}, '', url.toString());
-      });
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    import("@/lib/googleIdentity").then((m) => m.loadGIS()).catch(() => {});
   }, []);
+
+  // Sync client ID from settings or localStorage
+  useEffect(() => {
+    if (settings.googleClientId && !clientIdInput) {
+      setClientIdInput(settings.googleClientId);
+    } else if (typeof window !== "undefined") {
+      const stored = localStorage.getItem("lumina_google_client_id");
+      if (stored && !clientIdInput) {
+        setClientIdInput(stored);
+      }
+    }
+  }, [settings.googleClientId, clientIdInput]);
 
   // Subir por URL
   const [urlInput, setUrlInput] = useState("");
@@ -157,8 +161,13 @@ export function GoogleDriveSettingsCard({ onClose, onSelectPhotoForProduct }: Go
   };
 
   const handleSync = async () => {
-    await syncFiles();
-    showNotification("Fotoproductos sincronizados con el servidor");
+    if (settings.providerToken) {
+      await loadGoogleDriveFiles(settings.providerToken);
+      showNotification("Fotoproductos sincronizados con Google Drive");
+    } else {
+      await syncFiles();
+      showNotification("Fotoproductos sincronizados con el servidor");
+    }
   };
 
   const handleSelectFolderClick = async (folder: GoogleDriveFolder) => {
@@ -388,6 +397,26 @@ export function GoogleDriveSettingsCard({ onClose, onSelectPhotoForProduct }: Go
         </div>
       )}
 
+      {error && (
+        <div className="p-4 rounded-2xl bg-rose-500/10 border border-rose-500/30 text-rose-800 dark:text-rose-200 text-xs font-medium flex items-start justify-between gap-3 animate-fade-in shadow-xs">
+          <div className="flex items-start gap-2.5">
+            <AlertTriangle className="w-5 h-5 text-rose-600 dark:text-rose-400 shrink-0 mt-0.5" />
+            <div className="space-y-1">
+              <p className="font-bold text-rose-900 dark:text-rose-100">Aviso de Google Drive</p>
+              <p className="leading-relaxed opacity-95">{error}</p>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={() => clearError()}
+            className="text-stone-400 hover:text-stone-700 dark:hover:text-stone-200 p-1 cursor-pointer shrink-0"
+            title="Cerrar aviso"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+      )}
+
       {/* GOOGLE DRIVE MANDATORY CONNECTION GATE */}
       {!settings.isConnected ? (
         <div className="p-8 sm:p-12 rounded-3xl bg-stone-50/70 dark:bg-[#1f1f23]/70 border border-stone-200/80 dark:border-white/10 shadow-sm flex flex-col items-center justify-center text-center space-y-6">
@@ -414,16 +443,65 @@ export function GoogleDriveSettingsCard({ onClose, onSelectPhotoForProduct }: Go
           <div className="w-full max-w-sm space-y-3">
             <button
               type="button"
-              onClick={() => connectGoogleOAuth()}
+              onClick={() => {
+                if (!clientIdInput.trim() && !settings.googleClientId) {
+                  setShowClientIdConfig(true);
+                }
+                connectGoogleOAuth(clientIdInput);
+              }}
               disabled={isSyncing}
-              className="w-full p-4 rounded-2xl bg-stone-900 dark:bg-white hover:bg-stone-800 dark:hover:bg-stone-100 text-white dark:text-stone-900 font-bold text-[13px] shadow-lg hover:shadow-xl transition-all hover:scale-[1.02] active:scale-98 cursor-pointer flex items-center justify-center gap-3"
+              className="w-full p-4 rounded-2xl bg-stone-900 dark:bg-white hover:bg-stone-800 dark:hover:bg-stone-100 text-white dark:text-stone-900 font-bold text-[13px] shadow-lg hover:shadow-xl transition-all hover:scale-[1.02] active:scale-98 cursor-pointer flex items-center justify-center gap-3 disabled:opacity-60"
             >
               <GoogleLogoIcon className="w-5 h-5" />
-              <span>Iniciar sesión con Google Drive</span>
+              <span>{isSyncing ? "Abriendo Google..." : "Iniciar sesión con Google Drive"}</span>
             </button>
-            <p className="text-[11px] text-stone-500 dark:text-stone-400 mt-3 max-w-xs mx-auto">
-              Serás redirigido a Google de forma segura para autorizar el acceso a tus fotografías.
+
+            <p className="text-[11px] text-stone-500 dark:text-stone-400 mt-2 max-w-xs mx-auto">
+              Se abrirá una ventana de Google para autorizar el acceso a tus fotos de Drive (sin cerrar tu sesión de administrador).
             </p>
+
+            {/* Client ID Configuration Trigger */}
+            <div className="pt-2">
+              <button
+                type="button"
+                onClick={() => setShowClientIdConfig(!showClientIdConfig)}
+                className="text-[11px] text-amber-700 dark:text-amber-400 font-medium hover:underline inline-flex items-center gap-1 cursor-pointer"
+              >
+                <span>⚙️ {showClientIdConfig ? "Ocultar configuración de Client ID" : "Configurar / Ver Google Client ID"}</span>
+              </button>
+
+              {showClientIdConfig && (
+                <div className="mt-3 p-4 rounded-2xl bg-white dark:bg-[#28282c] border border-stone-200 dark:border-white/10 text-left space-y-2.5 animate-fade-in shadow-xs">
+                  <label className="text-[11px] font-bold text-gray-800 dark:text-gray-200 block">
+                    Google OAuth Client ID (Web Application)
+                  </label>
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={clientIdInput}
+                      onChange={(e) => setClientIdInput(e.target.value)}
+                      placeholder="123456789-xxxx.apps.googleusercontent.com"
+                      className="flex-1 px-3 py-2 text-xs rounded-xl bg-stone-50 dark:bg-[#1a1a1c] border border-stone-200 dark:border-white/10 focus:outline-hidden focus:ring-2 focus:ring-amber-500 font-mono text-gray-900 dark:text-gray-100"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (clientIdInput.trim()) {
+                          setGoogleClientId(clientIdInput.trim());
+                          showNotification("Client ID guardado correctamente");
+                        }
+                      }}
+                      className="px-3 py-2 rounded-xl bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold transition-all cursor-pointer shrink-0"
+                    >
+                      Guardar
+                    </button>
+                  </div>
+                  <p className="text-[10px] text-stone-500 dark:text-stone-400 leading-normal">
+                    Pega tu Client ID aquí para activarlo al instante. Asegúrate de haber agregado <span className="font-mono text-amber-600 dark:text-amber-400 font-bold">{typeof window !== 'undefined' ? window.location.origin : 'https://luminahome-3rick.vercel.app'}</span> en <strong>Orígenes de JavaScript autorizados</strong> en Google Cloud Console.
+                  </p>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       ) : (
