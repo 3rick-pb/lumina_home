@@ -321,23 +321,23 @@ export function OrderDetailModal({
                 <p className="text-[10px] text-gray-400">{activeOrder.shippingAddress.postalCode} • {activeOrder.shippingAddress.country}</p>
                 
                 {/* Metadatos adicionales de entrega: Cédula & WhatsApp */}
-                {(activeOrder.customerIdNumber || activeOrder.shippingAddress.idNumber || activeOrder.customerPhone || activeOrder.shippingAddress.phone) && (
+                {(activeOrder.customerIdNumber || activeOrder.shippingAddress?.idNumber || activeOrder.customerPhone || activeOrder.shippingAddress?.phone) && (
                   <div className="flex flex-wrap items-center gap-1.5 mt-2 pt-1.5 border-t border-gray-200/60 dark:border-white/10/60">
-                    {(activeOrder.customerIdNumber || activeOrder.shippingAddress.idNumber) && (
+                    {(activeOrder.customerIdNumber || activeOrder.shippingAddress?.idNumber) && (
                       <span className="text-[10px] font-mono px-2 py-0.5 rounded-md bg-gray-100 dark:bg-[#3a3a3c] text-gray-700 dark:text-gray-300 font-semibold">
-                        C.I.: {activeOrder.customerIdNumber || activeOrder.shippingAddress.idNumber}
+                        C.I.: {activeOrder.customerIdNumber || activeOrder.shippingAddress?.idNumber}
                       </span>
                     )}
-                    {(activeOrder.customerPhone || activeOrder.shippingAddress.phone) && (
+                    {(activeOrder.customerPhone || activeOrder.shippingAddress?.phone) && (
                       <a
-                        href={`https://wa.me/${(activeOrder.customerPhone || activeOrder.shippingAddress.phone || '').replace(/[^0-9]/g, '')}`}
+                        href={`https://wa.me/${(activeOrder.customerPhone || activeOrder.shippingAddress?.phone || '').replace(/[^0-9]/g, '')}`}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="text-[10px] font-mono px-2 py-0.5 rounded-md bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200/50 dark:border-emerald-800/40 font-semibold hover:underline flex items-center gap-1 max-w-full"
                         title="Abrir chat en WhatsApp"
                       >
                         <span>WhatsApp:</span>
-                        <span className="truncate">{activeOrder.customerPhone || activeOrder.shippingAddress.phone}</span>
+                        <span className="truncate">{activeOrder.customerPhone || activeOrder.shippingAddress?.phone}</span>
                       </a>
                     )}
                   </div>

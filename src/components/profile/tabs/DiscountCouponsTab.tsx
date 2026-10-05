@@ -122,11 +122,12 @@ function Style1TicketSvg({
   palette: { start: string; mid: string; end: string };
   className?: string;
 }) {
-  const gradId = `grad-s1-${coupon.id.replace(/[^a-zA-Z0-9]/g, "")}`;
+  const gradId = `grad-s1-${String(coupon?.id || "coupon").replace(/[^a-zA-Z0-9]/g, "")}`;
   const discNum = coupon.discountType === "free_shipping" ? "100%" : `${coupon.discountPercent}%`;
   const offText = coupon.discountType === "free_shipping" ? "GRATIS" : "OFF";
   // Anti-collision dynamic font sizing so long codes never overflow or get cut
-  const codeFontSize = coupon.code.length > 14 ? 13 : coupon.code.length > 11 ? 15 : coupon.code.length > 9 ? 17 : 20;
+  const codeLength = (coupon?.code || "").length;
+  const codeFontSize = codeLength > 14 ? 13 : codeLength > 11 ? 15 : codeLength > 9 ? 17 : 20;
 
   return (
     <div className={`relative w-full max-w-[340px] aspect-[340/215] select-none mx-auto ${className}`}>

@@ -17,7 +17,7 @@ import {
 import { useCatalogStore, normalizeCategory } from "@/lib/catalogStore";
 import { useUserStore, Order } from "@/lib/userStore";
 import { LuminaCardFolderItem } from "@/components/ui/CardFolder";
-import { BeUIOrderStatusSelector } from "@/components/ui/BeUIControls";
+import { BeUIOrderStatusSelector, type LuminaOrderStatus } from "@/components/ui/BeUIControls";
 import { getLenis } from "@/components/providers/SmoothScrollProvider";
 import { MacOSScrollbar } from "@/components/ui/MacOSScrollbar";
 
@@ -36,18 +36,21 @@ export function OverviewTab({
   setShowCardModal,
   onRequestDeleteNiche
 }: OverviewTabProps) {
-  const { user, orders: rawOrders, cards, favorites, removeCard, setDefaultCard, updateOrderStatus } = useUserStore();
+  const { user, orders: rawOrders, cards: rawCards, favorites, removeCard, setDefaultCard, updateOrderStatus } = useUserStore();
   const { products, categories } = useCatalogStore();
+  const cards = useMemo(() => Array.isArray(rawCards) ? rawCards.filter(Boolean) : [], [rawCards]);
 
   // Strictly scope orders: Admins see store-wide orders; Clients ONLY see their own orders
   const orders = useMemo(() => {
-    if (isAdmin) return rawOrders;
+    const list = Array.isArray(rawOrders) ? rawOrders.filter(Boolean) : [];
+    if (isAdmin) return list;
     if (!user) return [];
-    const uId = (user.id || "").trim();
-    const uEmail = (user.email || "").toLowerCase().trim();
-    return rawOrders.filter((ord) => {
-      const oUserId = (ord.userId || "").trim();
-      const oEmail = (ord.customerEmail || ord.shippingAddress?.email || "").toLowerCase().trim();
+    const uId = String(user.id || "").trim();
+    const uEmail = String(user.email || "").toLowerCase().trim();
+    return list.filter((ord) => {
+      if (!ord) return false;
+      const oUserId = String(ord.userId || "").trim();
+      const oEmail = String(ord.customerEmail || ord.shippingAddress?.email || "").toLowerCase().trim();
       if (uId && oUserId && uId === oUserId) return true;
       if (uEmail && oEmail && uEmail === oEmail) return true;
       return false;
@@ -111,7 +114,7 @@ export function OverviewTab({
     const hasAnyOrders = orders.length > 0;
     
     const totals = monthNames.map(m => {
-      const monthOrders = orders.filter(o => o.date?.toLowerCase().includes(m.toLowerCase()));
+      const monthOrders = orders.filter(o => o?.date && typeof o.date === "string" && o.date.toLowerCase().includes(m.toLowerCase()));
       const sum = monthOrders.reduce((acc, o) => acc + Number(o?.total || 0), 0);
       return { month: m, total: sum };
     });
@@ -571,17 +574,17 @@ export function OverviewTab({
         ) : (
           <div className="flex flex-col items-center justify-center py-1">
             {(() => {
-              const primaryIndex = Math.max(0, cards.findIndex((c) => c.isDefault));
+              const primaryIndex = Math.max(0, cards.findIndex((c) => c?.isDefault));
               const primaryCard = cards[primaryIndex] || cards[0];
               if (!primaryCard) return null;
               return (
                 <LuminaCardFolderItem
-                  key={primaryCard.id}
-                  id={primaryCard.id}
-                  holder={primaryCard.holder}
-                  number={primaryCard.number}
-                  exp={primaryCard.exp}
-                  type={primaryCard.type}
+                  key={primaryCard.id || "primary-card"}
+                  id={primaryCard.id || "primary-card"}
+                  holder={primaryCard.holder || "Titular Lumina"}
+                  number={primaryCard.number || ""}
+                  exp={primaryCard.exp || "12/28"}
+                  type={primaryCard.type === "mastercard" ? "mastercard" : "visa"}
                   isDefault={true}
                   index={primaryIndex}
                   compact
@@ -663,9 +666,9 @@ export function OverviewTab({
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
-                {orders.slice(0, 4).map((ord) => (
-                  <tr key={ord.id} className="hover:bg-gray-50/50 dark:hover:bg-[#2c2c2e]/50 transition-colors cursor-pointer" onClick={() => setSelectedOrder(ord)}>
-                    <td className="py-3.5 px-2 font-mono font-semibold text-gray-900 dark:text-gray-100">{ord.id}</td>
+                {orders.filter(Boolean).slice(0, 4).map((ord) => (
+                  <tr key={ord.id || Math.random()} className="hover:bg-gray-50/50 dark:hover:bg-[#2c2c2e]/50 transition-colors cursor-pointer" onClick={() => setSelectedOrder(ord)}>
+                    <td className="py-3.5 px-2 font-mono font-semibold text-gray-900 dark:text-gray-100">{ord.id || "ORD"}</td>
                     {isAdmin && (
                       <td className="py-3.5 px-2">
                         <p className="font-semibold text-gray-900 dark:text-gray-100 truncate max-w-[130px]">{ord.customerName || "Cliente Lumina"}</p>
@@ -681,21 +684,21 @@ export function OverviewTab({
                     <td className="py-3.5 px-2 font-bold text-gray-900 dark:text-gray-100">${Number(ord.total || 0).toFixed(2)}</td>
                     <td className="py-3.5 px-2" onClick={(e) => e.stopPropagation()}>
                       <BeUIOrderStatusSelector
-                        status={ord.status}
+                        status={(ord.status as LuminaOrderStatus) || "Procesando"}
                         isAdmin={isAdmin}
-                        orderId={ord.id}
+                        orderId={ord.id || ""}
                         initialTrackingNumber={ord.trackingNumber}
                         initialTrackingUrl={ord.trackingUrl}
                         initialCarrierName={ord.carrierName}
                         onUpdateStatus={(nextSt, trackingInfo) =>
-                          updateOrderStatus(ord.id, nextSt, trackingInfo)
+                          updateOrderStatus(ord.id || "", nextSt, trackingInfo)
                         }
                         size="sm"
                         align="center"
                       />
                     </td>
                     <td className="py-3.5 px-2 text-gray-500 dark:text-gray-400">
-                      <span className="block font-medium text-gray-800 dark:text-gray-200">{ord.date}</span>
+                      <span className="block font-medium text-gray-800 dark:text-gray-200">{ord.date || "Fecha no disp."}</span>
                       {ord.time && <span className="block text-[10px] text-gray-400">{ord.time}</span>}
                     </td>
                     <td className="py-3.5 px-2 text-right">

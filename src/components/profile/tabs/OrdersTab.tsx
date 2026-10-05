@@ -11,7 +11,7 @@ import { supabase } from "@/lib/supabase";
 import { normalizeSearchText } from "@/lib/utils";
 import { CloudSyncStatus } from "../CloudSyncStatus";
 import { BlobatarAvatar } from "@/components/ui/BlobatarAvatar";
-import { BeUIOrderStatusSelector } from "@/components/ui/BeUIControls";
+import { BeUIOrderStatusSelector, type LuminaOrderStatus } from "@/components/ui/BeUIControls";
 
 interface OrdersTabProps {
   isAdmin: boolean;
@@ -121,8 +121,8 @@ export function OrdersTab({
 
   const resolveCustomerAvatar = useCallback(
     (ord: Order) => {
-      const normEmail = (ord.customerEmail || ord.shippingAddress?.email || "").toLowerCase().trim();
-      const ordUserId = (ord.userId || avatarDirectory?.byEmail?.[normEmail]?.userId || "").trim();
+      const normEmail = (ord?.customerEmail || ord?.shippingAddress?.email || "").toLowerCase().trim();
+      const ordUserId = (ord?.userId || avatarDirectory?.byEmail?.[normEmail]?.userId || "").trim();
 
       // 1. Check if this order belongs to the currently logged-in user
       const isCurrentSelf =
@@ -190,13 +190,15 @@ export function OrdersTab({
   };
 
   const scopedOrders = useMemo(() => {
-    if (isAdmin) return orders;
+    const list = Array.isArray(orders) ? orders.filter(Boolean) : [];
+    if (isAdmin) return list;
     if (!user) return [];
-    const uId = (user.id || "").trim();
-    const uEmail = (user.email || "").toLowerCase().trim();
-    return orders.filter((ord) => {
-      const oUserId = (ord.userId || "").trim();
-      const oEmail = (ord.customerEmail || ord.shippingAddress?.email || "").toLowerCase().trim();
+    const uId = String(user.id || "").trim();
+    const uEmail = String(user.email || "").toLowerCase().trim();
+    return list.filter((ord) => {
+      if (!ord) return false;
+      const oUserId = String(ord.userId || "").trim();
+      const oEmail = String(ord.customerEmail || ord.shippingAddress?.email || "").toLowerCase().trim();
       if (uId && oUserId && uId === oUserId) return true;
       if (uEmail && oEmail && uEmail === oEmail) return true;
       return false;
@@ -206,12 +208,14 @@ export function OrdersTab({
   const filteredOrders = useMemo(() => {
     const q = normalizeSearchText(searchQuery);
     return scopedOrders.filter(ord => {
-      const matchStatus = orderStatusFilter === "all" || ord.status.toLowerCase() === orderStatusFilter.toLowerCase();
+      if (!ord) return false;
+      const ordStatus = String(ord.status || "Procesando");
+      const matchStatus = orderStatusFilter === "all" || ordStatus.toLowerCase() === orderStatusFilter.toLowerCase();
       const matchQuery = !q || 
-        normalizeSearchText(ord.id).includes(q) ||
-        normalizeSearchText(ord.customerName || "").includes(q) ||
-        normalizeSearchText(ord.customerEmail || "").includes(q) ||
-        normalizeSearchText(ord.trackingNumber || "").includes(q);
+        normalizeSearchText(String(ord.id || "")).includes(q) ||
+        normalizeSearchText(String(ord.customerName || "")).includes(q) ||
+        normalizeSearchText(String(ord.customerEmail || "")).includes(q) ||
+        normalizeSearchText(String(ord.trackingNumber || "")).includes(q);
       return matchStatus && matchQuery;
     });
   }, [scopedOrders, orderStatusFilter, searchQuery]);
@@ -252,7 +256,7 @@ export function OrdersTab({
               const count =
                 item.id === "all"
                   ? scopedOrders.length
-                  : scopedOrders.filter((o) => o.status === item.id).length;
+                  : scopedOrders.filter((o) => String(o?.status || "Procesando").toLowerCase() === item.id.toLowerCase()).length;
 
               return (
                 <button
@@ -390,14 +394,14 @@ export function OrdersTab({
                     </td>
                     <td className="py-4 px-3" onClick={(e) => e.stopPropagation()}>
                       <BeUIOrderStatusSelector
-                        status={ord.status}
+                        status={(ord?.status as LuminaOrderStatus) || "Procesando"}
                         isAdmin={isAdmin}
-                        orderId={ord.id}
-                        initialTrackingNumber={ord.trackingNumber}
-                        initialTrackingUrl={ord.trackingUrl}
-                        initialCarrierName={ord.carrierName}
+                        orderId={ord?.id || ""}
+                        initialTrackingNumber={ord?.trackingNumber}
+                        initialTrackingUrl={ord?.trackingUrl}
+                        initialCarrierName={ord?.carrierName}
                         onUpdateStatus={(nextSt, trackingInfo) =>
-                          updateOrderStatus(ord.id, nextSt, trackingInfo)
+                          updateOrderStatus(ord?.id || "", nextSt, trackingInfo)
                         }
                         size="sm"
                         align="center"

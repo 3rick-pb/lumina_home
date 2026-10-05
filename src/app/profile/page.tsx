@@ -48,6 +48,7 @@ import {
   type ProductWizardStep,
 } from "@/components/profile/ProductStoreSketchPreview";
 import { OverviewTab } from "@/components/profile/tabs/OverviewTab";
+import { ProfileTabErrorBoundary } from "@/components/profile/ProfileTabErrorBoundary";
 import {
   BeUISelectField,
   BeUICenterMorphModal,
@@ -161,20 +162,22 @@ export default function ProfilePage() {
   const isAdminUser = user?.role === "ADMIN";
 
   const scopedOrders = useMemo(() => {
-    if (isAdminUser) return orders;
+    const list = Array.isArray(orders) ? orders.filter(Boolean) : [];
+    if (isAdminUser) return list;
     if (!user) return [];
-    const uId = (user.id || "").trim();
-    const uEmail = (user.email || "").toLowerCase().trim();
-    return orders.filter((ord) => {
-      const oUserId = (ord.userId || "").trim();
-      const oEmail = (ord.customerEmail || ord.shippingAddress?.email || "").toLowerCase().trim();
+    const uId = String(user.id || "").trim();
+    const uEmail = String(user.email || "").toLowerCase().trim();
+    return list.filter((ord) => {
+      if (!ord) return false;
+      const oUserId = String(ord.userId || "").trim();
+      const oEmail = String(ord.customerEmail || ord.shippingAddress?.email || "").toLowerCase().trim();
       if (uId && oUserId && uId === oUserId) return true;
       if (uEmail && oEmail && uEmail === oEmail) return true;
       return false;
     });
   }, [orders, isAdminUser, user]);
 
-  const pendingOrdersCount = scopedOrders.filter((o) => o.status !== "Entregado").length;
+  const pendingOrdersCount = scopedOrders.filter((o) => o?.status !== "Entregado").length;
 
   type ProfileTab = "overview" | "orders" | "cards" | "favorites" | "catalog" | "niches" | "analytics" | "cart_alerts" | "integrations" | "loyalty" | "settings";
   const [activeTab, setActiveTab] = useState<ProfileTab>("overview");
@@ -1169,21 +1172,21 @@ const handleConfirmDeleteNiche = async () => {
     className={`group inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all duration-200 cursor-pointer select-none hover:-translate-y-0.5 active:scale-95 ${activeTab === "orders" ? "bg-white dark:bg-[#202022] text-gray-900 dark:text-gray-100 shadow-sm dark:shadow-none" : "text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-white/50 dark:hover:bg-white/5"}`}
   >
     <ShoppingBag className="w-3.5 h-3.5 transition-transform duration-200 group-hover:scale-115 group-hover:-translate-y-0.5 shrink-0 text-blue-500/90" />
-    <span>Pedidos ({scopedOrders.length})</span>
+    <span>Pedidos ({(Array.isArray(scopedOrders) ? scopedOrders : []).length})</span>
   </button>
   <button 
     onClick={() => setActiveTab("cards")} 
     className={`group inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all duration-200 cursor-pointer select-none hover:-translate-y-0.5 active:scale-95 ${activeTab === "cards" ? "bg-white dark:bg-[#202022] text-gray-900 dark:text-gray-100 shadow-sm dark:shadow-none" : "text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-white/50 dark:hover:bg-white/5"}`}
   >
     <CreditCard className="w-3.5 h-3.5 transition-transform duration-200 group-hover:scale-115 group-hover:-rotate-6 shrink-0 text-emerald-500/90" />
-    <span>Billetera ({cards.length})</span>
+    <span>Billetera ({(Array.isArray(cards) ? cards : []).length})</span>
   </button>
   <button 
     onClick={() => setActiveTab("favorites")} 
     className={`group inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all duration-200 cursor-pointer select-none hover:-translate-y-0.5 active:scale-95 ${activeTab === "favorites" ? "bg-white dark:bg-[#202022] text-gray-900 dark:text-gray-100 shadow-sm dark:shadow-none" : "text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-white/50 dark:hover:bg-white/5"}`}
   >
     <Heart className="w-3.5 h-3.5 transition-transform duration-200 group-hover:scale-120 group-hover:text-rose-500 shrink-0 text-rose-500/90" />
-    <span>Favoritos ({favorites.length})</span>
+    <span>Favoritos ({(Array.isArray(favorites) ? favorites : []).length})</span>
   </button>
   {isAdmin && (
   <>
@@ -1192,14 +1195,14 @@ const handleConfirmDeleteNiche = async () => {
     className={`group inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all duration-200 cursor-pointer select-none hover:-translate-y-0.5 active:scale-95 ${activeTab === "catalog" ? "bg-white dark:bg-[#202022] text-gray-900 dark:text-gray-100 shadow-sm dark:shadow-none" : "text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-white/50 dark:hover:bg-white/5"}`}
   >
     <Package className="w-3.5 h-3.5 transition-transform duration-200 group-hover:scale-115 group-hover:-translate-y-0.5 shrink-0 text-amber-500/90" />
-    <span>Inventario ({products.length})</span>
+    <span>Inventario ({(Array.isArray(products) ? products : []).length})</span>
   </button>
   <button 
     onClick={() => setActiveTab("niches")} 
     className={`group inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all duration-200 cursor-pointer select-none hover:-translate-y-0.5 active:scale-95 ${activeTab === "niches" ? "bg-white dark:bg-[#202022] text-gray-900 dark:text-gray-100 shadow-sm dark:shadow-none" : "text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-white/50 dark:hover:bg-white/5"}`}
   >
     <Layers className="w-3.5 h-3.5 transition-transform duration-200 group-hover:scale-115 group-hover:rotate-6 shrink-0 text-purple-500/90" />
-    <span>Nichos ({categories.length})</span>
+    <span>Nichos ({(Array.isArray(categories) ? categories : []).length})</span>
   </button>
   <button 
     onClick={() => setActiveTab("analytics")} 
@@ -1316,11 +1319,11 @@ const handleConfirmDeleteNiche = async () => {
                       {ord.id}
                     </span>
                     <span className="text-[10.5px] text-gray-400 truncate block">
-                      {ord.customerName || "Cliente Lumina"} · ${ord.total.toFixed(2)}
+                      {ord.customerName || "Cliente Lumina"} · ${Number(ord?.total || 0).toFixed(2)}
                     </span>
                   </div>
                   <span className="text-[10px] px-2 py-0.5 rounded-full bg-stone-100 dark:bg-white/10 text-gray-700 dark:text-gray-300 font-semibold shrink-0">
-                    {ord.status}
+                    {ord?.status || "Procesando"}
                   </span>
                 </div>
               ))}
@@ -1439,40 +1442,48 @@ const handleConfirmDeleteNiche = async () => {
  {/* VIEW 1: OVERVIEW (MASTER BENTO GRID) */}
  {/* ========================================================================= */}
         {activeTab === "overview" && (
-          <OverviewTab
-            isAdmin={isAdmin}
-            setActiveTab={setActiveTab}
-            setSelectedOrder={setSelectedOrder}
-            setShowCardModal={setShowCardModal}
-            onRequestDeleteNiche={handleRequestDeleteNiche}
-          />
+          <ProfileTabErrorBoundary tabName="Vista General">
+            <OverviewTab
+              isAdmin={isAdmin}
+              setActiveTab={setActiveTab}
+              setSelectedOrder={setSelectedOrder}
+              setShowCardModal={setShowCardModal}
+              onRequestDeleteNiche={handleRequestDeleteNiche}
+            />
+          </ProfileTabErrorBoundary>
         )}
 
         {/* ========================================================================= */}
         {/* VIEW 2: ORDERS & ACTIVITIES TAB */}
         {/* ========================================================================= */}
         {activeTab === "orders" && (
-          <OrdersTab
-            isAdmin={isAdmin}
-            searchQuery={searchQuery}
-            setSelectedOrder={setSelectedOrder}
-          />
+          <ProfileTabErrorBoundary tabName="Pedidos">
+            <OrdersTab
+              isAdmin={isAdmin}
+              searchQuery={searchQuery}
+              setSelectedOrder={setSelectedOrder}
+            />
+          </ProfileTabErrorBoundary>
         )}
 
         {/* ========================================================================= */}
         {/* VIEW 3: CARDS & WALLET TAB */}
         {/* ========================================================================= */}
         {activeTab === "cards" && (
-          <CardsTab
-            setShowCardModal={setShowCardModal}
-          />
+          <ProfileTabErrorBoundary tabName="Billetera">
+            <CardsTab
+              setShowCardModal={setShowCardModal}
+            />
+          </ProfileTabErrorBoundary>
         )}
 
         {/* ========================================================================= */}
         {/* VIEW 4: FAVORITES TAB */}
         {/* ========================================================================= */}
         {activeTab === "favorites" && (
-          <FavoritesTab />
+          <ProfileTabErrorBoundary tabName="Favoritos">
+            <FavoritesTab />
+          </ProfileTabErrorBoundary>
         )}
 
  {/* ========================================================================= */}
@@ -1482,30 +1493,34 @@ const handleConfirmDeleteNiche = async () => {
         {/* VIEW 5: ADMIN CATALOG & INVENTORY TAB */}
         {/* ========================================================================= */}
         {activeTab === "catalog" && isAdmin && (
-          <CatalogTab
-            searchQuery={searchQuery}
-            onOpenCreateProduct={() => {
-              requestMobileLandscapeFullscreen();
-              setShowProductModal(true);
-            }}
-            onOpenEditProduct={(p) => {
-              requestMobileLandscapeFullscreen();
-              handleOpenEditProduct(p);
-            }}
-            onDeleteProduct={(p) => {
-              setDeleteProductError(null);
-              setProductToDelete(p);
-            }}
-          />
+          <ProfileTabErrorBoundary tabName="Inventario">
+            <CatalogTab
+              searchQuery={searchQuery}
+              onOpenCreateProduct={() => {
+                requestMobileLandscapeFullscreen();
+                setShowProductModal(true);
+              }}
+              onOpenEditProduct={(p) => {
+                requestMobileLandscapeFullscreen();
+                handleOpenEditProduct(p);
+              }}
+              onDeleteProduct={(p) => {
+                setDeleteProductError(null);
+                setProductToDelete(p);
+              }}
+            />
+          </ProfileTabErrorBoundary>
         )}
 
         {/* ========================================================================= */}
         {/* VIEW 6: ADMIN NICHES TAB */}
         {/* ========================================================================= */}
         {activeTab === "niches" && isAdmin && (
-          <NichesTab
-            onRequestDeleteNiche={handleRequestDeleteNiche}
-          />
+          <ProfileTabErrorBoundary tabName="Nichos">
+            <NichesTab
+              onRequestDeleteNiche={handleRequestDeleteNiche}
+            />
+          </ProfileTabErrorBoundary>
         )}
 
         {/* ========================================================================= */}
@@ -1513,12 +1528,14 @@ const handleConfirmDeleteNiche = async () => {
         {/* ========================================================================= */}
         {activeTab === "analytics" && isAdmin && (
           <div className="flex-1 flex flex-col min-h-0 w-full">
-            <AnalyticsTab
-              onNavigateToAddresses={() => {
-                setActiveTab("settings");
-                setShowAddressForm(true);
-              }}
-            />
+            <ProfileTabErrorBoundary tabName="Analíticas">
+              <AnalyticsTab
+                onNavigateToAddresses={() => {
+                  setActiveTab("settings");
+                  setShowAddressForm(true);
+                }}
+              />
+            </ProfileTabErrorBoundary>
           </div>
         )}
 
@@ -1526,33 +1543,41 @@ const handleConfirmDeleteNiche = async () => {
         {/* VIEW 8: ADMIN CART ALERTS TAB (SILEO PLAYGROUND) */}
         {/* ========================================================================= */}
         {activeTab === "cart_alerts" && isAdmin && (
-          <CartAlertsTab />
+          <ProfileTabErrorBoundary tabName="Alertas de Carrito">
+            <CartAlertsTab />
+          </ProfileTabErrorBoundary>
         )}
 
         {/* ========================================================================= */}
         {/* VIEW 8B: ADMIN INTEGRATIONS & VERCEL SMTP TAB */}
         {/* ========================================================================= */}
         {activeTab === "integrations" && isAdmin && (
-          <IntegrationsTab />
+          <ProfileTabErrorBoundary tabName="Integraciones">
+            <IntegrationsTab />
+          </ProfileTabErrorBoundary>
         )}
 
         {/* ========================================================================= */}
         {/* VIEW 8C: ADMIN DISCOUNT COUPONS GENERATOR & MANAGER                       */}
         {/* ========================================================================= */}
         {activeTab === "loyalty" && (
-          <DiscountCouponsTab />
+          <ProfileTabErrorBoundary tabName="Cupones">
+            <DiscountCouponsTab />
+          </ProfileTabErrorBoundary>
         )}
 
         {/* ========================================================================= */}
         {/* VIEW 9: SETTINGS & ADDRESS TAB */}
         {/* ========================================================================= */}
         {activeTab === "settings" && (
-          <SettingsTab
-            isAdmin={isAdmin}
-            isRootAdmin={isRootAdmin}
-            showAddressForm={showAddressForm}
-            setShowAddressForm={setShowAddressForm}
-          />
+          <ProfileTabErrorBoundary tabName="Ajustes">
+            <SettingsTab
+              isAdmin={isAdmin}
+              isRootAdmin={isRootAdmin}
+              showAddressForm={showAddressForm}
+              setShowAddressForm={setShowAddressForm}
+            />
+          </ProfileTabErrorBoundary>
         )}
 
  </main>
@@ -1599,11 +1624,11 @@ const handleConfirmDeleteNiche = async () => {
     defaultHolder={user?.name || ''}
     onSaveCard={async (cardData) => {
       await addCard({
-        number: `•••• •••• ${cardData.number.replace(/\s+/g, "").slice(-4) || "8888"}`,
-        holder: cardData.holder,
-        exp: cardData.exp,
-        type: cardData.type,
-        isDefault: cards.length === 0,
+        number: `•••• •••• ${String(cardData?.number || "").replace(/\s+/g, "").slice(-4) || "8888"}`,
+        holder: cardData?.holder || user?.name || "Titular Lumina",
+        exp: cardData?.exp || "12/28",
+        type: cardData?.type || "visa",
+        isDefault: (Array.isArray(cards) ? cards : []).length === 0,
       });
     }}
   />

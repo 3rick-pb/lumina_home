@@ -11,7 +11,8 @@ interface CardsTabProps {
 }
 
 export function CardsTab({ setShowCardModal }: CardsTabProps) {
-  const { cards, setDefaultCard, removeCard, user } = useUserStore();
+  const { cards: rawCards, setDefaultCard, removeCard, user } = useUserStore();
+  const cards = Array.isArray(rawCards) ? rawCards.filter(Boolean) : [];
   const [isSyncing, setIsSyncing] = useState(false);
   const [syncError, setSyncError] = useState<string | null>(null);
 
@@ -78,13 +79,13 @@ export function CardsTab({ setShowCardModal }: CardsTabProps) {
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8 pt-2 pb-4 place-items-center">
               {cards.map((c, index) => (
                 <LuminaCardFolderItem
-                  key={c.id}
-                  id={c.id}
-                  holder={c.holder}
-                  number={c.number}
-                  exp={c.exp}
-                  type={c.type}
-                  isDefault={c.isDefault}
+                  key={c?.id || `card-${index}`}
+                  id={c?.id || `card-${index}`}
+                  holder={c?.holder || "Titular Lumina"}
+                  number={c?.number || ""}
+                  exp={c?.exp || "12/28"}
+                  type={c?.type === "mastercard" ? "mastercard" : "visa"}
+                  isDefault={Boolean(c?.isDefault)}
                   index={index}
                   onSetDefault={setDefaultCard}
                   onRemove={removeCard}

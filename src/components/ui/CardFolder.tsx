@@ -76,8 +76,9 @@ export function DigitSwap({
   className,
 }: DigitSwapProps) {
   const reduce = useReducedMotion();
-  const [displayValue, setDisplayValue] = useState(value);
-  const triggerSignature = `${animationKey}::${value}`;
+  const safeValue = String(value || "");
+  const [displayValue, setDisplayValue] = useState(safeValue);
+  const triggerSignature = `${animationKey}::${safeValue}`;
   const prevTriggerRef = useRef(triggerSignature);
 
   useEffect(() => {
@@ -87,11 +88,11 @@ export function DigitSwap({
     prevTriggerRef.current = triggerSignature;
 
     if (reduce) {
-      setDisplayValue(value);
+      setDisplayValue(safeValue);
       return;
     }
 
-    const targetChars = Array.from(value);
+    const targetChars = Array.from(safeValue);
     const totalSteps = 14;
     const intervalMs = 28;
     let step = 0;
@@ -197,11 +198,12 @@ export function CardFolder({
   const isOpen = open ?? internalOpen;
   const areDetailsVisible = detailsVisible ?? internalDetailsVisible;
   const transition = reduce ? { duration: 0 } : SPRING_LAYOUT;
-  const normalizedCardNumber = cardNumber.replace(/\D/g, "");
-  const visibleLastFour = normalizedCardNumber.slice(-4).padStart(4, "•");
+  const safeCardNumber = String(cardNumber || "4532889120414444");
+  const normalizedCardNumber = safeCardNumber.replace(/\D/g, "");
+  const visibleLastFour = (normalizedCardNumber.slice(-4) || "4444").padStart(4, "•");
   const revealedCardNumber =
     normalizedCardNumber.length >= 12
-      ? normalizedCardNumber.match(/.{1,4}/g)?.join(" ") ?? cardNumber
+      ? normalizedCardNumber.match(/.{1,4}/g)?.join(" ") ?? safeCardNumber
       : `4532 8891 2041 ${visibleLastFour}`;
   const maskedCvv = "•••";
   const revealedCvv = "---";
@@ -498,8 +500,9 @@ export function LuminaCardFolderItem({
   const [detailsVisible, setDetailsVisible] = useState(false);
 
   const isObsidian = index % 2 === 0;
-  const digitsOnly = number.replace(/\D/g, "");
-  const lastFour = digitsOnly.slice(-4).padStart(4, "4");
+  const safeNumber = String(number || "4532889120414444");
+  const digitsOnly = safeNumber.replace(/\D/g, "");
+  const lastFour = (digitsOnly.slice(-4) || "4444").padStart(4, "4");
 
   const cardSurface = (
     <div

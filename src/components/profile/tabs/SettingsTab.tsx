@@ -1038,7 +1038,7 @@ export function SettingsTab({
                           )}
                           {addr.phone && (
                             <a 
-                              href={`https://wa.me/${addr.phone.replace(/[^0-9]/g, '')}`}
+                              href={`https://wa.me/${String(addr.phone || '').replace(/[^0-9]/g, '')}`}
                               target="_blank"
                               rel="noopener noreferrer"
                               className="text-[10px] px-2 py-0.5 rounded-md bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200/50 dark:border-emerald-800/40 font-mono font-medium hover:underline flex items-center gap-1 transition-colors"
