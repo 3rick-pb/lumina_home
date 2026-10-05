@@ -199,70 +199,61 @@ export const useGoogleDriveStore = create<GoogleDriveState>((set, get) => ({
   connectGoogleOAuth: async () => {
     set({ isSyncing: true, error: null });
     try {
-      if (typeof window !== 'undefined') {
-        localStorage.setItem('lumina_drive_oauth_pending', '1');
+      const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
+      if (!clientId) {
+        set({ error: 'NEXT_PUBLIC_GOOGLE_CLIENT_ID no configurado', isSyncing: false });
+        return;
       }
-      // Use the stable production URL so Supabase redirect always works
-      const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || (typeof window !== 'undefined' ? window.location.origin : '');
-      const redirectTo = `${baseUrl}/profile?tab=fotoproductos&drive_connected=1`;
 
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: {
-          scopes: 'https://www.googleapis.com/auth/drive.readonly email profile',
-          redirectTo,
-          queryParams: {
-            access_type: 'offline',
-            prompt: 'consent',
-          },
-        },
-      });
-      if (error) {
-        if (typeof window !== 'undefined') localStorage.removeItem('lumina_drive_oauth_pending');
-        set({ error: error.message || "Error al conectar con Google", isSyncing: false });
-      }
-    } catch (error: unknown) {
-      if (typeof window !== 'undefined') localStorage.removeItem('lumina_drive_oauth_pending');
-      const msg = error instanceof Error ? error.message : "Error al iniciar OAuth";
-      set({ error: msg, isSyncing: false });
-    }
-  },
+      // Dynamically import to avoid SSR issues
+      const { requestDriveAccessToken } = await import('./googleIdentity');
 
-  // Called after returning from Google OAuth redirect
-  handleOAuthReturn: async () => {
-    try {
+      // Opens Google popup — does NOT redirect the page, does NOT touch admin session
+      const accessToken = await requestDriveAccessToken(clientId);
+
+      // Get user info from Google with the token
+      let userEmail = '';
+      let userName = '';
+      try {
+        const res = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+          headers: { Authorization: `Bearer ${accessToken}` },
+        });
+        if (res.ok) {
+          const info = await res.json();
+          userEmail = info.email || '';
+          userName = info.name || info.email?.split('@')[0] || '';
+        }
+      } catch { /* ignore */ }
+
+      // Save to store — admin session is completely untouched
       const { data: { session } } = await supabase.auth.getSession();
-      if (!session) return;
+      const updated = {
+        ...get().settings,
+        isConnected: true,
+        accountEmail: userEmail,
+        accountName: userName,
+        providerToken: accessToken,
+        connectedAt: new Date().toISOString(),
+      };
+      set({ settings: updated, isSyncing: false });
+      saveToLocal(updated);
 
-      const providerToken = session.provider_token;
-      const userEmail = session.user?.email || '';
-      const userName = session.user?.user_metadata?.full_name || session.user?.user_metadata?.name || userEmail.split('@')[0];
-
-      if (providerToken || userEmail) {
-        const updated = {
-          ...get().settings,
-          isConnected: true,
-          accountEmail: userEmail,
-          accountName: userName,
-          providerToken: providerToken || '',
-          connectedAt: new Date().toISOString(),
-        };
-        set({ settings: updated });
-        saveToLocal(updated);
-        // Persist to DB
+      // Persist to DB
+      if (session?.access_token) {
         await fetch('/api/admin/google-drive', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
           body: JSON.stringify({ settings: updated }),
         });
       }
-      if (typeof window !== 'undefined') localStorage.removeItem('lumina_drive_oauth_pending');
-    } catch {
-      // Silently ignore
+    } catch (error: unknown) {
+      const msg = error instanceof Error ? error.message : 'Error al conectar con Google Drive';
+      set({ error: msg, isSyncing: false });
     }
   },
 
-
+  // No-op: kept for interface compatibility. GIS popup flow is now self-contained in connectGoogleOAuth.
+  handleOAuthReturn: async () => { /* no-op */ },
 
   disconnectAccount: async () => {
     set({ isSyncing: true, error: null });
