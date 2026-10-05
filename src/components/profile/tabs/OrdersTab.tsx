@@ -122,7 +122,7 @@ export function OrdersTab({
   const resolveCustomerAvatar = useCallback(
     (ord: Order) => {
       const normEmail = (ord.customerEmail || ord.shippingAddress?.email || "").toLowerCase().trim();
-      const ordUserId = (ord.userId || avatarDirectory.byEmail[normEmail]?.userId || "").trim();
+      const ordUserId = (ord.userId || avatarDirectory?.byEmail?.[normEmail]?.userId || "").trim();
 
       // 1. Check if this order belongs to the currently logged-in user
       const isCurrentSelf =
@@ -138,14 +138,14 @@ export function OrdersTab({
       }
 
       // 2. Check live user_avatar_settings directory by userId or email
-      if (ordUserId && avatarDirectory.byUserId[ordUserId]) {
+      if (ordUserId && avatarDirectory?.byUserId?.[ordUserId]) {
         return {
           name: avatarDirectory.byUserId[ordUserId].seed,
           background: avatarDirectory.byUserId[ordUserId].shape,
           role: ord.customerRole || "USER",
         };
       }
-      if (normEmail && avatarDirectory.byEmail[normEmail]) {
+      if (normEmail && avatarDirectory?.byEmail?.[normEmail]) {
         return {
           name: avatarDirectory.byEmail[normEmail].seed,
           background: avatarDirectory.byEmail[normEmail].shape,
@@ -381,9 +381,13 @@ export function OrdersTab({
                       )}
                     </td>
                     <td className="py-4 px-3 text-gray-700 dark:text-gray-300">
-                      {ord.items.length > 0 ? `${ord.items.length} producto(s)` : "1 producto"}
+                      {Array.isArray(ord.items) && ord.items.length > 0
+                        ? `${ord.items.length} producto(s)`
+                        : "1 producto"}
                     </td>
-                    <td className="py-4 px-3 font-bold text-gray-900 dark:text-gray-100">${ord.total.toFixed(2)}</td>
+                    <td className="py-4 px-3 font-bold text-gray-900 dark:text-gray-100">
+                      ${Number(ord.total || 0).toFixed(2)}
+                    </td>
                     <td className="py-4 px-3" onClick={(e) => e.stopPropagation()}>
                       <BeUIOrderStatusSelector
                         status={ord.status}

@@ -1657,16 +1657,31 @@ export function BeUICenterMorphModal({
           window.innerWidth < 1024 ||
           (typeof navigator !== "undefined" &&
             /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent));
+        const isLand =
+          window.innerWidth > window.innerHeight ||
+          (typeof screen !== "undefined" &&
+            screen.orientation &&
+            screen.orientation.type.includes("landscape"));
         setIsSmallScreen(isMobile);
-        setIsMobilePortrait(isMobile && window.innerHeight >= window.innerWidth);
+        setIsMobilePortrait(isMobile && !isLand);
       }
     };
     checkOrientation();
     window.addEventListener("resize", checkOrientation);
     window.addEventListener("orientationchange", checkOrientation);
+    if (typeof screen !== "undefined" && screen.orientation) {
+      try {
+        screen.orientation.addEventListener("change", checkOrientation);
+      } catch {}
+    }
     return () => {
       window.removeEventListener("resize", checkOrientation);
       window.removeEventListener("orientationchange", checkOrientation);
+      if (typeof screen !== "undefined" && screen.orientation) {
+        try {
+          screen.orientation.removeEventListener("change", checkOrientation);
+        } catch {}
+      }
     };
   }, []);
 
@@ -1747,6 +1762,55 @@ export function BeUICenterMorphModal({
               overflow: hidden !important;
               overscroll-behavior: none !important;
             }
+            @media (orientation: landscape) and (max-width: 1024px) {
+              .hyperos-landscape-force {
+                position: fixed !important;
+                top: 0 !important;
+                left: 0 !important;
+                width: 100vw !important;
+                width: 100dvw !important;
+                height: 100vh !important;
+                height: 100dvh !important;
+                max-width: none !important;
+                max-height: none !important;
+                transform: none !important;
+                margin: 0 !important;
+                border-radius: 0 !important;
+                z-index: 999999 !important;
+              }
+              .hyperos-landscape-force > div {
+                width: 100vw !important;
+                width: 100dvw !important;
+                height: 100vh !important;
+                height: 100dvh !important;
+                max-height: 100vh !important;
+                max-height: 100dvh !important;
+                border-radius: 0 !important;
+                margin: 0 !important;
+              }
+            }
+            @media (orientation: portrait) and (max-width: 1024px) {
+              .hyperos-landscape-force {
+                position: fixed !important;
+                top: 50% !important;
+                left: 50% !important;
+                width: 100dvh !important;
+                height: 100dvw !important;
+                max-width: none !important;
+                max-height: none !important;
+                margin: 0 !important;
+                border-radius: 0 !important;
+                transform: translate(-50%, -50%) rotate(90deg) !important;
+                z-index: 999999 !important;
+              }
+              .hyperos-landscape-force > div {
+                width: 100dvh !important;
+                height: 100dvw !important;
+                max-height: 100dvw !important;
+                border-radius: 0 !important;
+                margin: 0 !important;
+              }
+            }
           `}</style>
           <motion.div
             variants={CENTER_MORPH_BACKDROP_VARIANTS}
@@ -1776,39 +1840,9 @@ export function BeUICenterMorphModal({
                 ? { duration: 0.46, ease: [0.16, 1, 0.3, 1] }
                 : CENTER_MORPH_TRANSITION
             }
-            style={
-              isHyperOSActive
-                ? isMobilePortrait
-                  ? {
-                      position: "fixed",
-                      top: "50%",
-                      left: "50%",
-                      width: "100dvh",
-                      height: "100dvw",
-                      maxWidth: "none",
-                      maxHeight: "none",
-                      margin: 0,
-                      borderRadius: 0,
-                    }
-                  : {
-                      position: "fixed",
-                      top: 0,
-                      left: 0,
-                      width: "100dvw",
-                      height: "100dvh",
-                      maxWidth: "none",
-                      maxHeight: "none",
-                      margin: 0,
-                      borderRadius: 0,
-                    }
-                : undefined
-            }
             className={cn(
               "relative z-10 w-full max-w-2xl rounded-[30px] overflow-hidden shadow-2xl will-change-[clip-path,transform,opacity]",
-              isHyperOSActive &&
-                (isMobilePortrait
-                  ? "!fixed !top-1/2 !left-1/2 !w-[100dvh] !h-[100dvw] !max-w-none !max-h-none !m-0 !rounded-none !z-[999999]"
-                  : "!fixed !top-0 !left-0 !w-[100dvw] !h-[100dvh] !max-w-none !max-h-none !m-0 !rounded-none !z-[999999]"),
+              isHyperOSActive && "hyperos-landscape-force !rounded-none !max-w-none !m-0 !z-[999999]",
               className
             )}
           >

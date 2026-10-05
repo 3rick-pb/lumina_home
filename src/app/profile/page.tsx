@@ -492,7 +492,7 @@ export default function ProfilePage() {
     const el = tabsContainerRef.current;
     if (!el) return;
     const dx = e.clientX - dragStartX.current;
-    if (Math.abs(dx) > 5) hasDraggedPastThreshold.current = true;
+    if (Math.abs(dx) > 20) hasDraggedPastThreshold.current = true;
     el.scrollLeft = scrollStartX.current - dx * 1.25;
   }, []);
 
@@ -1155,77 +1155,88 @@ const handleConfirmDeleteNiche = async () => {
     onMouseLeave={handleTabsMouseUp}
     onClickCapture={handleTabsClickCapture}
     onWheel={handleTabsWheel}
-    className="hidden md:flex items-center bg-gray-100/80 dark:bg-[#3a3a3c]/80 p-1 rounded-2xl overflow-x-auto hide-scrollbar min-w-0 shrink cursor-grab active:cursor-grabbing select-none"
+    className="hidden md:flex items-center gap-0.5 bg-gray-100/80 dark:bg-[#3a3a3c]/80 p-1 rounded-2xl overflow-x-auto hide-scrollbar min-w-0 shrink cursor-grab active:cursor-grabbing select-none"
   >
   <button 
-  onClick={() => setActiveTab("overview")} 
-  className={`px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all cursor-pointer ${activeTab === "overview" ? "bg-white dark:bg-[#202022] text-gray-900 dark:text-gray-100 shadow-sm dark:shadow-none" : "text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100"}`}
+    onClick={() => setActiveTab("overview")} 
+    className={`group inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all duration-200 cursor-pointer select-none hover:-translate-y-0.5 active:scale-95 ${activeTab === "overview" ? "bg-white dark:bg-[#202022] text-gray-900 dark:text-gray-100 shadow-sm dark:shadow-none" : "text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-white/50 dark:hover:bg-white/5"}`}
   >
-  Resumen
+    <LayoutDashboard className="w-3.5 h-3.5 transition-transform duration-200 group-hover:scale-115 group-hover:rotate-6 shrink-0 text-amber-500/90" />
+    <span>Vista General</span>
   </button>
   <button 
-  onClick={() => setActiveTab("orders")} 
-  className={`px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all cursor-pointer ${activeTab === "orders" ? "bg-white dark:bg-[#202022] text-gray-900 dark:text-gray-100 shadow-sm dark:shadow-none" : "text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100"}`}
+    onClick={() => setActiveTab("orders")} 
+    className={`group inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all duration-200 cursor-pointer select-none hover:-translate-y-0.5 active:scale-95 ${activeTab === "orders" ? "bg-white dark:bg-[#202022] text-gray-900 dark:text-gray-100 shadow-sm dark:shadow-none" : "text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-white/50 dark:hover:bg-white/5"}`}
   >
-  Actividad ({scopedOrders.length})
+    <ShoppingBag className="w-3.5 h-3.5 transition-transform duration-200 group-hover:scale-115 group-hover:-translate-y-0.5 shrink-0 text-blue-500/90" />
+    <span>Pedidos ({scopedOrders.length})</span>
   </button>
   <button 
-  onClick={() => setActiveTab("cards")} 
-  className={`px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all cursor-pointer ${activeTab === "cards" ? "bg-white dark:bg-[#202022] text-gray-900 dark:text-gray-100 shadow-sm dark:shadow-none" : "text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100"}`}
+    onClick={() => setActiveTab("cards")} 
+    className={`group inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all duration-200 cursor-pointer select-none hover:-translate-y-0.5 active:scale-95 ${activeTab === "cards" ? "bg-white dark:bg-[#202022] text-gray-900 dark:text-gray-100 shadow-sm dark:shadow-none" : "text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-white/50 dark:hover:bg-white/5"}`}
   >
-  Tarjetas ({cards.length})
+    <CreditCard className="w-3.5 h-3.5 transition-transform duration-200 group-hover:scale-115 group-hover:-rotate-6 shrink-0 text-emerald-500/90" />
+    <span>Billetera ({cards.length})</span>
   </button>
   <button 
-  onClick={() => setActiveTab("favorites")} 
-  className={`px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all cursor-pointer ${activeTab === "favorites" ? "bg-white dark:bg-[#202022] text-gray-900 dark:text-gray-100 shadow-sm dark:shadow-none" : "text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100"}`}
+    onClick={() => setActiveTab("favorites")} 
+    className={`group inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all duration-200 cursor-pointer select-none hover:-translate-y-0.5 active:scale-95 ${activeTab === "favorites" ? "bg-white dark:bg-[#202022] text-gray-900 dark:text-gray-100 shadow-sm dark:shadow-none" : "text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-white/50 dark:hover:bg-white/5"}`}
   >
-  Favoritos ({favorites.length})
+    <Heart className="w-3.5 h-3.5 transition-transform duration-200 group-hover:scale-120 group-hover:text-rose-500 shrink-0 text-rose-500/90" />
+    <span>Favoritos ({favorites.length})</span>
   </button>
   {isAdmin && (
   <>
   <button 
-  onClick={() => setActiveTab("catalog")} 
-  className={`px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all cursor-pointer ${activeTab === "catalog" ? "bg-white dark:bg-[#202022] text-gray-900 dark:text-gray-100 shadow-sm dark:shadow-none" : "text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100"}`}
+    onClick={() => setActiveTab("catalog")} 
+    className={`group inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all duration-200 cursor-pointer select-none hover:-translate-y-0.5 active:scale-95 ${activeTab === "catalog" ? "bg-white dark:bg-[#202022] text-gray-900 dark:text-gray-100 shadow-sm dark:shadow-none" : "text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-white/50 dark:hover:bg-white/5"}`}
   >
-  Inventario ({products.length})
+    <Package className="w-3.5 h-3.5 transition-transform duration-200 group-hover:scale-115 group-hover:-translate-y-0.5 shrink-0 text-amber-500/90" />
+    <span>Inventario ({products.length})</span>
   </button>
   <button 
-  onClick={() => setActiveTab("niches")} 
-  className={`px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all cursor-pointer ${activeTab === "niches" ? "bg-white dark:bg-[#202022] text-gray-900 dark:text-gray-100 shadow-sm dark:shadow-none" : "text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100"}`}
+    onClick={() => setActiveTab("niches")} 
+    className={`group inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all duration-200 cursor-pointer select-none hover:-translate-y-0.5 active:scale-95 ${activeTab === "niches" ? "bg-white dark:bg-[#202022] text-gray-900 dark:text-gray-100 shadow-sm dark:shadow-none" : "text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-white/50 dark:hover:bg-white/5"}`}
   >
-  Nichos & Badges ({categories.length})
+    <Layers className="w-3.5 h-3.5 transition-transform duration-200 group-hover:scale-115 group-hover:rotate-6 shrink-0 text-purple-500/90" />
+    <span>Nichos ({categories.length})</span>
   </button>
   <button 
-  onClick={() => setActiveTab("analytics")} 
-  className={`px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all cursor-pointer ${activeTab === "analytics" ? "bg-white dark:bg-[#202022] text-gray-900 dark:text-gray-100 shadow-sm dark:shadow-none" : "text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100"}`}
+    onClick={() => setActiveTab("analytics")} 
+    className={`group inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all duration-200 cursor-pointer select-none hover:-translate-y-0.5 active:scale-95 ${activeTab === "analytics" ? "bg-white dark:bg-[#202022] text-gray-900 dark:text-gray-100 shadow-sm dark:shadow-none" : "text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-white/50 dark:hover:bg-white/5"}`}
   >
-  Radar en Vivo
+    <Globe className="w-3.5 h-3.5 transition-transform duration-200 group-hover:scale-115 group-hover:rotate-90 shrink-0 text-cyan-500/90" />
+    <span>Radar en Vivo</span>
   </button>
   <button 
-  onClick={() => setActiveTab("cart_alerts")} 
-  className={`px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all cursor-pointer ${activeTab === "cart_alerts" ? "bg-white dark:bg-[#202022] text-gray-900 dark:text-gray-100 shadow-sm dark:shadow-none" : "text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100"}`}
+    onClick={() => setActiveTab("cart_alerts")} 
+    className={`group inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all duration-200 cursor-pointer select-none hover:-translate-y-0.5 active:scale-95 ${activeTab === "cart_alerts" ? "bg-white dark:bg-[#202022] text-gray-900 dark:text-gray-100 shadow-sm dark:shadow-none" : "text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-white/50 dark:hover:bg-white/5"}`}
   >
-  Notificaciones de Bolsa
+    <BellRing className="w-3.5 h-3.5 transition-transform duration-200 group-hover:scale-115 group-hover:rotate-12 shrink-0 text-yellow-500/90" />
+    <span>Alertas Bolsa</span>
   </button>
   <button 
-  onClick={() => setActiveTab("integrations")} 
-  className={`px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all cursor-pointer ${activeTab === "integrations" ? "bg-white dark:bg-[#202022] text-gray-900 dark:text-gray-100 shadow-sm dark:shadow-none" : "text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100"}`}
+    onClick={() => setActiveTab("integrations")} 
+    className={`group inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all duration-200 cursor-pointer select-none hover:-translate-y-0.5 active:scale-95 ${activeTab === "integrations" ? "bg-white dark:bg-[#202022] text-gray-900 dark:text-gray-100 shadow-sm dark:shadow-none" : "text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-white/50 dark:hover:bg-white/5"}`}
   >
-  SMTP & Pasarelas
+    <Server className="w-3.5 h-3.5 transition-transform duration-200 group-hover:scale-115 group-hover:rotate-6 shrink-0 text-indigo-500/90" />
+    <span>SMTP & Servidor</span>
   </button>
   </>
   )}
   <button 
-  onClick={() => setActiveTab("loyalty")} 
-  className={`px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all cursor-pointer ${activeTab === "loyalty" ? "bg-white dark:bg-[#202022] text-gray-900 dark:text-gray-100 shadow-sm dark:shadow-none" : "text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100"}`}
+    onClick={() => setActiveTab("loyalty")} 
+    className={`group inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all duration-200 cursor-pointer select-none hover:-translate-y-0.5 active:scale-95 ${activeTab === "loyalty" ? "bg-white dark:bg-[#202022] text-gray-900 dark:text-gray-100 shadow-sm dark:shadow-none" : "text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-white/50 dark:hover:bg-white/5"}`}
   >
-  Cupones
+    <Tag className="w-3.5 h-3.5 transition-transform duration-200 group-hover:scale-115 group-hover:rotate-6 shrink-0 text-orange-500/90" />
+    <span>Cupones</span>
   </button>
   <button 
-  onClick={() => setActiveTab("settings")} 
-  className={`px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all cursor-pointer ${activeTab === "settings" ? "bg-white dark:bg-[#202022] text-gray-900 dark:text-gray-100 shadow-sm dark:shadow-none" : "text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100"}`}
+    onClick={() => setActiveTab("settings")} 
+    className={`group inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all duration-200 cursor-pointer select-none hover:-translate-y-0.5 active:scale-95 ${activeTab === "settings" ? "bg-white dark:bg-[#202022] text-gray-900 dark:text-gray-100 shadow-sm dark:shadow-none" : "text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-white/50 dark:hover:bg-white/5"}`}
   >
-  Ajustes
+    <Settings className="w-3.5 h-3.5 transition-transform duration-200 group-hover:scale-115 group-hover:rotate-90 shrink-0 text-stone-500/90" />
+    <span>Ajustes</span>
   </button>
   </div>
   </div>
@@ -3322,7 +3333,7 @@ const handleConfirmDeleteNiche = async () => {
           items={[
             {
               id: "overview",
-              label: "Resumen",
+              label: "Vista General",
               icon: <LayoutDashboard className="w-5 h-5" />,
               active: activeTab === "overview",
               onClick: () => setActiveTab("overview"),
@@ -3337,7 +3348,7 @@ const handleConfirmDeleteNiche = async () => {
             },
             {
               id: "cards",
-              label: "Tarjetas",
+              label: "Billetera",
               icon: <CreditCard className="w-5 h-5" />,
               active: activeTab === "cards",
               onClick: () => setActiveTab("cards"),

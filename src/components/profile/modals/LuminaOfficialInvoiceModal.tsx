@@ -28,11 +28,12 @@ export function LuminaOfficialInvoiceModal({
   };
 
   // Safe formatting helpers
-  const subtotal = order.items.reduce(
-    (acc, it) => acc + (it.product.price || 0) * (it.quantity || 1),
+  const itemsList = Array.isArray(order.items) ? order.items : [];
+  const subtotal = itemsList.reduce(
+    (acc, it) => acc + (it?.product?.price || 0) * (it?.quantity || 1),
     0
   );
-  const total = order.total || subtotal;
+  const total = Number(order.total || subtotal);
   const tax = Number((subtotal * 0.15).toFixed(2)); // Ecuador IVA 15%
   const discountAmount = Math.max(0, subtotal + tax - total);
 

@@ -50,12 +50,12 @@ export function GoogleDriveSettingsCard({ onClose }: GoogleDriveSettingsCardProp
   const { 
     settings, 
     isSyncing, 
-    activeView,
-    setActiveView,
+    activeView, 
+    setActiveView, 
     connectAccount, 
     disconnectAccount, 
     selectFolder, 
-    createFolder,
+    createFolder, 
     syncFiles 
   } = useGoogleDriveStore();
 
@@ -73,20 +73,20 @@ export function GoogleDriveSettingsCard({ onClose }: GoogleDriveSettingsCardProp
 
   const handleSync = async () => {
     await syncFiles();
-    setFeedback("Carpetas y fotografías de Google Drive sincronizadas");
+    setFeedback("Colecciones sincronizadas con Google Drive");
     setTimeout(() => setFeedback(null), 3000);
   };
 
   const handleSelectFolderClick = async (folder: GoogleDriveFolder) => {
     await selectFolder(folder.id, folder.name);
-    setFeedback(`Carpeta seleccionada: "${folder.name}"`);
+    setFeedback(`Colección activa: ${folder.name}`);
     setTimeout(() => setFeedback(null), 3000);
   };
 
   const handleGoogleLoginSubmit = async (email: string, name: string) => {
     await connectAccount(email, name);
     setShowGoogleLoginModal(false);
-    setFeedback(`Google Drive conectado con ${email}`);
+    setFeedback(`Google Drive conectado`);
     setTimeout(() => setFeedback(null), 3000);
   };
 
@@ -96,36 +96,33 @@ export function GoogleDriveSettingsCard({ onClose }: GoogleDriveSettingsCardProp
     await createFolder(newFolderName.trim());
     setNewFolderName("");
     setShowCreateFolderModal(false);
-    setFeedback(`Carpeta creada en Google Drive`);
+    setFeedback(`Nueva colección creada en Google Drive`);
     setTimeout(() => setFeedback(null), 3000);
   };
 
   return (
-    <div className="p-4 sm:p-7 md:p-8 rounded-[2rem] sm:rounded-[2.5rem] bg-gradient-to-br from-blue-50/50 via-white/95 to-amber-50/30 dark:from-[#131b26]/90 dark:via-[#18181b]/95 dark:to-[#1a1917]/80 border border-blue-500/20 dark:border-blue-400/20 shadow-2xl dark:shadow-none space-y-5 sm:space-y-6 relative overflow-hidden backdrop-blur-2xl max-h-[88vh] overflow-y-auto">
-      {/* Background Ambient Glow */}
-      <div className="absolute top-0 right-0 w-72 h-72 bg-blue-500/10 dark:bg-blue-400/10 rounded-full blur-3xl pointer-events-none -mr-20 -mt-20" />
-      <div className="absolute bottom-0 left-0 w-72 h-72 bg-amber-500/10 dark:bg-amber-400/5 rounded-full blur-3xl pointer-events-none -ml-20 -mb-20" />
+    <div className="p-4 sm:p-7 md:p-8 rounded-[2rem] sm:rounded-[2.5rem] bg-white/95 dark:bg-[#18181b]/95 border border-stone-200/80 dark:border-white/10 shadow-[0_20px_60px_rgba(0,0,0,0.12)] dark:shadow-[0_20px_60px_rgba(0,0,0,0.6)] space-y-5 sm:space-y-6 relative overflow-hidden backdrop-blur-2xl max-h-[88vh] overflow-y-auto">
+      {/* Subtle Brand Ambient Glow */}
+      <div className="absolute top-0 right-0 w-80 h-80 bg-amber-500/5 dark:bg-amber-400/5 rounded-full blur-3xl pointer-events-none -mr-20 -mt-20" />
+      <div className="absolute bottom-0 left-0 w-80 h-80 bg-stone-500/5 dark:bg-white/5 rounded-full blur-3xl pointer-events-none -ml-20 -mb-20" />
 
       {/* Main Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 relative z-10">
         <div className="flex items-start sm:items-center gap-3 sm:gap-3.5">
-          <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-2xl bg-white dark:bg-[#202024] border border-blue-200/80 dark:border-blue-500/30 flex items-center justify-center shadow-md shadow-blue-500/10 shrink-0">
+          <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-2xl bg-stone-100 dark:bg-white/[0.06] border border-stone-200/80 dark:border-white/10 flex items-center justify-center shadow-sm shrink-0">
             <GoogleDriveIcon className="w-6 h-6 sm:w-7 sm:h-7" />
           </div>
           <div>
-            <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 mb-1">
-              <span className="inline-flex items-center gap-1 text-[9px] sm:text-[10px] font-mono font-bold uppercase tracking-wider px-2 py-0.5 rounded-md bg-blue-500/15 text-blue-700 dark:text-blue-300 border border-blue-500/25">
-                <Sparkles className="w-3 h-3" /> GOOGLE DRIVE CORPORATIVO
-              </span>
-              <span className="text-[9px] sm:text-[10px] font-mono text-gray-500 dark:text-gray-400">
-                1 CUENTA PARA TODOS LOS ADMINS
+            <div className="flex flex-wrap items-center gap-2 mb-1">
+              <span className="inline-flex items-center gap-1.5 text-[9px] sm:text-[10px] font-mono font-bold uppercase tracking-widest px-2.5 py-0.5 rounded-full bg-amber-500/10 text-amber-800 dark:text-amber-300 border border-amber-500/20">
+                <Sparkles className="w-3 h-3 text-amber-500" /> LUMINA · ASSET STUDIO
               </span>
             </div>
-            <h3 className="text-lg sm:text-xl font-bold tracking-tight text-gray-900 dark:text-gray-100 flex items-center gap-2">
-              Banco de Fotos Google Drive
+            <h3 className="text-lg sm:text-xl font-display font-bold tracking-tight text-gray-900 dark:text-gray-100 flex items-center gap-2">
+              Banco Multimedia & Catálogo
             </h3>
-            <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 max-w-xl">
-              Inicia sesión con Google, escoge una carpeta de Drive para usar sus fotos en los productos, y cambia de carpeta cuando quieras.
+            <p className="text-xs text-stone-500 dark:text-stone-400 mt-0.5">
+              Colecciones fotográficas y recursos visuales en alta resolución.
             </p>
           </div>
         </div>
@@ -133,13 +130,13 @@ export function GoogleDriveSettingsCard({ onClose }: GoogleDriveSettingsCardProp
         {/* Status Pill & Close */}
         <div className="flex items-center gap-2 shrink-0 self-end sm:self-center">
           {settings.isConnected ? (
-            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-700 dark:text-emerald-300 text-xs font-semibold shadow-xs">
+            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/25 text-emerald-700 dark:text-emerald-300 text-xs font-semibold shadow-xs">
               <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
               <span>Conectado</span>
             </div>
           ) : (
-            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-gray-200/70 dark:bg-white/10 text-gray-600 dark:text-gray-400 text-xs font-semibold">
-              <span className="w-2 h-2 rounded-full bg-gray-400" />
+            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-stone-100 dark:bg-white/10 text-stone-600 dark:text-stone-400 text-xs font-semibold">
+              <span className="w-2 h-2 rounded-full bg-stone-400" />
               <span>Sin Conectar</span>
             </div>
           )}
@@ -147,7 +144,7 @@ export function GoogleDriveSettingsCard({ onClose }: GoogleDriveSettingsCardProp
             <button
               type="button"
               onClick={onClose}
-              className="p-1.5 sm:p-2 text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 bg-white/80 dark:bg-[#202022] hover:bg-gray-100 dark:hover:bg-white/10 rounded-full transition-colors cursor-pointer border border-gray-200 dark:border-white/10"
+              className="p-1.5 sm:p-2 text-stone-400 hover:text-stone-900 dark:hover:text-stone-100 bg-stone-100/80 dark:bg-white/[0.08] hover:bg-stone-200/80 dark:hover:bg-white/15 rounded-full transition-colors cursor-pointer border border-stone-200/60 dark:border-white/10"
               title="Cerrar ventana"
             >
               <X className="w-4 h-4 sm:w-5 sm:h-5" />
@@ -157,24 +154,24 @@ export function GoogleDriveSettingsCard({ onClose }: GoogleDriveSettingsCardProp
       </div>
 
       {feedback && (
-        <div className="p-3 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-800 dark:text-emerald-200 text-xs font-medium flex items-center gap-2 animate-fade-in">
+        <div className="p-3 rounded-2xl bg-emerald-500/10 border border-emerald-500/25 text-emerald-800 dark:text-emerald-200 text-xs font-medium flex items-center gap-2 animate-fade-in">
           <Check className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
           <span>{feedback}</span>
         </div>
       )}
 
-      {/* DISCONNECTED STATE: PROMINENT GOOGLE SIGN IN */}
+      {/* DISCONNECTED STATE */}
       {!settings.isConnected ? (
-        <div className="p-8 sm:p-12 rounded-3xl bg-white/80 dark:bg-[#1f1f23]/70 border border-dashed border-gray-300 dark:border-white/15 flex flex-col items-center justify-center text-center space-y-5">
-          <div className="w-16 h-16 rounded-3xl bg-blue-50 dark:bg-blue-500/10 border border-blue-200/80 dark:border-blue-500/20 flex items-center justify-center shadow-md">
+        <div className="p-8 sm:p-12 rounded-3xl bg-stone-50/60 dark:bg-[#1f1f23]/60 border border-dashed border-stone-300/80 dark:border-white/10 flex flex-col items-center justify-center text-center space-y-5">
+          <div className="w-16 h-16 rounded-3xl bg-white dark:bg-white/[0.06] border border-stone-200/80 dark:border-white/10 flex items-center justify-center shadow-md">
             <GoogleLogoIcon className="w-8 h-8" />
           </div>
-          <div className="max-w-md space-y-1.5">
-            <h4 className="text-base font-bold text-gray-900 dark:text-gray-100">
-              Iniciar Sesión con Google
+          <div className="max-w-sm space-y-1">
+            <h4 className="text-base font-display font-bold text-gray-900 dark:text-gray-100">
+              Conectar Google Drive
             </h4>
-            <p className="text-xs text-gray-500 dark:text-gray-400 leading-relaxed">
-              Conecta la cuenta oficial de Google Drive autorizada para la tienda. Podrás explorar todas las carpetas disponibles, escoger la carpeta de imágenes activa y cambiar de carpeta en cualquier momento.
+            <p className="text-xs text-stone-500 dark:text-stone-400">
+              Acceso a carpetas y fotografía autorizada de producto.
             </p>
           </div>
 
@@ -182,19 +179,19 @@ export function GoogleDriveSettingsCard({ onClose }: GoogleDriveSettingsCardProp
             type="button"
             onClick={() => setShowGoogleLoginModal(true)}
             disabled={isSyncing}
-            className="inline-flex items-center gap-3 px-6 py-3.5 rounded-2xl bg-white dark:bg-[#28282c] hover:bg-gray-50 dark:hover:bg-[#323238] text-gray-900 dark:text-gray-100 font-bold text-xs border border-gray-300 dark:border-white/15 hover:border-gray-400 shadow-md hover:shadow-lg transition-all hover:scale-105 active:scale-95 cursor-pointer"
+            className="inline-flex items-center gap-3 px-6 py-3.5 rounded-2xl bg-stone-900 dark:bg-white hover:bg-stone-800 dark:hover:bg-stone-100 text-white dark:text-stone-900 font-bold text-xs shadow-md hover:shadow-lg transition-all hover:scale-105 active:scale-95 cursor-pointer"
           >
-            <GoogleLogoIcon className="w-5 h-5" />
-            <span>Iniciar sesión con Google</span>
+            <GoogleLogoIcon className="w-4 h-4" />
+            <span>Vincular Cuenta de Google</span>
           </button>
         </div>
       ) : (
-        /* CONNECTED STATE: ACCOUNT STRIP + FOLDER EXPLORER OR ACTIVE FOLDER FILES */
+        /* CONNECTED STATE: ACCOUNT STRIP + FOLDERS OR ACTIVE FOLDER FILES */
         <div className="space-y-5 relative z-10">
           {/* Top Account Strip */}
-          <div className="p-4 sm:p-5 rounded-2xl bg-white/80 dark:bg-[#1d1d21]/90 border border-gray-200/80 dark:border-white/10 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="p-4 sm:p-5 rounded-2xl bg-stone-50/80 dark:bg-[#202024]/80 border border-stone-200/80 dark:border-white/10 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-blue-500/15 border border-blue-500/30 text-blue-600 dark:text-blue-400 flex items-center justify-center font-bold text-sm shrink-0">
+              <div className="w-10 h-10 rounded-xl bg-white dark:bg-white/10 border border-stone-200/60 dark:border-white/10 text-stone-700 dark:text-stone-200 flex items-center justify-center font-bold text-sm shrink-0 shadow-xs">
                 <GoogleLogoIcon className="w-5 h-5" />
               </div>
               <div className="min-w-0">
@@ -202,11 +199,11 @@ export function GoogleDriveSettingsCard({ onClose }: GoogleDriveSettingsCardProp
                   <span className="text-xs font-bold text-gray-900 dark:text-gray-100 truncate">
                     {settings.accountName}
                   </span>
-                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-blue-100 dark:bg-blue-900/40 text-blue-800 dark:text-blue-300 font-medium shrink-0">
-                    Google Drive Conectado
+                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-800 dark:text-amber-300 font-semibold shrink-0 border border-amber-500/20">
+                    Drive Activo
                   </span>
                 </div>
-                <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
+                <p className="text-xs text-stone-500 dark:text-stone-400 truncate">
                   {settings.accountEmail}
                 </p>
               </div>
@@ -218,7 +215,7 @@ export function GoogleDriveSettingsCard({ onClose }: GoogleDriveSettingsCardProp
                 onClick={handleSync}
                 disabled={isSyncing}
                 title="Sincronizar Google Drive"
-                className="p-2 rounded-xl bg-gray-100 dark:bg-[#28282c] hover:bg-gray-200/80 dark:hover:bg-[#323236] text-gray-600 dark:text-gray-300 transition-colors cursor-pointer"
+                className="p-2 rounded-xl bg-white dark:bg-white/10 hover:bg-stone-100 dark:hover:bg-white/15 text-stone-600 dark:text-stone-300 border border-stone-200/60 dark:border-white/10 transition-colors cursor-pointer"
               >
                 <RefreshCw className={`w-4 h-4 ${isSyncing ? "animate-spin text-amber-500" : ""}`} />
               </button>
@@ -227,15 +224,15 @@ export function GoogleDriveSettingsCard({ onClose }: GoogleDriveSettingsCardProp
                 type="button"
                 onClick={() => disconnectAccount()}
                 title="Cerrar sesión de Google"
-                className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-gray-100 dark:bg-[#28282c] hover:bg-red-50 dark:hover:bg-red-950/40 text-gray-500 hover:text-red-600 text-xs font-semibold transition-colors cursor-pointer"
+                className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white dark:bg-white/10 hover:bg-rose-50 dark:hover:bg-rose-950/40 text-stone-500 hover:text-rose-600 dark:hover:text-rose-300 border border-stone-200/60 dark:border-white/10 text-xs font-semibold transition-colors cursor-pointer"
               >
                 <LogOut className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">Cerrar Sesión</span>
+                <span className="hidden sm:inline">Desconectar</span>
               </button>
             </div>
           </div>
 
-          {/* VIEW SWITCHER / SUBHEADER */}
+          {/* VIEW SWITCHER / CONTENT */}
           {activeView === "folders" ? (
             /* ========================================================================= */
             /* VIEW 1: EXPLORADOR VISUAL DE CARPETAS DE GOOGLE DRIVE                     */
@@ -245,10 +242,10 @@ export function GoogleDriveSettingsCard({ onClose }: GoogleDriveSettingsCardProp
                 <div>
                   <h4 className="text-sm font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
                     <FolderOpen className="w-4 h-4 text-amber-500" />
-                    Carpetas en tu Google Drive ({settings.availableFolders.length})
+                    Carpetas Disponibles ({settings.availableFolders.length})
                   </h4>
-                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-                    Elige una carpeta para cargar y usar sus imágenes en los productos de la tienda.
+                  <p className="text-xs text-stone-500 dark:text-stone-400 mt-0.5">
+                    Selecciona la colección activa para el inventario de la tienda.
                   </p>
                 </div>
 
@@ -256,9 +253,9 @@ export function GoogleDriveSettingsCard({ onClose }: GoogleDriveSettingsCardProp
                   <button
                     type="button"
                     onClick={() => setShowCreateFolderModal(true)}
-                    className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold transition-all shadow-xs cursor-pointer"
+                    className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-stone-900 hover:bg-stone-800 dark:bg-stone-100 dark:hover:bg-white text-white dark:text-stone-900 text-xs font-bold transition-all shadow-xs cursor-pointer active:scale-95"
                   >
-                    <FolderPlus className="w-3.5 h-3.5" />
+                    <FolderPlus className="w-3.5 h-3.5 text-amber-400 dark:text-amber-600" />
                     <span>Nueva Carpeta</span>
                   </button>
 
@@ -266,9 +263,9 @@ export function GoogleDriveSettingsCard({ onClose }: GoogleDriveSettingsCardProp
                     <button
                       type="button"
                       onClick={() => setActiveView("files")}
-                      className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-gray-900 dark:bg-white text-white dark:text-gray-900 text-xs font-bold transition-all cursor-pointer"
+                      className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold transition-all shadow-xs cursor-pointer active:scale-95"
                     >
-                      <span>Ver Fotos Actuales</span>
+                      <span>Ver Fotos</span>
                       <ChevronRight className="w-3.5 h-3.5" />
                     </button>
                   )}
@@ -286,8 +283,8 @@ export function GoogleDriveSettingsCard({ onClose }: GoogleDriveSettingsCardProp
                       onClick={() => handleSelectFolderClick(folder)}
                       className={`p-4 rounded-2xl border transition-all cursor-pointer flex flex-col justify-between space-y-3 ${
                         isSelected
-                          ? "bg-amber-500/10 border-amber-500 shadow-md ring-2 ring-amber-500/20"
-                          : "bg-white dark:bg-[#1f1f23] border-gray-200/80 dark:border-white/10 hover:border-amber-400 dark:hover:border-amber-500/50 hover:shadow-md"
+                          ? "bg-amber-500/10 border-amber-500/80 shadow-md ring-2 ring-amber-500/20"
+                          : "bg-white dark:bg-[#1f1f23] border-stone-200/80 dark:border-white/10 hover:border-amber-400 dark:hover:border-amber-500/50 hover:shadow-md"
                       }`}
                     >
                       <div className="flex items-start justify-between gap-3">
@@ -296,7 +293,7 @@ export function GoogleDriveSettingsCard({ onClose }: GoogleDriveSettingsCardProp
                         </div>
                         {isSelected && (
                           <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 font-bold text-[10px] border border-emerald-500/25">
-                            <Check className="w-3 h-3" /> Carpeta en Uso
+                            <Check className="w-3 h-3" /> En Uso
                           </span>
                         )}
                       </div>
@@ -305,8 +302,8 @@ export function GoogleDriveSettingsCard({ onClose }: GoogleDriveSettingsCardProp
                         <h5 className="font-bold text-xs text-gray-900 dark:text-gray-100 line-clamp-1">
                           {folder.name}
                         </h5>
-                        <p className="text-[11px] text-gray-400 font-mono mt-0.5">
-                          {folder.itemCount} imágenes disponibles
+                        <p className="text-[11px] text-stone-400 font-mono mt-0.5">
+                          {folder.itemCount} archivos
                         </p>
                       </div>
 
@@ -319,11 +316,11 @@ export function GoogleDriveSettingsCard({ onClose }: GoogleDriveSettingsCardProp
                         className={`w-full py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
                           isSelected
                             ? "bg-amber-500 text-white shadow-xs"
-                            : "bg-gray-100 dark:bg-white/5 hover:bg-amber-500 hover:text-white text-gray-700 dark:text-gray-300"
+                            : "bg-stone-100 dark:bg-white/5 hover:bg-stone-900 hover:text-white dark:hover:bg-white dark:hover:text-stone-900 text-stone-700 dark:text-stone-300"
                         }`}
                       >
                         <FolderOpen className="w-3.5 h-3.5" />
-                        <span>{isSelected ? "Carpeta Activa (Ver Fotos)" : "Seleccionar esta Carpeta"}</span>
+                        <span>{isSelected ? "Colección Activa" : "Usar Colección"}</span>
                       </button>
                     </div>
                   );
@@ -335,7 +332,7 @@ export function GoogleDriveSettingsCard({ onClose }: GoogleDriveSettingsCardProp
             /* VIEW 2: FOTOGRAFÍAS DE LA CARPETA ACTIVA                                  */
             /* ========================================================================= */
             <div className="space-y-4">
-              {/* Active Folder Bar with "Cambiar de Carpeta" Button */}
+              {/* Active Folder Bar */}
               <div className="p-3.5 sm:p-4 rounded-2xl bg-amber-500/10 border border-amber-500/25 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div className="flex items-center gap-3">
                   <div className="w-8 h-8 rounded-xl bg-amber-500 text-white flex items-center justify-center shrink-0">
@@ -344,12 +341,12 @@ export function GoogleDriveSettingsCard({ onClose }: GoogleDriveSettingsCardProp
                   <div>
                     <div className="flex items-center gap-2">
                       <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-amber-700 dark:text-amber-300">
-                        CARPETA ACTIVA
+                        COLECCIÓN ACTIVA
                       </span>
                       <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
                     </div>
                     <h4 className="text-xs sm:text-sm font-bold text-gray-900 dark:text-gray-100">
-                      {settings.selectedFolderName} ({filteredFiles.length} fotos)
+                      {settings.selectedFolderName} ({filteredFiles.length} fotografías)
                     </h4>
                   </div>
                 </div>
@@ -358,10 +355,10 @@ export function GoogleDriveSettingsCard({ onClose }: GoogleDriveSettingsCardProp
                   <button
                     type="button"
                     onClick={() => setActiveView("folders")}
-                    className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-white dark:bg-[#202024] hover:bg-gray-50 text-gray-900 dark:text-gray-100 text-xs font-bold border border-amber-500/30 hover:border-amber-500 transition-all shadow-xs cursor-pointer"
+                    className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-white dark:bg-[#202024] hover:bg-stone-50 dark:hover:bg-white/10 text-gray-900 dark:text-gray-100 text-xs font-bold border border-stone-200/80 dark:border-white/10 transition-all shadow-xs cursor-pointer active:scale-95"
                   >
                     <Folder className="w-3.5 h-3.5 text-amber-500" />
-                    <span>Cambiar de Carpeta</span>
+                    <span>Cambiar Colección</span>
                   </button>
                 </div>
               </div>
@@ -369,33 +366,33 @@ export function GoogleDriveSettingsCard({ onClose }: GoogleDriveSettingsCardProp
               {/* Search Bar */}
               <div className="flex items-center justify-between gap-3">
                 <div className="relative flex-1 max-w-sm">
-                  <Search className="w-3.5 h-3.5 absolute left-3 top-2.5 text-gray-400" />
+                  <Search className="w-3.5 h-3.5 absolute left-3 top-2.5 text-stone-400" />
                   <input
                     type="text"
                     value={searchFilter}
                     onChange={(e) => setSearchFilter(e.target.value)}
-                    placeholder="Buscar foto en esta carpeta..."
-                    className="w-full pl-8 pr-3 py-1.5 rounded-xl border border-gray-200 dark:border-white/10 text-xs bg-white dark:bg-[#1a1a1c] text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="Filtrar fotografías..."
+                    className="w-full pl-8 pr-3 py-1.5 rounded-xl border border-stone-200 dark:border-white/10 text-xs bg-white dark:bg-[#1a1a1c] text-gray-900 dark:text-gray-100 placeholder-stone-400 focus:outline-none focus:ring-2 focus:ring-amber-500/50"
                   />
                 </div>
-                <span className="text-[11px] text-gray-400 font-mono">
+                <span className="text-[11px] text-stone-400 font-mono">
                   {filteredFiles.length} disponibles
                 </span>
               </div>
 
               {/* Photos Grid */}
               {filteredFiles.length === 0 ? (
-                <div className="p-8 text-center text-xs text-gray-400 border border-dashed border-gray-200 dark:border-white/10 rounded-2xl">
-                  No se encontraron fotografías en esta carpeta.
+                <div className="p-8 text-center text-xs text-stone-400 border border-dashed border-stone-200 dark:border-white/10 rounded-2xl">
+                  No se encontraron fotografías en esta colección.
                 </div>
               ) : (
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
                   {filteredFiles.map((file) => (
                     <div
                       key={file.id}
-                      className="group relative rounded-2xl bg-white dark:bg-[#1d1d21] border border-gray-200/80 dark:border-white/10 overflow-hidden shadow-xs hover:shadow-lg transition-all hover:-translate-y-0.5"
+                      className="group relative rounded-2xl bg-white dark:bg-[#1d1d21] border border-stone-200/80 dark:border-white/10 overflow-hidden shadow-xs hover:shadow-lg transition-all hover:-translate-y-0.5"
                     >
-                      <div className="aspect-square w-full relative bg-gray-100 dark:bg-black/30 overflow-hidden">
+                      <div className="aspect-square w-full relative bg-stone-100 dark:bg-black/30 overflow-hidden">
                         <img
                           src={file.thumbnailUrl || file.cdnUrl}
                           alt={file.name}
@@ -410,7 +407,7 @@ export function GoogleDriveSettingsCard({ onClose }: GoogleDriveSettingsCardProp
                         <p className="text-[11px] font-semibold text-gray-900 dark:text-gray-100 truncate" title={file.name}>
                           {file.name}
                         </p>
-                        <p className="text-[9px] text-gray-400 font-mono mt-0.5 truncate">
+                        <p className="text-[9px] text-stone-400 font-mono mt-0.5 truncate">
                           {file.dimensions || "2000x2000"}
                         </p>
                       </div>
@@ -426,49 +423,45 @@ export function GoogleDriveSettingsCard({ onClose }: GoogleDriveSettingsCardProp
       {/* POPUP MODAL: INICIAR SESIÓN CON GOOGLE */}
       {showGoogleLoginModal && (
         <div className="fixed inset-0 z-[1300] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-fade-in">
-          <div className="w-full max-w-md rounded-3xl bg-white dark:bg-[#1c1c1f] border border-gray-200 dark:border-white/10 shadow-2xl p-6 space-y-5">
+          <div className="w-full max-w-md rounded-3xl bg-white dark:bg-[#1c1c1f] border border-stone-200 dark:border-white/10 shadow-2xl p-6 space-y-5">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2.5">
                 <GoogleLogoIcon className="w-6 h-6" />
                 <h4 className="font-bold text-sm text-gray-900 dark:text-gray-100">
-                  Iniciar sesión con Google
+                  Vincular Cuenta de Google
                 </h4>
               </div>
               <button
                 type="button"
                 onClick={() => setShowGoogleLoginModal(false)}
-                className="p-1.5 text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 rounded-full"
+                className="p-1.5 text-stone-400 hover:text-stone-900 dark:hover:text-stone-100 rounded-full"
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
 
-            <p className="text-xs text-gray-500 dark:text-gray-400">
-              Selecciona la cuenta de Google con acceso al Google Drive oficial de la tienda.
-            </p>
-
             <div className="space-y-2">
               <button
                 type="button"
                 onClick={() => handleGoogleLoginSubmit("multimedia.lumina@gmail.com", "Lumina Home Oficial")}
-                className="w-full p-3 rounded-2xl border border-gray-200 dark:border-white/10 hover:border-blue-500 bg-gray-50 dark:bg-white/5 hover:bg-blue-50/50 dark:hover:bg-blue-900/10 flex items-center gap-3 transition-all text-left cursor-pointer"
+                className="w-full p-3 rounded-2xl border border-stone-200 dark:border-white/10 hover:border-amber-500 bg-stone-50 dark:bg-white/5 hover:bg-amber-50/50 dark:hover:bg-amber-950/20 flex items-center gap-3 transition-all text-left cursor-pointer"
               >
-                <div className="w-9 h-9 rounded-xl bg-blue-500 text-white flex items-center justify-center font-bold text-xs shrink-0">
+                <div className="w-9 h-9 rounded-xl bg-stone-900 dark:bg-white text-white dark:text-stone-900 flex items-center justify-center font-bold text-xs shrink-0">
                   L
                 </div>
                 <div className="min-w-0">
                   <p className="font-bold text-xs text-gray-900 dark:text-gray-100 truncate">
-                    Lumina Home Oficial (Recomendada)
+                    Lumina Home Oficial
                   </p>
-                  <p className="text-[11px] text-gray-400 font-mono truncate">
+                  <p className="text-[11px] text-stone-400 font-mono truncate">
                     multimedia.lumina@gmail.com
                   </p>
                 </div>
               </button>
 
-              <div className="pt-2 border-t border-gray-200 dark:border-white/5">
-                <label className="block text-[11px] font-bold text-gray-700 dark:text-gray-300 mb-1">
-                  O escribe tu correo de Google:
+              <div className="pt-2 border-t border-stone-200 dark:border-white/5">
+                <label className="block text-[11px] font-bold text-stone-700 dark:text-stone-300 mb-1">
+                  O escribe tu correo corporativo:
                 </label>
                 <div className="flex gap-2">
                   <input
@@ -476,13 +469,13 @@ export function GoogleDriveSettingsCard({ onClose }: GoogleDriveSettingsCardProp
                     value={customGoogleEmail}
                     onChange={(e) => setCustomGoogleEmail(e.target.value)}
                     placeholder="usuario@gmail.com"
-                    className="flex-1 px-3 py-2 rounded-xl border border-gray-200 dark:border-white/10 text-xs bg-white dark:bg-[#141416] text-gray-900 dark:text-gray-100 placeholder-gray-400"
+                    className="flex-1 px-3 py-2 rounded-xl border border-stone-200 dark:border-white/10 text-xs bg-white dark:bg-[#141416] text-gray-900 dark:text-gray-100 placeholder-stone-400 focus:outline-none focus:ring-2 focus:ring-amber-500/50"
                   />
                   <button
                     type="button"
                     disabled={!customGoogleEmail.includes("@")}
                     onClick={() => handleGoogleLoginSubmit(customGoogleEmail, customGoogleEmail.split("@")[0])}
-                    className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 disabled:opacity-40 text-white text-xs font-bold cursor-pointer"
+                    className="px-4 py-2 rounded-xl bg-stone-900 dark:bg-white hover:bg-stone-800 dark:hover:bg-stone-100 disabled:opacity-40 text-white dark:text-stone-900 text-xs font-bold cursor-pointer transition-all"
                   >
                     Conectar
                   </button>
@@ -498,7 +491,7 @@ export function GoogleDriveSettingsCard({ onClose }: GoogleDriveSettingsCardProp
         <div className="fixed inset-0 z-[1300] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-fade-in">
           <form
             onSubmit={handleCreateFolderSubmit}
-            className="w-full max-w-sm rounded-3xl bg-white dark:bg-[#1c1c1f] border border-gray-200 dark:border-white/10 shadow-2xl p-6 space-y-4"
+            className="w-full max-w-sm rounded-3xl bg-white dark:bg-[#1c1c1f] border border-stone-200 dark:border-white/10 shadow-2xl p-6 space-y-4"
           >
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
@@ -510,22 +503,22 @@ export function GoogleDriveSettingsCard({ onClose }: GoogleDriveSettingsCardProp
               <button
                 type="button"
                 onClick={() => setShowCreateFolderModal(false)}
-                className="p-1.5 text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 rounded-full"
+                className="p-1.5 text-stone-400 hover:text-stone-900 dark:hover:text-stone-100 rounded-full"
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
-                Nombre de la Carpeta
+              <label className="block text-xs font-semibold text-stone-700 dark:text-stone-300 mb-1">
+                Nombre de la Colección
               </label>
               <input
                 type="text"
                 value={newFolderName}
                 onChange={(e) => setNewFolderName(e.target.value)}
                 placeholder="Ej. Colección Nórdica 2026"
-                className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-xs bg-white dark:bg-[#141416] text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-amber-500"
+                className="w-full px-3.5 py-2.5 rounded-xl border border-stone-200 dark:border-white/10 text-xs bg-white dark:bg-[#141416] text-gray-900 dark:text-gray-100 placeholder-stone-400 focus:outline-none focus:ring-2 focus:ring-amber-500/50"
                 autoFocus
               />
             </div>
@@ -534,14 +527,14 @@ export function GoogleDriveSettingsCard({ onClose }: GoogleDriveSettingsCardProp
               <button
                 type="button"
                 onClick={() => setShowCreateFolderModal(false)}
-                className="px-4 py-2 rounded-xl text-xs font-semibold text-gray-500 hover:bg-gray-100 dark:hover:bg-white/5"
+                className="px-4 py-2 rounded-xl text-xs font-semibold text-stone-500 hover:bg-stone-100 dark:hover:bg-white/5 cursor-pointer"
               >
                 Cancelar
               </button>
               <button
                 type="submit"
                 disabled={!newFolderName.trim()}
-                className="px-5 py-2 rounded-xl bg-amber-500 hover:bg-amber-600 disabled:opacity-40 text-white text-xs font-bold cursor-pointer"
+                className="px-5 py-2 rounded-xl bg-amber-500 hover:bg-amber-600 disabled:opacity-40 text-white text-xs font-bold cursor-pointer transition-all"
               >
                 Crear Carpeta
               </button>

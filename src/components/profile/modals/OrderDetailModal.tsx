@@ -449,25 +449,25 @@ export function OrderDetailModal({
 
         {/* Items Purchased */}
         <div className="space-y-3 mb-5">
-          <h4 className="text-xs font-bold uppercase tracking-wider text-gray-400">Piezas Adquiridas ({activeOrder.items.length})</h4>
-          {activeOrder.items.length === 0 ? (
+          <h4 className="text-xs font-bold uppercase tracking-wider text-gray-400">Piezas Adquiridas ({Array.isArray(activeOrder.items) ? activeOrder.items.length : 0})</h4>
+          {(!Array.isArray(activeOrder.items) || activeOrder.items.length === 0) ? (
             <div className="p-3 bg-gray-50 dark:bg-[#2a2a2c] rounded-xl flex items-center justify-between text-xs">
               <span>Pieza Colección Exclusiva Lumina</span>
-              <span className="font-bold text-gray-900 dark:text-gray-100">${activeOrder.total.toFixed(2)}</span>
+              <span className="font-bold text-gray-900 dark:text-gray-100">${Number(activeOrder.total || 0).toFixed(2)}</span>
             </div>
           ) : (
             activeOrder.items.map((item, idx) => (
               <div key={idx} className="p-3 bg-gray-50 dark:bg-[#2a2a2c] rounded-xl flex items-center justify-between text-xs">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-lg overflow-hidden bg-white dark:bg-[#202022] shrink-0 relative border border-gray-100 dark:border-white/5">
-                    <Image src={item.product.imageUrl} alt={item.product.title} fill sizes="40px" className="object-cover" />
+                    <Image src={item?.product?.imageUrl || ""} alt={item?.product?.title || "Producto"} fill sizes="40px" className="object-cover" />
                   </div>
                   <div>
-                    <p className="font-semibold text-gray-900 dark:text-gray-100">{item.product.title}</p>
-                    <p className="text-[10px] text-gray-400">Cant: {item.quantity} {item.color ? `• Color: ${item.color}` : ""}</p>
+                    <p className="font-semibold text-gray-900 dark:text-gray-100">{item?.product?.title || "Producto Lumina"}</p>
+                    <p className="text-[10px] text-gray-400">Cant: {item?.quantity || 1} {item?.color ? `• Color: ${item.color}` : ""}</p>
                   </div>
                 </div>
-                <span className="font-bold text-gray-900 dark:text-gray-100">${(item.product.price * item.quantity).toFixed(2)}</span>
+                <span className="font-bold text-gray-900 dark:text-gray-100">${((item?.product?.price || 0) * (item?.quantity || 1)).toFixed(2)}</span>
               </div>
             ))
           )}
@@ -477,7 +477,7 @@ export function OrderDetailModal({
         <div className="pt-4 border-t border-gray-100 dark:border-white/5 space-y-3">
           <div className="flex items-center justify-between text-sm">
             <span className="text-gray-500 dark:text-gray-400 font-medium">Total Facturado</span>
-            <span className="text-xl font-bold text-gray-900 dark:text-gray-100">${activeOrder.total.toFixed(2)}</span>
+            <span className="text-xl font-bold text-gray-900 dark:text-gray-100">${Number(activeOrder.total || 0).toFixed(2)}</span>
           </div>
 
           <button

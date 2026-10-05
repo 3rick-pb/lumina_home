@@ -56,7 +56,7 @@ export function OverviewTab({
 
   // Metrics
   const totalUserSpend = useMemo(() => {
-    return orders.reduce((acc, curr) => acc + curr.total, 0);
+    return orders.reduce((acc, curr) => acc + Number(curr?.total || 0), 0);
   }, [orders]);
 
   const loyaltyPoints = useMemo(() => {
@@ -112,7 +112,7 @@ export function OverviewTab({
     
     const totals = monthNames.map(m => {
       const monthOrders = orders.filter(o => o.date?.toLowerCase().includes(m.toLowerCase()));
-      const sum = monthOrders.reduce((acc, o) => acc + o.total, 0);
+      const sum = monthOrders.reduce((acc, o) => acc + Number(o?.total || 0), 0);
       return { month: m, total: sum };
     });
 
@@ -676,9 +676,9 @@ export function OverviewTab({
                       <div className="w-7 h-7 rounded-lg bg-gray-100 dark:bg-[#3a3a3c] flex items-center justify-center text-gray-600 dark:text-gray-400">
                         <Package className="w-3.5 h-3.5" />
                       </div>
-                      <span>{ord.items.length > 0 ? `${ord.items.length} pieza(s)` : "Compra realizada"}</span>
+                      <span>{Array.isArray(ord.items) && ord.items.length > 0 ? `${ord.items.length} pieza(s)` : "Compra realizada"}</span>
                     </td>
-                    <td className="py-3.5 px-2 font-bold text-gray-900 dark:text-gray-100">${ord.total.toFixed(2)}</td>
+                    <td className="py-3.5 px-2 font-bold text-gray-900 dark:text-gray-100">${Number(ord.total || 0).toFixed(2)}</td>
                     <td className="py-3.5 px-2" onClick={(e) => e.stopPropagation()}>
                       <BeUIOrderStatusSelector
                         status={ord.status}
