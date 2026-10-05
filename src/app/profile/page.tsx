@@ -323,6 +323,20 @@ export default function ProfilePage() {
      setEditExtraImages(prev => prev.trim() ? `${prev.trim()}, ${imageUrl}` : imageUrl);
    }
  };
+
+ const handleDriveMultipleImagesSelected = (imageUrls: string[]) => {
+   if (!imageUrls || imageUrls.length === 0) return;
+   const joined = imageUrls.join(', ');
+   if (drivePickerTarget === 'create_main') {
+     setProdImageUrl(imageUrls[0]);
+   } else if (drivePickerTarget === 'create_gallery') {
+     setProdExtraImages(prev => prev.trim() ? `${prev.trim()}, ${joined}` : joined);
+   } else if (drivePickerTarget === 'edit_main') {
+     setEditImageUrl(imageUrls[0]);
+   } else if (drivePickerTarget === 'edit_gallery') {
+     setEditExtraImages(prev => prev.trim() ? `${prev.trim()}, ${joined}` : joined);
+   }
+ };
  const [prodDescription, setProdDescription] = useState("");
  const [prodFeatures, setProdFeatures] = useState("");
  const [hasSizes, setHasSizes] = useState(false);
@@ -3415,6 +3429,8 @@ const handleConfirmDeleteNiche = async () => {
         open={showDrivePicker}
         onClose={() => setShowDrivePicker(false)}
         onSelectImage={handleDriveImageSelected}
+        onSelectMultipleImages={handleDriveMultipleImagesSelected}
+        allowMultiple={drivePickerTarget.includes('gallery')}
         title={
           drivePickerTarget.includes('main')
             ? "Seleccionar Imagen Principal de Producto"

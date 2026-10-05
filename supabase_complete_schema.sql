@@ -656,7 +656,9 @@ BEGIN
     'admin_smtp_settings',
     'admin_payment_settings',
     'radar_telemetry_sessions',
-    'cart_alert_events'
+    'cart_alert_events',
+    'admin_google_drive_settings',
+    'admin_media_assets'
   ]
   LOOP
     BEGIN
@@ -665,4 +667,87 @@ BEGIN
       NULL;
     END;
   END LOOP;
+END $$;
+
+-- -----------------------------------------------------------------------------------------
+-- 12. BANCO DE FOTOS Y RESPALDO MULTIMEDIA (ADMIN_GOOGLE_DRIVE_SETTINGS, ADMIN_MEDIA_ASSETS)
+-- -----------------------------------------------------------------------------------------
+
+CREATE TABLE IF NOT EXISTS public.admin_google_drive_settings (
+  id TEXT PRIMARY KEY DEFAULT 'global',
+  is_connected BOOLEAN NOT NULL DEFAULT true,
+  connected_email TEXT NOT NULL DEFAULT 'multimedia.lumina@gmail.com',
+  connected_account_name TEXT NOT NULL DEFAULT 'Lumina Home Media Assets',
+  connected_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  selected_folder_id TEXT NOT NULL DEFAULT 'folder_lumina_catalog_2026',
+  selected_folder_name TEXT NOT NULL DEFAULT 'Lumina Home - Catálogo Fotográfico 2026',
+  folders_list JSONB NOT NULL DEFAULT '[
+    {"id": "folder_lumina_catalog_2026", "name": "Lumina Home - Catálogo Fotográfico 2026", "itemCount": 12},
+    {"id": "folder_iluminacion_premium", "name": "Iluminación & Lámparas de Autor", "itemCount": 6},
+    {"id": "folder_textiles_tapiceria", "name": "Textiles Naturales & Lino", "itemCount": 4},
+    {"id": "folder_ceramica_decoracion", "name": "Cerámica & Accesorios Minimalistas", "itemCount": 5}
+  ]'::jsonb,
+  files_cache JSONB NOT NULL DEFAULT '[]'::jsonb,
+  backup_at TIMESTAMPTZ,
+  backup_count INTEGER DEFAULT 0,
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS public.admin_media_assets (
+  id TEXT PRIMARY KEY,
+  name TEXT NOT NULL,
+  cdn_url TEXT NOT NULL,
+  thumbnail_url TEXT,
+  mime_type TEXT DEFAULT 'image/jpeg',
+  size TEXT,
+  dimensions TEXT,
+  folder_id TEXT NOT NULL DEFAULT 'folder_lumina_catalog_2026',
+  folder_name TEXT DEFAULT 'Lumina Home - Catálogo Fotográfico 2026',
+  source TEXT DEFAULT 'google_drive',
+  tags TEXT[] DEFAULT '{}'::TEXT[],
+  metadata JSONB DEFAULT '{}'::jsonb,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_media_assets_folder_id ON public.admin_media_assets (folder_id);
+CREATE INDEX IF NOT EXISTS idx_media_assets_created_at ON public.admin_media_assets (created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_media_assets_name ON public.admin_media_assets (name);
+
+ALTER TABLE public.admin_google_drive_settings ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.admin_media_assets ENABLE ROW LEVEL SECURITY;
+
+DO $$ 
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies 
+    WHERE tablename = 'admin_google_drive_settings' AND policyname = 'Allow public read of drive settings'
+  ) THEN
+    CREATE POLICY "Allow public read of drive settings"
+      ON public.admin_google_drive_settings FOR SELECT USING (true);
+  END IF;
+
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies 
+    WHERE tablename = 'admin_google_drive_settings' AND policyname = 'Allow write to drive settings'
+  ) THEN
+    CREATE POLICY "Allow write to drive settings"
+      ON public.admin_google_drive_settings FOR ALL USING (true);
+  END IF;
+
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies 
+    WHERE tablename = 'admin_media_assets' AND policyname = 'Allow public read of media assets'
+  ) THEN
+    CREATE POLICY "Allow public read of media assets"
+      ON public.admin_media_assets FOR SELECT USING (true);
+  END IF;
+
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies 
+    WHERE tablename = 'admin_media_assets' AND policyname = 'Allow write to media assets'
+  ) THEN
+    CREATE POLICY "Allow write to media assets"
+      ON public.admin_media_assets FOR ALL USING (true);
+  END IF;
 END $$;

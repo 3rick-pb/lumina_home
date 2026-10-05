@@ -1,57 +1,147 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
   X, 
   Search, 
   FolderOpen, 
   Check, 
-  Sparkles, 
-  Image as ImageIcon,
-  ExternalLink,
-  RefreshCw,
-  Folder
+  Folder, 
+  Plus, 
+  Upload 
 } from "lucide-react";
 import { useGoogleDriveStore, GoogleDriveFile } from "@/lib/googleDriveStore";
 import { GoogleDriveIcon } from "./GoogleDriveSettingsCard";
+import { formatGoogleDriveUrl, isGoogleDriveUrl } from "@/lib/imageUtils";
 
 interface GoogleDriveAssetPickerModalProps {
   open: boolean;
   onClose: () => void;
   onSelectImage: (imageUrl: string, file: GoogleDriveFile) => void;
+  onSelectMultipleImages?: (imageUrls: string[], files: GoogleDriveFile[]) => void;
   title?: string;
+  allowMultiple?: boolean;
 }
 
 export function GoogleDriveAssetPickerModal({
   open,
   onClose,
   onSelectImage,
-  title = "Seleccionar Imagen desde Google Drive",
+  onSelectMultipleImages,
+  title = "Seleccionar Imagen desde el Banco de Fotos",
+  allowMultiple = false,
 }: GoogleDriveAssetPickerModalProps) {
-  const { settings, selectFolder, syncFiles, isSyncing, connectAccount } = useGoogleDriveStore();
+  const { 
+    settings, 
+    selectFolder, 
+    addPhoto, 
+    addPhotos, 
+    connectAccount 
+  } = useGoogleDriveStore();
+
   const [searchFilter, setSearchFilter] = useState("");
-  const [selectedFileId, setSelectedFileId] = useState<string | null>(null);
+  const [selectedFileIds, setSelectedFileIds] = useState<string[]>([]);
   const [showFolderDropdown, setShowFolderDropdown] = useState(false);
+  const [showQuickAddModal, setShowQuickAddModal] = useState(false);
+
+  // Subir al vuelo
+  const [quickUrl, setQuickUrl] = useState("");
+  const [quickName, setQuickName] = useState("");
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   if (!open) return null;
 
-  const filteredFiles = (settings.files || []).filter((f) =>
+  const currentFolderFiles = (settings.files || []).filter((f) =>
+    !settings.selectedFolderId ||
+    settings.selectedFolderId === "folder_lumina_catalog_2026" ||
+    f.folderId === settings.selectedFolderId
+  );
+
+  const filteredFiles = currentFolderFiles.filter((f) =>
     !searchFilter.trim() || f.name.toLowerCase().includes(searchFilter.toLowerCase().trim())
   );
 
-  const selectedFile = (settings.files || []).find((f) => f.id === selectedFileId);
+  const isMultiMode = allowMultiple || Boolean(title.toLowerCase().includes("galer"));
+
+  const toggleSelect = (file: GoogleDriveFile) => {
+    if (isMultiMode) {
+      if (selectedFileIds.includes(file.id)) {
+        setSelectedFileIds(selectedFileIds.filter((id) => id !== file.id));
+      } else {
+        setSelectedFileIds([...selectedFileIds, file.id]);
+      }
+    } else {
+      setSelectedFileIds([file.id]);
+    }
+  };
 
   const handleConfirmSelection = () => {
-    if (selectedFile) {
-      onSelectImage(selectedFile.cdnUrl, selectedFile);
-      onClose();
+    const selectedFiles = settings.files.filter((f) => selectedFileIds.includes(f.id));
+    if (selectedFiles.length === 0) return;
+
+    if (isMultiMode && onSelectMultipleImages) {
+      onSelectMultipleImages(selectedFiles.map((f) => f.cdnUrl), selectedFiles);
+    } else {
+      onSelectImage(selectedFiles[0].cdnUrl, selectedFiles[0]);
     }
+    onClose();
+  };
+
+  const handleQuickAddUrl = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!quickUrl.trim()) return;
+
+    const normalized = formatGoogleDriveUrl(quickUrl.trim());
+    const name = quickName.trim() || `LUMINA-FOTO-${Date.now().toString().slice(-4)}.jpg`;
+
+    await addPhoto({
+      name,
+      cdnUrl: normalized,
+      thumbnailUrl: normalized,
+      size: "HD",
+      dimensions: "Resolución Óptima",
+      folderId: settings.selectedFolderId || "folder_lumina_catalog_2026",
+      mimeType: "image/jpeg",
+      source: isGoogleDriveUrl(quickUrl) ? "google_drive" : "url",
+    });
+
+    setQuickUrl("");
+    setQuickName("");
+    setShowQuickAddModal(false);
+  };
+
+  const handleQuickUploadFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    const newItems: Array<Omit<GoogleDriveFile, "id">> = [];
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+      const dataUrl = await new Promise<string>((resolve) => {
+        const reader = new FileReader();
+        reader.onload = (ev) => resolve((ev.target?.result as string) || "");
+        reader.readAsDataURL(file);
+      });
+
+      newItems.push({
+        name: file.name.toUpperCase().replace(/\s+/g, "-"),
+        cdnUrl: dataUrl,
+        thumbnailUrl: dataUrl,
+        size: `${(file.size / 1024).toFixed(0)} KB`,
+        dimensions: "Resolución Nativa",
+        folderId: settings.selectedFolderId || "folder_lumina_catalog_2026",
+        source: "upload",
+      });
+    }
+
+    await addPhotos(newItems);
+    setShowQuickAddModal(false);
   };
 
   return (
     <AnimatePresence>
-      <div className="fixed inset-0 z-[1200] flex items-center justify-center p-3 sm:p-6 overflow-hidden">
+      <div className="fixed inset-0 z-[1300] flex items-center justify-center p-3 sm:p-6 overflow-hidden">
         {/* Backdrop */}
         <motion.div
           initial={{ opacity: 0 }}
@@ -72,16 +162,16 @@ export function GoogleDriveAssetPickerModal({
           {/* Header */}
           <div className="px-4 py-3 sm:px-6 sm:py-4 border-b border-gray-200/80 dark:border-white/10 bg-white/95 dark:bg-[#202024]/95 backdrop-blur-xl flex items-center justify-between gap-3 shrink-0">
             <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
-              <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-2xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center shrink-0">
+              <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center shrink-0">
                 <GoogleDriveIcon className="w-4 h-4 sm:w-5 sm:h-5" />
               </div>
               <div className="min-w-0">
                 <div className="flex items-center gap-1.5 sm:gap-2">
-                  <span className="text-[9px] sm:text-[10px] font-mono font-bold uppercase tracking-wider px-1.5 sm:px-2 py-0.5 rounded bg-blue-500/15 text-blue-600 dark:text-blue-400">
+                  <span className="text-[9px] sm:text-[10px] font-mono font-bold uppercase tracking-wider px-1.5 sm:px-2 py-0.5 rounded bg-amber-500/15 text-amber-700 dark:text-amber-300">
                     BANCO DE MEDIOS
                   </span>
                   <span className="text-[9px] sm:text-[10px] text-gray-500 font-mono truncate hidden xs:inline">
-                    {settings.accountEmail || "Google Drive"}
+                    {isMultiMode ? "Selección Múltiple" : "Selección Simple"}
                   </span>
                 </div>
                 <h3 className="text-sm sm:text-lg font-bold text-gray-900 dark:text-gray-100 truncate">
@@ -90,13 +180,24 @@ export function GoogleDriveAssetPickerModal({
               </div>
             </div>
 
-            <button
-              type="button"
-              onClick={onClose}
-              className="p-1.5 sm:p-2 text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 rounded-full hover:bg-gray-100 dark:hover:bg-white/5 transition-colors cursor-pointer shrink-0"
-            >
-              <X className="w-5 h-5" />
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setShowQuickAddModal(true)}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold transition-all shadow-xs cursor-pointer active:scale-95"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">Subir Foto al Vuelo</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={onClose}
+                className="p-1.5 sm:p-2 text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 rounded-full hover:bg-gray-100 dark:hover:bg-white/5 transition-colors cursor-pointer shrink-0"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
           </div>
 
           {/* Folder & Search Subheader */}
@@ -118,7 +219,7 @@ export function GoogleDriveAssetPickerModal({
               {showFolderDropdown && (
                 <div className="absolute left-0 mt-2 w-full sm:w-72 rounded-2xl bg-white dark:bg-[#202024] border border-gray-200 dark:border-white/10 shadow-2xl p-2 z-50 space-y-1">
                   <p className="text-[10px] font-mono uppercase tracking-wider text-gray-400 px-3 py-1">
-                    Cambiar Carpeta de Drive
+                    Cambiar Colección de Drive
                   </p>
                   {settings.availableFolders.map((f) => (
                     <button
@@ -155,13 +256,13 @@ export function GoogleDriveAssetPickerModal({
                 value={searchFilter}
                 onChange={(e) => setSearchFilter(e.target.value)}
                 placeholder="Buscar imagen..."
-                className="w-full pl-8 pr-3 py-1.5 rounded-xl border border-gray-200 dark:border-white/10 text-xs bg-white dark:bg-[#1a1a1c] text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full pl-8 pr-3 py-1.5 rounded-xl border border-gray-200 dark:border-white/10 text-xs bg-white dark:bg-[#1a1a1c] text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-amber-500/50"
               />
             </div>
           </div>
 
           {/* Files Grid View */}
-          <div className="p-6 overflow-y-auto flex-1">
+          <div className="p-4 sm:p-6 overflow-y-auto flex-1">
             {!settings.isConnected ? (
               <div className="p-12 text-center flex flex-col items-center justify-center space-y-4">
                 <GoogleDriveIcon className="w-12 h-12" />
@@ -174,32 +275,40 @@ export function GoogleDriveAssetPickerModal({
                 <button
                   type="button"
                   onClick={() => connectAccount()}
-                  className="px-5 py-2.5 rounded-2xl bg-blue-500 text-white font-bold text-xs hover:bg-blue-600 transition-all cursor-pointer shadow-md"
+                  className="px-5 py-2.5 rounded-2xl bg-amber-500 text-white font-bold text-xs hover:bg-amber-600 transition-all cursor-pointer shadow-md"
                 >
                   Conectar Ahora
                 </button>
               </div>
             ) : filteredFiles.length === 0 ? (
-              <div className="p-12 text-center text-xs text-gray-400 border border-dashed border-gray-200 dark:border-white/10 rounded-3xl">
-                No se encontraron imágenes en esta carpeta que coincidan con la búsqueda.
+              <div className="p-12 text-center text-xs text-gray-400 border border-dashed border-gray-200 dark:border-white/10 rounded-3xl space-y-3">
+                <p>No se encontraron fotografías en esta carpeta.</p>
+                <button
+                  type="button"
+                  onClick={() => setShowQuickAddModal(true)}
+                  className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-amber-500 text-white text-xs font-bold hover:bg-amber-600 cursor-pointer shadow-xs"
+                >
+                  <Upload className="w-3.5 h-3.5" />
+                  <span>Subir una foto ahora</span>
+                </button>
               </div>
             ) : (
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 sm:gap-4">
                 {filteredFiles.map((file) => {
-                  const isSelected = selectedFileId === file.id;
+                  const isSelected = selectedFileIds.includes(file.id);
 
                   return (
                     <div
                       key={file.id}
-                      onClick={() => setSelectedFileId(file.id)}
+                      onClick={() => toggleSelect(file)}
                       onDoubleClick={() => {
                         onSelectImage(file.cdnUrl, file);
                         onClose();
                       }}
                       className={`group relative rounded-2xl overflow-hidden cursor-pointer transition-all duration-200 border text-left ${
                         isSelected
-                          ? "ring-3 ring-blue-500 border-blue-500 shadow-lg scale-[1.02] bg-blue-50/20 dark:bg-blue-900/10"
-                          : "border-gray-200/80 dark:border-white/10 hover:border-blue-400 dark:hover:border-blue-500/50 hover:shadow-md bg-white dark:bg-[#1f1f23]"
+                          ? "ring-3 ring-amber-500 border-amber-500 shadow-lg scale-[1.02] bg-amber-50/20 dark:bg-amber-900/10"
+                          : "border-gray-200/80 dark:border-white/10 hover:border-amber-400 dark:hover:border-amber-500/50 hover:shadow-md bg-white dark:bg-[#1f1f23]"
                       }`}
                     >
                       {/* Image Thumbnail */}
@@ -211,7 +320,7 @@ export function GoogleDriveAssetPickerModal({
                           loading="lazy"
                         />
                         {isSelected && (
-                          <div className="absolute top-2 right-2 w-6 h-6 rounded-full bg-blue-500 text-white flex items-center justify-center shadow-md">
+                          <div className="absolute top-2 right-2 w-6 h-6 rounded-full bg-amber-500 text-white flex items-center justify-center shadow-md">
                             <Check className="w-3.5 h-3.5 stroke-[3]" />
                           </div>
                         )}
@@ -237,14 +346,14 @@ export function GoogleDriveAssetPickerModal({
           </div>
 
           {/* Footer Bar */}
-          <div className="px-6 py-4 border-t border-gray-200/80 dark:border-white/10 bg-white/95 dark:bg-[#202024]/95 backdrop-blur-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 shrink-0">
+          <div className="px-4 py-3 sm:px-6 sm:py-4 border-t border-gray-200/80 dark:border-white/10 bg-white/95 dark:bg-[#202024]/95 backdrop-blur-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 shrink-0">
             <div className="text-xs text-gray-500 truncate max-w-sm">
-              {selectedFile ? (
-                <span className="font-semibold text-blue-600 dark:text-blue-400 truncate block">
-                  Seleccionado: {selectedFile.name}
+              {selectedFileIds.length > 0 ? (
+                <span className="font-semibold text-amber-600 dark:text-amber-400 truncate block">
+                  {selectedFileIds.length} fotografía(s) seleccionada(s)
                 </span>
               ) : (
-                <span>Haz clic en una fotografía para seleccionarla (o doble clic para insertar)</span>
+                <span>Haz clic en una o varias fotos para seleccionarlas (o doble clic para insertar)</span>
               )}
             </div>
 
@@ -258,16 +367,110 @@ export function GoogleDriveAssetPickerModal({
               </button>
               <button
                 type="button"
-                disabled={!selectedFile}
+                disabled={selectedFileIds.length === 0}
                 onClick={handleConfirmSelection}
-                className="px-6 py-2.5 rounded-xl text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white shadow-md disabled:opacity-40 disabled:cursor-not-allowed hover:scale-105 active:scale-95 transition-all cursor-pointer flex items-center gap-1.5"
+                className="px-6 py-2.5 rounded-xl text-xs font-bold bg-amber-500 hover:bg-amber-600 text-white shadow-md disabled:opacity-40 disabled:cursor-not-allowed hover:scale-105 active:scale-95 transition-all cursor-pointer flex items-center gap-1.5"
               >
                 <Check className="w-3.5 h-3.5" />
-                <span>Usar en Producto</span>
+                <span>
+                  {selectedFileIds.length > 1
+                    ? `Insertar ${selectedFileIds.length} Fotos`
+                    : "Usar en Producto"}
+                </span>
               </button>
             </div>
           </div>
         </motion.div>
+
+        {/* MODAL: SUBIR FOTO AL VUELO */}
+        {showQuickAddModal && (
+          <div className="fixed inset-0 z-[1400] flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm animate-fade-in">
+            <div className="w-full max-w-md rounded-3xl bg-white dark:bg-[#1c1c1f] border border-stone-200 dark:border-white/10 shadow-2xl p-6 space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Upload className="w-5 h-5 text-amber-500" />
+                  <h4 className="font-bold text-sm text-gray-900 dark:text-gray-100">
+                    Añadir Foto al Banco
+                  </h4>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowQuickAddModal(false)}
+                  className="p-1.5 text-stone-400 hover:text-stone-900 dark:hover:text-stone-100 rounded-full"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              {/* Subir archivo */}
+              <input
+                ref={fileInputRef}
+                type="file"
+                multiple
+                accept="image/*"
+                onChange={handleQuickUploadFile}
+                className="hidden"
+              />
+
+              <div
+                onClick={() => fileInputRef.current?.click()}
+                className="p-5 border-2 border-dashed border-stone-300 dark:border-white/15 hover:border-amber-500 rounded-2xl text-center cursor-pointer bg-stone-50 dark:bg-white/5 transition-all"
+              >
+                <Upload className="w-6 h-6 text-amber-500 mx-auto mb-1.5" />
+                <p className="text-xs font-bold text-gray-900 dark:text-gray-100">
+                  Seleccionar archivo desde tu equipo
+                </p>
+                <p className="text-[10px] text-stone-400">JPG, PNG o WEBP</p>
+              </div>
+
+              <div className="relative flex py-1 items-center">
+                <div className="flex-grow border-t border-stone-200 dark:border-white/10"></div>
+                <span className="flex-shrink mx-2 text-[10px] uppercase font-mono text-stone-400">O pegar enlace</span>
+                <div className="flex-grow border-t border-stone-200 dark:border-white/10"></div>
+              </div>
+
+              <form onSubmit={handleQuickAddUrl} className="space-y-3">
+                <div>
+                  <input
+                    type="url"
+                    required
+                    value={quickUrl}
+                    onChange={(e) => setQuickUrl(e.target.value)}
+                    placeholder="URL de imagen o Google Drive..."
+                    className="w-full px-3 py-2 rounded-xl border border-stone-200 dark:border-white/10 text-xs bg-stone-50 dark:bg-[#141416] text-gray-900 dark:text-gray-100 placeholder-stone-400 focus:outline-none focus:ring-2 focus:ring-amber-500/50"
+                  />
+                </div>
+
+                <div>
+                  <input
+                    type="text"
+                    value={quickName}
+                    onChange={(e) => setQuickName(e.target.value)}
+                    placeholder="Nombre de la fotografía (opcional)..."
+                    className="w-full px-3 py-2 rounded-xl border border-stone-200 dark:border-white/10 text-xs bg-stone-50 dark:bg-[#141416] text-gray-900 dark:text-gray-100 placeholder-stone-400 focus:outline-none focus:ring-2 focus:ring-amber-500/50"
+                  />
+                </div>
+
+                <div className="flex justify-end gap-2 pt-1">
+                  <button
+                    type="button"
+                    onClick={() => setShowQuickAddModal(false)}
+                    className="px-4 py-2 rounded-xl text-xs font-semibold text-stone-500 hover:bg-stone-100 dark:hover:bg-white/5 cursor-pointer"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={!quickUrl.trim()}
+                    className="px-5 py-2 rounded-xl bg-amber-500 hover:bg-amber-600 disabled:opacity-40 text-white text-xs font-bold cursor-pointer transition-all"
+                  >
+                    Guardar
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
       </div>
     </AnimatePresence>
   );
