@@ -199,15 +199,18 @@ export const useGoogleDriveStore = create<GoogleDriveState>((set, get) => ({
   connectGoogleOAuth: async () => {
     set({ isSyncing: true, error: null });
     try {
-      // Store a flag so we can detect the return from Google OAuth
       if (typeof window !== 'undefined') {
         localStorage.setItem('lumina_drive_oauth_pending', '1');
       }
+      // Use the stable production URL so Supabase redirect always works
+      const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || (typeof window !== 'undefined' ? window.location.origin : '');
+      const redirectTo = `${baseUrl}/profile?tab=fotoproductos&drive_connected=1`;
+
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
           scopes: 'https://www.googleapis.com/auth/drive.readonly email profile',
-          redirectTo: typeof window !== 'undefined' ? `${window.location.origin}/profile?tab=fotoproductos&drive_connected=1` : undefined,
+          redirectTo,
           queryParams: {
             access_type: 'offline',
             prompt: 'consent',
@@ -218,7 +221,6 @@ export const useGoogleDriveStore = create<GoogleDriveState>((set, get) => ({
         if (typeof window !== 'undefined') localStorage.removeItem('lumina_drive_oauth_pending');
         set({ error: error.message || "Error al conectar con Google", isSyncing: false });
       }
-      // Browser will redirect to Google — no code runs after this
     } catch (error: unknown) {
       if (typeof window !== 'undefined') localStorage.removeItem('lumina_drive_oauth_pending');
       const msg = error instanceof Error ? error.message : "Error al iniciar OAuth";
