@@ -8,12 +8,12 @@
 -- 1. Actualizar / Asegurar la tabla de configuración y resumen
 CREATE TABLE IF NOT EXISTS public.admin_google_drive_settings (
   id text PRIMARY KEY DEFAULT 'global',
-  is_connected boolean NOT NULL DEFAULT true,
-  connected_email text NOT NULL DEFAULT 'multimedia.lumina@gmail.com',
-  connected_account_name text NOT NULL DEFAULT 'Lumina Home Media Assets',
-  connected_at timestamptz NOT NULL DEFAULT now(),
+  is_connected boolean NOT NULL DEFAULT false,
+  connected_email text DEFAULT NULL,
+  connected_account_name text DEFAULT NULL,
+  connected_at timestamptz,
   selected_folder_id text NOT NULL DEFAULT 'folder_lumina_catalog_2026',
-  selected_folder_name text NOT NULL DEFAULT 'Lumina Home - Catálogo Fotográfico 2026',
+  selected_folder_name text NOT NULL DEFAULT 'Fotoproductos - Catálogo Lumina',
   folders_list jsonb NOT NULL DEFAULT '[
     {"id": "folder_lumina_catalog_2026", "name": "Lumina Home - Catálogo Fotográfico 2026", "itemCount": 12},
     {"id": "folder_iluminacion_premium", "name": "Iluminación & Lámparas de Autor", "itemCount": 6},
@@ -98,7 +98,15 @@ BEGIN
   END IF;
 END $$;
 
--- 4. Inserción inicial de configuración por defecto si la fila global no existe
+-- 4. Limpieza de cuentas demo anteriores
+UPDATE public.admin_google_drive_settings
+SET is_connected = false,
+    connected_email = NULL,
+    connected_account_name = NULL,
+    connected_at = NULL
+WHERE connected_email = 'multimedia.lumina@gmail.com';
+
+-- 5. Inserción inicial de configuración por defecto si la fila global no existe
 INSERT INTO public.admin_google_drive_settings (
   id,
   is_connected,
@@ -109,11 +117,15 @@ INSERT INTO public.admin_google_drive_settings (
 )
 VALUES (
   'global',
-  true,
-  'multimedia.lumina@gmail.com',
-  'Lumina Home - Fotoproductos',
+  false,
+  NULL,
+  NULL,
   'folder_lumina_catalog_2026',
   'Fotoproductos - Catálogo Lumina'
 )
-ON CONFLICT (id) DO NOTHING;
+ON CONFLICT (id) DO UPDATE SET
+  is_connected = false,
+  connected_email = NULL,
+  connected_account_name = NULL
+WHERE public.admin_google_drive_settings.connected_email = 'multimedia.lumina@gmail.com';
 

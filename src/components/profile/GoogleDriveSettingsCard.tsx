@@ -32,6 +32,7 @@ import {
   GoogleDriveFile
 } from "@/lib/googleDriveStore";
 import { formatGoogleDriveUrl, isGoogleDriveUrl } from "@/lib/imageUtils";
+import { useUserStore } from "@/lib/userStore";
 
 export function GoogleDriveIcon({ className = "w-5 h-5" }: { className?: string }) {
   return (
@@ -82,6 +83,8 @@ export function GoogleDriveSettingsCard({ onClose, onSelectPhotoForProduct }: Go
     importBackupJson,
     syncFiles 
   } = useGoogleDriveStore();
+
+  const currentUser = useUserStore((s) => s.user);
 
   const [searchFilter, setSearchFilter] = useState("");
   const [showGoogleLoginModal, setShowGoogleLoginModal] = useState(false);
@@ -331,12 +334,12 @@ export function GoogleDriveSettingsCard({ onClose, onSelectPhotoForProduct }: Go
           {settings.isConnected ? (
             <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/25 text-emerald-700 dark:text-emerald-300 text-xs font-semibold shadow-xs">
               <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-              <span>Conectado</span>
+              <span>Drive Vinculado</span>
             </div>
           ) : (
             <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-stone-100 dark:bg-white/10 text-stone-600 dark:text-stone-400 text-xs font-semibold">
               <span className="w-2 h-2 rounded-full bg-stone-400" />
-              <span>Sin Conectar</span>
+              <span>Almacén Activo (Drive Opcional)</span>
             </div>
           )}
           {onClose && (
@@ -359,36 +362,11 @@ export function GoogleDriveSettingsCard({ onClose, onSelectPhotoForProduct }: Go
         </div>
       )}
 
-      {/* DISCONNECTED STATE */}
-      {!settings.isConnected ? (
-        <div className="p-8 sm:p-12 rounded-3xl bg-stone-50/60 dark:bg-[#1f1f23]/60 border border-dashed border-stone-300/80 dark:border-white/10 flex flex-col items-center justify-center text-center space-y-5">
-          <div className="w-16 h-16 rounded-3xl bg-white dark:bg-white/[0.06] border border-stone-200/80 dark:border-white/10 flex items-center justify-center shadow-md">
-            <GoogleLogoIcon className="w-8 h-8" />
-          </div>
-          <div className="max-w-sm space-y-1">
-            <h4 className="text-base font-display font-bold text-gray-900 dark:text-gray-100">
-              Conectar Google Drive
-            </h4>
-            <p className="text-xs text-stone-500 dark:text-stone-400">
-              Acceso a carpetas, subida de fotos y fotografía autorizada de producto.
-            </p>
-          </div>
-
-          <button
-            type="button"
-            onClick={() => setShowGoogleLoginModal(true)}
-            disabled={isSyncing}
-            className="inline-flex items-center gap-3 px-6 py-3.5 rounded-2xl bg-stone-900 dark:bg-white hover:bg-stone-800 dark:hover:bg-stone-100 text-white dark:text-stone-900 font-bold text-xs shadow-md hover:shadow-lg transition-all hover:scale-105 active:scale-95 cursor-pointer"
-          >
-            <GoogleLogoIcon className="w-4 h-4" />
-            <span>Vincular Cuenta de Google</span>
-          </button>
-        </div>
-      ) : (
-        /* CONNECTED STATE: NAVIGATION TABS + ACTIONS */
-        <div className="space-y-5 relative z-10">
-          {/* Top Account Strip */}
-          <div className="p-3.5 sm:p-4 rounded-2xl bg-stone-50/80 dark:bg-[#202024]/80 border border-stone-200/80 dark:border-white/10 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+      {/* WORKSPACE & NAVIGATION TABS (ALWAYS ACCESSIBLE, NEVER GATED) */}
+      <div className="space-y-5 relative z-10">
+        {/* Top Account & Google Drive Status Strip */}
+        <div className="p-3.5 sm:p-4 rounded-2xl bg-stone-50/80 dark:bg-[#202024]/80 border border-stone-200/80 dark:border-white/10 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          {settings.isConnected ? (
             <div className="flex items-center gap-3">
               <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-white dark:bg-white/10 border border-stone-200/60 dark:border-white/10 text-stone-700 dark:text-stone-200 flex items-center justify-center font-bold text-sm shrink-0 shadow-xs">
                 <GoogleLogoIcon className="w-5 h-5" />
@@ -396,9 +374,9 @@ export function GoogleDriveSettingsCard({ onClose, onSelectPhotoForProduct }: Go
               <div className="min-w-0">
                 <div className="flex items-center gap-2">
                   <span className="text-xs font-bold text-gray-900 dark:text-gray-100 truncate">
-                    {settings.accountName}
+                    {settings.accountName || "Google Drive"}
                   </span>
-                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-800 dark:text-amber-300 font-semibold shrink-0 border border-amber-500/20">
+                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-800 dark:text-emerald-300 font-semibold shrink-0 border border-emerald-500/20">
                     Drive Activo
                   </span>
                 </div>
@@ -407,29 +385,62 @@ export function GoogleDriveSettingsCard({ onClose, onSelectPhotoForProduct }: Go
                 </p>
               </div>
             </div>
-
-            <div className="flex items-center gap-2 self-end sm:self-center">
-              <button
-                type="button"
-                onClick={handleSync}
-                disabled={isSyncing}
-                title="Sincronizar Fotoproductos"
-                className="p-2 rounded-xl bg-white dark:bg-white/10 hover:bg-stone-100 dark:hover:bg-white/15 text-stone-600 dark:text-stone-300 border border-stone-200/60 dark:border-white/10 transition-colors cursor-pointer"
-              >
-                <RefreshCw className={`w-4 h-4 ${isSyncing ? "animate-spin text-amber-500" : ""}`} />
-              </button>
-
-              <button
-                type="button"
-                onClick={() => disconnectAccount()}
-                title="Cerrar sesión de Google"
-                className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white dark:bg-white/10 hover:bg-rose-50 dark:hover:bg-rose-950/40 text-stone-500 hover:text-rose-600 dark:hover:text-rose-300 border border-stone-200/60 dark:border-white/10 text-xs font-semibold transition-colors cursor-pointer"
-              >
-                <LogOut className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">Desconectar</span>
-              </button>
+          ) : (
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-stone-200/60 dark:bg-white/5 border border-stone-200/60 dark:border-white/10 text-stone-400 flex items-center justify-center font-bold text-sm shrink-0 shadow-xs">
+                <GoogleDriveIcon className="w-5 h-5 opacity-60 grayscale" />
+              </div>
+              <div className="min-w-0">
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-bold text-gray-900 dark:text-gray-100 truncate">
+                    Google Drive: No vinculado
+                  </span>
+                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-stone-200/80 dark:bg-white/10 text-stone-600 dark:text-stone-400 font-semibold shrink-0">
+                    Opcional
+                  </span>
+                </div>
+                <p className="text-xs text-stone-500 dark:text-stone-400 truncate">
+                  Tus fotografías se gestionan y respaldan en el banco local y en la base de datos Supabase.
+                </p>
+              </div>
             </div>
+          )}
+
+          <div className="flex items-center gap-2 self-end sm:self-center">
+            {settings.isConnected ? (
+              <>
+                <button
+                  type="button"
+                  onClick={handleSync}
+                  disabled={isSyncing}
+                  title="Sincronizar Fotoproductos"
+                  className="p-2 rounded-xl bg-white dark:bg-white/10 hover:bg-stone-100 dark:hover:bg-white/15 text-stone-600 dark:text-stone-300 border border-stone-200/60 dark:border-white/10 transition-colors cursor-pointer"
+                >
+                  <RefreshCw className={`w-4 h-4 ${isSyncing ? "animate-spin text-amber-500" : ""}`} />
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => disconnectAccount()}
+                  title="Cerrar sesión de Google"
+                  className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white dark:bg-white/10 hover:bg-rose-50 dark:hover:bg-rose-950/40 text-stone-500 hover:text-rose-600 dark:hover:text-rose-300 border border-stone-200/60 dark:border-white/10 text-xs font-semibold transition-colors cursor-pointer"
+                >
+                  <LogOut className="w-3.5 h-3.5" />
+                  <span className="hidden sm:inline">Desvincular</span>
+                </button>
+              </>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setShowGoogleLoginModal(true)}
+                className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-stone-900 dark:bg-white hover:bg-stone-800 dark:hover:bg-stone-100 text-white dark:text-stone-900 text-xs font-bold transition-all shadow-xs cursor-pointer hover:scale-105 active:scale-95"
+              >
+                <GoogleLogoIcon className="w-3.5 h-3.5" />
+                <span>Vincular Google Drive</span>
+              </button>
+            )}
           </div>
+        </div>
 
           {/* Liquid Glass Navigation Tabs */}
           <div className="flex items-center gap-1.5 p-1.5 rounded-2xl bg-stone-100/80 dark:bg-white/[0.05] border border-stone-200/80 dark:border-white/10 overflow-x-auto no-scrollbar">
@@ -1016,7 +1027,6 @@ export function GoogleDriveSettingsCard({ onClose, onSelectPhotoForProduct }: Go
             </div>
           )}
         </div>
-      )}
 
       {/* LIGHTBOX / VISOR HD EN PANTALLA COMPLETA */}
       {previewPhoto && (
@@ -1181,28 +1191,34 @@ export function GoogleDriveSettingsCard({ onClose, onSelectPhotoForProduct }: Go
               </button>
             </div>
 
-            <div className="space-y-2">
-              <button
-                type="button"
-                onClick={() => handleGoogleLoginSubmit("multimedia.lumina@gmail.com", "Lumina Home Oficial")}
-                className="w-full p-3 rounded-2xl border border-stone-200 dark:border-white/10 hover:border-amber-500 bg-stone-50 dark:bg-white/5 hover:bg-amber-50/50 dark:hover:bg-amber-950/20 flex items-center gap-3 transition-all text-left cursor-pointer"
-              >
-                <div className="w-9 h-9 rounded-xl bg-stone-900 dark:bg-white text-white dark:text-stone-900 flex items-center justify-center font-bold text-xs shrink-0">
-                  L
-                </div>
-                <div className="min-w-0">
-                  <p className="font-bold text-xs text-gray-900 dark:text-gray-100 truncate">
-                    Lumina Home Oficial
-                  </p>
-                  <p className="text-[11px] text-stone-400 font-mono truncate">
-                    multimedia.lumina@gmail.com
-                  </p>
-                </div>
-              </button>
+            <div className="space-y-4">
+              <p className="text-xs text-stone-500 dark:text-stone-400">
+                Conecta tu cuenta de Google para sincronizar tus fotografías y carpetas multimedia en Google Drive.
+              </p>
+
+              {currentUser?.email ? (
+                <button
+                  type="button"
+                  onClick={() => handleGoogleLoginSubmit(currentUser.email, currentUser.name || "Administrador Lumina")}
+                  className="w-full p-3.5 rounded-2xl border border-stone-200 dark:border-white/10 hover:border-amber-500 bg-stone-50 dark:bg-white/5 hover:bg-amber-50/50 dark:hover:bg-amber-950/20 flex items-center gap-3 transition-all text-left cursor-pointer group"
+                >
+                  <div className="w-9 h-9 rounded-xl bg-stone-900 dark:bg-white text-white dark:text-stone-900 flex items-center justify-center font-bold text-xs shrink-0 group-hover:scale-105 transition-transform">
+                    {currentUser.name ? currentUser.name.charAt(0).toUpperCase() : "L"}
+                  </div>
+                  <div className="min-w-0">
+                    <p className="font-bold text-xs text-gray-900 dark:text-gray-100 truncate">
+                      {currentUser.name || "Administrador"} (Tu cuenta activa)
+                    </p>
+                    <p className="text-[11px] text-stone-500 dark:text-stone-400 font-mono truncate">
+                      {currentUser.email}
+                    </p>
+                  </div>
+                </button>
+              ) : null}
 
               <div className="pt-2 border-t border-stone-200 dark:border-white/5">
-                <label className="block text-[11px] font-bold text-stone-700 dark:text-stone-300 mb-1">
-                  O escribe tu correo corporativo:
+                <label className="block text-[11px] font-bold text-stone-700 dark:text-stone-300 mb-1.5">
+                  {currentUser?.email ? "O escribe otro correo de Google / Workspace:" : "Escribe tu correo de Google o Workspace:"}
                 </label>
                 <div className="flex gap-2">
                   <input
@@ -1210,15 +1226,15 @@ export function GoogleDriveSettingsCard({ onClose, onSelectPhotoForProduct }: Go
                     value={customGoogleEmail}
                     onChange={(e) => setCustomGoogleEmail(e.target.value)}
                     placeholder="usuario@gmail.com"
-                    className="flex-1 px-3 py-2 rounded-xl border border-stone-200 dark:border-white/10 text-xs bg-white dark:bg-[#141416] text-gray-900 dark:text-gray-100 placeholder-stone-400 focus:outline-none focus:ring-2 focus:ring-amber-500/50"
+                    className="flex-1 px-3.5 py-2.5 rounded-xl border border-stone-200 dark:border-white/10 text-xs bg-white dark:bg-[#141416] text-gray-900 dark:text-gray-100 placeholder-stone-400 focus:outline-none focus:ring-2 focus:ring-amber-500/50"
                   />
                   <button
                     type="button"
                     disabled={!customGoogleEmail.includes("@")}
-                    onClick={() => handleGoogleLoginSubmit(customGoogleEmail, customGoogleEmail.split("@")[0])}
-                    className="px-4 py-2 rounded-xl bg-stone-900 dark:bg-white hover:bg-stone-800 dark:hover:bg-stone-100 disabled:opacity-40 text-white dark:text-stone-900 text-xs font-bold cursor-pointer transition-all"
+                    onClick={() => handleGoogleLoginSubmit(customGoogleEmail.trim().toLowerCase(), customGoogleEmail.split("@")[0])}
+                    className="px-4 py-2 rounded-xl bg-stone-900 dark:bg-white hover:bg-stone-800 dark:hover:bg-stone-100 disabled:opacity-40 text-white dark:text-stone-900 text-xs font-bold cursor-pointer transition-all shrink-0"
                   >
-                    Conectar
+                    Vincular
                   </button>
                 </div>
               </div>

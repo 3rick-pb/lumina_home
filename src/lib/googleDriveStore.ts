@@ -50,7 +50,7 @@ interface GoogleDriveState {
   activeView: GoogleDriveActiveTab;
   setActiveView: (view: GoogleDriveActiveTab) => void;
   loadSettings: () => Promise<void>;
-  connectAccount: (email?: string, name?: string) => Promise<boolean>;
+  connectAccount: (email: string, name?: string) => Promise<boolean>;
   disconnectAccount: () => Promise<boolean>;
   selectFolder: (folderId: string, folderName?: string) => Promise<boolean>;
   createFolder: (name: string) => Promise<boolean>;
@@ -66,7 +66,7 @@ interface GoogleDriveState {
   syncFiles: () => Promise<void>;
 }
 
-const STORAGE_KEY = "lumina_fotoproductos_v3";
+const STORAGE_KEY = "lumina_fotoproductos_v4";
 
 function recalculateFolderCounts(folders: GoogleDriveFolder[], files: GoogleDriveFile[]): GoogleDriveFolder[] {
   const counts: Record<string, number> = {};
@@ -88,15 +88,15 @@ function recalculateFolderCounts(folders: GoogleDriveFolder[], files: GoogleDriv
 
 function loadFromLocal(): GoogleDriveSettings {
   const defaults: GoogleDriveSettings = {
-    isConnected: true,
-    accountEmail: "multimedia.lumina@gmail.com",
-    accountName: "Lumina Home - Fotoproductos",
-    connectedAt: new Date().toISOString(),
+    isConnected: false,
+    accountEmail: "",
+    accountName: "",
+    connectedAt: undefined,
     selectedFolderId: "folder_lumina_catalog_2026",
     selectedFolderName: "Fotoproductos - Catálogo Lumina",
     availableFolders: INITIAL_DRIVE_FOLDERS,
     files: [],
-    backupAt: new Date().toISOString(),
+    backupAt: undefined,
     backupCount: 0,
   };
 
@@ -105,18 +105,33 @@ function loadFromLocal(): GoogleDriveSettings {
   }
 
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
+    // Check v4 first, fallback to legacy v3/v2 to preserve any uploaded files
+    let raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) {
+      raw = localStorage.getItem("lumina_fotoproductos_v3") || localStorage.getItem("lumina_fotoproductos_v2");
+    }
+
     if (raw) {
       const parsed = JSON.parse(raw);
-      if (parsed && typeof parsed.isConnected === "boolean" && Array.isArray(parsed.files)) {
-        return {
+      if (parsed && typeof parsed === "object") {
+        // Purge legacy demo account completely
+        const isDemo = parsed.accountEmail === "multimedia.lumina@gmail.com";
+        const sanitized: GoogleDriveSettings = {
           ...defaults,
           ...parsed,
+          isConnected: isDemo ? false : Boolean(parsed.isConnected),
+          accountEmail: isDemo ? "" : (parsed.accountEmail || ""),
+          accountName: isDemo ? "" : (parsed.accountName || ""),
+          connectedAt: isDemo ? undefined : parsed.connectedAt,
           availableFolders: recalculateFolderCounts(
             parsed.availableFolders || INITIAL_DRIVE_FOLDERS,
             parsed.files || INITIAL_DRIVE_FILES
           ),
         };
+        // Save cleaned settings to current key
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(sanitized));
+        localStorage.removeItem("lumina_fotoproductos_v3");
+        return sanitized;
       }
     }
   } catch {}
@@ -153,12 +168,18 @@ export const useGoogleDriveStore = create<GoogleDriveState>((set, get) => ({
       if (res.ok) {
         const data = await res.json();
         if (data?.success && data?.settings) {
+          const rawSettings = data.settings;
+          const isDemo = rawSettings.accountEmail === "multimedia.lumina@gmail.com";
           const loadedSettings: GoogleDriveSettings = {
             ...get().settings,
-            ...data.settings,
+            ...rawSettings,
+            isConnected: isDemo ? false : Boolean(rawSettings.isConnected),
+            accountEmail: isDemo ? "" : (rawSettings.accountEmail || ""),
+            accountName: isDemo ? "" : (rawSettings.accountName || ""),
+            connectedAt: isDemo ? undefined : rawSettings.connectedAt,
             availableFolders: recalculateFolderCounts(
-              data.settings.availableFolders || get().settings.availableFolders,
-              data.settings.files || get().settings.files
+              rawSettings.availableFolders || get().settings.availableFolders,
+              rawSettings.files || get().settings.files
             ),
           };
           set({ settings: loadedSettings, isLoading: false });
@@ -172,15 +193,22 @@ export const useGoogleDriveStore = create<GoogleDriveState>((set, get) => ({
     set({ settings: loadFromLocal(), isLoading: false });
   },
 
-  connectAccount: async (email = "multimedia.lumina@gmail.com", name = "Lumina Home Media Assets") => {
+  connectAccount: async (email: string, name?: string) => {
+    const cleanEmail = (email || "").trim().toLowerCase();
+    if (!cleanEmail || !cleanEmail.includes("@")) {
+      set({ error: "Ingresa una dirección de correo válida para vincular Google Drive", isSyncing: false });
+      return false;
+    }
+    const cleanName = (name && name.trim()) || cleanEmail.split("@")[0];
+
     set({ isSyncing: true, error: null });
     try {
       const current = get().settings;
       const updated: GoogleDriveSettings = {
         ...current,
         isConnected: true,
-        accountEmail: email.trim().toLowerCase(),
-        accountName: name.trim(),
+        accountEmail: cleanEmail,
+        accountName: cleanName,
         connectedAt: new Date().toISOString(),
       };
 
@@ -188,7 +216,7 @@ export const useGoogleDriveStore = create<GoogleDriveState>((set, get) => ({
         await fetch("/api/admin/google-drive", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ action: "connect", email, name }),
+          body: JSON.stringify({ action: "connect", email: cleanEmail, name: cleanName }),
         });
       } catch {}
 

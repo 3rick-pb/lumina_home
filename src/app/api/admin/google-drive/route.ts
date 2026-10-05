@@ -46,13 +46,13 @@ export interface PhotoInputRow {
 
 const DEFAULT_GLOBAL_DRIVE_SETTINGS = {
   id: 'global',
-  is_connected: true,
-  connected_email: 'multimedia.lumina@gmail.com',
-  connected_account_name: 'Lumina Home - Fotoproductos',
-  connected_at: new Date().toISOString(),
+  is_connected: false,
+  connected_email: '',
+  connected_account_name: '',
+  connected_at: null as string | null,
   selected_folder_id: 'folder_lumina_catalog_2026',
   selected_folder_name: 'Fotoproductos - Catálogo Lumina',
-  backup_at: new Date().toISOString(),
+  backup_at: null as string | null,
   backup_count: 0,
   folders_list: [
     { id: 'folder_lumina_catalog_2026', name: 'Fotoproductos - Catálogo Lumina', itemCount: 0 },
@@ -89,10 +89,28 @@ export async function GET(request: Request) {
         .maybeSingle();
 
       if (row) {
-        isConnected = Boolean(row.is_connected);
-        connectedEmail = row.connected_email || connectedEmail;
-        connectedAccountName = row.connected_account_name || connectedAccountName;
-        connectedAt = row.connected_at || connectedAt;
+        // Sanitize legacy demo account
+        const isDemo = row.connected_email === 'multimedia.lumina@gmail.com';
+        if (isDemo) {
+          isConnected = false;
+          connectedEmail = '';
+          connectedAccountName = '';
+          connectedAt = null;
+          // Clean database row
+          try {
+            await supabase.from('admin_google_drive_settings').upsert({
+              id: 'global',
+              is_connected: false,
+              connected_email: null,
+              connected_account_name: null,
+            });
+          } catch {}
+        } else {
+          isConnected = Boolean(row.is_connected);
+          connectedEmail = row.connected_email || '';
+          connectedAccountName = row.connected_account_name || '';
+          connectedAt = row.connected_at || null;
+        }
         selectedFolderId = row.selected_folder_id || selectedFolderId;
         selectedFolderName = row.selected_folder_name || selectedFolderName;
         backupAt = row.backup_at || backupAt;
@@ -180,8 +198,11 @@ export async function POST(request: Request) {
     const supabase = getScopedSupabaseClient(request);
 
     if (action === 'connect') {
-      const email = typeof body.email === 'string' ? body.email.trim() : 'multimedia.lumina@gmail.com';
-      const name = typeof body.name === 'string' ? body.name.trim() : 'Lumina Home Media Assets';
+      const email = typeof body.email === 'string' ? body.email.trim() : '';
+      if (!email || !email.includes('@')) {
+        return NextResponse.json({ success: false, error: 'Correo de Google Drive no válido o ausente' }, { status: 400 });
+      }
+      const name = typeof body.name === 'string' && body.name.trim() ? body.name.trim() : email.split('@')[0];
 
       inMemoryDriveSettings = {
         ...inMemoryDriveSettings,
@@ -372,9 +393,16 @@ export async function POST(request: Request) {
           .order('created_at', { ascending: false });
 
         if (row) {
-          inMemoryDriveSettings.is_connected = Boolean(row.is_connected);
-          inMemoryDriveSettings.connected_email = row.connected_email || inMemoryDriveSettings.connected_email;
-          inMemoryDriveSettings.connected_account_name = row.connected_account_name || inMemoryDriveSettings.connected_account_name;
+          const isDemo = row.connected_email === 'multimedia.lumina@gmail.com';
+          if (isDemo) {
+            inMemoryDriveSettings.is_connected = false;
+            inMemoryDriveSettings.connected_email = '';
+            inMemoryDriveSettings.connected_account_name = '';
+          } else {
+            inMemoryDriveSettings.is_connected = Boolean(row.is_connected);
+            inMemoryDriveSettings.connected_email = row.connected_email || '';
+            inMemoryDriveSettings.connected_account_name = row.connected_account_name || '';
+          }
           inMemoryDriveSettings.selected_folder_id = row.selected_folder_id || inMemoryDriveSettings.selected_folder_id;
           inMemoryDriveSettings.selected_folder_name = row.selected_folder_name || inMemoryDriveSettings.selected_folder_name;
           if (Array.isArray(row.folders_list) && row.folders_list.length > 0) {

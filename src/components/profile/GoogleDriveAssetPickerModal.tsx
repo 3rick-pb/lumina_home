@@ -36,8 +36,7 @@ export function GoogleDriveAssetPickerModal({
     settings, 
     selectFolder, 
     addPhoto, 
-    addPhotos, 
-    connectAccount 
+    addPhotos 
   } = useGoogleDriveStore();
 
   const [searchFilter, setSearchFilter] = useState("");
@@ -180,7 +179,20 @@ export function GoogleDriveAssetPickerModal({
               </div>
             </div>
 
+            {/* Drive / Cloud Indicator Pill */}
             <div className="flex items-center gap-2">
+              {settings.isConnected ? (
+                <div className="hidden xs:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-700 dark:text-emerald-300 text-[10px] font-semibold">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                  <span className="truncate max-w-[120px]">{settings.accountEmail || "Drive Vinculado"}</span>
+                </div>
+              ) : (
+                <div className="hidden xs:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-stone-100 dark:bg-white/5 border border-stone-200 dark:border-white/10 text-stone-500 text-[10px] font-semibold">
+                  <span className="w-1.5 h-1.5 rounded-full bg-stone-400" />
+                  <span>Catálogo Local / BD</span>
+                </div>
+              )}
+
               <button
                 type="button"
                 onClick={() => setShowQuickAddModal(true)}
@@ -219,7 +231,7 @@ export function GoogleDriveAssetPickerModal({
               {showFolderDropdown && (
                 <div className="absolute left-0 mt-2 w-full sm:w-72 rounded-2xl bg-white dark:bg-[#202024] border border-gray-200 dark:border-white/10 shadow-2xl p-2 z-50 space-y-1">
                   <p className="text-[10px] font-mono uppercase tracking-wider text-gray-400 px-3 py-1">
-                    Cambiar Colección de Drive
+                    Cambiar Colección de Fotos
                   </p>
                   {settings.availableFolders.map((f) => (
                     <button
@@ -263,33 +275,26 @@ export function GoogleDriveAssetPickerModal({
 
           {/* Files Grid View */}
           <div className="p-4 sm:p-6 overflow-y-auto flex-1">
-            {!settings.isConnected ? (
-              <div className="p-12 text-center flex flex-col items-center justify-center space-y-4">
-                <GoogleDriveIcon className="w-12 h-12" />
-                <h4 className="text-sm font-bold text-gray-900 dark:text-gray-100">
-                  Google Drive no está vinculado
-                </h4>
-                <p className="text-xs text-gray-500 max-w-sm">
-                  Conecta la cuenta compartida de Google Drive para acceder a todo el catálogo multimedia oficial.
-                </p>
-                <button
-                  type="button"
-                  onClick={() => connectAccount()}
-                  className="px-5 py-2.5 rounded-2xl bg-amber-500 text-white font-bold text-xs hover:bg-amber-600 transition-all cursor-pointer shadow-md"
-                >
-                  Conectar Ahora
-                </button>
-              </div>
-            ) : filteredFiles.length === 0 ? (
-              <div className="p-12 text-center text-xs text-gray-400 border border-dashed border-gray-200 dark:border-white/10 rounded-3xl space-y-3">
-                <p>No se encontraron fotografías en esta carpeta.</p>
+            {filteredFiles.length === 0 ? (
+              <div className="p-10 sm:p-14 text-center flex flex-col items-center justify-center space-y-4 border border-dashed border-gray-200 dark:border-white/10 rounded-3xl">
+                <div className="w-14 h-14 rounded-2xl bg-amber-500/10 dark:bg-amber-500/15 flex items-center justify-center text-amber-500">
+                  <FolderOpen className="w-7 h-7" />
+                </div>
+                <div className="max-w-xs space-y-1">
+                  <h4 className="text-sm font-bold text-gray-900 dark:text-gray-100">
+                    No hay fotografías en esta colección
+                  </h4>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">
+                    Sube fotos reales desde tu equipo o añade enlaces directos para usarlas en tus productos.
+                  </p>
+                </div>
                 <button
                   type="button"
                   onClick={() => setShowQuickAddModal(true)}
-                  className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-amber-500 text-white text-xs font-bold hover:bg-amber-600 cursor-pointer shadow-xs"
+                  className="inline-flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs transition-all cursor-pointer shadow-md active:scale-95"
                 >
-                  <Upload className="w-3.5 h-3.5" />
-                  <span>Subir una foto ahora</span>
+                  <Upload className="w-4 h-4" />
+                  <span>+ Subir Fotografías Ahora</span>
                 </button>
               </div>
             ) : (
