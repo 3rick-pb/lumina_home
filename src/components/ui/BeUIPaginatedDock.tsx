@@ -42,31 +42,31 @@ const pageVariants = {
 const getItemIconAnimation = (id: string) => {
   switch (id) {
     case "overview":
-      return "group-hover:scale-120 group-hover:rotate-6 group-hover:-translate-y-0.5 group-active:scale-90";
+      return "group-hover:scale-115 group-hover:rotate-6 group-hover:-translate-y-1";
     case "orders":
-      return "group-hover:scale-120 group-hover:-translate-y-1 group-active:scale-90";
+      return "group-hover:scale-115 group-hover:-translate-y-1.5";
     case "cards":
-      return "group-hover:scale-120 group-hover:-rotate-12 group-hover:-translate-y-0.5 group-active:scale-90";
+      return "group-hover:scale-115 group-hover:-rotate-6 group-hover:-translate-y-1";
     case "favorites":
-      return "group-hover:scale-125 group-hover:text-rose-500 group-hover:-translate-y-0.5 group-active:scale-90";
+      return "group-hover:scale-120 group-hover:text-rose-500 group-hover:-translate-y-1";
     case "loyalty":
-      return "group-hover:scale-120 group-hover:rotate-6 group-hover:-translate-y-0.5 group-active:scale-90";
+      return "group-hover:scale-115 group-hover:rotate-6 group-hover:-translate-y-1";
     case "catalog":
-      return "group-hover:scale-120 group-hover:-translate-y-1 group-active:scale-90";
+      return "group-hover:scale-115 group-hover:-translate-y-1.5";
     case "niches":
-      return "group-hover:scale-120 group-hover:rotate-6 group-hover:-translate-y-1 group-active:scale-90";
+      return "group-hover:scale-115 group-hover:rotate-6 group-hover:-translate-y-1";
     case "analytics":
-      return "group-hover:scale-120 group-hover:rotate-90 group-hover:text-amber-500 group-active:scale-90";
+      return "group-hover:scale-115 group-hover:rotate-90 group-hover:text-amber-500 group-hover:-translate-y-1";
     case "cart_alerts":
-      return "group-hover:scale-120 group-hover:rotate-12 group-hover:-translate-y-0.5 group-active:scale-90";
+      return "group-hover:scale-115 group-hover:rotate-12 group-hover:-translate-y-1";
     case "integrations":
-      return "group-hover:scale-120 group-hover:rotate-6 group-hover:-translate-y-0.5 group-active:scale-90";
+      return "group-hover:scale-115 group-hover:rotate-6 group-hover:-translate-y-1";
     case "settings":
-      return "group-hover:scale-120 group-hover:rotate-90 group-hover:-translate-y-0.5 group-active:scale-90";
+      return "group-hover:scale-115 group-hover:rotate-90 group-hover:-translate-y-1";
     case "store":
-      return "group-hover:scale-120 group-hover:-translate-y-0.5 group-active:scale-90";
+      return "group-hover:scale-115 group-hover:-translate-y-1";
     default:
-      return "group-hover:scale-115 group-hover:-translate-y-0.5 group-active:scale-90";
+      return "group-hover:scale-115 group-hover:-translate-y-1";
   }
 };
 
@@ -144,15 +144,15 @@ export function BeUIPaginatedDock({
       } ${className}`}
     >
       <div className="pointer-events-auto flex flex-col items-center gap-1.5 w-full max-w-[340px]">
-        {/* Dock Frosted Capsule Container (High-Contrast Liquid Glass) */}
+        {/* Dock Frosted Capsule Container (Authentic Liquid Glass with High Contrast) */}
         <div
           onTouchStart={handleTouchStart}
           onTouchEnd={handleTouchEnd}
-          className="w-full bg-white/95 dark:bg-[#18181b]/95 backdrop-blur-3xl border border-black/10 dark:border-white/15 shadow-[0_16px_45px_rgba(0,0,0,0.18)] dark:shadow-[0_16px_45px_rgba(0,0,0,0.65)] rounded-[28px] sm:rounded-full px-2 py-1.5 overflow-hidden relative select-none touch-pan-y"
+          className="w-full bg-white/85 dark:bg-[#18181b]/85 backdrop-blur-2xl border border-white/80 dark:border-white/15 shadow-[0_16px_45px_rgba(0,0,0,0.14)] dark:shadow-[0_16px_45px_rgba(0,0,0,0.65)] rounded-[28px] sm:rounded-full px-2 py-1.5 overflow-hidden relative select-none"
         >
           {/* Real Page View */}
           <div className="relative w-full overflow-hidden min-h-[58px] flex items-center justify-center">
-            <AnimatePresence mode="popLayout" initial={false} custom={direction}>
+            <AnimatePresence initial={false} custom={direction}>
               <motion.div
                 key={safePage}
                 custom={direction}
@@ -171,37 +171,35 @@ export function BeUIPaginatedDock({
                   <button
                     key={item.id}
                     type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
+                    onClick={() => {
                       item.onClick();
                     }}
                     title={item.title || item.label}
-                    className={`relative w-full flex flex-col items-center justify-center h-14 py-1.5 px-0.5 rounded-2xl select-none group cursor-pointer touch-manipulation focus:outline-none transition-all duration-200 ${
-                      item.active ? "scale-105" : "hover:scale-105 active:scale-95"
+                    className={`relative w-full flex flex-col items-center justify-center h-14 py-1.5 px-0.5 rounded-2xl select-none group cursor-pointer focus:outline-none transition-all duration-200 ${
+                      item.active ? "scale-102" : "hover:scale-108 hover:-translate-y-0.5 active:scale-95"
                     }`}
                   >
-                    {/* Active Pill (Stable, smooth spring animation) */}
+                    {/* Active Pill (Smooth, fluid sliding spring animation) */}
                     {item.active && (
                       <motion.div
-                        initial={{ scale: 0.88, opacity: 0 }}
-                        animate={{ scale: 1, opacity: 1 }}
+                        layoutId="beui-dock-active-pill"
                         transition={{
                           type: "spring",
                           stiffness: 480,
-                          damping: 32,
+                          damping: 34,
                         }}
-                        className="absolute inset-0 bg-gray-950 dark:bg-white rounded-2xl shadow-md shadow-gray-950/20 dark:shadow-white/15 z-0"
+                        className="absolute inset-0 bg-stone-900 dark:bg-white rounded-2xl shadow-md shadow-black/15 dark:shadow-white/20 z-0"
                       />
                     )}
 
                     {/* Content positioned above the active pill */}
-                    <div className="relative z-10 flex flex-col items-center justify-center w-full">
+                    <div className="relative z-10 flex flex-col items-center justify-center w-full pointer-events-none">
                       <div className="relative">
                         <div
                           className={`w-5 h-5 flex items-center justify-center transition-all duration-200 ${getItemIconAnimation(item.id)} ${
                             item.active
-                              ? "text-white dark:text-gray-950"
-                              : "text-stone-700 dark:text-stone-300 group-hover:text-gray-950 dark:group-hover:text-white"
+                              ? "text-white dark:text-stone-950 font-bold"
+                              : "text-stone-700 dark:text-stone-300 group-hover:text-stone-950 dark:group-hover:text-white"
                           }`}
                         >
                           {item.icon}
@@ -219,10 +217,10 @@ export function BeUIPaginatedDock({
                         )}
                       </div>
                       <span
-                        className={`text-[10px] font-semibold tracking-tight mt-1 leading-none truncate max-w-[66px] transition-colors duration-200 ${
+                        className={`text-[10.5px] font-semibold tracking-tight mt-1 leading-none truncate max-w-[66px] transition-colors duration-200 ${
                           item.active
-                            ? "text-white dark:text-gray-950 font-bold"
-                            : "text-stone-700 dark:text-stone-300 group-hover:text-gray-950 dark:group-hover:text-white"
+                            ? "text-white dark:text-stone-950 font-bold"
+                            : "text-stone-700 dark:text-stone-300 group-hover:text-stone-950 dark:group-hover:text-white font-medium"
                         }`}
                       >
                         {item.label}
