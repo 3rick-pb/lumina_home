@@ -38,7 +38,7 @@ export function GoogleDriveAssetPickerModal({
     selectFolder, 
     addPhoto, 
     addPhotos,
-    connectAccount 
+    connectGoogleOAuth 
   } = useGoogleDriveStore();
 
   const currentUser = useUserStore((s) => s.user);
@@ -293,34 +293,18 @@ export function GoogleDriveAssetPickerModal({
                   </p>
                 </div>
                 <div className="w-full max-w-sm space-y-2.5 pt-2">
-                  {currentUser?.email ? (
                     <button
                       type="button"
-                      onClick={() => connectAccount(currentUser.email, currentUser.name || "Administrador Lumina")}
-                      className="w-full py-3 px-4 rounded-2xl bg-stone-900 dark:bg-white hover:bg-stone-800 dark:hover:bg-stone-100 text-white dark:text-stone-900 font-bold text-xs shadow-md transition-all cursor-pointer flex items-center justify-center gap-2"
+                      onClick={() => connectGoogleOAuth()}
+                      className="w-full py-3.5 px-4 rounded-2xl bg-stone-900 dark:bg-white hover:bg-stone-800 dark:hover:bg-stone-100 text-white dark:text-stone-900 font-bold text-[13px] shadow-md transition-all cursor-pointer flex items-center justify-center gap-3"
                     >
-                      <GoogleLogoIcon className="w-4 h-4" />
-                      <span>Conectar con {currentUser.email}</span>
+                      <GoogleLogoIcon className="w-5 h-5" />
+                      <span>Iniciar sesión con Google Drive</span>
                     </button>
-                  ) : null}
-                  <div className="flex gap-2">
-                    <input
-                      type="email"
-                      value={connectEmailInput}
-                      onChange={(e) => setConnectEmailInput(e.target.value)}
-                      placeholder="tu_cuenta@gmail.com"
-                      className="flex-1 px-3.5 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-xs bg-white dark:bg-[#1a1a1c] text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-amber-500/50"
-                    />
-                    <button
-                      type="button"
-                      disabled={!connectEmailInput.includes("@")}
-                      onClick={() => connectAccount(connectEmailInput.trim().toLowerCase())}
-                      className="px-4 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 disabled:opacity-40 text-white text-xs font-bold transition-all cursor-pointer shadow-xs shrink-0"
-                    >
-                      Conectar
-                    </button>
+                    <p className="text-[11px] text-gray-500 text-center pt-2">
+                      Serás redirigido a Google de forma segura para autorizar el acceso.
+                    </p>
                   </div>
-                </div>
               </div>
             ) : filteredFiles.length === 0 ? (
               <div className="p-10 sm:p-14 text-center flex flex-col items-center justify-center space-y-4 border border-dashed border-gray-200 dark:border-white/10 rounded-3xl">
@@ -527,3 +511,4 @@ export function GoogleDriveAssetPickerModal({
     </AnimatePresence>
   );
 }
+
