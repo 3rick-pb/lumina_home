@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { supabase } from "./supabase";
 
 export interface GoogleDriveFile {
   id: string;
@@ -50,7 +51,7 @@ interface GoogleDriveState {
   activeView: GoogleDriveActiveTab;
   setActiveView: (view: GoogleDriveActiveTab) => void;
   loadSettings: () => Promise<void>;
-  connectAccount: (email: string, name?: string) => Promise<boolean>;
+  connectGoogleOAuth: () => Promise<void>;
   disconnectAccount: () => Promise<boolean>;
   selectFolder: (folderId: string, folderName?: string) => Promise<boolean>;
   createFolder: (name: string) => Promise<boolean>;
@@ -193,41 +194,26 @@ export const useGoogleDriveStore = create<GoogleDriveState>((set, get) => ({
     set({ settings: loadFromLocal(), isLoading: false });
   },
 
-  connectAccount: async (email: string, name?: string) => {
-    const cleanEmail = (email || "").trim().toLowerCase();
-    if (!cleanEmail || !cleanEmail.includes("@")) {
-      set({ error: "Ingresa una dirección de correo válida para vincular Google Drive", isSyncing: false });
-      return false;
-    }
-    const cleanName = (name && name.trim()) || cleanEmail.split("@")[0];
-
+  connectGoogleOAuth: async () => {
     set({ isSyncing: true, error: null });
     try {
-      const current = get().settings;
-      const updated: GoogleDriveSettings = {
-        ...current,
-        isConnected: true,
-        accountEmail: cleanEmail,
-        accountName: cleanName,
-        connectedAt: new Date().toISOString(),
-      };
-
-      try {
-        await fetch("/api/admin/google-drive", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ action: "connect", email: cleanEmail, name: cleanName }),
-        });
-      } catch {}
-
-      saveToLocal(updated);
-      set({ settings: updated, isSyncing: false, activeView: 'files' });
-      return true;
-    } catch {
-      set({ error: "Error al conectar Google Drive", isSyncing: false });
-      return false;
+      const { error } = await supabase.auth.linkIdentity({
+        provider: 'google',
+        options: {
+          scopes: 'https://www.googleapis.com/auth/drive.readonly',
+          redirectTo: window.location.href, // Redirects back to exactly where the user is
+        }
+      });
+      if (error) {
+        set({ error: error.message || "Error al conectar con Google", isSyncing: false });
+      }
+      // The browser will redirect to Google's OAuth consent screen
+    } catch (error: any) {
+      set({ error: error.message || "Error al iniciar OAuth", isSyncing: false });
     }
   },
+
+
 
   disconnectAccount: async () => {
     set({ isSyncing: true, error: null });

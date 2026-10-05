@@ -69,7 +69,7 @@ export function GoogleDriveSettingsCard({ onClose, onSelectPhotoForProduct }: Go
     isSyncing, 
     activeView, 
     setActiveView, 
-    connectAccount, 
+    connectGoogleOAuth, 
     disconnectAccount, 
     selectFolder, 
     createFolder, 
@@ -150,11 +150,7 @@ export function GoogleDriveSettingsCard({ onClose, onSelectPhotoForProduct }: Go
     showNotification(`Colección activa: ${folder.name}`);
   };
 
-  const handleGoogleLoginSubmit = async (email: string, name: string) => {
-    await connectAccount(email, name);
-    setShowGoogleLoginModal(false);
-    showNotification("Google Drive conectado correctamente");
-  };
+
 
   const handleCreateFolderSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -398,42 +394,20 @@ export function GoogleDriveSettingsCard({ onClose, onSelectPhotoForProduct }: Go
             </p>
           </div>
 
-          {/* Quick Connect with current admin session or custom input */}
+          {/* OAuth Connect */}
           <div className="w-full max-w-sm space-y-3">
-            {currentUser?.email ? (
-              <button
-                type="button"
-                onClick={() => handleGoogleLoginSubmit(currentUser.email, currentUser.name || "Administrador Lumina")}
-                disabled={isSyncing}
-                className="w-full p-4 rounded-2xl bg-stone-900 dark:bg-white hover:bg-stone-800 dark:hover:bg-stone-100 text-white dark:text-stone-900 font-bold text-xs shadow-lg hover:shadow-xl transition-all hover:scale-[1.02] active:scale-98 cursor-pointer flex items-center justify-center gap-3"
-              >
-                <GoogleLogoIcon className="w-4 h-4" />
-                <span>Vincular con tu cuenta ({currentUser.email})</span>
-              </button>
-            ) : null}
-
-            <div className="p-4 rounded-2xl bg-white dark:bg-[#151518] border border-stone-200/80 dark:border-white/10 shadow-xs space-y-2.5 text-left">
-              <label className="block text-[11px] font-bold text-stone-700 dark:text-stone-300">
-                {currentUser?.email ? "O escribe otra cuenta de Google / Gmail:" : "Ingresa tu cuenta de Google / Gmail:"}
-              </label>
-              <div className="flex gap-2">
-                <input
-                  type="email"
-                  value={customGoogleEmail}
-                  onChange={(e) => setCustomGoogleEmail(e.target.value)}
-                  placeholder="tu_cuenta@gmail.com"
-                  className="flex-1 px-3.5 py-2.5 rounded-xl border border-stone-200 dark:border-white/10 text-xs bg-stone-50 dark:bg-[#1a1a1c] text-gray-900 dark:text-gray-100 placeholder-stone-400 focus:outline-none focus:ring-2 focus:ring-amber-500/50"
-                />
-                <button
-                  type="button"
-                  disabled={!customGoogleEmail.includes("@") || isSyncing}
-                  onClick={() => handleGoogleLoginSubmit(customGoogleEmail.trim().toLowerCase(), customGoogleEmail.split("@")[0])}
-                  className="px-4 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 disabled:opacity-40 text-white text-xs font-bold cursor-pointer transition-all shadow-sm shrink-0"
-                >
-                  Conectar
-                </button>
-              </div>
-            </div>
+            <button
+              type="button"
+              onClick={() => connectGoogleOAuth()}
+              disabled={isSyncing}
+              className="w-full p-4 rounded-2xl bg-stone-900 dark:bg-white hover:bg-stone-800 dark:hover:bg-stone-100 text-white dark:text-stone-900 font-bold text-[13px] shadow-lg hover:shadow-xl transition-all hover:scale-[1.02] active:scale-98 cursor-pointer flex items-center justify-center gap-3"
+            >
+              <GoogleLogoIcon className="w-5 h-5" />
+              <span>Iniciar sesión con Google Drive</span>
+            </button>
+            <p className="text-[11px] text-stone-500 dark:text-stone-400 mt-3 max-w-xs mx-auto">
+              Serás redirigido a Google de forma segura para autorizar el acceso a tus fotografías.
+            </p>
           </div>
         </div>
       ) : (
@@ -1241,48 +1215,14 @@ export function GoogleDriveSettingsCard({ onClose, onSelectPhotoForProduct }: Go
                 Conecta tu cuenta de Google para sincronizar tus fotografías y carpetas multimedia en Google Drive.
               </p>
 
-              {currentUser?.email ? (
-                <button
-                  type="button"
-                  onClick={() => handleGoogleLoginSubmit(currentUser.email, currentUser.name || "Administrador Lumina")}
-                  className="w-full p-3.5 rounded-2xl border border-stone-200 dark:border-white/10 hover:border-amber-500 bg-stone-50 dark:bg-white/5 hover:bg-amber-50/50 dark:hover:bg-amber-950/20 flex items-center gap-3 transition-all text-left cursor-pointer group"
-                >
-                  <div className="w-9 h-9 rounded-xl bg-stone-900 dark:bg-white text-white dark:text-stone-900 flex items-center justify-center font-bold text-xs shrink-0 group-hover:scale-105 transition-transform">
-                    {currentUser.name ? currentUser.name.charAt(0).toUpperCase() : "L"}
-                  </div>
-                  <div className="min-w-0">
-                    <p className="font-bold text-xs text-gray-900 dark:text-gray-100 truncate">
-                      {currentUser.name || "Administrador"} (Tu cuenta activa)
-                    </p>
-                    <p className="text-[11px] text-stone-500 dark:text-stone-400 font-mono truncate">
-                      {currentUser.email}
-                    </p>
-                  </div>
-                </button>
-              ) : null}
-
-              <div className="pt-2 border-t border-stone-200 dark:border-white/5">
-                <label className="block text-[11px] font-bold text-stone-700 dark:text-stone-300 mb-1.5">
-                  {currentUser?.email ? "O escribe otro correo de Google / Workspace:" : "Escribe tu correo de Google o Workspace:"}
-                </label>
-                <div className="flex gap-2">
-                  <input
-                    type="email"
-                    value={customGoogleEmail}
-                    onChange={(e) => setCustomGoogleEmail(e.target.value)}
-                    placeholder="usuario@gmail.com"
-                    className="flex-1 px-3.5 py-2.5 rounded-xl border border-stone-200 dark:border-white/10 text-xs bg-white dark:bg-[#141416] text-gray-900 dark:text-gray-100 placeholder-stone-400 focus:outline-none focus:ring-2 focus:ring-amber-500/50"
-                  />
-                  <button
-                    type="button"
-                    disabled={!customGoogleEmail.includes("@")}
-                    onClick={() => handleGoogleLoginSubmit(customGoogleEmail.trim().toLowerCase(), customGoogleEmail.split("@")[0])}
-                    className="px-4 py-2 rounded-xl bg-stone-900 dark:bg-white hover:bg-stone-800 dark:hover:bg-stone-100 disabled:opacity-40 text-white dark:text-stone-900 text-xs font-bold cursor-pointer transition-all shrink-0"
-                  >
-                    Vincular
-                  </button>
-                </div>
-              </div>
+              <button
+                type="button"
+                onClick={() => connectGoogleOAuth()}
+                className="w-full p-4 rounded-2xl bg-stone-900 dark:bg-white hover:bg-stone-800 dark:hover:bg-stone-100 text-white dark:text-stone-900 font-bold text-[13px] shadow-lg hover:shadow-xl transition-all hover:scale-[1.02] active:scale-98 cursor-pointer flex items-center justify-center gap-3"
+              >
+                <GoogleLogoIcon className="w-5 h-5" />
+                <span>Iniciar sesión con Google</span>
+              </button>
             </div>
           </div>
         </div>
