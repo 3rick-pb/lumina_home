@@ -24,6 +24,7 @@ export interface GoogleDriveSettings {
   accountEmail: string;
   accountName: string;
   connectedAt?: string;
+  providerToken?: string;
   selectedFolderId: string;
   selectedFolderName: string;
   availableFolders: GoogleDriveFolder[];
@@ -52,6 +53,7 @@ interface GoogleDriveState {
   setActiveView: (view: GoogleDriveActiveTab) => void;
   loadSettings: () => Promise<void>;
   connectGoogleOAuth: () => Promise<void>;
+  handleOAuthReturn: () => Promise<void>;
   disconnectAccount: () => Promise<boolean>;
   selectFolder: (folderId: string, folderName?: string) => Promise<boolean>;
   createFolder: (name: string) => Promise<boolean>;
@@ -197,20 +199,64 @@ export const useGoogleDriveStore = create<GoogleDriveState>((set, get) => ({
   connectGoogleOAuth: async () => {
     set({ isSyncing: true, error: null });
     try {
-      const { error } = await supabase.auth.linkIdentity({
+      // Store a flag so we can detect the return from Google OAuth
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('lumina_drive_oauth_pending', '1');
+      }
+      const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          scopes: 'https://www.googleapis.com/auth/drive.readonly',
-          redirectTo: window.location.href, // Redirects back to exactly where the user is
-        }
+          scopes: 'https://www.googleapis.com/auth/drive.readonly email profile',
+          redirectTo: typeof window !== 'undefined' ? `${window.location.origin}/profile?tab=fotoproductos&drive_connected=1` : undefined,
+          queryParams: {
+            access_type: 'offline',
+            prompt: 'consent',
+          },
+        },
       });
       if (error) {
+        if (typeof window !== 'undefined') localStorage.removeItem('lumina_drive_oauth_pending');
         set({ error: error.message || "Error al conectar con Google", isSyncing: false });
       }
-      // The browser will redirect to Google's OAuth consent screen
+      // Browser will redirect to Google — no code runs after this
     } catch (error: unknown) {
+      if (typeof window !== 'undefined') localStorage.removeItem('lumina_drive_oauth_pending');
       const msg = error instanceof Error ? error.message : "Error al iniciar OAuth";
       set({ error: msg, isSyncing: false });
+    }
+  },
+
+  // Called after returning from Google OAuth redirect
+  handleOAuthReturn: async () => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+
+      const providerToken = session.provider_token;
+      const userEmail = session.user?.email || '';
+      const userName = session.user?.user_metadata?.full_name || session.user?.user_metadata?.name || userEmail.split('@')[0];
+
+      if (providerToken || userEmail) {
+        const updated = {
+          ...get().settings,
+          isConnected: true,
+          accountEmail: userEmail,
+          accountName: userName,
+          providerToken: providerToken || '',
+          connectedAt: new Date().toISOString(),
+        };
+        set({ settings: updated });
+        saveToLocal(updated);
+        // Persist to DB
+        await fetch('/api/admin/google-drive', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
+          body: JSON.stringify({ settings: updated }),
+        });
+      }
+      if (typeof window !== 'undefined') localStorage.removeItem('lumina_drive_oauth_pending');
+    } catch {
+      // Silently ignore
     }
   },
 

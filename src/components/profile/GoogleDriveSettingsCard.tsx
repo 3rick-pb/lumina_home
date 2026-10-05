@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { 
   Folder, 
   FolderOpen, 
@@ -32,7 +32,7 @@ import {
   GoogleDriveFile
 } from "@/lib/googleDriveStore";
 import { formatGoogleDriveUrl, isGoogleDriveUrl } from "@/lib/imageUtils";
-import { useUserStore } from "@/lib/userStore";
+
 
 export function GoogleDriveIcon({ className = "w-5 h-5" }: { className?: string }) {
   return (
@@ -69,7 +69,8 @@ export function GoogleDriveSettingsCard({ onClose, onSelectPhotoForProduct }: Go
     isSyncing, 
     activeView, 
     setActiveView, 
-    connectGoogleOAuth, 
+    connectGoogleOAuth,
+    handleOAuthReturn,
     disconnectAccount, 
     selectFolder, 
     createFolder, 
@@ -84,14 +85,29 @@ export function GoogleDriveSettingsCard({ onClose, onSelectPhotoForProduct }: Go
     syncFiles 
   } = useGoogleDriveStore();
 
-  const currentUser = useUserStore((s) => s.user);
-
   const [searchFilter, setSearchFilter] = useState("");
   const [showGoogleLoginModal, setShowGoogleLoginModal] = useState(false);
   const [showCreateFolderModal, setShowCreateFolderModal] = useState(false);
-  const [customGoogleEmail, setCustomGoogleEmail] = useState("");
   const [newFolderName, setNewFolderName] = useState("");
   const [feedback, setFeedback] = useState<string | null>(null);
+
+  // Detect return from Google OAuth redirect
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const params = new URLSearchParams(window.location.search);
+    const driveConnected = params.get('drive_connected');
+    const pending = localStorage.getItem('lumina_drive_oauth_pending');
+    if (driveConnected === '1' || pending === '1') {
+      handleOAuthReturn().then(() => {
+        showNotification("✅ Google Drive conectado correctamente");
+        // Clean up the URL param without reloading
+        const url = new URL(window.location.href);
+        url.searchParams.delete('drive_connected');
+        window.history.replaceState({}, '', url.toString());
+      });
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Subir por URL
   const [urlInput, setUrlInput] = useState("");
