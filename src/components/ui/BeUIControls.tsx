@@ -1456,25 +1456,66 @@ const CENTER_MORPH_TRANSITION = {
   ease: [0.2, 0, 0.2, 1] as const,
 };
 
-const HYPEROS_LANDSCAPE_MODAL_VARIANTS = {
+const HYPEROS_PORTRAIT_VARIANTS = {
   closed: {
     opacity: 0,
     scale: 0.82,
     rotate: 0,
-    borderRadius: 32,
-    transition: {
-      duration: 0.45,
-      ease: [0.16, 1, 0.3, 1] as const,
-    },
+    x: "-50%",
+    y: "-50%",
+    borderRadius: "32px",
   },
   open: {
     opacity: 1,
     scale: 1,
     rotate: 90,
-    borderRadius: 0,
+    x: "-50%",
+    y: "-50%",
+    borderRadius: "0px",
     transition: {
-      duration: 0.45,
+      duration: 0.48,
       ease: [0.16, 1, 0.3, 1] as const,
+    },
+  },
+  exit: {
+    opacity: 0,
+    scale: 0.86,
+    rotate: 0,
+    x: "-50%",
+    y: "-50%",
+    borderRadius: "32px",
+    transition: {
+      duration: 0.32,
+      ease: [0.32, 0.72, 0, 1] as const,
+    },
+  },
+};
+
+const HYPEROS_LANDSCAPE_NATIVE_VARIANTS = {
+  closed: {
+    opacity: 0,
+    scale: 0.9,
+    rotate: 0,
+    borderRadius: "24px",
+  },
+  open: {
+    opacity: 1,
+    scale: 1,
+    rotate: 0,
+    borderRadius: "0px",
+    transition: {
+      duration: 0.42,
+      ease: [0.16, 1, 0.3, 1] as const,
+    },
+  },
+  exit: {
+    opacity: 0,
+    scale: 0.92,
+    rotate: 0,
+    borderRadius: "24px",
+    transition: {
+      duration: 0.28,
+      ease: [0.32, 0.72, 0, 1] as const,
     },
   },
 };
@@ -1502,10 +1543,10 @@ interface LegacyScreen {
   unlockOrientation?: () => boolean;
 }
 
-export function requestMobileLandscapeFullscreen() {
+export async function requestMobileLandscapeFullscreen() {
   if (typeof window === "undefined") return;
   const isMobile =
-    window.innerWidth < 768 ||
+    window.innerWidth < 1024 ||
     (typeof navigator !== "undefined" &&
       /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent));
   if (!isMobile) return;
@@ -1515,16 +1556,16 @@ export function requestMobileLandscapeFullscreen() {
   if (!document.fullscreenElement && !doc.webkitFullscreenElement) {
     try {
       if (docEl.requestFullscreen) {
-        docEl.requestFullscreen().catch(() => {});
+        await docEl.requestFullscreen();
       } else if (docEl.webkitRequestFullscreen) {
-        void docEl.webkitRequestFullscreen();
+        await docEl.webkitRequestFullscreen();
       } else if (docEl.mozRequestFullScreen) {
-        void docEl.mozRequestFullScreen();
+        await docEl.mozRequestFullScreen();
       } else if (docEl.msRequestFullscreen) {
-        void docEl.msRequestFullscreen();
+        await docEl.msRequestFullscreen();
       }
     } catch {
-      // Ignore
+      // Ignore: fallback to CSS orientation
     }
   }
 
@@ -1532,7 +1573,7 @@ export function requestMobileLandscapeFullscreen() {
     const sOri = screen.orientation as ScreenOrientationWithLock | undefined;
     const lScreen = screen as unknown as LegacyScreen;
     if (sOri && typeof sOri.lock === "function") {
-      sOri.lock("landscape").catch(() => {});
+      await sOri.lock("landscape").catch(() => {});
     } else if (typeof lScreen.lockOrientation === "function") {
       lScreen.lockOrientation("landscape");
     }
@@ -1590,14 +1631,34 @@ export function BeUICenterMorphModal({
   hyperOSLandscapeOnMobile = false,
 }: BeUICenterMorphModalProps) {
   const [mounted, setMounted] = useState(false);
-  const [isMobilePortrait, setIsMobilePortrait] = useState(false);
+  const [isSmallScreen, setIsSmallScreen] = useState(() => {
+    if (typeof window === "undefined") return false;
+    return (
+      window.innerWidth < 1024 ||
+      (typeof navigator !== "undefined" &&
+        /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent))
+    );
+  });
+  const [isMobilePortrait, setIsMobilePortrait] = useState(() => {
+    if (typeof window === "undefined") return false;
+    const isMobile =
+      window.innerWidth < 1024 ||
+      (typeof navigator !== "undefined" &&
+        /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent));
+    return isMobile && window.innerHeight >= window.innerWidth;
+  });
   const onOpenChangeRef = useRef(onOpenChange);
 
   useEffect(() => {
     setMounted(true);
     const checkOrientation = () => {
       if (typeof window !== "undefined") {
-        setIsMobilePortrait(window.innerWidth < 768 && window.innerHeight > window.innerWidth);
+        const isMobile =
+          window.innerWidth < 1024 ||
+          (typeof navigator !== "undefined" &&
+            /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent));
+        setIsSmallScreen(isMobile);
+        setIsMobilePortrait(isMobile && window.innerHeight >= window.innerWidth);
       }
     };
     checkOrientation();
@@ -1616,7 +1677,7 @@ export function BeUICenterMorphModal({
   useEffect(() => {
     if (hyperOSLandscapeOnMobile) {
       if (open) {
-        requestMobileLandscapeFullscreen();
+        void requestMobileLandscapeFullscreen();
       } else {
         exitMobileLandscapeFullscreen();
       }
@@ -1666,7 +1727,8 @@ export function BeUICenterMorphModal({
 
   const { mode } = useThemeStore();
   const isDark = getResolvedTheme(mode) === "dark";
-  const shouldUseHyperOS = Boolean(hyperOSLandscapeOnMobile && isMobilePortrait);
+
+  const isHyperOSActive = Boolean(hyperOSLandscapeOnMobile && isSmallScreen);
 
   const modalContent = (
     <AnimatePresence>
@@ -1674,8 +1736,8 @@ export function BeUICenterMorphModal({
         <div
           data-lenis-prevent="true"
           className={cn(
-            "fixed inset-0 z-[999] flex items-center justify-center overflow-hidden",
-            shouldUseHyperOS ? "p-0" : "p-4 sm:p-6",
+            "fixed inset-0 z-[99999] overflow-hidden",
+            isHyperOSActive ? "p-0" : "flex items-center justify-center p-4 sm:p-6",
             isDark && "dark"
           )}
         >
@@ -1693,30 +1755,60 @@ export function BeUICenterMorphModal({
             exit="closed"
             transition={CENTER_MORPH_TRANSITION}
             onClick={() => onOpenChange(false)}
-            className="fixed inset-0 bg-black/75 backdrop-blur-md"
+            className="fixed inset-0 bg-black/85 backdrop-blur-md"
           />
           <motion.div
             role="dialog"
             aria-modal="true"
             data-lenis-prevent="true"
-            variants={shouldUseHyperOS ? HYPEROS_LANDSCAPE_MODAL_VARIANTS : CENTER_MORPH_MODAL_VARIANTS}
+            variants={
+              isHyperOSActive
+                ? isMobilePortrait
+                  ? HYPEROS_PORTRAIT_VARIANTS
+                  : HYPEROS_LANDSCAPE_NATIVE_VARIANTS
+                : CENTER_MORPH_MODAL_VARIANTS
+            }
             initial="closed"
             animate="open"
-            exit="closed"
-            transition={shouldUseHyperOS ? { duration: 0.45, ease: [0.16, 1, 0.3, 1] } : CENTER_MORPH_TRANSITION}
+            exit={isHyperOSActive ? "exit" : "closed"}
+            transition={
+              isHyperOSActive
+                ? { duration: 0.46, ease: [0.16, 1, 0.3, 1] }
+                : CENTER_MORPH_TRANSITION
+            }
             style={
-              shouldUseHyperOS
-                ? {
-                    width: "100vh",
-                    height: "100vw",
-                    maxWidth: "none",
-                    maxHeight: "none",
-                  }
+              isHyperOSActive
+                ? isMobilePortrait
+                  ? {
+                      position: "fixed",
+                      top: "50%",
+                      left: "50%",
+                      width: "100dvh",
+                      height: "100dvw",
+                      maxWidth: "none",
+                      maxHeight: "none",
+                      margin: 0,
+                      borderRadius: 0,
+                    }
+                  : {
+                      position: "fixed",
+                      top: 0,
+                      left: 0,
+                      width: "100dvw",
+                      height: "100dvh",
+                      maxWidth: "none",
+                      maxHeight: "none",
+                      margin: 0,
+                      borderRadius: 0,
+                    }
                 : undefined
             }
             className={cn(
               "relative z-10 w-full max-w-2xl rounded-[30px] overflow-hidden shadow-2xl will-change-[clip-path,transform,opacity]",
-              shouldUseHyperOS && "!rounded-none !max-w-none !w-[100vh] !h-[100vw]",
+              isHyperOSActive &&
+                (isMobilePortrait
+                  ? "!fixed !top-1/2 !left-1/2 !w-[100dvh] !h-[100dvw] !max-w-none !max-h-none !m-0 !rounded-none !z-[999999]"
+                  : "!fixed !top-0 !left-0 !w-[100dvw] !h-[100dvh] !max-w-none !max-h-none !m-0 !rounded-none !z-[999999]"),
               className
             )}
           >

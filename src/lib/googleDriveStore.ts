@@ -1,5 +1,4 @@
 import { create } from "zustand";
-import { formatGoogleDriveUrl } from "./imageUtils";
 
 export interface GoogleDriveFile {
   id: string;
@@ -164,12 +163,14 @@ interface GoogleDriveState {
   isLoading: boolean;
   isSyncing: boolean;
   error: string | null;
+  activeView: 'folders' | 'files';
+  setActiveView: (view: 'folders' | 'files') => void;
   loadSettings: () => Promise<void>;
   connectAccount: (email?: string, name?: string) => Promise<boolean>;
   disconnectAccount: () => Promise<boolean>;
   selectFolder: (folderId: string, folderName?: string) => Promise<boolean>;
+  createFolder: (name: string) => Promise<boolean>;
   syncFiles: () => Promise<void>;
-  addCustomFile: (fileUrl: string, fileName?: string) => boolean;
 }
 
 const STORAGE_KEY = "lumina_admin_google_drive_v1";
@@ -227,6 +228,11 @@ export const useGoogleDriveStore = create<GoogleDriveState>((set, get) => ({
   isLoading: false,
   isSyncing: false,
   error: null,
+  activeView: 'files',
+
+  setActiveView: (view: 'folders' | 'files') => {
+    set({ activeView: view });
+  },
 
   loadSettings: async () => {
     set({ isLoading: true, error: null });
@@ -270,7 +276,7 @@ export const useGoogleDriveStore = create<GoogleDriveState>((set, get) => ({
       } catch {}
 
       saveToLocal(updated);
-      set({ settings: updated, isSyncing: false });
+      set({ settings: updated, isSyncing: false, activeView: 'files' });
       return true;
     } catch {
       set({ error: "Error al conectar Google Drive", isSyncing: false });
@@ -298,7 +304,7 @@ export const useGoogleDriveStore = create<GoogleDriveState>((set, get) => ({
       } catch {}
 
       saveToLocal(updated);
-      set({ settings: updated, isSyncing: false });
+      set({ settings: updated, isSyncing: false, activeView: 'folders' });
       return true;
     } catch {
       set({ error: "Error al desconectar", isSyncing: false });
@@ -332,10 +338,46 @@ export const useGoogleDriveStore = create<GoogleDriveState>((set, get) => ({
       } catch {}
 
       saveToLocal(updated);
-      set({ settings: updated, isSyncing: false });
+      set({ settings: updated, isSyncing: false, activeView: 'files' });
       return true;
     } catch {
       set({ error: "Error al seleccionar carpeta", isSyncing: false });
+      return false;
+    }
+  },
+
+  createFolder: async (name: string) => {
+    if (!name.trim()) return false;
+    set({ isSyncing: true });
+    try {
+      const newFolderId = `folder_${Date.now()}`;
+      const newFolder: GoogleDriveFolder = {
+        id: newFolderId,
+        name: name.trim(),
+        itemCount: 0,
+      };
+
+      const updated: GoogleDriveSettings = {
+        ...get().settings,
+        availableFolders: [newFolder, ...get().settings.availableFolders],
+        selectedFolderId: newFolderId,
+        selectedFolderName: name.trim(),
+        files: [],
+      };
+
+      try {
+        await fetch("/api/admin/google-drive", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ action: "create_folder", folder: newFolder }),
+        });
+      } catch {}
+
+      saveToLocal(updated);
+      set({ settings: updated, isSyncing: false, activeView: 'files' });
+      return true;
+    } catch {
+      set({ isSyncing: false });
       return false;
     }
   },
@@ -348,28 +390,5 @@ export const useGoogleDriveStore = create<GoogleDriveState>((set, get) => ({
     } catch {
       set({ isSyncing: false });
     }
-  },
-
-  addCustomFile: (fileUrl: string, fileName?: string) => {
-    if (!fileUrl.trim()) return false;
-    const cdnUrl = formatGoogleDriveUrl(fileUrl.trim());
-    const newFile: GoogleDriveFile = {
-      id: `custom_drive_${Date.now()}`,
-      name: fileName?.trim() || `LUMINA-ASSET-${Date.now().toString().slice(-4)}.jpg`,
-      mimeType: "image/jpeg",
-      cdnUrl,
-      thumbnailUrl: cdnUrl,
-      size: "2.5 MB",
-      dimensions: "2000 x 2000",
-      folderId: get().settings.selectedFolderId,
-    };
-
-    const updated = {
-      ...get().settings,
-      files: [newFile, ...get().settings.files],
-    };
-    saveToLocal(updated);
-    set({ settings: updated });
-    return true;
   },
 }));

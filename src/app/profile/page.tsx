@@ -1608,7 +1608,7 @@ const handleConfirmDeleteNiche = async () => {
  >
  <div
    data-lenis-prevent="true"
-   className="bg-[#f5f5f3] dark:bg-[#161618] sm:rounded-[32px] w-full shadow-2xl dark:shadow-none overflow-hidden flex flex-col h-full sm:max-h-[92vh] border border-gray-200/90 dark:border-white/[0.12]"
+   className="bg-[#f5f5f3] dark:bg-[#161618] sm:rounded-[32px] w-full shadow-2xl dark:shadow-none overflow-hidden flex flex-col h-full sm:max-h-[92vh] border-0 sm:border sm:border-gray-200/90 dark:sm:border-white/[0.12]"
  >
    {/* Top Bar Header (Executive Studio Header + 4-Step Pill Dock) */}
    <div className="px-5 sm:px-7 py-4 border-b border-gray-200/80 dark:border-white/[0.08] flex flex-col lg:flex-row lg:items-center justify-between gap-3.5 bg-white/95 dark:bg-[#202022]/95 backdrop-blur-xl shrink-0">
@@ -2372,7 +2372,7 @@ const handleConfirmDeleteNiche = async () => {
   >
   <div
     data-lenis-prevent="true"
-    className="bg-[#f5f5f3] dark:bg-[#161618] sm:rounded-[32px] w-full shadow-2xl dark:shadow-none overflow-hidden flex flex-col h-full sm:max-h-[92vh] border border-gray-200/90 dark:border-white/[0.12]"
+    className="bg-[#f5f5f3] dark:bg-[#161618] sm:rounded-[32px] w-full shadow-2xl dark:shadow-none overflow-hidden flex flex-col h-full sm:max-h-[92vh] border-0 sm:border sm:border-gray-200/90 dark:sm:border-white/[0.12]"
   >
     {/* HEADER + STEP SEPARATOR DOCK */}
     <div className="px-6 pt-5 pb-4 border-b border-gray-200/80 dark:border-white/[0.08] bg-white/95 dark:bg-[#202022]/95 backdrop-blur-xl space-y-3.5 shrink-0">
