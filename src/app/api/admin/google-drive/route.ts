@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getAuthenticatedUser, verifyIsAdmin, getScopedSupabaseClient } from '@/lib/serverAuth';
+import { GoogleDriveService } from '@/lib/googleDriveService';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -70,6 +71,7 @@ let inMemoryDriveSettings = { ...DEFAULT_GLOBAL_DRIVE_SETTINGS };
 export async function GET(request: Request) {
   try {
     const supabase = getScopedSupabaseClient(request);
+    const authUser = await getAuthenticatedUser(request);
     let resolvedFiles = inMemoryDriveSettings.files_cache;
     let resolvedFolders = inMemoryDriveSettings.folders_list;
     let isConnected = inMemoryDriveSettings.is_connected;
@@ -80,6 +82,42 @@ export async function GET(request: Request) {
     let selectedFolderName = inMemoryDriveSettings.selected_folder_name;
     let backupAt = inMemoryDriveSettings.backup_at;
     let backupCount = inMemoryDriveSettings.backup_count;
+
+    // 0. Comprobar credenciales de Google Drive vinculadas al admin_id
+    if (authUser?.id) {
+      try {
+        const { data: cred } = await supabase
+          .from('google_drive_credentials')
+          .select('*')
+          .eq('admin_id', authUser.id)
+          .is('revoked_at', null)
+          .maybeSingle();
+
+        if (cred) {
+          isConnected = true;
+          connectedEmail = cred.google_account_email || '';
+          connectedAccountName = cred.google_account_name || '';
+          connectedAt = cred.created_at;
+          selectedFolderId = cred.drive_folder_id || selectedFolderId;
+          selectedFolderName = cred.drive_folder_name || selectedFolderName;
+
+          // Intentar obtener listado actualizado de Google Drive API
+          try {
+            const driveData = await GoogleDriveService.listImages(authUser.id, selectedFolderId);
+            if (Array.isArray(driveData?.files) && driveData.files.length > 0) {
+              resolvedFiles = driveData.files;
+            }
+          } catch {}
+
+          try {
+            const driveFolders = await GoogleDriveService.listFolders(authUser.id);
+            if (Array.isArray(driveFolders) && driveFolders.length > 0) {
+              resolvedFolders = driveFolders;
+            }
+          } catch {}
+        }
+      } catch {}
+    }
 
     // 1. Intentar cargar configuración global de la tabla admin_google_drive_settings
     try {
@@ -227,6 +265,11 @@ export async function POST(request: Request) {
         connected_at: new Date().toISOString(),
       };
     } else if (action === 'disconnect') {
+      if (authUser?.id) {
+        try {
+          await GoogleDriveService.disconnect(authUser.id);
+        } catch {}
+      }
       inMemoryDriveSettings = {
         ...inMemoryDriveSettings,
         is_connected: false,
@@ -236,6 +279,12 @@ export async function POST(request: Request) {
     } else if (action === 'select_folder') {
       const folderId = typeof body.folderId === 'string' ? body.folderId.trim() : inMemoryDriveSettings.selected_folder_id;
       const folderName = typeof body.folderName === 'string' ? body.folderName.trim() : inMemoryDriveSettings.selected_folder_name;
+
+      if (authUser?.id) {
+        try {
+          await GoogleDriveService.selectFolder(authUser.id, folderId, folderName);
+        } catch {}
+      }
 
       inMemoryDriveSettings = {
         ...inMemoryDriveSettings,

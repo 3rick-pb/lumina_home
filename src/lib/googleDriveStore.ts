@@ -173,7 +173,10 @@ export const useGoogleDriveStore = create<GoogleDriveState>((set, get) => ({
   loadSettings: async () => {
     set({ isLoading: true, error: null });
     try {
-      const res = await fetch("/api/admin/google-drive");
+      const { data: { session } } = await supabase.auth.getSession();
+      const res = await fetch("/api/admin/google-drive", {
+        headers: session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {},
+      });
       if (res.ok) {
         const data = await res.json();
         if (data?.success && data?.settings) {
@@ -248,25 +251,17 @@ export const useGoogleDriveStore = create<GoogleDriveState>((set, get) => ({
         localStorage.removeItem("lumina_fotoproductos_auth_result");
       } catch {}
 
-      // 3. Iniciar OAuth con el cliente aislado supabaseDrive
-      const redirectUri = `${window.location.origin}/auth/drive-callback`;
-      const { data, error } = await supabaseDrive.auth.signInWithOAuth({
-        provider: "google",
-        options: {
-          scopes: "https://www.googleapis.com/auth/drive.readonly email profile",
-          redirectTo: redirectUri,
-          skipBrowserRedirect: true,
-          queryParams: {
-            access_type: "offline",
-            prompt: "consent",
-          },
-        },
+      // 3. Solicitar URL de OAuth segura con state criptográfico al backend
+      const { data: { session } } = await supabase.auth.getSession();
+      const res = await fetch("/api/admin/google-drive/auth", {
+        headers: session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {},
       });
+      const data = await res.json();
 
-      if (error || !data?.url) {
+      if (!res.ok || !data.success || !data.url) {
         if (popup) popup.close();
         set({
-          error: error?.message || "No se pudo iniciar la conexión con Google.",
+          error: data?.error || "No se pudo iniciar la conexión con Google Drive.",
           isSyncing: false,
         });
         return;
@@ -284,7 +279,7 @@ export const useGoogleDriveStore = create<GoogleDriveState>((set, get) => ({
       // 5. Esperar resolución mediante postMessage o sondeo de localStorage
       let resolved = false;
 
-      const finishConnection = async (payload: { providerToken?: string; email?: string; name?: string }) => {
+      const finishConnection = async (_payload?: { email?: string; name?: string }) => {
         if (resolved) return;
         resolved = true;
 
@@ -292,44 +287,9 @@ export const useGoogleDriveStore = create<GoogleDriveState>((set, get) => ({
           try { popup.close(); } catch {}
         }
 
-        const accessToken = payload.providerToken || "";
-        const userEmail = payload.email || "";
-        const userName = payload.name || "";
-
-        if (!accessToken && !userEmail) {
-          set({ error: "No se recibieron permisos de Google Drive.", isSyncing: false });
-          return;
-        }
-
-        const updated: GoogleDriveSettings = {
-          ...get().settings,
-          isConnected: true,
-          accountEmail: userEmail || get().settings.accountEmail || "Google Drive Conectado",
-          accountName: userName || get().settings.accountName || "Google Drive",
-          providerToken: accessToken || get().settings.providerToken,
-          connectedAt: new Date().toISOString(),
-        };
-
-        set({ settings: updated, isSyncing: false, error: null });
-        saveToLocal(updated);
-
-        // Respaldar sesión de Drive en base de datos
-        try {
-          const { data: { session } } = await supabase.auth.getSession();
-          await fetch("/api/admin/google-drive", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              ...(session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {}),
-            },
-            body: JSON.stringify({ settings: updated }),
-          });
-        } catch {}
-
-        // Obtener fotografías y carpetas de la unidad
-        if (accessToken) {
-          await get().loadGoogleDriveFiles(accessToken);
-        }
+        // Recargar configuración, colecciones y fotos directamente del backend seguro
+        await get().loadSettings();
+        set({ isSyncing: false, error: null });
       };
 
       // Escuchador para postMessage
@@ -564,9 +524,13 @@ export const useGoogleDriveStore = create<GoogleDriveState>((set, get) => ({
       };
 
       try {
+        const { data: { session } } = await supabase.auth.getSession();
         await fetch("/api/admin/google-drive", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: {
+            "Content-Type": "application/json",
+            ...(session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {}),
+          },
           body: JSON.stringify({ action: "disconnect" }),
         });
       } catch {}
@@ -593,9 +557,13 @@ export const useGoogleDriveStore = create<GoogleDriveState>((set, get) => ({
       };
 
       try {
+        const { data: { session } } = await supabase.auth.getSession();
         await fetch("/api/admin/google-drive", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: {
+            "Content-Type": "application/json",
+            ...(session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {}),
+          },
           body: JSON.stringify({ action: "select_folder", folderId, folderName: resolvedName }),
         });
       } catch {}
