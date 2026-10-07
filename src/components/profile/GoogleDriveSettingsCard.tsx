@@ -71,6 +71,7 @@ export function GoogleDriveSettingsCard({ onClose, onSelectPhotoForProduct }: Go
     activeView, 
     setActiveView, 
     connectGoogleOAuth,
+    handleOAuthReturn,
     loadGoogleDriveFiles,
     disconnectAccount, 
     selectFolder, 
@@ -92,10 +93,10 @@ export function GoogleDriveSettingsCard({ onClose, onSelectPhotoForProduct }: Go
   const [newFolderName, setNewFolderName] = useState("");
   const [feedback, setFeedback] = useState<string | null>(null);
 
-  // Preload GIS script on component mount so popups open instantaneously without browser blocking
+  // Procesar retorno de OAuth si se realizó por redirección directa
   useEffect(() => {
-    import("@/lib/googleIdentity").then((m) => m.loadGIS()).catch(() => {});
-  }, []);
+    handleOAuthReturn();
+  }, [handleOAuthReturn]);
 
   // Subir por URL
   const [urlInput, setUrlInput] = useState("");

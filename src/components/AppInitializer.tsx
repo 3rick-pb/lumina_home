@@ -360,6 +360,69 @@ export function AppInitializer() {
   const initializeAuth = useUserStore((state) => state.initializeAuth);
 
   useEffect(() => {
+    // Si esta ventana es un popup secundario con retorno de OAuth de Google Drive,
+    // procesar credenciales exclusivamente en supabaseDrive y cerrar la ventana sin tocar la sesión de la tienda.
+    if (
+      typeof window !== "undefined" &&
+      window.opener &&
+      (window.location.search.includes("code=") || window.location.hash.includes("provider_token="))
+    ) {
+      import("@/lib/supabaseDrive").then(async ({ supabaseDrive }) => {
+        try {
+          const currentUrl = new URL(window.location.href);
+          const code = currentUrl.searchParams.get("code");
+          const hashParams = new URLSearchParams(window.location.hash.replace(/^#/, ""));
+          let providerToken = hashParams.get("provider_token") || "";
+          let userEmail = "";
+          let userName = "";
+
+          if (code) {
+            const { data } = await supabaseDrive.auth.exchangeCodeForSession(code);
+            if (data?.session) {
+              providerToken = data.session.provider_token || providerToken;
+              userEmail = data.session.user?.email || "";
+              userName =
+                data.session.user?.user_metadata?.full_name ||
+                data.session.user?.user_metadata?.name ||
+                userEmail.split("@")[0] ||
+                "";
+            }
+          }
+
+          if (providerToken && !userEmail) {
+            try {
+              const res = await fetch("https://www.googleapis.com/oauth2/v3/userinfo", {
+                headers: { Authorization: `Bearer ${providerToken}` },
+              });
+              if (res.ok) {
+                const info = await res.json();
+                userEmail = info.email || "";
+                userName = info.name || userEmail.split("@")[0] || "";
+              }
+            } catch {}
+          }
+
+          const authPayload = {
+            type: "GOOGLE_DRIVE_AUTH_SUCCESS",
+            providerToken,
+            email: userEmail,
+            name: userName,
+            timestamp: Date.now(),
+          };
+
+          try {
+            window.opener.postMessage(authPayload, window.location.origin);
+          } catch {}
+          try {
+            localStorage.setItem("lumina_fotoproductos_auth_result", JSON.stringify(authPayload));
+          } catch {}
+
+          window.close();
+        } catch {}
+      });
+      return;
+    }
+
     initSilentAudioEngine();
     hydrateStoreFromClient();
     fetchProducts();

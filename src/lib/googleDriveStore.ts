@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { supabase } from "./supabase";
+import { supabaseDrive } from "./supabaseDrive";
 
 export interface GoogleDriveFile {
   id: string;
@@ -208,93 +209,179 @@ export const useGoogleDriveStore = create<GoogleDriveState>((set, get) => ({
   connectGoogleOAuth: async () => {
     set({ isSyncing: true, error: null });
     try {
-      // Resolve Client ID from environment or server settings
-      let clientId = get().settings.googleClientId?.trim();
-
-      if (!clientId) {
-        const envId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
-        if (envId && envId.trim() && !envId.includes("YOUR_GOOGLE_CLIENT_ID")) {
-          clientId = envId.trim();
-        }
+      if (typeof window === "undefined") {
+        set({ isSyncing: false });
+        return;
       }
 
-      // Check server API runtime env if not yet loaded in client bundle
-      if (!clientId) {
+      // 1. Abrir popup de forma síncrona en el evento click para evitar bloqueos del navegador
+      const popup = window.open("about:blank", "google_drive_oauth", "width=540,height=680");
+      if (popup) {
         try {
-          const res = await fetch("/api/admin/google-drive");
-          if (res.ok) {
-            const data = await res.json();
-            const serverId = data?.settings?.googleClientId;
-            if (serverId && typeof serverId === "string" && serverId.trim() && !serverId.includes("YOUR_GOOGLE_CLIENT_ID")) {
-              clientId = serverId.trim();
-            }
-          }
-        } catch { /* ignore */ }
+          popup.document.write(`
+            <!DOCTYPE html>
+            <html>
+              <head>
+                <meta charset="utf-8">
+                <title>Google Drive</title>
+                <style>
+                  body { background: #1c1917; color: #f5f5f4; font-family: system-ui, -apple-system, sans-serif; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; }
+                  .box { text-align: center; }
+                  .spinner { width: 32px; height: 32px; border: 3px solid #44403c; border-top-color: #fafaf9; border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 16px; }
+                  @keyframes spin { to { transform: rotate(360deg); } }
+                  p { font-size: 13px; margin: 0; color: #a8a29e; }
+                </style>
+              </head>
+              <body>
+                <div class="box">
+                  <div class="spinner"></div>
+                  <p>Conectando con Google...</p>
+                </div>
+              </body>
+            </html>
+          `);
+        } catch {}
       }
 
-      if (!clientId) {
+      // 2. Limpiar resultados previos en localStorage
+      try {
+        localStorage.removeItem("lumina_fotoproductos_auth_result");
+      } catch {}
+
+      // 3. Iniciar OAuth con el cliente aislado supabaseDrive
+      const redirectUri = `${window.location.origin}/auth/drive-callback`;
+      const { data, error } = await supabaseDrive.auth.signInWithOAuth({
+        provider: "google",
+        options: {
+          scopes: "https://www.googleapis.com/auth/drive.readonly email profile",
+          redirectTo: redirectUri,
+          skipBrowserRedirect: true,
+          queryParams: {
+            access_type: "offline",
+            prompt: "consent",
+          },
+        },
+      });
+
+      if (error || !data?.url) {
+        if (popup) popup.close();
         set({
-          error: "Configuración de Google no disponible. Verifica que la variable de entorno NEXT_PUBLIC_GOOGLE_CLIENT_ID esté configurada en el servidor.",
+          error: error?.message || "No se pudo iniciar la conexión con Google.",
           isSyncing: false,
         });
         return;
       }
 
-      // Persist resolved valid client ID locally
-      if (typeof window !== "undefined") {
-        localStorage.setItem("lumina_google_client_id", clientId);
+      // 4. Navegar el popup a la pantalla de consentimiento de Google
+      if (popup) {
+        popup.location.href = data.url;
+      } else {
+        // Fallback si el navegador forzó bloqueo estricto de ventanas emergentes
+        window.location.href = data.url;
+        return;
       }
 
-      // Ensure GIS script is ready
-      const { requestDriveAccessToken, loadGIS } = await import("./googleIdentity");
-      await loadGIS();
+      // 5. Esperar resolución mediante postMessage o sondeo de localStorage
+      let resolved = false;
 
-      // Open Google popup — doesn't disrupt admin session
-      const accessToken = await requestDriveAccessToken(clientId);
+      const finishConnection = async (payload: { providerToken?: string; email?: string; name?: string }) => {
+        if (resolved) return;
+        resolved = true;
 
-      // Fetch user profile from Google with the access token
-      let userEmail = "";
-      let userName = "";
-      try {
-        const res = await fetch("https://www.googleapis.com/oauth2/v3/userinfo", {
-          headers: { Authorization: `Bearer ${accessToken}` },
-        });
-        if (res.ok) {
-          const info = await res.json();
-          userEmail = info.email || "";
-          userName = info.name || info.email?.split("@")[0] || "";
+        if (popup && !popup.closed) {
+          try { popup.close(); } catch {}
         }
-      } catch { /* ignore */ }
 
-      // Update store settings with new connection state
-      const { data: { session } } = await supabase.auth.getSession();
-      const updated: GoogleDriveSettings = {
-        ...get().settings,
-        isConnected: true,
-        accountEmail: userEmail || get().settings.accountEmail || "Google Drive Conectado",
-        accountName: userName || get().settings.accountName || "Admin Drive",
-        providerToken: accessToken,
-        googleClientId: clientId,
-        connectedAt: new Date().toISOString(),
+        const accessToken = payload.providerToken || "";
+        const userEmail = payload.email || "";
+        const userName = payload.name || "";
+
+        if (!accessToken && !userEmail) {
+          set({ error: "No se recibieron permisos de Google Drive.", isSyncing: false });
+          return;
+        }
+
+        const updated: GoogleDriveSettings = {
+          ...get().settings,
+          isConnected: true,
+          accountEmail: userEmail || get().settings.accountEmail || "Google Drive Conectado",
+          accountName: userName || get().settings.accountName || "Google Drive",
+          providerToken: accessToken || get().settings.providerToken,
+          connectedAt: new Date().toISOString(),
+        };
+
+        set({ settings: updated, isSyncing: false, error: null });
+        saveToLocal(updated);
+
+        // Respaldar sesión de Drive en base de datos
+        try {
+          const { data: { session } } = await supabase.auth.getSession();
+          await fetch("/api/admin/google-drive", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              ...(session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {}),
+            },
+            body: JSON.stringify({ settings: updated }),
+          });
+        } catch {}
+
+        // Obtener fotografías y carpetas de la unidad
+        if (accessToken) {
+          await get().loadGoogleDriveFiles(accessToken);
+        }
       };
 
-      set({ settings: updated, isSyncing: false, error: null });
-      saveToLocal(updated);
+      // Escuchador para postMessage
+      const onMessage = (event: MessageEvent) => {
+        if (event.origin !== window.location.origin) return;
+        if (event.data?.type === "GOOGLE_DRIVE_AUTH_SUCCESS") {
+          window.removeEventListener("message", onMessage);
+          clearInterval(pollInterval);
+          finishConnection(event.data);
+        }
+      };
+      window.addEventListener("message", onMessage);
 
-      // Persist connection info to server database
-      try {
-        await fetch("/api/admin/google-drive", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            ...(session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {}),
-          },
-          body: JSON.stringify({ settings: updated }),
-        });
-      } catch { /* ignore */ }
+      // Sondeo periódico para respaldo por localStorage y detección de cierre
+      const startTime = Date.now();
+      const pollInterval = setInterval(() => {
+        // Verificar si se completó vía localStorage
+        try {
+          const stored = localStorage.getItem("lumina_fotoproductos_auth_result");
+          if (stored) {
+            const parsed = JSON.parse(stored);
+            if (parsed?.type === "GOOGLE_DRIVE_AUTH_SUCCESS" && parsed.timestamp >= startTime) {
+              localStorage.removeItem("lumina_fotoproductos_auth_result");
+              window.removeEventListener("message", onMessage);
+              clearInterval(pollInterval);
+              finishConnection(parsed);
+              return;
+            }
+          }
+        } catch {}
 
-      // Automatically load real Google Drive folders and photos
-      await get().loadGoogleDriveFiles(accessToken);
+        // Detectar si el usuario cerró manualmente el popup
+        if (popup?.closed) {
+          setTimeout(() => {
+            if (!resolved) {
+              window.removeEventListener("message", onMessage);
+              clearInterval(pollInterval);
+              set({ isSyncing: false });
+            }
+          }, 800);
+        }
+
+        // Tiempo límite de seguridad (3 minutos)
+        if (Date.now() - startTime > 180000) {
+          window.removeEventListener("message", onMessage);
+          clearInterval(pollInterval);
+          if (!resolved) {
+            set({ isSyncing: false, error: "Tiempo de espera agotado al conectar con Google." });
+          }
+        }
+      }, 500);
+
     } catch (error: unknown) {
       const msg = error instanceof Error ? error.message : "Error al conectar con Google Drive";
       set({ error: msg, isSyncing: false });
@@ -411,16 +498,68 @@ export const useGoogleDriveStore = create<GoogleDriveState>((set, get) => ({
     }
   },
 
-  handleOAuthReturn: async () => { /* no-op: GIS popup is self-contained */ },
+  handleOAuthReturn: async () => {
+    try {
+      if (typeof window === "undefined") return;
+
+      const stored = localStorage.getItem("lumina_fotoproductos_auth_result");
+      if (stored) {
+        localStorage.removeItem("lumina_fotoproductos_auth_result");
+        const parsed = JSON.parse(stored);
+        if (parsed?.providerToken || parsed?.email) {
+          const updated: GoogleDriveSettings = {
+            ...get().settings,
+            isConnected: true,
+            accountEmail: parsed.email || get().settings.accountEmail || "Google Drive Conectado",
+            accountName: parsed.name || get().settings.accountName || "Google Drive",
+            providerToken: parsed.providerToken || get().settings.providerToken,
+            connectedAt: new Date().toISOString(),
+          };
+          set({ settings: updated });
+          saveToLocal(updated);
+
+          if (parsed.providerToken) {
+            await get().loadGoogleDriveFiles(parsed.providerToken);
+          }
+          return;
+        }
+      }
+
+      // Fallback: verificar sesión en supabaseDrive
+      const { data: { session } } = await supabaseDrive.auth.getSession();
+      if (session?.provider_token) {
+        const updated: GoogleDriveSettings = {
+          ...get().settings,
+          isConnected: true,
+          accountEmail: session.user?.email || get().settings.accountEmail || "Google Drive Conectado",
+          accountName:
+            session.user?.user_metadata?.full_name ||
+            session.user?.user_metadata?.name ||
+            get().settings.accountName ||
+            "Google Drive",
+          providerToken: session.provider_token,
+          connectedAt: new Date().toISOString(),
+        };
+        set({ settings: updated });
+        saveToLocal(updated);
+        await get().loadGoogleDriveFiles(session.provider_token);
+      }
+    } catch {}
+  },
 
   disconnectAccount: async () => {
     set({ isSyncing: true, error: null });
     try {
+      try {
+        await supabaseDrive.auth.signOut();
+      } catch {}
+
       const updated: GoogleDriveSettings = {
         ...get().settings,
         isConnected: false,
         accountEmail: "",
         accountName: "",
+        providerToken: undefined,
         connectedAt: undefined,
       };
 
