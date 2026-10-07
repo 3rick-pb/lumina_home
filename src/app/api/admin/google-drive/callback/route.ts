@@ -178,7 +178,7 @@ function renderHtmlResponse(
   data?: { email: string; name: string }
 ) {
   const payloadJson = JSON.stringify({
-    type: "GOOGLE_DRIVE_OAUTH_SUCCESS",
+    type: "GOOGLE_DRIVE_AUTH_SUCCESS",
     success,
     message,
     email: data?.email || "",
@@ -199,6 +199,8 @@ function renderHtmlResponse(
     .error { background: #7f1d1d; color: #f87171; }
     h2 { font-size: 15px; margin: 0 0 8px; font-weight: 600; }
     p { font-size: 12px; margin: 0; color: #a8a29e; line-height: 1.5; }
+    .btn { margin-top: 18px; background: #44403c; color: #f5f5f4; border: 1px solid #57534e; border-radius: 10px; padding: 8px 18px; font-size: 12px; font-weight: 500; cursor: pointer; transition: background 0.2s; }
+    .btn:hover { background: #57534e; }
   </style>
 </head>
 <body>
@@ -206,14 +208,15 @@ function renderHtmlResponse(
     <div class="icon ${success ? "success" : "error"}">${success ? "✓" : "!"}</div>
     <h2>${success ? "Google Drive Conectado" : "Error de Conexión"}</h2>
     <p>${message}</p>
-    <p style="margin-top: 14px; font-size: 11px; color: #78716c;">${success ? "Cerrando ventana automáticamente..." : "Puedes cerrar esta ventana e intentar de nuevo."}</p>
+    <p style="margin-top: 14px; font-size: 11px; color: #78716c;">${success ? "Ventana autorizada. Cerrando..." : "Puedes cerrar esta ventana e intentar de nuevo."}</p>
+    <button type="button" class="btn" onclick="window.close()">Cerrar Ventana</button>
   </div>
   <script>
     (function() {
       var payload = ${payloadJson};
       try {
         if (window.opener && !window.opener.closed) {
-          window.opener.postMessage(payload, "${origin}");
+          window.opener.postMessage(payload, "*");
         }
       } catch (e) {}
 
@@ -223,12 +226,10 @@ function renderHtmlResponse(
 
       if (${success ? "true" : "false"}) {
         setTimeout(function() {
-          if (window.opener) {
+          try {
             window.close();
-          } else {
-            window.location.href = "/profile?tab=fotoproductos&drive_connected=1";
-          }
-        }, 800);
+          } catch (e) {}
+        }, 1000);
       }
     })();
   </script>

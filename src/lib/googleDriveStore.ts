@@ -276,7 +276,7 @@ export const useGoogleDriveStore = create<GoogleDriveState>((set, get) => ({
         return;
       }
 
-      // 5. Esperar resolución mediante postMessage o sondeo de localStorage
+      // 5. Esperar resolución mediante postMessage o sondeo activo de backend
       let resolved = false;
 
       const finishConnection = async (_payload?: { email?: string; name?: string }) => {
@@ -292,10 +292,10 @@ export const useGoogleDriveStore = create<GoogleDriveState>((set, get) => ({
         set({ isSyncing: false, error: null });
       };
 
-      // Escuchador para postMessage
+      // Escuchador para postMessage (compatible entre previsualizaciones y producción)
       const onMessage = (event: MessageEvent) => {
-        if (event.origin !== window.location.origin) return;
-        if (event.data?.type === "GOOGLE_DRIVE_AUTH_SUCCESS") {
+        const type = event.data?.type;
+        if (type === "GOOGLE_DRIVE_AUTH_SUCCESS" || type === "GOOGLE_DRIVE_OAUTH_SUCCESS") {
           window.removeEventListener("message", onMessage);
           clearInterval(pollInterval);
           finishConnection(event.data);
@@ -303,15 +303,21 @@ export const useGoogleDriveStore = create<GoogleDriveState>((set, get) => ({
       };
       window.addEventListener("message", onMessage);
 
-      // Sondeo periódico para respaldo por localStorage y detección de cierre
+      // Sondeo periódico para respaldo por localStorage, base de datos y detección de cierre
       const startTime = Date.now();
-      const pollInterval = setInterval(() => {
-        // Verificar si se completó vía localStorage
+      let pollCycle = 0;
+      const pollInterval = setInterval(async () => {
+        pollCycle++;
+
+        // A. Verificar si se completó vía localStorage
         try {
           const stored = localStorage.getItem("lumina_fotoproductos_auth_result");
           if (stored) {
             const parsed = JSON.parse(stored);
-            if (parsed?.type === "GOOGLE_DRIVE_AUTH_SUCCESS" && parsed.timestamp >= startTime) {
+            if (
+              (parsed?.type === "GOOGLE_DRIVE_AUTH_SUCCESS" || parsed?.type === "GOOGLE_DRIVE_OAUTH_SUCCESS") &&
+              parsed.timestamp >= startTime
+            ) {
               localStorage.removeItem("lumina_fotoproductos_auth_result");
               window.removeEventListener("message", onMessage);
               clearInterval(pollInterval);
@@ -321,10 +327,45 @@ export const useGoogleDriveStore = create<GoogleDriveState>((set, get) => ({
           }
         } catch {}
 
-        // Detectar si el usuario cerró manualmente el popup
+        // B. Consultar directamente al servidor cada 2 segundos (~cada 2 ciclos)
+        if (pollCycle % 2 === 0) {
+          try {
+            const { data: { session } } = await supabase.auth.getSession();
+            const res = await fetch("/api/admin/google-drive", {
+              headers: session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {},
+            });
+            if (res.ok) {
+              const data = await res.json();
+              if (data?.success && data?.settings?.isConnected) {
+                window.removeEventListener("message", onMessage);
+                clearInterval(pollInterval);
+                finishConnection(data.settings);
+                return;
+              }
+            }
+          } catch {}
+        }
+
+        // C. Detectar si el usuario o el callback cerró la ventana emergente
         if (popup?.closed) {
-          setTimeout(() => {
+          setTimeout(async () => {
             if (!resolved) {
+              try {
+                const { data: { session } } = await supabase.auth.getSession();
+                const res = await fetch("/api/admin/google-drive", {
+                  headers: session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {},
+                });
+                if (res.ok) {
+                  const data = await res.json();
+                  if (data?.success && data?.settings?.isConnected) {
+                    window.removeEventListener("message", onMessage);
+                    clearInterval(pollInterval);
+                    finishConnection(data.settings);
+                    return;
+                  }
+                }
+              } catch {}
+
               window.removeEventListener("message", onMessage);
               clearInterval(pollInterval);
               set({ isSyncing: false });
@@ -332,7 +373,7 @@ export const useGoogleDriveStore = create<GoogleDriveState>((set, get) => ({
           }, 800);
         }
 
-        // Tiempo límite de seguridad (3 minutos)
+        // D. Tiempo límite de seguridad (3 minutos)
         if (Date.now() - startTime > 180000) {
           window.removeEventListener("message", onMessage);
           clearInterval(pollInterval);
@@ -340,7 +381,7 @@ export const useGoogleDriveStore = create<GoogleDriveState>((set, get) => ({
             set({ isSyncing: false, error: "Tiempo de espera agotado al conectar con Google." });
           }
         }
-      }, 500);
+      }, 1000);
 
     } catch (error: unknown) {
       const msg = error instanceof Error ? error.message : "Error al conectar con Google Drive";

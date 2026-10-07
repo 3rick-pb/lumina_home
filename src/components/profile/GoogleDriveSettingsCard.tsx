@@ -70,6 +70,7 @@ export function GoogleDriveSettingsCard({ onClose, onSelectPhotoForProduct }: Go
     clearError,
     activeView, 
     setActiveView, 
+    loadSettings,
     connectGoogleOAuth,
     handleOAuthReturn,
     loadGoogleDriveFiles,
@@ -93,10 +94,11 @@ export function GoogleDriveSettingsCard({ onClose, onSelectPhotoForProduct }: Go
   const [newFolderName, setNewFolderName] = useState("");
   const [feedback, setFeedback] = useState<string | null>(null);
 
-  // Procesar retorno de OAuth si se realizó por redirección directa
+  // Cargar configuración de base de datos y procesar retorno de OAuth si aplica
   useEffect(() => {
+    loadSettings();
     handleOAuthReturn();
-  }, [handleOAuthReturn]);
+  }, [loadSettings, handleOAuthReturn]);
 
   // Subir por URL
   const [urlInput, setUrlInput] = useState("");

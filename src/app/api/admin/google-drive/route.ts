@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getAuthenticatedUser, verifyIsAdmin, getScopedSupabaseClient } from '@/lib/serverAuth';
+import { getAuthenticatedUser, verifyIsAdmin, getScopedSupabaseClient, getServiceSupabaseClient } from '@/lib/serverAuth';
 import { GoogleDriveService } from '@/lib/googleDriveService';
 
 export const dynamic = 'force-dynamic';
@@ -71,6 +71,7 @@ let inMemoryDriveSettings = { ...DEFAULT_GLOBAL_DRIVE_SETTINGS };
 export async function GET(request: Request) {
   try {
     const supabase = getScopedSupabaseClient(request);
+    const serviceSupabase = getServiceSupabaseClient();
     const authUser = await getAuthenticatedUser(request);
     let resolvedFiles = inMemoryDriveSettings.files_cache;
     let resolvedFolders = inMemoryDriveSettings.folders_list;
@@ -86,12 +87,29 @@ export async function GET(request: Request) {
     // 0. Comprobar credenciales de Google Drive vinculadas al admin_id
     if (authUser?.id) {
       try {
-        const { data: cred } = await supabase
+        let { data: cred } = await serviceSupabase
           .from('google_drive_credentials')
           .select('*')
           .eq('admin_id', authUser.id)
           .is('revoked_at', null)
           .maybeSingle();
+
+        // Si no se encontró por admin_id exacto pero el usuario es administrador comprobado
+        if (!cred && authUser.email) {
+          const isAdmin = await verifyIsAdmin(authUser.email, request);
+          if (isAdmin) {
+            const { data: latestCred } = await serviceSupabase
+              .from('google_drive_credentials')
+              .select('*')
+              .is('revoked_at', null)
+              .order('updated_at', { ascending: false })
+              .limit(1)
+              .maybeSingle();
+            if (latestCred) {
+              cred = latestCred;
+            }
+          }
+        }
 
         if (cred) {
           isConnected = true;
@@ -103,20 +121,26 @@ export async function GET(request: Request) {
 
           // Intentar obtener listado actualizado de Google Drive API
           try {
-            const driveData = await GoogleDriveService.listImages(authUser.id, selectedFolderId);
+            const driveData = await GoogleDriveService.listImages(cred.admin_id, selectedFolderId);
             if (Array.isArray(driveData?.files) && driveData.files.length > 0) {
               resolvedFiles = driveData.files;
             }
-          } catch {}
+          } catch (listErr) {
+            console.warn('GoogleDriveService.listImages warning:', listErr);
+          }
 
           try {
-            const driveFolders = await GoogleDriveService.listFolders(authUser.id);
+            const driveFolders = await GoogleDriveService.listFolders(cred.admin_id);
             if (Array.isArray(driveFolders) && driveFolders.length > 0) {
               resolvedFolders = driveFolders;
             }
-          } catch {}
+          } catch (foldErr) {
+            console.warn('GoogleDriveService.listFolders warning:', foldErr);
+          }
         }
-      } catch {}
+      } catch (credErr) {
+        console.warn('Error reading google_drive_credentials:', credErr);
+      }
     }
 
     // 1. Intentar cargar configuración global de la tabla admin_google_drive_settings
@@ -270,6 +294,10 @@ export async function POST(request: Request) {
           await GoogleDriveService.disconnect(authUser.id);
         } catch {}
       }
+      try {
+        const serviceSupabase = getServiceSupabaseClient();
+        await serviceSupabase.from('google_drive_credentials').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+      } catch {}
       inMemoryDriveSettings = {
         ...inMemoryDriveSettings,
         is_connected: false,

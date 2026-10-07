@@ -94,7 +94,7 @@ export default function DriveCallbackPage() {
         // Enviar resultado a la ventana principal sin alterar su sesión de tienda
         if (window.opener && !window.opener.closed) {
           try {
-            window.opener.postMessage(authPayload, window.location.origin);
+            window.opener.postMessage(authPayload, "*");
           } catch {}
         }
 
@@ -109,13 +109,10 @@ export default function DriveCallbackPage() {
 
         // Cerrar popup suavemente
         setTimeout(() => {
-          if (window.opener) {
+          try {
             window.close();
-          } else {
-            // Si no fue abierto en popup, volver a Fotoproductos
-            window.location.href = "/profile?tab=fotoproductos&drive_connected=1";
-          }
-        }, 600);
+          } catch {}
+        }, 800);
       } catch (err: unknown) {
         const msg = err instanceof Error ? err.message : "Error desconocido al procesar autenticación";
         if (isMounted) {

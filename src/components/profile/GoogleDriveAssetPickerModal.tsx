@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
   X, 
@@ -35,6 +35,7 @@ export function GoogleDriveAssetPickerModal({
 }: GoogleDriveAssetPickerModalProps) {
   const { 
     settings, 
+    loadSettings,
     selectFolder, 
     addPhoto, 
     addPhotos,
@@ -43,6 +44,12 @@ export function GoogleDriveAssetPickerModal({
     clearError,
     connectGoogleOAuth 
   } = useGoogleDriveStore();
+
+  useEffect(() => {
+    if (open) {
+      loadSettings();
+    }
+  }, [open, loadSettings]);
 
   const [searchFilter, setSearchFilter] = useState("");
   const [selectedFileIds, setSelectedFileIds] = useState<string[]>([]);

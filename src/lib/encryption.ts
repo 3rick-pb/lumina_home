@@ -56,16 +56,22 @@ export function decryptToken(encryptedBundle: string): string {
     return "";
   }
 
-  const [ivHex, tagHex, cipherHex] = parts;
-  const key = getEncryptionKey();
-  const iv = Buffer.from(ivHex, "hex");
-  const authTag = Buffer.from(tagHex, "hex");
+  try {
+    const [ivHex, tagHex, cipherHex] = parts;
+    const key = getEncryptionKey();
+    const iv = Buffer.from(ivHex, "hex");
+    const authTag = Buffer.from(tagHex, "hex");
 
-  const decipher = crypto.createDecipheriv(ALGORITHM, key, iv);
-  decipher.setAuthTag(authTag);
+    const decipher = crypto.createDecipheriv(ALGORITHM, key, iv);
+    decipher.setAuthTag(authTag);
 
-  let decrypted = decipher.update(cipherHex, "hex", "utf8");
-  decrypted += decipher.final("utf8");
+    let decrypted = decipher.update(cipherHex, "hex", "utf8");
+    decrypted += decipher.final("utf8");
 
-  return decrypted;
+    return decrypted;
+  } catch (err) {
+    console.warn("Aviso: No se pudo descifrar token con la clave actual:", err);
+    return "";
+  }
 }
+
