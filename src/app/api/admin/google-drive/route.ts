@@ -51,16 +51,13 @@ const DEFAULT_GLOBAL_DRIVE_SETTINGS = {
   connected_email: '',
   connected_account_name: '',
   connected_at: null as string | null,
-  selected_folder_id: 'folder_lumina_catalog_2026',
-  selected_folder_name: 'Fotoproductos - Catálogo Lumina',
+  selected_folder_id: 'root',
+  selected_folder_name: 'Mi Unidad',
   backup_at: null as string | null,
   backup_count: 0,
   google_client_id: '',
   folders_list: [
-    { id: 'folder_lumina_catalog_2026', name: 'Fotoproductos - Catálogo Lumina', itemCount: 0 },
-    { id: 'folder_iluminacion_premium', name: 'Iluminación & Lámparas', itemCount: 0 },
-    { id: 'folder_textiles_tapiceria', name: 'Textiles & Tapicería', itemCount: 0 },
-    { id: 'folder_ceramica_decoracion', name: 'Cerámica & Decoración', itemCount: 0 },
+    { id: 'root', name: 'Mi Unidad', itemCount: 0 },
   ],
   files_cache: [] as MediaAssetRow[],
 };
@@ -73,16 +70,16 @@ export async function GET(request: Request) {
     const supabase = getScopedSupabaseClient(request);
     const serviceSupabase = getServiceSupabaseClient();
     const authUser = await getAuthenticatedUser(request);
-    let resolvedFiles = inMemoryDriveSettings.files_cache;
+    let resolvedFiles: MediaAssetRow[] = [];
     let resolvedFolders = inMemoryDriveSettings.folders_list;
-    let isConnected = inMemoryDriveSettings.is_connected;
-    let connectedEmail = inMemoryDriveSettings.connected_email;
-    let connectedAccountName = inMemoryDriveSettings.connected_account_name;
-    let connectedAt = inMemoryDriveSettings.connected_at;
-    let selectedFolderId = inMemoryDriveSettings.selected_folder_id;
-    let selectedFolderName = inMemoryDriveSettings.selected_folder_name;
-    let backupAt = inMemoryDriveSettings.backup_at;
-    let backupCount = inMemoryDriveSettings.backup_count;
+    let isConnected = false;
+    let connectedEmail = '';
+    let connectedAccountName = '';
+    let connectedAt: string | null = null;
+    let selectedFolderId = 'root';
+    let selectedFolderName = 'Mi Unidad';
+    let backupAt: string | null = null;
+    let backupCount = 0;
 
     // 0. Comprobar credenciales de Google Drive vinculadas al admin_id
     if (authUser?.id) {
@@ -116,13 +113,13 @@ export async function GET(request: Request) {
           connectedEmail = cred.google_account_email || '';
           connectedAccountName = cred.google_account_name || '';
           connectedAt = cred.created_at;
-          selectedFolderId = cred.drive_folder_id || selectedFolderId;
-          selectedFolderName = cred.drive_folder_name || selectedFolderName;
+          selectedFolderId = cred.drive_folder_id && cred.drive_folder_id !== 'folder_lumina_catalog_2026' ? cred.drive_folder_id : 'root';
+          selectedFolderName = cred.drive_folder_name && !cred.drive_folder_name.includes('Lumina') ? cred.drive_folder_name : 'Mi Unidad';
 
           // Intentar obtener listado actualizado de Google Drive API
           try {
             const driveData = await GoogleDriveService.listImages(cred.admin_id, selectedFolderId);
-            if (Array.isArray(driveData?.files) && driveData.files.length > 0) {
+            if (Array.isArray(driveData?.files)) {
               resolvedFiles = driveData.files;
             }
           } catch (listErr) {
@@ -143,50 +140,34 @@ export async function GET(request: Request) {
       }
     }
 
-    // 1. Intentar cargar configuración global de la tabla admin_google_drive_settings
-    try {
-      const { data: row } = await supabase
-        .from('admin_google_drive_settings')
-        .select('*')
-        .eq('id', 'global')
-        .maybeSingle();
+    // 1. Cargar configuración global SOLO si Google Drive NO está conectado
+    if (!isConnected) {
+      try {
+        const { data: row } = await supabase
+          .from('admin_google_drive_settings')
+          .select('*')
+          .eq('id', 'global')
+          .maybeSingle();
 
-      if (row) {
-        // Sanitize legacy demo account
-        const isDemo = row.connected_email === 'multimedia.lumina@gmail.com';
-        if (isDemo) {
-          isConnected = false;
-          connectedEmail = '';
-          connectedAccountName = '';
-          connectedAt = null;
-          // Clean database row
-          try {
-            await supabase.from('admin_google_drive_settings').upsert({
-              id: 'global',
-              is_connected: false,
-              connected_email: null,
-              connected_account_name: null,
-            });
-          } catch {}
-        } else {
+        if (row && !row.connected_email?.includes('demo') && !row.connected_email?.includes('multimedia.lumina')) {
           isConnected = Boolean(row.is_connected);
           connectedEmail = row.connected_email || '';
           connectedAccountName = row.connected_account_name || '';
           connectedAt = row.connected_at || null;
+          selectedFolderId = row.selected_folder_id || selectedFolderId;
+          selectedFolderName = row.selected_folder_name || selectedFolderName;
+          backupAt = row.backup_at || backupAt;
+          backupCount = typeof row.backup_count === 'number' ? row.backup_count : backupCount;
+          if (Array.isArray(row.folders_list) && row.folders_list.length > 0) {
+            resolvedFolders = row.folders_list;
+          }
+          if (Array.isArray(row.files_cache) && row.files_cache.length > 0) {
+            resolvedFiles = row.files_cache;
+          }
         }
-        selectedFolderId = row.selected_folder_id || selectedFolderId;
-        selectedFolderName = row.selected_folder_name || selectedFolderName;
-        backupAt = row.backup_at || backupAt;
-        backupCount = typeof row.backup_count === 'number' ? row.backup_count : backupCount;
-        if (Array.isArray(row.folders_list) && row.folders_list.length > 0) {
-          resolvedFolders = row.folders_list;
-        }
-        if (Array.isArray(row.files_cache) && row.files_cache.length > 0) {
-          resolvedFiles = row.files_cache;
-        }
+      } catch {
+        // Ignorar si la tabla aún no fue creada
       }
-    } catch {
-      // Ignorar si la tabla aún no fue creada
     }
 
     // 2. Intentar consultar la tabla relacional public.admin_media_assets para fotos individuales respaldadas
@@ -338,8 +319,8 @@ export async function POST(request: Request) {
           f.folderId === folderId ? { ...f, folderId: 'folder_lumina_catalog_2026' } : f
         );
         if (inMemoryDriveSettings.selected_folder_id === folderId) {
-          inMemoryDriveSettings.selected_folder_id = 'folder_lumina_catalog_2026';
-          inMemoryDriveSettings.selected_folder_name = 'Lumina Home - Catálogo Fotográfico 2026';
+          inMemoryDriveSettings.selected_folder_id = 'root';
+          inMemoryDriveSettings.selected_folder_name = 'Mi Unidad';
         }
       }
     } else if (action === 'add_photo' || action === 'add_photos') {
@@ -348,14 +329,14 @@ export async function POST(request: Request) {
         : (body.photo ? [body.photo as PhotoInputRow] : []);
 
       const formattedItems = newItems.map((item) => ({
-        id: item.id || `lumina_media_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
-        name: item.name || 'FOTOGRAFIA-LUMINA.jpg',
+        id: item.id || `media_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
+        name: item.name || 'FOTOGRAFIA.jpg',
         mimeType: item.mimeType || 'image/jpeg',
         cdnUrl: item.cdnUrl,
         thumbnailUrl: item.thumbnailUrl || item.cdnUrl,
         size: item.size || '1.8 MB',
         dimensions: item.dimensions || '2000 x 2000',
-        folderId: item.folderId || inMemoryDriveSettings.selected_folder_id || 'folder_lumina_catalog_2026',
+        folderId: item.folderId || inMemoryDriveSettings.selected_folder_id || 'root',
       }));
 
       // Agregar a cache en memoria
@@ -368,7 +349,7 @@ export async function POST(request: Request) {
       });
       inMemoryDriveSettings.folders_list = inMemoryDriveSettings.folders_list.map(f => ({
         ...f,
-        itemCount: counts[f.id] || (f.id === 'folder_lumina_catalog_2026' ? inMemoryDriveSettings.files_cache.length : 0),
+        itemCount: counts[f.id] || (f.id === 'root' ? inMemoryDriveSettings.files_cache.length : 0),
       }));
 
       // Persistir cada foto en admin_media_assets si la tabla existe
@@ -440,14 +421,14 @@ export async function POST(request: Request) {
         // 2. Guardar cada fotografía en admin_media_assets
         if (clientFiles.length > 0) {
           const rows = clientFiles.map((f) => ({
-            id: f.id || `lumina_media_${Date.now()}`,
-            name: f.name || 'FOTO-LUMINA.jpg',
+            id: f.id || `media_${Date.now()}`,
+            name: f.name || 'FOTO.jpg',
             cdn_url: f.cdnUrl,
             thumbnail_url: f.thumbnailUrl || f.cdnUrl,
             mime_type: f.mimeType || 'image/jpeg',
             size: f.size || '2.0 MB',
             dimensions: f.dimensions || '2000 x 2000',
-            folder_id: f.folderId || 'folder_lumina_catalog_2026',
+            folder_id: f.folderId || 'root',
             folder_name: inMemoryDriveSettings.selected_folder_name,
             source: 'backup',
             updated_at: nowIso,
@@ -516,7 +497,7 @@ export async function POST(request: Request) {
             thumbnailUrl: a.thumbnail_url || a.cdn_url,
             size: a.size || '2.0 MB',
             dimensions: a.dimensions || '2000 x 2000',
-            folderId: a.folder_id || 'folder_lumina_catalog_2026',
+            folderId: a.folder_id || 'root',
           }));
           inMemoryDriveSettings.backup_count = inMemoryDriveSettings.files_cache.length;
         }

@@ -36,10 +36,7 @@ export interface GoogleDriveSettings {
 }
 
 export const INITIAL_DRIVE_FOLDERS: GoogleDriveFolder[] = [
-  { id: "folder_lumina_catalog_2026", name: "Catálogo General", itemCount: 0 },
-  { id: "folder_iluminacion_premium", name: "Iluminación", itemCount: 0 },
-  { id: "folder_textiles_tapiceria", name: "Textiles", itemCount: 0 },
-  { id: "folder_ceramica_decoracion", name: "Decoración", itemCount: 0 },
+  { id: "root", name: "Mi Unidad", itemCount: 0 },
 ];
 
 export const INITIAL_DRIVE_FILES: GoogleDriveFile[] = [];
@@ -73,7 +70,7 @@ interface GoogleDriveState {
   syncFiles: () => Promise<void>;
 }
 
-const STORAGE_KEY = "lumina_fotoproductos_v4";
+const STORAGE_KEY = "lumina_fotoproductos_v5";
 
 function recalculateFolderCounts(folders: GoogleDriveFolder[], files: GoogleDriveFile[]): GoogleDriveFolder[] {
   const counts: Record<string, number> = {};
@@ -83,7 +80,7 @@ function recalculateFolderCounts(folders: GoogleDriveFolder[], files: GoogleDriv
     }
   });
   return folders.map((folder) => {
-    if (folder.id === "folder_lumina_catalog_2026") {
+    if (folder.id === "root" || folder.id === "folder_lumina_catalog_2026") {
       return { ...folder, itemCount: files.length };
     }
     return {
@@ -99,8 +96,8 @@ function loadFromLocal(): GoogleDriveSettings {
     accountEmail: "",
     accountName: "",
     connectedAt: undefined,
-    selectedFolderId: "folder_lumina_catalog_2026",
-    selectedFolderName: "Catálogo General",
+    selectedFolderId: "root",
+    selectedFolderName: "Mi Unidad",
     availableFolders: INITIAL_DRIVE_FOLDERS,
     files: [],
     backupAt: undefined,
@@ -112,40 +109,38 @@ function loadFromLocal(): GoogleDriveSettings {
   }
 
   try {
-    // Check v4 first, fallback to legacy v3/v2 to preserve any uploaded files
-    let raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) {
-      raw = localStorage.getItem("lumina_fotoproductos_v3") || localStorage.getItem("lumina_fotoproductos_v2");
-    }
+    localStorage.removeItem("lumina_fotoproductos_v4");
+    localStorage.removeItem("lumina_fotoproductos_v3");
+    localStorage.removeItem("lumina_fotoproductos_v2");
 
+    const raw = localStorage.getItem(STORAGE_KEY);
     if (raw) {
       const parsed = JSON.parse(raw);
       if (parsed && typeof parsed === "object") {
-        // Purge legacy demo account completely
         const isDemo = parsed.accountEmail === "multimedia.lumina@gmail.com";
+        const hasUnsplash = Array.isArray(parsed.files) && parsed.files.some((f: GoogleDriveFile) => f.cdnUrl?.includes("unsplash.com") || f.name?.includes("LUMINA-AURA"));
+        const hasMockFolders = Array.isArray(parsed.availableFolders) && parsed.availableFolders.some((f: GoogleDriveFolder) => f.id === "folder_iluminacion_premium" || f.id === "folder_lumina_catalog_2026");
+
+        if (isDemo || hasUnsplash || hasMockFolders) {
+          localStorage.removeItem(STORAGE_KEY);
+          return defaults;
+        }
+
         const sanitized: GoogleDriveSettings = {
           ...defaults,
           ...parsed,
-          isConnected: isDemo ? false : Boolean(parsed.isConnected),
-          accountEmail: isDemo ? "" : (parsed.accountEmail || ""),
-          accountName: isDemo ? "" : (parsed.accountName || ""),
-          connectedAt: isDemo ? undefined : parsed.connectedAt,
+          selectedFolderId: parsed.selectedFolderId === "folder_lumina_catalog_2026" ? "root" : (parsed.selectedFolderId || "root"),
+          selectedFolderName: parsed.selectedFolderName?.includes("Catálogo") ? "Mi Unidad" : (parsed.selectedFolderName || "Mi Unidad"),
           availableFolders: recalculateFolderCounts(
             parsed.availableFolders || INITIAL_DRIVE_FOLDERS,
             parsed.files || INITIAL_DRIVE_FILES
           ),
         };
-        // Save cleaned settings to current key
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(sanitized));
-        localStorage.removeItem("lumina_fotoproductos_v3");
         return sanitized;
       }
     }
   } catch {}
 
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(defaults));
-  } catch {}
   return defaults;
 }
 
@@ -185,18 +180,30 @@ export const useGoogleDriveStore = create<GoogleDriveState>((set, get) => ({
           const localStoredClientId = typeof window !== "undefined" ? localStorage.getItem("lumina_google_client_id") || "" : "";
           const resolvedClientId = rawSettings.googleClientId || localStoredClientId || get().settings.googleClientId || "";
 
+          // Filtrar cualquier residuo de carpetas o imágenes de demostración
+          const cleanFolders = (rawSettings.availableFolders || []).filter(
+            (f: GoogleDriveFolder) => !f.id?.includes("iluminacion_premium") && !f.id?.includes("textiles_tapiceria") && !f.id?.includes("ceramica_decoracion") && f.id !== "folder_lumina_catalog_2026"
+          );
+          if (cleanFolders.length === 0) {
+            cleanFolders.push({ id: "root", name: "Mi Unidad", itemCount: 0 });
+          }
+
+          const cleanFiles = (rawSettings.files || []).filter(
+            (f: GoogleDriveFile) => !f.cdnUrl?.includes("unsplash.com") && !f.name?.includes("LUMINA-AURA")
+          );
+
           const loadedSettings: GoogleDriveSettings = {
             ...get().settings,
             ...rawSettings,
+            selectedFolderId: rawSettings.selectedFolderId === "folder_lumina_catalog_2026" ? "root" : (rawSettings.selectedFolderId || "root"),
+            selectedFolderName: rawSettings.selectedFolderName?.includes("Catálogo") || rawSettings.selectedFolderName?.includes("Lumina") ? "Mi Unidad" : (rawSettings.selectedFolderName || "Mi Unidad"),
             googleClientId: resolvedClientId,
             isConnected: isDemo ? false : Boolean(rawSettings.isConnected),
             accountEmail: isDemo ? "" : (rawSettings.accountEmail || ""),
             accountName: isDemo ? "" : (rawSettings.accountName || ""),
             connectedAt: isDemo ? undefined : rawSettings.connectedAt,
-            availableFolders: recalculateFolderCounts(
-              rawSettings.availableFolders || get().settings.availableFolders,
-              rawSettings.files || get().settings.files
-            ),
+            availableFolders: recalculateFolderCounts(cleanFolders, cleanFiles),
+            files: cleanFiles,
           };
           set({ settings: loadedSettings, isLoading: false });
           saveToLocal(loadedSettings);
@@ -435,20 +442,20 @@ export const useGoogleDriveStore = create<GoogleDriveState>((set, get) => ({
         id: file.id,
         name: file.name,
         mimeType: file.mimeType || "image/jpeg",
-        cdnUrl: `https://lh3.googleusercontent.com/d/${file.id}=s0`,
-        thumbnailUrl: file.thumbnailLink || `https://lh3.googleusercontent.com/d/${file.id}=w600`,
+        cdnUrl: `/api/admin/google-drive/image?id=${file.id}`,
+        thumbnailUrl: file.thumbnailLink || `/api/admin/google-drive/image?id=${file.id}&thumb=1`,
         size: file.size ? `${(parseInt(file.size, 10) / (1024 * 1024)).toFixed(1)} MB` : "HD Stream",
         dimensions: file.imageMediaMetadata?.width && file.imageMediaMetadata?.height
           ? `${file.imageMediaMetadata.width} x ${file.imageMediaMetadata.height}`
           : "Resolución Google Drive",
-        folderId: file.parents?.[0] || "folder_lumina_catalog_2026",
+        folderId: file.parents?.[0] || "root",
         source: "google_drive",
       }));
 
       // 2. Fetch real folders from Google Drive API
       const folderQuery = encodeURIComponent("trashed = false and mimeType = 'application/vnd.google-apps.folder'");
       let realFolders: GoogleDriveFolder[] = [
-        { id: "folder_lumina_catalog_2026", name: "Catálogo General", itemCount: driveFiles.length },
+        { id: "root", name: "Mi Unidad", itemCount: driveFiles.length },
       ];
 
       try {
@@ -655,20 +662,20 @@ export const useGoogleDriveStore = create<GoogleDriveState>((set, get) => ({
   },
 
   deleteFolder: async (folderId: string) => {
-    if (folderId === "folder_lumina_catalog_2026") return false;
+    if (folderId === "root" || folderId === "folder_lumina_catalog_2026") return false;
     set({ isSyncing: true });
     try {
       const filteredFolders = get().settings.availableFolders.filter((f) => f.id !== folderId);
       const remappedFiles = get().settings.files.map((f) =>
-        f.folderId === folderId ? { ...f, folderId: "folder_lumina_catalog_2026" } : f
+        f.folderId === folderId ? { ...f, folderId: "root" } : f
       );
 
       const updated: GoogleDriveSettings = {
         ...get().settings,
         availableFolders: recalculateFolderCounts(filteredFolders, remappedFiles),
         files: remappedFiles,
-        selectedFolderId: "folder_lumina_catalog_2026",
-        selectedFolderName: "Catálogo General",
+        selectedFolderId: "root",
+        selectedFolderName: "Mi Unidad",
       };
 
       try {
@@ -703,7 +710,7 @@ export const useGoogleDriveStore = create<GoogleDriveState>((set, get) => ({
         thumbnailUrl: photoData.thumbnailUrl || photoData.cdnUrl,
         size: photoData.size || "2.1 MB",
         dimensions: photoData.dimensions || "2400 x 1800",
-        folderId: photoData.folderId || get().settings.selectedFolderId || "folder_lumina_catalog_2026",
+        folderId: photoData.folderId || get().settings.selectedFolderId || "root",
         source: photoData.source || "upload",
       };
 
@@ -746,7 +753,7 @@ export const useGoogleDriveStore = create<GoogleDriveState>((set, get) => ({
         thumbnailUrl: p.thumbnailUrl || p.cdnUrl,
         size: p.size || "2.2 MB",
         dimensions: p.dimensions || "2400 x 1800",
-        folderId: p.folderId || get().settings.selectedFolderId || "folder_lumina_catalog_2026",
+        folderId: p.folderId || get().settings.selectedFolderId || "root",
         source: p.source || "upload",
       }));
 

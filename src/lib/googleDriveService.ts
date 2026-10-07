@@ -212,7 +212,7 @@ export class GoogleDriveService {
     checkRateLimit(adminId);
 
     const { accessToken, record } = await this.getValidAccessToken(adminId);
-    const targetFolderId = folderIdOverride || record.drive_folder_id || "folder_lumina_catalog_2026";
+    const targetFolderId = folderIdOverride || record.drive_folder_id || "root";
     const cacheKey = `drive:${adminId}:files:${targetFolderId}`;
 
     const cached = getFromCache<{ files: GoogleDriveApiFile[]; folderId: string; folderName: string }>(cacheKey);
@@ -220,7 +220,7 @@ export class GoogleDriveService {
 
     // Consulta de imágenes en Google Drive API v3
     let query = "trashed = false and (mimeType contains 'image/')";
-    if (targetFolderId && targetFolderId !== "folder_lumina_catalog_2026" && targetFolderId !== "root") {
+    if (targetFolderId && targetFolderId !== "root" && targetFolderId !== "folder_lumina_catalog_2026") {
       query += ` and '${targetFolderId}' in parents`;
     }
 
@@ -250,8 +250,8 @@ export class GoogleDriveService {
       id: f.id,
       name: f.name,
       mimeType: f.mimeType || "image/jpeg",
-      cdnUrl: `https://lh3.googleusercontent.com/d/${f.id}=s0`,
-      thumbnailUrl: f.thumbnailLink || `https://lh3.googleusercontent.com/d/${f.id}=w600`,
+      cdnUrl: `/api/admin/google-drive/image?id=${f.id}`,
+      thumbnailUrl: f.thumbnailLink || `/api/admin/google-drive/image?id=${f.id}&thumb=1`,
       size: f.size ? `${(parseInt(f.size, 10) / (1024 * 1024)).toFixed(1)} MB` : "HD",
       dimensions:
         f.imageMediaMetadata?.width && f.imageMediaMetadata?.height
@@ -264,7 +264,7 @@ export class GoogleDriveService {
     const result = {
       files,
       folderId: targetFolderId,
-      folderName: record.drive_folder_name || "Catálogo General",
+      folderName: record.drive_folder_name || "Mi Unidad",
     };
 
     setToCache(cacheKey, result, 45000); // 45s de caché
@@ -300,7 +300,7 @@ export class GoogleDriveService {
     const rawFolders: RawFolder[] = Array.isArray(data.files) ? data.files : [];
 
     const folders: GoogleDriveApiFolder[] = [
-      { id: "folder_lumina_catalog_2026", name: "Catálogo General", itemCount: 0 },
+      { id: "root", name: "Mi Unidad", itemCount: 0 },
       ...rawFolders.map((f) => ({ id: f.id, name: f.name, itemCount: 0 })),
     ];
 

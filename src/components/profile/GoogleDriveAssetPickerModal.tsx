@@ -65,6 +65,7 @@ export function GoogleDriveAssetPickerModal({
 
   const currentFolderFiles = (settings.files || []).filter((f) =>
     !settings.selectedFolderId ||
+    settings.selectedFolderId === "root" ||
     settings.selectedFolderId === "folder_lumina_catalog_2026" ||
     f.folderId === settings.selectedFolderId
   );
@@ -112,7 +113,7 @@ export function GoogleDriveAssetPickerModal({
       thumbnailUrl: normalized,
       size: "HD",
       dimensions: "Resolución Óptima",
-      folderId: settings.selectedFolderId || "folder_lumina_catalog_2026",
+      folderId: settings.selectedFolderId || "root",
       mimeType: "image/jpeg",
       source: isGoogleDriveUrl(quickUrl) ? "google_drive" : "url",
     });
@@ -141,7 +142,7 @@ export function GoogleDriveAssetPickerModal({
         thumbnailUrl: dataUrl,
         size: `${(file.size / 1024).toFixed(0)} KB`,
         dimensions: "Resolución Nativa",
-        folderId: settings.selectedFolderId || "folder_lumina_catalog_2026",
+        folderId: settings.selectedFolderId || "root",
         source: "upload",
       });
     }

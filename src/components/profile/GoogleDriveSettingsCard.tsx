@@ -103,7 +103,7 @@ export function GoogleDriveSettingsCard({ onClose, onSelectPhotoForProduct }: Go
   // Subir por URL
   const [urlInput, setUrlInput] = useState("");
   const [urlNameInput, setUrlNameInput] = useState("");
-  const [urlFolderTarget, setUrlFolderTarget] = useState(settings.selectedFolderId || "folder_lumina_catalog_2026");
+  const [urlFolderTarget, setUrlFolderTarget] = useState(settings.selectedFolderId || "root");
   const [isAddingUrl, setIsAddingUrl] = useState(false);
 
   // Subir archivos locales
@@ -121,6 +121,7 @@ export function GoogleDriveSettingsCard({ onClose, onSelectPhotoForProduct }: Go
   // Filtrado de archivos
   const currentFolderFiles = (settings.files || []).filter(f => 
     !settings.selectedFolderId || 
+    settings.selectedFolderId === "root" || 
     settings.selectedFolderId === "folder_lumina_catalog_2026" || 
     f.folderId === settings.selectedFolderId
   );
@@ -276,7 +277,7 @@ export function GoogleDriveSettingsCard({ onClose, onSelectPhotoForProduct }: Go
         size: sizeStr,
         dimensions,
         mimeType: file.type || "image/jpeg",
-        folderId: settings.selectedFolderId || "folder_lumina_catalog_2026",
+        folderId: settings.selectedFolderId || "root",
         source: "upload",
       });
     }
@@ -722,7 +723,7 @@ export function GoogleDriveSettingsCard({ onClose, onSelectPhotoForProduct }: Go
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                 {settings.availableFolders.map((folder) => {
                   const isSelected = settings.selectedFolderId === folder.id;
-                  const isRootFolder = folder.id === "folder_lumina_catalog_2026";
+                  const isRootFolder = folder.id === "root" || folder.id === "folder_lumina_catalog_2026";
 
                   return (
                     <div
