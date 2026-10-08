@@ -156,8 +156,8 @@ export async function GET(request: Request) {
           .eq('id', 'global')
           .maybeSingle();
 
-        if (row && !row.connected_email?.includes('demo') && !row.connected_email?.includes('multimedia.lumina')) {
-          isConnected = Boolean(row.is_connected);
+        if (row && row.is_connected && row.connected_email && row.connected_email.includes('@') && !row.connected_email?.includes('demo') && !row.connected_email?.includes('multimedia.lumina') && Array.isArray(row.files_cache) && row.files_cache.length > 0) {
+          isConnected = true;
           connectedEmail = row.connected_email || '';
           connectedAccountName = row.connected_account_name || '';
           connectedAt = row.connected_at || null;
@@ -299,12 +299,21 @@ export async function POST(request: Request) {
       try {
         const serviceSupabase = getServiceSupabaseClient();
         await serviceSupabase.from('google_drive_credentials').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+        await serviceSupabase.from('admin_google_drive_settings').upsert({
+          id: 'global',
+          is_connected: false,
+          connected_email: '',
+          connected_account_name: '',
+          files_cache: [],
+          updated_at: new Date().toISOString(),
+        });
       } catch {}
       inMemoryDriveSettings = {
         ...inMemoryDriveSettings,
         is_connected: false,
         connected_email: '',
         connected_account_name: '',
+        files_cache: [],
       };
     } else if (action === 'select_folder') {
       const folderId = typeof body.folderId === 'string' ? body.folderId.trim() : inMemoryDriveSettings.selected_folder_id;
