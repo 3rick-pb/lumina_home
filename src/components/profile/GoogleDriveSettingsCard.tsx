@@ -51,7 +51,7 @@ export function GoogleLogoIcon({ className = "w-5 h-5" }: { className?: string }
   );
 }
 
-// Visualizador de Carpeta 3D oficial de rareUI (En contenedor separado y alineado)
+// Visualizador de Carpeta 3D oficial de rareUI (Solo la carpeta y el nombre, sin contenedor ni bordes)
 function LayeredFolderCard({ 
   folder, 
   isSelected, 
@@ -68,14 +68,10 @@ function LayeredFolderCard({
       onClick={onClick}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
-      className={`group relative flex flex-col items-center justify-between p-5 sm:p-6 rounded-3xl border transition-all duration-300 ease-out cursor-pointer w-full min-h-[290px] ${
-        isSelected
-          ? 'bg-[#1b2034] border-blue-400 ring-2 ring-blue-500/50 shadow-2xl shadow-blue-500/20'
-          : 'bg-[#14141e]/90 border-zinc-800 hover:border-zinc-700 hover:bg-[#191926] shadow-lg hover:shadow-xl'
-      }`}
+      className="group flex flex-col items-center justify-center cursor-pointer select-none py-3 px-2 transition-transform duration-200 hover:-translate-y-1"
     >
-      {/* Contenedor holgado para la Carpeta rareUI con alineación exacta */}
-      <div className="relative w-full h-[190px] flex items-center justify-center overflow-visible pointer-events-none my-auto">
+      {/* Solo la carpeta de rareUI libre */}
+      <div className="relative flex items-center justify-center overflow-visible pointer-events-none">
         <FolderComponent 
           color="blue" 
           size="sm" 
@@ -83,20 +79,16 @@ function LayeredFolderCard({
         />
       </div>
 
-      {/* Contenedor inferior de metadatos de la carpeta */}
-      <div className="text-center space-y-1 w-full pt-3 border-t border-zinc-800/80 mt-auto">
+      {/* Solo el nombre de la carpeta abajo */}
+      <div className="text-center mt-3 max-w-[220px]">
         <h5 
-          className={`font-bold text-sm sm:text-base truncate px-2 transition-colors ${
+          className={`font-bold text-sm sm:text-base truncate px-1 transition-colors ${
             isSelected ? 'text-blue-400' : 'text-white group-hover:text-blue-300'
           }`} 
           title={folder.name}
         >
           {folder.name}
         </h5>
-        <div className="flex items-center justify-center gap-1.5 text-xs text-zinc-300 font-medium font-mono">
-          <span className="font-bold text-white">{folder.itemCount || 0}</span>
-          <span>{folder.itemCount === 1 ? 'archivo' : 'archivos'}</span>
-        </div>
       </div>
     </div>
   );
