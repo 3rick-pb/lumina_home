@@ -51,7 +51,7 @@ export function GoogleLogoIcon({ className = "w-5 h-5" }: { className?: string }
   );
 }
 
-// Visualizador de Carpeta 3D con alto contraste, previsualización multimedia y apertura suave
+// Visualizador de Carpeta 3D oficial de rareUI
 function LayeredFolderCard({ 
   folder, 
   isSelected, 
@@ -68,15 +68,15 @@ function LayeredFolderCard({
       onClick={onClick}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
-      className={`group relative rounded-2xl sm:rounded-3xl p-4 sm:p-5 border transition-all duration-300 ease-out cursor-pointer flex flex-col items-center justify-between min-h-[210px] sm:min-h-[225px] overflow-hidden ${
+      className={`group relative rounded-2xl sm:rounded-3xl p-4 sm:p-5 border transition-all duration-300 ease-out cursor-pointer flex flex-col items-center justify-between min-h-[240px] sm:min-h-[260px] overflow-hidden ${
         isSelected
-          ? 'bg-[#222230] border-blue-400 shadow-xl ring-2 ring-blue-500/40 shadow-blue-500/10'
-          : 'bg-[#16161f] border-zinc-700/80 hover:border-zinc-500 hover:bg-[#1f1f2b] shadow-md hover:shadow-2xl'
+          ? 'bg-[#1e2336] border-blue-400 shadow-2xl ring-2 ring-blue-500/50 shadow-blue-500/20'
+          : 'bg-[#15151e] border-zinc-700/80 hover:border-blue-400/60 hover:bg-[#1a1c28] shadow-md hover:shadow-2xl'
       }`}
     >
-      <div className="relative w-full h-32 sm:h-36 flex items-center justify-center my-auto pointer-events-none">
+      <div className="relative w-full h-40 sm:h-44 flex items-center justify-center my-auto pointer-events-none overflow-visible">
         <FolderComponent 
-          color={isSelected ? 'blue' : 'black'} 
+          color="blue" 
           size="sm" 
           isHovered={isHovered}
         />

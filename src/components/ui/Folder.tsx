@@ -1,244 +1,480 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useId } from "react";
 import { motion } from "motion/react";
-import { Image as ImageIcon, Camera, Sparkles, Folder as FolderIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-export interface FolderComponentProps extends Omit<React.HTMLAttributes<HTMLDivElement>, "color"> {
-  color?: "black" | "white" | "blue" | "amber";
-  size?: "xs" | "sm" | "md" | "lg";
-  isHovered?: boolean;
-}
-
-const sizeDimensions = {
-  xs: { width: 150, height: 120, scale: 0.8 },
-  sm: { width: 170, height: 135, scale: 0.9 },
-  md: { width: 190, height: 150, scale: 1 },
-  lg: { width: 230, height: 180, scale: 1.2 },
+const themes = {
+  black: {
+    backFill: "black",
+    backInsetColor: "0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0.37 0",
+    backInsetShadow: "inset 0 0 6px 2px rgba(255,255,255,0.37)",
+    flapFill: "#292929",
+    flapFillOpacity: 0.25,
+    flapStroke: "#979797",
+    flapInsetColor: "0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.08 0",
+    cardFill: "#F1F1F1",
+    cardStroke: "#E0E0E0",
+    cardLineFill: "#D4D4D4",
+    cardInsetColor: "0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 1 0",
+  },
+  white: {
+    backFill: "#ffffff",
+    backInsetColor: "0 0 0 0 0.7 0 0 0 0 0.7 0 0 0 0 0.7 0 0 0 0.25 0",
+    backInsetShadow: "inset 0 0 6px 2px rgba(178,178,178,0.25)",
+    flapFill: "#f5f5f5",
+    flapFillOpacity: 0.85,
+    flapStroke: "#d4d4d4",
+    flapInsetColor: "0 0 0 0 0.6 0 0 0 0 0.6 0 0 0 0 0.6 0 0 0 0.15 0",
+    cardFill: "#262626",
+    cardStroke: "#404040",
+    cardLineFill: "#737373",
+    cardInsetColor: "0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0.15 0",
+  },
+  blue: {
+    backFill: "#50B1FD",
+    backInsetColor: "0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0.35 0",
+    backInsetShadow: "inset 0 0 6px 2px rgba(255,255,255,0.35)",
+    flapFill: "#3a9ae8",
+    flapFillOpacity: 0.45,
+    flapStroke: "#7ec8ff",
+    flapInsetColor: "0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0.12 0",
+    cardFill: "#F1F1F1",
+    cardStroke: "#E0E0E0",
+    cardLineFill: "#D4D4D4",
+    cardInsetColor: "0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 1 0",
+  },
 } as const;
 
-export const FolderComponent = ({
-  color = "black",
+const sizeScales = {
+  xs: 0.5,
+  sm: 0.65,
+  md: 1,
+  lg: 1.35,
+} as const;
+
+type FolderComponentProps = Omit<React.ComponentProps<"div">, "color"> & {
+  color?: "black" | "white" | "blue";
+  size?: "xs" | "sm" | "md" | "lg";
+  isHovered?: boolean;
+};
+
+const BASE_WIDTH = 321;
+const BASE_HEIGHT = 270;
+
+const FLAP_PATH =
+  "M0 25C0 11.1929 11.1929 0 25 0H136.084C143.044 0 149.689 2.90139 154.42 8.00608L178.08 33.5343C182.811 38.639 189.456 41.5404 196.416 41.5404H296C309.807 41.5404 321 52.7333 321 66.5404V216C321 229.807 309.807 241 296 241H25C11.1929 241 0 229.807 0 216V25Z";
+
+const FolderComponent = ({
+  color = "blue",
   size = "md",
-  isHovered: controlledHover,
+  isHovered: externalHover,
   className,
   ...props
 }: FolderComponentProps) => {
+  const theme = themes[color] ?? themes.blue;
+  const scale = sizeScales[size] ?? sizeScales.md;
   const [internalHover, setInternalHover] = useState(false);
-  const active = controlledHover !== undefined ? controlledHover : internalHover;
-  const dim = sizeDimensions[size] || sizeDimensions.md;
-
-  // Temas de color de alta fidelidad y contraste para modo oscuro
-  const themeStyles = {
-    black: {
-      back: "bg-gradient-to-br from-[#2a2c3d] via-[#1c1d29] to-[#12131b] border-zinc-700/80 shadow-2xl",
-      tab: "bg-[#2a2c3d] border-t border-l border-r border-zinc-600/70",
-      flap: "bg-gradient-to-b from-[#252736]/95 via-[#1a1b26]/95 to-[#12131c]/98 border-zinc-600/70",
-      flapHighlight: "border-t border-white/20",
-      accent: "text-zinc-300",
-      badge: "bg-white/10 text-zinc-200 border border-white/10",
-      glow: "shadow-[0_8px_32px_rgba(0,0,0,0.6)]",
-    },
-    blue: {
-      back: "bg-gradient-to-br from-[#2563eb] via-[#1d4ed8] to-[#1e3a8a] border-blue-400/50 shadow-2xl shadow-blue-500/20",
-      tab: "bg-[#2563eb] border-t border-l border-r border-blue-300/60",
-      flap: "bg-gradient-to-b from-[#3b82f6]/95 via-[#2563eb]/95 to-[#1d4ed8]/98 border-blue-400/50",
-      flapHighlight: "border-t border-cyan-200/40",
-      accent: "text-cyan-200",
-      badge: "bg-white/20 text-white border border-white/20",
-      glow: "shadow-[0_8px_32px_rgba(37,99,235,0.35)]",
-    },
-    amber: {
-      back: "bg-gradient-to-br from-[#d97706] via-[#b45309] to-[#78350f] border-amber-400/50 shadow-2xl shadow-amber-500/20",
-      tab: "bg-[#d97706] border-t border-l border-r border-amber-300/60",
-      flap: "bg-gradient-to-b from-[#f59e0b]/95 via-[#d97706]/95 to-[#b45309]/98 border-amber-400/50",
-      flapHighlight: "border-t border-amber-100/40",
-      accent: "text-amber-100",
-      badge: "bg-white/20 text-white border border-white/20",
-      glow: "shadow-[0_8px_32px_rgba(217,119,6,0.35)]",
-    },
-    white: {
-      back: "bg-gradient-to-br from-zinc-100 via-zinc-200 to-zinc-300 border-zinc-300 shadow-xl",
-      tab: "bg-zinc-100 border-t border-l border-r border-zinc-300",
-      flap: "bg-gradient-to-b from-white/95 via-zinc-100/95 to-zinc-200/98 border-zinc-300",
-      flapHighlight: "border-t border-white/80",
-      accent: "text-zinc-700",
-      badge: "bg-zinc-800 text-white border border-zinc-700",
-      glow: "shadow-[0_8px_24px_rgba(0,0,0,0.15)]",
-    },
-  }[color] || {
-    back: "bg-gradient-to-br from-[#2a2c3d] via-[#1c1d29] to-[#12131b] border-zinc-700/80 shadow-2xl",
-    tab: "bg-[#2a2c3d] border-t border-l border-r border-zinc-600/70",
-    flap: "bg-gradient-to-b from-[#252736]/95 via-[#1a1b26]/95 to-[#12131c]/98 border-zinc-600/70",
-    flapHighlight: "border-t border-white/20",
-    accent: "text-zinc-300",
-    badge: "bg-white/10 text-zinc-200 border border-white/10",
-    glow: "shadow-[0_8px_32px_rgba(0,0,0,0.6)]",
-  };
+  const [isOpen, setIsOpen] = useState(false);
+  const isHovered = externalHover !== undefined ? externalHover : internalHover;
+  const uid = useId().replace(/:/g, "_");
+  const flapFilterId = `filter0_i_171_13_${uid}`;
 
   return (
     <div
       data-slot="folder"
-      onMouseEnter={() => setInternalHover(true)}
-      onMouseLeave={() => setInternalHover(false)}
       className={cn(
-        "relative flex items-center justify-center select-none cursor-pointer",
-        className
+        "relative w-full h-full flex items-center justify-center",
+        className,
       )}
-      style={{
-        width: dim.width,
-        height: dim.height,
-      }}
       {...props}
     >
-      {/* Contenedor con perspectiva 3D para apertura natural */}
-      <div 
-        className="relative w-full h-full flex items-end justify-center"
-        style={{ perspective: 1000 }}
+      <div
+        className="relative cursor-pointer select-none"
+        style={{
+          width: BASE_WIDTH * scale,
+          height: BASE_HEIGHT * scale,
+          touchAction: "manipulation",
+          WebkitTapHighlightColor: "transparent",
+        }}
+        onMouseEnter={() => setInternalHover(true)}
+        onMouseLeave={() => {
+          setInternalHover(false);
+          setIsOpen(false);
+        }}
+        onClick={() => setIsOpen((o) => !o)}
       >
-        {/* 1. CARA POSTERIOR DE LA CARPETA (Back plate con solapa superior) */}
-        <div 
-          className={cn(
-            "absolute inset-0 rounded-2xl border transition-all duration-300 flex flex-col justify-start",
-            themeStyles.back,
-            themeStyles.glow
-          )}
-        >
-          {/* Pestaña superior izquierda de la carpeta */}
-          <div 
-            className={cn(
-              "absolute -top-3 left-2.5 w-16 h-4 rounded-t-lg transition-colors",
-              themeStyles.tab
-            )}
-          />
-        </div>
-
-        {/* 2. TARJETAS DE CONTENIDO MULTIMEDIA (Miniaturas estilizadas de fotos) */}
-        <div className="absolute inset-x-0 bottom-4 flex items-center justify-center pointer-events-none z-10">
-          {/* Tarjeta 1 (Izquierda: Foto Twilight Sunset) */}
-          <motion.div
-            className="absolute rounded-xl overflow-hidden border border-white/30 shadow-2xl p-1 bg-zinc-900/90 backdrop-blur-md"
-            style={{ width: dim.width * 0.44, height: dim.height * 0.62 }}
-            animate={{
-              y: active ? -dim.height * 0.38 : -6,
-              x: active ? -dim.width * 0.18 : -8,
-              rotate: active ? -13 : -4,
-              scale: active ? 1.05 : 0.96,
-            }}
-            transition={{
-              type: "spring",
-              stiffness: 260,
-              damping: 22,
-            }}
-          >
-            <div className="w-full h-full rounded-lg bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 flex flex-col justify-between p-1 relative overflow-hidden shadow-inner">
-              <div className="flex justify-between items-center text-white/90">
-                <Camera className="w-2.5 h-2.5" />
-                <div className="w-1.5 h-1.5 rounded-full bg-white/70" />
-              </div>
-              <div className="w-full h-1 bg-white/30 rounded-full" />
-            </div>
-          </motion.div>
-
-          {/* Tarjeta 3 (Derecha: Foto Golden Hour / Sunny) */}
-          <motion.div
-            className="absolute rounded-xl overflow-hidden border border-white/30 shadow-2xl p-1 bg-zinc-900/90 backdrop-blur-md"
-            style={{ width: dim.width * 0.44, height: dim.height * 0.62 }}
-            animate={{
-              y: active ? -dim.height * 0.36 : -8,
-              x: active ? dim.width * 0.18 : 8,
-              rotate: active ? 14 : 5,
-              scale: active ? 1.05 : 0.96,
-            }}
-            transition={{
-              type: "spring",
-              stiffness: 260,
-              damping: 22,
-            }}
-          >
-            <div className="w-full h-full rounded-lg bg-gradient-to-br from-amber-400 via-orange-500 to-rose-500 flex flex-col justify-between p-1 relative overflow-hidden shadow-inner">
-              <div className="flex justify-between items-center text-white/90">
-                <Sparkles className="w-2.5 h-2.5" />
-                <div className="w-1.5 h-1.5 rounded-full bg-white/70" />
-              </div>
-              <div className="w-full h-1 bg-white/30 rounded-full" />
-            </div>
-          </motion.div>
-
-          {/* Tarjeta 2 (Centro: Foto Ocean / Aurora - Se eleva más alta) */}
-          <motion.div
-            className="absolute rounded-xl overflow-hidden border border-white/40 shadow-2xl p-1 bg-zinc-900/95 backdrop-blur-md z-10"
-            style={{ width: dim.width * 0.46, height: dim.height * 0.66 }}
-            animate={{
-              y: active ? -dim.height * 0.50 : -12,
-              x: 0,
-              rotate: active ? 0 : 0.5,
-              scale: active ? 1.08 : 1,
-            }}
-            transition={{
-              type: "spring",
-              stiffness: 280,
-              damping: 20,
-              delay: active ? 0.02 : 0,
-            }}
-          >
-            <div className="w-full h-full rounded-lg bg-gradient-to-br from-cyan-400 via-teal-500 to-blue-600 flex flex-col justify-between p-1 relative overflow-hidden shadow-inner">
-              <div className="flex justify-between items-center text-white/90">
-                <ImageIcon className="w-3 h-3" />
-                <span className="text-[7px] font-mono font-bold tracking-tight bg-black/30 px-1 py-0.2 rounded text-cyan-100">
-                  HD
-                </span>
-              </div>
-              <div className="space-y-0.5">
-                <div className="w-3/4 h-1 bg-white/50 rounded-full" />
-                <div className="w-1/2 h-0.5 bg-white/30 rounded-full" />
-              </div>
-            </div>
-          </motion.div>
-        </div>
-
-        {/* 3. SOLAPA FRONTAL DE LA CARPETA (Front flap con bisagra 3D) */}
-        <motion.div
-          className={cn(
-            "absolute inset-x-0 bottom-0 rounded-b-2xl rounded-t-xl border backdrop-blur-md z-20 flex flex-col justify-between p-2.5 transition-shadow",
-            themeStyles.flap,
-            themeStyles.flapHighlight
-          )}
+        <div
+          className="absolute top-1/2 left-1/2"
           style={{
-            height: dim.height * 0.74,
-            transformOrigin: "bottom center",
-            transformStyle: "preserve-3d",
-          }}
-          animate={{
-            rotateX: active ? -24 : 0,
-            y: active ? 3 : 0,
-          }}
-          transition={{
-            type: "spring",
-            stiffness: 240,
-            damping: 18,
+            width: BASE_WIDTH,
+            height: BASE_HEIGHT,
+            transform: `translate(-50%, -50%) scale(${scale})`,
+            perspective: 800 * scale,
           }}
         >
-          {/* Muesca superior elegante de la solapa */}
-          <div className="flex items-center justify-between w-full">
-            <div className="flex items-center gap-1.5 opacity-80">
-              <FolderIcon className={cn("w-3.5 h-3.5", themeStyles.accent)} />
-              <div className="w-8 h-1 rounded-full bg-white/20" />
-            </div>
-            <div className={cn("w-2 h-2 rounded-full", themeStyles.badge)} />
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
+            <div
+              style={{
+                width: BASE_WIDTH,
+                height: BASE_HEIGHT,
+                borderRadius: 25,
+                backgroundColor: theme.backFill,
+                boxShadow: theme.backInsetShadow,
+              }}
+            />
           </div>
 
-          {/* Borde inferior estilizado */}
-          <div className="flex items-center justify-between pt-1 border-t border-white/10 text-[9px] font-mono text-zinc-400">
-            <span className="w-10 h-0.5 bg-white/10 rounded-full" />
-            <span className="w-4 h-0.5 bg-white/10 rounded-full" />
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 flex items-center justify-center">
+            <motion.div
+              className="absolute"
+              animate={{
+                y: isOpen ? -160 : isHovered ? -30 : -10,
+                x: isOpen ? 70 : 40,
+                rotate: isOpen ? 18 : isHovered ? 14 : 10,
+              }}
+              transition={{
+                type: "spring",
+                stiffness: 120,
+                damping: 13,
+                delay: isOpen ? 0.1 : isHovered ? 0.12 : 0,
+              }}
+            >
+              <Card id={1} theme={theme} uid={uid} />
+            </motion.div>
+            <motion.div
+              className="absolute"
+              animate={{
+                y: isOpen ? -180 : isHovered ? -35 : -20,
+                x: isOpen ? 0 : 3,
+                rotate: isOpen ? -3 : isHovered ? -1 : 2,
+              }}
+              transition={{
+                type: "spring",
+                stiffness: 120,
+                damping: 13,
+                delay: isOpen ? 0.05 : isHovered ? 0.06 : 0,
+              }}
+            >
+              <Card id={2} theme={theme} uid={uid} />
+            </motion.div>
+            <motion.div
+              className="absolute"
+              animate={{
+                y: isOpen ? -170 : isHovered ? -44 : -22,
+                x: isOpen ? -65 : -40,
+                rotate: isOpen ? -14 : isHovered ? -9 : -5,
+              }}
+              transition={{
+                type: "spring",
+                stiffness: 120,
+                damping: 13,
+                delay: isOpen ? 0 : 0,
+              }}
+            >
+              <Card id={3} theme={theme} uid={uid} />
+            </motion.div>
           </div>
-        </motion.div>
+
+          <motion.div
+            className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 mt-4"
+            style={{
+              transformOrigin: "bottom center",
+              transformStyle: "preserve-3d",
+              width: 321,
+              height: 241,
+            }}
+            animate={{ rotateX: isOpen ? -55 : isHovered ? -45 : -15 }}
+            transition={{ type: "spring", stiffness: 120, damping: 14 }}
+          >
+            <div
+              className="absolute inset-0"
+              style={{
+                backdropFilter: "blur(6px)",
+                WebkitBackdropFilter: "blur(6px)",
+                clipPath: `path('${FLAP_PATH}')`,
+                WebkitClipPath: `path('${FLAP_PATH}')`,
+                transform: "translateZ(0)",
+                backfaceVisibility: "hidden",
+                WebkitBackfaceVisibility: "hidden",
+                willChange: "transform",
+              }}
+            />
+            <svg
+              className="absolute inset-0"
+              width="321"
+              height="241"
+              viewBox="0 0 321 241"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <g filter={`url(#${flapFilterId})`}>
+                <path
+                  d={FLAP_PATH}
+                  fill={theme.flapFill}
+                  fillOpacity={theme.flapFillOpacity}
+                />
+                <path
+                  d="M25 0.5H136.084C142.905 0.5 149.417 3.3431 154.054 8.3457L177.713 33.874C182.539 39.0808 189.317 42.04 196.416 42.04H296C309.531 42.04 320.5 53.0092 320.5 66.54V216C320.5 229.531 309.531 240.5 296 240.5H25C11.469 240.5 0.5 229.531 0.5 216V25C0.5 11.469 11.469 0.5 25 0.5Z"
+                  stroke={theme.flapStroke}
+                />
+              </g>
+              <defs>
+                <filter
+                  id={flapFilterId}
+                  x="-25.4"
+                  y="-25.4"
+                  width="371.8"
+                  height="291.8"
+                  filterUnits="userSpaceOnUse"
+                  colorInterpolationFilters="sRGB"
+                >
+                  <feFlood floodOpacity="0" result="BackgroundImageFix" />
+                  <feBlend
+                    mode="normal"
+                    in="SourceGraphic"
+                    in2="BackgroundImageFix"
+                    result="shape"
+                  />
+                  <feColorMatrix
+                    in="SourceAlpha"
+                    type="matrix"
+                    values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0"
+                    result="hardAlpha"
+                  />
+                  <feOffset />
+                  <feGaussianBlur stdDeviation="2.65" />
+                  <feComposite
+                    in2="hardAlpha"
+                    operator="arithmetic"
+                    k2="-1"
+                    k3="1"
+                  />
+                  <feColorMatrix type="matrix" values={theme.flapInsetColor} />
+                  <feBlend
+                    mode="normal"
+                    in2="shape"
+                    result="effect1_innerShadow_171_13"
+                  />
+                </filter>
+              </defs>
+            </svg>
+          </motion.div>
+        </div>
       </div>
     </div>
   );
 };
 
 export default FolderComponent;
+
 export { FolderComponent as Folder };
+export type { FolderComponentProps };
+
+type Theme = (typeof themes)[keyof typeof themes];
+
+const Card = ({ id, theme, uid }: { id: number; theme: Theme; uid: string }) => {
+  const filterId = `filter0_i_card_${id}_${uid}`;
+  return (
+    <div data-slot="folder-card">
+      <svg
+        width="164"
+        height="214"
+        viewBox="0 0 164 214"
+        fill="none"
+        xmlns="http://www.w3.org/2000/svg"
+      >
+        <g filter={`url(#${filterId})`}>
+          <rect
+            width="163.078"
+            height="213.262"
+            rx="20"
+            fill={theme.cardFill}
+          />
+        </g>
+        <rect
+          x="0.5"
+          y="0.5"
+          width="162.078"
+          height="212.262"
+          rx="19.5"
+          stroke={theme.cardStroke}
+        />
+        <rect
+          x="14.1193"
+          y="31.2091"
+          width="134.84"
+          height="11.8892"
+          rx="5.94459"
+          fill={theme.cardLineFill}
+        />
+        <rect
+          width="64.5183"
+          height="5.88276"
+          rx="2.94138"
+          transform="matrix(1 -0.000409158 0.00201956 0.999998 14.8253 60.9939)"
+          fill={theme.cardLineFill}
+        />
+        <rect
+          width="64.5183"
+          height="5.88276"
+          rx="2.94138"
+          transform="matrix(1 -0.000461045 0.00179228 0.999998 84.4303 60.9617)"
+          fill={theme.cardLineFill}
+        />
+        <rect
+          width="64.5183"
+          height="5.88276"
+          rx="2.94138"
+          transform="matrix(1 -0.000409158 0.00201956 0.999998 14.8253 75.1122)"
+          fill={theme.cardLineFill}
+        />
+        <rect
+          width="64.5183"
+          height="5.88276"
+          rx="2.94138"
+          transform="matrix(1 -0.000461045 0.00179228 0.999998 84.4303 75.0801)"
+          fill={theme.cardLineFill}
+        />
+        <rect
+          width="64.5183"
+          height="5.88276"
+          rx="2.94138"
+          transform="matrix(1 -0.000409158 0.00201956 0.999998 14.8253 89.2306)"
+          fill={theme.cardLineFill}
+        />
+        <rect
+          width="64.5183"
+          height="5.88276"
+          rx="2.94138"
+          transform="matrix(1 -0.000461045 0.00179228 0.999998 84.4303 89.1985)"
+          fill={theme.cardLineFill}
+        />
+        <rect
+          width="64.5183"
+          height="5.88276"
+          rx="2.94138"
+          transform="matrix(1 -0.000409158 0.00201956 0.999998 14.8253 103.349)"
+          fill={theme.cardLineFill}
+        />
+        <rect
+          width="64.5183"
+          height="5.88276"
+          rx="2.94138"
+          transform="matrix(1 -0.000461045 0.00179228 0.999998 84.4303 103.317)"
+          fill={theme.cardLineFill}
+        />
+        <rect
+          width="64.5183"
+          height="5.88276"
+          rx="2.94138"
+          transform="matrix(1 -0.000409158 0.00201956 0.999998 14.8253 117.467)"
+          fill={theme.cardLineFill}
+        />
+        <rect
+          width="64.5183"
+          height="5.88276"
+          rx="2.94138"
+          transform="matrix(1 -0.000461045 0.00179228 0.999998 84.4303 117.435)"
+          fill={theme.cardLineFill}
+        />
+        <rect
+          width="64.5183"
+          height="5.88276"
+          rx="2.94138"
+          transform="matrix(1 -0.000409158 0.00201956 0.999998 14.8253 131.586)"
+          fill={theme.cardLineFill}
+        />
+        <rect
+          width="64.5183"
+          height="5.88276"
+          rx="2.94138"
+          transform="matrix(1 -0.000461045 0.00179228 0.999998 84.4303 131.554)"
+          fill={theme.cardLineFill}
+        />
+        <rect
+          width="64.5183"
+          height="5.88276"
+          rx="2.94138"
+          transform="matrix(1 -0.000409158 0.00201956 0.999998 14.8253 145.704)"
+          fill={theme.cardLineFill}
+        />
+        <rect
+          width="64.5183"
+          height="5.88276"
+          rx="2.94138"
+          transform="matrix(1 -0.000461045 0.00179228 0.999998 84.4303 145.672)"
+          fill={theme.cardLineFill}
+        />
+        <rect
+          width="64.5183"
+          height="5.88276"
+          rx="2.94138"
+          transform="matrix(1 -0.000409158 0.00201956 0.999998 14.8253 159.823)"
+          fill={theme.cardLineFill}
+        />
+        <rect
+          width="64.5183"
+          height="5.88276"
+          rx="2.94138"
+          transform="matrix(1 -0.000461045 0.00179228 0.999998 84.4303 159.79)"
+          fill={theme.cardLineFill}
+        />
+        <rect
+          width="64.5183"
+          height="5.88276"
+          rx="2.94138"
+          transform="matrix(1 -0.000409158 0.00201956 0.999998 14.8253 173.941)"
+          fill={theme.cardLineFill}
+        />
+        <rect
+          width="64.5183"
+          height="5.88276"
+          rx="2.94138"
+          transform="matrix(1 -0.000461045 0.00179228 0.999998 84.4303 173.909)"
+          fill={theme.cardLineFill}
+        />
+        <defs>
+          <filter
+            id={filterId}
+            x="0"
+            y="0"
+            width="166.078"
+            height="218.262"
+            filterUnits="userSpaceOnUse"
+            colorInterpolationFilters="sRGB"
+          >
+            <feFlood floodOpacity="0" result="BackgroundImageFix" />
+            <feBlend
+              mode="normal"
+              in="SourceGraphic"
+              in2="BackgroundImageFix"
+              result="shape"
+            />
+            <feColorMatrix
+              in="SourceAlpha"
+              type="matrix"
+              values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0"
+              result="hardAlpha"
+            />
+            <feMorphology
+              radius="2"
+              operator="erode"
+              in="SourceAlpha"
+              result={`effect1_innerShadow_${id}`}
+            />
+            <feOffset dx="3" dy="5" />
+            <feGaussianBlur stdDeviation="3.05" />
+            <feComposite in2="hardAlpha" operator="arithmetic" k2="-1" k3="1" />
+            <feColorMatrix type="matrix" values={theme.cardInsetColor} />
+            <feBlend
+              mode="normal"
+              in2="shape"
+              result={`effect1_innerShadow_${id}`}
+            />
+          </filter>
+        </defs>
+      </svg>
+    </div>
+  );
+};
