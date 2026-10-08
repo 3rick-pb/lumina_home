@@ -51,7 +51,7 @@ export function GoogleLogoIcon({ className = "w-5 h-5" }: { className?: string }
   );
 }
 
-// Visualizador de Carpeta 3D oficial de rareUI
+// Visualizador de Carpeta 3D oficial de rareUI (Libre, sin contorno)
 function LayeredFolderCard({ 
   folder, 
   isSelected, 
@@ -68,13 +68,10 @@ function LayeredFolderCard({
       onClick={onClick}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
-      className={`group relative rounded-2xl sm:rounded-3xl p-4 sm:p-5 border transition-all duration-300 ease-out cursor-pointer flex flex-col items-center justify-between min-h-[240px] sm:min-h-[260px] overflow-hidden ${
-        isSelected
-          ? 'bg-[#1e2336] border-blue-400 shadow-2xl ring-2 ring-blue-500/50 shadow-blue-500/20'
-          : 'bg-[#15151e] border-zinc-700/80 hover:border-blue-400/60 hover:bg-[#1a1c28] shadow-md hover:shadow-2xl'
-      }`}
+      className="group relative flex flex-col items-center justify-center cursor-pointer p-2 w-full max-w-[280px] transition-transform duration-200 hover:-translate-y-1.5"
     >
-      <div className="relative w-full h-40 sm:h-44 flex items-center justify-center my-auto pointer-events-none overflow-visible">
+      {/* Carpeta libre de rareUI sin contorno ni cajas */}
+      <div className="relative w-full h-[200px] flex items-center justify-center overflow-visible pointer-events-none">
         <FolderComponent 
           color="blue" 
           size="sm" 
@@ -82,8 +79,14 @@ function LayeredFolderCard({
         />
       </div>
 
-      <div className="text-center space-y-1 w-full mt-2 pt-2.5 border-t border-zinc-700/80">
-        <h5 className="font-bold text-xs sm:text-sm text-white truncate px-1 group-hover:text-blue-300 transition-colors" title={folder.name}>
+      {/* Información de la carpeta libre */}
+      <div className="text-center space-y-1 w-full mt-2">
+        <h5 
+          className={`font-bold text-sm sm:text-base truncate px-2 transition-colors ${
+            isSelected ? 'text-blue-400' : 'text-white group-hover:text-blue-300'
+          }`} 
+          title={folder.name}
+        >
           {folder.name}
         </h5>
         <div className="flex items-center justify-center gap-1.5 text-xs text-zinc-300 font-medium">
@@ -564,8 +567,8 @@ export function GoogleDriveSettingsCard({ onClose, onSelectPhotoForProduct }: Go
                   </button>
                 </div>
               ) : (
-                /* Grid de Carpetas 3D de Mi Unidad */
-                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3.5 sm:gap-4">
+                /* Grid de Carpetas 3D de Mi Unidad (Filas de 3) */
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8 justify-items-center">
                   {rootFolders.map((folder) => (
                     <LayeredFolderCard
                       key={folder.id}
@@ -587,7 +590,7 @@ export function GoogleDriveSettingsCard({ onClose, onSelectPhotoForProduct }: Go
         ) : (
           /* PANTALLA DE CARPETA SELECCIONADA: SUBCARPETAS + FOTOGRAFÍAS */
           <div className="flex-1 overflow-y-auto p-5 sm:p-7 space-y-7">
-            {/* Si tiene subcarpetas, mostrarlas arriba */}
+            {/* Si tiene subcarpetas, mostrarlas arriba en filas de 3 */}
             {currentSubfolders.length > 0 && (
               <div className="space-y-3.5">
                 <div className="flex items-center justify-between border-b border-zinc-800 pb-2">
@@ -599,7 +602,7 @@ export function GoogleDriveSettingsCard({ onClose, onSelectPhotoForProduct }: Go
                   </span>
                 </div>
 
-                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3.5 sm:gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8 justify-items-center">
                   {currentSubfolders.map((folder) => (
                     <LayeredFolderCard
                       key={folder.id}
