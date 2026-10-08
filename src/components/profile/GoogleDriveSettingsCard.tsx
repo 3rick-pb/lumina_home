@@ -214,9 +214,9 @@ export function GoogleDriveSettingsCard({ onClose, onSelectPhotoForProduct }: Go
   const [activeArcFolderId, setActiveArcFolderId] = useState<string>(settings.selectedFolderId || "root");
   const debouncedSelectRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Sincronizar activeArcFolderId cuando el store se actualice externamente
+  // Sincronizar activeArcFolderId cuando el store se actualice externamente (solo si no hay interacción activa)
   useEffect(() => {
-    if (settings.selectedFolderId) {
+    if (settings.selectedFolderId && !debouncedSelectRef.current) {
       setActiveArcFolderId(settings.selectedFolderId);
     }
   }, [settings.selectedFolderId]);
@@ -247,6 +247,27 @@ export function GoogleDriveSettingsCard({ onClose, onSelectPhotoForProduct }: Go
     } catch {}
   };
 
+  // Confirmar y cargar archivos solo cuando el usuario se queda quieto
+  const commitFolderSelection = useCallback((val: string) => {
+    if (debouncedSelectRef.current) {
+      clearTimeout(debouncedSelectRef.current);
+      debouncedSelectRef.current = null;
+    }
+    // Si ya está seleccionada y cargada esta misma carpeta, no reiniciar fetch
+    if (val === settings.selectedFolderId) {
+      return;
+    }
+
+    if (val === "root") {
+      selectFolder("root", "Mi Unidad");
+    } else {
+      const target = (settings.availableFolders || []).find((f) => f.id === val);
+      if (target) {
+        selectFolder(target.id, target.name);
+      }
+    }
+  }, [settings.selectedFolderId, settings.availableFolders, selectFolder]);
+
   // Selección inmediata (para clics directos en carpetas o botones)
   const handleSelectFolderImmediate = useCallback(async (folder: GoogleDriveFolder) => {
     if (debouncedSelectRef.current) {
@@ -257,23 +278,29 @@ export function GoogleDriveSettingsCard({ onClose, onSelectPhotoForProduct }: Go
     await selectFolder(folder.id, folder.name);
   }, [selectFolder]);
 
-  // Manejo de cambio en ArcPicker con debounce para estabilidad perfecta durante scroll continuo
+  // Manejo de cambio en ArcPicker: durante el desplazamiento rápido NO empieza a mostrar archivos
   const handleArcValueChange = useCallback((val: string) => {
     setActiveArcFolderId(val);
     if (debouncedSelectRef.current) {
       clearTimeout(debouncedSelectRef.current);
     }
+    // Esperar a que el usuario se quede quieto durante 500ms antes de cargar contenido
     debouncedSelectRef.current = setTimeout(() => {
-      if (val === "root") {
-        selectFolder("root", "Mi Unidad");
-      } else {
-        const target = (settings.availableFolders || []).find((f) => f.id === val);
-        if (target) {
-          selectFolder(target.id, target.name);
-        }
-      }
-    }, 280);
-  }, [settings.availableFolders, selectFolder]);
+      commitFolderSelection(val);
+    }, 500);
+  }, [commitFolderSelection]);
+
+  // Cuando el movimiento de la media rueda o drag se detiene completamente en una carpeta
+  const handleArcSettle = useCallback((val: string) => {
+    setActiveArcFolderId(val);
+    if (debouncedSelectRef.current) {
+      clearTimeout(debouncedSelectRef.current);
+    }
+    // Margen de 180ms tras frenar para confirmar que no girará otro notch inmediatamente
+    debouncedSelectRef.current = setTimeout(() => {
+      commitFolderSelection(val);
+    }, 180);
+  }, [commitFolderSelection]);
 
   // Botón HOME del rail izquierdo -> Volver a Mi Unidad
   const handleHomeClick = async () => {
@@ -517,6 +544,7 @@ export function GoogleDriveSettingsCard({ onClose, onSelectPhotoForProduct }: Go
                 value={activeArcFolderId}
                 onValueChange={handleArcValueChange}
                 onProgressChange={(p) => setArcProgressPercent(p)}
+                onSettle={handleArcSettle}
                 side="right"
                 radius={240}
                 itemHeight={44}

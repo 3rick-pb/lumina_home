@@ -44,6 +44,8 @@ export type ArcPickerProps = Omit<
   onValueChange?: (value: string) => void;
   /** Called with the percentage of distance traveled along the half-wheel (0 to 100). */
   onProgressChange?: (percent: number) => void;
+  /** Called when the picker has settled and stopped moving on a final choice. */
+  onSettle?: (value: string) => void;
   /** The side the arc bows toward. Top and bottom scroll horizontally. */
   side?: ArcPickerSide;
   /** Radius in pixels. Larger radii make a gentler curve. */
@@ -233,6 +235,7 @@ export function ArcPicker({
   defaultValue,
   onValueChange,
   onProgressChange,
+  onSettle,
   side = "right",
   radius = 280,
   itemHeight = 48,
@@ -382,6 +385,7 @@ export function ArcPicker({
     spacing,
     horizontal,
     onValueChange,
+    onSettle,
   });
   useLayoutEffect(() => {
     latest.current = {
@@ -394,6 +398,7 @@ export function ArcPicker({
       spacing,
       horizontal,
       onValueChange,
+      onSettle,
     };
   });
 
@@ -468,6 +473,10 @@ export function ArcPicker({
         animation.current = null;
         wheelTarget.current = null;
         activity.set(0);
+        const opt = latest.current.options[index];
+        if (opt && !opt.disabled) {
+          latest.current.onSettle?.(opt.value);
+        }
       };
       if (immediate || latest.current.reducedMotion) {
         position.jump(index);
@@ -562,6 +571,7 @@ export function ArcPicker({
       }
       publish(index, keyboard);
       settle(index, keyboard);
+      current.onSettle?.(option.value);
       if (keyboard)
         buttons.current.get(option.value)?.focus({ preventScroll: true });
     },
@@ -688,6 +698,10 @@ export function ArcPicker({
             animation.current = null;
             wheelTarget.current = null;
             activity.set(0);
+            const opt = latest.current.options[nextTarget];
+            if (opt && !opt.disabled) {
+              latest.current.onSettle?.(opt.value);
+            }
           },
         });
       } else {

@@ -106,6 +106,8 @@ function recalculateFolderCounts(
   });
 }
 
+let selectFolderRequestId = 0;
+
 export const useGoogleDriveStore = create<GoogleDriveState>((set, get) => ({
   settings: DEFAULT_DRIVE_SETTINGS,
   isLoading: false,
@@ -572,6 +574,7 @@ export const useGoogleDriveStore = create<GoogleDriveState>((set, get) => ({
   },
 
   selectFolder: async (folderId: string, folderName?: string) => {
+    const requestId = ++selectFolderRequestId;
     set({ isSyncing: true, error: null });
     try {
       const folder = get().settings.availableFolders.find((f) => f.id === folderId);
@@ -587,12 +590,21 @@ export const useGoogleDriveStore = create<GoogleDriveState>((set, get) => ({
         body: JSON.stringify({ action: "select_folder", folderId, folderName: resolvedName }),
       });
 
+      // Si otro selectFolder fue invocado mientras esta llamada estaba en vuelo, descartar esta respuesta obsoleta
+      if (requestId !== selectFolderRequestId) {
+        return false;
+      }
+
       let returnedFiles: GoogleDriveFile[] = [];
       if (res.ok) {
         const data = await res.json();
         if (Array.isArray(data.files)) {
           returnedFiles = data.files;
         }
+      }
+
+      if (requestId !== selectFolderRequestId) {
+        return false;
       }
 
       // En 'root' (Mi Unidad) NUNCA se muestran imágenes. Solo al seleccionar una carpeta concreta.
@@ -608,7 +620,9 @@ export const useGoogleDriveStore = create<GoogleDriveState>((set, get) => ({
       set({ settings: updated, isSyncing: false, activeView: folderId === "root" ? "folders" : "files" });
       return true;
     } catch {
-      set({ error: "Error al seleccionar carpeta", isSyncing: false });
+      if (requestId === selectFolderRequestId) {
+        set({ error: "Error al seleccionar carpeta", isSyncing: false });
+      }
       return false;
     }
   },
