@@ -33,7 +33,7 @@ import { CatalogProduct, ProductCombo } from "@/lib/catalogStore";
 import { FloatingGalleryPhotoPicker } from "./FloatingGalleryPhotoPicker";
 import { ColorVariantsManager, ColorVariant } from "../admin/ColorVariantsManager";
 import { ProductCombosManager } from "./ProductCombosManager";
-import { BeUISelectField } from "@/components/ui/BeUIControls";
+import { BeUISelectField, BeUICenterMorphModal } from "@/components/ui/BeUIControls";
 import { normalizeImageUrl } from "@/lib/imageUtils";
 import { cn } from "@/lib/utils";
 import { Space_Mono } from "next/font/google";
@@ -312,28 +312,19 @@ export function ProductEditorModal({
     }
   };
 
-  if (!open) return null;
-
   return (
-    <AnimatePresence>
-      <div className="fixed inset-0 z-[1400] flex items-center justify-center p-2 sm:p-4 md:p-6 overflow-hidden select-none">
-        {/* Backdrop */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          onClick={onClose}
-          className="fixed inset-0 bg-black/80 backdrop-blur-md"
-        />
-
-        {/* Ventana Modal Principal del Editor */}
-        <motion.div
-          initial={{ opacity: 0, scale: 0.96, y: 15 }}
-          animate={{ opacity: 1, scale: 1, y: 0 }}
-          exit={{ opacity: 0, scale: 0.96, y: 15 }}
-          transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
+    <>
+      <BeUICenterMorphModal
+        open={open}
+        onOpenChange={(isOpen) => {
+          if (!isOpen) onClose();
+        }}
+        className="max-w-5xl w-full p-0 overflow-hidden !rounded-[2.5rem] border border-zinc-200/90 dark:border-zinc-800/90 shadow-2xl max-h-[92vh] flex flex-col"
+      >
+        <div
+          data-lenis-prevent="true"
           className={cn(
-            "relative z-10 w-full max-w-5xl max-h-[92vh] flex flex-col rounded-[2.5rem] bg-[#fafafc] dark:bg-[#0e0e14] border border-zinc-200/90 dark:border-zinc-800/90 shadow-2xl overflow-hidden font-mono",
+            "w-full flex flex-col flex-1 min-h-0 bg-[#fafafc] dark:bg-[#0e0e14] overflow-hidden font-mono select-none",
             spaceMono.className
           )}
         >
@@ -439,7 +430,8 @@ export function ProductEditorModal({
           )}
 
           {/* 2. BODY CONTENT: Flujo sin estrés según pestaña activa */}
-          <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-5 sm:p-7 space-y-6">
+          <form onSubmit={handleSubmit} className="flex-1 min-h-0 flex flex-col overflow-hidden">
+            <div className="flex-1 min-h-0 overflow-y-auto p-5 sm:p-7 space-y-6">
             
             {/* PESTAÑA 1: ESENCIALES (Solo lo verdaderamente importante) */}
             {activeTab === 'esenciales' && (
@@ -1063,8 +1055,10 @@ export function ProductEditorModal({
               </div>
             )}
 
-            {/* 3. FOOTER DEL FORMULARIO */}
-            <div className="pt-4 border-t border-zinc-200 dark:border-zinc-800 flex items-center justify-between gap-3 shrink-0">
+            </div>
+
+            {/* 3. FOOTER INFERIOR FIJO: Botones de Acción Intuitivos */}
+            <div className="px-5 sm:px-7 py-4 border-t border-zinc-200/80 dark:border-zinc-800/80 bg-white/95 dark:bg-[#12121a]/95 backdrop-blur-xl flex items-center justify-between gap-3 shrink-0">
               <button
                 type="button"
                 onClick={onClose}
@@ -1117,18 +1111,18 @@ export function ProductEditorModal({
               </div>
             </div>
           </form>
-        </motion.div>
+        </div>
+      </BeUICenterMorphModal>
 
-        {/* Modal Flotante de Selección de Fotos desde la Carpeta de Google Drive */}
-        <FloatingGalleryPhotoPicker
-          open={showGalleryPicker}
-          onClose={() => setShowGalleryPicker(false)}
-          onSelectPhotos={handlePhotosAddedFromPicker}
-          onOpenFullGallery={onOpenFullGallery}
-          title="Seleccionar Fotos para el Producto"
-          allowMultiple={true}
-        />
-      </div>
-    </AnimatePresence>
+      {/* Modal Flotante de Selección de Fotos desde la Carpeta de Google Drive */}
+      <FloatingGalleryPhotoPicker
+        open={showGalleryPicker}
+        onClose={() => setShowGalleryPicker(false)}
+        onSelectPhotos={handlePhotosAddedFromPicker}
+        onOpenFullGallery={onOpenFullGallery}
+        title="Seleccionar Fotos para el Producto"
+        allowMultiple={true}
+      />
+    </>
   );
 }

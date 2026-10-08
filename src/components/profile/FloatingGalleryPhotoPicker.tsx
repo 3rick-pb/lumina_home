@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
   X, 
@@ -35,6 +36,7 @@ export function FloatingGalleryPhotoPicker({
   title = "Seleccionar de Galería de Fotos",
   allowMultiple = true,
 }: FloatingGalleryPhotoPickerProps) {
+  const [mounted, setMounted] = useState(false);
   const { 
     settings, 
     loadSettings,
@@ -46,6 +48,10 @@ export function FloatingGalleryPhotoPicker({
   const [selectedFileIds, setSelectedFileIds] = useState<string[]>([]);
 
   useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
     if (open) {
       loadSettings();
       setSelectedFileIds([]);
@@ -53,7 +59,7 @@ export function FloatingGalleryPhotoPicker({
     }
   }, [open, loadSettings]);
 
-  if (!open) return null;
+  if (!mounted || typeof document === "undefined") return null;
 
   // Filtrar fotos pertenecientes a la carpeta seleccionada actualmente en Galería de Fotos
   const currentFolderFiles = (settings.files || []).filter((f) => {
@@ -95,9 +101,10 @@ export function FloatingGalleryPhotoPicker({
     onClose();
   };
 
-  return (
+  return createPortal(
     <AnimatePresence>
-      <div className="fixed inset-0 z-[1500] flex items-center justify-center p-3 sm:p-5 overflow-hidden select-none">
+      {open && (
+        <div className="fixed inset-0 z-[100050] flex items-center justify-center p-3 sm:p-5 overflow-hidden select-none">
         {/* Backdrop suave */}
         <motion.div
           initial={{ opacity: 0 }}
@@ -326,7 +333,9 @@ export function FloatingGalleryPhotoPicker({
             </div>
           </div>
         </motion.div>
-      </div>
-    </AnimatePresence>
+        </div>
+      )}
+    </AnimatePresence>,
+    document.body
   );
 }
