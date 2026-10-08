@@ -58,6 +58,7 @@ type FolderComponentProps = Omit<React.ComponentProps<"div">, "color"> & {
   size?: "xs" | "sm" | "md" | "lg";
   isHovered?: boolean;
   isOpen?: boolean;
+  onOpenChange?: (open: boolean) => void;
 };
 
 const BASE_WIDTH = 321;
@@ -71,6 +72,7 @@ const FolderComponent = ({
   size = "md",
   isHovered: externalHover,
   isOpen: externalOpen,
+  onOpenChange,
   className,
   ...props
 }: FolderComponentProps) => {
@@ -83,11 +85,20 @@ const FolderComponent = ({
   const uid = useId().replace(/:/g, "_");
   const flapFilterId = `filter0_i_171_13_${uid}`;
 
+  const handleToggle = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    const next = !isOpen;
+    if (externalOpen === undefined) {
+      setInternalOpen(next);
+    }
+    onOpenChange?.(next);
+  };
+
   return (
     <div
       data-slot="folder"
       className={cn(
-        "relative w-full h-full flex items-center justify-center",
+        "relative flex items-center justify-center select-none overflow-visible",
         className,
       )}
       {...props}
@@ -103,9 +114,8 @@ const FolderComponent = ({
         onMouseEnter={() => setInternalHover(true)}
         onMouseLeave={() => {
           setInternalHover(false);
-          setInternalOpen(false);
         }}
-        onClick={() => setInternalOpen((o) => !o)}
+        onClick={handleToggle}
       >
         <div
           className="absolute top-1/2 left-1/2"
@@ -179,7 +189,7 @@ const FolderComponent = ({
             </motion.div>
           </div>
 
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 mt-4">
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 mt-4" style={{ transformStyle: "preserve-3d" }}>
             <motion.div
               style={{
                 transformOrigin: "bottom center",

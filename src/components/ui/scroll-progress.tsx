@@ -7,7 +7,7 @@ import {
   useReducedMotion,
   useScroll,
   useSpring,
-} from "framer-motion"
+} from "motion/react"
 
 import { cn } from "@/lib/utils"
 
@@ -62,8 +62,7 @@ const ScrollProgress = ({
       if (scrollLock.current) return
       const anchor =
         (containerRef?.current?.getBoundingClientRect().top ?? 0) + offset
-      const reversed = [...sections].reverse()
-      const active = reversed.find(({ id }) => {
+      const active = sections.findLast(({ id }) => {
         const top = document.getElementById(id)?.getBoundingClientRect().top
         return top !== undefined && top <= anchor
       })
@@ -119,9 +118,7 @@ const ScrollProgress = ({
     if (labelRef.current) ro.observe(labelRef.current)
     if (collapsedRef.current) ro.observe(collapsedRef.current)
     if (openRef.current) ro.observe(openRef.current)
-    if (typeof document !== "undefined" && document.fonts?.ready) {
-      document.fonts.ready.then(measure).catch(() => {})
-    }
+    document.fonts?.ready.then(measure).catch(() => {})
     return () => ro.disconnect()
   }, [sections])
 
@@ -169,7 +166,7 @@ const ScrollProgress = ({
     <div
       ref={rootRef}
       data-slot="scroll-progress"
-      className={cn("fixed bottom-6 left-1/2 z-50 -translate-x-1/2 select-none", className)}
+      className={cn("fixed bottom-6 left-1/2 z-50 -translate-x-1/2", className)}
       {...props}
     >
       <div className="pointer-events-none invisible absolute" aria-hidden>
@@ -202,7 +199,7 @@ const ScrollProgress = ({
         <motion.div
           data-slot="scroll-progress-surface"
           className={cn(
-            "absolute bottom-0 left-1/2 -translate-x-1/2 overflow-hidden border border-black/10 dark:border-white/15 bg-white/85 dark:bg-[#18181b]/85 shadow-2xl backdrop-blur-xl text-gray-900 dark:text-gray-100",
+            "absolute bottom-0 left-1/2 -translate-x-1/2 overflow-hidden border border-border/60 bg-background/70 shadow-lg backdrop-blur-md",
             squircle
           )}
           initial={false}
@@ -237,18 +234,18 @@ const ScrollProgress = ({
                         type="button"
                         onClick={() => selectSection(s.id)}
                         className={cn(
-                          "relative flex w-full items-center gap-3 rounded-[14px] px-3 py-2 text-left text-sm font-medium leading-none transition-colors cursor-pointer",
+                          "relative flex w-full items-center gap-3 rounded-[14px] px-3 py-2 text-left text-sm font-medium leading-none transition-colors",
                           squircle,
                           isActive
-                            ? "text-gray-900 dark:text-white font-semibold"
-                            : "text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white"
+                            ? "text-foreground"
+                            : "text-foreground/55 hover:text-foreground/80"
                         )}
                       >
                         {isActive && (
                           <motion.span
                             layoutId={`${layoutId}-active`}
                             className={cn(
-                              "absolute inset-0 rounded-[14px] bg-[#8c9276]/15 dark:bg-[#8c9276]/25",
+                              "absolute inset-0 rounded-[14px] bg-foreground/10",
                               squircle
                             )}
                             transition={
@@ -259,7 +256,7 @@ const ScrollProgress = ({
                         <motion.span
                           className={cn(
                             "relative h-1.5 w-1.5 shrink-0 rounded-full",
-                            isActive ? "bg-[#8c9276]" : "bg-gray-300 dark:bg-gray-600"
+                            isActive ? "bg-foreground" : "bg-foreground/30"
                           )}
                           initial={
                             reduceMotion
@@ -299,8 +296,8 @@ const ScrollProgress = ({
                 key="pill"
                 type="button"
                 onClick={() => setOpen(true)}
-                aria-label="Ver secciones del catálogo"
-                className="absolute inset-0 flex items-center gap-2.5 py-1.5 pl-2 pr-4 cursor-pointer"
+                aria-label="Show sections"
+                className="absolute inset-0 flex items-center gap-2.5 py-1.5 pl-2 pr-4"
                 initial={{
                   opacity: 0,
                   filter: reduceMotion ? undefined : "blur(4px)",
@@ -320,7 +317,7 @@ const ScrollProgress = ({
                       r="10"
                       fill="none"
                       strokeWidth="2.5"
-                      className="stroke-gray-200 dark:stroke-gray-700"
+                      className="stroke-foreground/15"
                     />
                     <motion.circle
                       cx="12"
@@ -329,7 +326,7 @@ const ScrollProgress = ({
                       fill="none"
                       strokeWidth="2.5"
                       strokeLinecap="round"
-                      className="stroke-[#8c9276]"
+                      className="stroke-foreground"
                       style={{ pathLength: progress }}
                     />
                   </svg>
@@ -344,7 +341,7 @@ const ScrollProgress = ({
                       <motion.span
                         key={labelVersion.current}
                         data-slot="scroll-progress-label"
-                        className="absolute inset-y-0 left-0 flex items-center whitespace-nowrap text-sm font-medium leading-none text-gray-900 dark:text-gray-100"
+                        className="absolute inset-y-0 left-0 flex items-center whitespace-nowrap text-sm font-medium leading-none text-foreground"
                         initial={
                           reduceMotion
                             ? { opacity: 0 }
