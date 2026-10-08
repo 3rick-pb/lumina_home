@@ -57,6 +57,7 @@ type FolderComponentProps = Omit<React.ComponentProps<"div">, "color"> & {
   color?: "black" | "white" | "blue";
   size?: "xs" | "sm" | "md" | "lg";
   isHovered?: boolean;
+  isOpen?: boolean;
 };
 
 const BASE_WIDTH = 321;
@@ -69,14 +70,16 @@ const FolderComponent = ({
   color = "blue",
   size = "md",
   isHovered: externalHover,
+  isOpen: externalOpen,
   className,
   ...props
 }: FolderComponentProps) => {
   const theme = themes[color] ?? themes.blue;
   const scale = sizeScales[size] ?? sizeScales.md;
   const [internalHover, setInternalHover] = useState(false);
-  const [isOpen, setIsOpen] = useState(false);
+  const [internalOpen, setInternalOpen] = useState(false);
   const isHovered = externalHover !== undefined ? externalHover : internalHover;
+  const isOpen = externalOpen !== undefined ? externalOpen : internalOpen;
   const uid = useId().replace(/:/g, "_");
   const flapFilterId = `filter0_i_171_13_${uid}`;
 
@@ -100,9 +103,9 @@ const FolderComponent = ({
         onMouseEnter={() => setInternalHover(true)}
         onMouseLeave={() => {
           setInternalHover(false);
-          setIsOpen(false);
+          setInternalOpen(false);
         }}
-        onClick={() => setIsOpen((o) => !o)}
+        onClick={() => setInternalOpen((o) => !o)}
       >
         <div
           className="absolute top-1/2 left-1/2"
@@ -176,7 +179,7 @@ const FolderComponent = ({
             </motion.div>
           </div>
 
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 mt-3.5">
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 mt-4">
             <motion.div
               style={{
                 transformOrigin: "bottom center",

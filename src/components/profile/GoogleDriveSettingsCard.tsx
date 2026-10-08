@@ -62,13 +62,29 @@ function LayeredFolderCard({
   onClick: () => void; 
 }) {
   const [isHovered, setIsHovered] = useState(false);
+  const [isOpen, setIsOpen] = useState(false);
+  const [isNavigating, setIsNavigating] = useState(false);
+
+  const handleClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (isNavigating) return;
+    setIsNavigating(true);
+    setIsOpen(true);
+    // Animar la salida de las tarjetas del folder antes de entrar en él
+    setTimeout(() => {
+      onClick();
+    }, 450);
+  };
 
   return (
     <div
-      onClick={onClick}
+      onClick={handleClick}
       onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
-      className="group flex flex-col items-center justify-center cursor-pointer select-none py-3 px-2 transition-transform duration-200 hover:-translate-y-1"
+      onMouseLeave={() => {
+        setIsHovered(false);
+        if (!isNavigating) setIsOpen(false);
+      }}
+      className="group flex flex-col items-center justify-center cursor-pointer select-none py-2 px-2 transition-transform duration-200 hover:-translate-y-1"
     >
       {/* Solo la carpeta de rareUI libre */}
       <div className="relative flex items-center justify-center overflow-visible pointer-events-none">
@@ -76,6 +92,7 @@ function LayeredFolderCard({
           color="blue" 
           size="sm" 
           isHovered={isHovered}
+          isOpen={isOpen}
         />
       </div>
 
@@ -83,7 +100,7 @@ function LayeredFolderCard({
       <div className="text-center mt-3 max-w-[220px]">
         <h5 
           className={`font-bold text-sm sm:text-base truncate px-1 transition-colors ${
-            isSelected ? 'text-blue-400' : 'text-white group-hover:text-blue-300'
+            isSelected || isNavigating ? 'text-blue-400' : 'text-white group-hover:text-blue-300'
           }`} 
           title={folder.name}
         >
@@ -564,7 +581,7 @@ export function GoogleDriveSettingsCard({ onClose, onSelectPhotoForProduct }: Go
                 </div>
               ) : (
                 /* Grid de Carpetas 3D de Mi Unidad (Filas de 3) */
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8 justify-items-center">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-10 sm:gap-x-8 sm:gap-y-12 pt-6 sm:pt-8 pb-4 justify-items-center">
                   {rootFolders.map((folder) => (
                     <LayeredFolderCard
                       key={folder.id}
@@ -598,7 +615,7 @@ export function GoogleDriveSettingsCard({ onClose, onSelectPhotoForProduct }: Go
                   </span>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8 justify-items-center">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-10 sm:gap-x-8 sm:gap-y-12 pt-6 sm:pt-8 pb-4 justify-items-center">
                   {currentSubfolders.map((folder) => (
                     <LayeredFolderCard
                       key={folder.id}
