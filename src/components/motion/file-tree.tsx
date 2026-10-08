@@ -361,14 +361,21 @@ export function FileTree({
                 onKeyDown={(event) => handleKeyDown(event, row)}
                 onClick={() => {
                   if (row.item.disabled) return;
+                  // Si la carpeta ya está desplegada, cerrarla NO debe seleccionarla
+                  if (isFolder && isOpen) {
+                    toggleFolder(row.item.value);
+                    return;
+                  }
                   selectItem(row.item);
-                  if (isFolder) toggleFolder(row.item.value);
+                  if (isFolder && !isOpen) {
+                    toggleFolder(row.item.value);
+                  }
                 }}
                 className={cn(
-                  "group/file-tree relative flex h-9 w-full items-center gap-2 overflow-hidden rounded-lg pr-2 text-left text-sm text-muted-foreground outline-none",
-                  "transition-colors hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset",
+                  "group/file-tree relative flex h-9 w-full items-center gap-2 overflow-hidden rounded-xl pr-2 text-left text-sm text-zinc-200 outline-none",
+                  "transition-colors hover:text-white hover:bg-white/5 focus-visible:ring-2 focus-visible:ring-white/30 focus-visible:ring-inset",
                   "aria-disabled:cursor-not-allowed",
-                  isSelected && "bg-muted font-medium text-foreground",
+                  isSelected && "bg-white/15 text-white font-semibold shadow-xs ring-1 ring-white/20",
                   classNames?.item,
                   row.item.className,
                 )}
@@ -381,28 +388,39 @@ export function FileTree({
                     animate={{ opacity: 1, scaleY: 1 }}
                     exit={{ opacity: 0, scaleY: 0 }}
                     transition={reduce ? { duration: 0 } : BRANCH_DRAW}
-                    className="absolute top-0 bottom-0 w-px origin-top bg-border/70"
+                    className="absolute top-0 bottom-0 w-px origin-top bg-zinc-700/80"
                     style={{ left: 16 + (row.depth - 1) * indent }}
                   />
                 ) : null}
 
-                <motion.span
-                  aria-hidden="true"
-                  animate={{ rotate: isOpen ? 90 : 0 }}
-                  transition={reduce ? { duration: 0 } : SPRING_SWAP}
+                <span
+                  role="button"
+                  tabIndex={-1}
+                  aria-label={isOpen ? "Contraer" : "Expandir"}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (isFolder) toggleFolder(row.item.value);
+                  }}
                   className={cn(
-                    "relative z-10 grid size-4 shrink-0 place-items-center",
-                    !isFolder && "opacity-0",
+                    "relative z-20 grid size-5 shrink-0 place-items-center rounded hover:bg-white/10 text-zinc-300 hover:text-white transition-colors cursor-pointer",
+                    !isFolder && "opacity-0 pointer-events-none",
                   )}
                 >
-                  <ChevronRight className="size-3.5" />
-                </motion.span>
+                  <motion.span
+                    aria-hidden="true"
+                    animate={{ rotate: isOpen ? 90 : 0 }}
+                    transition={reduce ? { duration: 0 } : SPRING_SWAP}
+                    className="grid size-3.5 place-items-center"
+                  >
+                    <ChevronRight className="size-3.5" />
+                  </motion.span>
+                </span>
 
                 <span
                   aria-hidden="true"
                   className={cn(
-                    "relative z-10 grid size-4 shrink-0 place-items-center text-muted-foreground transition-colors group-hover/file-tree:text-foreground",
-                    isFolder && isOpen && "text-foreground",
+                    "relative z-10 grid size-4 shrink-0 place-items-center text-zinc-300 transition-colors group-hover/file-tree:text-white",
+                    isFolder && isOpen && "text-white",
                     classNames?.icon,
                   )}
                 >
@@ -417,7 +435,7 @@ export function FileTree({
 
                 <span
                   className={cn(
-                    "relative z-10 min-w-0 flex-1 truncate",
+                    "relative z-10 min-w-0 flex-1 truncate font-medium text-zinc-200 group-hover/file-tree:text-white transition-colors",
                     classNames?.label,
                   )}
                 >
