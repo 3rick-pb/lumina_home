@@ -214,12 +214,22 @@ function renderHtmlResponse(
   <script>
     (function() {
       var payload = ${payloadJson};
+
+      // 1. Canal BroadcastChannel (funciona de inmediato entre ventanas/pestañas del mismo origen)
+      try {
+        var bc = new BroadcastChannel("lumina_google_drive_channel");
+        bc.postMessage(payload);
+        bc.close();
+      } catch (e) {}
+
+      // 2. PostMessage si el opener está disponible
       try {
         if (window.opener && !window.opener.closed) {
           window.opener.postMessage(payload, "*");
         }
       } catch (e) {}
 
+      // 3. LocalStorage
       try {
         localStorage.setItem("lumina_fotoproductos_auth_result", JSON.stringify(payload));
       } catch (e) {}
@@ -229,7 +239,7 @@ function renderHtmlResponse(
           try {
             window.close();
           } catch (e) {}
-        }, 1000);
+        }, 1200);
       }
     })();
   </script>

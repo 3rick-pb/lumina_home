@@ -283,12 +283,21 @@ export const useGoogleDriveStore = create<GoogleDriveState>((set, get) => ({
         return;
       }
 
-      // 5. Esperar resolución mediante postMessage o sondeo activo de backend
+      // 5. Esperar resolución mediante BroadcastChannel, postMessage, storage o sondeo activo
       let resolved = false;
+
+      const cleanup = () => {
+        try { if (bc) bc.close(); } catch {}
+        try { window.removeEventListener("message", onMessage); } catch {}
+        try { window.removeEventListener("storage", onStorage); } catch {}
+        try { window.removeEventListener("focus", onFocus); } catch {}
+        clearInterval(pollInterval);
+      };
 
       const finishConnection = async (_payload?: { email?: string; name?: string }) => {
         if (resolved) return;
         resolved = true;
+        cleanup();
 
         if (popup && !popup.closed) {
           try { popup.close(); } catch {}
@@ -299,24 +308,69 @@ export const useGoogleDriveStore = create<GoogleDriveState>((set, get) => ({
         set({ isSyncing: false, error: null });
       };
 
-      // Escuchador para postMessage (compatible entre previsualizaciones y producción)
+      // A. Canal BroadcastChannel (instantáneo entre pestañas y popups del mismo origen)
+      let bc: BroadcastChannel | null = null;
+      try {
+        bc = new BroadcastChannel("lumina_google_drive_channel");
+        bc.onmessage = (event) => {
+          const type = event.data?.type;
+          if (type === "GOOGLE_DRIVE_AUTH_SUCCESS" || type === "GOOGLE_DRIVE_OAUTH_SUCCESS") {
+            finishConnection(event.data);
+          }
+        };
+      } catch {}
+
+      // B. Escuchador para postMessage (si window.opener sigue vinculado)
       const onMessage = (event: MessageEvent) => {
         const type = event.data?.type;
         if (type === "GOOGLE_DRIVE_AUTH_SUCCESS" || type === "GOOGLE_DRIVE_OAUTH_SUCCESS") {
-          window.removeEventListener("message", onMessage);
-          clearInterval(pollInterval);
           finishConnection(event.data);
         }
       };
       window.addEventListener("message", onMessage);
 
-      // Sondeo periódico para respaldo por localStorage, base de datos y detección de cierre
-      const startTime = Date.now();
-      let pollCycle = 0;
-      const pollInterval = setInterval(async () => {
-        pollCycle++;
+      // C. Escuchador storage
+      const onStorage = (event: StorageEvent) => {
+        if (event.key === "lumina_fotoproductos_auth_result" && event.newValue) {
+          try {
+            const parsed = JSON.parse(event.newValue);
+            if (parsed?.type === "GOOGLE_DRIVE_AUTH_SUCCESS" || parsed?.type === "GOOGLE_DRIVE_OAUTH_SUCCESS") {
+              localStorage.removeItem("lumina_fotoproductos_auth_result");
+              finishConnection(parsed);
+            }
+          } catch {}
+        }
+      };
+      window.addEventListener("storage", onStorage);
 
-        // A. Verificar si se completó vía localStorage
+      // D. Escuchador focus (cuando el usuario vuelve a enfocar esta pestaña tras el popup)
+      const onFocus = async () => {
+        if (resolved) return;
+        try {
+          const { data: { session } } = await supabase.auth.getSession();
+          const res = await fetch("/api/admin/google-drive", {
+            headers: session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {},
+          });
+          if (res.ok) {
+            const data = await res.json();
+            if (data?.success && data?.settings?.isConnected) {
+              finishConnection(data.settings);
+            }
+          }
+        } catch {}
+      };
+      window.addEventListener("focus", onFocus);
+
+      // E. Sondeo activo continuo
+      const startTime = Date.now();
+      let closedCheckAttempts = 0;
+      const pollInterval = setInterval(async () => {
+        if (resolved) {
+          cleanup();
+          return;
+        }
+
+        // 1. Verificar localStorage
         try {
           const stored = localStorage.getItem("lumina_fotoproductos_auth_result");
           if (stored) {
@@ -326,37 +380,34 @@ export const useGoogleDriveStore = create<GoogleDriveState>((set, get) => ({
               parsed.timestamp >= startTime
             ) {
               localStorage.removeItem("lumina_fotoproductos_auth_result");
-              window.removeEventListener("message", onMessage);
-              clearInterval(pollInterval);
               finishConnection(parsed);
               return;
             }
           }
         } catch {}
 
-        // B. Consultar directamente al servidor cada 2 segundos (~cada 2 ciclos)
-        if (pollCycle % 2 === 0) {
-          try {
-            const { data: { session } } = await supabase.auth.getSession();
-            const res = await fetch("/api/admin/google-drive", {
-              headers: session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {},
-            });
-            if (res.ok) {
-              const data = await res.json();
-              if (data?.success && data?.settings?.isConnected) {
-                window.removeEventListener("message", onMessage);
-                clearInterval(pollInterval);
-                finishConnection(data.settings);
-                return;
-              }
+        // 2. Consultar servidor directamente
+        try {
+          const { data: { session } } = await supabase.auth.getSession();
+          const res = await fetch("/api/admin/google-drive", {
+            headers: session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {},
+          });
+          if (res.ok) {
+            const data = await res.json();
+            if (data?.success && data?.settings?.isConnected) {
+              finishConnection(data.settings);
+              return;
             }
-          } catch {}
-        }
+          }
+        } catch {}
 
-        // C. Detectar si el usuario o el callback cerró la ventana emergente
+        // 3. Manejar cierre del popup con varios reintentos para no rendirse prematuramente
         if (popup?.closed) {
-          setTimeout(async () => {
+          closedCheckAttempts++;
+          if (closedCheckAttempts >= 3) {
+            cleanup();
             if (!resolved) {
+              // Intento final antes de apagar estado sincronizando
               try {
                 const { data: { session } } = await supabase.auth.getSession();
                 const res = await fetch("/api/admin/google-drive", {
@@ -365,25 +416,19 @@ export const useGoogleDriveStore = create<GoogleDriveState>((set, get) => ({
                 if (res.ok) {
                   const data = await res.json();
                   if (data?.success && data?.settings?.isConnected) {
-                    window.removeEventListener("message", onMessage);
-                    clearInterval(pollInterval);
                     finishConnection(data.settings);
                     return;
                   }
                 }
               } catch {}
-
-              window.removeEventListener("message", onMessage);
-              clearInterval(pollInterval);
               set({ isSyncing: false });
             }
-          }, 800);
+          }
         }
 
-        // D. Tiempo límite de seguridad (3 minutos)
+        // 4. Timeout máximo de 3 minutos
         if (Date.now() - startTime > 180000) {
-          window.removeEventListener("message", onMessage);
-          clearInterval(pollInterval);
+          cleanup();
           if (!resolved) {
             set({ isSyncing: false, error: "Tiempo de espera agotado al conectar con Google." });
           }
@@ -596,17 +641,12 @@ export const useGoogleDriveStore = create<GoogleDriveState>((set, get) => ({
     set({ isSyncing: true, error: null });
     try {
       const folder = get().settings.availableFolders.find((f) => f.id === folderId);
-      const resolvedName = folderName || folder?.name || folderId;
+      const resolvedName = folderName || folder?.name || (folderId === 'root' ? 'Mi Unidad' : folderId);
 
-      const updated: GoogleDriveSettings = {
-        ...get().settings,
-        selectedFolderId: folderId,
-        selectedFolderName: resolvedName,
-      };
-
+      let folderFiles: GoogleDriveFile[] = [];
       try {
         const { data: { session } } = await supabase.auth.getSession();
-        await fetch("/api/admin/google-drive", {
+        const res = await fetch("/api/admin/google-drive", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -614,7 +654,21 @@ export const useGoogleDriveStore = create<GoogleDriveState>((set, get) => ({
           },
           body: JSON.stringify({ action: "select_folder", folderId, folderName: resolvedName }),
         });
+
+        if (res.ok) {
+          const data = await res.json();
+          if (Array.isArray(data?.files)) {
+            folderFiles = data.files;
+          }
+        }
       } catch {}
+
+      const updated: GoogleDriveSettings = {
+        ...get().settings,
+        selectedFolderId: folderId,
+        selectedFolderName: resolvedName,
+        files: folderFiles.length > 0 ? folderFiles : get().settings.files,
+      };
 
       saveToLocal(updated);
       set({ settings: updated, isSyncing: false, activeView: 'files' });

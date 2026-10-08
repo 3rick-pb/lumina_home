@@ -81,6 +81,9 @@ export async function GET(request: Request) {
     let backupAt: string | null = null;
     let backupCount = 0;
 
+    const urlObj = new URL(request.url);
+    const folderIdParam = urlObj.searchParams.get('folderId');
+
     // 0. Comprobar credenciales de Google Drive vinculadas al admin_id
     if (authUser?.id) {
       try {
@@ -113,10 +116,11 @@ export async function GET(request: Request) {
           connectedEmail = cred.google_account_email || '';
           connectedAccountName = cred.google_account_name || '';
           connectedAt = cred.created_at;
-          selectedFolderId = cred.drive_folder_id && cred.drive_folder_id !== 'folder_lumina_catalog_2026' ? cred.drive_folder_id : 'root';
+          const defaultCredFolder = cred.drive_folder_id && cred.drive_folder_id !== 'folder_lumina_catalog_2026' ? cred.drive_folder_id : 'root';
+          selectedFolderId = folderIdParam && folderIdParam !== 'folder_lumina_catalog_2026' ? folderIdParam : defaultCredFolder;
           selectedFolderName = cred.drive_folder_name && !cred.drive_folder_name.includes('Lumina') ? cred.drive_folder_name : 'Mi Unidad';
 
-          // Intentar obtener listado actualizado de Google Drive API
+          // Intentar obtener listado actualizado de Google Drive API para la carpeta seleccionada
           try {
             const driveData = await GoogleDriveService.listImages(cred.admin_id, selectedFolderId);
             if (Array.isArray(driveData?.files)) {
@@ -288,18 +292,39 @@ export async function POST(request: Request) {
     } else if (action === 'select_folder') {
       const folderId = typeof body.folderId === 'string' ? body.folderId.trim() : inMemoryDriveSettings.selected_folder_id;
       const folderName = typeof body.folderName === 'string' ? body.folderName.trim() : inMemoryDriveSettings.selected_folder_name;
+      let folderFiles: MediaAssetRow[] = [];
 
       if (authUser?.id) {
         try {
           await GoogleDriveService.selectFolder(authUser.id, folderId, folderName);
-        } catch {}
+          const driveData = await GoogleDriveService.listImages(authUser.id, folderId);
+          if (Array.isArray(driveData?.files)) {
+            folderFiles = driveData.files;
+          }
+        } catch (selErr) {
+          console.warn('GoogleDriveService.selectFolder warning:', selErr);
+        }
       }
 
       inMemoryDriveSettings = {
         ...inMemoryDriveSettings,
         selected_folder_id: folderId,
         selected_folder_name: folderName,
+        files_cache: folderFiles.length > 0 ? folderFiles : inMemoryDriveSettings.files_cache,
       };
+
+      return NextResponse.json({
+        success: true,
+        selectedFolderId: folderId,
+        selectedFolderName: folderName,
+        files: folderFiles,
+        settings: {
+          ...inMemoryDriveSettings,
+          selectedFolderId: folderId,
+          selectedFolderName: folderName,
+          files: folderFiles,
+        },
+      });
     } else if (action === 'create_folder') {
       const folder = body.folder;
       if (folder && folder.id && folder.name) {
