@@ -74,90 +74,36 @@ interface GoogleDriveState {
   syncFiles: () => Promise<void>;
 }
 
-const STORAGE_KEY = "lumina_fotoproductos_v5";
+const DEFAULT_DRIVE_SETTINGS: GoogleDriveSettings = {
+  isConnected: false,
+  accountEmail: "",
+  accountName: "",
+  connectedAt: undefined,
+  selectedFolderId: "root",
+  selectedFolderName: "Mi Unidad",
+  availableFolders: INITIAL_DRIVE_FOLDERS,
+  files: [],
+  backupAt: undefined,
+  backupCount: 0,
+};
 
-function recalculateFolderCounts(folders: GoogleDriveFolder[], files: GoogleDriveFile[]): GoogleDriveFolder[] {
+function recalculateFolderCounts(
+  folders: GoogleDriveFolder[],
+  files: GoogleDriveFile[]
+): GoogleDriveFolder[] {
   const counts: Record<string, number> = {};
-  files.forEach((f) => {
-    if (f.folderId) {
-      counts[f.folderId] = (counts[f.folderId] || 0) + 1;
-    }
-  });
-  return folders.map((folder) => {
-    if (folder.id === "root" || folder.id === "folder_lumina_catalog_2026") {
-      return { ...folder, itemCount: files.length };
-    }
-    return {
-      ...folder,
-      itemCount: counts[folder.id] || 0,
-    };
-  });
-}
-
-function loadFromLocal(): GoogleDriveSettings {
-  const defaults: GoogleDriveSettings = {
-    isConnected: false,
-    accountEmail: "",
-    accountName: "",
-    connectedAt: undefined,
-    selectedFolderId: "root",
-    selectedFolderName: "Mi Unidad",
-    availableFolders: INITIAL_DRIVE_FOLDERS,
-    files: [],
-    backupAt: undefined,
-    backupCount: 0,
-  };
-
-  if (typeof window === "undefined") {
-    return defaults;
+  for (const file of files) {
+    const fId = file.folderId || "root";
+    counts[fId] = (counts[fId] || 0) + 1;
   }
-
-  try {
-    localStorage.removeItem("lumina_fotoproductos_v4");
-    localStorage.removeItem("lumina_fotoproductos_v3");
-    localStorage.removeItem("lumina_fotoproductos_v2");
-
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) {
-      const parsed = JSON.parse(raw);
-      if (parsed && typeof parsed === "object") {
-        const isDemo = parsed.accountEmail === "multimedia.lumina@gmail.com";
-        const hasUnsplash = Array.isArray(parsed.files) && parsed.files.some((f: GoogleDriveFile) => f.cdnUrl?.includes("unsplash.com") || f.name?.includes("LUMINA-AURA"));
-        const hasMockFolders = Array.isArray(parsed.availableFolders) && parsed.availableFolders.some((f: GoogleDriveFolder) => f.id === "folder_iluminacion_premium" || f.id === "folder_lumina_catalog_2026");
-
-        if (isDemo || hasUnsplash || hasMockFolders) {
-          localStorage.removeItem(STORAGE_KEY);
-          return defaults;
-        }
-
-        const sanitized: GoogleDriveSettings = {
-          ...defaults,
-          ...parsed,
-          selectedFolderId: parsed.selectedFolderId === "folder_lumina_catalog_2026" ? "root" : (parsed.selectedFolderId || "root"),
-          selectedFolderName: parsed.selectedFolderName?.includes("Catálogo") ? "Mi Unidad" : (parsed.selectedFolderName || "Mi Unidad"),
-          availableFolders: recalculateFolderCounts(
-            parsed.availableFolders || INITIAL_DRIVE_FOLDERS,
-            parsed.files || INITIAL_DRIVE_FILES
-          ),
-        };
-        return sanitized;
-      }
-    }
-  } catch {}
-
-  return defaults;
-}
-
-function saveToLocal(settings: GoogleDriveSettings) {
-  if (typeof window !== "undefined") {
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
-    } catch {}
-  }
+  return folders.map((folder) => ({
+    ...folder,
+    itemCount: counts[folder.id] || 0,
+  }));
 }
 
 export const useGoogleDriveStore = create<GoogleDriveState>((set, get) => ({
-  settings: loadFromLocal(),
+  settings: DEFAULT_DRIVE_SETTINGS,
   isLoading: false,
   isSyncing: false,
   error: null,
@@ -181,7 +127,7 @@ export const useGoogleDriveStore = create<GoogleDriveState>((set, get) => ({
         if (data?.success && data?.settings) {
           const rawSettings = data.settings;
           const isDemo = rawSettings.accountEmail === "multimedia.lumina@gmail.com";
-          const localStoredClientId = typeof window !== "undefined" ? localStorage.getItem("lumina_google_client_id") || "" : "";
+          const localStoredClientId = "";
           const resolvedClientId = rawSettings.googleClientId || localStoredClientId || get().settings.googleClientId || "";
 
           // Filtrar cualquier residuo de carpetas o imágenes de demostración
@@ -227,7 +173,6 @@ export const useGoogleDriveStore = create<GoogleDriveState>((set, get) => ({
             files: cleanFiles.length > 0 ? cleanFiles : get().settings.files,
           };
           set({ settings: loadedSettings, isLoading: false });
-          saveToLocal(loadedSettings);
           return;
         }
       }
@@ -274,10 +219,7 @@ export const useGoogleDriveStore = create<GoogleDriveState>((set, get) => ({
         } catch {}
       }
 
-      // 2. Limpiar resultados previos en localStorage
-      try {
-        localStorage.removeItem("lumina_fotoproductos_auth_result");
-      } catch {}
+
 
       // 3. Solicitar URL de OAuth segura con state criptográfico al backend
       const { data: { session } } = await supabase.auth.getSession();
@@ -356,7 +298,6 @@ export const useGoogleDriveStore = create<GoogleDriveState>((set, get) => ({
           try {
             const parsed = JSON.parse(event.newValue);
             if (parsed?.type === "GOOGLE_DRIVE_AUTH_SUCCESS" || parsed?.type === "GOOGLE_DRIVE_OAUTH_SUCCESS") {
-              localStorage.removeItem("lumina_fotoproductos_auth_result");
               finishConnection(parsed);
             }
           } catch {}
@@ -391,21 +332,7 @@ export const useGoogleDriveStore = create<GoogleDriveState>((set, get) => ({
           return;
         }
 
-        // 1. Verificar localStorage
-        try {
-          const stored = localStorage.getItem("lumina_fotoproductos_auth_result");
-          if (stored) {
-            const parsed = JSON.parse(stored);
-            if (
-              (parsed?.type === "GOOGLE_DRIVE_AUTH_SUCCESS" || parsed?.type === "GOOGLE_DRIVE_OAUTH_SUCCESS") &&
-              parsed.timestamp >= startTime
-            ) {
-              localStorage.removeItem("lumina_fotoproductos_auth_result");
-              finishConnection(parsed);
-              return;
-            }
-          }
-        } catch {}
+
 
         // 2. Consultar servidor directamente
         try {
@@ -548,7 +475,6 @@ export const useGoogleDriveStore = create<GoogleDriveState>((set, get) => ({
       };
 
       set({ settings: updated, isSyncing: false, error: null });
-      saveToLocal(updated);
 
       // Persist backup to DB
       try {
@@ -575,29 +501,7 @@ export const useGoogleDriveStore = create<GoogleDriveState>((set, get) => ({
   handleOAuthReturn: async () => {
     try {
       if (typeof window === "undefined") return;
-
-      const stored = localStorage.getItem("lumina_fotoproductos_auth_result");
-      if (stored) {
-        localStorage.removeItem("lumina_fotoproductos_auth_result");
-        const parsed = JSON.parse(stored);
-        if (parsed?.providerToken || parsed?.email) {
-          const updated: GoogleDriveSettings = {
-            ...get().settings,
-            isConnected: true,
-            accountEmail: parsed.email || get().settings.accountEmail || "Google Drive Conectado",
-            accountName: parsed.name || get().settings.accountName || "Google Drive",
-            providerToken: parsed.providerToken || get().settings.providerToken,
-            connectedAt: new Date().toISOString(),
-          };
-          set({ settings: updated });
-          saveToLocal(updated);
-
-          if (parsed.providerToken) {
-            await get().loadGoogleDriveFiles(parsed.providerToken);
-          }
-          return;
-        }
-      }
+      await get().loadSettings();
 
       // Fallback: verificar sesión en supabaseDrive
       const { data: { session } } = await supabaseDrive.auth.getSession();
@@ -615,7 +519,6 @@ export const useGoogleDriveStore = create<GoogleDriveState>((set, get) => ({
           connectedAt: new Date().toISOString(),
         };
         set({ settings: updated });
-        saveToLocal(updated);
         await get().loadGoogleDriveFiles(session.provider_token);
       }
     } catch {}
@@ -649,7 +552,6 @@ export const useGoogleDriveStore = create<GoogleDriveState>((set, get) => ({
         });
       } catch {}
 
-      saveToLocal(updated);
       set({ settings: updated, isSyncing: false, activeView: 'folders' });
       return true;
     } catch {
@@ -682,7 +584,6 @@ export const useGoogleDriveStore = create<GoogleDriveState>((set, get) => ({
         selectedFolderName: resolvedName,
       };
 
-      saveToLocal(updated);
       set({ settings: updated });
       
       // Lanzar sincronización del nuevo folder
@@ -723,7 +624,6 @@ export const useGoogleDriveStore = create<GoogleDriveState>((set, get) => ({
         });
       } catch {}
 
-      saveToLocal(updated);
       set({ settings: updated, isSyncing: false, activeView: 'files' });
       return true;
     } catch {
@@ -757,7 +657,6 @@ export const useGoogleDriveStore = create<GoogleDriveState>((set, get) => ({
         });
       } catch {}
 
-      saveToLocal(updated);
       set({ settings: updated, isSyncing: false, activeView: 'folders' });
       return true;
     } catch {
@@ -803,7 +702,6 @@ export const useGoogleDriveStore = create<GoogleDriveState>((set, get) => ({
         });
       } catch {}
 
-      saveToLocal(updated);
       set({ settings: updated, isSyncing: false, activeView: 'files' });
       return true;
     } catch {
@@ -846,7 +744,6 @@ export const useGoogleDriveStore = create<GoogleDriveState>((set, get) => ({
         });
       } catch {}
 
-      saveToLocal(updated);
       set({ settings: updated, isSyncing: false, activeView: 'files' });
       return true;
     } catch {
@@ -876,7 +773,6 @@ export const useGoogleDriveStore = create<GoogleDriveState>((set, get) => ({
         });
       } catch {}
 
-      saveToLocal(updated);
       set({ settings: updated, isSyncing: false });
       return true;
     } catch {
@@ -898,7 +794,6 @@ export const useGoogleDriveStore = create<GoogleDriveState>((set, get) => ({
         availableFolders: updatedFolders,
       };
 
-      saveToLocal(updated);
       set({ settings: updated });
       return true;
     } catch {
@@ -928,7 +823,6 @@ export const useGoogleDriveStore = create<GoogleDriveState>((set, get) => ({
           backupAt: timestamp,
           backupCount: current.files.length,
         };
-        saveToLocal(updated);
         set({ settings: updated, isSyncing: false });
         return {
           success: true,
@@ -963,7 +857,6 @@ export const useGoogleDriveStore = create<GoogleDriveState>((set, get) => ({
               data.settings.files || get().settings.files
             ),
           };
-          saveToLocal(restored);
           set({ settings: restored, isSyncing: false, activeView: 'files' });
           return true;
         }
@@ -1016,7 +909,6 @@ export const useGoogleDriveStore = create<GoogleDriveState>((set, get) => ({
           backupAt: new Date().toISOString(),
         };
 
-        saveToLocal(updated);
         set({ settings: updated, activeView: 'files' });
 
         // Enviar a la base de datos

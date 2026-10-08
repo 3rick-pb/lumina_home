@@ -21,10 +21,9 @@ import {
   BarChart2,
   List,
   LayoutGrid,
-  Plus,
-  Square,
   FileText
 } from "lucide-react";
+import { FileTree, FileTreeFolder } from "@/components/motion/file-tree";
 import { 
   useGoogleDriveStore, 
   GoogleDriveFolder, 
@@ -86,12 +85,13 @@ function LayeredFolderCard({
           {folder.name}
         </h5>
         <p className="text-[11px] text-zinc-400 font-medium">
-          {folder.itemCount || 0} Files
+          {folder.itemCount || 0} archivos
         </p>
       </div>
     </div>
   );
 }
+
 export interface GoogleDriveSettingsCardProps {
   onClose?: () => void;
   onSelectPhotoForProduct?: (url: string, file: GoogleDriveFile) => void;
@@ -108,15 +108,12 @@ export function GoogleDriveSettingsCard({ onClose, onSelectPhotoForProduct }: Go
     syncFiles 
   } = useGoogleDriveStore();
 
-  const [activeTab, setActiveTab] = useState<'folders' | 'tags'>('folders');
   const [activeRailTab, setActiveRailTab] = useState<'database' | 'home' | 'stats'>('database');
   const [showStatsModal, setShowStatsModal] = useState(false);
   const [viewMode, setViewMode] = useState<'list' | 'grid'>('list');
   const [searchFilter, setSearchFilter] = useState("");
   const [showFolderDropdown, setShowFolderDropdown] = useState(false);
   const [showMainFolderModal, setShowMainFolderModal] = useState(false);
-  const [expandedFolders, setExpandedFolders] = useState<Record<string, boolean>>({ root: true });
-  const [feedback, setFeedback] = useState<string | null>(null);
 
   // Lightbox / Visor HD
   const [previewPhoto, setPreviewPhoto] = useState<GoogleDriveFile | null>(null);
@@ -139,51 +136,32 @@ export function GoogleDriveSettingsCard({ onClose, onSelectPhotoForProduct }: Go
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // Sincronización silenciosa periódica eliminada para optimizar rendimiento.
-  // Ahora la sincronización se realiza de forma manual mediante el botón Sync,
-  // y la carga inicial utiliza los datos de la base de datos de manera asíncrona y no bloqueante.
-  useEffect(() => {
-    // Empty effect to preserve hook order
-  }, [settings.isConnected]);
-
-  const showNotification = (msg: string) => {
-    setFeedback(msg);
-    setTimeout(() => setFeedback(null), 3000);
-  };
-
   const handleCopyLink = async (e: React.MouseEvent, url: string, id: string) => {
     e.stopPropagation();
     try {
       await navigator.clipboard.writeText(url);
       setCopiedId(id);
-      showNotification("Enlace copiado al portapapeles");
       setTimeout(() => setCopiedId(null), 2000);
-    } catch {
-      showNotification("Error al copiar");
-    }
+    } catch {}
   };
 
   // 1. Funcionalidad Botón HOME del rail izquierdo
   const handleHomeClick = async () => {
     setActiveRailTab('home');
     setShowStatsModal(false);
-    await selectFolder('root', 'General Knowledge');
+    await selectFolder('root', 'Carpeta Principal');
     setSearchFilter("");
-    showNotification("Inicio: Todas las fotos");
   };
 
   // 2. Funcionalidad Botón DATABASE (Banco Multimedia)
   const handleDatabaseClick = () => {
     setActiveRailTab('database');
     setShowStatsModal(false);
-    showNotification("Banco Multimedia activo");
   };
 
   // 3. Funcionalidad Botón SYNC (Sincronizar)
   const handleSyncClick = async () => {
-    showNotification("Sincronizando con Google Drive...");
     await syncFiles();
-    showNotification("Sincronización completada con éxito");
   };
 
   // 4. Funcionalidad Botón STATS (Estadísticas)
@@ -195,13 +173,6 @@ export function GoogleDriveSettingsCard({ onClose, onSelectPhotoForProduct }: Go
   const handleSelectFolder = async (folder: GoogleDriveFolder) => {
     await selectFolder(folder.id, folder.name);
     setShowFolderDropdown(false);
-    setExpandedFolders((prev) => ({ ...prev, [folder.id]: true }));
-    showNotification(`Carpeta activa: ${folder.name}`);
-  };
-
-  const toggleFolderExpand = (folderId: string, e: React.MouseEvent) => {
-    e.stopPropagation();
-    setExpandedFolders((prev) => ({ ...prev, [folderId]: !prev[folderId] }));
   };
 
   // Carpetas disponibles
@@ -247,7 +218,7 @@ export function GoogleDriveSettingsCard({ onClose, onSelectPhotoForProduct }: Go
       }
     }
 
-    if (settings.selectedFolderName && settings.selectedFolderName !== 'Mi Unidad' && settings.selectedFolderName !== 'General Knowledge') {
+    if (settings.selectedFolderName && settings.selectedFolderName !== 'Mi Unidad' && settings.selectedFolderName !== 'General Knowledge' && settings.selectedFolderName !== 'Carpeta Principal') {
       const foundByName = availableFolders.find((f) => f.name === settings.selectedFolderName);
       if (foundByName) return foundByName;
     }
@@ -259,7 +230,7 @@ export function GoogleDriveSettingsCard({ onClose, onSelectPhotoForProduct }: Go
     return null;
   }, [settings.selectedFolderId, settings.selectedFolderName, availableFolders, rootFolders]);
 
-  // Subcarpetas para la sección "Folders" en el canvas principal
+  // Subcarpetas para la sección "Carpetas" en el canvas principal
   const currentSubfolders = useMemo(() => {
     const currId = settings.selectedFolderId || mainFolder?.id || "root";
     return subfoldersMap[currId] || [];
@@ -283,79 +254,35 @@ export function GoogleDriveSettingsCard({ onClose, onSelectPhotoForProduct }: Go
     return currentFolderFiles.filter((f) => f.name.toLowerCase().includes(query));
   }, [currentFolderFiles, searchFilter]);
 
-  // Componente recursivo para renderizar el árbol de carpetas con guías visuales
-  const renderTreeFolder = (folder: GoogleDriveFolder, depth = 0) => {
-    const isSelected = settings.selectedFolderId === folder.id;
+  // Renderizado recursivo para beUI FileTree
+  const renderFileTreeNode = (folder: GoogleDriveFolder): React.ReactNode => {
     const children = subfoldersMap[folder.id] || [];
-    const hasChildren = children.length > 0;
-    const isExpanded = Boolean(expandedFolders[folder.id]);
-
     return (
-      <div key={folder.id} className="relative select-none">
-        <div
-          onClick={() => handleSelectFolder(folder)}
-          className={`group flex items-center justify-between px-2.5 py-1.5 rounded-xl text-xs transition-all duration-200 cursor-pointer ${
-            isSelected
-              ? "bg-[#25252b] text-white font-medium"
-              : "text-zinc-400 hover:text-zinc-200 hover:bg-white/5"
-          }`}
-          style={{ paddingLeft: `${Math.max(10, depth * 16 + 10)}px` }}
-        >
-          <div className="flex items-center gap-2 truncate">
-            {hasChildren ? (
-              <button
-                type="button"
-                onClick={(e) => toggleFolderExpand(folder.id, e)}
-                className="p-0.5 hover:text-white text-zinc-500 rounded transition-transform duration-200"
-              >
-                {isExpanded ? (
-                  <ChevronDown className="w-3 h-3" />
-                ) : (
-                  <ChevronRight className="w-3 h-3" />
-                )}
-              </button>
-            ) : (
-              <div className="w-3" />
-            )}
-
-            {isSelected ? (
-              <FolderOpen className="w-3.5 h-3.5 text-zinc-100 shrink-0" />
-            ) : (
-              <Folder className="w-3.5 h-3.5 text-zinc-400 group-hover:text-zinc-200 shrink-0" />
-            )}
-
-            <span className="truncate">{folder.name}</span>
-          </div>
-
-          <span className="text-[10px] font-mono px-1.5 py-0.5 rounded-md bg-[#222228] text-zinc-400 shrink-0 ml-1">
-            {folder.itemCount || 0}
-          </span>
-        </div>
-
-        {/* Subcarpetas con línea guía vertical */}
-        {hasChildren && isExpanded && (
-          <div className="relative pl-3 ml-3 border-l border-zinc-800/80 space-y-0.5 my-0.5 transition-all duration-300">
-            {children.map((child) => renderTreeFolder(child, depth + 1))}
-          </div>
-        )}
-      </div>
+      <FileTreeFolder
+        key={folder.id}
+        value={folder.id}
+        name={folder.name}
+        icon={<Folder className="w-4 h-4 text-zinc-400 shrink-0" />}
+      >
+        {children.map((child) => renderFileTreeNode(child))}
+      </FileTreeFolder>
     );
   };
 
   return (
     <div className="w-full flex flex-col md:flex-row h-[88vh] max-h-[820px] rounded-[2rem] bg-[#0e0e11] text-zinc-100 border border-white/10 shadow-2xl overflow-hidden select-none font-sans transition-colors duration-300">
       
-      {/* 1. RAIL DE ICONOS VERTICAL (IZQUIERDA EXTREMA - 100% FUNCIONAL) */}
+      {/* 1. RAIL DE ICONOS VERTICAL (IZQUIERDA EXTREMA) */}
       <div className="hidden lg:flex w-14 shrink-0 flex-col items-center justify-between py-5 bg-[#141417] border-r border-white/5">
         <div className="flex flex-col items-center gap-6">
-          {/* Logo Isométrico tipo Cube de la referencia */}
+          {/* Logo Isométrico tipo Cube */}
           <div className="w-9 h-9 rounded-xl bg-white text-zinc-950 flex items-center justify-center shadow-md">
             <svg className="w-5 h-5 fill-current" viewBox="0 0 24 24">
               <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
             </svg>
           </div>
 
-          {/* Iconos de Navegación del Rail con acciones y estados reales */}
+          {/* Iconos de Navegación del Rail con acciones reales */}
           <div className="flex flex-col items-center gap-2">
             {/* 1. Home / Inicio */}
             <button
@@ -366,7 +293,7 @@ export function GoogleDriveSettingsCard({ onClose, onSelectPhotoForProduct }: Go
                   ? "bg-white/10 text-white shadow-xs"
                   : "text-zinc-500 hover:text-zinc-200 hover:bg-white/5"
               }`}
-              title="Inicio: Ver todas las fotos"
+              title="Inicio: Ver todas las fotografías"
             >
               <Home className="w-4 h-4" />
             </button>
@@ -385,18 +312,7 @@ export function GoogleDriveSettingsCard({ onClose, onSelectPhotoForProduct }: Go
               <Database className="w-4 h-4" />
             </button>
 
-            {/* 3. Sincronizar en tiempo real con Google Drive */}
-            <button
-              type="button"
-              onClick={handleSyncClick}
-              disabled={isSyncing}
-              className="p-2.5 rounded-xl text-zinc-500 hover:text-zinc-200 hover:bg-white/5 transition-all duration-300 ease-out cursor-pointer"
-              title="Sincronizar ahora con Google Drive"
-            >
-              <ArrowLeftRight className={`w-4 h-4 transition-transform duration-500 ${isSyncing ? "animate-spin text-white" : ""}`} />
-            </button>
-
-            {/* 4. Panel de Estadísticas */}
+            {/* 3. Panel de Estadísticas */}
             <button
               type="button"
               onClick={handleStatsClick}
@@ -405,7 +321,7 @@ export function GoogleDriveSettingsCard({ onClose, onSelectPhotoForProduct }: Go
                   ? "bg-white/10 text-white shadow-xs"
                   : "text-zinc-500 hover:text-zinc-200 hover:bg-white/5"
               }`}
-              title="Estadísticas de Almacenamiento"
+              title="Estadísticas de multimedia"
             >
               <BarChart2 className="w-4 h-4" />
             </button>
@@ -418,31 +334,13 @@ export function GoogleDriveSettingsCard({ onClose, onSelectPhotoForProduct }: Go
         </div>
       </div>
 
-      {/* 2. PANEL LATERAL: KNOWLEDGE BASE / EXPLORADOR DE CARPETAS */}
+      {/* 2. PANEL LATERAL: EXPLORADOR DE CARPETAS (beUI File Tree) */}
       <div className="w-full md:w-64 lg:w-72 shrink-0 flex flex-col bg-[#121215] border-r border-white/5">
         {/* Cabecera del Sidebar */}
         <div className="p-4 sm:p-5 pb-3 flex items-center justify-between">
           <h3 className="font-semibold text-sm tracking-tight text-zinc-100">
-            Knowledge Base
+            Explorador de Carpetas
           </h3>
-          <div className="flex items-center gap-1.5 text-zinc-400">
-            <button 
-              type="button" 
-              onClick={() => showNotification("Para organizar, crea carpetas en Google Drive y sincroniza")}
-              className="p-1 hover:text-white hover:bg-white/5 rounded-lg transition-colors cursor-pointer"
-              title="Crear carpeta"
-            >
-              <Plus className="w-3.5 h-3.5" />
-            </button>
-            <button 
-              type="button" 
-              onClick={handleSyncClick}
-              className="p-1 hover:text-white hover:bg-white/5 rounded-lg transition-colors cursor-pointer"
-              title="Actualizar"
-            >
-              <Square className="w-3.5 h-3.5" />
-            </button>
-          </div>
         </div>
 
         {/* Buscador de la barra lateral */}
@@ -453,88 +351,65 @@ export function GoogleDriveSettingsCard({ onClose, onSelectPhotoForProduct }: Go
               type="text"
               value={searchFilter}
               onChange={(e) => setSearchFilter(e.target.value)}
-              placeholder="Search..."
+              placeholder="Buscar archivos o carpetas..."
               className="w-full pl-8 pr-3 py-1.5 rounded-xl border border-white/5 text-xs bg-[#1a1a1f] text-zinc-100 placeholder-zinc-500 focus:outline-none focus:ring-1 focus:ring-white/20 transition-all duration-200"
             />
           </div>
         </div>
 
-        {/* Pill Toggle Switcher (Folders / Tags) */}
-        <div className="px-4 pb-3">
-          <div className="p-1 rounded-xl bg-[#18181c] border border-white/5 flex items-center">
-            <button
-              type="button"
-              onClick={() => setActiveTab('folders')}
-              className={`flex-1 py-1 px-2.5 rounded-lg text-xs font-semibold transition-all duration-200 cursor-pointer ${
-                activeTab === 'folders'
-                  ? "bg-[#25252b] text-white shadow-xs"
-                  : "text-zinc-400 hover:text-zinc-200"
-              }`}
-            >
-              Folders
-            </button>
-            <button
-              type="button"
-              onClick={() => setActiveTab('tags')}
-              className={`flex-1 py-1 px-2.5 rounded-lg text-xs font-semibold transition-all duration-200 cursor-pointer ${
-                activeTab === 'tags'
-                  ? "bg-[#25252b] text-white shadow-xs"
-                  : "text-zinc-400 hover:text-zinc-200"
-              }`}
-            >
-              Tags
-            </button>
-          </div>
-        </div>
-
-        {/* Vista en Árbol Jerárquico de Carpetas: Exclusivamente Carpeta Principal */}
-        <div className="flex-1 overflow-y-auto px-3 pb-4 space-y-0.5">
+        {/* Árbol Jerárquico de Carpetas con beUI FileTree */}
+        <div className="flex-1 overflow-y-auto px-3 pb-4 space-y-2">
           {mainFolder ? (
-            <>
-              {/* Carpeta Principal de Lumina Home */}
-              <div
-                onClick={() => handleSelectFolder(mainFolder)}
-                className={`group flex items-center justify-between px-2.5 py-2 rounded-xl text-xs transition-all duration-200 cursor-pointer ${
-                  settings.selectedFolderId === mainFolder.id
-                    ? "bg-[#25252b] text-white font-medium shadow-xs"
-                    : "text-zinc-300 hover:text-white hover:bg-white/5"
-                }`}
-              >
-                <div className="flex items-center gap-2 truncate">
-                  <FolderOpen className="w-4 h-4 text-blue-400 shrink-0" />
-                  <span className="truncate font-semibold">{mainFolder.name}</span>
-                </div>
-                <div className="flex items-center gap-1.5 shrink-0">
-                  <span className="text-[10px] font-mono px-1.5 py-0.5 rounded-md bg-[#222228] text-zinc-400">
-                    {mainFolder.itemCount || currentFolderFiles.length || 0}
-                  </span>
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setShowMainFolderModal(true);
-                    }}
-                    className="p-1 hover:text-white text-zinc-500 hover:bg-white/10 rounded-md transition-colors cursor-pointer"
-                    title="Cambiar carpeta principal de Drive"
-                  >
-                    <ArrowLeftRight className="w-3 h-3" />
-                  </button>
-                </div>
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between px-2 pt-1 pb-1">
+                <span className="text-[10px] font-mono uppercase tracking-wider text-zinc-500">
+                  Carpeta Principal
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setShowMainFolderModal(true)}
+                  className="text-[11px] text-blue-400 hover:text-blue-300 hover:underline flex items-center gap-1 cursor-pointer transition-colors"
+                  title="Cambiar carpeta principal"
+                >
+                  <span>Cambiar</span>
+                  <ArrowLeftRight className="w-3 h-3" />
+                </button>
               </div>
 
-              {/* Subcarpetas pertenecientes ÚNICAMENTE a la carpeta principal */}
-              <div className="relative pl-2.5 ml-2 border-l border-zinc-800/80 space-y-0.5 mt-0.5">
-                {(subfoldersMap[mainFolder.id] || []).map((folder) => renderTreeFolder(folder, 1))}
-              </div>
-            </>
+              <FileTree
+                value={settings.selectedFolderId}
+                onValueChange={(folderId) => {
+                  const target = availableFolders.find((f) => f.id === folderId);
+                  if (target) {
+                    handleSelectFolder(target);
+                  }
+                }}
+                defaultExpandedIds={mainFolder ? [mainFolder.id, ...(subfoldersMap[mainFolder.id]?.map((f) => f.id) || [])] : []}
+                className="w-full text-xs"
+                pillClassName="rounded-xl bg-white/10"
+                classNames={{
+                  item: "text-zinc-300 hover:text-white hover:bg-white/5 py-1.5 px-2 rounded-xl text-xs",
+                }}
+              >
+                <FileTreeFolder
+                  value={mainFolder.id}
+                  name={mainFolder.name}
+                  icon={<FolderOpen className="w-4 h-4 text-blue-400 shrink-0" />}
+                >
+                  {(subfoldersMap[mainFolder.id] || []).map((sub) => renderFileTreeNode(sub))}
+                </FileTreeFolder>
+              </FileTree>
+            </div>
           ) : (
-            <div className="p-3 text-center space-y-2 bg-white/5 rounded-2xl border border-white/5 mt-2">
-              <p className="text-xs text-zinc-300 font-medium">Sin carpeta principal</p>
-              <p className="text-[10px] text-zinc-500">Selecciona la carpeta de Google Drive para Lumina Home</p>
+            <div className="p-4 text-center space-y-2.5 bg-white/5 rounded-2xl border border-white/5 mt-2">
+              <p className="text-xs text-zinc-200 font-semibold">Sin carpeta principal</p>
+              <p className="text-[11px] text-zinc-400 leading-relaxed">
+                Selecciona la carpeta de Google Drive para Lumina Home
+              </p>
               <button
                 type="button"
                 onClick={() => setShowMainFolderModal(true)}
-                className="w-full py-1.5 px-3 bg-white text-zinc-950 rounded-xl text-xs font-semibold hover:bg-zinc-200 transition-colors cursor-pointer"
+                className="w-full py-2 px-3 bg-white text-zinc-950 rounded-xl text-xs font-semibold hover:bg-zinc-200 transition-colors cursor-pointer shadow-sm"
               >
                 Seleccionar Carpeta
               </button>
@@ -542,7 +417,7 @@ export function GoogleDriveSettingsCard({ onClose, onSelectPhotoForProduct }: Go
           )}
         </div>
 
-        {/* Pie de la barra lateral: Correo de Google conectado */}
+        {/* Pie de la barra lateral: Información de cuenta */}
         <div className="p-3 border-t border-white/5 bg-black/20">
           <div className="flex items-center justify-between gap-2">
             <div className="flex items-center gap-2 min-w-0">
@@ -551,7 +426,7 @@ export function GoogleDriveSettingsCard({ onClose, onSelectPhotoForProduct }: Go
               </div>
               <div className="min-w-0">
                 <p className="text-[11px] font-medium text-zinc-200 truncate">
-                  {settings.accountEmail || (settings.isConnected ? "Conectado" : "Desconectado")}
+                  {settings.accountEmail || (settings.isConnected ? "Conectado" : "Google Drive")}
                 </p>
                 <p className="text-[9px] text-emerald-400 font-mono">
                   {settings.isConnected ? "Conectado" : "Sin vincular"}
@@ -559,7 +434,7 @@ export function GoogleDriveSettingsCard({ onClose, onSelectPhotoForProduct }: Go
               </div>
             </div>
 
-            {settings.isConnected ? (
+            {settings.isConnected && (
               <button
                 type="button"
                 onClick={() => disconnectAccount()}
@@ -567,14 +442,6 @@ export function GoogleDriveSettingsCard({ onClose, onSelectPhotoForProduct }: Go
                 title="Desconectar cuenta"
               >
                 <LogOut className="w-3.5 h-3.5" />
-              </button>
-            ) : (
-              <button
-                type="button"
-                onClick={() => connectGoogleOAuth()}
-                className="px-2 py-1 bg-white text-zinc-950 rounded-lg text-[10px] font-semibold hover:bg-zinc-200 transition-colors cursor-pointer"
-              >
-                Conectar
               </button>
             )}
           </div>
@@ -596,14 +463,6 @@ export function GoogleDriveSettingsCard({ onClose, onSelectPhotoForProduct }: Go
               >
                 <span>{settings.selectedFolderName && settings.selectedFolderName !== "Mi Unidad" ? settings.selectedFolderName : (mainFolder?.name || "Carpeta Principal")}</span>
                 <ChevronDown className={`w-4 h-4 text-zinc-400 transition-transform duration-300 ease-out ${showFolderDropdown ? "rotate-180" : ""}`} />
-              </button>
-              <button
-                type="button"
-                onClick={() => setShowMainFolderModal(true)}
-                className="p-1.5 text-zinc-500 hover:text-zinc-200 hover:bg-white/5 rounded-lg transition-colors cursor-pointer"
-                title="Cambiar carpeta principal de Google Drive"
-              >
-                <ArrowLeftRight className="w-3.5 h-3.5" />
               </button>
             </div>
 
@@ -672,19 +531,8 @@ export function GoogleDriveSettingsCard({ onClose, onSelectPhotoForProduct }: Go
             )}
           </div>
 
-          {/* Acciones de la derecha: Conexión, Toggle vista, Sincronizar, Cerrar */}
+          {/* Acciones de la derecha: Sincronizar, Toggle vista, Cerrar */}
           <div className="flex items-center gap-2.5">
-            {!settings.isConnected && (
-              <button
-                type="button"
-                onClick={() => connectGoogleOAuth()}
-                className="px-3 py-1.5 rounded-xl bg-white text-zinc-950 font-semibold text-xs hover:bg-zinc-200 transition-colors duration-200 flex items-center gap-1.5 cursor-pointer shadow-sm"
-              >
-                <GoogleLogoIcon className="w-3.5 h-3.5" />
-                <span>Conectar Drive</span>
-              </button>
-            )}
-
             <button
               type="button"
               onClick={handleSyncClick}
@@ -736,16 +584,9 @@ export function GoogleDriveSettingsCard({ onClose, onSelectPhotoForProduct }: Go
           </div>
         </div>
 
-        {/* Notificaciones / Toast flotante */}
-        {feedback && (
-          <div className="absolute top-16 right-8 px-4 py-2 bg-white text-zinc-900 rounded-full text-xs font-semibold shadow-2xl z-50 animate-fade-in">
-            {feedback}
-          </div>
-        )}
-
         {/* CONTENIDO DEL CANVAS */}
         {!settings.isConnected ? (
-          /* Pantalla cuando Google Drive NO está conectado */
+          /* Pantalla única cuando Google Drive NO está conectado (1 solo botón) */
           <div className="flex-1 flex flex-col items-center justify-center p-8 text-center space-y-5">
             <div className="w-16 h-16 rounded-3xl bg-[#18181c] border border-white/10 flex items-center justify-center shadow-md">
               <GoogleDriveIcon className="w-8 h-8" />
@@ -771,14 +612,14 @@ export function GoogleDriveSettingsCard({ onClose, onSelectPhotoForProduct }: Go
             </button>
           </div>
         ) : (
-          /* CANVAS CON CONTENIDO: SECCIÓN 1 FOLDERS + SECCIÓN 2 FILES */
+          /* CANVAS CON CONTENIDO: SECCIÓN 1 CARPETAS + SECCIÓN 2 FOTOGRAFÍAS */
           <div className="flex-1 overflow-y-auto p-5 sm:p-7 space-y-7">
             
-            {/* SECCIÓN 1: FOLDERS (TARJETAS 3D CON MICRO-INTERACCIONES SUAVES) */}
+            {/* SECCIÓN 1: CARPETAS (TARJETAS 3D CON MICRO-INTERACCIONES SUAVES) */}
             <div className="space-y-3.5">
               <div className="flex items-center justify-between">
                 <h4 className="text-sm sm:text-base font-bold text-zinc-100">
-                  Folders
+                  Carpetas
                 </h4>
                 <span className="text-[11px] font-mono text-zinc-500">
                   {currentSubfolders.length} carpetas
@@ -798,11 +639,11 @@ export function GoogleDriveSettingsCard({ onClose, onSelectPhotoForProduct }: Go
               </div>
             </div>
 
-            {/* SECCIÓN 2: FILES (LISTADO O TABLA EXACTA A LA IMAGEN) */}
+            {/* SECCIÓN 2: FOTOGRAFÍAS */}
             <div className="space-y-3.5 pb-6">
               <div className="flex items-center justify-between">
                 <h4 className="text-sm sm:text-base font-bold text-zinc-100">
-                  Files
+                  Fotografías
                 </h4>
                 <span className="text-[11px] font-mono text-zinc-500">
                   {filteredFiles.length} archivos
@@ -811,16 +652,16 @@ export function GoogleDriveSettingsCard({ onClose, onSelectPhotoForProduct }: Go
 
               {filteredFiles.length === 0 ? (
                 <div className="p-8 rounded-2xl bg-[#141418] border border-white/5 text-center text-zinc-500 text-xs">
-                  No se encontraron archivos en esta carpeta.
+                  No se encontraron fotografías en esta carpeta.
                 </div>
               ) : viewMode === 'list' ? (
-                /* TABLA LISTA EXACTA A LA IMAGEN (Name + Added By) */
+                /* TABLA LISTA (Nombre + Subido por + Acciones) */
                 <div className="rounded-2xl border border-white/5 bg-[#141418] overflow-hidden">
                   {/* Encabezado de la tabla */}
                   <div className="grid grid-cols-12 px-4 py-2.5 text-[11px] font-medium text-zinc-400 border-b border-white/5 bg-[#18181c]">
-                    <div className="col-span-7 sm:col-span-6">Name</div>
-                    <div className="col-span-5 sm:col-span-4">Added By</div>
-                    <div className="hidden sm:block sm:col-span-2 text-right">Actions</div>
+                    <div className="col-span-7 sm:col-span-6">Nombre</div>
+                    <div className="col-span-5 sm:col-span-4">Subido por</div>
+                    <div className="hidden sm:block sm:col-span-2 text-right">Acciones</div>
                   </div>
 
                   {/* Filas de archivos */}
@@ -849,7 +690,7 @@ export function GoogleDriveSettingsCard({ onClose, onSelectPhotoForProduct }: Go
                           </div>
                         </div>
 
-                        {/* Columna Added By (Avatar + Email como en la foto) */}
+                        {/* Columna Subido por */}
                         <div className="col-span-5 sm:col-span-4 flex items-center gap-2 min-w-0">
                           <div className="w-6 h-6 rounded-full bg-zinc-700 border border-white/10 shrink-0 flex items-center justify-center text-[10px] font-bold text-zinc-200">
                             {file.ownerEmail ? file.ownerEmail.charAt(0).toUpperCase() : "A"}
@@ -865,7 +706,7 @@ export function GoogleDriveSettingsCard({ onClose, onSelectPhotoForProduct }: Go
                             type="button"
                             onClick={() => setPreviewPhoto(file)}
                             className="p-1.5 rounded-lg text-zinc-400 hover:text-white hover:bg-white/10 transition-colors duration-200 cursor-pointer"
-                            title="Ver en Grande"
+                            title="Vista previa"
                           >
                             <Eye className="w-3.5 h-3.5" />
                           </button>
@@ -874,7 +715,7 @@ export function GoogleDriveSettingsCard({ onClose, onSelectPhotoForProduct }: Go
                             type="button"
                             onClick={(e) => handleCopyLink(e, file.cdnUrl, file.id)}
                             className="p-1.5 rounded-lg text-zinc-400 hover:text-white hover:bg-white/10 transition-colors duration-200 cursor-pointer"
-                            title="Copiar Enlace"
+                            title="Copiar enlace"
                           >
                             {copiedId === file.id ? (
                               <Check className="w-3.5 h-3.5 text-emerald-400" />
@@ -898,7 +739,7 @@ export function GoogleDriveSettingsCard({ onClose, onSelectPhotoForProduct }: Go
                   </div>
                 </div>
               ) : (
-                /* VISTA EN CUADRÍCULA DE FOTOGRAFÍAS (GALLERY GRID) */
+                /* VISTA EN CUADRÍCULA DE FOTOGRAFÍAS */
                 <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
                   {filteredFiles.map((file) => (
                     <div
@@ -922,7 +763,7 @@ export function GoogleDriveSettingsCard({ onClose, onSelectPhotoForProduct }: Go
                             type="button"
                             onClick={() => setPreviewPhoto(file)}
                             className="p-1.5 rounded-lg bg-zinc-800 text-zinc-100 hover:bg-zinc-700 transition-colors duration-200 cursor-pointer"
-                            title="Ver en Alta Resolución"
+                            title="Vista previa HD"
                           >
                             <Eye className="w-3.5 h-3.5" />
                           </button>
@@ -956,7 +797,7 @@ export function GoogleDriveSettingsCard({ onClose, onSelectPhotoForProduct }: Go
                             onClick={() => onSelectPhotoForProduct(file.cdnUrl, file)}
                             className="w-full mt-2 py-1 px-2 rounded-lg bg-white text-zinc-950 text-[10px] font-semibold hover:bg-zinc-200 transition-colors duration-200 cursor-pointer"
                           >
-                            Usar en Producto
+                            Usar en producto
                           </button>
                         )}
                       </div>
@@ -968,7 +809,7 @@ export function GoogleDriveSettingsCard({ onClose, onSelectPhotoForProduct }: Go
           </div>
         )}
 
-        {/* MODAL / PANEL DE ESTADÍSTICAS DEL RAIL IZQUIERDO */}
+        {/* MODAL DE ESTADÍSTICAS */}
         {showStatsModal && (
           <div className="absolute inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fade-in">
             <div className="w-full max-w-md bg-[#16161b] border border-white/10 rounded-3xl p-6 shadow-2xl space-y-5">
@@ -993,7 +834,7 @@ export function GoogleDriveSettingsCard({ onClose, onSelectPhotoForProduct }: Go
 
               <div className="grid grid-cols-2 gap-3">
                 <div className="p-3.5 rounded-2xl bg-[#1c1c22] border border-white/5">
-                  <p className="text-[11px] text-zinc-400 font-medium">Fotos Totales</p>
+                  <p className="text-[11px] text-zinc-400 font-medium">Fotografías Totales</p>
                   <p className="text-xl font-bold text-white mt-1">{settings.files?.length || 0}</p>
                 </div>
                 <div className="p-3.5 rounded-2xl bg-[#1c1c22] border border-white/5">
@@ -1013,7 +854,7 @@ export function GoogleDriveSettingsCard({ onClose, onSelectPhotoForProduct }: Go
                 </div>
                 <div className="flex justify-between text-zinc-300">
                   <span className="text-zinc-500">Carpeta actual:</span>
-                  <span className="truncate max-w-[180px]">{settings.selectedFolderName || "General Knowledge"}</span>
+                  <span className="truncate max-w-[180px]">{settings.selectedFolderName || "Carpeta Principal"}</span>
                 </div>
               </div>
 
@@ -1025,7 +866,7 @@ export function GoogleDriveSettingsCard({ onClose, onSelectPhotoForProduct }: Go
                   className="flex-1 py-2 px-3 rounded-xl bg-white text-zinc-950 font-semibold text-xs hover:bg-zinc-200 transition-colors flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50"
                 >
                   <RefreshCw className={`w-3.5 h-3.5 ${isSyncing ? "animate-spin" : ""}`} />
-                  <span>Sincronizar Todo</span>
+                  <span>Sincronizar</span>
                 </button>
                 <button
                   type="button"
@@ -1066,7 +907,7 @@ export function GoogleDriveSettingsCard({ onClose, onSelectPhotoForProduct }: Go
                   ) : (
                     <>
                       <Copy className="w-3.5 h-3.5" />
-                      <span>Copiar Enlace</span>
+                      <span>Copiar enlace</span>
                     </>
                   )}
                 </button>
@@ -1076,7 +917,7 @@ export function GoogleDriveSettingsCard({ onClose, onSelectPhotoForProduct }: Go
                   target="_blank"
                   rel="noopener noreferrer"
                   className="p-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-200 transition-colors cursor-pointer"
-                  title="Abrir imagen"
+                  title="Descargar imagen"
                 >
                   <Download className="w-4 h-4" />
                 </a>
@@ -1085,6 +926,7 @@ export function GoogleDriveSettingsCard({ onClose, onSelectPhotoForProduct }: Go
                   type="button"
                   onClick={() => setPreviewPhoto(null)}
                   className="p-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-200 transition-colors cursor-pointer"
+                  title="Cerrar"
                 >
                   <X className="w-4 h-4" />
                 </button>
@@ -1145,7 +987,7 @@ export function GoogleDriveSettingsCard({ onClose, onSelectPhotoForProduct }: Go
                         <span className="truncate">{folder.name}</span>
                       </div>
                       <span className="text-[10px] text-zinc-500 font-mono">
-                        {folder.itemCount || 0} items
+                        {folder.itemCount || 0} archivos
                       </span>
                     </button>
                   );
@@ -1168,10 +1010,3 @@ export function GoogleDriveSettingsCard({ onClose, onSelectPhotoForProduct }: Go
     </div>
   );
 }
-
-
-
-
-
-
-

@@ -229,10 +229,7 @@ function renderHtmlResponse(
         }
       } catch (e) {}
 
-      // 3. LocalStorage
-      try {
-        localStorage.setItem("lumina_fotoproductos_auth_result", JSON.stringify(payload));
-      } catch (e) {}
+
 
       if (${success ? "true" : "false"}) {
         setTimeout(function() {
