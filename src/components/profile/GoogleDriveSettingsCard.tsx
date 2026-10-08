@@ -1,33 +1,44 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import {
-  Folder,
-  Image as ImageIcon,
-  Check,
-  LogOut,
+import { 
+  Folder, 
+  FolderOpen, 
+  RefreshCw, 
+  Check, 
+  Search, 
+  LogOut, 
   X,
-  Search,
-  List,
-  LayoutGrid,
+  ChevronDown,
   Copy,
   Download,
   Eye,
-  RefreshCw,
-  ArrowLeft
+  AlertTriangle,
+  Home,
+  Database,
+  ArrowLeftRight,
+  BarChart2,
+  List,
+  LayoutGrid,
+  FileText,
+  ImageIcon,
+  Plus
 } from "lucide-react";
-import {
-  useGoogleDriveStore,
-  GoogleDriveFolder,
+import { 
+  useGoogleDriveStore, 
+  GoogleDriveFolder, 
   GoogleDriveFile
 } from "@/lib/googleDriveStore";
 
 export function GoogleDriveIcon({ className = "w-5 h-5" }: { className?: string }) {
   return (
     <svg className={className} viewBox="0 0 87.3 78" xmlns="http://www.w3.org/2000/svg">
-      <path d="M6.6 66.85l38.8-67.3h27.75L34.35 66.85z" fill="#FFC107" />
-      <path d="M45.4 0l38.8 67.3H56.45L17.65 0z" fill="#1976D2" />
-      <path d="M27.75 0H0l38.8 67.3h27.75z" fill="#4CAF50" />
+      <path d="m6.6 66.85 3.85 6.65c.8 1.4 1.95 2.5 3.3 3.3l13.75-23.8H0c0 1.55.4 3.1 1.2 4.5z" fill="#0066da" />
+      <path d="M43.65 25 29.9 1.2c-1.35.8-2.5 1.9-3.3 3.3l-25.4 44A8.97 8.97 0 0 0 0 53h27.5z" fill="#00ac47" />
+      <path d="M73.55 76.8c1.35-.8 2.5-1.9 3.3-3.3l1.6-2.75 7.65-13.25c.8-1.4 1.2-2.95 1.2-4.5H59.8l5.85 10.1z" fill="#ea4335" />
+      <path d="M43.65 25 57.4 1.2C56.05.4 54.5 0 52.9 0H34.4c-1.6 0-3.15.4-4.5 1.2z" fill="#00832d" />
+      <path d="M59.8 53H27.5L13.75 76.8c1.35.8 2.9 1.2 4.5 1.2h50.8c1.6 0 3.15-.4 4.5-1.2z" fill="#2684fc" />
+      <path d="m73.4 26.5-12.7-22c-.8-1.4-1.95-2.5-3.3-3.3L43.65 25l16.15 28h27.5c0-1.55-.4-3.1-1.2-4.5z" fill="#ffba00" />
     </svg>
   );
 }
@@ -43,29 +54,40 @@ export function GoogleLogoIcon({ className = "w-5 h-5" }: { className?: string }
   );
 }
 
+// Visualizador de Carpeta 3D con hojas salientes y badges (exacto al diseño de referencia)
 function LayeredFolderGraphic({ className = "" }: { className?: string }) {
   return (
     <div className={`relative w-28 h-20 sm:w-32 sm:h-22 mx-auto select-none ${className}`}>
+      {/* Hoja posterior izquierda inclinada */}
       <div className="absolute top-1 left-2 sm:left-3 w-18 sm:w-20 h-14 sm:h-16 rounded-lg bg-zinc-200 dark:bg-zinc-300 shadow-xs border border-zinc-300 dark:border-zinc-400 transform -rotate-8 transition-transform duration-300 group-hover:-rotate-12 group-hover:-translate-y-1">
         <div className="p-1 flex items-center justify-between">
           <div className="w-4 h-0.5 rounded-full bg-zinc-400 dark:bg-zinc-500" />
           <span className="text-[7px] font-bold font-mono px-1 py-0.2 rounded bg-zinc-300 dark:bg-zinc-400 text-zinc-700">IMG</span>
         </div>
       </div>
+
+      {/* Hoja posterior derecha inclinada */}
       <div className="absolute top-0.5 right-2 sm:right-3 w-18 sm:w-20 h-14 sm:h-16 rounded-lg bg-zinc-100 dark:bg-zinc-200 shadow-xs border border-zinc-300 dark:border-zinc-400 transform rotate-6 transition-transform duration-300 group-hover:rotate-10 group-hover:-translate-y-1.5">
         <div className="p-1 flex items-center justify-between">
           <div className="w-4 h-0.5 rounded-full bg-zinc-400 dark:bg-zinc-500" />
           <span className="text-[7px] font-bold font-mono px-1 py-0.2 rounded bg-zinc-300 dark:bg-zinc-400 text-zinc-800">RAW</span>
         </div>
       </div>
+
+      {/* Hoja central frontal peeking */}
       <div className="absolute top-1 left-5 sm:left-6 w-18 sm:w-20 h-14 sm:h-16 rounded-lg bg-white dark:bg-zinc-100 shadow-sm border border-zinc-200 dark:border-zinc-300 transform rotate-0 transition-transform duration-300 group-hover:-translate-y-2">
         <div className="p-1.5 flex items-center justify-between">
           <div className="w-5 h-0.5 rounded-full bg-zinc-300 dark:bg-zinc-400" />
           <span className="text-[7px] font-bold font-mono px-1 py-0.2 rounded bg-zinc-200 dark:bg-zinc-300 text-zinc-900">JPG</span>
         </div>
       </div>
+
+      {/* Tapa frontal de la carpeta */}
       <div className="absolute bottom-0 inset-x-0 h-14 sm:h-16 rounded-2xl bg-zinc-300 dark:bg-[#252529] border border-zinc-400/40 dark:border-white/10 shadow-md flex items-end justify-between p-2 transition-colors duration-200 group-hover:bg-zinc-200 dark:group-hover:bg-[#2c2c31]">
+        {/* Pestaña superior izquierda */}
         <div className="absolute -top-2 left-0 w-12 sm:w-14 h-4 rounded-t-lg bg-zinc-300 dark:bg-[#252529] border-t border-l border-r border-zinc-400/40 dark:border-white/10 transition-colors group-hover:bg-zinc-200 dark:group-hover:bg-[#2c2c31]" />
+
+        {/* Badges de integración en la esquina inferior izquierda */}
         <div className="flex items-center -space-x-1 z-10">
           <div className="w-4.5 h-4.5 rounded-full bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 flex items-center justify-center p-0.5 shadow-xs">
             <GoogleDriveIcon className="w-3 h-3" />
@@ -88,6 +110,8 @@ export function GoogleDriveSettingsCard({ onClose, onSelectPhotoForProduct }: Go
   const { 
     settings, 
     isSyncing, 
+    error, 
+    clearError, 
     loadSettings, 
     connectGoogleOAuth, 
     disconnectAccount, 
@@ -95,21 +119,24 @@ export function GoogleDriveSettingsCard({ onClose, onSelectPhotoForProduct }: Go
     syncFiles 
   } = useGoogleDriveStore();
 
-  const [viewMode, setViewMode] = useState<'list' | 'grid'>('grid');
+  <'folders' | 'tags'>('folders');
+  const [viewMode, setViewMode] = useState<'list' | 'grid'>('list');
   const [searchFilter, setSearchFilter] = useState("");
+  
   const [feedback, setFeedback] = useState<string | null>(null);
 
   // Lightbox / Visor HD
   const [previewPhoto, setPreviewPhoto] = useState<GoogleDriveFile | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
-  // Background Realtime Sync sin interrumpir UI
   useEffect(() => {
     loadSettings();
+  }, [loadSettings]);
+  // Background Realtime Sync sin interrumpir UI
+  useEffect(() => {
     let interval: NodeJS.Timeout;
     if (settings.isConnected) {
       interval = setInterval(() => {
-        // Sincronización silenciosa cada 6 segundos
         fetch("/api/admin/google-drive")
           .then(res => res.json())
           .then(data => {
@@ -121,7 +148,23 @@ export function GoogleDriveSettingsCard({ onClose, onSelectPhotoForProduct }: Go
       }, 6000);
     }
     return () => clearInterval(interval);
-  }, [settings.isConnected, loadSettings, settings]);
+  }, [settings.isConnected, settings]);
+
+
+  // Archivos de la carpeta actualmente seleccionada
+  const currentFolderFiles = (settings.files || []).filter((f) => 
+    !settings.selectedFolderId || 
+    settings.selectedFolderId === "root" || 
+    f.folderId === settings.selectedFolderId
+  );
+
+  const filteredFiles = currentFolderFiles.filter((file) => 
+    !searchFilter.trim() || 
+    file.name.toLowerCase().includes(searchFilter.toLowerCase().trim())
+  );
+
+  // Carpetas disponibles (excluyendo la seleccionada actual para la lista de "Folders" si se desea o mostrando todas)
+  const availableFolders = settings.availableFolders || [];
 
   const showNotification = (msg: string) => {
     setFeedback(msg);
@@ -147,266 +190,446 @@ export function GoogleDriveSettingsCard({ onClose, onSelectPhotoForProduct }: Go
 
   const handleSelectFolder = async (folder: GoogleDriveFolder) => {
     await selectFolder(folder.id, folder.name);
-    setSearchFilter("");
+    setShowFolderDropdown(false);
     showNotification(`Carpeta activa: ${folder.name}`);
   };
 
-  const clearFolder = async () => {
-    await selectFolder("root", "Mi Unidad");
-    setSearchFilter("");
-  };
-
-  // Determine current step
-  const step = !settings.isConnected 
-    ? 1 
-    : (!settings.selectedFolderId || settings.selectedFolderId === 'root') 
-      ? 2 
-      : 3;
-
-  const currentFolderFiles = (settings.files || []).filter((f) => 
-    f.folderId === settings.selectedFolderId
-  );
-
-  const filteredFiles = currentFolderFiles.filter((file) => 
-    !searchFilter.trim() || 
-    file.name.toLowerCase().includes(searchFilter.toLowerCase().trim())
-  );
-
-  const availableFolders = (settings.availableFolders || []).filter(f => f.id !== 'root');
-  const filteredFolders = availableFolders.filter((f) => 
-    !searchFilter.trim() || 
-    f.name.toLowerCase().includes(searchFilter.toLowerCase().trim())
-  );
-
   return (
-    <div className="w-full flex flex-col h-[88vh] max-h-[820px] rounded-[2rem] bg-zinc-100 dark:bg-[#0c0c0e] text-zinc-900 dark:text-zinc-100 border border-zinc-200 dark:border-white/10 shadow-2xl overflow-hidden select-none font-sans transition-colors duration-200">
+    <div className="w-full flex flex-col md:flex-row h-[88vh] max-h-[820px] rounded-[2rem] bg-zinc-100 dark:bg-[#0c0c0e] text-zinc-900 dark:text-zinc-100 border border-zinc-200 dark:border-white/10 shadow-2xl overflow-hidden select-none font-sans transition-colors duration-200">
       
-      {/* HEADER PRINCIPAL */}
-      <div className="px-5 sm:px-7 py-4 border-b border-zinc-200 dark:border-white/5 flex items-center justify-between gap-4 shrink-0 bg-white/80 dark:bg-[#0c0c0e]/80 backdrop-blur-md">
-        <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-xl bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 flex items-center justify-center shadow-xs">
-            <GoogleDriveIcon className="w-5 h-5" />
-          </div>
-          <div className="min-w-0">
-            <h2 className="text-base font-semibold text-zinc-900 dark:text-zinc-100 leading-tight">
-              {step === 1 ? "Conectar Google Drive" : step === 2 ? "Seleccionar Carpeta" : settings.selectedFolderName}
-            </h2>
-            <p className="text-xs text-zinc-500 dark:text-zinc-400 font-medium truncate">
-              {step === 1 
-                ? "Integración Segura OAuth 2.0" 
-                : step === 2 
-                  ? "Escoge la carpeta fuente" 
-                  : `${filteredFiles.length} recursos disponibles`}
-            </p>
+      {/* 2. PANEL LATERAL: TREE VIEW & EXPLORADOR */}
+      <div className="w-full md:w-64 lg:w-72 shrink-0 flex flex-col bg-white dark:bg-[#111114] border-r border-zinc-200 dark:border-white/5 transition-colors">
+        {/* Cabecera del Sidebar */}
+        <div className="p-4 sm:p-5 pb-3 flex items-center justify-between">
+          <h3 className="font-semibold text-sm tracking-tight text-zinc-900 dark:text-zinc-100">
+            Banco de Fotos
+          </h3>
+          <div className="flex items-center gap-1">
+            <button
+              type="button"
+              onClick={handleSync}
+              disabled={isSyncing}
+              className="p-1.5 text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 rounded-lg hover:bg-zinc-100 dark:hover:bg-white/5 transition-colors cursor-pointer"
+              title="Actualizar"
+            >
+              <RefreshCw className={`w-3.5 h-3.5 ${isSyncing ? "animate-spin" : ""}`} />
+            </button>
+            {onClose && (
+              <button
+                type="button"
+                onClick={onClose}
+                className="md:hidden p-1.5 text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 rounded-lg"
+                title="Cerrar"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            )}
           </div>
         </div>
 
-        <div className="flex items-center gap-2 sm:gap-3">
-          {settings.isConnected && (
-            <>
-              {step === 3 && (
-                <button
-                  type="button"
-                  onClick={clearFolder}
-                  className="hidden sm:flex px-3 py-1.5 rounded-lg bg-zinc-200 dark:bg-white/10 hover:bg-zinc-300 dark:hover:bg-white/20 text-zinc-800 dark:text-zinc-200 text-xs font-semibold items-center gap-1.5 transition-colors cursor-pointer"
-                >
-                  <ArrowLeft className="w-3.5 h-3.5" />
-                  Cambiar Carpeta
-                </button>
-              )}
-              
-              <button
-                type="button"
-                onClick={handleSync}
-                className={`p-2 rounded-lg text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200 hover:bg-zinc-200 dark:hover:bg-white/10 transition-colors cursor-pointer ${isSyncing ? "animate-spin" : ""}`}
-                title="Actualizar Datos"
-              >
-                <RefreshCw className="w-4 h-4" />
-              </button>
-            </>
-          )}
-          
-          {onClose && (
+        {/* Buscador de la barra lateral */}
+        <div className="px-4 pb-3">
+          <div className="relative">
+            <Search className="w-3.5 h-3.5 absolute left-3 top-2.5 text-zinc-400 dark:text-zinc-500" />
+            <input
+              type="text"
+              value={searchFilter}
+              onChange={(e) => setSearchFilter(e.target.value)}
+              placeholder="Buscar..."
+              className="w-full pl-8 pr-3 py-1.5 rounded-xl border border-zinc-200 dark:border-white/10 text-xs bg-zinc-100 dark:bg-[#18181b] text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 dark:placeholder-zinc-500 focus:outline-none focus:ring-1 focus:ring-zinc-400 dark:focus:ring-white/20 transition-all"
+            />
+          </div>
+        </div>
+
+        {/* Pill Toggle Switcher (Folders / Tags como en la referencia) */}
+        <div className="px-4 pb-3">
+          <div className="p-1 rounded-xl bg-zinc-200/70 dark:bg-[#18181b] border border-zinc-300/50 dark:border-white/5 flex items-center">
             <button
               type="button"
-              onClick={onClose}
-              className="p-2 rounded-lg text-zinc-500 hover:bg-rose-50 hover:text-rose-600 dark:hover:bg-rose-500/10 dark:hover:text-rose-400 transition-colors cursor-pointer"
+              onClick={() => setActiveTab('folders')}
+              className={`flex-1 py-1 px-2.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                activeTab === 'folders'
+                  ? "bg-white dark:bg-[#27272a] text-zinc-900 dark:text-white shadow-xs"
+                  : "text-zinc-500 dark:text-zinc-400 hover:text-zinc-800 dark:hover:text-zinc-200"
+              }`}
             >
-              <X className="w-5 h-5" />
+              Carpetas
             </button>
-          )}
+            <button
+              type="button"
+              onClick={() => setActiveTab('tags')}
+              className={`flex-1 py-1 px-2.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                activeTab === 'tags'
+                  ? "bg-white dark:bg-[#27272a] text-zinc-900 dark:text-white shadow-xs"
+                  : "text-zinc-500 dark:text-zinc-400 hover:text-zinc-800 dark:hover:text-zinc-200"
+              }`}
+            >
+              Archivos
+            </button>
+          </div>
+        </div>
+
+        {/* Vista en Árbol Jerárquico de Carpetas */}
+        <div className="flex-1 overflow-y-auto px-3 pb-4 space-y-1">
+          {availableFolders.map((folder) => {
+            const isSelected = settings.selectedFolderId === folder.id;
+            const isRoot = folder.id === 'root';
+
+            return (
+              <div key={folder.id} className="space-y-0.5">
+                <button
+                  type="button"
+                  onClick={() => handleSelectFolder(folder)}
+                  className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-xl text-xs transition-colors cursor-pointer text-left ${
+                    isSelected
+                      ? "bg-zinc-200/90 dark:bg-white/10 text-zinc-900 dark:text-white font-semibold"
+                      : "text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-white/5 hover:text-zinc-900 dark:hover:text-zinc-200"
+                  }`}
+                >
+                  <div className="flex items-center gap-2 truncate">
+                    {isSelected ? (
+                      <FolderOpen className="w-3.5 h-3.5 text-zinc-800 dark:text-zinc-200 shrink-0" />
+                    ) : (
+                      <Folder className="w-3.5 h-3.5 text-zinc-400 dark:text-zinc-500 shrink-0" />
+                    )}
+                    <span className="truncate">{folder.name}</span>
+                  </div>
+                  <span className="text-[10px] font-mono px-1.5 py-0.2 rounded-full bg-zinc-200 dark:bg-[#202024] text-zinc-600 dark:text-zinc-400 shrink-0">
+                    {folder.itemCount || 0}
+                  </span>
+                </button>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Pie de la barra lateral: Correo de Google conectado */}
+        <div className="p-3 border-t border-zinc-200 dark:border-white/5 bg-zinc-50/50 dark:bg-black/20">
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2 min-w-0">
+              <div className="w-7 h-7 rounded-lg bg-zinc-200 dark:bg-zinc-800 flex items-center justify-center text-xs font-bold text-zinc-700 dark:text-zinc-300 shrink-0">
+                {settings.accountEmail ? settings.accountEmail.charAt(0).toUpperCase() : "G"}
+              </div>
+              <div className="min-w-0">
+                <p className="text-[11px] font-medium text-zinc-800 dark:text-zinc-200 truncate">
+                  {settings.accountEmail || "Google Drive"}
+                </p>
+                <p className="text-[9px] text-emerald-600 dark:text-emerald-400 font-mono">
+                  {settings.isConnected ? "Conectado" : "Desconectado"}
+                </p>
+              </div>
+            </div>
+
+            {settings.isConnected && (
+              <button
+                type="button"
+                onClick={() => disconnectAccount()}
+                className="p-1.5 text-zinc-400 hover:text-rose-500 rounded-lg transition-colors cursor-pointer"
+                title="Cambiar cuenta"
+              >
+                <LogOut className="w-3.5 h-3.5" />
+              </button>
+            )}
+          </div>
         </div>
       </div>
 
-      {/* CONTENIDO PRINCIPAL POR PASO */}
-      <div className="flex-1 flex flex-col min-h-0 bg-white dark:bg-[#0c0c0e] relative">
+      )}
+      {/* 3. ÁREA DE CONTENIDO PRINCIPAL (DERECHA) */}
+      <div className="flex-1 flex flex-col min-w-0 bg-white dark:bg-[#0c0c0e] overflow-hidden transition-colors">
         
-        {step === 1 && (
-          <div className="flex-1 flex flex-col items-center justify-center p-8 text-center space-y-6">
-            <LayeredFolderGraphic className="scale-125 mb-4" />
-            <div className="max-w-md space-y-2">
-              <h3 className="text-xl font-bold text-zinc-900 dark:text-zinc-100">
-                Almacenamiento Conectado
-              </h3>
-              <p className="text-sm text-zinc-500 dark:text-zinc-400 leading-relaxed">
-                Autoriza a Lumina Home para acceder exclusivamente en modo lectura a tus carpetas de Google Drive.
+        {/* Barra Superior del Canvas Principal */}
+        <div className="px-5 sm:px-7 py-4 border-b border-zinc-200 dark:border-white/5 flex items-center justify-between gap-4 shrink-0 bg-white/80 dark:bg-[#0c0c0e]/80 backdrop-blur-md">
+          {/* Breadcrumb / Dropdown de Carpeta (General Knowledge ∨ en la referencia) */}
+          <div className="relative">
+            <div className="inline-flex items-center gap-2 text-sm sm:text-base font-semibold text-zinc-900 dark:text-zinc-100 transition-colors">
+              <span>{settings.selectedFolderName || "Mi Unidad"}</span>
+            </div>
+              </div>
+            )}
+          </div>
+
+          {/* Acciones de la derecha: Conexión, Toggle de vista, Cerrar */}
+          <div className="flex items-center gap-2.5">
+            {/* View Mode Toggle: Lista / Cuadrícula */}
+            <div className="p-1 rounded-xl bg-zinc-100 dark:bg-[#18181b] border border-zinc-200 dark:border-white/10 flex items-center">
+              <button
+                type="button"
+                onClick={() => setViewMode('list')}
+                className={`p-1.5 rounded-lg transition-colors cursor-pointer ${
+                  viewMode === 'list'
+                    ? "bg-white dark:bg-[#27272a] text-zinc-900 dark:text-white shadow-xs"
+                    : "text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200"
+                }`}
+                title="Vista en Lista"
+              >
+                <List className="w-3.5 h-3.5" />
+              </button>
+              <button
+                type="button"
+                onClick={() => setViewMode('grid')}
+                className={`p-1.5 rounded-lg transition-colors cursor-pointer ${
+                  viewMode === 'grid'
+                    ? "bg-white dark:bg-[#27272a] text-zinc-900 dark:text-white shadow-xs"
+                    : "text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200"
+                }`}
+                title="Vista en Cuadrícula"
+              >
+                <LayoutGrid className="w-3.5 h-3.5" />
+              </button>
+            </div>
+
+            {onClose && (
+              <button
+                type="button"
+                onClick={onClose}
+                className="hidden md:flex p-1.5 text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-100 rounded-lg hover:bg-zinc-100 dark:hover:bg-white/5 transition-colors cursor-pointer"
+                title="Cerrar ventana"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* Notificaciones / Feedback flotante */}
+        {feedback && (
+          <div className="mx-6 my-2 p-2.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300 text-xs font-medium flex items-center gap-2">
+            <Check className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
+            <span>{feedback}</span>
+          </div>
+        )}
+
+        {/* Pantalla cuando Google Drive NO está conectado */}
+        {!settings.isConnected ? (
+          <div className="flex-1 flex flex-col items-center justify-center p-8 text-center space-y-5">
+            <div className="w-14 h-14 rounded-2xl bg-zinc-100 dark:bg-[#18181b] border border-zinc-200 dark:border-white/10 flex items-center justify-center shadow-xs">
+              <GoogleDriveIcon className="w-7 h-7" />
+            </div>
+
+            <div className="max-w-sm space-y-1.5">
+              <h4 className="text-base font-semibold text-zinc-900 dark:text-zinc-100">
+                Conectar Google Drive
+              </h4>
+              <p className="text-xs text-zinc-500 dark:text-zinc-400 leading-relaxed">
+                Vincula tu unidad para explorar tus carpetas y seleccionar fotografías de producto en alta resolución.
               </p>
             </div>
+
             <button
               type="button"
               onClick={() => connectGoogleOAuth()}
               disabled={isSyncing}
-              className="py-3 px-6 rounded-xl bg-zinc-900 dark:bg-white hover:bg-zinc-800 dark:hover:bg-zinc-100 text-white dark:text-zinc-900 font-bold text-sm shadow-xl transition-all hover:-translate-y-0.5 cursor-pointer flex items-center gap-3 disabled:opacity-50 disabled:hover:translate-y-0"
+              className="py-2.5 px-5 rounded-xl bg-zinc-900 dark:bg-white hover:bg-zinc-800 dark:hover:bg-zinc-100 text-white dark:text-zinc-900 font-semibold text-xs shadow-md transition-colors cursor-pointer flex items-center gap-2.5 disabled:opacity-50"
             >
-              <GoogleLogoIcon className="w-5 h-5" />
+              <GoogleLogoIcon className="w-4 h-4" />
               <span>{isSyncing ? "Conectando..." : "Conectar Google Drive"}</span>
             </button>
           </div>
-        )}
-
-        {step === 2 && (
-          <div className="flex-1 flex flex-col h-full">
-            <div className="px-5 sm:px-7 py-4 border-b border-zinc-100 dark:border-white/5">
-              <div className="relative">
-                <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400" />
-                <input
-                  type="text"
-                  placeholder="Buscar carpeta..."
-                  value={searchFilter}
-                  onChange={(e) => setSearchFilter(e.target.value)}
-                  className="w-full pl-9 pr-4 py-2.5 rounded-xl bg-zinc-100 dark:bg-[#18181b] border-none focus:ring-2 focus:ring-zinc-300 dark:focus:ring-zinc-700 outline-none text-sm font-medium text-zinc-900 dark:text-zinc-100 placeholder:font-normal"
-                />
+        ) : (
+          /* CANVAS CON CONTENIDO: SECCIÓN 1 FOLDERS + SECCIÓN 2 FILES */
+          <div className="flex-1 overflow-y-auto p-5 sm:p-7 space-y-7">
+            
+            {/* SECCIÓN 1: FOLDERS (CARPETAS CON EL DISEÑO 3D DE LA IMAGEN DE REFERENCIA) */}
+            <div className="space-y-3.5">
+              <div className="flex items-center justify-between">
+                <h4 className="text-sm sm:text-base font-semibold text-zinc-900 dark:text-zinc-100">
+                  Folders
+                </h4>
+                <span className="text-[11px] font-mono text-zinc-400">
+                  {availableFolders.length} carpetas
+                </span>
               </div>
-            </div>
-            <div className="flex-1 overflow-y-auto p-5 sm:p-7">
-              {filteredFolders.length === 0 ? (
-                <div className="h-full flex flex-col items-center justify-center text-zinc-400 space-y-3">
-                  <Folder className="w-10 h-10 opacity-50" />
-                  <p className="text-sm">No se encontraron carpetas.</p>
-                </div>
-              ) : (
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-                  {filteredFolders.map(folder => (
-                    <button
+
+              {/* Grid / Carrusel de Tarjetas de Carpeta 3D */}
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3.5 sm:gap-4">
+                {availableFolders.map((folder) => {
+                  const isCurrent = settings.selectedFolderId === folder.id;
+
+                  return (
+                    <div
                       key={folder.id}
-                      type="button"
                       onClick={() => handleSelectFolder(folder)}
-                      className="group p-5 rounded-3xl bg-zinc-50 dark:bg-[#141417] border border-zinc-200 dark:border-white/10 hover:border-zinc-300 dark:hover:border-white/20 transition-all flex flex-col items-center text-center gap-3 cursor-pointer shadow-xs hover:shadow-md"
+                      className={`group p-4 sm:p-5 rounded-2xl sm:rounded-3xl border transition-all duration-200 cursor-pointer flex flex-col items-center text-center space-y-3 ${
+                        isCurrent
+                          ? "bg-zinc-200/60 dark:bg-[#18181b] border-zinc-400 dark:border-white/20 shadow-md ring-1 ring-zinc-400/30"
+                          : "bg-zinc-50 dark:bg-[#141417] border-zinc-200 dark:border-white/5 hover:border-zinc-300 dark:hover:border-white/15 hover:bg-zinc-100/70 dark:hover:bg-[#18181b] shadow-xs hover:shadow-md"
+                      }`}
                     >
-                      <LayeredFolderGraphic className="scale-75 group-hover:scale-90 transition-transform" />
-                      <div className="w-full">
-                        <p className="text-xs font-semibold text-zinc-800 dark:text-zinc-200 truncate px-1" title={folder.name}>
+                      {/* Ilustración de Carpeta Layered 3D */}
+                      <LayeredFolderGraphic />
+
+                      {/* Información de la Carpeta */}
+                      <div className="space-y-0.5 w-full">
+                        <h5 className="font-semibold text-xs sm:text-sm text-zinc-900 dark:text-zinc-100 truncate group-hover:text-zinc-950 dark:group-hover:text-white">
                           {folder.name}
+                        </h5>
+                        <p className="text-[11px] text-zinc-400 dark:text-zinc-500 font-medium">
+                          {folder.itemCount || 0} Files
                         </p>
-                        <p className="text-[10px] text-zinc-500 mt-1 font-mono">{folder.itemCount || 0} items</p>
-                      </div>
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
-        )}
-
-        {step === 3 && (
-          <div className="flex-1 flex flex-col h-full relative">
-            <div className="px-5 sm:px-7 py-4 border-b border-zinc-100 dark:border-white/5 flex flex-col sm:flex-row gap-3 items-center justify-between">
-              <div className="relative w-full sm:max-w-xs">
-                <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400" />
-                <input
-                  type="text"
-                  placeholder="Buscar fotos..."
-                  value={searchFilter}
-                  onChange={(e) => setSearchFilter(e.target.value)}
-                  className="w-full pl-9 pr-4 py-2.5 rounded-xl bg-zinc-100 dark:bg-[#18181b] border-none focus:ring-2 focus:ring-zinc-300 dark:focus:ring-zinc-700 outline-none text-sm font-medium text-zinc-900 dark:text-zinc-100 placeholder:font-normal"
-                />
-              </div>
-              <div className="flex items-center gap-2 self-end sm:self-auto">
-                <button
-                  type="button"
-                  onClick={clearFolder}
-                  className="sm:hidden p-2 rounded-lg bg-zinc-100 dark:bg-[#18181b] text-zinc-600 dark:text-zinc-300 transition-colors"
-                  title="Cambiar Carpeta"
-                >
-                  <ArrowLeft className="w-4 h-4" />
-                </button>
-                <div className="p-1 rounded-xl bg-zinc-100 dark:bg-[#18181b] flex items-center">
-                  <button
-                    type="button"
-                    onClick={() => setViewMode('list')}
-                    className={`p-1.5 rounded-lg transition-colors cursor-pointer ${viewMode === 'list' ? "bg-white dark:bg-[#27272a] text-zinc-900 dark:text-white shadow-xs" : "text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200"}`}
-                  >
-                    <List className="w-4 h-4" />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setViewMode('grid')}
-                    className={`p-1.5 rounded-lg transition-colors cursor-pointer ${viewMode === 'grid' ? "bg-white dark:bg-[#27272a] text-zinc-900 dark:text-white shadow-xs" : "text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200"}`}
-                  >
-                    <LayoutGrid className="w-4 h-4" />
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            <div className="flex-1 overflow-y-auto p-5 sm:p-7">
-              {filteredFiles.length === 0 ? (
-                <div className="h-full flex flex-col items-center justify-center text-zinc-400 space-y-3">
-                  <ImageIcon className="w-10 h-10 opacity-50" />
-                  <p className="text-sm">No hay fotografías disponibles.</p>
-                </div>
-              ) : viewMode === 'list' ? (
-                <div className="space-y-2">
-                  {filteredFiles.map(file => (
-                    <div key={file.id} className="group flex items-center justify-between p-2 rounded-xl bg-zinc-50 dark:bg-[#141417] border border-zinc-200 dark:border-white/5 hover:border-zinc-300 dark:hover:border-white/20 transition-colors">
-                      <div className="flex items-center gap-3 min-w-0">
-                        <div className="w-12 h-12 rounded-lg bg-zinc-200 dark:bg-black overflow-hidden shrink-0">
-                          <img src={file.thumbnailUrl || file.cdnUrl} alt={file.name} className="w-full h-full object-cover" loading="lazy" />
-                        </div>
-                        <div className="min-w-0">
-                          <p className="text-xs font-semibold text-zinc-900 dark:text-zinc-100 truncate">{file.name}</p>
-                          <p className="text-[10px] text-zinc-500 font-mono mt-0.5">{file.dimensions} • {file.size}</p>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-1.5 shrink-0 px-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <button type="button" onClick={() => setPreviewPhoto(file)} className="p-1.5 rounded-lg bg-zinc-100 dark:bg-white/5 text-zinc-600 dark:text-zinc-300 hover:bg-zinc-200 dark:hover:bg-white/10" title="Ver en Grande">
-                          <Eye className="w-4 h-4" />
-                        </button>
-                        <button type="button" onClick={(e) => handleCopyLink(e, file.cdnUrl, file.id)} className="p-1.5 rounded-lg bg-zinc-100 dark:bg-white/5 text-zinc-600 dark:text-zinc-300 hover:bg-zinc-200 dark:hover:bg-white/10" title="Copiar Enlace">
-                          {copiedId === file.id ? <Check className="w-4 h-4 text-emerald-500" /> : <Copy className="w-4 h-4" />}
-                        </button>
-                        {onSelectPhotoForProduct && (
-                          <button type="button" onClick={() => onSelectPhotoForProduct(file.cdnUrl, file)} className="px-3 py-1.5 rounded-lg bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 font-semibold text-[10px] ml-2">
-                            Usar
-                          </button>
-                        )}
                       </div>
                     </div>
-                  ))}
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* SECCIÓN 2: FILES (ARCHIVOS / FOTOGRAFÍAS) */}
+            <div className="space-y-3.5">
+              <div className="flex items-center justify-between">
+                <h4 className="text-sm sm:text-base font-semibold text-zinc-900 dark:text-zinc-100">
+                  Files
+                </h4>
+                <span className="text-[11px] font-mono text-zinc-400">
+                  {filteredFiles.length} fotografías en {settings.selectedFolderName}
+                </span>
+              </div>
+
+              {/* ESTADO VACÍO */}
+              {filteredFiles.length === 0 ? (
+                <div className="p-10 text-center rounded-2xl border border-dashed border-zinc-200 dark:border-white/10 text-xs text-zinc-400 space-y-2">
+                  <p>No se encontraron fotografías en esta carpeta.</p>
+                  <p className="text-[11px] text-zinc-500">Selecciona otra carpeta en la sección superior.</p>
+                </div>
+              ) : viewMode === 'list' ? (
+                /* TABLA LIST VIEW EXACTA AL DISEÑO DE REFERENCIA */
+                <div className="rounded-2xl border border-zinc-200 dark:border-white/10 overflow-hidden bg-white dark:bg-[#111114]">
+                  {/* Encabezado de la tabla */}
+                  <div className="grid grid-cols-12 px-4 py-2.5 bg-zinc-50 dark:bg-[#161619] border-b border-zinc-200 dark:border-white/5 text-[11px] font-medium text-zinc-400 dark:text-zinc-500 font-mono">
+                    <div className="col-span-7 sm:col-span-6">Name</div>
+                    <div className="col-span-5 sm:col-span-4">Added By</div>
+                    <div className="hidden sm:block sm:col-span-2 text-right">Acciones</div>
+                  </div>
+
+                  {/* Filas de Archivos */}
+                  <div className="divide-y divide-zinc-200 dark:divide-white/5">
+                    {filteredFiles.map((file) => (
+                      <div
+                        key={file.id}
+                        className="grid grid-cols-12 items-center px-4 py-2.5 hover:bg-zinc-50 dark:hover:bg-white/[0.03] transition-colors group text-xs"
+                      >
+                        {/* Columna Nombre con thumbnail/icono */}
+                        <div className="col-span-7 sm:col-span-6 flex items-center gap-2.5 min-w-0 pr-2">
+                          <div className="w-7 h-7 rounded-lg overflow-hidden bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-white/10 shrink-0">
+                            <img
+                              src={file.thumbnailUrl || file.cdnUrl}
+                              alt={file.name}
+                              className="w-full h-full object-cover"
+                              loading="lazy"
+                            />
+                          </div>
+                          <span className="truncate font-medium text-zinc-800 dark:text-zinc-200" title={file.name}>
+                            {file.name}
+                          </span>
+                        </div>
+
+                        {/* Columna Added By con Avatar y Email */}
+                        <div className="col-span-5 sm:col-span-4 flex items-center gap-2 min-w-0 pr-2">
+                          <div className="w-5 h-5 rounded-full bg-zinc-200 dark:bg-zinc-700 text-zinc-700 dark:text-zinc-300 text-[10px] font-bold flex items-center justify-center shrink-0">
+                            {settings.accountEmail ? settings.accountEmail.charAt(0).toUpperCase() : "A"}
+                          </div>
+                          <span className="truncate text-zinc-500 dark:text-zinc-400 text-[11px] font-mono">
+                            {settings.accountEmail || "Google Drive"}
+                          </span>
+                        </div>
+
+                        {/* Columna Acciones */}
+                        <div className="col-span-12 sm:col-span-2 flex items-center justify-end gap-1.5 mt-2 sm:mt-0 pt-1 sm:pt-0 border-t sm:border-0 border-zinc-100 dark:border-white/5">
+                          <button
+                            type="button"
+                            onClick={() => setPreviewPhoto(file)}
+                            className="p-1.5 rounded-lg text-zinc-400 hover:text-zinc-800 dark:hover:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-white/5 transition-colors cursor-pointer"
+                            title="Ver en Grande"
+                          >
+                            <Eye className="w-3.5 h-3.5" />
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={(e) => handleCopyLink(e, file.cdnUrl, file.id)}
+                            className="p-1.5 rounded-lg text-zinc-400 hover:text-zinc-800 dark:hover:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-white/5 transition-colors cursor-pointer"
+                            title="Copiar Enlace"
+                          >
+                            {copiedId === file.id ? (
+                              <Check className="w-3.5 h-3.5 text-emerald-500" />
+                            ) : (
+                              <Copy className="w-3.5 h-3.5" />
+                            )}
+                          </button>
+
+                          {onSelectPhotoForProduct && (
+                            <button
+                              type="button"
+                              onClick={() => onSelectPhotoForProduct(file.cdnUrl, file)}
+                              className="px-2.5 py-1 rounded-lg bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 font-semibold text-[10px] transition-colors cursor-pointer"
+                            >
+                              Usar
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               ) : (
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-                  {filteredFiles.map(file => (
-                    <div key={file.id} className="group relative rounded-2xl bg-zinc-50 dark:bg-[#141417] border border-zinc-200 dark:border-white/10 overflow-hidden shadow-xs hover:border-zinc-400 dark:hover:border-white/20 transition-all flex flex-col justify-between">
+                /* VISTA EN CUADRÍCULA DE FOTOGRAFÍAS (GALLERY GRID) */
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
+                  {filteredFiles.map((file) => (
+                    <div
+                      key={file.id}
+                      className="group relative rounded-2xl bg-zinc-50 dark:bg-[#141417] border border-zinc-200 dark:border-white/10 overflow-hidden shadow-xs hover:border-zinc-400 dark:hover:border-white/20 transition-all flex flex-col justify-between"
+                    >
                       <div className="aspect-square w-full relative bg-zinc-100 dark:bg-black overflow-hidden">
-                        <img src={file.thumbnailUrl || file.cdnUrl} alt={file.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" loading="lazy" />
+                        <img
+                          src={file.thumbnailUrl || file.cdnUrl}
+                          alt={file.name}
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                          loading="lazy"
+                        />
                         <div className="absolute bottom-1.5 left-1.5 bg-black/70 backdrop-blur-md px-1.5 py-0.5 rounded text-[8px] font-mono text-white/90">
                           {file.size || "HD"}
                         </div>
-                        <div className="absolute inset-0 bg-black/60 backdrop-blur-[2px] opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2 p-2">
-                          <button type="button" onClick={() => setPreviewPhoto(file)} className="p-2 rounded-lg bg-zinc-800 text-zinc-100 hover:bg-zinc-700" title="Ver en Alta Resolución">
-                            <Eye className="w-4 h-4" />
+
+                        {/* Hover Overlay */}
+                        <div className="absolute inset-0 bg-black/60 backdrop-blur-[2px] opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1.5 p-2">
+                          <button
+                            type="button"
+                            onClick={() => setPreviewPhoto(file)}
+                            className="p-1.5 rounded-lg bg-zinc-800 text-zinc-100 hover:bg-zinc-700 transition-colors cursor-pointer"
+                            title="Ver en Alta Resolución"
+                          >
+                            <Eye className="w-3.5 h-3.5" />
                           </button>
-                          <button type="button" onClick={(e) => handleCopyLink(e, file.cdnUrl, file.id)} className="p-2 rounded-lg bg-zinc-800 text-zinc-100 hover:bg-zinc-700" title="Copiar enlace">
-                            {copiedId === file.id ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
+
+                          <button
+                            type="button"
+                            onClick={(e) => handleCopyLink(e, file.cdnUrl, file.id)}
+                            className="p-1.5 rounded-lg bg-zinc-800 text-zinc-100 hover:bg-zinc-700 transition-colors cursor-pointer"
+                            title="Copiar enlace"
+                          >
+                            {copiedId === file.id ? (
+                              <Check className="w-3.5 h-3.5 text-emerald-400" />
+                            ) : (
+                              <Copy className="w-3.5 h-3.5" />
+                            )}
                           </button>
                         </div>
                       </div>
-                      <div className="p-3">
-                        <p className="text-xs font-semibold text-zinc-800 dark:text-zinc-200 truncate" title={file.name}>{file.name}</p>
-                        <p className="text-[9px] text-zinc-400 font-mono mt-1 truncate">{file.dimensions || "Resolución Drive"}</p>
+
+                      <div className="p-2.5">
+                        <p className="text-[11px] font-semibold text-zinc-800 dark:text-zinc-200 truncate" title={file.name}>
+                          {file.name}
+                        </p>
+                        <p className="text-[9px] text-zinc-400 font-mono mt-0.5 truncate">
+                          {file.dimensions || "Resolución Drive"}
+                        </p>
+
                         {onSelectPhotoForProduct && (
-                          <button type="button" onClick={() => onSelectPhotoForProduct(file.cdnUrl, file)} className="w-full mt-3 py-1.5 px-2 rounded-lg bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 text-[10px] font-semibold">
+                          <button
+                            type="button"
+                            onClick={() => onSelectPhotoForProduct(file.cdnUrl, file)}
+                            className="w-full mt-2 py-1 px-2 rounded-lg bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 text-[10px] font-semibold transition-colors cursor-pointer"
+                          >
                             Usar en Producto
                           </button>
                         )}
@@ -415,24 +638,6 @@ export function GoogleDriveSettingsCard({ onClose, onSelectPhotoForProduct }: Go
                   ))}
                 </div>
               )}
-            </div>
-
-            {/* BARRA INFERIOR CON EMAIL Y CERRAR SESION */}
-            <div className="px-5 sm:px-7 py-3 border-t border-zinc-200 dark:border-white/5 flex items-center justify-between bg-zinc-50 dark:bg-black/20 text-xs mt-auto">
-              <div className="flex items-center gap-2 text-zinc-600 dark:text-zinc-400 font-medium">
-                <div className="w-5 h-5 rounded-md bg-zinc-200 dark:bg-zinc-800 flex items-center justify-center text-[10px] font-bold text-zinc-900 dark:text-white">
-                  {settings.accountEmail?.charAt(0).toUpperCase() || "G"}
-                </div>
-                <span>{settings.accountEmail || "Google Drive"}</span>
-              </div>
-              <button
-                type="button"
-                onClick={() => disconnectAccount()}
-                className="flex items-center gap-1.5 text-zinc-400 hover:text-rose-500 transition-colors font-medium"
-              >
-                <LogOut className="w-3.5 h-3.5" />
-                <span>Desconectar</span>
-              </button>
             </div>
           </div>
         )}
@@ -445,31 +650,58 @@ export function GoogleDriveSettingsCard({ onClose, onSelectPhotoForProduct }: Go
             <div className="p-4 border-b border-zinc-200 dark:border-zinc-800 flex items-center justify-between bg-zinc-50 dark:bg-zinc-950/80">
               <div className="min-w-0 pr-3">
                 <h5 className="font-semibold text-sm truncate text-zinc-900 dark:text-zinc-100">{previewPhoto.name}</h5>
-                <p className="text-[11px] text-zinc-400 font-mono">{previewPhoto.dimensions} • {previewPhoto.size}</p>
+                <p className="text-[11px] text-zinc-400 font-mono">
+                  {previewPhoto.dimensions} • {previewPhoto.size}
+                </p>
               </div>
+
               <div className="flex items-center gap-2 shrink-0">
-                <button type="button" onClick={(e) => handleCopyLink(e, previewPhoto.cdnUrl, previewPhoto.id)} className="px-3 py-1.5 rounded-xl bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-800 dark:text-zinc-200 text-xs font-medium flex items-center gap-1.5 cursor-pointer">
-                  {copiedId === previewPhoto.id ? <><Check className="w-3.5 h-3.5 text-emerald-500" /><span>Copiado</span></> : <><Copy className="w-3.5 h-3.5" /><span>Copiar Enlace</span></>}
+                <button
+                  type="button"
+                  onClick={(e) => handleCopyLink(e, previewPhoto.cdnUrl, previewPhoto.id)}
+                  className="px-3 py-1.5 rounded-xl bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-800 dark:text-zinc-200 text-xs font-medium flex items-center gap-1.5 cursor-pointer transition-colors"
+                >
+                  {copiedId === previewPhoto.id ? (
+                    <>
+                      <Check className="w-3.5 h-3.5 text-emerald-500" />
+                      <span>Copiado</span>
+                    </>
+                  ) : (
+                    <>
+                      <Copy className="w-3.5 h-3.5" />
+                      <span>Copiar Enlace</span>
+                    </>
+                  )}
                 </button>
-                <a href={previewPhoto.cdnUrl} target="_blank" rel="noopener noreferrer" className="p-2 rounded-xl bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-800 dark:text-zinc-200 cursor-pointer">
+
+                <a
+                  href={previewPhoto.cdnUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="p-2 rounded-xl bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-800 dark:text-zinc-200 transition-colors cursor-pointer"
+                  title="Abrir imagen"
+                >
                   <Download className="w-4 h-4" />
                 </a>
-                <button type="button" onClick={() => setPreviewPhoto(null)} className="p-2 rounded-xl bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-800 dark:text-zinc-200 cursor-pointer">
+
+                <button
+                  type="button"
+                  onClick={() => setPreviewPhoto(null)}
+                  className="p-2 rounded-xl bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-800 dark:text-zinc-200 transition-colors cursor-pointer"
+                >
                   <X className="w-4 h-4" />
                 </button>
               </div>
             </div>
+
             <div className="p-4 flex-1 flex items-center justify-center overflow-hidden bg-zinc-100 dark:bg-black min-h-[320px]">
-              <img src={previewPhoto.cdnUrl} alt={previewPhoto.name} className="max-h-[68vh] w-auto max-w-full object-contain rounded-xl shadow-lg" />
+              <img
+                src={previewPhoto.cdnUrl}
+                alt={previewPhoto.name}
+                className="max-h-[68vh] w-auto max-w-full object-contain rounded-xl shadow-lg"
+              />
             </div>
           </div>
-        </div>
-      )}
-      
-      {/* FEEDBACK TOAST */}
-      {feedback && (
-        <div className="absolute bottom-6 left-1/2 -translate-x-1/2 px-4 py-2 bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 rounded-full text-xs font-medium shadow-xl animate-fade-in z-[100]">
-          {feedback}
         </div>
       )}
     </div>
