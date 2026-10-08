@@ -352,7 +352,7 @@ export const useGoogleDriveStore = create<GoogleDriveState>((set, get) => ({
         // 3. Manejar cierre del popup con varios reintentos para no rendirse prematuramente
         if (popup?.closed) {
           closedCheckAttempts++;
-          if (closedCheckAttempts >= 3) {
+          if (closedCheckAttempts >= 10) {
             cleanup();
             if (!resolved) {
               // Intento final antes de apagar estado sincronizando
@@ -566,30 +566,35 @@ export const useGoogleDriveStore = create<GoogleDriveState>((set, get) => ({
       const folder = get().settings.availableFolders.find((f) => f.id === folderId);
       const resolvedName = folderName || folder?.name || (folderId === 'root' ? 'Mi Unidad' : folderId);
 
-      try {
-        const { data: { session } } = await supabase.auth.getSession();
-        await fetch("/api/admin/google-drive", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            ...(session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {}),
-          },
-          body: JSON.stringify({ action: "select_folder", folderId, folderName: resolvedName }),
-        });
-      } catch {}
+      const { data: { session } } = await supabase.auth.getSession();
+      const res = await fetch("/api/admin/google-drive", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {}),
+        },
+        body: JSON.stringify({ action: "select_folder", folderId, folderName: resolvedName }),
+      });
+
+      let returnedFiles: GoogleDriveFile[] = [];
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data.files)) {
+          returnedFiles = data.files;
+        }
+      }
+
+      // En 'root' (Mi Unidad) NUNCA se muestran imágenes. Solo al seleccionar una carpeta concreta.
+      const finalFiles = folderId === "root" ? [] : (returnedFiles.length > 0 ? returnedFiles : get().settings.files.filter((f) => f.folderId === folderId));
 
       const updated: GoogleDriveSettings = {
         ...get().settings,
         selectedFolderId: folderId,
         selectedFolderName: resolvedName,
+        files: finalFiles,
       };
 
-      set({ settings: updated });
-      
-      // Lanzar sincronización del nuevo folder
-      await get().syncFiles();
-      
-      set({ isSyncing: false, activeView: 'files' });
+      set({ settings: updated, isSyncing: false, activeView: folderId === "root" ? "folders" : "files" });
       return true;
     } catch {
       set({ error: "Error al seleccionar carpeta", isSyncing: false });

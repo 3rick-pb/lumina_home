@@ -93,60 +93,68 @@ export async function GET(request: Request) {
     }
 
     // 3. Obtener archivos desde la tabla de caché (admin_media_assets)
-    try {
-      let query = supabase.from('admin_media_assets').select('*').order('created_at', { ascending: false }).limit(2000);
-      if (selectedFolderId && selectedFolderId !== 'root' && selectedFolderId !== 'folder_lumina_catalog_2026') {
-        query = query.eq('folder_id', selectedFolderId);
-      }
-      
-      const { data: assets, error } = await query;
-      if (!error && Array.isArray(assets) && assets.length > 0) {
-        resolvedFiles = assets.map((a: {
-          id: string;
-          name: string;
-          mime_type?: string;
-          cdn_url: string;
-          thumbnail_url?: string;
-          size?: string;
-          dimensions?: string;
-          folder_id?: string;
-          source?: string;
-        }) => ({
-          id: a.id,
-          name: a.name,
-          mimeType: a.mime_type || 'image/jpeg',
-          cdnUrl: a.cdn_url,
-          thumbnailUrl: a.thumbnail_url || a.cdn_url,
-          size: a.size || 'HD',
-          dimensions: a.dimensions || '2000 x 2000',
-          folderId: a.folder_id || 'root',
-          source: a.source || 'google_drive'
-        }));
-        backupCount = resolvedFiles.length;
-      } else if (cred?.admin_id && isConnected && selectedFolderId !== 'root') {
-        // Si la carpeta seleccionada no tiene imágenes en caché, cargarlas bajo demanda
-        try {
-          const freshFiles = await GoogleDriveService.fetchFolderImages(cred.admin_id, selectedFolderId);
-          if (Array.isArray(freshFiles) && freshFiles.length > 0) {
-            resolvedFiles = freshFiles.map((f) => ({
-              id: f.id,
-              name: f.name,
-              mimeType: f.mimeType,
-              cdnUrl: f.cdnUrl,
-              thumbnailUrl: f.thumbnailUrl,
-              size: f.size,
-              dimensions: f.dimensions,
-              folderId: f.folderId,
-              source: f.source,
-            }));
-            backupCount = resolvedFiles.length;
+    // REQUISITO ESTRICTO: Antes de seleccionar una carpeta de Mi Unidad, NO se muestra ninguna imagen.
+    if (selectedFolderId && selectedFolderId !== 'root' && selectedFolderId !== 'folder_lumina_catalog_2026') {
+      try {
+        const query = serviceSupabase
+          .from('admin_media_assets')
+          .select('*')
+          .eq('folder_id', selectedFolderId)
+          .order('created_at', { ascending: false })
+          .limit(2000);
+        
+        const { data: assets, error } = await query;
+        if (!error && Array.isArray(assets) && assets.length > 0) {
+          resolvedFiles = assets.map((a: {
+            id: string;
+            name: string;
+            mime_type?: string;
+            cdn_url: string;
+            thumbnail_url?: string;
+            size?: string;
+            dimensions?: string;
+            folder_id?: string;
+            source?: string;
+          }) => ({
+            id: a.id,
+            name: a.name,
+            mimeType: a.mime_type || 'image/jpeg',
+            cdnUrl: a.cdn_url,
+            thumbnailUrl: a.thumbnail_url || a.cdn_url,
+            size: a.size || 'HD',
+            dimensions: a.dimensions || '2000 x 2000',
+            folderId: a.folder_id || selectedFolderId,
+            source: a.source || 'google_drive'
+          }));
+          backupCount = resolvedFiles.length;
+        } else if (cred?.admin_id && isConnected) {
+          // Si la carpeta seleccionada no tiene imágenes en caché, cargarlas bajo demanda
+          try {
+            const freshFiles = await GoogleDriveService.fetchFolderImages(cred.admin_id, selectedFolderId);
+            if (Array.isArray(freshFiles) && freshFiles.length > 0) {
+              resolvedFiles = freshFiles.map((f) => ({
+                id: f.id,
+                name: f.name,
+                mimeType: f.mimeType,
+                cdnUrl: f.cdnUrl,
+                thumbnailUrl: f.thumbnailUrl,
+                size: f.size,
+                dimensions: f.dimensions,
+                folderId: f.folderId,
+                source: f.source,
+              }));
+              backupCount = resolvedFiles.length;
+            }
+          } catch (err: unknown) {
+            console.error("Error auto-cargando fotos de carpeta:", err);
           }
-        } catch (err: unknown) {
-          console.error("Error auto-cargando fotos de carpeta:", err);
         }
+      } catch (e) {
+        console.warn("No se pudieron cargar archivos del caché", e);
       }
-    } catch (e) {
-      console.warn("No se pudieron cargar archivos del caché", e);
+    } else {
+      // En 'Mi Unidad' (sin carpeta específica seleccionada), NO se muestra ninguna imagen.
+      resolvedFiles = [];
     }
 
     // Ajustar itemCount de las carpetas basado en la BD local

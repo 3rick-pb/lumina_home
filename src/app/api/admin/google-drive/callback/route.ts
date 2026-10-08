@@ -163,7 +163,28 @@ export async function GET(request: Request) {
     return renderHtmlResponse(origin, false, "Error al persistir credenciales de Google Drive en base de datos.", 500);
   }
 
-  // 8. Responder con página segura que notifica al popup y se cierra
+  // 8. Persistir estado de conexión en admin_google_drive_settings
+  await supabase
+    .from("admin_google_drive_settings")
+    .upsert({
+      id: "global",
+      is_connected: true,
+      connected_email: googleEmail,
+      connected_account_name: googleName,
+      selected_folder_id: "root",
+      selected_folder_name: "Mi Unidad",
+      updated_at: new Date().toISOString(),
+    });
+
+  // 9. Precargar las carpetas de Google Drive de inmediato para que la UI responda instantáneamente
+  try {
+    const { GoogleDriveService } = await import("@/lib/googleDriveService");
+    await GoogleDriveService.listFolders(adminId, true);
+  } catch (prefetchErr) {
+    console.warn("Aviso: No se pudieron precargar las carpetas en el callback:", prefetchErr);
+  }
+
+  // 10. Responder con página segura que notifica al popup y se cierra
   return renderHtmlResponse(origin, true, "Conexión autorizada con éxito.", 200, {
     email: googleEmail,
     name: googleName,
