@@ -581,17 +581,9 @@ export function ArcPicker({
         const previous = latest.current.options.findIndex(
           (option) => option.value === request.current,
         );
-        // A large frame delta may cross several detents. Notify each enabled
-        // choice in order; never wait for the wheel-idle timer or pointer release.
-        const step = next > previous ? 1 : -1;
-        if (previous < 0 || previous === next) publish(next);
-        else
-          for (
-            let index = previous + step;
-            step > 0 ? index <= next : index >= next;
-            index += step
-          )
-            publish(index);
+        if (previous !== next) {
+          publish(next);
+        }
       }),
     [nearestEnabled, position, publish],
   );
@@ -610,7 +602,7 @@ export function ArcPicker({
         return;
       const useX = Math.abs(event.deltaX) > Math.abs(event.deltaY);
       if (!current.horizontal && useX) return;
-      const delta =
+      const rawDelta =
         (current.horizontal && useX ? event.deltaX : event.deltaY) *
         (event.deltaMode === 1
           ? 16
@@ -619,7 +611,7 @@ export function ArcPicker({
               ? element.clientWidth
               : element.clientHeight
             : 1);
-      if (!delta) return;
+      if (!rawDelta) return;
       const enabled = current.options
         .map((option, index) => ({ option, index }))
         .filter(({ option }) => !option.disabled);
@@ -627,7 +619,7 @@ export function ArcPicker({
       const last = enabled[enabled.length - 1]?.index ?? first;
       const from = wheelTarget.current ?? position.get();
       // At an end, release wheel events back to the page's own scroll.
-      if ((from <= first && delta < 0) || (from >= last && delta > 0)) return;
+      if ((from <= first && rawDelta < 0) || (from >= last && rawDelta > 0)) return;
       event.preventDefault();
       if (wheelTimer.current) clearTimeout(wheelTimer.current);
       if (current.reducedMotion) {
@@ -635,7 +627,7 @@ export function ArcPicker({
           ({ option }) => option.value === request.current,
         );
         const next =
-          enabled[clamp(at + Math.sign(delta), 0, enabled.length - 1)];
+          enabled[clamp(at + Math.sign(rawDelta), 0, enabled.length - 1)];
         if (next) select(next.index, true);
       } else {
         if (wheelTarget.current === null) {
@@ -645,17 +637,22 @@ export function ArcPicker({
         instant.current = false;
         tracking.current = true;
         activity.set(1);
-        const next = clamp(from + delta / current.spacing, first, last);
-        // Wheel deltas already contain trackpad momentum. Follow them directly;
-        // useTransform coalesces visual writes to one per frame. A spring here
-        // lags behind frequent input and can feel stuck until scrolling stops.
+        
+        // Suavizado inteligente: en mouse wheels físicos (saltos >= 40px), limitar cada notch
+        // a 1 posición para evitar saltos caóticos de múltiples carpetas a la vez.
+        // En trackpads de precisión, permitir desplazamiento proporcional suave.
+        const stepDistance = Math.abs(rawDelta) >= 40
+          ? Math.sign(rawDelta) * Math.min(Math.abs(rawDelta) * 0.38, current.spacing * 0.95)
+          : rawDelta * 0.45;
+
+        const next = clamp(from + stepDistance / current.spacing, first, last);
         wheelTarget.current = next;
         position.set(next);
         wheelTimer.current = setTimeout(() => {
           wheelTimer.current = null;
           wheelTarget.current = null;
           settle(nearestEnabled(next));
-        }, WHEEL_SETTLE_MS);
+        }, 140);
       }
     };
     element.addEventListener("wheel", wheel, { passive: false });
@@ -719,8 +716,9 @@ export function ArcPicker({
       activity.set(0);
       settle(latest.current.selectedIndex);
     } else {
-      const velocity =
+      const rawVel =
         performance.now() - current.time > 100 ? 0 : current.velocity;
+      const velocity = clamp(rawVel, -10, 10);
       settle(
         nearestEnabled(
           position.get() + (reducedMotion ? 0 : velocity * COAST_SECONDS),

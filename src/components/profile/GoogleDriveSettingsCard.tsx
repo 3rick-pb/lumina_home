@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { Space_Mono } from "next/font/google";
 import { motion } from "motion/react";
 import FolderComponent from "@/components/ui/Folder";
@@ -136,9 +136,9 @@ function LayeredFolderCard({
       onClick={onClick}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
-      className="group flex flex-col items-center justify-center cursor-pointer select-none py-2 px-2"
+      className="group flex flex-col items-center justify-center cursor-pointer select-none py-1 px-1 w-full max-w-[200px]"
     >
-      {/* Solo la carpeta de rareUI libre: sin clases de traslación en hover */}
+      {/* Solo la carpeta de rareUI libre: tamaño sm compacto para no colisionar con las demás */}
       <div className="relative flex items-center justify-center overflow-visible">
         <FolderComponent 
           color="blue" 
@@ -150,7 +150,7 @@ function LayeredFolderCard({
       </div>
 
       {/* Solo el nombre de la carpeta abajo con Space Mono */}
-      <div className="text-center mt-3 max-w-[220px]">
+      <div className="text-center mt-2.5 max-w-[170px] w-full">
         <h5 
           className={cn(
             "font-bold text-xs sm:text-sm truncate px-1 transition-colors font-mono",
@@ -164,6 +164,11 @@ function LayeredFolderCard({
         >
           {folder.name}
         </h5>
+        {folder.itemCount !== undefined && folder.itemCount > 0 && (
+          <span className="text-[10px] text-zinc-500 dark:text-zinc-400 font-mono block mt-0.5">
+            {folder.itemCount} {folder.itemCount === 1 ? 'foto' : 'fotos'}
+          </span>
+        )}
       </div>
     </div>
   );
@@ -194,6 +199,26 @@ export function GoogleDriveSettingsCard({ onClose, onSelectPhotoForProduct }: Go
   const [searchFilter, setSearchFilter] = useState("");
   const [arcProgressPercent, setArcProgressPercent] = useState(0);
 
+  // Estado local para el valor activo del ArcPicker (evita saltos/bloqueos al hacer scroll)
+  const [activeArcFolderId, setActiveArcFolderId] = useState<string>(settings.selectedFolderId || "root");
+  const debouncedSelectRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Sincronizar activeArcFolderId cuando el store se actualice externamente
+  useEffect(() => {
+    if (settings.selectedFolderId) {
+      setActiveArcFolderId(settings.selectedFolderId);
+    }
+  }, [settings.selectedFolderId]);
+
+  // Limpiar timer al desmontar
+  useEffect(() => {
+    return () => {
+      if (debouncedSelectRef.current) {
+        clearTimeout(debouncedSelectRef.current);
+      }
+    };
+  }, []);
+
   // Lightbox / Visor HD
   const [previewPhoto, setPreviewPhoto] = useState<GoogleDriveFile | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
@@ -211,10 +236,43 @@ export function GoogleDriveSettingsCard({ onClose, onSelectPhotoForProduct }: Go
     } catch {}
   };
 
+  // Selección inmediata (para clics directos en carpetas o botones)
+  const handleSelectFolderImmediate = useCallback(async (folder: GoogleDriveFolder) => {
+    if (debouncedSelectRef.current) {
+      clearTimeout(debouncedSelectRef.current);
+      debouncedSelectRef.current = null;
+    }
+    setActiveArcFolderId(folder.id);
+    await selectFolder(folder.id, folder.name);
+  }, [selectFolder]);
+
+  // Manejo de cambio en ArcPicker con debounce para estabilidad perfecta durante scroll continuo
+  const handleArcValueChange = useCallback((val: string) => {
+    setActiveArcFolderId(val);
+    if (debouncedSelectRef.current) {
+      clearTimeout(debouncedSelectRef.current);
+    }
+    debouncedSelectRef.current = setTimeout(() => {
+      if (val === "root") {
+        selectFolder("root", "Mi Unidad");
+      } else {
+        const target = (settings.availableFolders || []).find((f) => f.id === val);
+        if (target) {
+          selectFolder(target.id, target.name);
+        }
+      }
+    }, 280);
+  }, [settings.availableFolders, selectFolder]);
+
   // Botón HOME del rail izquierdo -> Volver a Mi Unidad
   const handleHomeClick = async () => {
     setActiveRailTab('home');
     setShowStatsModal(false);
+    if (debouncedSelectRef.current) {
+      clearTimeout(debouncedSelectRef.current);
+      debouncedSelectRef.current = null;
+    }
+    setActiveArcFolderId('root');
     await selectFolder('root', 'Mi Unidad');
     setSearchFilter("");
   };
@@ -231,12 +289,14 @@ export function GoogleDriveSettingsCard({ onClose, onSelectPhotoForProduct }: Go
   };
 
   const handleSelectFolder = async (folder: GoogleDriveFolder) => {
-    await selectFolder(folder.id, folder.name);
+    await handleSelectFolderImmediate(folder);
   };
 
-  // Carpetas disponibles desde el store
+  // Carpetas disponibles desde el store (excluyendo tajantemente carpetas vacías de raíz)
   const availableFolders = useMemo(() => {
-    return settings.availableFolders || [];
+    return (settings.availableFolders || []).filter(
+      (f) => f.id === "root" || (f.itemCount !== undefined && f.itemCount > 0)
+    );
   }, [settings.availableFolders]);
 
   // Estructura jerárquica de carpetas de Google Drive
@@ -420,17 +480,8 @@ export function GoogleDriveSettingsCard({ onClose, onSelectPhotoForProduct }: Go
             <div className="w-full flex-1 flex flex-col items-center justify-center">
               <ArcPicker
                 options={arcOptions}
-                value={settings.selectedFolderId || "root"}
-                onValueChange={(val) => {
-                  if (val === "root") {
-                    selectFolder("root", "Mi Unidad");
-                  } else {
-                    const target = availableFolders.find((f) => f.id === val);
-                    if (target) {
-                      selectFolder(target.id, target.name);
-                    }
-                  }
-                }}
+                value={activeArcFolderId}
+                onValueChange={handleArcValueChange}
                 onProgressChange={(p) => setArcProgressPercent(p)}
                 side="right"
                 radius={240}
@@ -685,7 +736,7 @@ export function GoogleDriveSettingsCard({ onClose, onSelectPhotoForProduct }: Go
                 </div>
               ) : (
                 /* Grid de Carpetas 3D de Mi Unidad (Filas de 3, libres y sin desplazamiento en hover) */
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-10 sm:gap-x-8 sm:gap-y-12 pt-6 sm:pt-8 pb-4 justify-items-center">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-8 sm:gap-x-10 lg:gap-x-12 gap-y-10 sm:gap-y-12 pt-6 sm:pt-8 pb-4 justify-items-center">
                   {rootFolders.map((folder) => (
                     <LayeredFolderCard
                       key={folder.id}
@@ -726,7 +777,7 @@ export function GoogleDriveSettingsCard({ onClose, onSelectPhotoForProduct }: Go
                   </span>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-10 sm:gap-x-8 sm:gap-y-12 pt-4 sm:pt-6 pb-2 justify-items-center">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-8 sm:gap-x-10 lg:gap-x-12 gap-y-10 sm:gap-y-12 pt-4 sm:pt-6 pb-2 justify-items-center">
                   {currentSubfolders.map((folder) => (
                     <LayeredFolderCard
                       key={folder.id}

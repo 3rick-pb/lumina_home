@@ -217,14 +217,18 @@ export class GoogleDriveService {
         .eq('id', 'global')
         .maybeSingle();
 
-      if (Array.isArray(globalSettings?.folders_list) && globalSettings.folders_list.length > 1) {
-        return globalSettings.folders_list;
+      if (Array.isArray(globalSettings?.folders_list) && globalSettings.folders_list.length > 0) {
+        const filteredCached = globalSettings.folders_list.filter(
+          (f: GoogleDriveApiFolder) => f.id === "root" || (f.itemCount && f.itemCount > 0)
+        );
+        if (filteredCached.length > 1) {
+          return filteredCached;
+        }
       }
     }
 
     const { accessToken, record } = await this.getValidAccessToken(adminId);
 
-    let folders: GoogleDriveApiFolder[] = [{ id: "root", name: "Mi Unidad", parentId: null, itemCount: 0 }];
     let pageToken: string | undefined;
     // Consulta estándar y compatible para carpetas no eliminadas
     const folderQuery = encodeURIComponent("trashed = false and mimeType = 'application/vnd.google-apps.folder'");
@@ -251,23 +255,65 @@ export class GoogleDriveService {
       pageToken = data.nextPageToken;
     } while (pageToken);
 
+    // Contar fotos asociadas por carpeta (tanto en base de datos local como en Google Drive)
+    const folderPhotoCounts: Record<string, number> = {};
+
+    // 1. Conteo desde la BD local admin_media_assets
+    const { data: localAssets } = await supabase
+      .from("admin_media_assets")
+      .select("folder_id");
+    if (Array.isArray(localAssets)) {
+      for (const a of localAssets) {
+        if (a.folder_id) {
+          folderPhotoCounts[a.folder_id] = (folderPhotoCounts[a.folder_id] || 0) + 1;
+        }
+      }
+    }
+
+    // 2. Conteo directo desde Google Drive para archivos de imagen
+    try {
+      const photosQuery = encodeURIComponent("trashed = false and (mimeType contains 'image/')");
+      const photosUrl = `https://www.googleapis.com/drive/v3/files?q=${photosQuery}&pageSize=1000&fields=nextPageToken,files(id,parents)&orderBy=modifiedTime desc`;
+      const photosRes = await this.fetchWithBackoff(photosUrl, accessToken);
+      if (photosRes.ok) {
+        const photosData = await photosRes.json();
+        const drivePhotos: Array<{ id: string; parents?: string[] }> = Array.isArray(photosData.files) ? photosData.files : [];
+        for (const dp of drivePhotos) {
+          if (dp.parents) {
+            for (const pid of dp.parents) {
+              folderPhotoCounts[pid] = (folderPhotoCounts[pid] || 0) + 1;
+            }
+          }
+        }
+      }
+    } catch (err) {
+      console.warn("No se pudieron contar fotos de Drive en listFolders:", err);
+    }
+
     // Identificar carpetas raíz: si el padre no está entre las demás carpetas, su padre es 'root'
     const folderIds = new Set(allApiFolders.map((f) => f.id));
 
-    const mappedFolders: GoogleDriveApiFolder[] = allApiFolders.map((f) => {
-      const parent = f.parents?.[0];
-      const resolvedParent = !parent || !folderIds.has(parent) ? "root" : parent;
-      return {
-        id: f.id,
-        name: f.name,
-        parentId: resolvedParent,
-        itemCount: 0,
-      };
-    });
+    // Excluir de raíz en BD todas las carpetas vacías (itemCount === 0)
+    const nonEmptyFolders: GoogleDriveApiFolder[] = allApiFolders
+      .map((f) => {
+        const parent = f.parents?.[0];
+        const resolvedParent = !parent || !folderIds.has(parent) ? "root" : parent;
+        return {
+          id: f.id,
+          name: f.name,
+          parentId: resolvedParent,
+          itemCount: folderPhotoCounts[f.id] || 0,
+        };
+      })
+      .filter((f) => f.itemCount > 0);
 
-    folders = folders.concat(mappedFolders);
+    const totalCount = Object.values(folderPhotoCounts).reduce((a, b) => a + b, 0);
+    const folders: GoogleDriveApiFolder[] = [
+      { id: "root", name: "Mi Unidad", parentId: null, itemCount: totalCount },
+      ...nonEmptyFolders,
+    ];
 
-    // Persistir lista en admin_google_drive_settings
+    // Persistir lista limpia sin carpetas vacías en admin_google_drive_settings
     await supabase.from('admin_google_drive_settings').upsert({
       id: 'global',
       is_connected: true,

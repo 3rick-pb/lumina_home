@@ -157,17 +157,51 @@ export async function GET(request: Request) {
       resolvedFiles = [];
     }
 
-    // Ajustar itemCount de las carpetas basado en la BD local
-    const fileFolderCounts: Record<string, number> = {};
-    resolvedFiles.forEach((file) => {
-      const fId = file.folderId || 'root';
-      fileFolderCounts[fId] = (fileFolderCounts[fId] || 0) + 1;
+    // Consultar el recuento global de fotos por carpeta directamente en la BD (admin_media_assets)
+    let totalDbMediaCount = 0;
+    const dbFileFolderCounts: Record<string, number> = {};
+    try {
+      const { data: dbAssetCounts } = await serviceSupabase
+        .from('admin_media_assets')
+        .select('folder_id');
+
+      if (Array.isArray(dbAssetCounts)) {
+        totalDbMediaCount = dbAssetCounts.length;
+        for (const row of dbAssetCounts) {
+          if (row.folder_id) {
+            dbFileFolderCounts[row.folder_id] = (dbFileFolderCounts[row.folder_id] || 0) + 1;
+          }
+        }
+      }
+    } catch (e) {
+      console.warn("No se pudo consultar conteo de admin_media_assets:", e);
+    }
+
+    // Actualizar itemCount de cada carpeta combinando BD y Drive
+    resolvedFolders = resolvedFolders.map((folder) => {
+      const dbCount = dbFileFolderCounts[folder.id];
+      const count = folder.id === 'root'
+        ? totalDbMediaCount
+        : (dbCount !== undefined && dbCount > 0 ? dbCount : (folder.itemCount || 0));
+      return {
+        ...folder,
+        itemCount: count,
+      };
     });
 
-    resolvedFolders = resolvedFolders.map((folder) => ({
-      ...folder,
-      itemCount: folder.id === 'root' ? resolvedFiles.length : (fileFolderCounts[folder.id] || folder.itemCount || 0),
-    }));
+    // FILTRADO DE RAÍZ EN BD: Excluir estrictamente todas las carpetas vacías (itemCount === 0)
+    // Mi Unidad ('root') siempre permanece como ancla raíz
+    resolvedFolders = resolvedFolders.filter(
+      (folder) => folder.id === 'root' || (folder.itemCount && folder.itemCount > 0)
+    );
+
+    // Persistir lista filtrada limpia en BD si hay conexión activa
+    if (globalSettings?.is_connected) {
+      supabase.from('admin_google_drive_settings').update({
+        folders_list: resolvedFolders,
+        updated_at: new Date().toISOString()
+      }).eq('id', 'global').then(() => {});
+    }
 
     return NextResponse.json({
       success: true,

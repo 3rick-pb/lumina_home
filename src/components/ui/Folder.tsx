@@ -47,10 +47,10 @@ const themes = {
 } as const;
 
 const sizeScales = {
-  xs: 0.5,
-  sm: 0.65,
-  md: 1,
-  lg: 1.35,
+  xs: 0.42,
+  sm: 0.52,
+  md: 0.85,
+  lg: 1.15,
 } as const;
 
 type FolderComponentProps = Omit<React.ComponentProps<"div">, "color"> & {

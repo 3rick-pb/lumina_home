@@ -137,7 +137,8 @@ export const useGoogleDriveStore = create<GoogleDriveState>((set, get) => ({
                 !f.id?.includes("iluminacion_premium") &&
                 !f.id?.includes("textiles_tapiceria") &&
                 !f.id?.includes("ceramica_decoracion") &&
-                f.id !== "folder_lumina_catalog_2026"
+                f.id !== "folder_lumina_catalog_2026" &&
+                (f.id === "root" || (f.itemCount !== undefined && f.itemCount > 0))
             )
             .map((f: GoogleDriveFolder) => ({
               id: f.id,
