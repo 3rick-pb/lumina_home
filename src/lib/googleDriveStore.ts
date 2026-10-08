@@ -12,11 +12,15 @@ export interface GoogleDriveFile {
   dimensions?: string;
   folderId?: string;
   source?: string;
+  ownerName?: string;
+  ownerEmail?: string;
+  ownerPhoto?: string;
 }
 
 export interface GoogleDriveFolder {
   id: string;
   name: string;
+  parentId?: string | null;
   itemCount: number;
 }
 
@@ -181,11 +185,22 @@ export const useGoogleDriveStore = create<GoogleDriveState>((set, get) => ({
           const resolvedClientId = rawSettings.googleClientId || localStoredClientId || get().settings.googleClientId || "";
 
           // Filtrar cualquier residuo de carpetas o imágenes de demostración
-          const cleanFolders = (rawSettings.availableFolders || []).filter(
-            (f: GoogleDriveFolder) => !f.id?.includes("iluminacion_premium") && !f.id?.includes("textiles_tapiceria") && !f.id?.includes("ceramica_decoracion") && f.id !== "folder_lumina_catalog_2026"
-          );
+          let cleanFolders: GoogleDriveFolder[] = (rawSettings.availableFolders || [])
+            .filter(
+              (f: GoogleDriveFolder) =>
+                !f.id?.includes("iluminacion_premium") &&
+                !f.id?.includes("textiles_tapiceria") &&
+                !f.id?.includes("ceramica_decoracion") &&
+                f.id !== "folder_lumina_catalog_2026"
+            )
+            .map((f: GoogleDriveFolder) => ({
+              id: f.id,
+              name: f.name,
+              parentId: f.parentId !== undefined ? f.parentId : (f.id === "root" ? null : "root"),
+              itemCount: f.itemCount || 0,
+            }));
           if (cleanFolders.length === 0) {
-            cleanFolders.push({ id: "root", name: "Mi Unidad", itemCount: 0 });
+            cleanFolders = [{ id: "root", name: "Mi Unidad", parentId: null, itemCount: 0 }];
           }
 
           const cleanFiles = (rawSettings.files || []).filter(

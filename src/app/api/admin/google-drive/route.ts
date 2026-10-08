@@ -16,6 +16,9 @@ export interface MediaAssetRow {
   folderId?: string;
   folderName?: string;
   source?: string;
+  ownerName?: string;
+  ownerEmail?: string;
+  ownerPhoto?: string;
 }
 
 export interface DbMediaAssetRow {
@@ -172,31 +175,45 @@ export async function GET(request: Request) {
       } catch {
         // Ignorar si la tabla aún no fue creada
       }
-    }
 
-    // 2. Intentar consultar la tabla relacional public.admin_media_assets para fotos individuales respaldadas
-    try {
-      const { data: assets, error } = await supabase
-        .from('admin_media_assets')
-        .select('*')
-        .order('created_at', { ascending: false });
+      // 2. Intentar consultar tabla relacional public.admin_media_assets para fotos individuales respaldadas
+      if (resolvedFiles.length === 0) {
+        try {
+          const { data: assets, error } = await supabase
+            .from('admin_media_assets')
+            .select('*')
+            .order('created_at', { ascending: false });
 
-      if (!error && Array.isArray(assets) && assets.length > 0) {
-        resolvedFiles = (assets as DbMediaAssetRow[]).map((a) => ({
-          id: a.id,
-          name: a.name,
-          mimeType: a.mime_type || 'image/jpeg',
-          cdnUrl: a.cdn_url,
-          thumbnailUrl: a.thumbnail_url || a.cdn_url,
-          size: a.size || '2.0 MB',
-          dimensions: a.dimensions || '2000 x 2000',
-          folderId: a.folder_id || 'folder_lumina_catalog_2026',
-        }));
-        backupCount = resolvedFiles.length;
+          if (!error && Array.isArray(assets) && assets.length > 0) {
+            resolvedFiles = (assets as DbMediaAssetRow[]).map((a) => ({
+              id: a.id,
+              name: a.name,
+              mimeType: a.mime_type || 'image/jpeg',
+              cdnUrl: a.cdn_url,
+              thumbnailUrl: a.thumbnail_url || a.cdn_url,
+              size: a.size || '2.0 MB',
+              dimensions: a.dimensions || '2000 x 2000',
+              folderId: a.folder_id || 'root',
+            }));
+            backupCount = resolvedFiles.length;
+          }
+        } catch {
+          // Si admin_media_assets no existe aún, se usan los de files_cache
+        }
       }
-    } catch {
-      // Si admin_media_assets no existe aún, se usan los de files_cache
     }
+
+    // Calcular conteos reales por carpeta
+    const fileFolderCounts: Record<string, number> = {};
+    resolvedFiles.forEach((file) => {
+      const fId = file.folderId || 'root';
+      fileFolderCounts[fId] = (fileFolderCounts[fId] || 0) + 1;
+    });
+
+    resolvedFolders = resolvedFolders.map((folder) => ({
+      ...folder,
+      itemCount: folder.id === 'root' ? resolvedFiles.length : (fileFolderCounts[folder.id] || 0),
+    }));
 
     // Actualizar in-memory
     inMemoryDriveSettings = {
@@ -210,7 +227,7 @@ export async function GET(request: Request) {
       folders_list: resolvedFolders,
       files_cache: resolvedFiles,
       backup_at: backupAt,
-      backup_count: backupCount,
+      backup_count: resolvedFiles.length,
     };
 
     return NextResponse.json({

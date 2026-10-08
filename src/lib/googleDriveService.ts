@@ -11,11 +11,15 @@ export interface GoogleDriveApiFile {
   dimensions: string;
   folderId: string;
   source: string;
+  ownerName?: string;
+  ownerEmail?: string;
+  ownerPhoto?: string;
 }
 
 export interface GoogleDriveApiFolder {
   id: string;
   name: string;
+  parentId?: string | null;
   itemCount: number;
 }
 
@@ -226,7 +230,7 @@ export class GoogleDriveService {
 
     const url = `https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(
       query
-    )}&pageSize=100&fields=nextPageToken,files(id,name,mimeType,thumbnailLink,webContentLink,size,imageMediaMetadata,parents)&orderBy=modifiedTime desc`;
+    )}&pageSize=100&fields=nextPageToken,files(id,name,mimeType,thumbnailLink,webContentLink,size,imageMediaMetadata,parents,owners)&orderBy=modifiedTime desc`;
 
     const res = await this.fetchWithBackoff(url, accessToken);
     if (!res.ok) {
@@ -241,6 +245,7 @@ export class GoogleDriveService {
       size?: string;
       imageMediaMetadata?: { width?: number; height?: number };
       parents?: string[];
+      owners?: Array<{ displayName?: string; emailAddress?: string; photoLink?: string }>;
     }
 
     const data = await res.json();
@@ -259,6 +264,9 @@ export class GoogleDriveService {
           : "Resolución Google Drive",
       folderId: f.parents?.[0] || targetFolderId,
       source: "google_drive",
+      ownerName: f.owners?.[0]?.displayName || record.google_account_name || "Admin",
+      ownerEmail: f.owners?.[0]?.emailAddress || record.google_account_email || "admin@lumina.com",
+      ownerPhoto: f.owners?.[0]?.photoLink || "",
     }));
 
     const result = {
@@ -284,7 +292,7 @@ export class GoogleDriveService {
     if (cached) return cached;
 
     const query = encodeURIComponent("trashed = false and mimeType = 'application/vnd.google-apps.folder'");
-    const url = `https://www.googleapis.com/drive/v3/files?q=${query}&pageSize=60&fields=files(id,name)&orderBy=name`;
+    const url = `https://www.googleapis.com/drive/v3/files?q=${query}&pageSize=100&fields=files(id,name,parents)&orderBy=name`;
 
     const res = await this.fetchWithBackoff(url, accessToken);
     if (!res.ok) {
@@ -294,14 +302,20 @@ export class GoogleDriveService {
     interface RawFolder {
       id: string;
       name: string;
+      parents?: string[];
     }
 
     const data = await res.json();
     const rawFolders: RawFolder[] = Array.isArray(data.files) ? data.files : [];
 
     const folders: GoogleDriveApiFolder[] = [
-      { id: "root", name: "Mi Unidad", itemCount: 0 },
-      ...rawFolders.map((f) => ({ id: f.id, name: f.name, itemCount: 0 })),
+      { id: "root", name: "Mi Unidad", parentId: null, itemCount: 0 },
+      ...rawFolders.map((f) => ({
+        id: f.id,
+        name: f.name,
+        parentId: f.parents?.[0] || "root",
+        itemCount: 0,
+      })),
     ];
 
     setToCache(cacheKey, folders, 60000);
