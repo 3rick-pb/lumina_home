@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useMemo, useRef } from "react";
+import FolderComponent from "@/components/ui/Folder";
 import { 
   Folder, 
   FolderOpen, 
@@ -68,52 +69,21 @@ function LayeredFolderCard({
   return (
     <div
       onClick={onClick}
-      className={`group relative rounded-2xl sm:rounded-3xl p-4 sm:p-5 border transition-all duration-300 ease-out cursor-pointer flex flex-col justify-between ${
+      className={`group relative rounded-2xl sm:rounded-3xl p-3 sm:p-4 border transition-all duration-300 ease-out cursor-pointer flex flex-col items-center justify-center ${
         isSelected
-          ? "bg-[#222228] border-zinc-400 dark:border-white/30 shadow-lg ring-1 ring-zinc-400/40"
-          : "bg-[#18181c] border-white/5 hover:border-white/15 hover:bg-[#1f1f24] shadow-sm hover:shadow-md"
+          ? 'bg-[#222228] border-zinc-400 dark:border-white/30 shadow-lg ring-1 ring-zinc-400/40'
+          : 'bg-[#18181c] border-white/5 hover:border-white/15 hover:bg-[#1f1f24] shadow-sm hover:shadow-md'
       }`}
     >
-      {/* Gráfico 3D de la Carpeta */}
-      <div className="relative w-full h-24 sm:h-28 flex items-center justify-center select-none mb-3">
-        {/* Documentos asomándose detrás con rotación suave y sutil */}
-        <div className="absolute top-2 left-1/2 -translate-x-[56%] w-24 sm:w-28 h-16 sm:h-18 rounded-lg bg-zinc-200 dark:bg-zinc-300 border border-zinc-400/20 transform -rotate-3 transition-transform duration-500 ease-out group-hover:-rotate-5 group-hover:-translate-y-1 shadow-xs">
-          <div className="p-1.5 flex items-center justify-between">
-            <div className="w-5 h-0.5 rounded-full bg-zinc-400" />
-            <span className="text-[7px] font-bold font-mono px-1 py-0.5 rounded bg-zinc-400 text-zinc-900">PDF</span>
-          </div>
-        </div>
-
-        <div className="absolute top-2 left-1/2 -translate-x-[44%] w-24 sm:w-28 h-16 sm:h-18 rounded-lg bg-white dark:bg-zinc-100 border border-zinc-300 transform rotate-2 transition-transform duration-500 ease-out group-hover:rotate-4 group-hover:-translate-y-1 shadow-xs">
-          <div className="p-1.5 flex items-center justify-between">
-            <div className="w-6 h-0.5 rounded-full bg-zinc-400" />
-            <span className="text-[7px] font-bold font-mono px-1 py-0.5 rounded bg-zinc-300 text-zinc-800">DOC</span>
-          </div>
-        </div>
-
-        {/* Tapa frontal de la carpeta en gris oscuro / carbón */}
-        <div className="absolute bottom-1 inset-x-2 sm:inset-x-3 h-16 sm:h-18 rounded-xl sm:rounded-2xl bg-[#26262c] border border-white/10 shadow-md flex items-end justify-between p-2.5 transition-colors duration-300 ease-out group-hover:bg-[#2e2e36]">
-          {/* Pestaña superior de la carpeta */}
-          <div className="absolute -top-2 left-0 w-12 sm:w-14 h-4 rounded-t-lg bg-[#26262c] border-t border-l border-r border-white/10 transition-colors duration-300 ease-out group-hover:bg-[#2e2e36]" />
-
-          {/* Badges de Integración (Drive, Notion, Docs) */}
-          <div className="flex items-center -space-x-1.5 z-10">
-            <div className="w-5 h-5 rounded-full bg-white dark:bg-zinc-900 border border-white/10 flex items-center justify-center p-0.5 shadow-xs">
-              <GoogleDriveIcon className="w-3 h-3" />
-            </div>
-            <div className="w-5 h-5 rounded-full bg-zinc-800 border border-white/10 flex items-center justify-center text-[8px] font-bold text-white shadow-xs">
-              N
-            </div>
-            <div className="w-5 h-5 rounded-full bg-blue-600 border border-white/10 flex items-center justify-center p-0.5 shadow-xs">
-              <ImageIcon className="w-2.5 h-2.5 text-white" />
-            </div>
-          </div>
-        </div>
+      <div className="relative w-full h-24 sm:h-28 flex items-center justify-center mb-2 pointer-events-none">
+        <FolderComponent 
+          color={isSelected ? 'blue' : 'black'} 
+          size="sm" 
+        />
       </div>
 
-      {/* Título y Conteo de Archivos */}
-      <div className="text-center space-y-0.5 w-full">
-        <h5 className="font-semibold text-xs sm:text-sm text-zinc-100 truncate group-hover:text-white transition-colors duration-200" title={folder.name}>
+      <div className="text-center space-y-0.5 w-full mt-2">
+        <h5 className="font-semibold text-xs sm:text-sm text-zinc-100 truncate group-hover:text-white transition-colors duration-200 px-1" title={folder.name}>
           {folder.name}
         </h5>
         <p className="text-[11px] text-zinc-400 font-medium">
@@ -123,7 +93,6 @@ function LayeredFolderCard({
     </div>
   );
 }
-
 export interface GoogleDriveSettingsCardProps {
   onClose?: () => void;
   onSelectPhotoForProduct?: (url: string, file: GoogleDriveFile) => void;
@@ -1057,3 +1026,10 @@ export function GoogleDriveSettingsCard({ onClose, onSelectPhotoForProduct }: Go
     </div>
   );
 }
+
+
+
+
+
+
+
