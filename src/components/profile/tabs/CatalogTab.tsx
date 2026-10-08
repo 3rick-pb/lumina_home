@@ -219,7 +219,7 @@ export function CatalogTab({
       <BeUICenterMorphModal
         open={showDriveModal}
         onOpenChange={setShowDriveModal}
-        className="max-w-4xl w-full"
+        className="max-w-6xl w-full p-0 overflow-hidden rounded-3xl"
       >
         <GoogleDriveSettingsCard onClose={() => setShowDriveModal(false)} />
       </BeUICenterMorphModal>
