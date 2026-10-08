@@ -17,6 +17,7 @@ import { ProductBentoView } from "@/components/product/ProductBentoView";
 import { ProductBundleSection } from "@/components/product/ProductBundleSection";
 import { Isometric3DGallery } from "@/components/product/Isometric3DGallery";
 import { EmbeddedCylinderCarousel } from "@/components/product/EmbeddedCylinderCarousel";
+import { ProductStorytellingShowcase } from "@/components/product/ProductStorytellingShowcase";
 import { normalizeImageUrl } from "@/lib/imageUtils";
 import { motion } from "framer-motion";
 import { flyToCart } from "@/components/ui/FlyToCartAnimation";
@@ -569,6 +570,18 @@ function ProductDetailContent({ product, products }: { product: CatalogProduct; 
           activeColorName={product.colors?.[activeColor]?.name}
           activeSize={product.sizes && product.sizes.length > 0 ? activeSize : undefined}
           isAgotado={isAgotado}
+        />
+
+        {/* BLOQUE DE HISTORIA, KEYNOTE & MARKETING DIGITAL PROFUNDO (8 CAPÍTULOS EXTENSOS) */}
+        <ProductStorytellingShowcase
+          product={product}
+          images={images}
+          activeColor={activeColor}
+          currentFinish={product.colors?.[activeColor] || { name: "Estándar", hex: "#18181b" }}
+          handleAddToCart={handleAddToCart}
+          isAdding={isAdding}
+          isAgotado={isAgotado}
+          effectivePrice={effectivePrice}
         />
 
         {/* Tabs Section */}
