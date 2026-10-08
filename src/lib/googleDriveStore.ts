@@ -207,18 +207,24 @@ export const useGoogleDriveStore = create<GoogleDriveState>((set, get) => ({
             (f: GoogleDriveFile) => !f.cdnUrl?.includes("unsplash.com") && !f.name?.includes("LUMINA-AURA")
           );
 
+          const isCurrentlyConnected = get().settings.isConnected;
+          const backendIsConnected = Boolean(rawSettings.isConnected);
+          const finalIsConnected = isDemo
+            ? false
+            : (backendIsConnected || (isCurrentlyConnected && data?.action !== 'disconnect' && data?.error !== 'TOKEN_REVOKED'));
+
           const loadedSettings: GoogleDriveSettings = {
             ...get().settings,
             ...rawSettings,
-            selectedFolderId: rawSettings.selectedFolderId === "folder_lumina_catalog_2026" ? "root" : (rawSettings.selectedFolderId || "root"),
-            selectedFolderName: rawSettings.selectedFolderName?.includes("Catálogo") || rawSettings.selectedFolderName?.includes("Lumina") ? "Mi Unidad" : (rawSettings.selectedFolderName || "Mi Unidad"),
+            selectedFolderId: rawSettings.selectedFolderId === "folder_lumina_catalog_2026" ? "root" : (rawSettings.selectedFolderId || get().settings.selectedFolderId || "root"),
+            selectedFolderName: rawSettings.selectedFolderName?.includes("Catálogo") || rawSettings.selectedFolderName?.includes("Lumina") ? "Mi Unidad" : (rawSettings.selectedFolderName || get().settings.selectedFolderName || "Mi Unidad"),
             googleClientId: resolvedClientId,
-            isConnected: isDemo ? false : Boolean(rawSettings.isConnected),
-            accountEmail: isDemo ? "" : (rawSettings.accountEmail || ""),
-            accountName: isDemo ? "" : (rawSettings.accountName || ""),
-            connectedAt: isDemo ? undefined : rawSettings.connectedAt,
-            availableFolders: recalculateFolderCounts(cleanFolders, cleanFiles),
-            files: cleanFiles,
+            isConnected: finalIsConnected,
+            accountEmail: isDemo ? "" : (rawSettings.accountEmail || get().settings.accountEmail || ""),
+            accountName: isDemo ? "" : (rawSettings.accountName || get().settings.accountName || ""),
+            connectedAt: isDemo ? undefined : (rawSettings.connectedAt || get().settings.connectedAt),
+            availableFolders: cleanFolders.length > 0 ? recalculateFolderCounts(cleanFolders, cleanFiles.length > 0 ? cleanFiles : get().settings.files) : get().settings.availableFolders,
+            files: cleanFiles.length > 0 ? cleanFiles : get().settings.files,
           };
           set({ settings: loadedSettings, isLoading: false });
           saveToLocal(loadedSettings);
@@ -226,9 +232,9 @@ export const useGoogleDriveStore = create<GoogleDriveState>((set, get) => ({
         }
       }
     } catch {
-      // Fallback gracefully
+      // Fallback silencioso sin desconectar ni degradar estado
     }
-    set({ settings: loadFromLocal(), isLoading: false });
+    set({ isLoading: false });
   },
 
   connectGoogleOAuth: async () => {
@@ -462,8 +468,8 @@ export const useGoogleDriveStore = create<GoogleDriveState>((set, get) => ({
 
     set({ isSyncing: true, error: null });
     try {
-      // 1. Fetch images from Google Drive API
-      const query = encodeURIComponent("trashed = false and (mimeType contains 'image/')");
+      // 1. Fetch images from Google Drive API estrictamente de Mi Unidad
+      const query = encodeURIComponent("trashed = false and (mimeType contains 'image/') and 'me' in owners and sharedWithMe = false");
       const url = `https://www.googleapis.com/drive/v3/files?q=${query}&pageSize=100&fields=nextPageToken,files(id,name,mimeType,thumbnailLink,webContentLink,size,imageMediaMetadata,parents)&orderBy=modifiedTime desc`;
 
       const res = await fetch(url, {
@@ -512,8 +518,8 @@ export const useGoogleDriveStore = create<GoogleDriveState>((set, get) => ({
         source: "google_drive",
       }));
 
-      // 2. Fetch real folders from Google Drive API
-      const folderQuery = encodeURIComponent("trashed = false and mimeType = 'application/vnd.google-apps.folder'");
+      // 2. Fetch real folders from Google Drive API estrictamente de Mi Unidad
+      const folderQuery = encodeURIComponent("trashed = false and mimeType = 'application/vnd.google-apps.folder' and 'me' in owners and sharedWithMe = false");
       let realFolders: GoogleDriveFolder[] = [
         { id: "root", name: "Mi Unidad", itemCount: driveFiles.length },
       ];

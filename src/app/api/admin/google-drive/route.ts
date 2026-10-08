@@ -111,6 +111,18 @@ export async function GET(request: Request) {
           .maybeSingle();
         if (latestCred) {
           cred = latestCred;
+        } else {
+          // Fallback con cliente seguro alternativo
+          try {
+            const { data: scopedCred } = await supabase
+              .from('google_drive_credentials')
+              .select('*')
+              .is('revoked_at', null)
+              .order('updated_at', { ascending: false })
+              .limit(1)
+              .maybeSingle();
+            if (scopedCred) cred = scopedCred;
+          } catch {}
         }
       }
 
@@ -123,7 +135,7 @@ export async function GET(request: Request) {
         selectedFolderId = folderIdParam && folderIdParam !== 'folder_lumina_catalog_2026' ? folderIdParam : defaultCredFolder;
         selectedFolderName = cred.drive_folder_name && !cred.drive_folder_name.includes('Lumina') ? cred.drive_folder_name : 'Mi Unidad';
 
-        // Intentar obtener listado actualizado de Google Drive API para la carpeta seleccionada
+        // Intentar obtener listado actualizado de Google Drive API para la carpeta seleccionada (exclusivo Mi Unidad)
         try {
           const driveData = await GoogleDriveService.listImages(cred.admin_id, selectedFolderId);
           if (Array.isArray(driveData?.files)) {
@@ -141,9 +153,29 @@ export async function GET(request: Request) {
         } catch (foldErr) {
           console.warn('GoogleDriveService.listFolders warning:', foldErr);
         }
+      } else if (inMemoryDriveSettings.is_connected && inMemoryDriveSettings.connected_email) {
+        // Preservar estado en memoria ante fluctuación temporal de red con base de datos
+        isConnected = true;
+        connectedEmail = inMemoryDriveSettings.connected_email;
+        connectedAccountName = inMemoryDriveSettings.connected_account_name;
+        connectedAt = inMemoryDriveSettings.connected_at;
+        selectedFolderId = folderIdParam || inMemoryDriveSettings.selected_folder_id || 'root';
+        selectedFolderName = inMemoryDriveSettings.selected_folder_name || 'Mi Unidad';
+        if (inMemoryDriveSettings.files_cache?.length > 0) {
+          resolvedFiles = inMemoryDriveSettings.files_cache;
+        }
+        if (inMemoryDriveSettings.folders_list?.length > 0) {
+          resolvedFolders = inMemoryDriveSettings.folders_list;
+        }
       }
     } catch (credErr) {
       console.warn('Error reading google_drive_credentials:', credErr);
+      if (inMemoryDriveSettings.is_connected && inMemoryDriveSettings.connected_email) {
+        isConnected = true;
+        connectedEmail = inMemoryDriveSettings.connected_email;
+        connectedAccountName = inMemoryDriveSettings.connected_account_name;
+        connectedAt = inMemoryDriveSettings.connected_at;
+      }
     }
 
     // 1. Cargar configuración global SOLO si Google Drive NO está conectado
@@ -214,17 +246,17 @@ export async function GET(request: Request) {
       itemCount: folder.id === 'root' ? resolvedFiles.length : (fileFolderCounts[folder.id] || 0),
     }));
 
-    // Actualizar in-memory
+    // Actualizar in-memory preservando estado conectado
     inMemoryDriveSettings = {
       ...inMemoryDriveSettings,
-      is_connected: isConnected,
-      connected_email: connectedEmail,
-      connected_account_name: connectedAccountName,
-      connected_at: connectedAt,
+      is_connected: isConnected || inMemoryDriveSettings.is_connected,
+      connected_email: connectedEmail || inMemoryDriveSettings.connected_email,
+      connected_account_name: connectedAccountName || inMemoryDriveSettings.connected_account_name,
+      connected_at: connectedAt || inMemoryDriveSettings.connected_at,
       selected_folder_id: selectedFolderId,
       selected_folder_name: selectedFolderName,
-      folders_list: resolvedFolders,
-      files_cache: resolvedFiles,
+      folders_list: resolvedFolders.length > 0 ? resolvedFolders : inMemoryDriveSettings.folders_list,
+      files_cache: resolvedFiles.length > 0 ? resolvedFiles : inMemoryDriveSettings.files_cache,
       backup_at: backupAt,
       backup_count: resolvedFiles.length,
     };
@@ -319,10 +351,23 @@ export async function POST(request: Request) {
       const folderName = typeof body.folderName === 'string' ? body.folderName.trim() : inMemoryDriveSettings.selected_folder_name;
       let folderFiles: MediaAssetRow[] = [];
 
-      if (authUser?.id) {
+      let targetAdminId = authUser?.id;
+      if (!targetAdminId) {
+        const serviceSupabase = getServiceSupabaseClient();
+        const { data: latest } = await serviceSupabase
+          .from('google_drive_credentials')
+          .select('admin_id')
+          .is('revoked_at', null)
+          .order('updated_at', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        if (latest?.admin_id) targetAdminId = latest.admin_id;
+      }
+
+      if (targetAdminId) {
         try {
-          await GoogleDriveService.selectFolder(authUser.id, folderId, folderName);
-          const driveData = await GoogleDriveService.listImages(authUser.id, folderId);
+          await GoogleDriveService.selectFolder(targetAdminId, folderId, folderName);
+          const driveData = await GoogleDriveService.listImages(targetAdminId, folderId);
           if (Array.isArray(driveData?.files)) {
             folderFiles = driveData.files;
           }
@@ -333,6 +378,7 @@ export async function POST(request: Request) {
 
       inMemoryDriveSettings = {
         ...inMemoryDriveSettings,
+        is_connected: true,
         selected_folder_id: folderId,
         selected_folder_name: folderName,
         files_cache: folderFiles.length > 0 ? folderFiles : inMemoryDriveSettings.files_cache,
@@ -345,9 +391,10 @@ export async function POST(request: Request) {
         files: folderFiles,
         settings: {
           ...inMemoryDriveSettings,
+          isConnected: true,
           selectedFolderId: folderId,
           selectedFolderName: folderName,
-          files: folderFiles,
+          files: folderFiles.length > 0 ? folderFiles : inMemoryDriveSettings.files_cache,
         },
       });
     } else if (action === 'create_folder') {

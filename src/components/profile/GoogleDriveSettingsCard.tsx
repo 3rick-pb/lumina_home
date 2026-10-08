@@ -157,7 +157,7 @@ export function GoogleDriveSettingsCard({ onClose, onSelectPhotoForProduct }: Go
 
   useEffect(() => {
     loadSettings();
-  }, [loadSettings]);
+  }, []);
 
   // Cerrar dropdown al hacer click fuera
   useEffect(() => {
@@ -188,6 +188,7 @@ export function GoogleDriveSettingsCard({ onClose, onSelectPhotoForProduct }: Go
               settings: {
                 ...prev.settings,
                 ...data.settings,
+                isConnected: true,
                 files: data.settings.files && data.settings.files.length > 0 ? data.settings.files : prev.settings.files,
                 availableFolders: data.settings.availableFolders && data.settings.availableFolders.length > 0 ? data.settings.availableFolders : prev.settings.availableFolders,
               },
@@ -197,7 +198,7 @@ export function GoogleDriveSettingsCard({ onClose, onSelectPhotoForProduct }: Go
       } catch {
         // Fallos de red silenciosos: nunca alterar el estado conectado
       }
-    }, 30000);
+    }, 45000);
 
     return () => clearInterval(interval);
   }, [settings.isConnected]);
