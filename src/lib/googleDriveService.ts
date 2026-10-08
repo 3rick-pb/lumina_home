@@ -204,56 +204,112 @@ export class GoogleDriveService {
   }
 
   /**
-   * Ejecuta una sincronización completa asíncrona hacia Supabase con paginación
+   * Obtiene la lista de carpetas disponibles en Google Drive y las persiste en base de datos
    */
-  static async syncAllToDatabase(adminId: string, targetFolderId?: string): Promise<{ filesCount: number; foldersCount: number }> {
-    const { accessToken, record } = await this.getValidAccessToken(adminId);
+  static async listFolders(adminId: string, forceRefresh = false): Promise<GoogleDriveApiFolder[]> {
+    const supabase = getServiceSupabaseClient();
     
-    // 1. Obtener TODAS las carpetas (siempre necesitamos las carpetas para el selector)
+    // Si no es forzado, intentar leer de admin_google_drive_settings
+    if (!forceRefresh) {
+      const { data: globalSettings } = await supabase
+        .from('admin_google_drive_settings')
+        .select('folders_list')
+        .eq('id', 'global')
+        .maybeSingle();
+
+      if (Array.isArray(globalSettings?.folders_list) && globalSettings.folders_list.length > 1) {
+        return globalSettings.folders_list;
+      }
+    }
+
+    const { accessToken, record } = await this.getValidAccessToken(adminId);
+
     let folders: GoogleDriveApiFolder[] = [{ id: "root", name: "Mi Unidad", parentId: null, itemCount: 0 }];
     let pageToken: string | undefined;
-    const folderQuery = encodeURIComponent("trashed = false and mimeType = 'application/vnd.google-apps.folder' and 'me' in owners and sharedWithMe = false");
+    // Consulta estándar y compatible para carpetas no eliminadas
+    const folderQuery = encodeURIComponent("trashed = false and mimeType = 'application/vnd.google-apps.folder'");
+
+    interface ApiRawFolder {
+      id: string;
+      name: string;
+      parents?: string[];
+    }
+
+    const allApiFolders: ApiRawFolder[] = [];
 
     do {
       const url = `https://www.googleapis.com/drive/v3/files?q=${folderQuery}&pageSize=1000&fields=nextPageToken,files(id,name,parents)&orderBy=name${pageToken ? `&pageToken=${pageToken}` : ''}`;
       const res = await this.fetchWithBackoff(url, accessToken);
-      if (!res.ok) throw new Error(`Google API Folders Error: ${res.statusText}`);
-      
+      if (!res.ok) {
+        console.error("Error al obtener carpetas de Google:", res.statusText);
+        break;
+      }
+
       const data = await res.json();
-      const apiFolders = Array.isArray(data.files) ? data.files : [];
-      
-      folders = folders.concat(apiFolders.map((f: GoogleDriveApiFolder & { parents?: string[] }) => ({
-        id: f.id,
-        name: f.name,
-        parentId: f.parents?.[0] || "root",
-        itemCount: 0
-      })));
-      
+      const batchFolders: ApiRawFolder[] = Array.isArray(data.files) ? data.files : [];
+      allApiFolders.push(...batchFolders);
       pageToken = data.nextPageToken;
     } while (pageToken);
 
-    // 2. Obtener TODAS las imágenes DE LA CARPETA SELECCIONADA
-    let files: GoogleDriveApiFile[] = [];
-    pageToken = undefined;
-    
-    const target = targetFolderId || record.drive_folder_id || "root";
-    let fileQueryStr = "trashed = false and (mimeType contains 'image/') and 'me' in owners and sharedWithMe = false";
-    if (target !== "root" && target !== "folder_lumina_catalog_2026") {
+    // Identificar carpetas raíz: si el padre no está entre las demás carpetas, su padre es 'root'
+    const folderIds = new Set(allApiFolders.map((f) => f.id));
+
+    const mappedFolders: GoogleDriveApiFolder[] = allApiFolders.map((f) => {
+      const parent = f.parents?.[0];
+      const resolvedParent = !parent || !folderIds.has(parent) ? "root" : parent;
+      return {
+        id: f.id,
+        name: f.name,
+        parentId: resolvedParent,
+        itemCount: 0,
+      };
+    });
+
+    folders = folders.concat(mappedFolders);
+
+    // Persistir lista en admin_google_drive_settings
+    await supabase.from('admin_google_drive_settings').upsert({
+      id: 'global',
+      is_connected: true,
+      connected_email: record.google_account_email,
+      connected_account_name: record.google_account_name,
+      folders_list: folders,
+      updated_at: new Date().toISOString()
+    });
+
+    return folders;
+  }
+
+  /**
+   * Obtiene y almacena en caché las imágenes de una carpeta específica
+   */
+  static async fetchFolderImages(adminId: string, folderId: string): Promise<GoogleDriveApiFile[]> {
+    const { accessToken, record } = await this.getValidAccessToken(adminId);
+    const supabase = getServiceSupabaseClient();
+
+    const target = folderId || record.drive_folder_id || "root";
+    let fileQueryStr = "trashed = false and (mimeType contains 'image/')";
+    if (target && target !== "root" && target !== "folder_lumina_catalog_2026") {
       fileQueryStr += ` and '${target}' in parents`;
+    } else {
+      fileQueryStr += " and 'root' in parents";
     }
+
     const fileQuery = encodeURIComponent(fileQueryStr);
-    
-    let totalFetched = 0;
-    const MAX_FILES = 5000;
+    let pageToken: string | undefined;
+    let files: GoogleDriveApiFile[] = [];
 
     do {
-      const url = `https://www.googleapis.com/drive/v3/files?q=${fileQuery}&pageSize=1000&fields=nextPageToken,files(id,name,mimeType,thumbnailLink,webContentLink,size,imageMediaMetadata,parents,owners)&orderBy=modifiedTime desc${pageToken ? `&pageToken=${pageToken}` : ''}`;
+      const url = `https://www.googleapis.com/drive/v3/files?q=${fileQuery}&pageSize=500&fields=nextPageToken,files(id,name,mimeType,thumbnailLink,webContentLink,size,imageMediaMetadata,parents,owners)&orderBy=modifiedTime desc${pageToken ? `&pageToken=${pageToken}` : ''}`;
       const res = await this.fetchWithBackoff(url, accessToken);
-      if (!res.ok) throw new Error(`Google API Files Error: ${res.statusText}`);
-      
+      if (!res.ok) {
+        console.error("Error al obtener imágenes de carpeta:", res.statusText);
+        break;
+      }
+
       const data = await res.json();
       const apiFiles = Array.isArray(data.files) ? data.files : [];
-      
+
       const batchFiles = apiFiles.map((f: {
         id: string;
         name: string;
@@ -271,69 +327,49 @@ export class GoogleDriveService {
         thumbnailUrl: f.thumbnailLink || `/api/admin/google-drive/image?id=${f.id}&thumb=1`,
         size: f.size ? `${(parseInt(f.size, 10) / (1024 * 1024)).toFixed(1)} MB` : "HD",
         dimensions: f.imageMediaMetadata?.width && f.imageMediaMetadata?.height ? `${f.imageMediaMetadata.width} x ${f.imageMediaMetadata.height}` : "Resolución Google Drive",
-        folderId: f.parents?.[0] || "root",
+        folderId: target,
         source: "google_drive",
         ownerName: f.owners?.[0]?.displayName || record.google_account_name || "Admin",
         ownerEmail: f.owners?.[0]?.emailAddress || record.google_account_email || "admin@lumina.com",
         ownerPhoto: f.owners?.[0]?.photoLink || "",
       }));
-      
+
       files = files.concat(batchFiles);
-      totalFetched += batchFiles.length;
-      
       pageToken = data.nextPageToken;
-      if (totalFetched >= MAX_FILES) break;
     } while (pageToken);
 
-    // 3. Persistir en Supabase
-    const supabase = getServiceSupabaseClient();
-    
-    // Contar items por carpeta
-    const folderCounts: Record<string, number> = {};
-    files.forEach(f => {
-      folderCounts[f.folderId] = (folderCounts[f.folderId] || 0) + 1;
-    });
-    
-    const finalFolders = folders.map(f => ({
-      ...f,
-      itemCount: f.id === 'root' ? files.length : (folderCounts[f.id] || 0)
-    }));
-
-    // Actualizar carpetas en admin_google_drive_settings
-    await supabase.from('admin_google_drive_settings').upsert({
-      id: 'global',
-      is_connected: true,
-      connected_email: record.google_account_email,
-      connected_account_name: record.google_account_name,
-      folders_list: finalFolders,
-      updated_at: new Date().toISOString()
-    });
-
-    // Actualizar fotos en admin_media_assets
+    // Guardar en la tabla de caché admin_media_assets
     if (files.length > 0) {
-      // Opcional: borrar solo las fotos sincronizadas de drive antes de insertar masivamente
-      // await supabase.from('admin_media_assets').delete().eq('source', 'google_drive');
-      
-      const chunkSize = 500;
-      for (let i = 0; i < files.length; i += chunkSize) {
-        const chunk = files.slice(i, i + chunkSize);
-        const rows = chunk.map(f => ({
-          id: f.id,
-          name: f.name,
-          cdn_url: f.cdnUrl,
-          thumbnail_url: f.thumbnailUrl,
-          mime_type: f.mimeType,
-          size: f.size,
-          dimensions: f.dimensions,
-          folder_id: f.folderId,
-          source: 'google_drive',
-          updated_at: new Date().toISOString()
-        }));
-        await supabase.from('admin_media_assets').upsert(rows);
-      }
+      const rows = files.map((f) => ({
+        id: f.id,
+        name: f.name,
+        cdn_url: f.cdnUrl,
+        thumbnail_url: f.thumbnailUrl,
+        mime_type: f.mimeType,
+        size: f.size,
+        dimensions: f.dimensions,
+        folder_id: f.folderId,
+        source: 'google_drive',
+        updated_at: new Date().toISOString()
+      }));
+
+      await supabase.from('admin_media_assets').upsert(rows);
     }
 
-    return { filesCount: files.length, foldersCount: finalFolders.length };
+    return files;
+  }
+
+  /**
+   * Ejecuta una sincronización completa asíncrona hacia Supabase con paginación
+   */
+  static async syncAllToDatabase(adminId: string, targetFolderId?: string): Promise<{ filesCount: number; foldersCount: number }> {
+    // 1. Refrescar carpetas desde Google Drive
+    const folders = await this.listFolders(adminId, true);
+
+    // 2. Refrescar imágenes de la carpeta seleccionada
+    const files = await this.fetchFolderImages(adminId, targetFolderId || "root");
+
+    return { filesCount: files.length, foldersCount: folders.length };
   }
 
   static async selectFolder(adminId: string, folderId: string, folderName: string): Promise<void> {

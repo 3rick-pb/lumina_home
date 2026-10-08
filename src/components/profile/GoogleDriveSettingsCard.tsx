@@ -23,8 +23,7 @@ import {
   LayoutGrid,
   Plus,
   Square,
-  FileText,
-  ImageIcon
+  FileText
 } from "lucide-react";
 import { 
   useGoogleDriveStore, 
@@ -69,20 +68,20 @@ function LayeredFolderCard({
   return (
     <div
       onClick={onClick}
-      className={`group relative rounded-2xl sm:rounded-3xl p-3 sm:p-4 border transition-all duration-300 ease-out cursor-pointer flex flex-col items-center justify-center ${
+      className={`group relative rounded-2xl sm:rounded-3xl p-3 sm:p-4 border transition-all duration-300 ease-out cursor-pointer flex flex-col items-center justify-between min-h-[220px] ${
         isSelected
           ? 'bg-[#222228] border-zinc-400 dark:border-white/30 shadow-lg ring-1 ring-zinc-400/40'
           : 'bg-[#18181c] border-white/5 hover:border-white/15 hover:bg-[#1f1f24] shadow-sm hover:shadow-md'
       }`}
     >
-      <div className="relative w-full h-24 sm:h-28 flex items-center justify-center mb-2 pointer-events-none">
+      <div className="relative w-full h-32 sm:h-36 flex items-center justify-center my-auto overflow-visible">
         <FolderComponent 
           color={isSelected ? 'blue' : 'black'} 
-          size="sm" 
+          size="xs" 
         />
       </div>
 
-      <div className="text-center space-y-0.5 w-full mt-2">
+      <div className="text-center space-y-0.5 w-full mt-2 pt-2 border-t border-white/5">
         <h5 className="font-semibold text-xs sm:text-sm text-zinc-100 truncate group-hover:text-white transition-colors duration-200 px-1" title={folder.name}>
           {folder.name}
         </h5>
@@ -213,11 +212,12 @@ export function GoogleDriveSettingsCard({ onClose, onSelectPhotoForProduct }: Go
   const { rootFolders, subfoldersMap } = useMemo(() => {
     const roots: GoogleDriveFolder[] = [];
     const subs: Record<string, GoogleDriveFolder[]> = {};
+    const knownIds = new Set(availableFolders.map((f) => f.id));
 
     availableFolders.forEach((f) => {
       if (f.id === "root") return;
-      const pId = f.parentId || "root";
-      if (pId === "root") {
+      const pId = f.parentId;
+      if (!pId || pId === "root" || !knownIds.has(pId)) {
         roots.push(f);
       } else {
         if (!subs[pId]) subs[pId] = [];
@@ -235,8 +235,7 @@ export function GoogleDriveSettingsCard({ onClose, onSelectPhotoForProduct }: Go
       return rootFolders.length > 0 ? rootFolders : availableFolders.filter((f) => f.id !== "root");
     }
     const children = subfoldersMap[currId] || [];
-    if (children.length > 0) return children;
-    return availableFolders.filter((f) => f.id !== currId && f.id !== "root").slice(0, 4);
+    return children;
   }, [settings.selectedFolderId, rootFolders, subfoldersMap, availableFolders]);
 
   // Archivos de la carpeta actualmente seleccionada

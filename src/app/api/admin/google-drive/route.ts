@@ -67,14 +67,32 @@ export async function GET(request: Request) {
       
       selectedFolderName = cred?.drive_folder_name || globalSettings?.selected_folder_name || 'Mi Unidad';
       
-      if (Array.isArray(globalSettings?.folders_list) && globalSettings.folders_list.length > 0) {
+      if (Array.isArray(globalSettings?.folders_list) && globalSettings.folders_list.length > 1) {
         resolvedFolders = globalSettings.folders_list;
+      } else if (cred?.admin_id) {
+        // Si no hay carpetas en caché, cargarlas automáticamente de Google Drive
+        try {
+          const freshFolders = await GoogleDriveService.listFolders(cred.admin_id, true);
+          if (Array.isArray(freshFolders) && freshFolders.length > 0) {
+            resolvedFolders = freshFolders;
+          }
+        } catch (err: unknown) {
+          console.error("Error auto-cargando carpetas de Drive:", err);
+        }
       }
+
+      // Resolver el nombre de la carpeta seleccionada si no es la raíz
+      if (selectedFolderId !== 'root') {
+        const foundFolder = resolvedFolders.find((f) => f.id === selectedFolderId);
+        if (foundFolder) {
+          selectedFolderName = foundFolder.name;
+        }
+      }
+
       backupAt = globalSettings?.backup_at || null;
     }
 
     // 3. Obtener archivos desde la tabla de caché (admin_media_assets)
-    // Ya NO consultamos a la API de Google síncronamente.
     try {
       let query = supabase.from('admin_media_assets').select('*').order('created_at', { ascending: false }).limit(2000);
       if (selectedFolderId && selectedFolderId !== 'root' && selectedFolderId !== 'folder_lumina_catalog_2026') {
@@ -82,7 +100,7 @@ export async function GET(request: Request) {
       }
       
       const { data: assets, error } = await query;
-      if (!error && Array.isArray(assets)) {
+      if (!error && Array.isArray(assets) && assets.length > 0) {
         resolvedFiles = assets.map((a: {
           id: string;
           name: string;
@@ -105,6 +123,27 @@ export async function GET(request: Request) {
           source: a.source || 'google_drive'
         }));
         backupCount = resolvedFiles.length;
+      } else if (cred?.admin_id && isConnected && selectedFolderId !== 'root') {
+        // Si la carpeta seleccionada no tiene imágenes en caché, cargarlas bajo demanda
+        try {
+          const freshFiles = await GoogleDriveService.fetchFolderImages(cred.admin_id, selectedFolderId);
+          if (Array.isArray(freshFiles) && freshFiles.length > 0) {
+            resolvedFiles = freshFiles.map((f) => ({
+              id: f.id,
+              name: f.name,
+              mimeType: f.mimeType,
+              cdnUrl: f.cdnUrl,
+              thumbnailUrl: f.thumbnailUrl,
+              size: f.size,
+              dimensions: f.dimensions,
+              folderId: f.folderId,
+              source: f.source,
+            }));
+            backupCount = resolvedFiles.length;
+          }
+        } catch (err: unknown) {
+          console.error("Error auto-cargando fotos de carpeta:", err);
+        }
       }
     } catch (e) {
       console.warn("No se pudieron cargar archivos del caché", e);
@@ -203,10 +242,18 @@ export async function POST(request: Request) {
         if (latest?.admin_id) targetAdminId = latest.admin_id;
       }
 
+      let folderFiles: unknown[] = [];
       if (targetAdminId) {
         await GoogleDriveService.selectFolder(targetAdminId, folderId, folderName);
+        if (folderId !== 'root') {
+          try {
+            folderFiles = await GoogleDriveService.fetchFolderImages(targetAdminId, folderId);
+          } catch (e) {
+            console.error("Error fetching images on select_folder:", e);
+          }
+        }
       }
-      return NextResponse.json({ success: true });
+      return NextResponse.json({ success: true, files: folderFiles });
     } else if (action === 'create_folder') {
       const folder = body.folder;
       if (folder && folder.id && folder.name) {
