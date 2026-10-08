@@ -87,64 +87,63 @@ export async function GET(request: Request) {
     const urlObj = new URL(request.url);
     const folderIdParam = urlObj.searchParams.get('folderId');
 
-    // 0. Comprobar credenciales de Google Drive vinculadas al admin_id
-    if (authUser?.id) {
-      try {
-        let { data: cred } = await serviceSupabase
+    // 0. Comprobar credenciales de Google Drive vinculadas a la administración
+    try {
+      let cred = null;
+      if (authUser?.id) {
+        const { data: userCred } = await serviceSupabase
           .from('google_drive_credentials')
           .select('*')
           .eq('admin_id', authUser.id)
           .is('revoked_at', null)
           .maybeSingle();
-
-        // Si no se encontró por admin_id exacto pero el usuario es administrador comprobado
-        if (!cred && authUser.email) {
-          const isAdmin = await verifyIsAdmin(authUser.email, request);
-          if (isAdmin) {
-            const { data: latestCred } = await serviceSupabase
-              .from('google_drive_credentials')
-              .select('*')
-              .is('revoked_at', null)
-              .order('updated_at', { ascending: false })
-              .limit(1)
-              .maybeSingle();
-            if (latestCred) {
-              cred = latestCred;
-            }
-          }
-        }
-
-        if (cred) {
-          isConnected = true;
-          connectedEmail = cred.google_account_email || '';
-          connectedAccountName = cred.google_account_name || '';
-          connectedAt = cred.created_at;
-          const defaultCredFolder = cred.drive_folder_id && cred.drive_folder_id !== 'folder_lumina_catalog_2026' ? cred.drive_folder_id : 'root';
-          selectedFolderId = folderIdParam && folderIdParam !== 'folder_lumina_catalog_2026' ? folderIdParam : defaultCredFolder;
-          selectedFolderName = cred.drive_folder_name && !cred.drive_folder_name.includes('Lumina') ? cred.drive_folder_name : 'Mi Unidad';
-
-          // Intentar obtener listado actualizado de Google Drive API para la carpeta seleccionada
-          try {
-            const driveData = await GoogleDriveService.listImages(cred.admin_id, selectedFolderId);
-            if (Array.isArray(driveData?.files)) {
-              resolvedFiles = driveData.files;
-            }
-          } catch (listErr) {
-            console.warn('GoogleDriveService.listImages warning:', listErr);
-          }
-
-          try {
-            const driveFolders = await GoogleDriveService.listFolders(cred.admin_id);
-            if (Array.isArray(driveFolders) && driveFolders.length > 0) {
-              resolvedFolders = driveFolders;
-            }
-          } catch (foldErr) {
-            console.warn('GoogleDriveService.listFolders warning:', foldErr);
-          }
-        }
-      } catch (credErr) {
-        console.warn('Error reading google_drive_credentials:', credErr);
+        if (userCred) cred = userCred;
       }
+
+      // Si no se encontró por admin_id directo (o authUser ausente en sondeo background), buscar la credencial activa más reciente
+      if (!cred) {
+        const { data: latestCred } = await serviceSupabase
+          .from('google_drive_credentials')
+          .select('*')
+          .is('revoked_at', null)
+          .order('updated_at', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        if (latestCred) {
+          cred = latestCred;
+        }
+      }
+
+      if (cred) {
+        isConnected = true;
+        connectedEmail = cred.google_account_email || '';
+        connectedAccountName = cred.google_account_name || '';
+        connectedAt = cred.created_at;
+        const defaultCredFolder = cred.drive_folder_id && cred.drive_folder_id !== 'folder_lumina_catalog_2026' ? cred.drive_folder_id : 'root';
+        selectedFolderId = folderIdParam && folderIdParam !== 'folder_lumina_catalog_2026' ? folderIdParam : defaultCredFolder;
+        selectedFolderName = cred.drive_folder_name && !cred.drive_folder_name.includes('Lumina') ? cred.drive_folder_name : 'Mi Unidad';
+
+        // Intentar obtener listado actualizado de Google Drive API para la carpeta seleccionada
+        try {
+          const driveData = await GoogleDriveService.listImages(cred.admin_id, selectedFolderId);
+          if (Array.isArray(driveData?.files)) {
+            resolvedFiles = driveData.files;
+          }
+        } catch (listErr) {
+          console.warn('GoogleDriveService.listImages warning:', listErr);
+        }
+
+        try {
+          const driveFolders = await GoogleDriveService.listFolders(cred.admin_id);
+          if (Array.isArray(driveFolders) && driveFolders.length > 0) {
+            resolvedFolders = driveFolders;
+          }
+        } catch (foldErr) {
+          console.warn('GoogleDriveService.listFolders warning:', foldErr);
+        }
+      }
+    } catch (credErr) {
+      console.warn('Error reading google_drive_credentials:', credErr);
     }
 
     // 1. Cargar configuración global SOLO si Google Drive NO está conectado

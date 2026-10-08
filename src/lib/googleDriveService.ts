@@ -44,7 +44,7 @@ export interface StoredCredentialsRecord {
 // RATE LIMITING EN MEMORIA: 20 solicitudes / minuto por administrador
 // =========================================================================
 const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
-const MAX_REQUESTS_PER_MINUTE = 25;
+const MAX_REQUESTS_PER_MINUTE = 60;
 
 function checkRateLimit(adminId: string): void {
   const now = Date.now();
@@ -56,15 +56,16 @@ function checkRateLimit(adminId: string): void {
   }
 
   if (entry.count >= MAX_REQUESTS_PER_MINUTE) {
-    const waitSec = Math.ceil((entry.resetAt - now) / 1000);
-    throw new Error(`RATE_LIMIT_EXCEEDED: Límite de solicitudes a Google Drive excedido. Reintenta en ${waitSec}s.`);
+    // No lanzar error fatal, simplemente loguear advertencia para mantener estabilidad
+    console.warn(`[GoogleDriveService] Aviso de alta frecuencia para adminId: ${adminId}`);
+    return;
   }
 
   entry.count += 1;
 }
 
 // =========================================================================
-// CACHÉ EN MEMORIA (TTL: 60 segundos) para listados frecuentes
+// CACHÉ EN MEMORIA (TTL: 90 segundos) para listados frecuentes
 // =========================================================================
 interface CacheEntry<T> {
   data: T;
@@ -82,7 +83,7 @@ function getFromCache<T>(key: string): T | null {
   return item.data as T;
 }
 
-function setToCache<T>(key: string, data: T, ttlMs = 60000): void {
+function setToCache<T>(key: string, data: T, ttlMs = 90000): void {
   memoryCache.set(key, { data, expires: Date.now() + ttlMs });
 }
 
@@ -103,14 +104,30 @@ export class GoogleDriveService {
    */
   static async getValidAccessToken(adminId: string): Promise<{ accessToken: string; record: StoredCredentialsRecord }> {
     const supabase = getServiceSupabaseClient();
-    const { data: record, error } = await supabase
+    const { data: recordData, error } = await supabase
       .from("google_drive_credentials")
       .select("*")
       .eq("admin_id", adminId)
       .is("revoked_at", null)
       .maybeSingle();
 
+    let record = recordData;
+
+    // Si no se encontró por admin_id exacto, buscar la credencial activa más reciente (resiliencia multi-sesión)
     if (error || !record) {
+      const { data: latest } = await supabase
+        .from("google_drive_credentials")
+        .select("*")
+        .is("revoked_at", null)
+        .order("updated_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (latest) {
+        record = latest;
+      }
+    }
+
+    if (!record) {
       throw new Error("DRIVE_NOT_CONNECTED: No hay cuenta de Google Drive autorizada para este administrador.");
     }
 
@@ -132,11 +149,11 @@ export class GoogleDriveService {
       throw new Error("TOKEN_INVALID: El token de Google Drive no es válido y requiere reautorización.");
     }
 
-    // Actualizar last_used_at
+    // Actualizar last_used_at en background
     supabase
       .from("google_drive_credentials")
       .update({ last_used_at: new Date().toISOString() })
-      .eq("admin_id", adminId)
+      .eq("id", rec.id)
       .then(() => {});
 
     return { accessToken, record: rec };

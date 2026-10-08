@@ -170,23 +170,37 @@ export function GoogleDriveSettingsCard({ onClose, onSelectPhotoForProduct }: Go
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // Sincronización silenciosa cada 12 segundos sin bloquear UI
+  // Sincronización silenciosa periódica con preservación de estado
   useEffect(() => {
-    let interval: NodeJS.Timeout;
-    if (settings.isConnected) {
-      interval = setInterval(() => {
-        fetch("/api/admin/google-drive")
-          .then((res) => res.json())
-          .then((data) => {
-            if (data?.success && data?.settings) {
-              useGoogleDriveStore.setState({ settings: { ...settings, ...data.settings } });
-            }
-          })
-          .catch(() => {});
-      }, 12000);
-    }
+    if (!settings.isConnected) return;
+
+    const interval = setInterval(async () => {
+      try {
+        const { supabase } = await import("@/lib/supabase");
+        const { data: { session } } = await supabase.auth.getSession();
+        const res = await fetch("/api/admin/google-drive", {
+          headers: session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {},
+        });
+        if (res.ok) {
+          const data = await res.json();
+          if (data?.success && data?.settings?.isConnected) {
+            useGoogleDriveStore.setState((prev) => ({
+              settings: {
+                ...prev.settings,
+                ...data.settings,
+                files: data.settings.files && data.settings.files.length > 0 ? data.settings.files : prev.settings.files,
+                availableFolders: data.settings.availableFolders && data.settings.availableFolders.length > 0 ? data.settings.availableFolders : prev.settings.availableFolders,
+              },
+            }));
+          }
+        }
+      } catch {
+        // Fallos de red silenciosos: nunca alterar el estado conectado
+      }
+    }, 30000);
+
     return () => clearInterval(interval);
-  }, [settings.isConnected, settings]);
+  }, [settings.isConnected]);
 
   const showNotification = (msg: string) => {
     setFeedback(msg);
