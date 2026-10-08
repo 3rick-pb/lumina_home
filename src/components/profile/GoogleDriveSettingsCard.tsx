@@ -114,6 +114,7 @@ export function GoogleDriveSettingsCard({ onClose, onSelectPhotoForProduct }: Go
   const [viewMode, setViewMode] = useState<'list' | 'grid'>('list');
   const [searchFilter, setSearchFilter] = useState("");
   const [showFolderDropdown, setShowFolderDropdown] = useState(false);
+  const [showMainFolderModal, setShowMainFolderModal] = useState(false);
   const [expandedFolders, setExpandedFolders] = useState<Record<string, boolean>>({ root: true });
   const [feedback, setFeedback] = useState<string | null>(null);
 
@@ -228,26 +229,52 @@ export function GoogleDriveSettingsCard({ onClose, onSelectPhotoForProduct }: Go
     return { rootFolders: roots, subfoldersMap: subs };
   }, [availableFolders]);
 
+  // Carpeta principal configurada para el catálogo de Lumina Home
+  const mainFolder = useMemo(() => {
+    const currentId = settings.selectedFolderId;
+    if (currentId && currentId !== 'root') {
+      const found = availableFolders.find((f) => f.id === currentId);
+      if (found) {
+        let top = found;
+        let pId = top.parentId;
+        while (pId && pId !== 'root' && pId !== top.id) {
+          const parentFolder = availableFolders.find((f) => f.id === pId);
+          if (!parentFolder) break;
+          top = parentFolder;
+          pId = top.parentId;
+        }
+        return top;
+      }
+    }
+
+    if (settings.selectedFolderName && settings.selectedFolderName !== 'Mi Unidad' && settings.selectedFolderName !== 'General Knowledge') {
+      const foundByName = availableFolders.find((f) => f.name === settings.selectedFolderName);
+      if (foundByName) return foundByName;
+    }
+
+    if (rootFolders.length > 0) {
+      return rootFolders[0];
+    }
+
+    return null;
+  }, [settings.selectedFolderId, settings.selectedFolderName, availableFolders, rootFolders]);
+
   // Subcarpetas para la sección "Folders" en el canvas principal
   const currentSubfolders = useMemo(() => {
-    const currId = settings.selectedFolderId || "root";
-    if (currId === "root") {
-      return rootFolders.length > 0 ? rootFolders : availableFolders.filter((f) => f.id !== "root");
-    }
-    const children = subfoldersMap[currId] || [];
-    return children;
-  }, [settings.selectedFolderId, rootFolders, subfoldersMap, availableFolders]);
+    const currId = settings.selectedFolderId || mainFolder?.id || "root";
+    return subfoldersMap[currId] || [];
+  }, [settings.selectedFolderId, mainFolder, subfoldersMap]);
 
   // Archivos de la carpeta actualmente seleccionada
   const currentFolderFiles = useMemo(() => {
-    const currId = settings.selectedFolderId || "root";
+    const currId = settings.selectedFolderId || mainFolder?.id || "root";
     const allFiles = settings.files || [];
     if (currId === "root") {
       return allFiles;
     }
     const matching = allFiles.filter((f) => f.folderId === currId);
     return matching.length > 0 ? matching : allFiles;
-  }, [settings.files, settings.selectedFolderId]);
+  }, [settings.files, settings.selectedFolderId, mainFolder]);
 
   // Filtrado por buscador
   const filteredFiles = useMemo(() => {
@@ -460,34 +487,59 @@ export function GoogleDriveSettingsCard({ onClose, onSelectPhotoForProduct }: Go
           </div>
         </div>
 
-        {/* Vista en Árbol Jerárquico de Carpetas */}
+        {/* Vista en Árbol Jerárquico de Carpetas: Exclusivamente Carpeta Principal */}
         <div className="flex-1 overflow-y-auto px-3 pb-4 space-y-0.5">
-          {/* Carpeta Raíz: General Knowledge */}
-          <div
-            onClick={() => handleSelectFolder({ id: 'root', name: 'General Knowledge', itemCount: settings.files?.length || 0 })}
-            className={`group flex items-center justify-between px-2.5 py-1.5 rounded-xl text-xs transition-all duration-200 cursor-pointer ${
-              settings.selectedFolderId === 'root'
-                ? "bg-[#25252b] text-white font-medium"
-                : "text-zinc-400 hover:text-zinc-200 hover:bg-white/5"
-            }`}
-          >
-            <div className="flex items-center gap-2 truncate">
-              {settings.selectedFolderId === 'root' ? (
-                <FolderOpen className="w-3.5 h-3.5 text-zinc-100 shrink-0" />
-              ) : (
-                <Folder className="w-3.5 h-3.5 text-zinc-400 shrink-0" />
-              )}
-              <span className="truncate">General Knowledge</span>
-            </div>
-            <span className="text-[10px] font-mono px-1.5 py-0.5 rounded-md bg-[#222228] text-zinc-400 shrink-0">
-              {settings.files?.length || 0}
-            </span>
-          </div>
+          {mainFolder ? (
+            <>
+              {/* Carpeta Principal de Lumina Home */}
+              <div
+                onClick={() => handleSelectFolder(mainFolder)}
+                className={`group flex items-center justify-between px-2.5 py-2 rounded-xl text-xs transition-all duration-200 cursor-pointer ${
+                  settings.selectedFolderId === mainFolder.id
+                    ? "bg-[#25252b] text-white font-medium shadow-xs"
+                    : "text-zinc-300 hover:text-white hover:bg-white/5"
+                }`}
+              >
+                <div className="flex items-center gap-2 truncate">
+                  <FolderOpen className="w-4 h-4 text-blue-400 shrink-0" />
+                  <span className="truncate font-semibold">{mainFolder.name}</span>
+                </div>
+                <div className="flex items-center gap-1.5 shrink-0">
+                  <span className="text-[10px] font-mono px-1.5 py-0.5 rounded-md bg-[#222228] text-zinc-400">
+                    {mainFolder.itemCount || currentFolderFiles.length || 0}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setShowMainFolderModal(true);
+                    }}
+                    className="p-1 hover:text-white text-zinc-500 hover:bg-white/10 rounded-md transition-colors cursor-pointer"
+                    title="Cambiar carpeta principal de Drive"
+                  >
+                    <ArrowLeftRight className="w-3 h-3" />
+                  </button>
+                </div>
+              </div>
 
-          {/* Subcarpetas raíz con guías jerárquicas */}
-          <div className="relative pl-2.5 ml-2 border-l border-zinc-800/80 space-y-0.5 mt-0.5">
-            {rootFolders.map((folder) => renderTreeFolder(folder, 1))}
-          </div>
+              {/* Subcarpetas pertenecientes ÚNICAMENTE a la carpeta principal */}
+              <div className="relative pl-2.5 ml-2 border-l border-zinc-800/80 space-y-0.5 mt-0.5">
+                {(subfoldersMap[mainFolder.id] || []).map((folder) => renderTreeFolder(folder, 1))}
+              </div>
+            </>
+          ) : (
+            <div className="p-3 text-center space-y-2 bg-white/5 rounded-2xl border border-white/5 mt-2">
+              <p className="text-xs text-zinc-300 font-medium">Sin carpeta principal</p>
+              <p className="text-[10px] text-zinc-500">Selecciona la carpeta de Google Drive para Lumina Home</p>
+              <button
+                type="button"
+                onClick={() => setShowMainFolderModal(true)}
+                className="w-full py-1.5 px-3 bg-white text-zinc-950 rounded-xl text-xs font-semibold hover:bg-zinc-200 transition-colors cursor-pointer"
+              >
+                Seleccionar Carpeta
+              </button>
+            </div>
+          )}
         </div>
 
         {/* Pie de la barra lateral: Correo de Google conectado */}
@@ -534,47 +586,74 @@ export function GoogleDriveSettingsCard({ onClose, onSelectPhotoForProduct }: Go
         
         {/* Barra Superior del Canvas Principal */}
         <div className="px-5 sm:px-7 py-4 border-b border-white/5 flex items-center justify-between gap-4 shrink-0 bg-[#0e0e11]/90 backdrop-blur-md relative z-30">
-          {/* Breadcrumb / Dropdown de Carpeta (General Knowledge ⌄) */}
+          {/* Breadcrumb / Dropdown de Carpeta Principal */}
           <div className="relative" ref={dropdownRef}>
-            <button
-              type="button"
-              onClick={() => setShowFolderDropdown(!showFolderDropdown)}
-              className="inline-flex items-center gap-2 text-sm sm:text-base font-semibold text-zinc-100 hover:text-white transition-colors duration-200 cursor-pointer"
-            >
-              <span>{settings.selectedFolderName && settings.selectedFolderName !== "Mi Unidad" ? settings.selectedFolderName : "General Knowledge"}</span>
-              <ChevronDown className={`w-4 h-4 text-zinc-400 transition-transform duration-300 ease-out ${showFolderDropdown ? "rotate-180" : ""}`} />
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setShowFolderDropdown(!showFolderDropdown)}
+                className="inline-flex items-center gap-2 text-sm sm:text-base font-semibold text-zinc-100 hover:text-white transition-colors duration-200 cursor-pointer"
+              >
+                <span>{settings.selectedFolderName && settings.selectedFolderName !== "Mi Unidad" ? settings.selectedFolderName : (mainFolder?.name || "Carpeta Principal")}</span>
+                <ChevronDown className={`w-4 h-4 text-zinc-400 transition-transform duration-300 ease-out ${showFolderDropdown ? "rotate-180" : ""}`} />
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowMainFolderModal(true)}
+                className="p-1.5 text-zinc-500 hover:text-zinc-200 hover:bg-white/5 rounded-lg transition-colors cursor-pointer"
+                title="Cambiar carpeta principal de Google Drive"
+              >
+                <ArrowLeftRight className="w-3.5 h-3.5" />
+              </button>
+            </div>
 
             {/* Menú Desplegable flotante */}
             {showFolderDropdown && (
-              <div className="absolute left-0 mt-2 w-64 rounded-2xl bg-[#18181c] border border-white/10 shadow-2xl p-1.5 z-50 animate-fade-in space-y-0.5">
-                <p className="text-[10px] font-mono uppercase tracking-wider text-zinc-500 px-2.5 py-1">
-                  Cambiar Carpeta
-                </p>
-                <button
-                  type="button"
-                  onClick={() => handleSelectFolder({ id: 'root', name: 'General Knowledge', itemCount: settings.files?.length || 0 })}
-                  className={`w-full flex items-center justify-between p-2 rounded-xl text-xs transition-colors duration-150 cursor-pointer text-left ${
-                    settings.selectedFolderId === 'root'
-                      ? "bg-white/10 text-white font-semibold"
-                      : "hover:bg-white/5 text-zinc-300"
-                  }`}
-                >
-                  <div className="flex items-center gap-2 truncate">
-                    <Folder className="w-3.5 h-3.5 text-zinc-400 shrink-0" />
-                    <span>General Knowledge</span>
-                  </div>
-                  <span className="text-[10px] text-zinc-500 font-mono">
-                    {settings.files?.length || 0}
-                  </span>
-                </button>
+              <div className="absolute left-0 mt-2 w-72 rounded-2xl bg-[#18181c] border border-white/10 shadow-2xl p-1.5 z-50 animate-fade-in space-y-1">
+                <div className="flex items-center justify-between px-2.5 py-1">
+                  <p className="text-[10px] font-mono uppercase tracking-wider text-zinc-500">
+                    Navegación
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowFolderDropdown(false);
+                      setShowMainFolderModal(true);
+                    }}
+                    className="text-[10px] text-blue-400 hover:underline flex items-center gap-0.5 cursor-pointer font-medium"
+                  >
+                    <span>Cambiar carpeta</span>
+                    <ChevronRight className="w-3 h-3" />
+                  </button>
+                </div>
 
-                {availableFolders.filter((f) => f.id !== 'root').map((f) => (
+                {mainFolder && (
+                  <button
+                    type="button"
+                    onClick={() => handleSelectFolder(mainFolder)}
+                    className={`w-full flex items-center justify-between p-2 rounded-xl text-xs transition-colors duration-150 cursor-pointer text-left ${
+                      settings.selectedFolderId === mainFolder.id
+                        ? "bg-white/10 text-white font-semibold"
+                        : "hover:bg-white/5 text-zinc-300"
+                    }`}
+                  >
+                    <div className="flex items-center gap-2 truncate">
+                      <Folder className="w-3.5 h-3.5 text-blue-400 shrink-0" />
+                      <span className="truncate">{mainFolder.name} (Principal)</span>
+                    </div>
+                    <span className="text-[10px] text-zinc-500 font-mono">
+                      {mainFolder.itemCount || 0}
+                    </span>
+                  </button>
+                )}
+
+                {/* Subcarpetas de la carpeta principal */}
+                {mainFolder && (subfoldersMap[mainFolder.id] || []).map((f) => (
                   <button
                     key={f.id}
                     type="button"
                     onClick={() => handleSelectFolder(f)}
-                    className={`w-full flex items-center justify-between p-2 rounded-xl text-xs transition-colors duration-150 cursor-pointer text-left ${
+                    className={`w-full flex items-center justify-between p-2 pl-4 rounded-xl text-xs transition-colors duration-150 cursor-pointer text-left ${
                       settings.selectedFolderId === f.id
                         ? "bg-white/10 text-white font-semibold"
                         : "hover:bg-white/5 text-zinc-300"
@@ -1018,6 +1097,70 @@ export function GoogleDriveSettingsCard({ onClose, onSelectPhotoForProduct }: Go
                 alt={previewPhoto.name}
                 className="max-h-[68vh] w-auto max-w-full object-contain rounded-xl shadow-lg"
               />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL PARA SELECCIONAR / CAMBIAR CARPETA PRINCIPAL */}
+      {showMainFolderModal && (
+        <div className="fixed inset-0 z-[1500] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fade-in">
+          <div className="w-full max-w-md rounded-3xl bg-[#141418] border border-white/10 shadow-2xl p-6 space-y-4">
+            <div className="flex items-center justify-between border-b border-white/5 pb-3.5">
+              <div>
+                <h4 className="text-base font-bold text-zinc-100">Carpeta Principal</h4>
+                <p className="text-xs text-zinc-400 mt-0.5">Selecciona la carpeta de Google Drive para tu catálogo</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowMainFolderModal(false)}
+                className="p-1.5 text-zinc-400 hover:text-white rounded-xl hover:bg-white/5 transition-colors cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="max-h-72 overflow-y-auto space-y-1.5 pr-1">
+              {rootFolders.length === 0 ? (
+                <p className="text-xs text-zinc-500 text-center py-6">No se encontraron carpetas en la unidad.</p>
+              ) : (
+                rootFolders.map((folder) => {
+                  const isCurrent = mainFolder?.id === folder.id;
+                  return (
+                    <button
+                      key={folder.id}
+                      type="button"
+                      onClick={async () => {
+                        await handleSelectFolder(folder);
+                        setShowMainFolderModal(false);
+                      }}
+                      className={`w-full flex items-center justify-between p-3 rounded-2xl text-xs transition-all duration-150 cursor-pointer text-left ${
+                        isCurrent
+                          ? "bg-blue-600/20 text-blue-400 border border-blue-500/40 font-semibold"
+                          : "hover:bg-white/5 text-zinc-200 border border-transparent"
+                      }`}
+                    >
+                      <div className="flex items-center gap-3 truncate">
+                        <Folder className={`w-4 h-4 shrink-0 ${isCurrent ? "text-blue-400" : "text-zinc-400"}`} />
+                        <span className="truncate">{folder.name}</span>
+                      </div>
+                      <span className="text-[10px] text-zinc-500 font-mono">
+                        {folder.itemCount || 0} items
+                      </span>
+                    </button>
+                  );
+                })
+              )}
+            </div>
+
+            <div className="pt-2 border-t border-white/5 flex justify-end">
+              <button
+                type="button"
+                onClick={() => setShowMainFolderModal(false)}
+                className="px-4 py-2 rounded-xl text-xs font-semibold bg-white/5 hover:bg-white/10 text-zinc-300 transition-colors cursor-pointer"
+              >
+                Cerrar
+              </button>
             </div>
           </div>
         </div>
