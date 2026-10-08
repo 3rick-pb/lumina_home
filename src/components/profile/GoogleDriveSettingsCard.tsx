@@ -51,7 +51,7 @@ export function GoogleLogoIcon({ className = "w-5 h-5" }: { className?: string }
   );
 }
 
-// Visualizador de Carpeta 3D oficial de rareUI (Libre, sin contorno)
+// Visualizador de Carpeta 3D oficial de rareUI (En contenedor separado y alineado)
 function LayeredFolderCard({ 
   folder, 
   isSelected, 
@@ -68,10 +68,14 @@ function LayeredFolderCard({
       onClick={onClick}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
-      className="group relative flex flex-col items-center justify-center cursor-pointer p-2 w-full max-w-[280px] transition-transform duration-200 hover:-translate-y-1.5"
+      className={`group relative flex flex-col items-center justify-between p-5 sm:p-6 rounded-3xl border transition-all duration-300 ease-out cursor-pointer w-full min-h-[290px] ${
+        isSelected
+          ? 'bg-[#1b2034] border-blue-400 ring-2 ring-blue-500/50 shadow-2xl shadow-blue-500/20'
+          : 'bg-[#14141e]/90 border-zinc-800 hover:border-zinc-700 hover:bg-[#191926] shadow-lg hover:shadow-xl'
+      }`}
     >
-      {/* Carpeta libre de rareUI sin contorno ni cajas */}
-      <div className="relative w-full h-[200px] flex items-center justify-center overflow-visible pointer-events-none">
+      {/* Contenedor holgado para la Carpeta rareUI con alineación exacta */}
+      <div className="relative w-full h-[190px] flex items-center justify-center overflow-visible pointer-events-none my-auto">
         <FolderComponent 
           color="blue" 
           size="sm" 
@@ -79,8 +83,8 @@ function LayeredFolderCard({
         />
       </div>
 
-      {/* Información de la carpeta libre */}
-      <div className="text-center space-y-1 w-full mt-2">
+      {/* Contenedor inferior de metadatos de la carpeta */}
+      <div className="text-center space-y-1 w-full pt-3 border-t border-zinc-800/80 mt-auto">
         <h5 
           className={`font-bold text-sm sm:text-base truncate px-2 transition-colors ${
             isSelected ? 'text-blue-400' : 'text-white group-hover:text-blue-300'
@@ -89,8 +93,8 @@ function LayeredFolderCard({
         >
           {folder.name}
         </h5>
-        <div className="flex items-center justify-center gap-1.5 text-xs text-zinc-300 font-medium">
-          <span className="font-mono font-bold text-white">{folder.itemCount || 0}</span>
+        <div className="flex items-center justify-center gap-1.5 text-xs text-zinc-300 font-medium font-mono">
+          <span className="font-bold text-white">{folder.itemCount || 0}</span>
           <span>{folder.itemCount === 1 ? 'archivo' : 'archivos'}</span>
         </div>
       </div>

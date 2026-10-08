@@ -176,19 +176,19 @@ const FolderComponent = ({
             </motion.div>
           </div>
 
-          <motion.div
-            className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 mt-4"
-            style={{
-              transformOrigin: "bottom center",
-              transformStyle: "preserve-3d",
-              width: 321,
-              height: 241,
-            }}
-            animate={{ rotateX: isOpen ? -55 : isHovered ? -45 : -15 }}
-            transition={{ type: "spring", stiffness: 120, damping: 14 }}
-          >
-            <div
-              className="absolute inset-0"
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 mt-3.5">
+            <motion.div
+              style={{
+                transformOrigin: "bottom center",
+                transformStyle: "preserve-3d",
+                width: 321,
+                height: 241,
+              }}
+              animate={{ rotateX: isOpen ? -55 : isHovered ? -45 : -15 }}
+              transition={{ type: "spring", stiffness: 120, damping: 14 }}
+            >
+              <div
+                className="absolute inset-0"
               style={{
                 backdropFilter: "blur(6px)",
                 WebkitBackdropFilter: "blur(6px)",
@@ -263,6 +263,7 @@ const FolderComponent = ({
         </div>
       </div>
     </div>
+  </div>
   );
 };
 
