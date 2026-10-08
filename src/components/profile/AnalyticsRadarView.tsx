@@ -514,7 +514,7 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
   const userAddresses = useUserStore((state) => state.addresses);
   const userOrders = useUserStore((state) => state.orders);
 
-  const isAdmin = (currentUser?.role === 'ADMIN') || (props.user?.role === 'ADMIN');
+  const isAdmin = (currentUser?.role === 'ADMIN' || currentUser?.role === 'SUBADMIN') || (props.user?.role === 'ADMIN' || props.user?.role === 'SUBADMIN');
 
   // Authoritative location and exact street/sector of the active viewer directly from the user store
   const primaryAddressObj = useMemo(() => {
@@ -662,8 +662,8 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
   const isClientAdmin = useCallback((c?: { id?: string; email?: string; name?: string; role?: string; isAdmin?: boolean } | null) => {
     if (!c) return false;
     if (isAdmin && isUserSelf(c)) return true;
-    if (currentUser?.role === 'ADMIN' && (isUserSelf(c) || c.id === currentUser.id || (currentUser.email && c.email?.toLowerCase() === currentUser.email.toLowerCase()))) return true;
-    if (c.role === 'ADMIN' || Boolean(c.isAdmin)) return true;
+    if ((currentUser?.role === 'ADMIN' || currentUser?.role === 'SUBADMIN') && (isUserSelf(c) || c.id === currentUser.id || (currentUser.email && c.email?.toLowerCase() === currentUser.email.toLowerCase()))) return true;
+    if (c.role === 'ADMIN' || c.role === 'SUBADMIN' || Boolean(c.isAdmin)) return true;
     if (c.name && c.name.toLowerCase().includes('admin')) return true;
     if (c.email && c.email.toLowerCase().includes('admin')) return true;
     return false;

@@ -92,7 +92,7 @@ async function persistInvitedAdmins(emails: string[], request?: Request): Promis
 /**
  * Broadcasts role updates to all active client tabs on the unified 'lumina:roles' channel.
  */
-async function broadcastRoleChange(targetEmail: string, role: 'USER' | 'ADMIN', request?: Request) {
+async function broadcastRoleChange(targetEmail: string, role: 'USER' | 'ADMIN' | 'SUBADMIN', request?: Request) {
   try {
     const supabase = getScopedSupabaseClient(request);
     const rolesChan = supabase.channel('lumina:roles');
@@ -283,7 +283,7 @@ export async function POST(request: Request) {
 
     // Broadcast realtime promotion to newly added admins
     for (const addedEmail of cleanedCandidates) {
-      await broadcastRoleChange(addedEmail, 'ADMIN', request);
+      await broadcastRoleChange(addedEmail, 'SUBADMIN', request);
     }
 
     return NextResponse.json({

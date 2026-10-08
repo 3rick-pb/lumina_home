@@ -1459,7 +1459,7 @@ const CENTER_MORPH_TRANSITION = {
 const HYPEROS_PORTRAIT_VARIANTS = {
   closed: {
     opacity: 0,
-    scale: 0.82,
+    scale: 0.8,
     rotate: 0,
     x: "-50%",
     y: "-50%",
@@ -1473,19 +1473,19 @@ const HYPEROS_PORTRAIT_VARIANTS = {
     y: "-50%",
     borderRadius: "0px",
     transition: {
-      duration: 0.48,
-      ease: [0.16, 1, 0.3, 1] as const,
+      duration: 0.65,
+      ease: [0.2, 0.9, 0.2, 1] as const,
     },
   },
   exit: {
     opacity: 0,
-    scale: 0.86,
+    scale: 0.82,
     rotate: 0,
     x: "-50%",
     y: "-50%",
     borderRadius: "32px",
     transition: {
-      duration: 0.32,
+      duration: 0.52,
       ease: [0.32, 0.72, 0, 1] as const,
     },
   },
@@ -1800,7 +1800,6 @@ export function BeUICenterMorphModal({
                 max-height: none !important;
                 margin: 0 !important;
                 border-radius: 0 !important;
-                transform: translate(-50%, -50%) rotate(90deg) !important;
                 z-index: 999999 !important;
               }
               .hyperos-landscape-force > div {

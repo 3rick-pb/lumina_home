@@ -157,23 +157,57 @@ export const canonicalCategory = (cat: string, knownCategories: string[]): strin
 export const INITIAL_NICHE_PRODUCTS: CatalogProduct[] = [];
 
 // Convert camelCase to snake_case for Supabase
+// Helper to validate and sanitize image URLs from any source (direct Google CDN, proxy stream, unsplash, local)
+const isValidProductImageUrl = (url: unknown): boolean => {
+  if (!url || typeof url !== 'string') return false;
+  const s = url.trim();
+  return (
+    s.startsWith('http://') ||
+    s.startsWith('https://') ||
+    s.startsWith('/') ||
+    s.startsWith('data:image/')
+  );
+};
+
+const sanitizeProductImageUrl = (url: string): string => {
+  return url.trim().replace(/^['"]|['"]$/g, '');
+};
+
+// Convert camelCase to snake_case for Supabase
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const toSupabaseProduct = (p: Partial<CatalogProduct>) => {
   // Helper to extract and sanitize clean image URLs
   const rawList: string[] = [];
-  if (p.imageUrl && typeof p.imageUrl === 'string') {
-    p.imageUrl.split(/[\n,]+/).map(s => s.trim().replace(/^['"]|['"]$/g, '')).filter(s => s.startsWith('http')).forEach(u => rawList.push(u));
-  }
+
+  // 1. Process images array preserving order
   if (Array.isArray(p.images)) {
     p.images.forEach(img => {
       if (typeof img === 'string') {
-        img.split(/[\n,]+/).map(s => s.trim().replace(/^['"]|['"]$/g, '')).filter(s => s.startsWith('http')).forEach(u => {
-          if (!rawList.includes(u)) rawList.push(u);
-        });
+        const trimmed = sanitizeProductImageUrl(img);
+        if (isValidProductImageUrl(trimmed)) {
+          if (!rawList.includes(trimmed)) rawList.push(trimmed);
+        } else if (trimmed.includes('\n') || trimmed.includes(',')) {
+          trimmed.split(/[\n,]+/).map(sanitizeProductImageUrl).filter(isValidProductImageUrl).forEach((u: string) => {
+            if (!rawList.includes(u)) rawList.push(u);
+          });
+        }
       }
     });
   }
-  const cleanMain = rawList[0] || (typeof p.imageUrl === 'string' ? p.imageUrl : '');
+
+  // 2. Process primary imageUrl ensuring it is placed at the front (cover photo)
+  if (p.imageUrl && typeof p.imageUrl === 'string') {
+    const trimmed = sanitizeProductImageUrl(p.imageUrl);
+    if (isValidProductImageUrl(trimmed)) {
+      const idx = rawList.indexOf(trimmed);
+      if (idx > -1) {
+        rawList.splice(idx, 1);
+      }
+      rawList.unshift(trimmed);
+    }
+  }
+
+  const cleanMain = rawList[0] || (typeof p.imageUrl === 'string' ? sanitizeProductImageUrl(p.imageUrl) : '');
   const cleanImages = rawList.length > 0 ? rawList : (cleanMain ? [cleanMain] : []);
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -253,21 +287,34 @@ const isArrayMismatchError = (err: unknown): boolean => {
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const toFrontendProduct = (p: any): CatalogProduct => {
   const parsedImages: string[] = [];
-  if (p.image_url && typeof p.image_url === 'string') {
-    p.image_url.split(/[\n,]+/).map((s: string) => s.trim().replace(/^['"]|['"]$/g, '')).filter((s: string) => s.startsWith('http')).forEach((u: string) => {
-      if (!parsedImages.includes(u)) parsedImages.push(u);
-    });
-  }
+
   if (Array.isArray(p.images)) {
     p.images.forEach((img: unknown) => {
       if (typeof img === 'string') {
-        img.split(/[\n,]+/).map((s: string) => s.trim().replace(/^['"]|['"]$/g, '')).filter((s: string) => s.startsWith('http')).forEach((u: string) => {
-          if (!parsedImages.includes(u)) parsedImages.push(u);
-        });
+        const trimmed = sanitizeProductImageUrl(img);
+        if (isValidProductImageUrl(trimmed)) {
+          if (!parsedImages.includes(trimmed)) parsedImages.push(trimmed);
+        } else if (trimmed.includes('\n') || trimmed.includes(',')) {
+          trimmed.split(/[\n,]+/).map(sanitizeProductImageUrl).filter(isValidProductImageUrl).forEach((u: string) => {
+            if (!parsedImages.includes(u)) parsedImages.push(u);
+          });
+        }
       }
     });
   }
-  const frontMain = parsedImages[0] || (typeof p.image_url === 'string' ? p.image_url : '');
+
+  if (p.image_url && typeof p.image_url === 'string') {
+    const trimmed = sanitizeProductImageUrl(p.image_url);
+    if (isValidProductImageUrl(trimmed)) {
+      const idx = parsedImages.indexOf(trimmed);
+      if (idx > -1) {
+        parsedImages.splice(idx, 1);
+      }
+      parsedImages.unshift(trimmed);
+    }
+  }
+
+  const frontMain = parsedImages[0] || (typeof p.image_url === 'string' ? sanitizeProductImageUrl(p.image_url) : '');
   const frontImages = parsedImages.length > 0 ? parsedImages : (frontMain ? [frontMain] : []);
 
   return {

@@ -29,7 +29,9 @@ export function BlobatarAvatar({
   // Ensure a stable, non-empty string seed for deterministic avatar generation
   const seed = (name && name.trim().length > 0) ? name.trim() : "lumina-client";
 
-  const isAdmin = role === "ADMIN";
+  const isMasterAdmin = role === "ADMIN";
+  const isSubAdmin = role === "SUBADMIN";
+  const isAdmin = isMasterAdmin || isSubAdmin;
 
   const borderRadius = background === "circle" 
     ? "9999px" 
@@ -42,7 +44,15 @@ export function BlobatarAvatar({
   return (
     <div
       onClick={onClick}
-      title={title || (isAdmin ? "Administrador Lumina" : "Cliente Lumina")}
+      title={
+        title || (
+          isMasterAdmin
+            ? "Administrador Lumina"
+            : isSubAdmin
+            ? "Sub Administrador Lumina"
+            : "Cliente Lumina"
+        )
+      }
       style={{ 
         width: size, 
         height: size,
@@ -50,17 +60,21 @@ export function BlobatarAvatar({
         transform: "translateZ(0)",
         backfaceVisibility: "hidden",
       }}
-      className={`relative shrink-0 flex items-center justify-center select-none overflow-hidden transition-transform duration-200 [&>svg]:w-full [&>svg]:h-full [&>svg]:block [&>img]:w-full [&>img]:h-full [&>img]:block ${
+      className={`relative shrink-0 flex items-center justify-center select-none overflow-hidden transition-transform duration-200 [&>svg]:w-full [&>svg]:h-full [&>svg]:block [&>img]:w-full [&>img]:block ${
         onClick ? "cursor-pointer hover:scale-105 active:scale-95" : ""
       } ${
-        isAdmin 
+        isMasterAdmin
+          ? "ring-1.5 ring-red-500/70 dark:ring-red-500/60"
+          : isSubAdmin 
           ? "ring-1.5 ring-amber-400/60 dark:ring-amber-400/50" 
-          : "ring-1 ring-black/5 dark:ring-white/10"
+          : "ring-1 ring-blue-500/30 dark:ring-blue-400/30"
       } ${
         showGlow
-          ? isAdmin
+          ? isMasterAdmin
+            ? "shadow-[0_0_12px_rgba(239,68,68,0.35)]"
+            : isSubAdmin
             ? "shadow-[0_0_12px_rgba(245,158,11,0.25)]"
-            : "shadow-[0_0_12px_rgba(16,185,129,0.2)]"
+            : "shadow-[0_0_12px_rgba(59,130,246,0.2)]"
           : ""
       } ${className}`}
     >

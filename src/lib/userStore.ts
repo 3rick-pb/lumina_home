@@ -9,11 +9,13 @@ import { useCatalogStore } from './catalogStore';
 import { playFavoriteSound, playStepperTickSound } from './soundUtils';
 import type { RawGpsHardwareData } from './locationUtils';
 
+export type UserRole = 'USER' | 'ADMIN' | 'SUBADMIN';
+
 export interface User {
   id: string;
   email: string;
   name: string;
-  role: 'USER' | 'ADMIN';
+  role: UserRole;
   isRootAdmin?: boolean;
 }
 
@@ -357,7 +359,7 @@ export const validateStrongPassword = (password?: string | null): { isValid: boo
   return { isValid: true, error: null };
 };
 
-const adminCache = new Map<string, { role: 'USER' | 'ADMIN'; isRootAdmin: boolean; timestamp: number }>();
+const adminCache = new Map<string, { role: UserRole; isRootAdmin: boolean; timestamp: number }>();
 const ADMIN_CACHE_TTL_MS = 30 * 1000; // 30 seconds
 
 export const clearAdminCache = () => {
@@ -367,13 +369,13 @@ export const clearAdminCache = () => {
 export const checkIsAdmin = async (
   email: string, 
   skipCache = false
-): Promise<{ role: 'USER' | 'ADMIN'; isRootAdmin: boolean }> => {
+): Promise<{ role: UserRole; isRootAdmin: boolean }> => {
   const normalized = (email || '').toLowerCase().trim();
   if (!normalized || !isValidEmail(normalized)) {
     return { role: 'USER', isRootAdmin: false };
   }
 
-  // 1. Master system account
+  // 1. Master system account: ADMINISTRADOR principal
   if (normalized === MASTER_ADMIN_EMAIL) {
     return { role: 'ADMIN', isRootAdmin: true };
   }
@@ -386,7 +388,7 @@ export const checkIsAdmin = async (
     }
   }
 
-  // 2. Dedicated admin_invitations table
+  // 2. Dedicated admin_invitations table: SUB ADMINISTRADOR agregado por el admin principal
   try {
     const { data: invRow } = await supabase
       .from('admin_invitations')
@@ -396,7 +398,7 @@ export const checkIsAdmin = async (
       .maybeSingle();
 
     if (invRow) {
-      const res = { role: 'ADMIN' as const, isRootAdmin: false };
+      const res = { role: 'SUBADMIN' as const, isRootAdmin: false };
       adminCache.set(normalized, { ...res, timestamp: Date.now() });
       return res;
     }
@@ -413,7 +415,7 @@ export const checkIsAdmin = async (
       if (Array.isArray(data.invitedAdmins)) {
         const cleanList = data.invitedAdmins.map((e: string) => String(e).toLowerCase().trim());
         if (cleanList.includes(normalized)) {
-          const res = { role: 'ADMIN' as const, isRootAdmin: false };
+          const res = { role: 'SUBADMIN' as const, isRootAdmin: false };
           adminCache.set(normalized, { ...res, timestamp: Date.now() });
           return res;
         }
@@ -670,7 +672,7 @@ export async function syncFavoritesToCloud(userId: string | null | undefined, fa
   }
 }
 
-const fetchUserDataFromDatabase = async (userId: string, role: 'USER' | 'ADMIN' = 'USER', email: string = '') => {
+const fetchUserDataFromDatabase = async (userId: string, role: UserRole = 'USER', email: string = '') => {
   try {
     // 1. Fetch store/user orders from persistent API with instant synchronization
     let orders: Order[] = [];
@@ -846,7 +848,7 @@ function setupRolesRealtimeListener(
 
       if (currentNorm === targetNorm) {
         clearAdminCache();
-        const newRole: 'USER' | 'ADMIN' = payload.role === 'ADMIN' ? 'ADMIN' : 'USER';
+        const newRole: UserRole = payload.role === 'ADMIN' ? 'ADMIN' : payload.role === 'SUBADMIN' ? 'SUBADMIN' : 'USER';
         const isRoot = currentUser.isRootAdmin || false;
 
         const updatedUser: User = {
@@ -857,9 +859,9 @@ function setupRolesRealtimeListener(
 
         set({ user: updatedUser });
 
-        if (newRole === 'ADMIN') {
+        if (newRole === 'ADMIN' || newRole === 'SUBADMIN') {
           try {
-            const personalData = await fetchUserDataFromDatabase(currentUser.id, 'ADMIN', currentUser.email);
+            const personalData = await fetchUserDataFromDatabase(currentUser.id, newRole, currentUser.email);
             set({ orders: personalData.orders });
           } catch {}
         }
@@ -904,7 +906,7 @@ let userSyncTargetId: string | null = null;
 
 async function syncAndFetchMergedUserData(
   userId: string,
-  role: 'USER' | 'ADMIN',
+  role: UserRole,
   email: string,
   accessToken?: string,
   currentStoreState?: {
@@ -1766,7 +1768,7 @@ export const useUserStore = create<UserState>((set, get) => ({
         const orders = get().orders;
         const totalSpent = orders?.reduce((acc, order) => acc + (order.total || 0), 0) || 0;
         const purchasesCount = orders?.length || 0;
-        const section = user.role === 'ADMIN' ? 'Mi Perfil / Mapa' : 'Mi Perfil / Pedidos';
+        const section = (user.role === 'ADMIN' || user.role === 'SUBADMIN') ? 'Mi Perfil / Mapa' : 'Mi Perfil / Pedidos';
         useRadarStore.getState().trackActivity(user, activeAddr?.city || '', totalSpent, purchasesCount, section);
       } catch {}
     } else {
@@ -1897,10 +1899,10 @@ export const useUserStore = create<UserState>((set, get) => ({
 
       set({ user: updatedUser });
 
-      if (role === 'ADMIN') {
+      if (role === 'ADMIN' || role === 'SUBADMIN') {
         // Refresh store orders and administrative data immediately
         try {
-          const personalData = await fetchUserDataFromDatabase(currentUser.id, 'ADMIN', currentUser.email);
+          const personalData = await fetchUserDataFromDatabase(currentUser.id, role, currentUser.email);
           set({
             orders: personalData.orders,
           });

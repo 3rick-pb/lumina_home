@@ -112,9 +112,19 @@ export function ProductEditorModal({
   const [careInstructions, setCareInstructions] = useState("");
   const [combos, setCombos] = useState<ProductCombo[]>([]);
 
-  // Inicializar estado según creación o edición
+  const prevOpenRef = useRef(false);
+  const prevProductIdRef = useRef<string | null>(null);
+
+  // Inicializar estado según creación o edición (Solo al abrir o cambiar de producto)
   useEffect(() => {
+    const justOpened = open && !prevOpenRef.current;
+    const switchedProduct = open && mode === 'edit' && product?.id !== prevProductIdRef.current;
+    prevOpenRef.current = open;
+    if (product) prevProductIdRef.current = product.id;
+
     if (!open) return;
+    if (!justOpened && !switchedProduct) return;
+
     setFormError(null);
     setFormSuccess(null);
     setActiveTab('esenciales');
@@ -319,6 +329,7 @@ export function ProductEditorModal({
         onOpenChange={(isOpen) => {
           if (!isOpen) onClose();
         }}
+        hyperOSLandscapeOnMobile={true}
         className="max-w-5xl w-full p-0 overflow-hidden !rounded-[2.5rem] border border-zinc-200/90 dark:border-zinc-800/90 shadow-2xl max-h-[92vh] flex flex-col"
       >
         <div

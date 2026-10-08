@@ -513,7 +513,7 @@ function Style2TicketSvg({
 
 export function DiscountCouponsTab() {
   const { user } = useUserStore();
-  const isAdmin = user?.role === "ADMIN";
+  const isAdmin = user?.role === "ADMIN" || user?.role === "SUBADMIN";
 
   const {
     coupons,

@@ -159,7 +159,7 @@ export default function ProfilePage() {
     }
   }, [user?.id, loadSettingsFromDatabase]);
 
-  const isAdminUser = user?.role === "ADMIN";
+  const isAdminUser = user?.role === "ADMIN" || user?.role === "SUBADMIN";
 
   const scopedOrders = useMemo(() => {
     const list = Array.isArray(orders) ? orders.filter(Boolean) : [];
@@ -541,8 +541,9 @@ export default function ProfilePage() {
  );
  }
 
-  const isAdmin = user.role === "ADMIN";
   const isRootAdmin = Boolean(user.isRootAdmin || (user.email || '').toLowerCase().trim() === 'admin@lumina.com');
+  const isSubAdmin = user.role === "SUBADMIN" || (user.role === "ADMIN" && !isRootAdmin);
+  const isAdmin = isRootAdmin || isSubAdmin;
 
  // Auto calculate discount
  const handlePriceChange = (newP: string, newOldP: string, withDisc: boolean) => {
@@ -1363,8 +1364,14 @@ const handleConfirmDeleteNiche = async () => {
  />
  <div className="hidden lg:block text-left">
  <p className="text-xs font-bold text-gray-900 dark:text-gray-100 leading-tight tracking-normal">{formatCleanName(user.name)}</p>
- <span className={`inline-block text-[10px] font-bold px-2 py-0.5 rounded-full mt-0.5 ${isAdmin ? "bg-amber-100 dark:bg-amber-950/40 text-amber-900 dark:text-amber-300 border border-amber-200 dark:border-amber-800/40" : "bg-stone-100 dark:bg-white/10 text-stone-700 dark:text-stone-300 border border-stone-200/80 dark:border-white/10"}`}>
- {isAdmin ? "ADMINISTRADOR" : "CLIENTE"}
+ <span className={`inline-block text-[10px] font-bold px-2 py-0.5 rounded-full mt-0.5 ${
+   isRootAdmin 
+     ? "bg-red-100 dark:bg-red-950/40 text-red-700 dark:text-red-300 border border-red-200 dark:border-red-800/40" 
+     : isSubAdmin 
+     ? "bg-amber-100 dark:bg-amber-950/40 text-amber-900 dark:text-amber-300 border border-amber-200 dark:border-amber-800/40" 
+     : "bg-blue-100 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800/40"
+ }`}>
+ {isRootAdmin ? "ADMINISTRADOR" : isSubAdmin ? "SUB ADMINISTRADOR" : "CLIENTE"}
  </span>
  </div>
  <button 

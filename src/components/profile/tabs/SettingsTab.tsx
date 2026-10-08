@@ -871,7 +871,7 @@ export function SettingsTab({
                             <div className="flex items-center gap-2 min-w-0">
                               <ShieldCheck className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0" />
                               <span className="font-semibold text-gray-900 dark:text-gray-100 truncate">{admEmail}</span>
-                              <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-amber-100 dark:bg-amber-900/40 text-amber-800 dark:text-amber-300">ADMINISTRADOR</span>
+                              <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-amber-100 dark:bg-amber-900/40 text-amber-800 dark:text-amber-300">SUB ADMINISTRADOR</span>
                             </div>
                             <button
                               type="button"
