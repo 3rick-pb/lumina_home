@@ -63,7 +63,7 @@ export function GoogleLogoIcon({ className = "w-5 h-5" }: { className?: string }
 }
 
 // Componente Scroll Progress de rareUI simplificado al porcentaje de la media rueda
-function ArcScrollProgress({
+const ArcScrollProgress = React.memo(function ArcScrollProgress({
   percent,
   isDark
 }: {
@@ -114,10 +114,10 @@ function ArcScrollProgress({
       ) : null}
     </div>
   );
-}
+});
 
 // Visualizador de Carpeta 3D oficial de rareUI (Sin contenedor, sin salto al pasar el cursor)
-function LayeredFolderCard({ 
+const LayeredFolderCard = React.memo(function LayeredFolderCard({ 
   folder, 
   isSelected, 
   isDark,
@@ -131,11 +131,22 @@ function LayeredFolderCard({
   const [isHovered, setIsHovered] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
 
+  const handleClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setIsOpen(true);
+    setTimeout(() => {
+      onClick();
+    }, 200);
+  };
+
   return (
     <div
-      onClick={onClick}
+      onClick={handleClick}
       onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
+      onMouseLeave={() => {
+        setIsHovered(false);
+        setIsOpen(false);
+      }}
       className="group flex flex-col items-center justify-center cursor-pointer select-none py-1 px-1 w-full max-w-[200px]"
     >
       {/* Solo la carpeta de rareUI libre: tamaño sm compacto para no colisionar con las demás */}
@@ -172,7 +183,7 @@ function LayeredFolderCard({
       </div>
     </div>
   );
-}
+});
 
 export interface GoogleDriveSettingsCardProps {
   onClose?: () => void;
@@ -457,21 +468,33 @@ export function GoogleDriveSettingsCard({ onClose, onSelectPhotoForProduct }: Go
             <ArcScrollProgress percent={arcProgressPercent} isDark={isDark} />
           </div>
 
-          {/* Buscador de carpetas */}
-          <div className="relative">
-            <Search className={cn("w-3.5 h-3.5 absolute left-3 top-2.5", isDark ? "text-zinc-400" : "text-zinc-500")} />
+          {/* Buscador de carpetas con alineación y simetría perfecta */}
+          <div className="relative flex items-center w-full">
+            <div className="absolute left-3 inset-y-0 flex items-center pointer-events-none text-zinc-400 dark:text-zinc-500">
+              <Search className="w-3.5 h-3.5" />
+            </div>
             <input
               type="text"
               value={searchFilter}
               onChange={(e) => setSearchFilter(e.target.value)}
               placeholder="Buscar carpetas..."
               className={cn(
-                "w-full pl-8 pr-3 py-1.5 rounded-xl border text-xs focus:outline-none transition-all duration-200 font-mono",
+                "w-full pl-8.5 pr-8 h-8 rounded-xl border text-xs focus:outline-none transition-all duration-200 font-mono flex items-center leading-normal",
                 isDark 
                   ? "bg-[#1c1c24] border-zinc-700 text-white placeholder-zinc-500 focus:ring-1 focus:ring-zinc-400" 
                   : "bg-white border-zinc-300 text-zinc-900 placeholder-zinc-400 focus:ring-1 focus:ring-blue-500"
               )}
             />
+            {searchFilter && (
+              <button
+                type="button"
+                onClick={() => setSearchFilter("")}
+                className="absolute right-2.5 inset-y-0 flex items-center text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 cursor-pointer"
+                title="Limpiar búsqueda"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            )}
           </div>
         </div>
 

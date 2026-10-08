@@ -326,11 +326,14 @@ export function ArcPicker({
 
   useEffect(() => {
     const maxIdx = Math.max(1, options.length - 1);
-    const initialPercent = Math.round(clamp(position.get() / maxIdx, 0, 1) * 100);
-    onProgressChange?.(initialPercent);
+    let lastP = Math.round(clamp(position.get() / maxIdx, 0, 1) * 100);
+    onProgressChange?.(lastP);
     return position.on("change", (latest) => {
       const p = Math.round(clamp(latest / maxIdx, 0, 1) * 100);
-      onProgressChange?.(p);
+      if (p !== lastP) {
+        lastP = p;
+        onProgressChange?.(p);
+      }
     });
   }, [options.length, onProgressChange, position]);
   const activity = useMotionValue(0);
@@ -469,7 +472,10 @@ export function ArcPicker({
         complete();
       } else
         animation.current = animate(position, index, {
-          ...SPRING_LAYOUT,
+          type: "spring",
+          stiffness: 200,
+          damping: 25,
+          mass: 0.95,
           onComplete: complete,
         });
     },
@@ -638,21 +644,27 @@ export function ArcPicker({
         tracking.current = true;
         activity.set(1);
         
-        // Suavizado inteligente: en mouse wheels físicos (saltos >= 40px), limitar cada notch
-        // a 1 posición para evitar saltos caóticos de múltiples carpetas a la vez.
-        // En trackpads de precisión, permitir desplazamiento proporcional suave.
+        // Efecto scroll pesado beUI: inercia ponderada con curva expo-out estilo Lenis
         const stepDistance = Math.abs(rawDelta) >= 40
-          ? Math.sign(rawDelta) * Math.min(Math.abs(rawDelta) * 0.38, current.spacing * 0.95)
-          : rawDelta * 0.45;
+          ? Math.sign(rawDelta) * Math.min(Math.abs(rawDelta) * 0.42, current.spacing * 1.1)
+          : rawDelta * 0.48;
 
-        const next = clamp(from + stepDistance / current.spacing, first, last);
-        wheelTarget.current = next;
-        position.set(next);
+        const currentTarget = wheelTarget.current ?? position.get();
+        const nextTarget = clamp(currentTarget + stepDistance / current.spacing, first, last);
+        wheelTarget.current = nextTarget;
+
+        animation.current?.stop();
+        animation.current = animate(position, nextTarget, {
+          ease: [0.16, 1, 0.3, 1],
+          duration: 0.38,
+        });
+
         wheelTimer.current = setTimeout(() => {
           wheelTimer.current = null;
+          const finalIndex = nearestEnabled(wheelTarget.current ?? position.get());
           wheelTarget.current = null;
-          settle(nearestEnabled(next));
-        }, 140);
+          settle(finalIndex);
+        }, 180);
       }
     };
     element.addEventListener("wheel", wheel, { passive: false });
