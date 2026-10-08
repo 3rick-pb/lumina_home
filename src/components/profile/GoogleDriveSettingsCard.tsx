@@ -15,7 +15,6 @@ import {
   Download,
   Eye,
   Home,
-  Database,
   BarChart2,
   List,
   LayoutGrid,
@@ -52,7 +51,7 @@ export function GoogleLogoIcon({ className = "w-5 h-5" }: { className?: string }
   );
 }
 
-// Visualizador de Carpeta 3D con alto contraste y bordes definidos
+// Visualizador de Carpeta 3D con alto contraste, previsualización multimedia y apertura suave
 function LayeredFolderCard({ 
   folder, 
   isSelected, 
@@ -62,19 +61,24 @@ function LayeredFolderCard({
   isSelected: boolean; 
   onClick: () => void; 
 }) {
+  const [isHovered, setIsHovered] = useState(false);
+
   return (
     <div
       onClick={onClick}
-      className={`group relative rounded-2xl sm:rounded-3xl p-3.5 sm:p-4 border transition-all duration-300 ease-out cursor-pointer flex flex-col items-center justify-between min-h-[220px] ${
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+      className={`group relative rounded-2xl sm:rounded-3xl p-4 sm:p-5 border transition-all duration-300 ease-out cursor-pointer flex flex-col items-center justify-between min-h-[210px] sm:min-h-[225px] overflow-hidden ${
         isSelected
-          ? 'bg-[#252530] border-blue-400 shadow-xl ring-2 ring-blue-500/40'
-          : 'bg-[#181820] border-zinc-700/80 hover:border-zinc-400 hover:bg-[#22222c] shadow-md hover:shadow-lg'
+          ? 'bg-[#222230] border-blue-400 shadow-xl ring-2 ring-blue-500/40 shadow-blue-500/10'
+          : 'bg-[#16161f] border-zinc-700/80 hover:border-zinc-500 hover:bg-[#1f1f2b] shadow-md hover:shadow-2xl'
       }`}
     >
-      <div className="relative w-full h-32 sm:h-36 flex items-center justify-center my-auto overflow-visible">
+      <div className="relative w-full h-32 sm:h-36 flex items-center justify-center my-auto pointer-events-none">
         <FolderComponent 
           color={isSelected ? 'blue' : 'black'} 
-          size="xs" 
+          size="sm" 
+          isHovered={isHovered}
         />
       </div>
 
@@ -82,9 +86,10 @@ function LayeredFolderCard({
         <h5 className="font-bold text-xs sm:text-sm text-white truncate px-1 group-hover:text-blue-300 transition-colors" title={folder.name}>
           {folder.name}
         </h5>
-        <p className="text-xs text-zinc-300 font-semibold font-mono">
-          {folder.itemCount || 0} archivos
-        </p>
+        <div className="flex items-center justify-center gap-1.5 text-xs text-zinc-300 font-medium">
+          <span className="font-mono font-bold text-white">{folder.itemCount || 0}</span>
+          <span>{folder.itemCount === 1 ? 'archivo' : 'archivos'}</span>
+        </div>
       </div>
     </div>
   );
@@ -106,7 +111,7 @@ export function GoogleDriveSettingsCard({ onClose, onSelectPhotoForProduct }: Go
     syncFiles 
   } = useGoogleDriveStore();
 
-  const [activeRailTab, setActiveRailTab] = useState<'database' | 'home' | 'stats'>('database');
+  const [activeRailTab, setActiveRailTab] = useState<'home' | 'stats'>('home');
   const [showStatsModal, setShowStatsModal] = useState(false);
   const [viewMode, setViewMode] = useState<'list' | 'grid'>('list');
   const [searchFilter, setSearchFilter] = useState("");
@@ -134,12 +139,6 @@ export function GoogleDriveSettingsCard({ onClose, onSelectPhotoForProduct }: Go
     setShowStatsModal(false);
     await selectFolder('root', 'Mi Unidad');
     setSearchFilter("");
-  };
-
-  // 2. Botón DATABASE (Banco Multimedia)
-  const handleDatabaseClick = () => {
-    setActiveRailTab('database');
-    setShowStatsModal(false);
   };
 
   // 3. Botón SYNC (Sincronizar)
@@ -258,21 +257,7 @@ export function GoogleDriveSettingsCard({ onClose, onSelectPhotoForProduct }: Go
               <Home className="w-4 h-4" />
             </button>
 
-            {/* 2. Activo: Base de Datos / Banco Multimedia */}
-            <button
-              type="button"
-              onClick={handleDatabaseClick}
-              className={`p-2.5 rounded-xl transition-all duration-300 ease-out cursor-pointer ${
-                activeRailTab === 'database' && !showStatsModal
-                  ? "bg-white/20 text-white shadow-xs ring-1 ring-white/30"
-                  : "text-zinc-300 hover:text-white hover:bg-white/10"
-              }`}
-              title="Banco Multimedia"
-            >
-              <Database className="w-4 h-4" />
-            </button>
-
-            {/* 3. Panel de Estadísticas */}
+            {/* 2. Panel de Estadísticas */}
             <button
               type="button"
               onClick={handleStatsClick}
@@ -343,10 +328,6 @@ export function GoogleDriveSettingsCard({ onClose, onSelectPhotoForProduct }: Go
                 }}
                 defaultExpandedIds={[]}
                 className="w-full text-xs"
-                pillClassName="rounded-xl bg-white/15"
-                classNames={{
-                  item: "text-zinc-200 hover:text-white hover:bg-white/10 py-1.5 px-2 rounded-xl text-xs font-medium",
-                }}
               >
                 <FileTreeFolder
                   value={mainFolder.id}
@@ -384,10 +365,6 @@ export function GoogleDriveSettingsCard({ onClose, onSelectPhotoForProduct }: Go
                   }}
                   defaultExpandedIds={[]}
                   className="w-full text-xs"
-                  pillClassName="rounded-xl bg-white/15"
-                  classNames={{
-                    item: "text-zinc-200 hover:text-white hover:bg-white/10 py-1.5 px-2 rounded-xl text-xs font-medium",
-                  }}
                 >
                   {rootFolders.map((folder) => renderFileTreeNode(folder))}
                 </FileTree>
