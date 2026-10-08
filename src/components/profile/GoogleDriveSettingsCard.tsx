@@ -189,7 +189,7 @@ export function GoogleDriveSettingsCard({ onClose, onSelectPhotoForProduct }: Go
 
   const handleSelectFolder = async (folder: GoogleDriveFolder) => {
     await selectFolder(folder.id, folder.name);
-    setShowFolderDropdown(false);
+    
     showNotification(`Carpeta activa: ${folder.name}`);
   };
 
