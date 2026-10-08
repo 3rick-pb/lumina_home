@@ -1,6 +1,7 @@
-﻿'use client'
+'use client'
 
 import React, { useEffect, useRef } from 'react'
+
 import { cn } from '@/lib/utils'
 
 export type FluidOrbProps = React.ComponentProps<'div'> & {
@@ -196,4 +197,3 @@ const FluidOrb = ({
 }
 
 export default FluidOrb
-export { FluidOrb }

@@ -76,7 +76,10 @@ export async function GET(request: Request) {
     // 3. Obtener archivos desde la tabla de caché (admin_media_assets)
     // Ya NO consultamos a la API de Google síncronamente.
     try {
-      const query = supabase.from('admin_media_assets').select('*').order('created_at', { ascending: false }).limit(2000);
+      let query = supabase.from('admin_media_assets').select('*').order('created_at', { ascending: false }).limit(2000);
+      if (selectedFolderId && selectedFolderId !== 'root' && selectedFolderId !== 'folder_lumina_catalog_2026') {
+        query = query.eq('folder_id', selectedFolderId);
+      }
       
       const { data: assets, error } = await query;
       if (!error && Array.isArray(assets)) {
@@ -168,7 +171,7 @@ export async function POST(request: Request) {
 
       if (targetAdminId) {
         try {
-          const stats = await GoogleDriveService.syncAllToDatabase(targetAdminId);
+          const stats = await GoogleDriveService.syncAllToDatabase(targetAdminId, body.folderId);
           return NextResponse.json({ success: true, message: `Sincronización completa: ${stats.filesCount} archivos y ${stats.foldersCount} carpetas.` });
         } catch (err: unknown) {
           return NextResponse.json({ success: false, error: err instanceof Error ? err.message : String(err) }, { status: 500 });

@@ -206,10 +206,10 @@ export class GoogleDriveService {
   /**
    * Ejecuta una sincronización completa asíncrona hacia Supabase con paginación
    */
-  static async syncAllToDatabase(adminId: string): Promise<{ filesCount: number; foldersCount: number }> {
+  static async syncAllToDatabase(adminId: string, targetFolderId?: string): Promise<{ filesCount: number; foldersCount: number }> {
     const { accessToken, record } = await this.getValidAccessToken(adminId);
     
-    // 1. Obtener TODAS las carpetas
+    // 1. Obtener TODAS las carpetas (siempre necesitamos las carpetas para el selector)
     let folders: GoogleDriveApiFolder[] = [{ id: "root", name: "Mi Unidad", parentId: null, itemCount: 0 }];
     let pageToken: string | undefined;
     const folderQuery = encodeURIComponent("trashed = false and mimeType = 'application/vnd.google-apps.folder' and 'me' in owners and sharedWithMe = false");
@@ -232,10 +232,17 @@ export class GoogleDriveService {
       pageToken = data.nextPageToken;
     } while (pageToken);
 
-    // 2. Obtener TODAS las imágenes (limitado a 5,000 en este ejemplo por seguridad)
+    // 2. Obtener TODAS las imágenes DE LA CARPETA SELECCIONADA
     let files: GoogleDriveApiFile[] = [];
     pageToken = undefined;
-    const fileQuery = encodeURIComponent("trashed = false and (mimeType contains 'image/') and 'me' in owners and sharedWithMe = false");
+    
+    const target = targetFolderId || record.drive_folder_id || "root";
+    let fileQueryStr = "trashed = false and (mimeType contains 'image/') and 'me' in owners and sharedWithMe = false";
+    if (target !== "root" && target !== "folder_lumina_catalog_2026") {
+      fileQueryStr += ` and '${target}' in parents`;
+    }
+    const fileQuery = encodeURIComponent(fileQueryStr);
+    
     let totalFetched = 0;
     const MAX_FILES = 5000;
 

@@ -664,10 +664,9 @@ export const useGoogleDriveStore = create<GoogleDriveState>((set, get) => ({
       const folder = get().settings.availableFolders.find((f) => f.id === folderId);
       const resolvedName = folderName || folder?.name || (folderId === 'root' ? 'Mi Unidad' : folderId);
 
-      let folderFiles: GoogleDriveFile[] = [];
       try {
         const { data: { session } } = await supabase.auth.getSession();
-        const res = await fetch("/api/admin/google-drive", {
+        await fetch("/api/admin/google-drive", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -675,24 +674,21 @@ export const useGoogleDriveStore = create<GoogleDriveState>((set, get) => ({
           },
           body: JSON.stringify({ action: "select_folder", folderId, folderName: resolvedName }),
         });
-
-        if (res.ok) {
-          const data = await res.json();
-          if (Array.isArray(data?.files)) {
-            folderFiles = data.files;
-          }
-        }
       } catch {}
 
       const updated: GoogleDriveSettings = {
         ...get().settings,
         selectedFolderId: folderId,
         selectedFolderName: resolvedName,
-        files: folderFiles.length > 0 ? folderFiles : get().settings.files,
       };
 
       saveToLocal(updated);
-      set({ settings: updated, isSyncing: false, activeView: 'files' });
+      set({ settings: updated });
+      
+      // Lanzar sincronización del nuevo folder
+      await get().syncFiles();
+      
+      set({ isSyncing: false, activeView: 'files' });
       return true;
     } catch {
       set({ error: "Error al seleccionar carpeta", isSyncing: false });
@@ -1055,7 +1051,7 @@ export const useGoogleDriveStore = create<GoogleDriveState>((set, get) => ({
           "Content-Type": "application/json",
           ...(session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {}),
         },
-        body: JSON.stringify({ action: "sync" }),
+        body: JSON.stringify({ action: "sync", folderId: get().settings.selectedFolderId }),
       });
       if (res.ok) {
         await get().loadSettings(); // Recargar desde base de datos
