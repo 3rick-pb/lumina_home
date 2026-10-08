@@ -386,11 +386,14 @@ export function GoogleDriveSettingsCard({ onClose, onSelectPhotoForProduct }: Go
   }, [currentFolderFiles, searchFilter]);
 
   return (
-    <div className={cn(
-      "w-full flex flex-col md:flex-row h-[88vh] max-h-[820px] rounded-[2rem] shadow-2xl overflow-hidden select-none transition-colors duration-300 border",
-      isDark ? "bg-[#0c0c10] text-zinc-100 border-zinc-800" : "bg-white text-zinc-900 border-zinc-200",
-      spaceMono.className
-    )}>
+    <div 
+      data-lenis-prevent="true"
+      className={cn(
+        "w-full flex flex-col md:flex-row h-[88vh] max-h-[820px] rounded-[2rem] shadow-2xl overflow-hidden select-none transition-colors duration-300 border",
+        isDark ? "bg-[#0c0c10] text-zinc-100 border-zinc-800" : "bg-white text-zinc-900 border-zinc-200",
+        spaceMono.className
+      )}
+    >
       
       {/* 1. RAIL DE ICONOS VERTICAL (IZQUIERDA EXTREMA) - Sin logo superior ni ícono de Drive inferior */}
       <div className={cn(
@@ -452,10 +455,13 @@ export function GoogleDriveSettingsCard({ onClose, onSelectPhotoForProduct }: Go
       </div>
 
       {/* 2. PANEL LATERAL: GESTOR DE CARPETAS (beUI Arc Picker en modo Right + RareUI Scroll Progress) */}
-      <div className={cn(
-        "w-full md:w-72 lg:w-80 shrink-0 flex flex-col border-r transition-colors duration-200",
-        isDark ? "bg-[#121217] border-zinc-800" : "bg-zinc-50 border-zinc-200"
-      )}>
+      <div 
+        data-lenis-prevent="true"
+        className={cn(
+          "w-full md:w-72 lg:w-80 shrink-0 flex flex-col border-r transition-colors duration-200",
+          isDark ? "bg-[#121217] border-zinc-800" : "bg-zinc-50 border-zinc-200"
+        )}
+      >
         {/* Cabecera del Sidebar con título y Scroll Progress */}
         <div className="p-4 sm:p-5 pb-3 space-y-3">
           <div className="flex items-center justify-between">
@@ -470,8 +476,8 @@ export function GoogleDriveSettingsCard({ onClose, onSelectPhotoForProduct }: Go
 
           {/* Buscador de carpetas con alineación y simetría perfecta */}
           <div className="relative flex items-center w-full">
-            <div className="absolute left-3 inset-y-0 flex items-center pointer-events-none text-zinc-400 dark:text-zinc-500">
-              <Search className="w-3.5 h-3.5" />
+            <div className="absolute left-3.5 inset-y-0 flex items-center justify-center pointer-events-none text-zinc-400 dark:text-zinc-500">
+              <Search className="w-4 h-4" />
             </div>
             <input
               type="text"
@@ -479,17 +485,17 @@ export function GoogleDriveSettingsCard({ onClose, onSelectPhotoForProduct }: Go
               onChange={(e) => setSearchFilter(e.target.value)}
               placeholder="Buscar carpetas..."
               className={cn(
-                "w-full pl-8.5 pr-8 h-8 rounded-xl border text-xs focus:outline-none transition-all duration-200 font-mono flex items-center leading-normal",
+                "w-full pl-10 pr-9 h-9 rounded-xl border text-xs font-mono transition-all duration-200 outline-none flex items-center leading-none",
                 isDark 
-                  ? "bg-[#1c1c24] border-zinc-700 text-white placeholder-zinc-500 focus:ring-1 focus:ring-zinc-400" 
-                  : "bg-white border-zinc-300 text-zinc-900 placeholder-zinc-400 focus:ring-1 focus:ring-blue-500"
+                  ? "bg-[#181822] border-zinc-700/80 text-white placeholder:text-zinc-500 focus:border-zinc-500 focus:ring-1 focus:ring-zinc-500" 
+                  : "bg-white border-zinc-300 text-zinc-900 placeholder:text-zinc-400 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
               )}
             />
             {searchFilter && (
               <button
                 type="button"
                 onClick={() => setSearchFilter("")}
-                className="absolute right-2.5 inset-y-0 flex items-center text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 cursor-pointer"
+                className="absolute right-3 inset-y-0 flex items-center justify-center text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 cursor-pointer"
                 title="Limpiar búsqueda"
               >
                 <X className="w-3.5 h-3.5" />

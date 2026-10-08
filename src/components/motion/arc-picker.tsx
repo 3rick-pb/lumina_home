@@ -344,6 +344,8 @@ export function ArcPicker({
   const animation = useRef<AnimationPlaybackControls | null>(null);
   const wheelTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const wheelTarget = useRef<number | null>(null);
+  const lastNotchTime = useRef<number>(0);
+  const lastNotchSign = useRef<number>(0);
   const reconcileFrame = useRef(0);
   const request = useRef(selectedValue);
   const tracking = useRef(false);
@@ -628,6 +630,7 @@ export function ArcPicker({
       if ((from <= first && rawDelta < 0) || (from >= last && rawDelta > 0)) return;
       event.preventDefault();
       if (wheelTimer.current) clearTimeout(wheelTimer.current);
+
       if (current.reducedMotion) {
         const at = enabled.findIndex(
           ({ option }) => option.value === request.current,
@@ -635,28 +638,73 @@ export function ArcPicker({
         const next =
           enabled[clamp(at + Math.sign(rawDelta), 0, enabled.length - 1)];
         if (next) select(next.index, true);
-      } else {
-        if (wheelTarget.current === null) {
-          animation.current?.stop();
-          animation.current = null;
+        return;
+      }
+
+      const now = performance.now();
+      const sign = Math.sign(rawDelta);
+      // Rueda física de mouse: deltaMode != 0 o |rawDelta| >= 30.
+      // En mouses económicos o Windows con configuración de "desplazar 3 líneas", 1 notch
+      // genera ráfagas de 2 o 3 eventos en < 75ms.
+      const isWheelNotch = event.deltaMode !== 0 || Math.abs(rawDelta) >= 30;
+
+      if (isWheelNotch) {
+        // Debounce ráfagas del mismo notch físico para garantizar que 1 paso en la rueda = exactamente 1 carpeta
+        if (now - lastNotchTime.current < 75 && sign === lastNotchSign.current) {
+          return;
         }
+        lastNotchTime.current = now;
+        lastNotchSign.current = sign;
+
+        // Base para el siguiente paso: si ya está en movimiento hacia un target, usamos ese;
+        // de lo contrario, la posición flotante actual.
+        const currentRef = wheelTarget.current !== null 
+          ? wheelTarget.current 
+          : position.get();
+        
+        let nextTarget: number;
+        if (sign > 0) {
+          // Avanzar exactamente 1 opción habilitada
+          const nextOpt = enabled.find((e) => e.index > currentRef + 0.05);
+          nextTarget = nextOpt ? nextOpt.index : last;
+        } else {
+          // Retroceder exactamente 1 opción habilitada
+          const prevOpts = enabled.filter((e) => e.index < currentRef - 0.05);
+          nextTarget = prevOpts.length > 0 ? prevOpts[prevOpts.length - 1].index : first;
+        }
+
+        wheelTarget.current = nextTarget;
         instant.current = false;
         tracking.current = true;
         activity.set(1);
-        
-        // Efecto scroll pesado beUI: inercia ponderada con curva expo-out estilo Lenis
-        const stepDistance = Math.abs(rawDelta) >= 40
-          ? Math.sign(rawDelta) * Math.min(Math.abs(rawDelta) * 0.42, current.spacing * 1.1)
-          : rawDelta * 0.48;
+
+        // Scroll pesado beUI con curva canónica Lenis [0.16, 1, 0.3, 1] y amortiguación estable
+        animation.current?.stop();
+        animation.current = animate(position, nextTarget, {
+          ease: [0.16, 1, 0.3, 1],
+          duration: 0.42,
+          onComplete: () => {
+            tracking.current = false;
+            animation.current = null;
+            wheelTarget.current = null;
+            activity.set(0);
+          },
+        });
+      } else {
+        // Trackpad continuo: acumulación suave con resistencia de desplazamiento pesado beUI
+        instant.current = false;
+        tracking.current = true;
+        activity.set(1);
 
         const currentTarget = wheelTarget.current ?? position.get();
-        const nextTarget = clamp(currentTarget + stepDistance / current.spacing, first, last);
+        const step = (rawDelta / current.spacing) * 0.38;
+        const nextTarget = clamp(currentTarget + step, first, last);
         wheelTarget.current = nextTarget;
 
         animation.current?.stop();
         animation.current = animate(position, nextTarget, {
           ease: [0.16, 1, 0.3, 1],
-          duration: 0.38,
+          duration: 0.34,
         });
 
         wheelTimer.current = setTimeout(() => {
@@ -664,7 +712,7 @@ export function ArcPicker({
           const finalIndex = nearestEnabled(wheelTarget.current ?? position.get());
           wheelTarget.current = null;
           settle(finalIndex);
-        }, 180);
+        }, 150);
       }
     };
     element.addEventListener("wheel", wheel, { passive: false });
@@ -743,6 +791,7 @@ export function ArcPicker({
     <div
       {...props}
       ref={root}
+      data-lenis-prevent="true"
       role="radiogroup"
       aria-label={label}
       aria-describedby={[describedBy, instructionsId].filter(Boolean).join(" ")}
