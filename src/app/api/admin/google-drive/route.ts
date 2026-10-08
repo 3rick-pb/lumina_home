@@ -5,236 +5,109 @@ import { GoogleDriveService } from '@/lib/googleDriveService';
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
-export interface MediaAssetRow {
-  id: string;
-  name: string;
-  mimeType?: string;
-  cdnUrl: string;
-  thumbnailUrl: string;
-  size?: string;
-  dimensions?: string;
-  folderId?: string;
-  folderName?: string;
-  source?: string;
-  ownerName?: string;
-  ownerEmail?: string;
-  ownerPhoto?: string;
-}
-
-export interface DbMediaAssetRow {
-  id: string;
-  name: string;
-  mime_type?: string;
-  cdn_url: string;
-  thumbnail_url?: string;
-  size?: string;
-  dimensions?: string;
-  folder_id?: string;
-  folder_name?: string;
-  source?: string;
-  created_at?: string;
-  updated_at?: string;
-}
-
-export interface PhotoInputRow {
-  id?: string;
-  name?: string;
-  mimeType?: string;
-  cdnUrl: string;
-  thumbnailUrl?: string;
-  size?: string;
-  dimensions?: string;
-  folderId?: string;
-  source?: string;
-}
-
-const DEFAULT_GLOBAL_DRIVE_SETTINGS = {
-  id: 'global',
-  is_connected: false,
-  connected_email: '',
-  connected_account_name: '',
-  connected_at: null as string | null,
-  selected_folder_id: 'root',
-  selected_folder_name: 'Mi Unidad',
-  backup_at: null as string | null,
-  backup_count: 0,
-  google_client_id: '',
-  folders_list: [
-    { id: 'root', name: 'Mi Unidad', itemCount: 0 },
-  ],
-  files_cache: [] as MediaAssetRow[],
-};
-
-// In-memory fallback singleton for current server instance
-let inMemoryDriveSettings = { ...DEFAULT_GLOBAL_DRIVE_SETTINGS };
-
 export async function GET(request: Request) {
   try {
     const supabase = getScopedSupabaseClient(request);
     const serviceSupabase = getServiceSupabaseClient();
     const authUser = await getAuthenticatedUser(request);
-    let resolvedFiles: MediaAssetRow[] = [];
-    let resolvedFolders = inMemoryDriveSettings.folders_list;
+    
     let isConnected = false;
     let connectedEmail = '';
     let connectedAccountName = '';
     let connectedAt: string | null = null;
     let selectedFolderId = 'root';
     let selectedFolderName = 'Mi Unidad';
+    
+    let resolvedFolders: Array<{ id: string; name: string; itemCount: number; parentId?: string | null }> = [{ id: 'root', name: 'Mi Unidad', itemCount: 0 }];
+    let resolvedFiles: Array<{ id: string; name: string; mimeType?: string; cdnUrl: string; thumbnailUrl: string; size?: string; dimensions?: string; folderId?: string; source?: string }> = [];
     let backupAt: string | null = null;
     let backupCount = 0;
 
     const urlObj = new URL(request.url);
     const folderIdParam = urlObj.searchParams.get('folderId');
 
-    // 0. Comprobar credenciales de Google Drive vinculadas a la administración
+    // 1. Verificar si hay credenciales activas
+    let cred = null;
+    if (authUser?.id) {
+      const { data: userCred } = await serviceSupabase
+        .from('google_drive_credentials')
+        .select('*')
+        .eq('admin_id', authUser.id)
+        .is('revoked_at', null)
+        .maybeSingle();
+      if (userCred) cred = userCred;
+    }
+
+    if (!cred) {
+      const { data: latestCred } = await serviceSupabase
+        .from('google_drive_credentials')
+        .select('*')
+        .is('revoked_at', null)
+        .order('updated_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (latestCred) cred = latestCred;
+    }
+
+    // 2. Leer configuraciones globales guardadas en base de datos (NUESTRO CACHÉ)
+    const { data: globalSettings } = await supabase
+      .from('admin_google_drive_settings')
+      .select('*')
+      .eq('id', 'global')
+      .maybeSingle();
+
+    if (cred || (globalSettings && globalSettings.is_connected)) {
+      isConnected = true;
+      connectedEmail = cred?.google_account_email || globalSettings?.connected_email || '';
+      connectedAccountName = cred?.google_account_name || globalSettings?.connected_account_name || '';
+      connectedAt = cred?.created_at || globalSettings?.updated_at || null;
+      
+      const defaultCredFolder = cred?.drive_folder_id || globalSettings?.selected_folder_id || 'root';
+      selectedFolderId = folderIdParam && folderIdParam !== 'folder_lumina_catalog_2026' ? folderIdParam : defaultCredFolder;
+      
+      selectedFolderName = cred?.drive_folder_name || globalSettings?.selected_folder_name || 'Mi Unidad';
+      
+      if (Array.isArray(globalSettings?.folders_list) && globalSettings.folders_list.length > 0) {
+        resolvedFolders = globalSettings.folders_list;
+      }
+      backupAt = globalSettings?.backup_at || null;
+    }
+
+    // 3. Obtener archivos desde la tabla de caché (admin_media_assets)
+    // Ya NO consultamos a la API de Google síncronamente.
     try {
-      let cred = null;
-      if (authUser?.id) {
-        const { data: userCred } = await serviceSupabase
-          .from('google_drive_credentials')
-          .select('*')
-          .eq('admin_id', authUser.id)
-          .is('revoked_at', null)
-          .maybeSingle();
-        if (userCred) cred = userCred;
+      const query = supabase.from('admin_media_assets').select('*').order('created_at', { ascending: false }).limit(2000);
+      
+      const { data: assets, error } = await query;
+      if (!error && Array.isArray(assets)) {
+        resolvedFiles = assets.map((a: {
+          id: string;
+          name: string;
+          mime_type?: string;
+          cdn_url: string;
+          thumbnail_url?: string;
+          size?: string;
+          dimensions?: string;
+          folder_id?: string;
+          source?: string;
+        }) => ({
+          id: a.id,
+          name: a.name,
+          mimeType: a.mime_type || 'image/jpeg',
+          cdnUrl: a.cdn_url,
+          thumbnailUrl: a.thumbnail_url || a.cdn_url,
+          size: a.size || 'HD',
+          dimensions: a.dimensions || '2000 x 2000',
+          folderId: a.folder_id || 'root',
+          source: a.source || 'google_drive'
+        }));
+        backupCount = resolvedFiles.length;
       }
-
-      // Si no se encontró por admin_id directo (o authUser ausente en sondeo background), buscar la credencial activa más reciente
-      if (!cred) {
-        const { data: latestCred } = await serviceSupabase
-          .from('google_drive_credentials')
-          .select('*')
-          .is('revoked_at', null)
-          .order('updated_at', { ascending: false })
-          .limit(1)
-          .maybeSingle();
-        if (latestCred) {
-          cred = latestCred;
-        } else {
-          // Fallback con cliente seguro alternativo
-          try {
-            const { data: scopedCred } = await supabase
-              .from('google_drive_credentials')
-              .select('*')
-              .is('revoked_at', null)
-              .order('updated_at', { ascending: false })
-              .limit(1)
-              .maybeSingle();
-            if (scopedCred) cred = scopedCred;
-          } catch {}
-        }
-      }
-
-      if (cred) {
-        isConnected = true;
-        connectedEmail = cred.google_account_email || '';
-        connectedAccountName = cred.google_account_name || '';
-        connectedAt = cred.created_at;
-        const defaultCredFolder = cred.drive_folder_id && cred.drive_folder_id !== 'folder_lumina_catalog_2026' ? cred.drive_folder_id : 'root';
-        selectedFolderId = folderIdParam && folderIdParam !== 'folder_lumina_catalog_2026' ? folderIdParam : defaultCredFolder;
-        selectedFolderName = cred.drive_folder_name && !cred.drive_folder_name.includes('Lumina') ? cred.drive_folder_name : 'Mi Unidad';
-
-        // Intentar obtener listado actualizado de Google Drive API para la carpeta seleccionada (exclusivo Mi Unidad)
-        try {
-          const driveData = await GoogleDriveService.listImages(cred.admin_id, selectedFolderId);
-          if (Array.isArray(driveData?.files)) {
-            resolvedFiles = driveData.files;
-          }
-        } catch (listErr) {
-          console.warn('GoogleDriveService.listImages warning:', listErr);
-        }
-
-        try {
-          const driveFolders = await GoogleDriveService.listFolders(cred.admin_id);
-          if (Array.isArray(driveFolders) && driveFolders.length > 0) {
-            resolvedFolders = driveFolders;
-          }
-        } catch (foldErr) {
-          console.warn('GoogleDriveService.listFolders warning:', foldErr);
-        }
-      } else if (inMemoryDriveSettings.is_connected && inMemoryDriveSettings.connected_email) {
-        // Preservar estado en memoria ante fluctuación temporal de red con base de datos
-        isConnected = true;
-        connectedEmail = inMemoryDriveSettings.connected_email;
-        connectedAccountName = inMemoryDriveSettings.connected_account_name;
-        connectedAt = inMemoryDriveSettings.connected_at;
-        selectedFolderId = folderIdParam || inMemoryDriveSettings.selected_folder_id || 'root';
-        selectedFolderName = inMemoryDriveSettings.selected_folder_name || 'Mi Unidad';
-        if (inMemoryDriveSettings.files_cache?.length > 0) {
-          resolvedFiles = inMemoryDriveSettings.files_cache;
-        }
-        if (inMemoryDriveSettings.folders_list?.length > 0) {
-          resolvedFolders = inMemoryDriveSettings.folders_list;
-        }
-      }
-    } catch (credErr) {
-      console.warn('Error reading google_drive_credentials:', credErr);
-      if (inMemoryDriveSettings.is_connected && inMemoryDriveSettings.connected_email) {
-        isConnected = true;
-        connectedEmail = inMemoryDriveSettings.connected_email;
-        connectedAccountName = inMemoryDriveSettings.connected_account_name;
-        connectedAt = inMemoryDriveSettings.connected_at;
-      }
+    } catch (e) {
+      console.warn("No se pudieron cargar archivos del caché", e);
     }
 
-    // 1. Cargar configuración global SOLO si Google Drive NO está conectado
-    if (!isConnected) {
-      try {
-        const { data: row } = await supabase
-          .from('admin_google_drive_settings')
-          .select('*')
-          .eq('id', 'global')
-          .maybeSingle();
-
-        if (row && row.is_connected && row.connected_email && row.connected_email.includes('@') && !row.connected_email?.includes('demo') && !row.connected_email?.includes('multimedia.lumina') && Array.isArray(row.files_cache) && row.files_cache.length > 0) {
-          isConnected = true;
-          connectedEmail = row.connected_email || '';
-          connectedAccountName = row.connected_account_name || '';
-          connectedAt = row.connected_at || null;
-          selectedFolderId = row.selected_folder_id || selectedFolderId;
-          selectedFolderName = row.selected_folder_name || selectedFolderName;
-          backupAt = row.backup_at || backupAt;
-          backupCount = typeof row.backup_count === 'number' ? row.backup_count : backupCount;
-          if (Array.isArray(row.folders_list) && row.folders_list.length > 0) {
-            resolvedFolders = row.folders_list;
-          }
-          if (Array.isArray(row.files_cache) && row.files_cache.length > 0) {
-            resolvedFiles = row.files_cache;
-          }
-        }
-      } catch {
-        // Ignorar si la tabla aún no fue creada
-      }
-
-      // 2. Intentar consultar tabla relacional public.admin_media_assets para fotos individuales respaldadas
-      if (resolvedFiles.length === 0) {
-        try {
-          const { data: assets, error } = await supabase
-            .from('admin_media_assets')
-            .select('*')
-            .order('created_at', { ascending: false });
-
-          if (!error && Array.isArray(assets) && assets.length > 0) {
-            resolvedFiles = (assets as DbMediaAssetRow[]).map((a) => ({
-              id: a.id,
-              name: a.name,
-              mimeType: a.mime_type || 'image/jpeg',
-              cdnUrl: a.cdn_url,
-              thumbnailUrl: a.thumbnail_url || a.cdn_url,
-              size: a.size || '2.0 MB',
-              dimensions: a.dimensions || '2000 x 2000',
-              folderId: a.folder_id || 'root',
-            }));
-            backupCount = resolvedFiles.length;
-          }
-        } catch {
-          // Si admin_media_assets no existe aún, se usan los de files_cache
-        }
-      }
-    }
-
-    // Calcular conteos reales por carpeta
+    // Ajustar itemCount de las carpetas basado en la BD local
     const fileFolderCounts: Record<string, number> = {};
     resolvedFiles.forEach((file) => {
       const fId = file.folderId || 'root';
@@ -243,23 +116,8 @@ export async function GET(request: Request) {
 
     resolvedFolders = resolvedFolders.map((folder) => ({
       ...folder,
-      itemCount: folder.id === 'root' ? resolvedFiles.length : (fileFolderCounts[folder.id] || 0),
+      itemCount: folder.id === 'root' ? resolvedFiles.length : (fileFolderCounts[folder.id] || folder.itemCount || 0),
     }));
-
-    // Actualizar in-memory preservando estado conectado
-    inMemoryDriveSettings = {
-      ...inMemoryDriveSettings,
-      is_connected: isConnected || inMemoryDriveSettings.is_connected,
-      connected_email: connectedEmail || inMemoryDriveSettings.connected_email,
-      connected_account_name: connectedAccountName || inMemoryDriveSettings.connected_account_name,
-      connected_at: connectedAt || inMemoryDriveSettings.connected_at,
-      selected_folder_id: selectedFolderId,
-      selected_folder_name: selectedFolderName,
-      folders_list: resolvedFolders.length > 0 ? resolvedFolders : inMemoryDriveSettings.folders_list,
-      files_cache: resolvedFiles.length > 0 ? resolvedFiles : inMemoryDriveSettings.files_cache,
-      backup_at: backupAt,
-      backup_count: resolvedFiles.length,
-    };
 
     return NextResponse.json({
       success: true,
@@ -273,8 +131,8 @@ export async function GET(request: Request) {
         availableFolders: resolvedFolders,
         files: resolvedFiles,
         backupAt,
-        backupCount: resolvedFiles.length,
-        googleClientId: (process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || process.env.GOOGLE_CLIENT_ID || inMemoryDriveSettings.google_client_id || '').replace('YOUR_GOOGLE_CLIENT_ID_HERE', ''),
+        backupCount,
+        googleClientId: (process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || process.env.GOOGLE_CLIENT_ID || '').replace('YOUR_GOOGLE_CLIENT_ID_HERE', ''),
       },
     });
   } catch (err) {
@@ -294,63 +152,7 @@ export async function POST(request: Request) {
     const { action } = body || {};
     const supabase = getScopedSupabaseClient(request);
 
-    if (body.settings) {
-      const s = body.settings;
-      inMemoryDriveSettings.is_connected = Boolean(s.isConnected);
-      inMemoryDriveSettings.connected_email = s.accountEmail || '';
-      inMemoryDriveSettings.connected_account_name = s.accountName || '';
-      inMemoryDriveSettings.connected_at = s.connectedAt || inMemoryDriveSettings.connected_at;
-      if (s.googleClientId) {
-        inMemoryDriveSettings.google_client_id = s.googleClientId;
-      }
-      if (s.selectedFolderId) inMemoryDriveSettings.selected_folder_id = s.selectedFolderId;
-      if (s.selectedFolderName) inMemoryDriveSettings.selected_folder_name = s.selectedFolderName;
-      if (Array.isArray(s.availableFolders)) inMemoryDriveSettings.folders_list = s.availableFolders;
-      if (Array.isArray(s.files)) inMemoryDriveSettings.files_cache = s.files;
-    } else if (action === 'connect') {
-      const email = typeof body.email === 'string' ? body.email.trim() : '';
-      if (!email || !email.includes('@')) {
-        return NextResponse.json({ success: false, error: 'Correo de Google Drive no válido o ausente' }, { status: 400 });
-      }
-      const name = typeof body.name === 'string' && body.name.trim() ? body.name.trim() : email.split('@')[0];
-
-      inMemoryDriveSettings = {
-        ...inMemoryDriveSettings,
-        is_connected: true,
-        connected_email: email,
-        connected_account_name: name,
-        connected_at: new Date().toISOString(),
-      };
-    } else if (action === 'disconnect') {
-      if (authUser?.id) {
-        try {
-          await GoogleDriveService.disconnect(authUser.id);
-        } catch {}
-      }
-      try {
-        const serviceSupabase = getServiceSupabaseClient();
-        await serviceSupabase.from('google_drive_credentials').delete().neq('id', '00000000-0000-0000-0000-000000000000');
-        await serviceSupabase.from('admin_google_drive_settings').upsert({
-          id: 'global',
-          is_connected: false,
-          connected_email: '',
-          connected_account_name: '',
-          files_cache: [],
-          updated_at: new Date().toISOString(),
-        });
-      } catch {}
-      inMemoryDriveSettings = {
-        ...inMemoryDriveSettings,
-        is_connected: false,
-        connected_email: '',
-        connected_account_name: '',
-        files_cache: [],
-      };
-    } else if (action === 'select_folder') {
-      const folderId = typeof body.folderId === 'string' ? body.folderId.trim() : inMemoryDriveSettings.selected_folder_id;
-      const folderName = typeof body.folderName === 'string' ? body.folderName.trim() : inMemoryDriveSettings.selected_folder_name;
-      let folderFiles: MediaAssetRow[] = [];
-
+    if (action === 'sync') {
       let targetAdminId = authUser?.id;
       if (!targetAdminId) {
         const serviceSupabase = getServiceSupabaseClient();
@@ -366,281 +168,90 @@ export async function POST(request: Request) {
 
       if (targetAdminId) {
         try {
-          await GoogleDriveService.selectFolder(targetAdminId, folderId, folderName);
-          const driveData = await GoogleDriveService.listImages(targetAdminId, folderId);
-          if (Array.isArray(driveData?.files)) {
-            folderFiles = driveData.files;
-          }
-        } catch (selErr) {
-          console.warn('GoogleDriveService.selectFolder warning:', selErr);
+          const stats = await GoogleDriveService.syncAllToDatabase(targetAdminId);
+          return NextResponse.json({ success: true, message: `Sincronización completa: ${stats.filesCount} archivos y ${stats.foldersCount} carpetas.` });
+        } catch (err: unknown) {
+          return NextResponse.json({ success: false, error: err instanceof Error ? err.message : String(err) }, { status: 500 });
         }
+      } else {
+        return NextResponse.json({ success: false, error: 'No admin credentials found' }, { status: 400 });
+      }
+    } else if (action === 'disconnect') {
+      if (authUser?.id) {
+        try {
+          await GoogleDriveService.disconnect(authUser.id);
+        } catch {}
+      }
+      return NextResponse.json({ success: true });
+    } else if (action === 'select_folder') {
+      const folderId = typeof body.folderId === 'string' ? body.folderId.trim() : 'root';
+      const folderName = typeof body.folderName === 'string' ? body.folderName.trim() : 'Mi Unidad';
+      
+      let targetAdminId = authUser?.id;
+      if (!targetAdminId) {
+        const serviceSupabase = getServiceSupabaseClient();
+        const { data: latest } = await serviceSupabase
+          .from('google_drive_credentials')
+          .select('admin_id')
+          .is('revoked_at', null)
+          .order('updated_at', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        if (latest?.admin_id) targetAdminId = latest.admin_id;
       }
 
-      inMemoryDriveSettings = {
-        ...inMemoryDriveSettings,
-        is_connected: true,
-        selected_folder_id: folderId,
-        selected_folder_name: folderName,
-        files_cache: folderFiles.length > 0 ? folderFiles : inMemoryDriveSettings.files_cache,
-      };
-
-      return NextResponse.json({
-        success: true,
-        selectedFolderId: folderId,
-        selectedFolderName: folderName,
-        files: folderFiles,
-        settings: {
-          ...inMemoryDriveSettings,
-          isConnected: true,
-          selectedFolderId: folderId,
-          selectedFolderName: folderName,
-          files: folderFiles.length > 0 ? folderFiles : inMemoryDriveSettings.files_cache,
-        },
-      });
+      if (targetAdminId) {
+        await GoogleDriveService.selectFolder(targetAdminId, folderId, folderName);
+      }
+      return NextResponse.json({ success: true });
     } else if (action === 'create_folder') {
       const folder = body.folder;
       if (folder && folder.id && folder.name) {
-        const exists = inMemoryDriveSettings.folders_list.some((f) => f.id === folder.id);
-        if (!exists) {
-          inMemoryDriveSettings.folders_list = [folder, ...inMemoryDriveSettings.folders_list];
+        // En un caso real crearíamos la carpeta en Google Drive.
+        // Aquí solo actualizamos el caché local (admin_google_drive_settings)
+        const { data: globalSettings } = await supabase.from('admin_google_drive_settings').select('folders_list').eq('id', 'global').maybeSingle();
+        if (globalSettings && Array.isArray(globalSettings.folders_list)) {
+          const updatedFolders = [folder, ...globalSettings.folders_list];
+          await supabase.from('admin_google_drive_settings').update({ folders_list: updatedFolders, selected_folder_id: folder.id, selected_folder_name: folder.name }).eq('id', 'global');
         }
-        inMemoryDriveSettings.selected_folder_id = folder.id;
-        inMemoryDriveSettings.selected_folder_name = folder.name;
       }
+      return NextResponse.json({ success: true });
     } else if (action === 'delete_folder') {
       const folderId = body.folderId;
-      if (folderId && folderId !== 'folder_lumina_catalog_2026') {
-        inMemoryDriveSettings.folders_list = inMemoryDriveSettings.folders_list.filter((f) => f.id !== folderId);
-        // Reasignar fotos a la carpeta raíz
-        inMemoryDriveSettings.files_cache = inMemoryDriveSettings.files_cache.map((f) => 
-          f.folderId === folderId ? { ...f, folderId: 'folder_lumina_catalog_2026' } : f
-        );
-        if (inMemoryDriveSettings.selected_folder_id === folderId) {
-          inMemoryDriveSettings.selected_folder_id = 'root';
-          inMemoryDriveSettings.selected_folder_name = 'Mi Unidad';
+      if (folderId) {
+        const { data: globalSettings } = await supabase.from('admin_google_drive_settings').select('folders_list').eq('id', 'global').maybeSingle();
+        if (globalSettings && Array.isArray(globalSettings.folders_list)) {
+          const updatedFolders = globalSettings.folders_list.filter((f: { id: string }) => f.id !== folderId);
+          await supabase.from('admin_google_drive_settings').update({ folders_list: updatedFolders, selected_folder_id: 'root', selected_folder_name: 'Mi Unidad' }).eq('id', 'global');
         }
       }
+      return NextResponse.json({ success: true });
     } else if (action === 'add_photo' || action === 'add_photos') {
-      const newItems: PhotoInputRow[] = Array.isArray(body.photos) 
-        ? (body.photos as PhotoInputRow[]) 
-        : (body.photo ? [body.photo as PhotoInputRow] : []);
-
-      const formattedItems = newItems.map((item) => ({
-        id: item.id || `media_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
-        name: item.name || 'FOTOGRAFIA.jpg',
-        mimeType: item.mimeType || 'image/jpeg',
-        cdnUrl: item.cdnUrl,
-        thumbnailUrl: item.thumbnailUrl || item.cdnUrl,
-        size: item.size || '1.8 MB',
-        dimensions: item.dimensions || '2000 x 2000',
-        folderId: item.folderId || inMemoryDriveSettings.selected_folder_id || 'root',
-      }));
-
-      // Agregar a cache en memoria
-      inMemoryDriveSettings.files_cache = [...formattedItems, ...inMemoryDriveSettings.files_cache];
-
-      // Actualizar contadores de carpetas
-      const counts: Record<string, number> = {};
-      inMemoryDriveSettings.files_cache.forEach(f => {
-        counts[f.folderId || ''] = (counts[f.folderId || ''] || 0) + 1;
-      });
-      inMemoryDriveSettings.folders_list = inMemoryDriveSettings.folders_list.map(f => ({
-        ...f,
-        itemCount: counts[f.id] || (f.id === 'root' ? inMemoryDriveSettings.files_cache.length : 0),
-      }));
-
-      // Persistir cada foto en admin_media_assets si la tabla existe
-      try {
-        const rows = formattedItems.map((f) => ({
-          id: f.id,
-          name: f.name,
-          cdn_url: f.cdnUrl,
-          thumbnail_url: f.thumbnailUrl,
-          mime_type: f.mimeType,
-          size: f.size,
-          dimensions: f.dimensions,
-          folder_id: f.folderId,
-          folder_name: inMemoryDriveSettings.selected_folder_name,
-          source: body.source || 'google_drive',
-          updated_at: new Date().toISOString(),
-        }));
-        await supabase.from('admin_media_assets').upsert(rows);
-      } catch {}
-    } else if (action === 'delete_photo') {
-      const photoId = body.photoId;
-      if (photoId) {
-        inMemoryDriveSettings.files_cache = inMemoryDriveSettings.files_cache.filter(f => f.id !== photoId);
-        try {
-          await supabase.from('admin_media_assets').delete().eq('id', photoId);
-        } catch {}
-      }
-    } else if (action === 'backup_now') {
-      // RESPALDO COMPLETO EN BASE DE DATOS
-      const clientFiles: PhotoInputRow[] = Array.isArray(body.files) && body.files.length > 0 
-        ? body.files 
-        : inMemoryDriveSettings.files_cache;
-      const clientFolders = Array.isArray(body.folders) && body.folders.length > 0 
-        ? body.folders 
-        : inMemoryDriveSettings.folders_list;
-      const nowIso = new Date().toISOString();
-
-      inMemoryDriveSettings.files_cache = clientFiles.map(f => ({
-        id: f.id || `lumina_media_${Date.now()}`,
-        name: f.name || 'FOTOGRAFIA-LUMINA.jpg',
-        mimeType: f.mimeType || 'image/jpeg',
-        cdnUrl: f.cdnUrl,
-        thumbnailUrl: f.thumbnailUrl || f.cdnUrl,
-        size: f.size || '2.0 MB',
+      const newItems = Array.isArray(body.photos) ? body.photos : (body.photo ? [body.photo] : []);
+      const rows = newItems.map((f: { id?: string; name?: string; cdnUrl: string; thumbnailUrl?: string; mimeType?: string; size?: string; dimensions?: string; folderId?: string }) => ({
+        id: f.id || `media_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
+        name: f.name || 'FOTOGRAFIA.jpg',
+        cdn_url: f.cdnUrl,
+        thumbnail_url: f.thumbnailUrl || f.cdnUrl,
+        mime_type: f.mimeType || 'image/jpeg',
+        size: f.size || '1.8 MB',
         dimensions: f.dimensions || '2000 x 2000',
-        folderId: f.folderId || 'folder_lumina_catalog_2026',
+        folder_id: f.folderId || 'root',
+        source: 'upload',
+        updated_at: new Date().toISOString(),
       }));
-      inMemoryDriveSettings.folders_list = clientFolders;
-      inMemoryDriveSettings.backup_at = nowIso;
-      inMemoryDriveSettings.backup_count = clientFiles.length;
-
-      let dbSaveSuccess = false;
-      try {
-        // 1. Guardar resumen global en admin_google_drive_settings
-        await supabase.from('admin_google_drive_settings').upsert({
-          id: 'global',
-          is_connected: inMemoryDriveSettings.is_connected,
-          connected_email: inMemoryDriveSettings.connected_email,
-          connected_account_name: inMemoryDriveSettings.connected_account_name,
-          selected_folder_id: inMemoryDriveSettings.selected_folder_id,
-          selected_folder_name: inMemoryDriveSettings.selected_folder_name,
-          folders_list: clientFolders,
-          files_cache: inMemoryDriveSettings.files_cache,
-          backup_at: nowIso,
-          backup_count: clientFiles.length,
-          updated_at: nowIso,
-        });
-
-        // 2. Guardar cada fotografía en admin_media_assets
-        if (clientFiles.length > 0) {
-          const rows = clientFiles.map((f) => ({
-            id: f.id || `media_${Date.now()}`,
-            name: f.name || 'FOTO.jpg',
-            cdn_url: f.cdnUrl,
-            thumbnail_url: f.thumbnailUrl || f.cdnUrl,
-            mime_type: f.mimeType || 'image/jpeg',
-            size: f.size || '2.0 MB',
-            dimensions: f.dimensions || '2000 x 2000',
-            folder_id: f.folderId || 'root',
-            folder_name: inMemoryDriveSettings.selected_folder_name,
-            source: 'backup',
-            updated_at: nowIso,
-          }));
-          await supabase.from('admin_media_assets').upsert(rows);
-        }
-        dbSaveSuccess = true;
-      } catch (dbErr) {
-        console.warn('Backup write error to Supabase (continuing with memory/local):', dbErr);
+      if (rows.length > 0) {
+        await supabase.from('admin_media_assets').upsert(rows);
       }
-
-      return NextResponse.json({
-        success: true,
-        backedUpToDatabase: dbSaveSuccess,
-        backupAt: nowIso,
-        backupCount: clientFiles.length,
-        settings: {
-          ...inMemoryDriveSettings,
-          backupAt: nowIso,
-          backupCount: clientFiles.length,
-        },
-      });
-    } else if (action === 'restore_backup') {
-      // RESTAURAR TODO DESDE SUPABASE
-      try {
-        const { data: row } = await supabase
-          .from('admin_google_drive_settings')
-          .select('*')
-          .eq('id', 'global')
-          .maybeSingle();
-
-        const { data: assets } = await supabase
-          .from('admin_media_assets')
-          .select('*')
-          .order('created_at', { ascending: false });
-
-        if (row) {
-          const isDemo = row.connected_email === 'multimedia.lumina@gmail.com';
-          if (isDemo) {
-            inMemoryDriveSettings.is_connected = false;
-            inMemoryDriveSettings.connected_email = '';
-            inMemoryDriveSettings.connected_account_name = '';
-          } else {
-            inMemoryDriveSettings.is_connected = Boolean(row.is_connected);
-            inMemoryDriveSettings.connected_email = row.connected_email || '';
-            inMemoryDriveSettings.connected_account_name = row.connected_account_name || '';
-          }
-          inMemoryDriveSettings.selected_folder_id = row.selected_folder_id || inMemoryDriveSettings.selected_folder_id;
-          inMemoryDriveSettings.selected_folder_name = row.selected_folder_name || inMemoryDriveSettings.selected_folder_name;
-          if (Array.isArray(row.folders_list) && row.folders_list.length > 0) {
-            inMemoryDriveSettings.folders_list = row.folders_list;
-          }
-          if (Array.isArray(row.files_cache) && row.files_cache.length > 0) {
-            inMemoryDriveSettings.files_cache = row.files_cache;
-          }
-          inMemoryDriveSettings.backup_at = row.backup_at || inMemoryDriveSettings.backup_at;
-          inMemoryDriveSettings.backup_count = row.backup_count || inMemoryDriveSettings.backup_count;
-        }
-
-        if (Array.isArray(assets) && assets.length > 0) {
-          inMemoryDriveSettings.files_cache = (assets as DbMediaAssetRow[]).map((a) => ({
-            id: a.id,
-            name: a.name,
-            mimeType: a.mime_type || 'image/jpeg',
-            cdnUrl: a.cdn_url,
-            thumbnailUrl: a.thumbnail_url || a.cdn_url,
-            size: a.size || '2.0 MB',
-            dimensions: a.dimensions || '2000 x 2000',
-            folderId: a.folder_id || 'root',
-          }));
-          inMemoryDriveSettings.backup_count = inMemoryDriveSettings.files_cache.length;
-        }
-      } catch (err) {
-        console.warn('Restore error from Supabase:', err);
+      return NextResponse.json({ success: true });
+    } else if (action === 'delete_photo') {
+      if (body.photoId) {
+        await supabase.from('admin_media_assets').delete().eq('id', body.photoId);
       }
-
-      return NextResponse.json({
-        success: true,
-        restored: true,
-        settings: inMemoryDriveSettings,
-      });
+      return NextResponse.json({ success: true });
     }
 
-    // Guardado sincrónico del estado general en Supabase si aplica
-    try {
-      await supabase.from('admin_google_drive_settings').upsert({
-        id: 'global',
-        is_connected: inMemoryDriveSettings.is_connected,
-        connected_email: inMemoryDriveSettings.connected_email,
-        connected_account_name: inMemoryDriveSettings.connected_account_name,
-        selected_folder_id: inMemoryDriveSettings.selected_folder_id,
-        selected_folder_name: inMemoryDriveSettings.selected_folder_name,
-        folders_list: inMemoryDriveSettings.folders_list,
-        files_cache: inMemoryDriveSettings.files_cache,
-        backup_at: inMemoryDriveSettings.backup_at,
-        backup_count: inMemoryDriveSettings.files_cache.length,
-        updated_at: new Date().toISOString(),
-      });
-    } catch {}
-
-    return NextResponse.json({
-      success: true,
-      settings: {
-        isConnected: inMemoryDriveSettings.is_connected,
-        accountEmail: inMemoryDriveSettings.connected_email,
-        accountName: inMemoryDriveSettings.connected_account_name,
-        connectedAt: inMemoryDriveSettings.connected_at,
-        selectedFolderId: inMemoryDriveSettings.selected_folder_id,
-        selectedFolderName: inMemoryDriveSettings.selected_folder_name,
-        availableFolders: inMemoryDriveSettings.folders_list,
-        files: inMemoryDriveSettings.files_cache,
-        backupAt: inMemoryDriveSettings.backup_at,
-        backupCount: inMemoryDriveSettings.files_cache.length,
-      },
-    });
+    return NextResponse.json({ success: true });
   } catch (err) {
     return NextResponse.json({ success: false, error: String(err) }, { status: 500 });
   }

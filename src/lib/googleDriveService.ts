@@ -41,67 +41,12 @@ export interface StoredCredentialsRecord {
 }
 
 // =========================================================================
-// RATE LIMITING EN MEMORIA: 20 solicitudes / minuto por administrador
-// =========================================================================
-const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
-const MAX_REQUESTS_PER_MINUTE = 60;
-
-function checkRateLimit(adminId: string): void {
-  const now = Date.now();
-  const entry = rateLimitMap.get(adminId);
-
-  if (!entry || now > entry.resetAt) {
-    rateLimitMap.set(adminId, { count: 1, resetAt: now + 60000 });
-    return;
-  }
-
-  if (entry.count >= MAX_REQUESTS_PER_MINUTE) {
-    // No lanzar error fatal, simplemente loguear advertencia para mantener estabilidad
-    console.warn(`[GoogleDriveService] Aviso de alta frecuencia para adminId: ${adminId}`);
-    return;
-  }
-
-  entry.count += 1;
-}
-
-// =========================================================================
-// CACHÉ EN MEMORIA (TTL: 90 segundos) para listados frecuentes
-// =========================================================================
-interface CacheEntry<T> {
-  data: T;
-  expires: number;
-}
-const memoryCache = new Map<string, CacheEntry<unknown>>();
-
-function getFromCache<T>(key: string): T | null {
-  const item = memoryCache.get(key);
-  if (!item) return null;
-  if (Date.now() > item.expires) {
-    memoryCache.delete(key);
-    return null;
-  }
-  return item.data as T;
-}
-
-function setToCache<T>(key: string, data: T, ttlMs = 90000): void {
-  memoryCache.set(key, { data, expires: Date.now() + ttlMs });
-}
-
-export function invalidateCache(adminId: string): void {
-  for (const key of memoryCache.keys()) {
-    if (key.startsWith(`drive:${adminId}:`)) {
-      memoryCache.delete(key);
-    }
-  }
-}
-
-// =========================================================================
 // CLASE PRINCIPAL DEL SERVICIO
 // =========================================================================
 export class GoogleDriveService {
   // Mutex para evitar que múltiples solicitudes concurrentes refresquen el token al mismo tiempo
   private static refreshPromises = new Map<string, Promise<{ accessToken: string }>>();
-  // Caché de tokens válidos en memoria (adminId -> { accessToken, expiresAt, record })
+  // Caché de tokens válidos en memoria para no saturar DB al descifrar (TTL hasta expiración)
   private static tokenCache = new Map<string, { accessToken: string; expiresAt: number; record: StoredCredentialsRecord }>();
 
   /**
@@ -124,7 +69,7 @@ export class GoogleDriveService {
 
     let record = recordData;
 
-    // Si no se encontró por admin_id exacto, buscar la credencial activa más reciente (resiliencia multi-sesión)
+    // Resiliencia multi-sesión
     if (error || !record) {
       const { data: latest } = await supabase
         .from("google_drive_credentials")
@@ -149,7 +94,7 @@ export class GoogleDriveService {
     const expiresAt = rec.token_expiry ? new Date(rec.token_expiry).getTime() : 0;
     const isExpiredOrClose = expiresAt > 0 && now >= (expiresAt - 5 * 60 * 1000);
 
-    // Si el token expiró y poseemos refresh_token, renovarlo de forma transparente y concurrente-segura
+    // Renovación transparente
     if ((isExpiredOrClose || !accessToken) && refreshToken) {
       const refreshed = await this.refreshAccessToken(rec.admin_id, refreshToken, rec);
       accessToken = refreshed.accessToken;
@@ -159,14 +104,14 @@ export class GoogleDriveService {
       throw new Error("TOKEN_INVALID: El token de Google Drive no es válido y requiere reautorización.");
     }
 
-    // Actualizar token en memoria
+    // Actualizar caché de tokens
     const finalExpiresAt = rec.token_expiry ? new Date(rec.token_expiry).getTime() : now + 3500 * 1000;
     this.tokenCache.set(adminId, { accessToken, expiresAt: finalExpiresAt, record: rec });
     if (rec.admin_id !== adminId) {
       this.tokenCache.set(rec.admin_id, { accessToken, expiresAt: finalExpiresAt, record: rec });
     }
 
-    // Actualizar last_used_at en background
+    // Background update de último uso
     supabase
       .from("google_drive_credentials")
       .update({ last_used_at: new Date().toISOString() })
@@ -176,15 +121,11 @@ export class GoogleDriveService {
     return { accessToken, record: rec };
   }
 
-  /**
-   * Refresca el access token utilizando el refresh token ante Google OAuth con mutex anti-race conditions
-   */
   static async refreshAccessToken(
     adminId: string,
     refreshToken: string,
     _existingRecord?: StoredCredentialsRecord
   ): Promise<{ accessToken: string }> {
-    // Si ya existe un refresh en vuelo para este adminId, esperar la misma promesa
     const inFlight = this.refreshPromises.get(adminId);
     if (inFlight) {
       return inFlight;
@@ -196,7 +137,7 @@ export class GoogleDriveService {
         const clientSecret = process.env.GOOGLE_CLIENT_SECRET || "";
 
         if (!clientId || !clientSecret) {
-          throw new Error("CONFIG_MISSING: Faltan credenciales GOOGLE_CLIENT_ID o GOOGLE_CLIENT_SECRET en el servidor.");
+          throw new Error("CONFIG_MISSING: Faltan credenciales GOOGLE_CLIENT_ID o GOOGLE_CLIENT_SECRET.");
         }
 
         const params = new URLSearchParams({
@@ -229,19 +170,16 @@ export class GoogleDriveService {
               .update({ revoked_at: new Date().toISOString() })
               .eq("admin_id", adminId);
             this.tokenCache.delete(adminId);
-            throw new Error("TOKEN_REVOKED: La autorización de Google Drive ha sido revocada. Conéctala de nuevo.");
+            throw new Error("TOKEN_REVOKED: La autorización ha sido revocada.");
           }
 
-          console.warn(`[GoogleDriveService] Aviso temporal en renovación de token: (${res.status}) ${errText}`);
-          throw new Error(`REFRESH_FAILED: Error al renovar token de Google: ${res.statusText}`);
+          throw new Error(`REFRESH_FAILED: Error al renovar token: ${res.statusText}`);
         }
 
         const data = await res.json();
         const newAccessToken = data.access_token as string;
         const expiresIn = (data.expires_in as number) || 3600;
         const newExpiry = new Date(Date.now() + expiresIn * 1000).toISOString();
-
-        // Conservar el refresh_token anterior si Google no envió uno nuevo
         const newRefreshToken = data.refresh_token ? (data.refresh_token as string) : refreshToken;
 
         const supabase = getServiceSupabaseClient();
@@ -266,126 +204,131 @@ export class GoogleDriveService {
   }
 
   /**
-   * Obtiene la lista de imágenes de Google Drive para un administrador
-   * EXCLUSIVAMENTE de 'Mi Unidad' (excluye 'Compartidos conmigo')
+   * Ejecuta una sincronización completa asíncrona hacia Supabase con paginación
    */
-  static async listImages(
-    adminId: string,
-    folderIdOverride?: string
-  ): Promise<{ files: GoogleDriveApiFile[]; folderId: string; folderName: string }> {
-    checkRateLimit(adminId);
-
+  static async syncAllToDatabase(adminId: string): Promise<{ filesCount: number; foldersCount: number }> {
     const { accessToken, record } = await this.getValidAccessToken(adminId);
-    const targetFolderId = folderIdOverride || record.drive_folder_id || "root";
-    const cacheKey = `drive:${adminId}:files:${targetFolderId}`;
+    
+    // 1. Obtener TODAS las carpetas
+    let folders: GoogleDriveApiFolder[] = [{ id: "root", name: "Mi Unidad", parentId: null, itemCount: 0 }];
+    let pageToken: string | undefined;
+    const folderQuery = encodeURIComponent("trashed = false and mimeType = 'application/vnd.google-apps.folder' and 'me' in owners and sharedWithMe = false");
 
-    const cached = getFromCache<{ files: GoogleDriveApiFile[]; folderId: string; folderName: string }>(cacheKey);
-    if (cached) return cached;
-
-    // Consulta de imágenes estrictamente pertenecientes a 'Mi Unidad' (no compartidos)
-    let query = "trashed = false and (mimeType contains 'image/') and 'me' in owners and sharedWithMe = false";
-    if (targetFolderId && targetFolderId !== "root" && targetFolderId !== "folder_lumina_catalog_2026") {
-      query += ` and '${targetFolderId}' in parents`;
-    }
-
-    const url = `https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(
-      query
-    )}&pageSize=100&fields=nextPageToken,files(id,name,mimeType,thumbnailLink,webContentLink,size,imageMediaMetadata,parents,owners)&orderBy=modifiedTime desc`;
-
-    const res = await this.fetchWithBackoff(url, accessToken);
-    if (!res.ok) {
-      throw new Error(`GOOGLE_API_ERROR: (${res.status}) ${res.statusText}`);
-    }
-
-    interface RawDriveFile {
-      id: string;
-      name: string;
-      mimeType?: string;
-      thumbnailLink?: string;
-      size?: string;
-      imageMediaMetadata?: { width?: number; height?: number };
-      parents?: string[];
-      owners?: Array<{ displayName?: string; emailAddress?: string; photoLink?: string }>;
-    }
-
-    const data = await res.json();
-    const rawFiles: RawDriveFile[] = Array.isArray(data.files) ? data.files : [];
-
-    const files: GoogleDriveApiFile[] = rawFiles.map((f) => ({
-      id: f.id,
-      name: f.name,
-      mimeType: f.mimeType || "image/jpeg",
-      cdnUrl: `/api/admin/google-drive/image?id=${f.id}`,
-      thumbnailUrl: f.thumbnailLink || `/api/admin/google-drive/image?id=${f.id}&thumb=1`,
-      size: f.size ? `${(parseInt(f.size, 10) / (1024 * 1024)).toFixed(1)} MB` : "HD",
-      dimensions:
-        f.imageMediaMetadata?.width && f.imageMediaMetadata?.height
-          ? `${f.imageMediaMetadata.width} x ${f.imageMediaMetadata.height}`
-          : "Resolución Google Drive",
-      folderId: f.parents?.[0] || targetFolderId,
-      source: "google_drive",
-      ownerName: f.owners?.[0]?.displayName || record.google_account_name || "Admin",
-      ownerEmail: f.owners?.[0]?.emailAddress || record.google_account_email || "admin@lumina.com",
-      ownerPhoto: f.owners?.[0]?.photoLink || "",
-    }));
-
-    const result = {
-      files,
-      folderId: targetFolderId,
-      folderName: record.drive_folder_name || "Mi Unidad",
-    };
-
-    setToCache(cacheKey, result, 45000); // 45s de caché
-    return result;
-  }
-
-  /**
-   * Obtiene la lista de carpetas disponibles en la unidad
-   */
-  static async listFolders(adminId: string): Promise<GoogleDriveApiFolder[]> {
-    checkRateLimit(adminId);
-
-    const { accessToken } = await this.getValidAccessToken(adminId);
-    const cacheKey = `drive:${adminId}:folders`;
-
-    const cached = getFromCache<GoogleDriveApiFolder[]>(cacheKey);
-    if (cached) return cached;
-
-    // Consulta de carpetas estrictamente pertenecientes a 'Mi Unidad' (no compartidas con el usuario)
-    const query = encodeURIComponent("trashed = false and mimeType = 'application/vnd.google-apps.folder' and 'me' in owners and sharedWithMe = false");
-    const url = `https://www.googleapis.com/drive/v3/files?q=${query}&pageSize=100&fields=files(id,name,parents)&orderBy=name`;
-
-    const res = await this.fetchWithBackoff(url, accessToken);
-    if (!res.ok) {
-      throw new Error(`GOOGLE_API_ERROR: (${res.status}) ${res.statusText}`);
-    }
-
-    interface RawFolder {
-      id: string;
-      name: string;
-      parents?: string[];
-    }
-
-    const data = await res.json();
-    const rawFolders: RawFolder[] = Array.isArray(data.files) ? data.files : [];
-
-    const folders: GoogleDriveApiFolder[] = [
-      { id: "root", name: "Mi Unidad", parentId: null, itemCount: 0 },
-      ...rawFolders.map((f) => ({
+    do {
+      const url = `https://www.googleapis.com/drive/v3/files?q=${folderQuery}&pageSize=1000&fields=nextPageToken,files(id,name,parents)&orderBy=name${pageToken ? `&pageToken=${pageToken}` : ''}`;
+      const res = await this.fetchWithBackoff(url, accessToken);
+      if (!res.ok) throw new Error(`Google API Folders Error: ${res.statusText}`);
+      
+      const data = await res.json();
+      const apiFolders = Array.isArray(data.files) ? data.files : [];
+      
+      folders = folders.concat(apiFolders.map((f: GoogleDriveApiFolder & { parents?: string[] }) => ({
         id: f.id,
         name: f.name,
         parentId: f.parents?.[0] || "root",
-        itemCount: 0,
-      })),
-    ];
+        itemCount: 0
+      })));
+      
+      pageToken = data.nextPageToken;
+    } while (pageToken);
 
-    setToCache(cacheKey, folders, 60000);
-    return folders;
+    // 2. Obtener TODAS las imágenes (limitado a 5,000 en este ejemplo por seguridad)
+    let files: GoogleDriveApiFile[] = [];
+    pageToken = undefined;
+    const fileQuery = encodeURIComponent("trashed = false and (mimeType contains 'image/') and 'me' in owners and sharedWithMe = false");
+    let totalFetched = 0;
+    const MAX_FILES = 5000;
+
+    do {
+      const url = `https://www.googleapis.com/drive/v3/files?q=${fileQuery}&pageSize=1000&fields=nextPageToken,files(id,name,mimeType,thumbnailLink,webContentLink,size,imageMediaMetadata,parents,owners)&orderBy=modifiedTime desc${pageToken ? `&pageToken=${pageToken}` : ''}`;
+      const res = await this.fetchWithBackoff(url, accessToken);
+      if (!res.ok) throw new Error(`Google API Files Error: ${res.statusText}`);
+      
+      const data = await res.json();
+      const apiFiles = Array.isArray(data.files) ? data.files : [];
+      
+      const batchFiles = apiFiles.map((f: {
+        id: string;
+        name: string;
+        mimeType?: string;
+        thumbnailLink?: string;
+        size?: string;
+        imageMediaMetadata?: { width?: number; height?: number };
+        parents?: string[];
+        owners?: Array<{ displayName?: string; emailAddress?: string; photoLink?: string }>;
+      }) => ({
+        id: f.id,
+        name: f.name,
+        mimeType: f.mimeType || "image/jpeg",
+        cdnUrl: `/api/admin/google-drive/image?id=${f.id}`,
+        thumbnailUrl: f.thumbnailLink || `/api/admin/google-drive/image?id=${f.id}&thumb=1`,
+        size: f.size ? `${(parseInt(f.size, 10) / (1024 * 1024)).toFixed(1)} MB` : "HD",
+        dimensions: f.imageMediaMetadata?.width && f.imageMediaMetadata?.height ? `${f.imageMediaMetadata.width} x ${f.imageMediaMetadata.height}` : "Resolución Google Drive",
+        folderId: f.parents?.[0] || "root",
+        source: "google_drive",
+        ownerName: f.owners?.[0]?.displayName || record.google_account_name || "Admin",
+        ownerEmail: f.owners?.[0]?.emailAddress || record.google_account_email || "admin@lumina.com",
+        ownerPhoto: f.owners?.[0]?.photoLink || "",
+      }));
+      
+      files = files.concat(batchFiles);
+      totalFetched += batchFiles.length;
+      
+      pageToken = data.nextPageToken;
+      if (totalFetched >= MAX_FILES) break;
+    } while (pageToken);
+
+    // 3. Persistir en Supabase
+    const supabase = getServiceSupabaseClient();
+    
+    // Contar items por carpeta
+    const folderCounts: Record<string, number> = {};
+    files.forEach(f => {
+      folderCounts[f.folderId] = (folderCounts[f.folderId] || 0) + 1;
+    });
+    
+    const finalFolders = folders.map(f => ({
+      ...f,
+      itemCount: f.id === 'root' ? files.length : (folderCounts[f.id] || 0)
+    }));
+
+    // Actualizar carpetas en admin_google_drive_settings
+    await supabase.from('admin_google_drive_settings').upsert({
+      id: 'global',
+      is_connected: true,
+      connected_email: record.google_account_email,
+      connected_account_name: record.google_account_name,
+      folders_list: finalFolders,
+      updated_at: new Date().toISOString()
+    });
+
+    // Actualizar fotos en admin_media_assets
+    if (files.length > 0) {
+      // Opcional: borrar solo las fotos sincronizadas de drive antes de insertar masivamente
+      // await supabase.from('admin_media_assets').delete().eq('source', 'google_drive');
+      
+      const chunkSize = 500;
+      for (let i = 0; i < files.length; i += chunkSize) {
+        const chunk = files.slice(i, i + chunkSize);
+        const rows = chunk.map(f => ({
+          id: f.id,
+          name: f.name,
+          cdn_url: f.cdnUrl,
+          thumbnail_url: f.thumbnailUrl,
+          mime_type: f.mimeType,
+          size: f.size,
+          dimensions: f.dimensions,
+          folder_id: f.folderId,
+          source: 'google_drive',
+          updated_at: new Date().toISOString()
+        }));
+        await supabase.from('admin_media_assets').upsert(rows);
+      }
+    }
+
+    return { filesCount: files.length, foldersCount: finalFolders.length };
   }
 
-  /**
-   * Actualiza la carpeta activa seleccionada por el administrador
-   */
   static async selectFolder(adminId: string, folderId: string, folderName: string): Promise<void> {
     const supabase = getServiceSupabaseClient();
     await supabase
@@ -396,18 +339,19 @@ export class GoogleDriveService {
         updated_at: new Date().toISOString(),
       })
       .eq("admin_id", adminId);
-
-    invalidateCache(adminId);
+      
+    await supabase
+      .from("admin_google_drive_settings")
+      .update({
+        selected_folder_id: folderId,
+        selected_folder_name: folderName,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", "global");
   }
 
-  /**
-   * Desconecta Google Drive del administrador (revoca tokens y elimina registro)
-   * NUNCA toca la sesión del administrador en Lumina Home
-   */
   static async disconnect(adminId: string): Promise<void> {
     const supabase = getServiceSupabaseClient();
-
-    // Obtener token para intentar revocación ante Google si es posible
     try {
       const { data: record } = await supabase
         .from("google_drive_credentials")
@@ -426,21 +370,22 @@ export class GoogleDriveService {
       }
     } catch {}
 
-    // Eliminar credenciales asociadas al admin_id
     await supabase.from("google_drive_credentials").delete().eq("admin_id", adminId);
-    invalidateCache(adminId);
+    this.tokenCache.delete(adminId);
+    
+    await supabase.from('admin_google_drive_settings').upsert({
+      id: 'global',
+      is_connected: false,
+      connected_email: '',
+      connected_account_name: '',
+      updated_at: new Date().toISOString()
+    });
   }
 
-  /**
-   * Ejecuta peticiones HTTP con exponential backoff + jitter para errores 5xx o 429
-   */
-  private static async fetchWithBackoff(url: string, token: string, maxRetries = 2): Promise<Response> {
+  private static async fetchWithBackoff(url: string, token: string, maxRetries = 3): Promise<Response> {
     let attempt = 0;
     while (attempt <= maxRetries) {
-      const res = await fetch(url, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-
+      const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
       if (res.status === 429 || (res.status >= 500 && res.status < 600)) {
         attempt++;
         if (attempt > maxRetries) return res;
@@ -448,7 +393,6 @@ export class GoogleDriveService {
         await new Promise((r) => setTimeout(r, delay));
         continue;
       }
-
       return res;
     }
     return fetch(url, { headers: { Authorization: `Bearer ${token}` } });

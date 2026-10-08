@@ -1047,10 +1047,24 @@ export const useGoogleDriveStore = create<GoogleDriveState>((set, get) => ({
   syncFiles: async () => {
     set({ isSyncing: true, error: null });
     try {
-      await get().loadSettings();
+      const { supabase } = await import("@/lib/supabase");
+      const { data: { session } } = await supabase.auth.getSession();
+      const res = await fetch("/api/admin/google-drive", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {}),
+        },
+        body: JSON.stringify({ action: "sync" }),
+      });
+      if (res.ok) {
+        await get().loadSettings(); // Recargar desde base de datos
+      } else {
+        set({ error: "Error al sincronizar con Google Drive" });
+      }
       set({ isSyncing: false });
     } catch {
-      set({ isSyncing: false });
+      set({ error: "Error de red al sincronizar", isSyncing: false });
     }
   },
 }));

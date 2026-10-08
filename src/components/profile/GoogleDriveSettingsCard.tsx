@@ -170,37 +170,11 @@ export function GoogleDriveSettingsCard({ onClose, onSelectPhotoForProduct }: Go
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // Sincronización silenciosa periódica con preservación de estado
+  // Sincronización silenciosa periódica eliminada para optimizar rendimiento.
+  // Ahora la sincronización se realiza de forma manual mediante el botón Sync,
+  // y la carga inicial utiliza los datos de la base de datos de manera asíncrona y no bloqueante.
   useEffect(() => {
-    if (!settings.isConnected) return;
-
-    const interval = setInterval(async () => {
-      try {
-        const { supabase } = await import("@/lib/supabase");
-        const { data: { session } } = await supabase.auth.getSession();
-        const res = await fetch("/api/admin/google-drive", {
-          headers: session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {},
-        });
-        if (res.ok) {
-          const data = await res.json();
-          if (data?.success && data?.settings?.isConnected) {
-            useGoogleDriveStore.setState((prev) => ({
-              settings: {
-                ...prev.settings,
-                ...data.settings,
-                isConnected: true,
-                files: data.settings.files && data.settings.files.length > 0 ? data.settings.files : prev.settings.files,
-                availableFolders: data.settings.availableFolders && data.settings.availableFolders.length > 0 ? data.settings.availableFolders : prev.settings.availableFolders,
-              },
-            }));
-          }
-        }
-      } catch {
-        // Fallos de red silenciosos: nunca alterar el estado conectado
-      }
-    }, 45000);
-
-    return () => clearInterval(interval);
+    // Empty effect to preserve hook order
   }, [settings.isConnected]);
 
   const showNotification = (msg: string) => {
