@@ -129,6 +129,22 @@
     scrollbar-color: var(--scrollbar-thumb) transparent;
   }
 
+  /* En escritorio con ratón/trackpad, el scroll de ventana es manejado 100% por MacOSScrollbar */
+  @media (pointer: fine) {
+    html,
+    body {
+      -ms-overflow-style: none !important;
+      scrollbar-width: none !important;
+    }
+    html::-webkit-scrollbar,
+    body::-webkit-scrollbar {
+      display: none !important;
+      width: 0 !important;
+      height: 0 !important;
+      background: transparent !important;
+    }
+  }
+
   /* Las clases .hide-scrollbar y .no-scrollbar deben OCULTAR la barra al 100% */
   .hide-scrollbar,
   .no-scrollbar {

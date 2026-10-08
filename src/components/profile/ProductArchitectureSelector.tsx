@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { CatalogProduct } from "@/lib/catalogStore";
 import { normalizeImageUrl, isGoogleDriveUrl } from "@/lib/imageUtils";
+import { MacOSScrollbar } from "@/components/ui/MacOSScrollbar";
 
 export interface LandingSpecItem {
   title: string;
@@ -89,6 +90,7 @@ export function ProductArchitectureSelector({
   const [selectedPinIndex, setSelectedPinIndex] = useState<number>(0);
   const [companionSearch, setCompanionSearch] = useState("");
   const canvasRef = useRef<HTMLDivElement>(null);
+  const companionScrollRef = useRef<HTMLDivElement | null>(null);
 
   const handleAddDefaultSpecs = () => {
     onLandingSpecsChange([
@@ -478,36 +480,44 @@ export function ProductArchitectureSelector({
                   />
                 </div>
 
-                <div className="max-h-36 overflow-y-auto space-y-1 p-1 rounded-xl bg-gray-50 dark:bg-black/20 border border-gray-200/60 dark:border-white/5">
-                  {filteredCompanions.slice(0, 15).map(prod => {
-                    const isChecked = bundleCompanionIds.includes(prod.id);
-                    return (
-                      <div
-                        key={prod.id}
-                        onClick={() => toggleCompanion(prod.id)}
-                        className={`p-2 rounded-lg cursor-pointer flex items-center justify-between transition-all ${
-                          isChecked
-                            ? "bg-white dark:bg-[#202022] shadow-sm border border-gray-950/20 dark:border-white/20"
-                            : "hover:bg-gray-100 dark:hover:bg-white/5 opacity-80"
-                        }`}
-                      >
-                        <div className="flex items-center gap-2">
-                          <input
-                            type="checkbox"
-                            checked={isChecked}
-                            onChange={() => {}}
-                            className="w-3.5 h-3.5 text-gray-900 rounded cursor-pointer"
-                          />
-                          <span className="text-xs font-medium text-gray-900 dark:text-white line-clamp-1">
-                            {prod.title}
+                <div className="relative rounded-xl overflow-hidden">
+                  <div 
+                    ref={companionScrollRef}
+                    data-lenis-prevent="true"
+                    className="max-h-36 overflow-y-auto space-y-1 p-1 pr-3.5 rounded-xl bg-gray-50 dark:bg-black/20 border border-gray-200/60 dark:border-white/5 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden overscroll-contain"
+                  >
+                    {filteredCompanions.slice(0, 15).map(prod => {
+                      const isChecked = bundleCompanionIds.includes(prod.id);
+                      return (
+                        <div
+                          key={prod.id}
+                          onClick={() => toggleCompanion(prod.id)}
+                          className={`p-2 rounded-lg cursor-pointer flex items-center justify-between transition-all ${
+                            isChecked
+                              ? "bg-white dark:bg-[#202022] shadow-sm border border-gray-950/20 dark:border-white/20"
+                              : "hover:bg-gray-100 dark:hover:bg-white/5 opacity-80"
+                          }`}
+                        >
+                          <div className="flex items-center gap-2">
+                            <input
+                              type="checkbox"
+                              checked={isChecked}
+                              onChange={() => {}}
+                              className="w-3.5 h-3.5 text-gray-900 rounded cursor-pointer"
+                            />
+                            <span className="text-xs font-medium text-gray-900 dark:text-white line-clamp-1">
+                              {prod.title}
+                            </span>
+                          </div>
+                          <span className="text-xs font-bold text-gray-500">
+                            ${prod.price.toFixed(2)}
                           </span>
                         </div>
-                        <span className="text-xs font-bold text-gray-500">
-                          ${prod.price.toFixed(2)}
-                        </span>
-                      </div>
-                    );
-                  })}
+                      );
+                    })}
+                  </div>
+                  {/* Authentic macOS Sequoia Floating Overlay Scrollbar */}
+                  <MacOSScrollbar containerRef={companionScrollRef} insetTop={4} insetBottom={4} insetRight={2} />
                 </div>
               </div>
             )}

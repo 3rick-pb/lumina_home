@@ -397,14 +397,14 @@ export function OverviewTab({
             orientation="horizontal"
             insetLeft={12}
             insetRight={12}
-            insetBottom={0}
+            insetBottom={2}
           />
           <div 
             ref={nicheChartRef}
             data-lenis-prevent="true"
             onMouseEnter={isAdmin ? handleNicheContainerMouseEnter : undefined}
             onMouseLeave={isAdmin ? handleNicheContainerLeave : handleMonthContainerLeave}
-            className={`flex items-end h-40 pt-7 pb-1 px-1 overflow-x-auto overflow-y-hidden select-none cursor-grab active:cursor-grabbing touch-pan-y touch-pan-x [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden ${
+            className={`flex items-end h-44 pt-7 pb-4.5 px-1 overflow-x-auto overflow-y-hidden select-none cursor-grab active:cursor-grabbing touch-pan-y touch-pan-x [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden ${
               categoryDistributionData.length <= 4 
                 ? "justify-around gap-3" 
                 : categoryDistributionData.length <= 7 

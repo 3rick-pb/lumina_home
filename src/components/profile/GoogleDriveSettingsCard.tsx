@@ -814,7 +814,7 @@ export function GoogleDriveSettingsCard({ onClose, onSelectPhotoForProduct }: Go
           </div>
         ) : !mainFolder ? (
           /* PANTALLA EN 'MI UNIDAD': MUESTRA TODAS LAS CARPETAS, CERO IMÁGENES */
-          <div className="flex-1 overflow-y-auto p-5 sm:p-7 space-y-6">
+          <div className="flex-1 overflow-y-auto p-5 sm:p-7 space-y-6 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden overscroll-contain">
             {/* Tarjeta Guía de Alto Nivel (Apple Card) */}
             <div className={cn(
               "p-4 sm:p-5 rounded-2xl border flex flex-col sm:flex-row sm:items-center justify-between gap-4 transition-colors",
@@ -899,7 +899,7 @@ export function GoogleDriveSettingsCard({ onClose, onSelectPhotoForProduct }: Go
           </div>
         ) : (
           /* PANTALLA DE CARPETA SELECCIONADA: SUBCARPETAS + FOTOGRAFÍAS */
-          <div className="flex-1 overflow-y-auto p-5 sm:p-7 space-y-7">
+          <div className="flex-1 overflow-y-auto p-5 sm:p-7 space-y-7 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden overscroll-contain">
             {/* Si tiene subcarpetas, mostrarlas arriba en filas de 3 */}
             {currentSubfolders.length > 0 && (
               <div className="space-y-4">

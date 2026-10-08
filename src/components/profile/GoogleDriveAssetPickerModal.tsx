@@ -15,6 +15,7 @@ import {
 import { useGoogleDriveStore, GoogleDriveFile } from "@/lib/googleDriveStore";
 import { GoogleDriveIcon, GoogleLogoIcon } from "./GoogleDriveSettingsCard";
 import { formatGoogleDriveUrl, isGoogleDriveUrl } from "@/lib/imageUtils";
+import { MacOSScrollbar } from "@/components/ui/MacOSScrollbar";
 
 interface GoogleDriveAssetPickerModalProps {
   open: boolean;
@@ -55,6 +56,7 @@ export function GoogleDriveAssetPickerModal({
   const [selectedFileIds, setSelectedFileIds] = useState<string[]>([]);
   const [showFolderDropdown, setShowFolderDropdown] = useState(false);
   const [showQuickAddModal, setShowQuickAddModal] = useState(false);
+  const scrollContainerRef = useRef<HTMLDivElement | null>(null);
 
   // Subir al vuelo
   const [quickUrl, setQuickUrl] = useState("");
@@ -282,7 +284,12 @@ export function GoogleDriveAssetPickerModal({
           </div>
 
           {/* Files Grid View */}
-          <div className="p-4 sm:p-6 overflow-y-auto flex-1">
+          <div className="relative flex-1 min-h-0 overflow-hidden">
+            <div 
+              ref={scrollContainerRef}
+              data-lenis-prevent="true"
+              className="w-full h-full p-4 sm:p-6 overflow-y-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden overscroll-contain"
+            >
             {!settings.isConnected ? (
               <div className="p-8 sm:p-12 text-center flex flex-col items-center justify-center space-y-5 max-w-sm mx-auto">
                 <div className="w-12 h-12 rounded-xl bg-stone-100 dark:bg-stone-800 border border-stone-200 dark:border-stone-700 flex items-center justify-center">
@@ -401,6 +408,9 @@ export function GoogleDriveAssetPickerModal({
                 })}
               </div>
             )}
+            </div>
+            {/* Authentic macOS Sequoia Floating Overlay Scrollbar */}
+            <MacOSScrollbar containerRef={scrollContainerRef} insetTop={10} insetBottom={10} insetRight={3} />
           </div>
 
           {/* Footer Bar */}

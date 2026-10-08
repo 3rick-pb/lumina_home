@@ -1375,7 +1375,7 @@ export function BeUISelectField({
               data-lenis-prevent="true"
               onWheel={(e) => e.stopPropagation()}
               onTouchMove={(e) => e.stopPropagation()}
-              className="max-h-52 overflow-y-auto overscroll-contain space-y-0.5 pr-0.5 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
+              className="max-h-52 overflow-y-auto overscroll-contain space-y-0.5 pl-0.5 pr-4 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
             >
               {normalizedOptions.map((item) => {
                 const isSelected = item.value === value;
@@ -1420,7 +1420,7 @@ export function BeUISelectField({
               })}
             </div>
             {/* Authentic macOS Sequoia Floating Overlay Scrollbar */}
-            <MacOSScrollbar containerRef={selectScrollRef} insetTop={6} insetBottom={10} />
+            <MacOSScrollbar containerRef={selectScrollRef} insetTop={6} insetBottom={10} insetRight={3} />
           </motion.div>
         )}
       </AnimatePresence>

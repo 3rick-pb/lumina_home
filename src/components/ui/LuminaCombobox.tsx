@@ -164,7 +164,7 @@ export function LuminaCombobox({
             <div
               ref={dropdownScrollRef}
               data-lenis-prevent="true"
-              className="relative max-h-64 overflow-y-auto overscroll-contain p-1.5 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
+              className="relative max-h-64 overflow-y-auto overscroll-contain py-1.5 pl-1.5 pr-4 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
             >
             {/* OPTIONAL SEARCH */}
             {searchable && (
@@ -236,6 +236,7 @@ export function LuminaCombobox({
             <MacOSScrollbar
               containerRef={dropdownScrollRef}
               inset={10}
+              insetRight={3}
             />
           </motion.div>
         )}

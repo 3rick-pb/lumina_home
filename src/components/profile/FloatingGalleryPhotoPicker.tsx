@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { useGoogleDriveStore, GoogleDriveFile } from "@/lib/googleDriveStore";
 import { GoogleDriveIcon } from "./GoogleDriveSettingsCard";
+import { MacOSScrollbar } from "@/components/ui/MacOSScrollbar";
 import { cn } from "@/lib/utils";
 
 interface FloatingGalleryPhotoPickerProps {
@@ -46,6 +47,7 @@ export function FloatingGalleryPhotoPicker({
 
   const [searchFilter, setSearchFilter] = useState("");
   const [selectedFileIds, setSelectedFileIds] = useState<string[]>([]);
+  const scrollRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     setMounted(true);
@@ -197,7 +199,12 @@ export function FloatingGalleryPhotoPicker({
           </div>
 
           {/* Cuerpo: Cuadrícula de fotos para seleccionar */}
-          <div className="p-4 sm:p-5 overflow-y-auto flex-1">
+          <div className="relative flex-1 min-h-0 overflow-hidden">
+            <div 
+              ref={scrollRef}
+              data-lenis-prevent="true"
+              className="w-full h-full p-4 sm:p-5 overflow-y-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden overscroll-contain"
+            >
             {!settings.isConnected ? (
               <div className="p-10 text-center flex flex-col items-center justify-center space-y-4 max-w-sm mx-auto">
                 <div className="w-12 h-12 rounded-2xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-500">
@@ -292,6 +299,9 @@ export function FloatingGalleryPhotoPicker({
                 })}
               </div>
             )}
+            </div>
+            {/* Authentic macOS Sequoia Floating Overlay Scrollbar */}
+            <MacOSScrollbar containerRef={scrollRef} insetTop={10} insetBottom={10} insetRight={3} />
           </div>
 
           {/* Footer Bar: Confirmación de Selección */}

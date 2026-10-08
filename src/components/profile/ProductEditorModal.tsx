@@ -34,6 +34,7 @@ import { FloatingGalleryPhotoPicker } from "./FloatingGalleryPhotoPicker";
 import { ColorVariantsManager, ColorVariant } from "../admin/ColorVariantsManager";
 import { ProductCombosManager } from "./ProductCombosManager";
 import { BeUISelectField, BeUICenterMorphModal } from "@/components/ui/BeUIControls";
+import { MacOSScrollbar } from "@/components/ui/MacOSScrollbar";
 import { normalizeImageUrl } from "@/lib/imageUtils";
 import { cn } from "@/lib/utils";
 import { Space_Mono } from "next/font/google";
@@ -75,6 +76,7 @@ export function ProductEditorModal({
   const [formError, setFormError] = useState<string | null>(null);
   const [formSuccess, setFormSuccess] = useState<string | null>(null);
   const [showGalleryPicker, setShowGalleryPicker] = useState(false);
+  const modalScrollRef = useRef<HTMLDivElement | null>(null);
 
   // Estados del Formulario
   const [title, setTitle] = useState("");
@@ -441,8 +443,13 @@ export function ProductEditorModal({
           )}
 
           {/* 2. BODY CONTENT: Flujo sin estrés según pestaña activa */}
-          <form onSubmit={handleSubmit} className="flex-1 min-h-0 flex flex-col overflow-hidden">
-            <div className="flex-1 min-h-0 overflow-y-auto p-5 sm:p-7 space-y-6">
+          <form onSubmit={handleSubmit} className="flex-1 min-h-0 flex flex-col overflow-hidden relative">
+            <div className="relative flex-1 min-h-0 overflow-hidden">
+              <div 
+                ref={modalScrollRef}
+                data-lenis-prevent="true"
+                className="w-full h-full overflow-y-auto p-5 sm:p-7 space-y-6 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden overscroll-contain"
+              >
             
             {/* PESTAÑA 1: ESENCIALES (Solo lo verdaderamente importante) */}
             {activeTab === 'esenciales' && (
@@ -1066,6 +1073,9 @@ export function ProductEditorModal({
               </div>
             )}
 
+              </div>
+              {/* Authentic macOS Sequoia Floating Overlay Scrollbar */}
+              <MacOSScrollbar containerRef={modalScrollRef} insetTop={14} insetBottom={14} insetRight={3} />
             </div>
 
             {/* 3. FOOTER INFERIOR FIJO: Botones de Acción Intuitivos */}
