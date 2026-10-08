@@ -119,7 +119,6 @@ export function GoogleDriveSettingsCard({ onClose, onSelectPhotoForProduct }: Go
     syncFiles 
   } = useGoogleDriveStore();
 
-  <'folders' | 'tags'>('folders');
   const [viewMode, setViewMode] = useState<'list' | 'grid'>('list');
   const [searchFilter, setSearchFilter] = useState("");
   
