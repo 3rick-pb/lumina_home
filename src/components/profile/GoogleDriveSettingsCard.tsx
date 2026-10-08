@@ -197,7 +197,7 @@ export function GoogleDriveSettingsCard({ onClose, onSelectPhotoForProduct }: Go
     <div className="w-full flex flex-col md:flex-row h-[88vh] max-h-[820px] rounded-[2rem] bg-zinc-100 dark:bg-[#0c0c0e] text-zinc-900 dark:text-zinc-100 border border-zinc-200 dark:border-white/10 shadow-2xl overflow-hidden select-none font-sans transition-colors duration-200">
       
       {/* 2. PANEL LATERAL: TREE VIEW & EXPLORADOR */}
-      <div className="w-full md:w-64 lg:w-72 shrink-0 flex flex-col bg-white dark:bg-[#111114] border-r border-zinc-200 dark:border-white/5 transition-colors">
+      {settings.isConnected && (<div className="w-full md:w-64 lg:w-72 shrink-0 flex flex-col bg-white dark:bg-[#111114] border-r border-zinc-200 dark:border-white/5 transition-colors">
         {/* Cabecera del Sidebar */}
         <div className="p-4 sm:p-5 pb-3 flex items-center justify-between">
           <h3 className="font-semibold text-sm tracking-tight text-zinc-900 dark:text-zinc-100">
@@ -237,34 +237,6 @@ export function GoogleDriveSettingsCard({ onClose, onSelectPhotoForProduct }: Go
               placeholder="Buscar..."
               className="w-full pl-8 pr-3 py-1.5 rounded-xl border border-zinc-200 dark:border-white/10 text-xs bg-zinc-100 dark:bg-[#18181b] text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 dark:placeholder-zinc-500 focus:outline-none focus:ring-1 focus:ring-zinc-400 dark:focus:ring-white/20 transition-all"
             />
-          </div>
-        </div>
-
-        {/* Pill Toggle Switcher (Folders / Tags como en la referencia) */}
-        <div className="px-4 pb-3">
-          <div className="p-1 rounded-xl bg-zinc-200/70 dark:bg-[#18181b] border border-zinc-300/50 dark:border-white/5 flex items-center">
-            <button
-              type="button"
-              onClick={() => setActiveTab('folders')}
-              className={`flex-1 py-1 px-2.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
-                activeTab === 'folders'
-                  ? "bg-white dark:bg-[#27272a] text-zinc-900 dark:text-white shadow-xs"
-                  : "text-zinc-500 dark:text-zinc-400 hover:text-zinc-800 dark:hover:text-zinc-200"
-              }`}
-            >
-              Carpetas
-            </button>
-            <button
-              type="button"
-              onClick={() => setActiveTab('tags')}
-              className={`flex-1 py-1 px-2.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
-                activeTab === 'tags'
-                  ? "bg-white dark:bg-[#27272a] text-zinc-900 dark:text-white shadow-xs"
-                  : "text-zinc-500 dark:text-zinc-400 hover:text-zinc-800 dark:hover:text-zinc-200"
-              }`}
-            >
-              Archivos
-            </button>
           </div>
         </div>
 
@@ -344,8 +316,6 @@ export function GoogleDriveSettingsCard({ onClose, onSelectPhotoForProduct }: Go
             <div className="inline-flex items-center gap-2 text-sm sm:text-base font-semibold text-zinc-900 dark:text-zinc-100 transition-colors">
               <span>{settings.selectedFolderName || "Mi Unidad"}</span>
             </div>
-              </div>
-            )}
           </div>
 
           {/* Acciones de la derecha: Conexión, Toggle de vista, Cerrar */}
