@@ -82,8 +82,8 @@ export interface CatalogProduct {
   stock?: number;
   howToUse?: string;
   combos?: ProductCombo[];
-  layoutType?: 'standard' | 'landing';
-  galleryStyle?: 'traditional' | 'isometric_3d';
+  layoutType?: 'standard' | 'landing' | 'cinematic' | 'bento';
+  galleryStyle?: 'traditional' | 'isometric_3d' | 'carousel_flow' | 'stack_cards';
   galleryAutoplay?: boolean;
   galleryAutoplaySpeed?: number;
   landingSpecs?: LandingSpec[];
@@ -297,7 +297,7 @@ const toFrontendProduct = (p: any): CatalogProduct => {
       : (typeof p.how_to_use === 'string' ? p.how_to_use : undefined),
     combos: p.combos || undefined,
     layoutType: p.layout_type || 'standard',
-    galleryStyle: (p.gallery_style || p.landing_bundle?.galleryStyle || 'traditional') as 'traditional' | 'isometric_3d',
+    galleryStyle: (p.gallery_style || p.landing_bundle?.galleryStyle || 'traditional') as 'traditional' | 'isometric_3d' | 'carousel_flow' | 'stack_cards',
     galleryAutoplay: p.gallery_autoplay !== undefined ? Boolean(p.gallery_autoplay) : (p.landing_bundle?.galleryAutoplay !== undefined ? Boolean(p.landing_bundle?.galleryAutoplay) : true),
     galleryAutoplaySpeed: typeof p.gallery_autoplay_speed === 'number' ? p.gallery_autoplay_speed : (typeof p.landing_bundle?.galleryAutoplaySpeed === 'number' ? p.landing_bundle?.galleryAutoplaySpeed : 4),
     landingSpecs: p.landing_specs || undefined,

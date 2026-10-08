@@ -12,6 +12,8 @@ import { useCatalogStore, isAgotadoBadge, ProductCombo, CatalogProduct } from "@
 import { useUserStore } from "@/lib/userStore";
 import { useAmbientStore } from "@/lib/ambientStore";
 import { ProductLandingView } from "@/components/product/ProductLandingView";
+import { ProductCinematicView } from "@/components/product/ProductCinematicView";
+import { ProductBentoView } from "@/components/product/ProductBentoView";
 import { ProductBundleSection } from "@/components/product/ProductBundleSection";
 import { Isometric3DGallery } from "@/components/product/Isometric3DGallery";
 import { EmbeddedCylinderCarousel } from "@/components/product/EmbeddedCylinderCarousel";
@@ -171,6 +173,38 @@ function ProductDetailContent({ product, products }: { product: CatalogProduct; 
             handleAddToCart={handleAddToCart}
             isAdding={isAdding}
             isAgotado={isAgotado}
+          />
+        ) : product.layoutType === "cinematic" ? (
+          <ProductCinematicView
+            product={product}
+            allProducts={products}
+            images={images}
+            activeImage={activeImage}
+            setActiveImage={setActiveImage}
+            activeColor={activeColor}
+            setActiveColor={setActiveColor}
+            activeSize={activeSize}
+            setActiveSize={setActiveSize}
+            handleAddToCart={handleAddToCart}
+            isAdding={isAdding}
+            isAgotado={isAgotado}
+            effectivePrice={effectivePrice}
+          />
+        ) : product.layoutType === "bento" ? (
+          <ProductBentoView
+            product={product}
+            allProducts={products}
+            images={images}
+            activeImage={activeImage}
+            setActiveImage={setActiveImage}
+            activeColor={activeColor}
+            setActiveColor={setActiveColor}
+            activeSize={activeSize}
+            setActiveSize={setActiveSize}
+            handleAddToCart={handleAddToCart}
+            isAdding={isAdding}
+            isAgotado={isAgotado}
+            effectivePrice={effectivePrice}
           />
         ) : (
           <>

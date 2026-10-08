@@ -90,11 +90,11 @@ export function CatalogTab({
             type="button"
             onClick={() => setShowDriveModal(true)}
             className="inline-flex items-center gap-2 px-3.5 py-2.5 rounded-xl border border-blue-500/25 bg-blue-50/70 hover:bg-blue-100/80 dark:bg-blue-950/30 dark:hover:bg-blue-900/40 text-blue-700 dark:text-blue-300 text-xs font-bold transition-all shadow-xs hover:scale-[1.02] active:scale-[0.98] cursor-pointer shrink-0"
-            title="Fotoproductos"
+            title="Galería de Fotos"
           >
             <GoogleDriveIcon className="w-4 h-4" />
-            <span className="hidden sm:inline">Fotoproductos</span>
-            <span className="sm:hidden">Fotos</span>
+            <span className="hidden sm:inline">Galería de Fotos</span>
+            <span className="sm:hidden">Galería</span>
             {driveSettings.isConnected && (
               <span className="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.7)] animate-pulse" />
             )}
