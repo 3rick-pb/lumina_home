@@ -91,15 +91,19 @@ function recalculateFolderCounts(
   folders: GoogleDriveFolder[],
   files: GoogleDriveFile[]
 ): GoogleDriveFolder[] {
+  if (!files || files.length === 0) return folders;
   const counts: Record<string, number> = {};
   for (const file of files) {
     const fId = file.folderId || "root";
     counts[fId] = (counts[fId] || 0) + 1;
   }
-  return folders.map((folder) => ({
-    ...folder,
-    itemCount: counts[folder.id] || 0,
-  }));
+  return folders.map((folder) => {
+    const memCount = counts[folder.id];
+    return {
+      ...folder,
+      itemCount: memCount !== undefined ? Math.max(folder.itemCount || 0, memCount) : (folder.itemCount || 0),
+    };
+  });
 }
 
 export const useGoogleDriveStore = create<GoogleDriveState>((set, get) => ({
@@ -137,15 +141,21 @@ export const useGoogleDriveStore = create<GoogleDriveState>((set, get) => ({
                 !f.id?.includes("iluminacion_premium") &&
                 !f.id?.includes("textiles_tapiceria") &&
                 !f.id?.includes("ceramica_decoracion") &&
-                f.id !== "folder_lumina_catalog_2026" &&
-                (f.id === "root" || (f.itemCount !== undefined && f.itemCount > 0))
+                f.id !== "folder_lumina_catalog_2026"
             )
             .map((f: GoogleDriveFolder) => ({
               id: f.id,
               name: f.name,
               parentId: f.parentId !== undefined ? f.parentId : (f.id === "root" ? null : "root"),
-              itemCount: f.itemCount || 0,
+              itemCount: f.itemCount !== undefined ? f.itemCount : 0,
             }));
+
+          // Filtrar carpetas vacías si hay conteo de archivos disponible
+          const hasKnownCounts = cleanFolders.some((f) => f.id !== "root" && f.itemCount > 0);
+          if (hasKnownCounts) {
+            cleanFolders = cleanFolders.filter((f) => f.id === "root" || f.itemCount > 0);
+          }
+
           if (cleanFolders.length === 0) {
             cleanFolders = [{ id: "root", name: "Mi Unidad", parentId: null, itemCount: 0 }];
           }
@@ -170,7 +180,7 @@ export const useGoogleDriveStore = create<GoogleDriveState>((set, get) => ({
             accountEmail: isDemo ? "" : (rawSettings.accountEmail || get().settings.accountEmail || ""),
             accountName: isDemo ? "" : (rawSettings.accountName || get().settings.accountName || ""),
             connectedAt: isDemo ? undefined : (rawSettings.connectedAt || get().settings.connectedAt),
-            availableFolders: cleanFolders.length > 0 ? recalculateFolderCounts(cleanFolders, cleanFiles.length > 0 ? cleanFiles : get().settings.files) : get().settings.availableFolders,
+            availableFolders: cleanFolders.length > 0 ? cleanFolders : get().settings.availableFolders,
             files: cleanFiles.length > 0 ? cleanFiles : get().settings.files,
           };
           set({ settings: loadedSettings, isLoading: false });

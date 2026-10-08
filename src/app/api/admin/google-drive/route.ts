@@ -189,11 +189,13 @@ export async function GET(request: Request) {
       };
     });
 
-    // FILTRADO DE RAÍZ EN BD: Excluir estrictamente todas las carpetas vacías (itemCount === 0)
-    // Mi Unidad ('root') siempre permanece como ancla raíz
-    resolvedFolders = resolvedFolders.filter(
-      (folder) => folder.id === 'root' || (folder.itemCount && folder.itemCount > 0)
-    );
+    // FILTRADO DE RAÍZ EN BD: Excluir carpetas vacías si hay conteo de archivos disponible
+    const hasKnownFolderCounts = resolvedFolders.some((f) => f.id !== 'root' && f.itemCount > 0);
+    if (hasKnownFolderCounts) {
+      resolvedFolders = resolvedFolders.filter(
+        (folder) => folder.id === 'root' || (folder.itemCount && folder.itemCount > 0)
+      );
+    }
 
     // Persistir lista filtrada limpia en BD si hay conexión activa
     if (globalSettings?.is_connected) {

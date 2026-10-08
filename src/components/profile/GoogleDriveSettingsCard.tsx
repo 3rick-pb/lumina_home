@@ -292,9 +292,14 @@ export function GoogleDriveSettingsCard({ onClose, onSelectPhotoForProduct }: Go
     await handleSelectFolderImmediate(folder);
   };
 
-  // Carpetas disponibles desde el store (excluyendo tajantemente carpetas vacías de raíz)
+  // Carpetas disponibles desde el store (excluyendo carpetas vacías si hay conteo de archivos disponible)
   const availableFolders = useMemo(() => {
-    return (settings.availableFolders || []).filter(
+    const list = settings.availableFolders || [];
+    const hasAnyCount = list.some((f) => f.id !== "root" && f.itemCount !== undefined && f.itemCount > 0);
+    if (!hasAnyCount) {
+      return list;
+    }
+    return list.filter(
       (f) => f.id === "root" || (f.itemCount !== undefined && f.itemCount > 0)
     );
   }, [settings.availableFolders]);
