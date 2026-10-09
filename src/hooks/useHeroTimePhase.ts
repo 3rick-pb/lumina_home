@@ -11,7 +11,6 @@ export interface HeroPhase {
   timeRange: string;
   description: string;
   imageSrc: string;
-  gradientOverlay: string;
   accentPill: string;
   glowColor: string;
 }
@@ -23,8 +22,7 @@ export const HERO_PHASES: Record<HeroPhaseId, HeroPhase> = {
     badgeLabel: "Amanecer",
     timeRange: "06:00 – 09:30",
     description: "Luz matutina fresca y apacible",
-    imageSrc: "/images/hero/hero-amanecer@2x.webp",
-    gradientOverlay: "from-[#171219]/90 via-[#171219]/35 to-transparent",
+    imageSrc: "/images/hero/Amanecer_clean.png",
     accentPill: "bg-rose-500/20 text-rose-200 border-rose-300/30",
     glowColor: "rgba(244, 114, 182, 0.2)",
   },
@@ -34,8 +32,7 @@ export const HERO_PHASES: Record<HeroPhaseId, HeroPhase> = {
     badgeLabel: "Medio Día",
     timeRange: "09:30 – 16:30",
     description: "Luz natural diurna pura",
-    imageSrc: "/images/hero/hero-mediodia@2x.webp",
-    gradientOverlay: "from-brand-900/90 via-brand-900/40 to-transparent",
+    imageSrc: "/images/hero/Lumina_Hero_Original.jpg",
     accentPill: "bg-amber-500/20 text-amber-200 border-amber-300/30",
     glowColor: "rgba(251, 191, 36, 0.15)",
   },
@@ -45,8 +42,7 @@ export const HERO_PHASES: Record<HeroPhaseId, HeroPhase> = {
     badgeLabel: "Atardecer",
     timeRange: "16:30 – 19:30",
     description: "Golden hour cálida y envolvente",
-    imageSrc: "/images/hero/hero-atardecer@2x.webp",
-    gradientOverlay: "from-[#23120b]/90 via-[#23120b]/40 to-transparent",
+    imageSrc: "/images/hero/Atardecer_clean.png",
     accentPill: "bg-orange-500/20 text-orange-200 border-orange-300/30",
     glowColor: "rgba(249, 115, 22, 0.22)",
   },
@@ -56,8 +52,7 @@ export const HERO_PHASES: Record<HeroPhaseId, HeroPhase> = {
     badgeLabel: "Crepúsculo",
     timeRange: "19:30 – 21:00",
     description: "Hora azul y primeras luces tenues",
-    imageSrc: "/images/hero/hero-crepusculo@2x.webp",
-    gradientOverlay: "from-[#0b1424]/92 via-[#0b1424]/40 to-transparent",
+    imageSrc: "/images/hero/Crepusculo_clean.png",
     accentPill: "bg-indigo-500/20 text-indigo-200 border-indigo-300/30",
     glowColor: "rgba(99, 102, 241, 0.22)",
   },
@@ -67,8 +62,7 @@ export const HERO_PHASES: Record<HeroPhaseId, HeroPhase> = {
     badgeLabel: "Noche Profunda",
     timeRange: "21:00 – 06:00",
     description: "Atmósfera íntima, velas y noche urbana",
-    imageSrc: "/images/hero/hero-noche@2x.webp",
-    gradientOverlay: "from-[#080b12]/95 via-[#080b12]/50 to-transparent",
+    imageSrc: "/images/hero/Noche_clean.png",
     accentPill: "bg-sky-500/20 text-sky-200 border-sky-300/30",
     glowColor: "rgba(56, 189, 248, 0.18)",
   },

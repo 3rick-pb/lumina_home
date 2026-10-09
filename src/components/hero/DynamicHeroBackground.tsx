@@ -11,11 +11,9 @@ interface DynamicHeroBackgroundProps {
 export const DynamicHeroBackground = memo(function DynamicHeroBackground({
   activePhaseId,
 }: DynamicHeroBackgroundProps) {
-  const currentPhase = HERO_PHASES[activePhaseId] || HERO_PHASES.mediodia;
-
   return (
     <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none select-none [contain:paint]">
-      {/* 5 Stacked Hero Layers for True Zero-Flicker Crossfade */}
+      {/* 5 Stacked Hero Layers with Pure Original Images - No WebP, No Color/Contrast Alterations */}
       {HERO_PHASE_ORDER.map((phaseKey) => {
         const phase = HERO_PHASES[phaseKey];
         const isActive = phaseKey === activePhaseId;
@@ -34,21 +32,13 @@ export const DynamicHeroBackground = memo(function DynamicHeroBackground({
               alt={`Lumina Home - ${phase.label}`}
               fill
               sizes="100vw"
-              priority={phaseKey === "mediodia" || phaseKey === "noche"}
-              quality={90}
+              priority
+              unoptimized
               className="object-cover pointer-events-none select-none transform-gpu"
             />
           </div>
         );
       })}
-
-      {/* Atmospheric Tone Overlay adapted per time phase */}
-      <div
-        className={`absolute inset-0 bg-gradient-to-t ${currentPhase.gradientOverlay} transition-all duration-1000 pointer-events-none z-20`}
-      />
-
-      {/* Subtle Bottom Ambient Vignette to cleanly integrate with the Trust Badges bar */}
-      <div className="absolute inset-x-0 bottom-0 h-32 bg-gradient-to-t from-black/50 via-black/20 to-transparent pointer-events-none z-20" />
     </div>
   );
 });
