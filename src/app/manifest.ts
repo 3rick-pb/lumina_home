@@ -3,14 +3,19 @@ import { brandConfig } from "@/config";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: brandConfig.name,
-    short_name: "Lumina",
+    name: "Lumina Home",
+    short_name: "Lumina Home",
     description: brandConfig.description,
     start_url: "/",
     display: "standalone",
-    background_color: "#faf9f6",
-    theme_color: "#8c9276",
+    background_color: "#121316",
+    theme_color: "#e07a3f",
     icons: [
+      {
+        src: "/icon.svg",
+        sizes: "any",
+        type: "image/svg+xml",
+      },
       {
         src: "/favicon.ico",
         sizes: "any",

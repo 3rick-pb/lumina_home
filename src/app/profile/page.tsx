@@ -30,10 +30,14 @@ import {
   Sparkles,
   Command,
   CornerDownLeft,
-  ArrowRight
+  ArrowRight,
+  ChevronLeft,
+  ChevronRight
 } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 import dynamic from "next/dynamic";
 import { Tag } from "lucide-react";
+import { playStepperTickSound } from "@/lib/soundUtils";
 import { useUserStore, Order, formatCleanName } from "@/lib/userStore";
 import { useThemeStore, getResolvedTheme } from "@/lib/themeStore";
 import { useCatalogStore, normalizeCategory, CatalogProduct, ProductCombo, EmbeddedCarouselConfig } from "@/lib/catalogStore";
@@ -543,17 +547,111 @@ export default function ProfilePage() {
     };
   }, [isAnyModalOpen]);
 
-  // --- Tab bar horizontal smooth scrolling (trackpad / mouse wheel) ---
-  const tabsContainerRef = useRef<HTMLDivElement>(null);
+  // --- Top bar 3-by-3 paginated tabs state & navigation ---
+  interface TopNavTabItem {
+    id: ProfileTab;
+    label: string;
+    icon: React.ComponentType<{ className?: string }>;
+    iconColor: string;
+    badge?: number;
+  }
+
+  const isEffectiveAdmin = Boolean(
+    user?.isRootAdmin || 
+    (user?.email || '').toLowerCase().trim() === 'admin@lumina.com' || 
+    user?.role === "ADMIN" || 
+    user?.role === "SUBADMIN"
+  );
+
+  const topNavTabs = useMemo<TopNavTabItem[]>(() => {
+    const list: TopNavTabItem[] = [
+      { id: "overview", label: "Vista General", icon: LayoutDashboard, iconColor: "text-amber-500/90" },
+      { id: "orders", label: "Pedidos", icon: ShoppingBag, iconColor: "text-blue-500/90", badge: (Array.isArray(scopedOrders) ? scopedOrders : []).length },
+      { id: "cards", label: "Billetera", icon: CreditCard, iconColor: "text-emerald-500/90", badge: (Array.isArray(cards) ? cards : []).length },
+      { id: "favorites", label: "Favoritos", icon: Heart, iconColor: "text-rose-500/90", badge: (Array.isArray(favorites) ? favorites : []).length },
+    ];
+    if (isEffectiveAdmin) {
+      list.push(
+        { id: "catalog", label: "Inventario", icon: Package, iconColor: "text-amber-500/90", badge: (Array.isArray(products) ? products : []).length },
+        { id: "niches", label: "Nichos", icon: Layers, iconColor: "text-purple-500/90", badge: (Array.isArray(categories) ? categories : []).length },
+        { id: "analytics", label: "Radar en Vivo", icon: Globe, iconColor: "text-cyan-500/90" },
+        { id: "cart_alerts", label: "Alertas Bolsa", icon: BellRing, iconColor: "text-yellow-500/90" },
+        { id: "integrations", label: "SMTP & Servidor", icon: Server, iconColor: "text-indigo-500/90" }
+      );
+    }
+    list.push(
+      { id: "loyalty", label: "Cupones", icon: Tag, iconColor: "text-orange-500/90" },
+      { id: "settings", label: "Ajustes", icon: Settings, iconColor: "text-stone-500/90" }
+    );
+    return list;
+  }, [isEffectiveAdmin, scopedOrders, cards, favorites, products, categories]);
+
+  const TABS_PER_PAGE = 3;
+  const tabPages = useMemo(() => {
+    const pages: TopNavTabItem[][] = [];
+    for (let i = 0; i < topNavTabs.length; i += TABS_PER_PAGE) {
+      pages.push(topNavTabs.slice(i, i + TABS_PER_PAGE));
+    }
+    return pages;
+  }, [topNavTabs]);
+
+  const [topNavPage, setTopNavPage] = useState(0);
+  const [navDirection, setNavDirection] = useState<number>(0);
+
+  // Auto-sync page whenever activeTab changes elsewhere (e.g. search bar, drawer)
+  useEffect(() => {
+    const activeIdx = topNavTabs.findIndex((t) => t.id === activeTab);
+    if (activeIdx !== -1) {
+      const targetPage = Math.floor(activeIdx / TABS_PER_PAGE);
+      if (targetPage !== topNavPage) {
+        setNavDirection(targetPage > topNavPage ? 1 : -1);
+        setTopNavPage(targetPage);
+      }
+    }
+  }, [activeTab, topNavTabs, topNavPage]);
+
+  // Keep page index within bounds if tab count changes
+  useEffect(() => {
+    if (tabPages.length > 0 && topNavPage >= tabPages.length) {
+      setTopNavPage(Math.max(0, tabPages.length - 1));
+    }
+  }, [tabPages.length, topNavPage]);
+
+  const goToPreviousPage = useCallback(() => {
+    if (topNavPage > 0) {
+      playStepperTickSound("down");
+      setNavDirection(-1);
+      setTopNavPage((prev) => Math.max(0, prev - 1));
+    }
+  }, [topNavPage]);
+
+  const goToNextPage = useCallback(() => {
+    if (topNavPage < tabPages.length - 1) {
+      playStepperTickSound("up");
+      setNavDirection(1);
+      setTopNavPage((prev) => Math.min(tabPages.length - 1, prev + 1));
+    }
+  }, [topNavPage, tabPages.length]);
+
+  const goToPage = useCallback((targetPage: number) => {
+    if (targetPage !== topNavPage && targetPage >= 0 && targetPage < tabPages.length) {
+      playStepperTickSound(targetPage > topNavPage ? "up" : "down");
+      setNavDirection(targetPage > topNavPage ? 1 : -1);
+      setTopNavPage(targetPage);
+    }
+  }, [topNavPage, tabPages.length]);
 
   const handleTabsWheel = useCallback((e: React.WheelEvent) => {
-    const el = tabsContainerRef.current;
-    if (!el) return;
-    if (Math.abs(e.deltaY) > Math.abs(e.deltaX)) {
+    if (Math.abs(e.deltaY) > 15 || Math.abs(e.deltaX) > 15) {
       e.preventDefault();
-      el.scrollLeft += e.deltaY;
+      const dir = (e.deltaY > 0 || e.deltaX > 0) ? 1 : -1;
+      if (dir > 0) {
+        goToNextPage();
+      } else {
+        goToPreviousPage();
+      }
     }
-  }, []);
+  }, [goToNextPage, goToPreviousPage]);
 
   // Category & Badge manager state
 
@@ -1164,7 +1262,7 @@ const handleConfirmDeleteNiche = async () => {
   <header className="relative z-40 bg-white/80 dark:bg-[#202022]/80 backdrop-blur-2xl px-4 py-3 sm:px-6 sm:py-3.5 rounded-2xl sm:rounded-3xl border border-white/80 dark:border-white/10 shadow-[0_4px_20px_rgba(0,0,0,0.02)] flex items-center justify-between gap-3 sm:gap-4">
   
   {/* Brand & Top Navigation Pill Bar */}
-  <div className="flex items-center justify-center sm:justify-start gap-3 md:gap-4 min-w-0 flex-1 overflow-hidden">
+  <div className="flex items-center justify-center sm:justify-start gap-3 md:gap-4 min-w-0 flex-1">
   <Link 
     href="/" 
     className="shrink-0 flex items-center hover:opacity-85 transition-opacity mx-auto sm:mx-0 select-none py-0.5" 
@@ -1180,93 +1278,122 @@ const handleConfirmDeleteNiche = async () => {
     />
   </Link>
 
-  {/* Top Bar Tabs (Visible on Laptop and Desktop, Hidden on Mobile) */}
+  {/* Top Bar Paginated Tabs (3 por página con estética luxury liquid glass) */}
   <div
-    ref={tabsContainerRef}
     onWheel={handleTabsWheel}
-    className="hidden md:flex items-center gap-0.5 bg-gray-100/80 dark:bg-[#3a3a3c]/80 p-1 rounded-2xl overflow-x-auto hide-scrollbar min-w-0 shrink select-none"
+    className="hidden md:flex items-center gap-1.5 p-1 rounded-2xl bg-stone-100/80 dark:bg-[#18181b]/80 backdrop-blur-2xl border border-stone-200/80 dark:border-white/10 shadow-[0_2px_12px_rgba(0,0,0,0.03)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.35)] transition-all select-none min-w-0"
   >
-  <button 
-    onClick={() => setActiveTab("overview")} 
-    className={`group inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all duration-200 cursor-pointer select-none hover:-translate-y-0.5 active:scale-95 ${activeTab === "overview" ? "bg-white dark:bg-[#202022] text-gray-900 dark:text-gray-100 shadow-sm dark:shadow-none" : "text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-white/50 dark:hover:bg-white/5"}`}
-  >
-    <LayoutDashboard className="w-3.5 h-3.5 transition-transform duration-200 group-hover:scale-115 group-hover:rotate-6 shrink-0 text-amber-500/90" />
-    <span>Vista General</span>
-  </button>
-  <button 
-    onClick={() => setActiveTab("orders")} 
-    className={`group inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all duration-200 cursor-pointer select-none hover:-translate-y-0.5 active:scale-95 ${activeTab === "orders" ? "bg-white dark:bg-[#202022] text-gray-900 dark:text-gray-100 shadow-sm dark:shadow-none" : "text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-white/50 dark:hover:bg-white/5"}`}
-  >
-    <ShoppingBag className="w-3.5 h-3.5 transition-transform duration-200 group-hover:scale-115 group-hover:-translate-y-0.5 shrink-0 text-blue-500/90" />
-    <span>Pedidos ({(Array.isArray(scopedOrders) ? scopedOrders : []).length})</span>
-  </button>
-  <button 
-    onClick={() => setActiveTab("cards")} 
-    className={`group inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all duration-200 cursor-pointer select-none hover:-translate-y-0.5 active:scale-95 ${activeTab === "cards" ? "bg-white dark:bg-[#202022] text-gray-900 dark:text-gray-100 shadow-sm dark:shadow-none" : "text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-white/50 dark:hover:bg-white/5"}`}
-  >
-    <CreditCard className="w-3.5 h-3.5 transition-transform duration-200 group-hover:scale-115 group-hover:-rotate-6 shrink-0 text-emerald-500/90" />
-    <span>Billetera ({(Array.isArray(cards) ? cards : []).length})</span>
-  </button>
-  <button 
-    onClick={() => setActiveTab("favorites")} 
-    className={`group inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all duration-200 cursor-pointer select-none hover:-translate-y-0.5 active:scale-95 ${activeTab === "favorites" ? "bg-white dark:bg-[#202022] text-gray-900 dark:text-gray-100 shadow-sm dark:shadow-none" : "text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-white/50 dark:hover:bg-white/5"}`}
-  >
-    <Heart className="w-3.5 h-3.5 transition-transform duration-200 group-hover:scale-120 group-hover:text-rose-500 shrink-0 text-rose-500/90" />
-    <span>Favoritos ({(Array.isArray(favorites) ? favorites : []).length})</span>
-  </button>
-  {isAdmin && (
-  <>
-  <button 
-    onClick={() => setActiveTab("catalog")} 
-    className={`group inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all duration-200 cursor-pointer select-none hover:-translate-y-0.5 active:scale-95 ${activeTab === "catalog" ? "bg-white dark:bg-[#202022] text-gray-900 dark:text-gray-100 shadow-sm dark:shadow-none" : "text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-white/50 dark:hover:bg-white/5"}`}
-  >
-    <Package className="w-3.5 h-3.5 transition-transform duration-200 group-hover:scale-115 group-hover:-translate-y-0.5 shrink-0 text-amber-500/90" />
-    <span>Inventario ({(Array.isArray(products) ? products : []).length})</span>
-  </button>
-  <button 
-    onClick={() => setActiveTab("niches")} 
-    className={`group inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all duration-200 cursor-pointer select-none hover:-translate-y-0.5 active:scale-95 ${activeTab === "niches" ? "bg-white dark:bg-[#202022] text-gray-900 dark:text-gray-100 shadow-sm dark:shadow-none" : "text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-white/50 dark:hover:bg-white/5"}`}
-  >
-    <Layers className="w-3.5 h-3.5 transition-transform duration-200 group-hover:scale-115 group-hover:rotate-6 shrink-0 text-purple-500/90" />
-    <span>Nichos ({(Array.isArray(categories) ? categories : []).length})</span>
-  </button>
-  <button 
-    onClick={() => setActiveTab("analytics")} 
-    className={`group inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all duration-200 cursor-pointer select-none hover:-translate-y-0.5 active:scale-95 ${activeTab === "analytics" ? "bg-white dark:bg-[#202022] text-gray-900 dark:text-gray-100 shadow-sm dark:shadow-none" : "text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-white/50 dark:hover:bg-white/5"}`}
-  >
-    <Globe className="w-3.5 h-3.5 transition-transform duration-200 group-hover:scale-115 group-hover:rotate-90 shrink-0 text-cyan-500/90" />
-    <span>Radar en Vivo</span>
-  </button>
-  <button 
-    onClick={() => setActiveTab("cart_alerts")} 
-    className={`group inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all duration-200 cursor-pointer select-none hover:-translate-y-0.5 active:scale-95 ${activeTab === "cart_alerts" ? "bg-white dark:bg-[#202022] text-gray-900 dark:text-gray-100 shadow-sm dark:shadow-none" : "text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-white/50 dark:hover:bg-white/5"}`}
-  >
-    <BellRing className="w-3.5 h-3.5 transition-transform duration-200 group-hover:scale-115 group-hover:rotate-12 shrink-0 text-yellow-500/90" />
-    <span>Alertas Bolsa</span>
-  </button>
-  <button 
-    onClick={() => setActiveTab("integrations")} 
-    className={`group inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all duration-200 cursor-pointer select-none hover:-translate-y-0.5 active:scale-95 ${activeTab === "integrations" ? "bg-white dark:bg-[#202022] text-gray-900 dark:text-gray-100 shadow-sm dark:shadow-none" : "text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-white/50 dark:hover:bg-white/5"}`}
-  >
-    <Server className="w-3.5 h-3.5 transition-transform duration-200 group-hover:scale-115 group-hover:rotate-6 shrink-0 text-indigo-500/90" />
-    <span>SMTP & Servidor</span>
-  </button>
-  </>
-  )}
-  <button 
-    onClick={() => setActiveTab("loyalty")} 
-    className={`group inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all duration-200 cursor-pointer select-none hover:-translate-y-0.5 active:scale-95 ${activeTab === "loyalty" ? "bg-white dark:bg-[#202022] text-gray-900 dark:text-gray-100 shadow-sm dark:shadow-none" : "text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-white/50 dark:hover:bg-white/5"}`}
-  >
-    <Tag className="w-3.5 h-3.5 transition-transform duration-200 group-hover:scale-115 group-hover:rotate-6 shrink-0 text-orange-500/90" />
-    <span>Cupones</span>
-  </button>
-  <button 
-    onClick={() => setActiveTab("settings")} 
-    className={`group inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all duration-200 cursor-pointer select-none hover:-translate-y-0.5 active:scale-95 ${activeTab === "settings" ? "bg-white dark:bg-[#202022] text-gray-900 dark:text-gray-100 shadow-sm dark:shadow-none" : "text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-white/50 dark:hover:bg-white/5"}`}
-  >
-    <Settings className="w-3.5 h-3.5 transition-transform duration-200 group-hover:scale-115 group-hover:rotate-90 shrink-0 text-stone-500/90" />
-    <span>Ajustes</span>
-  </button>
+    {/* Botón página previa */}
+    <button
+      type="button"
+      onClick={goToPreviousPage}
+      disabled={topNavPage === 0}
+      title="Página anterior de pestañas"
+      className={`p-1.5 rounded-xl transition-all duration-200 flex items-center justify-center shrink-0 ${
+        topNavPage === 0
+          ? "text-stone-300 dark:text-stone-700 cursor-not-allowed opacity-30"
+          : "text-stone-500 dark:text-stone-400 hover:text-stone-900 dark:hover:text-white hover:bg-white dark:hover:bg-white/10 shadow-xs active:scale-95 cursor-pointer"
+      }`}
+    >
+      <ChevronLeft className="w-3.5 h-3.5" />
+    </button>
+
+    {/* Contenedor animado de las 3 pestañas */}
+    <div className="overflow-hidden w-[330px] lg:w-[360px] xl:w-[380px]">
+      <AnimatePresence mode="wait" custom={navDirection}>
+        <motion.div
+          key={topNavPage}
+          custom={navDirection}
+          variants={{
+            enter: (direction: number) => ({
+              x: direction > 0 ? 16 : -16,
+              opacity: 0,
+              filter: "blur(2px)",
+            }),
+            center: {
+              x: 0,
+              opacity: 1,
+              filter: "blur(0px)",
+            },
+            exit: (direction: number) => ({
+              x: direction > 0 ? -16 : 16,
+              opacity: 0,
+              filter: "blur(2px)",
+            }),
+          }}
+          initial="enter"
+          animate="center"
+          exit="exit"
+          transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }}
+          className="flex items-center gap-1 w-full"
+        >
+          {tabPages[topNavPage]?.map((tab) => {
+            const Icon = tab.icon;
+            const isActive = activeTab === tab.id;
+            return (
+              <button
+                key={tab.id}
+                type="button"
+                onClick={() => {
+                  setActiveTab(tab.id);
+                  playStepperTickSound();
+                }}
+                title={tab.label}
+                className={`group relative flex-1 min-w-0 flex items-center justify-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs whitespace-nowrap transition-all duration-200 cursor-pointer select-none truncate ${
+                  isActive
+                    ? "bg-white dark:bg-[#232328] text-stone-900 dark:text-white font-semibold shadow-[0_2px_8px_rgba(0,0,0,0.06)] dark:shadow-[0_2px_12px_rgba(0,0,0,0.4)] ring-1 ring-black/5 dark:ring-white/10"
+                    : "text-stone-600 dark:text-stone-400 hover:text-stone-900 dark:hover:text-stone-100 hover:bg-white/60 dark:hover:bg-white/5 font-medium"
+                }`}
+              >
+                <Icon className={`w-3.5 h-3.5 shrink-0 transition-transform duration-200 group-hover:scale-115 ${tab.iconColor}`} />
+                <span className="truncate">{tab.label}</span>
+                {typeof tab.badge === "number" && tab.badge > 0 && (
+                  <span className={`text-[10px] font-mono px-1.5 py-0.2 rounded-full shrink-0 leading-none ${
+                    isActive
+                      ? "bg-[#e07a3f]/15 text-[#e07a3f] dark:text-[#ff9d66] font-semibold"
+                      : "bg-stone-200/70 dark:bg-white/10 text-stone-500 dark:text-stone-400"
+                  }`}>
+                    {tab.badge}
+                  </span>
+                )}
+              </button>
+            );
+          })}
+        </motion.div>
+      </AnimatePresence>
+    </div>
+
+    {/* Botón página siguiente */}
+    <button
+      type="button"
+      onClick={goToNextPage}
+      disabled={topNavPage >= tabPages.length - 1}
+      title="Página siguiente de pestañas"
+      className={`p-1.5 rounded-xl transition-all duration-200 flex items-center justify-center shrink-0 ${
+        topNavPage >= tabPages.length - 1
+          ? "text-stone-300 dark:text-stone-700 cursor-not-allowed opacity-30"
+          : "text-stone-500 dark:text-stone-400 hover:text-stone-900 dark:hover:text-white hover:bg-white dark:hover:bg-white/10 shadow-xs active:scale-95 cursor-pointer"
+      }`}
+    >
+      <ChevronRight className="w-3.5 h-3.5" />
+    </button>
+
+    {/* Indicador de páginas con micro-pills */}
+    <div className="flex items-center gap-1 shrink-0 border-l border-stone-200/80 dark:border-white/10 pl-1.5 pr-0.5">
+      {tabPages.map((_, idx) => (
+        <button
+          key={idx}
+          type="button"
+          onClick={() => goToPage(idx)}
+          title={`Ir a página ${idx + 1} de pestañas`}
+          className={`h-1.5 rounded-full transition-all duration-300 cursor-pointer ${
+            topNavPage === idx
+              ? "w-3.5 bg-[#e07a3f]"
+              : "w-1.5 bg-stone-300 dark:bg-stone-600 hover:bg-stone-400 dark:hover:bg-stone-500"
+          }`}
+        />
+      ))}
+    </div>
   </div>
   </div>
 
@@ -1274,17 +1401,17 @@ const handleConfirmDeleteNiche = async () => {
   <div className="flex items-center gap-2.5 sm:gap-3 shrink-0">
     <div className="relative z-50 group/search" ref={searchDropdownRef}>
       <div 
-        className={`relative flex items-center gap-2.5 pl-3.5 pr-2.5 h-10 rounded-full bg-white/80 dark:bg-[#1a1a20]/80 hover:bg-white dark:hover:bg-[#202026] focus-within:bg-white dark:focus-within:bg-[#1a1a20] backdrop-blur-2xl border transition-all duration-300 ease-out shadow-xs ${
+        className={`relative flex items-center gap-2.5 pl-3.5 pr-2.5 h-10 rounded-full bg-white/80 dark:bg-[#1a1a20]/80 hover:bg-white dark:hover:bg-[#202026] focus-within:bg-white dark:focus-within:bg-[#1a1a20] backdrop-blur-2xl border transition-all duration-300 ease-out ${
           isSearchFocused
-            ? "border-[#e07a3f] dark:border-[#e07a3f] ring-4 ring-[#e07a3f]/15 shadow-[0_8px_30px_rgba(224,122,63,0.18)]"
-            : "border-stone-200/90 dark:border-white/10 hover:border-[#e07a3f]/40 dark:hover:border-[#e07a3f]/30"
+            ? "border-[#e07a3f] dark:border-[#e07a3f] ring-4 ring-[#e07a3f]/25 shadow-[0_8px_32px_rgba(224,122,63,0.24)]"
+            : "border-[#e07a3f]/30 dark:border-[#e07a3f]/35 hover:border-[#e07a3f] dark:hover:border-[#e07a3f] hover:ring-2 hover:ring-[#e07a3f]/20 shadow-[0_2px_10px_rgba(224,122,63,0.06)] hover:shadow-[0_4px_22px_rgba(224,122,63,0.18)]"
         }`}
       >
         <div className="flex items-center justify-center shrink-0">
           <Search className={`w-4 h-4 transition-all duration-300 ${
             isSearchFocused
               ? "text-[#e07a3f] scale-110 rotate-[-8deg]"
-              : "text-gray-400 dark:text-gray-500 group-hover/search:text-gray-600 dark:group-hover/search:text-gray-300"
+              : "text-[#e07a3f]/70 dark:text-[#e07a3f]/80 group-hover/search:text-[#e07a3f] group-hover/search:scale-110"
           }`} />
         </div>
 

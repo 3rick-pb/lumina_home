@@ -24,6 +24,7 @@ import {
 } from "react";
 import { SPRING_GLIDE, SPRING_LAYOUT } from "@/lib/ease";
 import { cn } from "@/lib/utils";
+import { createTickPlayer } from "@/lib/tick-sound";
 
 export type ArcPickerOption = {
   value: string;
@@ -55,6 +56,8 @@ export type ArcPickerProps = Omit<
   visibleCount?: number;
   disabled?: boolean;
   name?: string;
+  /** Whether to play crisp mechanical detent sounds during scrolling and selection. Defaults to true. */
+  sound?: boolean;
 };
 
 // A short velocity projection lets a flick coast through several detents
@@ -242,6 +245,7 @@ export function ArcPicker({
   visibleCount = 7,
   disabled = false,
   name,
+  sound = true,
   className,
   style,
   onKeyDown,
@@ -262,6 +266,18 @@ export function ArcPicker({
   const instructionsId = useId();
   const root = useRef<HTMLDivElement>(null);
   const buttons = useRef(new Map<string, HTMLButtonElement>());
+  const tickPlayer = useRef<ReturnType<typeof createTickPlayer> | null>(null);
+
+  useEffect(() => {
+    if (sound === false) return;
+    const player = createTickPlayer();
+    tickPlayer.current = player;
+    return () => {
+      player.dispose();
+      tickPlayer.current = null;
+    };
+  }, [sound]);
+
   const first = options.find((option) => !option.disabled)?.value;
   const [internalValue, setInternalValue] = useState(defaultValue ?? first);
   const controlled = value !== undefined;
@@ -563,6 +579,7 @@ export function ArcPicker({
       const current = latest.current;
       const option = current.options[index];
       if (!option || option.disabled || current.disabled) return;
+      if (sound !== false) tickPlayer.current?.play();
       stop();
       instant.current = keyboard;
       if (keyboard) {
@@ -575,7 +592,7 @@ export function ArcPicker({
       if (keyboard)
         buttons.current.get(option.value)?.focus({ preventScroll: true });
     },
-    [expansion, frameTarget, frameWidth, publish, settle, stop],
+    [expansion, frameTarget, frameWidth, publish, settle, sound, stop],
   );
 
   const nearestEnabled = useCallback((at: number) => {
@@ -600,16 +617,18 @@ export function ArcPicker({
           (option) => option.value === request.current,
         );
         if (previous !== next) {
+          if (sound !== false) tickPlayer.current?.play();
           publish(next);
         }
       }),
-    [nearestEnabled, position, publish],
+    [nearestEnabled, position, publish, sound],
   );
 
   useEffect(() => {
     const element = root.current;
     if (!element) return;
     const wheel = (event: WheelEvent) => {
+      tickPlayer.current?.prepare();
       const current = latest.current;
       if (
         current.disabled ||
@@ -835,6 +854,7 @@ export function ArcPicker({
         onBlurCapture?.(event);
       }}
       onPointerDown={(event) => {
+        tickPlayer.current?.prepare();
         onPointerDown?.(event);
         if (
           event.defaultPrevented ||

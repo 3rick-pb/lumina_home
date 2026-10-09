@@ -1,0 +1,57 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <!-- Background Luxury Obsidian Dark Gradient -->
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1c1d22"/>
+      <stop offset="50%" stop-color="#141518"/>
+      <stop offset="100%" stop-color="#0c0d0f"/>
+    </linearGradient>
+
+    <!-- Ambient Amber/Gold Radial Glow -->
+    <radialGradient id="ambientGlow" cx="50%" cy="45%" r="60%">
+      <stop offset="0%" stop-color="#e07a3f" stop-opacity="0.32"/>
+      <stop offset="60%" stop-color="#f59e0b" stop-opacity="0.08"/>
+      <stop offset="100%" stop-color="#000000" stop-opacity="0"/>
+    </radialGradient>
+
+    <!-- Lumina Signature Warm Amber Gold Gradient -->
+    <linearGradient id="goldEmblem" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fde68a"/>
+      <stop offset="35%" stop-color="#f59e0b"/>
+      <stop offset="75%" stop-color="#e07a3f"/>
+      <stop offset="100%" stop-color="#c25e24"/>
+    </linearGradient>
+
+    <!-- Subtle Bevel Border Gradient -->
+    <linearGradient id="borderGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.22"/>
+      <stop offset="50%" stop-color="#e07a3f" stop-opacity="0.35"/>
+      <stop offset="100%" stop-color="#ffffff" stop-opacity="0.06"/>
+    </linearGradient>
+
+    <!-- Soft Drop Shadow for Emblem -->
+    <filter id="emblemShadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="6" stdDeviation="10" flood-color="#000000" flood-opacity="0.6"/>
+      <feDropShadow dx="0" dy="0" stdDeviation="16" flood-color="#e07a3f" flood-opacity="0.35"/>
+    </filter>
+  </defs>
+
+  <!-- Squircle Base with Luxury Dark Gradient -->
+  <rect x="16" y="16" width="480" height="480" rx="112" ry="112" fill="url(#bgGrad)"/>
+
+  <!-- Ambient Glow Center -->
+  <rect x="16" y="16" width="480" height="480" rx="112" ry="112" fill="url(#ambientGlow)"/>
+
+  <!-- Delicate Bevel Border -->
+  <rect x="16" y="16" width="480" height="480" rx="112" ry="112" fill="none" stroke="url(#borderGrad)" stroke-width="4"/>
+
+  <!-- Centered Lumina Interlocking Diamond Arches Emblem (Original viewBox 400x340 -> scaled 0.88x & centered) -->
+  <g transform="translate(80, 106) scale(0.88)" filter="url(#emblemShadow)">
+    <path
+      fill="url(#goldEmblem)"
+      fill-rule="evenodd"
+      clip-rule="evenodd"
+      d="M 157.3 14.7 L 18.5 165.0 C 53.7 217.7, 83.8 270.3, 98.5 323.0 C 96.7 270.3, 69.8 217.7, 53.5 165.0 L 160.4 52.3 L 257.5 165.0 C 244.2 213.0, 216.0 261.0, 211.5 309.0 C 227.9 261.0, 258.5 213.0, 288.5 165.0 Z M 242.7 14.7 L 381.5 165.0 C 346.3 217.7, 316.2 270.3, 301.5 323.0 C 303.3 270.3, 330.2 217.7, 346.5 165.0 L 239.6 52.3 L 142.5 165.0 C 155.8 213.0, 184.0 261.0, 188.5 309.0 C 172.1 261.0, 141.5 213.0, 111.5 165.0 Z"
+    />
+  </g>
+</svg>

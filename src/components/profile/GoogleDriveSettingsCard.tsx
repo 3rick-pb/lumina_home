@@ -38,6 +38,7 @@ import {
   GoogleDriveFile
 } from "@/lib/googleDriveStore";
 import { cn } from "@/lib/utils";
+import { playStepperTickSound, playCardEnvelopeSound } from "@/lib/soundUtils";
 
 // Tipografía Space Mono solicitada por el usuario
 const spaceMono = Space_Mono({
@@ -278,6 +279,7 @@ export function GoogleDriveSettingsCard({ onClose, onSelectPhotoForProduct }: Go
 
   // Selección inmediata (para clics directos en carpetas o botones)
   const handleSelectFolderImmediate = useCallback(async (folder: GoogleDriveFolder) => {
+    playCardEnvelopeSound("open");
     if (debouncedSelectRef.current) {
       clearTimeout(debouncedSelectRef.current);
       debouncedSelectRef.current = null;
@@ -286,8 +288,9 @@ export function GoogleDriveSettingsCard({ onClose, onSelectPhotoForProduct }: Go
     await selectFolder(folder.id, folder.name);
   }, [selectFolder]);
 
-  // Manejo de cambio en ArcPicker: durante el desplazamiento rápido NO empieza a mostrar archivos
+  // Manejo de cambio en ArcPicker: durante el desplazamiento rápido emite sonido tactile y no recarga archivos hasta frenar
   const handleArcValueChange = useCallback((val: string) => {
+    playStepperTickSound("up");
     setActiveArcFolderId(val);
     if (debouncedSelectRef.current) {
       clearTimeout(debouncedSelectRef.current);
@@ -300,6 +303,7 @@ export function GoogleDriveSettingsCard({ onClose, onSelectPhotoForProduct }: Go
 
   // Cuando el movimiento de la media rueda o drag se detiene completamente en una carpeta
   const handleArcSettle = useCallback((val: string) => {
+    playCardEnvelopeSound("open");
     setActiveArcFolderId(val);
     if (debouncedSelectRef.current) {
       clearTimeout(debouncedSelectRef.current);
@@ -312,6 +316,7 @@ export function GoogleDriveSettingsCard({ onClose, onSelectPhotoForProduct }: Go
 
   // Botón HOME del rail izquierdo -> Volver a Mi Unidad
   const handleHomeClick = async () => {
+    playCardEnvelopeSound("close");
     setActiveRailTab('home');
     setShowStatsModal(false);
     if (debouncedSelectRef.current) {

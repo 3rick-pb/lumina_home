@@ -15,15 +15,15 @@ export function buildBrandMetadata(
   const base: Metadata = {
     metadataBase: new URL(siteUrl),
     title: {
-      default: `${customBrand.name} | ${customBrand.tagline}`,
-      template: `%s | ${customBrand.name}`,
+      default: "Lumina Home",
+      template: `%s | Lumina Home`,
     },
     description: customBrand.description,
-    applicationName: customBrand.name,
+    applicationName: "Lumina Home",
     appleWebApp: {
       capable: true,
       statusBarStyle: 'default',
-      title: customBrand.name,
+      title: "Lumina Home",
     },
     keywords: customBrand.meta.keywords,
     authors: [{ name: customBrand.meta.publisher }],
@@ -41,8 +41,8 @@ export function buildBrandMetadata(
       type: 'website',
       locale: customBrand.meta.locale,
       url: siteUrl,
-      siteName: customBrand.name,
-      title: `${customBrand.name} | ${customBrand.tagline}`,
+      siteName: "Lumina Home",
+      title: "Lumina Home",
       description: customBrand.description,
       images: [
         {
@@ -55,7 +55,7 @@ export function buildBrandMetadata(
     },
     twitter: {
       card: 'summary_large_image',
-      title: `${customBrand.name} | ${customBrand.tagline}`,
+      title: "Lumina Home",
       description: customBrand.description,
       images: [customBrand.meta.ogImage],
     },
@@ -71,7 +71,11 @@ export function buildBrandMetadata(
       },
     },
     icons: {
-      icon: customBrand.favicon,
+      icon: [
+        { url: '/icon.svg', type: 'image/svg+xml' },
+        { url: '/favicon.ico' },
+      ],
+      apple: '/icon.svg',
     },
   };
 
