@@ -105,7 +105,7 @@ export function OverviewTab({
     const maxCount = Math.max(...counts.map(c => c.count), 1);
     return counts.map(c => ({
       ...c,
-      heightPct: c.count === 0 ? 8 : Math.max(Math.round((c.count / maxCount) * 82), 14)
+      heightPct: c.count === 0 ? 8 : Math.max(Math.round((c.count / maxCount) * 58), 12)
     }));
   }, [categories, products]);
 
@@ -124,7 +124,7 @@ export function OverviewTab({
     return totals.map(t => ({
       month: t.month,
       total: t.total,
-      heightPct: hasAnyOrders && t.total > 0 ? Math.max(Math.round((t.total / maxMonth) * 82), 12) : 6,
+      heightPct: hasAnyOrders && t.total > 0 ? Math.max(Math.round((t.total / maxMonth) * 58), 12) : 6,
       hasData: t.total > 0
     }));
   }, [orders]);
@@ -146,10 +146,8 @@ export function OverviewTab({
       // If desktop cursor is hovering over the niche inventory chart, translate wheel to horizontal scroll
       const isFinePointer = typeof window !== "undefined" && window.matchMedia("(pointer: fine)").matches;
       if (isFinePointer) {
-        // Desktop (cursor): block the general web scroll completely while wheeling over niche bars
+        // Desktop (cursor): block the general web scroll vertically while wheeling over niche bars
         e.preventDefault();
-        e.stopPropagation();
-        e.stopImmediatePropagation();
 
         const lenis = getLenis();
         if (lenis) {
@@ -169,9 +167,41 @@ export function OverviewTab({
         }
       }
     };
+
+    // Horizontal mouse drag-to-scroll
+    let isMouseDown = false;
+    let startX = 0;
+    let startScrollLeft = 0;
+
+    const handleMouseDown = (e: MouseEvent) => {
+      if (e.button !== 0) return;
+      isMouseDown = true;
+      startX = e.clientX;
+      startScrollLeft = el.scrollLeft;
+      el.style.cursor = "grabbing";
+    };
+
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!isMouseDown) return;
+      const dx = e.clientX - startX;
+      el.scrollLeft = startScrollLeft - dx;
+    };
+
+    const handleMouseUp = () => {
+      if (!isMouseDown) return;
+      isMouseDown = false;
+      el.style.cursor = "grab";
+    };
+
     el.addEventListener("wheel", handleWheel, { passive: false });
+    el.addEventListener("mousedown", handleMouseDown);
+    window.addEventListener("mousemove", handleMouseMove);
+    window.addEventListener("mouseup", handleMouseUp);
     return () => {
       el.removeEventListener("wheel", handleWheel);
+      el.removeEventListener("mousedown", handleMouseDown);
+      window.removeEventListener("mousemove", handleMouseMove);
+      window.removeEventListener("mouseup", handleMouseUp);
       if (wheelResumeTimeoutRef.current) clearTimeout(wheelResumeTimeoutRef.current);
     };
   }, []);
@@ -397,14 +427,14 @@ export function OverviewTab({
             orientation="horizontal"
             insetLeft={12}
             insetRight={12}
-            insetBottom={2}
+            insetBottom={0}
           />
           <div 
             ref={nicheChartRef}
             data-lenis-prevent="true"
             onMouseEnter={isAdmin ? handleNicheContainerMouseEnter : undefined}
             onMouseLeave={isAdmin ? handleNicheContainerLeave : handleMonthContainerLeave}
-            className={`flex items-end h-44 pt-7 pb-4.5 px-1 overflow-x-auto overflow-y-hidden select-none cursor-grab active:cursor-grabbing touch-pan-y touch-pan-x [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden ${
+            className={`flex items-end h-52 pt-10 pb-6 px-2 overflow-x-auto overflow-y-hidden select-none cursor-grab active:cursor-grabbing touch-pan-y touch-pan-x [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden ${
               categoryDistributionData.length <= 4 
                 ? "justify-around gap-3" 
                 : categoryDistributionData.length <= 7 
@@ -438,13 +468,21 @@ export function OverviewTab({
                     {/* 1. Bar Area */}
                     <div className="relative w-full flex-1 flex flex-col justify-end items-center px-1">
                       {isHovered && (
-                        <div className="absolute -top-7 z-30 flex flex-col items-center pointer-events-none animate-fade-in">
-                          <div className="bg-gray-950 dark:bg-white text-white dark:text-gray-950 px-2 py-0.5 rounded-lg text-[10px] font-bold shadow-lg border border-white/10 dark:border-gray-800 whitespace-nowrap flex items-center gap-1">
+                        <div className={`absolute -top-8 z-30 flex flex-col pointer-events-none animate-fade-in ${
+                          idx === 0 
+                            ? "left-0 items-start" 
+                            : idx === categoryDistributionData.length - 1 
+                            ? "right-0 items-end" 
+                            : "left-1/2 -translate-x-1/2 items-center"
+                        }`}>
+                          <div className="bg-gray-950 dark:bg-white text-white dark:text-gray-950 px-2.5 py-1 rounded-lg text-[10px] font-bold shadow-lg border border-white/10 dark:border-gray-800 whitespace-nowrap flex items-center gap-1.5">
                             <span className={`w-1.5 h-1.5 rounded-full ${hasItems ? "bg-[#e07a3f]" : "bg-gray-400"}`} />
                             <span>{bar.count}</span>
                             <span className="text-gray-400 dark:text-gray-600 font-normal">({bar.pctOfTotal}%)</span>
                           </div>
-                          <div className="w-1.5 h-1 bg-gray-950 dark:bg-white rotate-45 -mt-0.5" />
+                          <div className={`w-1.5 h-1 bg-gray-950 dark:bg-white rotate-45 -mt-0.5 ${
+                            idx === 0 ? "ml-4" : idx === categoryDistributionData.length - 1 ? "mr-4" : ""
+                          }`} />
                         </div>
                       )}
 
@@ -466,8 +504,8 @@ export function OverviewTab({
                       />
                     </div>
 
-                    {/* 2. Anchored Category Label Area */}
-                    <div className="w-full h-6 pt-1.5 flex items-center justify-center shrink-0 overflow-hidden">
+                    {/* 2. Anchored Category Label Area with 20px bottom clearance for scrollbar */}
+                    <div className="w-full h-6 pt-1.5 mb-5 flex items-center justify-center shrink-0 overflow-hidden">
                       <span 
                         className={`text-[10px] text-center transition-colors block truncate w-full ${
                           isHovered ? "text-gray-950 dark:text-white font-bold" : "text-gray-400 font-medium"
@@ -493,11 +531,19 @@ export function OverviewTab({
                   >
                     <div className="relative w-full flex-1 flex flex-col justify-end items-center px-1">
                       {isHovered && bar.hasData && (
-                        <div className="absolute -top-7 z-30 flex flex-col items-center pointer-events-none animate-fade-in">
-                          <div className="bg-gray-950 text-white dark:text-gray-900 px-2 py-0.5 rounded-lg text-[10px] font-bold shadow-lg dark:shadow-none border border-white/10 whitespace-nowrap">
+                        <div className={`absolute -top-8 z-30 flex flex-col pointer-events-none animate-fade-in ${
+                          idx === 0 
+                            ? "left-0 items-start" 
+                            : idx === monthlySpendData.length - 1 
+                            ? "right-0 items-end" 
+                            : "left-1/2 -translate-x-1/2 items-center"
+                        }`}>
+                          <div className="bg-gray-950 text-white dark:text-gray-900 px-2.5 py-1 rounded-lg text-[10px] font-bold shadow-lg dark:shadow-none border border-white/10 whitespace-nowrap">
                             ${bar.total.toFixed(0)}
                           </div>
-                          <div className="w-1.5 h-1 bg-gray-950 rotate-45 -mt-0.5" />
+                          <div className={`w-1.5 h-1 bg-gray-950 rotate-45 -mt-0.5 ${
+                            idx === 0 ? "ml-4" : idx === monthlySpendData.length - 1 ? "mr-4" : ""
+                          }`} />
                         </div>
                       )}
 
@@ -513,7 +559,7 @@ export function OverviewTab({
                       />
                     </div>
 
-                    <div className="w-full h-6 pt-1.5 flex items-center justify-center shrink-0">
+                    <div className="w-full h-6 pt-1.5 mb-5 flex items-center justify-center shrink-0">
                       <span className={`text-[10px] text-center ${isHovered ? "text-gray-950 font-bold" : "text-gray-400 font-medium"}`}>
                         {bar.month}
                       </span>

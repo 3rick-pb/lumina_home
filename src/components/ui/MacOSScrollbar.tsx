@@ -158,6 +158,7 @@ export function MacOSScrollbar({
   }, [isWindowMode]);
 
   const hideTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const triggerPhysicsRef = useRef<(() => void) | null>(null);
 
   // Cached metrics & physics state
   const stateRef = useRef({
@@ -282,12 +283,13 @@ export function MacOSScrollbar({
       const progress = Math.max(0, Math.min(1, s.scrollPos / Math.max(1, s.maxScroll)));
       
       // Rubber bounce displacement with safe limits (never spills outside the straight track)
-      const clampedBounce = Math.max(-6, Math.min(6, s.bounceY));
+      const maxBounceLimit = isWindowMode ? 14 : 22;
+      const clampedBounce = Math.max(-maxBounceLimit, Math.min(maxBounceLimit, s.bounceY));
       const thumbPos = progress * s.maxPos + clampedBounce;
 
       // Authentic rubber squish & constant-volume bulge during bounce (Efecto Gelatina)
-      const squish = Math.max(0.58, 1 - Math.abs(s.bounceY) * 0.016);
-      const bulge = 1 + (1 - squish) * 0.34;
+      const squish = Math.max(0.42, 1 - Math.abs(s.bounceY) * 0.024);
+      const bulge = 1 + (1 - squish) * 0.52;
 
       if (isHorizontal) {
         thumb.style.transformOrigin =
@@ -305,8 +307,8 @@ export function MacOSScrollbar({
     const stepPhysics = () => {
       s.rafId = 0;
 
-      const springK = 0.17; // Spring tension
-      const springDamping = 0.73; // Spring friction (allows 2-3 satisfying rebound oscillations)
+      const springK = 0.18; // Spring tension
+      const springDamping = 0.72; // Spring friction (allows 2-3 satisfying rebound oscillations)
       const force = -s.bounceY * springK;
       s.bounceYVel = (s.bounceYVel + force) * springDamping;
       s.bounceY += s.bounceYVel;
@@ -327,6 +329,7 @@ export function MacOSScrollbar({
         s.rafId = window.requestAnimationFrame(stepPhysics);
       }
     };
+    triggerPhysicsRef.current = triggerPhysics;
 
     // Fast scroll handler
     const handleScroll = () => {
@@ -370,21 +373,26 @@ export function MacOSScrollbar({
     const handleWheel = (e: WheelEvent) => {
       if (s.maxScroll <= 6) return;
 
+      const currentPos = isWindowMode
+        ? (isHorizontal ? Math.max(0, window.scrollX || document.documentElement.scrollLeft || 0) : Math.max(0, window.scrollY || document.documentElement.scrollTop || 0))
+        : (containerRef?.current ? (isHorizontal ? containerRef.current.scrollLeft : containerRef.current.scrollTop) : s.scrollPos);
+      s.scrollPos = currentPos;
+
       const delta = isHorizontal ? (e.deltaX !== 0 ? e.deltaX : e.deltaY) : e.deltaY;
-      const atStart = s.scrollPos <= 1;
-      const atEnd = s.scrollPos >= s.maxScroll - 2;
+      const atStart = currentPos <= 2;
+      const atEnd = currentPos >= s.maxScroll - 3;
 
       if (atStart && delta < 0) {
-        const pull = Math.min(16, Math.abs(delta) * 0.16);
-        const resistance = 1 / (1 + s.bounceY * 0.08);
-        s.bounceY = Math.min(28, s.bounceY + pull * resistance);
+        const pull = Math.min(22, Math.abs(delta) * 0.28);
+        const resistance = 1 / (1 + Math.abs(s.bounceY) * 0.06);
+        s.bounceY = Math.min(32, s.bounceY + pull * resistance);
         s.bounceYVel = 0;
         showTemporarily();
         triggerPhysics();
       } else if (atEnd && delta > 0) {
-        const pull = Math.min(16, Math.abs(delta) * 0.16);
-        const resistance = 1 / (1 + Math.abs(s.bounceY) * 0.08);
-        s.bounceY = Math.max(-28, s.bounceY - pull * resistance);
+        const pull = Math.min(22, Math.abs(delta) * 0.28);
+        const resistance = 1 / (1 + Math.abs(s.bounceY) * 0.06);
+        s.bounceY = Math.max(-32, s.bounceY - pull * resistance);
         s.bounceYVel = 0;
         showTemporarily();
         triggerPhysics();
@@ -487,9 +495,9 @@ export function MacOSScrollbar({
     // Edge elastic resistance while dragging
     const rawNext = s.dragStartScrollPos + scrollDelta;
     if (rawNext < 0) {
-      s.bounceY = Math.min(24, Math.abs(dClient) * 0.2);
+      s.bounceY = Math.min(28, Math.abs(dClient) * 0.35);
     } else if (rawNext > s.maxScroll) {
-      s.bounceY = Math.max(-24, -Math.abs(dClient) * 0.2);
+      s.bounceY = Math.max(-28, -Math.abs(dClient) * 0.35);
     } else {
       s.bounceY = 0;
     }
@@ -497,12 +505,19 @@ export function MacOSScrollbar({
     // Instantly update thumb DOM to stick to cursor without waiting for scroll event loop
     if (thumbRef.current) {
       const progress = Math.max(0, Math.min(1, s.scrollPos / Math.max(1, s.maxScroll)));
-      const clampedBounce = Math.max(-6, Math.min(6, s.bounceY));
+      const maxBounceLimit = isWindowMode ? 14 : 22;
+      const clampedBounce = Math.max(-maxBounceLimit, Math.min(maxBounceLimit, s.bounceY));
       const thumbPos = progress * s.maxPos + clampedBounce;
+      const squish = Math.max(0.42, 1 - Math.abs(s.bounceY) * 0.024);
+      const bulge = 1 + (1 - squish) * 0.52;
       if (isHorizontal) {
-        thumbRef.current.style.transform = `translate3d(${thumbPos.toFixed(1)}px, 0, 0) scaleX(1) scaleY(1)`;
+        thumbRef.current.style.transformOrigin =
+          s.bounceY > 0 ? "left center" : s.bounceY < 0 ? "right center" : "center center";
+        thumbRef.current.style.transform = `translate3d(${thumbPos.toFixed(1)}px, 0, 0) scaleX(${squish.toFixed(3)}) scaleY(${bulge.toFixed(3)})`;
       } else {
-        thumbRef.current.style.transform = `translate3d(0, ${thumbPos.toFixed(1)}px, 0) scaleX(1) scaleY(1)`;
+        thumbRef.current.style.transformOrigin =
+          s.bounceY > 0 ? "top center" : s.bounceY < 0 ? "bottom center" : "center center";
+        thumbRef.current.style.transform = `translate3d(0, ${thumbPos.toFixed(1)}px, 0) scaleX(${bulge.toFixed(3)}) scaleY(${squish.toFixed(3)})`;
       }
     }
   };
@@ -516,11 +531,9 @@ export function MacOSScrollbar({
       e.currentTarget.releasePointerCapture(e.pointerId);
     } catch {}
     // Trigger bounce release if released past edge
-    if (Math.abs(stateRef.current.bounceY) > 0.5) {
-      stateRef.current.bounceYVel = -stateRef.current.bounceY * 0.3;
-      if (stateRef.current.rafId === 0) {
-        stateRef.current.rafId = window.requestAnimationFrame(() => {});
-      }
+    if (Math.abs(s.bounceY) > 0.5) {
+      s.bounceYVel = -s.bounceY * 0.45;
+      triggerPhysicsRef.current?.();
     }
     showTemporarily();
   };
