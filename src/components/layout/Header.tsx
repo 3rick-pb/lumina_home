@@ -199,7 +199,7 @@ export function Header() {
     <>
       <CartDrawer />
       <header className="fixed top-4 sm:top-6 left-0 right-0 z-50 flex justify-center px-2 sm:px-4 pointer-events-none">
-        <div className="pointer-events-auto flex items-center justify-between p-1.5 sm:p-2 rounded-full bg-white/55 dark:bg-[#16161a]/60 backdrop-blur-3xl border border-white/70 dark:border-white/20 shadow-[0_16px_40px_rgba(0,0,0,0.15),inset_0_1.5px_2px_rgba(255,255,255,0.85),inset_0_-1px_1.5px_rgba(0,0,0,0.04)] dark:shadow-[0_20px_50px_rgba(0,0,0,0.7),inset_0_1.5px_2px_rgba(255,255,255,0.2),inset_0_-1px_1.5px_rgba(0,0,0,0.4)] relative transform-gpu max-w-full">
+        <div className="pointer-events-auto flex items-center justify-between p-1.5 sm:p-2 rounded-full bg-white/50 dark:bg-[#1a1a1c]/80 backdrop-blur-xl border border-white/70 dark:border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.08)] dark:shadow-[0_8px_32px_rgba(0,0,0,0.4)] relative transform-gpu max-w-full">
           
           {/* Logo Section */}
           <Link href="/" className="pl-3 sm:pl-4 pr-3 sm:pr-6 flex items-center gap-1.5 group shrink-0">
