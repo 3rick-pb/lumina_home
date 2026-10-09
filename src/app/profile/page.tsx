@@ -1418,6 +1418,26 @@ const handleConfirmDeleteNiche = async () => {
           type="text"
           value={searchQuery}
           onFocus={() => setIsSearchFocused(true)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              e.preventDefault();
+              if (!isSearchFocused) {
+                setIsSearchFocused(true);
+              } else if (searchQuery.trim().length > 0) {
+                if (filteredOrders.length > 0) {
+                  setActiveTab("orders");
+                  setSelectedOrder(filteredOrders[0]);
+                  setSearchQuery("");
+                  setIsSearchFocused(false);
+                } else if (filteredCatalog.length > 0) {
+                  setActiveTab("catalog");
+                  handleOpenEditProduct(filteredCatalog[0]);
+                  setSearchQuery("");
+                  setIsSearchFocused(false);
+                }
+              }
+            }
+          }}
           onChange={(e) => setSearchQuery(e.target.value)}
           placeholder={isAdmin ? "Buscar pedidos, piezas, clientes o catálogo..." : "Buscar mis pedidos, artículos o marcas..."}
           className="bg-transparent border-none outline-none text-xs w-36 sm:w-48 lg:w-56 focus:w-56 sm:focus:w-72 lg:focus:w-84 font-medium text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 transition-all duration-300 ease-out"
