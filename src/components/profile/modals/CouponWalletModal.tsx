@@ -91,16 +91,10 @@ export function CouponWalletModal({
         className="max-w-md w-full mx-auto p-0 border-0 bg-transparent shadow-none"
       >
         <div
-          className="relative w-full bg-stone-900 text-stone-100 rounded-[2rem] border border-stone-800/80 overflow-hidden"
+          className="relative w-full bg-stone-900 text-stone-100 rounded-[2rem] border border-stone-800/80 overflow-hidden flex flex-col max-h-[85vh]"
         >
-          {/* Scrollable body */}
-          <div
-            ref={scrollContainerRef}
-            data-lenis-prevent="true"
-            className="max-h-[85vh] overflow-y-auto overscroll-contain [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
-          >
-        {/* Header bar */}
-            <div className="flex items-center justify-between p-5 border-b border-stone-800/80 bg-stone-950/40">
+          {/* Header bar */}
+          <div className="flex items-center justify-between p-5 border-b border-stone-800/80 bg-stone-950/40 shrink-0">
               <div className="flex items-center gap-2">
                 <div className="w-8 h-8 rounded-xl bg-amber-500/10 text-amber-400 flex items-center justify-center">
                   <Sparkles className="w-4 h-4" />
@@ -124,7 +118,13 @@ export function CouponWalletModal({
               </button>
             </div>
 
-            <div className="p-5 sm:p-6 space-y-5">
+            {/* Modal Body Container with Relative Isolation */}
+            <div className="relative flex-1 min-h-0 overflow-hidden">
+              <div
+                ref={scrollContainerRef}
+                data-lenis-prevent="true"
+                className="h-full overflow-y-auto overscroll-contain p-5 sm:p-6 space-y-5 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
+              >
               {/* Wallet Pass Visual Card */}
               <div className="relative rounded-2xl bg-gradient-to-br from-[#1b1c1e] via-[#242528] to-[#141517] p-5 border border-stone-700/80 shadow-inner overflow-hidden text-white">
                 {/* Ambient glow */}
@@ -247,12 +247,12 @@ export function CouponWalletModal({
               <p className="text-[10px] text-stone-400 text-center leading-relaxed">
                 El pase almacena el código de barras lineal 1D estandarizado para lectura inmediata sin conexión en cajas registradoras o en el checkout online.
               </p>
+              </div>{/* end scrollable body */}
+              {/* MacOS jelly scrollbar strictly isolated to body */}
+              <MacOSScrollbar containerRef={scrollContainerRef} insetTop={12} insetBottom={12} insetRight={3} />
             </div>
-          </div>{/* end scrollable body */}
-          {/* MacOS jelly scrollbar — strictly bounded at top and bottom to clear rounded-[2rem] corners */}
-          <MacOSScrollbar containerRef={scrollContainerRef} insetTop={28} insetBottom={28} insetRight={3} />
-        </div>
-      </CenterMorphModalContent>
+          </div>
+        </CenterMorphModalContent>
     </CenterMorphModal>
   );
 }
