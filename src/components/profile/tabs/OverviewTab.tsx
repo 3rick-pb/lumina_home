@@ -458,6 +458,7 @@ export function OverviewTab({
             insetLeft={12}
             insetRight={12}
             insetBottom={0}
+            alwaysVisible={categoryDistributionData.length > 6}
           />
           <div 
             ref={nicheChartRef}
@@ -497,25 +498,6 @@ export function OverviewTab({
                   >
                     {/* 1. Bar Area */}
                     <div className="relative w-full flex-1 flex flex-col justify-end items-center px-1">
-                      {isHovered && (
-                        <div className={`absolute -top-8 z-30 flex flex-col pointer-events-none animate-fade-in ${
-                          idx === 0 
-                            ? "left-0 items-start" 
-                            : idx === categoryDistributionData.length - 1 
-                            ? "right-0 items-end" 
-                            : "left-1/2 -translate-x-1/2 items-center"
-                        }`}>
-                          <div className="bg-gray-950 dark:bg-white text-white dark:text-gray-950 px-2.5 py-1 rounded-lg text-[10px] font-bold shadow-lg border border-white/10 dark:border-gray-800 whitespace-nowrap flex items-center gap-1.5">
-                            <span className={`w-1.5 h-1.5 rounded-full ${hasItems ? "bg-[#e07a3f]" : "bg-gray-400"}`} />
-                            <span>{bar.count}</span>
-                            <span className="text-gray-400 dark:text-gray-600 font-normal">({bar.pctOfTotal}%)</span>
-                          </div>
-                          <div className={`w-1.5 h-1 bg-gray-950 dark:bg-white rotate-45 -mt-0.5 ${
-                            idx === 0 ? "ml-4" : idx === categoryDistributionData.length - 1 ? "mr-4" : ""
-                          }`} />
-                        </div>
-                      )}
-
                       {!isHovered && (
                         <span className="text-[10px] font-bold text-gray-400 mb-1 opacity-60 group-hover:opacity-100 transition-opacity">
                           {bar.count}
@@ -523,7 +505,7 @@ export function OverviewTab({
                       )}
 
                       <div 
-                        className={`w-full rounded-2xl transition-all duration-200 ${
+                        className={`w-full rounded-2xl transition-all duration-200 relative ${
                           hasItems 
                             ? isHovered 
                             ? "bg-gradient-to-t from-[#c25e24] via-[#e07a3f] to-[#f59e0b] shadow-md shadow-[#e07a3f]/30 ring-2 ring-[#e07a3f]/40" 
@@ -531,7 +513,26 @@ export function OverviewTab({
                             : "bg-gray-200/90 dark:bg-[#48484a]/90"
                         }`} 
                         style={{ height: `${bar.heightPct}%` }}
-                      />
+                      >
+                        {isHovered && (
+                          <div className={`absolute -top-8.5 z-30 flex flex-col pointer-events-none animate-fade-in ${
+                            idx === 0 
+                              ? "left-0 items-start" 
+                              : idx === categoryDistributionData.length - 1 
+                              ? "right-0 items-end" 
+                              : "left-1/2 -translate-x-1/2 items-center"
+                          }`}>
+                            <div className="bg-gray-950 dark:bg-white text-white dark:text-gray-950 px-2.5 py-1 rounded-lg text-[10px] font-bold shadow-lg border border-white/10 dark:border-gray-800 whitespace-nowrap flex items-center gap-1.5">
+                              <span className={`w-1.5 h-1.5 rounded-full ${hasItems ? "bg-[#e07a3f]" : "bg-gray-400"}`} />
+                              <span>{bar.count}</span>
+                              <span className="text-gray-400 dark:text-gray-600 font-normal">({bar.pctOfTotal}%)</span>
+                            </div>
+                            <div className={`w-1.5 h-1 bg-gray-950 dark:bg-white rotate-45 -mt-0.5 ${
+                              idx === 0 ? "ml-4" : idx === categoryDistributionData.length - 1 ? "mr-4" : ""
+                            }`} />
+                          </div>
+                        )}
+                      </div>
                     </div>
 
                     {/* 2. Anchored Category Label Area with bottom clearance for scrollbar */}
@@ -560,25 +561,8 @@ export function OverviewTab({
                     title={`${bar.month}: $${bar.total.toFixed(2)}`}
                   >
                     <div className="relative w-full flex-1 flex flex-col justify-end items-center px-1">
-                      {isHovered && bar.hasData && (
-                        <div className={`absolute -top-8 z-30 flex flex-col pointer-events-none animate-fade-in ${
-                          idx === 0 
-                            ? "left-0 items-start" 
-                            : idx === monthlySpendData.length - 1 
-                            ? "right-0 items-end" 
-                            : "left-1/2 -translate-x-1/2 items-center"
-                        }`}>
-                          <div className="bg-gray-950 text-white dark:text-gray-900 px-2.5 py-1 rounded-lg text-[10px] font-bold shadow-lg dark:shadow-none border border-white/10 whitespace-nowrap">
-                            ${bar.total.toFixed(0)}
-                          </div>
-                          <div className={`w-1.5 h-1 bg-gray-950 rotate-45 -mt-0.5 ${
-                            idx === 0 ? "ml-4" : idx === monthlySpendData.length - 1 ? "mr-4" : ""
-                          }`} />
-                        </div>
-                      )}
-
                       <div 
-                        className={`w-full rounded-2xl transition-all duration-300 ${
+                        className={`w-full rounded-2xl transition-all duration-300 relative ${
                           bar.hasData 
                             ? isHovered 
                             ? "bg-gradient-to-t from-[#c25e24] via-[#e07a3f] to-[#f59e0b] shadow-md dark:shadow-none shadow-[#e07a3f]/30" 
@@ -586,7 +570,24 @@ export function OverviewTab({
                             : "bg-gray-200 dark:bg-[#48484a]"
                         }`} 
                         style={{ height: `${bar.heightPct}%` }}
-                      />
+                      >
+                        {isHovered && bar.hasData && (
+                          <div className={`absolute -top-8.5 z-30 flex flex-col pointer-events-none animate-fade-in ${
+                            idx === 0 
+                              ? "left-0 items-start" 
+                              : idx === monthlySpendData.length - 1 
+                              ? "right-0 items-end" 
+                              : "left-1/2 -translate-x-1/2 items-center"
+                          }`}>
+                            <div className="bg-gray-950 text-white dark:text-gray-900 px-2.5 py-1 rounded-lg text-[10px] font-bold shadow-lg dark:shadow-none border border-white/10 whitespace-nowrap">
+                              ${bar.total.toFixed(0)}
+                            </div>
+                            <div className={`w-1.5 h-1 bg-gray-950 rotate-45 -mt-0.5 ${
+                              idx === 0 ? "ml-4" : idx === monthlySpendData.length - 1 ? "mr-4" : ""
+                            }`} />
+                          </div>
+                        )}
+                      </div>
                     </div>
 
                     <div className="w-full h-5 mb-2.5 flex items-center justify-center shrink-0">

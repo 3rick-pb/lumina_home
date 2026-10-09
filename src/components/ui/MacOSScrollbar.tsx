@@ -33,6 +33,8 @@ export interface MacOSScrollbarProps {
   insetLeft?: number;
   /** Direct right limit override (px) */
   insetRight?: number;
+  /** If true, the scrollbar remains perpetually visible instead of auto-hiding */
+  alwaysVisible?: boolean;
   className?: string;
   style?: React.CSSProperties;
 }
@@ -56,6 +58,7 @@ export function MacOSScrollbar({
   insetBottom,
   insetLeft,
   insetRight,
+  alwaysVisible = false,
   className,
   style,
 }: MacOSScrollbarProps = {}) {
@@ -195,6 +198,59 @@ export function MacOSScrollbar({
     }, 1100);
   }, [isHovered]);
 
+  // Fast GPU transform update without layout thrashing — EFECTO GELATINA (squish & bulge with HARD BOUNDS)
+  const updateThumbDOM = useCallback(() => {
+    const thumb = thumbRef.current;
+    if (!thumb) return;
+    const s = stateRef.current;
+
+    if (s.maxScroll <= 6) {
+      thumb.style.opacity = "0";
+      return;
+    }
+
+    const progress = Math.max(0, Math.min(1, s.scrollPos / Math.max(1, s.maxScroll)));
+    let thumbPos = progress * s.maxPos;
+    let squish = 1;
+    let bulge = 1;
+    let origin = "center center";
+
+    // Detect interaction at START (strictly locked to start edge; never spills < 0)
+    if (progress <= 0.002 || (s.scrollPos <= 1 && s.bounceY > 0)) {
+      thumbPos = 0;
+      origin = isHorizontal ? "left center" : "top center";
+      if (s.bounceY > 0) {
+        squish = Math.max(0.55, 1 - s.bounceY * 0.022);
+        bulge = 1 + (1 - squish) * 0.45;
+      }
+    }
+    // Detect interaction at END (strictly locked to end edge; never spills > maxPos)
+    else if (progress >= 0.998 || (s.scrollPos >= s.maxScroll - 2 && s.bounceY < 0)) {
+      thumbPos = s.maxPos;
+      origin = isHorizontal ? "right center" : "bottom center";
+      if (s.bounceY < 0) {
+        const comp = Math.abs(s.bounceY);
+        squish = Math.max(0.55, 1 - comp * 0.022);
+        bulge = 1 + (1 - squish) * 0.45;
+      }
+    }
+    // Middle of track: purely smooth translation, zero squish, centered origin
+    else {
+      thumbPos = Math.max(0, Math.min(s.maxPos, thumbPos));
+      squish = 1;
+      bulge = 1;
+      origin = "center center";
+    }
+
+    thumb.style.transformOrigin = origin;
+    if (isHorizontal) {
+      thumb.style.transform = `translate3d(${thumbPos.toFixed(1)}px, 0, 0) scaleX(${squish.toFixed(3)}) scaleY(${bulge.toFixed(3)})`;
+    } else {
+      thumb.style.transform = `translate3d(0, ${thumbPos.toFixed(1)}px, 0) scaleX(${bulge.toFixed(3)}) scaleY(${squish.toFixed(3)})`;
+    }
+    thumb.style.opacity = "";
+  }, [isHorizontal]);
+
   useEffect(() => {
     if (typeof window === "undefined" || !isDesktopDevice) return;
 
@@ -275,58 +331,6 @@ export function MacOSScrollbar({
       }
     };
 
-    // Fast GPU transform update without layout thrashing — EFECTO GELATINA (squish & bulge with HARD BOUNDS)
-    const updateThumbDOM = () => {
-      const thumb = thumbRef.current;
-      if (!thumb) return;
-
-      if (s.maxScroll <= 6) {
-        thumb.style.opacity = "0";
-        return;
-      }
-
-      const progress = Math.max(0, Math.min(1, s.scrollPos / Math.max(1, s.maxScroll)));
-      let thumbPos = progress * s.maxPos;
-      let squish = 1;
-      let bulge = 1;
-      let origin = "center center";
-
-      // Detect interaction at START (strictly locked to start edge; never spills < 0)
-      if (progress <= 0.002 || (s.scrollPos <= 1 && s.bounceY > 0)) {
-        thumbPos = 0;
-        origin = isHorizontal ? "left center" : "top center";
-        if (s.bounceY > 0) {
-          squish = Math.max(0.55, 1 - s.bounceY * 0.022);
-          bulge = 1 + (1 - squish) * 0.45;
-        }
-      }
-      // Detect interaction at END (strictly locked to end edge; never spills > maxPos)
-      else if (progress >= 0.998 || (s.scrollPos >= s.maxScroll - 2 && s.bounceY < 0)) {
-        thumbPos = s.maxPos;
-        origin = isHorizontal ? "right center" : "bottom center";
-        if (s.bounceY < 0) {
-          const comp = Math.abs(s.bounceY);
-          squish = Math.max(0.55, 1 - comp * 0.022);
-          bulge = 1 + (1 - squish) * 0.45;
-        }
-      }
-      // Middle of track: purely smooth translation, zero squish, centered origin
-      else {
-        thumbPos = Math.max(0, Math.min(s.maxPos, thumbPos));
-        squish = 1;
-        bulge = 1;
-        origin = "center center";
-      }
-
-      thumb.style.transformOrigin = origin;
-      if (isHorizontal) {
-        thumb.style.transform = `translate3d(${thumbPos.toFixed(1)}px, 0, 0) scaleX(${squish.toFixed(3)}) scaleY(${bulge.toFixed(3)})`;
-      } else {
-        thumb.style.transform = `translate3d(0, ${thumbPos.toFixed(1)}px, 0) scaleX(${bulge.toFixed(3)}) scaleY(${squish.toFixed(3)})`;
-      }
-      thumb.style.opacity = "";
-    };
-
     // Critically-damped Hooke's Law spring oscillation loop for silky smooth rebound
     const stepPhysics = () => {
       s.rafId = 0;
@@ -362,28 +366,42 @@ export function MacOSScrollbar({
       let currentPos = 0;
 
       if (isWindowMode) {
+        const doc = document.documentElement;
+        const body = document.body;
+        const currentScrollSize = isHorizontal
+          ? Math.max(doc.scrollWidth, body ? body.scrollWidth : 0)
+          : Math.max(doc.scrollHeight, body ? body.scrollHeight : 0);
+        if (Math.abs(currentScrollSize - s.scrollSize) > 4) {
+          measureMetrics();
+        }
         currentPos = isHorizontal
-          ? Math.max(0, window.scrollX || document.documentElement.scrollLeft || 0)
-          : Math.max(0, window.scrollY || document.documentElement.scrollTop || 0);
+          ? Math.max(0, window.scrollX || doc.scrollLeft || 0)
+          : Math.max(0, window.scrollY || doc.scrollTop || 0);
       } else {
         const el = containerRef?.current;
-        currentPos = isHorizontal
-          ? Math.max(0, el?.scrollLeft || 0)
-          : Math.max(0, el?.scrollTop || 0);
+        if (el) {
+          const currentScrollSize = isHorizontal ? el.scrollWidth : el.scrollHeight;
+          if (Math.abs(currentScrollSize - s.scrollSize) > 4) {
+            measureMetrics();
+          }
+          currentPos = isHorizontal
+            ? Math.max(0, el.scrollLeft)
+            : Math.max(0, el.scrollTop);
+        }
       }
 
       s.scrollPos = currentPos;
       const delta = currentPos - prevPos;
 
       // Detect high-speed slam into START rail
-      if (currentPos <= 0 && prevPos > 1) {
-        const impact = Math.min(24, Math.abs(delta) * 0.4);
+      if (currentPos <= 0 && prevPos > 2) {
+        const impact = Math.min(18, Math.abs(delta) * 0.35);
         s.bounceYVel = impact;
         triggerPhysics();
       }
       // Detect high-speed slam into END rail
-      else if (currentPos >= s.maxScroll && prevPos < s.maxScroll - 1 && s.maxScroll > 6) {
-        const impact = Math.min(24, Math.abs(delta) * 0.4);
+      else if (currentPos >= s.maxScroll && prevPos < s.maxScroll - 2 && s.maxScroll > 6) {
+        const impact = Math.min(18, Math.abs(delta) * 0.35);
         s.bounceYVel = -impact;
         triggerPhysics();
       }
@@ -449,6 +467,7 @@ export function MacOSScrollbar({
       });
       if (isWindowMode) {
         ro.observe(document.documentElement);
+        if (document.body) ro.observe(document.body);
       } else if (capturedTargetEl) {
         ro.observe(capturedTargetEl);
       }
@@ -466,7 +485,7 @@ export function MacOSScrollbar({
       if (s.rafId) window.cancelAnimationFrame(s.rafId);
       if (hideTimeoutRef.current) clearTimeout(hideTimeoutRef.current);
     };
-  }, [showTemporarily, isDesktopDevice, isWindowMode, isHorizontal, containerRef]);
+  }, [showTemporarily, isDesktopDevice, isWindowMode, isHorizontal, containerRef, updateThumbDOM]);
 
   // Pointer dragging on the thumb
   const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
@@ -519,31 +538,15 @@ export function MacOSScrollbar({
     // Edge elastic resistance while dragging
     const rawNext = s.dragStartScrollPos + scrollDelta;
     if (rawNext < 0) {
-      s.bounceY = Math.min(28, Math.abs(dClient) * 0.35);
+      s.bounceY = Math.min(22, Math.abs(dClient) * 0.25);
     } else if (rawNext > s.maxScroll) {
-      s.bounceY = Math.max(-28, -Math.abs(dClient) * 0.35);
+      s.bounceY = Math.max(-22, -Math.abs(dClient) * 0.25);
     } else {
       s.bounceY = 0;
     }
 
-    // Instantly update thumb DOM to stick to cursor without waiting for scroll event loop
-    if (thumbRef.current) {
-      const progress = Math.max(0, Math.min(1, s.scrollPos / Math.max(1, s.maxScroll)));
-      const maxBounceLimit = isWindowMode ? 14 : 22;
-      const clampedBounce = Math.max(-maxBounceLimit, Math.min(maxBounceLimit, s.bounceY));
-      const thumbPos = progress * s.maxPos + clampedBounce;
-      const squish = Math.max(0.42, 1 - Math.abs(s.bounceY) * 0.024);
-      const bulge = 1 + (1 - squish) * 0.52;
-      if (isHorizontal) {
-        thumbRef.current.style.transformOrigin =
-          s.bounceY > 0 ? "left center" : s.bounceY < 0 ? "right center" : "center center";
-        thumbRef.current.style.transform = `translate3d(${thumbPos.toFixed(1)}px, 0, 0) scaleX(${squish.toFixed(3)}) scaleY(${bulge.toFixed(3)})`;
-      } else {
-        thumbRef.current.style.transformOrigin =
-          s.bounceY > 0 ? "top center" : s.bounceY < 0 ? "bottom center" : "center center";
-        thumbRef.current.style.transform = `translate3d(0, ${thumbPos.toFixed(1)}px, 0) scaleX(${bulge.toFixed(3)}) scaleY(${squish.toFixed(3)})`;
-      }
-    }
+    // Instantly update thumb DOM to stick to cursor with guaranteed hard limits
+    updateThumbDOM();
   };
 
   const handlePointerUp = (e: React.PointerEvent<HTMLDivElement>) => {
@@ -607,8 +610,8 @@ export function MacOSScrollbar({
   if (!isDesktopDevice) return null;
 
   const showOverlay = isWindowMode
-    ? !isScrollLocked && hasScrollableContent && (isVisible || isHovered || isDragging)
-    : hasScrollableContent && (isVisible || isHovered || isDragging);
+    ? !isScrollLocked && hasScrollableContent && (alwaysVisible || isVisible || isHovered || isDragging)
+    : hasScrollableContent && (alwaysVisible || isVisible || isHovered || isDragging);
 
   const canAcceptPointerEvents = isWindowMode
     ? !isScrollLocked && hasScrollableContent
@@ -712,6 +715,7 @@ export interface MacOSScrollAreaProps extends React.HTMLAttributes<HTMLDivElemen
   inset?: number | MacOSScrollbarInsets;
   insetTop?: number;
   insetBottom?: number;
+  alwaysVisible?: boolean;
   orientation?: "vertical" | "horizontal";
 }
 
@@ -729,6 +733,7 @@ export const MacOSScrollArea = React.forwardRef<HTMLDivElement, MacOSScrollAreaP
       inset = 18,
       insetTop,
       insetBottom,
+      alwaysVisible = false,
       orientation = "vertical",
       ...props
     },
@@ -759,6 +764,7 @@ export const MacOSScrollArea = React.forwardRef<HTMLDivElement, MacOSScrollAreaP
           inset={inset}
           insetTop={insetTop}
           insetBottom={insetBottom}
+          alwaysVisible={alwaysVisible}
         />
       </div>
     );
