@@ -19,6 +19,7 @@ import { useUserStore, Order } from "@/lib/userStore";
 import { useCatalogStore, CatalogProduct } from "@/lib/catalogStore";
 import { DROPI_HEADERS, DROPI_ECUADOR_REFERENCE } from "@/lib/dropiEcuadorData";
 import { useBrand } from "@/core/hooks/useBrand";
+import { formatOrderDate, formatOrderTime } from "@/lib/dateUtils";
 
 export const NORMAL_ORDER_HEADERS = [
   "Nº",
@@ -405,8 +406,8 @@ export function ExcelExportRadialMenu({ onOpenChange }: ExcelExportRadialMenuPro
         return {
           "Nº": idx + 1,
           "ID Pedido": ord.id,
-          "Fecha": ord.date || (ord.createdAt ? new Date(ord.createdAt).toLocaleDateString("es-ES") : "Reciente"),
-          "Hora": ord.time || (ord.createdAt ? new Date(ord.createdAt).toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" }) : ""),
+          "Fecha": formatOrderDate(ord),
+          "Hora": formatOrderTime(ord),
           "Estado Actual": ord.status, // Procesando / Enviado / Entregado
           "Nº Seguimiento / Guía": ord.trackingNumber || "Pendiente de Despacho",
           "Cliente": ord.customerName || "Cliente",

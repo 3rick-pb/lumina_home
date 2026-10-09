@@ -1543,8 +1543,8 @@ export const useUserStore = create<UserState>((set, get) => ({
       customerEmail: order.customerEmail || order.shippingAddress?.email || user?.email || 'cliente@lumina.com',
       customerIdNumber: order.customerIdNumber || order.shippingAddress?.idNumber,
       customerPhone: order.customerPhone || order.shippingAddress?.phone,
-      recipient: order.recipient || order.shippingAddress?.recipient || order.customerName || user?.name || 'Cliente',
-      time: order.time || new Date().toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }),
+      date: order.date || new Date().toLocaleDateString('es-EC', { year: 'numeric', month: 'short', day: 'numeric' }),
+      time: order.time || new Date().toLocaleTimeString('es-EC', { hour: '2-digit', minute: '2-digit', hour12: true }),
       createdAt: order.createdAt || new Date().toISOString()
     };
     const nextOrders = [enrichedOrder, ...get().orders];

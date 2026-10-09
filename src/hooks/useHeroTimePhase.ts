@@ -114,14 +114,17 @@ export function useHeroTimePhase() {
       }
     } catch {}
 
-    // Interval to refresh time every 30 seconds
-    const interval = setInterval(() => {
-      const cur = new Date();
-      setAutoPhaseId(getPhaseForTime(cur));
-      setFormattedTime(formatClockTime(cur));
-    }, 30000);
-
-    return () => clearInterval(interval);
+    // Zero background polling loop: evaluate local device time once on mount
+    // and optionally re-sync only when user returns to the tab (visibilitychange)
+    const handleVisibility = () => {
+      if (document.visibilityState === "visible") {
+        const cur = new Date();
+        setAutoPhaseId(getPhaseForTime(cur));
+        setFormattedTime(formatClockTime(cur));
+      }
+    };
+    document.addEventListener("visibilitychange", handleVisibility);
+    return () => document.removeEventListener("visibilitychange", handleVisibility);
   }, []);
 
   const isAuto = manualPhaseId === null;

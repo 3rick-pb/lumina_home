@@ -1,25 +1,13 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
   <defs>
     <style>
-      :root {
-        --bg-color: #080C26;
-        --border-color: rgba(255, 228, 209, 0.4);
-        --fg-color: #FFE4D1;
-      }
-      @media (prefers-color-scheme: light) {
-        :root {
-          --bg-color: #FFE4D1;
-          --border-color: #F5C2A1;
-          --fg-color: #080C26;
-        }
-      }
-      .bg { fill: var(--bg-color); stroke: var(--border-color); stroke-width: 14; rx: 110; }
-      .emblem { fill: var(--fg-color); }
+      .bg { fill: #FFE4D1; stroke: #F5C2A1; stroke-width: 14; rx: 110; }
+      .emblem { fill: #080C26; }
     </style>
   </defs>
-  <!-- Squircle container matching profile top-left button -->
+  <!-- Squircle container in Light Mode: Soft Melon / Champagne Peach with peach border -->
   <rect x="14" y="14" width="484" height="484" class="bg" />
-  <!-- Exact Lumina Twin Interlocking Diamond Arches from Mi Perfil -->
+  <!-- Exact Lumina Twin Interlocking Diamond Arches from Mi Perfil in Obsidian #080C26 -->
   <g transform="translate(68, 92) scale(0.94)">
     <path
       class="emblem"

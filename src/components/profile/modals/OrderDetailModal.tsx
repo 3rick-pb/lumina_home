@@ -11,6 +11,7 @@ import { GoogleWalletIcon } from "@/components/ui/GoogleWalletButton";
 import { supabase } from "@/lib/supabase";
 import { MacOSScrollbar } from "@/components/ui/MacOSScrollbar";
 import { LuminaOfficialInvoiceModal } from "./LuminaOfficialInvoiceModal";
+import { formatOrderDate, formatOrderTime } from "@/lib/dateUtils";
 
 interface EmailNotificationLog {
   id: string;
@@ -300,12 +301,14 @@ export function OrderDetailModal({
             <div className="mt-2 pt-2 border-t border-gray-200/60 dark:border-white/10/60 text-[11px] text-gray-600 dark:text-gray-400 space-y-1">
               <div className="flex items-center justify-between">
                 <span className="text-[10px] text-gray-400">Fecha:</span>
-                <span className="font-semibold text-gray-800 dark:text-gray-200">{activeOrder.date}</span>
+                <span className="font-semibold text-gray-800 dark:text-gray-200">
+                  {formatOrderDate(activeOrder.createdAt || activeOrder.date)}
+                </span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-[10px] text-gray-400">Hora:</span>
-                <span className="font-semibold text-gray-800 dark:text-gray-200">
-                  {activeOrder.time || (activeOrder.createdAt ? new Date(activeOrder.createdAt).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }) : "12:00")}
+                <span className="font-semibold text-gray-800 dark:text-gray-200 font-mono">
+                  {formatOrderTime(activeOrder.createdAt, activeOrder.time)}
                 </span>
               </div>
             </div>

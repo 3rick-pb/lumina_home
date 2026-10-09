@@ -169,8 +169,8 @@ export async function POST(request: Request) {
         country: 'Ecuador'
       } : undefined,
       paymentMethod: cardDetail,
-      date: now.toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: 'numeric' }),
-      time: now.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }),
+      date: now.toLocaleDateString('es-EC', { timeZone: 'America/Guayaquil', year: 'numeric', month: 'short', day: 'numeric' }),
+      time: now.toLocaleTimeString('es-EC', { timeZone: 'America/Guayaquil', hour: '2-digit', minute: '2-digit', hour12: true }),
       createdAt: now.toISOString(),
       status: 'Procesando',
       trackingNumber: undefined,

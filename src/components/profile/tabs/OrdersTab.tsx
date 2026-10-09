@@ -12,6 +12,7 @@ import { normalizeSearchText } from "@/lib/utils";
 import { CloudSyncStatus } from "../CloudSyncStatus";
 import { BlobatarAvatar } from "@/components/ui/BlobatarAvatar";
 import { BeUIOrderStatusSelector, type LuminaOrderStatus } from "@/components/ui/BeUIControls";
+import { formatOrderDate, formatOrderTime } from "@/lib/dateUtils";
 
 interface OrdersTabProps {
   isAdmin: boolean;
@@ -408,8 +409,12 @@ export function OrdersTab({
                       />
                     </td>
                     <td className="py-4 px-3 text-gray-500 dark:text-gray-400">
-                      <span className="block font-medium text-gray-800 dark:text-gray-200">{ord.date}</span>
-                      {ord.time && <span className="block text-[10px] text-gray-400">{ord.time}</span>}
+                      <span className="block font-medium text-gray-800 dark:text-gray-200">
+                        {formatOrderDate(ord.createdAt || ord.date)}
+                      </span>
+                      <span className="block text-[10px] text-gray-400 font-mono">
+                        {formatOrderTime(ord.createdAt, ord.time)}
+                      </span>
                     </td>
                     <td className="py-4 pr-2 pl-3 text-right whitespace-nowrap">
                       <div className="inline-flex items-center justify-end gap-2 ml-auto">

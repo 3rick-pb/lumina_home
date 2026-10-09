@@ -20,6 +20,7 @@ import { LuminaCardFolderItem } from "@/components/ui/CardFolder";
 import { BeUIOrderStatusSelector, type LuminaOrderStatus } from "@/components/ui/BeUIControls";
 import { getLenis } from "@/components/providers/SmoothScrollProvider";
 import { MacOSScrollbar } from "@/components/ui/MacOSScrollbar";
+import { formatOrderDate, formatOrderTime } from "@/lib/dateUtils";
 
 interface OverviewTabProps {
   isAdmin: boolean;
@@ -841,8 +842,12 @@ export function OverviewTab({
                       />
                     </td>
                     <td className="py-3.5 px-2 text-gray-500 dark:text-gray-400">
-                      <span className="block font-medium text-gray-800 dark:text-gray-200">{ord.date || "Fecha no disp."}</span>
-                      {ord.time && <span className="block text-[10px] text-gray-400">{ord.time}</span>}
+                      <span className="block font-medium text-gray-800 dark:text-gray-200">
+                        {formatOrderDate(ord.createdAt || ord.date)}
+                      </span>
+                      <span className="block text-[10px] text-gray-400 font-mono">
+                        {formatOrderTime(ord.createdAt, ord.time)}
+                      </span>
                     </td>
                     <td className="py-3.5 px-2 text-right">
                       <button 
