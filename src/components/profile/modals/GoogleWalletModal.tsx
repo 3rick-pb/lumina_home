@@ -280,7 +280,7 @@ export function GoogleWalletModal({
               </div>
             </div>
           </motion.div>
-          <MacOSScrollbar containerRef={scrollContainerRef} />
+          <MacOSScrollbar containerRef={scrollContainerRef} insetTop={28} insetBottom={28} insetRight={3} />
         </div>
       )}
     </AnimatePresence>,

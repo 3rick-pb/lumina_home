@@ -407,7 +407,7 @@ export function CouponAnalyticsModal({
             </div>
 
             {/* Authentic macOS Sequoia Floating Overlay Scrollbar with Hooke's Law Rebound Physics */}
-            <MacOSScrollbar containerRef={scrollContainerRef} insetTop={80} insetBottom={60} />
+            <MacOSScrollbar containerRef={scrollContainerRef} insetTop={80} insetBottom={64} insetRight={3} />
         </div>
       </CenterMorphModalContent>
     </CenterMorphModal>

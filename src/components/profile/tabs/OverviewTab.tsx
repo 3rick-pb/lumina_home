@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useMemo, useState, useRef, useEffect } from "react";
+import React, { useMemo, useState, useRef, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { 
   ShoppingBag, 
@@ -129,18 +129,61 @@ export function OverviewTab({
     }));
   }, [orders]);
 
-  // Interactive Chart Hover States
+  // Interactive Chart Hover & Tooltip States
   const [hoveredNicheIdx, setHoveredNicheIdx] = useState<number | null>(null);
   const [hoveredMonthIdx, setHoveredMonthIdx] = useState<number | null>(null);
   const nicheHoverTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const monthHoverTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const wheelResumeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Ref for non-passive wheel listener on the niche chart scroll container
+  // Responsive floating tooltip state (boundary-aware & clamped)
+  const [tooltipState, setTooltipState] = useState<{
+    idx: number;
+    x: number;
+    caretOffset: number;
+    isVisible: boolean;
+  } | null>(null);
+
+  const nicheCardRef = useRef<HTMLDivElement>(null);
+  const chartStageRef = useRef<HTMLDivElement>(null);
   const nicheChartRef = useRef<HTMLDivElement>(null);
+  const barElementsRef = useRef<(HTMLDivElement | null)[]>([]);
+  const isInsideNicheRef = useRef(false);
+
+  // Calculate clamped responsive tooltip position
+  const updateTooltipPosition = useCallback((idx: number, barElement?: HTMLElement | null) => {
+    const stage = chartStageRef.current;
+    const barEl = barElement || barElementsRef.current[idx];
+    const chartEl = nicheChartRef.current;
+    if (!stage || !barEl || !chartEl) return;
+
+    const stageRect = stage.getBoundingClientRect();
+    const barRect = barEl.getBoundingClientRect();
+    const chartRect = chartEl.getBoundingClientRect();
+
+    // The bar must be within visible horizontal bounds of the chart scroll window
+    const isBarVisible = barRect.right > chartRect.left + 4 && barRect.left < chartRect.right - 4;
+
+    // Center of bar relative to stage
+    const barCenterX = barRect.left + barRect.width / 2 - stageRect.left;
+
+    // Responsive safety bounds for tooltip badge
+    const badgeHalfWidth = 68; // ~136px badge width
+    const minX = badgeHalfWidth + 8;
+    const maxX = Math.max(minX, stageRect.width - badgeHalfWidth - 8);
+    const clampedX = Math.max(minX, Math.min(maxX, barCenterX));
+    const caretOffset = Math.max(-badgeHalfWidth + 14, Math.min(badgeHalfWidth - 14, barCenterX - clampedX));
+
+    setTooltipState({
+      idx,
+      x: clampedX,
+      caretOffset,
+      isVisible: isBarVisible,
+    });
+  }, []);
 
   useEffect(() => {
     const el = nicheChartRef.current;
+    const cardEl = nicheCardRef.current;
     if (!el) return;
 
     let targetScrollLeft = el.scrollLeft;
@@ -160,19 +203,15 @@ export function OverviewTab({
     };
 
     const handleWheel = (e: WheelEvent) => {
-      // If desktop cursor is hovering over the niche inventory chart, translate wheel to smooth horizontal scroll
       const isFinePointer = typeof window !== "undefined" && window.matchMedia("(pointer: fine)").matches;
       if (isFinePointer) {
-        // Desktop (cursor): block the general web scroll vertically while wheeling over niche bars
+        // ALWAYS block general page vertical scroll while cursor is inside Inventario por Nicho
         e.preventDefault();
+        e.stopPropagation();
 
         const lenis = getLenis();
         if (lenis) {
           lenis.stop();
-          if (wheelResumeTimeoutRef.current) clearTimeout(wheelResumeTimeoutRef.current);
-          wheelResumeTimeoutRef.current = setTimeout(() => {
-            lenis.start();
-          }, 350);
         }
 
         const delta = e.deltaY !== 0 ? e.deltaY : e.deltaX;
@@ -183,7 +222,6 @@ export function OverviewTab({
           smoothRafId = requestAnimationFrame(smoothScrollTick);
         }
       } else {
-        // Touch or generic device: allow natural vertical pass-through, capture horizontal
         if (Math.abs(e.deltaX) > Math.abs(e.deltaY) || e.shiftKey) {
           e.preventDefault();
           el.scrollLeft += e.deltaX || e.deltaY;
@@ -222,36 +260,63 @@ export function OverviewTab({
       el.style.cursor = "grab";
     };
 
-    el.addEventListener("wheel", handleWheel, { passive: false });
+    const targetWheelEl = cardEl || el;
+    targetWheelEl.addEventListener("wheel", handleWheel, { passive: false });
     el.addEventListener("mousedown", handleMouseDown);
     window.addEventListener("mousemove", handleMouseMove);
     window.addEventListener("mouseup", handleMouseUp);
+
     return () => {
-      el.removeEventListener("wheel", handleWheel);
+      targetWheelEl.removeEventListener("wheel", handleWheel);
       el.removeEventListener("mousedown", handleMouseDown);
       window.removeEventListener("mousemove", handleMouseMove);
       window.removeEventListener("mouseup", handleMouseUp);
       if (smoothRafId) cancelAnimationFrame(smoothRafId);
-      if (wheelResumeTimeoutRef.current) clearTimeout(wheelResumeTimeoutRef.current);
+      // Ensure Lenis resumes if unmounted while cursor was inside card
+      getLenis()?.start();
     };
   }, []);
 
-  const handleNicheMouseEnter = (idx: number) => {
+  // Update floating tooltip position when chart scrolls or window resizes
+  useEffect(() => {
+    const el = nicheChartRef.current;
+    if (!el) return;
+
+    const onScroll = () => {
+      if (hoveredNicheIdx !== null) {
+        updateTooltipPosition(hoveredNicheIdx);
+      } else if (hoveredMonthIdx !== null) {
+        updateTooltipPosition(hoveredMonthIdx);
+      }
+    };
+
+    el.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("resize", onScroll);
+    return () => {
+      el.removeEventListener("scroll", onScroll);
+      window.removeEventListener("resize", onScroll);
+    };
+  }, [hoveredNicheIdx, hoveredMonthIdx, updateTooltipPosition]);
+
+  const handleNicheMouseEnter = (idx: number, e: React.MouseEvent<HTMLDivElement>) => {
     if (nicheHoverTimeoutRef.current) {
       clearTimeout(nicheHoverTimeoutRef.current);
       nicheHoverTimeoutRef.current = null;
     }
     setHoveredNicheIdx(idx);
+    updateTooltipPosition(idx, e.currentTarget);
   };
 
   const handleNicheMouseLeave = () => {
     if (nicheHoverTimeoutRef.current) clearTimeout(nicheHoverTimeoutRef.current);
     nicheHoverTimeoutRef.current = setTimeout(() => {
       setHoveredNicheIdx(null);
-    }, 150);
+      setTooltipState(null);
+    }, 120);
   };
 
   const handleNicheContainerMouseEnter = () => {
+    isInsideNicheRef.current = true;
     const isFinePointer = typeof window !== "undefined" && window.matchMedia("(pointer: fine)").matches;
     if (isFinePointer) {
       getLenis()?.stop();
@@ -259,33 +324,33 @@ export function OverviewTab({
   };
 
   const handleNicheContainerLeave = () => {
+    isInsideNicheRef.current = false;
     if (nicheHoverTimeoutRef.current) clearTimeout(nicheHoverTimeoutRef.current);
+    if (monthHoverTimeoutRef.current) clearTimeout(monthHoverTimeoutRef.current);
     setHoveredNicheIdx(null);
+    setHoveredMonthIdx(null);
+    setTooltipState(null);
     const isFinePointer = typeof window !== "undefined" && window.matchMedia("(pointer: fine)").matches;
     if (isFinePointer) {
-      if (wheelResumeTimeoutRef.current) clearTimeout(wheelResumeTimeoutRef.current);
       getLenis()?.start();
     }
   };
 
-  const handleMonthMouseEnter = (idx: number) => {
+  const handleMonthMouseEnter = (idx: number, e: React.MouseEvent<HTMLDivElement>) => {
     if (monthHoverTimeoutRef.current) {
       clearTimeout(monthHoverTimeoutRef.current);
       monthHoverTimeoutRef.current = null;
     }
     setHoveredMonthIdx(idx);
+    updateTooltipPosition(idx, e.currentTarget);
   };
 
   const handleMonthMouseLeave = () => {
     if (monthHoverTimeoutRef.current) clearTimeout(monthHoverTimeoutRef.current);
     monthHoverTimeoutRef.current = setTimeout(() => {
       setHoveredMonthIdx(null);
-    }, 150);
-  };
-
-  const handleMonthContainerLeave = () => {
-    if (monthHoverTimeoutRef.current) clearTimeout(monthHoverTimeoutRef.current);
-    setHoveredMonthIdx(null);
+      setTooltipState(null);
+    }, 120);
   };
 
   return (
@@ -422,7 +487,12 @@ export function OverviewTab({
       </div>
 
       {/* BENTO CARD 3: REAL DYNAMIC CHART (4 cols) */}
-      <div className="md:col-span-2 lg:col-span-4 min-w-0 max-w-full bg-white/90 dark:bg-[#202022]/90 backdrop-blur-xl p-5 sm:p-6 rounded-3xl sm:rounded-[2rem] border border-white/80 dark:border-white/10 shadow-[0_4px_24px_rgba(0,0,0,0.02)] flex flex-col justify-between overflow-hidden">
+      <div 
+        ref={nicheCardRef}
+        onMouseEnter={handleNicheContainerMouseEnter}
+        onMouseLeave={handleNicheContainerLeave}
+        className="md:col-span-2 lg:col-span-4 min-w-0 max-w-full bg-white/90 dark:bg-[#202022]/90 backdrop-blur-xl p-5 sm:p-6 rounded-3xl sm:rounded-[2rem] border border-white/80 dark:border-white/10 shadow-[0_4px_24px_rgba(0,0,0,0.02)] flex flex-col justify-between overflow-hidden"
+      >
         <div className="flex items-center justify-between mb-4">
           <div className="min-w-0 pr-2">
             <h3 className="text-sm font-bold text-gray-900 dark:text-gray-100 truncate">
@@ -450,7 +520,7 @@ export function OverviewTab({
         </div>
 
         {/* Visual Dynamic Bar Chart */}
-        <div data-lenis-prevent="true" className="relative w-full my-auto">
+        <div ref={chartStageRef} data-lenis-prevent="true" className="relative w-full my-auto">
           {/* Horizontal MacOS jelly scrollbar for niche inventory bars */}
           <MacOSScrollbar
             containerRef={nicheChartRef}
@@ -460,11 +530,60 @@ export function OverviewTab({
             insetBottom={0}
             alwaysVisible={categoryDistributionData.length > 6}
           />
+
+          {/* Smart Responsive Floating Tooltip Badge (Never clipped by overflow-y-hidden, never covered by adjacent bars, strictly clamped to stage width) */}
+          {tooltipState && tooltipState.isVisible && (
+            <div 
+              style={{ 
+                left: `${tooltipState.x}px`,
+                transform: "translateX(-50%)",
+              }}
+              className="absolute top-0.5 z-30 pointer-events-none flex flex-col items-center animate-fade-in transition-[left] duration-150 ease-out"
+            >
+              {isAdmin ? (
+                (() => {
+                  const currentBar = categoryDistributionData[tooltipState.idx];
+                  if (!currentBar) return null;
+                  return (
+                    <>
+                      <div className="bg-gray-950/95 dark:bg-white text-white dark:text-gray-950 px-3 py-1.5 rounded-xl text-[10.5px] font-bold shadow-xl border border-white/10 dark:border-gray-200 whitespace-nowrap flex items-center gap-2 backdrop-blur-md">
+                        <span className={`w-2 h-2 rounded-full shrink-0 ${currentBar.count > 0 ? "bg-[#e07a3f]" : "bg-gray-400"}`} />
+                        <span className="font-extrabold text-white dark:text-gray-950 truncate max-w-[120px]">{currentBar.category}:</span>
+                        <span className="font-bold text-[#e07a3f]">{currentBar.count} {currentBar.count === 1 ? "pieza" : "piezas"}</span>
+                        <span className="text-gray-400 dark:text-gray-500 font-medium">({currentBar.pctOfTotal}%)</span>
+                      </div>
+                      <div 
+                        style={{ transform: `translateX(${tooltipState.caretOffset}px)` }}
+                        className="w-2 h-1.5 bg-gray-950 dark:bg-white rotate-45 -mt-0.5 shadow-xs transition-transform duration-150 ease-out" 
+                      />
+                    </>
+                  );
+                })()
+              ) : (
+                (() => {
+                  const currentMonth = monthlySpendData[tooltipState.idx];
+                  if (!currentMonth) return null;
+                  return (
+                    <>
+                      <div className="bg-gray-950/95 dark:bg-white text-white dark:text-gray-950 px-3 py-1.5 rounded-xl text-[10.5px] font-bold shadow-xl border border-white/10 dark:border-gray-200 whitespace-nowrap flex items-center gap-2 backdrop-blur-md">
+                        <span className={`w-2 h-2 rounded-full shrink-0 ${currentMonth.hasData ? "bg-[#e07a3f]" : "bg-gray-400"}`} />
+                        <span className="font-extrabold text-white dark:text-gray-950">{currentMonth.month}:</span>
+                        <span className="font-bold text-[#e07a3f]">${currentMonth.total.toFixed(2)}</span>
+                      </div>
+                      <div 
+                        style={{ transform: `translateX(${tooltipState.caretOffset}px)` }}
+                        className="w-2 h-1.5 bg-gray-950 dark:bg-white rotate-45 -mt-0.5 shadow-xs transition-transform duration-150 ease-out" 
+                      />
+                    </>
+                  );
+                })()
+              )}
+            </div>
+          )}
+
           <div 
             ref={nicheChartRef}
             data-lenis-prevent="true"
-            onMouseEnter={isAdmin ? handleNicheContainerMouseEnter : undefined}
-            onMouseLeave={isAdmin ? handleNicheContainerLeave : handleMonthContainerLeave}
             className={`flex items-end h-44 pt-6 pb-2 px-2 overflow-x-auto overflow-y-hidden select-none cursor-grab active:cursor-grabbing touch-pan-y touch-pan-x [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden ${
               categoryDistributionData.length <= 4 
                 ? "justify-around gap-3" 
@@ -492,17 +611,20 @@ export function OverviewTab({
                 return (
                   <div 
                     key={idx} 
-                    onMouseEnter={() => handleNicheMouseEnter(idx)}
+                    ref={(el) => { barElementsRef.current[idx] = el; }}
+                    onMouseEnter={(e) => handleNicheMouseEnter(idx, e)}
                     onMouseLeave={handleNicheMouseLeave}
                     className={`flex flex-col items-center h-full justify-between group cursor-pointer relative ${widthClass} z-10`}
                   >
                     {/* 1. Bar Area */}
                     <div className="relative w-full flex-1 flex flex-col justify-end items-center px-1">
-                      {!isHovered && (
-                        <span className="text-[10px] font-bold text-gray-400 mb-1 opacity-60 group-hover:opacity-100 transition-opacity">
-                          {bar.count}
-                        </span>
-                      )}
+                      <span className={`text-[10px] font-bold mb-1 transition-all ${
+                        isHovered 
+                          ? "text-[#e07a3f] font-extrabold scale-110" 
+                          : "text-gray-400 opacity-60 group-hover:opacity-100"
+                      }`}>
+                        {bar.count}
+                      </span>
 
                       <div 
                         className={`w-full rounded-2xl transition-all duration-200 relative ${
@@ -513,26 +635,7 @@ export function OverviewTab({
                             : "bg-gray-200/90 dark:bg-[#48484a]/90"
                         }`} 
                         style={{ height: `${bar.heightPct}%` }}
-                      >
-                        {isHovered && (
-                          <div className={`absolute -top-8.5 z-30 flex flex-col pointer-events-none animate-fade-in ${
-                            idx === 0 
-                              ? "left-0 items-start" 
-                              : idx === categoryDistributionData.length - 1 
-                              ? "right-0 items-end" 
-                              : "left-1/2 -translate-x-1/2 items-center"
-                          }`}>
-                            <div className="bg-gray-950 dark:bg-white text-white dark:text-gray-950 px-2.5 py-1 rounded-lg text-[10px] font-bold shadow-lg border border-white/10 dark:border-gray-800 whitespace-nowrap flex items-center gap-1.5">
-                              <span className={`w-1.5 h-1.5 rounded-full ${hasItems ? "bg-[#e07a3f]" : "bg-gray-400"}`} />
-                              <span>{bar.count}</span>
-                              <span className="text-gray-400 dark:text-gray-600 font-normal">({bar.pctOfTotal}%)</span>
-                            </div>
-                            <div className={`w-1.5 h-1 bg-gray-950 dark:bg-white rotate-45 -mt-0.5 ${
-                              idx === 0 ? "ml-4" : idx === categoryDistributionData.length - 1 ? "mr-4" : ""
-                            }`} />
-                          </div>
-                        )}
-                      </div>
+                      />
                     </div>
 
                     {/* 2. Anchored Category Label Area with bottom clearance for scrollbar */}
@@ -555,7 +658,8 @@ export function OverviewTab({
                 return (
                   <div 
                     key={idx} 
-                    onMouseEnter={() => handleMonthMouseEnter(idx)}
+                    ref={(el) => { barElementsRef.current[idx] = el; }}
+                    onMouseEnter={(e) => handleMonthMouseEnter(idx, e)}
                     onMouseLeave={handleMonthMouseLeave}
                     className="flex-1 min-w-[2.5rem] flex flex-col items-center h-full justify-between transition-all duration-300 group cursor-pointer relative"
                     title={`${bar.month}: $${bar.total.toFixed(2)}`}
@@ -570,24 +674,7 @@ export function OverviewTab({
                             : "bg-gray-200 dark:bg-[#48484a]"
                         }`} 
                         style={{ height: `${bar.heightPct}%` }}
-                      >
-                        {isHovered && bar.hasData && (
-                          <div className={`absolute -top-8.5 z-30 flex flex-col pointer-events-none animate-fade-in ${
-                            idx === 0 
-                              ? "left-0 items-start" 
-                              : idx === monthlySpendData.length - 1 
-                              ? "right-0 items-end" 
-                              : "left-1/2 -translate-x-1/2 items-center"
-                          }`}>
-                            <div className="bg-gray-950 text-white dark:text-gray-900 px-2.5 py-1 rounded-lg text-[10px] font-bold shadow-lg dark:shadow-none border border-white/10 whitespace-nowrap">
-                              ${bar.total.toFixed(0)}
-                            </div>
-                            <div className={`w-1.5 h-1 bg-gray-950 rotate-45 -mt-0.5 ${
-                              idx === 0 ? "ml-4" : idx === monthlySpendData.length - 1 ? "mr-4" : ""
-                            }`} />
-                          </div>
-                        )}
-                      </div>
+                      />
                     </div>
 
                     <div className="w-full h-5 mb-2.5 flex items-center justify-center shrink-0">

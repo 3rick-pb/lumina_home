@@ -249,8 +249,8 @@ export function CouponWalletModal({
               </p>
             </div>
           </div>{/* end scrollable body */}
-          {/* MacOS jelly scrollbar — inset=14 clears the 2rem rounded corners */}
-          <MacOSScrollbar containerRef={scrollContainerRef} inset={14} />
+          {/* MacOS jelly scrollbar — strictly bounded at top and bottom to clear rounded-[2rem] corners */}
+          <MacOSScrollbar containerRef={scrollContainerRef} insetTop={28} insetBottom={28} insetRight={3} />
         </div>
       </CenterMorphModalContent>
     </CenterMorphModal>
