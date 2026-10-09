@@ -102,28 +102,46 @@ def main():
     ])
     atardecer_u8 = (atardecer_out * 255.0).astype(np.uint8)
 
+    # Lampshade fabric masks (only illuminates the actual lampshade fabric, not the air/wall around it)
+    gray_m = cv2.cvtColor(master, cv2.COLOR_BGR2GRAY) / 255.0
+    shade_geo_l = np.exp(-(((X - lamp_l_pos[0]) / 185.0)**4 + ((Y - lamp_l_pos[1]) / 145.0)**4)).astype(np.float32)
+    shade_geo_r = np.exp(-(((X - lamp_r_pos[0]) / 185.0)**4 + ((Y - lamp_r_pos[1]) / 145.0)**4)).astype(np.float32)
+    shade_geo = np.maximum(shade_geo_l, shade_geo_r)
+    # Modulated by actual brightness so it only hits the fabric and bulb area
+    fabric_mask = shade_geo * np.clip((gray_m - 0.35) / 0.45, 0.0, 1.0).astype(np.float32)
+    # Inner core (bulb glow)
+    core_mask = shade_geo * np.clip((gray_m - 0.60) / 0.30, 0.0, 1.0).astype(np.float32)
+
+    # Multiplicative light pools on table & surfaces
+    lamp_pool_mult = lamp_light_field
+
     # ==========================================
     # PHASE 4: CREPÚSCULO (Twilight / Blue Hour)
     # ==========================================
-    print("Rendering Crepúsculo (Twilight + Lamps ON)...")
-    # Twilight ambient drops, cool blue exterior window light, warm lamps turned ON
-    # Cool ambient base
-    twilight_ambient_r = lin_r * 0.55
-    twilight_ambient_g = lin_g * 0.59
-    twilight_ambient_b = lin_b * 0.70 + 0.04 * window_wash_left
-    
-    # Lamps ON (2700K warm incandescent)
-    lamp_crep_emission = lamp_shade_field * 0.50 + lamp_bloom_field * 0.22
-    lamp_crep_light = lamp_light_field * 0.60
-    
-    crep_lamp_r = (lin_r * lamp_crep_light + lamp_crep_emission) * 1.00
-    crep_lamp_g = (lin_g * lamp_crep_light + lamp_crep_emission) * 0.82
-    crep_lamp_b = (lin_b * lamp_crep_light + lamp_crep_emission) * 0.50
-    
-    crep_r = twilight_ambient_r + crep_lamp_r
-    crep_g = twilight_ambient_g + crep_lamp_g
-    crep_b = twilight_ambient_b + crep_lamp_b
-    
+    print("Rendering Crepúsculo (Twilight + Multiplicative Lamps ON)...")
+    # Ambient: cool blue hour, ~50% daylight, zero milky fog
+    crep_ambient_r = 0.50 + 0.02 * window_wash_left
+    crep_ambient_g = 0.56 + 0.04 * window_wash_left
+    crep_ambient_b = 0.68 + 0.12 * window_wash_left
+
+    # Lamp light pool: warm golden 2700K (multiplicative on surface texture)
+    crep_lamp_r = 0.90 * lamp_pool_mult * 1.35
+    crep_lamp_g = 0.90 * lamp_pool_mult * 1.05
+    crep_lamp_b = 0.90 * lamp_pool_mult * 0.65
+
+    mult_crep_r = crep_ambient_r + crep_lamp_r
+    mult_crep_g = crep_ambient_g + crep_lamp_g
+    mult_crep_b = crep_ambient_b + crep_lamp_b
+
+    crep_r = lin_r * mult_crep_r + fabric_mask * 0.55 + core_mask * 0.25
+    crep_g = lin_g * mult_crep_g + fabric_mask * 0.42 + core_mask * 0.20
+    crep_b = lin_b * mult_crep_b + fabric_mask * 0.20 + core_mask * 0.10
+
+    # Contrast curve: keeps shadows rich and deep, highlights crisp
+    crep_r = np.clip(crep_r, 0.0, 1.0) ** 1.05
+    crep_g = np.clip(crep_g, 0.0, 1.0) ** 1.05
+    crep_b = np.clip(crep_b, 0.0, 1.0) ** 1.05
+
     crep_out = cv2.merge([
         linear_to_srgb(crep_b),
         linear_to_srgb(crep_g),
@@ -134,45 +152,51 @@ def main():
     # ==========================================
     # PHASE 5: NOCHE (Night + Lamps ON Brightly)
     # ==========================================
-    print("Rendering Noche (Night + Lamps ON)...")
-    # Deep night ambient, lamps are primary heroes (2400K incandescent)
-    # Dark ambient room base
-    night_ambient_r = lin_r * 0.22
-    night_ambient_g = lin_g * 0.24
-    night_ambient_b = lin_b * 0.32 + 0.015 * window_wash_left
-    
-    # Lamps ON brightly
-    lamp_night_emission = lamp_shade_field * 0.75 + lamp_bloom_field * 0.35
-    lamp_night_light = lamp_light_field * 0.95
-    
-    night_lamp_r = (lin_r * lamp_night_light + lamp_night_emission) * 1.00
-    night_lamp_g = (lin_g * lamp_night_light + lamp_night_emission) * 0.78
-    night_lamp_b = (lin_b * lamp_night_light + lamp_night_emission) * 0.42
-    
-    night_r = night_ambient_r + night_lamp_r
-    night_g = night_ambient_g + night_lamp_g
-    night_b = night_ambient_b + night_lamp_b
-    
+    print("Rendering Noche (Night + Pure Blacks + Multiplicative Lamps ON)...")
+    # Ambient: deep nighttime, ~20% daylight (deep slate/charcoal, zero milky veil)
+    noche_ambient_r = 0.18
+    noche_ambient_g = 0.19
+    noche_ambient_b = 0.23 + 0.02 * window_wash_left
+
+    # Lamp light pool: rich incandescent 2400K (multiplicative)
+    noche_lamp_r = 1.15 * lamp_pool_mult * 1.45
+    noche_lamp_g = 1.15 * lamp_pool_mult * 1.10
+    noche_lamp_b = 1.15 * lamp_pool_mult * 0.55
+
+    mult_noche_r = noche_ambient_r + noche_lamp_r
+    mult_noche_g = noche_ambient_g + noche_lamp_g
+    mult_noche_b = noche_ambient_b + noche_lamp_b
+
+    noche_r = lin_r * mult_noche_r + fabric_mask * 0.75 + core_mask * 0.35
+    noche_g = lin_g * mult_noche_g + fabric_mask * 0.58 + core_mask * 0.28
+    noche_b = lin_b * mult_noche_b + fabric_mask * 0.28 + core_mask * 0.14
+
+    # Contrast curve: deep inky blacks, punchy warm highlights
+    noche_r = np.clip(noche_r, 0.0, 1.0) ** 1.08
+    noche_g = np.clip(noche_g, 0.0, 1.0) ** 1.08
+    noche_b = np.clip(noche_b, 0.0, 1.0) ** 1.08
+
     night_out = cv2.merge([
-        linear_to_srgb(night_b),
-        linear_to_srgb(night_g),
-        linear_to_srgb(night_r)
+        linear_to_srgb(noche_b),
+        linear_to_srgb(noche_g),
+        linear_to_srgb(noche_r)
     ])
     night_u8 = (night_out * 255.0).astype(np.uint8)
 
     # Save to public/images/hero/ (preserving 4K PNG/JPEG resolution)
     out_dir = r'c:\Users\WinterOS\Desktop\Test_Antigravity\lumina-home\public\images\hero'
     
-    cv2.imwrite(os.path.join(out_dir, 'Amanecer_clean.png'), amanecer_u8)
+    png_opts = [cv2.IMWRITE_PNG_COMPRESSION, 9]
+    cv2.imwrite(os.path.join(out_dir, 'Amanecer_clean.png'), amanecer_u8, png_opts)
     print("Saved public/images/hero/Amanecer_clean.png")
     
-    cv2.imwrite(os.path.join(out_dir, 'Atardecer_clean.png'), atardecer_u8)
+    cv2.imwrite(os.path.join(out_dir, 'Atardecer_clean.png'), atardecer_u8, png_opts)
     print("Saved public/images/hero/Atardecer_clean.png")
     
-    cv2.imwrite(os.path.join(out_dir, 'Crepusculo_clean.png'), crep_u8)
+    cv2.imwrite(os.path.join(out_dir, 'Crepusculo_clean.png'), crep_u8, png_opts)
     print("Saved public/images/hero/Crepusculo_clean.png")
     
-    cv2.imwrite(os.path.join(out_dir, 'Noche_clean.png'), night_u8)
+    cv2.imwrite(os.path.join(out_dir, 'Noche_clean.png'), night_u8, png_opts)
     print("Saved public/images/hero/Noche_clean.png")
 
     # Generate verification collage artifacts
