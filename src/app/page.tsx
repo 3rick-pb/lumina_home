@@ -13,6 +13,9 @@ import { supabase } from "@/lib/supabase";
 import { ProximitySidebar } from "@/components/ui/proximity-sidebar";
 import { CatalogScrollToTopButton } from "@/components/ui/CatalogScrollToTopButton";
 import { HandwrittenHeroTitle } from "@/components/home/HandwrittenHeroTitle";
+import { useHeroTimePhase } from "@/hooks/useHeroTimePhase";
+import { DynamicHeroBackground } from "@/components/hero/DynamicHeroBackground";
+import { HeroTimePill } from "@/components/hero/HeroTimePill";
 
 const HOME_SECTIONS = [
   { id: "hero-section", label: "Inicio", level: 1 as const },
@@ -142,6 +145,7 @@ const DEFAULT_TRUST_BADGES: TrustBadgeItem[] = [
 export default function Home() {
   const { products, categories } = useCatalogStore();
   const { setCategoryTheme, resetTheme } = useAmbientStore();
+  const heroTime = useHeroTimePhase();
   const [isMounted, setIsMounted] = useState(false);
   const [activeFilter, setActiveFilter] = useState("Todos");
   const [trustBadges, setTrustBadges] = useState<TrustBadgeItem[]>(DEFAULT_TRUST_BADGES);
@@ -365,17 +369,7 @@ export default function Home() {
         data-ambient-category="default"
         className="relative min-h-[calc(100svh-2.5rem)] sm:min-h-[calc(100dvh-4rem)] flex flex-col justify-between sm:justify-center overflow-hidden bg-brand-900"
       >
-        <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none select-none [contain:paint]">
-          <Image 
-            src="https://images.unsplash.com/photo-1600210492486-724fe5c67fb0?q=80&w=2000&auto=format&fit=crop" 
-            alt="Interior elegante" 
-            fill 
-            sizes="100vw" 
-            className="object-cover pointer-events-none select-none" 
-            priority
-          />
-          <div className="absolute inset-0 bg-gradient-to-t from-brand-900/90 via-brand-900/40 to-transparent pointer-events-none" />
-        </div>
+        <DynamicHeroBackground activePhaseId={heroTime.phaseId} />
 
         <div className="container mx-auto px-4 sm:px-6 md:px-8 relative z-10 pt-20 pb-4 sm:pt-20 sm:pb-10 [@media(min-height:760px)]:pt-28 [@media(min-height:760px)]:pb-14 [@media(min-height:860px)]:pt-36 [@media(min-height:860px)]:pb-16 flex-1 flex flex-col justify-between sm:justify-center">
           <motion.div 
@@ -384,21 +378,39 @@ export default function Home() {
             transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
             className="max-w-3xl transform-gpu flex-1 flex flex-col justify-between sm:justify-center"
           >
-            {/* Bloque superior (Píldora, Título, Subtítulo): Centrado y ordenado en la zona superior */}
+            {/* Bloque superior (Píldoras, Título, Subtítulo): Centrado y ordenado en la zona superior */}
             <div className="flex flex-col justify-center my-auto sm:my-0">
-              {/* Tag Pill with Instant Hardware-Accelerated Glass Blur */}
-              <motion.div 
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: 0.05, ease: [0.16, 1, 0.3, 1] }}
-                className="relative inline-flex self-start items-center px-3.5 py-1 sm:px-4 sm:py-1.5 rounded-full overflow-hidden border border-white/25 text-xs sm:text-sm font-medium text-white mb-2.5 sm:mb-2.5 [@media(min-height:760px)]:mb-4 [@media(min-height:860px)]:mb-6 shadow-sm [isolation:isolate] transform-gpu select-none"
-              >
-                <div 
-                  className="absolute inset-0 bg-white/15 backdrop-blur-xl pointer-events-none transform-gpu"
-                  style={{ willChange: "transform, backdrop-filter", WebkitBackdropFilter: "blur(16px)" }}
-                />
-                <span className="relative z-10">Artículos premium para tu hogar</span>
-              </motion.div>
+              {/* Row with Tag Pill & Hero Time-of-Day Pill */}
+              <div className="flex flex-wrap items-center gap-2 sm:gap-2.5 mb-2.5 sm:mb-2.5 [@media(min-height:760px)]:mb-4 [@media(min-height:860px)]:mb-6">
+                <motion.div 
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.5, delay: 0.05, ease: [0.16, 1, 0.3, 1] }}
+                  className="relative inline-flex items-center px-3.5 py-1 sm:px-4 sm:py-1.5 rounded-full overflow-hidden border border-white/25 text-xs sm:text-sm font-medium text-white shadow-sm [isolation:isolate] transform-gpu select-none"
+                >
+                  <div 
+                    className="absolute inset-0 bg-white/15 backdrop-blur-xl pointer-events-none transform-gpu"
+                    style={{ willChange: "transform, backdrop-filter", WebkitBackdropFilter: "blur(16px)" }}
+                  />
+                  <span className="relative z-10">Artículos premium para tu hogar</span>
+                </motion.div>
+
+                {/* Hero Time-of-Day Pill (Auto / Selector de 5 fases) */}
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.5, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
+                >
+                  <HeroTimePill
+                    phaseId={heroTime.phaseId}
+                    isAuto={heroTime.isAuto}
+                    formattedTime={heroTime.formattedTime}
+                    onSelectPhase={heroTime.setPhase}
+                    phases={heroTime.phases}
+                    phaseOrder={heroTime.phaseOrder}
+                  />
+                </motion.div>
+              </div>
 
               <HandwrittenHeroTitle />
               
