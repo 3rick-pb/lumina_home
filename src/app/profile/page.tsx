@@ -1543,28 +1543,56 @@ const handleConfirmDeleteNiche = async () => {
   <main className={`flex-1 flex flex-col min-w-0 w-full space-y-6 pb-28 sm:pb-32 md:pb-6 ${activeTab === "cart_alerts" || activeTab === "analytics" ? "max-w-none" : "max-w-7xl mx-auto"}`}>
   
   {/* Top App Bar (Reference Style) */}
-  <header className="relative z-40 bg-white/80 dark:bg-[#202022]/80 backdrop-blur-2xl px-4 py-3 sm:px-6 sm:py-3.5 rounded-2xl sm:rounded-3xl border border-white/80 dark:border-white/10 shadow-[0_4px_20px_rgba(0,0,0,0.02)] flex flex-col md:flex-row md:items-center justify-between gap-3 sm:gap-4 min-h-[56px]">
+  <header className="relative z-40 bg-white/80 dark:bg-[#202022]/80 backdrop-blur-2xl px-3.5 py-2.5 sm:px-6 sm:py-3.5 rounded-2xl sm:rounded-3xl border border-white/80 dark:border-white/10 shadow-[0_4px_20px_rgba(0,0,0,0.02)] flex items-center justify-between min-h-[56px]">
   
-  {/* Mobile Center Brand Wordmark (100% Centrado en Pantallas Móviles) */}
-  <div className="md:hidden absolute left-1/2 -translate-x-1/2 flex items-center justify-center pointer-events-auto">
-    <Link 
-      href="/" 
-      className="flex items-center hover:opacity-85 transition-opacity select-none py-0.5" 
-      title="Ir a la tienda"
-    >
-      <Image
-        src="/brand/lumina-wordmark.png"
-        alt={brand.name || "Lumina"}
-        width={1058}
-        height={272}
-        priority
-        className="h-6 w-auto object-contain dark:invert"
+  {/* --- 1. VISTA MÓVIL (Celulares y pantallas pequeñas): Disperso 1:1 a la captura de pantalla --- */}
+  <div className="flex md:hidden items-center justify-between w-full gap-2 min-w-0">
+    {/* Lumina Brand Centrado en la sección izquierda */}
+    <div className="flex-1 flex items-center justify-center min-w-0">
+      <Link 
+        href="/" 
+        className="flex items-center hover:opacity-85 transition-opacity select-none py-0.5" 
+        title="Ir a la tienda"
+      >
+        <Image
+          src="/brand/lumina-wordmark.png"
+          alt={brand.name || "Lumina"}
+          width={1058}
+          height={272}
+          priority
+          className="h-6 w-auto object-contain dark:invert"
+        />
+      </Link>
+    </div>
+
+    {/* Separador Vertical */}
+    <div className="h-6 w-px bg-stone-300 dark:bg-white/20 shrink-0 mx-1" aria-hidden="true" />
+
+    {/* Avatar + Botón Salir en el extremo derecho */}
+    <div className="flex items-center gap-2 sm:gap-2.5 shrink-0">
+      <BlobatarAvatar
+        name={customSeed || user.id || user.email || user.name}
+        size={34}
+        animate="always"
+        background={backgroundShape || "squircle"}
+        role={user.role}
+        showGlow
+        title={`Avatar de ${formatCleanName(user.name)}`}
       />
-    </Link>
+      <button 
+        onClick={() => { logout(); router.push("/auth/login"); }}
+        className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-red-600 dark:text-red-400 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/40 border border-red-200/80 dark:border-red-900/40 transition-all shrink-0 cursor-pointer shadow-xs active:scale-95"
+        title="Cerrar Sesión"
+        aria-label="Cerrar Sesión"
+      >
+        <LogOut className="w-3.5 h-3.5" />
+        <span className="text-[11px] font-bold">Salir</span>
+      </button>
+    </div>
   </div>
 
-  {/* Brand & Top Navigation Pill Bar */}
-  <div className="flex items-center justify-between md:justify-start gap-3 md:gap-4 min-w-0 w-full md:w-auto md:flex-1">
+  {/* --- 2. VISTA DESKTOP (md:flex): Brand & Top Navigation Pill Bar --- */}
+  <div className="hidden md:flex items-center justify-start gap-3 md:gap-4 min-w-0 flex-1">
   {/* Desktop Brand Logo (Lateral Izquierdo en Desktop) */}
   <Link 
     href="/" 
@@ -1696,29 +1724,6 @@ const handleConfirmDeleteNiche = async () => {
         />
       ))}
     </div>
-  </div>
-
-  {/* Acciones Rápidas en Móvil: Separador Vertical + Avatar Blobatar + Botón Salir */}
-  <div className="flex md:hidden items-center gap-2.5 shrink-0">
-    <div className="h-6 w-px bg-stone-300 dark:bg-white/20 shrink-0 my-auto" aria-hidden="true" />
-    <BlobatarAvatar
-      name={customSeed || user.id || user.email || user.name}
-      size={34}
-      animate="always"
-      background={backgroundShape || "squircle"}
-      role={user.role}
-      showGlow
-      title={`Avatar de ${formatCleanName(user.name)}`}
-    />
-    <button 
-      onClick={() => { logout(); router.push("/auth/login"); }}
-      className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-red-600 dark:text-red-400 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/40 border border-red-200/80 dark:border-red-900/40 transition-all shrink-0 cursor-pointer shadow-xs active:scale-95"
-      title="Cerrar Sesión"
-      aria-label="Cerrar Sesión"
-    >
-      <LogOut className="w-3.5 h-3.5" />
-      <span className="text-[11px] font-bold">Salir</span>
-    </button>
   </div>
   </div>
 

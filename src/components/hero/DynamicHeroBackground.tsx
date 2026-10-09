@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { memo } from "react";
+import { memo, useState, useEffect } from "react";
 import { HERO_PHASES, HERO_PHASE_ORDER, HeroPhaseId } from "@/hooks/useHeroTimePhase";
 
 interface DynamicHeroBackgroundProps {
@@ -11,10 +11,43 @@ interface DynamicHeroBackgroundProps {
 export const DynamicHeroBackground = memo(function DynamicHeroBackground({
   activePhaseId,
 }: DynamicHeroBackgroundProps) {
+  // Only the active phase is rendered on first paint, completely eliminating initial thread blocking & decode lag
+  const [loadedPhases, setLoadedPhases] = useState<Set<HeroPhaseId>>(() => new Set([activePhaseId]));
+
+  // Ensure active phase is immediately added if time updates or is overridden
+  useEffect(() => {
+    setLoadedPhases((prev) => {
+      if (prev.has(activePhaseId)) return prev;
+      const next = new Set(prev);
+      next.add(activePhaseId);
+      return next;
+    });
+  }, [activePhaseId]);
+
+  // Non-blocking idle preloader: defer loading other phases until after initial interaction & idle state
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const timer = setTimeout(() => {
+      if ("requestIdleCallback" in window) {
+        (window as Window & { requestIdleCallback: (cb: () => void) => number }).requestIdleCallback(() => {
+          setLoadedPhases(new Set(HERO_PHASE_ORDER));
+        });
+      } else {
+        setLoadedPhases(new Set(HERO_PHASE_ORDER));
+      }
+    }, 2500);
+
+    return () => clearTimeout(timer);
+  }, []);
+
   return (
     <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none select-none [contain:paint]">
-      {/* 5 Stacked Hero Layers with Pure Original Images */}
+      {/* Dynamic Hero Layers with Progressive Non-blocking Loading */}
       {HERO_PHASE_ORDER.map((phaseKey) => {
+        // Skip mounting DOM/Image elements until needed, avoiding GPU memory pressure
+        if (!loadedPhases.has(phaseKey)) return null;
+
         const phase = HERO_PHASES[phaseKey];
         const isActive = phaseKey === activePhaseId;
 
@@ -26,7 +59,7 @@ export const DynamicHeroBackground = memo(function DynamicHeroBackground({
               isActive ? "opacity-100 z-10" : "opacity-0 z-0"
             }`}
             style={{ 
-              willChange: "opacity",
+              willChange: isActive ? "opacity" : "auto",
               transitionTimingFunction: "cubic-bezier(0.4, 0, 0.2, 1)"
             }}
           >
@@ -35,7 +68,8 @@ export const DynamicHeroBackground = memo(function DynamicHeroBackground({
               alt={`Lumina Home - ${phase.label}`}
               fill
               sizes="100vw"
-              priority
+              priority={isActive}
+              loading={isActive ? "eager" : "lazy"}
               unoptimized
               className="object-cover pointer-events-none select-none transform-gpu"
             />
