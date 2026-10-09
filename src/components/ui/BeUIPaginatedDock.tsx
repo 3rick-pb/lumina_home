@@ -193,7 +193,7 @@ export function BeUIPaginatedDock({
                   x: { type: "spring", stiffness: 420, damping: 36, mass: 0.8 },
                   opacity: { duration: 0.16, ease: "easeOut" },
                 }}
-                className="w-full grid grid-cols-4 items-center justify-items-center h-full"
+                className="w-full grid grid-cols-4 items-center justify-items-stretch gap-1 px-1 h-full"
               >
                 {currentItems.map((item) => {
                   const isActive = !!item.active;
@@ -203,14 +203,14 @@ export function BeUIPaginatedDock({
                       type="button"
                       onClick={() => item.onClick()}
                       title={item.title || item.label}
-                      className="relative w-full h-[52px] flex flex-col items-center justify-center py-1 px-1 rounded-full select-none group cursor-pointer focus:outline-none transition-transform duration-150 active:scale-92"
+                      className="relative w-full h-[50px] flex flex-col items-center justify-center py-1 px-0.5 rounded-full select-none group cursor-pointer focus:outline-none transition-transform duration-150 active:scale-95"
                     >
-                      {/* Óvalo highlight activo de Alto Contraste (Súper notorio) */}
+                      {/* Píldora activa plana sin sombras (simétrica y nítida) */}
                       {isActive && (
                         <motion.div
                           layoutId="beui-dock-active-pill"
                           transition={{ type: "spring", stiffness: 450, damping: 35 }}
-                          className="absolute inset-x-1 inset-y-1 rounded-full bg-white dark:bg-white/25 border border-stone-200/90 dark:border-white/40 shadow-[0_4px_16px_rgba(0,0,0,0.12),inset_0_1px_1px_rgba(255,255,255,0.9)] dark:shadow-[0_4px_20px_rgba(0,0,0,0.5),0_0_12px_rgba(255,255,255,0.15)] ring-1 ring-black/5 dark:ring-white/20 -z-0 pointer-events-none"
+                          className="absolute inset-0 rounded-full bg-white dark:bg-white/20 border border-stone-200/80 dark:border-white/25 -z-0 pointer-events-none"
                         />
                       )}
 
@@ -219,8 +219,8 @@ export function BeUIPaginatedDock({
                         <div
                           className={`w-5 h-5 flex items-center justify-center transition-all duration-200 ${
                             isActive
-                              ? "text-[#e07a3f] dark:text-[#f59e0b] scale-115 stroke-[2.4px] drop-shadow-[0_2px_8px_rgba(224,122,63,0.35)]"
-                              : "text-stone-400 dark:text-stone-400 opacity-60 group-hover:opacity-100 group-hover:text-stone-800 dark:group-hover:text-stone-200"
+                              ? "text-[#c25e1a] dark:text-[#f59e0b] scale-110 stroke-[2.4px]"
+                              : "text-stone-700 dark:text-stone-200 group-hover:text-stone-950 dark:group-hover:text-white"
                           }`}
                         >
                           {item.icon}
@@ -233,12 +233,12 @@ export function BeUIPaginatedDock({
                         )}
                       </div>
 
-                      {/* Texto estilo Apple Music */}
+                      {/* Texto de alto contraste para lectura perfecta */}
                       <span
-                        className={`relative z-10 text-[9.5px] tracking-tight mt-0.5 leading-none truncate max-w-[66px] text-center transition-colors duration-200 ${
+                        className={`relative z-10 text-[10px] tracking-tight mt-0.5 leading-none truncate max-w-[68px] text-center transition-colors duration-200 ${
                           isActive
-                            ? "text-[#e07a3f] dark:text-[#f59e0b] font-black"
-                            : "text-stone-500 dark:text-stone-400 font-medium opacity-70 group-hover:opacity-100"
+                            ? "text-[#c25e1a] dark:text-[#f59e0b] font-black"
+                            : "text-stone-800 dark:text-stone-100 font-bold group-hover:text-stone-950 dark:group-hover:text-white"
                         }`}
                       >
                         {item.label}
@@ -262,14 +262,14 @@ export function BeUIPaginatedDock({
           </div>
         </div>
 
-        {/* Botón Circular de Búsqueda FUERA DEL MENÚ (Isla flotante independiente a la derecha) */}
+        {/* Botón Circular de Búsqueda FUERA DEL MENÚ (Isla flotante simétrica en altura) */}
         {onSearchClick && (
           <button
             type="button"
             onClick={onSearchClick}
             title="Buscar pedidos, marcas o piezas..."
             aria-label="Abrir buscador"
-            className={`relative w-[60px] h-[60px] rounded-full shrink-0 flex items-center justify-center transition-all duration-300 cursor-pointer active:scale-90 group ${
+            className={`relative w-[64px] h-[64px] rounded-full shrink-0 flex items-center justify-center transition-all duration-300 cursor-pointer active:scale-90 group ${
               isSearchActive
                 ? "bg-[#e07a3f] text-white border-2 border-white/80 shadow-[0_0_24px_rgba(224,122,63,0.6)]"
                 : "bg-white/70 dark:bg-[#16161a]/70 hover:bg-white/90 dark:hover:bg-[#202026] active:bg-white/95 border border-white/80 dark:border-white/25 backdrop-blur-3xl shadow-[0_16px_40px_rgba(0,0,0,0.16),inset_0_1.5px_2px_rgba(255,255,255,0.9),inset_0_-1px_1.5px_rgba(0,0,0,0.04)] dark:shadow-[0_20px_50px_rgba(0,0,0,0.7),inset_0_1.5px_2px_rgba(255,255,255,0.25)] text-stone-900 dark:text-stone-100"
