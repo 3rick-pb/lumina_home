@@ -95,27 +95,23 @@ const STORAGE_KEY = "lumina_hero_phase_override";
 
 export function useHeroTimePhase() {
   const [autoPhaseId, setAutoPhaseId] = useState<HeroPhaseId>("mediodia");
-  const [manualPhaseId, setManualPhaseId] = useState<HeroPhaseId | null>(null);
   const [formattedTime, setFormattedTime] = useState<string>("");
   const [isMounted, setIsMounted] = useState<boolean>(false);
 
-  // Sync with client clock
+  // Sync with client clock automatically
   useEffect(() => {
     setIsMounted(true);
     const now = new Date();
     setAutoPhaseId(getPhaseForTime(now));
     setFormattedTime(formatClockTime(now));
 
-    // Restore manual selection if previously saved in session
+    // Clear any legacy manual test override from session storage
     try {
-      const saved = sessionStorage.getItem(STORAGE_KEY);
-      if (saved && saved in HERO_PHASES) {
-        setManualPhaseId(saved as HeroPhaseId);
-      }
+      sessionStorage.removeItem(STORAGE_KEY);
     } catch {}
 
     // Zero background polling loop: evaluate local device time once on mount
-    // and optionally re-sync only when user returns to the tab (visibilitychange)
+    // and re-sync automatically when user returns to the tab (visibilitychange)
     const handleVisibility = () => {
       if (document.visibilityState === "visible") {
         const cur = new Date();
@@ -127,39 +123,16 @@ export function useHeroTimePhase() {
     return () => document.removeEventListener("visibilitychange", handleVisibility);
   }, []);
 
-  const isAuto = manualPhaseId === null;
-  const activePhaseId: HeroPhaseId = manualPhaseId || autoPhaseId;
+  const activePhaseId: HeroPhaseId = autoPhaseId;
   const currentPhase = HERO_PHASES[activePhaseId];
-
-  const setPhase = useCallback((target: HeroPhaseId | "auto") => {
-    if (target === "auto") {
-      setManualPhaseId(null);
-      try {
-        sessionStorage.removeItem(STORAGE_KEY);
-      } catch {}
-    } else {
-      setManualPhaseId(target);
-      try {
-        sessionStorage.setItem(STORAGE_KEY, target);
-      } catch {}
-    }
-  }, []);
-
-  const cycleNextPhase = useCallback(() => {
-    const currentIndex = HERO_PHASE_ORDER.indexOf(activePhaseId);
-    const nextIndex = (currentIndex + 1) % HERO_PHASE_ORDER.length;
-    setPhase(HERO_PHASE_ORDER[nextIndex]);
-  }, [activePhaseId, setPhase]);
 
   return {
     isMounted,
-    isAuto,
+    isAuto: true,
     phaseId: activePhaseId,
     currentPhase,
     autoPhaseId,
     formattedTime,
-    setPhase,
-    cycleNextPhase,
     phases: HERO_PHASES,
     phaseOrder: HERO_PHASE_ORDER,
   };
