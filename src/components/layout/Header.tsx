@@ -199,7 +199,7 @@ export function Header() {
     <>
       <CartDrawer />
       <header className="fixed top-4 sm:top-6 left-0 right-0 z-50 flex justify-center px-2 sm:px-4 pointer-events-none">
-        <div className="pointer-events-auto flex items-center justify-between p-1.5 sm:p-2 rounded-full bg-white/60 dark:bg-[#141418]/65 backdrop-blur-3xl border border-white/75 dark:border-white/20 shadow-[0_16px_40px_rgba(0,0,0,0.14),inset_0_1.5px_2px_rgba(255,255,255,0.9),inset_0_-1px_1.5px_rgba(0,0,0,0.04)] dark:shadow-[0_20px_50px_rgba(0,0,0,0.7),inset_0_1.5px_2px_rgba(255,255,255,0.22),inset_0_-1px_1.5px_rgba(0,0,0,0.4)] relative transform-gpu max-w-full transition-all duration-300">
+        <div className="pointer-events-auto flex items-center justify-between p-1.5 sm:p-2 rounded-full bg-white/55 dark:bg-[#16161a]/60 backdrop-blur-3xl border border-white/70 dark:border-white/20 shadow-[0_16px_40px_rgba(0,0,0,0.15),inset_0_1.5px_2px_rgba(255,255,255,0.85),inset_0_-1px_1.5px_rgba(0,0,0,0.04)] dark:shadow-[0_20px_50px_rgba(0,0,0,0.7),inset_0_1.5px_2px_rgba(255,255,255,0.2),inset_0_-1px_1.5px_rgba(0,0,0,0.4)] relative transform-gpu max-w-full">
           
           {/* Logo Section */}
           <Link href="/" className="pl-3 sm:pl-4 pr-3 sm:pr-6 flex items-center gap-1.5 group shrink-0">
@@ -230,11 +230,11 @@ export function Header() {
                   {isActive && (
                     <motion.div
                       layoutId="active-pill"
-                      className="absolute inset-0 rounded-full bg-white/85 dark:bg-white/20 shadow-[0_4px_16px_rgba(0,0,0,0.06),inset_0_1px_1px_rgba(255,255,255,0.85)] border border-white/60 dark:border-white/25 ring-1 ring-black/5 dark:ring-white/10"
+                      className="absolute inset-0 rounded-full bg-white/70 dark:bg-white/15 shadow-[0_2px_8px_rgba(0,0,0,0.04)] border border-white/50 dark:border-white/10"
                       initial={{ opacity: 0 }}
                       animate={{ opacity: 1 }}
                       exit={{ opacity: 0 }}
-                      transition={{ type: "spring", stiffness: 380, damping: 30 }}
+                      transition={{ type: "spring", stiffness: 350, damping: 30 }}
                     />
                   )}
                   
@@ -263,7 +263,7 @@ export function Header() {
             <Link 
               href={isAuthenticated ? '/profile' : '/auth/login'}
               aria-label="Perfil" 
-              className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-white/60 dark:bg-white/10 hover:bg-white/85 dark:hover:bg-white/20 backdrop-blur-2xl border border-white/75 dark:border-white/20 text-gray-700 dark:text-gray-200 transition-all duration-200 shadow-[0_4px_16px_rgba(0,0,0,0.06),inset_0_1px_1px_rgba(255,255,255,0.7)] flex items-center justify-center shrink-0 overflow-hidden active:scale-95"
+              className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-white/40 dark:bg-white/10 backdrop-blur-md border border-white/60 dark:border-white/15 text-gray-700 dark:text-gray-200 hover:bg-white/60 dark:hover:bg-white/20 transition-colors shadow-[0_4px_16px_rgba(0,0,0,0.05)] flex items-center justify-center shrink-0 overflow-hidden"
               title={isAuthenticated ? `Mi Perfil (${user?.name || 'Cuenta'})` : "Iniciar Sesión"}
             >
               {isAuthenticated && user && showAvatarInNavbar ? (
@@ -288,7 +288,7 @@ export function Header() {
                   onChange={(e) => setSearchVal(e.target.value)}
                   placeholder="Buscar en catálogo..."
                   className={cn(
-                    "h-9 sm:h-10 transition-all duration-300 rounded-full pl-9 sm:pl-10 text-xs text-gray-900 dark:text-gray-100 placeholder:text-gray-500 dark:placeholder:text-gray-400 outline-none bg-white/60 dark:bg-white/10 backdrop-blur-2xl border border-white/75 dark:border-white/20 focus:bg-white/95 dark:focus:bg-white/25 focus:border-white/90 dark:focus:border-white/35 shadow-[0_4px_16px_rgba(0,0,0,0.06),inset_0_1px_1px_rgba(255,255,255,0.7)]",
+                    "h-9 sm:h-10 transition-all duration-300 rounded-full pl-9 sm:pl-10 text-xs text-gray-900 dark:text-gray-100 placeholder:text-gray-500 dark:placeholder:text-gray-400 outline-none bg-white/50 dark:bg-white/10 backdrop-blur-md border border-white/60 dark:border-white/15 focus:bg-white/90 dark:focus:bg-white/20 focus:border-white/80 dark:focus:border-white/30 shadow-[0_4px_16px_rgba(0,0,0,0.05)]",
                     searchVal 
                       ? "w-32 sm:w-64 pr-8 opacity-100" 
                       : "w-9 sm:w-10 pr-0 opacity-0 group-hover:w-32 sm:group-hover:w-56 group-hover:pr-8 group-hover:opacity-100 focus:w-32 sm:focus:w-64 focus:pr-8 focus:opacity-100 cursor-pointer focus:cursor-text"
@@ -422,7 +422,7 @@ export function Header() {
                   y: rect.top + rect.height / 2
                 });
               }}
-              className="relative p-2 sm:p-2.5 rounded-full bg-white/60 dark:bg-white/10 hover:bg-white/85 dark:hover:bg-white/20 active:scale-95 backdrop-blur-2xl border border-white/75 dark:border-white/20 text-gray-900 dark:text-gray-100 transition-all duration-200 shadow-[0_4px_16px_rgba(0,0,0,0.06),inset_0_1px_1px_rgba(255,255,255,0.7)] shrink-0 cursor-pointer"
+              className="relative p-2 sm:p-2.5 rounded-full bg-white/40 dark:bg-white/10 backdrop-blur-md border border-white/60 dark:border-white/15 text-gray-900 dark:text-gray-100 hover:bg-white/60 dark:hover:bg-white/20 transition-colors shadow-[0_4px_16px_rgba(0,0,0,0.05)] shrink-0 cursor-pointer"
             >
               <ShoppingBag className="w-4 h-4 sm:w-5 sm:h-5" />
               {totalItems > 0 && (
