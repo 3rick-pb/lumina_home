@@ -13,7 +13,7 @@ export const DynamicHeroBackground = memo(function DynamicHeroBackground({
 }: DynamicHeroBackgroundProps) {
   return (
     <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none select-none [contain:paint]">
-      {/* 5 Stacked Hero Layers with Pure Original Images - No WebP, No Color/Contrast Alterations */}
+      {/* 5 Stacked Hero Layers with Pure Original Images */}
       {HERO_PHASE_ORDER.map((phaseKey) => {
         const phase = HERO_PHASES[phaseKey];
         const isActive = phaseKey === activePhaseId;
@@ -39,6 +39,9 @@ export const DynamicHeroBackground = memo(function DynamicHeroBackground({
           </div>
         );
       })}
+
+      {/* Original Lumina Brand Gradient Overlay (matches Original.png 100%) */}
+      <div className="absolute inset-0 bg-gradient-to-t from-brand-900/90 via-brand-900/40 to-transparent pointer-events-none z-20" />
     </div>
   );
 });
