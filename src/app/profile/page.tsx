@@ -37,7 +37,6 @@ import {
 import { motion, AnimatePresence } from "framer-motion";
 import dynamic from "next/dynamic";
 import { Tag } from "lucide-react";
-import { playStepperTickSound } from "@/lib/soundUtils";
 import { useUserStore, Order, formatCleanName } from "@/lib/userStore";
 import { useThemeStore, getResolvedTheme } from "@/lib/themeStore";
 import { useCatalogStore, normalizeCategory, CatalogProduct, ProductCombo, EmbeddedCarouselConfig } from "@/lib/catalogStore";
@@ -597,14 +596,16 @@ export default function ProfilePage() {
 
   const [topNavPage, setTopNavPage] = useState(0);
   const [navDirection, setNavDirection] = useState<number>(0);
+  const prevActiveTabRef = useRef(activeTab);
 
-  // Auto-sync page whenever activeTab changes elsewhere (e.g. search bar, drawer)
+  // Auto-sync page ONLY when activeTab actually changes (e.g. search bar, drawer, clicks)
   useEffect(() => {
-    const activeIdx = topNavTabs.findIndex((t) => t.id === activeTab);
-    if (activeIdx !== -1) {
-      const targetPage = Math.floor(activeIdx / TABS_PER_PAGE);
-      if (targetPage !== topNavPage) {
-        setNavDirection(targetPage > topNavPage ? 1 : -1);
+    if (prevActiveTabRef.current !== activeTab) {
+      prevActiveTabRef.current = activeTab;
+      const activeIdx = topNavTabs.findIndex((t) => t.id === activeTab);
+      if (activeIdx !== -1) {
+        const targetPage = Math.floor(activeIdx / TABS_PER_PAGE);
+        setNavDirection(targetPage >= topNavPage ? 1 : -1);
         setTopNavPage(targetPage);
       }
     }
@@ -619,7 +620,6 @@ export default function ProfilePage() {
 
   const goToPreviousPage = useCallback(() => {
     if (topNavPage > 0) {
-      playStepperTickSound("down");
       setNavDirection(-1);
       setTopNavPage((prev) => Math.max(0, prev - 1));
     }
@@ -627,7 +627,6 @@ export default function ProfilePage() {
 
   const goToNextPage = useCallback(() => {
     if (topNavPage < tabPages.length - 1) {
-      playStepperTickSound("up");
       setNavDirection(1);
       setTopNavPage((prev) => Math.min(tabPages.length - 1, prev + 1));
     }
@@ -635,7 +634,6 @@ export default function ProfilePage() {
 
   const goToPage = useCallback((targetPage: number) => {
     if (targetPage !== topNavPage && targetPage >= 0 && targetPage < tabPages.length) {
-      playStepperTickSound(targetPage > topNavPage ? "up" : "down");
       setNavDirection(targetPage > topNavPage ? 1 : -1);
       setTopNavPage(targetPage);
     }
@@ -1336,7 +1334,6 @@ const handleConfirmDeleteNiche = async () => {
                 type="button"
                 onClick={() => {
                   setActiveTab(tab.id);
-                  playStepperTickSound();
                 }}
                 title={tab.label}
                 className={`group relative flex-1 min-w-0 flex items-center justify-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs whitespace-nowrap transition-all duration-200 cursor-pointer select-none truncate ${

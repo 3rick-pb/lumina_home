@@ -149,10 +149,10 @@ export function OverviewTab({
     if (!barEl || !chartEl) return "center";
     const chartRect = chartEl.getBoundingClientRect();
     const barRect = barEl.getBoundingClientRect();
-    const distFromLeft = barRect.left - chartRect.left;
-    const distFromRight = chartRect.right - barRect.right;
-    if (distFromLeft < 70) return "left";
-    if (distFromRight < 70) return "right";
+    const barCenterDistLeft = (barRect.left + barRect.width / 2) - chartRect.left;
+    const barCenterDistRight = chartRect.right - (barRect.left + barRect.width / 2);
+    if (barCenterDistLeft < 75) return "left";
+    if (barCenterDistRight < 75) return "right";
     return "center";
   }, []);
 
@@ -497,7 +497,7 @@ export function OverviewTab({
           <div 
             ref={nicheChartRef}
             data-lenis-prevent="true"
-            className={`flex items-end h-44 pt-7 pb-2 px-2 overflow-x-auto select-none cursor-grab active:cursor-grabbing touch-pan-x [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden ${
+            className={`flex items-end h-44 pt-8 pb-2 px-2 overflow-x-auto select-none cursor-grab active:cursor-grabbing touch-pan-x [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden ${
               categoryDistributionData.length <= 4 
                 ? "justify-around gap-3" 
                 : categoryDistributionData.length <= 7 
@@ -534,26 +534,29 @@ export function OverviewTab({
                     {/* Responsive In-Bar Hover Tooltip Badge */}
                     {isHovered && (
                       <div 
-                        className={`absolute top-0 z-50 pointer-events-none flex flex-col animate-fade-in ${
+                        className={`absolute top-0 z-50 pointer-events-none flex flex-col transition-opacity duration-150 ${
                           hoveredAlignment === "left"
                             ? "left-0 items-start"
                             : hoveredAlignment === "right"
                             ? "right-0 items-end"
                             : "left-1/2 -translate-x-1/2 items-center"
                         }`}
+                        style={{
+                          transform: hoveredAlignment === "center" ? "translateX(-50%)" : "none",
+                        }}
                       >
                         <div className="bg-gray-950/95 dark:bg-white text-white dark:text-gray-950 px-2.5 py-1 rounded-xl text-[10px] font-bold shadow-xl border border-white/10 dark:border-gray-200 whitespace-nowrap flex items-center gap-1.5 backdrop-blur-md">
                           <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${hasItems ? "bg-[#e07a3f]" : "bg-gray-400"}`} />
-                          <span className="font-extrabold text-white dark:text-gray-950 truncate max-w-[95px]">{bar.category}:</span>
+                          <span className="font-extrabold text-white dark:text-gray-950 truncate max-w-[110px]">{bar.category}:</span>
                           <span className="font-bold text-[#e07a3f]">{bar.count} {bar.count === 1 ? "pz" : "pzs"}</span>
                           <span className="text-gray-400 dark:text-gray-500 font-medium">({bar.pctOfTotal}%)</span>
                         </div>
                         <div 
                           className={`w-2 h-1.5 bg-gray-950 dark:bg-white rotate-45 -mt-0.5 shadow-xs shrink-0 ${
                             hoveredAlignment === "left"
-                              ? "ml-4"
+                              ? "ml-[20px]"
                               : hoveredAlignment === "right"
-                              ? "mr-4"
+                              ? "mr-[20px]"
                               : "mx-auto"
                           }`} 
                         />
@@ -612,13 +615,16 @@ export function OverviewTab({
                     {/* Responsive In-Bar Hover Tooltip Badge */}
                     {isHovered && (
                       <div 
-                        className={`absolute top-0 z-50 pointer-events-none flex flex-col animate-fade-in ${
+                        className={`absolute top-0 z-50 pointer-events-none flex flex-col transition-opacity duration-150 ${
                           hoveredAlignment === "left"
                             ? "left-0 items-start"
                             : hoveredAlignment === "right"
                             ? "right-0 items-end"
                             : "left-1/2 -translate-x-1/2 items-center"
                         }`}
+                        style={{
+                          transform: hoveredAlignment === "center" ? "translateX(-50%)" : "none",
+                        }}
                       >
                         <div className="bg-gray-950/95 dark:bg-white text-white dark:text-gray-950 px-2.5 py-1 rounded-xl text-[10px] font-bold shadow-xl border border-white/10 dark:border-gray-200 whitespace-nowrap flex items-center gap-1.5 backdrop-blur-md">
                           <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${bar.hasData ? "bg-[#e07a3f]" : "bg-gray-400"}`} />
@@ -628,9 +634,9 @@ export function OverviewTab({
                         <div 
                           className={`w-2 h-1.5 bg-gray-950 dark:bg-white rotate-45 -mt-0.5 shadow-xs shrink-0 ${
                             hoveredAlignment === "left"
-                              ? "ml-4"
+                              ? "ml-[20px]"
                               : hoveredAlignment === "right"
-                              ? "mr-4"
+                              ? "mr-[20px]"
                               : "mx-auto"
                           }`} 
                         />
