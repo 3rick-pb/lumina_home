@@ -246,10 +246,29 @@ export default function ProfilePage() {
 
   // Enhanced Spotlight Search Bar State & Keyboard Shortcuts
   const [isSearchFocused, setIsSearchFocused] = useState(false);
+  const [isMobileSearchOpen, setIsMobileSearchOpen] = useState(false);
+  const [keyboardOffset, setKeyboardOffset] = useState(0);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const mobileSearchInputRef = useRef<HTMLInputElement>(null);
   const searchDropdownRef = useRef<HTMLDivElement>(null);
   const mobileSearchDropdownRef = useRef<HTMLDivElement>(null);
+
+  // Dynamic visualViewport tracker for mobile virtual keyboard
+  useEffect(() => {
+    if (typeof window === "undefined" || !window.visualViewport) return;
+    const handleVisualResize = () => {
+      const vv = window.visualViewport;
+      if (!vv) return;
+      const offset = Math.max(0, window.innerHeight - (vv.height + vv.offsetTop));
+      setKeyboardOffset(offset);
+    };
+    window.visualViewport.addEventListener("resize", handleVisualResize);
+    window.visualViewport.addEventListener("scroll", handleVisualResize);
+    return () => {
+      window.visualViewport?.removeEventListener("resize", handleVisualResize);
+      window.visualViewport?.removeEventListener("scroll", handleVisualResize);
+    };
+  }, []);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -257,28 +276,31 @@ export default function ProfilePage() {
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
         e.preventDefault();
         if (window.innerWidth < 768) {
-          mobileSearchInputRef.current?.focus();
+          setIsMobileSearchOpen(true);
+          setTimeout(() => mobileSearchInputRef.current?.focus(), 60);
         } else {
           searchInputRef.current?.focus();
+          setIsSearchFocused(true);
         }
-        setIsSearchFocused(true);
       } 
       // Slash key '/' when not inside an input
       else if (e.key === "/" && document.activeElement?.tagName !== "INPUT" && document.activeElement?.tagName !== "TEXTAREA") {
         e.preventDefault();
         if (window.innerWidth < 768) {
-          mobileSearchInputRef.current?.focus();
+          setIsMobileSearchOpen(true);
+          setTimeout(() => mobileSearchInputRef.current?.focus(), 60);
         } else {
           searchInputRef.current?.focus();
+          setIsSearchFocused(true);
         }
-        setIsSearchFocused(true);
       } 
       // Escape key to dismiss
       else if (e.key === "Escape") {
-        if (isSearchFocused || searchQuery) {
+        if (isMobileSearchOpen || isSearchFocused || searchQuery) {
           searchInputRef.current?.blur();
           mobileSearchInputRef.current?.blur();
           setIsSearchFocused(false);
+          setIsMobileSearchOpen(false);
           setSearchQuery("");
         }
       }
@@ -301,7 +323,7 @@ export default function ProfilePage() {
       document.removeEventListener("mousedown", handleClickOutside);
       document.removeEventListener("touchstart", handleClickOutside);
     };
-  }, [isSearchFocused, searchQuery]);
+  }, [isMobileSearchOpen, isSearchFocused, searchQuery]);
 
   // Ensure browser smooth scroll resumes whenever search loses focus or unmounts
   useEffect(() => {
@@ -1657,8 +1679,9 @@ const handleConfirmDeleteNiche = async () => {
     </div>
   </div>
 
-  {/* Acciones Rápidas en Móvil: Avatar Blobatar + Botón Salir */}
-  <div className="flex md:hidden items-center gap-2 shrink-0">
+  {/* Acciones Rápidas en Móvil: Separador Vertical + Avatar Blobatar + Botón Salir */}
+  <div className="flex md:hidden items-center gap-2.5 shrink-0">
+    <div className="h-6 w-px bg-stone-300 dark:bg-white/20 shrink-0 my-auto" aria-hidden="true" />
     <BlobatarAvatar
       name={customSeed || user.id || user.email || user.name}
       size={34}
@@ -1678,74 +1701,6 @@ const handleConfirmDeleteNiche = async () => {
       <span className="text-[11px] font-bold">Salir</span>
     </button>
   </div>
-  </div>
-
-  {/* Barra de Búsqueda Móvil Dedicada estilo Spotlight (Visible solo en pantallas pequeñas) */}
-  <div className="relative w-full md:hidden z-50 group/mobile-search" ref={mobileSearchDropdownRef}>
-    <div 
-      className={`relative flex items-center gap-2.5 px-3.5 h-11 rounded-2xl bg-white/90 dark:bg-[#1a1a20]/90 backdrop-blur-2xl border transition-all duration-300 ease-out shadow-xs ${
-        isSearchFocused
-          ? "border-[#e07a3f] ring-4 ring-[#e07a3f]/25 shadow-[0_4px_20px_rgba(224,122,63,0.2)]"
-          : "border-stone-200/90 dark:border-white/10 hover:border-[#e07a3f]/50"
-      }`}
-    >
-      <div className="flex items-center justify-center shrink-0">
-        <Search className={`w-4 h-4 transition-all duration-300 ${
-          isSearchFocused ? "text-[#e07a3f] scale-110 rotate-[-8deg]" : "text-[#e07a3f]/80"
-        }`} />
-      </div>
-
-      <input
-        ref={mobileSearchInputRef}
-        id="lumina-profile-search-input-mobile"
-        type="text"
-        value={searchQuery}
-        onFocus={() => setIsSearchFocused(true)}
-        onChange={(e) => setSearchQuery(e.target.value)}
-        onKeyDown={(e) => {
-          if (e.key === "Enter") {
-            e.preventDefault();
-            if (searchQuery.trim().length > 0) {
-              if (filteredOrders.length > 0) {
-                setActiveTab("orders");
-                setSelectedOrder(filteredOrders[0]);
-                setSearchQuery("");
-                setIsSearchFocused(false);
-              } else if (filteredCatalog.length > 0) {
-                setActiveTab("catalog");
-                handleOpenEditProduct(filteredCatalog[0]);
-                setSearchQuery("");
-                setIsSearchFocused(false);
-              }
-            }
-          }
-        }}
-        placeholder={isAdmin ? "Buscar pedidos, clientes, catálogo..." : "Buscar pedidos, marcas o piezas..."}
-        className="bg-transparent border-none outline-none text-xs w-full font-medium text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500"
-      />
-
-      {searchQuery && (
-        <div className="flex items-center gap-1.5 shrink-0">
-          <span className="px-2 py-0.5 rounded-full bg-[#e07a3f]/10 text-[#e07a3f] dark:text-[#f59e0b] text-[10px] font-mono font-bold">
-            {filteredOrders.length + filteredCatalog.length}
-          </span>
-          <button
-            type="button"
-            onClick={() => {
-              setSearchQuery("");
-              mobileSearchInputRef.current?.focus();
-            }}
-            className="w-5 h-5 rounded-full hover:bg-stone-200/80 dark:hover:bg-white/15 text-gray-400 hover:text-gray-800 dark:hover:text-white flex items-center justify-center transition-all cursor-pointer"
-            title="Limpiar búsqueda"
-          >
-            <X className="w-3.5 h-3.5" />
-          </button>
-        </div>
-      )}
-    </div>
-
-    {/* Dropdown Spotlight en Móvil */}
-    {isSearchFocused && renderSpotlightDropdown(true)}
   </div>
 
   {/* Right Search Input & Profile Badge (Spotlight Alive Command Bar en Desktop) */}
@@ -2322,7 +2277,14 @@ const handleConfirmDeleteNiche = async () => {
       {/* Mobile Floating Bottom Dock (beUI Paginated Dock, 3 pages of 4 sections, Hidden on md and up) */}
       <div className="md:hidden">
         <BeUIPaginatedDock
-          isVisible={isMobileDockVisible}
+          isVisible={isMobileDockVisible && !isMobileSearchOpen}
+          onSearchClick={() => {
+            setIsMobileSearchOpen(true);
+            setTimeout(() => {
+              mobileSearchInputRef.current?.focus();
+            }, 60);
+          }}
+          isSearchActive={isMobileSearchOpen}
           items={[
             {
               id: "overview",
@@ -2419,6 +2381,306 @@ const handleConfirmDeleteNiche = async () => {
           itemsPerPage={4}
         />
       </div>
+
+      {/* Drawer de Búsqueda Móvil estilo iOS 26 (Resultados arriba, Barra encima del teclado) */}
+      <AnimatePresence>
+        {isMobileSearchOpen && (
+          <div className="fixed inset-0 z-[140] pointer-events-auto md:hidden" ref={mobileSearchDropdownRef}>
+            {/* Backdrop Translúcido con desenfoque de cristal */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              onClick={() => {
+                setIsMobileSearchOpen(false);
+                setSearchQuery("");
+              }}
+              className="absolute inset-0 bg-black/50 dark:bg-black/70 backdrop-blur-md"
+            />
+
+            {/* Contenedor anclado dinámicamente encima del teclado virtual */}
+            <motion.div
+              initial={{ y: "100%", opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              exit={{ y: "100%", opacity: 0 }}
+              transition={{ type: "spring", stiffness: 400, damping: 32 }}
+              style={keyboardOffset > 0 ? { bottom: `${keyboardOffset}px` } : undefined}
+              className="fixed inset-x-0 bottom-0 z-[150] flex flex-col justify-end pointer-events-none"
+            >
+              {/* 1. RESULTADOS ARRIBA (Scrollable encima de la barra de búsqueda) */}
+              <div 
+                data-lenis-prevent="true"
+                className="w-full max-h-[60vh] overflow-y-auto overscroll-contain px-3 pb-2.5 space-y-2 pointer-events-auto [scrollbar-width:thin]"
+              >
+                <div className="bg-white/95 dark:bg-[#1a1a20]/95 backdrop-blur-3xl border border-stone-200/90 dark:border-white/10 rounded-3xl shadow-[0_20px_50px_rgba(0,0,0,0.25)] dark:shadow-[0_20px_50px_rgba(0,0,0,0.7)] p-3.5 space-y-3">
+                  {/* Header de resultados */}
+                  <div className="shrink-0 flex items-center justify-between px-1 pb-2 border-b border-gray-100 dark:border-white/10">
+                    <span className="text-[10px] text-gray-400 dark:text-gray-500 uppercase tracking-wider font-bold flex items-center gap-1.5">
+                      <Sparkles className="w-3 h-3 text-[#e07a3f]" />
+                      {searchQuery.trim().length > 0 
+                        ? `Coincidencias (${filteredOrders.length + filteredCatalog.length})`
+                        : "Sugerencias de Navegación"}
+                    </span>
+                    {searchQuery && (
+                      <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-[#e07a3f]/10 text-[#e07a3f] dark:text-[#f59e0b] font-bold">
+                        {filteredOrders.length + filteredCatalog.length} encontrados
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Estado inicial sin texto: Accesos directos rápidos */}
+                  {searchQuery.trim().length === 0 && (
+                    <div className="space-y-2 py-1">
+                      <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider px-1">
+                        Accesos Directos Rápidos
+                      </p>
+                      <div className="grid grid-cols-2 gap-2">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setActiveTab("orders");
+                            setIsMobileSearchOpen(false);
+                          }}
+                          className="p-2.5 rounded-2xl bg-stone-50 dark:bg-white/[0.04] hover:bg-amber-50 dark:hover:bg-[#e07a3f]/10 border border-stone-100 dark:border-white/5 text-left transition-all flex items-center gap-2.5 cursor-pointer"
+                        >
+                          <div className="w-7 h-7 rounded-xl bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0">
+                            <ShoppingBag className="w-3.5 h-3.5" />
+                          </div>
+                          <div className="min-w-0">
+                            <span className="font-semibold text-gray-800 dark:text-gray-200 text-xs block truncate">
+                              {isAdmin ? "Todos los Pedidos" : "Mis Pedidos"}
+                            </span>
+                            <span className="text-[10px] text-gray-400 block truncate">
+                              {scopedOrders.length} registros
+                            </span>
+                          </div>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setActiveTab(isAdmin ? "catalog" : "favorites");
+                            setIsMobileSearchOpen(false);
+                          }}
+                          className="p-2.5 rounded-2xl bg-stone-50 dark:bg-white/[0.04] hover:bg-amber-50 dark:hover:bg-[#e07a3f]/10 border border-stone-100 dark:border-white/5 text-left transition-all flex items-center gap-2.5 cursor-pointer"
+                        >
+                          <div className="w-7 h-7 rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0">
+                            {isAdmin ? <Layers className="w-3.5 h-3.5" /> : <Heart className="w-3.5 h-3.5 text-red-500" />}
+                          </div>
+                          <div className="min-w-0">
+                            <span className="font-semibold text-gray-800 dark:text-gray-200 text-xs block truncate">
+                              {isAdmin ? "Catálogo y Piezas" : "Lista de Deseos"}
+                            </span>
+                            <span className="text-[10px] text-gray-400 block truncate">
+                              {isAdmin ? `${products.length} productos` : `${favorites.length} guardados`}
+                            </span>
+                          </div>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setActiveTab("cards");
+                            setIsMobileSearchOpen(false);
+                          }}
+                          className="p-2.5 rounded-2xl bg-stone-50 dark:bg-white/[0.04] hover:bg-amber-50 dark:hover:bg-[#e07a3f]/10 border border-stone-100 dark:border-white/5 text-left transition-all flex items-center gap-2.5 cursor-pointer"
+                        >
+                          <div className="w-7 h-7 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
+                            <CreditCard className="w-3.5 h-3.5" />
+                          </div>
+                          <div className="min-w-0">
+                            <span className="font-semibold text-gray-800 dark:text-gray-200 text-xs block truncate">
+                              Billetera y Pagos
+                            </span>
+                            <span className="text-[10px] text-gray-400 block truncate">
+                              Métodos guardados
+                            </span>
+                          </div>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setActiveTab("settings");
+                            setIsMobileSearchOpen(false);
+                          }}
+                          className="p-2.5 rounded-2xl bg-stone-50 dark:bg-white/[0.04] hover:bg-amber-50 dark:hover:bg-[#e07a3f]/10 border border-stone-100 dark:border-white/5 text-left transition-all flex items-center gap-2.5 cursor-pointer"
+                        >
+                          <div className="w-7 h-7 rounded-xl bg-purple-500/10 text-purple-600 dark:text-purple-400 flex items-center justify-center shrink-0">
+                            <Settings className="w-3.5 h-3.5" />
+                          </div>
+                          <div className="min-w-0">
+                            <span className="font-semibold text-gray-800 dark:text-gray-200 text-xs block truncate">
+                              Ajustes de Perfil
+                            </span>
+                            <span className="text-[10px] text-gray-400 block truncate">
+                              Seguridad y Datos
+                            </span>
+                          </div>
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Resultados de Pedidos */}
+                  {searchQuery.trim().length > 0 && filteredOrders.length > 0 && (
+                    <div className="space-y-1.5">
+                      <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider px-1 flex items-center gap-1.5">
+                        <ShoppingBag className="w-3 h-3 text-blue-500" />
+                        <span>Pedidos ({filteredOrders.length})</span>
+                      </p>
+                      <div className="space-y-1 max-h-44 overflow-y-auto pr-1 [scrollbar-width:thin]">
+                        {filteredOrders.slice(0, 4).map((ord) => (
+                          <div
+                            key={ord.id}
+                            onClick={() => {
+                              setActiveTab("orders");
+                              setSelectedOrder(ord);
+                              setSearchQuery("");
+                              setIsMobileSearchOpen(false);
+                            }}
+                            className="p-2.5 rounded-2xl hover:bg-stone-100/80 dark:hover:bg-white/[0.06] cursor-pointer flex items-center justify-between gap-2.5 transition-all group"
+                          >
+                            <div className="min-w-0">
+                              <span className="font-mono font-bold text-gray-900 dark:text-white block group-hover:text-[#e07a3f] transition-colors text-xs">
+                                {ord.id}
+                              </span>
+                              <span className="text-[10.5px] text-gray-400 truncate block">
+                                {ord.customerName || "Cliente Lumina"} · ${Number(ord?.total || 0).toFixed(2)}
+                              </span>
+                            </div>
+                            <span className={`text-[10px] px-2 py-0.5 rounded-full font-semibold shrink-0 border ${
+                              ord?.status === "Entregado"
+                                ? "bg-emerald-50 text-emerald-700 border-emerald-100 dark:bg-emerald-950/40 dark:text-emerald-400 dark:border-emerald-800/30"
+                                : ord?.status === "Enviado"
+                                ? "bg-amber-50 text-amber-700 border-amber-100 dark:bg-amber-950/40 dark:text-amber-400 dark:border-amber-800/30"
+                                : "bg-blue-50 text-blue-700 border-blue-100 dark:bg-blue-950/40 dark:text-blue-400 dark:border-blue-800/30"
+                            }`}>
+                              {ord?.status || "Procesando"}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Resultados de Catálogo */}
+                  {searchQuery.trim().length > 0 && filteredCatalog.length > 0 && (
+                    <div className="space-y-1.5">
+                      <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider px-1 flex items-center gap-1.5">
+                        <Layers className="w-3 h-3 text-amber-500" />
+                        <span>Catálogo de Piezas ({filteredCatalog.length})</span>
+                      </p>
+                      <div className="space-y-1 max-h-44 overflow-y-auto pr-1 [scrollbar-width:thin]">
+                        {filteredCatalog.slice(0, 4).map((prod) => (
+                          <div
+                            key={prod.id}
+                            onClick={() => {
+                              setActiveTab(isAdmin ? "catalog" : "favorites");
+                              if (isAdmin) handleOpenEditProduct(prod);
+                              setSearchQuery("");
+                              setIsMobileSearchOpen(false);
+                            }}
+                            className="p-2 rounded-2xl hover:bg-stone-100/80 dark:hover:bg-white/[0.06] cursor-pointer flex items-center justify-between gap-2.5 transition-all group"
+                          >
+                            <div className="flex items-center gap-2.5 min-w-0">
+                              {prod.imageUrl && (
+                                <div className="w-9 h-9 rounded-xl overflow-hidden bg-gray-100 dark:bg-white/10 shrink-0 border border-stone-200/50 dark:border-white/10">
+                                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                                  <img src={prod.imageUrl} alt={prod.title} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300" />
+                                </div>
+                              )}
+                              <div className="min-w-0">
+                                <span className="font-semibold text-gray-800 dark:text-gray-100 truncate block max-w-[200px] group-hover:text-[#e07a3f] transition-colors text-xs">
+                                  {prod.title}
+                                </span>
+                                <span className="text-[10px] text-gray-400 block">{prod.category}</span>
+                              </div>
+                            </div>
+                            <span className="font-mono font-bold text-gray-900 dark:text-gray-200 shrink-0 text-xs">
+                              ${Number(prod.price || 0).toFixed(2)}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Sin resultados */}
+                  {searchQuery.trim().length > 0 && filteredOrders.length === 0 && filteredCatalog.length === 0 && (
+                    <div className="py-6 text-center space-y-1.5">
+                      <div className="w-9 h-9 rounded-2xl bg-amber-500/10 text-[#e07a3f] mx-auto flex items-center justify-center">
+                        <Search className="w-4 h-4 opacity-60" />
+                      </div>
+                      <p className="text-xs font-semibold text-gray-800 dark:text-gray-200">
+                        Sin resultados para &ldquo;{searchQuery}&rdquo;
+                      </p>
+                      <p className="text-[11px] text-gray-400">
+                        Prueba buscando por número de orden, cliente o pieza de diseño.
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* 2. BARRA DE BÚSQUEDA ENCIMA DEL TECLADO (Bottom-anchored bar) */}
+              <div className="w-full bg-white/95 dark:bg-[#18181c]/95 backdrop-blur-3xl border-t border-stone-200/90 dark:border-white/10 px-3.5 py-2.5 pb-[calc(env(safe-area-inset-bottom,0px)+10px)] flex items-center gap-2 pointer-events-auto shadow-[0_-12px_40px_rgba(0,0,0,0.18)]">
+                <div className="relative flex-1 flex items-center gap-2 px-3.5 h-11 rounded-2xl bg-stone-100 dark:bg-white/10 border border-stone-200/80 dark:border-white/10 ring-2 ring-[#e07a3f]/30">
+                  <Search className="w-4 h-4 text-[#e07a3f] shrink-0" />
+                  <input
+                    ref={mobileSearchInputRef}
+                    autoFocus
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        e.preventDefault();
+                        if (searchQuery.trim().length > 0) {
+                          if (filteredOrders.length > 0) {
+                            setActiveTab("orders");
+                            setSelectedOrder(filteredOrders[0]);
+                            setSearchQuery("");
+                            setIsMobileSearchOpen(false);
+                          } else if (filteredCatalog.length > 0) {
+                            setActiveTab("catalog");
+                            handleOpenEditProduct(filteredCatalog[0]);
+                            setSearchQuery("");
+                            setIsMobileSearchOpen(false);
+                          }
+                        }
+                      }
+                    }}
+                    placeholder={isAdmin ? "Buscar pedidos, clientes, catálogo..." : "Buscar mis pedidos, marcas o piezas..."}
+                    className="bg-transparent border-none outline-none text-xs w-full font-medium text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500"
+                  />
+                  {searchQuery && (
+                    <button
+                      type="button"
+                      onClick={() => setSearchQuery("")}
+                      className="w-5 h-5 rounded-full hover:bg-stone-200/80 dark:hover:bg-white/15 text-gray-400 hover:text-gray-800 dark:hover:text-white flex items-center justify-center transition-all cursor-pointer"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsMobileSearchOpen(false);
+                    setSearchQuery("");
+                  }}
+                  className="text-xs font-bold text-[#e07a3f] dark:text-[#f59e0b] px-2.5 py-2 rounded-xl hover:bg-[#e07a3f]/10 transition-colors shrink-0 cursor-pointer active:scale-95"
+                >
+                  Cancelar
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
 
       {activeTab === "catalog" && (
         <CatalogScrollToTopButton className="bottom-24 md:bottom-8" />
