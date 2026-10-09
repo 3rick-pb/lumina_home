@@ -443,18 +443,16 @@ export function ProductEditorModal({
           )}
 
           {/* 2. BODY CONTENT: Flujo sin estrés según pestaña activa */}
-          <form onSubmit={handleSubmit} className="flex-1 min-h-0 flex flex-col relative overflow-hidden">
-            <div 
-              ref={modalScrollRef}
-              data-lenis-prevent="true"
-              onWheel={(e) => {
-                e.stopPropagation();
-                if (modalScrollRef.current) {
-                  modalScrollRef.current.scrollTop += e.deltaY;
-                }
-              }}
-              className="flex-1 min-h-0 overflow-y-auto p-5 sm:p-7 space-y-6 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden overscroll-contain"
-            >
+          <form onSubmit={handleSubmit} className="flex-1 min-h-0 flex flex-col overflow-hidden">
+            <div className="relative flex-1 min-h-0 overflow-hidden">
+              <div 
+                ref={modalScrollRef}
+                data-lenis-prevent="true"
+                onWheel={(e) => {
+                  e.stopPropagation();
+                }}
+                className="h-full w-full overflow-y-auto p-5 sm:p-7 space-y-6 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden overscroll-contain"
+              >
             
             {/* PESTAÑA 1: ESENCIALES (Solo lo verdaderamente importante) */}
             {activeTab === 'esenciales' && (
@@ -1079,8 +1077,9 @@ export function ProductEditorModal({
             )}
 
               </div>
-              {/* Authentic macOS Sequoia Floating Overlay Scrollbar */}
-              <MacOSScrollbar containerRef={modalScrollRef} insetTop={14} insetBottom={14} insetRight={3} />
+              {/* Authentic macOS Sequoia Floating Overlay Scrollbar strictly inside content area */}
+              <MacOSScrollbar containerRef={modalScrollRef} insetTop={10} insetBottom={10} insetRight={3} />
+            </div>
 
             {/* 3. FOOTER INFERIOR FIJO: Botones de Acción Intuitivos */}
             <div className="px-5 sm:px-7 py-4 border-t border-zinc-200/80 dark:border-zinc-800/80 bg-white/95 dark:bg-[#12121a]/95 backdrop-blur-xl flex items-center justify-between gap-3 shrink-0">

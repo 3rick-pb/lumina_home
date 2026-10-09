@@ -180,14 +180,19 @@ export function MacOSScrollbar({
     isDragging: false,
   });
 
+  const isVisibleRef = useRef(false);
   const showTemporarily = useCallback(() => {
-    setIsVisible(true);
+    if (!isVisibleRef.current) {
+      isVisibleRef.current = true;
+      setIsVisible(true);
+    }
     if (hideTimeoutRef.current) clearTimeout(hideTimeoutRef.current);
     hideTimeoutRef.current = setTimeout(() => {
       if (!stateRef.current.rafId && !stateRef.current.isDragging && !isHovered) {
+        isVisibleRef.current = false;
         setIsVisible(false);
       }
-    }, 1200);
+    }, 1100);
   }, [isHovered]);
 
   useEffect(() => {
@@ -270,7 +275,7 @@ export function MacOSScrollbar({
       }
     };
 
-    // Fast GPU transform update without layout thrashing — EFECTO GELATINA (squish & bulge)
+    // Fast GPU transform update without layout thrashing — EFECTO GELATINA (squish & bulge with HARD BOUNDS)
     const updateThumbDOM = () => {
       const thumb = thumbRef.current;
       if (!thumb) return;
@@ -281,41 +286,60 @@ export function MacOSScrollbar({
       }
 
       const progress = Math.max(0, Math.min(1, s.scrollPos / Math.max(1, s.maxScroll)));
-      
-      // Rubber bounce displacement with safe limits (never spills outside the straight track)
-      const maxBounceLimit = isWindowMode ? 14 : 22;
-      const clampedBounce = Math.max(-maxBounceLimit, Math.min(maxBounceLimit, s.bounceY));
-      const thumbPos = progress * s.maxPos + clampedBounce;
+      let thumbPos = progress * s.maxPos;
+      let squish = 1;
+      let bulge = 1;
+      let origin = "center center";
 
-      // Authentic rubber squish & constant-volume bulge during bounce (Efecto Gelatina)
-      const squish = Math.max(0.42, 1 - Math.abs(s.bounceY) * 0.024);
-      const bulge = 1 + (1 - squish) * 0.52;
+      // Detect interaction at START (strictly locked to start edge; never spills < 0)
+      if (progress <= 0.002 || (s.scrollPos <= 1 && s.bounceY > 0)) {
+        thumbPos = 0;
+        origin = isHorizontal ? "left center" : "top center";
+        if (s.bounceY > 0) {
+          squish = Math.max(0.55, 1 - s.bounceY * 0.022);
+          bulge = 1 + (1 - squish) * 0.45;
+        }
+      }
+      // Detect interaction at END (strictly locked to end edge; never spills > maxPos)
+      else if (progress >= 0.998 || (s.scrollPos >= s.maxScroll - 2 && s.bounceY < 0)) {
+        thumbPos = s.maxPos;
+        origin = isHorizontal ? "right center" : "bottom center";
+        if (s.bounceY < 0) {
+          const comp = Math.abs(s.bounceY);
+          squish = Math.max(0.55, 1 - comp * 0.022);
+          bulge = 1 + (1 - squish) * 0.45;
+        }
+      }
+      // Middle of track: purely smooth translation, zero squish, centered origin
+      else {
+        thumbPos = Math.max(0, Math.min(s.maxPos, thumbPos));
+        squish = 1;
+        bulge = 1;
+        origin = "center center";
+      }
 
+      thumb.style.transformOrigin = origin;
       if (isHorizontal) {
-        thumb.style.transformOrigin =
-          s.bounceY > 0 ? "left center" : s.bounceY < 0 ? "right center" : "center center";
         thumb.style.transform = `translate3d(${thumbPos.toFixed(1)}px, 0, 0) scaleX(${squish.toFixed(3)}) scaleY(${bulge.toFixed(3)})`;
       } else {
-        thumb.style.transformOrigin =
-          s.bounceY > 0 ? "top center" : s.bounceY < 0 ? "bottom center" : "center center";
         thumb.style.transform = `translate3d(0, ${thumbPos.toFixed(1)}px, 0) scaleX(${bulge.toFixed(3)}) scaleY(${squish.toFixed(3)})`;
       }
       thumb.style.opacity = "";
     };
 
-    // Underdamped spring oscillation loop for juicy rebound (Efecto Gelatina)
+    // Critically-damped Hooke's Law spring oscillation loop for silky smooth rebound
     const stepPhysics = () => {
       s.rafId = 0;
 
-      const springK = 0.18; // Spring tension
-      const springDamping = 0.72; // Spring friction (allows 2-3 satisfying rebound oscillations)
+      const springK = 0.22; // Spring tension
+      const springDamping = 0.78; // Spring damping (smooth, jitter-free settling)
       const force = -s.bounceY * springK;
       s.bounceYVel = (s.bounceYVel + force) * springDamping;
       s.bounceY += s.bounceYVel;
 
       updateThumbDOM();
 
-      if (Math.abs(s.bounceY) > 0.12 || Math.abs(s.bounceYVel) > 0.12) {
+      if (Math.abs(s.bounceY) > 0.08 || Math.abs(s.bounceYVel) > 0.08) {
         s.rafId = window.requestAnimationFrame(stepPhysics);
       } else {
         s.bounceY = 0;
@@ -600,14 +624,14 @@ export function MacOSScrollbar({
 
   if (isWindowMode) {
     if (isHorizontal) {
-      trackStyle.bottom = 0;
-      trackStyle.left = 0;
-      trackStyle.right = 0;
+      trackStyle.bottom = `${resolvedInsets.bottom}px`;
+      trackStyle.left = `${resolvedInsets.left}px`;
+      trackStyle.right = `${resolvedInsets.right}px`;
       trackStyle.height = "14px";
     } else {
-      trackStyle.top = 0;
-      trackStyle.right = 0;
-      trackStyle.bottom = 0;
+      trackStyle.top = `${resolvedInsets.top}px`;
+      trackStyle.right = `${resolvedInsets.right}px`;
+      trackStyle.bottom = `${resolvedInsets.bottom}px`;
       trackStyle.width = "14px";
     }
   } else {

@@ -105,7 +105,7 @@ export function OverviewTab({
     const maxCount = Math.max(...counts.map(c => c.count), 1);
     return counts.map(c => ({
       ...c,
-      heightPct: c.count === 0 ? 8 : Math.max(Math.round((c.count / maxCount) * 58), 12)
+      heightPct: c.count === 0 ? 8 : Math.max(Math.round((c.count / maxCount) * 48), 12)
     }));
   }, [categories, products]);
 
@@ -124,7 +124,7 @@ export function OverviewTab({
     return totals.map(t => ({
       month: t.month,
       total: t.total,
-      heightPct: hasAnyOrders && t.total > 0 ? Math.max(Math.round((t.total / maxMonth) * 58), 12) : 6,
+      heightPct: hasAnyOrders && t.total > 0 ? Math.max(Math.round((t.total / maxMonth) * 48), 12) : 6,
       hasData: t.total > 0
     }));
   }, [orders]);
@@ -142,8 +142,25 @@ export function OverviewTab({
   useEffect(() => {
     const el = nicheChartRef.current;
     if (!el) return;
+
+    let targetScrollLeft = el.scrollLeft;
+    let smoothRafId = 0;
+
+    const smoothScrollTick = () => {
+      if (!el) return;
+      const current = el.scrollLeft;
+      const diff = targetScrollLeft - current;
+      if (Math.abs(diff) > 0.8) {
+        el.scrollLeft = current + diff * 0.28;
+        smoothRafId = requestAnimationFrame(smoothScrollTick);
+      } else {
+        el.scrollLeft = targetScrollLeft;
+        smoothRafId = 0;
+      }
+    };
+
     const handleWheel = (e: WheelEvent) => {
-      // If desktop cursor is hovering over the niche inventory chart, translate wheel to horizontal scroll
+      // If desktop cursor is hovering over the niche inventory chart, translate wheel to smooth horizontal scroll
       const isFinePointer = typeof window !== "undefined" && window.matchMedia("(pointer: fine)").matches;
       if (isFinePointer) {
         // Desktop (cursor): block the general web scroll vertically while wheeling over niche bars
@@ -155,10 +172,16 @@ export function OverviewTab({
           if (wheelResumeTimeoutRef.current) clearTimeout(wheelResumeTimeoutRef.current);
           wheelResumeTimeoutRef.current = setTimeout(() => {
             lenis.start();
-          }, 400);
+          }, 350);
         }
 
-        el.scrollLeft += (e.deltaY !== 0 ? e.deltaY : e.deltaX) * 1.15;
+        const delta = e.deltaY !== 0 ? e.deltaY : e.deltaX;
+        const maxScroll = Math.max(0, el.scrollWidth - el.clientWidth);
+        targetScrollLeft = Math.max(0, Math.min(maxScroll, (smoothRafId ? targetScrollLeft : el.scrollLeft) + delta * 0.85));
+
+        if (!smoothRafId) {
+          smoothRafId = requestAnimationFrame(smoothScrollTick);
+        }
       } else {
         // Touch or generic device: allow natural vertical pass-through, capture horizontal
         if (Math.abs(e.deltaX) > Math.abs(e.deltaY) || e.shiftKey) {
@@ -178,6 +201,11 @@ export function OverviewTab({
       isMouseDown = true;
       startX = e.clientX;
       startScrollLeft = el.scrollLeft;
+      targetScrollLeft = el.scrollLeft;
+      if (smoothRafId) {
+        cancelAnimationFrame(smoothRafId);
+        smoothRafId = 0;
+      }
       el.style.cursor = "grabbing";
     };
 
@@ -185,6 +213,7 @@ export function OverviewTab({
       if (!isMouseDown) return;
       const dx = e.clientX - startX;
       el.scrollLeft = startScrollLeft - dx;
+      targetScrollLeft = el.scrollLeft;
     };
 
     const handleMouseUp = () => {
@@ -202,6 +231,7 @@ export function OverviewTab({
       el.removeEventListener("mousedown", handleMouseDown);
       window.removeEventListener("mousemove", handleMouseMove);
       window.removeEventListener("mouseup", handleMouseUp);
+      if (smoothRafId) cancelAnimationFrame(smoothRafId);
       if (wheelResumeTimeoutRef.current) clearTimeout(wheelResumeTimeoutRef.current);
     };
   }, []);
@@ -434,7 +464,7 @@ export function OverviewTab({
             data-lenis-prevent="true"
             onMouseEnter={isAdmin ? handleNicheContainerMouseEnter : undefined}
             onMouseLeave={isAdmin ? handleNicheContainerLeave : handleMonthContainerLeave}
-            className={`flex items-end h-52 pt-10 pb-6 px-2 overflow-x-auto overflow-y-hidden select-none cursor-grab active:cursor-grabbing touch-pan-y touch-pan-x [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden ${
+            className={`flex items-end h-44 pt-6 pb-2 px-2 overflow-x-auto overflow-y-hidden select-none cursor-grab active:cursor-grabbing touch-pan-y touch-pan-x [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden ${
               categoryDistributionData.length <= 4 
                 ? "justify-around gap-3" 
                 : categoryDistributionData.length <= 7 
@@ -504,8 +534,8 @@ export function OverviewTab({
                       />
                     </div>
 
-                    {/* 2. Anchored Category Label Area with 20px bottom clearance for scrollbar */}
-                    <div className="w-full h-6 pt-1.5 mb-5 flex items-center justify-center shrink-0 overflow-hidden">
+                    {/* 2. Anchored Category Label Area with bottom clearance for scrollbar */}
+                    <div className="w-full h-5 mb-2.5 flex items-center justify-center shrink-0 overflow-hidden">
                       <span 
                         className={`text-[10px] text-center transition-colors block truncate w-full ${
                           isHovered ? "text-gray-950 dark:text-white font-bold" : "text-gray-400 font-medium"
@@ -559,7 +589,7 @@ export function OverviewTab({
                       />
                     </div>
 
-                    <div className="w-full h-6 pt-1.5 mb-5 flex items-center justify-center shrink-0">
+                    <div className="w-full h-5 mb-2.5 flex items-center justify-center shrink-0">
                       <span className={`text-[10px] text-center ${isHovered ? "text-gray-950 font-bold" : "text-gray-400 font-medium"}`}>
                         {bar.month}
                       </span>
