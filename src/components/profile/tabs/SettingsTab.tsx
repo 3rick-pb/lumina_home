@@ -628,8 +628,8 @@ export function SettingsTab({
             </div>
           </div>
 
-          {/* Selector de Forma Geométrica */}
-          <div className="pt-4 border-t border-gray-200/60 dark:border-white/10 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          {/* Selector de Forma Geométrica con botones claramente separados y previsualización táctil */}
+          <div className="pt-4 border-t border-gray-200/60 dark:border-white/10 flex flex-col sm:flex-row sm:items-center justify-between gap-3.5">
             <div className="space-y-0.5">
               <p className="text-xs font-bold text-gray-900 dark:text-gray-100">
                 Forma del Contenedor
@@ -638,28 +638,47 @@ export function SettingsTab({
                 Elige entre el contorno squircle orgánico Liquid Glass o círculo completo.
               </p>
             </div>
-            <div className="flex items-center gap-1.5 bg-gray-100/90 dark:bg-[#2c2c2e]/90 p-1 rounded-xl shrink-0">
+            <div className="flex items-center gap-3 sm:gap-4 shrink-0">
               <button
                 type="button"
                 onClick={() => setBackgroundShape("squircle", user?.id, user?.email)}
-                className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-all cursor-pointer ${
+                className={`flex-1 sm:flex-initial px-4 py-2 sm:px-4.5 sm:py-2.5 rounded-2xl text-xs font-bold transition-all duration-200 flex items-center justify-center gap-2.5 cursor-pointer active:scale-95 border ${
                   backgroundShape === "squircle"
-                    ? "bg-white dark:bg-[#3a3a3c] text-gray-900 dark:text-white shadow-sm"
-                    : "text-gray-500 hover:text-gray-900 dark:hover:text-white"
+                    ? "bg-white dark:bg-[#252528] text-gray-900 dark:text-white border-[#e07a3f] ring-2 ring-[#e07a3f]/20 shadow-md shadow-[#e07a3f]/10"
+                    : "bg-gray-100/80 dark:bg-white/[0.05] text-gray-600 dark:text-gray-400 border-gray-200/80 dark:border-white/10 hover:bg-gray-200/70 dark:hover:bg-white/10 hover:text-gray-900 dark:hover:text-white"
                 }`}
+                title="Seleccionar contorno squircle orgánico"
               >
-                Squircle
+                <div
+                  className={`w-4 h-4 rounded-[5px] border-2 transition-colors ${
+                    backgroundShape === "squircle"
+                      ? "border-[#e07a3f] bg-[#e07a3f]/20"
+                      : "border-gray-400 dark:border-gray-500"
+                  }`}
+                  aria-hidden="true"
+                />
+                <span>Squircle</span>
               </button>
+
               <button
                 type="button"
                 onClick={() => setBackgroundShape("circle", user?.id, user?.email)}
-                className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-all cursor-pointer ${
+                className={`flex-1 sm:flex-initial px-4 py-2 sm:px-4.5 sm:py-2.5 rounded-2xl text-xs font-bold transition-all duration-200 flex items-center justify-center gap-2.5 cursor-pointer active:scale-95 border ${
                   backgroundShape === "circle"
-                    ? "bg-white dark:bg-[#3a3a3c] text-gray-900 dark:text-white shadow-sm"
-                    : "text-gray-500 hover:text-gray-900 dark:hover:text-white"
+                    ? "bg-white dark:bg-[#252528] text-gray-900 dark:text-white border-[#e07a3f] ring-2 ring-[#e07a3f]/20 shadow-md shadow-[#e07a3f]/10"
+                    : "bg-gray-100/80 dark:bg-white/[0.05] text-gray-600 dark:text-gray-400 border-gray-200/80 dark:border-white/10 hover:bg-gray-200/70 dark:hover:bg-white/10 hover:text-gray-900 dark:hover:text-white"
                 }`}
+                title="Seleccionar contorno de círculo completo"
               >
-                Círculo
+                <div
+                  className={`w-4 h-4 rounded-full border-2 transition-colors ${
+                    backgroundShape === "circle"
+                      ? "border-[#e07a3f] bg-[#e07a3f]/20"
+                      : "border-gray-400 dark:border-gray-500"
+                  }`}
+                  aria-hidden="true"
+                />
+                <span>Círculo</span>
               </button>
             </div>
           </div>

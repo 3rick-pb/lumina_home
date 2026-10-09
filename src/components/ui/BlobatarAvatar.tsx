@@ -15,7 +15,7 @@ export interface BlobatarAvatarProps {
   showGlow?: boolean;
 }
 
-export function BlobatarAvatar({
+export const BlobatarAvatar = React.memo(function BlobatarAvatar({
   name,
   size = 40,
   animate = "hover",
@@ -93,4 +93,4 @@ export function BlobatarAvatar({
       />
     </div>
   );
-}
+});

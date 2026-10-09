@@ -68,6 +68,9 @@ export function cleanupAvatarRealtimeListener() {
   }
 }
 
+// Timer de debouncing para guardar cambios de semilla sin congelar la UI ni saturar la red
+let avatarSeedDebounceTimer: ReturnType<typeof setTimeout> | null = null;
+
 export const useAvatarSettingsStore = create<AvatarSettingsState>()(
   persist(
     (set, get) => ({
@@ -95,9 +98,24 @@ export const useAvatarSettingsStore = create<AvatarSettingsState>()(
       },
 
       setCustomSeed: async (seed: string | null, userId?: string, email?: string) => {
+        // 1. Actualización optimista inmediata en memoria (cero lag, 60fps)
         set({ customSeed: seed });
+
+        // 2. Cancelar cualquier guardado previo pendiente si el usuario sigue pulsando
+        if (avatarSeedDebounceTimer) {
+          clearTimeout(avatarSeedDebounceTimer);
+          avatarSeedDebounceTimer = null;
+        }
+
+        // 3. Debounce de 600ms: solo persiste en Supabase cuando el usuario frena de pulsar
         if (userId) {
-          await get().saveSettingsToDatabase(userId, email);
+          avatarSeedDebounceTimer = setTimeout(async () => {
+            try {
+              await get().saveSettingsToDatabase(userId, email);
+            } catch (err) {
+              console.warn('[avatarSettingsStore] Debounced seed save error:', err);
+            }
+          }, 600);
         }
       },
 

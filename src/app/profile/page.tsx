@@ -247,43 +247,59 @@ export default function ProfilePage() {
   // Enhanced Spotlight Search Bar State & Keyboard Shortcuts
   const [isSearchFocused, setIsSearchFocused] = useState(false);
   const searchInputRef = useRef<HTMLInputElement>(null);
+  const mobileSearchInputRef = useRef<HTMLInputElement>(null);
   const searchDropdownRef = useRef<HTMLDivElement>(null);
+  const mobileSearchDropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       // Cmd+K or Ctrl+K
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
         e.preventDefault();
-        searchInputRef.current?.focus();
+        if (window.innerWidth < 768) {
+          mobileSearchInputRef.current?.focus();
+        } else {
+          searchInputRef.current?.focus();
+        }
         setIsSearchFocused(true);
       } 
       // Slash key '/' when not inside an input
       else if (e.key === "/" && document.activeElement?.tagName !== "INPUT" && document.activeElement?.tagName !== "TEXTAREA") {
         e.preventDefault();
-        searchInputRef.current?.focus();
+        if (window.innerWidth < 768) {
+          mobileSearchInputRef.current?.focus();
+        } else {
+          searchInputRef.current?.focus();
+        }
         setIsSearchFocused(true);
       } 
       // Escape key to dismiss
       else if (e.key === "Escape") {
         if (isSearchFocused || searchQuery) {
           searchInputRef.current?.blur();
+          mobileSearchInputRef.current?.blur();
           setIsSearchFocused(false);
           setSearchQuery("");
         }
       }
     };
 
-    const handleClickOutside = (e: MouseEvent) => {
-      if (searchDropdownRef.current && !searchDropdownRef.current.contains(e.target as Node)) {
+    const handleClickOutside = (e: MouseEvent | TouchEvent) => {
+      const target = e.target as Node;
+      const inDesktop = searchDropdownRef.current && searchDropdownRef.current.contains(target);
+      const inMobile = mobileSearchDropdownRef.current && mobileSearchDropdownRef.current.contains(target);
+      if (!inDesktop && !inMobile) {
         setIsSearchFocused(false);
       }
     };
 
     window.addEventListener("keydown", handleKeyDown);
     document.addEventListener("mousedown", handleClickOutside);
+    document.addEventListener("touchstart", handleClickOutside);
     return () => {
       window.removeEventListener("keydown", handleKeyDown);
       document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("touchstart", handleClickOutside);
     };
   }, [isSearchFocused, searchQuery]);
 
@@ -499,14 +515,14 @@ export default function ProfilePage() {
    if (showEditProductModal) setEditProductStep(0);
  }, [showEditProductModal]);
 
-  // Computed visibility for mobile bottom dock:
+  // Computed visibility for mobile bottom dock (Estilo Apple Music: siempre presente de forma estable, solo se oculta ante modales de pantalla completa):
   const isMobileDockVisible = Boolean(
-    isDockScrollVisible &&
-      !selectedOrder &&
+    !selectedOrder &&
       !isExcelMenuOpen &&
       !showProductModal &&
       !showCardModal &&
-      !showAddressForm
+      !showAddressForm &&
+      !showDriveModal
   );
 
   // Delete Product Confirmation Modal State
@@ -998,6 +1014,254 @@ const handleConfirmDeleteNiche = async () => {
   setNicheToDelete(null);
 };
 
+  // Renderizador unificado para el panel Spotlight Dropdown (móvil y desktop)
+  const renderSpotlightDropdown = (isMobile: boolean) => (
+    <div 
+      data-lenis-prevent="true"
+      onMouseEnter={() => {
+        getLenis()?.stop();
+      }}
+      onMouseLeave={() => {
+        getLenis()?.start();
+      }}
+      className={
+        isMobile
+          ? "absolute left-0 right-0 top-full mt-2 w-full max-h-[75vh] bg-white/95 dark:bg-[#1c1c22]/95 backdrop-blur-2xl border border-stone-200/90 dark:border-white/10 rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.18)] dark:shadow-[0_20px_50px_rgba(0,0,0,0.7)] p-3.5 z-[100] flex flex-col text-xs pointer-events-auto transition-all duration-200 ease-out animate-fade-in"
+          : "absolute right-0 top-full mt-2.5 w-[390px] max-w-[calc(100vw-2rem)] max-h-[78vh] bg-white/95 dark:bg-[#1c1c22]/95 backdrop-blur-2xl border border-stone-200/90 dark:border-white/10 rounded-3xl shadow-[0_25px_60px_rgba(0,0,0,0.18)] dark:shadow-[0_25px_60px_rgba(0,0,0,0.65)] p-4 z-[100] flex flex-col text-xs pointer-events-auto transition-all duration-200 ease-out animate-fade-in"
+      }
+    >
+      {/* Header */}
+      <div className="shrink-0 flex items-center justify-between px-1 pb-2 border-b border-gray-100 dark:border-white/10">
+        <span className="text-[10px] text-gray-400 dark:text-gray-500 uppercase tracking-wider font-bold flex items-center gap-1.5">
+          <Sparkles className="w-3 h-3 text-[#e07a3f]" />
+          {searchQuery.trim().length > 0 
+            ? `Coincidencias (${filteredOrders.length + filteredCatalog.length})`
+            : "Sugerencias de Navegación"}
+        </span>
+        <button
+          type="button"
+          onClick={() => {
+            setIsSearchFocused(false);
+            setSearchQuery("");
+          }}
+          className="text-[10.5px] text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 font-semibold px-2 py-0.5 rounded-lg hover:bg-stone-100 dark:hover:bg-white/5 transition-colors cursor-pointer"
+        >
+          Cerrar (Esc)
+        </button>
+      </div>
+
+      {/* Scrollable Results Container */}
+      <div 
+        data-lenis-prevent="true"
+        className="flex-1 min-h-0 overflow-y-auto overscroll-contain py-1 space-y-3.5 pr-1 [scrollbar-width:thin]"
+        style={{ overscrollBehavior: "contain" }}
+      >
+        {/* Estado vacío cuando NO hay consulta: Sugerencias rápidas */}
+        {searchQuery.trim().length === 0 && (
+          <div className="space-y-2 py-1">
+            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider px-1">
+              Accesos Directos Rápidos
+            </p>
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setActiveTab("orders");
+                  setIsSearchFocused(false);
+                }}
+                className="p-2.5 rounded-2xl bg-stone-50 dark:bg-white/[0.04] hover:bg-amber-50 dark:hover:bg-[#e07a3f]/10 border border-stone-100 dark:border-white/5 hover:border-[#e07a3f]/30 text-left transition-all group flex items-center gap-2.5 cursor-pointer"
+              >
+                <div className="w-7 h-7 rounded-xl bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0">
+                  <Package className="w-3.5 h-3.5" />
+                </div>
+                <div className="min-w-0">
+                  <span className="font-semibold text-gray-800 dark:text-gray-200 text-xs block group-hover:text-[#e07a3f] transition-colors truncate">
+                    {isAdmin ? "Todos los Pedidos" : "Mis Pedidos"}
+                  </span>
+                  <span className="text-[10px] text-gray-400 block truncate">
+                    {scopedOrders.length} registros
+                  </span>
+                </div>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setActiveTab(isAdmin ? "catalog" : "favorites");
+                  setIsSearchFocused(false);
+                }}
+                className="p-2.5 rounded-2xl bg-stone-50 dark:bg-white/[0.04] hover:bg-amber-50 dark:hover:bg-[#e07a3f]/10 border border-stone-100 dark:border-white/5 hover:border-[#e07a3f]/30 text-left transition-all group flex items-center gap-2.5 cursor-pointer"
+              >
+                <div className="w-7 h-7 rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0">
+                  {isAdmin ? <Layers className="w-3.5 h-3.5" /> : <Heart className="w-3.5 h-3.5 text-red-500" />}
+                </div>
+                <div className="min-w-0">
+                  <span className="font-semibold text-gray-800 dark:text-gray-200 text-xs block group-hover:text-[#e07a3f] transition-colors truncate">
+                    {isAdmin ? "Catálogo y Piezas" : "Lista de Deseos"}
+                  </span>
+                  <span className="text-[10px] text-gray-400 block truncate">
+                    {isAdmin ? `${products.length} productos` : `${favorites.length} guardados`}
+                  </span>
+                </div>
+              </button>
+
+              {isAdmin && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setActiveTab("niches");
+                    setIsSearchFocused(false);
+                  }}
+                  className="p-2.5 rounded-2xl bg-stone-50 dark:bg-white/[0.04] hover:bg-amber-50 dark:hover:bg-[#e07a3f]/10 border border-stone-100 dark:border-white/5 hover:border-[#e07a3f]/30 text-left transition-all group flex items-center gap-2.5 cursor-pointer"
+                >
+                  <div className="w-7 h-7 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
+                    <Store className="w-3.5 h-3.5" />
+                  </div>
+                  <div className="min-w-0">
+                    <span className="font-semibold text-gray-800 dark:text-gray-200 text-xs block group-hover:text-[#e07a3f] transition-colors truncate">
+                      Nichos de Tienda
+                    </span>
+                    <span className="text-[10px] text-gray-400 block truncate">
+                      {categories.length} categorías
+                    </span>
+                  </div>
+                </button>
+              )}
+
+              <button
+                type="button"
+                onClick={() => {
+                  setActiveTab("settings");
+                  setIsSearchFocused(false);
+                }}
+                className="p-2.5 rounded-2xl bg-stone-50 dark:bg-white/[0.04] hover:bg-amber-50 dark:hover:bg-[#e07a3f]/10 border border-stone-100 dark:border-white/5 hover:border-[#e07a3f]/30 text-left transition-all group flex items-center gap-2.5 cursor-pointer"
+              >
+                <div className="w-7 h-7 rounded-xl bg-purple-500/10 text-purple-600 dark:text-purple-400 flex items-center justify-center shrink-0">
+                  <Settings className="w-3.5 h-3.5" />
+                </div>
+                <div className="min-w-0">
+                  <span className="font-semibold text-gray-800 dark:text-gray-200 text-xs block group-hover:text-[#e07a3f] transition-colors truncate">
+                    Ajustes de Perfil
+                  </span>
+                  <span className="text-[10px] text-gray-400 block truncate">
+                    Seguridad y Datos
+                  </span>
+                </div>
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Resultados de Pedidos */}
+        {searchQuery.trim().length > 0 && filteredOrders.length > 0 && (
+          <div className="space-y-1.5">
+            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider px-1 flex items-center gap-1.5">
+              <Package className="w-3 h-3 text-blue-500" />
+              <span>Pedidos ({filteredOrders.length})</span>
+            </p>
+            <div className="space-y-1 max-h-48 overflow-y-auto pr-1 [scrollbar-width:thin]">
+              {filteredOrders.slice(0, 4).map((ord) => (
+                <div
+                  key={ord.id}
+                  onClick={() => {
+                    setActiveTab("orders");
+                    setSelectedOrder(ord);
+                    setSearchQuery("");
+                    setIsSearchFocused(false);
+                  }}
+                  className="p-2.5 rounded-2xl hover:bg-stone-100/80 dark:hover:bg-white/[0.06] cursor-pointer flex items-center justify-between gap-2.5 transition-all group"
+                >
+                  <div className="min-w-0">
+                    <span className="font-mono font-bold text-gray-900 dark:text-white block group-hover:text-[#e07a3f] transition-colors">
+                      {ord.id}
+                    </span>
+                    <span className="text-[10.5px] text-gray-400 truncate block">
+                      {ord.customerName || "Cliente Lumina"} · ${Number(ord?.total || 0).toFixed(2)}
+                    </span>
+                  </div>
+                  <span className={`text-[10px] px-2 py-0.5 rounded-full font-semibold shrink-0 border ${
+                    ord?.status === "Entregado"
+                      ? "bg-emerald-50 text-emerald-700 border-emerald-100 dark:bg-emerald-950/40 dark:text-emerald-400 dark:border-emerald-800/30"
+                      : ord?.status === "Enviado"
+                      ? "bg-amber-50 text-amber-700 border-amber-100 dark:bg-amber-950/40 dark:text-amber-400 dark:border-amber-800/30"
+                      : "bg-blue-50 text-blue-700 border-blue-100 dark:bg-blue-950/40 dark:text-blue-400 dark:border-blue-800/30"
+                  }`}>
+                    {ord?.status || "Procesando"}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Resultados de Catálogo */}
+        {searchQuery.trim().length > 0 && filteredCatalog.length > 0 && (
+          <div className="space-y-1.5">
+            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider px-1 flex items-center gap-1.5">
+              <Layers className="w-3 h-3 text-amber-500" />
+              <span>Catálogo de Piezas ({filteredCatalog.length})</span>
+            </p>
+            <div className="space-y-1 max-h-48 overflow-y-auto pr-1 [scrollbar-width:thin]">
+              {filteredCatalog.slice(0, 4).map((prod) => (
+                <div
+                  key={prod.id}
+                  onClick={() => {
+                    setActiveTab(isAdmin ? "catalog" : "favorites");
+                    setSearchQuery("");
+                    setIsSearchFocused(false);
+                  }}
+                  className="p-2 rounded-2xl hover:bg-stone-100/80 dark:hover:bg-white/[0.06] cursor-pointer flex items-center justify-between gap-2.5 transition-all group"
+                >
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    {prod.imageUrl && (
+                      <div className="w-9 h-9 rounded-xl overflow-hidden bg-gray-100 dark:bg-white/10 shrink-0 border border-stone-200/50 dark:border-white/10">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src={prod.imageUrl} alt={prod.title} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300" />
+                      </div>
+                    )}
+                    <div className="min-w-0">
+                      <span className="font-semibold text-gray-800 dark:text-gray-100 truncate block max-w-[200px] group-hover:text-[#e07a3f] transition-colors">
+                        {prod.title}
+                      </span>
+                      <span className="text-[10px] text-gray-400 block">{prod.category}</span>
+                    </div>
+                  </div>
+                  <span className="font-mono font-bold text-gray-900 dark:text-gray-200 shrink-0">
+                    ${Number(prod.price || 0).toFixed(2)}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Sin resultados */}
+        {searchQuery.trim().length > 0 && filteredOrders.length === 0 && filteredCatalog.length === 0 && (
+          <div className="py-7 text-center space-y-2">
+            <div className="w-10 h-10 rounded-2xl bg-amber-500/10 text-[#e07a3f] mx-auto flex items-center justify-center">
+              <Search className="w-5 h-5 opacity-60" />
+            </div>
+            <p className="text-xs font-semibold text-gray-800 dark:text-gray-200">
+              Sin resultados para &ldquo;{searchQuery}&rdquo;
+            </p>
+            <p className="text-[11px] text-gray-400">
+              Prueba buscando por número de orden, nombre de cliente o pieza de diseño.
+            </p>
+          </div>
+        )}
+      </div>
+
+      {/* Footer Bar */}
+      <div className="shrink-0 pt-2.5 border-t border-gray-100 dark:border-white/10 flex items-center justify-between text-[10px] text-gray-400">
+        <span className="flex items-center gap-1">
+          <kbd className="px-1 py-0.5 rounded bg-stone-100 dark:bg-white/10 font-mono text-[9px]">ESC</kbd> cerrar
+        </span>
+        <span className="flex items-center gap-1">
+          <kbd className="px-1 py-0.5 rounded bg-stone-100 dark:bg-white/10 font-mono text-[9px]">↵</kbd> abrir resultado
+        </span>
+      </div>
+    </div>
+  );
 
  return (
  <div className={clsx(resolvedTheme === 'dark' ? 'dark' : '')}>
@@ -1254,16 +1518,16 @@ const handleConfirmDeleteNiche = async () => {
  </aside>
 
   {/* 2. Main Bento Canvas */}
-  <main className={`flex-1 flex flex-col min-w-0 w-full space-y-6 pb-24 md:pb-0 ${activeTab === "cart_alerts" || activeTab === "analytics" ? "max-w-none" : "max-w-7xl mx-auto"}`}>
+  <main className={`flex-1 flex flex-col min-w-0 w-full space-y-6 pb-28 sm:pb-32 md:pb-6 ${activeTab === "cart_alerts" || activeTab === "analytics" ? "max-w-none" : "max-w-7xl mx-auto"}`}>
   
   {/* Top App Bar (Reference Style) */}
-  <header className="relative z-40 bg-white/80 dark:bg-[#202022]/80 backdrop-blur-2xl px-4 py-3 sm:px-6 sm:py-3.5 rounded-2xl sm:rounded-3xl border border-white/80 dark:border-white/10 shadow-[0_4px_20px_rgba(0,0,0,0.02)] flex items-center justify-between gap-3 sm:gap-4">
+  <header className="relative z-40 bg-white/80 dark:bg-[#202022]/80 backdrop-blur-2xl px-4 py-3 sm:px-6 sm:py-3.5 rounded-2xl sm:rounded-3xl border border-white/80 dark:border-white/10 shadow-[0_4px_20px_rgba(0,0,0,0.02)] flex flex-col md:flex-row md:items-center justify-between gap-3 sm:gap-4">
   
   {/* Brand & Top Navigation Pill Bar */}
-  <div className="flex items-center justify-center sm:justify-start gap-3 md:gap-4 min-w-0 flex-1">
+  <div className="flex items-center justify-between md:justify-start gap-3 md:gap-4 min-w-0 w-full md:w-auto md:flex-1">
   <Link 
     href="/" 
-    className="shrink-0 flex items-center hover:opacity-85 transition-opacity mx-auto sm:mx-0 select-none py-0.5" 
+    className="shrink-0 flex items-center hover:opacity-85 transition-opacity select-none py-0.5" 
     title="Ir a la tienda"
   >
     <Image
@@ -1392,10 +1656,100 @@ const handleConfirmDeleteNiche = async () => {
       ))}
     </div>
   </div>
+
+  {/* Acciones Rápidas en Móvil: Avatar Blobatar + Botón Salir */}
+  <div className="flex md:hidden items-center gap-2 shrink-0">
+    <BlobatarAvatar
+      name={customSeed || user.id || user.email || user.name}
+      size={34}
+      animate="always"
+      background={backgroundShape || "squircle"}
+      role={user.role}
+      showGlow
+      title={`Avatar de ${formatCleanName(user.name)}`}
+    />
+    <button 
+      onClick={() => { logout(); router.push("/auth/login"); }}
+      className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-red-600 dark:text-red-400 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/40 border border-red-200/80 dark:border-red-900/40 transition-all shrink-0 cursor-pointer shadow-xs active:scale-95"
+      title="Cerrar Sesión"
+      aria-label="Cerrar Sesión"
+    >
+      <LogOut className="w-3.5 h-3.5" />
+      <span className="text-[11px] font-bold">Salir</span>
+    </button>
+  </div>
   </div>
 
-  {/* Right Search Input & Profile Badge (Spotlight Alive Command Bar) */}
-  <div className="flex items-center gap-2.5 sm:gap-3 shrink-0">
+  {/* Barra de Búsqueda Móvil Dedicada estilo Spotlight (Visible solo en pantallas pequeñas) */}
+  <div className="relative w-full md:hidden z-50 group/mobile-search" ref={mobileSearchDropdownRef}>
+    <div 
+      className={`relative flex items-center gap-2.5 px-3.5 h-11 rounded-2xl bg-white/90 dark:bg-[#1a1a20]/90 backdrop-blur-2xl border transition-all duration-300 ease-out shadow-xs ${
+        isSearchFocused
+          ? "border-[#e07a3f] ring-4 ring-[#e07a3f]/25 shadow-[0_4px_20px_rgba(224,122,63,0.2)]"
+          : "border-stone-200/90 dark:border-white/10 hover:border-[#e07a3f]/50"
+      }`}
+    >
+      <div className="flex items-center justify-center shrink-0">
+        <Search className={`w-4 h-4 transition-all duration-300 ${
+          isSearchFocused ? "text-[#e07a3f] scale-110 rotate-[-8deg]" : "text-[#e07a3f]/80"
+        }`} />
+      </div>
+
+      <input
+        ref={mobileSearchInputRef}
+        id="lumina-profile-search-input-mobile"
+        type="text"
+        value={searchQuery}
+        onFocus={() => setIsSearchFocused(true)}
+        onChange={(e) => setSearchQuery(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") {
+            e.preventDefault();
+            if (searchQuery.trim().length > 0) {
+              if (filteredOrders.length > 0) {
+                setActiveTab("orders");
+                setSelectedOrder(filteredOrders[0]);
+                setSearchQuery("");
+                setIsSearchFocused(false);
+              } else if (filteredCatalog.length > 0) {
+                setActiveTab("catalog");
+                handleOpenEditProduct(filteredCatalog[0]);
+                setSearchQuery("");
+                setIsSearchFocused(false);
+              }
+            }
+          }
+        }}
+        placeholder={isAdmin ? "Buscar pedidos, clientes, catálogo..." : "Buscar pedidos, marcas o piezas..."}
+        className="bg-transparent border-none outline-none text-xs w-full font-medium text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500"
+      />
+
+      {searchQuery && (
+        <div className="flex items-center gap-1.5 shrink-0">
+          <span className="px-2 py-0.5 rounded-full bg-[#e07a3f]/10 text-[#e07a3f] dark:text-[#f59e0b] text-[10px] font-mono font-bold">
+            {filteredOrders.length + filteredCatalog.length}
+          </span>
+          <button
+            type="button"
+            onClick={() => {
+              setSearchQuery("");
+              mobileSearchInputRef.current?.focus();
+            }}
+            className="w-5 h-5 rounded-full hover:bg-stone-200/80 dark:hover:bg-white/15 text-gray-400 hover:text-gray-800 dark:hover:text-white flex items-center justify-center transition-all cursor-pointer"
+            title="Limpiar búsqueda"
+          >
+            <X className="w-3.5 h-3.5" />
+          </button>
+        </div>
+      )}
+    </div>
+
+    {/* Dropdown Spotlight en Móvil */}
+    {isSearchFocused && renderSpotlightDropdown(true)}
+  </div>
+
+  {/* Right Search Input & Profile Badge (Spotlight Alive Command Bar en Desktop) */}
+  <div className="hidden md:flex items-center gap-2.5 sm:gap-3 shrink-0">
     <div className="relative z-50 group/search" ref={searchDropdownRef}>
       <div 
         className={`relative flex items-center gap-2.5 pl-3.5 pr-2.5 h-10 rounded-full bg-white/80 dark:bg-[#1a1a20]/80 hover:bg-white dark:hover:bg-[#202026] focus-within:bg-white dark:focus-within:bg-[#1a1a20] backdrop-blur-2xl border transition-all duration-300 ease-out ${
@@ -1463,291 +1817,38 @@ const handleConfirmDeleteNiche = async () => {
         )}
       </div>
 
-      {/* Spotlight Dropdown Panel */}
-      {isSearchFocused && (
-        <div 
-          data-lenis-prevent="true"
-          onMouseEnter={() => {
-            getLenis()?.stop();
-          }}
-          onMouseLeave={() => {
-            getLenis()?.start();
-          }}
-          className="absolute right-0 top-full mt-2.5 w-[390px] max-w-[calc(100vw-2rem)] max-h-[78vh] bg-white/95 dark:bg-[#1c1c22]/95 backdrop-blur-2xl border border-stone-200/90 dark:border-white/10 rounded-3xl shadow-[0_25px_60px_rgba(0,0,0,0.18)] dark:shadow-[0_25px_60px_rgba(0,0,0,0.65)] p-4 z-[100] flex flex-col text-xs pointer-events-auto transition-all duration-200 ease-out animate-fade-in"
-        >
-          {/* Header */}
-          <div className="shrink-0 flex items-center justify-between px-1 pb-2 border-b border-gray-100 dark:border-white/10">
-            <span className="text-[10px] text-gray-400 dark:text-gray-500 uppercase tracking-wider font-bold flex items-center gap-1.5">
-              <Sparkles className="w-3 h-3 text-[#e07a3f]" />
-              {searchQuery.trim().length > 0 
-                ? `Coincidencias (${filteredOrders.length + filteredCatalog.length})`
-                : "Sugerencias de Navegación"}
-            </span>
-            <button
-              type="button"
-              onClick={() => {
-                setIsSearchFocused(false);
-                setSearchQuery("");
-              }}
-              className="text-[10.5px] text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 font-semibold px-2 py-0.5 rounded-lg hover:bg-stone-100 dark:hover:bg-white/5 transition-colors cursor-pointer"
-            >
-              Cerrar (Esc)
-            </button>
-          </div>
-
-          {/* Scrollable Results Container */}
-          <div 
-            data-lenis-prevent="true"
-            className="flex-1 min-h-0 overflow-y-auto overscroll-contain py-1 space-y-3.5 pr-1 [scrollbar-width:thin]"
-            style={{ overscrollBehavior: "contain" }}
-          >
-
-          {/* Estado vacío cuando NO hay consulta: Sugerencias rápidas */}
-          {searchQuery.trim().length === 0 && (
-            <div className="space-y-2 py-1">
-              <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider px-1">
-                Accesos Directos Rápidos
-              </p>
-              <div className="grid grid-cols-2 gap-2">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setActiveTab("orders");
-                    setIsSearchFocused(false);
-                  }}
-                  className="p-2.5 rounded-2xl bg-stone-50 dark:bg-white/[0.04] hover:bg-amber-50 dark:hover:bg-[#e07a3f]/10 border border-stone-100 dark:border-white/5 hover:border-[#e07a3f]/30 text-left transition-all group flex items-center gap-2.5 cursor-pointer"
-                >
-                  <div className="w-7 h-7 rounded-xl bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0">
-                    <Package className="w-3.5 h-3.5" />
-                  </div>
-                  <div className="min-w-0">
-                    <span className="font-semibold text-gray-800 dark:text-gray-200 text-xs block group-hover:text-[#e07a3f] transition-colors truncate">
-                      {isAdmin ? "Todos los Pedidos" : "Mis Pedidos"}
-                    </span>
-                    <span className="text-[10px] text-gray-400 block truncate">
-                      {scopedOrders.length} registros
-                    </span>
-                  </div>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => {
-                    setActiveTab(isAdmin ? "catalog" : "favorites");
-                    setIsSearchFocused(false);
-                  }}
-                  className="p-2.5 rounded-2xl bg-stone-50 dark:bg-white/[0.04] hover:bg-amber-50 dark:hover:bg-[#e07a3f]/10 border border-stone-100 dark:border-white/5 hover:border-[#e07a3f]/30 text-left transition-all group flex items-center gap-2.5 cursor-pointer"
-                >
-                  <div className="w-7 h-7 rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0">
-                    {isAdmin ? <Layers className="w-3.5 h-3.5" /> : <Heart className="w-3.5 h-3.5 text-red-500" />}
-                  </div>
-                  <div className="min-w-0">
-                    <span className="font-semibold text-gray-800 dark:text-gray-200 text-xs block group-hover:text-[#e07a3f] transition-colors truncate">
-                      {isAdmin ? "Catálogo y Piezas" : "Lista de Deseos"}
-                    </span>
-                    <span className="text-[10px] text-gray-400 block truncate">
-                      {isAdmin ? `${products.length} productos` : `${favorites.length} guardados`}
-                    </span>
-                  </div>
-                </button>
-
-                {isAdmin && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setActiveTab("niches");
-                      setIsSearchFocused(false);
-                    }}
-                    className="p-2.5 rounded-2xl bg-stone-50 dark:bg-white/[0.04] hover:bg-amber-50 dark:hover:bg-[#e07a3f]/10 border border-stone-100 dark:border-white/5 hover:border-[#e07a3f]/30 text-left transition-all group flex items-center gap-2.5 cursor-pointer"
-                  >
-                    <div className="w-7 h-7 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
-                      <Store className="w-3.5 h-3.5" />
-                    </div>
-                    <div className="min-w-0">
-                      <span className="font-semibold text-gray-800 dark:text-gray-200 text-xs block group-hover:text-[#e07a3f] transition-colors truncate">
-                        Nichos de Tienda
-                      </span>
-                      <span className="text-[10px] text-gray-400 block truncate">
-                        {categories.length} categorías
-                      </span>
-                    </div>
-                  </button>
-                )}
-
-                <button
-                  type="button"
-                  onClick={() => {
-                    setActiveTab("settings");
-                    setIsSearchFocused(false);
-                  }}
-                  className="p-2.5 rounded-2xl bg-stone-50 dark:bg-white/[0.04] hover:bg-amber-50 dark:hover:bg-[#e07a3f]/10 border border-stone-100 dark:border-white/5 hover:border-[#e07a3f]/30 text-left transition-all group flex items-center gap-2.5 cursor-pointer"
-                >
-                  <div className="w-7 h-7 rounded-xl bg-purple-500/10 text-purple-600 dark:text-purple-400 flex items-center justify-center shrink-0">
-                    <Settings className="w-3.5 h-3.5" />
-                  </div>
-                  <div className="min-w-0">
-                    <span className="font-semibold text-gray-800 dark:text-gray-200 text-xs block group-hover:text-[#e07a3f] transition-colors truncate">
-                      Ajustes de Perfil
-                    </span>
-                    <span className="text-[10px] text-gray-400 block truncate">
-                      Seguridad y Datos
-                    </span>
-                  </div>
-                </button>
-              </div>
-            </div>
-          )}
-
-          {/* Resultados de Pedidos */}
-          {searchQuery.trim().length > 0 && filteredOrders.length > 0 && (
-            <div className="space-y-1.5">
-              <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider px-1 flex items-center gap-1.5">
-                <Package className="w-3 h-3 text-blue-500" />
-                <span>Pedidos ({filteredOrders.length})</span>
-              </p>
-              <div className="space-y-1 max-h-48 overflow-y-auto pr-1 [scrollbar-width:thin]">
-                {filteredOrders.slice(0, 4).map((ord) => (
-                  <div
-                    key={ord.id}
-                    onClick={() => {
-                      setActiveTab("orders");
-                      setSelectedOrder(ord);
-                      setSearchQuery("");
-                      setIsSearchFocused(false);
-                    }}
-                    className="p-2.5 rounded-2xl hover:bg-stone-100/80 dark:hover:bg-white/[0.06] cursor-pointer flex items-center justify-between gap-2.5 transition-all group"
-                  >
-                    <div className="min-w-0">
-                      <span className="font-mono font-bold text-gray-900 dark:text-white block group-hover:text-[#e07a3f] transition-colors">
-                        {ord.id}
-                      </span>
-                      <span className="text-[10.5px] text-gray-400 truncate block">
-                        {ord.customerName || "Cliente Lumina"} · ${Number(ord?.total || 0).toFixed(2)}
-                      </span>
-                    </div>
-                    <span className={`text-[10px] px-2 py-0.5 rounded-full font-semibold shrink-0 border ${
-                      ord?.status === "Entregado"
-                        ? "bg-emerald-50 text-emerald-700 border-emerald-100 dark:bg-emerald-950/40 dark:text-emerald-400 dark:border-emerald-800/30"
-                        : ord?.status === "Enviado"
-                        ? "bg-amber-50 text-amber-700 border-amber-100 dark:bg-amber-950/40 dark:text-amber-400 dark:border-amber-800/30"
-                        : "bg-blue-50 text-blue-700 border-blue-100 dark:bg-blue-950/40 dark:text-blue-400 dark:border-blue-800/30"
-                    }`}>
-                      {ord?.status || "Procesando"}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Resultados de Catálogo */}
-          {searchQuery.trim().length > 0 && filteredCatalog.length > 0 && (
-            <div className="space-y-1.5">
-              <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider px-1 flex items-center gap-1.5">
-                <Layers className="w-3 h-3 text-amber-500" />
-                <span>Catálogo de Piezas ({filteredCatalog.length})</span>
-              </p>
-              <div className="space-y-1 max-h-48 overflow-y-auto pr-1 [scrollbar-width:thin]">
-                {filteredCatalog.slice(0, 4).map((prod) => (
-                  <div
-                    key={prod.id}
-                    onClick={() => {
-                      setActiveTab(isAdmin ? "catalog" : "favorites");
-                      setSearchQuery("");
-                      setIsSearchFocused(false);
-                    }}
-                    className="p-2 rounded-2xl hover:bg-stone-100/80 dark:hover:bg-white/[0.06] cursor-pointer flex items-center justify-between gap-2.5 transition-all group"
-                  >
-                    <div className="flex items-center gap-2.5 min-w-0">
-                      {prod.imageUrl && (
-                        <div className="w-9 h-9 rounded-xl overflow-hidden bg-gray-100 dark:bg-white/10 shrink-0 border border-stone-200/50 dark:border-white/10">
-                          {/* eslint-disable-next-line @next/next/no-img-element */}
-                          <img src={prod.imageUrl} alt={prod.title} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300" />
-                        </div>
-                      )}
-                      <div className="min-w-0">
-                        <span className="font-semibold text-gray-800 dark:text-gray-100 truncate block max-w-[200px] group-hover:text-[#e07a3f] transition-colors">
-                          {prod.title}
-                        </span>
-                        <span className="text-[10px] text-gray-400 block">{prod.category}</span>
-                      </div>
-                    </div>
-                    <span className="font-mono font-bold text-gray-900 dark:text-gray-200 shrink-0">
-                      ${Number(prod.price || 0).toFixed(2)}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Sin resultados */}
-          {searchQuery.trim().length > 0 && filteredOrders.length === 0 && filteredCatalog.length === 0 && (
-            <div className="py-7 text-center space-y-2">
-              <div className="w-10 h-10 rounded-2xl bg-amber-500/10 text-[#e07a3f] mx-auto flex items-center justify-center">
-                <Search className="w-5 h-5 opacity-60" />
-              </div>
-              <p className="text-xs font-semibold text-gray-800 dark:text-gray-200">
-                Sin resultados para &ldquo;{searchQuery}&rdquo;
-              </p>
-              <p className="text-[11px] text-gray-400">
-                Prueba buscando por número de orden, nombre de cliente o pieza de diseño.
-              </p>
-            </div>
-          )}
-
-          </div>
-
-          {/* Footer Bar */}
-          <div className="shrink-0 pt-2.5 border-t border-gray-100 dark:border-white/5 flex items-center justify-between text-[10px] text-gray-400">
-            <span className="flex items-center gap-1">
-              <kbd className="px-1 py-0.5 rounded bg-stone-100 dark:bg-white/10 font-mono text-[9px]">ESC</kbd> cerrar
-            </span>
-            <span className="flex items-center gap-1">
-              <kbd className="px-1 py-0.5 rounded bg-stone-100 dark:bg-white/10 font-mono text-[9px]">↵</kbd> abrir resultado
-            </span>
-          </div>
-        </div>
-      )}
+      {/* Spotlight Dropdown Panel en Desktop */}
+      {isSearchFocused && renderSpotlightDropdown(false)}
     </div>
 
- <Link href="/" className="hidden lg:flex text-xs font-medium text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 px-3 py-1.5 rounded-xl hover:bg-gray-100 dark:hover:bg-[#3a3a3c] transition-colors">
- Ver Tienda &rarr;
- </Link>
+    <Link href="/" className="hidden lg:flex text-xs font-medium text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 px-3 py-1.5 rounded-xl hover:bg-gray-100 dark:hover:bg-[#3a3a3c] transition-colors">
+      Ver Tienda &rarr;
+    </Link>
 
- <div className="flex items-center gap-2.5 sm:gap-3 pl-3 border-l border-gray-200 dark:border-white/10">
- <BlobatarAvatar
-   name={customSeed || user.id || user.email || user.name}
-   size={38}
-   animate="always"
-   background={backgroundShape || "squircle"}
-   role={user.role}
-   showGlow
-   title={`Avatar de ${formatCleanName(user.name)}`}
- />
- <div className="hidden lg:block text-left">
- <p className="text-xs font-bold text-gray-900 dark:text-gray-100 leading-tight tracking-normal">{formatCleanName(user.name)}</p>
- <span className={`inline-block text-[10px] font-bold px-2 py-0.5 rounded-full mt-0.5 ${
-   isRootAdmin 
-     ? "bg-red-100 dark:bg-red-950/40 text-red-700 dark:text-red-300 border border-red-200 dark:border-red-800/40" 
-     : isSubAdmin 
-     ? "bg-amber-100 dark:bg-amber-950/40 text-amber-900 dark:text-amber-300 border border-amber-200 dark:border-amber-800/40" 
-     : "bg-blue-100 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800/40"
- }`}>
- {isRootAdmin ? "ADMINISTRADOR" : isSubAdmin ? "SUB ADMINISTRADOR" : "CLIENTE"}
- </span>
- </div>
- <button 
-   onClick={() => { logout(); router.push("/auth/login"); }}
-   className="flex md:hidden items-center gap-1.5 px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-2xl text-red-600 dark:text-red-400 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/40 border border-red-200/80 dark:border-red-900/40 transition-all shrink-0 cursor-pointer shadow-xs active:scale-95"
-   title="Cerrar Sesión"
-   aria-label="Cerrar Sesión"
- >
-   <LogOut className="w-3.5 h-3.5" />
-   <span className="text-xs font-bold">Salir</span>
- </button>
- </div>
- </div>
+    <div className="flex items-center gap-2.5 sm:gap-3 pl-3 border-l border-gray-200 dark:border-white/10">
+      <BlobatarAvatar
+        name={customSeed || user.id || user.email || user.name}
+        size={38}
+        animate="always"
+        background={backgroundShape || "squircle"}
+        role={user.role}
+        showGlow
+        title={`Avatar de ${formatCleanName(user.name)}`}
+      />
+      <div className="hidden lg:block text-left">
+        <p className="text-xs font-bold text-gray-900 dark:text-gray-100 leading-tight tracking-normal">{formatCleanName(user.name)}</p>
+        <span className={`inline-block text-[10px] font-bold px-2 py-0.5 rounded-full mt-0.5 ${
+          isRootAdmin 
+            ? "bg-red-100 dark:bg-red-950/40 text-red-700 dark:text-red-300 border border-red-200 dark:border-red-800/40" 
+            : isSubAdmin 
+            ? "bg-amber-100 dark:bg-amber-950/40 text-amber-900 dark:text-amber-300 border border-amber-200 dark:border-amber-800/40" 
+            : "bg-blue-100 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800/40"
+        }`}>
+          {isRootAdmin ? "ADMINISTRADOR" : isSubAdmin ? "SUB ADMINISTRADOR" : "CLIENTE"}
+        </span>
+      </div>
+    </div>
+  </div>
  </header>
 
  {/* Greeting Banner */}
@@ -2325,8 +2426,8 @@ const handleConfirmDeleteNiche = async () => {
 
       {/* Galería de Fotos (Antes Banco de Fotos) */}
       {showDriveModal && (
-        <div className="fixed inset-0 z-[1600] flex items-center justify-center p-3 sm:p-6 bg-black/80 backdrop-blur-md">
-          <div className="w-full max-w-6xl max-h-[92vh] flex">
+        <div className="fixed inset-0 z-[1600] flex items-center justify-center p-2 sm:p-6 bg-black/80 backdrop-blur-md">
+          <div className="w-full max-w-6xl max-h-[96vh] sm:max-h-[92vh] flex">
             <GoogleDriveSettingsCard onClose={() => setShowDriveModal(false)} />
           </div>
         </div>
