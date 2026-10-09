@@ -22,10 +22,13 @@ export const DynamicHeroBackground = memo(function DynamicHeroBackground({
           <div
             key={phase.id}
             aria-hidden={!isActive}
-            className={`absolute inset-0 transition-opacity duration-1000 ease-in-out transform-gpu pointer-events-none select-none ${
+            className={`absolute inset-0 transition-opacity duration-[2200ms] transform-gpu pointer-events-none select-none ${
               isActive ? "opacity-100 z-10" : "opacity-0 z-0"
             }`}
-            style={{ willChange: "opacity" }}
+            style={{ 
+              willChange: "opacity",
+              transitionTimingFunction: "cubic-bezier(0.4, 0, 0.2, 1)"
+            }}
           >
             <Image
               src={phase.imageSrc}

@@ -94,8 +94,12 @@ function formatClockTime(date: Date = new Date()): string {
 const STORAGE_KEY = "lumina_hero_phase_override";
 
 export function useHeroTimePhase() {
-  const [autoPhaseId, setAutoPhaseId] = useState<HeroPhaseId>("mediodia");
-  const [formattedTime, setFormattedTime] = useState<string>("");
+  const [autoPhaseId, setAutoPhaseId] = useState<HeroPhaseId>(() => {
+    return getPhaseForTime(new Date());
+  });
+  const [formattedTime, setFormattedTime] = useState<string>(() => {
+    return formatClockTime(new Date());
+  });
   const [isMounted, setIsMounted] = useState<boolean>(false);
 
   // Sync with client clock automatically

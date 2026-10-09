@@ -222,6 +222,19 @@ export function GoogleDriveSettingsCard({ onClose, onSelectPhotoForProduct }: Go
   const [previewPhoto, setPreviewPhoto] = useState<GoogleDriveFile | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
+  // Responsividad de la Media Rueda (ArcPicker) en móviles
+  const [isMobileScreen, setIsMobileScreen] = useState(false);
+  const [showMobileWheel, setShowMobileWheel] = useState(true);
+
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobileScreen(window.innerWidth < 768);
+    };
+    checkMobile();
+    window.addEventListener("resize", checkMobile);
+    return () => window.removeEventListener("resize", checkMobile);
+  }, []);
+
   // Estado local para el valor activo del ArcPicker (evita saltos/bloqueos al hacer scroll)
   const [activeArcFolderId, setActiveArcFolderId] = useState<string>(settings.selectedFolderId || "root");
   const debouncedSelectRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -516,16 +529,17 @@ export function GoogleDriveSettingsCard({ onClose, onSelectPhotoForProduct }: Go
         )}
       </div>
 
-      {/* 2. PANEL LATERAL: GESTOR DE CARPETAS (beUI Arc Picker en modo Right en Desktop) */}
+      {/* 2. PANEL LATERAL: GESTOR DE CARPETAS (beUI Arc Picker Responsivo) */}
       <div 
         data-lenis-prevent="true"
         className={cn(
-          "hidden md:flex md:w-72 lg:w-80 shrink-0 flex-col border-r transition-colors duration-200 relative z-10",
+          "w-full md:w-72 lg:w-80 shrink-0 flex-col border-b md:border-b-0 md:border-r transition-colors duration-200 relative z-10",
+          !showMobileWheel ? "hidden md:flex" : "flex",
           isDark ? "bg-[#0e0e14]/90 border-zinc-800/80" : "bg-zinc-50/90 border-zinc-200/80"
         )}
       >
         {/* Cabecera del Sidebar con título y Scroll Progress */}
-        <div className="p-4 sm:p-5 pb-3 space-y-3.5">
+        <div className="p-3 sm:p-5 pb-2.5 sm:pb-3 space-y-2.5 sm:space-y-3.5">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
@@ -533,7 +547,7 @@ export function GoogleDriveSettingsCard({ onClose, onSelectPhotoForProduct }: Go
                 "font-bold text-xs uppercase tracking-widest font-mono",
                 isDark ? "text-zinc-300" : "text-zinc-700"
               )}>
-                Carpetas
+                Carpetas (Media Rueda)
               </h3>
             </div>
             <ArcScrollProgress percent={arcProgressPercent} isDark={isDark} />
@@ -550,7 +564,7 @@ export function GoogleDriveSettingsCard({ onClose, onSelectPhotoForProduct }: Go
               onChange={(e) => setSearchFilter(e.target.value)}
               placeholder="Buscar carpetas..."
               className={cn(
-                "w-full pl-9 pr-8 h-9 rounded-xl border text-xs font-mono transition-all duration-200 outline-none flex items-center",
+                "w-full pl-9 pr-8 h-8 sm:h-9 rounded-xl border text-xs font-mono transition-all duration-200 outline-none flex items-center",
                 isDark 
                   ? "bg-zinc-900/60 border-zinc-800 text-white placeholder:text-zinc-500 focus:border-blue-500/60 focus:ring-1 focus:ring-blue-500/30" 
                   : "bg-white border-zinc-200 text-zinc-900 placeholder:text-zinc-400 focus:border-blue-500 focus:ring-1 focus:ring-blue-500/30 shadow-xs"
@@ -569,10 +583,10 @@ export function GoogleDriveSettingsCard({ onClose, onSelectPhotoForProduct }: Go
           </div>
         </div>
 
-        {/* beUI Arc Picker en modo Right con fondo ambiental */}
-        <div className="flex-1 flex flex-col items-center justify-center p-2 relative overflow-hidden bg-[radial-gradient(ellipse_at_center,rgba(59,130,246,0.05)_0%,transparent_75%)]">
+        {/* beUI Arc Picker en modo Right con fondo ambiental (Responsivo para móviles y desktop) */}
+        <div className="flex-1 flex flex-col items-center justify-center p-1 sm:p-2 relative overflow-hidden bg-[radial-gradient(ellipse_at_center,rgba(59,130,246,0.05)_0%,transparent_75%)]">
           {arcOptions.length === 0 ? (
-            <div className="text-center p-6 space-y-2">
+            <div className="text-center p-4 sm:p-6 space-y-2">
               <Folder className="w-8 h-8 mx-auto text-zinc-500 opacity-40" />
               <p className="text-xs text-zinc-500 font-mono">
                 No se encontraron carpetas
@@ -587,10 +601,10 @@ export function GoogleDriveSettingsCard({ onClose, onSelectPhotoForProduct }: Go
                 onProgressChange={(p) => setArcProgressPercent(p)}
                 onSettle={handleArcSettle}
                 side="right"
-                radius={240}
-                itemHeight={44}
-                visibleCount={7}
-                className="w-full h-[380px]"
+                radius={isMobileScreen ? 165 : 240}
+                itemHeight={isMobileScreen ? 36 : 44}
+                visibleCount={isMobileScreen ? 5 : 7}
+                className={cn("w-full transition-all", isMobileScreen ? "h-[200px]" : "h-[380px]")}
               />
             </div>
           )}
@@ -758,6 +772,24 @@ export function GoogleDriveSettingsCard({ onClose, onSelectPhotoForProduct }: Go
               </div>
             )}
 
+            {/* Botón Móvil para alternar Rueda de Carpetas */}
+            <button
+              type="button"
+              onClick={() => setShowMobileWheel((prev) => !prev)}
+              className={cn(
+                "md:hidden px-2.5 py-1.5 rounded-xl border text-[11px] font-mono font-bold flex items-center gap-1.5 transition-all cursor-pointer active:scale-95",
+                showMobileWheel
+                  ? "bg-blue-600 text-white border-blue-500 shadow-xs"
+                  : isDark
+                  ? "bg-zinc-800 text-zinc-300 border-zinc-700 hover:text-white"
+                  : "bg-zinc-100 text-zinc-800 border-zinc-200 hover:bg-zinc-200"
+              )}
+              title={showMobileWheel ? "Ocultar rueda de carpetas" : "Ver rueda de carpetas"}
+            >
+              <Folder className="w-3.5 h-3.5" />
+              <span>{showMobileWheel ? "Ocultar Rueda" : "Rueda"}</span>
+            </button>
+
             {onClose && (
               <button
                 type="button"
@@ -775,50 +807,6 @@ export function GoogleDriveSettingsCard({ onClose, onSelectPhotoForProduct }: Go
             )}
           </div>
         </div>
-
-        {/* Barra Móvil de Navegación de Carpetas (Píldoras táctiles con scroll horizontal suave) */}
-        {settings.isConnected && (
-          <div className="md:hidden flex items-center gap-2 px-3.5 py-2.5 border-b overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden shrink-0 bg-stone-50/95 dark:bg-[#0c0c12]/95 backdrop-blur-md z-20">
-            <button
-              type="button"
-              onClick={() => handleSelectFolder({ id: 'root', name: 'Mi Unidad', itemCount: rootFolders.length })}
-              className={cn(
-                "px-3 py-1.5 rounded-xl text-xs font-bold font-mono transition-all shrink-0 flex items-center gap-1.5 cursor-pointer active:scale-95 border",
-                !mainFolder || settings.selectedFolderId === 'root'
-                  ? "bg-blue-600 text-white border-blue-500 shadow-sm"
-                  : isDark
-                  ? "bg-zinc-800/80 text-zinc-300 border-zinc-700/80 hover:bg-zinc-700"
-                  : "bg-white text-zinc-700 border-zinc-200 shadow-xs hover:bg-zinc-100"
-              )}
-            >
-              <Folder className="w-3.5 h-3.5" />
-              <span>Mi Unidad</span>
-              <span className="text-[10px] opacity-75">({rootFolders.length})</span>
-            </button>
-
-            {availableFolders.filter(f => f.id !== 'root').map((folder) => {
-              const isSelected = mainFolder?.id === folder.id;
-              return (
-                <button
-                  key={folder.id}
-                  type="button"
-                  onClick={() => handleSelectFolder(folder)}
-                  className={cn(
-                    "px-3 py-1.5 rounded-xl text-xs font-bold font-mono transition-all shrink-0 flex items-center gap-1.5 cursor-pointer active:scale-95 border",
-                    isSelected
-                      ? "bg-blue-600 text-white border-blue-500 shadow-sm"
-                      : isDark
-                      ? "bg-zinc-800/80 text-zinc-300 border-zinc-700/80 hover:bg-zinc-700"
-                      : "bg-white text-zinc-700 border-zinc-200 shadow-xs hover:bg-zinc-100"
-                  )}
-                >
-                  <FolderOpen className="w-3.5 h-3.5" />
-                  <span className="max-w-[130px] truncate">{folder.name}</span>
-                </button>
-              );
-            })}
-          </div>
-        )}
 
         {/* CONTENIDO DEL CANVAS */}
         {!settings.isConnected ? (

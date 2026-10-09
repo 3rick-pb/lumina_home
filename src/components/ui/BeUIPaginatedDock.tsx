@@ -171,115 +171,118 @@ export function BeUIPaginatedDock({
         </div>
       )}
 
-      {/* Cápsula Flotante Liquid Glass estilo iOS 26 */}
-      <div
-        onTouchStart={handleTouchStart}
-        onTouchEnd={handleTouchEnd}
-        className="w-[calc(100%-1.25rem)] max-w-[400px] h-[64px] px-2 py-1.5 rounded-full bg-white/55 dark:bg-[#16161a]/60 backdrop-blur-3xl border border-white/70 dark:border-white/20 shadow-[0_16px_40px_rgba(0,0,0,0.15),inset_0_1.5px_2px_rgba(255,255,255,0.85),inset_0_-1px_1.5px_rgba(0,0,0,0.04)] dark:shadow-[0_20px_50px_rgba(0,0,0,0.7),inset_0_1.5px_2px_rgba(255,255,255,0.2),inset_0_-1px_1.5px_rgba(0,0,0,0.4)] pointer-events-auto flex items-center justify-between gap-1.5"
-      >
-        {/* Contenedor animado de pestañas por página */}
-        <div className="relative flex-1 min-w-0 h-full overflow-hidden flex items-center">
-          <AnimatePresence initial={false} custom={direction} mode="wait">
-            <motion.div
-              key={safePage}
-              custom={direction}
-              variants={pageVariants}
-              initial="enter"
-              animate="center"
-              exit="exit"
-              transition={{
-                x: { type: "spring", stiffness: 420, damping: 36, mass: 0.8 },
-                opacity: { duration: 0.16, ease: "easeOut" },
-              }}
-              className="w-full grid grid-cols-4 items-center justify-items-center h-full"
-            >
-              {currentItems.map((item) => {
-                const isActive = !!item.active;
-                return (
-                  <button
-                    key={item.id}
-                    type="button"
-                    onClick={() => item.onClick()}
-                    title={item.title || item.label}
-                    className="relative w-full h-[52px] flex flex-col items-center justify-center py-1 px-1 rounded-full select-none group cursor-pointer focus:outline-none transition-transform duration-150 active:scale-92"
-                  >
-                    {/* Óvalo highlight activo estilo Liquid Glass (como Library en Apple Music) */}
-                    {isActive && (
-                      <motion.div
-                        layoutId="beui-dock-active-pill"
-                        transition={{ type: "spring", stiffness: 450, damping: 35 }}
-                        className="absolute inset-x-0.5 inset-y-0.5 rounded-full bg-black/8 dark:bg-white/15 border border-white/50 dark:border-white/20 shadow-xs -z-0 pointer-events-none"
-                      />
-                    )}
+      {/* Contenedor Flotante iOS 26: Menú de Pestañas + Lupa Circular Externa */}
+      <div className="flex items-center justify-center gap-2.5 sm:gap-3 w-[calc(100%-1.25rem)] max-w-[420px] pointer-events-auto">
+        {/* Cápsula Flotante Liquid Glass de las Pestañas */}
+        <div
+          onTouchStart={handleTouchStart}
+          onTouchEnd={handleTouchEnd}
+          className="flex-1 min-w-0 h-[64px] px-2 py-1.5 rounded-full bg-white/60 dark:bg-[#16161a]/65 backdrop-blur-3xl border border-white/75 dark:border-white/20 shadow-[0_16px_40px_rgba(0,0,0,0.15),inset_0_1.5px_2px_rgba(255,255,255,0.85),inset_0_-1px_1.5px_rgba(0,0,0,0.04)] dark:shadow-[0_20px_50px_rgba(0,0,0,0.7),inset_0_1.5px_2px_rgba(255,255,255,0.22),inset_0_-1px_1.5px_rgba(0,0,0,0.4)] flex items-center justify-center"
+        >
+          {/* Contenedor animado de pestañas por página */}
+          <div className="relative w-full h-full overflow-hidden flex items-center">
+            <AnimatePresence initial={false} custom={direction} mode="wait">
+              <motion.div
+                key={safePage}
+                custom={direction}
+                variants={pageVariants}
+                initial="enter"
+                animate="center"
+                exit="exit"
+                transition={{
+                  x: { type: "spring", stiffness: 420, damping: 36, mass: 0.8 },
+                  opacity: { duration: 0.16, ease: "easeOut" },
+                }}
+                className="w-full grid grid-cols-4 items-center justify-items-center h-full"
+              >
+                {currentItems.map((item) => {
+                  const isActive = !!item.active;
+                  return (
+                    <button
+                      key={item.id}
+                      type="button"
+                      onClick={() => item.onClick()}
+                      title={item.title || item.label}
+                      className="relative w-full h-[52px] flex flex-col items-center justify-center py-1 px-1 rounded-full select-none group cursor-pointer focus:outline-none transition-transform duration-150 active:scale-92"
+                    >
+                      {/* Óvalo highlight activo de Alto Contraste (Súper notorio) */}
+                      {isActive && (
+                        <motion.div
+                          layoutId="beui-dock-active-pill"
+                          transition={{ type: "spring", stiffness: 450, damping: 35 }}
+                          className="absolute inset-x-1 inset-y-1 rounded-full bg-white dark:bg-white/25 border border-stone-200/90 dark:border-white/40 shadow-[0_4px_16px_rgba(0,0,0,0.12),inset_0_1px_1px_rgba(255,255,255,0.9)] dark:shadow-[0_4px_20px_rgba(0,0,0,0.5),0_0_12px_rgba(255,255,255,0.15)] ring-1 ring-black/5 dark:ring-white/20 -z-0 pointer-events-none"
+                        />
+                      )}
 
-                    {/* Icono con badge */}
-                    <div className="relative z-10 flex items-center justify-center">
-                      <div
-                        className={`w-5 h-5 flex items-center justify-center transition-all duration-200 ${
-                          isActive
-                            ? "text-[#e07a3f] dark:text-[#f59e0b] scale-110"
-                            : "text-stone-600 dark:text-stone-300 group-hover:text-stone-900 dark:group-hover:text-white"
-                        }`}
-                      >
-                        {item.icon}
+                      {/* Icono con badge */}
+                      <div className="relative z-10 flex items-center justify-center">
+                        <div
+                          className={`w-5 h-5 flex items-center justify-center transition-all duration-200 ${
+                            isActive
+                              ? "text-[#e07a3f] dark:text-[#f59e0b] scale-115 stroke-[2.4px] drop-shadow-[0_2px_8px_rgba(224,122,63,0.35)]"
+                              : "text-stone-400 dark:text-stone-400 opacity-60 group-hover:opacity-100 group-hover:text-stone-800 dark:group-hover:text-stone-200"
+                          }`}
+                        >
+                          {item.icon}
+                        </div>
+
+                        {typeof item.badgeCount === "number" && item.badgeCount > 0 && (
+                          <span className="absolute -top-1 -right-2 min-w-[15px] h-[15px] px-1 rounded-full text-[9px] font-black bg-[#fa2d48] text-white flex items-center justify-center ring-2 ring-white dark:ring-[#16161a] shadow-xs">
+                            {item.badgeCount > 99 ? "99+" : item.badgeCount}
+                          </span>
+                        )}
                       </div>
 
-                      {typeof item.badgeCount === "number" && item.badgeCount > 0 && (
-                        <span className="absolute -top-1 -right-2 min-w-[15px] h-[15px] px-1 rounded-full text-[9px] font-black bg-[#fa2d48] text-white flex items-center justify-center ring-2 ring-white dark:ring-[#16161a] shadow-xs">
-                          {item.badgeCount > 99 ? "99+" : item.badgeCount}
-                        </span>
-                      )}
-                    </div>
+                      {/* Texto estilo Apple Music */}
+                      <span
+                        className={`relative z-10 text-[9.5px] tracking-tight mt-0.5 leading-none truncate max-w-[66px] text-center transition-colors duration-200 ${
+                          isActive
+                            ? "text-[#e07a3f] dark:text-[#f59e0b] font-black"
+                            : "text-stone-500 dark:text-stone-400 font-medium opacity-70 group-hover:opacity-100"
+                        }`}
+                      >
+                        {item.label}
+                      </span>
+                    </button>
+                  );
+                })}
 
-                    {/* Texto estilo Apple Music San Francisco */}
-                    <span
-                      className={`relative z-10 text-[9.5px] tracking-tight mt-0.5 leading-none truncate max-w-[66px] text-center transition-colors duration-200 ${
-                        isActive
-                          ? "text-[#e07a3f] dark:text-[#f59e0b] font-bold"
-                          : "text-stone-600 dark:text-stone-300 font-medium group-hover:text-stone-900 dark:group-hover:text-white"
-                      }`}
-                    >
-                      {item.label}
-                    </span>
-                  </button>
-                );
-              })}
-
-              {/* Espacios vacíos simétricos si la última página tiene menos de 4 elementos */}
-              {Array.from({ length: Math.max(0, itemsPerPage - currentItems.length) }).map(
-                (_, i) => (
-                  <div
-                    key={`empty-slot-${i}`}
-                    className="w-full h-12 pointer-events-none"
-                    aria-hidden="true"
-                  />
-                )
-              )}
-            </motion.div>
-          </AnimatePresence>
+                {/* Espacios vacíos simétricos si la última página tiene menos de 4 elementos */}
+                {Array.from({ length: Math.max(0, itemsPerPage - currentItems.length) }).map(
+                  (_, i) => (
+                    <div
+                      key={`empty-slot-${i}`}
+                      className="w-full h-12 pointer-events-none"
+                      aria-hidden="true"
+                    />
+                  )
+                )}
+              </motion.div>
+            </AnimatePresence>
+          </div>
         </div>
 
-        {/* Botón Circular de Búsqueda estilo Apple Music iOS 26 (a la derecha) */}
+        {/* Botón Circular de Búsqueda FUERA DEL MENÚ (Isla flotante independiente a la derecha) */}
         {onSearchClick && (
-          <div className="shrink-0 flex items-center pl-0.5">
-            <button
-              type="button"
-              onClick={onSearchClick}
-              title="Buscar pedidos, marcas o piezas..."
-              aria-label="Abrir buscador"
-              className={`relative w-11 h-11 rounded-full flex items-center justify-center transition-all duration-200 cursor-pointer active:scale-90 group ${
+          <button
+            type="button"
+            onClick={onSearchClick}
+            title="Buscar pedidos, marcas o piezas..."
+            aria-label="Abrir buscador"
+            className={`relative w-[60px] h-[60px] rounded-full shrink-0 flex items-center justify-center transition-all duration-300 cursor-pointer active:scale-90 group ${
+              isSearchActive
+                ? "bg-[#e07a3f] text-white border-2 border-white/80 shadow-[0_0_24px_rgba(224,122,63,0.6)]"
+                : "bg-white/70 dark:bg-[#16161a]/70 hover:bg-white/90 dark:hover:bg-[#202026] active:bg-white/95 border border-white/80 dark:border-white/25 backdrop-blur-3xl shadow-[0_16px_40px_rgba(0,0,0,0.16),inset_0_1.5px_2px_rgba(255,255,255,0.9),inset_0_-1px_1.5px_rgba(0,0,0,0.04)] dark:shadow-[0_20px_50px_rgba(0,0,0,0.7),inset_0_1.5px_2px_rgba(255,255,255,0.25)] text-stone-900 dark:text-stone-100"
+            }`}
+          >
+            <Search
+              className={`w-[22px] h-[22px] transition-transform duration-200 group-hover:scale-115 stroke-[2.3px] ${
                 isSearchActive
-                  ? "bg-[#e07a3f] text-white border border-[#e07a3f] shadow-[0_0_15px_rgba(224,122,63,0.4)]"
-                  : "bg-white/45 dark:bg-white/10 hover:bg-white/70 dark:hover:bg-white/20 border border-white/60 dark:border-white/25 backdrop-blur-xl shadow-xs text-stone-800 dark:text-stone-100"
+                  ? "text-white"
+                  : "text-stone-800 dark:text-stone-100 group-hover:text-[#e07a3f] dark:group-hover:text-[#f59e0b]"
               }`}
-            >
-              <Search
-                className={`w-5 h-5 transition-transform duration-200 group-hover:scale-110 ${
-                  isSearchActive ? "text-white" : "text-stone-800 dark:text-stone-100 group-hover:text-[#e07a3f] dark:group-hover:text-[#f59e0b]"
-                }`}
-              />
-            </button>
-          </div>
+            />
+          </button>
         )}
       </div>
     </nav>

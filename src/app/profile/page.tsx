@@ -1543,13 +1543,32 @@ const handleConfirmDeleteNiche = async () => {
   <main className={`flex-1 flex flex-col min-w-0 w-full space-y-6 pb-28 sm:pb-32 md:pb-6 ${activeTab === "cart_alerts" || activeTab === "analytics" ? "max-w-none" : "max-w-7xl mx-auto"}`}>
   
   {/* Top App Bar (Reference Style) */}
-  <header className="relative z-40 bg-white/80 dark:bg-[#202022]/80 backdrop-blur-2xl px-4 py-3 sm:px-6 sm:py-3.5 rounded-2xl sm:rounded-3xl border border-white/80 dark:border-white/10 shadow-[0_4px_20px_rgba(0,0,0,0.02)] flex flex-col md:flex-row md:items-center justify-between gap-3 sm:gap-4">
+  <header className="relative z-40 bg-white/80 dark:bg-[#202022]/80 backdrop-blur-2xl px-4 py-3 sm:px-6 sm:py-3.5 rounded-2xl sm:rounded-3xl border border-white/80 dark:border-white/10 shadow-[0_4px_20px_rgba(0,0,0,0.02)] flex flex-col md:flex-row md:items-center justify-between gap-3 sm:gap-4 min-h-[56px]">
   
+  {/* Mobile Center Brand Wordmark (100% Centrado en Pantallas Móviles) */}
+  <div className="md:hidden absolute left-1/2 -translate-x-1/2 flex items-center justify-center pointer-events-auto">
+    <Link 
+      href="/" 
+      className="flex items-center hover:opacity-85 transition-opacity select-none py-0.5" 
+      title="Ir a la tienda"
+    >
+      <Image
+        src="/brand/lumina-wordmark.png"
+        alt={brand.name || "Lumina"}
+        width={1058}
+        height={272}
+        priority
+        className="h-6 w-auto object-contain dark:invert"
+      />
+    </Link>
+  </div>
+
   {/* Brand & Top Navigation Pill Bar */}
   <div className="flex items-center justify-between md:justify-start gap-3 md:gap-4 min-w-0 w-full md:w-auto md:flex-1">
+  {/* Desktop Brand Logo (Lateral Izquierdo en Desktop) */}
   <Link 
     href="/" 
-    className="shrink-0 flex items-center hover:opacity-85 transition-opacity select-none py-0.5" 
+    className="hidden md:flex shrink-0 items-center hover:opacity-85 transition-opacity select-none py-0.5" 
     title="Ir a la tienda"
   >
     <Image
@@ -2288,7 +2307,7 @@ const handleConfirmDeleteNiche = async () => {
           items={[
             {
               id: "overview",
-              label: "Vista General",
+              label: "General",
               icon: <LayoutDashboard className="w-5 h-5" />,
               active: activeTab === "overview",
               onClick: () => setActiveTab("overview"),
