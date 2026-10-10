@@ -61,8 +61,6 @@ export interface LoyaltyProgramConfig {
   tierBlackMin: number;
   pushMessage: string;
   autoSyncPurchases: boolean;
-  appleTeamId: string;
-  applePassTypeId: string;
   googleIssuerId: string;
   googleClassId: string;
 }
@@ -76,7 +74,7 @@ export interface LoyaltyMemberCard {
   lifetimePoints: number;
   totalSpent: number;
   purchasesCount: number;
-  walletPlatform: "apple" | "google" | "both";
+  walletPlatform: "google";
   status: "active" | "suspended";
   createdAt: string;
   lastUpdated: string;
@@ -102,8 +100,6 @@ const DEFAULT_PROGRAM_CONFIG: LoyaltyProgramConfig = {
   tierBlackMin: 3000,
   pushMessage: "Tus puntos de lealtad se han actualizado tras tu compra.",
   autoSyncPurchases: true,
-  appleTeamId: "LUMINA99EC",
-  applePassTypeId: "pass.ec.luminahome.member",
   googleIssuerId: "3388000000023209784",
   googleClassId: "3388000000023209784.LUMINA_HOME",
 };
@@ -322,7 +318,7 @@ export function LoyaltyCardsTab() {
   const [newCustomerName, setNewCustomerName] = useState("");
   const [newCustomerEmail, setNewCustomerEmail] = useState("");
   const [newInitialPoints, setNewInitialPoints] = useState(200);
-  const [newPlatform, setNewPlatform] = useState<"apple" | "google" | "both">("both");
+  const [newPlatform, setNewPlatform] = useState<"google">("google");
 
   const fetchLoyaltyDataFromBackend = React.useCallback(async () => {
     try {
@@ -1476,7 +1472,7 @@ export function LoyaltyCardsTab() {
                   </label>
                   <select
                     value={newPlatform}
-                    onChange={(e) => setNewPlatform(e.target.value as "apple" | "google" | "both")}
+                    onChange={(e) => setNewPlatform(e.target.value as "google")}
                     className="w-full h-10 px-3 rounded-xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-[#2a2a2c] text-xs text-gray-900 dark:text-white"
                   >
                     <option value="google">Google Wallet</option>

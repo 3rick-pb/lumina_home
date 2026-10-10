@@ -923,8 +923,8 @@ export function IntegrationsTab() {
               >
                 <CodeBlock
                   code={computedMasterEnv}
-                  language="bash"
-                  accent="#ff6a00"
+                  language="env"
+                  accent="#F75001"
                   showLineNumbers={true}
                   showCopyButton={true}
                   showHeader={false}

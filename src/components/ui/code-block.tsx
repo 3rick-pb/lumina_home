@@ -2,10 +2,49 @@
 
 import { Copy } from 'lucide-react'
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
-import { Highlight, type PrismTheme } from 'prism-react-renderer'
+import { Highlight, Prism, type PrismTheme } from 'prism-react-renderer'
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
 import { cn } from '@/lib/utils'
+
+// Register dedicated grammars for .env and shell files so Prism properly tokenizes variables, strings, numbers & booleans
+if (typeof Prism !== 'undefined' && Prism.languages) {
+    const envGrammar = {
+        comment: {
+            pattern: /(^|[^\\])#.*/,
+            lookbehind: true,
+            greedy: true,
+        },
+        string: {
+            pattern: /(["'])(?:\\(?:\r\n|[\s\S])|(?!\1)[^\\\r\n])*\1/,
+            greedy: true,
+        },
+        number: {
+            pattern: /(=\s*)\d+\b/,
+            lookbehind: true,
+        },
+        boolean: {
+            pattern: /(=\s*)(?:true|false)\b/i,
+            lookbehind: true,
+        },
+        value: {
+            pattern: /(=\s*)[^\s#'"]+/,
+            lookbehind: true,
+        },
+        keyword: /\b(?:NEXT_PUBLIC|export|env)\b/,
+        variable: {
+            pattern: /(^|[\r\n])[A-Za-z0-9_]+(?=\s*=)/,
+            lookbehind: true,
+        },
+        operator: /=/,
+        punctuation: /[{}[\]();:,]/,
+    }
+
+    Prism.languages.env = envGrammar
+    Prism.languages.bash = envGrammar
+    Prism.languages.sh = envGrammar
+    Prism.languages.shell = envGrammar
+}
 
 const TAP_SPRING = { type: 'spring', stiffness: 500, damping: 30 } as const
 const SWAP_SPRING = { type: 'spring', duration: 0.3, bounce: 0 } as const
@@ -15,9 +54,9 @@ const COPY_RESET_MS = 1800
 export type CodeBlockProps = Omit<React.ComponentProps<'div'>, 'children'> & {
     /** The source code to render. */
     code: string
-    /** Prism language id, e.g. "tsx", "css", "json", "bash". */
+    /** Prism language id, e.g. "tsx", "css", "json", "bash", "env". */
     language?: string
-    /** Any hex color. Defaults to rareUI vibrant orange #ff6a00. */
+    /** Any hex color. Defaults to rareUI vibrant orange #F75001. */
     accent?: string
     /** "auto" follows the page theme; pass "dark" or "light" to pin it. Defaults to dark for developer terminal aesthetic. */
     mode?: 'auto' | 'dark' | 'light'
@@ -36,20 +75,20 @@ export type CodeBlockProps = Omit<React.ComponentProps<'div'>, 'children'> & {
 }
 
 function buildTheme(accent: string) {
-    const accentTone = accent || '#ff6a00'
+    const accentTone = accent || '#F75001'
 
     const colors = {
         accent: accentTone,
-        bg: '#0e0e11',
-        border: 'rgba(255, 255, 255, 0.1)',
-        headerBg: 'rgba(255, 255, 255, 0.04)',
+        bg: '#0d0d11',
+        border: 'rgba(255, 255, 255, 0.08)',
+        headerBg: 'rgba(255, 255, 255, 0.03)',
         plain: '#ffffff',
         muted: 'rgba(255, 255, 255, 0.6)',
         gutter: '#52525b',
-        hoverWash: 'rgba(255, 255, 255, 0.1)',
-        floatBg: 'rgba(255, 255, 255, 0.06)',
-        selection: 'rgba(255, 106, 0, 0.3)',
-        lineWash: 'rgba(255, 106, 0, 0.12)',
+        hoverWash: 'rgba(255, 255, 255, 0.08)',
+        floatBg: 'rgba(255, 255, 255, 0.05)',
+        selection: 'rgba(247, 80, 1, 0.28)',
+        lineWash: 'rgba(247, 80, 1, 0.1)',
     }
 
     const theme: PrismTheme = {
@@ -59,7 +98,7 @@ function buildTheme(accent: string) {
             { types: ['punctuation'], style: { color: colors.plain } },
             { types: ['operator', 'combinator'], style: { color: colors.plain } },
             { types: ['keyword', 'selector', 'atrule', 'important', 'tag'], style: { color: accentTone } },
-            { types: ['string', 'char', 'inserted', 'url', 'attr-value'], style: { color: accentTone } },
+            { types: ['string', 'char', 'inserted', 'url', 'attr-value', 'value'], style: { color: accentTone } },
             { types: ['function'], style: { color: colors.plain } },
             { types: ['attr-name'], style: { color: accentTone } },
             { types: ['number', 'boolean', 'constant', 'symbol', 'deleted'], style: { color: accentTone } },
@@ -128,7 +167,7 @@ function CopyButton({ code, floating }: { code: string; floating?: boolean }) {
             className={cn(
                 'relative grid size-8 place-items-center rounded-xl text-zinc-400 outline-none transition-all duration-150 ease-out hover:bg-white/10 hover:text-white focus-visible:ring-2 focus-visible:ring-amber-500/60 cursor-pointer',
                 copied && 'bg-amber-500/20 text-amber-400 hover:bg-amber-500/25 hover:text-amber-300',
-                floating && 'absolute top-3.5 right-3.5 z-20 border border-white/10 bg-[#18181c]/80 backdrop-blur-md shadow-md hover:border-white/20',
+                floating && 'absolute top-3.5 right-3.5 z-20 border border-white/10 bg-[#16161a]/85 backdrop-blur-md shadow-md hover:border-white/20',
             )}
         >
             <AnimatePresence initial={false}>
@@ -174,8 +213,8 @@ function CopyButton({ code, floating }: { code: string; floating?: boolean }) {
 
 export function CodeBlock({
     code,
-    language = 'bash',
-    accent = '#ff6a00',
+    language = 'env',
+    accent = '#F75001',
     filename,
     showFrame = true,
     showHeader = false,
@@ -186,7 +225,7 @@ export function CodeBlock({
     style,
     ...props
 }: CodeBlockProps) {
-    const safeLanguage = typeof language === 'string' ? language : 'bash'
+    const safeLanguage = typeof language === 'string' ? language : 'env'
     const { colors, theme } = useMemo(() => buildTheme(accent), [accent])
     const trimmed = useMemo(() => {
         const source = typeof code === 'string' ? code : String(code ?? '')
@@ -201,7 +240,7 @@ export function CodeBlock({
         <div
             data-slot='code-block'
             className={cn(
-                'group relative flex flex-col overflow-hidden text-left rounded-2xl sm:rounded-3xl border border-white/10 bg-[#0e0e11] text-white shadow-2xl',
+                'group relative flex flex-col overflow-hidden text-left rounded-2xl sm:rounded-3xl border border-white/10 bg-[#0d0d11] text-white shadow-2xl',
                 className,
             )}
             style={{ backgroundColor: colors.bg, ...style }}
@@ -234,8 +273,12 @@ export function CodeBlock({
                         return (
                             <pre
                                 data-slot='code-block-pre'
-                                className='w-max min-w-full font-mono text-[13px] leading-6'
-                                style={{ tabSize: 4 }}
+                                className='w-max min-w-full font-mono text-[13px] sm:text-[13.5px] leading-relaxed [letter-spacing:-0.01em]'
+                                style={{
+                                    fontFamily: 'ui-monospace, "Geist Mono", "JetBrains Mono", Menlo, Monaco, Consolas, monospace',
+                                    lineHeight: '1.75',
+                                    tabSize: 4,
+                                }}
                             >
                                 {tokens.map((line, i) => {
                                     const lineProps = getLineProps({ line })
@@ -252,7 +295,7 @@ export function CodeBlock({
                                             {showLineNumbers && (
                                                 <span
                                                     aria-hidden
-                                                    className='mr-5 shrink-0 text-right text-zinc-500 select-none font-mono text-[13px]'
+                                                    className='mr-5 sm:mr-6 shrink-0 text-right text-zinc-500 select-none font-mono text-[12.5px] sm:text-[13px]'
                                                     style={{ width: gutterWidth }}
                                                 >
                                                     {i + 1}
