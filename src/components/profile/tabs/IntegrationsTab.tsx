@@ -34,6 +34,7 @@ import {
   AtSign,
   Hash,
   User,
+  Activity,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "@/lib/supabase";
@@ -887,98 +888,185 @@ export function IntegrationsTab() {
         </div>
 
         {/* ==================================================================== */}
-        {/* PANEL MAESTRO: CODE BLOCK RARE-UI CON GENERADOR UNIVERSAL EN VIVO    */}
+        {/* PANEL MAESTRO: TERMINAL OBSIDIAN CON RARE-UI CODE BLOCK (.ENV)       */}
         {/* ==================================================================== */}
-        <div className="rounded-2xl sm:rounded-3xl border border-black/5 dark:border-white/10 bg-gradient-to-b from-white/95 to-zinc-50/80 dark:from-[#18181c]/95 dark:to-[#121215]/90 backdrop-blur-2xl p-4 sm:p-6 shadow-sm space-y-4">
-          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
-            <div className="flex items-center gap-3 min-w-0">
-              <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-amber-500/20 via-orange-500/20 to-amber-500/10 border border-amber-500/30 text-amber-500 flex items-center justify-center shrink-0 shadow-xs">
-                <Terminal className="w-5 h-5" />
-              </div>
-              <div className="min-w-0">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <h3 className="text-sm sm:text-base font-bold tracking-tight text-zinc-900 dark:text-zinc-100">
-                    Variables de Entorno Generadas en Vivo (.env)
-                  </h3>
-                  <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/25">
-                    100% de la web
-                  </span>
-                  <span className="px-2 py-0.5 rounded-full text-[10px] font-mono text-zinc-500 dark:text-zinc-400 bg-black/5 dark:bg-white/5 border border-black/5 dark:border-white/10 hidden sm:inline-block">
-                    {computedMasterEnv.split("\n").filter(Boolean).length} líneas de variables
-                  </span>
+        <div className="relative overflow-hidden rounded-[2rem] sm:rounded-[2.5rem] bg-[#090a0f] border-2 border-amber-500/30 shadow-[0_25px_60px_-15px_rgba(0,0,0,0.6),0_0_40px_-15px_rgba(247,80,1,0.18)] p-2 sm:p-2.5 transition-all">
+          {/* Luces ambientales cálidas */}
+          <div className="absolute -top-24 -right-24 w-80 h-80 rounded-full bg-amber-500/10 blur-3xl pointer-events-none" />
+          <div className="absolute -bottom-24 -left-24 w-80 h-80 rounded-full bg-orange-600/10 blur-3xl pointer-events-none" />
+
+          {/* Núcleo interior del Terminal */}
+          <div className="relative rounded-[calc(2rem-0.5rem)] sm:rounded-[calc(2.5rem-0.5rem)] bg-[#0e0f17]/95 border border-white/5 p-4 sm:p-6 md:p-7 space-y-5">
+            
+            {/* Header del Terminal con Botones Estilo Mac y Telemetría */}
+            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-4 border-b border-white/10">
+              <div className="flex items-start sm:items-center gap-3.5 min-w-0">
+                <div className="w-11 h-11 rounded-2xl bg-gradient-to-tr from-[#F75001]/25 via-amber-500/20 to-orange-500/10 border border-[#F75001]/40 text-[#F75001] flex items-center justify-center shrink-0 shadow-[0_4px_20px_rgba(247,80,1,0.25)]">
+                  <Terminal className="w-5 h-5" />
                 </div>
-                <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5 truncate">
-                  Configuración maestra sincronizada con Supabase, Servidor SMTP, PayPhone y Google Cloud en un solo bloque.
-                </p>
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    {/* Botones de ventana macOS */}
+                    <div className="flex items-center gap-1.5 mr-1 hidden sm:flex">
+                      <span className="w-2.5 h-2.5 rounded-full bg-red-500/80 ring-1 ring-red-400/30" />
+                      <span className="w-2.5 h-2.5 rounded-full bg-amber-500/80 ring-1 ring-amber-400/30" />
+                      <span className="w-2.5 h-2.5 rounded-full bg-emerald-500/80 ring-1 ring-emerald-400/30" />
+                    </div>
+                    <h3 className="text-sm sm:text-base font-bold tracking-tight text-white flex items-center gap-2">
+                      <span>Terminal Maestro de Variables (.env)</span>
+                    </h3>
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-amber-500/15 text-amber-300 border border-amber-500/30">
+                      Rare UI Engine
+                    </span>
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-medium text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 flex items-center gap-1">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                      <span>Sincronizado en Vivo</span>
+                    </span>
+                  </div>
+                  <p className="text-xs text-zinc-400 mt-1 max-w-2xl leading-relaxed">
+                    Configuración maestra universal: Supabase, Servidor SMTP, PayPhone, Google Cloud y Hosting en un único archivo de despliegue.
+                  </p>
+                </div>
+              </div>
+
+              {/* Acciones Rápidas del Header */}
+              <div className="flex items-center gap-2 flex-wrap shrink-0">
+                <motion.button
+                  type="button"
+                  whileHover={{ scale: 1.02, y: -1 }}
+                  whileTap={{ scale: 0.97 }}
+                  onClick={() => markCopied("master_all", computedMasterEnv)}
+                  className="flex items-center gap-1.5 px-3.5 py-2 bg-[#F75001] hover:bg-[#ff641c] text-white text-xs font-bold rounded-xl transition-all shadow-[0_4px_16px_rgba(247,80,1,0.3)] cursor-pointer"
+                >
+                  {copiedKey === "master_all" ? <Check className="w-3.5 h-3.5 text-white" /> : <Copy className="w-3.5 h-3.5" />}
+                  <span>{copiedKey === "master_all" ? "¡Copiado Todo!" : "Copiar .env Maestro"}</span>
+                </motion.button>
+
+                <motion.button
+                  type="button"
+                  whileHover={{ scale: 1.02, y: -1 }}
+                  whileTap={{ scale: 0.97 }}
+                  onClick={() => setShowLiveCode((prev) => !prev)}
+                  className="px-3.5 py-2 rounded-xl border border-white/10 hover:bg-white/10 text-xs text-zinc-300 font-medium transition-colors cursor-pointer flex items-center gap-1.5"
+                >
+                  <FileCode className="w-3.5 h-3.5 text-zinc-400" />
+                  <span>{showLiveCode ? "Ocultar Código" : "Expandir Terminal"}</span>
+                  <ChevronDown className={`w-3.5 h-3.5 text-zinc-400 transition-transform duration-300 ${showLiveCode ? "rotate-180" : ""}`} />
+                </motion.button>
               </div>
             </div>
 
-            <div className="flex items-center gap-2 flex-wrap shrink-0">
-              <button
-                type="button"
-                onClick={() => markCopied("master_all", computedMasterEnv)}
-                className="flex items-center gap-1.5 px-3.5 py-2 bg-zinc-900 hover:bg-black dark:bg-white dark:hover:bg-zinc-100 text-white dark:text-zinc-950 text-xs font-semibold rounded-xl transition-all shadow-xs cursor-pointer active:scale-95"
-              >
-                {copiedKey === "master_all" ? <Check className="w-3.5 h-3.5 text-emerald-400 dark:text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
-                <span>{copiedKey === "master_all" ? "¡Copiado Todo!" : "Copiar .env Maestro"}</span>
-              </button>
+            {/* Barra de Atajos para Copiar Bloques Específicos */}
+            <div className="flex items-center justify-between gap-2 flex-wrap pt-0.5">
+              <span className="text-[11px] font-mono text-zinc-400">
+                Copiar fragmento directo:
+              </span>
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <motion.button
+                  type="button"
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => {
+                    const snip = `SMTP_HOST="${smtpProvider === "gmail" ? "smtp.gmail.com" : smtpHost}"\nSMTP_PORT="${smtpProvider === "gmail" ? "587" : smtpPort}"\nSMTP_SECURE="${smtpSecure ? "true" : "false"}"\nSMTP_USER="${smtpUser}"\nSMTP_PASS="${smtpPass}"\nSMTP_FROM="${senderName} <${smtpUser}>"`;
+                    markCopied("smtp_snip", snip);
+                  }}
+                  className="px-2.5 py-1 rounded-lg bg-white/5 hover:bg-white/10 text-[11px] font-mono text-blue-300 border border-blue-500/20 transition-colors flex items-center gap-1 cursor-pointer"
+                >
+                  {copiedKey === "smtp_snip" ? <Check className="w-3 h-3 text-emerald-400" /> : <Mail className="w-3 h-3 text-blue-400" />}
+                  <span>Solo SMTP</span>
+                </motion.button>
 
-              <button
-                type="button"
-                onClick={() => setShowLiveCode((prev) => !prev)}
-                className="px-3.5 py-2 rounded-xl border border-black/10 dark:border-white/10 hover:bg-black/5 dark:hover:bg-white/5 text-xs text-zinc-700 dark:text-zinc-300 font-medium transition-colors cursor-pointer flex items-center gap-1.5 active:scale-95"
-              >
-                <FileCode className="w-3.5 h-3.5 text-zinc-500" />
-                <span>{showLiveCode ? "Ocultar Código" : "Ver Código .env"}</span>
-                <ChevronDown className={`w-3.5 h-3.5 text-zinc-400 transition-transform duration-200 ${showLiveCode ? "rotate-180" : ""}`} />
-              </button>
+                <motion.button
+                  type="button"
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => {
+                    const snip = `NEXT_PUBLIC_SUPABASE_URL="${supabaseUrl}"\nNEXT_PUBLIC_SUPABASE_ANON_KEY="${supabaseAnonKey}"\nSUPABASE_SERVICE_ROLE_KEY="${supabaseServiceRoleKey}"`;
+                    markCopied("supabase_snip", snip);
+                  }}
+                  className="px-2.5 py-1 rounded-lg bg-white/5 hover:bg-white/10 text-[11px] font-mono text-emerald-300 border border-emerald-500/20 transition-colors flex items-center gap-1 cursor-pointer"
+                >
+                  {copiedKey === "supabase_snip" ? <Check className="w-3 h-3 text-emerald-400" /> : <Database className="w-3 h-3 text-emerald-400" />}
+                  <span>Solo Supabase</span>
+                </motion.button>
+
+                <motion.button
+                  type="button"
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => {
+                    const snip = `PAYPHONE_TOKEN="${payphoneToken}"\nNEXT_PUBLIC_PAYPHONE_APP_ID="${payphoneAppId}"\nPAYPHONE_APP_ID="${payphoneAppId}"\nPAYPHONE_STORE_ID="${payphoneStoreId}"\nPAYPHONE_ENV="${payphoneEnv}"\nPAYPHONE_PAYMENT_MODE="${payphoneMode}"`;
+                    markCopied("payphone_snip", snip);
+                  }}
+                  className="px-2.5 py-1 rounded-lg bg-white/5 hover:bg-white/10 text-[11px] font-mono text-amber-300 border border-amber-500/20 transition-colors flex items-center gap-1 cursor-pointer"
+                >
+                  {copiedKey === "payphone_snip" ? <Check className="w-3 h-3 text-emerald-400" /> : <CreditCard className="w-3 h-3 text-amber-400" />}
+                  <span>Solo PayPhone</span>
+                </motion.button>
+
+                <motion.button
+                  type="button"
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => {
+                    const snip = `GOOGLE_CLIENT_ID="${googleClientId}"\nGOOGLE_CLIENT_SECRET="${googleClientSecret}"\nGOOGLE_REDIRECT_URI="${googleRedirectUri}"`;
+                    markCopied("google_snip", snip);
+                  }}
+                  className="px-2.5 py-1 rounded-lg bg-white/5 hover:bg-white/10 text-[11px] font-mono text-sky-300 border border-sky-500/20 transition-colors flex items-center gap-1 cursor-pointer"
+                >
+                  {copiedKey === "google_snip" ? <Check className="w-3 h-3 text-emerald-400" /> : <Cloud className="w-3 h-3 text-sky-400" />}
+                  <span>Solo Google Cloud</span>
+                </motion.button>
+              </div>
             </div>
-          </div>
 
-          <AnimatePresence>
-            {showLiveCode && (
-              <motion.div
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: "auto" }}
-                exit={{ opacity: 0, height: 0 }}
-                transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
-                className="overflow-hidden pt-1"
-              >
-                <CodeBlock
-                  code={computedMasterEnv}
-                  language="env"
-                  accent="#F75001"
-                  showLineNumbers={true}
-                  showCopyButton={true}
-                  showHeader={false}
-                  defaultExpanded={true}
-                  showFooter={true}
-                  className="w-full rounded-2xl sm:rounded-3xl shadow-2xl overflow-hidden border border-white/10"
-                />
-              </motion.div>
-            )}
-          </AnimatePresence>
+            {/* Rare UI CodeBlock con Resaltado Completo y Altura Natural */}
+            <AnimatePresence>
+              {showLiveCode && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: "auto" }}
+                  exit={{ opacity: 0, height: 0 }}
+                  transition={{ type: "spring", stiffness: 380, damping: 28 }}
+                  className="overflow-hidden pt-1"
+                >
+                  <CodeBlock
+                    code={computedMasterEnv}
+                    language="env"
+                    accent="#F75001"
+                    filename=".env.production"
+                    showHeader={true}
+                    showLineNumbers={true}
+                    showCopyButton={true}
+                    defaultExpanded={true}
+                    maxHeight={false}
+                    showFooter={true}
+                    className="w-full rounded-2xl sm:rounded-3xl shadow-2xl overflow-hidden border border-white/10"
+                  />
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
         </div>
 
         {/* ==================================================================== */}
         {/* SECCIONES EDITABLES UNIFICADAS                                       */}
         {/* ==================================================================== */}
-        <div className="space-y-6 sm:space-y-8 pt-2">
+        <div className="space-y-8 sm:space-y-10 pt-2">
 
           {/* ------------------------------------------------------------------ */}
-          {/* 1. SERVIDOR SMTP & NOTIFICACIONES (MAIL) - BENTO 2.0 COMMAND HUB    */}
+          {/* 1. SERVIDOR SMTP & NOTIFICACIONES (MAIL) - DOUBLE BEZEL CHASSIS     */}
           {/* ------------------------------------------------------------------ */}
           {(activeSection === "all" || activeSection === "smtp") && (
-            <div className="rounded-3xl border border-black/5 dark:border-white/10 bg-gradient-to-b from-white/95 via-zinc-50/70 to-white/90 dark:from-[#1b1b1f]/95 dark:via-[#161619]/80 dark:to-[#121215]/90 p-5 sm:p-7 md:p-8 space-y-6 sm:space-y-7 shadow-[0_12px_40px_rgba(0,0,0,0.02)]">
+            <div className="rounded-[2.5rem] sm:rounded-[3rem] p-4 sm:p-7 md:p-8 bg-gradient-to-b from-sky-500/[0.04] via-blue-500/[0.02] to-white/95 dark:from-sky-950/20 dark:via-zinc-900/40 dark:to-[#141418]/95 border-2 border-sky-500/20 dark:border-sky-500/25 shadow-[0_20px_50px_-15px_rgba(56,189,248,0.08)] space-y-7">
               
-              {/* Header Principal con Mesh Visual & Telemetría Rápida */}
+              {/* Header Principal del Módulo SMTP */}
               <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-5 border-b border-black/5 dark:border-white/10">
                 <div className="flex items-start sm:items-center gap-3.5 min-w-0">
-                  <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-blue-600/20 via-indigo-500/20 to-sky-400/20 border border-blue-500/30 text-blue-500 dark:text-blue-400 flex items-center justify-center shrink-0 shadow-[0_4px_20px_rgba(59,130,246,0.15)]">
+                  <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-sky-500/20 via-blue-600/20 to-indigo-500/10 border border-sky-500/35 text-sky-500 dark:text-sky-400 flex items-center justify-center shrink-0 shadow-[0_4px_20px_rgba(56,189,248,0.2)]">
                     <Mail className="w-6 h-6" />
                   </div>
                   <div className="min-w-0">
                     <div className="flex items-center gap-2.5 flex-wrap">
+                      <span className="text-[10px] uppercase tracking-[0.2em] font-bold text-sky-600 dark:text-sky-400 bg-sky-500/10 px-2.5 py-0.5 rounded-full border border-sky-500/20">
+                        INFRAESTRUCTURA DE MENSAJERÍA
+                      </span>
                       <h3 className="text-base sm:text-xl font-bold tracking-tight text-zinc-900 dark:text-white">
                         Servidor SMTP & Notificaciones Transaccionales
                       </h3>
@@ -988,31 +1076,33 @@ export function IntegrationsTab() {
                           : "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/30"
                       }`}>
                         <span className={`w-2 h-2 rounded-full ${servicesStatus?.smtp?.configured ? "bg-emerald-500 animate-pulse" : "bg-amber-400"}`} />
-                        <span>{servicesStatus?.smtp?.configured ? "Servidor Operativo" : "Requiere Configuración"}</span>
+                        <span>{servicesStatus?.smtp?.configured ? "Servidor Conectado" : "Configuración Pendiente"}</span>
                       </span>
                     </div>
                     <p className="text-xs sm:text-sm text-zinc-500 dark:text-zinc-400 mt-1 max-w-2xl leading-relaxed">
-                      Motor de mensajería para facturas por compra, comprobantes de pago y avisos inmediatos de preparación a bodegas.
+                      Motor de despacho para comprobantes por compra, facturas al cliente y avisos inmediatos a las bodegas de empaque.
                     </p>
                   </div>
                 </div>
 
                 <div className="flex items-center gap-2 shrink-0">
-                  <button
+                  <motion.button
                     type="button"
+                    whileHover={{ scale: 1.02, y: -1 }}
+                    whileTap={{ scale: 0.97 }}
                     onClick={() => setShowGoogleGuide(!showGoogleGuide)}
-                    className="px-3.5 py-2 rounded-xl border border-blue-500/20 bg-blue-50/70 hover:bg-blue-100 dark:bg-blue-500/10 dark:hover:bg-blue-500/20 text-xs text-blue-600 dark:text-blue-400 font-semibold transition-all cursor-pointer flex items-center gap-2 active:scale-95 shadow-xs"
+                    className="px-3.5 py-2 rounded-xl border border-sky-500/25 bg-sky-50/80 hover:bg-sky-100 dark:bg-sky-500/10 dark:hover:bg-sky-500/20 text-xs text-sky-600 dark:text-sky-400 font-semibold transition-all cursor-pointer flex items-center gap-2 shadow-xs"
                   >
-                    <Sparkles className="w-3.5 h-3.5 text-blue-500" />
+                    <Sparkles className="w-3.5 h-3.5 text-sky-500" />
                     <span>{showGoogleGuide ? "Ocultar Guía Gmail" : "Guía Gmail 16 Dígitos"}</span>
-                  </button>
+                  </motion.button>
                 </div>
               </div>
 
               {/* Bento Ribbon de Métricas en Vivo */}
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
                 <div className="p-3.5 rounded-2xl border border-black/5 dark:border-white/10 bg-white/70 dark:bg-zinc-800/50 backdrop-blur-md flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-xl bg-blue-500/10 border border-blue-500/20 text-blue-500 flex items-center justify-center shrink-0">
+                  <div className="w-9 h-9 rounded-xl bg-sky-500/10 border border-sky-500/20 text-sky-500 flex items-center justify-center shrink-0">
                     <ShieldCheck className="w-4 h-4" />
                   </div>
                   <div className="min-w-0">
@@ -1028,7 +1118,7 @@ export function IntegrationsTab() {
                     <Zap className="w-4 h-4" />
                   </div>
                   <div className="min-w-0">
-                    <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider block">Canal de Envío</span>
+                    <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider block">Canal Activo</span>
                     <span className="text-xs font-semibold text-zinc-800 dark:text-zinc-200 truncate block">
                       {smtpProvider === "gmail" ? "Google Cloud Relay" : (smtpHost || "Custom SMTP Host")}
                     </span>
@@ -1061,7 +1151,7 @@ export function IntegrationsTab() {
                     initial={{ opacity: 0, height: 0, y: -10 }}
                     animate={{ opacity: 1, height: "auto", y: 0 }}
                     exit={{ opacity: 0, height: 0, y: -10 }}
-                    transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
+                    transition={{ type: "spring", stiffness: 350, damping: 28 }}
                     className="overflow-hidden p-5 sm:p-6 rounded-3xl bg-gradient-to-br from-amber-500/10 via-amber-500/[0.04] to-blue-500/10 border border-amber-500/25 space-y-4"
                   >
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
@@ -1069,15 +1159,17 @@ export function IntegrationsTab() {
                         <Sparkles className="w-4 h-4 text-amber-500" />
                         <span>Cómo generar tu Contraseña de Aplicación de 16 caracteres en Gmail</span>
                       </h4>
-                      <a
+                      <motion.a
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
                         href="https://myaccount.google.com/apppasswords"
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-stone-950 font-bold text-xs transition-all shadow-xs cursor-pointer active:scale-95"
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-stone-950 font-bold text-xs transition-all shadow-xs cursor-pointer"
                       >
                         <span>Abrir Seguridad Google</span>
                         <ExternalLink className="w-3.5 h-3.5" />
-                      </a>
+                      </motion.a>
                     </div>
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs">
@@ -1126,15 +1218,16 @@ export function IntegrationsTab() {
               </AnimatePresence>
 
               {/* Selector Visual de Proveedor (Cards Interactivas) */}
-              <div className="space-y-2">
+              <div className="space-y-2.5">
                 <label className="text-[11px] font-bold tracking-wider text-zinc-500 dark:text-zinc-400 uppercase block px-1">
                   Selecciona la Plataforma de Correo:
                 </label>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   
                   {/* Tarjeta Proveedor 1: Gmail Cloud */}
                   <motion.button
                     type="button"
+                    whileHover={{ scale: 1.01, y: -1 }}
                     whileTap={{ scale: 0.98 }}
                     onClick={() => {
                       setSmtpProvider("gmail");
@@ -1142,29 +1235,29 @@ export function IntegrationsTab() {
                       setSmtpPort(587);
                       setSmtpSecure(false);
                     }}
-                    className={`p-4 rounded-2xl text-left border transition-all cursor-pointer flex items-start gap-3.5 relative overflow-hidden ${
+                    className={`p-4 sm:p-5 rounded-2xl sm:rounded-3xl text-left border-2 transition-all cursor-pointer flex items-start gap-3.5 relative overflow-hidden ${
                       smtpProvider === "gmail"
-                        ? "bg-white dark:bg-zinc-800/90 border-blue-500/50 shadow-[0_8px_24px_rgba(59,130,246,0.12),inset_0_1px_1px_rgba(255,255,255,0.4)] ring-2 ring-blue-500/20"
+                        ? "bg-gradient-to-br from-sky-500/[0.08] to-blue-500/[0.04] dark:from-sky-500/15 dark:to-blue-600/10 border-sky-500 shadow-[0_10px_25px_-5px_rgba(56,189,248,0.25)] ring-2 ring-sky-500/20"
                         : "bg-white/60 dark:bg-zinc-900/40 border-black/5 dark:border-white/10 hover:bg-white dark:hover:bg-zinc-800/60 opacity-80"
                     }`}
                   >
-                    <div className="w-10 h-10 rounded-xl bg-red-500/10 border border-red-500/20 text-red-500 flex items-center justify-center shrink-0">
-                      <Mail className="w-5 h-5 text-red-500" />
+                    <div className="w-11 h-11 rounded-2xl bg-gradient-to-tr from-sky-500/20 to-blue-600/20 border border-sky-500/30 text-sky-600 dark:text-sky-400 flex items-center justify-center shrink-0 shadow-xs">
+                      <Mail className="w-5 h-5 text-sky-500" />
                     </div>
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2">
                         <span className="font-bold text-xs sm:text-sm text-zinc-900 dark:text-white">Gmail / Google Workspace</span>
-                        <span className="px-1.5 py-0.5 rounded-md text-[9.5px] font-bold bg-blue-500/15 text-blue-600 dark:text-blue-400 border border-blue-500/30">
+                        <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-sky-500/15 text-sky-600 dark:text-sky-400 border border-sky-500/30">
                           Recomendado
                         </span>
                       </div>
-                      <p className="text-[11px] text-zinc-500 dark:text-zinc-400 mt-0.5 leading-relaxed">
+                      <p className="text-[11px] text-zinc-500 dark:text-zinc-400 mt-1 leading-relaxed">
                         Puerto 587 STARTTLS automático. Máxima reputación contra filtros de spam sin configurar DNS complejos.
                       </p>
                     </div>
                     {smtpProvider === "gmail" && (
-                      <div className="w-5 h-5 rounded-full bg-blue-500 text-white flex items-center justify-center shrink-0 shadow-xs">
-                        <Check className="w-3 h-3 stroke-[3]" />
+                      <div className="w-6 h-6 rounded-full bg-sky-500 text-white flex items-center justify-center shrink-0 shadow-xs">
+                        <Check className="w-3.5 h-3.5 stroke-[3]" />
                       </div>
                     )}
                   </motion.button>
@@ -1172,54 +1265,64 @@ export function IntegrationsTab() {
                   {/* Tarjeta Proveedor 2: SMTP Propio */}
                   <motion.button
                     type="button"
+                    whileHover={{ scale: 1.01, y: -1 }}
                     whileTap={{ scale: 0.98 }}
                     onClick={() => setSmtpProvider("custom")}
-                    className={`p-4 rounded-2xl text-left border transition-all cursor-pointer flex items-start gap-3.5 relative overflow-hidden ${
+                    className={`p-4 sm:p-5 rounded-2xl sm:rounded-3xl text-left border-2 transition-all cursor-pointer flex items-start gap-3.5 relative overflow-hidden ${
                       smtpProvider === "custom"
-                        ? "bg-white dark:bg-zinc-800/90 border-amber-500/50 shadow-[0_8px_24px_rgba(245,158,11,0.12),inset_0_1px_1px_rgba(255,255,255,0.4)] ring-2 ring-amber-500/20"
+                        ? "bg-gradient-to-br from-amber-500/[0.08] to-orange-500/[0.04] dark:from-amber-500/15 dark:to-orange-600/10 border-amber-500 shadow-[0_10px_25px_-5px_rgba(245,158,11,0.25)] ring-2 ring-amber-500/20"
                         : "bg-white/60 dark:bg-zinc-900/40 border-black/5 dark:border-white/10 hover:bg-white dark:hover:bg-zinc-800/60 opacity-80"
                     }`}
                   >
-                    <div className="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-500 flex items-center justify-center shrink-0">
+                    <div className="w-11 h-11 rounded-2xl bg-gradient-to-tr from-amber-500/20 to-orange-500/20 border border-amber-500/30 text-amber-500 flex items-center justify-center shrink-0 shadow-xs">
                       <Server className="w-5 h-5 text-amber-500" />
                     </div>
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2">
                         <span className="font-bold text-xs sm:text-sm text-zinc-900 dark:text-white">Hosting Propio / Relay</span>
-                        <span className="px-1.5 py-0.5 rounded-md text-[9.5px] font-bold bg-zinc-200 dark:bg-zinc-700 text-zinc-700 dark:text-zinc-300">
+                        <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-zinc-200 dark:bg-zinc-700 text-zinc-700 dark:text-zinc-300">
                           Personalizado
                         </span>
                       </div>
-                      <p className="text-[11px] text-zinc-500 dark:text-zinc-400 mt-0.5 leading-relaxed">
+                      <p className="text-[11px] text-zinc-500 dark:text-zinc-400 mt-1 leading-relaxed">
                         Servidor cPanel, AWS SES, Resend o SendGrid con puertos configurables (587, 465, 25).
                       </p>
                     </div>
                     {smtpProvider === "custom" && (
-                      <div className="w-5 h-5 rounded-full bg-amber-500 text-stone-950 flex items-center justify-center shrink-0 shadow-xs">
-                        <Check className="w-3 h-3 stroke-[3]" />
+                      <div className="w-6 h-6 rounded-full bg-amber-500 text-stone-950 flex items-center justify-center shrink-0 shadow-xs">
+                        <Check className="w-3.5 h-3.5 stroke-[3]" />
                       </div>
                     )}
                   </motion.button>
                 </div>
               </div>
 
-              {/* Grid Bento de 2 Columnas: Credenciales vs Prueba & Bodegas */}
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 sm:gap-6">
+              {/* ================================================================ */}
+              {/* LOS 3 RECUADROS TOTALMENTE DIFERENCIADOS POR COLOR Y ARQUITECTURA */}
+              {/* ================================================================ */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-7 items-start">
                 
-                {/* Bento Card A: Credenciales del Servidor */}
-                <div className="p-5 sm:p-6 rounded-3xl border border-black/5 dark:border-white/10 bg-white/90 dark:bg-[#1c1c20]/90 backdrop-blur-xl shadow-xs space-y-4">
-                  <div className="flex items-center justify-between pb-3 border-b border-black/5 dark:border-white/10">
+                {/* -------------------------------------------------------------- */}
+                {/* RECUADRO 1 (AZUL SKY): BÓVEDA DE AUTENTICACIÓN SMTP            */}
+                {/* -------------------------------------------------------------- */}
+                <div className="rounded-3xl border-2 border-sky-500/35 dark:border-sky-500/40 bg-gradient-to-br from-sky-500/[0.04] via-white to-sky-500/[0.02] dark:from-sky-950/30 dark:via-[#161722] dark:to-zinc-900/60 p-5 sm:p-7 shadow-[0_12px_35px_-8px_rgba(56,189,248,0.12)] space-y-4 sm:space-y-5">
+                  <div className="flex items-center justify-between pb-3.5 border-b border-sky-500/20 dark:border-sky-500/25">
                     <div className="flex items-center gap-2.5">
-                      <div className="w-8 h-8 rounded-xl bg-blue-500/10 text-blue-500 flex items-center justify-center shrink-0">
+                      <div className="w-9 h-9 rounded-xl bg-sky-500/15 border border-sky-500/25 text-sky-600 dark:text-sky-400 flex items-center justify-center shrink-0 shadow-xs">
                         <KeyRound className="w-4 h-4" />
                       </div>
-                      <h4 className="font-bold text-xs sm:text-sm text-zinc-900 dark:text-zinc-100">
-                        Credenciales de Autenticación
-                      </h4>
+                      <div>
+                        <h4 className="font-bold text-xs sm:text-sm text-zinc-900 dark:text-zinc-100">
+                          Credenciales de Autenticación
+                        </h4>
+                        <span className="text-[10px] text-zinc-400">
+                          {smtpProvider === "gmail" ? "Protocolo Google Workspace Relay" : "Servidor SMTP Estándar"}
+                        </span>
+                      </div>
                     </div>
 
-                    <span className="text-[10px] font-mono font-medium text-zinc-400 bg-zinc-100 dark:bg-zinc-800 px-2 py-0.5 rounded-md">
-                      {smtpProvider === "gmail" ? "gmail-auth-v2" : "smtp-custom-auth"}
+                    <span className="text-[10px] font-mono font-bold text-sky-600 dark:text-sky-400 bg-sky-500/10 border border-sky-500/25 px-2.5 py-0.5 rounded-full">
+                      BÓVEDA PRIVADA
                     </span>
                   </div>
 
@@ -1227,7 +1330,7 @@ export function IntegrationsTab() {
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
                       <div className="space-y-1.5">
                         <label className="text-[11px] font-bold text-zinc-600 dark:text-zinc-400 flex items-center gap-1.5">
-                          <Server className="w-3 h-3 text-zinc-400" />
+                          <Server className="w-3.5 h-3.5 text-sky-500" />
                           <span>Host SMTP</span>
                         </label>
                         <input
@@ -1235,12 +1338,12 @@ export function IntegrationsTab() {
                           value={smtpHost}
                           onChange={(e) => setSmtpHost(e.target.value)}
                           placeholder="mail.tudominio.com"
-                          className="w-full px-3.5 py-2.5 rounded-xl border border-black/10 dark:border-white/10 bg-zinc-50/80 dark:bg-zinc-800/70 text-xs font-mono outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all"
+                          className="w-full px-3.5 py-2.5 rounded-xl border border-sky-500/20 dark:border-sky-500/30 bg-white dark:bg-zinc-800/80 text-xs font-mono outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20 transition-all"
                         />
                       </div>
                       <div className="space-y-1.5">
                         <label className="text-[11px] font-bold text-zinc-600 dark:text-zinc-400 flex items-center gap-1.5">
-                          <Hash className="w-3 h-3 text-zinc-400" />
+                          <Hash className="w-3.5 h-3.5 text-sky-500" />
                           <span>Puerto</span>
                         </label>
                         <input
@@ -1248,7 +1351,7 @@ export function IntegrationsTab() {
                           value={smtpPort}
                           onChange={(e) => setSmtpPort(Number(e.target.value))}
                           placeholder="587 o 465"
-                          className="w-full px-3.5 py-2.5 rounded-xl border border-black/10 dark:border-white/10 bg-zinc-50/80 dark:bg-zinc-800/70 text-xs font-mono outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all"
+                          className="w-full px-3.5 py-2.5 rounded-xl border border-sky-500/20 dark:border-sky-500/30 bg-white dark:bg-zinc-800/80 text-xs font-mono outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20 transition-all"
                         />
                       </div>
                     </div>
@@ -1256,7 +1359,7 @@ export function IntegrationsTab() {
 
                   <div className="space-y-1.5">
                     <label className="text-[11px] font-bold text-zinc-600 dark:text-zinc-400 flex items-center gap-1.5">
-                      <AtSign className="w-3 h-3 text-zinc-400" />
+                      <AtSign className="w-3.5 h-3.5 text-sky-500" />
                       <span>Correo Remitente (SMTP_USER)</span>
                     </label>
                     <input
@@ -1264,17 +1367,17 @@ export function IntegrationsTab() {
                       value={smtpUser}
                       onChange={(e) => setSmtpUser(e.target.value)}
                       placeholder="contacto@luminahome.com"
-                      className="w-full px-3.5 py-2.5 rounded-xl border border-black/10 dark:border-white/10 bg-zinc-50/80 dark:bg-zinc-800/70 text-xs font-mono outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all"
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-sky-500/20 dark:border-sky-500/30 bg-white dark:bg-zinc-800/80 text-xs font-mono outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20 transition-all"
                     />
                   </div>
 
                   <div className="space-y-1.5">
                     <div className="flex items-center justify-between">
                       <label className="text-[11px] font-bold text-zinc-600 dark:text-zinc-400 flex items-center gap-1.5">
-                        <KeyRound className="w-3 h-3 text-zinc-400" />
+                        <KeyRound className="w-3.5 h-3.5 text-sky-500" />
                         <span>{smtpProvider === "gmail" ? "Contraseña de App (16 caracteres)" : "Contraseña del Servidor"}</span>
                       </label>
-                      <span className="text-[10px] text-zinc-400 font-mono">SMTP_PASS</span>
+                      <span className="text-[10px] text-sky-600 dark:text-sky-400 font-mono font-medium">SMTP_PASS</span>
                     </div>
                     <div className="relative">
                       <input
@@ -1282,12 +1385,12 @@ export function IntegrationsTab() {
                         value={smtpPass}
                         onChange={(e) => setSmtpPass(e.target.value)}
                         placeholder="••••••••••••••••"
-                        className="w-full pl-3.5 pr-10 py-2.5 rounded-xl border border-black/10 dark:border-white/10 bg-zinc-50/80 dark:bg-zinc-800/70 text-xs font-mono outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all"
+                        className="w-full pl-3.5 pr-10 py-2.5 rounded-xl border border-sky-500/20 dark:border-sky-500/30 bg-white dark:bg-zinc-800/80 text-xs font-mono outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20 transition-all"
                       />
                       <button
                         type="button"
                         onClick={() => setShowSmtpPass(!showSmtpPass)}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 cursor-pointer p-1"
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-sky-500 cursor-pointer p-1 transition-colors"
                         aria-label="Ver u ocultar contraseña"
                       >
                         {showSmtpPass ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
@@ -1297,7 +1400,7 @@ export function IntegrationsTab() {
 
                   <div className="space-y-1.5">
                     <label className="text-[11px] font-bold text-zinc-600 dark:text-zinc-400 flex items-center gap-1.5">
-                      <User className="w-3 h-3 text-zinc-400" />
+                      <User className="w-3.5 h-3.5 text-sky-500" />
                       <span>Nombre Visible de la Marca (SMTP_FROM)</span>
                     </label>
                     <input
@@ -1305,47 +1408,54 @@ export function IntegrationsTab() {
                       value={senderName}
                       onChange={(e) => setSenderName(e.target.value)}
                       placeholder={brand.name}
-                      className="w-full px-3.5 py-2.5 rounded-xl border border-black/10 dark:border-white/10 bg-zinc-50/80 dark:bg-zinc-800/70 text-xs outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all"
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-sky-500/20 dark:border-sky-500/30 bg-white dark:bg-zinc-800/80 text-xs outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20 transition-all"
                     />
                   </div>
 
-                  <div className="pt-2 flex items-center justify-between border-t border-black/5 dark:border-white/5">
-                    <span className="text-[10.5px] text-zinc-400">¿Deseas probar esta configuración?</span>
-                    <button
+                  <div className="pt-2 flex items-center justify-between border-t border-sky-500/15 dark:border-sky-500/20">
+                    <span className="text-[10.5px] text-zinc-400">¿Deseas exportar esta configuración?</span>
+                    <motion.button
                       type="button"
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.97 }}
                       onClick={() => {
                         const snippet = `SMTP_HOST="${smtpProvider === "gmail" ? "smtp.gmail.com" : smtpHost}"\nSMTP_PORT="${smtpProvider === "gmail" ? "587" : smtpPort}"\nSMTP_SECURE="${smtpSecure ? "true" : "false"}"\nSMTP_USER="${smtpUser}"\nSMTP_PASS="${smtpPass}"\nSMTP_FROM="${senderName} <${smtpUser}>"`;
                         markCopied("smtp_snip", snippet);
                       }}
-                      className="px-3 py-1.5 rounded-xl bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-xs font-semibold text-zinc-800 dark:text-zinc-200 transition-colors flex items-center gap-1.5 cursor-pointer active:scale-95"
+                      className="px-3.5 py-1.5 rounded-xl bg-sky-500/15 hover:bg-sky-500/25 text-sky-600 dark:text-sky-300 text-xs font-bold transition-colors flex items-center gap-1.5 cursor-pointer border border-sky-500/30"
                     >
                       {copiedKey === "smtp_snip" ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
                       <span>Copiar Bloque SMTP</span>
-                    </button>
+                    </motion.button>
                   </div>
                 </div>
 
-                {/* Bento Card B: Consola de Diagnóstico & Receptores de Bodega */}
-                <div className="space-y-5">
+                {/* Columna Derecha: Recuadro 2 (Diagnóstico) y Recuadro 3 (Bodegas) */}
+                <div className="space-y-6">
                   
-                  {/* Sub-tarjeta 1: Consola de Diagnóstico y Prueba en Vivo */}
-                  <div className="p-5 rounded-3xl border border-emerald-500/20 bg-gradient-to-br from-emerald-500/[0.04] to-white/90 dark:to-[#1c1c20]/90 backdrop-blur-xl shadow-xs space-y-3.5">
-                    <div className="flex items-center justify-between">
+                  {/* ------------------------------------------------------------ */}
+                  {/* RECUADRO 2 (VERDE ESMERALDA): LABORATORIO DE DIAGNÓSTICO     */}
+                  {/* ------------------------------------------------------------ */}
+                  <div className="rounded-3xl border-2 border-emerald-500/40 dark:border-emerald-500/45 bg-gradient-to-br from-emerald-500/[0.05] via-white to-emerald-500/[0.02] dark:from-emerald-950/30 dark:via-[#131d17] dark:to-zinc-900/60 p-5 sm:p-6 shadow-[0_12px_35px_-8px_rgba(16,185,129,0.14)] space-y-4">
+                    <div className="flex items-center justify-between pb-3 border-b border-emerald-500/20 dark:border-emerald-500/25">
                       <div className="flex items-center gap-2.5">
-                        <div className="w-8 h-8 rounded-xl bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
+                        <div className="w-9 h-9 rounded-xl bg-emerald-500/15 border border-emerald-500/25 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0 shadow-xs">
                           <Send className="w-4 h-4" />
                         </div>
-                        <h4 className="font-bold text-xs sm:text-sm text-zinc-900 dark:text-zinc-100">
-                          Prueba de Conexión en Vivo
-                        </h4>
+                        <div>
+                          <h4 className="font-bold text-xs sm:text-sm text-zinc-900 dark:text-zinc-100">
+                            Prueba de Conexión en Vivo
+                          </h4>
+                          <span className="text-[10px] text-zinc-400">Verificación de credenciales en tiempo real</span>
+                        </div>
                       </div>
-                      <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">
-                        Diagnóstico Real
+                      <span className="text-[10px] font-mono font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 border border-emerald-500/25 px-2.5 py-0.5 rounded-full">
+                        LABORATORIO REAL
                       </span>
                     </div>
 
                     <p className="text-xs text-zinc-500 dark:text-zinc-400 leading-relaxed">
-                      Envía un correo de prueba al instante para comprobar que los puertos y la contraseña funcionen sin restricciones de firewall.
+                      Envía un correo de prueba al instante para comprobar que los puertos y la contraseña funcionen sin restricciones de firewall ni rebotes.
                     </p>
 
                     <div className="flex flex-col sm:flex-row gap-2">
@@ -1354,27 +1464,30 @@ export function IntegrationsTab() {
                         value={testEmail}
                         onChange={(e) => setTestEmail(e.target.value)}
                         placeholder="tu_correo_personal@gmail.com"
-                        className="flex-1 px-3.5 py-2.5 rounded-xl border border-black/10 dark:border-white/10 bg-white/90 dark:bg-zinc-800/80 text-xs outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all min-h-[42px] sm:min-h-0"
+                        className="flex-1 px-3.5 py-2.5 rounded-xl border border-emerald-500/25 dark:border-emerald-500/35 bg-white dark:bg-zinc-800/80 text-xs outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all min-h-[42px] sm:min-h-0"
                       />
-                      <button
+                      <motion.button
                         type="button"
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.97 }}
                         onClick={handleTestSmtpConnection}
                         disabled={isTestingSmtp}
-                        className="px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition-all cursor-pointer disabled:opacity-50 flex items-center justify-center gap-1.5 shrink-0 active:scale-95 shadow-sm shadow-emerald-600/20 min-h-[42px] sm:min-h-0"
+                        className="px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition-all cursor-pointer disabled:opacity-50 flex items-center justify-center gap-1.5 shrink-0 shadow-sm shadow-emerald-600/30 min-h-[42px] sm:min-h-0"
                       >
                         <Send className="w-3.5 h-3.5" />
                         <span>{isTestingSmtp ? "Comprobando..." : "Lanzar Prueba"}</span>
-                      </button>
+                      </motion.button>
                     </div>
 
                     {smtpTestResult && (
                       <motion.div
                         initial={{ opacity: 0, y: 4 }}
                         animate={{ opacity: 1, y: 0 }}
+                        transition={{ type: "spring", stiffness: 350, damping: 25 }}
                         className={`p-3.5 rounded-2xl border text-xs font-medium leading-relaxed flex items-start gap-2.5 ${
                           smtpTestResult.success
-                            ? "bg-emerald-500/10 border-emerald-500/25 text-emerald-800 dark:text-emerald-300"
-                            : "bg-red-500/10 border-red-500/25 text-red-700 dark:text-red-300"
+                            ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-800 dark:text-emerald-300"
+                            : "bg-red-500/10 border-red-500/30 text-red-700 dark:text-red-300"
                         }`}
                       >
                         {smtpTestResult.success ? (
@@ -1387,40 +1500,46 @@ export function IntegrationsTab() {
                     )}
                   </div>
 
-                  {/* Sub-tarjeta 2: Receptores de Órdenes (Bodegas) */}
-                  <div className="p-5 rounded-3xl border border-indigo-500/20 bg-gradient-to-br from-indigo-500/[0.04] to-white/90 dark:to-[#1c1c20]/90 backdrop-blur-xl shadow-xs space-y-3.5">
-                    <div className="flex items-center justify-between">
+                  {/* ------------------------------------------------------------ */}
+                  {/* RECUADRO 3 (VIOLETA ÍNDIGO): CENTRO DE DESPACHO A BODEGAS    */}
+                  {/* ------------------------------------------------------------ */}
+                  <div className="rounded-3xl border-2 border-indigo-500/40 dark:border-indigo-500/45 bg-gradient-to-br from-indigo-500/[0.05] via-white to-indigo-500/[0.02] dark:from-indigo-950/30 dark:via-[#171528] dark:to-zinc-900/60 p-5 sm:p-6 shadow-[0_12px_35px_-8px_rgba(99,102,241,0.14)] space-y-4">
+                    <div className="flex items-center justify-between pb-3 border-b border-indigo-500/20 dark:border-indigo-500/25">
                       <div className="flex items-center gap-2.5">
-                        <div className="w-8 h-8 rounded-xl bg-indigo-500/15 text-indigo-600 dark:text-indigo-400 flex items-center justify-center shrink-0">
+                        <div className="w-9 h-9 rounded-xl bg-indigo-500/15 border border-indigo-500/25 text-indigo-600 dark:text-indigo-400 flex items-center justify-center shrink-0 shadow-xs">
                           <Truck className="w-4 h-4" />
                         </div>
-                        <h4 className="font-bold text-xs sm:text-sm text-zinc-900 dark:text-zinc-100">
-                          Receptores de Órdenes (Bodegas)
-                        </h4>
+                        <div>
+                          <h4 className="font-bold text-xs sm:text-sm text-zinc-900 dark:text-zinc-100">
+                            Receptores de Órdenes (Bodegas)
+                          </h4>
+                          <span className="text-[10px] text-zinc-400">Notificaciones automáticas al concretar compra</span>
+                        </div>
                       </div>
-                      <span className="text-xs font-mono font-bold px-2 py-0.5 rounded-md bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-500/20">
+                      <span className="text-xs font-mono font-bold px-2.5 py-0.5 rounded-full bg-indigo-500/15 text-indigo-600 dark:text-indigo-400 border border-indigo-500/30">
                         {dispatchRecipients.length}/7 cupos
                       </span>
                     </div>
 
                     <p className="text-xs text-zinc-500 dark:text-zinc-400 leading-relaxed">
-                      Hasta 7 correos recibirán una alerta automática detallada con los productos cada vez que un cliente pague exitosamente.
+                      Hasta 7 correos recibirán una alerta automática con el desglose del pedido cada vez que un cliente pague exitosamente.
                     </p>
 
                     {/* Chips de correos registrados */}
-                    <div className="flex flex-wrap gap-2 min-h-[42px] p-2 rounded-2xl bg-black/[0.02] dark:bg-white/[0.02] border border-black/5 dark:border-white/5">
+                    <div className="flex flex-wrap gap-2 min-h-[44px] p-2 rounded-2xl bg-black/[0.02] dark:bg-white/[0.02] border border-indigo-500/15">
                       {dispatchRecipients.length === 0 ? (
                         <div className="flex items-center gap-2 px-2 py-1 text-xs text-zinc-400 italic">
-                          <Info className="w-3.5 h-3.5 text-zinc-400" />
-                          <span>No hay correos de bodega registrados todavía.</span>
+                          <Info className="w-3.5 h-3.5 text-indigo-400" />
+                          <span>No hay correos de bodega registrados todavía. Agrega uno abajo.</span>
                         </div>
                       ) : (
                         dispatchRecipients.map((em, idx) => (
-                          <span
+                          <motion.span
                             key={em}
-                            className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white dark:bg-zinc-800 border border-black/5 dark:border-white/10 text-xs text-zinc-800 dark:text-zinc-200 shadow-xs"
+                            whileHover={{ scale: 1.02 }}
+                            className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white dark:bg-zinc-800 border border-indigo-500/25 text-xs text-zinc-800 dark:text-zinc-200 shadow-xs"
                           >
-                            <span className="w-4 h-4 rounded-md bg-indigo-500/15 text-indigo-600 dark:text-indigo-400 font-bold text-[10px] flex items-center justify-center">
+                            <span className="w-4 h-4 rounded-md bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 font-bold text-[10px] flex items-center justify-center">
                               B{idx + 1}
                             </span>
                             <span className="font-mono text-[11px]">{em}</span>
@@ -1432,7 +1551,7 @@ export function IntegrationsTab() {
                             >
                               <Trash2 className="w-3 h-3" />
                             </button>
-                          </span>
+                          </motion.span>
                         ))
                       )}
                     </div>
@@ -1450,37 +1569,42 @@ export function IntegrationsTab() {
                           }
                         }}
                         placeholder="bodega_norte@luminahome.com"
-                        className="flex-1 px-3.5 py-2.5 rounded-xl border border-black/10 dark:border-white/10 bg-white/90 dark:bg-zinc-800/80 text-xs outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all min-h-[42px] sm:min-h-0"
+                        className="flex-1 px-3.5 py-2.5 rounded-xl border border-indigo-500/25 dark:border-indigo-500/35 bg-white dark:bg-zinc-800/80 text-xs outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all min-h-[42px] sm:min-h-0"
                       />
-                      <button
+                      <motion.button
                         type="button"
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.97 }}
                         onClick={handleAddRecipient}
                         disabled={dispatchRecipients.length >= 7 || !recipientInput.trim()}
-                        className="px-4 py-2.5 rounded-xl bg-zinc-900 hover:bg-black dark:bg-white dark:hover:bg-zinc-100 text-white dark:text-zinc-950 text-xs font-bold transition-all cursor-pointer disabled:opacity-40 flex items-center justify-center gap-1.5 active:scale-95 min-h-[42px] sm:min-h-0"
+                        className="px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold transition-all cursor-pointer disabled:opacity-40 flex items-center justify-center gap-1.5 min-h-[42px] sm:min-h-0 shadow-xs"
                       >
                         <Plus className="w-3.5 h-3.5" />
                         <span>Agregar</span>
-                      </button>
+                      </motion.button>
                     </div>
 
                     {/* Acción de prueba de alerta a bodegas */}
-                    <div className="pt-1 flex items-center justify-between gap-2">
-                      <button
+                    <div className="pt-1 flex items-center justify-between gap-2 flex-wrap">
+                      <motion.button
                         type="button"
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.97 }}
                         onClick={handleTestDispatchEmail}
                         disabled={isTestingDispatch || dispatchRecipients.length === 0}
-                        className="px-3.5 py-2 rounded-xl border border-indigo-500/30 bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-500/10 dark:hover:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 text-xs font-bold transition-all cursor-pointer disabled:opacity-40 flex items-center gap-2 active:scale-95 shadow-xs"
+                        className="px-3.5 py-2 rounded-xl border border-indigo-500/30 bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-500/10 dark:hover:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 text-xs font-bold transition-all cursor-pointer disabled:opacity-40 flex items-center gap-2 shadow-xs"
                       >
                         <Send className="w-3.5 h-3.5" />
                         <span>{isTestingDispatch ? "Enviando alerta..." : "Probar Alerta a Bodegas"}</span>
-                      </button>
-                      <span className="text-[10px] text-zinc-400">Notifica a todos los destinatarios</span>
+                      </motion.button>
+                      <span className="text-[10.5px] text-zinc-400">Despacha a todos los destinatarios</span>
                     </div>
 
                     {dispatchMsg && (
                       <motion.div
                         initial={{ opacity: 0, y: 3 }}
                         animate={{ opacity: 1, y: 0 }}
+                        transition={{ type: "spring", stiffness: 350, damping: 25 }}
                         className={`p-3 rounded-2xl text-xs font-medium flex items-center gap-2 ${
                           dispatchMsg.success
                             ? "bg-emerald-500/10 text-emerald-800 dark:text-emerald-300 border border-emerald-500/25"
