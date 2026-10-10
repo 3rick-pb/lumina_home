@@ -1131,6 +1131,24 @@ export function GoogleDriveSettingsCard({ onClose, onSelectPhotoForProduct }: Go
         spaceMono.className
       )}
     >
+      {/* Botón Flotante Maestro Exterior de Cierre (Always accessible on Mobile, Tablets & Desktop) */}
+      {onClose && (
+        <button
+          type="button"
+          onClick={onClose}
+          className={cn(
+            "md:hidden absolute top-2.5 right-2.5 sm:top-3.5 sm:right-3.5 z-[70] w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center border transition-all duration-200 cursor-pointer active:scale-90 shadow-xl backdrop-blur-2xl select-none",
+            isDark
+              ? "bg-[#1c1c1e]/90 hover:bg-[#2c2c2e] active:bg-black text-white border-white/20 shadow-[0_4px_24px_rgba(0,0,0,0.6)]"
+              : "bg-white/95 hover:bg-zinc-100 active:bg-zinc-200 text-zinc-900 border-black/10 shadow-[0_4px_20px_rgba(0,0,0,0.15)]"
+          )}
+          style={{ touchAction: "manipulation" }}
+          title="Cerrar galería (Esc)"
+          aria-label="Cerrar galería"
+        >
+          <X className="w-4 h-4 sm:w-5 sm:h-5 text-current" />
+        </button>
+      )}
       
       {/* 1. RAIL DE ICONOS VERTICAL (IZQUIERDA EXTREMA) */}
       <div className={cn(
@@ -1446,7 +1464,7 @@ export function GoogleDriveSettingsCard({ onClose, onSelectPhotoForProduct }: Go
         
         {/* Barra Superior del Canvas Principal (Apple Glass Bar) */}
         <div className={cn(
-          "px-3.5 sm:px-7 py-2.5 sm:py-3.5 border-b flex flex-wrap sm:flex-nowrap items-center justify-between gap-2.5 sm:gap-4 shrink-0 backdrop-blur-xl sticky top-0 z-30 transition-colors duration-200",
+          "px-3.5 sm:px-6 py-2.5 sm:py-3.5 border-b flex items-center justify-between gap-2 sm:gap-4 shrink-0 backdrop-blur-xl sticky top-0 z-30 transition-colors duration-200 pr-12 sm:pr-14 md:pr-6",
           isDark ? "bg-[#0a0a0f]/85 border-zinc-800/80 text-white" : "bg-white/80 border-zinc-200/80 text-zinc-900"
         )}>
           {/* Breadcrumb / Navegación */}
@@ -1638,7 +1656,7 @@ export function GoogleDriveSettingsCard({ onClose, onSelectPhotoForProduct }: Go
                 type="button"
                 onClick={onClose}
                 className={cn(
-                  "p-2 rounded-xl border transition-all duration-200 cursor-pointer active:scale-90",
+                  "hidden md:flex p-2 rounded-xl border transition-all duration-200 cursor-pointer active:scale-90",
                   isDark 
                     ? "bg-zinc-900/60 border-zinc-800 text-zinc-400 hover:text-white hover:border-zinc-700" 
                     : "bg-zinc-50 border-zinc-200 text-zinc-500 hover:text-zinc-950 hover:bg-zinc-100 shadow-xs"
@@ -2348,12 +2366,14 @@ export function GoogleDriveSettingsCard({ onClose, onSelectPhotoForProduct }: Go
                   type="button"
                   onClick={() => setPreviewPhoto(null)}
                   className={cn(
-                    "p-1.5 sm:p-2 rounded-xl transition-all cursor-pointer active:scale-95 border",
-                    isDark ? "bg-white/10 hover:bg-white/20 text-white border-white/15" : "bg-zinc-100 hover:bg-zinc-200 text-zinc-800 border-zinc-200"
+                    "p-2 sm:p-2.5 rounded-full transition-all cursor-pointer active:scale-95 border flex items-center justify-center shrink-0",
+                    isDark ? "bg-white/10 hover:bg-white/20 active:bg-white/30 text-white border-white/20 shadow-md" : "bg-zinc-100 hover:bg-zinc-200 active:bg-zinc-300 text-zinc-800 border-zinc-200 shadow-sm"
                   )}
-                  title="Cerrar (Esc)"
+                  style={{ touchAction: "manipulation", minWidth: "42px", minHeight: "42px" }}
+                  title="Cerrar vista previa (Esc)"
+                  aria-label="Cerrar vista previa"
                 >
-                  <X className="w-4 h-4" />
+                  <X className="w-5 h-5 text-current" />
                 </button>
               </div>
             </div>

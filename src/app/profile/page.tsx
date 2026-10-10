@@ -2696,8 +2696,26 @@ const handleConfirmDeleteNiche = async () => {
 
       {/* Galería de Fotos (Antes Banco de Fotos) */}
       {showDriveModal && (
-        <div className="fixed inset-0 z-[1600] flex items-center justify-center p-2 sm:p-6 bg-black/80 backdrop-blur-md">
-          <div className="w-full max-w-6xl max-h-[96vh] sm:max-h-[92vh] flex">
+        <div 
+          className="fixed inset-0 z-[1600] flex items-center justify-center p-2 sm:p-6 bg-black/85 backdrop-blur-md"
+          onClick={() => setShowDriveModal(false)}
+        >
+          {/* Botón Flotante Maestro Exterior de Cierre para Móviles y Tablets */}
+          <button
+            type="button"
+            onClick={() => setShowDriveModal(false)}
+            className="fixed top-3 right-3 sm:top-5 sm:right-5 z-[1700] w-11 h-11 sm:w-12 sm:h-12 rounded-full bg-black/75 hover:bg-black/95 active:bg-black text-white backdrop-blur-2xl border border-white/30 shadow-[0_4px_25px_rgba(0,0,0,0.5)] flex items-center justify-center cursor-pointer active:scale-90 transition-all select-none"
+            style={{ touchAction: "manipulation" }}
+            title="Cerrar galería (Esc)"
+            aria-label="Cerrar galería"
+          >
+            <X className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
+          </button>
+
+          <div 
+            className="w-full max-w-6xl max-h-[96vh] sm:max-h-[92vh] flex relative"
+            onClick={(e) => e.stopPropagation()}
+          >
             <GoogleDriveSettingsCard onClose={() => setShowDriveModal(false)} />
           </div>
         </div>
