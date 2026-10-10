@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { Space_Mono } from "next/font/google";
 import { motion, AnimatePresence } from "motion/react";
+import { ReactLenis, useLenis } from "lenis/react";
 import FolderComponent from "@/components/ui/Folder";
 import { ArcPicker, ArcPickerOption } from "@/components/motion/arc-picker";
 import { useThemeStore, getResolvedTheme } from "@/lib/themeStore";
@@ -123,6 +124,20 @@ const ArcScrollProgress = React.memo(function ArcScrollProgress({
   );
 });
 
+// Observador reactivo de progreso de scroll contenido para beUI Lenis
+const CanvasScrollWatcher = React.memo(function CanvasScrollWatcher({
+  onProgress,
+}: {
+  onProgress: (pct: number) => void;
+}) {
+  useLenis((lenis) => {
+    const rawPct = (lenis.progress ?? 0) * 100;
+    const pct = Math.min(100, Math.max(0, Math.round(rawPct)));
+    onProgress(pct);
+  });
+  return null;
+});
+
 // Visualizador de Carpeta 3D oficial de rareUI (Sin contenedor, sin salto al pasar el cursor)
 const LayeredFolderCard = React.memo(function LayeredFolderCard({ 
   folder, 
@@ -138,12 +153,12 @@ const LayeredFolderCard = React.memo(function LayeredFolderCard({
   const [isHovered, setIsHovered] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
 
-  const handleClick = (e: React.MouseEvent) => {
-    e.stopPropagation();
+  const handleClick = (e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
     setIsOpen(true);
     setTimeout(() => {
       onClick();
-    }, 200);
+    }, 180);
   };
 
   return (
@@ -164,6 +179,7 @@ const LayeredFolderCard = React.memo(function LayeredFolderCard({
           isHovered={isHovered}
           isOpen={isOpen}
           onOpenChange={setIsOpen}
+          onClick={handleClick}
         />
       </div>
 
@@ -238,29 +254,29 @@ export function GoogleDriveSettingsCard({ onClose, onSelectPhotoForProduct }: Go
   const [activeArcFolderId, setActiveArcFolderId] = useState<string>(settings.selectedFolderId || "root");
   const debouncedSelectRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Estado interactivo de desenfoque / enfoque para el gestor de carpetas (hover en cursor y rueda en táctil)
-  const [isFolderManagerHovered, setIsFolderManagerHovered] = useState(false);
-  const [isTouchWheelActive, setIsTouchWheelActive] = useState(false);
-  const touchWheelTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Estado interactivo de desenfoque / enfoque exclusivo para la rueda (ArcPicker):
+  // Desenfocado/opaco en reposo (blur 4px, opacidad 0.42), enfocado nítido al pasar cursor o interactuar en táctil
+  const [isWheelHovered, setIsWheelHovered] = useState(false);
+  const [isWheelTouched, setIsWheelTouched] = useState(false);
+  const wheelTouchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const activateTouchWheelFocus = useCallback(() => {
-    setIsTouchWheelActive(true);
-    if (touchWheelTimerRef.current) {
-      clearTimeout(touchWheelTimerRef.current);
+    if (wheelTouchTimerRef.current) {
+      clearTimeout(wheelTouchTimerRef.current);
     }
-    touchWheelTimerRef.current = setTimeout(() => {
-      setIsTouchWheelActive(false);
-    }, 750);
+    setIsWheelTouched(true);
   }, []);
 
   const handleTouchWheelSettle = useCallback(() => {
-    if (touchWheelTimerRef.current) {
-      clearTimeout(touchWheelTimerRef.current);
+    if (wheelTouchTimerRef.current) {
+      clearTimeout(wheelTouchTimerRef.current);
     }
-    touchWheelTimerRef.current = setTimeout(() => {
-      setIsTouchWheelActive(false);
-    }, 500);
+    wheelTouchTimerRef.current = setTimeout(() => {
+      setIsWheelTouched(false);
+    }, 650);
   }, []);
+
+  const isWheelFocused = isWheelHovered || isWheelTouched;
 
   // Manejador del porcentaje de scroll del canvas de contenido
   const handleContentScroll = useCallback((e: React.UIEvent<HTMLDivElement>) => {
@@ -304,8 +320,8 @@ export function GoogleDriveSettingsCard({ onClose, onSelectPhotoForProduct }: Go
       if (debouncedSelectRef.current) {
         clearTimeout(debouncedSelectRef.current);
       }
-      if (touchWheelTimerRef.current) {
-        clearTimeout(touchWheelTimerRef.current);
+      if (wheelTouchTimerRef.current) {
+        clearTimeout(wheelTouchTimerRef.current);
       }
     };
   }, []);
@@ -576,21 +592,13 @@ export function GoogleDriveSettingsCard({ onClose, onSelectPhotoForProduct }: Go
         )}
       </div>
 
-      {/* 2. PANEL LATERAL: GESTOR DE CARPETAS (beUI Arc Picker Responsivo con Desenfoque/Enfoque Suave) */}
+      {/* 2. PANEL LATERAL: GESTOR DE CARPETAS (beUI Arc Picker) */}
       <div 
         data-lenis-prevent="true"
-        onMouseEnter={() => setIsFolderManagerHovered(true)}
-        onMouseLeave={() => setIsFolderManagerHovered(false)}
-        onTouchStart={activateTouchWheelFocus}
-        onTouchMove={activateTouchWheelFocus}
-        onTouchEnd={handleTouchWheelSettle}
         className={cn(
-          "w-full md:w-72 lg:w-80 shrink-0 flex-col border-b md:border-b-0 md:border-r relative z-10 transition-[opacity,filter] duration-300 ease-out will-change-[filter,opacity]",
+          "w-full md:w-72 lg:w-80 shrink-0 flex-col border-b md:border-b-0 md:border-r relative z-10",
           !showMobileWheel ? "hidden md:flex" : "flex",
-          isDark ? "bg-[#0e0e14]/90 border-zinc-800/80" : "bg-zinc-50/90 border-zinc-200/80",
-          (isFolderManagerHovered || isTouchWheelActive)
-            ? "opacity-100 blur-0"
-            : "opacity-75 blur-[1.5px]"
+          isDark ? "bg-[#0e0e14]/90 border-zinc-800/80" : "bg-zinc-50/90 border-zinc-200/80"
         )}
       >
         {/* Cabecera del Sidebar con título y Scroll Progress */}
@@ -638,8 +646,17 @@ export function GoogleDriveSettingsCard({ onClose, onSelectPhotoForProduct }: Go
           </div>
         </div>
 
-        {/* beUI Arc Picker en modo Right con fondo ambiental (Responsivo para móviles y desktop) */}
-        <div className="flex-1 flex flex-col items-center justify-center p-1 sm:p-2 relative overflow-hidden bg-[radial-gradient(ellipse_at_center,rgba(59,130,246,0.05)_0%,transparent_75%)]">
+        {/* beUI Arc Picker en modo Right con fondo ambiental y desenfoque/enfoque suave interactivo */}
+        <div 
+          className="flex-1 flex flex-col items-center justify-center p-1 sm:p-2 relative overflow-hidden bg-[radial-gradient(ellipse_at_center,rgba(59,130,246,0.05)_0%,transparent_75%)]"
+          onMouseEnter={() => setIsWheelHovered(true)}
+          onMouseLeave={() => setIsWheelHovered(false)}
+          onTouchStart={activateTouchWheelFocus}
+          onTouchMove={activateTouchWheelFocus}
+          onTouchEnd={handleTouchWheelSettle}
+          onPointerDown={activateTouchWheelFocus}
+          onPointerUp={handleTouchWheelSettle}
+        >
           {arcOptions.length === 0 ? (
             <div className="text-center p-4 sm:p-6 space-y-2">
               <Folder className="w-8 h-8 mx-auto text-zinc-500 opacity-40" />
@@ -649,20 +666,24 @@ export function GoogleDriveSettingsCard({ onClose, onSelectPhotoForProduct }: Go
             </div>
           ) : (
             <div 
-              className="w-full flex-1 flex flex-col items-center justify-center"
-              onTouchStart={activateTouchWheelFocus}
-              onTouchMove={activateTouchWheelFocus}
-              onTouchEnd={handleTouchWheelSettle}
+              className="w-full flex-1 flex flex-col items-center justify-center transition-[filter,opacity] duration-300 ease-out will-change-[filter,opacity]"
+              style={{
+                filter: isWheelFocused ? "blur(0px)" : "blur(4px)",
+                opacity: isWheelFocused ? 1 : 0.42,
+                transition: "filter 350ms cubic-bezier(0.16, 1, 0.3, 1), opacity 350ms cubic-bezier(0.16, 1, 0.3, 1)",
+              }}
             >
               <ArcPicker
                 options={arcOptions}
                 value={activeArcFolderId}
                 onValueChange={handleArcValueChange}
                 onProgressChange={(p) => {
-                  activateTouchWheelFocus();
                   setArcProgressPercent(p);
                 }}
-                onSettle={handleArcSettle}
+                onSettle={(val) => {
+                  handleArcSettle(val);
+                  handleTouchWheelSettle();
+                }}
                 side="right"
                 radius={isMobileScreen ? 165 : 240}
                 itemHeight={isMobileScreen ? 36 : 44}
@@ -913,10 +934,19 @@ export function GoogleDriveSettingsCard({ onClose, onSelectPhotoForProduct }: Go
           </div>
         ) : !mainFolder ? (
           /* PANTALLA EN 'MI UNIDAD': MUESTRA TODAS LAS CARPETAS, CERO IMÁGENES */
-          <div 
+          <ReactLenis 
+            root={false}
+            key="root"
             onScroll={handleContentScroll}
             className="flex-1 overflow-y-auto p-5 sm:p-7 space-y-6 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden overscroll-contain"
+            options={{
+              lerp: 0.075,
+              duration: 1.25,
+              easing: (t: number) => Math.min(1, 1.001 - 2 ** (-10 * t)),
+              smoothWheel: true,
+            }}
           >
+            <CanvasScrollWatcher onProgress={setContentScrollPercent} />
             {/* Tarjeta Guía de Alto Nivel (Apple Card) */}
             <div className={cn(
               "p-4 sm:p-5 rounded-2xl border flex flex-col sm:flex-row sm:items-center justify-between gap-4 transition-colors",
@@ -998,13 +1028,22 @@ export function GoogleDriveSettingsCard({ onClose, onSelectPhotoForProduct }: Go
                 </div>
               )}
             </div>
-          </div>
+          </ReactLenis>
         ) : (
           /* PANTALLA DE CARPETA SELECCIONADA: SUBCARPETAS + FOTOGRAFÍAS */
-          <div 
+          <ReactLenis 
+            root={false}
+            key={mainFolder.id}
             onScroll={handleContentScroll}
             className="flex-1 overflow-y-auto p-5 sm:p-7 space-y-7 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden overscroll-contain"
+            options={{
+              lerp: 0.075,
+              duration: 1.25,
+              easing: (t: number) => Math.min(1, 1.001 - 2 ** (-10 * t)),
+              smoothWheel: true,
+            }}
           >
+            <CanvasScrollWatcher onProgress={setContentScrollPercent} />
             {/* Si tiene subcarpetas, mostrarlas arriba en filas de 3 */}
             {currentSubfolders.length > 0 && (
               <div className="space-y-4">
@@ -1282,7 +1321,7 @@ export function GoogleDriveSettingsCard({ onClose, onSelectPhotoForProduct }: Go
                 </div>
               )}
             </div>
-          </div>
+          </ReactLenis>
         )}
 
         {/* MODAL DE ESTADÍSTICAS (Executive Metrics Dashboard) */}

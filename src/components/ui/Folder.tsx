@@ -59,6 +59,7 @@ type FolderComponentProps = Omit<React.ComponentProps<"div">, "color"> & {
   isHovered?: boolean;
   isOpen?: boolean;
   onOpenChange?: (open: boolean) => void;
+  onClick?: (e: React.MouseEvent<HTMLDivElement>) => void;
 };
 
 const BASE_WIDTH = 321;
@@ -73,6 +74,7 @@ const FolderComponent = ({
   isHovered: externalHover,
   isOpen: externalOpen,
   onOpenChange,
+  onClick,
   className,
   ...props
 }: FolderComponentProps) => {
@@ -85,13 +87,13 @@ const FolderComponent = ({
   const uid = useId().replace(/:/g, "_");
   const flapFilterId = `filter0_i_171_13_${uid}`;
 
-  const handleToggle = (e: React.MouseEvent) => {
-    e.stopPropagation();
+  const handleToggle = (e: React.MouseEvent<HTMLDivElement>) => {
     const next = !isOpen;
     if (externalOpen === undefined) {
       setInternalOpen(next);
     }
     onOpenChange?.(next);
+    onClick?.(e);
   };
 
   return (
@@ -245,8 +247,9 @@ const FolderComponent = ({
                   fillOpacity={theme.flapFillOpacity}
                 />
                 <path
-                  d="M25 0.5H136.084C142.905 0.5 149.417 3.3431 154.054 8.3457L177.713 33.874C182.539 39.0808 189.317 42.04 196.416 42.04H296C309.531 42.04 320.5 53.0092 320.5 66.54V216C320.5 229.531 309.531 240.5 296 240.5H25C11.469 240.5 0.5 229.531 0.5 216V25C0.5 11.469 11.469 0.5 25 0.5Z"
+                  d="M0.5 216V25C0.5 11.469 11.469 0.5 25 0.5H136.084C142.905 0.5 149.417 3.3431 154.054 8.3457L177.713 33.874C182.539 39.0808 189.317 42.04 196.416 42.04H296C309.531 42.04 320.5 53.0092 320.5 66.54V216"
                   stroke={theme.flapStroke}
+                  fill="none"
                 />
               </g>
               <defs>
@@ -330,138 +333,29 @@ const Card = ({ id, theme, uid }: { id: number; theme: Theme; uid: string }) => 
           rx="19.5"
           stroke={theme.cardStroke}
         />
+        {/* 3 líneas píldora horizontales gruesas idénticas a rareUI oficial */}
         <rect
-          x="14.1193"
-          y="31.2091"
-          width="134.84"
-          height="11.8892"
-          rx="5.94459"
+          x="18"
+          y="32"
+          width="128"
+          height="14"
+          rx="7"
           fill={theme.cardLineFill}
         />
         <rect
-          width="64.5183"
-          height="5.88276"
-          rx="2.94138"
-          transform="matrix(1 -0.000409158 0.00201956 0.999998 14.8253 60.9939)"
+          x="18"
+          y="54"
+          width="96"
+          height="13"
+          rx="6.5"
           fill={theme.cardLineFill}
         />
         <rect
-          width="64.5183"
-          height="5.88276"
-          rx="2.94138"
-          transform="matrix(1 -0.000461045 0.00179228 0.999998 84.4303 60.9617)"
-          fill={theme.cardLineFill}
-        />
-        <rect
-          width="64.5183"
-          height="5.88276"
-          rx="2.94138"
-          transform="matrix(1 -0.000409158 0.00201956 0.999998 14.8253 75.1122)"
-          fill={theme.cardLineFill}
-        />
-        <rect
-          width="64.5183"
-          height="5.88276"
-          rx="2.94138"
-          transform="matrix(1 -0.000461045 0.00179228 0.999998 84.4303 75.0801)"
-          fill={theme.cardLineFill}
-        />
-        <rect
-          width="64.5183"
-          height="5.88276"
-          rx="2.94138"
-          transform="matrix(1 -0.000409158 0.00201956 0.999998 14.8253 89.2306)"
-          fill={theme.cardLineFill}
-        />
-        <rect
-          width="64.5183"
-          height="5.88276"
-          rx="2.94138"
-          transform="matrix(1 -0.000461045 0.00179228 0.999998 84.4303 89.1985)"
-          fill={theme.cardLineFill}
-        />
-        <rect
-          width="64.5183"
-          height="5.88276"
-          rx="2.94138"
-          transform="matrix(1 -0.000409158 0.00201956 0.999998 14.8253 103.349)"
-          fill={theme.cardLineFill}
-        />
-        <rect
-          width="64.5183"
-          height="5.88276"
-          rx="2.94138"
-          transform="matrix(1 -0.000461045 0.00179228 0.999998 84.4303 103.317)"
-          fill={theme.cardLineFill}
-        />
-        <rect
-          width="64.5183"
-          height="5.88276"
-          rx="2.94138"
-          transform="matrix(1 -0.000409158 0.00201956 0.999998 14.8253 117.467)"
-          fill={theme.cardLineFill}
-        />
-        <rect
-          width="64.5183"
-          height="5.88276"
-          rx="2.94138"
-          transform="matrix(1 -0.000461045 0.00179228 0.999998 84.4303 117.435)"
-          fill={theme.cardLineFill}
-        />
-        <rect
-          width="64.5183"
-          height="5.88276"
-          rx="2.94138"
-          transform="matrix(1 -0.000409158 0.00201956 0.999998 14.8253 131.586)"
-          fill={theme.cardLineFill}
-        />
-        <rect
-          width="64.5183"
-          height="5.88276"
-          rx="2.94138"
-          transform="matrix(1 -0.000461045 0.00179228 0.999998 84.4303 131.554)"
-          fill={theme.cardLineFill}
-        />
-        <rect
-          width="64.5183"
-          height="5.88276"
-          rx="2.94138"
-          transform="matrix(1 -0.000409158 0.00201956 0.999998 14.8253 145.704)"
-          fill={theme.cardLineFill}
-        />
-        <rect
-          width="64.5183"
-          height="5.88276"
-          rx="2.94138"
-          transform="matrix(1 -0.000461045 0.00179228 0.999998 84.4303 145.672)"
-          fill={theme.cardLineFill}
-        />
-        <rect
-          width="64.5183"
-          height="5.88276"
-          rx="2.94138"
-          transform="matrix(1 -0.000409158 0.00201956 0.999998 14.8253 159.823)"
-          fill={theme.cardLineFill}
-        />
-        <rect
-          width="64.5183"
-          height="5.88276"
-          rx="2.94138"
-          transform="matrix(1 -0.000461045 0.00179228 0.999998 84.4303 159.79)"
-          fill={theme.cardLineFill}
-        />
-        <rect
-          width="64.5183"
-          height="5.88276"
-          rx="2.94138"
-          transform="matrix(1 -0.000409158 0.00201956 0.999998 14.8253 173.941)"
-          fill={theme.cardLineFill}
-        />
-        <rect
-          width="64.5183"
-          height="5.88276"
-          rx="2.94138"
-          transform="matrix(1 -0.000461045 0.00179228 0.999998 84.4303 173.909)"
+          x="18"
+          y="75"
+          width="82"
+          height="13"
+          rx="6.5"
           fill={theme.cardLineFill}
         />
         <defs>
