@@ -36,7 +36,8 @@ import {
   Shield,
   ShieldAlert,
   AlertTriangle,
-  KeyRound
+  KeyRound,
+  Clock
 } from "lucide-react";
 import { useUserStore } from "@/lib/userStore";
 import { 
@@ -270,6 +271,7 @@ export function GoogleDriveSettingsCard({ onClose, onSelectPhotoForProduct }: Go
   const [unlockPinDigits, setUnlockPinDigits] = useState<string[]>(["", "", "", "", "", ""]);
   const [unlockError, setUnlockError] = useState<string | null>(null);
   const [unlockSuccess, setUnlockSuccess] = useState(false);
+  const [isPasscodeShaking, setIsPasscodeShaking] = useState(false);
   const unlockInputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
   // Estados Formulario Admin
@@ -423,12 +425,11 @@ export function GoogleDriveSettingsCard({ onClose, onSelectPhotoForProduct }: Go
         setUnlockPinDigits(["", "", "", "", "", ""]);
       }, 400);
     } else {
-      // INCORRECTO: Solo informar "PIN incorrecto", NUNCA informar cuántos intentos quedan
+      // INCORRECTO: Efecto de rebote elástico tipo Apple, cambio de color a error y reseteo
       const nextCount = failedAttempts + 1;
       setFailedAttempts(nextCount);
-      setUnlockError("PIN incorrecto");
-      setUnlockPinDigits(["", "", "", "", "", ""]);
-      unlockInputRefs.current[0]?.focus();
+      setIsPasscodeShaking(true);
+      setUnlockError("Código incorrecto");
 
       // Al 3er intento fallido: Bloqueo de 10 minutos
       if (nextCount >= 3) {
@@ -438,6 +439,13 @@ export function GoogleDriveSettingsCard({ onClose, onSelectPhotoForProduct }: Go
           localStorage.setItem("lumina_gallery_lockout_until", String(lockoutTime));
         } catch {}
       }
+
+      // Tras el rebote de resorte (550ms), limpiar dígitos y refocalizar la primera casilla
+      setTimeout(() => {
+        setIsPasscodeShaking(false);
+        setUnlockPinDigits(["", "", "", "", "", ""]);
+        unlockInputRefs.current[0]?.focus();
+      }, 550);
     }
   };
 
@@ -891,11 +899,11 @@ export function GoogleDriveSettingsCard({ onClose, onSelectPhotoForProduct }: Go
                   "p-2.5 rounded-xl transition-all duration-200 cursor-pointer active:scale-90 relative",
                   savedPinHash
                     ? isLocked
-                      ? "bg-rose-500/20 text-rose-500 border border-rose-500/50 shadow-[0_0_18px_rgba(244,63,94,0.4)] hover:bg-rose-500/30"
-                      : "bg-rose-500/10 text-rose-400 border border-rose-500/25 hover:bg-rose-500/20 shadow-xs"
+                      ? "bg-red-500/10 text-red-500 border border-red-500/30 shadow-[0_0_14px_rgba(239,68,68,0.25)] hover:bg-red-500/15"
+                      : "bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300 border border-black/5 dark:border-white/10 hover:text-red-500 shadow-xs"
                     : isDark
-                      ? "text-rose-400/80 hover:text-rose-400 hover:bg-rose-500/10 border border-transparent hover:border-rose-500/25"
-                      : "text-rose-600/80 hover:text-rose-600 hover:bg-rose-50 border border-transparent hover:border-rose-200"
+                      ? "text-zinc-400 hover:text-red-400 hover:bg-white/5 border border-transparent"
+                      : "text-zinc-500 hover:text-red-500 hover:bg-zinc-200/70 border border-transparent"
                 )}
                 title={
                   savedPinHash
@@ -909,17 +917,17 @@ export function GoogleDriveSettingsCard({ onClose, onSelectPhotoForProduct }: Go
               >
                 {savedPinHash ? (
                   isLocked ? (
-                    <Lock className="w-4 h-4 text-rose-500 drop-shadow-[0_0_8px_rgba(244,63,94,0.7)]" />
+                    <Lock className="w-4 h-4 text-red-500" />
                   ) : (
-                    <Unlock className="w-4 h-4 text-rose-400" />
+                    <Unlock className="w-4 h-4 text-zinc-600 dark:text-zinc-300" />
                   )
                 ) : (
-                  <Lock className="w-4 h-4 text-rose-500/80" />
+                  <Lock className="w-4 h-4 text-zinc-400 dark:text-zinc-500" />
                 )}
 
                 {/* Punto indicador de candado activo */}
                 {savedPinHash && isLocked && (
-                  <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-rose-500 ring-2 ring-[#0e0e14] animate-pulse" />
+                  <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-red-500 ring-2 ring-white dark:ring-[#0e0e14]" />
                 )}
               </motion.button>
 
@@ -927,36 +935,37 @@ export function GoogleDriveSettingsCard({ onClose, onSelectPhotoForProduct }: Go
               <AnimatePresence>
                 {showAdminPinMenu && isAdmin && (
                   <motion.div
-                    initial={{ opacity: 0, x: -10, scale: 0.95 }}
+                    initial={{ opacity: 0, x: -8, scale: 0.96 }}
                     animate={{ opacity: 1, x: 0, scale: 1 }}
-                    exit={{ opacity: 0, x: -10, scale: 0.95 }}
-                    transition={{ duration: 0.2, ease: "easeOut" }}
+                    exit={{ opacity: 0, x: -8, scale: 0.96 }}
+                    transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
                     className={cn(
-                      "absolute left-full top-0 ml-3.5 w-72 sm:w-80 rounded-2xl border shadow-2xl p-4 sm:p-5 z-50 backdrop-blur-2xl font-mono select-text",
+                      "absolute left-full top-0 ml-3.5 w-80 rounded-[22px] border shadow-2xl p-4 z-50 backdrop-blur-3xl font-sans antialiased select-none transition-all",
                       isDark 
-                        ? "bg-[#111119]/95 border-zinc-700/80 text-zinc-100 shadow-[0_20px_50px_rgba(0,0,0,0.8),0_0_20px_rgba(244,63,94,0.15)]" 
-                        : "bg-white/95 border-zinc-200 text-zinc-900 shadow-[0_20px_50px_rgba(0,0,0,0.15),0_0_20px_rgba(244,63,94,0.08)]"
+                        ? "bg-[#1c1c1e]/95 border-white/10 text-white shadow-[0_24px_60px_rgba(0,0,0,0.65),0_0_0_1px_rgba(255,255,255,0.06)]" 
+                        : "bg-white/95 border-black/10 text-zinc-900 shadow-[0_24px_60px_rgba(0,0,0,0.12),0_1px_3px_rgba(0,0,0,0.04)]"
                     )}
                   >
-                    {/* Header del menú */}
-                    <div className="flex items-center justify-between pb-3 border-b border-zinc-800/60 dark:border-zinc-800">
-                      <div className="flex items-center gap-2">
-                        <div className="p-1.5 rounded-lg bg-rose-500/15 border border-rose-500/30 text-rose-500">
-                          <Shield className="w-3.5 h-3.5" />
+                    {/* Header del menú estilo Apple */}
+                    <div className="flex items-center justify-between pb-3.5 border-b border-black/5 dark:border-white/10">
+                      <div className="flex items-center gap-2.5">
+                        <div className="w-7 h-7 rounded-lg bg-red-500/10 border border-red-500/20 text-red-500 flex items-center justify-center shrink-0">
+                          <Lock className="w-3.5 h-3.5" />
                         </div>
                         <div>
-                          <h4 className="text-xs font-bold uppercase tracking-wider text-rose-500">
-                            Seguridad PIN
+                          <h4 className="text-[13px] font-semibold tracking-tight text-zinc-900 dark:text-zinc-100 leading-none">
+                            Seguridad de Galería
                           </h4>
-                          <span className="text-[10px] text-zinc-400 block -mt-0.5">
-                            Exclusivo Administrador
+                          <span className="text-[11px] text-zinc-500 dark:text-zinc-400 block mt-0.5 leading-none">
+                            Código de acceso · Administrador
                           </span>
                         </div>
                       </div>
                       <button
                         type="button"
                         onClick={() => setShowAdminPinMenu(false)}
-                        className="text-zinc-400 hover:text-zinc-200 p-1 rounded-md transition-colors cursor-pointer"
+                        className="w-6 h-6 rounded-full bg-zinc-200/50 hover:bg-zinc-200 dark:bg-zinc-700/50 dark:hover:bg-zinc-700 flex items-center justify-center text-zinc-500 dark:text-zinc-400 transition-colors cursor-pointer active:scale-95"
+                        title="Cerrar"
                       >
                         <X className="w-3.5 h-3.5" />
                       </button>
@@ -964,14 +973,14 @@ export function GoogleDriveSettingsCard({ onClose, onSelectPhotoForProduct }: Go
 
                     {/* Mensajes de error / éxito */}
                     {adminFormError && (
-                      <div className="mt-3 p-2.5 rounded-xl bg-rose-500/15 border border-rose-500/30 text-rose-400 text-[11px] leading-tight flex items-start gap-2">
-                        <AlertTriangle className="w-3.5 h-3.5 shrink-0 mt-0.5" />
+                      <div className="mt-3 p-2.5 rounded-xl bg-red-500/10 border border-red-500/20 text-red-600 dark:text-red-400 text-xs font-medium leading-tight flex items-center gap-2">
+                        <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
                         <span>{adminFormError}</span>
                       </div>
                     )}
                     {adminFormSuccess && (
-                      <div className="mt-3 p-2.5 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 text-[11px] leading-tight flex items-start gap-2">
-                        <Shield className="w-3.5 h-3.5 shrink-0 mt-0.5" />
+                      <div className="mt-3 p-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 text-xs font-medium leading-tight flex items-center gap-2">
+                        <Shield className="w-3.5 h-3.5 shrink-0" />
                         <span>{adminFormSuccess}</span>
                       </div>
                     )}
@@ -980,12 +989,12 @@ export function GoogleDriveSettingsCard({ onClose, onSelectPhotoForProduct }: Go
                     {!savedPinHash || adminPinMode === 'create' ? (
                       /* MODO: CREAR PIN NUEVO */
                       <div className="mt-3.5 space-y-3">
-                        <p className="text-[11px] text-zinc-400 leading-relaxed">
-                          Establece un PIN de 6 dígitos numéricos para proteger el gestor de carpetas y navegación.
+                        <p className="text-xs text-zinc-500 dark:text-zinc-400 leading-relaxed">
+                          Establece un código numérico de 6 dígitos para restringir el cambio de carpetas y el gestor lateral.
                         </p>
                         <div className="space-y-1.5">
-                          <label className="text-[10px] uppercase font-bold text-zinc-400 block">
-                            Nuevo PIN (6 dígitos)
+                          <label className="text-[11px] font-medium text-zinc-600 dark:text-zinc-400 block">
+                            Nuevo código (6 dígitos)
                           </label>
                           <input
                             type="password"
@@ -995,14 +1004,16 @@ export function GoogleDriveSettingsCard({ onClose, onSelectPhotoForProduct }: Go
                             onChange={(e) => setAdminNewPin(e.target.value.replace(/\D/g, "").slice(0, 6))}
                             placeholder="••••••"
                             className={cn(
-                              "w-full px-3 py-2 rounded-xl border text-center text-sm font-bold tracking-widest outline-none transition-all",
-                              isDark ? "bg-zinc-900 border-zinc-700 text-white focus:border-rose-500" : "bg-zinc-50 border-zinc-300 text-zinc-900 focus:border-rose-500"
+                              "w-full px-3.5 py-2 rounded-xl border text-center text-base tracking-[0.4em] font-medium outline-none transition-all",
+                              isDark 
+                                ? "bg-zinc-800/80 border-white/10 text-white focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20" 
+                                : "bg-white border-black/10 text-zinc-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 shadow-xs"
                             )}
                           />
                         </div>
                         <div className="space-y-1.5">
-                          <label className="text-[10px] uppercase font-bold text-zinc-400 block">
-                            Confirmar PIN
+                          <label className="text-[11px] font-medium text-zinc-600 dark:text-zinc-400 block">
+                            Confirmar código
                           </label>
                           <input
                             type="password"
@@ -1012,8 +1023,10 @@ export function GoogleDriveSettingsCard({ onClose, onSelectPhotoForProduct }: Go
                             onChange={(e) => setAdminConfirmPin(e.target.value.replace(/\D/g, "").slice(0, 6))}
                             placeholder="••••••"
                             className={cn(
-                              "w-full px-3 py-2 rounded-xl border text-center text-sm font-bold tracking-widest outline-none transition-all",
-                              isDark ? "bg-zinc-900 border-zinc-700 text-white focus:border-rose-500" : "bg-zinc-50 border-zinc-300 text-zinc-900 focus:border-rose-500"
+                              "w-full px-3.5 py-2 rounded-xl border text-center text-base tracking-[0.4em] font-medium outline-none transition-all",
+                              isDark 
+                                ? "bg-zinc-800/80 border-white/10 text-white focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20" 
+                                : "bg-white border-black/10 text-zinc-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 shadow-xs"
                             )}
                           />
                         </div>
@@ -1021,17 +1034,17 @@ export function GoogleDriveSettingsCard({ onClose, onSelectPhotoForProduct }: Go
                           type="button"
                           onClick={handleAdminSaveNewPin}
                           disabled={adminNewPin.length !== 6 || adminConfirmPin.length !== 6}
-                          className="w-full mt-2 py-2 px-3 rounded-xl bg-rose-600 hover:bg-rose-500 disabled:opacity-40 disabled:cursor-not-allowed text-white text-xs font-bold tracking-wide transition-all cursor-pointer shadow-md active:scale-95"
+                          className="w-full mt-2 py-2.5 px-4 rounded-xl bg-[#0071e3] hover:bg-[#0077ed] disabled:opacity-40 disabled:cursor-not-allowed text-white text-xs font-medium tracking-normal transition-all cursor-pointer shadow-xs active:scale-[0.98]"
                         >
-                          Guardar y Activar PIN
+                          Guardar y Proteger
                         </button>
                       </div>
                     ) : adminPinMode === 'change' ? (
                       /* MODO: CAMBIAR PIN */
                       <div className="mt-3.5 space-y-3">
                         <div className="space-y-1.5">
-                          <label className="text-[10px] uppercase font-bold text-zinc-400 block">
-                            PIN Actual (6 dígitos)
+                          <label className="text-[11px] font-medium text-zinc-600 dark:text-zinc-400 block">
+                            Código actual (6 dígitos)
                           </label>
                           <input
                             type="password"
@@ -1041,14 +1054,16 @@ export function GoogleDriveSettingsCard({ onClose, onSelectPhotoForProduct }: Go
                             onChange={(e) => setAdminCurrentPin(e.target.value.replace(/\D/g, "").slice(0, 6))}
                             placeholder="••••••"
                             className={cn(
-                              "w-full px-3 py-2 rounded-xl border text-center text-sm font-bold tracking-widest outline-none transition-all",
-                              isDark ? "bg-zinc-900 border-zinc-700 text-white focus:border-rose-500" : "bg-zinc-50 border-zinc-300 text-zinc-900 focus:border-rose-500"
+                              "w-full px-3.5 py-2 rounded-xl border text-center text-base tracking-[0.4em] font-medium outline-none transition-all",
+                              isDark 
+                                ? "bg-zinc-800/80 border-white/10 text-white focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20" 
+                                : "bg-white border-black/10 text-zinc-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 shadow-xs"
                             )}
                           />
                         </div>
                         <div className="space-y-1.5">
-                          <label className="text-[10px] uppercase font-bold text-zinc-400 block">
-                            Nuevo PIN (6 dígitos)
+                          <label className="text-[11px] font-medium text-zinc-600 dark:text-zinc-400 block">
+                            Nuevo código (6 dígitos)
                           </label>
                           <input
                             type="password"
@@ -1058,14 +1073,16 @@ export function GoogleDriveSettingsCard({ onClose, onSelectPhotoForProduct }: Go
                             onChange={(e) => setAdminNewPin(e.target.value.replace(/\D/g, "").slice(0, 6))}
                             placeholder="••••••"
                             className={cn(
-                              "w-full px-3 py-2 rounded-xl border text-center text-sm font-bold tracking-widest outline-none transition-all",
-                              isDark ? "bg-zinc-900 border-zinc-700 text-white focus:border-rose-500" : "bg-zinc-50 border-zinc-300 text-zinc-900 focus:border-rose-500"
+                              "w-full px-3.5 py-2 rounded-xl border text-center text-base tracking-[0.4em] font-medium outline-none transition-all",
+                              isDark 
+                                ? "bg-zinc-800/80 border-white/10 text-white focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20" 
+                                : "bg-white border-black/10 text-zinc-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 shadow-xs"
                             )}
                           />
                         </div>
                         <div className="space-y-1.5">
-                          <label className="text-[10px] uppercase font-bold text-zinc-400 block">
-                            Confirmar Nuevo PIN
+                          <label className="text-[11px] font-medium text-zinc-600 dark:text-zinc-400 block">
+                            Confirmar nuevo código
                           </label>
                           <input
                             type="password"
@@ -1075,8 +1092,10 @@ export function GoogleDriveSettingsCard({ onClose, onSelectPhotoForProduct }: Go
                             onChange={(e) => setAdminConfirmPin(e.target.value.replace(/\D/g, "").slice(0, 6))}
                             placeholder="••••••"
                             className={cn(
-                              "w-full px-3 py-2 rounded-xl border text-center text-sm font-bold tracking-widest outline-none transition-all",
-                              isDark ? "bg-zinc-900 border-zinc-700 text-white focus:border-rose-500" : "bg-zinc-50 border-zinc-300 text-zinc-900 focus:border-rose-500"
+                              "w-full px-3.5 py-2 rounded-xl border text-center text-base tracking-[0.4em] font-medium outline-none transition-all",
+                              isDark 
+                                ? "bg-zinc-800/80 border-white/10 text-white focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20" 
+                                : "bg-white border-black/10 text-zinc-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 shadow-xs"
                             )}
                           />
                         </div>
@@ -1087,7 +1106,7 @@ export function GoogleDriveSettingsCard({ onClose, onSelectPhotoForProduct }: Go
                               setAdminPinMode('view');
                               setAdminFormError(null);
                             }}
-                            className="flex-1 py-2 px-3 rounded-xl border border-zinc-700 hover:bg-zinc-800 text-zinc-300 text-xs font-bold transition-all cursor-pointer"
+                            className="flex-1 py-2 px-3 rounded-xl border border-black/10 dark:border-white/10 hover:bg-black/5 dark:hover:bg-white/5 text-zinc-700 dark:text-zinc-300 text-xs font-medium transition-all cursor-pointer"
                           >
                             Cancelar
                           </button>
@@ -1095,7 +1114,7 @@ export function GoogleDriveSettingsCard({ onClose, onSelectPhotoForProduct }: Go
                             type="button"
                             onClick={handleAdminChangePin}
                             disabled={adminCurrentPin.length !== 6 || adminNewPin.length !== 6 || adminConfirmPin.length !== 6}
-                            className="flex-1 py-2 px-3 rounded-xl bg-rose-600 hover:bg-rose-500 disabled:opacity-40 text-white text-xs font-bold transition-all cursor-pointer shadow-md active:scale-95"
+                            className="flex-1 py-2 px-3 rounded-xl bg-[#0071e3] hover:bg-[#0077ed] disabled:opacity-40 text-white text-xs font-medium transition-all cursor-pointer shadow-xs active:scale-[0.98]"
                           >
                             Actualizar
                           </button>
@@ -1104,41 +1123,55 @@ export function GoogleDriveSettingsCard({ onClose, onSelectPhotoForProduct }: Go
                     ) : adminPinMode === 'remove' ? (
                       /* MODO: QUITAR PIN */
                       <div className="mt-3.5 space-y-3">
-                        <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-400 text-xs space-y-1.5">
-                          <div className="font-bold flex items-center gap-1.5">
-                            <AlertTriangle className="w-4 h-4 text-rose-500 shrink-0" />
-                            <span>¿Eliminar protección con PIN?</span>
+                        <div className="p-3.5 rounded-2xl bg-red-500/10 border border-red-500/20 text-red-600 dark:text-red-400 text-xs space-y-1.5">
+                          <div className="font-semibold flex items-center gap-2 text-[13px]">
+                            <AlertTriangle className="w-4 h-4 text-red-500 shrink-0" />
+                            <span>¿Desactivar código?</span>
                           </div>
-                          <p className="text-[11px] leading-relaxed text-zinc-400">
-                            Cualquier usuario podrá usar el gestor de carpetas y cambiar la carpeta activa libremente.
+                          <p className="text-[11px] leading-relaxed text-zinc-600 dark:text-zinc-400">
+                            Cualquier usuario podrá usar el gestor de carpetas y alternar la carpeta activa sin restricciones.
                           </p>
                         </div>
                         <div className="flex items-center gap-2 pt-1">
                           <button
                             type="button"
                             onClick={() => setAdminPinMode('view')}
-                            className="flex-1 py-2 px-3 rounded-xl border border-zinc-700 hover:bg-zinc-800 text-zinc-300 text-xs font-bold transition-all cursor-pointer"
+                            className="flex-1 py-2 px-3 rounded-xl border border-black/10 dark:border-white/10 hover:bg-black/5 dark:hover:bg-white/5 text-zinc-700 dark:text-zinc-300 text-xs font-medium transition-all cursor-pointer"
                           >
                             Cancelar
                           </button>
                           <button
                             type="button"
                             onClick={handleAdminRemovePin}
-                            className="flex-1 py-2 px-3 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold transition-all cursor-pointer shadow-md active:scale-95"
+                            className="flex-1 py-2 px-3 rounded-xl bg-red-600 hover:bg-red-500 text-white text-xs font-medium transition-all cursor-pointer shadow-xs active:scale-[0.98]"
                           >
                             Confirmar Quitar
                           </button>
                         </div>
                       </div>
                     ) : (
-                      /* MODO: VISTA GENERAL (VIEW) */
-                      <div className="mt-3.5 space-y-3">
-                        <div className="p-3 rounded-xl bg-zinc-900/60 border border-zinc-800 flex items-center justify-between">
-                          <div className="flex items-center gap-2">
-                            <span className={cn("w-2 h-2 rounded-full", isLocked ? "bg-rose-500 animate-pulse" : "bg-emerald-500")} />
-                            <span className="text-xs font-bold text-zinc-300">
-                              {isLocked ? "Estado: Bloqueado" : "Estado: Desbloqueado"}
-                            </span>
+                      /* MODO: VISTA GENERAL (VIEW) - Apple Inset Grouped */
+                      <div className="mt-3 space-y-2.5">
+                        {/* Status Card Apple Inset */}
+                        <div className={cn(
+                          "p-3 rounded-2xl border flex items-center justify-between transition-colors",
+                          isDark ? "bg-white/[0.04] border-white/8" : "bg-black/[0.03] border-black/6"
+                        )}>
+                          <div className="flex items-center gap-2.5">
+                            <span className={cn(
+                              "w-2.5 h-2.5 rounded-full shrink-0",
+                              isLocked 
+                                ? "bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.5)]" 
+                                : "bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]"
+                            )} />
+                            <div>
+                              <span className="text-xs font-medium text-zinc-800 dark:text-zinc-200 block leading-tight">
+                                {isLocked ? "Galería protegida" : "Acceso libre"}
+                              </span>
+                              <span className="text-[10px] text-zinc-500 dark:text-zinc-400 block leading-tight mt-0.5">
+                                {isLocked ? "Bloqueado actualmente" : "Desbloqueado actualmente"}
+                              </span>
+                            </div>
                           </div>
                           <button
                             type="button"
@@ -1147,17 +1180,23 @@ export function GoogleDriveSettingsCard({ onClose, onSelectPhotoForProduct }: Go
                               setShowAdminPinMenu(false);
                             }}
                             className={cn(
-                              "text-[10px] font-bold px-2 py-1 rounded-lg border transition-all cursor-pointer",
-                              isLocked 
-                                ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/20" 
-                                : "bg-rose-500/10 border-rose-500/30 text-rose-400 hover:bg-rose-500/20"
+                              "text-[11px] font-medium px-3 py-1 rounded-full transition-all cursor-pointer active:scale-95",
+                              isLocked
+                                ? "bg-zinc-200/80 hover:bg-zinc-300 dark:bg-zinc-700 dark:hover:bg-zinc-600 text-zinc-800 dark:text-zinc-100 shadow-xs"
+                                : "bg-red-500/10 hover:bg-red-500/20 text-red-600 dark:text-red-400 border border-red-500/20"
                             )}
                           >
-                            {isLocked ? "Desbloquear" : "Bloquear Ahora"}
+                            {isLocked ? "Desbloquear" : "Bloquear"}
                           </button>
                         </div>
 
-                        <div className="space-y-1.5 pt-1">
+                        {/* Lista Inset Grouped de Acciones Apple */}
+                        <div className={cn(
+                          "rounded-2xl border overflow-hidden divide-y transition-colors",
+                          isDark 
+                            ? "bg-white/[0.04] border-white/8 divide-white/6" 
+                            : "bg-black/[0.03] border-black/6 divide-black/6"
+                        )}>
                           <button
                             type="button"
                             onClick={() => {
@@ -1167,10 +1206,15 @@ export function GoogleDriveSettingsCard({ onClose, onSelectPhotoForProduct }: Go
                               setAdminConfirmPin("");
                               setAdminFormError(null);
                             }}
-                            className="w-full py-2 px-3 rounded-xl border border-zinc-700 hover:bg-zinc-800 text-zinc-200 text-xs font-bold text-left flex items-center justify-between transition-all cursor-pointer"
+                            className="w-full px-3.5 py-2.5 flex items-center justify-between text-left hover:bg-black/[0.03] dark:hover:bg-white/[0.04] transition-colors cursor-pointer group"
                           >
-                            <span>Cambiar PIN</span>
-                            <KeyRound className="w-3.5 h-3.5 text-zinc-400" />
+                            <div className="flex items-center gap-2.5">
+                              <KeyRound className="w-3.5 h-3.5 text-zinc-500 dark:text-zinc-400 group-hover:text-blue-500 transition-colors" />
+                              <span className="text-xs font-medium text-zinc-800 dark:text-zinc-200 group-hover:text-blue-500 transition-colors">
+                                Cambiar código de acceso
+                              </span>
+                            </div>
+                            <ChevronRight className="w-3.5 h-3.5 text-zinc-400 dark:text-zinc-500" />
                           </button>
                           <button
                             type="button"
@@ -1178,10 +1222,15 @@ export function GoogleDriveSettingsCard({ onClose, onSelectPhotoForProduct }: Go
                               setAdminPinMode('remove');
                               setAdminFormError(null);
                             }}
-                            className="w-full py-2 px-3 rounded-xl border border-rose-950/40 hover:bg-rose-500/10 text-rose-400 text-xs font-bold text-left flex items-center justify-between transition-all cursor-pointer"
+                            className="w-full px-3.5 py-2.5 flex items-center justify-between text-left hover:bg-red-500/[0.06] transition-colors cursor-pointer group"
                           >
-                            <span>Quitar PIN de Seguridad</span>
-                            <ShieldAlert className="w-3.5 h-3.5 text-rose-500" />
+                            <div className="flex items-center gap-2.5">
+                              <ShieldAlert className="w-3.5 h-3.5 text-red-500 group-hover:text-red-600 transition-colors" />
+                              <span className="text-xs font-medium text-red-600 dark:text-red-400 group-hover:text-red-500 transition-colors">
+                                Desactivar código de acceso
+                              </span>
+                            </div>
+                            <ChevronRight className="w-3.5 h-3.5 text-red-400/60" />
                           </button>
                         </div>
                       </div>
@@ -1293,12 +1342,12 @@ export function GoogleDriveSettingsCard({ onClose, onSelectPhotoForProduct }: Go
                 e.stopPropagation();
                 triggerLockAnimation();
               }}
-              className="absolute inset-0 z-30 cursor-pointer flex flex-col items-center justify-center bg-black/25 backdrop-blur-[2px] transition-all"
-              title="Gestor bloqueado con PIN. Haz clic para ingresar el PIN"
+              className="absolute inset-0 z-30 cursor-pointer flex flex-col items-center justify-center bg-black/20 dark:bg-black/40 backdrop-blur-[2px] transition-all"
+              title="Gestor bloqueado con PIN. Haz clic para ingresar el código"
             >
-              <div className="p-2 sm:p-2.5 rounded-2xl bg-rose-500/15 border border-rose-500/40 text-rose-400 shadow-xl flex items-center gap-2 font-mono text-[11px] font-bold animate-pulse backdrop-blur-md">
-                <Lock className="w-3.5 h-3.5 text-rose-500" />
-                <span>Gestor Bloqueado</span>
+              <div className="px-3.5 py-1.5 rounded-full bg-white/90 dark:bg-[#1c1c1e]/90 border border-black/10 dark:border-white/10 text-zinc-900 dark:text-white shadow-xl flex items-center gap-2 font-sans antialiased text-xs font-medium backdrop-blur-2xl transition-all">
+                <Lock className="w-3.5 h-3.5 text-red-500" />
+                <span>Bloqueado con código</span>
               </div>
             </div>
           )}
@@ -1424,16 +1473,16 @@ export function GoogleDriveSettingsCard({ onClose, onSelectPhotoForProduct }: Go
                     handleSelectFolder({ id: 'root', name: 'Mi Unidad', itemCount: rootFolders.length });
                   }}
                   className={cn(
-                    "ml-1.5 px-2 py-0.5 rounded-lg text-[10px] font-bold transition-all cursor-pointer border active:scale-95 flex items-center gap-1",
+                    "ml-1.5 px-2 py-0.5 rounded-lg text-[10px] font-medium transition-all cursor-pointer border active:scale-95 flex items-center gap-1 font-sans",
                     savedPinHash && isLocked
-                      ? "bg-rose-500/10 text-rose-400 border-rose-500/30 hover:bg-rose-500/20"
+                      ? "bg-red-500/10 text-red-500 border-red-500/25 hover:bg-red-500/15"
                       : isDark 
                         ? "bg-zinc-800/80 hover:bg-zinc-700 text-blue-400 border-zinc-700/80" 
                         : "bg-zinc-100 hover:bg-zinc-200 text-blue-600 border-zinc-200 shadow-xs"
                   )}
-                  title={savedPinHash && isLocked ? "Bloqueado con PIN (Click para desbloquear)" : "Cambiar carpeta"}
+                  title={savedPinHash && isLocked ? "Bloqueado con código (Click para desbloquear)" : "Cambiar carpeta"}
                 >
-                  {savedPinHash && isLocked && <Lock className="w-2.5 h-2.5 text-rose-500 shrink-0" />}
+                  {savedPinHash && isLocked && <Lock className="w-2.5 h-2.5 text-red-500 shrink-0" />}
                   <span>Cambiar</span>
                 </button>
               </div>
@@ -1545,28 +1594,28 @@ export function GoogleDriveSettingsCard({ onClose, onSelectPhotoForProduct }: Go
               animate={isLockWiggling ? {
                 x: [0, -5, 5, -4, 4, -2, 2, 0],
                 rotate: [0, -8, 8, -6, 6, -2, 2, 0],
-                scale: [1, 1.15, 1.05, 1.1, 1],
+                scale: [1, 1.12, 1.05, 1.1, 1],
               } : {}}
               transition={{ duration: 0.65, ease: "easeInOut" }}
               className={cn(
                 "lg:hidden p-2 rounded-xl border transition-all cursor-pointer active:scale-95 relative",
                 savedPinHash
                   ? isLocked
-                    ? "bg-rose-500/20 text-rose-500 border-rose-500/50 shadow-[0_0_12px_rgba(244,63,94,0.35)]"
-                    : "bg-rose-500/10 text-rose-400 border-rose-500/25"
+                    ? "bg-red-500/10 text-red-500 border-red-500/30 shadow-[0_0_12px_rgba(239,68,68,0.2)]"
+                    : "bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300 border border-black/5 dark:border-white/10"
                   : isDark
-                    ? "text-rose-400/80 border-zinc-800 hover:bg-rose-500/10"
-                    : "text-rose-600/80 border-zinc-200 hover:bg-rose-50"
+                    ? "text-zinc-400 border-zinc-800 hover:bg-white/5"
+                    : "text-zinc-500 border-zinc-200 hover:bg-zinc-100"
               )}
-              title="Seguridad PIN"
+              title="Seguridad de Galería"
             >
               {savedPinHash ? (
-                isLocked ? <Lock className="w-3.5 h-3.5 text-rose-500" /> : <Unlock className="w-3.5 h-3.5 text-rose-400" />
+                isLocked ? <Lock className="w-3.5 h-3.5 text-red-500" /> : <Unlock className="w-3.5 h-3.5 text-zinc-600 dark:text-zinc-300" />
               ) : (
-                <Lock className="w-3.5 h-3.5 text-rose-500/80" />
+                <Lock className="w-3.5 h-3.5 text-zinc-400 dark:text-zinc-500" />
               )}
               {savedPinHash && isLocked && (
-                <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-rose-500 animate-pulse" />
+                <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-red-500 ring-2 ring-white dark:ring-[#0e0e14]" />
               )}
             </motion.button>
 
@@ -1588,46 +1637,56 @@ export function GoogleDriveSettingsCard({ onClose, onSelectPhotoForProduct }: Go
           </div>
         </div>
 
-        {/* BARRA HORIZONTAL DE DESBLOQUEO DE PIN DE 6 DÍGITOS */}
+        {/* BARRA HORIZONTAL DE DESBLOQUEO TIPO APPLE 2FA PASSCODE */}
         <AnimatePresence>
           {showUnlockBar && (
             <motion.div
               initial={{ height: 0, opacity: 0 }}
               animate={{ height: "auto", opacity: 1 }}
               exit={{ height: 0, opacity: 0 }}
-              transition={{ duration: 0.28, ease: "easeInOut" }}
+              transition={{ duration: 0.28, ease: [0.16, 1, 0.3, 1] }}
               className={cn(
-                "overflow-hidden border-b shrink-0 relative z-40 transition-colors shadow-md font-mono",
+                "overflow-hidden border-b shrink-0 relative z-40 transition-colors shadow-sm font-sans antialiased select-none",
                 isDark 
-                  ? "bg-[#140a10] border-rose-950/70 text-zinc-100" 
-                  : "bg-rose-50/95 border-rose-200 text-zinc-900"
+                  ? "bg-[#1c1c1e]/90 backdrop-blur-2xl border-white/10 text-white" 
+                  : "bg-white/90 backdrop-blur-2xl border-black/10 text-zinc-900"
               )}
             >
               <div className="px-4 sm:px-7 py-3 sm:py-3.5 flex flex-col sm:flex-row items-center justify-between gap-3">
-                {/* Lado izquierdo: Icono de Candado Rojo + Copy informativo */}
+                {/* Lado izquierdo: Icono Squircle Apple + Copy informativo */}
                 <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-xl bg-rose-500/15 border border-rose-500/30 text-rose-500 flex items-center justify-center shrink-0 shadow-[0_0_12px_rgba(244,63,94,0.25)]">
-                    <Lock className="w-4 h-4 animate-pulse" />
+                  <div className={cn(
+                    "w-8 h-8 rounded-xl flex items-center justify-center shrink-0 border transition-colors shadow-xs",
+                    isPasscodeShaking || unlockError
+                      ? "bg-red-500/10 border-red-500/30 text-red-500"
+                      : isDark 
+                      ? "bg-zinc-800 border-white/10 text-zinc-300" 
+                      : "bg-zinc-100 border-black/5 text-zinc-700"
+                  )}>
+                    <Lock className="w-3.5 h-3.5" />
                   </div>
                   <div>
-                    <h4 className={cn(
-                      "text-xs font-bold uppercase tracking-wider flex items-center gap-2",
-                      isDark ? "text-rose-400" : "text-rose-700"
-                    )}>
-                      {lockoutRemainingSec > 0 ? "Acceso Bloqueado por Seguridad" : "PIN de Seguridad Requerido"}
+                    <h4 className="text-xs font-semibold tracking-tight text-zinc-900 dark:text-white leading-none">
+                      {lockoutRemainingSec > 0 ? "Bloqueo por Seguridad" : "Código de Acceso Requerido"}
                     </h4>
-                    <p className={cn("text-[11px] leading-tight", isDark ? "text-zinc-400" : "text-zinc-600")}>
+                    <p className="text-[11px] text-zinc-500 dark:text-zinc-400 leading-none mt-1">
                       {lockoutRemainingSec > 0 
-                        ? "Has excedido los intentos permitidos. Espera a que termine la cuenta regresiva."
-                        : "Ingresa el PIN de 6 dígitos para desbloquear el gestor de carpetas y navegación."}
+                        ? "Has excedido los intentos. Espera a que termine la cuenta regresiva."
+                        : "Introduce el código de 6 dígitos para desbloquear el gestor."}
                     </p>
                   </div>
                 </div>
 
-                {/* Lado derecho: 6 casillas horizontales numéricas o temporizador si está bloqueado por 10 minutos */}
+                {/* Lado derecho: 6 casillas 2FA con efecto rebote tipo Apple o temporizador */}
                 {lockoutRemainingSec <= 0 ? (
                   <div className="flex items-center gap-2">
-                    <div className="flex items-center gap-1.5 sm:gap-2">
+                    <motion.div
+                      animate={isPasscodeShaking ? {
+                        x: [0, -16, 16, -12, 12, -8, 8, -4, 4, 0],
+                      } : { x: 0 }}
+                      transition={{ duration: 0.52, ease: "easeInOut" }}
+                      className="flex items-center gap-1.5 sm:gap-2"
+                    >
                       {unlockPinDigits.map((digit, idx) => (
                         <input
                           key={idx}
@@ -1641,23 +1700,31 @@ export function GoogleDriveSettingsCard({ onClose, onSelectPhotoForProduct }: Go
                           onKeyDown={(e) => handleUnlockKeyDown(idx, e)}
                           onPaste={handleUnlockPaste}
                           className={cn(
-                            "w-8 h-10 sm:w-10 sm:h-11 text-center text-lg font-bold font-mono rounded-xl border outline-none transition-all duration-150",
-                            unlockError
-                              ? "border-rose-500 bg-rose-500/10 text-rose-500 ring-2 ring-rose-500/20"
+                            "w-9 h-11 sm:w-10 sm:h-12 text-center text-lg font-semibold rounded-xl border outline-none transition-all duration-200",
+                            isPasscodeShaking || unlockError
+                              ? "border-red-500 bg-red-500/10 text-red-500 ring-4 ring-red-500/15"
                               : unlockSuccess
-                              ? "border-emerald-500 bg-emerald-500/15 text-emerald-400 ring-2 ring-emerald-500/20"
+                              ? "border-emerald-500 bg-emerald-500/15 text-emerald-500 ring-4 ring-emerald-500/20 scale-[1.03]"
+                              : digit
+                              ? isDark
+                                ? "bg-zinc-800 border-blue-500/70 text-white ring-2 ring-blue-500/20"
+                                : "bg-white border-blue-500/70 text-zinc-900 ring-2 ring-blue-500/15 shadow-xs"
                               : isDark
-                              ? "bg-zinc-900/90 border-zinc-700 text-white focus:border-rose-500 focus:ring-2 focus:ring-rose-500/25"
-                              : "bg-white border-zinc-300 text-zinc-900 focus:border-rose-500 focus:ring-2 focus:ring-rose-500/25 shadow-xs"
+                              ? "bg-zinc-800/60 border-zinc-700 text-white focus:bg-zinc-800 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/20"
+                              : "bg-zinc-100/80 border-zinc-300 text-zinc-900 focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/15 shadow-xs"
                           )}
                         />
                       ))}
-                    </div>
+                    </motion.div>
 
                     {unlockError && (
-                      <span className="text-xs font-mono font-bold text-rose-500 ml-1.5 animate-pulse">
-                        {unlockError}
-                      </span>
+                      <motion.span
+                        initial={{ opacity: 0, x: -6 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        className="text-xs font-medium text-red-500 ml-1.5 whitespace-nowrap"
+                      >
+                        Código incorrecto
+                      </motion.span>
                     )}
 
                     <button
@@ -1667,28 +1734,28 @@ export function GoogleDriveSettingsCard({ onClose, onSelectPhotoForProduct }: Go
                         setUnlockError(null);
                         setUnlockPinDigits(["", "", "", "", "", ""]);
                       }}
-                      className="p-1.5 ml-1.5 text-zinc-400 hover:text-zinc-200 transition-colors cursor-pointer active:scale-90"
+                      className="w-7 h-7 rounded-full bg-zinc-200/50 hover:bg-zinc-200 dark:bg-zinc-700/50 dark:hover:bg-zinc-700 flex items-center justify-center text-zinc-500 dark:text-zinc-400 transition-colors ml-2 cursor-pointer active:scale-95"
                       title="Cerrar barra"
                     >
-                      <X className="w-4 h-4" />
+                      <X className="w-3.5 h-3.5" />
                     </button>
                   </div>
                 ) : (
-                  /* BLOQUEO DE 10 MINUTOS CON CUENTA REGRESIVA */
+                  /* BLOQUEO DE 10 MINUTOS CON CUENTA REGRESIVA ESTILO APPLE */
                   <div className="flex items-center gap-3">
-                    <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-rose-500/20 border border-rose-500/40 text-rose-400 shadow-sm">
-                      <AlertTriangle className="w-4 h-4 animate-pulse shrink-0" />
-                      <span className="font-mono font-bold text-sm tracking-widest">
+                    <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-red-500/10 border border-red-500/20 text-red-600 dark:text-red-400 shadow-xs">
+                      <Clock className="w-3.5 h-3.5 animate-pulse shrink-0" />
+                      <span className="font-mono font-medium text-xs tracking-wider">
                         {String(Math.floor(lockoutRemainingSec / 60)).padStart(2, '0')}:{String(lockoutRemainingSec % 60).padStart(2, '0')}
                       </span>
                     </div>
                     <button
                       type="button"
                       onClick={() => setShowUnlockBar(false)}
-                      className="p-1.5 text-zinc-400 hover:text-zinc-200 transition-colors cursor-pointer active:scale-90"
+                      className="w-7 h-7 rounded-full bg-zinc-200/50 hover:bg-zinc-200 dark:bg-zinc-700/50 dark:hover:bg-zinc-700 flex items-center justify-center text-zinc-500 dark:text-zinc-400 transition-colors cursor-pointer active:scale-95"
                       title="Cerrar barra"
                     >
-                      <X className="w-4 h-4" />
+                      <X className="w-3.5 h-3.5" />
                     </button>
                   </div>
                 )}
