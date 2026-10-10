@@ -826,6 +826,300 @@ export function GoogleDriveSettingsCard({ onClose, onSelectPhotoForProduct }: Go
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [previewPhoto, filteredFiles]);
 
+  const renderAdminPinMenuBody = () => (
+    <>
+      {/* Header del menú estilo Apple */}
+      <div className="flex items-center justify-between pb-3.5 border-b border-black/5 dark:border-white/10">
+        <div className="flex items-center gap-2.5">
+          <div className="w-7 h-7 rounded-lg bg-red-500/10 border border-red-500/20 text-red-500 flex items-center justify-center shrink-0">
+            <Lock className="w-3.5 h-3.5" />
+          </div>
+          <div>
+            <h4 className="text-[13px] font-semibold tracking-tight text-zinc-900 dark:text-zinc-100 leading-none">
+              Seguridad de Galería
+            </h4>
+            <span className="text-[11px] text-zinc-500 dark:text-zinc-400 block mt-0.5 leading-none">
+              Código de acceso · Administrador
+            </span>
+          </div>
+        </div>
+        <button
+          type="button"
+          onClick={() => setShowAdminPinMenu(false)}
+          className="w-6 h-6 rounded-full bg-zinc-200/50 hover:bg-zinc-200 dark:bg-zinc-700/50 dark:hover:bg-zinc-700 flex items-center justify-center text-zinc-500 dark:text-zinc-400 transition-colors cursor-pointer active:scale-95"
+          title="Cerrar"
+        >
+          <X className="w-3.5 h-3.5" />
+        </button>
+      </div>
+
+      {/* Mensajes de error / éxito */}
+      {adminFormError && (
+        <div className="mt-3 p-2.5 rounded-xl bg-red-500/10 border border-red-500/20 text-red-600 dark:text-red-400 text-xs font-medium leading-tight flex items-center gap-2">
+          <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
+          <span>{adminFormError}</span>
+        </div>
+      )}
+      {adminFormSuccess && (
+        <div className="mt-3 p-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 text-xs font-medium leading-tight flex items-center gap-2">
+          <Shield className="w-3.5 h-3.5 shrink-0" />
+          <span>{adminFormSuccess}</span>
+        </div>
+      )}
+
+      {/* Contenido según el modo */}
+      {!savedPinHash || adminPinMode === 'create' ? (
+        /* MODO: CREAR PIN NUEVO */
+        <div className="mt-3.5 space-y-3">
+          <p className="text-xs text-zinc-500 dark:text-zinc-400 leading-relaxed">
+            Establece un código numérico de 6 dígitos para restringir el cambio de carpetas, el gestor lateral y la desconexión de cuenta.
+          </p>
+          <div className="space-y-1.5">
+            <label className="text-[11px] font-medium text-zinc-600 dark:text-zinc-400 block">
+              Nuevo código (6 dígitos)
+            </label>
+            <input
+              type="password"
+              inputMode="numeric"
+              maxLength={6}
+              value={adminNewPin}
+              onChange={(e) => setAdminNewPin(e.target.value.replace(/\D/g, "").slice(0, 6))}
+              placeholder="••••••"
+              className={cn(
+                "w-full px-3.5 py-2 rounded-xl border text-center text-base tracking-[0.4em] font-medium outline-none transition-all",
+                isDark 
+                  ? "bg-zinc-800/80 border-white/10 text-white focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20" 
+                  : "bg-white border-black/10 text-zinc-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 shadow-xs"
+              )}
+            />
+          </div>
+          <div className="space-y-1.5">
+            <label className="text-[11px] font-medium text-zinc-600 dark:text-zinc-400 block">
+              Confirmar código
+            </label>
+            <input
+              type="password"
+              inputMode="numeric"
+              maxLength={6}
+              value={adminConfirmPin}
+              onChange={(e) => setAdminConfirmPin(e.target.value.replace(/\D/g, "").slice(0, 6))}
+              placeholder="••••••"
+              className={cn(
+                "w-full px-3.5 py-2 rounded-xl border text-center text-base tracking-[0.4em] font-medium outline-none transition-all",
+                isDark 
+                  ? "bg-zinc-800/80 border-white/10 text-white focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20" 
+                  : "bg-white border-black/10 text-zinc-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 shadow-xs"
+              )}
+            />
+          </div>
+          <button
+            type="button"
+            onClick={handleAdminSaveNewPin}
+            disabled={adminNewPin.length !== 6 || adminConfirmPin.length !== 6}
+            className="w-full mt-2 py-2.5 px-4 rounded-xl bg-[#0071e3] hover:bg-[#0077ed] disabled:opacity-40 disabled:cursor-not-allowed text-white text-xs font-medium tracking-normal transition-all cursor-pointer shadow-xs active:scale-[0.98]"
+          >
+            Guardar y Proteger
+          </button>
+        </div>
+      ) : adminPinMode === 'change' ? (
+        /* MODO: CAMBIAR PIN */
+        <div className="mt-3.5 space-y-3">
+          <div className="space-y-1.5">
+            <label className="text-[11px] font-medium text-zinc-600 dark:text-zinc-400 block">
+              Código actual (6 dígitos)
+            </label>
+            <input
+              type="password"
+              inputMode="numeric"
+              maxLength={6}
+              value={adminCurrentPin}
+              onChange={(e) => setAdminCurrentPin(e.target.value.replace(/\D/g, "").slice(0, 6))}
+              placeholder="••••••"
+              className={cn(
+                "w-full px-3.5 py-2 rounded-xl border text-center text-base tracking-[0.4em] font-medium outline-none transition-all",
+                isDark 
+                  ? "bg-zinc-800/80 border-white/10 text-white focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20" 
+                  : "bg-white border-black/10 text-zinc-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 shadow-xs"
+              )}
+            />
+          </div>
+          <div className="space-y-1.5">
+            <label className="text-[11px] font-medium text-zinc-600 dark:text-zinc-400 block">
+              Nuevo código (6 dígitos)
+            </label>
+            <input
+              type="password"
+              inputMode="numeric"
+              maxLength={6}
+              value={adminNewPin}
+              onChange={(e) => setAdminNewPin(e.target.value.replace(/\D/g, "").slice(0, 6))}
+              placeholder="••••••"
+              className={cn(
+                "w-full px-3.5 py-2 rounded-xl border text-center text-base tracking-[0.4em] font-medium outline-none transition-all",
+                isDark 
+                  ? "bg-zinc-800/80 border-white/10 text-white focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20" 
+                  : "bg-white border-black/10 text-zinc-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 shadow-xs"
+              )}
+            />
+          </div>
+          <div className="space-y-1.5">
+            <label className="text-[11px] font-medium text-zinc-600 dark:text-zinc-400 block">
+              Confirmar nuevo código
+            </label>
+            <input
+              type="password"
+              inputMode="numeric"
+              maxLength={6}
+              value={adminConfirmPin}
+              onChange={(e) => setAdminConfirmPin(e.target.value.replace(/\D/g, "").slice(0, 6))}
+              placeholder="••••••"
+              className={cn(
+                "w-full px-3.5 py-2 rounded-xl border text-center text-base tracking-[0.4em] font-medium outline-none transition-all",
+                isDark 
+                  ? "bg-zinc-800/80 border-white/10 text-white focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20" 
+                  : "bg-white border-black/10 text-zinc-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 shadow-xs"
+              )}
+            />
+          </div>
+          <div className="flex items-center gap-2 pt-1">
+            <button
+              type="button"
+              onClick={() => {
+                setAdminPinMode('view');
+                setAdminFormError(null);
+              }}
+              className="flex-1 py-2 px-3 rounded-xl border border-black/10 dark:border-white/10 hover:bg-black/5 dark:hover:bg-white/5 text-zinc-700 dark:text-zinc-300 text-xs font-medium transition-all cursor-pointer"
+            >
+              Cancelar
+            </button>
+            <button
+              type="button"
+              onClick={handleAdminChangePin}
+              disabled={adminCurrentPin.length !== 6 || adminNewPin.length !== 6 || adminConfirmPin.length !== 6}
+              className="flex-1 py-2 px-3 rounded-xl bg-[#0071e3] hover:bg-[#0077ed] disabled:opacity-40 text-white text-xs font-medium transition-all cursor-pointer shadow-xs active:scale-[0.98]"
+            >
+              Actualizar
+            </button>
+          </div>
+        </div>
+      ) : adminPinMode === 'remove' ? (
+        /* MODO: QUITAR PIN */
+        <div className="mt-3.5 space-y-3">
+          <div className="p-3.5 rounded-2xl bg-red-500/10 border border-red-500/20 text-red-600 dark:text-red-400 text-xs space-y-1.5">
+            <div className="font-semibold flex items-center gap-2 text-[13px]">
+              <AlertTriangle className="w-4 h-4 text-red-500 shrink-0" />
+              <span>¿Desactivar código?</span>
+            </div>
+            <p className="text-[11px] leading-relaxed text-zinc-600 dark:text-zinc-400">
+              Cualquier usuario podrá usar el gestor de carpetas, alternar la carpeta activa o desconectar la cuenta sin restricciones.
+            </p>
+          </div>
+          <div className="flex items-center gap-2 pt-1">
+            <button
+              type="button"
+              onClick={() => setAdminPinMode('view')}
+              className="flex-1 py-2 px-3 rounded-xl border border-black/10 dark:border-white/10 hover:bg-black/5 dark:hover:bg-white/5 text-zinc-700 dark:text-zinc-300 text-xs font-medium transition-all cursor-pointer"
+            >
+              Cancelar
+            </button>
+            <button
+              type="button"
+              onClick={handleAdminRemovePin}
+              className="flex-1 py-2 px-3 rounded-xl bg-red-600 hover:bg-red-500 text-white text-xs font-medium transition-all cursor-pointer shadow-xs active:scale-[0.98]"
+            >
+              Confirmar Quitar
+            </button>
+          </div>
+        </div>
+      ) : (
+        /* MODO: VISTA GENERAL (VIEW) - Apple Inset Grouped */
+        <div className="mt-3 space-y-2.5">
+          {/* Status Card Apple Inset */}
+          <div className={cn(
+            "p-3 rounded-2xl border flex items-center justify-between transition-colors",
+            isDark ? "bg-white/[0.04] border-white/8" : "bg-black/[0.03] border-black/6"
+          )}>
+            <div className="flex items-center gap-2.5">
+              <span className={cn(
+                "w-2.5 h-2.5 rounded-full shrink-0",
+                isLocked 
+                  ? "bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.5)]" 
+                  : "bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]"
+              )} />
+              <div>
+                <span className="text-xs font-medium text-zinc-800 dark:text-zinc-200 block leading-tight">
+                  {isLocked ? "Galería protegida" : "Acceso libre"}
+                </span>
+                <span className="text-[10px] text-zinc-500 dark:text-zinc-400 block leading-tight mt-0.5">
+                  {isLocked ? "Bloqueado actualmente" : "Desbloqueado actualmente"}
+                </span>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                setIsLocked(!isLocked);
+                setShowAdminPinMenu(false);
+              }}
+              className={cn(
+                "text-[11px] font-medium px-3 py-1 rounded-full transition-all cursor-pointer active:scale-95",
+                isLocked
+                  ? "bg-zinc-200/80 hover:bg-zinc-300 dark:bg-zinc-700 dark:hover:bg-zinc-600 text-zinc-800 dark:text-zinc-100 shadow-xs"
+                  : "bg-red-500/10 hover:bg-red-500/20 text-red-600 dark:text-red-400 border border-red-500/20"
+              )}
+            >
+              {isLocked ? "Desbloquear" : "Bloquear"}
+            </button>
+          </div>
+
+          {/* Lista Inset Grouped de Acciones Apple */}
+          <div className={cn(
+            "rounded-2xl border overflow-hidden divide-y transition-colors",
+            isDark 
+              ? "bg-white/[0.04] border-white/8 divide-white/6" 
+              : "bg-black/[0.03] border-black/6 divide-black/6"
+          )}>
+            <button
+              type="button"
+              onClick={() => {
+                setAdminPinMode('change');
+                setAdminCurrentPin("");
+                setAdminNewPin("");
+                setAdminConfirmPin("");
+                setAdminFormError(null);
+              }}
+              className="w-full px-3.5 py-2.5 flex items-center justify-between text-left hover:bg-black/[0.03] dark:hover:bg-white/[0.04] transition-colors cursor-pointer group"
+            >
+              <div className="flex items-center gap-2.5">
+                <KeyRound className="w-3.5 h-3.5 text-zinc-500 dark:text-zinc-400 group-hover:text-blue-500 transition-colors" />
+                <span className="text-xs font-medium text-zinc-800 dark:text-zinc-200 group-hover:text-blue-500 transition-colors">
+                  Cambiar código de acceso
+                </span>
+              </div>
+              <ChevronRight className="w-3.5 h-3.5 text-zinc-400 dark:text-zinc-500" />
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setAdminPinMode('remove');
+                setAdminFormError(null);
+              }}
+              className="w-full px-3.5 py-2.5 flex items-center justify-between text-left hover:bg-red-500/[0.06] transition-colors cursor-pointer group"
+            >
+              <div className="flex items-center gap-2.5">
+                <ShieldAlert className="w-3.5 h-3.5 text-red-500 group-hover:text-red-600 transition-colors" />
+                <span className="text-xs font-medium text-red-600 dark:text-red-400 group-hover:text-red-500 transition-colors">
+                  Desactivar código de acceso
+                </span>
+              </div>
+              <ChevronRight className="w-3.5 h-3.5 text-red-400/60" />
+            </button>
+          </div>
+        </div>
+      )}
+    </>
+  );
+
   return (
     <div 
       data-lenis-prevent="true"
@@ -931,313 +1225,27 @@ export function GoogleDriveSettingsCard({ onClose, onSelectPhotoForProduct }: Go
                 )}
               </motion.button>
 
-              {/* Menú hacia la derecha que sale desde el botón (Solo ADMINISTRADOR) */}
-              <AnimatePresence>
-                {showAdminPinMenu && isAdmin && (
-                  <motion.div
-                    initial={{ opacity: 0, x: -8, scale: 0.96 }}
-                    animate={{ opacity: 1, x: 0, scale: 1 }}
-                    exit={{ opacity: 0, x: -8, scale: 0.96 }}
-                    transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
-                    className={cn(
-                      "absolute left-full top-0 ml-3.5 w-80 rounded-[22px] border shadow-2xl p-4 z-50 backdrop-blur-3xl font-sans antialiased select-none transition-all",
-                      isDark 
-                        ? "bg-[#1c1c1e]/95 border-white/10 text-white shadow-[0_24px_60px_rgba(0,0,0,0.65),0_0_0_1px_rgba(255,255,255,0.06)]" 
-                        : "bg-white/95 border-black/10 text-zinc-900 shadow-[0_24px_60px_rgba(0,0,0,0.12),0_1px_3px_rgba(0,0,0,0.04)]"
-                    )}
-                  >
-                    {/* Header del menú estilo Apple */}
-                    <div className="flex items-center justify-between pb-3.5 border-b border-black/5 dark:border-white/10">
-                      <div className="flex items-center gap-2.5">
-                        <div className="w-7 h-7 rounded-lg bg-red-500/10 border border-red-500/20 text-red-500 flex items-center justify-center shrink-0">
-                          <Lock className="w-3.5 h-3.5" />
-                        </div>
-                        <div>
-                          <h4 className="text-[13px] font-semibold tracking-tight text-zinc-900 dark:text-zinc-100 leading-none">
-                            Seguridad de Galería
-                          </h4>
-                          <span className="text-[11px] text-zinc-500 dark:text-zinc-400 block mt-0.5 leading-none">
-                            Código de acceso · Administrador
-                          </span>
-                        </div>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => setShowAdminPinMenu(false)}
-                        className="w-6 h-6 rounded-full bg-zinc-200/50 hover:bg-zinc-200 dark:bg-zinc-700/50 dark:hover:bg-zinc-700 flex items-center justify-center text-zinc-500 dark:text-zinc-400 transition-colors cursor-pointer active:scale-95"
-                        title="Cerrar"
-                      >
-                        <X className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-
-                    {/* Mensajes de error / éxito */}
-                    {adminFormError && (
-                      <div className="mt-3 p-2.5 rounded-xl bg-red-500/10 border border-red-500/20 text-red-600 dark:text-red-400 text-xs font-medium leading-tight flex items-center gap-2">
-                        <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
-                        <span>{adminFormError}</span>
-                      </div>
-                    )}
-                    {adminFormSuccess && (
-                      <div className="mt-3 p-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 text-xs font-medium leading-tight flex items-center gap-2">
-                        <Shield className="w-3.5 h-3.5 shrink-0" />
-                        <span>{adminFormSuccess}</span>
-                      </div>
-                    )}
-
-                    {/* Contenido según el modo */}
-                    {!savedPinHash || adminPinMode === 'create' ? (
-                      /* MODO: CREAR PIN NUEVO */
-                      <div className="mt-3.5 space-y-3">
-                        <p className="text-xs text-zinc-500 dark:text-zinc-400 leading-relaxed">
-                          Establece un código numérico de 6 dígitos para restringir el cambio de carpetas y el gestor lateral.
-                        </p>
-                        <div className="space-y-1.5">
-                          <label className="text-[11px] font-medium text-zinc-600 dark:text-zinc-400 block">
-                            Nuevo código (6 dígitos)
-                          </label>
-                          <input
-                            type="password"
-                            inputMode="numeric"
-                            maxLength={6}
-                            value={adminNewPin}
-                            onChange={(e) => setAdminNewPin(e.target.value.replace(/\D/g, "").slice(0, 6))}
-                            placeholder="••••••"
-                            className={cn(
-                              "w-full px-3.5 py-2 rounded-xl border text-center text-base tracking-[0.4em] font-medium outline-none transition-all",
-                              isDark 
-                                ? "bg-zinc-800/80 border-white/10 text-white focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20" 
-                                : "bg-white border-black/10 text-zinc-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 shadow-xs"
-                            )}
-                          />
-                        </div>
-                        <div className="space-y-1.5">
-                          <label className="text-[11px] font-medium text-zinc-600 dark:text-zinc-400 block">
-                            Confirmar código
-                          </label>
-                          <input
-                            type="password"
-                            inputMode="numeric"
-                            maxLength={6}
-                            value={adminConfirmPin}
-                            onChange={(e) => setAdminConfirmPin(e.target.value.replace(/\D/g, "").slice(0, 6))}
-                            placeholder="••••••"
-                            className={cn(
-                              "w-full px-3.5 py-2 rounded-xl border text-center text-base tracking-[0.4em] font-medium outline-none transition-all",
-                              isDark 
-                                ? "bg-zinc-800/80 border-white/10 text-white focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20" 
-                                : "bg-white border-black/10 text-zinc-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 shadow-xs"
-                            )}
-                          />
-                        </div>
-                        <button
-                          type="button"
-                          onClick={handleAdminSaveNewPin}
-                          disabled={adminNewPin.length !== 6 || adminConfirmPin.length !== 6}
-                          className="w-full mt-2 py-2.5 px-4 rounded-xl bg-[#0071e3] hover:bg-[#0077ed] disabled:opacity-40 disabled:cursor-not-allowed text-white text-xs font-medium tracking-normal transition-all cursor-pointer shadow-xs active:scale-[0.98]"
-                        >
-                          Guardar y Proteger
-                        </button>
-                      </div>
-                    ) : adminPinMode === 'change' ? (
-                      /* MODO: CAMBIAR PIN */
-                      <div className="mt-3.5 space-y-3">
-                        <div className="space-y-1.5">
-                          <label className="text-[11px] font-medium text-zinc-600 dark:text-zinc-400 block">
-                            Código actual (6 dígitos)
-                          </label>
-                          <input
-                            type="password"
-                            inputMode="numeric"
-                            maxLength={6}
-                            value={adminCurrentPin}
-                            onChange={(e) => setAdminCurrentPin(e.target.value.replace(/\D/g, "").slice(0, 6))}
-                            placeholder="••••••"
-                            className={cn(
-                              "w-full px-3.5 py-2 rounded-xl border text-center text-base tracking-[0.4em] font-medium outline-none transition-all",
-                              isDark 
-                                ? "bg-zinc-800/80 border-white/10 text-white focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20" 
-                                : "bg-white border-black/10 text-zinc-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 shadow-xs"
-                            )}
-                          />
-                        </div>
-                        <div className="space-y-1.5">
-                          <label className="text-[11px] font-medium text-zinc-600 dark:text-zinc-400 block">
-                            Nuevo código (6 dígitos)
-                          </label>
-                          <input
-                            type="password"
-                            inputMode="numeric"
-                            maxLength={6}
-                            value={adminNewPin}
-                            onChange={(e) => setAdminNewPin(e.target.value.replace(/\D/g, "").slice(0, 6))}
-                            placeholder="••••••"
-                            className={cn(
-                              "w-full px-3.5 py-2 rounded-xl border text-center text-base tracking-[0.4em] font-medium outline-none transition-all",
-                              isDark 
-                                ? "bg-zinc-800/80 border-white/10 text-white focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20" 
-                                : "bg-white border-black/10 text-zinc-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 shadow-xs"
-                            )}
-                          />
-                        </div>
-                        <div className="space-y-1.5">
-                          <label className="text-[11px] font-medium text-zinc-600 dark:text-zinc-400 block">
-                            Confirmar nuevo código
-                          </label>
-                          <input
-                            type="password"
-                            inputMode="numeric"
-                            maxLength={6}
-                            value={adminConfirmPin}
-                            onChange={(e) => setAdminConfirmPin(e.target.value.replace(/\D/g, "").slice(0, 6))}
-                            placeholder="••••••"
-                            className={cn(
-                              "w-full px-3.5 py-2 rounded-xl border text-center text-base tracking-[0.4em] font-medium outline-none transition-all",
-                              isDark 
-                                ? "bg-zinc-800/80 border-white/10 text-white focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20" 
-                                : "bg-white border-black/10 text-zinc-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 shadow-xs"
-                            )}
-                          />
-                        </div>
-                        <div className="flex items-center gap-2 pt-1">
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setAdminPinMode('view');
-                              setAdminFormError(null);
-                            }}
-                            className="flex-1 py-2 px-3 rounded-xl border border-black/10 dark:border-white/10 hover:bg-black/5 dark:hover:bg-white/5 text-zinc-700 dark:text-zinc-300 text-xs font-medium transition-all cursor-pointer"
-                          >
-                            Cancelar
-                          </button>
-                          <button
-                            type="button"
-                            onClick={handleAdminChangePin}
-                            disabled={adminCurrentPin.length !== 6 || adminNewPin.length !== 6 || adminConfirmPin.length !== 6}
-                            className="flex-1 py-2 px-3 rounded-xl bg-[#0071e3] hover:bg-[#0077ed] disabled:opacity-40 text-white text-xs font-medium transition-all cursor-pointer shadow-xs active:scale-[0.98]"
-                          >
-                            Actualizar
-                          </button>
-                        </div>
-                      </div>
-                    ) : adminPinMode === 'remove' ? (
-                      /* MODO: QUITAR PIN */
-                      <div className="mt-3.5 space-y-3">
-                        <div className="p-3.5 rounded-2xl bg-red-500/10 border border-red-500/20 text-red-600 dark:text-red-400 text-xs space-y-1.5">
-                          <div className="font-semibold flex items-center gap-2 text-[13px]">
-                            <AlertTriangle className="w-4 h-4 text-red-500 shrink-0" />
-                            <span>¿Desactivar código?</span>
-                          </div>
-                          <p className="text-[11px] leading-relaxed text-zinc-600 dark:text-zinc-400">
-                            Cualquier usuario podrá usar el gestor de carpetas y alternar la carpeta activa sin restricciones.
-                          </p>
-                        </div>
-                        <div className="flex items-center gap-2 pt-1">
-                          <button
-                            type="button"
-                            onClick={() => setAdminPinMode('view')}
-                            className="flex-1 py-2 px-3 rounded-xl border border-black/10 dark:border-white/10 hover:bg-black/5 dark:hover:bg-white/5 text-zinc-700 dark:text-zinc-300 text-xs font-medium transition-all cursor-pointer"
-                          >
-                            Cancelar
-                          </button>
-                          <button
-                            type="button"
-                            onClick={handleAdminRemovePin}
-                            className="flex-1 py-2 px-3 rounded-xl bg-red-600 hover:bg-red-500 text-white text-xs font-medium transition-all cursor-pointer shadow-xs active:scale-[0.98]"
-                          >
-                            Confirmar Quitar
-                          </button>
-                        </div>
-                      </div>
-                    ) : (
-                      /* MODO: VISTA GENERAL (VIEW) - Apple Inset Grouped */
-                      <div className="mt-3 space-y-2.5">
-                        {/* Status Card Apple Inset */}
-                        <div className={cn(
-                          "p-3 rounded-2xl border flex items-center justify-between transition-colors",
-                          isDark ? "bg-white/[0.04] border-white/8" : "bg-black/[0.03] border-black/6"
-                        )}>
-                          <div className="flex items-center gap-2.5">
-                            <span className={cn(
-                              "w-2.5 h-2.5 rounded-full shrink-0",
-                              isLocked 
-                                ? "bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.5)]" 
-                                : "bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]"
-                            )} />
-                            <div>
-                              <span className="text-xs font-medium text-zinc-800 dark:text-zinc-200 block leading-tight">
-                                {isLocked ? "Galería protegida" : "Acceso libre"}
-                              </span>
-                              <span className="text-[10px] text-zinc-500 dark:text-zinc-400 block leading-tight mt-0.5">
-                                {isLocked ? "Bloqueado actualmente" : "Desbloqueado actualmente"}
-                              </span>
-                            </div>
-                          </div>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setIsLocked(!isLocked);
-                              setShowAdminPinMenu(false);
-                            }}
-                            className={cn(
-                              "text-[11px] font-medium px-3 py-1 rounded-full transition-all cursor-pointer active:scale-95",
-                              isLocked
-                                ? "bg-zinc-200/80 hover:bg-zinc-300 dark:bg-zinc-700 dark:hover:bg-zinc-600 text-zinc-800 dark:text-zinc-100 shadow-xs"
-                                : "bg-red-500/10 hover:bg-red-500/20 text-red-600 dark:text-red-400 border border-red-500/20"
-                            )}
-                          >
-                            {isLocked ? "Desbloquear" : "Bloquear"}
-                          </button>
-                        </div>
-
-                        {/* Lista Inset Grouped de Acciones Apple */}
-                        <div className={cn(
-                          "rounded-2xl border overflow-hidden divide-y transition-colors",
-                          isDark 
-                            ? "bg-white/[0.04] border-white/8 divide-white/6" 
-                            : "bg-black/[0.03] border-black/6 divide-black/6"
-                        )}>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setAdminPinMode('change');
-                              setAdminCurrentPin("");
-                              setAdminNewPin("");
-                              setAdminConfirmPin("");
-                              setAdminFormError(null);
-                            }}
-                            className="w-full px-3.5 py-2.5 flex items-center justify-between text-left hover:bg-black/[0.03] dark:hover:bg-white/[0.04] transition-colors cursor-pointer group"
-                          >
-                            <div className="flex items-center gap-2.5">
-                              <KeyRound className="w-3.5 h-3.5 text-zinc-500 dark:text-zinc-400 group-hover:text-blue-500 transition-colors" />
-                              <span className="text-xs font-medium text-zinc-800 dark:text-zinc-200 group-hover:text-blue-500 transition-colors">
-                                Cambiar código de acceso
-                              </span>
-                            </div>
-                            <ChevronRight className="w-3.5 h-3.5 text-zinc-400 dark:text-zinc-500" />
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setAdminPinMode('remove');
-                              setAdminFormError(null);
-                            }}
-                            className="w-full px-3.5 py-2.5 flex items-center justify-between text-left hover:bg-red-500/[0.06] transition-colors cursor-pointer group"
-                          >
-                            <div className="flex items-center gap-2.5">
-                              <ShieldAlert className="w-3.5 h-3.5 text-red-500 group-hover:text-red-600 transition-colors" />
-                              <span className="text-xs font-medium text-red-600 dark:text-red-400 group-hover:text-red-500 transition-colors">
-                                Desactivar código de acceso
-                              </span>
-                            </div>
-                            <ChevronRight className="w-3.5 h-3.5 text-red-400/60" />
-                          </button>
-                        </div>
-                      </div>
-                    )}
-                  </motion.div>
-                )}
-              </AnimatePresence>
+              {/* Menú hacia la derecha que sale desde el botón (Desktop) */}
+              <div className="hidden lg:block">
+                <AnimatePresence>
+                  {showAdminPinMenu && isAdmin && (
+                    <motion.div
+                      initial={{ opacity: 0, x: -8, scale: 0.96 }}
+                      animate={{ opacity: 1, x: 0, scale: 1 }}
+                      exit={{ opacity: 0, x: -8, scale: 0.96 }}
+                      transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
+                      className={cn(
+                        "absolute left-full top-0 ml-3.5 w-80 rounded-[22px] border shadow-2xl p-4 z-50 backdrop-blur-3xl font-sans antialiased select-none transition-all",
+                        isDark 
+                          ? "bg-[#1c1c1e]/95 border-white/10 text-white shadow-[0_24px_60px_rgba(0,0,0,0.65),0_0_0_1px_rgba(255,255,255,0.06)]" 
+                          : "bg-white/95 border-black/10 text-zinc-900 shadow-[0_24px_60px_rgba(0,0,0,0.12),0_1px_3px_rgba(0,0,0,0.04)]"
+                      )}
+                    >
+                      {renderAdminPinMenuBody()}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
             </div>
           </div>
         </div>
@@ -1260,7 +1268,7 @@ export function GoogleDriveSettingsCard({ onClose, onSelectPhotoForProduct }: Go
       <div 
         data-lenis-prevent="true"
         className={cn(
-          "w-full md:w-72 lg:w-80 shrink-0 flex-col border-b md:border-b-0 md:border-r relative z-10",
+          "w-full md:w-72 lg:w-80 shrink-0 flex-col border-b md:border-b-0 md:border-r relative z-30 overflow-visible",
           !showMobileWheel ? "hidden md:flex" : "flex",
           isDark ? "bg-[#0e0e14]/90 border-zinc-800/80" : "bg-zinc-50/90 border-zinc-200/80"
         )}
@@ -1312,7 +1320,7 @@ export function GoogleDriveSettingsCard({ onClose, onSelectPhotoForProduct }: Go
 
         {/* beUI Arc Picker en modo Right con fondo ambiental y desenfoque/enfoque suave interactivo */}
         <div 
-          className="flex-1 flex flex-col items-center justify-center p-1 sm:p-2 relative overflow-hidden bg-[radial-gradient(ellipse_at_center,rgba(59,130,246,0.05)_0%,transparent_75%)]"
+          className="flex-1 flex flex-col items-center justify-center p-1 sm:p-2 relative overflow-visible z-30 bg-[radial-gradient(ellipse_at_center,rgba(59,130,246,0.05)_0%,transparent_75%)]"
           onMouseEnter={() => {
             if (!isLocked) setIsWheelHovered(true);
           }}
@@ -1413,9 +1421,15 @@ export function GoogleDriveSettingsCard({ onClose, onSelectPhotoForProduct }: Go
             {settings.isConnected && (
               <button
                 type="button"
-                onClick={() => disconnectAccount()}
+                onClick={() => {
+                  if (savedPinHash && isLocked) {
+                    triggerLockAnimation();
+                    return;
+                  }
+                  disconnectAccount();
+                }}
                 className="p-1.5 text-zinc-400 hover:text-rose-500 rounded-lg transition-colors cursor-pointer active:scale-90"
-                title="Desconectar cuenta"
+                title={savedPinHash && isLocked ? "Desconexión protegida con PIN" : "Desconectar cuenta"}
               >
                 <LogOut className="w-3.5 h-3.5" />
               </button>
@@ -1652,9 +1666,9 @@ export function GoogleDriveSettingsCard({ onClose, onSelectPhotoForProduct }: Go
                   : "bg-white/90 backdrop-blur-2xl border-black/10 text-zinc-900"
               )}
             >
-              <div className="px-4 sm:px-7 py-3 sm:py-3.5 flex flex-col sm:flex-row items-center justify-between gap-3">
+              <div className="px-3 sm:px-7 py-3 sm:py-3.5 flex flex-col md:flex-row items-center justify-between gap-3">
                 {/* Lado izquierdo: Icono Squircle Apple + Copy informativo */}
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2.5 sm:gap-3 text-center sm:text-left">
                   <div className={cn(
                     "w-8 h-8 rounded-xl flex items-center justify-center shrink-0 border transition-colors shadow-xs",
                     isPasscodeShaking || unlockError
@@ -1679,13 +1693,13 @@ export function GoogleDriveSettingsCard({ onClose, onSelectPhotoForProduct }: Go
 
                 {/* Lado derecho: 6 casillas 2FA con efecto rebote tipo Apple o temporizador */}
                 {lockoutRemainingSec <= 0 ? (
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap justify-center">
                     <motion.div
                       animate={isPasscodeShaking ? {
                         x: [0, -16, 16, -12, 12, -8, 8, -4, 4, 0],
                       } : { x: 0 }}
                       transition={{ duration: 0.52, ease: "easeInOut" }}
-                      className="flex items-center gap-1.5 sm:gap-2"
+                      className="flex items-center gap-1 sm:gap-1.5 md:gap-2 justify-center"
                     >
                       {unlockPinDigits.map((digit, idx) => (
                         <input
@@ -1700,7 +1714,7 @@ export function GoogleDriveSettingsCard({ onClose, onSelectPhotoForProduct }: Go
                           onKeyDown={(e) => handleUnlockKeyDown(idx, e)}
                           onPaste={handleUnlockPaste}
                           className={cn(
-                            "w-9 h-11 sm:w-10 sm:h-12 text-center text-lg font-semibold rounded-xl border outline-none transition-all duration-200",
+                            "w-8 h-10 sm:w-9 sm:h-11 md:w-10 md:h-12 text-center text-base sm:text-lg font-semibold rounded-xl border outline-none transition-all duration-200",
                             isPasscodeShaking || unlockError
                               ? "border-red-500 bg-red-500/10 text-red-500 ring-4 ring-red-500/15"
                               : unlockSuccess
@@ -2414,6 +2428,34 @@ export function GoogleDriveSettingsCard({ onClose, onSelectPhotoForProduct }: Go
           </div>
         </div>
       )}
+
+      {/* Modal Centrado Apple para Administrador de PIN en Mobile / Tablet (< lg) */}
+      <div className="lg:hidden">
+        <AnimatePresence>
+          {showAdminPinMenu && isAdmin && (
+            <div 
+              className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md"
+              onClick={() => setShowAdminPinMenu(false)}
+            >
+              <motion.div
+                initial={{ opacity: 0, scale: 0.92, y: 16 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.92, y: 16 }}
+                transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
+                onClick={(e) => e.stopPropagation()}
+                className={cn(
+                  "w-full max-w-sm rounded-[24px] border shadow-2xl p-4.5 backdrop-blur-3xl font-sans antialiased select-none transition-all max-h-[90vh] overflow-y-auto",
+                  isDark 
+                    ? "bg-[#1c1c1e]/95 border-white/10 text-white shadow-[0_24px_60px_rgba(0,0,0,0.8),0_0_0_1px_rgba(255,255,255,0.08)]" 
+                    : "bg-white/95 border-black/10 text-zinc-900 shadow-[0_24px_60px_rgba(0,0,0,0.15),0_1px_3px_rgba(0,0,0,0.05)]"
+                )}
+              >
+                {renderAdminPinMenuBody()}
+              </motion.div>
+            </div>
+          )}
+        </AnimatePresence>
+      </div>
     </div>
   );
 }

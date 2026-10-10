@@ -15,6 +15,7 @@ import { CatalogScrollToTopButton } from "@/components/ui/CatalogScrollToTopButt
 import { HandwrittenHeroTitle } from "@/components/home/HandwrittenHeroTitle";
 import { useHeroTimePhase } from "@/hooks/useHeroTimePhase";
 import { DynamicHeroBackground } from "@/components/hero/DynamicHeroBackground";
+import { HeroTimePill } from "@/components/hero/HeroTimePill";
 
 const HOME_SECTIONS = [
   { id: "hero-section", label: "Inicio", level: 1 as const },
@@ -377,21 +378,32 @@ export default function Home() {
             transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
             className="max-w-3xl transform-gpu flex-1 flex flex-col justify-between sm:justify-center"
           >
-            {/* Bloque superior (Píldora, Título, Subtítulo): Centrado y ordenado en la zona superior */}
+            {/* Bloque superior (Píldora de Categoría + Control de Iluminación Hero, Título, Subtítulo) */}
             <div className="flex flex-col justify-center my-auto sm:my-0">
-              {/* Tag Pill with Instant Hardware-Accelerated Glass Blur */}
-              <motion.div 
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: 0.05, ease: [0.16, 1, 0.3, 1] }}
-                className="relative inline-flex self-start items-center px-3.5 py-1 sm:px-4 sm:py-1.5 rounded-full overflow-hidden border border-white/25 text-xs sm:text-sm font-medium text-white mb-2.5 sm:mb-2.5 [@media(min-height:760px)]:mb-4 [@media(min-height:860px)]:mb-6 shadow-sm [isolation:isolate] transform-gpu select-none"
-              >
-                <div 
-                  className="absolute inset-0 bg-white/15 backdrop-blur-xl pointer-events-none transform-gpu"
-                  style={{ willChange: "transform, backdrop-filter", WebkitBackdropFilter: "blur(16px)" }}
+              {/* Tag Pill + Hero Ambient Time Pill */}
+              <div className="flex items-center gap-2 mb-2.5 sm:mb-2.5 [@media(min-height:760px)]:mb-4 [@media(min-height:860px)]:mb-6 flex-wrap">
+                <motion.div 
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.5, delay: 0.05, ease: [0.16, 1, 0.3, 1] }}
+                  className="relative inline-flex items-center px-3.5 py-1 sm:px-4 sm:py-1.5 rounded-full overflow-hidden border border-white/25 text-xs sm:text-sm font-medium text-white shadow-sm [isolation:isolate] transform-gpu select-none"
+                >
+                  <div 
+                    className="absolute inset-0 bg-white/15 backdrop-blur-xl pointer-events-none transform-gpu"
+                    style={{ willChange: "transform, backdrop-filter", WebkitBackdropFilter: "blur(16px)" }}
+                  />
+                  <span className="relative z-10">Artículos premium para tu hogar</span>
+                </motion.div>
+
+                <HeroTimePill
+                  phaseId={heroTime.phaseId}
+                  isAuto={heroTime.isAuto}
+                  formattedTime={heroTime.formattedTime}
+                  onSelectPhase={heroTime.setPhase}
+                  phases={heroTime.phases}
+                  phaseOrder={heroTime.phaseOrder}
                 />
-                <span className="relative z-10">Artículos premium para tu hogar</span>
-              </motion.div>
+              </div>
 
               <HandwrittenHeroTitle />
               

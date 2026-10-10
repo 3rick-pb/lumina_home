@@ -833,7 +833,7 @@ export function ArcPicker({
       data-slot="arc-picker"
       data-side={side}
       className={cn(
-        "relative w-full min-w-0 cursor-grab select-none overflow-hidden active:cursor-grabbing",
+        "relative w-full min-w-0 cursor-grab select-none overflow-visible active:cursor-grabbing",
         disabled && "cursor-default opacity-50",
         className,
       )}

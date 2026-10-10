@@ -103,6 +103,18 @@ export function useHeroTimePhase() {
     return getPhaseForTime(new Date());
   });
 
+  const [manualPhaseId, setManualPhaseId] = useState<HeroPhaseId | null>(() => {
+    if (typeof window !== "undefined") {
+      try {
+        const saved = sessionStorage.getItem(STORAGE_KEY);
+        if (saved && saved in HERO_PHASES) {
+          return saved as HeroPhaseId;
+        }
+      } catch {}
+    }
+    return null;
+  });
+
   const [formattedTime, setFormattedTime] = useState<string>(() => {
     return formatClockTime(new Date());
   });
@@ -111,6 +123,14 @@ export function useHeroTimePhase() {
   // Sync with client clock automatically
   useEffect(() => {
     setIsMounted(true);
+
+    // Check if user previously saved a manual phase
+    try {
+      const saved = sessionStorage.getItem(STORAGE_KEY);
+      if (saved && saved in HERO_PHASES) {
+        setManualPhaseId(saved as HeroPhaseId);
+      }
+    } catch {}
 
     const syncTime = () => {
       const now = new Date();
@@ -121,19 +141,15 @@ export function useHeroTimePhase() {
       if (typeof window !== "undefined") {
         (window as unknown as { __LUMINA_INITIAL_PHASE__?: HeroPhaseId }).__LUMINA_INITIAL_PHASE__ = currentCalculatedPhase;
         try {
-          document.cookie = `lumina_client_phase=${currentCalculatedPhase}; path=/; max-age=31536000; SameSite=Lax`;
-          document.documentElement.setAttribute("data-hero-phase", currentCalculatedPhase);
+          const activeToSave = manualPhaseId || currentCalculatedPhase;
+          document.cookie = `lumina_client_phase=${activeToSave}; path=/; max-age=31536000; SameSite=Lax`;
+          document.documentElement.setAttribute("data-hero-phase", activeToSave);
         } catch {}
       }
     };
 
     // Run sync immediately on mount
     syncTime();
-
-    // Clear any legacy manual test override from session storage
-    try {
-      sessionStorage.removeItem(STORAGE_KEY);
-    } catch {}
 
     // Polling interval every 30 seconds: enables automatic smooth transition when crossing time boundaries (e.g. 9:30 AM)
     const interval = setInterval(syncTime, 30000);
@@ -150,18 +166,45 @@ export function useHeroTimePhase() {
       clearInterval(interval);
       document.removeEventListener("visibilitychange", handleVisibility);
     };
-  }, []);
+  }, [manualPhaseId]);
 
-  const activePhaseId: HeroPhaseId = autoPhaseId;
+  const isAuto = manualPhaseId === null;
+  const activePhaseId: HeroPhaseId = manualPhaseId || autoPhaseId;
   const currentPhase = HERO_PHASES[activePhaseId];
+
+  const setPhase = useCallback((target: HeroPhaseId | "auto") => {
+    if (target === "auto") {
+      setManualPhaseId(null);
+      try {
+        sessionStorage.removeItem(STORAGE_KEY);
+        document.cookie = `lumina_client_phase=${autoPhaseId}; path=/; max-age=31536000; SameSite=Lax`;
+        document.documentElement.setAttribute("data-hero-phase", autoPhaseId);
+      } catch {}
+    } else {
+      setManualPhaseId(target);
+      try {
+        sessionStorage.setItem(STORAGE_KEY, target);
+        document.cookie = `lumina_client_phase=${target}; path=/; max-age=31536000; SameSite=Lax`;
+        document.documentElement.setAttribute("data-hero-phase", target);
+      } catch {}
+    }
+  }, [autoPhaseId]);
+
+  const cycleNextPhase = useCallback(() => {
+    const currentIndex = HERO_PHASE_ORDER.indexOf(activePhaseId);
+    const nextIndex = (currentIndex + 1) % HERO_PHASE_ORDER.length;
+    setPhase(HERO_PHASE_ORDER[nextIndex]);
+  }, [activePhaseId, setPhase]);
 
   return {
     isMounted,
-    isAuto: true,
+    isAuto,
     phaseId: activePhaseId,
     currentPhase,
     autoPhaseId,
     formattedTime,
+    setPhase,
+    cycleNextPhase,
     phases: HERO_PHASES,
     phaseOrder: HERO_PHASE_ORDER,
   };
