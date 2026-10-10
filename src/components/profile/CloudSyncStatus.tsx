@@ -20,7 +20,7 @@ export function CloudSyncStatus({
   syncError = null,
   onSave,
   onRetry,
-  saveLabel = "Guardar en nube",
+  saveLabel = "Guardar",
   savedLabel = "Guardado en nube",
   showSaveButton = true,
   compact = false,
@@ -51,7 +51,7 @@ export function CloudSyncStatus({
       {effectiveSyncing ? (
         <div className="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1 rounded-full bg-amber-50 dark:bg-amber-950/40 border border-amber-200/60 dark:border-amber-900/40 text-amber-700 dark:text-amber-400 text-[10.5px] sm:text-[11px] font-semibold animate-pulse select-none whitespace-nowrap shrink-0">
           <div className="w-2 h-2 rounded-full bg-amber-500 animate-ping" />
-          <span>Guardando automáticamente en nube...</span>
+          <span>Guardando en la Nube</span>
         </div>
       ) : syncError ? (
         <button

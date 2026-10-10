@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import {
   Server,
   Mail,
@@ -27,7 +27,6 @@ import {
   Globe,
   Smartphone,
   FileCode,
-  SlidersHorizontal,
   ChevronDown,
   Layers,
 } from "lucide-react";
@@ -36,6 +35,7 @@ import { supabase } from "@/lib/supabase";
 import { useUserStore } from "@/lib/userStore";
 import { useBrand } from "@/core/hooks/useBrand";
 import { CloudSyncStatus } from "../CloudSyncStatus";
+import { CodeBlock } from "@/components/ui/code-block";
 
 type ViewSection = "all" | "smtp" | "supabase" | "google" | "payphone" | "hosting" | "wallets";
 
@@ -94,9 +94,29 @@ export function IntegrationsTab() {
 
   const [activeSection, setActiveSection] = useState<ViewSection>("all");
   const [toolState, setToolState] = useState<"idle" | "working" | "done">("idle");
-  const [isLoadingStatus, setIsLoadingStatus] = useState(true);
+  const [isLoadingStatus, setIsLoadingStatus] = useState(false);
+  const [isSavingAll, setIsSavingAll] = useState(false);
   const [servicesStatus, setServicesStatus] = useState<ServiceConfigStatus | null>(null);
   const [showLiveCode, setShowLiveCode] = useState(true);
+
+  // Combobox Apple Liquid Glass state
+  const [isComboboxOpen, setIsComboboxOpen] = useState(false);
+  const comboboxRef = useRef<HTMLDivElement>(null);
+
+  // Close combobox on outside click
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (comboboxRef.current && !comboboxRef.current.contains(event.target as Node)) {
+        setIsComboboxOpen(false);
+      }
+    }
+    if (isComboboxOpen) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [isComboboxOpen]);
 
   // Copy states
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
@@ -267,6 +287,53 @@ export function IntegrationsTab() {
   useEffect(() => {
     fetchEnvConfig();
   }, [fetchEnvConfig]);
+
+  // Master Save to Database handler triggered by "Guardar"
+  const handleSaveAllToDatabase = async () => {
+    setIsSavingAll(true);
+    setToolState("working");
+    try {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      const headers: Record<string, string> = { "Content-Type": "application/json" };
+      if (session?.access_token) headers["Authorization"] = `Bearer ${session.access_token}`;
+
+      // 1. Guardar receptores de bodega si están configurados
+      if (dispatchRecipients.length > 0) {
+        await fetch("/api/admin/smtp", {
+          method: "POST",
+          headers,
+          body: JSON.stringify({
+            action: "save_dispatch_recipients",
+            recipients: dispatchRecipients,
+          }),
+        });
+      }
+
+      // 2. Guardar modo y parámetros de PayPhone si están disponibles
+      if (payphoneMode) {
+        await fetch("/api/admin/payphone/settings", {
+          method: "POST",
+          headers,
+          body: JSON.stringify({
+            mode: payphoneMode,
+            storeId: payphoneStoreId.trim() || undefined,
+          }),
+        });
+      }
+
+      // 3. Refrescar estado general del servidor
+      await fetchEnvConfig();
+      setToolState("done");
+      setTimeout(() => setToolState("idle"), 2500);
+    } catch (err) {
+      console.warn("Error al guardar en la nube:", err);
+      setToolState("idle");
+    } finally {
+      setIsSavingAll(false);
+    }
+  };
 
   // Handle PayPhone Mode Toggle (Box vs Redirect)
   const handleSavePayphoneMode = async (modeToSave: "box" | "redirect") => {
@@ -612,14 +679,17 @@ export function IntegrationsTab() {
   };
 
   const navCategories = [
-    { id: "all" as const, label: "Todas las Secciones", icon: Layers, ready: true },
-    { id: "smtp" as const, label: "SMTP & Correos", icon: Mail, ready: servicesStatus?.smtp?.configured },
-    { id: "supabase" as const, label: "Supabase DB", icon: Database, ready: servicesStatus?.supabase?.configured },
-    { id: "google" as const, label: "Google Cloud", icon: Cloud, ready: servicesStatus?.googleDrive?.configured },
-    { id: "payphone" as const, label: "PayPhone Pagos", icon: CreditCard, ready: servicesStatus?.payphone?.configured },
-    { id: "hosting" as const, label: "Hosting & Mapas", icon: Globe, ready: Boolean(servicesStatus?.hosting?.siteUrl) },
-    { id: "wallets" as const, label: "Wallets Apple/Google", icon: Smartphone, ready: servicesStatus?.wallets?.configured },
+    { id: "all" as const, label: "Todas las Secciones", icon: Layers, desc: "Vista unificada de toda la infraestructura", ready: true },
+    { id: "smtp" as const, label: "SMTP & Correos", icon: Mail, desc: "Servidor de emails y bodegas", ready: servicesStatus?.smtp?.configured },
+    { id: "supabase" as const, label: "Supabase DB", icon: Database, desc: "PostgreSQL, Auth y Storage", ready: servicesStatus?.supabase?.configured },
+    { id: "google" as const, label: "Google Cloud", icon: Cloud, desc: "OAuth 2.0 y Drive API", ready: servicesStatus?.googleDrive?.configured },
+    { id: "payphone" as const, label: "PayPhone Pagos", icon: CreditCard, desc: "Tarjetas y modo de cobro", ready: servicesStatus?.payphone?.configured },
+    { id: "hosting" as const, label: "Hosting & Mapas", icon: Globe, desc: "Dominio web y token Mapbox", ready: Boolean(servicesStatus?.hosting?.siteUrl) },
+    { id: "wallets" as const, label: "Wallets Apple/Google", icon: Smartphone, desc: "PassKit y firmas HMAC", ready: servicesStatus?.wallets?.configured },
   ];
+
+  const selectedCategory = navCategories.find((c) => c.id === activeSection) || navCategories[0];
+  const SelectedIcon = selectedCategory.icon;
 
   return (
     <div className="space-y-6 sm:space-y-8 animate-fade-in font-sans" data-state={toolState}>
@@ -631,13 +701,13 @@ export function IntegrationsTab() {
         {/* Cabecera Principal */}
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-4 border-b border-black/5 dark:border-white/10">
           <div className="min-w-0">
-            <div className="mb-2">
+            <div className="mb-2.5">
               <CloudSyncStatus
-                isSyncing={isLoadingStatus || isSavingDispatch || isSavingPayphone}
+                isSyncing={isSavingAll || isSavingDispatch || isSavingPayphone}
                 syncError={null}
-                onSave={fetchEnvConfig}
-                saveLabel="Verificar infraestructura"
-                savedLabel="Variables sincronizadas"
+                onSave={handleSaveAllToDatabase}
+                saveLabel="Guardar"
+                savedLabel="Guardado en nube"
               />
             </div>
             <h2 className="text-lg sm:text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100 flex items-center gap-2.5">
@@ -693,17 +763,17 @@ export function IntegrationsTab() {
         </div>
 
         {/* ==================================================================== */}
-        {/* PANEL MAESTRO CENTRALIZADO DE GENERACIÓN .ENV EN VIVO                */}
+        {/* PANEL MAESTRO: CODE BLOCK RARE-UI CON HIGHLIGHTING Y LINE NUMBERS    */}
         {/* ==================================================================== */}
-        <div className="rounded-2xl sm:rounded-3xl border border-black/10 dark:border-white/10 bg-[#0d0e12] overflow-hidden shadow-xl text-white">
-          <div className="px-4 py-3 bg-zinc-900/90 border-b border-white/5 flex flex-wrap items-center justify-between gap-2.5">
+        <div className="space-y-2">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 px-1">
             <div className="flex items-center gap-2">
-              <Terminal className="w-4 h-4 text-emerald-400" />
-              <span className="text-xs sm:text-sm font-bold tracking-tight text-zinc-100">
-                Generador Reactivo Maestro .env
+              <Terminal className="w-4 h-4 text-emerald-500" />
+              <span className="text-xs sm:text-sm font-bold tracking-tight text-zinc-900 dark:text-zinc-100">
+                Variables de Entorno Generadas en Vivo (.env)
               </span>
-              <span className="hidden xs:inline-block px-2 py-0.5 rounded-full text-[10px] font-mono font-medium bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">
-                100% de variables de la web
+              <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-medium bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                100% de la web
               </span>
             </div>
 
@@ -711,20 +781,11 @@ export function IntegrationsTab() {
               <button
                 type="button"
                 onClick={() => setShowLiveCode((prev) => !prev)}
-                className="px-2.5 py-1 rounded-lg bg-white/10 hover:bg-white/15 text-[11px] font-medium transition-colors cursor-pointer flex items-center gap-1 active:scale-95"
+                className="px-3 py-1.5 rounded-xl border border-black/10 dark:border-white/10 hover:bg-black/5 dark:hover:bg-white/5 text-xs text-zinc-700 dark:text-zinc-300 font-medium transition-colors cursor-pointer flex items-center gap-1.5 active:scale-95"
               >
-                <FileCode className="w-3 h-3 text-zinc-400" />
-                <span>{showLiveCode ? "Ocultar Código" : "Expandir Código"}</span>
-                <ChevronDown className={`w-3 h-3 text-zinc-400 transition-transform ${showLiveCode ? "rotate-180" : ""}`} />
-              </button>
-
-              <button
-                type="button"
-                onClick={() => markCopied("master_deck_copy", computedMasterEnv)}
-                className="px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-[11px] font-semibold transition-colors cursor-pointer flex items-center gap-1 active:scale-95"
-              >
-                {copiedKey === "master_deck_copy" ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
-                <span>{copiedKey === "master_deck_copy" ? "¡Copiado!" : "Copiar"}</span>
+                <FileCode className="w-3.5 h-3.5 text-zinc-500" />
+                <span>{showLiveCode ? "Ocultar Código" : "Ver Código .env"}</span>
+                <ChevronDown className={`w-3.5 h-3.5 text-zinc-400 transition-transform duration-200 ${showLiveCode ? "rotate-180" : ""}`} />
               </button>
             </div>
           </div>
@@ -735,63 +796,139 @@ export function IntegrationsTab() {
                 initial={{ opacity: 0, height: 0 }}
                 animate={{ opacity: 1, height: "auto" }}
                 exit={{ opacity: 0, height: 0 }}
-                transition={{ duration: 0.2 }}
+                transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
                 className="overflow-hidden"
               >
-                <pre className="p-3.5 sm:p-5 text-[11px] sm:text-xs font-mono text-zinc-300 leading-relaxed overflow-x-auto max-h-[300px] sm:max-h-[380px] scrollbar-thin select-text">
-                  {computedMasterEnv}
-                </pre>
+                <CodeBlock
+                  code={computedMasterEnv}
+                  language="bash"
+                  filename=".env.production"
+                  accent="#10b981"
+                  mode="auto"
+                  showLineNumbers={true}
+                  showCopyButton={true}
+                  showHeader={true}
+                  className="w-full rounded-2xl sm:rounded-3xl shadow-xl overflow-hidden border border-black/10 dark:border-white/10"
+                />
               </motion.div>
             )}
           </AnimatePresence>
         </div>
 
         {/* ==================================================================== */}
-        {/* BARRA DE NAVEGACIÓN Y FILTRO RÁPIDO ENTRE SECCIONES                   */}
+        {/* SELECTOR COMBOBOX APPLE LIQUID GLASS (REEMPLAZA EL SLIDER)           */}
         {/* ==================================================================== */}
-        <div className="space-y-2">
-          <div className="flex items-center justify-between text-xs font-medium text-zinc-500 dark:text-zinc-400 px-0.5">
-            <span>Editar sección o inspeccionar servicios:</span>
-            <span className="text-[11px] font-mono hidden sm:inline">Reactivo en tiempo real</span>
-          </div>
+        <div className="pt-2">
+          <div ref={comboboxRef} className="relative z-30 w-full sm:max-w-md">
+            <label className="text-[11px] font-semibold tracking-wider text-zinc-500 dark:text-zinc-400 uppercase block mb-1.5 px-0.5">
+              Módulo o Sección para Configurar:
+            </label>
 
-          <div className="overflow-x-auto pb-1 scrollbar-none -mx-1 px-1">
-            <div className="flex items-center gap-1.5 p-1 rounded-2xl bg-zinc-100/80 dark:bg-zinc-800/60 border border-black/5 dark:border-white/5 w-max min-w-full sm:min-w-0">
-              {navCategories.map((cat) => {
-                const Icon = cat.icon;
-                const isActive = activeSection === cat.id;
+            {/* Botón Trigger con Efecto Liquid Glass Apple */}
+            <motion.button
+              type="button"
+              onClick={() => setIsComboboxOpen((prev) => !prev)}
+              whileTap={{ scale: 0.985 }}
+              className="w-full flex items-center justify-between gap-3 px-4 py-3 rounded-2xl bg-white/70 dark:bg-zinc-800/60 hover:bg-white/90 dark:hover:bg-zinc-800/90 backdrop-blur-2xl border border-black/10 dark:border-white/10 hover:border-black/20 dark:hover:border-white/20 shadow-[0_8px_30px_rgba(0,0,0,0.04)] text-xs font-semibold text-zinc-900 dark:text-white transition-all cursor-pointer group"
+              aria-expanded={isComboboxOpen}
+              aria-haspopup="listbox"
+            >
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="w-8 h-8 rounded-xl bg-amber-500/10 dark:bg-amber-500/20 border border-amber-500/30 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0 shadow-2xs">
+                  <SelectedIcon className="w-4 h-4" />
+                </div>
+                <div className="flex flex-col text-left min-w-0">
+                  <span className="truncate leading-tight font-bold text-zinc-900 dark:text-white text-xs sm:text-sm">
+                    {selectedCategory.label}
+                  </span>
+                  <span className="text-[10px] sm:text-[11px] text-zinc-500 dark:text-zinc-400 font-normal leading-tight mt-0.5 truncate">
+                    {selectedCategory.desc}
+                  </span>
+                </div>
+              </div>
 
-                return (
-                  <button
-                    key={cat.id}
-                    type="button"
-                    onClick={() => setActiveSection(cat.id)}
-                    className={`flex items-center gap-1.5 sm:gap-2 px-3 py-2 sm:px-3.5 sm:py-2 rounded-xl text-xs font-medium transition-all cursor-pointer whitespace-nowrap active:scale-95 ${
-                      isActive
-                        ? "bg-white dark:bg-zinc-900 text-zinc-900 dark:text-white shadow-xs font-semibold"
-                        : "text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/5"
-                    }`}
-                  >
-                    <Icon className={`w-3.5 h-3.5 ${isActive ? "text-amber-500" : "opacity-70"}`} />
-                    <span>{cat.label}</span>
-                    {cat.id !== "all" && (
-                      cat.ready ? (
-                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" title="Configurado" />
-                      ) : (
-                        <span className="w-1.5 h-1.5 rounded-full bg-amber-400" title="Pendiente" />
-                      )
-                    )}
-                  </button>
-                );
-              })}
-            </div>
+              <div className="flex items-center gap-2 shrink-0">
+                {selectedCategory.id !== "all" && (
+                  selectedCategory.ready ? (
+                    <span className="w-2 h-2 rounded-full bg-emerald-500 ring-4 ring-emerald-500/20" title="Configurado" />
+                  ) : (
+                    <span className="w-2 h-2 rounded-full bg-amber-400 ring-4 ring-amber-400/20" title="Pendiente" />
+                  )
+                )}
+                <div className="w-6 h-6 rounded-lg bg-black/5 dark:bg-white/5 flex items-center justify-center group-hover:bg-black/10 dark:group-hover:bg-white/10 transition-colors">
+                  <ChevronDown className={`w-3.5 h-3.5 text-zinc-400 transition-transform duration-200 ${isComboboxOpen ? "rotate-180 text-zinc-900 dark:text-white" : ""}`} />
+                </div>
+              </div>
+            </motion.button>
+
+            {/* Menú Desplegable Liquid Glass Apple Popover */}
+            <AnimatePresence>
+              {isComboboxOpen && (
+                <motion.div
+                  initial={{ opacity: 0, y: 6, scale: 0.97 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: 4, scale: 0.97 }}
+                  transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }}
+                  className="absolute left-0 right-0 top-full mt-2 rounded-2xl bg-white/95 dark:bg-[#18181b]/95 backdrop-blur-3xl border border-black/10 dark:border-white/10 shadow-[0_20px_50px_rgba(0,0,0,0.25)] p-1.5 z-50 overflow-hidden"
+                  role="listbox"
+                >
+                  <div className="space-y-0.5 max-h-[340px] overflow-y-auto scrollbar-thin">
+                    {navCategories.map((cat) => {
+                      const Icon = cat.icon;
+                      const isSelected = activeSection === cat.id;
+
+                      return (
+                        <button
+                          key={cat.id}
+                          type="button"
+                          onClick={() => {
+                            setActiveSection(cat.id);
+                            setIsComboboxOpen(false);
+                          }}
+                          className={`w-full flex items-center justify-between gap-3 px-3 py-2.5 rounded-xl text-left text-xs transition-all cursor-pointer active:scale-[0.99] ${
+                            isSelected
+                              ? "bg-amber-500/15 dark:bg-amber-500/20 text-zinc-950 dark:text-white font-semibold shadow-2xs"
+                              : "text-zinc-700 dark:text-zinc-300 hover:bg-black/5 dark:hover:bg-white/5"
+                          }`}
+                          role="option"
+                          aria-selected={isSelected}
+                        >
+                          <div className="flex items-center gap-3 min-w-0">
+                            <div className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 border ${
+                              isSelected 
+                                ? "bg-amber-500 text-stone-950 border-amber-400 font-bold" 
+                                : "bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 border-black/5 dark:border-white/5"
+                            }`}>
+                              <Icon className="w-3.5 h-3.5" />
+                            </div>
+                            <div className="flex flex-col min-w-0">
+                              <span className="truncate leading-tight font-medium">{cat.label}</span>
+                              <span className="text-[10.5px] text-zinc-400 dark:text-zinc-500 leading-tight mt-0.5 truncate">
+                                {cat.desc}
+                              </span>
+                            </div>
+                          </div>
+
+                          <div className="flex items-center gap-2 shrink-0">
+                            {cat.id !== "all" && (
+                              <span className={`w-1.5 h-1.5 rounded-full ${cat.ready ? "bg-emerald-500" : "bg-amber-400"}`} />
+                            )}
+                            {isSelected && <Check className="w-4 h-4 text-amber-600 dark:text-amber-400 stroke-[2.5]" />}
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
         </div>
 
         {/* ==================================================================== */}
         {/* SECCIONES EDITABLES UNIFICADAS                                       */}
         {/* ==================================================================== */}
-        <div className="space-y-6 sm:space-y-8">
+        <div className="space-y-6 sm:space-y-8 pt-2">
 
           {/* ------------------------------------------------------------------ */}
           {/* 1. SERVIDOR SMTP & NOTIFICACIONES (MAIL)                           */}
@@ -1450,7 +1587,7 @@ export function IntegrationsTab() {
                         onClick={() => setShowPayphoneToken(!showPayphoneToken)}
                         className="text-[11px] text-zinc-500 hover:text-zinc-800 cursor-pointer flex items-center gap-1"
                       >
-                        {showPayphoneToken ? <EyeOff className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
+                        {showPayphoneToken ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
                         <span>{showPayphoneToken ? "Ocultar" : "Mostrar"}</span>
                       </button>
                     </div>
