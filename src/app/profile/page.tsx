@@ -1543,7 +1543,7 @@ const handleConfirmDeleteNiche = async () => {
   <main className={`flex-1 flex flex-col min-w-0 w-full space-y-6 pb-28 sm:pb-32 md:pb-6 ${activeTab === "cart_alerts" || activeTab === "analytics" ? "max-w-none" : "max-w-7xl mx-auto"}`}>
   
   {/* Top App Bar (Reference Style) */}
-  <header className="relative z-40 bg-white/80 dark:bg-[#202022]/80 backdrop-blur-2xl px-3.5 py-2.5 sm:px-5 md:px-6 py-3.5 rounded-2xl sm:rounded-3xl border border-white/80 dark:border-white/10 shadow-[0_4px_20px_rgba(0,0,0,0.02)] flex items-center justify-between gap-4 md:gap-6 lg:gap-8 min-h-[56px]">
+  <header className="relative z-40 bg-white/80 dark:bg-[#202022]/80 backdrop-blur-2xl px-3.5 py-2.5 sm:px-5 md:px-6 py-3 rounded-2xl sm:rounded-3xl border border-white/80 dark:border-white/10 shadow-[0_4px_20px_rgba(0,0,0,0.02)] flex items-center justify-between gap-2.5 md:gap-4 lg:gap-6 min-h-[56px] w-full max-w-full">
   
   {/* --- 1. VISTA MÓVIL (Celulares y pantallas pequeñas): Disperso 1:1 a la captura de pantalla --- */}
   <div className="flex md:hidden items-center justify-between w-full gap-2 min-w-0">
@@ -1592,11 +1592,11 @@ const handleConfirmDeleteNiche = async () => {
   </div>
 
   {/* --- 2. VISTA DESKTOP (md:flex): Brand & Top Navigation Pill Bar --- */}
-  <div className="hidden md:flex items-center justify-start gap-3 md:gap-4 lg:gap-5 min-w-0 shrink-0">
+  <div className="hidden md:flex items-center justify-start gap-2.5 md:gap-3.5 min-w-0 shrink-0">
   {/* Desktop Brand Logo (Lateral Izquierdo en Desktop) */}
   <Link 
     href="/" 
-    className="hidden md:flex shrink-0 items-center hover:opacity-85 transition-opacity select-none py-0.5 mr-1" 
+    className="hidden md:flex shrink-0 items-center hover:opacity-85 transition-opacity select-none py-0.5 mr-0.5" 
     title="Ir a la tienda"
   >
     <Image
@@ -1605,58 +1605,52 @@ const handleConfirmDeleteNiche = async () => {
       width={1058}
       height={272}
       priority
-      className="h-6 sm:h-7 w-auto object-contain dark:invert"
+      className="h-6 sm:h-6.5 w-auto object-contain dark:invert"
     />
   </Link>
 
-  {/* Top Bar Paginated Tabs (2 por página con estética luxury liquid glass) */}
+  {/* Top Bar Paginated Tabs (2 por página, tamaño compacto, botones en píldora individuales) */}
   <div
     onWheel={handleTabsWheel}
-    className="hidden md:flex items-center gap-1.5 p-1 rounded-2xl bg-stone-100/80 dark:bg-[#18181b]/80 backdrop-blur-2xl border border-stone-200/80 dark:border-white/10 shadow-[0_2px_12px_rgba(0,0,0,0.03)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.35)] transition-all select-none shrink-0"
+    className="hidden md:flex items-center gap-1 p-1 rounded-2xl bg-stone-100/90 dark:bg-[#18181b]/90 backdrop-blur-2xl border border-stone-200/80 dark:border-white/10 shadow-xs transition-all select-none shrink-0"
   >
-    {/* Botón página previa */}
-    <button
-      type="button"
-      onClick={goToPreviousPage}
-      disabled={topNavPage === 0}
-      title="Página anterior de pestañas"
-      className={`p-1.5 rounded-xl transition-all duration-200 flex items-center justify-center shrink-0 ${
-        topNavPage === 0
-          ? "text-stone-300 dark:text-stone-700 cursor-not-allowed opacity-30"
-          : "text-stone-500 dark:text-stone-400 hover:text-stone-900 dark:hover:text-white hover:bg-white dark:hover:bg-white/10 shadow-xs active:scale-95 cursor-pointer"
-      }`}
-    >
-      <ChevronLeft className="w-3.5 h-3.5" />
-    </button>
+    {/* Flecha izquierda: se muestra SOLO si no estamos en la primera página */}
+    {topNavPage > 0 && (
+      <button
+        type="button"
+        onClick={goToPreviousPage}
+        title="Pestañas anteriores"
+        className="p-1 rounded-xl text-stone-500 dark:text-stone-400 hover:text-stone-900 dark:hover:text-white hover:bg-stone-200/70 dark:hover:bg-white/10 transition-all flex items-center justify-center shrink-0 cursor-pointer active:scale-95"
+      >
+        <ChevronLeft className="w-3.5 h-3.5" />
+      </button>
+    )}
 
     {/* Contenedor animado de las 2 pestañas */}
-    <div className="overflow-hidden w-[240px] sm:w-[260px] lg:w-[280px]">
+    <div className="overflow-hidden w-[200px] sm:w-[210px] lg:w-[220px]">
       <AnimatePresence mode="wait" custom={navDirection}>
         <motion.div
           key={topNavPage}
           custom={navDirection}
           variants={{
             enter: (direction: number) => ({
-              x: direction > 0 ? 16 : -16,
+              x: direction > 0 ? 12 : -12,
               opacity: 0,
-              filter: "blur(2px)",
             }),
             center: {
               x: 0,
               opacity: 1,
-              filter: "blur(0px)",
             },
             exit: (direction: number) => ({
-              x: direction > 0 ? -16 : 16,
+              x: direction > 0 ? -12 : 12,
               opacity: 0,
-              filter: "blur(2px)",
             }),
           }}
           initial="enter"
           animate="center"
           exit="exit"
-          transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }}
-          className="grid grid-cols-2 gap-1.5 w-full"
+          transition={{ duration: 0.15, ease: [0.16, 1, 0.3, 1] }}
+          className="grid grid-cols-2 gap-1 w-full"
         >
           {tabPages[topNavPage]?.map((tab) => {
             const Icon = tab.icon;
@@ -1669,19 +1663,19 @@ const handleConfirmDeleteNiche = async () => {
                   setActiveTab(tab.id);
                 }}
                 title={tab.label}
-                className={`group relative flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-xl text-xs whitespace-nowrap transition-all duration-200 cursor-pointer select-none truncate ${
+                className={`group relative flex items-center justify-center gap-1 px-2 py-1 rounded-xl text-[11px] whitespace-nowrap transition-all duration-150 cursor-pointer select-none truncate ${
                   isActive
-                    ? "bg-white dark:bg-[#232328] text-stone-900 dark:text-white font-semibold shadow-[0_2px_8px_rgba(0,0,0,0.06)] dark:shadow-[0_2px_12px_rgba(0,0,0,0.4)] ring-1 ring-black/5 dark:ring-white/10"
-                    : "text-stone-600 dark:text-stone-400 hover:text-stone-900 dark:hover:text-stone-100 hover:bg-white/60 dark:hover:bg-white/5 font-medium"
+                    ? "bg-white dark:bg-[#28282e] text-stone-950 dark:text-white font-semibold border border-stone-200/90 dark:border-white/20 shadow-xs ring-1 ring-black/5 dark:ring-white/10"
+                    : "bg-stone-200/60 dark:bg-white/5 border border-stone-200/80 dark:border-white/5 text-stone-600 dark:text-stone-400 hover:text-stone-900 dark:hover:text-stone-100 hover:bg-white/80 dark:hover:bg-white/10 hover:border-stone-300 dark:hover:border-white/15 font-medium"
                 }`}
               >
-                <Icon className={`w-3.5 h-3.5 shrink-0 transition-transform duration-200 group-hover:scale-115 ${tab.iconColor}`} />
+                <Icon className={`w-3 h-3 shrink-0 transition-transform duration-150 group-hover:scale-110 ${tab.iconColor}`} />
                 <span className="truncate">{tab.label}</span>
                 {typeof tab.badge === "number" && tab.badge > 0 && (
-                  <span className={`text-[10px] font-mono px-1.5 py-0.2 rounded-full shrink-0 leading-none ${
+                  <span className={`text-[9px] font-mono px-1 py-0.2 rounded-full shrink-0 leading-none ${
                     isActive
                       ? "bg-[#e07a3f]/15 text-[#e07a3f] dark:text-[#ff9d66] font-semibold"
-                      : "bg-stone-200/70 dark:bg-white/10 text-stone-500 dark:text-stone-400"
+                      : "bg-stone-300/60 dark:bg-white/10 text-stone-600 dark:text-stone-400"
                   }`}>
                     {tab.badge}
                   </span>
@@ -1693,52 +1687,32 @@ const handleConfirmDeleteNiche = async () => {
       </AnimatePresence>
     </div>
 
-    {/* Botón página siguiente */}
-    <button
-      type="button"
-      onClick={goToNextPage}
-      disabled={topNavPage >= tabPages.length - 1}
-      title="Página siguiente de pestañas"
-      className={`p-1.5 rounded-xl transition-all duration-200 flex items-center justify-center shrink-0 ${
-        topNavPage >= tabPages.length - 1
-          ? "text-stone-300 dark:text-stone-700 cursor-not-allowed opacity-30"
-          : "text-stone-500 dark:text-stone-400 hover:text-stone-900 dark:hover:text-white hover:bg-white dark:hover:bg-white/10 shadow-xs active:scale-95 cursor-pointer"
-      }`}
-    >
-      <ChevronRight className="w-3.5 h-3.5" />
-    </button>
-
-    {/* Indicador de páginas con micro-pills */}
-    <div className="flex items-center gap-1 shrink-0 border-l border-stone-200/80 dark:border-white/10 pl-1.5 pr-0.5">
-      {tabPages.map((_, idx) => (
-        <button
-          key={idx}
-          type="button"
-          onClick={() => goToPage(idx)}
-          title={`Ir a página ${idx + 1} de pestañas`}
-          className={`h-1.5 rounded-full transition-all duration-300 cursor-pointer ${
-            topNavPage === idx
-              ? "w-3.5 bg-[#e07a3f]"
-              : "w-1.5 bg-stone-300 dark:bg-stone-600 hover:bg-stone-400 dark:hover:bg-stone-500"
-          }`}
-        />
-      ))}
-    </div>
+    {/* Flecha derecha: se muestra SOLO si no estamos en la última página */}
+    {topNavPage < tabPages.length - 1 && (
+      <button
+        type="button"
+        onClick={goToNextPage}
+        title="Pestañas siguientes"
+        className="p-1 rounded-xl text-stone-500 dark:text-stone-400 hover:text-stone-900 dark:hover:text-white hover:bg-stone-200/70 dark:hover:bg-white/10 transition-all flex items-center justify-center shrink-0 cursor-pointer active:scale-95"
+      >
+        <ChevronRight className="w-3.5 h-3.5" />
+      </button>
+    )}
   </div>
   </div>
 
   {/* Right Search Input & Profile Badge (Spotlight Alive Command Bar en Desktop) */}
-  <div className="hidden md:flex items-center gap-2.5 sm:gap-3 shrink-0 ml-auto pl-3 md:pl-5 lg:pl-6">
+  <div className="hidden md:flex items-center gap-2 sm:gap-2.5 shrink-0 min-w-0">
     <div className="relative z-50 group/search" ref={searchDropdownRef}>
       <div 
-        className={`relative flex items-center gap-2.5 pl-3.5 pr-2.5 h-10 rounded-full bg-white/80 dark:bg-[#1a1a20]/80 hover:bg-white dark:hover:bg-[#202026] focus-within:bg-white dark:focus-within:bg-[#1a1a20] backdrop-blur-2xl border transition-all duration-300 ease-out ${
+        className={`relative flex items-center gap-2 pl-3 pr-2 h-9 sm:h-9.5 rounded-full bg-white/80 dark:bg-[#1a1a20]/80 hover:bg-white dark:hover:bg-[#202026] focus-within:bg-white dark:focus-within:bg-[#1a1a20] backdrop-blur-2xl border transition-all duration-300 ease-out ${
           isSearchFocused
-            ? "border-[#e07a3f] dark:border-[#e07a3f] ring-4 ring-[#e07a3f]/25 shadow-[0_8px_32px_rgba(224,122,63,0.24)]"
-            : "border-[#e07a3f]/30 dark:border-[#e07a3f]/35 hover:border-[#e07a3f] dark:hover:border-[#e07a3f] hover:ring-2 hover:ring-[#e07a3f]/20 shadow-[0_2px_10px_rgba(224,122,63,0.06)] hover:shadow-[0_4px_22px_rgba(224,122,63,0.18)]"
+            ? "border-[#e07a3f] dark:border-[#e07a3f] ring-3 ring-[#e07a3f]/25 shadow-[0_4px_20px_rgba(224,122,63,0.2)]"
+            : "border-[#e07a3f]/30 dark:border-[#e07a3f]/35 hover:border-[#e07a3f] dark:hover:border-[#e07a3f] hover:ring-2 hover:ring-[#e07a3f]/20 shadow-[0_2px_8px_rgba(224,122,63,0.06)]"
         }`}
       >
         <div className="flex items-center justify-center shrink-0">
-          <Search className={`w-4 h-4 transition-all duration-300 ${
+          <Search className={`w-3.5 h-3.5 transition-all duration-300 ${
             isSearchFocused
               ? "text-[#e07a3f] scale-110 rotate-[-8deg]"
               : "text-[#e07a3f]/70 dark:text-[#e07a3f]/80 group-hover/search:text-[#e07a3f] group-hover/search:scale-110"
@@ -1755,7 +1729,7 @@ const handleConfirmDeleteNiche = async () => {
             if (e.key === "Enter") {
               e.preventDefault();
               if (!isSearchFocused) {
-                setIsSearchFocused(true);
+                 setIsSearchFocused(true);
               } else if (searchQuery.trim().length > 0) {
                 if (filteredOrders.length > 0) {
                   setActiveTab("orders");
@@ -1772,13 +1746,13 @@ const handleConfirmDeleteNiche = async () => {
             }
           }}
           onChange={(e) => setSearchQuery(e.target.value)}
-          placeholder={isAdmin ? "Buscar pedidos, piezas, clientes o catálogo..." : "Buscar mis pedidos, artículos o marcas..."}
-          className="bg-transparent border-none outline-none text-xs w-28 sm:w-36 md:w-40 lg:w-56 focus:w-44 md:focus:w-60 lg:focus:w-84 font-medium text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 transition-all duration-300 ease-out"
+          placeholder={isAdmin ? "Buscar pedidos o productos..." : "Buscar mis pedidos o marcas..."}
+          className="bg-transparent border-none outline-none text-[11px] w-24 sm:w-28 md:w-32 lg:w-44 focus:w-36 md:focus:w-48 lg:focus:w-60 font-medium text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 transition-all duration-300 ease-out"
         />
 
         {searchQuery && (
-          <div className="flex items-center gap-1.5 shrink-0 animate-fade-in">
-            <span className="px-2 py-0.5 rounded-full bg-[#e07a3f]/10 text-[#e07a3f] dark:text-[#f59e0b] text-[10px] font-mono font-bold">
+          <div className="flex items-center gap-1 shrink-0 animate-fade-in">
+            <span className="px-1.5 py-0.2 rounded-full bg-[#e07a3f]/10 text-[#e07a3f] dark:text-[#f59e0b] text-[9px] font-mono font-bold">
               {filteredOrders.length + filteredCatalog.length}
             </span>
             <button
@@ -1787,10 +1761,10 @@ const handleConfirmDeleteNiche = async () => {
                 setSearchQuery("");
                 searchInputRef.current?.focus();
               }}
-              className="w-5 h-5 rounded-full hover:bg-stone-200/80 dark:hover:bg-white/15 text-gray-400 hover:text-gray-800 dark:hover:text-white flex items-center justify-center transition-all hover:scale-110 active:scale-95 cursor-pointer"
+              className="w-4 h-4 rounded-full hover:bg-stone-200/80 dark:hover:bg-white/15 text-gray-400 hover:text-gray-800 dark:hover:text-white flex items-center justify-center transition-all hover:scale-110 active:scale-95 cursor-pointer"
               title="Limpiar búsqueda (Esc)"
             >
-              <X className="w-3.5 h-3.5" />
+              <X className="w-3 h-3" />
             </button>
           </div>
         )}
@@ -1800,35 +1774,37 @@ const handleConfirmDeleteNiche = async () => {
       {isSearchFocused && renderSpotlightDropdown(false)}
     </div>
 
-    <Link href="/" className="hidden lg:flex text-xs font-medium text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 px-3 py-1.5 rounded-xl hover:bg-gray-100 dark:hover:bg-[#3a3a3c] transition-colors">
+    <Link href="/" className="hidden 2xl:flex text-xs font-medium text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 px-2.5 py-1 rounded-xl hover:bg-gray-100 dark:hover:bg-[#3a3a3c] transition-colors shrink-0">
       Ver Tienda &rarr;
     </Link>
 
-    <div className="flex items-center gap-2.5 sm:gap-3 pl-3 border-l border-gray-200 dark:border-white/10">
+    <div className="flex items-center gap-2 pl-2 border-l border-gray-200 dark:border-white/10 shrink-0 min-w-0">
       <BlobatarAvatar
         name={customSeed || user.id || user.email || user.name}
-        size={38}
+        size={34}
         animate="always"
         background={backgroundShape || "squircle"}
         role={user.role}
         showGlow
         title={`Avatar de ${formatCleanName(user.name)}`}
       />
-      <div className="hidden lg:block text-left">
-        <p className="text-xs font-bold text-gray-900 dark:text-gray-100 leading-tight tracking-normal">{formatCleanName(user.name)}</p>
-        <span className={`inline-block text-[10px] font-bold px-2 py-0.5 rounded-full mt-0.5 ${
+      <div className="hidden lg:block text-left min-w-0 max-w-[105px] xl:max-w-[130px]">
+        <p className="text-xs font-bold text-gray-900 dark:text-gray-100 leading-tight truncate">
+          {formatCleanName(user.name)}
+        </p>
+        <span className={`inline-block text-[9px] font-bold px-1.5 py-0.2 rounded-full mt-0.5 truncate max-w-full ${
           isRootAdmin 
             ? "bg-red-100 dark:bg-red-950/40 text-red-700 dark:text-red-300 border border-red-200 dark:border-red-800/40" 
             : isSubAdmin 
             ? "bg-amber-100 dark:bg-amber-950/40 text-amber-900 dark:text-amber-300 border border-amber-200 dark:border-amber-800/40" 
             : "bg-blue-100 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800/40"
         }`}>
-          {isRootAdmin ? "ADMINISTRADOR" : isSubAdmin ? "SUB ADMINISTRADOR" : "CLIENTE"}
+          {isRootAdmin ? "ADMINISTRADOR" : isSubAdmin ? "SUB ADMIN" : "CLIENTE"}
         </span>
       </div>
     </div>
   </div>
- </header>
+  </header>
 
  {/* Greeting Banner */}
  <div className="px-1 sm:px-0 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
