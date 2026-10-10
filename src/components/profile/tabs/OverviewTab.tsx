@@ -184,23 +184,20 @@ export function OverviewTab({
       // Only handle wheel if fine pointer (mouse/trackpad); never hijack or block on touch screens
       if (!isFinePointer) return;
 
+      // Fully isolate scroll inside this card on desktop: prevent vertical propagation to general page
+      e.preventDefault();
+      e.stopPropagation();
+
       const maxScroll = Math.max(0, el.scrollWidth - el.clientWidth);
       if (maxScroll <= 0) return;
 
       const isHorizontalScroll = Math.abs(e.deltaX) > Math.abs(e.deltaY);
       const delta = isHorizontalScroll ? e.deltaX : e.deltaY;
 
-      // Only prevent vertical scroll if user has horizontal trackpad intent or if we can scroll
-      const canScrollLeft = el.scrollLeft > 0 && delta < 0;
-      const canScrollRight = el.scrollLeft < maxScroll && delta > 0;
+      targetScrollLeft = Math.max(0, Math.min(maxScroll, (smoothRafId ? targetScrollLeft : el.scrollLeft) + delta * 0.85));
 
-      if (canScrollLeft || canScrollRight) {
-        e.preventDefault();
-        targetScrollLeft = Math.max(0, Math.min(maxScroll, (smoothRafId ? targetScrollLeft : el.scrollLeft) + delta * 0.85));
-
-        if (!smoothRafId) {
-          smoothRafId = requestAnimationFrame(smoothScrollTick);
-        }
+      if (!smoothRafId) {
+        smoothRafId = requestAnimationFrame(smoothScrollTick);
       }
     };
 
@@ -243,6 +240,9 @@ export function OverviewTab({
     window.addEventListener("mouseup", handleMouseUp);
 
     return () => {
+      if (typeof window !== "undefined" && window.matchMedia("(pointer: fine)").matches) {
+        getLenis()?.start();
+      }
       targetWheelEl.removeEventListener("wheel", handleWheel);
       el.removeEventListener("mousedown", handleMouseDown);
       window.removeEventListener("mousemove", handleMouseMove);
@@ -289,10 +289,15 @@ export function OverviewTab({
   };
 
   const handleNicheContainerMouseEnter = () => {
-    // Intentionally no-op: page vertical scrolling remains fluid on both touch and pointer devices
+    if (typeof window !== "undefined" && window.matchMedia("(pointer: fine)").matches) {
+      getLenis()?.stop();
+    }
   };
 
   const handleNicheContainerLeave = () => {
+    if (typeof window !== "undefined" && window.matchMedia("(pointer: fine)").matches) {
+      getLenis()?.start();
+    }
     if (nicheHoverTimeoutRef.current) clearTimeout(nicheHoverTimeoutRef.current);
     if (monthHoverTimeoutRef.current) clearTimeout(monthHoverTimeoutRef.current);
     setHoveredNicheIdx(null);
@@ -451,6 +456,7 @@ export function OverviewTab({
       {/* BENTO CARD 3: REAL DYNAMIC CHART (4 cols) */}
       <div 
         ref={nicheCardRef}
+        data-lenis-prevent="true"
         onMouseEnter={handleNicheContainerMouseEnter}
         onMouseLeave={handleNicheContainerLeave}
         className="md:col-span-2 lg:col-span-4 min-w-0 max-w-full bg-white/90 dark:bg-[#202022]/90 backdrop-blur-xl p-5 sm:p-6 rounded-3xl sm:rounded-[2rem] border border-white/80 dark:border-white/10 shadow-[0_4px_24px_rgba(0,0,0,0.02)] flex flex-col justify-between overflow-hidden"

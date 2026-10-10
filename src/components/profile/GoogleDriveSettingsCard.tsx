@@ -16,7 +16,6 @@ import {
   X,
   ChevronRight,
   ChevronLeft,
-  Copy,
   Download,
   Eye,
   Home,
@@ -217,10 +216,10 @@ export function GoogleDriveSettingsCard({ onClose, onSelectPhotoForProduct }: Go
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [searchFilter, setSearchFilter] = useState("");
   const [arcProgressPercent, setArcProgressPercent] = useState(0);
+  const [contentScrollPercent, setContentScrollPercent] = useState(0);
 
   // Lightbox / Visor HD
   const [previewPhoto, setPreviewPhoto] = useState<GoogleDriveFile | null>(null);
-  const [copiedId, setCopiedId] = useState<string | null>(null);
 
   // Responsividad de la Media Rueda (ArcPicker) en móviles
   const [isMobileScreen, setIsMobileScreen] = useState(false);
@@ -251,7 +250,7 @@ export function GoogleDriveSettingsCard({ onClose, onSelectPhotoForProduct }: Go
     }
     touchWheelTimerRef.current = setTimeout(() => {
       setIsTouchWheelActive(false);
-    }, 1200);
+    }, 750);
   }, []);
 
   const handleTouchWheelSettle = useCallback(() => {
@@ -260,12 +259,37 @@ export function GoogleDriveSettingsCard({ onClose, onSelectPhotoForProduct }: Go
     }
     touchWheelTimerRef.current = setTimeout(() => {
       setIsTouchWheelActive(false);
-    }, 900);
+    }, 500);
+  }, []);
+
+  // Manejador del porcentaje de scroll del canvas de contenido
+  const handleContentScroll = useCallback((e: React.UIEvent<HTMLDivElement>) => {
+    const target = e.currentTarget;
+    const maxScroll = target.scrollHeight - target.clientHeight;
+    if (maxScroll <= 0) {
+      setContentScrollPercent(0);
+      return;
+    }
+    const pct = Math.min(100, Math.max(0, Math.round((target.scrollTop / maxScroll) * 100)));
+    setContentScrollPercent(pct);
   }, []);
 
   useEffect(() => {
     loadSettings();
   }, []);
+
+  // Al cerrar sesión o desconectar, el contador de porcentaje cambia automáticamente a 0%
+  useEffect(() => {
+    if (!settings.isConnected) {
+      setArcProgressPercent(0);
+      setContentScrollPercent(0);
+    }
+  }, [settings.isConnected]);
+
+  // Al cambiar de directorio, resetear el porcentaje de scroll del canvas
+  useEffect(() => {
+    setContentScrollPercent(0);
+  }, [settings.selectedFolderId]);
 
   // Sincronizar activeArcFolderId cuando el store se actualice externamente (solo si no hay interacción activa)
   useEffect(() => {
@@ -285,15 +309,6 @@ export function GoogleDriveSettingsCard({ onClose, onSelectPhotoForProduct }: Go
       }
     };
   }, []);
-
-  const handleCopyLink = async (e: React.MouseEvent, url: string, id: string) => {
-    e.stopPropagation();
-    try {
-      await navigator.clipboard.writeText(url);
-      setCopiedId(id);
-      setTimeout(() => setCopiedId(null), 2000);
-    } catch {}
-  };
 
   // Confirmar y cargar archivos solo cuando el usuario se queda quieto
   const commitFolderSelection = useCallback((val: string) => {
@@ -561,7 +576,7 @@ export function GoogleDriveSettingsCard({ onClose, onSelectPhotoForProduct }: Go
         )}
       </div>
 
-      {/* 2. PANEL LATERAL: GESTOR DE CARPETAS (beUI Arc Picker Responsivo con Desenfoque/Enfoque) */}
+      {/* 2. PANEL LATERAL: GESTOR DE CARPETAS (beUI Arc Picker Responsivo con Desenfoque/Enfoque Suave) */}
       <div 
         data-lenis-prevent="true"
         onMouseEnter={() => setIsFolderManagerHovered(true)}
@@ -570,12 +585,12 @@ export function GoogleDriveSettingsCard({ onClose, onSelectPhotoForProduct }: Go
         onTouchMove={activateTouchWheelFocus}
         onTouchEnd={handleTouchWheelSettle}
         className={cn(
-          "w-full md:w-72 lg:w-80 shrink-0 flex-col border-b md:border-b-0 md:border-r relative z-10 transition-all duration-400 ease-out",
+          "w-full md:w-72 lg:w-80 shrink-0 flex-col border-b md:border-b-0 md:border-r relative z-10 transition-[opacity,filter] duration-300 ease-out will-change-[filter,opacity]",
           !showMobileWheel ? "hidden md:flex" : "flex",
           isDark ? "bg-[#0e0e14]/90 border-zinc-800/80" : "bg-zinc-50/90 border-zinc-200/80",
           (isFolderManagerHovered || isTouchWheelActive)
             ? "opacity-100 blur-0"
-            : "opacity-70 blur-[1.5px]"
+            : "opacity-75 blur-[1.5px]"
         )}
       >
         {/* Cabecera del Sidebar con título y Scroll Progress */}
@@ -587,10 +602,10 @@ export function GoogleDriveSettingsCard({ onClose, onSelectPhotoForProduct }: Go
                 "font-bold text-xs uppercase tracking-widest font-mono",
                 isDark ? "text-zinc-300" : "text-zinc-700"
               )}>
-                CARPETAS GOOGLE DRIVE
+                CARPETAS DE DRIVE
               </h3>
             </div>
-            <ArcScrollProgress percent={arcProgressPercent} isDark={isDark} />
+            <ArcScrollProgress percent={settings.isConnected ? arcProgressPercent : 0} isDark={isDark} />
           </div>
 
           {/* Buscador de carpetas con alineación y simetría perfecta */}
@@ -764,8 +779,12 @@ export function GoogleDriveSettingsCard({ onClose, onSelectPhotoForProduct }: Go
             )}
           </div>
 
-          {/* Acciones de la derecha: Sincronizar, Toggle vista, Cerrar */}
+          {/* Acciones de la derecha: Scroll Progress, Sincronizar, Toggle vista, Cerrar */}
           <div className="flex items-center gap-2">
+            {settings.isConnected && (
+              <ArcScrollProgress percent={contentScrollPercent} isDark={isDark} />
+            )}
+
             <button
               type="button"
               onClick={handleSyncClick}
@@ -894,7 +913,10 @@ export function GoogleDriveSettingsCard({ onClose, onSelectPhotoForProduct }: Go
           </div>
         ) : !mainFolder ? (
           /* PANTALLA EN 'MI UNIDAD': MUESTRA TODAS LAS CARPETAS, CERO IMÁGENES */
-          <div className="flex-1 overflow-y-auto p-5 sm:p-7 space-y-6 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden overscroll-contain">
+          <div 
+            onScroll={handleContentScroll}
+            className="flex-1 overflow-y-auto p-5 sm:p-7 space-y-6 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden overscroll-contain"
+          >
             {/* Tarjeta Guía de Alto Nivel (Apple Card) */}
             <div className={cn(
               "p-4 sm:p-5 rounded-2xl border flex flex-col sm:flex-row sm:items-center justify-between gap-4 transition-colors",
@@ -914,7 +936,7 @@ export function GoogleDriveSettingsCard({ onClose, onSelectPhotoForProduct }: Go
                     Catálogo de Carpetas en Mi Unidad
                   </h4>
                   <p className={cn("text-xs font-mono mt-0.5", isDark ? "text-zinc-400" : "text-zinc-600")}>
-                    Gira la media rueda lateral o pulsa cualquier carpeta 3D para entrar y ver sus fotos.
+                    Selecciona una carpeta madre, que será usada para abastecer el contenido multimédia como imágenes de productos al editar o agregar un producto nuevo a la tienda.
                   </p>
                 </div>
               </div>
@@ -979,7 +1001,10 @@ export function GoogleDriveSettingsCard({ onClose, onSelectPhotoForProduct }: Go
           </div>
         ) : (
           /* PANTALLA DE CARPETA SELECCIONADA: SUBCARPETAS + FOTOGRAFÍAS */
-          <div className="flex-1 overflow-y-auto p-5 sm:p-7 space-y-7 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden overscroll-contain">
+          <div 
+            onScroll={handleContentScroll}
+            className="flex-1 overflow-y-auto p-5 sm:p-7 space-y-7 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden overscroll-contain"
+          >
             {/* Si tiene subcarpetas, mostrarlas arriba en filas de 3 */}
             {currentSubfolders.length > 0 && (
               <div className="space-y-4">
@@ -1139,24 +1164,6 @@ export function GoogleDriveSettingsCard({ onClose, onSelectPhotoForProduct }: Go
                             <Eye className="w-3.5 h-3.5" />
                           </button>
 
-                          <button
-                            type="button"
-                            onClick={(e) => handleCopyLink(e, file.cdnUrl, file.id)}
-                            className={cn(
-                              "p-1.5 rounded-lg border transition-all cursor-pointer active:scale-90",
-                              isDark 
-                                ? "bg-zinc-900/60 border-zinc-800 text-zinc-300 hover:text-white hover:border-zinc-700" 
-                                : "bg-zinc-50 border-zinc-200 text-zinc-700 hover:text-zinc-950 hover:bg-zinc-100"
-                            )}
-                            title="Copiar enlace"
-                          >
-                            {copiedId === file.id ? (
-                              <Check className="w-3.5 h-3.5 text-emerald-400" />
-                            ) : (
-                              <Copy className="w-3.5 h-3.5" />
-                            )}
-                          </button>
-
                           {onSelectPhotoForProduct && (
                             <button
                               type="button"
@@ -1208,33 +1215,17 @@ export function GoogleDriveSettingsCard({ onClose, onSelectPhotoForProduct }: Go
                         </div>
 
                         {/* Overlay Flotante al Hover en desktop */}
-                        <div className="hidden sm:flex absolute inset-0 bg-black/40 backdrop-blur-[2px] opacity-0 group-hover:opacity-100 transition-opacity duration-200 items-center justify-center gap-2 p-2 pointer-events-none group-hover:pointer-events-auto">
+                        <div className="hidden sm:flex absolute inset-0 bg-black/40 backdrop-blur-[2px] opacity-0 group-hover:opacity-100 transition-opacity duration-200 items-center justify-center p-2 pointer-events-none group-hover:pointer-events-auto">
                           <button
                             type="button"
                             onClick={(e) => {
                               e.stopPropagation();
                               setPreviewPhoto(file);
                             }}
-                            className="p-2 rounded-xl bg-white/20 hover:bg-white text-white hover:text-black backdrop-blur-md transition-all active:scale-90 cursor-pointer"
-                            title="Vista previa HD"
+                            className="p-2.5 rounded-xl bg-white/20 hover:bg-white text-white hover:text-black backdrop-blur-md transition-all active:scale-90 cursor-pointer shadow-lg"
+                            title="Ver en pantalla completa"
                           >
                             <Eye className="w-4 h-4" />
-                          </button>
-
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleCopyLink(e, file.cdnUrl, file.id);
-                            }}
-                            className="p-2 rounded-xl bg-white/20 hover:bg-white text-white hover:text-black backdrop-blur-md transition-all active:scale-90 cursor-pointer"
-                            title="Copiar enlace CDN"
-                          >
-                            {copiedId === file.id ? (
-                              <Check className="w-4 h-4 text-emerald-400" />
-                            ) : (
-                              <Copy className="w-4 h-4" />
-                            )}
                           </button>
                         </div>
                       </div>
@@ -1251,26 +1242,22 @@ export function GoogleDriveSettingsCard({ onClose, onSelectPhotoForProduct }: Go
                             </p>
                           </div>
 
-                          {/* Botón copiar directo visible para móvil */}
+                          {/* Botón ver pantalla completa visible para móvil */}
                           <button
                             type="button"
                             onClick={(e) => {
                               e.stopPropagation();
-                              handleCopyLink(e, file.cdnUrl, file.id);
+                              setPreviewPhoto(file);
                             }}
                             className={cn(
-                              "p-1.5 rounded-lg border transition-all cursor-pointer active:scale-90 shrink-0",
+                              "p-1.5 rounded-lg border transition-all cursor-pointer active:scale-90 shrink-0 sm:hidden",
                               isDark 
                                 ? "bg-zinc-900/80 border-zinc-700 text-zinc-300 hover:text-white" 
                                 : "bg-zinc-100 border-zinc-200 text-zinc-700 hover:text-zinc-950"
                             )}
-                            title="Copiar enlace directo"
+                            title="Ver fotografía completa"
                           >
-                            {copiedId === file.id ? (
-                              <Check className="w-3.5 h-3.5 text-emerald-400" />
-                            ) : (
-                              <Copy className="w-3.5 h-3.5" />
-                            )}
+                            <Eye className="w-3.5 h-3.5" />
                           </button>
                         </div>
 
@@ -1399,14 +1386,20 @@ export function GoogleDriveSettingsCard({ onClose, onSelectPhotoForProduct }: Go
 
       {/* LIGHTBOX / VISOR HD EN PANTALLA COMPLETA CON NAVEGACIÓN COMPLETA */}
       {previewPhoto && (
-        <div className="fixed inset-0 z-[1400] flex items-center justify-center p-2 sm:p-6 bg-black/92 backdrop-blur-2xl">
-          <div className={cn(
-            "relative max-w-5xl w-full max-h-[95vh] sm:max-h-[92vh] rounded-[1.5rem] sm:rounded-[2rem] overflow-hidden border shadow-2xl flex flex-col font-mono",
-            isDark ? "bg-[#0d0d12] border-white/10" : "bg-white border-zinc-200"
-          )}>
+        <div 
+          className="fixed inset-0 z-[1400] flex items-center justify-center p-2 sm:p-4 md:p-6 bg-black/92 backdrop-blur-2xl"
+          onClick={() => setPreviewPhoto(null)}
+        >
+          <div 
+            onClick={(e) => e.stopPropagation()}
+            className={cn(
+              "relative max-w-5xl w-full max-h-[92vh] sm:max-h-[90vh] rounded-2xl sm:rounded-3xl overflow-hidden border shadow-2xl flex flex-col font-mono",
+              isDark ? "bg-[#0d0d12] border-white/10" : "bg-white border-zinc-200"
+            )}
+          >
             {/* Cabecera del Visor HD */}
             <div className={cn(
-              "px-3.5 py-3 sm:px-5 sm:py-4 border-b flex items-center justify-between gap-2.5 sm:gap-4 backdrop-blur-md",
+              "px-3.5 py-2.5 sm:px-5 sm:py-3.5 border-b flex items-center justify-between gap-2.5 sm:gap-4 shrink-0 backdrop-blur-md",
               isDark ? "border-white/10 bg-zinc-950/80 text-white" : "border-zinc-200 bg-zinc-50/90 text-zinc-900"
             )}>
               <div className="min-w-0 pr-1 flex-1">
@@ -1417,28 +1410,6 @@ export function GoogleDriveSettingsCard({ onClose, onSelectPhotoForProduct }: Go
               </div>
 
               <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
-                <button
-                  type="button"
-                  onClick={(e) => handleCopyLink(e, previewPhoto.cdnUrl, previewPhoto.id)}
-                  className={cn(
-                    "px-2.5 sm:px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 cursor-pointer transition-all active:scale-95 border",
-                    isDark ? "bg-white/10 hover:bg-white/20 text-white border-white/15" : "bg-zinc-100 hover:bg-zinc-200 text-zinc-800 border-zinc-200"
-                  )}
-                  title="Copiar enlace directo"
-                >
-                  {copiedId === previewPhoto.id ? (
-                    <>
-                      <Check className="w-3.5 h-3.5 text-emerald-400" />
-                      <span className="hidden sm:inline">Copiado</span>
-                    </>
-                  ) : (
-                    <>
-                      <Copy className="w-3.5 h-3.5" />
-                      <span className="hidden sm:inline">Copiar enlace</span>
-                    </>
-                  )}
-                </button>
-
                 <a
                   href={previewPhoto.cdnUrl}
                   target="_blank"
@@ -1466,23 +1437,24 @@ export function GoogleDriveSettingsCard({ onClose, onSelectPhotoForProduct }: Go
               </div>
             </div>
 
-            {/* Viewport Central con Flechas Flotantes */}
-            <div className="p-2 sm:p-6 flex-1 flex items-center justify-center overflow-hidden bg-black min-h-[280px] sm:min-h-[360px] relative select-none">
+            {/* Viewport Central con Flechas Flotantes (Totalmente responsivo sin recortes) */}
+            <div className="relative flex-1 min-h-0 w-full flex items-center justify-center p-2 sm:p-4 md:p-6 overflow-hidden bg-black/95 select-none">
               <img
                 src={previewPhoto.cdnUrl}
                 alt={previewPhoto.name}
-                className="max-h-[68vh] w-auto max-w-full object-contain rounded-xl shadow-2xl transition-all duration-300"
+                className="max-h-full max-w-full w-auto h-auto object-contain rounded-xl shadow-2xl transition-all duration-300"
               />
 
               {/* Botón Flecha Anterior */}
               {filteredFiles.findIndex(f => f.id === previewPhoto.id) > 0 && (
                 <button
                   type="button"
-                  onClick={() => {
+                  onClick={(e) => {
+                    e.stopPropagation();
                     const idx = filteredFiles.findIndex(f => f.id === previewPhoto.id);
                     if (idx > 0) setPreviewPhoto(filteredFiles[idx - 1]);
                   }}
-                  className="absolute left-2 sm:left-4 top-1/2 -translate-y-1/2 w-9 h-9 sm:w-11 sm:h-11 rounded-full bg-black/60 hover:bg-white text-white hover:text-black backdrop-blur-md border border-white/20 flex items-center justify-center transition-all active:scale-90 cursor-pointer shadow-lg"
+                  className="absolute left-2 sm:left-4 top-1/2 -translate-y-1/2 z-20 w-9 h-9 sm:w-11 sm:h-11 rounded-full bg-black/60 hover:bg-white text-white hover:text-black backdrop-blur-md border border-white/20 flex items-center justify-center transition-all active:scale-90 cursor-pointer shadow-lg"
                   title="Anterior (Flecha izquierda)"
                 >
                   <ChevronLeft className="w-5 h-5 sm:w-6 sm:h-6" />
@@ -1493,11 +1465,12 @@ export function GoogleDriveSettingsCard({ onClose, onSelectPhotoForProduct }: Go
               {filteredFiles.findIndex(f => f.id === previewPhoto.id) < filteredFiles.length - 1 && (
                 <button
                   type="button"
-                  onClick={() => {
+                  onClick={(e) => {
+                    e.stopPropagation();
                     const idx = filteredFiles.findIndex(f => f.id === previewPhoto.id);
                     if (idx < filteredFiles.length - 1) setPreviewPhoto(filteredFiles[idx + 1]);
                   }}
-                  className="absolute right-2 sm:right-4 top-1/2 -translate-y-1/2 w-9 h-9 sm:w-11 sm:h-11 rounded-full bg-black/60 hover:bg-white text-white hover:text-black backdrop-blur-md border border-white/20 flex items-center justify-center transition-all active:scale-90 cursor-pointer shadow-lg"
+                  className="absolute right-2 sm:right-4 top-1/2 -translate-y-1/2 z-20 w-9 h-9 sm:w-11 sm:h-11 rounded-full bg-black/60 hover:bg-white text-white hover:text-black backdrop-blur-md border border-white/20 flex items-center justify-center transition-all active:scale-90 cursor-pointer shadow-lg"
                   title="Siguiente (Flecha derecha)"
                 >
                   <ChevronRight className="w-5 h-5 sm:w-6 sm:h-6" />
@@ -1507,7 +1480,7 @@ export function GoogleDriveSettingsCard({ onClose, onSelectPhotoForProduct }: Go
 
             {/* Barra Inferior del Visor HD */}
             <div className={cn(
-              "px-5 py-3 border-t flex items-center justify-between gap-4 backdrop-blur-md text-xs",
+              "px-4 py-2.5 sm:px-5 sm:py-3 border-t flex items-center justify-between gap-4 shrink-0 backdrop-blur-md text-xs",
               isDark ? "border-white/10 bg-zinc-950/80 text-zinc-400" : "border-zinc-200 bg-zinc-50/90 text-zinc-600"
             )}>
               <span className="text-[11px] hidden sm:inline">

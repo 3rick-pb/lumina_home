@@ -35,8 +35,8 @@ const themes = {
     backFill: "#50B1FD",
     backInsetColor: "0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0.35 0",
     backInsetShadow: "inset 0 0 6px 2px rgba(255,255,255,0.35)",
-    flapFill: "#3ea2f5",
-    flapFillOpacity: 0.85,
+    flapFill: "#3a9ae8",
+    flapFillOpacity: 0.45,
     flapStroke: "#7ec8ff",
     flapInsetColor: "0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0.12 0",
     cardFill: "#F1F1F1",
@@ -48,9 +48,9 @@ const themes = {
 
 const sizeScales = {
   xs: 0.42,
-  sm: 0.52,
-  md: 0.85,
-  lg: 1.15,
+  sm: 0.58,
+  md: 0.88,
+  lg: 1.2,
 } as const;
 
 type FolderComponentProps = Omit<React.ComponentProps<"div">, "color"> & {
@@ -193,28 +193,43 @@ const FolderComponent = ({
             </motion.div>
           </div>
 
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" style={{ transformStyle: "preserve-3d" }}>
-            <motion.div
+          <motion.div
+            className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 mt-[14.5px]"
+            style={{
+              transformOrigin: "bottom center",
+              transformStyle: "preserve-3d",
+              width: 321,
+              height: 241,
+            }}
+            animate={{ rotateX: isOpen ? -55 : isHovered ? -45 : -15 }}
+            transition={{ type: "spring", stiffness: 120, damping: 14 }}
+          >
+            <div
+              className="absolute inset-0"
               style={{
-                transformOrigin: "bottom center",
-                transformStyle: "preserve-3d",
-                width: 321,
-                height: 241,
+                backdropFilter: "blur(6px)",
+                WebkitBackdropFilter: "blur(6px)",
+                clipPath: `path('${FLAP_PATH}')`,
+                WebkitClipPath: `path('${FLAP_PATH}')`,
+                transform: "translateZ(0)",
+                backfaceVisibility: "hidden",
+                WebkitBackfaceVisibility: "hidden",
+                willChange: "transform",
               }}
-              animate={{ rotateX: isOpen ? -30 : isHovered ? -18 : 0 }}
-              transition={{ type: "spring", stiffness: 120, damping: 14 }}
-            >
-              <div
-                className="absolute inset-0"
-                style={{
-                  backdropFilter: "blur(4px)",
-                  WebkitBackdropFilter: "blur(4px)",
-                  clipPath: `path('${FLAP_PATH}')`,
-                  WebkitClipPath: `path('${FLAP_PATH}')`,
-                  backfaceVisibility: "hidden",
-                  WebkitBackfaceVisibility: "hidden",
-                }}
-              />
+            />
+            {/* Franja semitransparente cerca del cierre de la carpeta (visible en hover/zoom, se desvanece al salir) */}
+            <motion.div
+              className="absolute inset-x-0 top-0 pointer-events-none"
+              style={{
+                height: 52,
+                background: "linear-gradient(180deg, rgba(255, 255, 255, 0.45) 0%, rgba(255, 255, 255, 0.15) 55%, transparent 100%)",
+                clipPath: `path('${FLAP_PATH}')`,
+                WebkitClipPath: `path('${FLAP_PATH}')`,
+                transform: "translateZ(1px)",
+              }}
+              animate={{ opacity: isHovered || isOpen ? 1 : 0 }}
+              transition={{ duration: 0.25, ease: "easeOut" }}
+            />
             <svg
               className="absolute inset-0"
               width="321"
@@ -278,7 +293,6 @@ const FolderComponent = ({
         </div>
       </div>
     </div>
-  </div>
   );
 };
 
