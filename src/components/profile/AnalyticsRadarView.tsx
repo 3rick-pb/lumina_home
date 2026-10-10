@@ -361,7 +361,7 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const radarRootRef = useRef<HTMLDivElement>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
-  const [showFsExitHint, setShowFsExitHint] = useState(false);
+  const [isExitingFullscreen, setIsExitingFullscreen] = useState(false);
   const [isMobilePortrait, setIsMobilePortrait] = useState(false);
   const clientsListRef = useRef<HTMLDivElement>(null);
 
@@ -381,23 +381,10 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
   }, []);
 
   useEffect(() => {
-    if (isFullscreen) {
-      setShowFsExitHint(true);
-      const timer = setTimeout(() => setShowFsExitHint(false), 4500);
-      const resizeTimer = setTimeout(() => {
-        window.dispatchEvent(new Event("resize"));
-      }, 480);
-      return () => {
-        clearTimeout(timer);
-        clearTimeout(resizeTimer);
-      };
-    } else {
-      setShowFsExitHint(false);
-      const resizeTimer = setTimeout(() => {
-        window.dispatchEvent(new Event("resize"));
-      }, 480);
-      return () => clearTimeout(resizeTimer);
-    }
+    const resizeTimer = setTimeout(() => {
+      window.dispatchEvent(new Event("resize"));
+    }, 480);
+    return () => clearTimeout(resizeTimer);
   }, [isFullscreen]);
 
   const fetchActiveClients = useRadarStore((state) => state.fetchActiveClients);
@@ -1207,16 +1194,23 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
 
       const isFs = Boolean(
         document.fullscreenElement ||
-        (document as unknown as { webkitFullscreenElement?: Element }).webkitFullscreenElement
+        (document as unknown as { webkitFullscreenElement?: Element }).webkitFullscreenElement ||
+        isFullscreen
       );
 
       if (!isFs) {
-        if (container.requestFullscreen) {
-          await container.requestFullscreen();
-        } else if ((container as unknown as { webkitRequestFullscreen?: () => Promise<void> }).webkitRequestFullscreen) {
-          await (container as unknown as { webkitRequestFullscreen: () => Promise<void> }).webkitRequestFullscreen();
-        }
+        setIsExitingFullscreen(false);
         setIsFullscreen(true);
+
+        try {
+          if (container.requestFullscreen) {
+            await container.requestFullscreen();
+          } else if ((container as unknown as { webkitRequestFullscreen?: () => Promise<void> }).webkitRequestFullscreen) {
+            await (container as unknown as { webkitRequestFullscreen: () => Promise<void> }).webkitRequestFullscreen();
+          }
+        } catch (fsErr) {
+          console.log("Native fullscreen fallback to CSS landscape:", fsErr);
+        }
 
         // Auto-rotate to landscape on small screens / mobile phones like a video player
         const isMobileScreen =
@@ -1234,11 +1228,37 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
           }
         }
       } else {
-        if (document.exitFullscreen) {
-          await document.exitFullscreen();
-        } else if ((document as unknown as { webkitExitFullscreen?: () => Promise<void> }).webkitExitFullscreen) {
-          await (document as unknown as { webkitExitFullscreen: () => Promise<void> }).webkitExitFullscreen();
+        // Smooth HyperOS 90° rotation exit sequence
+        if (isMobilePortrait) {
+          setIsExitingFullscreen(true);
+          setTimeout(async () => {
+            try {
+              if (document.exitFullscreen) {
+                await document.exitFullscreen();
+              } else if ((document as unknown as { webkitExitFullscreen?: () => Promise<void> }).webkitExitFullscreen) {
+                await (document as unknown as { webkitExitFullscreen: () => Promise<void> }).webkitExitFullscreen();
+              }
+            } catch {}
+            try {
+              const screenAny = screen as unknown as { orientation?: { unlock?: () => void } };
+              if (screenAny?.orientation?.unlock) {
+                screenAny.orientation.unlock();
+              }
+            } catch {}
+            setIsFullscreen(false);
+            setIsExitingFullscreen(false);
+            window.dispatchEvent(new Event("resize"));
+          }, 460);
+          return;
         }
+
+        try {
+          if (document.exitFullscreen) {
+            await document.exitFullscreen();
+          } else if ((document as unknown as { webkitExitFullscreen?: () => Promise<void> }).webkitExitFullscreen) {
+            await (document as unknown as { webkitExitFullscreen: () => Promise<void> }).webkitExitFullscreen();
+          }
+        } catch {}
         try {
           const screenAny = screen as unknown as { orientation?: { unlock?: () => void } };
           if (screenAny?.orientation?.unlock) {
@@ -1246,11 +1266,13 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
           }
         } catch {}
         setIsFullscreen(false);
+        setIsExitingFullscreen(false);
       }
     } catch (err) {
       console.warn("Fullscreen toggle error:", err);
+      setIsFullscreen((prev) => !prev);
     }
-  }, []);
+  }, [isFullscreen, isMobilePortrait]);
 
   useEffect(() => {
     const handleFsChange = () => {
@@ -1258,14 +1280,17 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
         document.fullscreenElement ||
         (document as unknown as { webkitFullscreenElement?: Element }).webkitFullscreenElement
       );
-      setIsFullscreen(isFs);
       if (!isFs) {
+        setIsFullscreen(false);
+        setIsExitingFullscreen(false);
         try {
           const screenAny = screen as unknown as { orientation?: { unlock?: () => void } };
           if (screenAny?.orientation?.unlock) {
             screenAny.orientation.unlock();
           }
         } catch {}
+      } else {
+        setIsFullscreen(true);
       }
     };
     document.addEventListener("fullscreenchange", handleFsChange);
@@ -1826,17 +1851,21 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
         WebkitUserSelect: "none",
         overscrollBehavior: "contain",
         contain: isFullscreen ? "none" : "paint",
-        transition: "transform 450ms cubic-bezier(0.16, 1, 0.3, 1), border-radius 450ms cubic-bezier(0.16, 1, 0.3, 1), width 450ms cubic-bezier(0.16, 1, 0.3, 1), height 450ms cubic-bezier(0.16, 1, 0.3, 1)",
+        transition: "transform 480ms cubic-bezier(0.2, 0.9, 0.15, 1), border-radius 480ms cubic-bezier(0.2, 0.9, 0.15, 1), opacity 480ms cubic-bezier(0.2, 0.9, 0.15, 1)",
         ...(isFullscreen && isMobilePortrait
           ? {
               position: "fixed",
               top: "50%",
               left: "50%",
-              width: "100vh",
-              height: "100vw",
-              transform: "translate(-50%, -50%) rotate(90deg)",
+              width: "100dvh",
+              height: "100dvw",
+              transform: isExitingFullscreen
+                ? "translate(-50%, -50%) rotate(0deg) scale(0.92)"
+                : "translate(-50%, -50%) rotate(90deg) scale(1)",
+              transformOrigin: "center center",
               zIndex: 99999,
-              borderRadius: "0px",
+              borderRadius: isExitingFullscreen ? "2.5rem" : "0px",
+              opacity: isExitingFullscreen ? 0.7 : 1,
             }
           : {}),
       }}
@@ -1848,34 +1877,6 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
           : "rounded-[2rem] sm:rounded-[2.5rem] border-[2.5px] border-stone-300/95 dark:border-white/20 ring-1 ring-stone-900/12 dark:ring-white/10 shadow-[0_22px_50px_rgba(15,23,42,0.12)] dark:shadow-[0_22px_50px_rgba(0,0,0,0.45)]"
       } overflow-hidden bg-[#e8ecef] dark:bg-[#181d1b] text-white select-none overscroll-none animate-fade-in font-sans`}
     >
-      {/* HyperOS 4.0 Fullscreen Exit Instruction Banner */}
-      <AnimatePresence>
-        {isFullscreen && showFsExitHint && (
-          <motion.div
-            key="fs-exit-hint"
-            initial={{ opacity: 0, y: -24, scale: 0.94 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: -24, scale: 0.94 }}
-            transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
-            className="absolute top-4 left-1/2 -translate-x-1/2 z-[100000] pointer-events-auto select-none"
-          >
-            <div className="flex items-center gap-2.5 px-4 py-2 rounded-full bg-black/85 dark:bg-[#1a1a1c]/90 backdrop-blur-2xl border border-white/20 shadow-[0_8px_32px_rgba(0,0,0,0.5)] text-white text-xs sm:text-sm font-medium">
-              <span className="flex items-center justify-center w-5 h-5 rounded-full bg-emerald-500/25 text-emerald-400 font-bold text-[11px] border border-emerald-400/40">
-                5
-              </span>
-              <span>Presiona el 5to botón del menú lateral para salir</span>
-              <button
-                type="button"
-                onClick={() => setShowFsExitHint(false)}
-                className="ml-1 p-0.5 rounded-full hover:bg-white/20 text-white/70 hover:text-white transition-colors cursor-pointer"
-                title="Cerrar aviso"
-              >
-                <X className="w-3.5 h-3.5" />
-              </button>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
 
       {/* Architectural Inner Bezel Frame — clearly delineates the Radar viewport & seals rounded edges */}
       <div
@@ -2537,7 +2538,7 @@ export default function AnalyticsRadarView(props: AnalyticsRadarViewProps) {
           <button 
             type="button"
             onClick={toggleFullscreen}
-            title={isFullscreen ? "Salir de pantalla completa (5to botón)" : "Pantalla completa (Gira horizontal en móviles)"}
+            title={isFullscreen ? "Salir de pantalla completa" : "Pantalla completa (Gira horizontal en móviles)"}
             className={`w-8 h-8 sm:w-9 sm:h-9 rounded-xl flex items-center justify-center transition-all hover:scale-105 active:scale-95 cursor-pointer relative ${
               isFullscreen
                 ? "bg-emerald-500/30 text-emerald-300 border border-emerald-400/60 shadow-lg ring-2 ring-emerald-400/80 ring-offset-2 ring-offset-black/50"

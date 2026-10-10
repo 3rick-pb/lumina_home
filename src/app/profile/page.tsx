@@ -2707,7 +2707,7 @@ const handleConfirmDeleteNiche = async () => {
       </AnimatePresence>
 
       {activeTab === "catalog" && (
-        <CatalogScrollToTopButton className="bottom-24 md:bottom-8" />
+        <CatalogScrollToTopButton className="bottom-28 sm:bottom-32 md:bottom-8" />
       )}
 
       {/* Galería de Fotos (Antes Banco de Fotos) */}

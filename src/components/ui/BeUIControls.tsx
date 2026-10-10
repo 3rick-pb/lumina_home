@@ -1459,7 +1459,7 @@ const CENTER_MORPH_TRANSITION = {
 const HYPEROS_PORTRAIT_VARIANTS = {
   closed: {
     opacity: 0,
-    scale: 0.8,
+    scale: 0.82,
     rotate: 0,
     x: "-50%",
     y: "-50%",
@@ -1473,8 +1473,8 @@ const HYPEROS_PORTRAIT_VARIANTS = {
     y: "-50%",
     borderRadius: "0px",
     transition: {
-      duration: 0.65,
-      ease: [0.2, 0.9, 0.2, 1] as const,
+      duration: 0.5,
+      ease: [0.2, 0.9, 0.15, 1] as const,
     },
   },
   exit: {
@@ -1485,7 +1485,7 @@ const HYPEROS_PORTRAIT_VARIANTS = {
     y: "-50%",
     borderRadius: "32px",
     transition: {
-      duration: 0.52,
+      duration: 0.42,
       ease: [0.32, 0.72, 0, 1] as const,
     },
   },
@@ -1505,16 +1505,16 @@ const HYPEROS_LANDSCAPE_NATIVE_VARIANTS = {
     borderRadius: "0px",
     transition: {
       duration: 0.42,
-      ease: [0.16, 1, 0.3, 1] as const,
+      ease: [0.2, 0.9, 0.15, 1] as const,
     },
   },
   exit: {
     opacity: 0,
-    scale: 0.92,
+    scale: 0.9,
     rotate: 0,
     borderRadius: "24px",
     transition: {
-      duration: 0.28,
+      duration: 0.32,
       ease: [0.32, 0.72, 0, 1] as const,
     },
   },
@@ -1799,14 +1799,12 @@ export function BeUICenterMorphModal({
                 max-width: none !important;
                 max-height: none !important;
                 margin: 0 !important;
-                border-radius: 0 !important;
                 z-index: 999999 !important;
               }
               .hyperos-landscape-force > div {
                 width: 100dvh !important;
                 height: 100dvw !important;
                 max-height: 100dvw !important;
-                border-radius: 0 !important;
                 margin: 0 !important;
               }
             }
@@ -1836,12 +1834,12 @@ export function BeUICenterMorphModal({
             exit={isHyperOSActive ? "exit" : "closed"}
             transition={
               isHyperOSActive
-                ? { duration: 0.46, ease: [0.16, 1, 0.3, 1] }
+                ? undefined
                 : CENTER_MORPH_TRANSITION
             }
             className={cn(
               "relative z-10 w-full max-w-2xl rounded-[30px] overflow-hidden shadow-2xl will-change-[clip-path,transform,opacity]",
-              isHyperOSActive && "hyperos-landscape-force !rounded-none !max-w-none !m-0 !z-[999999]",
+              isHyperOSActive && "hyperos-landscape-force !max-w-none !m-0 !z-[999999]",
               className
             )}
           >

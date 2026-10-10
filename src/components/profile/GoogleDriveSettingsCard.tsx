@@ -612,10 +612,10 @@ export function GoogleDriveSettingsCard({ onClose, onSelectPhotoForProduct }: Go
 
         {/* Pie del Sidebar: Información de carpeta activa y cuenta */}
         <div className={cn(
-          "p-3.5 border-t text-xs flex items-center justify-between backdrop-blur-md",
+          "p-3 sm:p-3.5 border-t text-xs flex flex-wrap items-center justify-between gap-2 backdrop-blur-md",
           isDark ? "border-zinc-800/80 bg-[#0c0c12]/80 text-zinc-300" : "border-zinc-200/80 bg-zinc-100/80 text-zinc-700"
         )}>
-          <div className="flex items-center gap-2 min-w-0 pr-2">
+          <div className="flex items-center gap-2 min-w-0 flex-1">
             <span className="w-1.5 h-1.5 rounded-full bg-blue-500 shrink-0" />
             <span className="truncate font-semibold font-mono text-[11px]">
               {mainFolder ? mainFolder.name : "Mi Unidad"}
@@ -624,7 +624,7 @@ export function GoogleDriveSettingsCard({ onClose, onSelectPhotoForProduct }: Go
 
           <div className="flex items-center gap-2 shrink-0">
             <span className={cn(
-              "text-[10px] font-mono px-2 py-0.5 rounded-md font-bold tracking-tight border",
+              "text-[10px] font-mono px-2 py-0.5 rounded-md font-bold tracking-tight border whitespace-nowrap",
               isDark 
                 ? "bg-blue-500/10 text-blue-400 border-blue-500/20" 
                 : "bg-blue-50 text-blue-600 border-blue-200"
@@ -654,7 +654,7 @@ export function GoogleDriveSettingsCard({ onClose, onSelectPhotoForProduct }: Go
         
         {/* Barra Superior del Canvas Principal (Apple Glass Bar) */}
         <div className={cn(
-          "px-5 sm:px-7 py-3.5 border-b flex items-center justify-between gap-4 shrink-0 backdrop-blur-xl sticky top-0 z-30 transition-colors duration-200",
+          "px-3.5 sm:px-7 py-2.5 sm:py-3.5 border-b flex flex-wrap sm:flex-nowrap items-center justify-between gap-2.5 sm:gap-4 shrink-0 backdrop-blur-xl sticky top-0 z-30 transition-colors duration-200",
           isDark ? "bg-[#0a0a0f]/85 border-zinc-800/80 text-white" : "bg-white/80 border-zinc-200/80 text-zinc-900"
         )}>
           {/* Breadcrumb / Navegación */}
@@ -871,9 +871,9 @@ export function GoogleDriveSettingsCard({ onClose, onSelectPhotoForProduct }: Go
                 </div>
               </div>
 
-              <div className="flex items-center gap-2 self-end sm:self-auto shrink-0">
+              <div className="flex items-center gap-2 self-start sm:self-auto shrink-0">
                 <span className={cn(
-                  "text-[11px] font-mono font-bold px-3 py-1 rounded-xl border shadow-xs",
+                  "text-[11px] font-mono font-bold px-3 py-1 rounded-xl border shadow-xs whitespace-nowrap",
                   isDark 
                     ? "bg-zinc-800/80 border-zinc-700 text-zinc-200" 
                     : "bg-white border-zinc-300 text-zinc-800"
@@ -935,7 +935,7 @@ export function GoogleDriveSettingsCard({ onClose, onSelectPhotoForProduct }: Go
             {/* Si tiene subcarpetas, mostrarlas arriba en filas de 3 */}
             {currentSubfolders.length > 0 && (
               <div className="space-y-4">
-                <div className={cn("flex items-center justify-between border-b pb-2.5", isDark ? "border-zinc-800/80" : "border-zinc-200/80")}>
+                <div className={cn("flex flex-wrap sm:flex-nowrap items-center justify-between gap-2 border-b pb-2.5", isDark ? "border-zinc-800/80" : "border-zinc-200/80")}>
                   <div className="flex items-center gap-2">
                     <Folder className="w-4 h-4 text-blue-500" />
                     <h4 className={cn("text-xs sm:text-sm font-bold uppercase tracking-wider font-mono", isDark ? "text-white" : "text-zinc-900")}>
@@ -943,7 +943,7 @@ export function GoogleDriveSettingsCard({ onClose, onSelectPhotoForProduct }: Go
                     </h4>
                   </div>
                   <span className={cn(
-                    "text-[10px] font-mono font-bold px-2 py-0.5 rounded-md border",
+                    "text-[10px] font-mono font-bold px-2 py-0.5 rounded-md border whitespace-nowrap",
                     isDark ? "text-zinc-300 bg-zinc-800/80 border-zinc-700" : "text-zinc-700 bg-zinc-100 border-zinc-300"
                   )}>
                     {currentSubfolders.length} subcarpetas
@@ -966,15 +966,15 @@ export function GoogleDriveSettingsCard({ onClose, onSelectPhotoForProduct }: Go
 
             {/* SECCIÓN FOTOGRAFÍAS DE LA CARPETA SELECCIONADA */}
             <div className="space-y-4 pb-6">
-              <div className={cn("flex items-center justify-between border-b pb-2.5", isDark ? "border-zinc-800/80" : "border-zinc-200/80")}>
-                <div className="flex items-center gap-2">
-                  <ImageIcon className="w-4 h-4 text-blue-500" />
-                  <h4 className={cn("text-xs sm:text-sm font-bold uppercase tracking-wider font-mono", isDark ? "text-white" : "text-zinc-900")}>
+              <div className={cn("flex flex-wrap sm:flex-nowrap items-center justify-between gap-2 border-b pb-2.5", isDark ? "border-zinc-800/80" : "border-zinc-200/80")}>
+                <div className="flex items-center gap-2 min-w-0">
+                  <ImageIcon className="w-4 h-4 text-blue-500 shrink-0" />
+                  <h4 className={cn("text-xs sm:text-sm font-bold uppercase tracking-wider font-mono truncate max-w-[200px] sm:max-w-none", isDark ? "text-white" : "text-zinc-900")}>
                     Fotografías ({mainFolder.name})
                   </h4>
                 </div>
                 <span className={cn(
-                  "text-[10px] font-mono font-bold px-2.5 py-0.5 rounded-md border",
+                  "text-[10px] font-mono font-bold px-2.5 py-0.5 rounded-md border whitespace-nowrap",
                   isDark ? "text-zinc-300 bg-zinc-800/80 border-zinc-700" : "text-zinc-700 bg-zinc-100 border-zinc-300"
                 )}>
                   {filteredFiles.length} archivos

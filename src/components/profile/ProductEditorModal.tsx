@@ -256,26 +256,64 @@ export function ProductEditorModal({
     setSelectedPhotos([target, ...rest]);
   };
 
+  // Validación estricta: todos los campos requeridos deben estar completos para poder guardar/publicar
+  const isFormComplete = useMemo(() => {
+    if (!title.trim()) return false;
+    if (!category.trim()) return false;
+    if (!price.trim() || !(parseFloat(price) > 0)) return false;
+    if (!stock.trim() || parseInt(stock, 10) < 0) return false;
+    if (!description.trim()) return false;
+    if (selectedPhotos.length === 0) return false;
+    if (hasSizes && !sizes.trim()) return false;
+    if (hasDiscount && (!oldPrice.trim() || !(parseFloat(oldPrice) > parseFloat(price)))) return false;
+    return true;
+  }, [title, category, price, stock, description, selectedPhotos, hasSizes, sizes, hasDiscount, oldPrice]);
+
   // Submit
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setFormError(null);
     setFormSuccess(null);
 
-    // Validación ágil de esenciales
+    // Validación completa y navegación guiada a la pestaña correspondiente
     if (!title.trim()) {
       setActiveTab('esenciales');
       setFormError("Ingresa el Nombre del Producto.");
       return;
     }
+    if (!category.trim()) {
+      setActiveTab('esenciales');
+      setFormError("Selecciona una Categoría para el producto.");
+      return;
+    }
     if (!price.trim() || !(parseFloat(price) > 0)) {
       setActiveTab('esenciales');
-      setFormError("Ingresa un precio válido.");
+      setFormError("Ingresa un precio válido mayor a 0.");
+      return;
+    }
+    if (hasDiscount && (!oldPrice.trim() || !(parseFloat(oldPrice) > parseFloat(price)))) {
+      setActiveTab('esenciales');
+      setFormError("El precio original antes de descuento debe ser mayor que el precio de venta.");
+      return;
+    }
+    if (!stock.trim() || parseInt(stock, 10) < 0) {
+      setActiveTab('esenciales');
+      setFormError("Ingresa la cantidad de unidades en inventario.");
+      return;
+    }
+    if (!description.trim()) {
+      setActiveTab('esenciales');
+      setFormError("Ingresa una descripción comercial para el producto.");
       return;
     }
     if (selectedPhotos.length === 0) {
       setActiveTab('fotos');
       setFormError("Selecciona al menos una fotografía de la Galería de Fotos como portada.");
+      return;
+    }
+    if (hasSizes && !sizes.trim()) {
+      setActiveTab('presentacion');
+      setFormError("Especifica las tallas disponibles o desmarca la opción.");
       return;
     }
 
@@ -342,49 +380,61 @@ export function ProductEditorModal({
           )}
         >
           {/* 1. TOP HEADER: Barra de Navegación por Pestañas Claras (Sin estrés) */}
-          <div className="px-5 sm:px-7 py-4 border-b border-zinc-200/80 dark:border-zinc-800/80 bg-white/90 dark:bg-[#12121a]/90 backdrop-blur-xl flex flex-col md:flex-row md:items-center justify-between gap-4 shrink-0">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-2xl bg-blue-500/10 border border-blue-500/20 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0">
-                <Package className="w-5 h-5" />
-              </div>
-              <div>
-                <div className="flex items-center gap-2">
-                  <span className="text-[10px] font-bold uppercase tracking-widest text-blue-600 dark:text-blue-400">
-                    {mode === 'create' ? "NUEVO REGISTRO" : "MODO EDICIÓN"}
-                  </span>
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+          <div className="px-3.5 sm:px-7 py-2.5 sm:py-3.5 border-b border-zinc-200/80 dark:border-zinc-800/80 bg-white/90 dark:bg-[#12121a]/90 backdrop-blur-xl flex flex-col md:flex-row md:items-center justify-between gap-2.5 sm:gap-4 shrink-0">
+            <div className="flex items-center justify-between w-full md:w-auto">
+              <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
+                <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl sm:rounded-2xl bg-blue-500/10 border border-blue-500/20 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0">
+                  <Package className="w-4 h-4 sm:w-5 sm:h-5" />
                 </div>
-                <h2 className="text-base sm:text-lg font-bold text-zinc-900 dark:text-zinc-100 tracking-tight">
-                  {mode === 'create' ? "Añadir Producto al Catálogo" : `Editar: ${title || "Producto"}`}
-                </h2>
+                <div className="min-w-0">
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-[9px] sm:text-[10px] font-bold uppercase tracking-widest text-blue-600 dark:text-blue-400">
+                      {mode === 'create' ? "NUEVO REGISTRO" : "MODO EDICIÓN"}
+                    </span>
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                  </div>
+                  <h2 className="text-sm sm:text-lg font-bold text-zinc-900 dark:text-zinc-100 tracking-tight truncate max-w-[210px] sm:max-w-none">
+                    {mode === 'create' ? "Añadir Producto" : `Editar: ${title || "Producto"}`}
+                  </h2>
+                </div>
               </div>
+
+              {/* Close Button on Mobile (visible in top-right) */}
+              <button
+                type="button"
+                onClick={onClose}
+                className="flex md:hidden p-1.5 text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 rounded-xl hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer active:scale-90 shrink-0"
+                title="Cerrar"
+              >
+                <X className="w-5 h-5" />
+              </button>
             </div>
 
             {/* Pestañas de Navegación del Editor */}
-            <div className="flex items-center bg-zinc-100 dark:bg-zinc-900/80 p-1 rounded-2xl border border-zinc-200 dark:border-zinc-800 text-xs self-start md:self-auto overflow-x-auto max-w-full">
+            <div className="flex items-center bg-zinc-100 dark:bg-zinc-900/80 p-0.5 sm:p-1 rounded-xl sm:rounded-2xl border border-zinc-200 dark:border-zinc-800 text-[11px] sm:text-xs overflow-x-auto no-scrollbar max-w-full gap-0.5 shrink-0">
               <button
                 type="button"
                 onClick={() => setActiveTab('esenciales')}
                 className={cn(
-                  "px-3.5 py-1.5 rounded-xl font-bold transition-all cursor-pointer shrink-0 active:scale-95",
+                  "px-2.5 sm:px-3.5 py-1 sm:py-1.5 rounded-lg sm:rounded-xl font-bold transition-all cursor-pointer shrink-0 active:scale-95 whitespace-nowrap",
                   activeTab === 'esenciales'
                     ? "bg-white text-zinc-950 dark:bg-zinc-800 dark:text-white shadow-xs"
                     : "text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-200"
                 )}
               >
-                1. Esenciales
+                1. Esenciales *
               </button>
               <button
                 type="button"
                 onClick={() => setActiveTab('fotos')}
                 className={cn(
-                  "px-3.5 py-1.5 rounded-xl font-bold transition-all cursor-pointer shrink-0 flex items-center gap-1.5 active:scale-95",
+                  "px-2.5 sm:px-3.5 py-1 sm:py-1.5 rounded-lg sm:rounded-xl font-bold transition-all cursor-pointer shrink-0 flex items-center gap-1.5 active:scale-95 whitespace-nowrap",
                   activeTab === 'fotos'
                     ? "bg-white text-zinc-950 dark:bg-zinc-800 dark:text-white shadow-xs"
                     : "text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-200"
                 )}
               >
-                <span>2. Fotos</span>
+                <span>2. Fotos *</span>
                 <span className={cn(
                   "w-4 h-4 rounded-full text-[9px] flex items-center justify-center font-bold",
                   selectedPhotos.length > 0 ? "bg-blue-500 text-white" : "bg-zinc-300 dark:bg-zinc-700 text-zinc-600 dark:text-zinc-300"
@@ -396,20 +446,20 @@ export function ProductEditorModal({
                 type="button"
                 onClick={() => setActiveTab('presentacion')}
                 className={cn(
-                  "px-3.5 py-1.5 rounded-xl font-bold transition-all cursor-pointer shrink-0 flex items-center gap-1 active:scale-95",
+                  "px-2.5 sm:px-3.5 py-1 sm:py-1.5 rounded-lg sm:rounded-xl font-bold transition-all cursor-pointer shrink-0 flex items-center gap-1 active:scale-95 whitespace-nowrap",
                   activeTab === 'presentacion'
                     ? "bg-white text-zinc-950 dark:bg-zinc-800 dark:text-white shadow-xs"
                     : "text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-200"
                 )}
               >
                 <Sparkles className="w-3 h-3 text-amber-500" />
-                <span>3. Experiencia UX</span>
+                <span>3. UX</span>
               </button>
               <button
                 type="button"
                 onClick={() => setActiveTab('ficha')}
                 className={cn(
-                  "px-3.5 py-1.5 rounded-xl font-bold transition-all cursor-pointer shrink-0 active:scale-95",
+                  "px-2.5 sm:px-3.5 py-1 sm:py-1.5 rounded-lg sm:rounded-xl font-bold transition-all cursor-pointer shrink-0 active:scale-95 whitespace-nowrap",
                   activeTab === 'ficha'
                     ? "bg-white text-zinc-950 dark:bg-zinc-800 dark:text-white shadow-xs"
                     : "text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-200"
@@ -423,6 +473,7 @@ export function ProductEditorModal({
               type="button"
               onClick={onClose}
               className="hidden md:flex p-2 text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 rounded-xl hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer active:scale-90 shrink-0"
+              title="Cerrar"
             >
               <X className="w-5 h-5" />
             </button>
@@ -430,13 +481,13 @@ export function ProductEditorModal({
 
           {/* Mensajes de Alerta / Éxito */}
           {formError && (
-            <div className="mx-6 mt-3 p-3 bg-red-500/10 border border-red-500/20 rounded-xl flex items-center gap-2 text-xs text-red-600 dark:text-red-400 shrink-0">
+            <div className="mx-3.5 sm:mx-6 mt-2.5 sm:mt-3 p-2.5 sm:p-3 bg-red-500/10 border border-red-500/20 rounded-xl flex items-center gap-2 text-xs text-red-600 dark:text-red-400 shrink-0">
               <AlertCircle className="w-4 h-4 shrink-0" />
               <span>{formError}</span>
             </div>
           )}
           {formSuccess && (
-            <div className="mx-6 mt-3 p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-xl flex items-center gap-2 text-xs text-emerald-600 dark:text-emerald-400 shrink-0">
+            <div className="mx-3.5 sm:mx-6 mt-2.5 sm:mt-3 p-2.5 sm:p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-xl flex items-center gap-2 text-xs text-emerald-600 dark:text-emerald-400 shrink-0">
               <CheckCircle2 className="w-4 h-4 shrink-0" />
               <span>{formSuccess}</span>
             </div>
@@ -451,15 +502,15 @@ export function ProductEditorModal({
                 onWheel={(e) => {
                   e.stopPropagation();
                 }}
-                className="h-full w-full overflow-y-auto p-5 sm:p-7 space-y-6 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden overscroll-contain"
+                className="h-full w-full overflow-y-auto p-3.5 sm:p-6 space-y-4 sm:space-y-6 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden overscroll-contain"
               >
             
             {/* PESTAÑA 1: ESENCIALES (Solo lo verdaderamente importante) */}
             {activeTab === 'esenciales' && (
-              <div className="space-y-5 animate-fade-in">
+              <div className="space-y-4 sm:space-y-5 animate-fade-in">
                 {/* Nombre y Subtítulo */}
-                <div className="p-5 rounded-2xl bg-white dark:bg-[#12121a] border border-zinc-200/90 dark:border-zinc-800/90 space-y-4">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="p-3.5 sm:p-5 rounded-2xl bg-white dark:bg-[#12121a] border border-zinc-200/90 dark:border-zinc-800/90 space-y-3 sm:space-y-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                     <div>
                       <label className="block text-xs font-bold text-zinc-700 dark:text-zinc-300 mb-1.5">
                         Nombre del Producto *
@@ -488,8 +539,8 @@ export function ProductEditorModal({
                 </div>
 
                 {/* Categoría y Badge */}
-                <div className="p-5 rounded-2xl bg-white dark:bg-[#12121a] border border-zinc-200/90 dark:border-zinc-800/90 space-y-4">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="p-3.5 sm:p-5 rounded-2xl bg-white dark:bg-[#12121a] border border-zinc-200/90 dark:border-zinc-800/90 space-y-3 sm:space-y-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                     <div>
                       <div className="flex items-center justify-between mb-1.5">
                         <label className="text-xs font-bold text-zinc-700 dark:text-zinc-300">
@@ -530,8 +581,8 @@ export function ProductEditorModal({
                 </div>
 
                 {/* Precio, Oferta y Stock */}
-                <div className="p-5 rounded-2xl bg-white dark:bg-[#12121a] border border-zinc-200/90 dark:border-zinc-800/90 space-y-4">
-                  <div className="flex items-center justify-between pb-3 border-b border-zinc-200/60 dark:border-zinc-800/60">
+                <div className="p-3.5 sm:p-5 rounded-2xl bg-white dark:bg-[#12121a] border border-zinc-200/90 dark:border-zinc-800/90 space-y-3 sm:space-y-4">
+                  <div className="flex items-center justify-between pb-2.5 sm:pb-3 border-b border-zinc-200/60 dark:border-zinc-800/60">
                     <span className="text-xs font-bold text-zinc-800 dark:text-zinc-200 uppercase tracking-wider">
                       Precios y Existencias
                     </span>
@@ -557,7 +608,10 @@ export function ProductEditorModal({
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  <div className={cn(
+                    "grid gap-3 sm:gap-4",
+                    hasDiscount ? "grid-cols-1 sm:grid-cols-2 lg:grid-cols-4" : "grid-cols-1 sm:grid-cols-2"
+                  )}>
                     <div>
                       <label className="block text-xs font-bold text-zinc-700 dark:text-zinc-300 mb-1.5">
                         {hasDiscount ? "Precio con Descuento ($) *" : "Precio de Venta ($) *"}
@@ -571,11 +625,12 @@ export function ProductEditorModal({
                         className="w-full px-3.5 py-2.5 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/60 text-xs font-bold text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 focus:outline-none focus:border-blue-500"
                       />
                     </div>
-                    {hasDiscount ? (
+
+                    {hasDiscount && (
                       <>
                         <div>
                           <label className="block text-xs font-bold text-zinc-700 dark:text-zinc-300 mb-1.5">
-                            Precio Original Antes ($)
+                            Precio Original Antes ($) *
                           </label>
                           <input
                             type="number"
@@ -596,28 +651,28 @@ export function ProductEditorModal({
                           </div>
                         </div>
                       </>
-                    ) : (
-                      <div>
-                        <label className="block text-xs font-bold text-zinc-700 dark:text-zinc-300 mb-1.5">
-                          Unidades en Stock
-                        </label>
-                        <input
-                          type="number"
-                          value={stock}
-                          onChange={(e) => setStock(e.target.value)}
-                          placeholder="20"
-                          className="w-full px-3.5 py-2.5 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/60 text-xs text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 focus:outline-none focus:border-blue-500"
-                        />
-                      </div>
                     )}
+
+                    <div>
+                      <label className="block text-xs font-bold text-zinc-700 dark:text-zinc-300 mb-1.5">
+                        Unidades en Stock *
+                      </label>
+                      <input
+                        type="number"
+                        value={stock}
+                        onChange={(e) => setStock(e.target.value)}
+                        placeholder="20"
+                        className="w-full px-3.5 py-2.5 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/60 text-xs text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 focus:outline-none focus:border-blue-500"
+                      />
+                    </div>
                   </div>
                 </div>
 
                 {/* Descripción y Viñetas */}
-                <div className="p-5 rounded-2xl bg-white dark:bg-[#12121a] border border-zinc-200/90 dark:border-zinc-800/90 space-y-4">
+                <div className="p-3.5 sm:p-5 rounded-2xl bg-white dark:bg-[#12121a] border border-zinc-200/90 dark:border-zinc-800/90 space-y-3 sm:space-y-4">
                   <div>
                     <label className="block text-xs font-bold text-zinc-700 dark:text-zinc-300 mb-1.5">
-                      Descripción Comercial del Producto
+                      Descripción Comercial del Producto *
                     </label>
                     <textarea
                       rows={3}
@@ -1082,16 +1137,22 @@ export function ProductEditorModal({
             </div>
 
             {/* 3. FOOTER INFERIOR FIJO: Botones de Acción Intuitivos */}
-            <div className="px-5 sm:px-7 py-4 border-t border-zinc-200/80 dark:border-zinc-800/80 bg-white/95 dark:bg-[#12121a]/95 backdrop-blur-xl flex items-center justify-between gap-3 shrink-0">
+            <div className="px-3.5 sm:px-7 py-2.5 sm:py-3.5 border-t border-zinc-200/80 dark:border-zinc-800/80 bg-white/95 dark:bg-[#12121a]/95 backdrop-blur-xl flex items-center justify-between gap-2.5 shrink-0">
               <button
                 type="button"
                 onClick={onClose}
-                className="px-5 py-2.5 rounded-xl text-xs font-bold text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200/70 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
+                className="px-3 sm:px-5 py-2 sm:py-2.5 rounded-xl text-xs font-bold text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200/70 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
               >
                 Cancelar
               </button>
 
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1.5 sm:gap-2">
+                {!isFormComplete && (
+                  <span className="text-[10px] text-amber-500 font-bold hidden sm:inline-block">
+                    Completa los campos con * para guardar
+                  </span>
+                )}
+
                 {activeTab !== 'esenciales' && (
                   <button
                     type="button"
@@ -1100,7 +1161,7 @@ export function ProductEditorModal({
                       else if (activeTab === 'presentacion') setActiveTab('fotos');
                       else if (activeTab === 'fotos') setActiveTab('esenciales');
                     }}
-                    className="px-4 py-2.5 rounded-xl text-xs font-bold border border-zinc-200 dark:border-zinc-700 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
+                    className="px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl text-xs font-bold border border-zinc-200 dark:border-zinc-700 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
                   >
                     Anterior
                   </button>
@@ -1114,7 +1175,7 @@ export function ProductEditorModal({
                       else if (activeTab === 'fotos') setActiveTab('presentacion');
                       else if (activeTab === 'presentacion') setActiveTab('ficha');
                     }}
-                    className="px-4 py-2.5 rounded-xl text-xs font-bold bg-zinc-200 hover:bg-zinc-300 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-900 dark:text-zinc-100 transition-colors cursor-pointer"
+                    className="px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl text-xs font-bold bg-zinc-200 hover:bg-zinc-300 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-900 dark:text-zinc-100 transition-colors cursor-pointer"
                   >
                     Siguiente
                   </button>
@@ -1122,14 +1183,24 @@ export function ProductEditorModal({
 
                 <button
                   type="submit"
-                  disabled={isSubmitting}
-                  className="px-6 py-2.5 rounded-xl text-xs font-bold bg-blue-600 hover:bg-blue-500 text-white shadow-md disabled:opacity-50 transition-all active:scale-95 cursor-pointer flex items-center gap-2"
+                  disabled={isSubmitting || !isFormComplete}
+                  className={cn(
+                    "px-4 sm:px-6 py-2 sm:py-2.5 rounded-xl text-xs font-bold text-white shadow-md transition-all flex items-center gap-2",
+                    isFormComplete && !isSubmitting
+                      ? "bg-blue-600 hover:bg-blue-500 active:scale-95 cursor-pointer"
+                      : "bg-zinc-400 dark:bg-zinc-700 opacity-50 cursor-not-allowed"
+                  )}
+                  title={
+                    !isFormComplete
+                      ? "Completa todos los campos obligatorios (*) para poder guardar o publicar"
+                      : undefined
+                  }
                 >
                   <Sparkles className="w-3.5 h-3.5" />
                   <span>
                     {isSubmitting 
                       ? "Guardando..." 
-                      : mode === 'create' ? "Publicar en Tienda" : "Guardar Cambios"}
+                      : mode === 'create' ? "Publicar" : "Guardar Cambios"}
                   </span>
                 </button>
               </div>

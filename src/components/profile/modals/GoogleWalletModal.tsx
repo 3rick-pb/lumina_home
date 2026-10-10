@@ -128,7 +128,7 @@ export function GoogleWalletModal({
   return createPortal(
     <AnimatePresence>
       {open && (
-        <div ref={scrollContainerRef} className={cn("fixed inset-0 z-[1100] flex items-center justify-center p-4 sm:p-6 overflow-y-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden", isDark && "dark")}>
+        <div ref={scrollContainerRef} className={cn("fixed inset-0 z-[1000050] flex items-center justify-center p-4 sm:p-6 overflow-y-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden", isDark && "dark")}>
           {/* Backdrop with elegant blur */}
           <motion.div
             initial={{ opacity: 0 }}

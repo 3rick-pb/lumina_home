@@ -437,13 +437,13 @@ export function Header() {
               )}
             </motion.button>
             
-            {/* Mobile Navigation Toggle Button */}
+            {/* Mobile Navigation Toggle Button (Clean icon without white background circle) */}
             <button 
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-              className="md:hidden p-2 sm:p-2.5 rounded-full hover:bg-white/50 text-gray-700 ml-0.5 transition-colors cursor-pointer shrink-0"
+              className="md:hidden p-2 sm:p-2.5 bg-transparent hover:bg-transparent active:bg-transparent text-gray-800 ml-0.5 transition-transform duration-200 active:scale-90 cursor-pointer shrink-0 focus:outline-none"
               aria-label={isMobileMenuOpen ? "Cerrar menú móvil" : "Abrir menú móvil"}
             >
-              {isMobileMenuOpen ? <X className="w-4 h-4 sm:w-5 sm:h-5" /> : <Menu className="w-4 h-4 sm:w-5 sm:h-5" />}
+              {isMobileMenuOpen ? <X className="w-4 h-4 sm:w-5 sm:h-5 stroke-[2.3px]" /> : <Menu className="w-4 h-4 sm:w-5 sm:h-5 stroke-[2.3px]" />}
             </button>
           </div>
         </div>
