@@ -1592,7 +1592,7 @@ const handleConfirmDeleteNiche = async () => {
   </div>
 
   {/* --- 2. VISTA DESKTOP (md:flex): Brand & Top Navigation Pill Bar --- */}
-  <div className="hidden md:flex items-center justify-start gap-2.5 md:gap-3.5 min-w-0 shrink-0">
+  <div className="hidden md:flex items-center justify-start gap-3 md:gap-4 lg:gap-5 min-w-0 shrink-0">
   {/* Desktop Brand Logo (Lateral Izquierdo en Desktop) */}
   <Link 
     href="/" 
@@ -1701,19 +1701,10 @@ const handleConfirmDeleteNiche = async () => {
   </div>
   </div>
 
-  {/* Right Search Input & Profile Badge (Spotlight Alive Command Bar en Desktop) */}
-  <div className="hidden md:flex items-center gap-2 sm:gap-2.5 lg:gap-3 shrink-0 min-w-0">
-    {/* Botón Ver Tienda completamente restaurado a la izquierda de la barra de búsqueda */}
-    <Link 
-      href="/" 
-      className="hidden md:flex items-center gap-1.5 text-xs font-medium text-stone-600 dark:text-stone-300 hover:text-stone-900 dark:hover:text-white px-2.5 py-1.5 rounded-xl hover:bg-stone-100 dark:hover:bg-white/10 transition-colors shrink-0"
-      title="Ir a la tienda Lumina"
-    >
-      <span>Ver Tienda</span>
-      <span aria-hidden="true">&rarr;</span>
-    </Link>
-
-    <div className="relative z-50 group/search mr-1 sm:mr-2" ref={searchDropdownRef}>
+  {/* Right Search Input, Ver Tienda Button & Profile Badge (Desktop) */}
+  <div className="hidden md:flex items-center gap-3 sm:gap-3.5 lg:gap-4.5 shrink-0 min-w-0">
+    {/* Barra de Búsqueda (Spotlight Alive Command Bar en Desktop) */}
+    <div className="relative z-50 group/search" ref={searchDropdownRef}>
       <div 
         className={`relative flex items-center gap-2 pl-3 pr-2 h-9 sm:h-9.5 rounded-full bg-white/80 dark:bg-[#1a1a20]/80 hover:bg-white dark:hover:bg-[#202026] focus-within:bg-white dark:focus-within:bg-[#1a1a20] backdrop-blur-2xl border transition-all duration-300 ease-out ${
           isSearchFocused
@@ -1784,7 +1775,18 @@ const handleConfirmDeleteNiche = async () => {
       {isSearchFocused && renderSpotlightDropdown(false)}
     </div>
 
-    <div className="flex items-center gap-2 pl-2.5 sm:pl-3 border-l border-gray-200 dark:border-white/10 shrink-0 min-w-0">
+    {/* Botón Ver Tienda (Al lado derecho de la barra de búsqueda) */}
+    <Link 
+      href="/" 
+      className="hidden md:flex items-center gap-1.5 text-xs font-semibold text-stone-600 dark:text-stone-300 hover:text-stone-900 dark:hover:text-white px-2.5 py-1.5 rounded-xl hover:bg-stone-100 dark:hover:bg-white/10 transition-colors shrink-0"
+      title="Ir a la tienda Lumina"
+    >
+      <span>Ver Tienda</span>
+      <span aria-hidden="true">&rarr;</span>
+    </Link>
+
+    {/* Avatar + Nombre y Rol con espaciado independiente calibrado */}
+    <div className="flex items-center gap-2.5 sm:gap-3 pl-3.5 sm:pl-4 border-l border-gray-200 dark:border-white/10 shrink-0 min-w-0">
       <BlobatarAvatar
         name={customSeed || user.id || user.email || user.name}
         size={34}
@@ -1794,7 +1796,7 @@ const handleConfirmDeleteNiche = async () => {
         showGlow
         title={`Avatar de ${formatCleanName(user.name)}`}
       />
-      <div className="hidden lg:block text-left min-w-0 max-w-[105px] xl:max-w-[130px]">
+      <div className="hidden lg:block text-left min-w-0 max-w-[110px] xl:max-w-[140px]">
         <p className="text-xs font-bold text-gray-900 dark:text-gray-100 leading-tight truncate">
           {formatCleanName(user.name)}
         </p>
